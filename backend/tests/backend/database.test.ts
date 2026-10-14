@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { PGlite } from "@electric-sql/pglite";
 import { readFile, readdir } from "node:fs/promises";
-import { beforeAll, afterAll, describe, it, expect } from "vitest";
+import { beforeAll, afterAll, afterEach, describe, it, expect } from "vitest";
 
 const owner = "00000000-0000-4000-8000-000000000001",
   editor = "00000000-0000-4000-8000-000000000002",
@@ -370,5 +370,174 @@ describe("real PostgreSQL migrations and authorization", () => {
     await expect(
       asUser(reviewer, "select public.claim_backend_job()"),
     ).rejects.toThrow(/permission denied/);
+  });
+});
+
+describe("queue integration through migrated PostgreSQL functions", () => {
+  const queuedIds: string[] = [];
+  type Job = {
+    id: string;
+    status: string;
+    attempts: number;
+    lease_token: string | null;
+    lease_until: string | null;
+    error_code: string | null;
+    checkpoint: Record<string, unknown>;
+  };
+
+  async function queueJob(checkpoint: Record<string, unknown> = {}) {
+    const id = crypto.randomUUID();
+    await db.query(
+      `insert into public.jobs(id,workspace_id,type,entity_id,input_hash,status,created_by,checkpoint)
+       values($1,$2,'draft_section',$3,$4,'queued',$5,$6::jsonb)`,
+      [
+        id,
+        workspace,
+        crypto.randomUUID(),
+        "a".repeat(64),
+        owner,
+        JSON.stringify(checkpoint),
+      ],
+    );
+    queuedIds.push(id);
+    return id;
+  }
+
+  async function asWorker<T>(query: string, params: unknown[] = []) {
+    await db.exec("set role service_role");
+    try {
+      return await db.query<T>(query, params);
+    } finally {
+      await db.exec("reset role");
+    }
+  }
+
+  async function claim() {
+    const result = await asWorker<{ job: Job | null }>(
+      "select public.claim_backend_job() as job",
+    );
+    return result.rows[0].job;
+  }
+
+  const finish = (id: string, lease: string, status = "blocked") =>
+    asWorker("select public.finish_backend_job($1,$2,$3,'TEST_DEPENDENCY')", [
+      id,
+      lease,
+      status,
+    ]);
+
+  async function readJob(id: string) {
+    return (await db.query<Job>("select * from public.jobs where id=$1", [id]))
+      .rows[0];
+  }
+
+  afterEach(async () => {
+    await db.exec("reset role");
+    for (const id of queuedIds.splice(0))
+      await db.query("delete from public.jobs where id=$1", [id]);
+  });
+
+  it("denies worker execution to authenticated users, including the Owner", async () => {
+    for (const actor of [owner, editor, reviewer, outsider]) {
+      await expect(
+        asUser(actor, "select public.claim_backend_job()"),
+      ).rejects.toThrow(/permission denied/);
+      await expect(
+        asUser(
+          actor,
+          "select public.finish_backend_job($1,$2,'blocked','TEST')",
+          [crypto.randomUUID(), crypto.randomUUID()],
+        ),
+      ).rejects.toThrow(/permission denied/);
+    }
+  });
+
+  it("allows one active job across repeated dispatches and records a heartbeat", async () => {
+    await queueJob();
+    await queueJob();
+    const first = await claim();
+    expect(first).toMatchObject({ status: "running", attempts: 1 });
+    expect(first?.lease_token).toBeTruthy();
+    expect(await claim()).toBeNull();
+
+    const pending = queuedIds.find((id) => id !== first!.id)!;
+    await expect(
+      db.query("update public.jobs set status='running' where id=$1", [
+        pending,
+      ]),
+    ).rejects.toThrow(/one_active_job_per_workspace/);
+    expect((await readJob(pending)).attempts).toBe(0);
+    const heartbeat = await db.query<{ last_heartbeat_at: string | null }>(
+      "select last_heartbeat_at from public.operations where workspace_id=$1",
+      [workspace],
+    );
+    expect(heartbeat.rows[0].last_heartbeat_at).not.toBeNull();
+    await finish(first!.id, first!.lease_token!);
+    expect(await claim()).toMatchObject({ id: pending, attempts: 1 });
+  });
+
+  it("rejects wrong or replayed leases and cannot fabricate successful execution", async () => {
+    const id = await queueJob();
+    const job = (await claim())!;
+    await expect(finish(id, crypto.randomUUID())).rejects.toThrow(
+      "STALE_LEASE",
+    );
+    await expect(finish(id, job.lease_token!, "succeeded")).rejects.toThrow(
+      "HANDLER_NOT_IMPLEMENTED",
+    );
+    expect(await readJob(id)).toMatchObject({ status: "running", attempts: 1 });
+    await finish(id, job.lease_token!);
+    await expect(finish(id, job.lease_token!)).rejects.toThrow("STALE_LEASE");
+    expect(await readJob(id)).toMatchObject({
+      status: "blocked",
+      attempts: 1,
+      lease_token: null,
+      lease_until: null,
+    });
+  });
+
+  it("blocks an expired lease without replaying uncertain work or losing its checkpoint", async () => {
+    const checkpoint = { section: "scope", provider_result: "unknown" };
+    const expiredId = await queueJob(checkpoint);
+    const expired = (await claim())!;
+    await db.query(
+      "update public.jobs set lease_until=now()-interval '1 second' where id=$1",
+      [expiredId],
+    );
+    const nextId = await queueJob();
+    expect(await claim()).toMatchObject({ id: nextId, attempts: 1 });
+    expect(await readJob(expiredId)).toMatchObject({
+      status: "blocked",
+      error_code: "LEASE_EXPIRED_REVIEW_REQUIRED",
+      attempts: 1,
+      checkpoint,
+      lease_token: null,
+    });
+    await expect(finish(expiredId, expired.lease_token!)).rejects.toThrow(
+      "STALE_LEASE",
+    );
+  });
+
+  it("keeps a canceled running job's lease until completion before claiming another", async () => {
+    const canceledId = await queueJob({ section: "security" });
+    const running = (await claim())!;
+    const nextId = await queueJob();
+    // Simulate a future authorized cancellation command at its SQL boundary.
+    // No user-facing cancellation endpoint is claimed by this test.
+    await db.query("update public.jobs set cancel_requested=true where id=$1", [
+      canceledId,
+    ]);
+    expect(await claim()).toBeNull();
+    expect(await readJob(canceledId)).toMatchObject({
+      status: "running",
+      lease_token: running.lease_token,
+    });
+    await finish(canceledId, running.lease_token!);
+    expect(await readJob(canceledId)).toMatchObject({
+      status: "canceled",
+      lease_token: null,
+      checkpoint: { section: "security" },
+    });
+    expect(await claim()).toMatchObject({ id: nextId, attempts: 1 });
   });
 });

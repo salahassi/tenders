@@ -18,11 +18,14 @@ Run commands from this folder, or use `npm --prefix backend` from the repository
 npm ci
 npm run typecheck
 npm test
+npm run test:integration
 npm run build
 npm run contracts:generate
 ```
 
 `build` validates TypeScript. Supabase bundles the Edge Function source when it is deployed; this project does not produce a separate Node.js server bundle.
+
+`test:integration` runs the real SQL migrations and database functions in embedded PostgreSQL, including permissions, transactions, original-file reservations, and queue leases. The local identity and Storage catalog fixtures do not replace actual Supabase Auth/Storage integration tests. See [the staged continuation plan and acceptance evidence](docs/IMPLEMENTATION_CHECKLIST.md).
 
 After authenticating the Supabase CLI and linking the verified project, `npm run serve` serves functions locally and `npm run deploy` publishes `api` and `worker`. Run Supabase commands from this folder so the CLI discovers `supabase/config.toml` and the migrations. Never commit backend credentials.
 

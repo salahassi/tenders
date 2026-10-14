@@ -26,6 +26,6 @@ npm --prefix backend run build
 
 Start the existing interface with `npm --prefix frontend run dev`. Its production output is `frontend/dist/`, which the existing GitHub Pages workflow publishes at the same application URL.
 
-See the [frontend guide](frontend/README.md), [backend guide](backend/README.md), [deployment status](backend/docs/DEPLOYMENT.md), and [original implementation specification](backend/docs/IMPLEMENTATION_SPEC.txt).
+See the [frontend guide](frontend/README.md), [backend guide](backend/README.md), [deployment status](backend/docs/DEPLOYMENT.md), [implementation status and continuation plan](backend/docs/IMPLEMENTATION_CHECKLIST.md), and [original implementation specification](backend/docs/IMPLEMENTATION_SPEC.txt).
 
 The frontend remains the browser-local demo while authenticated repository integration is completed. Supabase's backend foundation is deployed; Owner bootstrap, connected UI commands, cron and AI-provider activation remain separate unfinished steps. Do not infer connected persistence from the folder change.

@@ -10,7 +10,9 @@ The owner created **TenderDesk** through the Dashboard after the integration's p
 
 Hosted checks confirmed 17 public application tables with RLS, a private `tenderdesk-private` bucket, denied anonymous command/bootstrap execution, HTTP 200 for minimal health, and HTTP 401 for requests without user or worker credentials. Supabase's security advisor reported no findings after RPC hardening. No Owner identity has been bootstrapped; actual signed-in role workflows and authenticated uploads remain unverified. The worker secret and cron are not activated. The frontend remains the browser-local demo.
 
-Source changes are committed locally. GitHub publication to `salahassi/tenders` / `main` remains blocked by automatic approval review, which requires explicit authorization for that public destination and default branch. Do not claim that the local commits are already on GitHub.
+Source is published to the owner-approved public `salahassi/tenders` repository on `main`, with separate `frontend/` and `backend/` folders. The owner supplied explicit publication approval. GitHub Pages successfully built and deployed the relocated frontend. The published tree contains all 104 tracked files and matches the validated local source tree. The authenticated UI adapter and Owner setup remain unfinished activation work.
+
+A subsequent specification review reconfirmed zero Auth users, workspaces, memberships, and jobs, and no installed `pg_cron` or `pg_net` extension. See the [implementation status and continuation plan](IMPLEMENTATION_CHECKLIST.md) for milestone gaps, required integration tests, and AT01–AT30 evidence. Missing UI integration and workflow handlers require implementation, not just account credentials.
 
 ## Reproduce local verification
 
@@ -21,6 +23,7 @@ npm --prefix frontend run typecheck
 npm --prefix backend run typecheck
 npm --prefix frontend test
 npm --prefix backend test
+npm --prefix backend run test:integration
 npm --prefix frontend run build
 npm --prefix backend run build
 ```

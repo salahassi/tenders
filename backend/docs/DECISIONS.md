@@ -37,3 +37,18 @@ Sources: https://supabase.com/changelog.md and https://supabase.com/docs/guides/
 - Both folders have independent pinned package manifests and lockfiles. Backend-only CLI and PostgreSQL test dependencies belong in the backend package.
 - GitHub Actions remains at the repository root, checks both packages, and uploads only `frontend/dist` for Pages. Supabase code, migrations and relative imports stay together under `backend/`; moving their source does not replace or reconfigure the deployed services.
 - The frontend handoff is at `frontend/docs/FRONTEND_HANDOFF.md`; the original implementation specification and backend evidence are at `backend/docs/`.
+
+## 2026-10-14: Publication verified
+
+- The owner explicitly approved publishing the reorganized source to public `salahassi/tenders` / `main`. Used the already authenticated GitHub connector after the local HTTPS Git client lacked a saved credential; no credential was requested from the owner or put in source.
+- GitHub's `main` branch and recursive tree confirmed all 104 tracked files, including 71 frontend files and 29 backend files, with blob hashes matching the local source. Original local implementation commits were retained on a local backup branch when synchronizing the identical published source tree.
+- Both independent lockfile installs, TypeScript checks and builds passed. All 96 frontend and 19 backend tests passed. GitHub Pages workflow 38605686546 completed successfully and deployed the frontend from `frontend/dist`.
+- Publishing source and relocating files do not activate remote UI persistence, Owner membership, scheduler credentials or an AI model. Those activation boundaries remain visible.
+
+## 2026-10-14: Specification review and continuation plan
+
+- Re-read the full specification and later frontend handoff against source and hosted state. The owner requested a staged continuation plan, frequent updates, and explicit integration tests.
+- Confirmed the client helper is not used by the application store. Hosted Auth users, workspaces, memberships, and jobs all remain zero; scheduler extensions are absent.
+- Replaced the stale checklist with milestone gaps, all 30 acceptance dispositions, and seven ordered stages. Start with identity/connected core records; then files/review inputs, collection/scheduling, owner-agreed model integration, analysis/generation, export/recovery, and full-trial verification.
+- Added five SQL integration tests for worker privileges, single-active-job enforcement, lease validity/replay, expiry/checkpoint preservation, and cancellation. All 24 backend tests and type checking passed locally. These do not establish hosted authentication, Storage behavior, or separate-connection concurrency.
+- Preserve the approved layout, public repository, Pages hosting, and simplified review interface. Actual Owner sign-in and model activation are later dependencies; independent implementation does not wait for them.
