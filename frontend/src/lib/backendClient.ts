@@ -124,17 +124,8 @@ export class BackendClient {
   }
 }
 
-// Configuration alone never migrates demo records or grants a browser role.
-export function configuredBackend(): BackendClient | null {
-  const mode =
-    typeof window !== "undefined"
-      ? new URLSearchParams(window.location.search).get("mode")
-      : null;
-  if (mode === "demo") return null;
-  const configuredMode =
-    import.meta.env.VITE_APP_MODE ||
-    (import.meta.env.PROD ? "CONNECTED_FREE" : "DEMO");
-  if (configuredMode !== "CONNECTED_FREE" && mode !== "connected") return null;
+// This app always uses authenticated server persistence. Query parameters cannot enable local data.
+export function configuredBackend(): BackendClient {
   const url = import.meta.env.VITE_SUPABASE_URL || deployment.projectUrl,
     key =
       import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||

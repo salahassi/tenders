@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
-import { createSeedState } from "../lib/seed";
+import { createSeedState } from "./fixtures/workspace";
 import { createProposalDocumentBlob } from "../lib/export";
 import { buildAgentInput } from "../lib/agentInput";
 

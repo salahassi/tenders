@@ -76,3 +76,9 @@ Sources: https://supabase.com/changelog.md and https://supabase.com/docs/guides/
 - Published application commit `99e40cf4a958e5aba73c5dd1f158f58d0e028ab8`; all 119 remote blobs matched the verified source. Pages workflow `38617159700` is the deployment evidence for this application revision. The documentation follow-up records its final outcome without rebuilding the app.
 
 - Pages workflow `38617159700` completed successfully on October 14, 2026 at 18:41 UTC (21:41 Riyadh). This confirms frontend publication, not completion of the blocked database/API activation or real-account acceptance.
+
+## 2026-10-15: Connected-only application and resumed hosted activation
+
+- The owner explicitly retired demo access and all sample UI/data while continuing the seven-stage plan. This supersedes earlier instructions to preserve the browser-local demo. Do not restore a mode query bypass, sample seeding, canned assessment/pricing evidence, role preview, or local reset/restore. Synthetic data remains confined to automated tests; existing user browser data is neither imported nor erased.
+- The same Supabase migration connector accepted all four pending migrations after the owner's renewed continuation instruction. No permissions were changed and no denied channel was bypassed. Hosted migration names and versions are recorded in the checklist and mirrored by repository filenames. API v3 is active; worker v1 remains unchanged.
+- Hosted health returned 200; unauthenticated bootstrap returned 401; an invalid invitation returned 422. Privileged Owner setup remains unavailable to browser database roles. Real first-Owner email selection and account/email/callback acceptance remain pending.

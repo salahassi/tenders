@@ -1,22 +1,13 @@
 import { useEffect, useState } from "react";
-import {
-  Download,
-  Upload,
-  RotateCcw,
-  ShieldCheck,
-  Users,
-  Check,
-  LockKeyhole,
-} from "lucide-react";
-import { useApp, serializeBackup, parseBackup } from "../lib/store";
-import { Badge, Button, PageHeader, Modal, Field } from "../components/ui";
-import type { AppState, Role } from "../types";
+import { ShieldCheck, Users, Check, LockKeyhole } from "lucide-react";
+import { useApp } from "../lib/store";
+import { Badge, Button, PageHeader, Field } from "../components/ui";
+import type { AppState } from "../types";
 import "./admin.css";
 import MembersPanel from "../components/MembersPanel";
 
 export default function Settings() {
-  const { state, update, notify, reset, restore, storageError, mode, saving } =
-    useApp();
+  const { state, update, notify, storageError, mode, saving } = useApp();
   const connected = mode === "CONNECTED_FREE";
   const owner = state.settings.role === "Owner";
   const toForm = (s: AppState) => ({
@@ -29,11 +20,6 @@ export default function Settings() {
   });
   const [form, setForm] = useState(() => toForm(state));
   const [error, setError] = useState("");
-  const [dialog, setDialog] = useState<"reset" | "restore" | null>(null);
-  const [confirmation, setConfirmation] = useState("");
-  const [restoreData, setRestoreData] = useState<AppState | null>(null);
-  const [restoreName, setRestoreName] = useState("");
-  const [restoreError, setRestoreError] = useState("");
   useEffect(() => {
     setForm(toForm(state));
   }, [
@@ -44,18 +30,6 @@ export default function Settings() {
     state.settings.pollHours,
     state.settings.retentionDays,
   ]);
-  const setRole = async (role: Role) => {
-    if (
-      !(await update(
-        (s) => ({ ...s, settings: { ...s.settings, role } }),
-        "Demo role changed",
-        role,
-      ))
-    ) {
-      return;
-    }
-    notify(`Previewing the ${role} role. This is not authentication.`);
-  };
   const save = async () => {
     if (!owner) return;
     const next = {
@@ -107,66 +81,12 @@ export default function Settings() {
         : "Preferences saved locally. Connected processing remains disabled.",
     );
   };
-  const download = () => {
-    if (!owner) return;
-    try {
-      const url = URL.createObjectURL(
-        new Blob([serializeBackup(state)], { type: "application/json" }),
-      );
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `tender-desk-backup-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      notify(
-        "Local workspace backup downloaded. Original attachments are not included.",
-      );
-    } catch (error) {
-      notify(
-        error instanceof Error
-          ? error.message
-          : "The workspace backup could not be downloaded.",
-      );
-    }
-  };
-  const chooseRestore = async (file?: File) => {
-    setRestoreData(null);
-    setRestoreError("");
-    setRestoreName("");
-    if (!file) return;
-    if (file.size > 25 * 1024 * 1024) {
-      setRestoreError("Choose a JSON backup under 25 MiB.");
-      return;
-    }
-    try {
-      const parsed = parseBackup(await file.text());
-      setRestoreData(parsed);
-      setRestoreName(file.name);
-    } catch (e) {
-      setRestoreError(
-        e instanceof Error ? e.message : "Could not read the backup.",
-      );
-    }
-  };
-  const confirm = () => {
-    if (!owner) return;
-    if (dialog === "reset" && confirmation === "RESET") {
-      reset();
-      setDialog(null);
-      setConfirmation("");
-    }
-    if (dialog === "restore" && confirmation === "RESTORE" && restoreData) {
-      restore(restoreData);
-      setDialog(null);
-      setConfirmation("");
-    }
-  };
   return (
     <>
       <PageHeader
         eyebrow="MAKE IT YOURS"
         title="Workspace settings"
-        description="Set your preferences, preview permissions, and keep control of your data."
+        description="Set your preferences and manage workspace access."
       />
       {storageError && (
         <div className="admin-error" role="alert">
@@ -207,7 +127,7 @@ export default function Settings() {
               </div>
               <Field
                 label="Daily model-call limit"
-                hint="1–50 calls. No model calls run in demo mode."
+                hint="1–50 calls. Model execution is not activated."
               >
                 <input
                   className="input"
@@ -271,7 +191,7 @@ export default function Settings() {
               </Field>
               <Field
                 label="History-retention preference"
-                hint="7–365 days. No automatic deletion runs in this demo."
+                hint="7–365 days. Automatic retention is not activated."
               >
                 <input
                   className="input"
@@ -335,71 +255,20 @@ export default function Settings() {
           </section>
           <section className="panel admin-section">
             <h2>Backup & restore</h2>
-            {connected && (
-              <p className="notice">
-                A connected backup and restore workflow is pending. No server
-                records are replaced by the demo restore tool.
-              </p>
-            )}
             <p className="admin-help">
-              Download your local records, edits, file details, and extracted
-              text as JSON. Original attachments are stored separately in this
-              browser and are not included in the backup. Keep copies of your
-              original files. Restore replaces this browser's current workspace.
+              Server backup and restore controls are not available yet.
             </p>
-            <div className="row">
-              <Button
-                variant="secondary"
-                onClick={download}
-                disabled={!owner || connected}
-              >
-                <Download size={15} /> Download backup
-              </Button>
-              <Button
-                variant="secondary"
-                disabled={!owner || connected}
-                onClick={() => {
-                  setDialog("restore");
-                  setConfirmation("");
-                  setRestoreData(null);
-                  setRestoreError("");
-                  setRestoreName("");
-                }}
-              >
-                <Upload size={15} /> Restore backup
-              </Button>
-            </div>
           </section>
         </div>
         <div className="stack">
           <section className="panel admin-section">
             <div className="admin-spread">
-              <h2>{connected ? "Workspace permissions" : "Preview a role"}</h2>
-              <Badge tone="amber">
-                {connected ? state.settings.role : "DEMO ONLY"}
-              </Badge>
+              <h2>Workspace permissions</h2>
+              <Badge tone="amber">{state.settings.role}</Badge>
             </div>
             <p className="admin-help">
-              {connected
-                ? "Your verified workspace membership determines permissions."
-                : "Switch views to explore permission behavior. This is a local demonstration, not a sign-in or security control."}
+              Your verified workspace membership determines permissions.
             </p>
-            <div className="admin-role-control">
-              {(["Owner", "Editor", "Reviewer"] as Role[]).map((role) => (
-                <Button
-                  key={role}
-                  variant={
-                    state.settings.role === role ? "primary" : "secondary"
-                  }
-                  size="sm"
-                  disabled={connected}
-                  onClick={() => setRole(role)}
-                  aria-pressed={state.settings.role === role}
-                >
-                  {role}
-                </Button>
-              ))}
-            </div>
             <div className="admin-divider" />
             <ul className="admin-feature-list">
               <li>
@@ -438,119 +307,19 @@ export default function Settings() {
           <section className="panel admin-section">
             <h2>Users & identity</h2>
             <p className="admin-help">
-              {connected
-                ? "You are signed in. Workspace membership and permissions are checked by the server."
-                : "No accounts or invitations are created in this frontend demo. Connected mode requires verified identities and server-enforced roles."}
+              Your account’s workspace membership and permissions are checked by
+              the server.
             </p>
             <div className="admin-muted-surface">
-              <span className="admin-mini-label">
-                {connected
-                  ? "Current workspace role"
-                  : "Current simulated role"}
-              </span>
+              <span className="admin-mini-label">Current workspace role</span>
               <p style={{ margin: "8px 0 0", fontWeight: 600 }}>
                 {state.settings.role}
               </p>
             </div>
           </section>
           {connected && owner && <MembersPanel />}
-          <section className="panel admin-section admin-danger">
-            <h2>Reset demo workspace</h2>
-            <p className="admin-help">
-              Replace your local edits with the sample data and remove uploaded
-              originals from this browser. Download a JSON backup and keep
-              separate copies of original files before resetting.
-            </p>
-            <Button
-              variant="danger"
-              disabled={!owner || connected}
-              onClick={() => {
-                setDialog("reset");
-                setConfirmation("");
-              }}
-            >
-              <RotateCcw size={15} /> Reset demo
-            </Button>
-          </section>
         </div>
       </div>
-      <Modal
-        open={dialog !== null}
-        onClose={() => setDialog(null)}
-        title={
-          dialog === "restore"
-            ? "Restore a workspace backup"
-            : "Reset your demo workspace"
-        }
-      >
-        {dialog === "restore" ? (
-          <>
-            <p className="admin-help">
-              Restore a version 1 JSON backup under 25 MiB. This replaces the
-              current local workspace; it does not reconnect services.
-            </p>
-            <input
-              className="admin-file-input"
-              type="file"
-              accept="application/json,.json"
-              aria-label="Choose workspace backup"
-              onChange={(e) => void chooseRestore(e.target.files?.[0])}
-            />
-            {restoreError && (
-              <div className="admin-error" role="alert">
-                {restoreError}
-              </div>
-            )}
-            {restoreData && (
-              <p className="admin-help">
-                Validated {restoreName}: {restoreData.opportunities.length}{" "}
-                opportunities, {restoreData.proposals.length} proposals.
-              </p>
-            )}
-            <Field label="Type RESTORE to confirm">
-              <input
-                className="input"
-                value={confirmation}
-                onChange={(e) => setConfirmation(e.target.value)}
-                autoComplete="off"
-              />
-            </Field>
-          </>
-        ) : (
-          <>
-            <p className="admin-help">
-              This removes local edits and uploaded originals, then restores the
-              sample workspace. A JSON backup preserves extracted text but
-              cannot restore original attachments.
-            </p>
-            <Field label="Type RESET to confirm">
-              <input
-                className="input"
-                value={confirmation}
-                onChange={(e) => setConfirmation(e.target.value)}
-                autoComplete="off"
-              />
-            </Field>
-          </>
-        )}
-        <div className="admin-form-actions">
-          <Button variant="secondary" onClick={() => setDialog(null)}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            onClick={confirm}
-            disabled={
-              !owner ||
-              (dialog === "restore"
-                ? confirmation !== "RESTORE" || !restoreData
-                : confirmation !== "RESET")
-            }
-          >
-            {dialog === "restore" ? "Restore workspace" : "Reset workspace"}
-          </Button>
-        </div>
-      </Modal>
     </>
   );
 }

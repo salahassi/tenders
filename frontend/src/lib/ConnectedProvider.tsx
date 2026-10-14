@@ -243,7 +243,9 @@ export function ConnectedProvider({
         signOut,
         operations: repository.operations,
         reset: () =>
-          setError("Reset is available only for the separate demo workspace."),
+          setError(
+            "Workspace reset is not available. No server data was changed.",
+          ),
         restore: () =>
           setError(
             "Connected restore needs a validated empty-target backup workflow. No data was changed.",

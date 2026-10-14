@@ -1,6 +1,6 @@
 # Working in this repository
 
-Tenderdesk retains its browser-local demo while the same repository adds a Supabase backend. Preserve truthful mode labeling and zero external model/payment/portal calls until explicitly activated. Do not implement simulated connected success.
+Tenderdesk is connected-only as requested by the owner on October 15, 2026. Never expose demo routes, seed user workspaces, or fall back to local simulated persistence. Synthetic records belong only in automated test fixtures. Keep zero external model/payment/portal calls until explicitly activated. Do not implement simulated connected success.
 
 - Application code is organized into `frontend/` and `backend/` at the owner's explicit request. Keep frontend assets and build configuration in `frontend/`, and Supabase functions, migrations, contracts and backend tests in `backend/`.
 - For every project change, read and update `backend/docs/IMPLEMENTATION_CHECKLIST.md` in the same change. Record the affected stage, implementation status, test evidence, deployment evidence, and remaining work. Code, tests, deployment, and hosted acceptance are separate statuses; never mark a stage complete without its exit evidence. Reconcile the checklist after deployment, including the source revision and workflow result.

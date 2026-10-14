@@ -28,7 +28,7 @@ Start the existing interface with `npm --prefix frontend run dev`. Its productio
 
 See the [frontend guide](frontend/README.md), [backend guide](backend/README.md), [deployment status](backend/docs/DEPLOYMENT.md), [implementation status and continuation plan](backend/docs/IMPLEMENTATION_CHECKLIST.md), and [original implementation specification](backend/docs/IMPLEMENTATION_SPEC.txt).
 
-Production builds use the email/password connected application; `?mode=demo` opens the separate browser-local demo. Connected core records and invitation administration are implemented in source; hosted activation is blocked by a declined Supabase migration. The first Owner must complete restricted setup before workspace access; files, collection, generation, and recovery remain separate unfinished stages. See the checklist for verified deployment and account-test results.
+All builds use the email/password connected application. Demo routes, sample workspace seeding, and local reset/restore controls have been retired. Eight migrations and API v3 are deployed to Supabase. The first Owner must complete restricted setup with a selected confirmed email before workspace access; hosted account acceptance, files, collection, generation, and recovery remain separate unfinished stages. See the checklist for exact verification and deployment evidence.
 
 ## Required change record
 

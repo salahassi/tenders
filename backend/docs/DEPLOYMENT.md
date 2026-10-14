@@ -2,9 +2,9 @@
 
 ## Scope and actual state
 
-**Activation blocker:** the Supabase connector declined the first new migration (`connected_workspace_commands`) without a reason. The four baseline migrations and api v2/worker v1 remain deployed. Application commit `99e40cf` and Pages workflow `38617159700` are published successfully, but connected workspace/invitation activation remains unavailable until migration approval and API deployment.
+**Current activation:** eight migrations and API v3/worker v1 are deployed. Hosted health, anonymous access denial, and invalid-invitation handling passed. The first Owner's selected email and real account/email/callback acceptance remain pending; see the checklist for the current frontend revision and Pages result.
 
-The stage-1 release adds connected core-record commands, email/password identities, Owner-issued invitations, and restricted first-Owner setup. Production frontend builds use the connected repository; `?mode=demo` retains the separate browser-local demo. Pending/error states and server-confirmed saves prevent local demo data from being presented as remote success.
+All frontend builds are connected-only. Demo query parameters, sample workspaces, and local reset/restore are retired. Pending/error states and server-confirmed saves prevent local data from being presented as remote success.
 
 The selected project is **TenderDesk**, reference `nqfwbqeozmuiuwbiowil`, Mumbai (`ap-south-1`). API base: `https://nqfwbqeozmuiuwbiowil.supabase.co/functions/v1/api`. Source and Pages use the owner-approved public repository `salahassi/tenders`, branch `main`.
 

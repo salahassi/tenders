@@ -505,7 +505,7 @@ ol {
   height: 30px;
   font-size: 11px;
 }
-.demo-bar {
+.workspace-status {
   min-height: 34px;
   padding: 8px 36px;
   display: flex;
@@ -516,11 +516,11 @@ ol {
   color: #5f684e;
   font-size: 11px;
 }
-.demo-bar strong {
+.workspace-status strong {
   font-weight: 600;
   color: #566a48;
 }
-.demo-bar a {
+.workspace-status a {
   margin-left: auto;
   white-space: nowrap;
   display: flex;
@@ -1805,7 +1805,7 @@ ol {
     padding: 42px 48px 25px;
   }
   .topbar,
-  .demo-bar {
+  .workspace-status {
     padding-left: 48px;
     padding-right: 48px;
   }
@@ -1833,7 +1833,7 @@ ol {
     padding: 28px 25px 20px;
   }
   .topbar,
-  .demo-bar {
+  .workspace-status {
     padding-left: 25px;
     padding-right: 25px;
   }
@@ -1923,7 +1923,7 @@ ol {
     padding: 25px 20px;
   }
   .topbar,
-  .demo-bar {
+  .workspace-status {
     padding-left: 20px;
     padding-right: 20px;
   }
@@ -1956,10 +1956,10 @@ ol {
   .focus-banner > .btn {
     margin-left: 61px;
   }
-  .demo-bar {
+  .workspace-status {
     font-size: 11px;
   }
-  .demo-bar a {
+  .workspace-status a {
     display: none;
   }
   .form-grid,
@@ -2061,13 +2061,13 @@ ol {
     width: 27px;
     height: 27px;
   }
-  .demo-bar {
+  .workspace-status {
     padding: 8px 18px;
     font-size: 11px;
     line-height: 1.6;
     gap: 8px;
   }
-  .demo-bar > svg {
+  .workspace-status > svg {
     width: 14px;
   }
   .main-content {
@@ -2519,8 +2519,7 @@ ol {
   line-height: 1.5;
   font-weight: 550;
 }
-.auth-text-button:hover:not(:disabled),
-.access-demo a:hover {
+.auth-text-button:hover:not(:disabled) {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -2582,25 +2581,6 @@ ol {
   font-size: 12px;
   overflow-wrap: anywhere;
 }
-.access-demo {
-  margin-top: 22px;
-  text-align: center;
-  font-size: 12px;
-  color: #737c69;
-}
-.access-demo a {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  margin-left: 6px;
-  color: #3d5d35;
-  font-weight: 600;
-}
-.access-demo p {
-  font-size: 10px;
-  color: #7c8671;
-  margin-top: 5px;
-}
 .access-footer {
   text-align: center;
   color: #7a856e;
@@ -2659,9 +2639,6 @@ ol {
   }
   .auth-navigation .auth-text-button {
     min-height: 36px;
-  }
-  .access-demo {
-    line-height: 1.9;
   }
 }
 @media (max-width: 360px) {

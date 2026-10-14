@@ -4,7 +4,7 @@
 
 Production builds now use a connected Supabase repository for email/password authentication, invitation-only workspace membership, and core records. The first Owner requires a restricted setup invitation tied to a confirmed email. Owner-issued invitations are limited to five active users. Saves wait for the server; errors keep entered values, and failure never silently falls back to local persistence.
 
-The separate browser-local demo remains available with `?mode=demo` (and by default in development). File upload/extraction, proposal editing, review inputs, and Word export described below are demo behavior unless explicitly identified as connected. Connected file/proposal/review mutations, submission, removal, and restore remain blocked until their stages are implemented. No connected AI provider, crawler, scheduler, or procurement portal executes.
+All builds are connected-only. `?mode=demo` cannot open a local workspace. Login demo links, sample review/fit modals, canned fit and pricing evidence, local role switching, and reset/restore tools have been removed. Synthetic workspace data and its provider are test fixtures only. Connected file/proposal/review mutations, submission, removal, and restore remain blocked until their stages are implemented. No connected AI provider, crawler, scheduler, or procurement portal executes.
 
 Use [the implementation checklist](../../backend/docs/IMPLEMENTATION_CHECKLIST.md) for deployment evidence and remaining work, and update it with every project change.
 
@@ -14,24 +14,26 @@ The current user journey is **Review fit → select opportunity → upload buyer
 
 ## Workflow and data compatibility
 
-| Current behavior                            | Implementation detail                                                                                                                                                         |
-| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Incoming discoveries appear in Review inbox | `new` and legacy `deferred` statuses are shown together; `declined` items appear under Archived                                                                               |
-| Selected items appear in Opportunities      | `shortlisted`, `in_progress`, and `submitted` are the selected set                                                                                                            |
-| Actual file/proposal stages                 | `getOpportunityStage` derives Awaiting RFP, Needs readable RFP, Ready to generate, or Has proposal; legacy saved status does not define progress                              |
-| One linked proposal per creation journey    | The opportunity opens its existing proposal. Generate requires readable RFPs; the old manual two-section starter was removed                                                  |
-| Submission recorded separately              | An opportunity with a proposal can be marked submitted externally; this does not send a file, freeze the document, or hide it from Proposals                                  |
-| Preliminary fit before RFP                  | `fitPreview.ts` supplies manually authored synthetic examples with notice/company evidence and unknowns. It never runs a scoring model or reads uploaded files as if assessed |
-| Closing dates are informational             | The buyer's submission deadline is optional; source notes identify where a date came from, and sample dates are labeled synthetic                                             |
-| Website, RSS, and JSON sources              | Website retains the existing internal `link_directory` value; `manual` is labeled Added by you and has no crawler controls                                                    |
-| Review inputs separate from file            | Answers and change requests persist under Proposal.review, with base version and a source signature; they do not alter document content                                       |
-| One Word file                               | Download exports current saved content only; pending review inputs are never silently incorporated into the Word file                                                         |
+| Current behavior                            | Implementation detail                                                                                                                            |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Incoming discoveries appear in Review inbox | `new` and legacy `deferred` statuses are shown together; `declined` items appear under Archived                                                  |
+| Selected items appear in Opportunities      | `shortlisted`, `in_progress`, and `submitted` are the selected set                                                                               |
+| Actual file/proposal stages                 | `getOpportunityStage` derives Awaiting RFP, Needs readable RFP, Ready to generate, or Has proposal; legacy saved status does not define progress |
+| One linked proposal per creation journey    | The opportunity opens its existing proposal. Generate requires readable RFPs; the old manual two-section starter was removed                     |
+| Submission recorded separately              | An opportunity with a proposal can be marked submitted externally; this does not send a file, freeze the document, or hide it from Proposals     |
+| Preliminary fit before RFP                  | `fitPreview.ts` returns Not assessed until real assessment is implemented; no canned reasons or scores are supplied                              |
+| Closing dates are informational             | The buyer's submission deadline is optional; source notes identify where a date came from, without synthesizing a missing date                   |
+| Website, RSS, and JSON sources              | Website retains the existing internal `link_directory` value; `manual` is labeled Added by you and has no crawler controls                       |
+| Review inputs separate from file            | Answers and change requests persist under Proposal.review, with base version and a source signature; they do not alter document content          |
+| One Word file                               | Download exports current saved content only; pending review inputs are never silently incorporated into the Word file                            |
 
 Legacy `score`, `coverage`, `saved`, `requirements`, `gaps`, `acquisition`, and proposal approval fields remain in the data model for compatibility with saved work. Their presence does not establish a current UI gate. Existing approval invalidation rules remain defensive data behavior, not a requirement to obtain approval before generating a file.
 
-Fit previews match the exact synthetic notice, company profile, and RFP context; changed inputs and imports show Not assessed. A separate example modal remains available without overwriting user data. Connected assessment must fetch available notice details/attachments, compare authorized Company Knowledge, cite both sides, and distinguish service fit, information confidence, and mandatory eligibility. A full RFP refines preliminary fit but is not a prerequisite for assessing a substantive notice. An unknown requirement is not a failed requirement. No probability of winning is inferred.
+All opportunities remain Not assessed until actual assessment is available. Connected assessment must fetch available notice details/attachments, compare authorized Company Knowledge, cite both sides, and distinguish service fit, information confidence, and mandatory eligibility. A full RFP refines preliminary fit but is not a prerequisite for assessing a substantive notice. An unknown requirement is not a failed requirement. No probability of winning is inferred.
 
-## Files, extraction, and backups
+## Pending file, extraction, and backup integration
+
+The following browser component behavior is covered with test fixtures; it is not an enabled connected upload/restore path. Stage 2 must replace local storage with authorized private Storage before exposing successful saves.
 
 `frontend/src/lib/documents.ts` extracts local PDF, DOCX, TXT, and Markdown files. The current limits are 10 MiB per file, 200 pages per PDF, and 1,000,000 extracted characters per file. An opportunity accepts up to 10 RFP files. DOCX parsing applies bounded archive checks. A file marked `needs_ocr` requires readable text; there is no optical character recognition (OCR) service in this release. Page markers are retained for PDFs, but the extraction is not a layout-preserving representation of the original.
 
@@ -39,7 +41,7 @@ Both RFP and company uploads retain the original Blob in IndexedDB using `fronte
 
 Company files have categories and an include/exclude control. Only enabled files with ready, nonempty text are readable agent context. Additional company notes remain available alongside files; they do not substitute for uploaded references.
 
-JSON workspace backups include records and extracted text, **not original file bytes**. Keep original attachments separately. Reset clears local originals and restores the sample workspace. Browser storage can also be removed by the user or browser; there is no durable remote backup. The current restore interface accepts version 1 JSON backups under 25 MiB.
+Legacy JSON backup validation remains for compatibility tests; it excludes original bytes. Local backup/reset/restore controls are removed. Stage 6 must implement complete connected recovery.
 
 ## Agent input handoff
 
@@ -67,7 +69,7 @@ Review inputs accept PDF, DOCX, TXT, MD, CSV, PNG, JPG/JPEG, WEBP, XLSX, and PPT
 
 The review interaction follows contextual document feedback patterns: [Microsoft Word comments](https://support.microsoft.com/en-us/word/give-and-receive-feedback-in-word) are tied to a document location, [Acrobat attachment comments](https://helpx.adobe.com/acrobat/desktop/share-and-review-documents/review-documents/add-attachment-comments.html) attach supporting files at a chosen location, and [GOV.UK upload/error guidance](https://design-system.service.gov.uk/components/file-upload/) calls for specific errors and clear file constraints. These inform interaction design, not a claim that the demo embeds those products.
 
-Pricing review explains each recorded cost through a supporting RFP clause, proposal response, deliverable, quantity/effort justification, and rate source. Unchanged synthetic fixtures have explicitly labeled example traceability; altered or custom inputs are not represented as verified. Missing links, rates, currency, and assumptions become review questions. An optional analytics cost with no proposal response is explicitly flagged. The calculator uses decimal arithmetic and never treats unknown input as confirmed zero. Recorded pricing not present in the current file is labeled as awaiting incorporation into a regenerated proposal. The connected agent must derive the work breakdown from the actual RFP and proposal and follow the buyer’s required financial format; it must not infer tax, rates, or commercial commitments without support.
+Pricing review explains each recorded cost through a supporting RFP clause, proposal response, deliverable, quantity/effort justification, and rate source. Only recorded supporting references are shown, and remain unverified until checked against the current evidence. No fixture traceability or currency is inferred. Missing links, rates, currency, and assumptions become review questions. An optional analytics cost with no proposal response is explicitly flagged. The calculator uses decimal arithmetic and never treats unknown input as confirmed zero. Recorded pricing not present in the current file is labeled as awaiting incorporation into a regenerated proposal. The connected agent must derive the work breakdown from the actual RFP and proposal and follow the buyer’s required financial format; it must not infer tax, rates, or commercial commitments without support.
 
 The DOCX has a native dynamic table of contents (TOC), heading styles, page-number fields, and an update-fields-on-open setting. After opening it in Word, update all fields, choose **Update Table → Update entire table** for the TOC, save, and review the final pagination and content. The browser does not calculate final Word pagination or create a final PDF. Arabic content is preserved and uses right-to-left paragraph settings when the opportunity language is Arabic.
 

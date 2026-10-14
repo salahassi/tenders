@@ -26,9 +26,7 @@ export default function PricingReview({
         <h2>
           <Calculator size={18} /> Pricing and its basis
         </h2>
-        <Badge tone={review.kind === "design_example" ? "blue" : "amber"}>
-          {review.kind === "design_example" ? "Design example" : "Needs review"}
-        </Badge>
+        <Badge tone="amber">Needs review</Badge>
       </div>
       <p className="pricing-review-notice">{review.notice}</p>
       {!!review.lines.length && !proposal.includePricing && (

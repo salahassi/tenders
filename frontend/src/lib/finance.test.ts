@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calculateFinance } from "./finance";
-import { createSeedState } from "./seed";
+import { createSeedState } from "../test/fixtures/workspace";
 
 describe("deterministic proposal finance", () => {
   const fixture = () =>

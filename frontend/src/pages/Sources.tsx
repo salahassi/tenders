@@ -185,7 +185,7 @@ export default function Sources() {
         <Metric
           label="Opportunities recorded"
           value={state.opportunities.length}
-          detail="Includes sample and user-added records"
+          detail="Sources recorded in your workspace"
           icon={<ArrowUpRight size={18} />}
         />
       </div>

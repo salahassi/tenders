@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createSeedState } from "./seed";
+import { createSeedState } from "../test/fixtures/workspace";
 import { getPricingReview } from "./pricingReview";
 
 const fixture = () => {
@@ -8,46 +8,22 @@ const fixture = () => {
 };
 
 describe("RFP pricing review", () => {
-  it("shows a labeled trace for all three untouched examples, with correct arithmetic", () => {
-    const state = createSeedState(new Date("2027-01-01T08:00:00Z"));
-    for (const proposal of state.proposals) {
-      const opportunity = state.opportunities.find(
-        (item) => item.id === proposal.opportunityId,
-      )!;
-      const review = getPricingReview(proposal, opportunity);
-      expect(review.kind).toBe("design_example");
-      expect(review.finance).toMatchObject({
-        isValid: true,
-        total: 16698,
-        optionalTotal: 2000,
-      });
-      expect(review.lines[0].requirements.map((item) => item.id)).toEqual([
-        `${opportunity.id}-r1`,
-        `${opportunity.id}-r2`,
-        `${opportunity.id}-r3`,
-      ]);
-      expect(review.lines[0].sections.map((item) => item.id)).toEqual([
-        "scope",
-        "architecture",
-        "delivery",
-      ]);
-      expect(review.lines[0].estimateJustification).toContain(
-        "not stated by the buyer",
-      );
-      expect(review.lines[1].estimateJustification).toContain(
-        "does not specify a session count",
-      );
-    }
-  });
-
-  it("does not invent a proposal response for the optional analytics line", () => {
+  it("keeps arithmetic but never attaches fabricated evidence or inferred currency", () => {
     const { proposal, opportunity } = fixture();
-    const option = getPricingReview(proposal, opportunity).lines[2];
-    expect(option.requirements.map((item) => item.id)).toEqual(["opp-1-r5"]);
-    expect(option.sections).toEqual([]);
-    expect(option.missingInputs.join(" ")).toContain(
-      "Define the optional analytics deliverable",
-    );
+    delete proposal.currency;
+    const review = getPricingReview(proposal, opportunity);
+    expect(review.kind).toBe("recorded_estimate");
+    expect(review.currency).toBeNull();
+    expect(review.finance).toMatchObject({
+      isValid: true,
+      total: 16698,
+      optionalTotal: 2000,
+    });
+    for (const line of review.lines) {
+      expect(line.linkage).toBe("unlinked");
+      expect(line.requirements).toEqual([]);
+      expect(line.sections).toEqual([]);
+    }
   });
 
   it.each([
@@ -150,12 +126,12 @@ describe("RFP pricing review", () => {
     expect(getPricingReview(proposal, opportunity).currency).toBeNull();
   });
 
-  it("invalidates synthetic trace for an explicit non-SAR currency while preserving legacy examples", () => {
+  it("uses only explicitly recorded currency for former fixture IDs", () => {
     const { proposal, opportunity } = fixture();
     delete proposal.currency;
     expect(getPricingReview(proposal, opportunity)).toMatchObject({
-      kind: "design_example",
-      currency: "SAR",
+      kind: "recorded_estimate",
+      currency: null,
     });
     proposal.currency = "USD";
     expect(getPricingReview(proposal, opportunity)).toMatchObject({

@@ -498,7 +498,7 @@ export default function Opportunities() {
             size="sm"
             onClick={() =>
               downloadText(
-                "title,buyer_name,external_id,canonical_url,description,sector_tags\nSynthetic analytics platform,Fictional buyer,DEMO-101,https://example.com/tenders/demo-101,Public sample for testing,AI & analytics",
+                "title,buyer_name,external_id,canonical_url,description,sector_tags\n",
                 "tenderdesk-import-template.csv",
                 "text/csv",
               )

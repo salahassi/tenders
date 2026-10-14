@@ -5,8 +5,8 @@ import {
   getApprovalBlockers,
   invalidateChangedApprovals,
 } from "./domain";
-import { createSeedState } from "./seed";
-import { parseBackup, serializeBackup } from "./store";
+import { createSeedState } from "../test/fixtures/workspace";
+import { parseBackup, serializeBackup } from "./legacyBackup";
 
 describe("proposal approval and role controls", () => {
   const seed = () => createSeedState(new Date("2026-10-14T10:00:00Z"));

@@ -4,7 +4,7 @@ import {
   opportunitiesToCsv,
   parseOpportunityCsv,
 } from "./import";
-import { createSeedState } from "./seed";
+import { createSeedState } from "../test/fixtures/workspace";
 describe("manual CSV boundary", () => {
   it("previews valid rows, duplicates, and unsafe URLs without guessing deadlines", () => {
     const existing = createSeedState().opportunities;

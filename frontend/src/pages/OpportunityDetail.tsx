@@ -63,7 +63,6 @@ export default function OpportunityDetail() {
   const editable = can(state.settings.role, "edit");
   const selected = isSelected(o);
   const proposals = state.proposals.filter((p) => p.opportunityId === o.id);
-  const reviewExample = state.proposals.find((p) => p.id === "prop-1");
   const stage = getOpportunityStage(o, state.proposals);
   const ready =
     o.documents.length > 0 && o.documents.every((d) => d.status === "ready");
@@ -420,19 +419,6 @@ export default function OpportunityDetail() {
                     <Download size={16} /> Download agent input
                   </Button>
                 </details>
-                {!proposals.length && reviewExample && (
-                  <p className="simple-note">
-                    <Link
-                      className="text-link"
-                      to={`/proposals/${reviewExample.id}`}
-                    >
-                      View a review example <ArrowRight size={14} />
-                    </Link>
-                    <br />
-                    Opens a saved demonstration proposal. It is unrelated to
-                    your uploaded RFP and does not create a proposal for it.
-                  </p>
-                )}
                 {proposals.length > 0 && (
                   <div className="stack" style={{ marginTop: 18 }}>
                     {proposals.map((p) => (
@@ -627,17 +613,6 @@ export default function OpportunityDetail() {
             No proposal has been created by this action. Your uploaded RFP
             remains attached and available.
           </p>
-          {reviewExample && (
-            <p>
-              <Link className="text-link" to={`/proposals/${reviewExample.id}`}>
-                View a review example <ArrowRight size={14} />
-              </Link>
-              <br />
-              <span className="small muted">
-                Saved demonstration only; unrelated to your uploaded RFP.
-              </span>
-            </p>
-          )}
           <details className="simple-note">
             <summary>Advanced</summary>
             <p>Export the supporting data prepared for the agent.</p>

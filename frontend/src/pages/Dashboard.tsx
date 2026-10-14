@@ -53,7 +53,7 @@ export default function Dashboard() {
       <div className="dashboard-date">
         <CalendarDays size={14} />
         {date(new Date().toISOString())}
-        <span>·</span>Demo workspace snapshot
+        <span>·</span>Workspace overview
       </div>
       <section className="focus-banner">
         <div className="focus-icon">
@@ -212,8 +212,7 @@ export default function Dashboard() {
               </p>
             )}
             <p className="panel-note">
-              These are the dates recorded for your selected opportunities. Demo
-              records use illustrative dates.
+              These are the dates recorded for your selected opportunities.
             </p>
           </section>
           <section className="panel needs-attention">
@@ -248,7 +247,7 @@ export default function Dashboard() {
               <strong>
                 {mode === "CONNECTED_FREE"
                   ? "Connected workspace"
-                  : "Frontend demo"}
+                  : "Workspace"}
               </strong>
             </div>
             <p>

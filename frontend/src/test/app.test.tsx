@@ -12,8 +12,8 @@ import { get, set } from "idb-keyval";
 import { webcrypto } from "node:crypto";
 import { File as NodeFile } from "node:buffer";
 import App from "../App";
-import { AppProvider, STORAGE_KEY } from "../lib/store";
-import { createSeedState } from "../lib/seed";
+import { FixtureProvider as AppProvider, STORAGE_KEY } from "./FixtureProvider";
+import { createSeedState } from "./fixtures/workspace";
 import { clearLocalFiles, getLocalFile } from "../lib/knowledgeFiles";
 import { getReviewSourceSignature } from "../lib/proposalReview";
 import type { AppState } from "../types";
@@ -94,8 +94,8 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
-describe("browser-local workspace journeys", () => {
-  it("opens without credentials, preserves the demo disclosure, and navigates to setup", async () => {
+describe("UI journeys with a test-only workspace", () => {
+  it("navigates through workspace pages without offering demo entry points", async () => {
     const user = userEvent.setup();
     mount();
     expect(
@@ -105,7 +105,9 @@ describe("browser-local workspace journeys", () => {
         { timeout: 5000 },
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("You’re exploring the demo.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("You’re exploring the demo."),
+    ).not.toBeInTheDocument();
     await user.click(
       within(
         screen.getByRole("navigation", { name: "Main navigation" }),
@@ -118,13 +120,15 @@ describe("browser-local workspace journeys", () => {
         { timeout: 5000 },
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("You’re exploring the demo.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("You’re exploring the demo."),
+    ).not.toBeInTheDocument();
     await user.click(screen.getByRole("link", { name: /Setup details/ }));
     expect(
-      await screen.findByText("Backend not configured"),
+      await screen.findByRole("heading", { name: "Current service status" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/No live tenders are collected, no model is called/),
+      screen.getByText(/File workflows, automated collection, AI analysis/),
     ).toBeInTheDocument();
   });
 
@@ -404,14 +408,19 @@ describe("browser-local workspace journeys", () => {
     ).toBeInTheDocument();
   });
 
-  it("persists the simulated Reviewer role and disables editing and source activation", async () => {
+  it("disables editing and source activation for a Reviewer fixture", async () => {
     const user = userEvent.setup();
+    const reviewer = createSeedState();
+    reviewer.settings.role = "Reviewer";
+    await set(STORAGE_KEY, reviewer);
     const first = mount("/settings");
-    await user.click(await screen.findByRole("button", { name: "Reviewer" }));
+    await screen.findByRole("heading", { name: "Workspace settings" });
     expect(
       screen.getByRole("button", { name: "Save preferences" }),
     ).toBeDisabled();
-    expect(screen.getByText(/This is not authentication/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Reviewer" }),
+    ).not.toBeInTheDocument();
     await waitFor(async () =>
       expect((await stored())?.settings.role).toBe("Reviewer"),
     );
@@ -576,15 +585,9 @@ describe("browser-local workspace journeys", () => {
     await user.click(
       within(aiDialog).getByRole("button", { name: "Close dialog" }),
     );
-    await user.click(
-      screen.getByRole("link", { name: "View a review example" }),
-    );
     expect(
-      await screen.findByRole("region", { name: "Current proposal file" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { level: 1, name: seed.proposals[0].title }),
-    ).toBeInTheDocument();
+      screen.queryByRole("link", { name: "View a review example" }),
+    ).not.toBeInTheDocument();
     const current = await stored();
     expect(current?.proposals).toEqual(seed.proposals);
     expect(

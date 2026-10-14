@@ -6,7 +6,6 @@ import {
   Check,
   ExternalLink,
   Search,
-  Sparkles,
   Undo2,
 } from "lucide-react";
 import { useApp } from "../lib/store";
@@ -14,23 +13,13 @@ import { can } from "../lib/domain";
 import { date } from "../lib/format";
 import { deadlineSourceLabel } from "../lib/workflow";
 import type { Opportunity } from "../types";
-import {
-  Badge,
-  Button,
-  EmptyState,
-  Modal,
-  PageHeader,
-  Tabs,
-} from "../components/ui";
+import { Badge, Button, EmptyState, PageHeader, Tabs } from "../components/ui";
 import FitAssessment from "../components/FitAssessment";
-import { createSeedState } from "../lib/seed";
 import "./simplified.css";
-const assessmentExample = createSeedState(new Date("2026-10-14T09:00:00Z"));
 export default function Review() {
   const { state, update, notify } = useApp();
   const [tab, setTab] = useState("pending");
   const [search, setSearch] = useState("");
-  const [showExample, setShowExample] = useState(false);
   const pending = state.opportunities.filter(
     (o) => o.status === "new" || o.status === "deferred",
   );
@@ -76,9 +65,6 @@ export default function Review() {
         description="Review each discovery’s scope, company fit, and open questions. Add the ones you want to pursue to Opportunities, or archive them."
         actions={
           <>
-            <Button onClick={() => setShowExample(true)}>
-              <Sparkles size={16} /> See fit example
-            </Button>
             <Link className="btn btn-secondary" to="/opportunities">
               Selected opportunities <ArrowRight size={16} />
             </Link>
@@ -190,32 +176,15 @@ export default function Review() {
             description={
               search
                 ? "Try a different search."
-                : "Selected items appear in Opportunities. Automated collection will populate this inbox after the backend is connected."
+                : "Selected items appear in Opportunities. Automated collection will populate this inbox after collection is activated."
             }
           />
         </section>
       )}
       <p className="help-caption">
-        Fit examples are written for synthetic notices and a synthetic company
-        profile. AI assessment and automatic source collection are not
-        connected. Your own notices and changed inputs remain unassessed.
+        AI assessment and automatic source collection are not activated.
+        Opportunities remain unassessed until those services are available.
       </p>
-      <Modal
-        open={showExample}
-        onClose={() => setShowExample(false)}
-        title="Fit assessment · design example"
-      >
-        <h3>{assessmentExample.opportunities[5].title}</h3>
-        <p className="muted small">
-          A fictional opportunity and company profile show how the assessment
-          will explain its recommendation. This example does not assess your
-          company or uploaded files.
-        </p>
-        <FitAssessment
-          state={assessmentExample}
-          opportunity={assessmentExample.opportunities[5]}
-        />
-      </Modal>
     </>
   );
 }

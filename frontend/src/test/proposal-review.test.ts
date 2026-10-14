@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { createSeedState } from "../lib/seed";
+import { createSeedState } from "./fixtures/workspace";
 import {
   getProposalReviewQuestions,
   getReviewSourceSignature,
   isReviewStale,
 } from "../lib/proposalReview";
 import { invalidateChangedApprovals } from "../lib/domain";
-import { parseBackup, serializeBackup } from "../lib/store";
+import { parseBackup, serializeBackup } from "../lib/legacyBackup";
 import { buildAgentInput } from "../lib/agentInput";
 
 describe("proposal review inputs and file version separation", () => {

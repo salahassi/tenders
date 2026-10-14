@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ArrowUpRight, LockKeyhole } from "lucide-react";
+import { LockKeyhole } from "lucide-react";
 
 export function AccessLayout({ children }: { children: ReactNode }) {
   return (
@@ -43,13 +43,6 @@ export function AccessLayout({ children }: { children: ReactNode }) {
         </section>
         <div className="access-form-column">
           <div className="access-card">{children}</div>
-          <div className="access-demo">
-            <span>Just taking a look?</span>
-            <a href={`${window.location.pathname}?mode=demo#/dashboard`}>
-              Explore the demo <ArrowUpRight size={15} aria-hidden="true" />
-            </a>
-            <p>Sample data · Saved only in this browser</p>
-          </div>
         </div>
       </div>
       <footer className="access-footer">

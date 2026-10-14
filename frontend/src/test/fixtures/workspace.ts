@@ -1,4 +1,4 @@
-import type { AppState, Opportunity, Proposal, Requirement } from "../types";
+import type { AppState, Opportunity, Proposal, Requirement } from "../../types";
 
 /** All buyers, contracts, rates, and documents below are fabricated fixtures. */
 export function createSeedState(now: Date = new Date()): AppState {

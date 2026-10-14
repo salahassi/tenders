@@ -189,20 +189,9 @@ export default function App() {
           <div className="sidebar-bottom">
             <div className="trial-card">
               <div>
-                <span className="pulse-dot" />{" "}
-                {connected ? "Connected workspace" : "Demo workspace"}
+                <span className="pulse-dot" /> Connected workspace
               </div>
-              <p>
-                {connected ? (
-                  "Your records are saved to your authorized workspace."
-                ) : (
-                  <>
-                    A place to explore.
-                    <br />
-                    No API keys. No costs.
-                  </>
-                )}
-              </p>
+              <p>Your records are saved to your authorized workspace.</p>
               <Link to="/setup">
                 View setup <ArrowUpRight size={14} />
               </Link>
@@ -213,11 +202,8 @@ export default function App() {
             >
               <span className="user-avatar">DU</span>
               <span>
-                <strong>{connected ? userLabel : "Demo user"}</strong>
-                <small>
-                  {state.settings.role} ·{" "}
-                  {connected ? "Connected workspace" : "Local workspace"}
-                </small>
+                <strong>{userLabel || "Workspace member"}</strong>
+                <small>{state.settings.role} · Connected workspace</small>
               </span>
               <ChevronDown size={14} />
             </button>
@@ -295,25 +281,17 @@ export default function App() {
               <span className="avatar-small">{connected ? "U" : "DU"}</span>
             </div>
           </header>
-          <div className="demo-bar">
+          <div className="workspace-status">
             <Sparkles size={14} />
             <span>
-              {connected ? (
-                <>
-                  <strong>
-                    {saving
-                      ? "Saving to your workspace…"
-                      : "Connected workspace."}
-                  </strong>{" "}
-                  Your records use your signed-in access.
-                </>
-              ) : (
-                <>
-                  <strong>You’re exploring the demo.</strong> Sample records are
-                  synthetic. Your changes and uploaded files stay in this
-                  browser.
-                </>
-              )}
+              <>
+                <strong>
+                  {saving
+                    ? "Saving to your workspace…"
+                    : "Connected workspace."}
+                </strong>{" "}
+                Your records use your signed-in access.
+              </>
             </span>
             <Link to="/setup">
               Setup details <ArrowUpRight size={13} />
@@ -321,10 +299,8 @@ export default function App() {
           </div>
           {offline && (
             <div className="notice notice-warning">
-              <WifiOff size={17} />{" "}
-              {connected
-                ? "You are offline. Server changes cannot be saved until the connection returns."
-                : "You are offline. The loaded demo remains available; external links may not open."}
+              <WifiOff size={17} /> You are offline. Server changes cannot be
+              saved until the connection returns.
             </div>
           )}
           {storageError && (
@@ -383,9 +359,8 @@ export default function App() {
               Tenderdesk <span>·</span> Your next opportunity, in focus.
             </span>
             <span>
-              <span className="status-dot" />{" "}
-              {connected ? "Connected workspace" : "Browser-local demo"}{" "}
-              <span>·</span> Asia/Riyadh
+              <span className="status-dot" /> Connected workspace <span>·</span>{" "}
+              Asia/Riyadh
             </span>
           </footer>
         </div>
@@ -481,16 +456,15 @@ export default function App() {
           <li>
             <strong>Generate the file</strong>
             <p>
-              Review the draft and generate a Word file. AI drafting and
-              rewriting need a backend connection; local editing and file export
-              are available in the demo.
+              Review the saved proposal before exporting a Word file. AI
+              drafting and rewriting will become available after model
+              activation.
             </p>
           </li>
         </ol>
         <div className="notice">
-          This release is the frontend. Live collection, model calls,
-          authentication, and scheduled processing require the backend described
-          in the implementation brief.
+          Sign-in and core records use the server. File workflows, automated
+          collection, and AI drafting are still being completed.
         </div>
       </Modal>
     </ErrorBoundary>

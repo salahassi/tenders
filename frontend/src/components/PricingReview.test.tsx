@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import PricingReview from "./PricingReview";
-import { createSeedState } from "../lib/seed";
+import { createSeedState } from "../test/fixtures/workspace";
 
 const fixture = () => {
   const state = createSeedState(new Date("2026-10-14T10:00:00Z"));
