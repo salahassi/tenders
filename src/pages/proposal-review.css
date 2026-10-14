@@ -49,7 +49,8 @@
 }
 .review-content,
 .review-advanced,
-.review-recovered {
+.review-recovered,
+.review-additional {
   margin-top: 22px;
   overflow: hidden;
 }
@@ -58,14 +59,16 @@
 }
 .review-content > summary,
 .review-advanced > summary,
-.review-recovered > summary {
+.review-recovered > summary,
+.review-additional > summary {
   padding: 20px 24px;
   font-size: 14px;
   font-weight: 600;
 }
 .review-content[open] > summary,
 .review-advanced[open] > summary,
-.review-recovered[open] > summary {
+.review-recovered[open] > summary,
+.review-additional[open] > summary {
   border-bottom: 1px solid #e6ebe1;
 }
 .review-summary-meta {
@@ -91,26 +94,42 @@
   border-top: 1px solid #e6ebe1;
   padding: 14px 0;
 }
-.review-text-section > summary {
-  font-size: 14px;
+.review-section-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.review-section-heading h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 2px 0 16px;
+}
+.review-section-heading .badge {
+  flex: 0 0 auto;
+}
+.review-saved-section {
+  margin: 0 0 20px;
+  background: #f7f9f4;
+  border: 1px solid #e6ebe1;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.review-saved-section > summary {
+  font-size: 12px;
+  color: #5d705b;
   font-weight: 550;
 }
-.review-text-section > p {
+.review-saved-section > p {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   line-height: 1.9;
   font-size: 13px;
   margin: 16px 0;
 }
-.review-main-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr);
-  gap: 24px;
-  align-items: start;
-  margin: 24px 0;
-}
 .review-questions {
   overflow: hidden;
+  margin-top: 24px;
 }
 .review-panel-heading {
   padding: 24px 24px 12px;
@@ -119,15 +138,13 @@
   justify-content: space-between;
   gap: 12px;
 }
-.review-panel-heading h2,
-.review-request h2 {
+.review-panel-heading h2 {
   font-size: 18px;
   margin: 6px 0 10px;
   line-height: 1.5;
   font-weight: 550;
 }
-.review-panel-heading p,
-.review-request > p {
+.review-panel-heading p {
   font-size: 12px;
   line-height: 1.8;
   color: #6b786b;
@@ -186,24 +203,64 @@
   padding: 10px 12px;
   border-inline-start: 2px solid #cadbb7;
 }
-.review-request {
-  padding: 24px;
+.review-actions {
+  position: sticky;
+  bottom: 12px;
+  z-index: 10;
+  margin-top: 24px;
+  padding: 18px 22px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 24px;
+  background: #fff;
+  border-color: #cddcc5;
+  box-shadow: 0 5px 26px rgba(37, 61, 32, 0.11);
 }
-.review-request .field {
-  margin: 20px 0 16px;
+.review-actions-status {
+  flex: 1;
+  min-width: 260px;
 }
-.review-request > .btn {
-  width: 100%;
-  justify-content: center;
-  margin-top: 10px;
+.review-actions-status > strong {
+  font-size: 13px;
+  color: #38593a;
 }
-.review-request .review-action-help {
-  margin-top: 14px;
+.review-actions-status > p {
   font-size: 11px;
+  color: #6b786b;
+  line-height: 1.7;
+  margin: 5px 0 0;
 }
-.review-request .review-missing-rfp {
-  margin-top: 14px;
+.review-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.review-actions > .review-action-help,
+.review-actions > .review-missing-rfp {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.review-missing-rfp {
   color: #816a40;
+}
+.review-retained-inputs {
+  border-top: 1px solid #e6ebe1;
+  padding: 20px 24px;
+  font-size: 12px;
+}
+.review-retained-inputs > summary {
+  font-weight: 550;
+}
+.review-retained-inputs > p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #6b786b;
+}
+.review-retained-inputs > div {
+  margin-top: 20px;
 }
 .review-missing-rfp a {
   text-decoration: underline;
@@ -225,18 +282,6 @@
   max-width: 460px;
   margin: 0;
 }
-.review-retained-answers {
-  border-top: 1px solid #e6ebe1;
-  padding: 18px 24px;
-  font-size: 12px;
-}
-.review-retained-answers > div {
-  margin-top: 14px;
-}
-.review-retained-answers p {
-  white-space: pre-wrap;
-  line-height: 1.8;
-}
 .review-recovered textarea {
   width: 100%;
   font-family: inherit;
@@ -253,22 +298,15 @@
   outline-offset: -3px;
   border-radius: 6px;
 }
-.proposal-review-page .review-text-section summary:focus-visible {
+.proposal-review-page .review-saved-section summary:focus-visible {
   outline-offset: 4px;
 }
 @media (max-width: 1050px) {
-  .review-main-grid {
-    grid-template-columns: minmax(0, 1fr) 320px;
-    gap: 18px;
-  }
   .review-panel-heading {
     flex-wrap: wrap;
   }
 }
 @media (max-width: 850px) {
-  .review-main-grid {
-    grid-template-columns: 1fr;
-  }
   .review-current-file {
     flex-wrap: wrap;
   }
@@ -280,7 +318,6 @@
   .review-current-file,
   .review-panel-heading,
   .review-question,
-  .review-request,
   .review-content-body {
     padding: 18px;
   }
@@ -302,7 +339,8 @@
   }
   .review-content > summary,
   .review-advanced > summary,
-  .review-recovered > summary {
+  .review-recovered > summary,
+  .review-additional > summary {
     padding: 18px;
   }
   .review-question-origin {
@@ -310,5 +348,29 @@
   }
   .review-file-info h2 {
     font-size: 14px;
+  }
+  .review-actions {
+    position: static;
+    padding: 18px;
+  }
+  .review-actions-status {
+    min-width: 0;
+    flex-basis: 100%;
+  }
+  .review-action-buttons {
+    width: 100%;
+  }
+  .review-action-buttons .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .review-section-heading {
+    flex-wrap: wrap;
+  }
+  .review-section-heading .badge {
+    margin-bottom: 12px;
+  }
+  .review-retained-inputs {
+    padding: 18px;
   }
 }

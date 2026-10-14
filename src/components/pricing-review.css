@@ -19,18 +19,10 @@
   font-size: 17px;
 }
 .pricing-review-notice,
-.pricing-review-empty,
 .pricing-review-totals > p {
   color: #5f6c64;
   font-size: 13px;
   line-height: 1.65;
-}
-.pricing-review-empty {
-  padding: 14px 18px;
-  background: #f5f8f5;
-  border: 1px solid #dce5dd;
-  border-radius: 10px;
-  margin-bottom: 18px;
 }
 .pricing-review-lines {
   display: grid;

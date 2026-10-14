@@ -1,7 +1,7 @@
-import { Calculator, MessageSquarePlus } from "lucide-react";
+import { Calculator } from "lucide-react";
 import type { Opportunity, Proposal } from "../types";
 import { getPricingReview } from "../lib/pricingReview";
-import { Badge, Button } from "./ui";
+import { Badge } from "./ui";
 import "./pricing-review.css";
 
 const number = (value: number) =>
@@ -13,15 +13,12 @@ const number = (value: number) =>
 export default function PricingReview({
   proposal,
   opportunity,
-  onRequestChange,
-  readOnly = false,
 }: {
   proposal: Proposal;
   opportunity: Opportunity;
-  onRequestChange: (text: string) => void;
-  readOnly?: boolean;
 }) {
   const review = getPricingReview(proposal, opportunity);
+  if (!review.lines.length) return null;
   const finance = review.finance;
   return (
     <section className="pricing-review" aria-label="Pricing review">
@@ -30,11 +27,7 @@ export default function PricingReview({
           <Calculator size={18} /> Pricing and its basis
         </h2>
         <Badge tone={review.kind === "design_example" ? "blue" : "amber"}>
-          {review.kind === "design_example"
-            ? "Design example"
-            : review.kind === "empty"
-              ? "Awaiting generation"
-              : "Needs review"}
+          {review.kind === "design_example" ? "Design example" : "Needs review"}
         </Badge>
       </div>
       <p className="pricing-review-notice">{review.notice}</p>
@@ -46,20 +39,6 @@ export default function PricingReview({
           The currently saved Word export excludes pricing. Reviewing this
           estimate does not change that file.
         </p>
-      )}
-      {!review.lines.length && (
-        <div className="pricing-review-empty">
-          <p>
-            <strong>
-              Requirements → deliverables → effort and quantities → sourced
-              rates → justified price
-            </strong>
-          </p>
-          <p>
-            You review the proposed costs and answer specific questions. Missing
-            values remain unknown until you supply or confirm them.
-          </p>
-        </div>
       )}
       <div className="pricing-review-lines">
         {review.lines.map((line) => (
@@ -154,17 +133,6 @@ export default function PricingReview({
                 ))}
               </ul>
             </details>
-            <Button
-              size="sm"
-              disabled={readOnly}
-              onClick={() =>
-                onRequestChange(
-                  `Pricing review — ${line.description}: ${line.missingInputs.join(" ") || "Review the scope, quantities, rates, and their justification against the RFP and proposal response."}`,
-                )
-              }
-            >
-              <MessageSquarePlus size={15} /> Request pricing change
-            </Button>
           </article>
         ))}
       </div>
@@ -244,19 +212,6 @@ export default function PricingReview({
           )}
         </div>
       )}
-      <Button
-        disabled={readOnly}
-        onClick={() =>
-          onRequestChange(
-            review.questions.map((item) => item.question).join("\n\n"),
-          )
-        }
-      >
-        <MessageSquarePlus size={16} />{" "}
-        {review.lines.length
-          ? "Review pricing assumptions"
-          : "Provide pricing information"}
-      </Button>
     </section>
   );
 }

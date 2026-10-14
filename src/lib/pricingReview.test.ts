@@ -89,7 +89,7 @@ describe("RFP pricing review", () => {
     const review = getPricingReview(proposal, opportunity);
     expect(review.kind).toBe("empty");
     expect(review.finance).toBeNull();
-    expect(review.questions[0].question).toContain("rate card");
+    expect(review.questions).toEqual([]);
     expect(JSON.stringify({ proposal, opportunity })).toBe(before);
   });
 

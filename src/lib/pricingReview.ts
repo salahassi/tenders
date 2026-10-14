@@ -245,13 +245,7 @@ export function getPricingReview(
     return {
       kind: "empty",
       lines: [],
-      questions: [
-        {
-          id: "pricing-basis",
-          question:
-            "Provide the applicable rate card, currency, commercial terms, and any known quantity constraints. The connected agent will first derive proposed cost items and effort from the RFP and proposal response.",
-        },
-      ],
+      questions: [],
       finance: null,
       currency: recordedCurrency,
       totalsLabel: "Pricing has not been generated",

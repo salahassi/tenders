@@ -1,4 +1,14 @@
-import type { AppState, Opportunity, Proposal } from "../types";
+import type {
+  AppState,
+  DocumentRecord,
+  Opportunity,
+  Proposal,
+  ProposalReview,
+} from "../types";
+import {
+  getProposalReviewQuestions,
+  getReviewDocuments,
+} from "./proposalReview";
 
 export interface RewriteRequest {
   sectionId: string;
@@ -17,6 +27,38 @@ export function buildAgentInput(
   const companyFiles = state.knowledgeDocuments.filter(
     (document) => document.enabled,
   );
+  const reviewDocuments = getReviewDocuments(proposal?.review);
+  const prepareAttachments = (documents?: DocumentRecord[]) =>
+    documents?.map((document) => ({
+      ...document,
+      text: readable(document) ? document.text : "",
+    }));
+  const prepareReview = (review: ProposalReview): ProposalReview => {
+    const prepareInputs = (
+      inputs: Pick<
+        ProposalReview,
+        "answers" | "sectionChanges" | "attachments" | "instructions"
+      >,
+    ) => ({
+      ...inputs,
+      answers: inputs.answers.map((answer) => ({
+        ...answer,
+        attachments: prepareAttachments(answer.attachments),
+      })),
+      sectionChanges: inputs.sectionChanges?.map((change) => ({
+        ...change,
+        attachments: prepareAttachments(change.attachments),
+      })),
+      attachments: prepareAttachments(inputs.attachments),
+    });
+    return {
+      ...review,
+      ...prepareInputs(review),
+      regeneration: review.regeneration
+        ? { ...review.regeneration, ...prepareInputs(review.regeneration) }
+        : undefined,
+    };
+  };
   return {
     format: "tenderdesk-agent-input",
     version: 1,
@@ -33,6 +75,8 @@ export function buildAgentInput(
       "Generate the complete proposal structure required by the RFP. Return a coherent document model, source references, review findings, and focused questions for missing information. Do not ask the user to build the outline manually.",
       "Derive the pricing work breakdown from RFP scope and proposed deliverables. Link each cost line to its requirement and proposal response, explain quantity/effort and the rate source, and distinguish buyer requirements from estimates. Ask for unknown rates, capacity, tax, licenses, and commercial assumptions; never invent them. Follow the buyer's required financial format.",
       "Apply the user's review answers and change requests to the existing proposal, check downstream scope and pricing effects, and regenerate a new file version only after successful generation. Do not treat saved feedback as already applied. Preserve the previous version and report changes and unresolved questions.",
+      "Review answers and section comments are separate structured inputs. Keep each attachment with its questionId or sectionId. A response can contain text, attachments, or both; do not discard attachment-only responses or concatenate all section comments into one undifferentiated instruction. If the supplied inputs conflict, ask for clarification before inventing a resolution.",
+      "Use readable attachment text as source data. An attachment marked needs_ocr, needs_processing, or error is present but not yet understood; retrieve and process its authorized original before relying on it. Never treat a filename as evidence or silently resolve a question from an unreadable file.",
       "Do not send, submit, publish, purchase, or call any external service without separate authorization.",
     ],
     opportunity: {
@@ -92,7 +136,19 @@ export function buildAgentInput(
             : {}),
         }
       : null,
-    reviewInputs: proposal?.review ?? null,
+    reviewInputs: proposal?.review ? prepareReview(proposal.review) : null,
+    reviewQuestions: proposal
+      ? getProposalReviewQuestions(proposal, opportunity)
+      : [],
+    reviewDocuments: reviewDocuments.map(({ target, document }) => ({
+      target,
+      id: document.id,
+      name: document.name,
+      hash: document.hash,
+      status: document.status,
+      text: readable(document) ? document.text : "",
+      originalFileIncluded: false,
+    })),
     rewrite: rewrite
       ? {
           ...rewrite,
@@ -109,6 +165,14 @@ export function buildAgentInput(
         ...opportunity.documents.filter((document) => !readable(document)),
         ...companyFiles.filter((document) => !readable(document)),
       ].map(({ id, name, status }) => ({ id, name, status })),
+      reviewAttachmentsNeedingProcessing: reviewDocuments
+        .filter(({ document }) => !readable(document))
+        .map(({ target, document: { id, name, status } }) => ({
+          target,
+          id,
+          name,
+          status,
+        })),
       note: "This package contains extracted text, not original files. Review tables, scanned pages, images, and extraction completeness against the originals before drafting. Downloading does not send these data to an agent.",
     },
   };

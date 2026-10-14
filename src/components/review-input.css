@@ -1,0 +1,124 @@
+.review-input {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.review-input-label {
+  font-weight: 600;
+}
+.review-input textarea {
+  width: 100%;
+  min-height: 96px;
+}
+.review-input textarea:read-only {
+  background: #f7f8f6;
+}
+.review-input-hint {
+  color: #5d6d63;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.review-input-upload {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px dashed #c8d4c9;
+  border-radius: 8px;
+  background: #fafbf8;
+}
+.review-input-upload label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.review-input-upload label span {
+  font-weight: 400;
+  color: #5d6d63;
+}
+.review-input-upload input {
+  background: #fff;
+  min-width: 0;
+}
+.review-input-progress {
+  color: #345746;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.review-input-files {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.review-input-files li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #e1e7df;
+  border-radius: 8px;
+  background: #fff;
+  min-width: 0;
+}
+.review-input-file-info {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.review-input-file-info strong {
+  font-size: 13px;
+}
+.review-input-file-info span,
+.review-input-file-info small {
+  color: #5d6d63;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.review-input-file-info .review-input-original-missing {
+  color: #9d3030;
+}
+.review-input-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.review-input-file-notice {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #795920;
+  background: #fff9ea;
+  padding: 10px 12px;
+  border-radius: 7px;
+}
+.review-input-errors {
+  color: #9d3030;
+  font-size: 13px;
+  background: #fff3f1;
+  border-inline-start: 3px solid #bd4747;
+  padding: 10px 12px;
+  border-radius: 5px;
+}
+.review-input-errors ul {
+  margin: 0;
+  padding-inline-start: 18px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .review-input-files li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .review-input-file-actions {
+    width: 100%;
+  }
+  .review-input-file-actions .btn {
+    flex: 1;
+  }
+}

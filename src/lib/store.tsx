@@ -57,7 +57,7 @@ const documentRecord = z.object({
   size: count.max(10 * 1024 * 1024),
   uploadedAt: date,
   text,
-  status: z.enum(["ready", "needs_ocr", "error"]),
+  status: z.enum(["ready", "needs_ocr", "needs_processing", "error"]),
   classification: z.enum(["synthetic", "public", "sanitized", "unspecified"]),
   hash: text,
 });
@@ -108,6 +108,18 @@ const section = z.object({
   body: text,
   evidence: z.array(text).max(1000),
 });
+const reviewAttachments = z.array(documentRecord).max(10).optional();
+const reviewAnswer = z.object({
+  questionId: id,
+  answer: text,
+  attachments: reviewAttachments,
+});
+const sectionChange = z.object({
+  sectionId: id,
+  sectionTitle: text,
+  comment: text,
+  attachments: reviewAttachments,
+});
 const proposal = z.object({
   id,
   opportunityId: id,
@@ -154,8 +166,10 @@ const proposal = z.object({
     .object({
       baseVersion: z.number().int().min(1),
       sourceSignature: text,
-      answers: z.array(z.object({ questionId: id, answer: text })).max(3000),
+      answers: z.array(reviewAnswer).max(3000),
       instructions: text,
+      sectionChanges: z.array(sectionChange).max(200).optional(),
+      attachments: reviewAttachments,
       savedAt: date,
       regeneration: z
         .object({
@@ -164,10 +178,10 @@ const proposal = z.object({
           status: z.literal("awaiting_connection"),
           baseVersion: z.number().int().min(1),
           sourceSignature: text,
-          answers: z
-            .array(z.object({ questionId: id, answer: text }))
-            .max(3000),
+          answers: z.array(reviewAnswer).max(3000),
           instructions: text,
+          sectionChanges: z.array(sectionChange).max(200).optional(),
+          attachments: reviewAttachments,
         })
         .optional(),
     })

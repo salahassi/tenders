@@ -17,20 +17,26 @@ import {
   getReviewSourceSignature,
   isReviewStale,
 } from "../lib/proposalReview";
-import {
-  Badge,
-  Button,
-  EmptyState,
-  Field,
-  Modal,
-  PageHeader,
-} from "../components/ui";
+import { Badge, Button, EmptyState, Modal, PageHeader } from "../components/ui";
 import PricingReview from "../components/PricingReview";
-import type { Opportunity, Proposal, ProposalReview } from "../types";
+import ReviewInput from "../components/ReviewInput";
+import type {
+  DocumentRecord,
+  Opportunity,
+  Proposal,
+  ProposalReview,
+  ProposalSectionChange,
+} from "../types";
 import "./workspace.css";
 import "./proposal-review.css";
 
-type ReviewDraft = { answers: Record<string, string>; instructions: string };
+type ReviewDraft = {
+  answers: Record<string, string>;
+  answerAttachments: Record<string, DocumentRecord[]>;
+  sectionChanges: Record<string, ProposalSectionChange>;
+  instructions: string;
+  attachments: DocumentRecord[];
+};
 type ReviewContext = {
   baseVersion: number | null;
   sourceSignature: string | null;
@@ -42,8 +48,83 @@ const draftOf = (proposal: Proposal): ReviewDraft => ({
       answer,
     ]),
   ),
+  answerAttachments: Object.fromEntries(
+    (proposal.review?.answers || [])
+      .filter((answer) => answer.attachments?.length)
+      .map(({ questionId, attachments }) => [questionId, attachments!]),
+  ),
+  sectionChanges: Object.fromEntries(
+    (proposal.review?.sectionChanges || []).map((change) => [
+      change.sectionId,
+      { ...change, attachments: change.attachments || [] },
+    ]),
+  ),
   instructions: proposal.review?.instructions || "",
+  attachments: proposal.review?.attachments || [],
 });
+
+function restoredDraft(cached: unknown): ReviewDraft | null {
+  if (!cached || typeof cached !== "object") return null;
+  const value = cached as Record<string, unknown>;
+  if (
+    typeof value.instructions !== "string" ||
+    !value.answers ||
+    typeof value.answers !== "object" ||
+    Array.isArray(value.answers) ||
+    !Object.values(value.answers).every((answer) => typeof answer === "string")
+  )
+    return null;
+  const validFiles = (files: unknown): files is DocumentRecord[] =>
+    Array.isArray(files) &&
+    files.every(
+      (file) =>
+        file &&
+        typeof file.id === "string" &&
+        typeof file.name === "string" &&
+        typeof file.text === "string" &&
+        typeof file.hash === "string" &&
+        typeof file.size === "number" &&
+        typeof file.uploadedAt === "string" &&
+        ["ready", "needs_ocr", "needs_processing", "error"].includes(
+          file.status,
+        ) &&
+        ["synthetic", "public", "sanitized", "unspecified"].includes(
+          file.classification,
+        ),
+    );
+  const answerAttachments = value.answerAttachments || {};
+  const sectionChanges = value.sectionChanges || {};
+  const attachments = value.attachments || [];
+  if (
+    typeof answerAttachments !== "object" ||
+    Array.isArray(answerAttachments) ||
+    !Object.values(answerAttachments).every(validFiles) ||
+    typeof sectionChanges !== "object" ||
+    Array.isArray(sectionChanges) ||
+    !Object.values(sectionChanges).every(
+      (change) =>
+        change &&
+        typeof change.sectionId === "string" &&
+        typeof change.sectionTitle === "string" &&
+        typeof change.comment === "string" &&
+        (change.attachments === undefined || validFiles(change.attachments)),
+    ) ||
+    !validFiles(attachments)
+  )
+    return null;
+  return {
+    answers: value.answers as Record<string, string>,
+    answerAttachments: answerAttachments as Record<string, DocumentRecord[]>,
+    sectionChanges: Object.fromEntries(
+      Object.entries(sectionChanges).map(([id, change]) => [
+        id,
+        { ...change, attachments: change.attachments || [] },
+      ]),
+    ),
+    instructions: value.instructions,
+    attachments,
+  };
+}
 
 /** Preserve old local edits for explicit recovery; never apply them to a file. */
 function recoverPreviousEdits(proposal: Proposal): string {
@@ -115,24 +196,13 @@ function ProposalReviewPage({
     if (canEdit) {
       try {
         const cached = JSON.parse(sessionStorage.getItem(storageKey) || "null");
-        if (
-          cached &&
-          typeof cached.instructions === "string" &&
-          cached.answers &&
-          typeof cached.answers === "object" &&
-          !Array.isArray(cached.answers) &&
-          Object.values(cached.answers).every(
-            (value) => typeof value === "string",
-          )
-        ) {
+        const restored = restoredDraft(cached);
+        if (restored) {
           const knownContext =
             Number.isInteger(cached.baseVersion) &&
             typeof cached.sourceSignature === "string";
           return {
-            draft: {
-              answers: cached.answers,
-              instructions: cached.instructions,
-            } as ReviewDraft,
+            draft: restored,
             context: {
               baseVersion: knownContext ? cached.baseVersion : null,
               sourceSignature: knownContext ? cached.sourceSignature : null,
@@ -162,6 +232,12 @@ function ProposalReviewPage({
   const [storageError, setStorageError] = useState("");
   const [exporting, setExporting] = useState(false);
   const [regenerateOpen, setRegenerateOpen] = useState(false);
+  const [busyInputs, setBusyInputs] = useState<Record<string, boolean>>({});
+  const uploading = Object.values(busyInputs).some(Boolean);
+  const setInputBusy = (id: string, busy: boolean) =>
+    setBusyInputs((current) =>
+      current[id] === busy ? current : { ...current, [id]: busy },
+    );
   const questions = getProposalReviewQuestions(proposal, opportunity);
   const dirty = JSON.stringify(draft) !== JSON.stringify(draftOf(proposal));
   const staleDraft =
@@ -170,21 +246,43 @@ function ProposalReviewPage({
       (draftContext.baseVersion !== proposal.version ||
         draftContext.sourceSignature !== currentSignature));
   const stale = isReviewStale(state, proposal, opportunity) || staleDraft;
+  const hasAnswer = (questionId: string) =>
+    !!draft.answers[questionId]?.trim() ||
+    !!draft.answerAttachments[questionId]?.length;
+  const hasSectionChange = (sectionId: string) =>
+    !!draft.sectionChanges[sectionId]?.comment.trim() ||
+    !!draft.sectionChanges[sectionId]?.attachments?.length;
   const hasInputs =
     !!draft.instructions.trim() ||
-    Object.values(draft.answers).some((answer) => answer.trim());
+    !!draft.attachments.length ||
+    Object.keys(draft.answers).some(hasAnswer) ||
+    Object.keys(draft.answerAttachments).some(hasAnswer) ||
+    Object.keys(draft.sectionChanges).some(hasSectionChange);
   const readableRfp =
     opportunity.documents.length > 0 &&
     opportunity.documents.every(
       (document) => document.status === "ready" && document.text.trim(),
     );
   const answered = questions.filter((question) =>
-    draft.answers[question.id]?.trim(),
+    hasAnswer(question.id),
   ).length;
-  const orphanAnswers = Object.entries(draft.answers).filter(
-    ([questionId, answer]) =>
-      answer.trim() &&
+  const changedSections = Object.keys(draft.sectionChanges).filter(
+    hasSectionChange,
+  ).length;
+  const orphanAnswerIds = [
+    ...new Set([
+      ...Object.keys(draft.answers),
+      ...Object.keys(draft.answerAttachments),
+    ]),
+  ].filter(
+    (questionId) =>
+      hasAnswer(questionId) &&
       !questions.some((question) => question.id === questionId),
+  );
+  const orphanSectionChanges = Object.values(draft.sectionChanges).filter(
+    (change) =>
+      hasSectionChange(change.sectionId) &&
+      !proposal.sections.some((section) => section.id === change.sectionId),
   );
 
   useEffect(() => {
@@ -204,42 +302,88 @@ function ProposalReviewPage({
   }, [draft, draftContext, dirty, legacyCache, canEdit, storageKey]);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
-      if (dirty && canEdit) {
+      if ((dirty || uploading) && canEdit) {
         event.preventDefault();
         event.returnValue = "";
       }
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty, canEdit]);
+  }, [dirty, uploading, canEdit]);
 
-  function requestChange(text: string) {
-    if (canEdit) {
-      setDraft((current) => ({
+  function updateSection(
+    sectionId: string,
+    sectionTitle: string,
+    change: Partial<ProposalSectionChange>,
+  ) {
+    if (!canEdit) return;
+    setDraft((current) => ({
+      ...current,
+      sectionChanges: {
+        ...current.sectionChanges,
+        [sectionId]: {
+          ...(current.sectionChanges[sectionId] || {
+            sectionId,
+            sectionTitle,
+            comment: "",
+            attachments: [],
+          }),
+          ...change,
+        },
+      },
+    }));
+  }
+  function setAnswer(questionId: string, answer: string) {
+    if (!canEdit) return;
+    setDraft((current) => ({
+      ...current,
+      answers: { ...current.answers, [questionId]: answer },
+    }));
+  }
+  function setAnswerFiles(questionId: string, attachments: DocumentRecord[]) {
+    if (!canEdit) return;
+    setDraft((current) => {
+      const answerAttachments = { ...current.answerAttachments };
+      if (attachments.length) answerAttachments[questionId] = attachments;
+      else delete answerAttachments[questionId];
+      return {
         ...current,
-        instructions: [current.instructions.trim(), text]
-          .filter(Boolean)
-          .join("\n\n"),
-      }));
-      document.getElementById("proposal-change-request")?.focus();
-    }
+        answers: {
+          ...current.answers,
+          [questionId]: current.answers[questionId] || "",
+        },
+        answerAttachments,
+      };
+    });
   }
   function saveReview(regenerate = false): Proposal {
-    if (!canEdit) return proposal;
+    if (!canEdit || uploading) return proposal;
     const savedAt = new Date().toISOString();
     const sourceSignature = getReviewSourceSignature(
       state,
       proposal,
       opportunity,
     );
-    const answers = Object.entries(draft.answers).map(
-      ([questionId, answer]) => ({ questionId, answer }),
-    );
+    const answers = [
+      ...new Set([
+        ...Object.keys(draft.answers),
+        ...Object.keys(draft.answerAttachments),
+      ]),
+    ].map((questionId) => ({
+      questionId,
+      answer: draft.answers[questionId] || "",
+      ...(draft.answerAttachments[questionId]?.length
+        ? { attachments: draft.answerAttachments[questionId] }
+        : {}),
+    }));
+    const sectionChanges = Object.values(draft.sectionChanges);
     const review: ProposalReview = {
       baseVersion: proposal.version,
       sourceSignature,
       answers,
       instructions: draft.instructions,
+      sectionChanges,
+      attachments: draft.attachments,
       savedAt,
       ...(regenerate
         ? {
@@ -251,6 +395,8 @@ function ProposalReviewPage({
               sourceSignature,
               answers,
               instructions: draft.instructions,
+              sectionChanges,
+              attachments: draft.attachments,
             },
           }
         : {}),
@@ -392,78 +538,145 @@ function ProposalReviewPage({
         </p>
       )}
 
-      <details className="panel review-content">
+      <details className="panel review-content" open>
         <summary>
           <span>Content for review</span>
           <span className="review-summary-meta">
-            Saved text · {proposal.sections.length} sections
+            {proposal.sections.length} sections · {changedSections} with review
+            inputs
           </span>
         </summary>
         <div className="review-content-body">
-          <p className="small muted">
-            This is the saved proposal text, not a preview of the Word file’s
-            page layout. Review the downloaded file for final formatting.
+          <p>
+            Review the saved proposal text and leave comments or attach files
+            under each section. All your section comments and answers will be
+            used together when you regenerate.
           </p>
-          {proposal.sections.map((section) => (
-            <details className="review-text-section" key={section.id}>
-              <summary dir="auto">
-                {section.title || "Untitled section"}
-              </summary>
-              <p dir="auto">
-                {section.body || "No content saved for this section."}
-              </p>
-              <Button
-                size="sm"
-                disabled={!canEdit}
-                onClick={() =>
-                  requestChange(
-                    `Requested change to “${section.title || "Untitled section"}”: `,
-                  )
-                }
+          <p className="small muted">
+            The saved text below is not a preview of the Word file’s page
+            layout. Download the current Word to review its formatting.
+          </p>
+          {proposal.sections.map((section) => {
+            const title = section.title || "Untitled section";
+            const change = draft.sectionChanges[section.id];
+            const inputId = `section-review-${section.id}`;
+            return (
+              <article
+                className="review-text-section"
+                key={section.id}
+                aria-labelledby={`review-section-title-${section.id}`}
               >
-                Request a change to this section
-              </Button>
-            </details>
-          ))}
+                <div className="review-section-heading">
+                  <h3 id={`review-section-title-${section.id}`} dir="auto">
+                    {title}
+                  </h3>
+                  {hasSectionChange(section.id) && (
+                    <Badge tone="blue">Review inputs added</Badge>
+                  )}
+                </div>
+                <details className="review-saved-section" open>
+                  <summary>Saved content</summary>
+                  <p dir="auto">
+                    {section.body || "No content saved for this section."}
+                  </p>
+                </details>
+                <ReviewInput
+                  id={inputId}
+                  label={`Comments on ${title}`}
+                  value={change?.comment || ""}
+                  onChange={(comment) =>
+                    updateSection(section.id, title, { comment })
+                  }
+                  attachments={change?.attachments || []}
+                  onAttachmentsChange={(attachments) =>
+                    updateSection(section.id, title, { attachments })
+                  }
+                  readOnly={!canEdit}
+                  placeholder="Describe what should change in this section, attach supporting files, or do both."
+                  rows={3}
+                  onBusyChange={(busy) => setInputBusy(inputId, busy)}
+                />
+              </article>
+            );
+          })}
           {!proposal.sections.length && (
             <p className="small muted">No saved proposal text is available.</p>
+          )}
+          {proposal.lines.length > 0 && (
+            <PricingReview proposal={proposal} opportunity={opportunity} />
+          )}
+          {orphanSectionChanges.length > 0 && (
+            <details className="review-retained-inputs">
+              <summary>
+                Comments retained from earlier sections (
+                {orphanSectionChanges.length})
+              </summary>
+              <p>
+                These sections are no longer in the current proposal. Their
+                comments and files are preserved for you to review before
+                regeneration.
+              </p>
+              {orphanSectionChanges.map((change) => {
+                const inputId = `retained-section-${change.sectionId}`;
+                return (
+                  <ReviewInput
+                    key={change.sectionId}
+                    id={inputId}
+                    label={`Comments on ${change.sectionTitle || "Earlier section"}`}
+                    value={change.comment}
+                    onChange={(comment) =>
+                      updateSection(change.sectionId, change.sectionTitle, {
+                        comment,
+                      })
+                    }
+                    attachments={change.attachments || []}
+                    onAttachmentsChange={(attachments) =>
+                      updateSection(change.sectionId, change.sectionTitle, {
+                        attachments,
+                      })
+                    }
+                    readOnly={!canEdit}
+                    onBusyChange={(busy) => setInputBusy(inputId, busy)}
+                  />
+                );
+              })}
+            </details>
           )}
         </div>
       </details>
 
-      <div className="review-main-grid">
-        <section
-          className="panel review-questions"
-          aria-labelledby="review-questions-title"
-        >
-          <div className="review-panel-heading">
-            <div>
-              <span className="workspace-kicker">REVIEW QUESTIONS</span>
-              <h2 id="review-questions-title">
-                Supply the missing information
-              </h2>
-              <p>
-                Answer the recorded questions. The agent will use these answers
-                when regenerating the proposal.
-              </p>
-            </div>
-            <Badge
-              tone={
-                answered === questions.length && answered > 0
-                  ? "green"
-                  : "neutral"
-              }
-            >
-              {answered}/{questions.length} answered
-            </Badge>
+      <section
+        className="panel review-questions"
+        aria-labelledby="review-questions-title"
+      >
+        <div className="review-panel-heading">
+          <div>
+            <span className="workspace-kicker">REVIEW QUESTIONS</span>
+            <h2 id="review-questions-title">Supply the missing information</h2>
+            <p>
+              For each question, enter an answer, attach supporting files, or do
+              both. There is no need to save each answer separately.
+            </p>
           </div>
-          <p className="review-question-origin">
-            These questions come from saved gaps, open requirements, pricing
-            inputs, and explicit placeholders. Automatic analysis of new RFPs
-            will be available with the AI connection.
-          </p>
-          <div className="review-question-list">
-            {questions.map((question) => (
+          <Badge
+            tone={
+              answered === questions.length && answered > 0
+                ? "green"
+                : "neutral"
+            }
+          >
+            {answered}/{questions.length} responses added
+          </Badge>
+        </div>
+        <p className="review-question-origin">
+          These questions come from saved gaps, open requirements, pricing
+          inputs, and explicit placeholders. Automatic analysis of new RFPs will
+          be available with the AI connection.
+        </p>
+        <div className="review-question-list">
+          {questions.map((question) => {
+            const inputId = `question-review-${question.id}`;
+            return (
               <article className="review-question" key={question.id}>
                 <h3 dir="auto">{question.question}</h3>
                 <p dir="auto">{question.reason}</p>
@@ -483,122 +696,99 @@ function ProposalReviewPage({
                     {question.existingAnswer}
                   </p>
                 )}
-                <Field
+                <ReviewInput
+                  id={inputId}
                   label="Your answer"
-                  hint="Add the facts, decision, or approved value the agent should use."
-                >
-                  <textarea
-                    rows={3}
-                    dir="auto"
-                    readOnly={!canEdit}
-                    value={draft.answers[question.id] || ""}
-                    onChange={(event) =>
-                      setDraft((current) => ({
-                        ...current,
-                        answers: {
-                          ...current.answers,
-                          [question.id]: event.target.value,
-                        },
-                      }))
-                    }
-                  />
-                </Field>
+                  value={draft.answers[question.id] || ""}
+                  onChange={(answer) => setAnswer(question.id, answer)}
+                  attachments={draft.answerAttachments[question.id] || []}
+                  onAttachmentsChange={(attachments) =>
+                    setAnswerFiles(question.id, attachments)
+                  }
+                  readOnly={!canEdit}
+                  placeholder="Add the facts, decision, or approved value the agent should use, or attach a file."
+                  rows={3}
+                  onBusyChange={(busy) => setInputBusy(inputId, busy)}
+                />
               </article>
-            ))}
-            {!questions.length && (
-              <div className="review-empty">
-                <MessageSquare size={24} />
-                <h3>No recorded review questions</h3>
-                <p>
-                  Automatic completeness review is not connected yet. This does
-                  not confirm that the proposal is complete. Add any corrections
-                  or missing information in the change request.
-                </p>
-              </div>
-            )}
-            {orphanAnswers.length > 0 && (
-              <details className="review-retained-answers">
-                <summary>
-                  Answers retained from earlier questions (
-                  {orphanAnswers.length})
-                </summary>
-                {orphanAnswers.map(([questionId, answer]) => (
-                  <div key={questionId}>
-                    <strong>{questionId}</strong>
-                    <p dir="auto">{answer}</p>
-                  </div>
-                ))}
-              </details>
-            )}
-          </div>
-        </section>
-        <aside className="review-request-column">
-          <section
-            className="panel review-request"
-            aria-labelledby="review-request-title"
-          >
-            <span className="workspace-kicker">YOUR CHANGES</span>
-            <h2 id="review-request-title">Tell the agent what to update</h2>
-            <p>
-              Refer to a heading, table, or requirement. Include any replacement
-              wording or decisions the agent needs.
-            </p>
-            <Field label="Change request">
-              <textarea
-                id="proposal-change-request"
-                rows={9}
-                dir="auto"
-                readOnly={!canEdit}
-                value={draft.instructions}
-                placeholder="For example: revise the implementation timeline to 12 weeks, explain the integration assumptions, and update the pricing justification to match the revised effort."
-                onChange={(event) =>
-                  setDraft((current) => ({
-                    ...current,
-                    instructions: event.target.value,
-                  }))
-                }
-              />
-            </Field>
-            <Button
-              disabled={!canEdit || (!dirty && !stale)}
-              onClick={() => saveReview()}
-            >
-              <Save size={15} /> Save review inputs
-            </Button>
-            <Button
-              variant="primary"
-              disabled={!canEdit || !readableRfp || stale}
-              onClick={() => {
-                saveReview(true);
-                setRegenerateOpen(true);
-              }}
-            >
-              <Sparkles size={16} /> Regenerate proposal
-            </Button>
-            <p className="review-action-help">
-              Regeneration will create an updated file version using the RFP,
-              company knowledge, your answers, and your change request. It
-              requires the AI connection.
-            </p>
-            {!readableRfp && (
-              <p className="review-missing-rfp">
-                Upload a readable RFP in the{" "}
-                <Link to={`/opportunities/${opportunity.id}`}>
-                  linked opportunity
-                </Link>{" "}
-                before requesting regeneration.
+            );
+          })}
+          {!questions.length && (
+            <div className="review-empty">
+              <MessageSquare size={24} />
+              <h3>No recorded review questions</h3>
+              <p>
+                Automatic completeness review is not connected yet. This does
+                not confirm that the proposal is complete. Add any corrections
+                under the relevant section.
               </p>
-            )}
-          </section>
-        </aside>
-      </div>
-
-      <PricingReview
-        proposal={proposal}
-        opportunity={opportunity}
-        onRequestChange={requestChange}
-        readOnly={!canEdit}
-      />
+            </div>
+          )}
+          {orphanAnswerIds.length > 0 && (
+            <details className="review-retained-inputs">
+              <summary>
+                Answers retained from earlier questions (
+                {orphanAnswerIds.length})
+              </summary>
+              <p>
+                These questions are no longer listed above. Their answers and
+                files remain attached to the earlier question.
+              </p>
+              {orphanAnswerIds.map((questionId) => {
+                const inputId = `retained-question-${questionId}`;
+                return (
+                  <ReviewInput
+                    key={questionId}
+                    id={inputId}
+                    label={`Earlier answer · ${questionId}`}
+                    value={draft.answers[questionId] || ""}
+                    onChange={(answer) => setAnswer(questionId, answer)}
+                    attachments={draft.answerAttachments[questionId] || []}
+                    onAttachmentsChange={(attachments) =>
+                      setAnswerFiles(questionId, attachments)
+                    }
+                    readOnly={!canEdit}
+                    onBusyChange={(busy) => setInputBusy(inputId, busy)}
+                  />
+                );
+              })}
+            </details>
+          )}
+        </div>
+      </section>
+      <details
+        className="panel review-additional"
+        open={!!draft.instructions || !!draft.attachments.length}
+      >
+        <summary>
+          Additional comments{" "}
+          <span className="review-summary-meta">
+            Optional · applies to the whole proposal
+          </span>
+        </summary>
+        <div className="review-content-body">
+          <p>
+            Use this only for changes that apply across the proposal. Existing
+            general change requests are preserved here.
+          </p>
+          <ReviewInput
+            id="proposal-additional-comments"
+            label="Additional comments"
+            value={draft.instructions}
+            onChange={(instructions) =>
+              setDraft((current) => ({ ...current, instructions }))
+            }
+            attachments={draft.attachments}
+            onAttachmentsChange={(attachments) =>
+              setDraft((current) => ({ ...current, attachments }))
+            }
+            readOnly={!canEdit}
+            placeholder="Add a proposal-wide instruction or supporting file."
+            rows={4}
+            onBusyChange={(busy) => setInputBusy("additional", busy)}
+          />
+        </div>
+      </details>
       {recovered && (
         <details className="panel review-recovered">
           <summary>Unsaved edits recovered from the previous editor</summary>
@@ -618,12 +808,18 @@ function ProposalReviewPage({
             <Button
               disabled={!canEdit}
               onClick={() =>
-                requestChange(
-                  `Please review and incorporate these recovered edits where applicable. Preserve any newer approved facts:\n\n${recovered}`,
-                )
+                setDraft((current) => ({
+                  ...current,
+                  instructions: [
+                    current.instructions.trim(),
+                    `Please review and incorporate these recovered edits where applicable. Preserve any newer approved facts:\n\n${recovered}`,
+                  ]
+                    .filter(Boolean)
+                    .join("\n\n"),
+                }))
               }
             >
-              Add recovered edits to change request
+              Add recovered edits to additional comments
             </Button>
           </div>
         </details>
@@ -643,14 +839,73 @@ function ProposalReviewPage({
           </Button>
         </div>
       </details>
+      <section
+        className="panel review-actions"
+        aria-label="Save or regenerate all review inputs"
+      >
+        <div className="review-actions-status">
+          <strong>
+            {uploading
+              ? "Attaching files…"
+              : dirty
+                ? "Unsaved review inputs"
+                : stale
+                  ? "Review inputs need reconfirmation"
+                  : hasInputs
+                    ? "All review inputs saved"
+                    : "Ready for your review"}
+          </strong>
+          <p>
+            {changedSections} section{changedSections === 1 ? "" : "s"} with
+            comments or files · {answered}/{questions.length} responses added
+          </p>
+          <p>
+            Save to continue later, or regenerate once to include all section
+            comments, answers, and attachments.
+          </p>
+        </div>
+        <div className="review-action-buttons">
+          <Button
+            disabled={!canEdit || uploading || (!dirty && !stale)}
+            onClick={() => saveReview()}
+          >
+            <Save size={15} /> Save review inputs
+          </Button>
+          <Button
+            variant="primary"
+            disabled={!canEdit || uploading || !readableRfp || stale}
+            onClick={() => {
+              saveReview(true);
+              setRegenerateOpen(true);
+            }}
+          >
+            <Sparkles size={16} /> Regenerate proposal
+          </Button>
+        </div>
+        {!readableRfp && (
+          <p className="review-missing-rfp">
+            Upload a readable RFP in the{" "}
+            <Link to={`/opportunities/${opportunity.id}`}>
+              linked opportunity
+            </Link>{" "}
+            before requesting regeneration.
+          </p>
+        )}
+        <p className="review-action-help">
+          Regenerate saves all your review inputs together. Applying them and
+          creating a new file requires the AI connection; the current file stays
+          unchanged until then.
+        </p>
+      </section>
       <Modal
         open={regenerateOpen}
         onClose={() => setRegenerateOpen(false)}
         title="Regeneration is awaiting the AI connection"
       >
         <p>
-          Your answers and change request have been saved in this browser. No AI
-          request has been sent and no new file or version has been created.
+          Your answers, section comments, and attachments have been saved
+          together in this browser. No AI request has been sent and no new file
+          or version has been created.
         </p>
         <p>
           Once connected, the agent will update the complete proposal and its

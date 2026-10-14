@@ -1,4 +1,10 @@
-import type { AppState, Opportunity, Proposal } from "../types";
+import type {
+  AppState,
+  DocumentRecord,
+  Opportunity,
+  Proposal,
+  ProposalReview,
+} from "../types";
 import { getPricingReview } from "./pricingReview";
 
 export interface ProposalReviewQuestion {
@@ -8,6 +14,40 @@ export interface ProposalReviewQuestion {
   source: string;
   target: string;
   existingAnswer?: string;
+}
+
+/** Each file keeps its review target; similarly named files are not merged. */
+export function getReviewDocuments(review?: ProposalReview): Array<{
+  target: {
+    kind: "question" | "section" | "general";
+    id: string;
+    title?: string;
+  };
+  document: DocumentRecord;
+}> {
+  if (!review) return [];
+  return [
+    ...review.answers.flatMap((answer) =>
+      (answer.attachments || []).map((document) => ({
+        target: { kind: "question" as const, id: answer.questionId },
+        document,
+      })),
+    ),
+    ...(review.sectionChanges || []).flatMap((change) =>
+      (change.attachments || []).map((document) => ({
+        target: {
+          kind: "section" as const,
+          id: change.sectionId,
+          title: change.sectionTitle,
+        },
+        document,
+      })),
+    ),
+    ...(review.attachments || []).map((document) => ({
+      target: { kind: "general" as const, id: "additional-comments" },
+      document,
+    })),
+  ];
 }
 
 /** Display recorded questions and explicit missing-input markers. No model inference. */

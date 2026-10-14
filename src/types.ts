@@ -21,7 +21,7 @@ export interface DocumentRecord {
   size: number;
   uploadedAt: string;
   text: string;
-  status: "ready" | "needs_ocr" | "error";
+  status: "ready" | "needs_ocr" | "needs_processing" | "error";
   classification: "synthetic" | "public" | "sanitized" | "unspecified";
   hash: string;
 }
@@ -78,6 +78,13 @@ export interface FinanceLine {
 export interface ProposalReviewAnswer {
   questionId: string;
   answer: string;
+  attachments?: DocumentRecord[];
+}
+export interface ProposalSectionChange {
+  sectionId: string;
+  sectionTitle: string;
+  comment: string;
+  attachments?: DocumentRecord[];
 }
 export interface ProposalRegenerationRequest {
   id: string;
@@ -87,12 +94,16 @@ export interface ProposalRegenerationRequest {
   sourceSignature: string;
   answers: ProposalReviewAnswer[];
   instructions: string;
+  sectionChanges?: ProposalSectionChange[];
+  attachments?: DocumentRecord[];
 }
 export interface ProposalReview {
   baseVersion: number;
   sourceSignature: string;
   answers: ProposalReviewAnswer[];
   instructions: string;
+  sectionChanges?: ProposalSectionChange[];
+  attachments?: DocumentRecord[];
   savedAt: string;
   regeneration?: ProposalRegenerationRequest;
 }
