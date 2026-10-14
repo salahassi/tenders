@@ -8,6 +8,7 @@ import {
   emptyConnectedState,
 } from "./connectedRepository";
 import { AuthPanel } from "./AuthPanel";
+import { AccessLayout } from "./AccessLayout";
 import { pendingInvitation, clearPendingInvitation } from "./invitations";
 
 const message = (error: unknown) =>
@@ -164,7 +165,7 @@ export function ConnectedProvider({
   };
   if (session && recovery)
     return (
-      <main className="app-loading">
+      <AccessLayout>
         <AuthPanel
           client={client}
           recovery
@@ -176,63 +177,53 @@ export function ConnectedProvider({
             void refresh();
           }}
         />
-      </main>
+      </AccessLayout>
     );
   if (!session || phase !== "ready")
     return (
-      <main className="app-loading" aria-live="polite">
-        <div className="brand-mark">
-          t<span>.</span>
-        </div>
-        <h1>
-          {session === undefined || (session && phase === "loading")
-            ? "Opening your workspace"
-            : !session
-              ? "Sign in to Tenderdesk"
-              : phase === "pending"
-                ? "Workspace access pending"
-                : "Workspace unavailable"}
-        </h1>
-        <p>
-          {!session
-            ? "Sign in with your invited email address to open your workspace."
-            : phase === "pending"
-              ? "Your identity is signed in. An Owner invitation is required for workspace access; first setup requires the verified Owner to be initialized."
-              : "Your data is loaded from the server. A failed connection does not open sample records."}
-        </p>
+      <AccessLayout>
         {error && (
           <p className="notice notice-error" role="alert">
             {error}
           </p>
         )}
-        <div className="row">
-          {session === null && (
-            <AuthPanel client={client} invitationToken={invitation} />
-          )}
-          {session && (
-            <>
-              <button
-                className="btn btn-primary"
-                onClick={() => void refresh()}
-              >
-                Check access again
-              </button>
-              <button
-                className="btn btn-secondary"
-                onClick={() => void signOut()}
-              >
-                Sign out
-              </button>
-            </>
-          )}
-          <a
-            className="btn btn-secondary"
-            href={`${window.location.pathname}?mode=demo#/dashboard`}
-          >
-            Open separate demo
-          </a>
-        </div>
-      </main>
+        {session === null ? (
+          <AuthPanel client={client} invitationToken={invitation} />
+        ) : (
+          <section className="access-state" aria-live="polite">
+            <h1>
+              {session === undefined || phase === "loading"
+                ? "Opening your workspace"
+                : phase === "pending"
+                  ? "Workspace access pending"
+                  : "Workspace unavailable"}
+            </h1>
+            <p>
+              {session === undefined || phase === "loading"
+                ? "Checking your account and workspace access…"
+                : phase === "pending"
+                  ? "You’re signed in, but this account doesn’t have workspace access yet. Open your invitation link or contact your workspace administrator."
+                  : "We couldn’t open your workspace. Please try again. Your saved data has not been changed."}
+            </p>
+            {session && (
+              <div className="access-state-actions">
+                <button
+                  className="btn btn-primary"
+                  onClick={() => void refresh()}
+                >
+                  Check access again
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => void signOut()}
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+          </section>
+        )}
+      </AccessLayout>
     );
   return (
     <AppContext.Provider

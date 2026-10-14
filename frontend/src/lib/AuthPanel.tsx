@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { BackendClient } from "./backendClient";
+import { ArrowRight, Eye, EyeOff, LockKeyhole } from "lucide-react";
 
 export function authRedirect(recovery = false, invitationToken = "") {
   const url = new URL(window.location.href);
@@ -30,9 +31,21 @@ export function AuthPanel({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [invited, setInvited] = useState(false);
+  const [checkingInvitation, setCheckingInvitation] = useState(
+    Boolean(invitationToken),
+  );
+  const [showPassword, setShowPassword] = useState(false);
   useEffect(() => {
     let active = true;
     setInvited(false);
+    setCheckingInvitation(Boolean(invitationToken));
+    setView("signin");
+    setEmail("");
+    setPassword("");
+    setConfirmation("");
+    setShowPassword(false);
+    setError("");
+    setMessage("");
     if (invitationToken)
       void client
         .checkInvitation(invitationToken)
@@ -50,6 +63,9 @@ export function AuthPanel({
                 ? cause.message
                 : "This invitation is unavailable.",
             );
+        })
+        .finally(() => {
+          if (active) setCheckingInvitation(false);
         });
     return () => {
       active = false;
@@ -61,10 +77,11 @@ export function AuthPanel({
     setMessage("");
     setPassword("");
     setConfirmation("");
+    setShowPassword(false);
   };
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (busy) return;
+    if (busy || checkingInvitation) return;
     setBusy(true);
     setError("");
     setMessage("");
@@ -103,7 +120,7 @@ export function AuthPanel({
         setMessage(
           data.session
             ? "Account created. Checking workspace access…"
-            : "Check your email for the confirmation link. After confirmation, sign in here. Workspace access requires Owner approval.",
+            : "Check your email for the confirmation link. Confirm your email, then return to sign in and accept your invitation.",
         );
       } else {
         const { error } = await client.auth.auth.resetPasswordForEmail(
@@ -127,15 +144,27 @@ export function AuthPanel({
   }
   return (
     <section className="auth-panel" aria-label="Account access">
-      <h2>
+      <span className="auth-icon" aria-hidden="true">
+        <LockKeyhole size={21} />
+      </span>
+      <h1>
         {recovery
           ? "Choose a new password"
           : view === "signup"
             ? "Accept your invitation"
             : view === "reset"
               ? "Reset your password"
-              : "Sign in with email"}
-      </h2>
+              : "Sign in to Tenderdesk"}
+      </h1>
+      <p className="auth-description">
+        {recovery
+          ? "Choose a new password to get back to your workspace."
+          : view === "signup"
+            ? "Set your password to join your team’s workspace."
+            : view === "reset"
+              ? "Enter your account email and we’ll request a reset link."
+              : "Welcome back. Use your email and password to continue."}
+      </p>
       {error && (
         <p role="alert" className="notice notice-error">
           {error}
@@ -146,60 +175,117 @@ export function AuthPanel({
           {message}
         </p>
       )}
-      <form onSubmit={submit} className="stack">
+      {checkingInvitation && (
+        <p role="status" className="notice">
+          Checking your invitation…
+        </p>
+      )}
+      <form
+        onSubmit={submit}
+        className="auth-form"
+        aria-busy={busy || checkingInvitation}
+      >
         {!recovery && (
           <label className="field">
             Email address
             <input
               className="input"
               type="email"
+              placeholder="you@company.com"
+              autoCapitalize="none"
+              spellCheck={false}
               autoComplete="username"
               value={email}
               readOnly={view === "signup" && invited}
               onChange={(event) => setEmail(event.target.value)}
               maxLength={254}
               required
-              disabled={busy}
+              disabled={busy || checkingInvitation}
             />
           </label>
         )}
         {(recovery || view !== "reset") && (
-          <label className="field">
-            {recovery ? "New password" : "Password"}
-            <input
-              className="input"
-              type="password"
-              autoComplete={
-                recovery || view === "signup"
-                  ? "new-password"
-                  : "current-password"
-              }
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              minLength={view === "signup" || recovery ? 12 : 1}
-              maxLength={128}
-              required
-              disabled={busy}
-            />
-          </label>
+          <div className="field">
+            <div className="auth-label-row">
+              <label htmlFor="auth-password">
+                {recovery ? "New password" : "Password"}
+              </label>
+              {!recovery && view === "signin" && (
+                <button
+                  type="button"
+                  className="auth-text-button"
+                  disabled={busy || checkingInvitation}
+                  onClick={() => change("reset")}
+                >
+                  Forgot password?
+                </button>
+              )}
+            </div>
+            <div className="auth-password-input">
+              <input
+                id="auth-password"
+                className="input"
+                type={showPassword ? "text" : "password"}
+                placeholder={
+                  recovery || view === "signup"
+                    ? "At least 12 characters"
+                    : "Enter your password"
+                }
+                aria-describedby={
+                  recovery || view === "signup"
+                    ? "auth-password-help"
+                    : undefined
+                }
+                autoComplete={
+                  recovery || view === "signup"
+                    ? "new-password"
+                    : "current-password"
+                }
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                minLength={view === "signup" || recovery ? 12 : 1}
+                maxLength={128}
+                required
+                disabled={busy || checkingInvitation}
+              />
+              <button
+                type="button"
+                className="auth-password-toggle"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-pressed={showPassword}
+                disabled={busy || checkingInvitation}
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
+            {(recovery || view === "signup") && (
+              <small id="auth-password-help">Use at least 12 characters.</small>
+            )}
+          </div>
         )}
         {(recovery || view === "signup") && (
           <label className="field">
             Confirm password
             <input
               className="input"
-              type="password"
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password again"
               autoComplete="new-password"
               value={confirmation}
               onChange={(event) => setConfirmation(event.target.value)}
               minLength={12}
               maxLength={128}
               required
-              disabled={busy}
+              disabled={busy || checkingInvitation}
             />
           </label>
         )}
-        <button type="submit" className="btn btn-primary" disabled={busy}>
+        <button
+          type="submit"
+          className="btn btn-primary auth-submit"
+          disabled={busy || checkingInvitation}
+        >
           {busy
             ? "Please wait…"
             : recovery
@@ -209,17 +295,15 @@ export function AuthPanel({
                 : view === "reset"
                   ? "Send reset link"
                   : "Sign in"}
+          {!busy && <ArrowRight size={17} aria-hidden="true" />}
         </button>
       </form>
       {!recovery && (
-        <div
-          className="row"
-          style={{ justifyContent: "center", marginTop: 12 }}
-        >
+        <div className="auth-navigation">
           {(invited || view !== "signin") && (
             <button
-              className="btn btn-secondary"
-              disabled={busy}
+              className="auth-text-button"
+              disabled={busy || checkingInvitation}
               onClick={() =>
                 change(view === "signin" && invited ? "signup" : "signin")
               }
@@ -227,19 +311,16 @@ export function AuthPanel({
               {view === "signin" ? "Create invited account" : "Back to sign in"}
             </button>
           )}
-          {view === "signin" && (
-            <button
-              className="btn btn-secondary"
-              disabled={busy}
-              onClick={() => change("reset")}
-            >
-              Forgot password?
-            </button>
-          )}
         </div>
       )}
-      {!recovery && !invited && (
-        <p>New accounts require an invitation from your workspace Owner.</p>
+      {!recovery && !invited && !checkingInvitation && view === "signin" && (
+        <div className="auth-invitation-note">
+          <strong>Joining for the first time?</strong>
+          <p>
+            Open the invitation link from your workspace administrator to create
+            your account and choose your password.
+          </p>
+        </div>
       )}
     </section>
   );

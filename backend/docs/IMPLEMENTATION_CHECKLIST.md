@@ -1,10 +1,18 @@
 # Implementation status and continuation plan
 
-Checkpoint: October 14, 2026. The owner resumed publication to Supabase, GitHub, and GitHub Pages after the plan review. Authority: [the implementation specification](IMPLEMENTATION_SPEC.txt), [the current interface handoff](../../frontend/docs/FRONTEND_HANDOFF.md), and later decisions in [DECISIONS.md](DECISIONS.md).
+Checkpoint: October 15, 2026. The owner resumed publication to Supabase, GitHub, and GitHub Pages after the plan review. Authority: [the implementation specification](IMPLEMENTATION_SPEC.txt), [the current interface handoff](../../frontend/docs/FRONTEND_HANDOFF.md), and later decisions in [DECISIONS.md](DECISIONS.md).
 
 **We are in continuation stage 1: identity and connected core records. It is not complete. The email/password release passed local verification and is published to GitHub/Pages. Supabase refused the first pending migration; hosted activation is blocked. Real-account onboarding and hosted desktop/mobile acceptance remain separate exit requirements.**
 
 The seven-stage sequence below remains the execution plan. The original specification's six milestones are requirement groups, not a second competing schedule. Later interface decisions and the owner's email/password-only instruction supersede earlier workflow and social-login prescriptions.
+
+## October 15 login design correction — stage 1
+
+- Inspected the published login page: a shared horizontal row placed the demo link beside the password field and repeated the sign-in heading.
+- Replaced the loading-screen layout with a dedicated responsive access page. The form has one heading, a clear invitation explanation, password visibility control, and a separate demo footer. Sign-in, invitation, recovery, and pending/error states use the same shell.
+- Added an explicit invitation-checking state and clear stale form state when the invitation changes. Email/password and server membership checks remain authoritative; no social provider or default password is added.
+- Local verification passed: 113 frontend tests, 38 backend tests, both TypeScript checks, and both production builds. The two added tests cover pending invitation validation and clearing stale credentials when an invitation changes. Automatic approval review initially rejected the GitHub tree upload on October 15 because it could not establish publication authorization. The owner then explicitly approved publishing the six changed files to public `salahassi/tenders` and GitHub Pages in the active conversation. Publication is now being resumed; success will be recorded only after the branch update and workflow complete. Hosted visual review of the new design remains pending. The existing published page was visually inspected before editing; local preview did not provide a usable browser session. Do not claim desktop/mobile visual acceptance of the new revision. Hosted migration listing still contains only the four baseline migrations. A read-only count confirmed zero Auth users, workspaces, and memberships on October 15.
+- Next action: complete the approved publication of these six changed files to public `salahassi/tenders` / `main` and GitHub Pages, then inspect the deployed login on desktop/mobile. Stage 1 remains open: the separate recorded Supabase migration refusal, first-Owner email selection/setup, email delivery, and signed-in hosted acceptance still require resolution. No denied mutation was retried through another channel.
 
 ## Verified state
 

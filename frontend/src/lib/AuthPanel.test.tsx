@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthPanel, authRedirect } from "./AuthPanel";
 import type { BackendClient } from "./backendClient";
@@ -88,6 +88,60 @@ describe("invitation-only email authentication", () => {
     expect(
       screen.queryByRole("button", { name: "Create account" }),
     ).not.toBeInTheDocument();
+    expect(f.auth.signUp).not.toHaveBeenCalled();
+  });
+  it("disables the form until the invitation check finishes", async () => {
+    const f = fixture();
+    let resolveCheck!: (value: {
+      email: string;
+      role: string;
+      expires_at: string;
+    }) => void;
+    f.api.checkInvitation.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveCheck = resolve;
+        }),
+    );
+    render(<AuthPanel client={f.client} invitationToken={"a".repeat(64)} />);
+    expect(screen.getByText("Checking your invitation…")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Sign in" }),
+    ).toBeDisabled();
+    expect(screen.getByLabelText("Email address")).toBeDisabled();
+    await act(async () =>
+      resolveCheck({
+        email: "invited@example.test",
+        role: "Reviewer",
+        expires_at: "2026-10-20T00:00:00Z",
+      }),
+    );
+    expect(
+      await screen.findByRole("button", { name: "Create account" }),
+    ).toBeEnabled();
+    expect(f.auth.signInWithPassword).not.toHaveBeenCalled();
+    expect(f.auth.signUp).not.toHaveBeenCalled();
+  });
+  it("clears the old invitation and password when a different invitation fails", async () => {
+    const f = fixture();
+    const { rerender } = render(
+      <AuthPanel client={f.client} invitationToken={"a".repeat(64)} />,
+    );
+    await screen.findByText("Accept your invitation");
+    await userEvent.type(
+      screen.getByLabelText("Password"),
+      "Synthetic-test-password",
+    );
+    f.api.checkInvitation.mockRejectedValueOnce(
+      new Error("Invitation expired"),
+    );
+    rerender(<AuthPanel client={f.client} invitationToken={"b".repeat(64)} />);
+    await screen.findByText("Invitation expired");
+    expect(
+      screen.queryByRole("button", { name: "Create account" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Email address")).toHaveValue("");
+    expect(screen.getByLabelText("Password")).toHaveValue("");
     expect(f.auth.signUp).not.toHaveBeenCalled();
   });
   it("keeps failed sign-in explicit and never invents a session", async () => {
