@@ -1,0 +1,19 @@
+SYNTHETIC RFP — FOR TENDERDESK TESTING ONLY
+Reference: DEMO-RFP-2026-001
+Buyer: Fictional Civic Services Lab
+
+Scope
+The supplier shall deliver a web-based request tracking application for a fictional public-service organization.
+The solution must support Arabic and English user-facing content.
+The supplier must provide role-based access for administrators, editors, and reviewers.
+The solution shall provide an audit record of status and ownership changes.
+The supplier must deliver a technical design, implementation plan, test evidence, and user guide.
+The supplier must define acceptance criteria and demonstrate the agreed workflows.
+
+Commercial instructions
+Provide a separate financial proposal in SAR with the pricing basis, assumptions, exclusions, and tax treatment.
+Provide the offer validity period and proposed payment milestones.
+
+Clarifications for the trial
+No real customer, employee, source portal, or procurement process is represented.
+The delivery schedule, hosting environment, staff rates, and acceptance approver must be confirmed before a proposal is approved.

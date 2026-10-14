@@ -1,0 +1,52 @@
+{
+  "name": "tender-desk",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:demo": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "format": "prettier --write src vite.config.ts index.html package.json tsconfig.json README.md AGENTS.md docs/FRONTEND_HANDOFF.md",
+    "format:check": "prettier --check src vite.config.ts index.html package.json tsconfig.json README.md AGENTS.md docs/FRONTEND_HANDOFF.md"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "1.3.1",
+    "@tailwindcss/vite": "4.3.3",
+    "decimal.js": "10.6.0",
+    "docx": "9.11.0",
+    "idb-keyval": "6.3.0",
+    "lucide-react": "1.57.0",
+    "mammoth": "1.13.0",
+    "papaparse": "5.7.0",
+    "pdfjs-dist": "6.4.299",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-router-dom": "7.18.4",
+    "tailwindcss": "4.3.3",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/node": "26.6.5",
+    "@types/papaparse": "5.5.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "fake-indexeddb": "6.2.5",
+    "jsdom": "30.1.2",
+    "prettier": "3.9.10",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.4"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
