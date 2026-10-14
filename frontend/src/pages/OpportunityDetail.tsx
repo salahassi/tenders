@@ -41,7 +41,7 @@ import "./workspace.css";
 import "./simplified.css";
 export default function OpportunityDetail() {
   const { id } = useParams();
-  const { state, update, notify } = useApp();
+  const { state, update, notify, mode } = useApp();
   const o = state.opportunities.find((item) => item.id === id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -70,19 +70,29 @@ export default function OpportunityDetail() {
   const knowledge = state.knowledgeDocuments.filter(
     (d) => d.enabled && d.status === "ready",
   );
-  function change(patch: Partial<Opportunity>, action: string) {
-    update(
-      (s) => ({
-        ...s,
-        opportunities: s.opportunities.map((x) =>
-          x.id === id ? { ...x, ...patch } : x,
-        ),
-      }),
-      action,
-      o!.title,
-    );
+  async function change(patch: Partial<Opportunity>, action: string) {
+    if (
+      !(await update(
+        (s) => ({
+          ...s,
+          opportunities: s.opportunities.map((x) =>
+            x.id === id ? { ...x, ...patch } : x,
+          ),
+        }),
+        action,
+        o!.title,
+      ))
+    ) {
+      return;
+    }
   }
   async function upload(files: File[]) {
+    if (mode === "CONNECTED_FREE") {
+      setError(
+        "Connected file upload is still being prepared. No file was saved.",
+      );
+      return;
+    }
     if (!editable || !files.length || busy) return;
     setBusy(true);
     setError("");
@@ -115,22 +125,27 @@ export default function OpportunityDetail() {
       }
     }
     if (added.length) {
-      update(
-        (s) => ({
-          ...s,
-          opportunities: s.opportunities.map((x) =>
-            x.id === id
-              ? {
-                  ...x,
-                  documents: [...x.documents, ...added],
-                  acquisition: "document_available",
-                }
-              : x,
-          ),
-        }),
-        "RFP files attached",
-        o!.title,
-      );
+      if (
+        !(await update(
+          (s) => ({
+            ...s,
+            opportunities: s.opportunities.map((x) =>
+              x.id === id
+                ? {
+                    ...x,
+                    documents: [...x.documents, ...added],
+                    acquisition: "document_available",
+                  }
+                : x,
+            ),
+          }),
+          "RFP files attached",
+          o!.title,
+        ))
+      ) {
+        setBusy(false);
+        return;
+      }
       notify(
         `${added.length} RFP file${added.length === 1 ? "" : "s"} saved locally. No AI request was made.`,
       );
@@ -250,7 +265,15 @@ export default function OpportunityDetail() {
                         size="sm"
                         aria-label={`Download ${d.name}`}
                         onClick={() =>
-                          void downloadLocalFile(d.id, d.name).catch((err) =>
+                          void (
+                            mode === "CONNECTED_FREE"
+                              ? Promise.reject(
+                                  new Error(
+                                    "Connected downloads are not available in this screen yet.",
+                                  ),
+                                )
+                              : downloadLocalFile(d.id, d.name)
+                          ).catch((err) =>
                             notify(
                               err instanceof Error
                                 ? err.message
@@ -266,25 +289,35 @@ export default function OpportunityDetail() {
                         aria-label={`Remove ${d.name}`}
                         disabled={!editable || busy}
                         onClick={async () => {
+                          if (mode === "CONNECTED_FREE") {
+                            notify(
+                              "Connected file removal is not available yet.",
+                            );
+                            return;
+                          }
                           try {
                             await removeLocalFile(d.id);
-                            update(
-                              (s) => ({
-                                ...s,
-                                opportunities: s.opportunities.map((x) =>
-                                  x.id === id
-                                    ? {
-                                        ...x,
-                                        documents: x.documents.filter(
-                                          (item) => item.id !== d.id,
-                                        ),
-                                      }
-                                    : x,
-                                ),
-                              }),
-                              "Removed RFP file",
-                              o.title,
-                            );
+                            if (
+                              !(await update(
+                                (s) => ({
+                                  ...s,
+                                  opportunities: s.opportunities.map((x) =>
+                                    x.id === id
+                                      ? {
+                                          ...x,
+                                          documents: x.documents.filter(
+                                            (item) => item.id !== d.id,
+                                          ),
+                                        }
+                                      : x,
+                                  ),
+                                }),
+                                "Removed RFP file",
+                                o.title,
+                              ))
+                            ) {
+                              return;
+                            }
                           } catch (err) {
                             notify(
                               err instanceof Error

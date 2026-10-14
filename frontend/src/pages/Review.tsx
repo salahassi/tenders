@@ -41,21 +41,25 @@ export default function Review() {
       .includes(search.toLowerCase()),
   );
   const edit = can(state.settings.role, "edit");
-  function decide(o: Opportunity, status: Opportunity["status"]) {
-    update(
-      (s) => ({
-        ...s,
-        opportunities: s.opportunities.map((x) =>
-          x.id === o.id ? { ...x, status } : x,
-        ),
-      }),
-      status === "shortlisted"
-        ? "Selected opportunity"
-        : status === "declined"
-          ? "Archived discovery"
-          : "Returned discovery to inbox",
-      o.title,
-    );
+  async function decide(o: Opportunity, status: Opportunity["status"]) {
+    if (
+      !(await update(
+        (s) => ({
+          ...s,
+          opportunities: s.opportunities.map((x) =>
+            x.id === o.id ? { ...x, status } : x,
+          ),
+        }),
+        status === "shortlisted"
+          ? "Selected opportunity"
+          : status === "declined"
+            ? "Archived discovery"
+            : "Returned discovery to inbox",
+        o.title,
+      ))
+    ) {
+      return;
+    }
     notify(
       status === "shortlisted"
         ? "Added to Opportunities. Open it there to upload the RFP."

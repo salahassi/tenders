@@ -10,7 +10,44 @@ import {
 } from "lucide-react";
 import { Badge, PageHeader } from "../components/ui";
 import "./admin.css";
+import { useApp } from "../lib/store";
 export default function Setup() {
+  const { mode, operations } = useApp();
+  const connected = mode === "CONNECTED_FREE";
+  if (connected)
+    return (
+      <>
+        <PageHeader
+          eyebrow="CONNECTION STATUS"
+          title="Connected workspace"
+          description="Sign-in and core records use your account."
+        />
+        <div className="panel admin-section stack">
+          <h2>Current service status</h2>
+          <p>Access: verified workspace membership.</p>
+          <p>Core records: read and saved through the server.</p>
+          <p>
+            Scheduler:{" "}
+            {operations?.schedulerEnabled ? "enabled" : "not activated"}.
+          </p>
+          <p>
+            Last worker heartbeat:{" "}
+            {operations?.lastHeartbeat || "none recorded"}.
+          </p>
+          <p>
+            Last successful collection:{" "}
+            {operations?.lastCollection || "none recorded"}.
+          </p>
+          <p>
+            File workflows, automated collection, AI analysis, and proposal
+            generation are still being completed.
+          </p>
+          <Link to="/settings" className="btn btn-primary">
+            Workspace settings and users
+          </Link>
+        </div>
+      </>
+    );
   return (
     <>
       <PageHeader
@@ -22,6 +59,11 @@ export default function Setup() {
         <Layers3 size={24} />
         <div>
           <strong>Demo mode is active.</strong>
+          <p>
+            <a href={`${window.location.pathname}?mode=connected`}>
+              Sign in to the connected workspace
+            </a>
+          </p>
           <p>
             Your edits stay in this browser. No live tenders are collected, no
             model is called, and no paid service is enabled.

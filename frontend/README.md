@@ -2,9 +2,11 @@
 
 A responsive workspace for reviewing incoming tender opportunities, uploading a request for proposal (RFP), and preparing one editable proposal file.
 
-The same repository includes a Supabase backend foundation under `../backend/supabase/`: migrations, RLS, authenticated commands, private file reservations, scoped review inputs, and a bounded dispatcher. The web application remains the browser-local demo until the authenticated repository adapter and actual project activation are completed. See [backend deployment](../backend/docs/DEPLOYMENT.md), [decisions](../backend/docs/DECISIONS.md), and [implementation checklist](../backend/docs/IMPLEMENTATION_CHECKLIST.md) for verified boundaries.
+Production builds open the connected Supabase application, using email/password and Owner-issued invitations. Connected core records persist through authenticated, revision-checked API commands. The first Owner must accept a restricted setup invitation before any workspace is available. The release still needs real-account/email/callback acceptance; see [Implementation Checklist](../backend/docs/IMPLEMENTATION_CHECKLIST.md) for exact evidence.
 
-This release is a **browser-local frontend demo**. It runs without accounts, application programming interface (API) keys, a database server, or model usage. Seeded organizations, tenders, rates, and claims are synthetic. Live collection and artificial intelligence (AI) drafting are not connected.
+The separate browser-local demo is available with `?mode=demo` and is the default during development. Its seeded organizations, tenders, rates, and claims are synthetic. The file, review, and export walkthrough below describes that demo. Connected file/proposal/review writes and restore are explicitly blocked pending later stages. Collection and AI drafting are inactive in both modes.
+
+Update the implementation checklist with every project change. See also [backend deployment](../backend/docs/DEPLOYMENT.md) and [decisions](../backend/docs/DECISIONS.md).
 
 ## Run locally
 

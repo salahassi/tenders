@@ -2,10 +2,10 @@
 
 The application source is separated into two folders in the same repository.
 
-| Folder | Contents | Runtime |
-| --- | --- | --- |
-| [frontend](frontend/) | Existing React interface, browser extraction/export, original assets, UI tests and Vite build | GitHub Pages |
-| [backend](backend/) | Supabase API and worker, SQL migrations, shared API schemas, backend tests and deployment documentation | Supabase Edge Functions and PostgreSQL |
+| Folder                | Contents                                                                                                | Runtime                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| [frontend](frontend/) | Existing React interface, browser extraction/export, original assets, UI tests and Vite build           | GitHub Pages                           |
+| [backend](backend/)   | Supabase API and worker, SQL migrations, shared API schemas, backend tests and deployment documentation | Supabase Edge Functions and PostgreSQL |
 
 Each folder has an independent `package.json` and `package-lock.json`. Root files contain repository documentation and configuration. GitHub Actions workflows remain in `.github/workflows/`.
 
@@ -28,4 +28,8 @@ Start the existing interface with `npm --prefix frontend run dev`. Its productio
 
 See the [frontend guide](frontend/README.md), [backend guide](backend/README.md), [deployment status](backend/docs/DEPLOYMENT.md), [implementation status and continuation plan](backend/docs/IMPLEMENTATION_CHECKLIST.md), and [original implementation specification](backend/docs/IMPLEMENTATION_SPEC.txt).
 
-The frontend remains the browser-local demo while authenticated repository integration is completed. Supabase's backend foundation is deployed; Owner bootstrap, connected UI commands, cron and AI-provider activation remain separate unfinished steps. Do not infer connected persistence from the folder change.
+Production builds use the email/password connected application; `?mode=demo` opens the separate browser-local demo. Connected core records and invitation administration are implemented in source; hosted activation is blocked by a declined Supabase migration. The first Owner must complete restricted setup before workspace access; files, collection, generation, and recovery remain separate unfinished stages. See the checklist for verified deployment and account-test results.
+
+## Required change record
+
+[Implementation Checklist](backend/docs/IMPLEMENTATION_CHECKLIST.md) is part of the project and must be updated with **every project change**, including fixes, features, tests, configuration, and deployments. Read it before work; record the affected stage, completed work, verification, deployment status, and remaining dependencies in the same change. Update it again with actual deployment evidence. `AGENTS.md` carries the same requirement for future agent work. Passing local tests alone does not complete a stage.

@@ -16,11 +16,14 @@ export default function Notifications() {
         n.id === id ? { ...n, read: true } : n,
       ),
     }));
-  const markAll = () => {
-    update((s) => ({
-      ...s,
-      notifications: s.notifications.map((n) => ({ ...n, read: true })),
-    }));
+  const markAll = async () => {
+    if (
+      !(await update((s) => ({
+        ...s,
+        notifications: s.notifications.map((n) => ({ ...n, read: true })),
+      })))
+    )
+      return;
     notify("All notifications marked as read.");
   };
   return (

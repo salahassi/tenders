@@ -53,7 +53,19 @@ const nav = [
   { to: "/knowledge", label: "Company knowledge", icon: BookOpen },
 ];
 export default function App() {
-  const { state, ready, storageError, toast, clearToast } = useApp();
+  const {
+    state,
+    ready,
+    storageError,
+    toast,
+    clearToast,
+    mode,
+    saving,
+    userLabel,
+    refresh,
+    signOut,
+  } = useApp();
+  const connected = mode === "CONNECTED_FREE";
   const location = useLocation();
   const navigate = useNavigate();
   const [menu, setMenu] = useState(false);
@@ -177,12 +189,19 @@ export default function App() {
           <div className="sidebar-bottom">
             <div className="trial-card">
               <div>
-                <span className="pulse-dot" /> Demo workspace
+                <span className="pulse-dot" />{" "}
+                {connected ? "Connected workspace" : "Demo workspace"}
               </div>
               <p>
-                A place to explore.
-                <br />
-                No API keys. No costs.
+                {connected ? (
+                  "Your records are saved to your authorized workspace."
+                ) : (
+                  <>
+                    A place to explore.
+                    <br />
+                    No API keys. No costs.
+                  </>
+                )}
               </p>
               <Link to="/setup">
                 View setup <ArrowUpRight size={14} />
@@ -194,8 +213,11 @@ export default function App() {
             >
               <span className="user-avatar">DU</span>
               <span>
-                <strong>Demo user</strong>
-                <small>{state.settings.role} · Local workspace</small>
+                <strong>{connected ? userLabel : "Demo user"}</strong>
+                <small>
+                  {state.settings.role} ·{" "}
+                  {connected ? "Connected workspace" : "Local workspace"}
+                </small>
               </span>
               <ChevronDown size={14} />
             </button>
@@ -253,14 +275,45 @@ export default function App() {
                 {unread > 0 && <i />}
               </Link>
               <div className="topbar-divider" />
-              <span className="avatar-small">DU</span>
+              {connected && (
+                <>
+                  <button
+                    className="btn btn-ghost"
+                    disabled={saving}
+                    onClick={() => void refresh?.()}
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => void signOut?.()}
+                  >
+                    Sign out
+                  </button>
+                </>
+              )}
+              <span className="avatar-small">{connected ? "U" : "DU"}</span>
             </div>
           </header>
           <div className="demo-bar">
             <Sparkles size={14} />
             <span>
-              <strong>You’re exploring the demo.</strong> Sample records are
-              synthetic. Your changes and uploaded files stay in this browser.
+              {connected ? (
+                <>
+                  <strong>
+                    {saving
+                      ? "Saving to your workspace…"
+                      : "Connected workspace."}
+                  </strong>{" "}
+                  Your records use your signed-in access.
+                </>
+              ) : (
+                <>
+                  <strong>You’re exploring the demo.</strong> Sample records are
+                  synthetic. Your changes and uploaded files stay in this
+                  browser.
+                </>
+              )}
             </span>
             <Link to="/setup">
               Setup details <ArrowUpRight size={13} />
@@ -268,14 +321,17 @@ export default function App() {
           </div>
           {offline && (
             <div className="notice notice-warning">
-              <WifiOff size={17} /> You are offline. The loaded demo remains
-              available; external links may not open.
+              <WifiOff size={17} />{" "}
+              {connected
+                ? "You are offline. Server changes cannot be saved until the connection returns."
+                : "You are offline. The loaded demo remains available; external links may not open."}
             </div>
           )}
           {storageError && (
             <div className="notice notice-error" role="alert">
-              {storageError} Keep this tab open and export a backup from
-              Settings.
+              {storageError}{" "}
+              {!connected &&
+                "Keep this tab open and export a backup from Settings."}
             </div>
           )}
           <main id="main" tabIndex={-1} className="main-content">
@@ -327,8 +383,9 @@ export default function App() {
               Tenderdesk <span>·</span> Your next opportunity, in focus.
             </span>
             <span>
-              <span className="status-dot" /> Browser-local demo <span>·</span>{" "}
-              Asia/Riyadh
+              <span className="status-dot" />{" "}
+              {connected ? "Connected workspace" : "Browser-local demo"}{" "}
+              <span>·</span> Asia/Riyadh
             </span>
           </footer>
         </div>

@@ -12,9 +12,12 @@ import { useApp, serializeBackup, parseBackup } from "../lib/store";
 import { Badge, Button, PageHeader, Modal, Field } from "../components/ui";
 import type { AppState, Role } from "../types";
 import "./admin.css";
+import MembersPanel from "../components/MembersPanel";
 
 export default function Settings() {
-  const { state, update, notify, reset, restore, storageError } = useApp();
+  const { state, update, notify, reset, restore, storageError, mode, saving } =
+    useApp();
+  const connected = mode === "CONNECTED_FREE";
   const owner = state.settings.role === "Owner";
   const toForm = (s: AppState) => ({
     companyName: s.settings.companyName,
@@ -41,15 +44,19 @@ export default function Settings() {
     state.settings.pollHours,
     state.settings.retentionDays,
   ]);
-  const setRole = (role: Role) => {
-    update(
-      (s) => ({ ...s, settings: { ...s.settings, role } }),
-      "Demo role changed",
-      role,
-    );
+  const setRole = async (role: Role) => {
+    if (
+      !(await update(
+        (s) => ({ ...s, settings: { ...s.settings, role } }),
+        "Demo role changed",
+        role,
+      ))
+    ) {
+      return;
+    }
     notify(`Previewing the ${role} role. This is not authentication.`);
   };
-  const save = () => {
+  const save = async () => {
     if (!owner) return;
     const next = {
       role: state.settings.role,
@@ -84,13 +91,21 @@ export default function Settings() {
       );
       return;
     }
-    update(
-      (s) => ({ ...s, settings: next }),
-      "Workspace preferences updated",
-      "settings",
-    );
+    if (
+      !(await update(
+        (s) => ({ ...s, settings: next }),
+        "Workspace preferences updated",
+        "settings",
+      ))
+    ) {
+      return;
+    }
     setError("");
-    notify("Preferences saved locally. Connected processing remains disabled.");
+    notify(
+      connected
+        ? "Workspace preferences saved to your account."
+        : "Preferences saved locally. Connected processing remains disabled.",
+    );
   };
   const download = () => {
     if (!owner) return;
@@ -155,8 +170,10 @@ export default function Settings() {
       />
       {storageError && (
         <div className="admin-error" role="alert">
-          Browser storage could not save your changes: {String(storageError)}.
-          Download a backup before closing this page.
+          {connected
+            ? "The server could not confirm this request: "
+            : "Browser storage could not save your changes: "}
+          {String(storageError)}
         </div>
       )}
       <div className="split-layout">
@@ -166,7 +183,9 @@ export default function Settings() {
               <div>
                 <h2>Workspace preferences</h2>
                 <p className="admin-help">
-                  These settings are saved locally for the free trial.
+                  {connected
+                    ? "Preferences are saved to your workspace. Processing stays inactive until its services are configured."
+                    : "These settings are saved locally for the free trial."}
                 </p>
               </div>
               <Badge tone="green">Free only</Badge>
@@ -273,7 +292,11 @@ export default function Settings() {
               </div>
             )}
             <div className="admin-form-actions">
-              <Button variant="primary" onClick={save} disabled={!owner}>
+              <Button
+                variant="primary"
+                onClick={save}
+                disabled={!owner || saving}
+              >
                 <Check size={15} /> Save preferences
               </Button>
             </div>
@@ -312,6 +335,12 @@ export default function Settings() {
           </section>
           <section className="panel admin-section">
             <h2>Backup & restore</h2>
+            {connected && (
+              <p className="notice">
+                A connected backup and restore workflow is pending. No server
+                records are replaced by the demo restore tool.
+              </p>
+            )}
             <p className="admin-help">
               Download your local records, edits, file details, and extracted
               text as JSON. Original attachments are stored separately in this
@@ -319,12 +348,16 @@ export default function Settings() {
               original files. Restore replaces this browser's current workspace.
             </p>
             <div className="row">
-              <Button variant="secondary" onClick={download} disabled={!owner}>
+              <Button
+                variant="secondary"
+                onClick={download}
+                disabled={!owner || connected}
+              >
                 <Download size={15} /> Download backup
               </Button>
               <Button
                 variant="secondary"
-                disabled={!owner}
+                disabled={!owner || connected}
                 onClick={() => {
                   setDialog("restore");
                   setConfirmation("");
@@ -341,12 +374,15 @@ export default function Settings() {
         <div className="stack">
           <section className="panel admin-section">
             <div className="admin-spread">
-              <h2>Preview a role</h2>
-              <Badge tone="amber">DEMO ONLY</Badge>
+              <h2>{connected ? "Workspace permissions" : "Preview a role"}</h2>
+              <Badge tone="amber">
+                {connected ? state.settings.role : "DEMO ONLY"}
+              </Badge>
             </div>
             <p className="admin-help">
-              Switch views to explore permission behavior. This is a local
-              demonstration, not a sign-in or security control.
+              {connected
+                ? "Your verified workspace membership determines permissions."
+                : "Switch views to explore permission behavior. This is a local demonstration, not a sign-in or security control."}
             </p>
             <div className="admin-role-control">
               {(["Owner", "Editor", "Reviewer"] as Role[]).map((role) => (
@@ -356,6 +392,7 @@ export default function Settings() {
                     state.settings.role === role ? "primary" : "secondary"
                   }
                   size="sm"
+                  disabled={connected}
                   onClick={() => setRole(role)}
                   aria-pressed={state.settings.role === role}
                 >
@@ -401,17 +438,22 @@ export default function Settings() {
           <section className="panel admin-section">
             <h2>Users & identity</h2>
             <p className="admin-help">
-              No accounts or invitations are created in this frontend demo.
-              Connected mode requires verified identities and server-enforced
-              roles.
+              {connected
+                ? "You are signed in. Workspace membership and permissions are checked by the server."
+                : "No accounts or invitations are created in this frontend demo. Connected mode requires verified identities and server-enforced roles."}
             </p>
             <div className="admin-muted-surface">
-              <span className="admin-mini-label">Current simulated role</span>
+              <span className="admin-mini-label">
+                {connected
+                  ? "Current workspace role"
+                  : "Current simulated role"}
+              </span>
               <p style={{ margin: "8px 0 0", fontWeight: 600 }}>
                 {state.settings.role}
               </p>
             </div>
           </section>
+          {connected && owner && <MembersPanel />}
           <section className="panel admin-section admin-danger">
             <h2>Reset demo workspace</h2>
             <p className="admin-help">
@@ -421,7 +463,7 @@ export default function Settings() {
             </p>
             <Button
               variant="danger"
-              disabled={!owner}
+              disabled={!owner || connected}
               onClick={() => {
                 setDialog("reset");
                 setConfirmation("");

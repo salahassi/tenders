@@ -36,4 +36,4 @@ export function deadlineLabel(value: string) {
       ? "Due today"
       : `${days} days left`;
 }
-export const uid = (prefix = "id") => `${prefix}-${crypto.randomUUID()}`;
+export const uid = (_prefix = "id") => crypto.randomUUID();

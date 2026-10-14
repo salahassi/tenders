@@ -37,7 +37,9 @@ export function environment(
       platformKey(get("SUPABASE_SECRET_KEYS")) ||
       get("SUPABASE_SERVICE_ROLE_KEY") ||
       "",
-    allowedOrigins: (get("APP_ALLOWED_ORIGINS") || "https://salahassi.github.io")
+    allowedOrigins: (
+      get("APP_ALLOWED_ORIGINS") || "https://salahassi.github.io"
+    )
       .split(",")
       .map((x) => x.trim())
       .filter(Boolean),
@@ -69,6 +71,47 @@ export class Backend {
       throw new AppError(401, "UNAUTHENTICATED", "Sign in to continue.");
     return data.user;
   }
+  async checkInvitation(token: string) {
+    const hash = Array.from(
+      new Uint8Array(
+        await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token)),
+      ),
+    )
+      .map((value) => value.toString(16).padStart(2, "0"))
+      .join("");
+    const { data, error } = await this.admin.rpc("inspect_invitation", {
+      invitation_hash: hash,
+    });
+    if (error) throw databaseError(error);
+    if (!data)
+      throw new AppError(
+        422,
+        "INVITATION_NOT_VALID",
+        "This invitation is expired, revoked, or unavailable. Ask the Owner for a new link.",
+      );
+    return data;
+  }
+  async acceptInvitation(token: string, invitationToken: string) {
+    const { data, error } = await this.user(token).rpc("accept_invitation", {
+      invitation_token: invitationToken,
+    });
+    if (error) throw databaseError(error);
+    return data;
+  }
+  async invitationCommand(
+    token: string,
+    operation: string,
+    input: unknown,
+    key: string,
+  ) {
+    const { data, error } = await this.user(token).rpc("invitation_command", {
+      operation,
+      input,
+      idempotency_key: key,
+    });
+    if (error) throw databaseError(error);
+    return data;
+  }
   async membership(token: string) {
     const { data, error } = await this.user(token).rpc("current_membership");
     if (error) throw databaseError(error);
@@ -90,16 +133,23 @@ export class Backend {
     limit: number,
     cursor?: string,
   ) {
+    const selection: string =
+      table === "workspace_invitations"
+        ? "id,workspace_id,email,role,status,expires_at,created_at,revision"
+        : "*";
     let q = this.user(token)
       .from(table)
-      .select("*")
+      .select(selection)
       .order("id", { ascending: true })
       .limit(limit + 1);
     for (const [key, value] of Object.entries(filters)) q = q.eq(key, value);
     if (cursor) q = q.gt("id", cursor);
     const { data, error } = await q;
     if (error) throw databaseError(error);
-    const rows = data || [];
+    const rows = (data || []) as unknown as Array<{
+      id: string;
+      [key: string]: unknown;
+    }>;
     return {
       records: rows.slice(0, limit),
       next_cursor: rows.length > limit ? rows[limit - 1].id : null,
@@ -124,6 +174,14 @@ export class Backend {
     const { data, error } = await this.user(token).rpc("app_command", {
       operation,
       input,
+      idempotency_key: key,
+    });
+    if (error) throw databaseError(error);
+    return data;
+  }
+  async batch(token: string, commands: unknown[], key: string) {
+    const { data, error } = await this.user(token).rpc("app_batch", {
+      commands,
       idempotency_key: key,
     });
     if (error) throw databaseError(error);

@@ -1,6 +1,22 @@
 import { z } from "zod";
 
 export const uuid = z.uuid();
+export const invitationTokenSchema = z
+  .object({ token: z.string().regex(/^[a-f0-9]{64}$/) })
+  .strict();
+export const invitationCreateSchema = z
+  .object({
+    email: z
+      .email()
+      .max(254)
+      .transform((value) => value.trim().toLowerCase()),
+    role: z.enum(["Owner", "Editor", "Reviewer"]),
+    token_hash: z.string().regex(/^[a-f0-9]{64}$/),
+  })
+  .strict();
+export const invitationRevokeSchema = z
+  .object({ expected_revision: z.number().int().positive() })
+  .strict();
 const text = z.string().max(100000);
 const title = z.string().trim().min(1).max(1000);
 const revision = z.number().int().positive();
@@ -44,11 +60,13 @@ const host = z
 export const commandSchemas = {
   "source.create": z
     .object({
+      client_id: uuid.optional(),
       name: z.string().trim().min(1).max(200),
       kind: z.enum(["rss", "json_feed", "link_directory", "manual"]),
       url: safeUrl.optional(),
       approved_hosts: z.array(host).max(10).default([]),
       policy_note: text.default(""),
+      tags: z.array(z.string().max(200)).max(100).default([]),
       poll_interval_hours: z.number().int().min(1).max(168).default(6),
     })
     .strict()
@@ -66,6 +84,7 @@ export const commandSchemas = {
     .strict(),
   "opportunity.create": z
     .object({
+      client_id: uuid.optional(),
       source_id: uuid,
       title,
       description: text.default(""),
@@ -76,6 +95,11 @@ export const commandSchemas = {
       deadline_raw: z.string().max(1000).optional(),
       deadline_at: z.iso.datetime({ offset: true }).optional(),
       deadline_timezone: z.string().max(100).optional(),
+      category: z.string().max(200).default(""),
+      tags: z.array(z.string().max(200)).max(100).default([]),
+      decision: z
+        .enum(["undecided", "shortlisted", "deferred", "declined"])
+        .default("undecided"),
     })
     .strict()
     .refine(
@@ -97,6 +121,7 @@ export const commandSchemas = {
     .strict(),
   "knowledge.save": z
     .object({
+      client_id: uuid.optional(),
       id: uuid.optional(),
       category: z.enum([
         "capability",
@@ -111,6 +136,7 @@ export const commandSchemas = {
       title,
       content: text.default(""),
       enabled: z.boolean().default(true),
+      evidence: text.default(""),
       expected_revision: revision.optional(),
     })
     .strict()
@@ -199,6 +225,43 @@ export const commandSchemas = {
       active: z.boolean(),
       reason: text.min(1),
       expected_revision: revision,
+    })
+    .strict(),
+  "workspace.settings": z
+    .object({
+      expected_revision: revision,
+      name: z.string().trim().min(1).max(120),
+      daily_call_limit: z.number().int().min(1).max(50),
+      input_token_limit: z.number().int().min(1000).max(250000),
+      output_token_limit: z.number().int().min(1000).max(50000),
+      poll_hours: z.number().int().min(6).max(168),
+      retention_days: z.number().int().min(7).max(365),
+    })
+    .strict(),
+  "opportunity.update": z
+    .object({
+      id: uuid,
+      expected_revision: revision,
+      title,
+      description: text,
+      buyer: z.string().max(1000),
+      reference: z.string().max(1000),
+      canonical_url: safeUrl.optional(),
+      language: z.enum(["en", "ar"]),
+      category: z.string().max(200),
+      tags: z.array(z.string().max(200)).max(100),
+      saved: z.boolean(),
+      deadline_raw: z.string().max(1000).optional(),
+      deadline_at: z.iso.datetime({ offset: true }).optional(),
+      deadline_timezone: z.string().max(100).optional(),
+    })
+    .strict(),
+  "job.action": z
+    .object({
+      id: uuid,
+      expected_revision: revision,
+      action: z.enum(["cancel", "retry"]),
+      reason: text.min(1),
     })
     .strict(),
 } as const;

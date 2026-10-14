@@ -2336,3 +2336,20 @@ ol {
 .trial-card p {
   line-height: 1.8;
 }
+
+.auth-panel {
+  width: min(420px, 100%);
+  text-align: left;
+  margin: 16px auto;
+}
+.auth-panel h2 {
+  text-align: center;
+  margin-bottom: 18px;
+}
+.auth-panel .field {
+  display: grid;
+  gap: 6px;
+}
+.auth-panel .row {
+  flex-wrap: wrap;
+}

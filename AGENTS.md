@@ -3,6 +3,8 @@
 Tenderdesk retains its browser-local demo while the same repository adds a Supabase backend. Preserve truthful mode labeling and zero external model/payment/portal calls until explicitly activated. Do not implement simulated connected success.
 
 - Application code is organized into `frontend/` and `backend/` at the owner's explicit request. Keep frontend assets and build configuration in `frontend/`, and Supabase functions, migrations, contracts and backend tests in `backend/`.
+- For every project change, read and update `backend/docs/IMPLEMENTATION_CHECKLIST.md` in the same change. Record the affected stage, implementation status, test evidence, deployment evidence, and remaining work. Code, tests, deployment, and hosted acceptance are separate statuses; never mark a stage complete without its exit evidence. Reconcile the checklist after deployment, including the source revision and workflow result.
+- Authentication is email/password with Owner-issued invitations only; do not add social providers.
 - Read `frontend/docs/FRONTEND_HANDOFF.md` before connecting services. Full future requirements are in `backend/docs/IMPLEMENTATION_SPEC.txt`.
 - Backend schema authority is `backend/supabase/migrations`; shared API validation is `backend/supabase/functions/_shared/contracts.ts`. Later user workflow decisions recorded in `backend/docs/DECISIONS.md` supersede earlier UI prescriptions.
 - No browser role or supplied workspace ID grants server authority. Verify Auth and membership, preserve RLS, expected revisions and transactional audit/idempotency.

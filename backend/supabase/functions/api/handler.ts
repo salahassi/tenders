@@ -1,12 +1,16 @@
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
 import {
   commandSchemas,
+  invitationTokenSchema,
+  invitationCreateSchema,
+  invitationRevokeSchema,
   completeUploadSchema,
   uuid,
   type CommandName,
 } from "../_shared/contracts.ts";
 import { AppError, corsHeaders, readJson } from "../_shared/http.ts";
 import { validateOriginal } from "../_shared/originals.ts";
+import { z } from "zod";
 
 const readTables: Record<string, string> = {
   sources: "sources",
@@ -16,6 +20,14 @@ const readTables: Record<string, string> = {
   notifications: "notifications",
   "audit-events": "audit_events",
   proposals: "proposals",
+  documents: "documents",
+  "proposal-versions": "proposal_versions",
+  "proposal-sections": "proposal_sections",
+  questions: "questions",
+  "review-inputs": "review_inputs",
+  "regeneration-requests": "regeneration_requests",
+  invitations: "workspace_invitations",
+  members: "workspace_members",
 };
 const routeCommands: Array<{
   method: string;
@@ -24,6 +36,19 @@ const routeCommands: Array<{
   idField?: string;
 }> = [
   { method: "POST", pattern: /^\/v1\/sources$/, command: "source.create" },
+  { method: "PUT", pattern: /^\/v1\/settings$/, command: "workspace.settings" },
+  {
+    method: "PATCH",
+    pattern: /^\/v1\/opportunities\/([^/]+)$/,
+    command: "opportunity.update",
+    idField: "id",
+  },
+  {
+    method: "POST",
+    pattern: /^\/v1\/jobs\/([^/]+)\/actions$/,
+    command: "job.action",
+    idField: "id",
+  },
   {
     method: "POST",
     pattern: /^\/v1\/sources\/([^/]+)\/actions$/,
@@ -111,6 +136,12 @@ export function createApiHandler(
         path = url.pathname.replace(/^\/(?:functions\/v1\/)?api(?=\/)/, "");
       if (path === "/v1/health" && request.method === "GET")
         return respond({ status: "available" });
+      if (path === "/v1/invitations/check" && request.method === "POST") {
+        const input = invitationTokenSchema.parse(
+          await readJson(request, 2048),
+        );
+        return respond(await factory().checkInvitation(input.token));
+      }
       const token = request.headers
         .get("authorization")
         ?.match(/^Bearer (\S+)$/i)?.[1];
@@ -118,11 +149,22 @@ export function createApiHandler(
         throw new AppError(401, "UNAUTHENTICATED", "Sign in to continue.");
       const backend = factory();
       const user = await backend.authenticate(token);
+      if (path === "/v1/invitations/accept" && request.method === "POST") {
+        const input = invitationTokenSchema.parse(
+          await readJson(request, 2048),
+        );
+        return respond(await backend.acceptInvitation(token, input.token));
+      }
       const membership = await backend.membership(token);
       if (path === "/v1/bootstrap" && request.method === "GET")
         return respond({
           mode: "CONNECTED_FREE",
           membership,
+          workspace: await backend.one(
+            token,
+            "workspaces",
+            membership.workspace_id,
+          ),
           operations: await backend.operations(token),
           model: { enabled: false, blocker: "MODEL_NOT_CONFIGURED" },
         });
@@ -194,6 +236,57 @@ export function createApiHandler(
           400,
           "IDEMPOTENCY_KEY_REQUIRED",
           "Supply an Idempotency-Key of at most 200 characters.",
+        );
+      if (request.method === "POST" && path === "/v1/commands") {
+        const batch = z
+          .object({
+            commands: z
+              .array(
+                z
+                  .object({
+                    operation: z.enum(
+                      Object.keys(commandSchemas) as [
+                        CommandName,
+                        ...CommandName[],
+                      ],
+                    ),
+                    input: z.unknown(),
+                  })
+                  .strict(),
+              )
+              .min(1)
+              .max(100),
+          })
+          .strict()
+          .parse(await readJson(request));
+        const commands = batch.commands.map(({ operation, input }) => ({
+          operation,
+          input: commandSchemas[operation].parse(input),
+        }));
+        return respond(await backend.batch(token, commands, key));
+      }
+      if (path === "/v1/invitations" && request.method === "POST")
+        return respond(
+          await backend.invitationCommand(
+            token,
+            "invitation.create",
+            invitationCreateSchema.parse(await readJson(request, 4096)),
+            key,
+          ),
+          201,
+        );
+      const revokeInvite = path.match(/^\/v1\/invitations\/([^/]+)\/revoke$/);
+      if (revokeInvite && request.method === "POST")
+        return respond(
+          await backend.invitationCommand(
+            token,
+            "invitation.revoke",
+            {
+              id: uuid.parse(revokeInvite[1]),
+              ...invitationRevokeSchema.parse(await readJson(request, 2048)),
+            },
+            key,
+          ),
         );
       if (request.method === "POST" && complete) {
         if (membership.role === "Reviewer")

@@ -17,7 +17,7 @@ import { EmptyState, Metric, PageHeader } from "../components/ui";
 import OpportunityTable from "../components/OpportunityTable";
 
 export default function Dashboard() {
-  const { state } = useApp();
+  const { state, mode } = useApp();
   const inbox = state.opportunities.filter(
     (o) => o.status === "new" || o.status === "deferred",
   );
@@ -245,11 +245,16 @@ export default function Dashboard() {
           </section>
           <section className="source-health">
             <div className="row">
-              <strong>Frontend demo</strong>
+              <strong>
+                {mode === "CONNECTED_FREE"
+                  ? "Connected workspace"
+                  : "Frontend demo"}
+              </strong>
             </div>
             <p>
-              Editing, uploads, and Word export work in this browser. Live
-              source collection and AI drafting require a backend connection.
+              {mode === "CONNECTED_FREE"
+                ? "Core records are saved to your account. File workflows, scheduled collection, and AI drafting remain pending."
+                : "Editing, uploads, and Word export work in this browser. Live source collection and AI drafting require a backend connection."}
             </p>
             <Link to="/setup">
               Connection details <ArrowUpRight size={14} />

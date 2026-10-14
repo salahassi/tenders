@@ -184,8 +184,8 @@ function ProposalReviewPage({
   proposal: Proposal;
   opportunity: Opportunity;
 }) {
-  const { state, update, notify } = useApp();
-  const canEdit = state.settings.role !== "Reviewer";
+  const { state, update, notify, mode } = useApp();
+  const canEdit = state.settings.role !== "Reviewer" && mode === "DEMO";
   const storageKey = `proposal-review-${proposal.id}`;
   const currentSignature = getReviewSourceSignature(
     state,
@@ -356,7 +356,7 @@ function ProposalReviewPage({
       };
     });
   }
-  function saveReview(regenerate = false): Proposal {
+  async function saveReview(regenerate = false): Promise<Proposal | null> {
     if (!canEdit || uploading) return proposal;
     const savedAt = new Date().toISOString();
     const sourceSignature = getReviewSourceSignature(
@@ -401,18 +401,22 @@ function ProposalReviewPage({
           }
         : {}),
     };
-    update(
-      (current) => ({
-        ...current,
-        proposals: current.proposals.map((item) =>
-          item.id === proposal.id ? { ...item, review } : item,
-        ),
-      }),
-      regenerate
-        ? "Saved regeneration request awaiting AI connection"
-        : "Saved proposal review inputs",
-      proposal.id,
-    );
+    if (
+      !(await update(
+        (current) => ({
+          ...current,
+          proposals: current.proposals.map((item) =>
+            item.id === proposal.id ? { ...item, review } : item,
+          ),
+        }),
+        regenerate
+          ? "Saved regeneration request awaiting AI connection"
+          : "Saved proposal review inputs",
+        proposal.id,
+      ))
+    ) {
+      return null;
+    }
     setDraftContext({ baseVersion: proposal.version, sourceSignature });
     setLegacyCache(false);
     if (!regenerate)
@@ -874,8 +878,8 @@ function ProposalReviewPage({
           <Button
             variant="primary"
             disabled={!canEdit || uploading || !readableRfp || stale}
-            onClick={() => {
-              saveReview(true);
+            onClick={async () => {
+              if (!(await saveReview(true))) return;
               setRegenerateOpen(true);
             }}
           >

@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { deployment } from "./deployment";
 
 export class BackendRequestError extends Error {
   constructor(
@@ -14,7 +15,7 @@ export class BackendClient {
   readonly auth: SupabaseClient;
   constructor(
     readonly projectUrl: string,
-    publishableKey: string,
+    private readonly publishableKey: string,
   ) {
     const url = new URL(projectUrl);
     if (
@@ -35,12 +36,25 @@ export class BackendClient {
       },
     });
   }
-  async signInWithGitHub(redirectTo: string) {
-    const { error } = await this.auth.auth.signInWithOAuth({
-      provider: "github",
-      options: { redirectTo },
-    });
-    if (error) throw error;
+  async checkInvitation(
+    token: string,
+  ): Promise<{ email: string; role: string; expires_at: string }> {
+    const response = await fetch(
+      `${this.projectUrl}/functions/v1/api/v1/invitations/check`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      },
+    );
+    const payload = await response.json();
+    if (!response.ok)
+      throw new BackendRequestError(
+        payload.error?.code || "INVITATION_NOT_VALID",
+        payload.error?.message || "This invitation is unavailable.",
+        response.status,
+      );
+    return payload.data;
   }
   async request<T>(
     path: string,
@@ -51,7 +65,7 @@ export class BackendClient {
       signal?: AbortSignal;
     } = {},
   ): Promise<{ data: T; meta: { request_id: string; revision?: number } }> {
-    if (!/^\/v1\/[a-z0-9/_?-]+$/i.test(path))
+    if (!/^\/v1\/[a-z0-9/_-]+(?:\?[a-z0-9_=&-]*)?$/i.test(path))
       throw new Error("Use an application API path.");
     const {
       data: { session },
@@ -112,9 +126,19 @@ export class BackendClient {
 
 // Configuration alone never migrates demo records or grants a browser role.
 export function configuredBackend(): BackendClient | null {
-  if (import.meta.env.VITE_APP_MODE !== "CONNECTED_FREE") return null;
-  const url = import.meta.env.VITE_SUPABASE_URL,
-    key = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+  const mode =
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("mode")
+      : null;
+  if (mode === "demo") return null;
+  const configuredMode =
+    import.meta.env.VITE_APP_MODE ||
+    (import.meta.env.PROD ? "CONNECTED_FREE" : "DEMO");
+  if (configuredMode !== "CONNECTED_FREE" && mode !== "connected") return null;
+  const url = import.meta.env.VITE_SUPABASE_URL || deployment.projectUrl,
+    key =
+      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
+      deployment.publishableKey;
   if (!url || !key)
     throw new BackendRequestError(
       "SETUP_REQUIRED",

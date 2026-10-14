@@ -2,7 +2,11 @@
 
 ## Current delivery boundary
 
-Tenderdesk is a runnable, browser-local frontend with persistent records, file uploads, local text extraction, editable proposals, and Word export. It has no connected AI provider, discovery crawler, authentication service, scheduler, or procurement portal. AI controls report that dependency explicitly; they do not simulate generated content or connected success.
+Production builds now use a connected Supabase repository for email/password authentication, invitation-only workspace membership, and core records. The first Owner requires a restricted setup invitation tied to a confirmed email. Owner-issued invitations are limited to five active users. Saves wait for the server; errors keep entered values, and failure never silently falls back to local persistence.
+
+The separate browser-local demo remains available with `?mode=demo` (and by default in development). File upload/extraction, proposal editing, review inputs, and Word export described below are demo behavior unless explicitly identified as connected. Connected file/proposal/review mutations, submission, removal, and restore remain blocked until their stages are implemented. No connected AI provider, crawler, scheduler, or procurement portal executes.
+
+Use [the implementation checklist](../../backend/docs/IMPLEMENTATION_CHECKLIST.md) for deployment evidence and remaining work, and update it with every project change.
 
 The current user journey is **Review fit → select opportunity → upload buyer’s RFP → generate its full linked proposal → review the file and identified issues → supply missing inputs or request changes → regenerate a new version**. Generation and regeneration remain disconnected boundaries. The UI no longer asks the user to create an outline, add sections, or fill an optional pricing form. It preserves current content separately from pending review inputs.
 
@@ -69,18 +73,18 @@ The DOCX has a native dynamic table of contents (TOC), heading styles, page-numb
 
 ## Backend integration points
 
-| Frontend boundary                                | Required connected work                                                                                                                    |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Frontend boundary                                         | Required connected work                                                                                                                    |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | `frontend/src/lib/store.tsx` local commands and IndexedDB | Authenticated commands, durable storage, transactional writes, conflict handling, and server-enforced authorization                        |
-| Settings role simulation                         | Real identities and workspace membership; remove the role switch in connected mode                                                         |
-| Source configuration                             | Permitted website/feed adapters, safe URL fetching, deduplication, schedules, and actual collection results delivered to Review inbox      |
-| Original files and extracted text                | Private object storage, authorization, document/extraction versions, secure processing, retention, and recovery                            |
-| Enabled company references                       | Authorized retrieval of the selected files and relevant notes, with traceable document references                                          |
-| Agent input JSON                                 | A validated model/agent adapter with bounded context, clear omissions, prompt-injection defenses, and accurate job status                  |
-| Generate/regenerate AI controls                  | Full document generation, grounded review findings, pricing dependencies, change application, versioned artifacts, and clear failures      |
-| Proposal review and Word export                  | Durable document versions, original DOCX plus a faithful rendered preview, change summaries, and explicit handling of unresolved questions |
-| Local activity and example jobs                  | Persistent job execution, idempotency, leases, retry limits, and actual run history                                                        |
-| Local JSON backup                                | A complete operational recovery process covering both metadata and original files                                                          |
+| Settings role simulation                                  | Real identities and workspace membership; remove the role switch in connected mode                                                         |
+| Source configuration                                      | Permitted website/feed adapters, safe URL fetching, deduplication, schedules, and actual collection results delivered to Review inbox      |
+| Original files and extracted text                         | Private object storage, authorization, document/extraction versions, secure processing, retention, and recovery                            |
+| Enabled company references                                | Authorized retrieval of the selected files and relevant notes, with traceable document references                                          |
+| Agent input JSON                                          | A validated model/agent adapter with bounded context, clear omissions, prompt-injection defenses, and accurate job status                  |
+| Generate/regenerate AI controls                           | Full document generation, grounded review findings, pricing dependencies, change application, versioned artifacts, and clear failures      |
+| Proposal review and Word export                           | Durable document versions, original DOCX plus a faithful rendered preview, change summaries, and explicit handling of unresolved questions |
+| Local activity and example jobs                           | Persistent job execution, idempotency, leases, retry limits, and actual run history                                                        |
+| Local JSON backup                                         | A complete operational recovery process covering both metadata and original files                                                          |
 
 Do not trust browser-provided roles, document classifications, prices, or model requests as server authority. No live purchase, payment, notification to a third party, or external bid submission is implemented. Recording Submitted is a local user decision.
 

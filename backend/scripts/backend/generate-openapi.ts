@@ -2,11 +2,17 @@ import { writeFile } from "node:fs/promises";
 import { z } from "zod";
 import {
   commandSchemas,
+  invitationCreateSchema,
+  invitationRevokeSchema,
+  invitationTokenSchema,
   completeUploadSchema,
   type CommandName,
 } from "../../supabase/functions/_shared/contracts.ts";
 const commands: Array<[string, string, CommandName]> = [
   ["/v1/sources", "post", "source.create"],
+  ["/v1/settings", "put", "workspace.settings"],
+  ["/v1/opportunities/{id}", "patch", "opportunity.update"],
+  ["/v1/jobs/{id}/actions", "post", "job.action"],
   ["/v1/sources/{id}/actions", "post", "source.action"],
   ["/v1/opportunities", "post", "opportunity.create"],
   ["/v1/opportunities/{id}/decision", "post", "opportunity.decision"],
@@ -82,6 +88,14 @@ for (const table of [
   "notifications",
   "audit-events",
   "proposals",
+  "documents",
+  "proposal-versions",
+  "proposal-sections",
+  "questions",
+  "review-inputs",
+  "regeneration-requests",
+  "invitations",
+  "members",
 ]) {
   for (const detail of [false, true]) {
     const path = `/v1/${table}${detail ? "/{id}" : ""}`;
@@ -117,6 +131,98 @@ for (const table of [
       responses,
     };
   }
+}
+paths["/v1/commands"] = {
+  post: {
+    security: [{ userJWT: [] }],
+    description:
+      "Atomically apply up to 100 validated commands. All writes and audit records roll back on failure.",
+    parameters: [
+      {
+        in: "header",
+        name: "Idempotency-Key",
+        required: true,
+        schema: { type: "string", minLength: 1, maxLength: 200 },
+      },
+    ],
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            required: ["commands"],
+            properties: {
+              commands: {
+                type: "array",
+                minItems: 1,
+                maxItems: 100,
+                items: {
+                  oneOf: Object.entries(commandSchemas).map(
+                    ([operation, schema]) => ({
+                      type: "object",
+                      additionalProperties: false,
+                      required: ["operation", "input"],
+                      properties: {
+                        operation: { const: operation },
+                        input: z.toJSONSchema(schema, {
+                          unrepresentable: "any",
+                        }),
+                      },
+                    }),
+                  ),
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    responses,
+  },
+};
+for (const [path, schema, publicRoute] of [
+  ["/v1/invitations", invitationCreateSchema, false],
+  ["/v1/invitations/{id}/revoke", invitationRevokeSchema, false],
+  ["/v1/invitations/check", invitationTokenSchema, true],
+  ["/v1/invitations/accept", invitationTokenSchema, false],
+] as const) {
+  paths[path] ||= {};
+  paths[path].post = {
+    security: publicRoute ? [] : [{ userJWT: [] }],
+    parameters: [
+      ...(path.includes("{id}")
+        ? [
+            {
+              in: "path",
+              name: "id",
+              required: true,
+              schema: { type: "string", format: "uuid" },
+            },
+          ]
+        : []),
+      ...(!path.endsWith("check") && !path.endsWith("accept")
+        ? [
+            {
+              in: "header",
+              name: "Idempotency-Key",
+              required: true,
+              schema: { type: "string" },
+            },
+          ]
+        : []),
+    ],
+    requestBody: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: z.toJSONSchema(schema, { unrepresentable: "any" }),
+        },
+      },
+    },
+    responses,
+  };
 }
 paths["/v1/health"] = {
   get: {

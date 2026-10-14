@@ -47,7 +47,7 @@ const stages: OpportunityStage[] = [
 ];
 
 export default function Opportunities() {
-  const { state, update, notify } = useApp();
+  const { state, update, notify, mode } = useApp();
   const [params, setParams] = useSearchParams();
   const initialStage = params.get("stage") as OpportunityStage;
   const [tab, setTab] = useState<OpportunityStage | "all">(
@@ -120,7 +120,7 @@ export default function Opportunities() {
       setParams(params, { replace: true });
     }
   };
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!editable) return;
@@ -184,11 +184,15 @@ export default function Opportunities() {
       language: "en",
       sourceUrl: form.url.trim(),
     };
-    update(
-      (s) => ({ ...s, opportunities: [opportunity, ...s.opportunities] }),
-      "Opportunity added",
-      opportunity.title,
-    );
+    if (
+      !(await update(
+        (s) => ({ ...s, opportunities: [opportunity, ...s.opportunities] }),
+        "Opportunity added",
+        opportunity.title,
+      ))
+    ) {
+      return;
+    }
     notify("Opportunity added. Open it to upload the RFP.");
     setForm({
       title: "",
@@ -367,8 +371,9 @@ export default function Opportunities() {
       <Modal open={add} onClose={closeAdd} title="Add an opportunity">
         <form onSubmit={submit} className="stack">
           <div className="notice">
-            Use a public, sanitized, or synthetic example. This demo saves data
-            only in this browser.
+            {mode === "CONNECTED_FREE"
+              ? "This opportunity will be saved to your workspace after the server confirms it."
+              : "Use a public, sanitized, or synthetic example. This demo saves data only in this browser."}
           </div>
           <Field label="Opportunity title">
             <input
@@ -577,18 +582,22 @@ export default function Opportunities() {
               disabled={
                 !rows.some((r) => !r.error && !r.duplicate) || !editable
               }
-              onClick={() => {
+              onClick={async () => {
                 const good = rows
                   .filter((r) => !r.error && !r.duplicate)
                   .map(fromImportRow);
-                update(
-                  (s) => ({
-                    ...s,
-                    opportunities: [...good, ...s.opportunities],
-                  }),
-                  "CSV imported",
-                  `${good.length} opportunities`,
-                );
+                if (
+                  !(await update(
+                    (s) => ({
+                      ...s,
+                      opportunities: [...good, ...s.opportunities],
+                    }),
+                    "CSV imported",
+                    `${good.length} opportunities`,
+                  ))
+                ) {
+                  return;
+                }
                 notify(`${good.length} discoveries added to the Review inbox`);
                 setImportOpen(false);
                 setRows([]);

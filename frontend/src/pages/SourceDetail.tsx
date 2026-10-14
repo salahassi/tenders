@@ -5,7 +5,7 @@ import { Badge, Button, EmptyState, PageHeader } from "../components/ui";
 import "./admin.css";
 export default function SourceDetail() {
   const { id } = useParams();
-  const { state, update, notify } = useApp();
+  const { state, update, notify, mode } = useApp();
   const source = state.sources.find((s) => s.id === id);
   if (!source)
     return (
@@ -38,7 +38,7 @@ export default function SourceDetail() {
   ).length;
   const audit = state.audit.filter((a) => a.target === id).slice(0, 8);
   const jobs = state.jobs.filter((j) => j.target === source.name);
-  const setStatus = (status: typeof source.status) => {
+  const setStatus = async (status: typeof source.status) => {
     if (!owner || isManual) return;
     if (
       status === "approved" &&
@@ -52,20 +52,24 @@ export default function SourceDetail() {
       );
       return;
     }
-    update(
-      (s) => ({
-        ...s,
-        sources: s.sources.map((x) =>
-          x.id === id ? { ...x, status, nextRun: null } : x,
-        ),
-      }),
-      `Source ${status}`,
-      source.id,
-    );
+    if (
+      !(await update(
+        (s) => ({
+          ...s,
+          sources: s.sources.map((x) =>
+            x.id === id ? { ...x, status, nextRun: null } : x,
+          ),
+        }),
+        `Source ${status}`,
+        source.id,
+      ))
+    ) {
+      return;
+    }
     notify(
       status === "approved"
         ? "Source enabled in your saved configuration. Live collection is not connected."
-        : `Source ${status} locally.`,
+        : `Source ${status}${mode === "DEMO" ? " locally" : ""}.`,
     );
   };
   const safeUrl = source.url.startsWith("https://");

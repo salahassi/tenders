@@ -65,7 +65,7 @@ const messageFor = (error: unknown) =>
   error instanceof Error ? error.message : "The file could not be processed.";
 
 export default function Knowledge() {
-  const { state, update, notify, ready } = useApp();
+  const { state, update, notify, ready, mode } = useApp();
   const [active, setActive] = useState("all");
   const [search, setSearch] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -104,6 +104,7 @@ export default function Knowledge() {
   ).length;
 
   useEffect(() => {
+    if (mode === "CONNECTED_FREE") return;
     let cancelled = false;
     void Promise.all(
       documents.map(async (item) => {
@@ -119,9 +120,15 @@ export default function Knowledge() {
     return () => {
       cancelled = true;
     };
-  }, [documents]);
+  }, [documents, mode]);
 
   const launchUpload = () => {
+    if (mode === "CONNECTED_FREE") {
+      notify(
+        "Connected file upload is still being prepared. Company notes can be saved now.",
+      );
+      return;
+    }
     setSelectedFiles([]);
     setErrors([]);
     setUploadMessage("");
@@ -189,6 +196,10 @@ export default function Knowledge() {
     else setSelectedFiles([]);
   };
   const remove = async () => {
+    if (mode === "CONNECTED_FREE") {
+      notify("Connected file removal is not available yet.");
+      return;
+    }
     if (!removing || !canEdit || removeBusy) return;
     setRemoveBusy(true);
     try {
@@ -212,6 +223,10 @@ export default function Knowledge() {
     }
   };
   const download = async (item: KnowledgeDocument) => {
+    if (mode === "CONNECTED_FREE") {
+      notify("Connected downloads are not available in this screen yet.");
+      return;
+    }
     try {
       await downloadLocalFile(item.id, item.name);
     } catch (error) {
@@ -233,7 +248,7 @@ export default function Knowledge() {
     setNoteError("");
     setNoteOpen(true);
   };
-  const saveNote = () => {
+  const saveNote = async () => {
     if (!canEdit) return;
     if (!editing && state.knowledge.length >= MAX_KNOWLEDGE_NOTES) {
       setNoteError(
@@ -288,9 +303,9 @@ export default function Knowledge() {
         <div>
           <h2>Give every proposal the right background.</h2>
           <p>
-            Choose the references to include in proposal preparation. Originals
-            and readable text are saved in this browser. The AI agent is not
-            connected yet.
+            {mode === "CONNECTED_FREE"
+              ? "Company notes are saved to your account. Connected file uploads and AI processing are still being prepared."
+              : "Choose the references to include in proposal preparation. Originals and readable text are saved in this browser. The AI agent is not connected yet."}
           </p>
           <div className="knowledge-summary">
             <span>

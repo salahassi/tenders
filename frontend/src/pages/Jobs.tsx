@@ -19,7 +19,7 @@ import {
 import type { Job } from "../types";
 import "./admin.css";
 export default function Jobs() {
-  const { state, update, notify } = useApp();
+  const { state, update, notify, mode } = useApp();
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const canEdit = state.settings.role !== "Reviewer";
@@ -28,50 +28,64 @@ export default function Jobs() {
       (filter === "all" || j.status === filter) &&
       `${j.target} ${j.type}`.toLowerCase().includes(search.toLowerCase()),
   );
-  const cancel = (job: Job) => {
+  const cancel = async (job: Job) => {
     if (!canEdit) return;
-    update(
-      (s) => ({
-        ...s,
-        jobs: s.jobs.map((j) =>
-          j.id === job.id
-            ? {
-                ...j,
-                status: "cancelled",
-                message:
-                  "Cancelled in this local demo. No connected worker was contacted.",
-              }
-            : j,
-        ),
-      }),
-      "Job cancelled",
-      job.id,
-    );
-    notify("Local job cancelled.");
-  };
-  const retry = (job: Job) => {
-    if (!canEdit) return;
-    update(
-      (s) => ({
-        ...s,
-        jobs: s.jobs.map((j) =>
-          j.id === job.id
-            ? {
-                ...j,
-                status: "blocked",
-                attempt: j.attempt + 1,
-                progress: 0,
-                message:
-                  "Retry checked locally: a connected backend is required. No external request was made.",
-              }
-            : j,
-        ),
-      }),
-      "Job retry checked",
-      job.id,
-    );
+    if (
+      !(await update(
+        (s) => ({
+          ...s,
+          jobs: s.jobs.map((j) =>
+            j.id === job.id
+              ? {
+                  ...j,
+                  status: "cancelled",
+                  message:
+                    "Cancelled in this local demo. No connected worker was contacted.",
+                }
+              : j,
+          ),
+        }),
+        "Job cancelled",
+        job.id,
+      ))
+    ) {
+      return;
+    }
     notify(
-      "Retry is blocked until a backend is connected. Your work is preserved.",
+      mode === "CONNECTED_FREE"
+        ? "Cancellation recorded. A running task stops at its next safe checkpoint."
+        : "Local job cancelled.",
+    );
+  };
+  const retry = async (job: Job) => {
+    if (!canEdit) return;
+    if (
+      !(await update(
+        (s) => ({
+          ...s,
+          jobs: s.jobs.map((j) =>
+            j.id === job.id
+              ? {
+                  ...j,
+                  status: "blocked",
+                  attempt: j.attempt + 1,
+                  progress: 0,
+                  message:
+                    "Retry checked locally: a connected backend is required. No external request was made.",
+                }
+              : j,
+          ),
+        }),
+        "Job retry checked",
+        job.id,
+      ))
+    ) {
+      return;
+    }
+    notify(
+      mode === "CONNECTED_FREE"
+        ? "Retry checked. See the task blocker; processing is not configured yet."
+        : "Retry is blocked until a backend is connected. Your work is preserved.",
     );
   };
   const tone = (s: Job["status"]) =>
@@ -104,13 +118,21 @@ export default function Jobs() {
               (j) => j.status === "queued" || j.status === "running",
             ).length
           }
-          detail="Illustrative demo job records"
+          detail={
+            mode === "CONNECTED_FREE"
+              ? "Server job records"
+              : "Illustrative demo job records"
+          }
           icon={<Clock3 size={18} />}
         />
         <Metric
           label="Completed"
           value={state.jobs.filter((j) => j.status === "completed").length}
-          detail="Local demo history"
+          detail={
+            mode === "CONNECTED_FREE"
+              ? "Recorded completions"
+              : "Local demo history"
+          }
           icon={<CheckCircle2 size={18} />}
         />
         <Metric
@@ -125,9 +147,9 @@ export default function Jobs() {
         />
       </div>
       <div className="notice notice-warning">
-        Background processing is not running in this frontend demo. Test and
-        retry controls record truthful local states; they do not call a model or
-        collector.
+        {mode === "CONNECTED_FREE"
+          ? "Background handlers and scheduling are not active yet. A blocked job remains blocked until its dependency is configured."
+          : "Background processing is not running in this frontend demo. Test and retry controls record truthful local states; they do not call a model or collector."}
       </div>
       <div className="admin-toolbar" style={{ marginTop: 24 }}>
         <div className="admin-search">

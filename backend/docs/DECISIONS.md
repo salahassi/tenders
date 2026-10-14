@@ -52,3 +52,22 @@ Sources: https://supabase.com/changelog.md and https://supabase.com/docs/guides/
 - Replaced the stale checklist with milestone gaps, all 30 acceptance dispositions, and seven ordered stages. Start with identity/connected core records; then files/review inputs, collection/scheduling, owner-agreed model integration, analysis/generation, export/recovery, and full-trial verification.
 - Added five SQL integration tests for worker privileges, single-active-job enforcement, lease validity/replay, expiry/checkpoint preservation, and cancellation. All 24 backend tests and type checking passed locally. These do not establish hosted authentication, Storage behavior, or separate-connection concurrency.
 - Preserve the approved layout, public repository, Pages hosting, and simplified review interface. Actual Owner sign-in and model activation are later dependencies; independent implementation does not wait for them.
+
+## 2026-10-14: Email-only invitations and implementation checkpoint
+
+- The owner finalized email/password with invitations as the sole sign-in method. Google, Apple, Facebook, and GitHub login are not to be activated.
+- The working tree includes email login/recovery, connected core-record commands, Owner invitation/member administration, and a restricted first-Owner setup path. Its latest full local run passed 111 frontend and 37 backend tests, including 25 integration/database cases. These are not hosted-account or email-delivery results.
+- The owner then requested pausing implementation and deployment to reconcile the plan. No further feature work or cloud mutation is authorized by this planning checkpoint itself. The active task is to resume the existing seven-stage plan when the owner resumes execution.
+- Hosted Supabase still has only the four baseline migrations and zero users/workspaces/memberships/jobs. The interrupted migration call was not a successful deployment; the subsequent migration listing confirmed no new migration. Published main remains 8a5912c.
+- Stage 1 remains open. Before deployment, consolidate the two pending files with migration version 20261014180222 into the email-only version and validate migration-version uniqueness. Stage 2 file/review writes, collection, model execution, generation, connected export/submission, and full recovery remain separate unfinished work.
+- Use IMPLEMENTATION_CHECKLIST.md as the current checkpoint and continuation authority; older deployment/handoff descriptions are historical until reconciled in the stage 1 release.
+
+## 2026-10-14: Resume publication and require continuous checklist maintenance
+
+- The owner explicitly resumed deployment to Supabase, the public GitHub repository, and GitHub Pages. This supersedes the preceding pause; the seven-stage plan and email/password-only decision remain in force.
+- Keep IMPLEMENTATION_CHECKLIST.md in the project and update it for every future project change. AGENTS.md and the root README now require the affected stage, local verification, deployment evidence, and remaining work to be recorded together with the change.
+- Removed the superseded social-identity migration, consolidated database fixtures, and added unique migration-version validation. The pilot cap of five active users is enforced under the workspace lock on invitation acceptance and membership reactivation.
+- Publishing the connected stage-1 code does not close its real-account, email/callback, hosted persistence, or desktop/mobile acceptance gates. No Owner identity or recipient is guessed, and no invitation email is sent by this deployment.
+
+- Release verification passed 111 frontend and 38 backend tests (26 database/integration cases included), both locked installs, type checks, and builds.
+- The Supabase connector returned `Migration was declined` for `connected_workspace_commands` without a stated reason. A fresh migration listing still shows only the four baseline migrations; api v2 and worker v1 remain active. The dependent API deployment is withheld. No alternate mutation channel is used to bypass the refusal. GitHub source and Pages publication continue with this limitation recorded.

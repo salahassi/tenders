@@ -57,7 +57,7 @@ export default function Sources() {
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
-  const changeStatus = (id: string, status: Source["status"]) => {
+  const changeStatus = async (id: string, status: Source["status"]) => {
     if (!owner || state.sources.find((s) => s.id === id)?.type === "manual")
       return;
     if (
@@ -72,23 +72,27 @@ export default function Sources() {
       );
       return;
     }
-    update(
-      (s) => ({
-        ...s,
-        sources: s.sources.map((x) =>
-          x.id === id ? { ...x, status, nextRun: null } : x,
-        ),
-      }),
-      `Source ${status}`,
-      id,
-    );
+    if (
+      !(await update(
+        (s) => ({
+          ...s,
+          sources: s.sources.map((x) =>
+            x.id === id ? { ...x, status, nextRun: null } : x,
+          ),
+        }),
+        `Source ${status}`,
+        id,
+      ))
+    ) {
+      return;
+    }
     notify(
       status === "approved"
         ? "Source enabled in your saved configuration. Live collection is not connected."
         : `Source ${status}.`,
     );
   };
-  const submit = () => {
+  const submit = async () => {
     if (!canEdit) return;
     if (!form.name.trim()) {
       setError("Give the source a name.");
@@ -119,11 +123,15 @@ export default function Sources() {
         .map((t) => t.trim())
         .filter(Boolean),
     };
-    update(
-      (s) => ({ ...s, sources: [source, ...s.sources] }),
-      "Source added",
-      source.id,
-    );
+    if (
+      !(await update(
+        (s) => ({ ...s, sources: [source, ...s.sources] }),
+        "Source added",
+        source.id,
+      ))
+    ) {
+      return;
+    }
     setOpen(false);
     setForm({
       name: "",

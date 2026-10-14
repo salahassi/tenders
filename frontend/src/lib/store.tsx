@@ -1,5 +1,4 @@
 import {
-  createContext,
   useCallback,
   useContext,
   useEffect,
@@ -12,6 +11,9 @@ import { z } from "zod";
 import type { AppState, StateMutation } from "../types";
 import { createSeedState } from "./seed";
 import { clearLocalFiles } from "./knowledgeFiles";
+import { AppContext, type AppContextValue } from "./appContext";
+import { ConnectedProvider } from "./ConnectedProvider";
+import { configuredBackend } from "./backendClient";
 import {
   canApplyMutation,
   getApprovalBlockers,
@@ -382,22 +384,10 @@ export function parseBackup(raw: string): AppState {
   return validateState(envelope.data.state);
 }
 
-export interface AppContextValue {
-  state: AppState;
-  update: (mutation: StateMutation, action?: string, target?: string) => void;
-  reset: () => void;
-  restore: (backup: AppState) => void;
-  ready: boolean;
-  storageError: string | null;
-  notify: (message: string) => void;
-  toast: string | null;
-  clearToast: () => void;
-}
-const AppContext = createContext<AppContextValue | null>(null);
 const messageFor = (error: unknown) =>
   error instanceof Error ? error.message : "Unknown browser storage error";
 
-export function AppProvider({ children }: { children: ReactNode }) {
+function DemoProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(() => createSeedState());
   const stateRef = useRef(state);
   const [ready, setReady] = useState(false);
@@ -453,10 +443,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [toast]);
 
   const update = useCallback(
-    (mutation: StateMutation, action?: string, target?: string) => {
+    async (
+      mutation: StateMutation,
+      action?: string,
+      target?: string,
+    ): Promise<boolean> => {
       if (!ready) {
         notify("Please wait for your saved workspace to load.");
-        return;
+        return false;
       }
       const previous = stateRef.current;
       let next: AppState;
@@ -469,11 +463,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         );
       } catch (error) {
         notify(`The change could not be applied: ${messageFor(error)}`);
-        return;
+        return false;
       }
       if (!canApplyMutation(previous, next)) {
         notify("Your current demo role cannot perform this action.");
-        return;
+        return false;
       }
       for (const proposal of next.proposals) {
         const before = previous.proposals.find(
@@ -492,7 +486,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             notify(
               `Approval blocked: ${blockers[0] ?? "The approved version must match the current content version."}`,
             );
-            return;
+            return false;
           }
         }
       }
@@ -513,6 +507,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       stateRef.current = next;
       setState(next);
       persist(next);
+      return true;
     },
     [notify, persist, ready],
   );
@@ -588,12 +583,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
         notify,
         toast,
         clearToast,
+        mode: "DEMO",
+        saving: false,
       }}
     >
       {children}
     </AppContext.Provider>
   );
 }
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [configuration] = useState(() => {
+    try {
+      return { client: configuredBackend(), error: null };
+    } catch (error) {
+      return { client: null, error: messageFor(error) };
+    }
+  });
+  if (configuration.error)
+    return (
+      <main className="app-loading">
+        <h1>Workspace setup required</h1>
+        <p role="alert">{configuration.error}</p>
+        <a
+          className="btn btn-secondary"
+          href={`${window.location.pathname}?mode=demo#/dashboard`}
+        >
+          Open separate demo
+        </a>
+      </main>
+    );
+  return configuration.client ? (
+    <ConnectedProvider client={configuration.client}>
+      {children}
+    </ConnectedProvider>
+  ) : (
+    <DemoProvider>{children}</DemoProvider>
+  );
+}
+
 export function useApp(): AppContextValue {
   const context = useContext(AppContext);
   if (!context) throw new Error("useApp must be used within AppProvider.");
