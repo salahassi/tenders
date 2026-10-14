@@ -1,0 +1,27 @@
+project_id = "tenderdesk"
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 100
+
+[auth]
+enabled = true
+site_url = "https://salahassi.github.io/tenders/"
+additional_redirect_urls = ["http://localhost:5173/", "https://salahassi.github.io/tenders/"]
+# OAuth identities may be created; workspace admission still requires the
+# verified allowlist and active membership. No automatic workspace signup.
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+[functions.api]
+# Every authenticated route explicitly calls Supabase Auth getUser and checks
+# active membership. CORS and public health do not rely on a publishable key.
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+[functions.worker]
+# Separate constant-time application secret check before privileged work.
+verify_jwt = false
+import_map = "./functions/deno.json"

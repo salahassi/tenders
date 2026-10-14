@@ -6,7 +6,7 @@ Tenderdesk is a runnable, browser-local frontend with persistent records, file u
 
 The current user journey is **Review fit → select opportunity → upload buyer’s RFP → generate its full linked proposal → review the file and identified issues → supply missing inputs or request changes → regenerate a new version**. Generation and regeneration remain disconnected boundaries. The UI no longer asks the user to create an outline, add sections, or fill an optional pricing form. It preserves current content separately from pending review inputs.
 
-`IMPLEMENTATION_SPEC.txt` remains a historical blueprint. The later user feedback and this handoff supersede its earlier interface workflow. Do not restore the removed screens or gates merely because the old specification describes them. Reconcile any future backend contract with this simpler interface.
+`backend/docs/IMPLEMENTATION_SPEC.txt` remains a historical blueprint. The later user feedback and this handoff supersede its earlier interface workflow. Do not restore the removed screens or gates merely because the old specification describes them. Reconcile any future backend contract with this simpler interface.
 
 ## Workflow and data compatibility
 
@@ -29,9 +29,9 @@ Fit previews match the exact synthetic notice, company profile, and RFP context;
 
 ## Files, extraction, and backups
 
-`src/lib/documents.ts` extracts local PDF, DOCX, TXT, and Markdown files. The current limits are 10 MiB per file, 200 pages per PDF, and 1,000,000 extracted characters per file. An opportunity accepts up to 10 RFP files. DOCX parsing applies bounded archive checks. A file marked `needs_ocr` requires readable text; there is no optical character recognition (OCR) service in this release. Page markers are retained for PDFs, but the extraction is not a layout-preserving representation of the original.
+`frontend/src/lib/documents.ts` extracts local PDF, DOCX, TXT, and Markdown files. The current limits are 10 MiB per file, 200 pages per PDF, and 1,000,000 extracted characters per file. An opportunity accepts up to 10 RFP files. DOCX parsing applies bounded archive checks. A file marked `needs_ocr` requires readable text; there is no optical character recognition (OCR) service in this release. Page markers are retained for PDFs, but the extraction is not a layout-preserving representation of the original.
 
-Both RFP and company uploads retain the original Blob in IndexedDB using `src/lib/knowledgeFiles.ts`. The serializable workspace record retains file metadata, hash, status, and extracted text. Classification selectors were removed; new uploads use the internal unspecified value without asserting whether the user file is public, sanitized, or synthetic. Older values remain compatible. Original downloads depend on the Blob being present in that browser. A restored or older workspace may have readable text without an original attachment, and the interface reports that condition instead of inventing a successful download.
+Both RFP and company uploads retain the original Blob in IndexedDB using `frontend/src/lib/knowledgeFiles.ts`. The serializable workspace record retains file metadata, hash, status, and extracted text. Classification selectors were removed; new uploads use the internal unspecified value without asserting whether the user file is public, sanitized, or synthetic. Older values remain compatible. Original downloads depend on the Blob being present in that browser. A restored or older workspace may have readable text without an original attachment, and the interface reports that condition instead of inventing a successful download.
 
 Company files have categories and an include/exclude control. Only enabled files with ready, nonempty text are readable agent context. Additional company notes remain available alongside files; they do not substitute for uploaded references.
 
@@ -39,7 +39,7 @@ JSON workspace backups include records and extracted text, **not original file b
 
 ## Agent input handoff
 
-`src/lib/agentInput.ts` implements `buildAgentInput` and `downloadAgentInput`. This is a local JSON export, not a model invocation. It contains:
+`frontend/src/lib/agentInput.ts` implements `buildAgentInput` and `downloadAgentInput`. This is a local JSON export, not a model invocation. It contains:
 
 - The opportunity details and requested proposal language.
 - Full readable text from attached RFP files, with names, IDs, classifications, and hashes.
@@ -53,7 +53,7 @@ The package contains no original bytes, images, or document layout. It is not si
 
 ## Proposal generation
 
-The proposal review page downloads current saved content through `src/lib/export.ts`. The read-only browser text is not a Word layout preview. Each section has its own comment input anchored by section ID and title; each recorded question has an independent answer input anchored by question ID. All editable review inputs accept text, attachments, or both. File-only responses are preserved without a required text placeholder. Legacy general instructions remain available as optional additional comments, not a combined destination for section edits.
+The proposal review page downloads current saved content through `frontend/src/lib/export.ts`. The read-only browser text is not a Word layout preview. Each section has its own comment input anchored by section ID and title; each recorded question has an independent answer input anchored by question ID. All editable review inputs accept text, attachments, or both. File-only responses are preserved without a required text placeholder. Legacy general instructions remain available as optional additional comments, not a combined destination for section edits.
 
 One Save action preserves all inputs. One Regenerate action saves the same complete snapshot and requests a new version, without requiring Save first. Pending answers, section comments, and file references are stored separately; saving or requesting regeneration never changes sections or creates a file version. A request is explicitly awaiting_connection, not an executed job. Changes to source evidence invalidate approval without claiming a new document version. Changing actual proposal content still creates a version and invalidates approval. Older unsaved editor content is retained for explicit recovery.
 
@@ -71,7 +71,7 @@ The DOCX has a native dynamic table of contents (TOC), heading styles, page-numb
 
 | Frontend boundary                                | Required connected work                                                                                                                    |
 | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/lib/store.tsx` local commands and IndexedDB | Authenticated commands, durable storage, transactional writes, conflict handling, and server-enforced authorization                        |
+| `frontend/src/lib/store.tsx` local commands and IndexedDB | Authenticated commands, durable storage, transactional writes, conflict handling, and server-enforced authorization                        |
 | Settings role simulation                         | Real identities and workspace membership; remove the role switch in connected mode                                                         |
 | Source configuration                             | Permitted website/feed adapters, safe URL fetching, deduplication, schedules, and actual collection results delivered to Review inbox      |
 | Original files and extracted text                | Private object storage, authorization, document/extraction versions, secure processing, retention, and recovery                            |
@@ -86,6 +86,6 @@ Do not trust browser-provided roles, document classifications, prices, or model 
 
 ## Deployment and verification
 
-The existing `.github/workflows/deploy-pages.yml` remains the deployment path. It installs locked dependencies, checks TypeScript, runs tests, builds, and deploys to GitHub Pages. GitHub Pages uses GitHub Actions as its source. Documentation-only changes do not trigger deployment; manual workflow dispatch is available.
+The repository-root `.github/workflows/deploy-pages.yml` remains the deployment path. It installs and checks both independent packages and publishes `frontend/dist`. It installs locked dependencies, checks TypeScript, runs tests, builds, and deploys to GitHub Pages. GitHub Pages uses GitHub Actions as its source. Documentation-only changes do not trigger deployment; manual workflow dispatch is available.
 
 From a clean checkout, run `npm ci`, `npm run typecheck`, `npm test`, and `npm run build`. Tests use jsdom and fake IndexedDB, so they are not proof of real-browser appearance, server security, provider connectivity, or document fidelity. Before production use, check desktop/mobile layouts, keyboard navigation, representative Arabic and scanned documents, and generated DOCX files in the target Word versions. Test the connected backend separately when it exists.

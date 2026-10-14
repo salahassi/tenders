@@ -6,4 +6,5 @@ coverage/
 .env.*
 !.env.example
 *.tsbuildinfo
+**/supabase/.temp/
 .DS_Store

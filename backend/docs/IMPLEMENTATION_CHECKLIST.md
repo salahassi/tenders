@@ -1,0 +1,22 @@
+# Implementation checklist
+
+The full `IMPLEMENTATION_SPEC.txt` (814 lines) and `FRONTEND_HANDOFF.md` were reviewed before backend work. Later user decisions take precedence over earlier interface requirements.
+
+| Requirement group                        | Current implementation                                                                                             | Verification / activation                                                               |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| M1: responsive local workspace           | Existing React application, persisted records and original files                                                   | 96 deterministic tests passed before backend work                                       |
+| Revised review journey                   | Section-specific comments and attachments; question-specific answers and attachments; one save/regenerate snapshot | Existing integration tests cover text, files, both, restore, and unchanged current file |
+| M2: authenticated persistence            | Supabase migrations, RLS, command API, private Storage, versions and audit                                         | Backend work in progress; live verification requires a connected Supabase project       |
+| Real identities and roles                | GitHub OAuth, approved membership, one-time verified-owner bootstrap                                               | Owner identity must come from the actual connected account; never seed a real identity  |
+| Transaction boundaries                   | Expected revisions, idempotency records, mutation/audit transaction                                                | SQL and API integration checks required before activation                               |
+| Files and review evidence                | Generated private paths, upload reservations, original validation and target ownership                             | Storage integration checks required on the actual project                               |
+| M3: collectors and queue                 | Bounded dispatcher and queue foundation; source adapters tracked separately                                        | No source is represented as connected until its adapter and access are verified         |
+| M4: model-dependent analysis and writing | Existing frontend boundary; provider activation deferred by the user                                               | Do not call a model or select credentials until the user discusses the model            |
+| M5: export and submission                | Existing browser DOCX with dynamic TOC; backend versions and evidence binding required                             | Browser tests are not evidence of live service or Word rendering correctness            |
+| M6: free-account activation              | TenderDesk selected and healthy; four migrations and two Edge Functions deployed in Free organization | Hosted health, anonymous denial, RLS and private bucket verified; Owner bootstrap, signed-in workflows, frontend adapter and cron pending |
+
+The connected system must not import synthetic demo records or browser role selections automatically. Unsupported commands must return an explicit dependency error rather than update local data as if saved remotely.
+
+AT01–AT30 remain the acceptance authority. Evidence is recorded against each implemented backend slice; no blanket claim that all acceptance tests have passed is permitted.
+
+Local verification on October 14, 2026: TypeScript check passed, all 115 tests in 14 files passed (including 19 backend HTTP/SQL tests), and the production build passed. Complete-upload tests cover the actual original-byte validation boundary, completion-key propagation, immutable acceptance, identical replay, changed replay rejection, and revoked identity denial. Hosted checks additionally confirmed four applied migrations, 17 RLS-protected tables, private Storage, minimal API health and unauthenticated API/worker denial. Authenticated hosted role workflows, real Storage uploads, and scheduler activation remain pending. Source publication to the public repository's main branch is awaiting explicit destination/branch approval after automatic review rejected the push.

@@ -1,0 +1,201 @@
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { AppError, databaseError } from "./http.ts";
+export interface BackendEnvironment {
+  url: string;
+  publishableKey: string;
+  serviceKey: string;
+  allowedOrigins: string[];
+  workerSecret: string;
+}
+function platformKey(value: string | undefined): string {
+  if (!value) return "";
+  try {
+    const keys: unknown = JSON.parse(value);
+    if (
+      keys &&
+      typeof keys === "object" &&
+      "default" in keys &&
+      typeof keys.default === "string"
+    )
+      return keys.default;
+  } catch {
+    // Invalid secret-store configuration must never be included in diagnostics.
+  }
+  return "";
+}
+export function environment(
+  get: (name: string) => string | undefined,
+): BackendEnvironment {
+  return {
+    url: get("SUPABASE_URL") || "",
+    publishableKey:
+      get("APP_SUPABASE_PUBLISHABLE_KEY") ||
+      platformKey(get("SUPABASE_PUBLISHABLE_KEYS")) ||
+      get("SUPABASE_ANON_KEY") ||
+      "",
+    serviceKey:
+      platformKey(get("SUPABASE_SECRET_KEYS")) ||
+      get("SUPABASE_SERVICE_ROLE_KEY") ||
+      "",
+    allowedOrigins: (get("APP_ALLOWED_ORIGINS") || "https://salahassi.github.io")
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean),
+    workerSecret: get("APP_WORKER_SECRET") || "",
+  };
+}
+export class Backend {
+  private admin: SupabaseClient;
+  constructor(private env: BackendEnvironment) {
+    if (!env.url || !env.publishableKey || !env.serviceKey)
+      throw new AppError(
+        503,
+        "SETUP_REQUIRED",
+        "Backend secrets are not configured.",
+      );
+    this.admin = createClient(env.url, env.serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
+  user(token: string) {
+    return createClient(this.env.url, this.env.publishableKey, {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
+  async authenticate(token: string) {
+    const { data, error } = await this.admin.auth.getUser(token);
+    if (error || !data.user)
+      throw new AppError(401, "UNAUTHENTICATED", "Sign in to continue.");
+    return data.user;
+  }
+  async membership(token: string) {
+    const { data, error } = await this.user(token).rpc("current_membership");
+    if (error) throw databaseError(error);
+    if (!data?.length)
+      throw new AppError(
+        403,
+        "ACCESS_PENDING",
+        "Your identity has not been approved for this workspace.",
+      );
+    return data[0] as {
+      workspace_id: string;
+      role: "Owner" | "Editor" | "Reviewer";
+    };
+  }
+  async list(
+    token: string,
+    table: string,
+    filters: Record<string, string>,
+    limit: number,
+    cursor?: string,
+  ) {
+    let q = this.user(token)
+      .from(table)
+      .select("*")
+      .order("id", { ascending: true })
+      .limit(limit + 1);
+    for (const [key, value] of Object.entries(filters)) q = q.eq(key, value);
+    if (cursor) q = q.gt("id", cursor);
+    const { data, error } = await q;
+    if (error) throw databaseError(error);
+    const rows = data || [];
+    return {
+      records: rows.slice(0, limit),
+      next_cursor: rows.length > limit ? rows[limit - 1].id : null,
+    };
+  }
+  async one(token: string, table: string, id: string) {
+    const { data, error } = await this.user(token)
+      .from(table)
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw databaseError(error);
+    if (!data)
+      throw new AppError(
+        404,
+        "NOT_FOUND",
+        "The record does not exist or is inaccessible.",
+      );
+    return data;
+  }
+  async command(token: string, operation: string, input: unknown, key: string) {
+    const { data, error } = await this.user(token).rpc("app_command", {
+      operation,
+      input,
+      idempotency_key: key,
+    });
+    if (error) throw databaseError(error);
+    return data;
+  }
+  async object(path: string) {
+    const { data, error } = await this.admin.storage
+      .from("tenderdesk-private")
+      .download(path);
+    if (error || !data)
+      throw new AppError(
+        422,
+        "UPLOAD_NOT_FOUND",
+        "The original has not been uploaded.",
+      );
+    return data;
+  }
+  async accept(
+    id: string,
+    actor: string,
+    hash: string,
+    size: number,
+    text: string,
+    status: string,
+    key: string,
+  ) {
+    const { data, error } = await this.admin.rpc("accept_uploaded_document", {
+      document_id: id,
+      actor_id: actor,
+      actual_hash: hash,
+      actual_size: size,
+      extraction_text: text,
+      extraction_status: status,
+      command_key: key,
+    });
+    if (error) throw databaseError(error);
+    return data;
+  }
+  async download(path: string) {
+    const { data, error } = await this.admin.storage
+      .from("tenderdesk-private")
+      .createSignedUrl(path, 300);
+    if (error || !data)
+      throw new AppError(
+        503,
+        "DOWNLOAD_UNAVAILABLE",
+        "The original could not be opened.",
+      );
+    return data.signedUrl;
+  }
+  async operations(token: string) {
+    const { data, error } = await this.user(token)
+      .from("operations")
+      .select(
+        "last_heartbeat_at,last_source_success_at,scheduler_enabled,last_error_code",
+      )
+      .maybeSingle();
+    if (error) throw databaseError(error);
+    return data;
+  }
+  async claim() {
+    const { data, error } = await this.admin.rpc("claim_backend_job");
+    if (error) throw databaseError(error);
+    return data;
+  }
+  async finish(id: string, lease: string, status: string, errorCode: string) {
+    const { error } = await this.admin.rpc("finish_backend_job", {
+      job_id: id,
+      lease,
+      result_status: status,
+      result_error: errorCode,
+    });
+    if (error) throw databaseError(error);
+  }
+}

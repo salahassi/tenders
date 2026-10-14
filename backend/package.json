@@ -1,0 +1,33 @@
+{
+  "name": "tenderdesk-backend",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -b",
+    "build": "tsc -b",
+    "test": "vitest run tests/backend",
+    "test:watch": "vitest tests/backend",
+    "db:migrate": "supabase db push --linked",
+    "db:reset": "supabase db reset",
+    "serve": "supabase functions serve",
+    "deploy": "supabase functions deploy api && supabase functions deploy worker",
+    "contracts:generate": "node --experimental-strip-types scripts/backend/generate-openapi.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.117.3",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.10",
+    "@types/node": "26.6.5",
+    "prettier": "3.9.10",
+    "supabase": "2.121.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.4"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
