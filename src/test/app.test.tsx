@@ -53,6 +53,7 @@ function navigation() {
 }
 
 beforeEach(async () => {
+  sessionStorage.clear();
   network.mockClear();
   vi.stubGlobal("fetch", network);
   vi.stubGlobal("crypto", webcrypto);
@@ -246,7 +247,7 @@ describe("browser-local workspace journeys", () => {
       await screen.findByRole("link", { name: "Open proposal" }),
     );
     expect(
-      await screen.findByRole("textbox", { name: "Section content" }),
+      await screen.findByRole("region", { name: "Current proposal file" }),
     ).toBeInTheDocument();
     expect((await stored())?.proposals).toEqual(seed.proposals);
   });
@@ -495,7 +496,7 @@ describe("browser-local workspace journeys", () => {
     ).toBeInTheDocument();
   });
 
-  it("requires an RFP and keeps disconnected AI generation separate from explicit manual writing", async () => {
+  it("requires an RFP and never substitutes a manual or sample proposal for disconnected generation", async () => {
     const seed = createSeedState();
     const opportunity = seed.opportunities.find((item) => item.id === "opp-2")!;
     opportunity.deadline = "";
@@ -509,10 +510,12 @@ describe("browser-local workspace journeys", () => {
     expect(
       screen.getByRole("button", { name: "Generate proposal" }),
     ).toBeDisabled();
-    await user.click(screen.getByText("Write the proposal manually"));
     expect(
-      screen.getByRole("button", { name: "Start writing from this RFP" }),
-    ).toBeDisabled();
+      screen.queryByText("Write the proposal manually"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", { name: "File content" }),
+    ).not.toBeInTheDocument();
     expect((await stored())?.proposals).toHaveLength(seed.proposals.length);
     expect(
       screen.queryByRole("button", { name: "Acquisition" }),
@@ -531,6 +534,7 @@ describe("browser-local workspace journeys", () => {
       expect(current?.documents[0]).toMatchObject({
         name: "synthetic-rfp.txt",
         status: "ready",
+        classification: "unspecified",
       });
     });
     await user.click(screen.getByRole("button", { name: "Generate proposal" }));
@@ -545,24 +549,22 @@ describe("browser-local workspace journeys", () => {
       within(aiDialog).getByRole("button", { name: "Close dialog" }),
     );
     await user.click(
-      screen.getByRole("button", { name: "Start writing from this RFP" }),
+      screen.getByRole("link", { name: "View a review example" }),
     );
-    await waitFor(async () => {
-      const current = await stored();
-      expect(current?.proposals).toHaveLength(seed.proposals.length + 1);
-      expect(
-        current?.proposals.find((item) => item.opportunityId === "opp-2"),
-      ).toMatchObject({ status: "draft", version: 1 });
-      expect(
-        current?.opportunities.find((item) => item.id === "opp-2")?.status,
-      ).toBe("in_progress");
-    });
     expect(
-      await screen.findByRole("textbox", { name: "Section content" }),
+      await screen.findByRole("region", { name: "Current proposal file" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Generate Word file" }),
-    ).toBeEnabled();
+      screen.getByRole("heading", { level: 1, name: seed.proposals[0].title }),
+    ).toBeInTheDocument();
+    const current = await stored();
+    expect(current?.proposals).toEqual(seed.proposals);
+    expect(
+      current?.proposals.some((proposal) => proposal.opportunityId === "opp-2"),
+    ).toBe(false);
+    expect(
+      current?.opportunities.find((item) => item.id === "opp-2")?.status,
+    ).toBe("shortlisted");
   });
 
   it("does not create a draft while any supplied RFP needs readable text", async () => {
@@ -595,78 +597,205 @@ describe("browser-local workspace journeys", () => {
     expect(
       await screen.findByRole("button", { name: "Generate proposal" }),
     ).toBeDisabled();
-    const user = userEvent.setup();
-    await user.click(screen.getByText("Write the proposal manually"));
     expect(
-      screen.getByRole("button", { name: "Start writing from this RFP" }),
-    ).toBeDisabled();
+      screen.queryByRole("button", { name: "Start writing from this RFP" }),
+    ).not.toBeInTheDocument();
     expect((await stored())?.proposals).toHaveLength(seed.proposals.length);
     expect(
       screen.queryByRole("textbox", { name: "Section content" }),
     ).not.toBeInTheDocument();
   });
 
-  it("saves free-text document content and invalidates a previously approved version", async () => {
+  it("persists Arabic review answers without changing the current proposal content or approval", async () => {
     const seed = createSeedState();
     const proposal = seed.proposals.find((item) => item.id === "prop-2")!;
+    const opportunity = seed.opportunities.find(
+      (item) => item.id === proposal.opportunityId,
+    )!;
+    const question = opportunity.gaps[0];
     proposal.status = "approved";
     proposal.approvalVersion = proposal.version;
     await set(STORAGE_KEY, seed);
     const user = userEvent.setup();
-    const first = mount("/proposals/prop-2");
-    const content = await screen.findByRole("textbox", {
-      name: "Section content",
+    const first = mount(`/proposals/${proposal.id}`);
+    const questionHeading = await screen.findByRole("heading", {
+      name: question.question,
     });
-    const replacement =
-      "Synthetic revised scope. Arabic delivery option: تنفيذ المشروع على مراحل واضحة.";
-    await user.clear(content);
-    await user.click(content);
-    await user.paste(replacement);
-    await user.click(screen.getByRole("button", { name: "Save proposal" }));
+    const answer = within(questionHeading.closest("article")!).getByRole(
+      "textbox",
+      { name: /^Your answer/ },
+    );
+    const arabicAnswer =
+      "ستتوفر واجهات الربط الثلاث وبيئة الاختبار قبل بدء التنفيذ.";
+    await user.click(answer);
+    await user.paste(arabicAnswer);
+    await user.click(
+      screen.getByRole("button", { name: "Save review inputs" }),
+    );
     expect(
-      screen.getByRole("button", { name: "Generate Word file" }),
+      screen.getByText("Review inputs have not been applied to the file."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Download current Word" }),
     ).toBeEnabled();
     expect(
-      screen.queryByRole("button", { name: /Approve version/ }),
+      screen.queryByRole("textbox", { name: "Section content" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Add section" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("checkbox", { name: /pricing/i }),
     ).not.toBeInTheDocument();
     await waitFor(async () => {
       const updated = (await stored())?.proposals.find(
-        (item) => item.id === "prop-2",
+        (item) => item.id === proposal.id,
       );
-      expect(updated).toMatchObject({
-        status: "draft",
-        version: proposal.version + 1,
-        approvalVersion: null,
+      const { review, ...currentFile } = updated!;
+      expect(currentFile).toEqual(proposal);
+      expect(review?.answers).toContainEqual({
+        questionId: `gap:${question.id}`,
+        answer: arabicAnswer,
       });
-      expect(updated?.sections[0].body).toBe(replacement);
+      expect(review?.regeneration).toBeUndefined();
     });
     first.unmount();
-    mount("/proposals/prop-2");
+    mount(`/proposals/${proposal.id}`);
+    const restoredQuestion = await screen.findByRole("heading", {
+      name: question.question,
+    });
     expect(
-      await screen.findByRole("textbox", { name: "Section content" }),
-    ).toHaveValue(replacement);
+      within(restoredQuestion.closest("article")!).getByRole("textbox", {
+        name: /^Your answer/,
+      }),
+    ).toHaveValue(arabicAnswer);
   });
 
-  it("makes the AI rewrite connection limit explicit without changing document text", async () => {
+  it("saves a regeneration request as pending without applying inputs or creating a new version", async () => {
     const seed = createSeedState();
-    const original = seed.proposals.find((item) => item.id === "prop-2")!
-      .sections[0].body;
+    const proposal = seed.proposals.find((item) => item.id === "prop-2")!;
+    await set(STORAGE_KEY, seed);
     const user = userEvent.setup();
-    mount("/proposals/prop-2");
+    mount(`/proposals/${proposal.id}`);
+    const request = await screen.findByRole("textbox", {
+      name: "Change request",
+    });
+    const instruction =
+      "عدّل خطة التنفيذ إلى 12 أسبوعًا واشرح أثر ذلك على التكلفة.";
+    await user.click(request);
+    await user.paste(instruction);
     await user.click(
-      await screen.findByRole("button", { name: "Rewrite with AI" }),
+      screen.getByRole("button", { name: "Regenerate proposal" }),
     );
-    const dialog = screen.getByRole("dialog", { name: "Rewrite with AI" });
-    expect(within(dialog).getByText(/AI.*not connected/i)).toBeInTheDocument();
+    const dialog = screen.getByRole("dialog", {
+      name: "Regeneration is awaiting the AI connection",
+    });
     expect(
-      within(dialog).getByRole("textbox", { name: "Rewrite instructions" }),
+      within(dialog).getByText(
+        /No AI request has been sent and no new file or version has been created/,
+      ),
     ).toBeInTheDocument();
+    await waitFor(async () => {
+      const state = await stored();
+      const updated = state?.proposals.find((item) => item.id === proposal.id);
+      const { review, ...currentFile } = updated!;
+      expect(currentFile).toEqual(proposal);
+      expect(state?.proposals).toHaveLength(seed.proposals.length);
+      expect(review).toMatchObject({
+        baseVersion: proposal.version,
+        instructions: instruction,
+        regeneration: {
+          status: "awaiting_connection",
+          baseVersion: proposal.version,
+          instructions: instruction,
+        },
+      });
+    });
+    await user.click(
+      within(dialog).getByRole("button", { name: "Back to review" }),
+    );
     expect(
-      within(dialog).getByRole("button", { name: "Download agent input" }),
+      screen.getByText("Review inputs have not been applied to the file."),
     ).toBeInTheDocument();
+  });
+
+  it("requires review of a recovered session draft before using it for regeneration", async () => {
+    const seed = createSeedState();
+    const proposal = seed.proposals.find((item) => item.id === "prop-2")!;
+    await set(STORAGE_KEY, seed);
+    const instruction =
+      "ملاحظة محفوظة سابقًا تحتاج مراجعة مقابل الكراسة الحالية.";
+    sessionStorage.setItem(
+      `proposal-review-${proposal.id}`,
+      JSON.stringify({
+        answers: {},
+        instructions: instruction,
+        baseVersion: proposal.version - 1,
+        sourceSignature: "previous-rfp-context",
+      }),
+    );
+    const user = userEvent.setup();
+    mount(`/proposals/${proposal.id}`);
     expect(
-      (await stored())?.proposals.find((item) => item.id === "prop-2")
-        ?.sections[0].body,
-    ).toBe(original);
+      await screen.findByRole("textbox", { name: "Change request" }),
+    ).toHaveValue(instruction);
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Regenerate proposal" }),
+    ).toBeDisabled();
+    expect((await stored())?.proposals).toEqual(seed.proposals);
+    await user.click(
+      screen.getByRole("button", { name: "Save review inputs" }),
+    );
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Regenerate proposal" }),
+      ).toBeEnabled(),
+    );
+    const updated = (await stored())?.proposals.find(
+      (item) => item.id === proposal.id,
+    );
+    const { review, ...currentFile } = updated!;
+    expect(currentFile).toEqual(proposal);
+    expect(review).toMatchObject({
+      baseVersion: proposal.version,
+      instructions: instruction,
+    });
+    expect(review?.sourceSignature).not.toBe("previous-rfp-context");
+    expect(review?.regeneration).toBeUndefined();
+  });
+
+  it("keeps proposal review inputs and regeneration read-only for the Reviewer role", async () => {
+    const seed = createSeedState();
+    seed.settings.role = "Reviewer";
+    await set(STORAGE_KEY, seed);
+    const user = userEvent.setup();
+    mount("/proposals/prop-1");
+    const request = await screen.findByRole("textbox", {
+      name: "Change request",
+    });
+    expect(request).toHaveAttribute("readonly");
+    for (const answer of screen.getAllByRole("textbox", {
+      name: /^Your answer/,
+    })) {
+      expect(answer).toHaveAttribute("readonly");
+    }
+    expect(
+      screen.getByRole("button", { name: "Save review inputs" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Regenerate proposal" }),
+    ).toBeDisabled();
+    for (const action of screen.getAllByRole("button", {
+      name: "Request pricing change",
+    })) {
+      expect(action).toBeDisabled();
+    }
+    expect(
+      screen.getByRole("button", { name: "Review pricing assumptions" }),
+    ).toBeDisabled();
+    await user.type(request, "This must not be saved");
+    expect(request).toHaveValue("");
+    expect((await stored())?.proposals).toEqual(seed.proposals);
   });
 });

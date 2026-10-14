@@ -371,6 +371,7 @@ export function createSeedState(now: Date = new Date()): AppState {
         },
       ],
       pricingMode: "markup",
+      currency: "SAR",
       percentage: "20",
       contingency: "10",
       tax: "15",

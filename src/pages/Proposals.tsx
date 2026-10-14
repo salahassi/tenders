@@ -53,7 +53,7 @@ export default function Proposals() {
       <PageHeader
         eyebrow="YOUR DOCUMENTS"
         title="Proposal files"
-        description="The proposal documents linked to your opportunities. Open a document, edit its sections, and download one Word file."
+        description="Review each proposal document and version, answer questions about missing information, and request a regenerated file using your feedback."
         actions={
           <Link className="btn btn-primary" to="/opportunities">
             Choose an opportunity <ArrowRight size={16} />
@@ -93,7 +93,7 @@ export default function Proposals() {
                   <th>Document</th>
                   <th>Buyer</th>
                   <th>Linked opportunity</th>
-                  <th>Content</th>
+                  <th>Version</th>
                   <th>Updated</th>
                   <th>File actions</th>
                 </tr>
@@ -151,10 +151,7 @@ export default function Proposals() {
                         )}
                       </td>
                       <td>
-                        <Badge tone="neutral">
-                          {proposal.sections.length} sections · v
-                          {proposal.version}
-                        </Badge>
+                        <Badge tone="neutral">v{proposal.version}</Badge>
                       </td>
                       <td className="muted">
                         {new Date(proposal.updatedAt).toLocaleDateString(
@@ -169,7 +166,7 @@ export default function Proposals() {
                             to={`/proposals/${proposal.id}`}
                             aria-label={`Open ${proposal.title}`}
                           >
-                            Open file <ArrowRight size={14} />
+                            Review proposal <ArrowRight size={14} />
                           </Link>
                           <Button
                             size="sm"
@@ -215,8 +212,9 @@ export default function Proposals() {
         )}
       </section>
       <p className="workspace-bottom-note">
-        <FileText size={14} /> Files are generated from saved content on
-        download. AI drafting is not connected.
+        <FileText size={14} /> Word downloads contain the saved document
+        version. Saved answers and feedback will be applied when AI regeneration
+        is connected; they do not change the current file yet.
       </p>
     </div>
   );

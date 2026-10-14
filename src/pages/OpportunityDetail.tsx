@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { useApp } from "../lib/store";
 import { can } from "../lib/domain";
-import { createTemplateProposal, extractLocalDocument } from "../lib/documents";
+import { extractLocalDocument } from "../lib/documents";
 import {
   downloadLocalFile,
   saveLocalFile,
@@ -41,15 +41,11 @@ import "./workspace.css";
 import "./simplified.css";
 export default function OpportunityDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { state, update, notify } = useApp();
   const o = state.opportunities.find((item) => item.id === id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [view, setView] = useState<DocumentRecord | null>(null);
-  const [classification, setClassification] = useState<
-    "public" | "synthetic" | "sanitized"
-  >("synthetic");
   const [editDetails, setEditDetails] = useState(false);
   const [aiInfo, setAiInfo] = useState(false);
   if (!o)
@@ -67,6 +63,7 @@ export default function OpportunityDetail() {
   const editable = can(state.settings.role, "edit");
   const selected = isSelected(o);
   const proposals = state.proposals.filter((p) => p.opportunityId === o.id);
+  const reviewExample = state.proposals.find((p) => p.id === "prop-1");
   const stage = getOpportunityStage(o, state.proposals);
   const ready =
     o.documents.length > 0 && o.documents.every((d) => d.status === "ready");
@@ -94,7 +91,7 @@ export default function OpportunityDetail() {
     let restored = 0;
     for (const file of files) {
       try {
-        const document = await extractLocalDocument(file, classification);
+        const document = await extractLocalDocument(file);
         const duplicate = [...o!.documents, ...added].find(
           (d) => d.hash === document.hash,
         );
@@ -145,27 +142,6 @@ export default function OpportunityDetail() {
     setError(failures.join("\n"));
     setBusy(false);
   }
-  function createDraft() {
-    if (!editable || !ready) return;
-    if (proposals.length) {
-      navigate(`/proposals/${proposals[0].id}`);
-      return;
-    }
-    const proposal = createTemplateProposal(o!);
-    update(
-      (s) => ({
-        ...s,
-        proposals: [proposal, ...s.proposals],
-        opportunities: s.opportunities.map((x) =>
-          x.id === id ? { ...x, status: "in_progress" } : x,
-        ),
-      }),
-      "Created editable draft",
-      o!.title,
-    );
-    notify("Editable starter created. AI has not written this draft.");
-    navigate(`/proposals/${proposal.id}`);
-  }
   return (
     <div className="workspace-page">
       <Link className="text-link" to={selected ? "/opportunities" : "/review"}>
@@ -208,7 +184,7 @@ export default function OpportunityDetail() {
             <ArrowRight size={15} />
             <span>2 · Generate linked proposal</span>
             <ArrowRight size={15} />
-            <span>3 · Review and download Word</span>
+            <span>3 · Review, answer, and regenerate</span>
           </div>
           <div className="simple-detail-grid">
             <div className="stack">
@@ -221,22 +197,6 @@ export default function OpportunityDetail() {
                 </p>
                 <div className="simple-upload">
                   <Upload size={25} />
-                  <Field label="File content">
-                    <select
-                      className="input"
-                      value={classification}
-                      disabled={!editable || busy}
-                      onChange={(e) =>
-                        setClassification(
-                          e.target.value as typeof classification,
-                        )
-                      }
-                    >
-                      <option value="synthetic">Synthetic test files</option>
-                      <option value="public">Public documents</option>
-                      <option value="sanitized">Sanitized documents</option>
-                    </select>
-                  </Field>
                   <Field
                     label="Upload RFP files"
                     hint="PDF, DOCX, TXT, MD · 10 MiB per file · up to 10 files"
@@ -253,9 +213,6 @@ export default function OpportunityDetail() {
                       }}
                     />
                   </Field>
-                  <span className="small muted">
-                    Use public, synthetic, or sanitized files for this trial.
-                  </span>
                 </div>
                 {busy && (
                   <p role="status">Reading and saving files on this device…</p>
@@ -354,9 +311,10 @@ export default function OpportunityDetail() {
                     : "Generate a proposal from the RFP"}
                 </h2>
                 <p>
-                  The RFP describes what the buyer needs. Your proposal is the
-                  response you will send back. This opportunity has one linked
-                  proposal, created after you attach the RFP.
+                  Generate the complete response to the buyer’s RFP, then review
+                  the document and answer specific questions about missing
+                  information. Your answers and change requests will be used to
+                  regenerate the same linked proposal.
                 </p>
                 <Field label="Proposal language">
                   <select
@@ -384,9 +342,10 @@ export default function OpportunityDetail() {
                 <div className="notice">
                   <Sparkles size={18} />
                   <p className="small">
-                    The agent will use this RFP and enabled company files to
-                    write your proposal. AI generation is not connected in this
-                    frontend; no generated response is claimed.
+                    The agent will use the RFP and enabled company files to
+                    prepare the complete proposal, flag review questions, and
+                    justify pricing against the requested scope. AI generation
+                    is not connected yet.
                   </p>
                 </div>
                 <div className="simple-inline-actions">
@@ -406,38 +365,40 @@ export default function OpportunityDetail() {
                       <Sparkles size={16} /> Generate proposal
                     </Button>
                   )}
-                  <Button
-                    disabled={!ready || busy}
-                    onClick={() => downloadAgentInput(state, o)}
-                  >
-                    <Download size={16} />
-                    Download agent input
-                  </Button>
                 </div>
                 {!ready && (
                   <p className="simple-note">
                     {o.documents.length
-                      ? "Attach readable replacements for files that need OCR before preparing the draft."
-                      : "Attach a readable RFP to start. A deadline and a separate requirements checklist are not required."}
+                      ? "Attach readable replacements for files that need OCR before generating the proposal."
+                      : "Upload the buyer’s RFP to prepare for proposal generation."}
                   </p>
                 )}
-                {!proposals.length && (
-                  <details className="simple-note">
-                    <summary>Write the proposal manually</summary>
-                    <p>
-                      Optional: after attaching the RFP, open an editor for this
-                      opportunity’s proposal. It starts with the notice
-                      description and an empty response section. You write the
-                      content, add the sections the RFP requires, and download
-                      it as Word. This does not generate an AI response.
-                    </p>
-                    <Button
-                      disabled={!editable || !ready || busy}
-                      onClick={createDraft}
+                <details className="simple-note">
+                  <summary>Advanced</summary>
+                  <p>
+                    Download the readable RFP and enabled company references as
+                    agent input. This is supporting data, not a proposal, and
+                    downloading it does not contact an AI service.
+                  </p>
+                  <Button
+                    disabled={!ready || busy}
+                    onClick={() => downloadAgentInput(state, o)}
+                  >
+                    <Download size={16} /> Download agent input
+                  </Button>
+                </details>
+                {!proposals.length && reviewExample && (
+                  <p className="simple-note">
+                    <Link
+                      className="text-link"
+                      to={`/proposals/${reviewExample.id}`}
                     >
-                      Start writing from this RFP <ArrowRight size={16} />
-                    </Button>
-                  </details>
+                      View a review example <ArrowRight size={14} />
+                    </Link>
+                    <br />
+                    Opens a saved demonstration proposal. It is unrelated to
+                    your uploaded RFP and does not create a proposal for it.
+                  </p>
                 )}
                 {proposals.length > 0 && (
                   <div className="stack" style={{ marginTop: 18 }}>
@@ -618,21 +579,42 @@ export default function OpportunityDetail() {
           <p>
             Your RFP is attached to this opportunity. Once the agent is
             connected, this action will read the RFP and enabled Company
-            Knowledge, write a proposal, and open it for your review. No
-            proposal has been created by this action. You can use the optional
-            manual editor meanwhile.
+            Knowledge and produce a complete proposal document. Its structure
+            will follow the RFP, with specific questions for information that
+            needs your review or input.
           </p>
           <p>
-            Download the agent input to get the readable RFP text and enabled
-            company files together. Downloading does not send anything to an AI
-            provider.
+            The cost plan will connect each price to the RFP scope and proposed
+            deliverables, with quantity, effort, rate sources, and assumptions.
+            Missing rates or quantities will become questions for you instead of
+            invented prices. After you respond, regeneration will create a new
+            version of the same proposal.
           </p>
-          <Button
-            disabled={!ready}
-            onClick={() => downloadAgentInput(state, o)}
-          >
-            Download agent input
-          </Button>
+          <p className="simple-note">
+            No proposal has been created by this action. Your uploaded RFP
+            remains attached and available.
+          </p>
+          {reviewExample && (
+            <p>
+              <Link className="text-link" to={`/proposals/${reviewExample.id}`}>
+                View a review example <ArrowRight size={14} />
+              </Link>
+              <br />
+              <span className="small muted">
+                Saved demonstration only; unrelated to your uploaded RFP.
+              </span>
+            </p>
+          )}
+          <details className="simple-note">
+            <summary>Advanced</summary>
+            <p>Export the supporting data prepared for the agent.</p>
+            <Button
+              disabled={!ready}
+              onClick={() => downloadAgentInput(state, o)}
+            >
+              Download agent input
+            </Button>
+          </details>
           <Link to="/setup" className="text-link">
             View connection requirements
           </Link>

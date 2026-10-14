@@ -58,7 +58,7 @@ const documentRecord = z.object({
   uploadedAt: date,
   text,
   status: z.enum(["ready", "needs_ocr", "error"]),
-  classification: z.enum(["synthetic", "public", "sanitized"]),
+  classification: z.enum(["synthetic", "public", "sanitized", "unspecified"]),
   hash: text,
 });
 const opportunity = z.object({
@@ -124,11 +124,24 @@ const proposal = z.object({
         unit: text,
         rate: text,
         optional: z.boolean(),
+        basis: z
+          .object({
+            rfpRequirementIds: z.array(id).max(3000),
+            proposalSectionIds: z.array(id).max(100),
+            deliverable: text,
+            estimateJustification: text,
+            rateSource: text,
+          })
+          .optional(),
       }),
     )
     .max(1000),
   pricingMode: z.enum(["markup", "margin"]),
   includePricing: z.boolean().optional(),
+  currency: z
+    .string()
+    .regex(/^[A-Z]{3}$/)
+    .optional(),
   percentage: text,
   contingency: text,
   tax: text,
@@ -137,6 +150,28 @@ const proposal = z.object({
   comments: z
     .array(z.object({ id, body: text, at: date, author: text }))
     .max(3000),
+  review: z
+    .object({
+      baseVersion: z.number().int().min(1),
+      sourceSignature: text,
+      answers: z.array(z.object({ questionId: id, answer: text })).max(3000),
+      instructions: text,
+      savedAt: date,
+      regeneration: z
+        .object({
+          id,
+          requestedAt: date,
+          status: z.literal("awaiting_connection"),
+          baseVersion: z.number().int().min(1),
+          sourceSignature: text,
+          answers: z
+            .array(z.object({ questionId: id, answer: text }))
+            .max(3000),
+          instructions: text,
+        })
+        .optional(),
+    })
+    .optional(),
 });
 const source = z.object({
   id,

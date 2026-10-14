@@ -22,7 +22,7 @@ export interface DocumentRecord {
   uploadedAt: string;
   text: string;
   status: "ready" | "needs_ocr" | "error";
-  classification: "synthetic" | "public" | "sanitized";
+  classification: "synthetic" | "public" | "sanitized" | "unspecified";
   hash: string;
 }
 export interface KnowledgeDocument extends DocumentRecord {
@@ -67,6 +67,34 @@ export interface FinanceLine {
   unit: string;
   rate: string;
   optional: boolean;
+  basis?: {
+    rfpRequirementIds: string[];
+    proposalSectionIds: string[];
+    deliverable: string;
+    estimateJustification: string;
+    rateSource: string;
+  };
+}
+export interface ProposalReviewAnswer {
+  questionId: string;
+  answer: string;
+}
+export interface ProposalRegenerationRequest {
+  id: string;
+  requestedAt: string;
+  status: "awaiting_connection";
+  baseVersion: number;
+  sourceSignature: string;
+  answers: ProposalReviewAnswer[];
+  instructions: string;
+}
+export interface ProposalReview {
+  baseVersion: number;
+  sourceSignature: string;
+  answers: ProposalReviewAnswer[];
+  instructions: string;
+  savedAt: string;
+  regeneration?: ProposalRegenerationRequest;
 }
 export interface Proposal {
   id: string;
@@ -77,6 +105,7 @@ export interface Proposal {
   sections: ProposalSection[];
   lines: FinanceLine[];
   includePricing?: boolean;
+  currency?: string;
   pricingMode: "markup" | "margin";
   percentage: string;
   contingency: string;
@@ -84,6 +113,7 @@ export interface Proposal {
   approvalVersion: number | null;
   updatedAt: string;
   comments: { id: string; body: string; at: string; author: string }[];
+  review?: ProposalReview;
 }
 export interface Source {
   id: string;

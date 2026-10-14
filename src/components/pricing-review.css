@@ -1,0 +1,183 @@
+.pricing-review {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pricing-review-heading,
+.pricing-review-heading h2,
+.pricing-review-line-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+.pricing-review-heading,
+.pricing-review-line-heading {
+  justify-content: space-between;
+}
+.pricing-review-heading h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.pricing-review-notice,
+.pricing-review-empty,
+.pricing-review-totals > p {
+  color: #5f6c64;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.pricing-review-empty {
+  padding: 14px 18px;
+  background: #f5f8f5;
+  border: 1px solid #dce5dd;
+  border-radius: 10px;
+  margin-bottom: 18px;
+}
+.pricing-review-lines {
+  display: grid;
+  gap: 16px;
+  margin: 18px 0;
+}
+.pricing-review-line {
+  padding: 18px;
+  border: 1px solid #dce3dd;
+  border-radius: 12px;
+  background: #fff;
+}
+.pricing-review-line h3 {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+.pricing-review-calculation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 13px;
+  margin: 14px 0;
+  padding: 11px 12px;
+  background: #f4f7f4;
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.pricing-review-calculation strong {
+  color: #27583b;
+}
+.pricing-review-basis {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.pricing-review-basis > div {
+  display: grid;
+  grid-template-columns: 155px minmax(0, 1fr);
+  gap: 16px;
+  padding: 10px 0;
+  border-top: 1px solid #edf0ec;
+}
+.pricing-review-basis dt {
+  font-weight: 600;
+  color: #526657;
+}
+.pricing-review-basis dd {
+  margin: 0;
+}
+.pricing-review-basis p {
+  margin: 0 0 8px;
+}
+.pricing-review-basis p:last-child {
+  margin-bottom: 0;
+}
+.pricing-review-warning {
+  color: #76571e;
+  background: #fff9eb;
+  padding: 11px 13px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.pricing-review-assumptions {
+  margin: 6px 0 14px;
+  font-size: 12px;
+  line-height: 1.65;
+}
+.pricing-review-assumptions summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #3e5c47;
+  padding: 8px 0;
+}
+.pricing-review-assumptions summary:focus-visible {
+  outline: 2px solid #356c50;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.pricing-review-assumptions ul,
+.pricing-review-warning ul {
+  padding-inline-start: 18px;
+  margin: 7px 0;
+}
+.pricing-review-assumptions li + li {
+  margin-top: 7px;
+}
+.pricing-review-totals {
+  background: #f6f8f5;
+  border: 1px solid #dce5da;
+  border-radius: 12px;
+  padding: 18px;
+  margin: 18px 0;
+}
+.pricing-review-totals h3 {
+  font-size: 14px;
+  margin: 0;
+}
+.pricing-review-terms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #dce5da;
+  font-size: 12px;
+}
+.pricing-review-terms dt {
+  color: #5c6d60;
+}
+.pricing-review-terms dd {
+  margin: 5px 0 0;
+  font-weight: 650;
+}
+.pricing-review-amounts {
+  margin: 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.pricing-review-amounts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 7px 0;
+}
+.pricing-review-amounts dd {
+  margin: 0;
+  text-align: end;
+}
+.pricing-review-amounts .pricing-review-grand-total {
+  border-top: 1px solid #dce5da;
+  margin-top: 7px;
+  padding-top: 14px;
+  font-weight: 700;
+  color: #27583b;
+}
+@media (max-width: 640px) {
+  .pricing-review-line,
+  .pricing-review-totals {
+    padding: 14px;
+  }
+  .pricing-review-basis > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .pricing-review-calculation {
+    gap: 7px;
+  }
+}

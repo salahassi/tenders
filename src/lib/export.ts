@@ -1,5 +1,6 @@
 import type { Opportunity, Proposal } from "../types";
 import { calculateFinance } from "./finance";
+import { getPricingReview } from "./pricingReview";
 
 export function proposalFileName(proposal: Proposal, opportunity: Opportunity) {
   const reference = opportunity.reference.replace(/[^\w-]/g, "_") || "proposal";
@@ -133,6 +134,7 @@ export async function createProposalDocumentBlob(
   });
   if (proposal.includePricing) {
     const total = calculateFinance(proposal);
+    const currency = getPricingReview(proposal, opportunity).currency;
     children.push(
       paragraph(
         label("Pricing schedule", "جدول التسعير"),
@@ -142,8 +144,8 @@ export async function createProposalDocumentBlob(
     children.push(
       paragraph(
         label(
-          "Currency: SAR. Optional items are excluded from the base offer. The base cost is adjusted using the entered pricing assumptions.",
-          "العملة: الريال السعودي. لا تشمل قيمة العرض الأساسية البنود الاختيارية. تُعدل التكلفة الأساسية وفق افتراضات التسعير المدخلة.",
+          `Currency: ${currency || "[INPUT REQUIRED: confirm offer currency]"}. Optional items are excluded from the base offer. The base cost is adjusted using the recorded pricing assumptions.`,
+          `العملة: ${currency || "[INPUT REQUIRED: تأكيد عملة العرض]"}. لا تشمل قيمة العرض الأساسية البنود الاختيارية. تُعدل التكلفة الأساسية وفق افتراضات التسعير المسجلة.`,
         ),
       ),
     );
@@ -153,7 +155,10 @@ export async function createProposalDocumentBlob(
           label("Description", "الوصف"),
           label("Quantity", "الكمية"),
           label("Unit", "الوحدة"),
-          label("Unit cost (SAR)", "تكلفة الوحدة (ريال)"),
+          label(
+            `Unit cost${currency ? ` (${currency})` : ""}`,
+            `تكلفة الوحدة${currency ? ` (${currency})` : ""}`,
+          ),
           label("Treatment", "النوع"),
         ],
         ...proposal.lines.map((line) => [
@@ -165,10 +170,10 @@ export async function createProposalDocumentBlob(
         ]),
       ]),
     );
-    if (total.isValid) {
+    if (total.isValid && currency) {
       children.push(
         table([
-          [label("Offer summary", "ملخص العرض"), "SAR"],
+          [label("Offer summary", "ملخص العرض"), currency],
           [
             label("Base offer excluding tax", "قيمة العرض الأساسي قبل الضريبة"),
             total.net.toFixed(2),

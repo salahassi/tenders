@@ -33,11 +33,7 @@ import {
   Field,
   Tabs,
 } from "../components/ui";
-import type {
-  KnowledgeDocument,
-  KnowledgeFact,
-  DocumentRecord,
-} from "../types";
+import type { KnowledgeDocument, KnowledgeFact } from "../types";
 import "./admin.css";
 import "./knowledge.css";
 
@@ -75,8 +71,6 @@ export default function Knowledge() {
   const [uploadOpen, setUploadOpen] = useState(false);
   const [category, setCategory] =
     useState<KnowledgeDocument["category"]>("previous_proposal");
-  const [classification, setClassification] =
-    useState<DocumentRecord["classification"]>("public");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
@@ -143,7 +137,7 @@ export default function Knowledge() {
     for (const file of selectedFiles) {
       setUploadMessage(`Reading ${file.name}…`);
       try {
-        const record = await extractLocalDocument(file, classification);
+        const record = await extractLocalDocument(file);
         const existing = [...documentsRef.current, ...added].find(
           (item) => item.hash === record.hash,
         );
@@ -576,25 +570,6 @@ export default function Knowledge() {
               ))}
             </ul>
           )}
-          <Field
-            label="Trial data type"
-            hint="Use public, synthetic, or sanitized material in this frontend trial."
-          >
-            <select
-              className="input"
-              value={classification}
-              disabled={uploading}
-              onChange={(event) =>
-                setClassification(
-                  event.target.value as DocumentRecord["classification"],
-                )
-              }
-            >
-              <option value="public">Public material</option>
-              <option value="synthetic">Synthetic examples</option>
-              <option value="sanitized">Sanitized material</option>
-            </select>
-          </Field>
           <p className="admin-help">
             The original files and extracted text are stored locally. Scanned
             pages may need OCR; no AI service is called.

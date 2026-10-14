@@ -4,7 +4,7 @@
 
 Tenderdesk is a runnable, browser-local frontend with persistent records, file uploads, local text extraction, editable proposals, and Word export. It has no connected AI provider, discovery crawler, authentication service, scheduler, or procurement portal. AI controls report that dependency explicitly; they do not simulate generated content or connected success.
 
-The current user journey is **Review fit → select opportunity → upload buyer’s RFP → generate its linked proposal → review/edit → download Word**. Each proposal originates from its opportunity and requires a readable RFP before creation. AI generation is a disconnected boundary; the working manual editor is a secondary, optional path after uploading the RFP. The editor supports free-text sections and optional structured pricing. Acquisition, a requirements inventory, and final approval are not mandatory gates.
+The current user journey is **Review fit → select opportunity → upload buyer’s RFP → generate its full linked proposal → review the file and identified issues → supply missing inputs or request changes → regenerate a new version**. Generation and regeneration remain disconnected boundaries. The UI no longer asks the user to create an outline, add sections, or fill an optional pricing form. It preserves current content separately from pending review inputs.
 
 `IMPLEMENTATION_SPEC.txt` remains a historical blueprint. The later user feedback and this handoff supersede its earlier interface workflow. Do not restore the removed screens or gates merely because the old specification describes them. Reconcile any future backend contract with this simpler interface.
 
@@ -15,13 +15,13 @@ The current user journey is **Review fit → select opportunity → upload buyer
 | Incoming discoveries appear in Review inbox | `new` and legacy `deferred` statuses are shown together; `declined` items appear under Archived                                                                               |
 | Selected items appear in Opportunities      | `shortlisted`, `in_progress`, and `submitted` are the selected set                                                                                                            |
 | Actual file/proposal stages                 | `getOpportunityStage` derives Awaiting RFP, Needs readable RFP, Ready to generate, or Has proposal; legacy saved status does not define progress                              |
-| One linked proposal per creation journey    | The opportunity opens its existing proposal. The optional manual creation path requires readable RFPs and checks for an existing proposal first                               |
+| One linked proposal per creation journey    | The opportunity opens its existing proposal. Generate requires readable RFPs; the old manual two-section starter was removed                                                  |
 | Submission recorded separately              | An opportunity with a proposal can be marked submitted externally; this does not send a file, freeze the document, or hide it from Proposals                                  |
 | Preliminary fit before RFP                  | `fitPreview.ts` supplies manually authored synthetic examples with notice/company evidence and unknowns. It never runs a scoring model or reads uploaded files as if assessed |
 | Closing dates are informational             | The buyer's submission deadline is optional; source notes identify where a date came from, and sample dates are labeled synthetic                                             |
 | Website, RSS, and JSON sources              | Website retains the existing internal `link_directory` value; `manual` is labeled Added by you and has no crawler controls                                                    |
-| Free-text proposal outline                  | Users can add, rename, reorder, and remove sections; a new starter has two editable sections, not a mandatory six-part form                                                   |
-| One Word file                               | All sections are exported in their displayed order; structured pricing is included only when enabled                                                                          |
+| Review inputs separate from file            | Answers and change requests persist under Proposal.review, with base version and a source signature; they do not alter document content                                       |
+| One Word file                               | Download exports current saved content only; pending review inputs are never silently incorporated into the Word file                                                         |
 
 Legacy `score`, `coverage`, `saved`, `requirements`, `gaps`, `acquisition`, and proposal approval fields remain in the data model for compatibility with saved work. Their presence does not establish a current UI gate. Existing approval invalidation rules remain defensive data behavior, not a requirement to obtain approval before generating a file.
 
@@ -31,7 +31,7 @@ Fit previews match the exact synthetic notice, company profile, and RFP context;
 
 `src/lib/documents.ts` extracts local PDF, DOCX, TXT, and Markdown files. The current limits are 10 MiB per file, 200 pages per PDF, and 1,000,000 extracted characters per file. An opportunity accepts up to 10 RFP files. DOCX parsing applies bounded archive checks. A file marked `needs_ocr` requires readable text; there is no optical character recognition (OCR) service in this release. Page markers are retained for PDFs, but the extraction is not a layout-preserving representation of the original.
 
-Both RFP and company uploads retain the original Blob in IndexedDB using `src/lib/knowledgeFiles.ts`. The serializable workspace record retains file metadata, classification, hash, status, and extracted text. Original downloads depend on the Blob being present in that browser. A restored or older workspace may have readable text without an original attachment, and the interface reports that condition instead of inventing a successful download.
+Both RFP and company uploads retain the original Blob in IndexedDB using `src/lib/knowledgeFiles.ts`. The serializable workspace record retains file metadata, hash, status, and extracted text. Classification selectors were removed; new uploads use the internal unspecified value without asserting whether the user file is public, sanitized, or synthetic. Older values remain compatible. Original downloads depend on the Blob being present in that browser. A restored or older workspace may have readable text without an original attachment, and the interface reports that condition instead of inventing a successful download.
 
 Company files have categories and an include/exclude control. Only enabled files with ready, nonempty text are readable agent context. Additional company notes remain available alongside files; they do not substitute for uploaded references.
 
@@ -44,7 +44,8 @@ JSON workspace backups include records and extracted text, **not original file b
 - The opportunity details and requested proposal language.
 - Full readable text from attached RFP files, with names, IDs, classifications, and hashes.
 - Full readable text from enabled company files, plus the saved company notes.
-- The current proposal sections and enabled pricing inputs when exported from a draft.
+- The current proposal sections and recorded pricing inputs, with an explicit flag indicating whether pricing is included in the current file.
+- Saved review answers, change requests, and pending regeneration context.
 - The selected section and rewrite instructions for a rewrite request.
 - A list of unreadable documents omitted from the package and explicit extraction limitations.
 
@@ -52,26 +53,26 @@ The package contains no original bytes, images, or document layout. It is not si
 
 ## Proposal generation
 
-The proposal editor saves editable content and generates one DOCX through `src/lib/export.ts`. Export includes every section in the displayed order and an optional pricing schedule. The file is a working draft unless its retained data already identifies an approved version. There is no mandatory approval UI before download.
+The proposal review page downloads current saved content through `src/lib/export.ts`. The read-only browser text is not a Word layout preview. Pending answers and change requests are stored separately; saving or requesting regeneration never changes sections or creates a file version. A request is explicitly awaiting_connection, not an executed job. Changes to source evidence invalidate approval without claiming a new document version. Changing actual proposal content still creates a version and invalidates approval. Older unsaved editor content is retained for explicit recovery.
 
-Structured pricing uses decimal arithmetic for direct costs, optional lines, markup or margin, contingency, and an entered tax percentage in Saudi riyals (SAR). Blank or invalid inputs remain incomplete; invalid totals are omitted with an input-required marker. Commercial text may also be written in ordinary sections. The calculator does not infer rates, tax, or commercial commitments from the RFP.
+Pricing review explains each recorded cost through a supporting RFP clause, proposal response, deliverable, quantity/effort justification, and rate source. Unchanged synthetic fixtures have explicitly labeled example traceability; altered or custom inputs are not represented as verified. Missing links, rates, currency, and assumptions become review questions. An optional analytics cost with no proposal response is explicitly flagged. The calculator uses decimal arithmetic and never treats unknown input as confirmed zero. Recorded pricing not present in the current file is labeled as awaiting incorporation into a regenerated proposal. The connected agent must derive the work breakdown from the actual RFP and proposal and follow the buyer’s required financial format; it must not infer tax, rates, or commercial commitments without support.
 
 The DOCX has a native dynamic table of contents (TOC), heading styles, page-number fields, and an update-fields-on-open setting. After opening it in Word, update all fields, choose **Update Table → Update entire table** for the TOC, save, and review the final pagination and content. The browser does not calculate final Word pagination or create a final PDF. Arabic content is preserved and uses right-to-left paragraph settings when the opportunity language is Arabic.
 
 ## Backend integration points
 
-| Frontend boundary                                | Required connected work                                                                                                               |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/lib/store.tsx` local commands and IndexedDB | Authenticated commands, durable storage, transactional writes, conflict handling, and server-enforced authorization                   |
-| Settings role simulation                         | Real identities and workspace membership; remove the role switch in connected mode                                                    |
-| Source configuration                             | Permitted website/feed adapters, safe URL fetching, deduplication, schedules, and actual collection results delivered to Review inbox |
-| Original files and extracted text                | Private object storage, authorization, document/extraction versions, secure processing, retention, and recovery                       |
-| Enabled company references                       | Authorized retrieval of the selected files and relevant notes, with traceable document references                                     |
-| Agent input JSON                                 | A validated model/agent adapter with bounded context, clear omissions, prompt-injection defenses, and accurate job status             |
-| Generate/rewrite AI controls                     | Real generation and section rewrite requests with cancellation, retries, token budgets, and user-visible errors                       |
-| Proposal editor and Word export                  | Durable draft versions, template support, reliable document assembly, and review of generated output                                  |
-| Local activity and example jobs                  | Persistent job execution, idempotency, leases, retry limits, and actual run history                                                   |
-| Local JSON backup                                | A complete operational recovery process covering both metadata and original files                                                     |
+| Frontend boundary                                | Required connected work                                                                                                                    |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/lib/store.tsx` local commands and IndexedDB | Authenticated commands, durable storage, transactional writes, conflict handling, and server-enforced authorization                        |
+| Settings role simulation                         | Real identities and workspace membership; remove the role switch in connected mode                                                         |
+| Source configuration                             | Permitted website/feed adapters, safe URL fetching, deduplication, schedules, and actual collection results delivered to Review inbox      |
+| Original files and extracted text                | Private object storage, authorization, document/extraction versions, secure processing, retention, and recovery                            |
+| Enabled company references                       | Authorized retrieval of the selected files and relevant notes, with traceable document references                                          |
+| Agent input JSON                                 | A validated model/agent adapter with bounded context, clear omissions, prompt-injection defenses, and accurate job status                  |
+| Generate/regenerate AI controls                  | Full document generation, grounded review findings, pricing dependencies, change application, versioned artifacts, and clear failures      |
+| Proposal review and Word export                  | Durable document versions, original DOCX plus a faithful rendered preview, change summaries, and explicit handling of unresolved questions |
+| Local activity and example jobs                  | Persistent job execution, idempotency, leases, retry limits, and actual run history                                                        |
+| Local JSON backup                                | A complete operational recovery process covering both metadata and original files                                                          |
 
 Do not trust browser-provided roles, document classifications, prices, or model requests as server authority. No live purchase, payment, notification to a third party, or external bid submission is implemented. Recording Submitted is a local user decision.
 

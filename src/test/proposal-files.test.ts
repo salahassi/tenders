@@ -9,6 +9,7 @@ async function exportedXml(
   includePricing = false,
   completePricing = false,
   arabic = false,
+  currency: string | null = "SAR",
 ) {
   const state = createSeedState();
   const proposal = structuredClone(state.proposals[0]);
@@ -38,6 +39,7 @@ async function exportedXml(
     },
   ];
   proposal.includePricing = includePricing;
+  proposal.currency = currency || undefined;
   proposal.lines = [
     {
       id: "line",
@@ -97,6 +99,15 @@ describe("proposal document export", () => {
     expect(xml.document).toContain("المحتويات");
     expect(xml.document).toContain("<w:bidi/>");
     expect(xml.document).toContain("<w:rtl/>");
+  });
+  it("uses the recorded currency and withholds totals when currency is unknown", async () => {
+    const usd = await exportedXml(true, true, false, "USD");
+    expect(usd.document).toContain("Currency: USD");
+    expect(usd.document).not.toContain("Unit cost (SAR)");
+    expect(usd.document).toContain("220.00");
+    const unknown = await exportedXml(true, true, false, null);
+    expect(unknown.document).toContain("confirm offer currency");
+    expect(unknown.document).not.toContain("Total including tax");
   });
 });
 

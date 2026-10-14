@@ -1,0 +1,314 @@
+.proposal-review-page {
+  max-width: 1320px;
+  margin: 0 auto;
+}
+.review-current-file {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  padding: 24px;
+}
+.review-file-icon {
+  width: 58px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  flex: 0 0 auto;
+  color: #31583e;
+  background: #edf3e5;
+  border: 1px solid #dee8d2;
+}
+.review-file-info {
+  flex: 1;
+  min-width: 0;
+}
+.review-file-info h2 {
+  margin: 6px 0;
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.review-file-info p,
+.review-demo-note,
+.review-action-help {
+  font-size: 12px;
+  line-height: 1.75;
+  color: #6b786b;
+}
+.review-file-info p {
+  margin: 0 0 10px;
+}
+.review-demo-note {
+  margin: 14px 0 22px;
+}
+.proposal-review-page > .notice {
+  margin-bottom: 18px;
+}
+.review-pending p {
+  margin-top: 5px !important;
+}
+.review-content,
+.review-advanced,
+.review-recovered {
+  margin-top: 22px;
+  overflow: hidden;
+}
+.proposal-review-page details > summary {
+  cursor: pointer;
+}
+.review-content > summary,
+.review-advanced > summary,
+.review-recovered > summary {
+  padding: 20px 24px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.review-content[open] > summary,
+.review-advanced[open] > summary,
+.review-recovered[open] > summary {
+  border-bottom: 1px solid #e6ebe1;
+}
+.review-summary-meta {
+  margin-inline-start: 14px;
+  font-weight: 400;
+  color: #74806e;
+  font-size: 12px;
+}
+.review-content-body {
+  padding: 20px 24px;
+}
+.review-content-body > p {
+  margin: 0 0 18px;
+  line-height: 1.8;
+  font-size: 12px;
+  color: #6b786b;
+}
+.review-content-body > h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.review-text-section {
+  border-top: 1px solid #e6ebe1;
+  padding: 14px 0;
+}
+.review-text-section > summary {
+  font-size: 14px;
+  font-weight: 550;
+}
+.review-text-section > p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.9;
+  font-size: 13px;
+  margin: 16px 0;
+}
+.review-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr);
+  gap: 24px;
+  align-items: start;
+  margin: 24px 0;
+}
+.review-questions {
+  overflow: hidden;
+}
+.review-panel-heading {
+  padding: 24px 24px 12px;
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.review-panel-heading h2,
+.review-request h2 {
+  font-size: 18px;
+  margin: 6px 0 10px;
+  line-height: 1.5;
+  font-weight: 550;
+}
+.review-panel-heading p,
+.review-request > p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #6b786b;
+  margin: 0;
+}
+.review-panel-heading .badge {
+  flex: 0 0 auto;
+  margin-top: 4px;
+}
+.review-question-origin {
+  margin: 0;
+  padding: 0 24px 22px;
+  font-size: 11px;
+  line-height: 1.75;
+  color: #7a8374;
+}
+.review-question {
+  padding: 24px;
+  border-top: 1px solid #e6ebe1;
+}
+.review-question h3 {
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0 0 9px;
+  font-weight: 600;
+}
+.review-question > p {
+  font-size: 12px;
+  line-height: 1.8;
+  color: #6b786b;
+  margin: 0 0 14px;
+}
+.review-question dl {
+  font-size: 11px;
+  background: #f7f9f3;
+  border-radius: 7px;
+  padding: 12px 14px;
+  margin: 0 0 16px;
+}
+.review-question dl > div {
+  display: grid;
+  grid-template-columns: 47px minmax(0, 1fr);
+  gap: 12px;
+  padding: 3px 0;
+}
+.review-question dt {
+  color: #7a8374;
+}
+.review-question dd {
+  margin: 0;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.review-question .review-existing-answer {
+  color: #475a49;
+  padding: 10px 12px;
+  border-inline-start: 2px solid #cadbb7;
+}
+.review-request {
+  padding: 24px;
+}
+.review-request .field {
+  margin: 20px 0 16px;
+}
+.review-request > .btn {
+  width: 100%;
+  justify-content: center;
+  margin-top: 10px;
+}
+.review-request .review-action-help {
+  margin-top: 14px;
+  font-size: 11px;
+}
+.review-request .review-missing-rfp {
+  margin-top: 14px;
+  color: #816a40;
+}
+.review-missing-rfp a {
+  text-decoration: underline;
+}
+.review-empty {
+  padding: 25px 24px 30px;
+  border-top: 1px solid #e6ebe1;
+  color: #7b8973;
+}
+.review-empty h3 {
+  margin: 12px 0 8px;
+  font-size: 14px;
+  font-weight: 550;
+  color: #4c614c;
+}
+.review-empty p {
+  font-size: 12px;
+  line-height: 1.8;
+  max-width: 460px;
+  margin: 0;
+}
+.review-retained-answers {
+  border-top: 1px solid #e6ebe1;
+  padding: 18px 24px;
+  font-size: 12px;
+}
+.review-retained-answers > div {
+  margin-top: 14px;
+}
+.review-retained-answers p {
+  white-space: pre-wrap;
+  line-height: 1.8;
+}
+.review-recovered textarea {
+  width: 100%;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+.proposal-review-page textarea {
+  resize: vertical;
+  min-height: 88px;
+}
+.proposal-review-page summary:focus-visible {
+  outline: 2px solid #648c55;
+  outline-offset: -3px;
+  border-radius: 6px;
+}
+.proposal-review-page .review-text-section summary:focus-visible {
+  outline-offset: 4px;
+}
+@media (max-width: 1050px) {
+  .review-main-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 18px;
+  }
+  .review-panel-heading {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 850px) {
+  .review-main-grid {
+    grid-template-columns: 1fr;
+  }
+  .review-current-file {
+    flex-wrap: wrap;
+  }
+  .review-current-file > .btn {
+    margin-inline-start: 78px;
+  }
+}
+@media (max-width: 550px) {
+  .review-current-file,
+  .review-panel-heading,
+  .review-question,
+  .review-request,
+  .review-content-body {
+    padding: 18px;
+  }
+  .review-current-file {
+    gap: 12px;
+  }
+  .review-file-icon {
+    width: 44px;
+    height: 55px;
+  }
+  .review-current-file > .btn {
+    margin-inline-start: 0;
+    width: 100%;
+    justify-content: center;
+  }
+  .review-summary-meta {
+    display: block;
+    margin: 8px 0 0 16px;
+  }
+  .review-content > summary,
+  .review-advanced > summary,
+  .review-recovered > summary {
+    padding: 18px;
+  }
+  .review-question-origin {
+    padding: 0 18px 18px;
+  }
+  .review-file-info h2 {
+    font-size: 14px;
+  }
+}

@@ -30,12 +30,13 @@ The production build is generated in `dist/`. `npm run preview` serves that buil
 2. Open **Opportunities** to see only the opportunities you selected. Search, filter, and sort them, or add an opportunity directly. CSV import provides a preview before accepting valid rows.
 3. Open a selected opportunity and upload its RFP and addenda. PDF, DOCX, TXT, and Markdown are supported, with a 10 MiB limit per file and up to 10 files per opportunity. Inspect extracted text and download the original when needed. A sample is included at [`public/demo-rfp.txt`](public/demo-rfp.txt).
 4. In **Company knowledge**, upload company profiles, team resumes, previous proposals, templates, and other examples. Choose which files to include as references. Additional text notes are optional.
-5. Return to the opportunity and choose **Generate proposal**. This is the intended RFP-to-proposal action; it currently explains the disconnected AI dependency without creating a fake result. To try the working editor, expand **Write the proposal manually** and choose **Start writing from this RFP**. This creates a manual starter linked to that opportunity. Both paths require readable RFP files; a deadline and separate requirements checklist are not required. Existing proposals open directly instead of creating another proposal.
-6. Edit the proposal's title and free-text sections. Add, rename, reorder, or remove sections to match the RFP. Include the optional pricing table only when needed; commercial information can also be written directly in a section.
-7. Choose **Generate Word file** to save the latest edits and export one DOCX containing all sections in their displayed order. Review the document before using it externally.
-8. Opportunity stages follow actual data: **Awaiting RFP**, **Needs readable RFP** when extraction is incomplete, **Ready to generate**, and **Has proposal**. **Proposals** collects the linked documents and provides a return link to each opportunity. After submitting externally, use **Mark as submitted externally** inside an opportunity with a proposal. This separate record does not send a bid, remove its proposal, or change its derived stage.
+5. Return to the opportunity and choose **Generate proposal**. The intended agent action produces the full RFP-driven proposal, pricing basis, and review questions. This frontend reports the missing AI connection without fabricating a result. There is no manual two-section starter. **View a review example** opens an existing, clearly labeled sample; it does not create a response to your uploaded RFP.
+6. Open a proposal to review its current saved version. **Download current Word** exports that version's content. The browser's read-only **Content for review** is text, not a claim of matching Word pagination or layout.
+7. Answer the recorded questions and enter a change request. **Pricing and its basis** links supported example costs to RFP requirements, proposal responses, deliverables, effort assumptions, and rate sources. Missing or unverified inputs are explicit. **Save review inputs** preserves your feedback without applying it to the file.
+8. Choose **Regenerate proposal** to save a request awaiting the AI connection. No model is called, content rewritten, or new file version claimed. In the connected workflow, the agent applies the review inputs, reconciles scope and pricing, and returns a new version with remaining questions.
+9. Opportunity stages follow actual data: **Awaiting RFP**, **Needs readable RFP**, **Ready to generate**, and **Has proposal**. External submission is recorded separately inside an opportunity with a proposal.
 
-**Generate proposal** and **Rewrite with AI** explain that the backend is not connected. **Download agent input** creates a JSON handoff containing readable RFP text, enabled readable company files, company notes, and the draft or rewrite request when applicable. It does not contact an agent or provider. Original files, images, and document layout are not included in that JSON.
+**Download agent input** remains under **Advanced** controls. It includes readable RFP text, enabled company files, saved proposal content, recorded pricing, and saved review inputs. It is an inspectable handoff, not the final prompt or proposal. Downloading does not contact an agent; original file bytes and document layout are not included.
 
 ### Update the Word table of contents
 
@@ -43,18 +44,18 @@ The DOCX contains a native dynamic table of contents (TOC) and requests field up
 
 ## Screens
 
-| Route                           | Purpose                                                                                           |
-| ------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `#/dashboard`                   | Inbox count, selected opportunities, recorded submission deadlines, and workflow guide            |
-| `#/review`                      | Incoming discoveries, selection decisions, and archived items                                     |
-| `#/opportunities`               | Selected opportunities, search, filtering, direct entry, and CSV import/export                    |
-| `#/opportunities/:id`           | RFP uploads, company-reference count, draft preparation, closing date, and status control         |
-| `#/proposals`                   | Proposal files with access to the editor and Word download                                        |
-| `#/proposals/:id`               | Free-text section editing, document preview, optional pricing, agent handoff, and Word generation |
-| `#/sources` and `#/sources/:id` | Website/RSS/JSON source configuration and local activation preferences                            |
-| `#/knowledge`                   | Original company files, extracted text, reference selection, and optional notes                   |
-| `#/jobs` and `#/notifications`  | Local activity, example jobs, and in-app notices                                                  |
-| `#/settings` and `#/setup`      | Preferences, simulated roles, backup/restore/reset, and connection requirements                   |
+| Route                           | Purpose                                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `#/dashboard`                   | Inbox count, selected opportunities, recorded submission deadlines, and workflow guide           |
+| `#/review`                      | Incoming discoveries, selection decisions, and archived items                                    |
+| `#/opportunities`               | Selected opportunities, search, filtering, direct entry, and CSV import/export                   |
+| `#/opportunities/:id`           | RFP uploads, generation boundary, linked proposal, closing date, and external submission         |
+| `#/proposals`                   | Proposal files with access to the editor and Word download                                       |
+| `#/proposals/:id`               | Current Word version, review questions and answers, justified pricing, and regeneration requests |
+| `#/sources` and `#/sources/:id` | Website/RSS/JSON source configuration and local activation preferences                           |
+| `#/knowledge`                   | Original company files, extracted text, reference selection, and optional notes                  |
+| `#/jobs` and `#/notifications`  | Local activity, example jobs, and in-app notices                                                 |
+| `#/settings` and `#/setup`      | Preferences, simulated roles, backup/restore/reset, and connection requirements                  |
 
 Sources can be websites, RSS feeds, or JSON feeds. **Added by you** is the built-in origin for manually entered or imported opportunities, not a collection connector. Enabling a source only saves its configuration; no live crawler runs in this release.
 

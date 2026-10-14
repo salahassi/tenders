@@ -8,7 +8,7 @@ import type {
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
 export async function extractLocalDocument(
   file: File,
-  classification: "public" | "synthetic" | "sanitized",
+  classification: DocumentRecord["classification"] = "unspecified",
 ): Promise<DocumentRecord> {
   if (file.size > MAX_FILE_BYTES)
     throw new Error("The file exceeds the 10 MiB trial limit.");

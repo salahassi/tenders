@@ -198,6 +198,7 @@ function content(proposal: Proposal) {
     sections: proposal.sections,
     lines: proposal.lines,
     includePricing: proposal.includePricing,
+    currency: proposal.currency,
     pricingMode: proposal.pricingMode,
     percentage: proposal.percentage,
     contingency: proposal.contingency,
@@ -215,7 +216,8 @@ function evidence(opportunity: Opportunity | undefined) {
     gaps: opportunity.gaps,
   });
 }
-/** Editing content or its supporting evidence creates a new content version.
+/** Editing content creates a new content version. Changed supporting evidence
+ * invalidates approval but does not pretend a new document was generated.
  * Comments, role simulation, decision changes, and reading notifications do not. */
 export function invalidateChangedApprovals(
   previous: AppState,
@@ -231,8 +233,9 @@ export function invalidateChangedApprovals(
     proposals: next.proposals.map((proposal) => {
       const before = previous.proposals.find((item) => item.id === proposal.id);
       if (!before) return proposal;
+      const contentChanged = content(before) !== content(proposal);
       const changed =
-        content(before) !== content(proposal) ||
+        contentChanged ||
         evidence(
           previous.opportunities.find(
             (item) => item.id === proposal.opportunityId,
@@ -249,7 +252,9 @@ export function invalidateChangedApprovals(
         ...proposal,
         status: "draft" as const,
         approvalVersion: null,
-        version: Math.max(before.version + 1, proposal.version),
+        version: contentChanged
+          ? Math.max(before.version + 1, proposal.version)
+          : proposal.version,
         updatedAt: new Date().toISOString(),
       };
     }),
