@@ -200,30 +200,55 @@ describe("browser-local workspace journeys", () => {
     );
   });
 
-  it("changes an opportunity status using its visible status control", async () => {
+  it("records external submission while keeping the same linked proposal available", async () => {
     const seed = createSeedState();
-    const opportunity = seed.opportunities.find((item) => item.id === "opp-2")!;
+    const opportunity = seed.opportunities.find((item) => item.id === "opp-1")!;
+    const proposal = seed.proposals.find(
+      (item) => item.opportunityId === opportunity.id,
+    )!;
+    await set(STORAGE_KEY, seed);
     const user = userEvent.setup();
-    mount("/opportunities/opp-2");
-    const status = await screen.findByRole("combobox", {
-      name: /^Opportunity status/,
-    });
-    await user.selectOptions(status, "new");
-    await waitFor(async () =>
-      expect(
-        (await stored())?.opportunities.find(
-          (item) => item.id === opportunity.id,
-        )?.status,
-      ).toBe("new"),
+    mount(`/opportunities/${opportunity.id}`);
+    await user.click(
+      await screen.findByRole("button", {
+        name: "Mark as submitted externally",
+      }),
     );
-    await user.click(navigation().getByRole("link", { name: /^Review inbox/ }));
+    await waitFor(async () => {
+      const state = await stored();
+      expect(
+        state?.opportunities.find((item) => item.id === opportunity.id)?.status,
+      ).toBe("submitted");
+      expect(state?.proposals).toEqual(seed.proposals);
+    });
+    expect(
+      screen.queryByRole("combobox", { name: /^Opportunity status/ }),
+    ).not.toBeInTheDocument();
+    await user.click(navigation().getByRole("link", { name: "Opportunities" }));
     expect(
       await screen.findByRole("link", { name: opportunity.title }),
     ).toBeInTheDocument();
-    await user.click(navigation().getByRole("link", { name: "Opportunities" }));
+    await user.click(screen.getByRole("button", { name: /^Has proposal/ }));
     expect(
-      screen.queryByRole("link", { name: opportunity.title }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("link", { name: opportunity.title }),
+    ).toBeInTheDocument();
+    await user.click(navigation().getByRole("link", { name: "Proposals" }));
+    await screen.findByRole("heading", { level: 1, name: "Proposal files" });
+    expect(
+      await screen.findByRole("link", { name: `Open ${proposal.title}` }),
+    ).toHaveAttribute("href", `/proposals/${proposal.id}`);
+    await user.click(
+      screen.getByRole("link", {
+        name: `View opportunity: ${opportunity.title}`,
+      }),
+    );
+    await user.click(
+      await screen.findByRole("link", { name: "Open proposal" }),
+    );
+    expect(
+      await screen.findByRole("textbox", { name: "Section content" }),
+    ).toBeInTheDocument();
+    expect((await stored())?.proposals).toEqual(seed.proposals);
   });
 
   it("opens every remaining workspace destination through visible navigation", async () => {
@@ -470,7 +495,7 @@ describe("browser-local workspace journeys", () => {
     ).toBeInTheDocument();
   });
 
-  it("creates an editable draft from an uploaded RFP without deadline or requirement gates", async () => {
+  it("requires an RFP and keeps disconnected AI generation separate from explicit manual writing", async () => {
     const seed = createSeedState();
     const opportunity = seed.opportunities.find((item) => item.id === "opp-2")!;
     opportunity.deadline = "";
@@ -482,8 +507,13 @@ describe("browser-local workspace journeys", () => {
     mount("/opportunities/opp-2");
     const input = await screen.findByLabelText(/^Upload RFP files/);
     expect(
-      screen.getByRole("button", { name: "Create editable draft" }),
+      screen.getByRole("button", { name: "Generate proposal" }),
     ).toBeDisabled();
+    await user.click(screen.getByText("Write the proposal manually"));
+    expect(
+      screen.getByRole("button", { name: "Start writing from this RFP" }),
+    ).toBeDisabled();
+    expect((await stored())?.proposals).toHaveLength(seed.proposals.length);
     expect(
       screen.queryByRole("button", { name: "Acquisition" }),
     ).not.toBeInTheDocument();
@@ -503,8 +533,19 @@ describe("browser-local workspace journeys", () => {
         status: "ready",
       });
     });
+    await user.click(screen.getByRole("button", { name: "Generate proposal" }));
+    const aiDialog = screen.getByRole("dialog", {
+      name: "Proposal generation is not connected",
+    });
+    expect(
+      within(aiDialog).getByText(/No proposal has been created by this action/),
+    ).toBeInTheDocument();
+    expect((await stored())?.proposals).toHaveLength(seed.proposals.length);
     await user.click(
-      screen.getByRole("button", { name: "Create editable draft" }),
+      within(aiDialog).getByRole("button", { name: "Close dialog" }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Start writing from this RFP" }),
     );
     await waitFor(async () => {
       const current = await stored();
@@ -552,7 +593,12 @@ describe("browser-local workspace journeys", () => {
     await set(STORAGE_KEY, seed);
     mount("/opportunities/opp-2");
     expect(
-      await screen.findByRole("button", { name: "Create editable draft" }),
+      await screen.findByRole("button", { name: "Generate proposal" }),
+    ).toBeDisabled();
+    const user = userEvent.setup();
+    await user.click(screen.getByText("Write the proposal manually"));
+    expect(
+      screen.getByRole("button", { name: "Start writing from this RFP" }),
     ).toBeDisabled();
     expect((await stored())?.proposals).toHaveLength(seed.proposals.length);
     expect(

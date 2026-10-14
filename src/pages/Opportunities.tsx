@@ -16,6 +16,13 @@ import { can } from "../lib/domain";
 import type { Opportunity } from "../types";
 import { uid } from "../lib/format";
 import {
+  getOpportunityStage,
+  isSelected,
+  opportunityStageHelp,
+  opportunityStageLabel,
+  type OpportunityStage,
+} from "../lib/workflow";
+import {
   downloadText,
   fromImportRow,
   opportunitiesToCsv,
@@ -31,15 +38,20 @@ import {
   Tabs,
 } from "../components/ui";
 import OpportunityTable from "../components/OpportunityTable";
+
+const stages: OpportunityStage[] = [
+  "awaiting_rfp",
+  "rfp_needs_text",
+  "ready_to_generate",
+  "proposal_created",
+];
+
 export default function Opportunities() {
   const { state, update, notify } = useApp();
   const [params, setParams] = useSearchParams();
-  const [tab, setTab] = useState(
-    ["shortlisted", "in_progress", "submitted"].includes(
-      params.get("status") || "",
-    )
-      ? params.get("status")!
-      : "all",
+  const initialStage = params.get("stage") as OpportunityStage;
+  const [tab, setTab] = useState<OpportunityStage | "all">(
+    stages.includes(initialStage) ? initialStage : "all",
   );
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
@@ -61,16 +73,24 @@ export default function Opportunities() {
     time: "17:00",
   });
   const editable = can(state.settings.role, "edit");
-  const selected = state.opportunities.filter((o) =>
-    ["shortlisted", "in_progress", "submitted"].includes(o.status),
-  );
+  const selected = state.opportunities.filter(isSelected);
+  const stageCounts = Object.fromEntries(
+    stages.map((stage) => [
+      stage,
+      selected.filter(
+        (opportunity) =>
+          getOpportunityStage(opportunity, state.proposals) === stage,
+      ).length,
+    ]),
+  ) as Record<OpportunityStage, number>;
   const filtered = useMemo(
     () =>
       state.opportunities
         .filter(
           (o) =>
-            ["shortlisted", "in_progress", "submitted"].includes(o.status) &&
-            (tab === "all" || o.status === tab) &&
+            isSelected(o) &&
+            (tab === "all" ||
+              getOpportunityStage(o, state.proposals) === tab) &&
             (category === "all" || o.category === category) &&
             `${o.title} ${o.buyer} ${o.reference}`
               .toLowerCase()
@@ -83,7 +103,7 @@ export default function Opportunities() {
               ? b.createdAt.localeCompare(a.createdAt)
               : b.createdAt.localeCompare(a.createdAt),
         ),
-    [state.opportunities, tab, category, query, sort],
+    [state.opportunities, state.proposals, tab, category, query, sort],
   );
   const maxPages = Math.max(1, Math.ceil(filtered.length / 8));
   const currentPage = Math.min(page, maxPages);
@@ -190,7 +210,7 @@ export default function Opportunities() {
       <PageHeader
         eyebrow="SELECTED FOR PROPOSAL PREPARATION"
         title="Opportunities"
-        description="The opportunities you chose to pursue. Open one, upload the RFP, and prepare your proposal file."
+        description="The opportunities you chose to pursue. Obtain and upload the buyer’s RFP, then generate the proposal linked to that opportunity."
         actions={
           <>
             <Button
@@ -225,14 +245,33 @@ export default function Opportunities() {
       <section className="panel opportunity-list">
         <Tabs
           active={tab}
-          onChange={(id) => resetFilter(() => setTab(id))}
+          onChange={(id) =>
+            resetFilter(() => setTab(id as OpportunityStage | "all"))
+          }
           items={[
             { id: "all", label: "All selected", count: selected.length },
-            { id: "shortlisted", label: "Ready to start" },
-            { id: "in_progress", label: "Preparing proposal" },
-            { id: "submitted", label: "Submitted" },
+            ...stages
+              .filter(
+                (stage) =>
+                  stage !== "rfp_needs_text" ||
+                  stageCounts[stage] > 0 ||
+                  tab === stage,
+              )
+              .map((stage) => ({
+                id: stage,
+                label: opportunityStageLabel(stage),
+                count: stageCounts[stage],
+              })),
           ]}
         />
+        <p
+          className="small muted"
+          role="status"
+          aria-live="polite"
+          style={{ margin: "16px 24px 0", lineHeight: 1.6 }}
+        >
+          {opportunityStageHelp[tab]}
+        </p>
         <div className="filter-bar">
           <div className="search-field">
             <Search size={17} />
@@ -290,7 +329,7 @@ export default function Opportunities() {
             <Download size={17} />
           </Button>
         </div>
-        <OpportunityTable items={shown} />
+        <OpportunityTable items={shown} proposals={state.proposals} />
         <div className="pagination">
           <span>
             {filtered.length

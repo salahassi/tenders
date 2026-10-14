@@ -1,15 +1,21 @@
 import { Link } from "react-router-dom";
 import { ArrowUpRight, CalendarDays } from "lucide-react";
-import type { Opportunity } from "../types";
+import type { Opportunity, Proposal } from "../types";
 import { date, deadlineLabel, daysLeft } from "../lib/format";
-import { deadlineSourceLabel, opportunityStatusLabel } from "../lib/workflow";
+import {
+  deadlineSourceLabel,
+  getOpportunityStage,
+  opportunityStageLabel,
+} from "../lib/workflow";
 import { EmptyState, Badge } from "./ui";
 export default function OpportunityTable({
   items,
   compact = false,
+  proposals,
 }: {
   items: Opportunity[];
   compact?: boolean;
+  proposals: Proposal[];
 }) {
   if (!items.length)
     return (
@@ -33,7 +39,7 @@ export default function OpportunityTable({
             <th scope="col">Opportunity</th>
             <th scope="col">RFP files</th>
             <th scope="col">Closing date</th>
-            <th scope="col">Status</th>
+            <th scope="col">Stage</th>
             <th scope="col">
               <span className="sr-only">Actions</span>
             </th>
@@ -81,9 +87,18 @@ export default function OpportunityTable({
                 </div>
               </td>
               <td>
-                <Badge tone={o.status === "in_progress" ? "blue" : "neutral"}>
-                  {opportunityStatusLabel(o.status)}
+                <Badge
+                  tone={
+                    getOpportunityStage(o, proposals) === "proposal_created"
+                      ? "green"
+                      : "neutral"
+                  }
+                >
+                  {opportunityStageLabel(getOpportunityStage(o, proposals))}
                 </Badge>
+                {o.status === "submitted" && (
+                  <p className="small muted">Submission recorded</p>
+                )}
               </td>
               <td>
                 <Link

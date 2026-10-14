@@ -26,16 +26,16 @@ The production build is generated in `dist/`. `npm run preview` serves that buil
 
 ## Try the workflow
 
-1. Open **Review inbox**. Incoming discoveries appear here first. Choose **Add to opportunities** for items you want to pursue, or archive them. Archived items remain available in a separate inbox tab.
+1. Open **Review inbox**. Review each discovery’s likelihood of fit, reasons, notice evidence, company references, and open questions before choosing **Add to opportunities** or archiving it. Assessment examples use synthetic notices and profile notes; changed inputs and real notices remain unassessed. **See fit example** always opens a clearly labeled standalone design example.
 2. Open **Opportunities** to see only the opportunities you selected. Search, filter, and sort them, or add an opportunity directly. CSV import provides a preview before accepting valid rows.
 3. Open a selected opportunity and upload its RFP and addenda. PDF, DOCX, TXT, and Markdown are supported, with a 10 MiB limit per file and up to 10 files per opportunity. Inspect extracted text and download the original when needed. A sample is included at [`public/demo-rfp.txt`](public/demo-rfp.txt).
 4. In **Company knowledge**, upload company profiles, team resumes, previous proposals, templates, and other examples. Choose which files to include as references. Additional text notes are optional.
-5. Return to the opportunity and choose **Create editable draft**. This creates a clearly labeled manual starter, not an AI-written proposal. Readable RFP files are required; a deadline, fit assessment, acquisition record, and separate requirements checklist are not.
+5. Return to the opportunity and choose **Generate proposal**. This is the intended RFP-to-proposal action; it currently explains the disconnected AI dependency without creating a fake result. To try the working editor, expand **Write the proposal manually** and choose **Start writing from this RFP**. This creates a manual starter linked to that opportunity. Both paths require readable RFP files; a deadline and separate requirements checklist are not required. Existing proposals open directly instead of creating another proposal.
 6. Edit the proposal's title and free-text sections. Add, rename, reorder, or remove sections to match the RFP. Include the optional pricing table only when needed; commercial information can also be written directly in a section.
 7. Choose **Generate Word file** to save the latest edits and export one DOCX containing all sections in their displayed order. Review the document before using it externally.
-8. When appropriate, change the opportunity status in its details panel. **Preparing proposal** is set when a draft is created. **Submitted** records your manual action; the application never submits a bid.
+8. Opportunity stages follow actual data: **Awaiting RFP**, **Needs readable RFP** when extraction is incomplete, **Ready to generate**, and **Has proposal**. **Proposals** collects the linked documents and provides a return link to each opportunity. After submitting externally, use **Mark as submitted externally** inside an opportunity with a proposal. This separate record does not send a bid, remove its proposal, or change its derived stage.
 
-**Generate with AI** and **Rewrite with AI** explain that the backend is not connected. **Download agent input** creates a JSON handoff containing readable RFP text, enabled readable company files, company notes, and the draft or rewrite request when applicable. It does not contact an agent or provider. Original files, images, and document layout are not included in that JSON.
+**Generate proposal** and **Rewrite with AI** explain that the backend is not connected. **Download agent input** creates a JSON handoff containing readable RFP text, enabled readable company files, company notes, and the draft or rewrite request when applicable. It does not contact an agent or provider. Original files, images, and document layout are not included in that JSON.
 
 ### Update the Word table of contents
 

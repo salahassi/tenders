@@ -119,7 +119,11 @@ export default function Dashboard() {
               </Link>
             </div>
             {recent.length ? (
-              <OpportunityTable items={recent} compact />
+              <OpportunityTable
+                items={recent}
+                proposals={state.proposals}
+                compact
+              />
             ) : (
               <EmptyState
                 title="Choose an opportunity to begin"

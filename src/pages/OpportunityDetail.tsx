@@ -22,7 +22,9 @@ import { downloadAgentInput } from "../lib/agentInput";
 import {
   isSelected,
   deadlineSourceLabel,
-  opportunityStatusLabel,
+  getOpportunityStage,
+  opportunityStageLabel,
+  opportunityStageHelp,
 } from "../lib/workflow";
 import { date } from "../lib/format";
 import {
@@ -34,6 +36,7 @@ import {
   PageHeader,
 } from "../components/ui";
 import type { DocumentRecord, Opportunity } from "../types";
+import FitAssessment from "../components/FitAssessment";
 import "./workspace.css";
 import "./simplified.css";
 export default function OpportunityDetail() {
@@ -64,6 +67,7 @@ export default function OpportunityDetail() {
   const editable = can(state.settings.role, "edit");
   const selected = isSelected(o);
   const proposals = state.proposals.filter((p) => p.opportunityId === o.id);
+  const stage = getOpportunityStage(o, state.proposals);
   const ready =
     o.documents.length > 0 && o.documents.every((d) => d.status === "ready");
   const knowledge = state.knowledgeDocuments.filter(
@@ -174,6 +178,7 @@ export default function OpportunityDetail() {
           o.description || "Upload the RFP to start preparing a proposal."
         }
       />
+      <FitAssessment state={state} opportunity={o} compact={selected} />
       {!selected ? (
         <section className="panel simple-section">
           <h2>Your decision</h2>
@@ -201,9 +206,9 @@ export default function OpportunityDetail() {
           <div className="simple-flow">
             <strong>1 · Upload RFP</strong>
             <ArrowRight size={15} />
-            <span>2 · Prepare and edit draft</span>
+            <span>2 · Generate linked proposal</span>
             <ArrowRight size={15} />
-            <span>3 · Generate Word file</span>
+            <span>3 · Review and download Word</span>
           </div>
           <div className="simple-detail-grid">
             <div className="stack">
@@ -343,10 +348,15 @@ export default function OpportunityDetail() {
               </section>
               <section className="panel simple-section">
                 <span className="simple-step">STEP 2</span>
-                <h2>Prepare your proposal</h2>
+                <h2>
+                  {proposals.length
+                    ? "Your linked proposal"
+                    : "Generate a proposal from the RFP"}
+                </h2>
                 <p>
-                  Use the RFP and your company files to prepare a draft, fill in
-                  any required sections, then generate one Word file.
+                  The RFP describes what the buyer needs. Your proposal is the
+                  response you will send back. This opportunity has one linked
+                  proposal, created after you attach the RFP.
                 </p>
                 <Field label="Proposal language">
                   <select
@@ -374,29 +384,28 @@ export default function OpportunityDetail() {
                 <div className="notice">
                   <Sparkles size={18} />
                   <p className="small">
-                    AI drafting is not connected yet. You can create an editable
-                    starter and export it now. A connected agent will use your
-                    RFP and enabled company files.
+                    The agent will use this RFP and enabled company files to
+                    write your proposal. AI generation is not connected in this
+                    frontend; no generated response is claimed.
                   </p>
                 </div>
                 <div className="simple-inline-actions">
-                  <Button
-                    variant="primary"
-                    disabled={!editable || !ready || busy}
-                    onClick={createDraft}
-                  >
-                    {proposals.length
-                      ? "Open existing draft"
-                      : "Create editable draft"}
-                    <ArrowRight size={16} />
-                  </Button>
-                  <Button
-                    disabled={!editable || !ready || busy}
-                    onClick={() => setAiInfo(true)}
-                  >
-                    <Sparkles size={16} />
-                    Generate with AI
-                  </Button>
+                  {proposals.length ? (
+                    <Link
+                      className="btn btn-primary"
+                      to={`/proposals/${proposals[0].id}`}
+                    >
+                      Open proposal <ArrowRight size={16} />
+                    </Link>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      disabled={!editable || !ready || busy}
+                      onClick={() => setAiInfo(true)}
+                    >
+                      <Sparkles size={16} /> Generate proposal
+                    </Button>
+                  )}
                   <Button
                     disabled={!ready || busy}
                     onClick={() => downloadAgentInput(state, o)}
@@ -411,6 +420,24 @@ export default function OpportunityDetail() {
                       ? "Attach readable replacements for files that need OCR before preparing the draft."
                       : "Attach a readable RFP to start. A deadline and a separate requirements checklist are not required."}
                   </p>
+                )}
+                {!proposals.length && (
+                  <details className="simple-note">
+                    <summary>Write the proposal manually</summary>
+                    <p>
+                      Optional: after attaching the RFP, open an editor for this
+                      opportunity’s proposal. It starts with the notice
+                      description and an empty response section. You write the
+                      content, add the sections the RFP requires, and download
+                      it as Word. This does not generate an AI response.
+                    </p>
+                    <Button
+                      disabled={!editable || !ready || busy}
+                      onClick={createDraft}
+                    >
+                      Start writing from this RFP <ArrowRight size={16} />
+                    </Button>
+                  </details>
                 )}
                 {proposals.length > 0 && (
                   <div className="stack" style={{ marginTop: 18 }}>
@@ -434,34 +461,48 @@ export default function OpportunityDetail() {
             </div>
             <aside className="panel simple-section">
               <h2>Opportunity details</h2>
-              <Field
-                label="Opportunity status"
-                hint="Preparing proposal is set when you create a draft. You can also change the status here."
-              >
-                <select
-                  className="input"
-                  value={o.status}
-                  disabled={!editable || busy}
-                  onChange={(e) => {
-                    change(
-                      { status: e.target.value as Opportunity["status"] },
-                      "Changed opportunity status",
-                    );
-                    notify("Opportunity status updated.");
-                  }}
-                >
-                  <option value="shortlisted">Ready to start</option>
-                  <option value="in_progress">Preparing proposal</option>
-                  <option
-                    value="submitted"
-                    disabled={!can(state.settings.role, "record_submission")}
+              <Badge tone={stage === "proposal_created" ? "green" : "blue"}>
+                {opportunityStageLabel(stage)}
+              </Badge>
+              <p className="simple-note">{opportunityStageHelp[stage]}</p>
+              <p className="simple-note">
+                This stage follows the attached RFP and linked proposal
+                automatically.
+              </p>
+              {proposals.length > 0 && (
+                <div className="simple-submission">
+                  <h3>External submission</h3>
+                  <p className="simple-note">
+                    {o.status === "submitted"
+                      ? "You recorded this opportunity as submitted. The proposal remains available in Proposals."
+                      : "After you send the Word file to the buyer outside this app, you can record that here."}
+                  </p>
+                  <Button
+                    size="sm"
+                    disabled={
+                      !can(state.settings.role, "record_submission") || busy
+                    }
+                    onClick={() => {
+                      change(
+                        {
+                          status:
+                            o.status === "submitted"
+                              ? "in_progress"
+                              : "submitted",
+                        },
+                        o.status === "submitted"
+                          ? "Cleared external submission record"
+                          : "Recorded external submission",
+                      );
+                      notify("Submission record updated. No file was sent.");
+                    }}
                   >
-                    Submitted — recorded by you
-                  </option>
-                  <option value="new">Return to Review inbox</option>
-                  <option value="declined">Archive</option>
-                </select>
-              </Field>
+                    {o.status === "submitted"
+                      ? "Clear submission record"
+                      : "Mark as submitted externally"}
+                  </Button>
+                </div>
+              )}
               <dl className="simple-meta">
                 <dt>Closing date</dt>
                 <dd>
@@ -513,9 +554,30 @@ export default function OpportunityDetail() {
                 Edit closing date
               </Button>
               <p className="simple-note">
-                Changing the status records your decision only. It does not
-                submit a bid.
+                Selecting a discovery does not create a proposal. Uploading an
+                RFP prepares it for generation. Downloading Word does not submit
+                it to the buyer.
               </p>
+              <div className="simple-inline-actions">
+                <Button
+                  size="sm"
+                  disabled={!editable || busy}
+                  onClick={() =>
+                    change({ status: "new" }, "Returned opportunity to Review")
+                  }
+                >
+                  Return to Review
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={!editable || busy}
+                  onClick={() =>
+                    change({ status: "declined" }, "Archived opportunity")
+                  }
+                >
+                  Archive opportunity
+                </Button>
+              </div>
             </aside>
           </div>
         </>
@@ -549,14 +611,16 @@ export default function OpportunityDetail() {
       </Modal>
       <Modal
         open={aiInfo}
-        title="AI drafting is not connected"
+        title="Proposal generation is not connected"
         onClose={() => setAiInfo(false)}
       >
         <div className="stack">
           <p>
-            The frontend can store your files, collect your inputs, and generate
-            Word documents. It cannot write or rewrite a proposal with AI until
-            the backend and model are connected.
+            Your RFP is attached to this opportunity. Once the agent is
+            connected, this action will read the RFP and enabled Company
+            Knowledge, write a proposal, and open it for your review. No
+            proposal has been created by this action. You can use the optional
+            manual editor meanwhile.
           </p>
           <p>
             Download the agent input to get the readable RFP text and enabled
@@ -576,7 +640,8 @@ export default function OpportunityDetail() {
       </Modal>
       {!selected && (
         <p className="simple-note">
-          Current status: {opportunityStatusLabel(o.status)}
+          Current stage:{" "}
+          {selected ? opportunityStageLabel(stage) : "Awaiting your decision"}
         </p>
       )}
     </div>

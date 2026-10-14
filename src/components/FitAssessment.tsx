@@ -1,0 +1,94 @@
+import { Link } from "react-router-dom";
+import { Sparkles } from "lucide-react";
+import type { AppState, Opportunity } from "../types";
+import { getFitPreview } from "../lib/fitPreview";
+import { Badge } from "./ui";
+import "./fit-assessment.css";
+
+export default function FitAssessment({
+  state,
+  opportunity,
+  compact = false,
+}: {
+  state: AppState;
+  opportunity: Opportunity;
+  compact?: boolean;
+}) {
+  const fit = getFitPreview(state, opportunity);
+  return (
+    <section className="fit-assessment" aria-label="AI fit assessment">
+      <div className="fit-heading">
+        <strong>
+          <Sparkles size={16} /> Likelihood of fit
+        </strong>
+        <Badge
+          tone={
+            fit.level === "High"
+              ? "green"
+              : fit.level === "Medium"
+                ? "amber"
+                : fit.level === "Low"
+                  ? "red"
+                  : "neutral"
+          }
+        >
+          {fit.level}
+        </Badge>
+      </div>
+      <p className="fit-disclosure">
+        {fit.mode === "example"
+          ? "Design example · synthetic notice and company profile"
+          : "AI assessment not connected"}
+      </p>
+      <p className="fit-summary">{fit.summary}</p>
+      {fit.mode === "example" && (
+        <p className="fit-basis">
+          {fit.basis} · Information confidence: {fit.confidence}
+        </p>
+      )}
+      <details open={!compact}>
+        <summary>
+          {fit.mode === "example"
+            ? "Reasons, evidence, and open questions"
+            : "What the assessment will use"}
+        </summary>
+        {fit.reasons.map((reason, index) => (
+          <div className="fit-reason" key={index}>
+            <strong>{reason.label}</strong>
+            <dl>
+              <dt>Notice evidence</dt>
+              <dd dir="auto">{reason.noticeEvidence}</dd>
+              <dt>Company Knowledge · {reason.knowledgeTitle}</dt>
+              <dd dir="auto">{reason.knowledgeEvidence}</dd>
+            </dl>
+          </div>
+        ))}
+        {fit.unknowns.length > 0 && (
+          <div className="fit-unknowns">
+            <strong>Still to check</strong>
+            <ul>
+              {fit.unknowns.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            <p className="fit-basis">
+              An unknown requirement is not a failed requirement.
+            </p>
+          </div>
+        )}
+        {fit.message && <p className="fit-basis">{fit.message}</p>}
+        <p className="fit-basis">
+          Preliminary fit can use the notice and available attachments before an
+          RFP is uploaded. A full RFP can refine the assessment.
+        </p>
+        <Link className="text-link" to="/knowledge">
+          Open Company Knowledge →
+        </Link>
+      </details>
+      <p className="fit-footnote">
+        Fit to company capabilities; eligibility and chance of winning are
+        separate.
+      </p>
+    </section>
+  );
+}

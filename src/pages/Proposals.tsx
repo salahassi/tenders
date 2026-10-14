@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Download, FileText, Search } from "lucide-react";
 import { useApp } from "../lib/store";
 import { exportProposal, proposalFileName } from "../lib/export";
+import { getOpportunityStage, opportunityStageLabel } from "../lib/workflow";
 import { Badge, Button, EmptyState, PageHeader } from "../components/ui";
 import type { Proposal } from "../types";
 import "./workspace.css";
@@ -52,13 +53,22 @@ export default function Proposals() {
       <PageHeader
         eyebrow="YOUR DOCUMENTS"
         title="Proposal files"
-        description="Open a draft, add the information your RFP needs, and download one Word file."
+        description="The proposal documents linked to your opportunities. Open a document, edit its sections, and download one Word file."
         actions={
           <Link className="btn btn-primary" to="/opportunities">
-            Upload an RFP <ArrowRight size={16} />
+            Choose an opportunity <ArrowRight size={16} />
           </Link>
         }
       />
+      <div className="notice">
+        <FileText size={18} />
+        <p className="small">
+          <strong>Each proposal belongs to one opportunity and its RFP.</strong>{" "}
+          Start inside a selected opportunity after uploading the buyer’s RFP.
+          Submission through the buyer’s portal or email is recorded separately;
+          the proposal stays available here.
+        </p>
+      </div>
       <section className="panel">
         <div className="workspace-proposal-toolbar">
           <p className="small muted">
@@ -82,6 +92,7 @@ export default function Proposals() {
                 <tr>
                   <th>Document</th>
                   <th>Buyer</th>
+                  <th>Linked opportunity</th>
                   <th>Content</th>
                   <th>Updated</th>
                   <th>File actions</th>
@@ -113,6 +124,32 @@ export default function Proposals() {
                         </Link>
                       </td>
                       <td>{opportunity?.buyer || "Not provided"}</td>
+                      <td>
+                        {opportunity ? (
+                          <div className="stack" style={{ gap: 6 }}>
+                            <Link
+                              className="text-link"
+                              to={`/opportunities/${opportunity.id}`}
+                              aria-label={`View opportunity: ${opportunity.title}`}
+                            >
+                              {opportunity.title}
+                            </Link>
+                            <span className="small muted">
+                              {opportunityStageLabel(
+                                getOpportunityStage(
+                                  opportunity,
+                                  state.proposals,
+                                ),
+                              )}
+                            </span>
+                            {opportunity.status === "submitted" && (
+                              <Badge tone="neutral">Submission recorded</Badge>
+                            )}
+                          </div>
+                        ) : (
+                          "Opportunity unavailable"
+                        )}
+                      </td>
                       <td>
                         <Badge tone="neutral">
                           {proposal.sections.length} sections · v
@@ -165,7 +202,7 @@ export default function Proposals() {
             description={
               search
                 ? "Try another title, buyer, or reference."
-                : "Open an opportunity, upload its RFP, and create a local document draft. AI generation becomes available after the backend is connected."
+                : "Select an opportunity in Review, obtain and upload the buyer’s RFP, then generate its linked proposal. AI generation becomes available after the backend is connected."
             }
             action={
               !search ? (
