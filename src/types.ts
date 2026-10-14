@@ -25,6 +25,10 @@ export interface DocumentRecord {
   classification: "synthetic" | "public" | "sanitized";
   hash: string;
 }
+export interface KnowledgeDocument extends DocumentRecord {
+  category: "company" | "team" | "previous_proposal" | "template" | "other";
+  enabled: boolean;
+}
 export interface Opportunity {
   id: string;
   reference: string;
@@ -48,6 +52,7 @@ export interface Opportunity {
     "not_requested" | "requested" | "approved" | "document_available";
   language: "en" | "ar";
   sourceUrl: string;
+  deadlineSource?: string;
 }
 export interface ProposalSection {
   id: string;
@@ -71,6 +76,7 @@ export interface Proposal {
   version: number;
   sections: ProposalSection[];
   lines: FinanceLine[];
+  includePricing?: boolean;
   pricingMode: "markup" | "margin";
   percentage: string;
   contingency: string;
@@ -141,6 +147,7 @@ export interface AppState {
   proposals: Proposal[];
   sources: Source[];
   knowledge: KnowledgeFact[];
+  knowledgeDocuments: KnowledgeDocument[];
   jobs: Job[];
   notifications: Notification[];
   audit: AuditEntry[];

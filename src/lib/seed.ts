@@ -389,6 +389,7 @@ export function createSeedState(now: Date = new Date()): AppState {
   });
   return {
     schemaVersion: 1,
+    knowledgeDocuments: [],
     opportunities,
     proposals,
     sources: [

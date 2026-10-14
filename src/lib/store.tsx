@@ -11,6 +11,7 @@ import { get, set } from "idb-keyval";
 import { z } from "zod";
 import type { AppState, StateMutation } from "../types";
 import { createSeedState } from "./seed";
+import { clearLocalFiles } from "./knowledgeFiles";
 import {
   canApplyMutation,
   getApprovalBlockers,
@@ -99,6 +100,7 @@ const opportunity = z.object({
   ]),
   language: z.enum(["en", "ar"]),
   sourceUrl: optionalHttpsUrl,
+  deadlineSource: text.optional(),
 });
 const section = z.object({
   id,
@@ -126,6 +128,7 @@ const proposal = z.object({
     )
     .max(1000),
   pricingMode: z.enum(["markup", "margin"]),
+  includePricing: z.boolean().optional(),
   percentage: text,
   contingency: text,
   tax: text,
@@ -153,6 +156,21 @@ const stateSchema = z.object({
   opportunities: z.array(opportunity).max(2000),
   proposals: z.array(proposal).max(2000),
   sources: z.array(source).max(100),
+  knowledgeDocuments: z
+    .array(
+      documentRecord.extend({
+        category: z.enum([
+          "company",
+          "team",
+          "previous_proposal",
+          "template",
+          "other",
+        ]),
+        enabled: z.boolean(),
+      }),
+    )
+    .max(200)
+    .default([]),
   knowledge: z
     .array(
       z.object({
@@ -239,6 +257,7 @@ function validateState(input: unknown): AppState {
     state.proposals,
     state.sources,
     state.knowledge,
+    state.knowledgeDocuments,
     state.jobs,
     state.notifications,
     state.audit,
@@ -276,7 +295,7 @@ function validateState(input: unknown): AppState {
   return state;
 }
 export function serializeBackup(state: AppState): string {
-  return JSON.stringify(
+  const backup = JSON.stringify(
     {
       format: "tender-desk-demo-backup",
       version: 1,
@@ -286,6 +305,11 @@ export function serializeBackup(state: AppState): string {
     null,
     2,
   );
+  if (new TextEncoder().encode(backup).length > 25 * 1024 * 1024)
+    throw new Error(
+      "The workspace exceeds the 25 MiB JSON backup limit. Download your original files and proposal documents separately; a larger backup cannot be restored in this trial.",
+    );
+  return backup;
 }
 export function parseBackup(raw: string): AppState {
   if (new TextEncoder().encode(raw).length > 25 * 1024 * 1024)
@@ -388,9 +412,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const previous = stateRef.current;
       let next: AppState;
       try {
-        next = invalidateChangedApprovals(
-          previous,
-          mutation(structuredClone(previous)),
+        next = validateState(
+          invalidateChangedApprovals(
+            previous,
+            mutation(structuredClone(previous)),
+          ),
         );
       } catch (error) {
         notify(`The change could not be applied: ${messageFor(error)}`);
@@ -442,10 +468,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [notify, persist, ready],
   );
 
-  const reset = useCallback(() => {
+  const reset = useCallback(async () => {
     if (!ready) return;
     if (stateRef.current.settings.role !== "Owner") {
       notify("Only the demo Owner can reset this workspace.");
+      return;
+    }
+    try {
+      await clearLocalFiles();
+    } catch (error) {
+      notify(
+        `Workspace reset could not remove local files: ${messageFor(error)}`,
+      );
       return;
     }
     const next = createSeedState();

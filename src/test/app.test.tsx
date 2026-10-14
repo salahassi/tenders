@@ -9,6 +9,7 @@ import {
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { get, set } from "idb-keyval";
+import { webcrypto } from "node:crypto";
 import App from "../App";
 import { AppProvider, STORAGE_KEY } from "../lib/store";
 import { createSeedState } from "../lib/seed";
@@ -34,9 +35,27 @@ async function stored() {
   return await get<AppState>(STORAGE_KEY);
 }
 
+// jsdom's File does not implement the Blob reading methods available in modern
+// browsers. Keep the real parsing/extraction path and supply only those methods.
+function textFile(name: string, content: string, type = "text/plain") {
+  const file = new File([content], name, { type });
+  Object.defineProperties(file, {
+    text: { value: async () => content },
+    arrayBuffer: {
+      value: async () => new TextEncoder().encode(content).buffer,
+    },
+  });
+  return file;
+}
+
+function navigation() {
+  return within(screen.getByRole("navigation", { name: "Main navigation" }));
+}
+
 beforeEach(async () => {
   network.mockClear();
   vi.stubGlobal("fetch", network);
+  vi.stubGlobal("crypto", webcrypto);
   await set(STORAGE_KEY, createSeedState());
 });
 
@@ -53,7 +72,7 @@ describe("browser-local workspace journeys", () => {
     expect(
       await screen.findByRole(
         "heading",
-        { name: "Good work starts with the right opportunity." },
+        { name: "From opportunity to proposal." },
         { timeout: 5000 },
       ),
     ).toBeInTheDocument();
@@ -64,9 +83,11 @@ describe("browser-local workspace journeys", () => {
       ).getByRole("link", { name: "Opportunities" }),
     );
     expect(
-      await screen.findByRole("heading", {
-        name: "Find your next opportunity.",
-      }),
+      await screen.findByRole(
+        "heading",
+        { name: "Opportunities" },
+        { timeout: 5000 },
+      ),
     ).toBeInTheDocument();
     expect(screen.getByText("You’re exploring the demo.")).toBeInTheDocument();
     await user.click(screen.getByRole("link", { name: /Setup details/ }));
@@ -78,41 +99,131 @@ describe("browser-local workspace journeys", () => {
     ).toBeInTheDocument();
   });
 
-  it("combines search and human-decision filters without hiding an unranked opportunity", async () => {
+  it("shows only accepted opportunities and keeps unranked items searchable", async () => {
     const seed = createSeedState();
-    const unranked = seed.opportunities.find((item) => item.id === "opp-7")!;
-    unranked.score = null;
+    const accepted = seed.opportunities.find((item) => item.id === "opp-2")!;
+    accepted.score = null;
     await set(STORAGE_KEY, seed);
     const user = userEvent.setup();
     mount("/opportunities");
     const search = await screen.findByRole("textbox", {
       name: "Search opportunities",
     });
-    await user.type(search, "DEMO-0007");
+    await user.type(search, accepted.reference);
     expect(
-      screen.getByRole("link", { name: unranked.title }),
+      screen.getByRole("link", { name: accepted.title }),
     ).toBeInTheDocument();
     expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(
       2,
     );
-    await user.click(screen.getByRole("button", { name: /^Shortlisted/ }));
     expect(
-      screen.queryByRole("link", { name: unranked.title }),
+      screen.queryByText(/Fit score|Evidence coverage/),
     ).not.toBeInTheDocument();
+    await user.clear(search);
+    for (const status of ["new", "deferred", "declined"]) {
+      const excluded = seed.opportunities.find(
+        (item) => item.status === status,
+      )!;
+      expect(
+        screen.queryByRole("link", { name: excluded.title }),
+      ).not.toBeInTheDocument();
+    }
+  });
+
+  it("reviews discovered items once and moves accepted items into Opportunities", async () => {
+    const seed = createSeedState();
+    const candidate = seed.opportunities.find((item) => item.id === "opp-4")!;
+    const deferred = seed.opportunities.find((item) => item.id === "opp-7")!;
+    const user = userEvent.setup();
+    mount("/review");
+    await screen.findByRole("heading", { level: 1, name: "Review inbox" });
+    expect(
+      screen.getByRole("link", { name: deferred.title }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: seed.opportunities[0].title }),
+    ).not.toBeInTheDocument();
+    const card = screen
+      .getByRole("link", { name: candidate.title })
+      .closest("article")!;
     await user.click(
-      screen.getByRole("button", { name: /^All opportunities/ }),
+      within(card).getByRole("button", { name: "Add to opportunities" }),
     );
     expect(
-      screen.getByRole("link", { name: unranked.title }),
-    ).toBeInTheDocument();
-    await user.clear(search);
-    await user.type(search, "DEMO-0010");
-    await user.click(screen.getByRole("button", { name: /^Declined/ }));
+      screen.queryByRole("link", { name: candidate.title }),
+    ).not.toBeInTheDocument();
+    await waitFor(async () => {
+      expect(
+        (await stored())?.opportunities.find((item) => item.id === candidate.id)
+          ?.status,
+      ).toBe("shortlisted");
+    });
+    await user.click(navigation().getByRole("link", { name: "Opportunities" }));
     expect(
-      screen.getByRole("link", {
-        name: "Construction of a new electrical substation",
-      }),
+      await screen.findByRole("link", { name: candidate.title }),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: deferred.title }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("archives discoveries reversibly without adding them to Opportunities", async () => {
+    const seed = createSeedState();
+    const candidate = seed.opportunities.find((item) => item.id === "opp-4")!;
+    const user = userEvent.setup();
+    mount("/review");
+    const link = await screen.findByRole("link", { name: candidate.title });
+    await user.click(
+      within(link.closest("article")!).getByRole("button", { name: "Archive" }),
+    );
+    expect(
+      screen.queryByRole("link", { name: candidate.title }),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^Archived/ }));
+    const archived = screen.getByRole("link", { name: candidate.title });
+    await user.click(
+      within(archived.closest("article")!).getByRole("button", {
+        name: "Return to inbox",
+      }),
+    );
+    await user.click(
+      screen.getByRole("button", { name: /^Awaiting your decision/ }),
+    );
+    expect(
+      screen.getByRole("link", { name: candidate.title }),
+    ).toBeInTheDocument();
+    await waitFor(async () =>
+      expect(
+        (await stored())?.opportunities.find((item) => item.id === candidate.id)
+          ?.status,
+      ).toBe("new"),
+    );
+  });
+
+  it("changes an opportunity status using its visible status control", async () => {
+    const seed = createSeedState();
+    const opportunity = seed.opportunities.find((item) => item.id === "opp-2")!;
+    const user = userEvent.setup();
+    mount("/opportunities/opp-2");
+    const status = await screen.findByRole("combobox", {
+      name: /^Opportunity status/,
+    });
+    await user.selectOptions(status, "new");
+    await waitFor(async () =>
+      expect(
+        (await stored())?.opportunities.find(
+          (item) => item.id === opportunity.id,
+        )?.status,
+      ).toBe("new"),
+    );
+    await user.click(navigation().getByRole("link", { name: /^Review inbox/ }));
+    expect(
+      await screen.findByRole("link", { name: opportunity.title }),
+    ).toBeInTheDocument();
+    await user.click(navigation().getByRole("link", { name: "Opportunities" }));
+    expect(
+      screen.queryByRole("link", { name: opportunity.title }),
+    ).not.toBeInTheDocument();
   });
 
   it("opens every remaining workspace destination through visible navigation", async () => {
@@ -120,13 +231,13 @@ describe("browser-local workspace journeys", () => {
     mount("/dashboard");
     await screen.findByRole(
       "heading",
-      { name: "Good work starts with the right opportunity." },
+      { name: "From opportunity to proposal." },
       { timeout: 5000 },
     );
     const destinations = [
-      ["Review queue", "A little attention goes a long way."],
-      ["Proposals", "Your proposal workspace"],
-      ["Company knowledge", "Knowledge base"],
+      ["Review inbox", "Review inbox"],
+      ["Proposals", "Proposal files"],
+      ["Company knowledge", "Company knowledge"],
     ];
     for (const [link, heading] of destinations) {
       await user.click(
@@ -164,7 +275,7 @@ describe("browser-local workspace journeys", () => {
     ).toBeInTheDocument();
   });
 
-  it("validates a manual entry and restores its Arabic text and unresolved deadline after remount", async () => {
+  it("adds a title-only opportunity and restores its Arabic text with no invented deadline", async () => {
     const user = userEvent.setup();
     const first = mount("/opportunities");
     await user.click(
@@ -172,24 +283,13 @@ describe("browser-local workspace journeys", () => {
     );
     const dialog = screen.getByRole("dialog", { name: "Add an opportunity" });
     const title = "منصة خدمات رقمية — synthetic QA opportunity";
-    await user.click(
-      within(dialog).getByRole("textbox", { name: "Opportunity title" }),
-    );
+    const titleInput = within(dialog).getByRole("textbox", {
+      name: "Opportunity title",
+    });
+    expect(titleInput).toBeRequired();
+    expect(titleInput).toBeInvalid();
+    await user.click(titleInput);
     await user.paste(title);
-    await user.click(
-      within(dialog).getByRole("button", { name: "Add opportunity" }),
-    );
-    expect(within(dialog).getByRole("alert")).toHaveTextContent(
-      "Provide a title and either a reference number or source URL.",
-    );
-    await user.type(
-      within(dialog).getByRole("textbox", { name: "Reference number" }),
-      "QA-MANUAL-001",
-    );
-    await user.type(
-      within(dialog).getByRole("textbox", { name: "Buyer" }),
-      "Synthetic QA buyer",
-    );
     await user.click(
       within(dialog).getByRole("button", { name: "Add opportunity" }),
     );
@@ -198,30 +298,59 @@ describe("browser-local workspace journeys", () => {
     ).toBeInTheDocument();
     await waitFor(async () => {
       const created = (await stored())?.opportunities.find(
-        (item) => item.reference === "QA-MANUAL-001",
+        (item) => item.title === title,
       );
       expect(created).toMatchObject({
         title,
         score: null,
-        coverage: 0,
         deadline: "",
-        status: "new",
-        acquisition: "not_requested",
+        status: "shortlisted",
+        requirements: [],
+        gaps: [],
       });
-      expect(created?.gaps.some((gap) => gap.required && !gap.answer)).toBe(
-        true,
-      );
     });
     first.unmount();
     mount("/opportunities");
-    await user.type(
-      await screen.findByRole("textbox", { name: "Search opportunities" }),
-      "QA-MANUAL-001",
-    );
+    const search = await screen.findByRole("textbox", {
+      name: "Search opportunities",
+    });
+    await user.click(search);
+    await user.paste(title);
     expect(screen.getByRole("link", { name: title })).toBeInTheDocument();
   });
 
-  it("persists the simulated Reviewer role and disables editing and source approval", async () => {
+  it("imports source discoveries into the review inbox before the active opportunity list", async () => {
+    const user = userEvent.setup();
+    mount("/opportunities");
+    await user.click(await screen.findByRole("button", { name: "Import CSV" }));
+    const dialog = screen.getByRole("dialog", { name: "Import opportunities" });
+    const title = "Synthetic QA CSV opportunity";
+    await user.upload(
+      within(dialog).getByLabelText("CSV file (up to 1 MiB)"),
+      textFile(
+        "opportunities.csv",
+        `title,external_id,description\n${title},QA-CSV-001,Synthetic public fixture for test review`,
+        "text/csv",
+      ),
+    );
+    await user.click(
+      await within(dialog).findByRole("button", { name: "Import valid rows" }),
+    );
+    await waitFor(async () => {
+      expect(
+        (await stored())?.opportunities.find(
+          (item) => item.reference === "QA-CSV-001",
+        ),
+      ).toMatchObject({ title, status: "new", deadline: "" });
+    });
+    expect(screen.queryByRole("link", { name: title })).not.toBeInTheDocument();
+    await user.click(navigation().getByRole("link", { name: /^Review inbox/ }));
+    expect(
+      await screen.findByRole("link", { name: title }),
+    ).toBeInTheDocument();
+  });
+
+  it("persists the simulated Reviewer role and disables editing and source activation", async () => {
     const user = userEvent.setup();
     const first = mount("/settings");
     await user.click(await screen.findByRole("button", { name: "Reviewer" }));
@@ -250,11 +379,11 @@ describe("browser-local workspace journeys", () => {
       screen.queryByRole("button", { name: "Add source" }),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Approve" }),
+      screen.queryByRole("button", { name: "Enable" }),
     ).not.toBeInTheDocument();
   });
 
-  it("records local source approval and reports a blocked test without contacting the source", async () => {
+  it("enables a source configuration without claiming a collection run or contacting the source", async () => {
     const seed = createSeedState();
     seed.sources.find((source) => source.id === "src-3")!.url =
       "https://example.org/unconnected-procurement-feed";
@@ -265,112 +394,233 @@ describe("browser-local workspace journeys", () => {
       name: "Procurement directory candidate",
     });
     const row = candidateLink.closest("tr")!;
-    await user.click(within(row).getByRole("button", { name: "Approve" }));
+    await user.click(within(row).getByRole("button", { name: "Enable" }));
     expect(
-      within(row).getByText("approved", { exact: true }),
+      within(row).getByText("Enabled", { exact: true }),
     ).toBeInTheDocument();
-    await user.click(within(row).getByRole("button", { name: "Test" }));
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Connected backend is not configured. No network request was made.",
+      "Source enabled in your saved configuration. Live collection is not connected.",
     );
     await waitFor(async () => {
       const state = await stored();
       expect(
         state?.sources.find((source) => source.id === "src-3"),
       ).toMatchObject({ status: "approved", lastRun: null, nextRun: null });
-      expect(state?.jobs[0]).toMatchObject({
-        status: "blocked",
-        progress: 0,
-        target: "Procurement directory candidate",
-      });
-      expect(state?.jobs[0].message).toContain("No network request was made.");
+      expect(state?.jobs).toEqual(seed.jobs);
     });
   });
 
-  it("records acquisition approval without creating a proposal before a readable RFP is supplied", async () => {
+  it("loads a legacy workspace and persists uploaded company references across remounts", async () => {
+    const legacy = createSeedState() as Partial<AppState>;
+    delete legacy.knowledgeDocuments;
+    await set(STORAGE_KEY, legacy);
+    const user = userEvent.setup();
+    const first = mount("/knowledge");
+    await screen.findByRole("heading", { level: 1, name: "Company knowledge" });
+    expect(
+      screen.getByText("Start with your company files"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Saved data could not be loaded/),
+    ).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Upload files" }));
+    const dialog = screen.getByRole("dialog", { name: "Upload company files" });
+    await user.selectOptions(
+      within(dialog).getByRole("combobox", { name: "File category" }),
+      "team",
+    );
+    await user.upload(
+      within(dialog).getByLabelText("Company reference files"),
+      textFile(
+        "synthetic-team.txt",
+        "Synthetic team fixture: a technical architect, integration engineer, and implementation lead are included for demonstration only.",
+      ),
+    );
+    await user.click(
+      within(dialog).getByRole("button", { name: "Add 1 file" }),
+    );
+    await screen.findByRole("heading", { name: "synthetic-team.txt" });
+    await waitFor(async () => {
+      const document = (await stored())?.knowledgeDocuments[0];
+      expect(document).toMatchObject({
+        name: "synthetic-team.txt",
+        category: "team",
+        enabled: true,
+        status: "ready",
+      });
+      expect(document?.text).toContain("Synthetic team fixture");
+    });
+    await user.click(
+      screen.getByRole("checkbox", { name: "Include as reference" }),
+    );
+    await waitFor(async () =>
+      expect((await stored())?.knowledgeDocuments[0].enabled).toBe(false),
+    );
+    first.unmount();
+    mount("/knowledge");
+    await screen.findByRole("heading", { name: "synthetic-team.txt" });
+    expect(
+      screen.getByRole("checkbox", { name: "Excluded from proposals" }),
+    ).not.toBeChecked();
+    await user.click(screen.getByRole("button", { name: "View text" }));
+    expect(
+      within(
+        screen.getByRole("dialog", { name: "synthetic-team.txt" }),
+      ).getByText(/Synthetic team fixture/),
+    ).toBeInTheDocument();
+  });
+
+  it("creates an editable draft from an uploaded RFP without deadline or requirement gates", async () => {
+    const seed = createSeedState();
+    const opportunity = seed.opportunities.find((item) => item.id === "opp-2")!;
+    opportunity.deadline = "";
+    opportunity.documents = [];
+    opportunity.requirements = [];
+    opportunity.gaps = [];
+    await set(STORAGE_KEY, seed);
     const user = userEvent.setup();
     mount("/opportunities/opp-2");
-    await user.click(
-      await screen.findByRole("button", { name: "Acquisition" }),
-    );
-    await user.click(
-      screen.getByRole("button", { name: "Request acquisition" }),
-    );
-    await user.click(
-      screen.getByRole("button", { name: "Approve acquisition" }),
-    );
-    expect(screen.getByText("Approved", { exact: true })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Create draft" }));
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Add and review a readable RFP before creating a draft.",
-    );
+    const input = await screen.findByLabelText(/^Upload RFP files/);
     expect(
-      screen.getByRole("heading", { name: "RFP document package" }),
-    ).toBeInTheDocument();
+      screen.getByRole("button", { name: "Create editable draft" }),
+    ).toBeDisabled();
+    expect(
+      screen.queryByRole("button", { name: "Acquisition" }),
+    ).not.toBeInTheDocument();
+    await user.upload(
+      input,
+      textFile(
+        "synthetic-rfp.txt",
+        "Synthetic RFP: provide an accessible bilingual portal with secure administrator access and a documented handover.",
+      ),
+    );
     await waitFor(async () => {
-      const state = await stored();
-      expect(
-        state?.opportunities.find((item) => item.id === "opp-2")?.acquisition,
-      ).toBe("approved");
-      expect(state?.proposals).toHaveLength(3);
-      expect(state?.jobs).toHaveLength(3);
-      expect(
-        state?.audit.some((item) => item.action.includes("no payment made")),
-      ).toBe(true);
+      const current = (await stored())?.opportunities.find(
+        (item) => item.id === "opp-2",
+      );
+      expect(current?.documents[0]).toMatchObject({
+        name: "synthetic-rfp.txt",
+        status: "ready",
+      });
     });
+    await user.click(
+      screen.getByRole("button", { name: "Create editable draft" }),
+    );
+    await waitFor(async () => {
+      const current = await stored();
+      expect(current?.proposals).toHaveLength(seed.proposals.length + 1);
+      expect(
+        current?.proposals.find((item) => item.opportunityId === "opp-2"),
+      ).toMatchObject({ status: "draft", version: 1 });
+      expect(
+        current?.opportunities.find((item) => item.id === "opp-2")?.status,
+      ).toBe("in_progress");
+    });
+    expect(
+      await screen.findByRole("textbox", { name: "Section content" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Generate Word file" }),
+    ).toBeEnabled();
   });
 
-  it("requires Owner attestation and invalidates exact-version approval when a section is edited", async () => {
+  it("does not create a draft while any supplied RFP needs readable text", async () => {
+    const seed = createSeedState();
+    const opportunity = seed.opportunities.find((item) => item.id === "opp-2")!;
+    opportunity.documents = [
+      {
+        id: "ready-file",
+        name: "readable.txt",
+        size: 50,
+        uploadedAt: new Date().toISOString(),
+        text: "A readable synthetic RFP body with enough detail.",
+        status: "ready",
+        classification: "synthetic",
+        hash: "ready-hash",
+      },
+      {
+        id: "scan-file",
+        name: "scanned.pdf",
+        size: 50,
+        uploadedAt: new Date().toISOString(),
+        text: "",
+        status: "needs_ocr",
+        classification: "synthetic",
+        hash: "scan-hash",
+      },
+    ];
+    await set(STORAGE_KEY, seed);
+    mount("/opportunities/opp-2");
+    expect(
+      await screen.findByRole("button", { name: "Create editable draft" }),
+    ).toBeDisabled();
+    expect((await stored())?.proposals).toHaveLength(seed.proposals.length);
+    expect(
+      screen.queryByRole("textbox", { name: "Section content" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("saves free-text document content and invalidates a previously approved version", async () => {
+    const seed = createSeedState();
+    const proposal = seed.proposals.find((item) => item.id === "prop-2")!;
+    proposal.status = "approved";
+    proposal.approvalVersion = proposal.version;
+    await set(STORAGE_KEY, seed);
+    const user = userEvent.setup();
+    const first = mount("/proposals/prop-2");
+    const content = await screen.findByRole("textbox", {
+      name: "Section content",
+    });
+    const replacement =
+      "Synthetic revised scope. Arabic delivery option: تنفيذ المشروع على مراحل واضحة.";
+    await user.clear(content);
+    await user.click(content);
+    await user.paste(replacement);
+    await user.click(screen.getByRole("button", { name: "Save proposal" }));
+    expect(
+      screen.getByRole("button", { name: "Generate Word file" }),
+    ).toBeEnabled();
+    expect(
+      screen.queryByRole("button", { name: /Approve version/ }),
+    ).not.toBeInTheDocument();
+    await waitFor(async () => {
+      const updated = (await stored())?.proposals.find(
+        (item) => item.id === "prop-2",
+      );
+      expect(updated).toMatchObject({
+        status: "draft",
+        version: proposal.version + 1,
+        approvalVersion: null,
+      });
+      expect(updated?.sections[0].body).toBe(replacement);
+    });
+    first.unmount();
+    mount("/proposals/prop-2");
+    expect(
+      await screen.findByRole("textbox", { name: "Section content" }),
+    ).toHaveValue(replacement);
+  });
+
+  it("makes the AI rewrite connection limit explicit without changing document text", async () => {
+    const seed = createSeedState();
+    const original = seed.proposals.find((item) => item.id === "prop-2")!
+      .sections[0].body;
     const user = userEvent.setup();
     mount("/proposals/prop-2");
     await user.click(
-      await screen.findByRole("button", { name: /^Review & export/ }),
+      await screen.findByRole("button", { name: "Rewrite with AI" }),
     );
+    const dialog = screen.getByRole("dialog", { name: "Rewrite with AI" });
+    expect(within(dialog).getByText(/AI.*not connected/i)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Approved technical DOCX" }),
-    ).toBeDisabled();
-    await user.click(screen.getByRole("button", { name: "Approve version 1" }));
-    const dialog = screen.getByRole("dialog", { name: "Approve version 1" });
+      within(dialog).getByRole("textbox", { name: "Rewrite instructions" }),
+    ).toBeInTheDocument();
     expect(
-      within(dialog).getByRole("button", {
-        name: "Approve this exact version",
-      }),
-    ).toBeDisabled();
-    await user.click(
-      within(dialog).getByRole("checkbox", {
-        name: /I reviewed the RFP coverage/,
-      }),
-    );
-    await user.click(
-      within(dialog).getByRole("button", {
-        name: "Approve this exact version",
-      }),
-    );
+      within(dialog).getByRole("button", { name: "Download agent input" }),
+    ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Approved technical DOCX" }),
-    ).toBeEnabled();
-    await waitFor(async () =>
-      expect(
-        (await stored())?.proposals.find((item) => item.id === "prop-2"),
-      ).toMatchObject({ status: "approved", version: 1, approvalVersion: 1 }),
-    );
-    await user.click(screen.getByRole("button", { name: /^Write proposal/ }));
-    const content = screen.getByRole("textbox", { name: "Section content" });
-    await user.click(content);
-    await user.keyboard("{Control>}{End}{/Control}");
-    await user.paste(" Clarified implementation acceptance criteria.");
-    await user.click(screen.getByRole("button", { name: "Save section" }));
-    await user.click(screen.getByRole("button", { name: /^Review & export/ }));
-    expect(
-      screen.getByRole("button", { name: "Approved technical DOCX" }),
-    ).toBeDisabled();
-    expect(
-      screen.getByRole("button", { name: "Approve version 2" }),
-    ).toBeEnabled();
-    await waitFor(async () =>
-      expect(
-        (await stored())?.proposals.find((item) => item.id === "prop-2"),
-      ).toMatchObject({ status: "draft", version: 2, approvalVersion: null }),
-    );
+      (await stored())?.proposals.find((item) => item.id === "prop-2")
+        ?.sections[0].body,
+    ).toBe(original);
   });
 });

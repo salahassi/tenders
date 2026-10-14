@@ -1,0 +1,249 @@
+.proposal-file-summary {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 24px;
+}
+.proposal-file-summary > div {
+  flex: 1;
+  min-width: 0;
+}
+.proposal-file-summary strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  color: #334d3b;
+}
+.proposal-file-summary p {
+  margin: 7px 0 0;
+  color: #75806e;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.proposal-local-note {
+  margin: 14px 0 25px;
+  color: #6c7867;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.proposal-tools {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin: 20px 0;
+}
+.proposal-view-switch {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  background: #edf1e8;
+  border-radius: 9px;
+}
+.proposal-edit-layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.proposal-editor-panel {
+  min-width: 0;
+  overflow: hidden;
+}
+.proposal-title-field {
+  padding: 22px 26px;
+  border-bottom: 1px solid #e7eddf;
+  background: #fafbf6;
+}
+.proposal-section-toolbar {
+  padding: 10px 24px;
+  border-bottom: 1px solid #edf0e7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.proposal-editor-panel .workspace-body-input {
+  min-height: 360px;
+}
+.proposal-editor-panel .workspace-paper-foot {
+  align-items: center;
+}
+.proposal-editor-panel .workspace-paper-foot > .btn {
+  font-size: 11px;
+}
+.proposal-ai-caption {
+  margin-top: 12px;
+  line-height: 1.6;
+}
+.proposal-undo {
+  margin-top: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center !important;
+  flex-wrap: wrap;
+}
+.proposal-pricing-details {
+  margin-top: 24px;
+  overflow: hidden;
+}
+.proposal-pricing-details > summary {
+  cursor: pointer;
+  padding: 22px 25px;
+  font-weight: 600;
+  font-size: 14px;
+}
+.proposal-pricing-details > summary span {
+  margin-left: 14px;
+  font-size: 12px;
+  font-weight: 400;
+  color: #7c8774;
+}
+.proposal-pricing-details[open] > summary {
+  border-bottom: 1px solid #e5ebdd;
+}
+.proposal-pricing-inputs {
+  margin-top: 25px;
+}
+.proposal-pricing-inputs .notice {
+  font-size: 12px;
+}
+.proposal-pricing-inputs .notice ul {
+  padding-left: 18px;
+  line-height: 1.8;
+}
+.proposal-pricing-assumptions {
+  margin: 25px 0 15px;
+}
+.proposal-calculated-total {
+  color: #45643d;
+  padding: 15px;
+  background: #eef3e8;
+  border-radius: 7px;
+}
+.proposal-footer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  margin-top: 24px;
+}
+.proposal-footer-grid p {
+  line-height: 1.8;
+}
+.proposal-preview-wrap {
+  padding: 22px;
+  background: #edf0e8;
+  border-radius: 12px;
+}
+.proposal-preview-wrap > p {
+  text-align: center;
+  margin: 0 0 20px;
+}
+.proposal-document-preview {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 55px 58px;
+  background: #fff;
+  box-shadow: 0 5px 18px #2030180d;
+  line-height: 1.8;
+  color: #37423a;
+  overflow-wrap: anywhere;
+}
+.proposal-document-preview header {
+  padding: 30px 0 55px;
+  border-bottom: 1px solid #dfe5da;
+}
+.proposal-document-preview h2 {
+  font:
+    500 31px/1.4 Georgia,
+    serif;
+}
+.proposal-preview-contents {
+  padding: 25px 0;
+  border-bottom: 1px solid #e4eadd;
+}
+.proposal-preview-contents li {
+  font-size: 13px;
+  padding: 3px;
+}
+.proposal-preview-section {
+  padding-top: 25px;
+}
+.proposal-preview-section h3 {
+  font-size: 20px;
+}
+.proposal-preview-section p {
+  white-space: pre-wrap;
+  font-size: 13px;
+}
+.proposal-list-actions {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+.proposal-list-actions .btn {
+  white-space: nowrap;
+}
+.proposal-file-page .workspace-body-input:focus-visible {
+  outline: 2px solid #8aaa79;
+  outline-offset: 5px;
+  border-radius: 2px;
+}
+.proposal-file-page summary:focus-visible {
+  outline: 2px solid #648c55;
+  outline-offset: -5px;
+}
+@media (max-width: 900px) {
+  .proposal-edit-layout {
+    grid-template-columns: 195px minmax(0, 1fr);
+    gap: 18px;
+  }
+  .proposal-footer-grid {
+    grid-template-columns: 1fr;
+  }
+  .proposal-file-summary {
+    flex-wrap: wrap;
+  }
+  .proposal-document-preview {
+    padding: 35px;
+  }
+}
+@media (max-width: 650px) {
+  .proposal-edit-layout {
+    grid-template-columns: 1fr;
+  }
+  .proposal-file-summary {
+    padding: 18px;
+    gap: 12px;
+  }
+  .proposal-file-summary > div {
+    min-width: 180px;
+  }
+  .proposal-tools {
+    flex-wrap: wrap;
+  }
+  .proposal-view-switch {
+    width: 100%;
+  }
+  .proposal-view-switch .btn {
+    flex: 1;
+    padding: 10px;
+    font-size: 11px;
+  }
+  .proposal-pricing-details > summary span {
+    display: block;
+    margin: 8px 0 0;
+    line-height: 1.6;
+  }
+  .proposal-title-field {
+    padding: 20px;
+  }
+  .proposal-preview-wrap {
+    padding: 12px;
+  }
+  .proposal-document-preview {
+    padding: 24px 18px;
+  }
+  .proposal-document-preview h2 {
+    font-size: 25px;
+  }
+}

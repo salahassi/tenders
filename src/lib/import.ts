@@ -87,14 +87,7 @@ export function fromImportRow(row: ImportRow): Opportunity {
     createdAt: new Date().toISOString(),
     documents: [],
     requirements: [],
-    gaps: [
-      {
-        id: uid("gap"),
-        question: "Confirm the submission deadline and timezone.",
-        answer: "",
-        required: true,
-      },
-    ],
+    gaps: [],
     acquisition: "not_requested",
     language: "en",
   };
@@ -109,8 +102,6 @@ export function opportunitiesToCsv(items: Opportunity[]): string {
       description: o.description,
       deadline: o.deadline,
       status: o.status,
-      fit_score: o.score ?? "",
-      evidence_coverage: o.coverage,
     })),
     { escapeFormulae: true },
   );

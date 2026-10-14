@@ -46,8 +46,8 @@ const Setup = lazy(() => import("./pages/Setup"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const nav = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
+  { to: "/review", label: "Review inbox", icon: ListChecks },
   { to: "/opportunities", label: "Opportunities", icon: Target },
-  { to: "/review", label: "Review queue", icon: ListChecks },
   { to: "/proposals", label: "Proposals", icon: FileText },
   { to: "/sources", label: "Sources", icon: Radio },
   { to: "/knowledge", label: "Company knowledge", icon: BookOpen },
@@ -62,9 +62,9 @@ export default function App() {
   const [help, setHelp] = useState(false);
   const [offline, setOffline] = useState(!navigator.onLine);
   const unread = state.notifications.filter((n) => !n.read).length;
-  const reviewCount =
-    state.opportunities.filter((o) => o.status === "new").length +
-    state.sources.filter((s) => s.status === "proposed").length;
+  const reviewCount = state.opportunities.filter(
+    (o) => o.status === "new" || o.status === "deferred",
+  ).length;
   useEffect(() => {
     setMenu(false);
     document.getElementById("main")?.focus();
@@ -259,8 +259,8 @@ export default function App() {
           <div className="demo-bar">
             <Sparkles size={14} />
             <span>
-              <strong>You’re exploring the demo.</strong> All organizations and
-              opportunities are synthetic. Changes stay in this browser.
+              <strong>You’re exploring the demo.</strong> Sample records are
+              synthetic. Your changes and uploaded files stay in this browser.
             </span>
             <Link to="/setup">
               Setup details <ArrowUpRight size={13} />
@@ -400,28 +400,33 @@ export default function App() {
       >
         <ol className="guide-list">
           <li>
-            <strong>Discover</strong>
-            <p>Browse synthetic opportunities or add your own public sample.</p>
-          </li>
-          <li>
-            <strong>Decide</strong>
+            <strong>Review incoming opportunities</strong>
             <p>
-              Review the evidence, shortlist the fit, and record document
-              acquisition.
+              Open the Review inbox and approve the opportunities you want to
+              pursue. Approved items move to Opportunities.
             </p>
           </li>
           <li>
-            <strong>Prepare</strong>
+            <strong>Upload the RFP</strong>
             <p>
-              Add an eligible RFP, resolve requirements, and edit a proposal
-              draft.
+              Open an approved opportunity and add the RFP and any supporting
+              documents.
             </p>
           </li>
           <li>
-            <strong>Review & export</strong>
+            <strong>Prepare your proposal</strong>
             <p>
-              Confirm the scope and prices. Approve the exact version before a
-              final export.
+              Use company reference files and add any information requested by
+              the RFP. The connected agent will use these inputs to draft and
+              refine the proposal.
+            </p>
+          </li>
+          <li>
+            <strong>Generate the file</strong>
+            <p>
+              Review the draft and generate a Word file. AI drafting and
+              rewriting need a backend connection; local editing and file export
+              are available in the demo.
             </p>
           </li>
         </ol>

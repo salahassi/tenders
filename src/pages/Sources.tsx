@@ -22,6 +22,19 @@ import {
 import type { Source } from "../types";
 import "./admin.css";
 
+const sourceTypeLabel: Record<Source["type"], string> = {
+  link_directory: "Website",
+  rss: "RSS feed",
+  json_feed: "JSON feed",
+  manual: "Added by you",
+};
+const sourceStatusLabel: Record<Source["status"], string> = {
+  approved: "Enabled",
+  proposed: "Not enabled",
+  paused: "Paused",
+  rejected: "Rejected",
+};
+
 export default function Sources() {
   const { state, update, notify } = useApp();
   const [search, setSearch] = useState("");
@@ -31,7 +44,7 @@ export default function Sources() {
   const [form, setForm] = useState({
     name: "",
     url: "",
-    type: "rss" as Source["type"],
+    type: "link_directory" as Exclude<Source["type"], "manual">,
     tags: "",
     policy: "",
   });
@@ -40,12 +53,13 @@ export default function Sources() {
   const sources = state.sources.filter(
     (s) =>
       (filter === "all" || s.status === filter) &&
-      `${s.name} ${s.tags.join(" ")}`
+      `${s.name} ${sourceTypeLabel[s.type]} ${s.tags.join(" ")}`
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
   const changeStatus = (id: string, status: Source["status"]) => {
-    if (!owner) return;
+    if (!owner || state.sources.find((s) => s.id === id)?.type === "manual")
+      return;
     if (
       status === "approved" &&
       state.sources.find((x) => x.id === id)?.type !== "manual" &&
@@ -54,7 +68,7 @@ export default function Sources() {
       ).length >= 5
     ) {
       notify(
-        "The trial allows five approved automated sources. Pause one before approving another.",
+        "This trial configuration supports five enabled sources. Pause one before enabling another.",
       );
       return;
     }
@@ -70,7 +84,7 @@ export default function Sources() {
     );
     notify(
       status === "approved"
-        ? "Source approved locally. Connected collection is not configured."
+        ? "Source enabled in your saved configuration. Live collection is not connected."
         : `Source ${status}.`,
     );
   };
@@ -80,14 +94,12 @@ export default function Sources() {
       setError("Give the source a name.");
       return;
     }
-    if (form.type !== "manual") {
-      try {
-        const u = new URL(form.url);
-        if (u.protocol !== "https:") throw Error();
-      } catch {
-        setError("Enter a valid HTTPS source URL, or choose manual entry.");
-        return;
-      }
+    try {
+      const u = new URL(form.url);
+      if (u.protocol !== "https:") throw Error();
+    } catch {
+      setError("Enter a valid HTTPS website or feed URL.");
+      return;
     }
     const source: Source = {
       id: crypto.randomUUID(),
@@ -109,66 +121,28 @@ export default function Sources() {
     };
     update(
       (s) => ({ ...s, sources: [source, ...s.sources] }),
-      "Source proposed",
+      "Source added",
       source.id,
     );
     setOpen(false);
-    setForm({ name: "", url: "", type: "rss", tags: "", policy: "" });
+    setForm({
+      name: "",
+      url: "",
+      type: "link_directory",
+      tags: "",
+      policy: "",
+    });
     setError("");
-    notify("Source proposed. An Owner can review and approve it.");
-  };
-  const test = (source: Source) => {
-    if (!owner) return;
-    if (source.status !== "approved") {
-      notify("Approve this source before testing it.");
-      return;
-    }
-    const fixture =
-      (source.id === "src-1" &&
-        source.url === "https://example.com/fixtures/public-tenders.xml") ||
-      (source.id === "src-2" &&
-        source.url === "https://example.com/fixtures/enterprise-tenders.json");
-    const records = state.opportunities.filter((o) => o.sourceId === source.id);
-    const valid =
-      records.every((o) => o.title.trim() && o.buyer.trim()) &&
-      new Set(records.map((o) => o.id)).size === records.length;
-    const completed = fixture && valid;
-    const jobId = crypto.randomUUID();
-    const message = fixture
-      ? valid
-        ? `Validated ${records.length} existing local fixture records. No network request or duplicate import occurred.`
-        : "Local fixture validation found a missing title, buyer, or duplicate ID."
-      : source.type === "manual"
-        ? "Manual source: automated collection is not available. Add opportunities using Import."
-        : "Connected backend is not configured. No network request was made.";
-    update(
-      (s) => ({
-        ...s,
-        jobs: [
-          {
-            id: jobId,
-            type: fixture ? "fixture_validation" : "source_collect",
-            target: source.name,
-            status: completed ? "completed" : fixture ? "failed" : "blocked",
-            progress: completed ? 100 : 0,
-            attempt: 1,
-            message,
-            createdAt: new Date().toISOString(),
-          },
-          ...s.jobs,
-        ],
-      }),
-      "Source test requested",
-      source.id,
+    notify(
+      "Source saved. An Owner can enable it in Sources. Live collection is not connected.",
     );
-    notify(message);
   };
   return (
     <>
       <PageHeader
         eyebrow="DISCOVERY"
         title="Sources"
-        description="A curated watchlist for your next opportunity."
+        description="Add the websites, RSS feeds, and JSON feeds you want the agent to monitor."
         actions={
           canEdit ? (
             <Button
@@ -185,21 +159,25 @@ export default function Sources() {
       />
       <div className="admin-metrics">
         <Metric
-          label="Approved sources"
-          value={state.sources.filter((s) => s.status === "approved").length}
-          detail="Your approved watchlist"
+          label="Enabled sources"
+          value={
+            state.sources.filter(
+              (s) => s.status === "approved" && s.type !== "manual",
+            ).length
+          }
+          detail="Saved configuration; collection not connected"
           icon={<Radio size={18} />}
         />
         <Metric
-          label="Pending review"
+          label="Not enabled"
           value={state.sources.filter((s) => s.status === "proposed").length}
-          detail="Awaiting Owner approval"
+          detail="An Owner can enable these sources"
           icon={<Globe2 size={18} />}
         />
         <Metric
-          label="Collected opportunities"
-          value={state.sources.reduce((n, s) => n + s.count, 0)}
-          detail="Includes illustrative demo records"
+          label="Opportunities recorded"
+          value={state.opportunities.length}
+          detail="Includes sample and user-added records"
           icon={<ArrowUpRight size={18} />}
         />
       </div>
@@ -221,8 +199,8 @@ export default function Sources() {
           onChange={(e) => setFilter(e.target.value)}
         >
           <option value="all">All sources</option>
-          <option value="approved">Approved</option>
-          <option value="proposed">Pending review</option>
+          <option value="approved">Enabled</option>
+          <option value="proposed">Not enabled</option>
           <option value="paused">Paused</option>
           <option value="rejected">Rejected</option>
         </select>
@@ -262,17 +240,22 @@ export default function Sources() {
                             className="admin-link"
                             to={`/sources/${source.id}`}
                           >
-                            {source.name}
+                            {source.type === "manual"
+                              ? "Added by you"
+                              : source.name}
                           </Link>
                           <small>
-                            {source.tags.join(" · ") || "No sectors specified"}
+                            {source.type === "manual"
+                              ? "Opportunities you enter or import yourself"
+                              : source.tags.join(" · ") ||
+                                "No sectors specified"}
                           </small>
                         </div>
                       </div>
                     </td>
                     <td>
                       <span className="tag">
-                        {source.type.replaceAll("_", " ")}
+                        {sourceTypeLabel[source.type]}
                       </span>
                     </td>
                     <td>
@@ -287,52 +270,58 @@ export default function Sources() {
                                 : "neutral"
                         }
                       >
-                        {source.status === "proposed"
-                          ? "Needs review"
-                          : source.status}
+                        {source.type === "manual"
+                          ? "Built-in origin"
+                          : sourceStatusLabel[source.status]}
                       </Badge>
                     </td>
-                    <td>{source.count}</td>
+                    <td>
+                      {
+                        state.opportunities.filter(
+                          (o) => o.sourceId === source.id,
+                        ).length
+                      }
+                    </td>
                     <td>
                       <div className="admin-cell-actions">
-                        {owner && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => test(source)}
-                            disabled={source.status !== "approved"}
-                          >
-                            Test
-                          </Button>
-                        )}
-                        {owner && source.status === "proposed" && (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => changeStatus(source.id, "approved")}
-                          >
-                            <Check size={13} /> Approve
-                          </Button>
-                        )}
-                        {owner && source.status === "approved" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => changeStatus(source.id, "paused")}
-                            aria-label={`Pause ${source.name}`}
-                          >
-                            <Pause size={14} />
-                          </Button>
-                        )}
-                        {owner && source.status === "paused" && (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => changeStatus(source.id, "approved")}
-                          >
-                            Resume
-                          </Button>
-                        )}
+                        {owner &&
+                          source.type !== "manual" &&
+                          source.status === "proposed" && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() =>
+                                changeStatus(source.id, "approved")
+                              }
+                            >
+                              <Check size={13} /> Enable
+                            </Button>
+                          )}
+                        {owner &&
+                          source.type !== "manual" &&
+                          source.status === "approved" && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => changeStatus(source.id, "paused")}
+                              aria-label={`Pause ${source.name}`}
+                            >
+                              <Pause size={14} />
+                            </Button>
+                          )}
+                        {owner &&
+                          source.type !== "manual" &&
+                          source.status === "paused" && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={() =>
+                                changeStatus(source.id, "approved")
+                              }
+                            >
+                              Resume
+                            </Button>
+                          )}
                       </div>
                     </td>
                   </tr>
@@ -348,18 +337,15 @@ export default function Sources() {
         )}
       </div>
       <p className="admin-help">
-        Demo records show the intended workflow. Approving a source here saves
-        your decision locally; it does not activate a live crawler. Restricted
-        or login-only sources remain manual.
+        Live collection is not connected. Enabling a source saves your
+        preference in this browser. "Added by you" is the built-in origin for
+        opportunities you enter or import yourself; it is not a website
+        connector.
       </p>
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        title="Propose a source"
-      >
+      <Modal open={open} onClose={() => setOpen(false)} title="Add source">
         <p className="admin-help">
-          Suggest a public source for review. Only an Owner can approve
-          collection.
+          Save a public website or feed. An Owner can enable it in the source
+          list. Live monitoring requires the backend connection.
         </p>
         <div className="stack">
           <Field label="Source name">
@@ -372,18 +358,20 @@ export default function Sources() {
               placeholder="e.g., Public procurement feed"
             />
           </Field>
-          <Field label="Collection method">
+          <Field label="Source type">
             <select
               className="input"
               value={form.type}
               onChange={(e) =>
-                setForm({ ...form, type: e.target.value as Source["type"] })
+                setForm({
+                  ...form,
+                  type: e.target.value as Exclude<Source["type"], "manual">,
+                })
               }
             >
+              <option value="link_directory">Website</option>
               <option value="rss">RSS feed</option>
-              <option value="json_feed">Public JSON feed</option>
-              <option value="link_directory">Public link directory</option>
-              <option value="manual">Manual entry</option>
+              <option value="json_feed">JSON feed</option>
             </select>
           </Field>
           <Field
@@ -428,7 +416,7 @@ export default function Sources() {
             Cancel
           </Button>
           <Button variant="primary" onClick={submit}>
-            Propose source
+            Save source
           </Button>
         </div>
       </Modal>

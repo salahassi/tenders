@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import {
   ArrowDownUp,
   ChevronLeft,
@@ -34,10 +34,16 @@ import OpportunityTable from "../components/OpportunityTable";
 export default function Opportunities() {
   const { state, update, notify } = useApp();
   const [params, setParams] = useSearchParams();
-  const [tab, setTab] = useState(params.get("status") || "all");
+  const [tab, setTab] = useState(
+    ["shortlisted", "in_progress", "submitted"].includes(
+      params.get("status") || "",
+    )
+      ? params.get("status")!
+      : "all",
+  );
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
-  const [sort, setSort] = useState(params.get("sort") || "fit");
+  const [sort, setSort] = useState(params.get("sort") || "newest");
   const [page, setPage] = useState(1);
   const [add, setAdd] = useState(params.get("new") === "1");
   const [importOpen, setImportOpen] = useState(false);
@@ -55,12 +61,16 @@ export default function Opportunities() {
     time: "17:00",
   });
   const editable = can(state.settings.role, "edit");
+  const selected = state.opportunities.filter((o) =>
+    ["shortlisted", "in_progress", "submitted"].includes(o.status),
+  );
   const filtered = useMemo(
     () =>
       state.opportunities
         .filter(
           (o) =>
-            (tab === "all" || (tab === "saved" ? o.saved : o.status === tab)) &&
+            ["shortlisted", "in_progress", "submitted"].includes(o.status) &&
+            (tab === "all" || o.status === tab) &&
             (category === "all" || o.category === category) &&
             `${o.title} ${o.buyer} ${o.reference}`
               .toLowerCase()
@@ -71,7 +81,7 @@ export default function Opportunities() {
             ? (a.deadline || "9999").localeCompare(b.deadline || "9999")
             : sort === "newest"
               ? b.createdAt.localeCompare(a.createdAt)
-              : (b.score ?? -1) - (a.score ?? -1),
+              : b.createdAt.localeCompare(a.createdAt),
         ),
     [state.opportunities, tab, category, query, sort],
   );
@@ -94,8 +104,8 @@ export default function Opportunities() {
     e.preventDefault();
     setError("");
     if (!editable) return;
-    if (!form.title.trim() || (!form.reference.trim() && !form.url.trim())) {
-      setError("Provide a title and either a reference number or source URL.");
+    if (!form.title.trim()) {
+      setError("Provide an opportunity title.");
       return;
     }
     if (form.url) {
@@ -109,13 +119,24 @@ export default function Opportunities() {
       }
     }
     if (
-      state.opportunities.some((o) =>
-        form.reference.trim()
-          ? o.reference === form.reference.trim()
-          : o.sourceUrl === form.url.trim(),
+      state.opportunities.some(
+        (o) =>
+          (form.reference.trim() && o.reference === form.reference.trim()) ||
+          (form.url.trim() && o.sourceUrl === form.url.trim()),
       )
     ) {
       setError("An opportunity with that reference or URL already exists.");
+      return;
+    }
+    const closingDate =
+      form.deadline && form.time
+        ? new Date(`${form.deadline}T${form.time}:00+03:00`)
+        : null;
+    if (
+      form.deadline &&
+      (!closingDate || !Number.isFinite(closingDate.getTime()))
+    ) {
+      setError("Enter a valid closing date and time, or leave the date blank.");
       return;
     }
     const id = uid("opp");
@@ -127,28 +148,18 @@ export default function Opportunities() {
       description: form.description,
       category: form.category,
       tags: ["Manually added"],
-      deadline: form.deadline
-        ? new Date(`${form.deadline}T${form.time}:00+03:00`).toISOString()
-        : "",
+      deadline: closingDate?.toISOString() || "",
       score: null,
       coverage: 0,
-      status: "new",
+      status: "shortlisted",
       sourceId: "manual",
       value: null,
       saved: false,
       createdAt: new Date().toISOString(),
       documents: [],
       requirements: [],
-      gaps: form.deadline
-        ? []
-        : [
-            {
-              id: uid("gap"),
-              question: "Confirm the submission deadline and timezone.",
-              answer: "",
-              required: true,
-            },
-          ],
+      gaps: [],
+      deadlineSource: form.deadline ? "Entered by you" : "",
       acquisition: "not_requested",
       language: "en",
       sourceUrl: form.url.trim(),
@@ -158,7 +169,7 @@ export default function Opportunities() {
       "Opportunity added",
       opportunity.title,
     );
-    notify("Opportunity added. Review its evidence before shortlisting.");
+    notify("Opportunity added. Open it to upload the RFP.");
     setForm({
       title: "",
       buyer: "",
@@ -177,9 +188,9 @@ export default function Opportunities() {
   return (
     <>
       <PageHeader
-        eyebrow="DISCOVER & QUALIFY"
-        title="Find your next opportunity."
-        description="Bring the right work into focus. Review the fit, understand the evidence, and build your shortlist."
+        eyebrow="SELECTED FOR PROPOSAL PREPARATION"
+        title="Opportunities"
+        description="The opportunities you chose to pursue. Open one, upload the RFP, and prepare your proposal file."
         actions={
           <>
             <Button
@@ -205,41 +216,21 @@ export default function Opportunities() {
       />
       <div className="list-summary">
         <span>
-          <strong>{state.opportunities.length}</strong> opportunities in your
-          workspace
+          <strong>{selected.length}</strong> selected opportunities
         </span>
-        <span className="subtle-label">SYNTHETIC DEMO DATA</span>
+        <Link className="text-link" to="/review">
+          Review new discoveries →
+        </Link>
       </div>
       <section className="panel opportunity-list">
         <Tabs
           active={tab}
           onChange={(id) => resetFilter(() => setTab(id))}
           items={[
-            {
-              id: "all",
-              label: "All opportunities",
-              count: state.opportunities.length,
-            },
-            {
-              id: "new",
-              label: "To review",
-              count: state.opportunities.filter((o) => o.status === "new")
-                .length,
-            },
-            {
-              id: "shortlisted",
-              label: "Shortlisted",
-              count: state.opportunities.filter(
-                (o) => o.status === "shortlisted",
-              ).length,
-            },
-            { id: "in_progress", label: "In progress" },
-            {
-              id: "saved",
-              label: "Saved",
-              count: state.opportunities.filter((o) => o.saved).length,
-            },
-            { id: "declined", label: "Declined" },
+            { id: "all", label: "All selected", count: selected.length },
+            { id: "shortlisted", label: "Ready to start" },
+            { id: "in_progress", label: "Preparing proposal" },
+            { id: "submitted", label: "Submitted" },
           ]}
         />
         <div className="filter-bar">
@@ -279,7 +270,6 @@ export default function Opportunities() {
               value={sort}
               onChange={(e) => resetFilter(() => setSort(e.target.value))}
             >
-              <option value="fit">Highest fit</option>
               <option value="deadline">Closing soon</option>
               <option value="newest">Newest first</option>
             </select>
@@ -332,8 +322,8 @@ export default function Opportunities() {
         </div>
       </section>
       <p className="help-caption">
-        Fit scores describe capability alignment. Evidence coverage shows how
-        much of the assessment is supported. Unknown scores remain unranked.
+        New discoveries belong in the Review inbox. Status updates happen inside
+        each opportunity; you can return an item to the inbox at any time.
       </p>
       <Modal open={add} onClose={closeAdd} title="Add an opportunity">
         <form onSubmit={submit} className="stack">
@@ -361,7 +351,7 @@ export default function Opportunities() {
                 dir="auto"
               />
             </Field>
-            <Field label="Reference number">
+            <Field label="Reference number (optional)">
               <input
                 value={form.reference}
                 maxLength={100}
@@ -374,7 +364,7 @@ export default function Opportunities() {
           </div>
           <Field
             label="Source URL"
-            hint="A reference number or an HTTPS source URL is required."
+            hint="Optional. Add the original notice link when available."
           >
             <input
               type="url"
@@ -400,7 +390,10 @@ export default function Opportunities() {
             </select>
           </Field>
           <div className="form-grid">
-            <Field label="Submission date" hint="Leave blank if not confirmed.">
+            <Field
+              label="Submission date"
+              hint="Optional. The closing date stated in the source or RFP."
+            >
               <input
                 type="date"
                 value={form.deadline}
@@ -454,8 +447,8 @@ export default function Opportunities() {
           <p className="muted">
             Upload a CSV with <code>title</code> and either{" "}
             <code>external_id</code> or <code>canonical_url</code>. Optional
-            columns: buyer_name, description, sector_tags. Deadlines are
-            confirmed separately after import.
+            columns: buyer_name, description, sector_tags. Imported discoveries
+            go to the Review inbox for your decision.
           </p>
           <Button
             size="sm"
@@ -557,9 +550,7 @@ export default function Opportunities() {
                   "CSV imported",
                   `${good.length} opportunities`,
                 );
-                notify(
-                  `${good.length} opportunities imported; confirm deadlines in each record`,
-                );
+                notify(`${good.length} discoveries added to the Review inbox`);
                 setImportOpen(false);
                 setRows([]);
                 setPreviewName("");

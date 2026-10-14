@@ -2,60 +2,48 @@ import { Link } from "react-router-dom";
 import {
   ArrowRight,
   ArrowUpRight,
+  BookOpen,
   CalendarDays,
-  CheckCheck,
-  CircleAlert,
   Clock3,
   FileText,
+  Inbox,
   Plus,
   Radio,
-  Sparkles,
   Target,
 } from "lucide-react";
 import { useApp } from "../lib/store";
 import { date, daysLeft } from "../lib/format";
-import { Metric, PageHeader, StatusBadge } from "../components/ui";
+import { EmptyState, Metric, PageHeader } from "../components/ui";
 import OpportunityTable from "../components/OpportunityTable";
+
 export default function Dashboard() {
   const { state } = useApp();
-  const active = state.opportunities.filter(
-    (o) => !["declined", "submitted"].includes(o.status),
+  const inbox = state.opportunities.filter(
+    (o) => o.status === "new" || o.status === "deferred",
   );
-  const newItems = state.opportunities.filter((o) => o.status === "new");
+  const selected = state.opportunities.filter((o) =>
+    ["shortlisted", "in_progress", "submitted"].includes(o.status),
+  );
+  const active = selected.filter((o) => o.status !== "submitted");
   const due = active.filter(
     (o) => daysLeft(o.deadline) >= 0 && daysLeft(o.deadline) <= 7,
   );
-  const shortlist = state.opportunities.filter(
-    (o) => o.status === "shortlisted" || o.status === "in_progress",
-  );
-  const top = [...active]
-    .sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
+  const recent = [...selected]
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, 4);
   const deadlines = [...active]
-    .filter((o) => daysLeft(o.deadline) >= 0)
+    .filter(
+      (o) => Number.isFinite(daysLeft(o.deadline)) && daysLeft(o.deadline) >= 0,
+    )
     .sort((a, b) => a.deadline.localeCompare(b.deadline))
     .slice(0, 3);
-  const stages = [
-    {
-      label: "Discovered",
-      value: state.opportunities.filter((o) => o.status === "new").length,
-      color: "#9cbcac",
-    },
-    { label: "Shortlisted", value: shortlist.length, color: "#347c67" },
-    { label: "In proposal", value: state.proposals.length, color: "#183f37" },
-    {
-      label: "Submitted",
-      value: state.opportunities.filter((o) => o.status === "submitted").length,
-      color: "#c1d99b",
-    },
-  ];
-  const max = Math.max(...stages.map((s) => s.value), 1);
+
   return (
     <>
       <PageHeader
         eyebrow="YOUR WORKSPACE, AT A GLANCE"
-        title="Good work starts with the right opportunity."
-        description="A clear view of what’s new, what needs you, and what’s next."
+        title="From opportunity to proposal."
+        description="Review incoming opportunities, upload an RFP, and prepare your proposal file."
         actions={
           <Link to="/opportunities?new=1" className="btn btn-primary">
             <Plus size={16} /> Add opportunity
@@ -69,22 +57,22 @@ export default function Dashboard() {
       </div>
       <section className="focus-banner">
         <div className="focus-icon">
-          <Sparkles size={25} />
+          <Inbox size={25} />
         </div>
         <div className="focus-copy">
-          <span className="overline">YOUR NEXT MOVE</span>
+          <span className="overline">START WITH YOUR INBOX</span>
           <h2>
-            {newItems.length
-              ? `${newItems.length} opportunities are ready for a closer look.`
-              : "Your review queue is in good shape."}
+            {inbox.length
+              ? `${inbox.length} incoming opportunities to review.`
+              : "Your review inbox is clear."}
           </h2>
           <p>
-            Review the evidence, spot the fit, and decide what deserves your
-            time.
+            Approve the ones you want to pursue. They will move into
+            Opportunities, ready for an RFP.
           </p>
         </div>
         <Link to="/review" className="btn btn-light">
-          Open review queue <ArrowRight size={17} />
+          Open review inbox <ArrowRight size={17} />
         </Link>
         <div className="focus-orbit" aria-hidden="true">
           <i />
@@ -94,30 +82,27 @@ export default function Dashboard() {
       </section>
       <div className="metrics-grid">
         <Metric
-          label="Open opportunities"
-          value={active.length.toString().padStart(2, "0")}
-          detail="Across your connected demo sources"
+          label="In review inbox"
+          value={inbox.length.toString().padStart(2, "0")}
+          detail="Waiting for your decision"
+          icon={<Inbox size={18} />}
+        />
+        <Metric
+          label="Your opportunities"
+          value={selected.length.toString().padStart(2, "0")}
+          detail="Approved by you to pursue"
           icon={<Target size={18} />}
         />
         <Metric
-          label="On your shortlist"
-          value={shortlist.length.toString().padStart(2, "0")}
-          detail="Selected for the next stage"
-          icon={<CheckCheck size={18} />}
-        />
-        <Metric
-          label="Proposals in progress"
-          value={state.proposals
-            .filter((p) => p.status !== "approved")
-            .length.toString()
-            .padStart(2, "0")}
-          detail={`${state.proposals.filter((p) => p.status === "approved").length} approved and ready to export`}
+          label="Proposal drafts"
+          value={state.proposals.length.toString().padStart(2, "0")}
+          detail="Open a draft to edit or export a file"
           icon={<FileText size={18} />}
         />
         <Metric
           label="Closing this week"
           value={due.length.toString().padStart(2, "0")}
-          detail="Deadlines within the next 7 days"
+          detail="Recorded submission deadlines, next 7 days"
           icon={<Clock3 size={18} />}
         />
       </div>
@@ -126,55 +111,56 @@ export default function Dashboard() {
           <section className="panel">
             <div className="panel-header">
               <div>
-                <h2>Opportunities worth your attention</h2>
-                <p>Ranked by fit. Every score comes with evidence.</p>
+                <h2>Your opportunities</h2>
+                <p>Opportunities you have approved, newest first.</p>
               </div>
               <Link className="text-link" to="/opportunities">
                 View all <ArrowUpRight size={16} />
               </Link>
             </div>
-            <OpportunityTable items={top} compact />
-            <div className="panel-note">
-              <span className="small-spark">
-                <Sparkles size={13} />
-              </span>
-              Fit measures alignment with your capabilities, not the chance of
-              winning.
-            </div>
+            {recent.length ? (
+              <OpportunityTable items={recent} compact />
+            ) : (
+              <EmptyState
+                title="Choose an opportunity to begin"
+                description="Approve an item in the Review inbox, then upload its RFP."
+                action={
+                  <Link className="btn btn-primary" to="/review">
+                    Open review inbox
+                  </Link>
+                }
+              />
+            )}
           </section>
-          <section className="panel pipeline-panel">
+          <section className="panel">
             <div className="panel-header">
               <div>
-                <h2>Your pipeline, in perspective</h2>
-                <p>Current workspace counts across each stage.</p>
+                <h2>A simple path to your proposal</h2>
+                <p>Keep the work focused on the documents you need.</p>
               </div>
-              <span className="subtle-label">LIVE SNAPSHOT</span>
             </div>
-            <div className="pipeline-bars">
-              {stages.map((s, i) => (
-                <div className="pipeline-stage" key={s.label}>
-                  <div>
-                    <span>
-                      <b>0{i + 1}</b>
-                      {s.label}
-                    </span>
-                    <strong>{s.value}</strong>
-                  </div>
-                  <div className="pipeline-track">
-                    <span
-                      style={{
-                        width: `${Math.max((s.value / max) * 100, 2)}%`,
-                        background: s.color,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="panel-note">
-              Proposal counts are versions in preparation; one opportunity may
-              have more than one proposal.
-            </p>
+            <ol className="guide-list" style={{ padding: "0 24px 20px 44px" }}>
+              <li>
+                <strong>Approve an opportunity</strong>
+                <p>
+                  Choose the items you want to pursue from your Review inbox.
+                </p>
+              </li>
+              <li>
+                <strong>Upload the RFP</strong>
+                <p>
+                  Add the tender document and choose the company reference files
+                  to use.
+                </p>
+              </li>
+              <li>
+                <strong>Prepare and generate the proposal</strong>
+                <p>
+                  Add any requested details, review the draft, and generate a
+                  Word file.
+                </p>
+              </li>
+            </ol>
           </section>
         </div>
         <aside className="dashboard-secondary">
@@ -182,7 +168,7 @@ export default function Dashboard() {
             <div className="panel-header">
               <div className="row">
                 <CalendarDays size={18} />
-                <h2>Coming up next</h2>
+                <h2>Submission deadlines</h2>
               </div>
               <span className="count-bubble">{deadlines.length}</span>
             </div>
@@ -216,93 +202,57 @@ export default function Dashboard() {
                 </div>
               </Link>
             ))}
-            {deadlines.length === 0 && (
-              <p className="panel-note">No upcoming deadlines.</p>
+            {!deadlines.length && (
+              <p className="panel-note">
+                No upcoming submission deadlines recorded.
+              </p>
             )}
-            <Link
-              className="panel-bottom-link"
-              to="/opportunities?sort=deadline"
-            >
-              View all deadlines <ArrowRight size={15} />
-            </Link>
+            <p className="panel-note">
+              These are the dates recorded for your selected opportunities. Demo
+              records use illustrative dates.
+            </p>
           </section>
           <section className="panel needs-attention">
             <div className="panel-header">
-              <div className="row">
-                <CircleAlert size={18} />
-                <h2>Needs your input</h2>
-              </div>
+              <h2>Prepare your workspace</h2>
             </div>
-            <Link to="/review" className="attention-item">
-              <span className="attention-icon amber">
-                <FileText size={17} />
+            <Link to="/knowledge" className="attention-item">
+              <span className="attention-icon green">
+                <BookOpen size={17} />
               </span>
               <div>
-                <strong>Fill in the missing pieces</strong>
+                <strong>Add company reference files</strong>
                 <p>
-                  {state.opportunities.reduce(
-                    (n, o) =>
-                      n +
-                      o.gaps.filter((g) => g.required && !g.answer.trim())
-                        .length,
-                    0,
-                  )}{" "}
-                  required answers across your opportunities
+                  Previous proposals, team profiles, and company information.
                 </p>
               </div>
               <ArrowUpRight size={15} />
             </Link>
             <Link to="/sources" className="attention-item">
-              <span className="attention-icon green">
+              <span className="attention-icon amber">
                 <Radio size={17} />
               </span>
               <div>
-                <strong>Review proposed sources</strong>
-                <p>
-                  {state.sources.filter((s) => s.status === "proposed").length}{" "}
-                  waiting for an owner decision
-                </p>
+                <strong>Manage discovery sources</strong>
+                <p>Websites, RSS feeds, and JSON feeds.</p>
               </div>
               <ArrowUpRight size={15} />
             </Link>
           </section>
           <section className="source-health">
             <div className="row">
-              <span className="status-dot" />
-              <strong>Demo sources are ready</strong>
+              <strong>Frontend demo</strong>
             </div>
             <p>
-              Explore collection results with synthetic data. Live background
-              monitoring is not connected.
+              Editing, uploads, and Word export work in this browser. Live
+              source collection and AI drafting require a backend connection.
             </p>
-            <Link to="/sources">
-              Manage sources <ArrowUpRight size={14} />
+            <Link to="/setup">
+              Connection details <ArrowUpRight size={14} />
             </Link>
           </section>
         </aside>
       </div>
-      <section className="panel recent-activity">
-        <div className="panel-header">
-          <h2>Latest activity</h2>
-          <Link to="/jobs" className="text-link">
-            Activity & jobs <ArrowUpRight size={15} />
-          </Link>
-        </div>
-        <div className="activity-grid">
-          {state.jobs.slice(0, 3).map((j) => (
-            <div key={j.id}>
-              <span className="activity-icon">
-                <CheckCheck size={17} />
-              </span>
-              <div>
-                <strong>{j.type}</strong>
-                <p>{j.target}</p>
-                <StatusBadge status={j.status} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
     </>
   );
 }

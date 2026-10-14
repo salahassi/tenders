@@ -20,10 +20,26 @@ export default function SourceDetail() {
       />
     );
   const owner = state.settings.role === "Owner";
+  const isManual = source.type === "manual";
+  const sourceTypeLabel = {
+    link_directory: "Website",
+    rss: "RSS feed",
+    json_feed: "JSON feed",
+    manual: "Added by you",
+  }[source.type];
+  const statusLabel = {
+    approved: "Enabled",
+    proposed: "Not enabled",
+    paused: "Paused",
+    rejected: "Rejected",
+  }[source.status];
+  const opportunityCount = state.opportunities.filter(
+    (o) => o.sourceId === source.id,
+  ).length;
   const audit = state.audit.filter((a) => a.target === id).slice(0, 8);
   const jobs = state.jobs.filter((j) => j.target === source.name);
   const setStatus = (status: typeof source.status) => {
-    if (!owner) return;
+    if (!owner || isManual) return;
     if (
       status === "approved" &&
       source.type !== "manual" &&
@@ -32,7 +48,7 @@ export default function SourceDetail() {
       ).length >= 5
     ) {
       notify(
-        "The trial allows five approved automated sources. Pause one before approving another.",
+        "This trial configuration supports five enabled sources. Pause one before enabling another.",
       );
       return;
     }
@@ -46,7 +62,11 @@ export default function SourceDetail() {
       `Source ${status}`,
       source.id,
     );
-    notify(`Source ${status} locally. Live collection is not configured.`);
+    notify(
+      status === "approved"
+        ? "Source enabled in your saved configuration. Live collection is not connected."
+        : `Source ${status} locally.`,
+    );
   };
   const safeUrl = source.url.startsWith("https://");
   return (
@@ -56,8 +76,12 @@ export default function SourceDetail() {
       </Link>
       <PageHeader
         eyebrow="SOURCE DETAILS"
-        title={source.name}
-        description="Review access, collection policy, and source activity."
+        title={isManual ? "Added by you" : source.name}
+        description={
+          isManual
+            ? "The built-in origin for opportunities you enter or import yourself."
+            : "A website or feed saved for future monitoring by the agent."
+        }
         actions={
           <div className="row">
             <Badge
@@ -69,14 +93,14 @@ export default function SourceDetail() {
                     : "neutral"
               }
             >
-              {source.status}
+              {isManual ? "Built-in origin" : statusLabel}
             </Badge>
-            {owner && source.status !== "approved" && (
+            {owner && !isManual && source.status !== "approved" && (
               <Button onClick={() => setStatus("approved")}>
-                Approve source
+                Enable source
               </Button>
             )}
-            {owner && source.status === "approved" && (
+            {owner && !isManual && source.status === "approved" && (
               <Button variant="secondary" onClick={() => setStatus("paused")}>
                 Pause source
               </Button>
@@ -107,13 +131,17 @@ export default function SourceDetail() {
                     {source.url} <ExternalLink size={12} />
                   </a>
                 ) : (
-                  source.url || "Manual source — no URL"
+                  source.url || "No URL — added directly by you"
                 )}
               </dd>
-              <dt>Method</dt>
-              <dd>{source.type.replaceAll("_", " ")}</dd>
+              <dt>Source type</dt>
+              <dd>{sourceTypeLabel}</dd>
               <dt>Polling preference</dt>
-              <dd>Every {state.settings.pollHours} hours, when connected</dd>
+              <dd>
+                {isManual
+                  ? "Not applicable"
+                  : `Every ${state.settings.pollHours} hours, when connected`}
+              </dd>
               <dt>Last collection</dt>
               <dd>
                 {source.lastRun
@@ -121,9 +149,13 @@ export default function SourceDetail() {
                   : "Not run"}
               </dd>
               <dt>Next collection</dt>
-              <dd>Not scheduled — demo mode</dd>
+              <dd>
+                {isManual
+                  ? "Not applicable — you add these opportunities"
+                  : "Not scheduled — live collection is not connected"}
+              </dd>
               <dt>Opportunities</dt>
-              <dd>{source.count} illustrative records</dd>
+              <dd>{opportunityCount} recorded in this workspace</dd>
               <dt>Sectors</dt>
               <dd>
                 <div className="admin-tag-row">
@@ -139,21 +171,29 @@ export default function SourceDetail() {
           <div className="panel admin-section">
             <div className="admin-icon-title">
               <ShieldCheck size={20} />
-              <h2>Permitted collection policy</h2>
+              <h2>
+                {isManual
+                  ? "How this origin works"
+                  : "Access and collection notes"}
+              </h2>
             </div>
-            <p>{source.policy}</p>
+            <p>
+              {isManual
+                ? "When you add an opportunity yourself, it is grouped under Added by you. This is not a crawler or feed and has no collection schedule."
+                : source.policy}
+            </p>
             <div className="admin-rate-note">
-              No login automation, CAPTCHA bypass, payment, or document
-              purchase. Verify permission and the source connector before
-              enabling collection in the connected backend.
+              {isManual
+                ? "You can enter a public opportunity or upload its RFP from the workspace."
+                : "Enabling this source saves your configuration locally. The backend must be connected before websites and feeds can be monitored. No live collection runs in this demo."}
             </div>
-            {owner && source.status === "proposed" && (
+            {owner && !isManual && source.status === "proposed" && (
               <div className="admin-form-actions">
                 <Button variant="danger" onClick={() => setStatus("rejected")}>
                   Reject source
                 </Button>
                 <Button onClick={() => setStatus("approved")}>
-                  Approve locally
+                  Enable source
                 </Button>
               </div>
             )}
@@ -161,7 +201,7 @@ export default function SourceDetail() {
         </div>
         <div className="stack">
           <div className="panel admin-section">
-            <h2>Collection history</h2>
+            <h2>{isManual ? "Source activity" : "Collection history"}</h2>
             {jobs.length ? (
               <ul className="admin-activity">
                 {jobs.slice(0, 5).map((j) => (
@@ -187,7 +227,9 @@ export default function SourceDetail() {
               </ul>
             ) : (
               <p className="admin-help">
-                No collection jobs recorded for this source.
+                {isManual
+                  ? "User-added opportunities do not run collection jobs."
+                  : "No collection jobs recorded for this source."}
               </p>
             )}
           </div>

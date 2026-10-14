@@ -28,7 +28,7 @@ export function daysLeft(value: string) {
     : Infinity;
 }
 export function deadlineLabel(value: string) {
-  if (!value) return "Not confirmed";
+  if (!value) return "Not provided";
   const days = daysLeft(value);
   return days < 0
     ? "Deadline passed"

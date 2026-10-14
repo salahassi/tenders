@@ -1,19 +1,19 @@
 # Tenderdesk
 
-A responsive frontend for discovering tender opportunities, reviewing their fit, tracking RFP acquisition, and preparing technical and financial proposals.
+A responsive workspace for reviewing incoming tender opportunities, uploading a request for proposal (RFP), and preparing one editable proposal file.
 
-This release implements the **browser-local frontend demo**. It runs without accounts, API keys, a database server, or model usage. All seeded organizations, tenders, rates, and claims are synthetic. Live procurement collection and AI services are not connected.
+This release is a **browser-local frontend demo**. It runs without accounts, application programming interface (API) keys, a database server, or model usage. Seeded organizations, tenders, rates, and claims are synthetic. Live collection and artificial intelligence (AI) drafting are not connected.
 
 ## Run locally
 
-Requirements: Node.js 22.12+ (Node.js 24 recommended) and npm.
+Requirements: Node.js 22.12+ and npm. The GitHub Pages workflow uses Node.js 24.
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Open the local URL printed by Vite. The default is `http://localhost:5173`. No environment file is required. `npm run dev:demo` is an equivalent explicit demo entry point.
+Open the local URL printed by Vite, normally `http://localhost:5173`. No environment file is required. `npm run dev:demo` is an equivalent demo entry point.
 
 ```bash
 npm run typecheck
@@ -22,70 +22,61 @@ npm run build
 npm run preview
 ```
 
-The production build is generated in `dist/`. `npm run preview` serves that build locally; it is not a production server.
+The production build is generated in `dist/`. `npm run preview` serves that build locally.
 
-## Try the complete workflow
+## Try the workflow
 
-1. Open **Overview**, then **Opportunities**. Search, filter, sort, paginate, and bookmark opportunities. Add an opportunity or preview a CSV import before committing valid rows.
-2. Open an opportunity. Inspect its fit and evidence coverage separately, make a shortlist/defer/decline decision, and record manual RFP acquisition.
-3. In **Documents**, select a public or synthetic TXT, Markdown, PDF, or DOCX file. Review the extracted text. A sample is included at [`public/demo-rfp.txt`](public/demo-rfp.txt). Scanned or partially unreadable PDFs remain blocked as Needs OCR.
-4. In **Requirements**, scan for keyword-based suggestions or add sourced requirements manually. Supply responses and resolve missing inputs. Suggestions are not AI analysis or a completeness guarantee.
-5. Create a template draft, edit its sections, and save financial inputs. Markup, margin, contingency, and tax use decimal arithmetic. Blank rates remain unknown; optional costs are excluded from the base offer.
-6. Send the current version for review. As the demo Owner, resolve blockers and attest to the exact version. Subsequent edits invalidate approval.
-7. Export separate technical and financial DOCX files. Each has a native Word table of contents. In Word, update the entire TOC and all fields, save, and review pagination before external use.
-8. Record a completed external submission manually. No portal purchase, message, payment, or bid submission is performed by this application.
+1. Open **Review inbox**. Incoming discoveries appear here first. Choose **Add to opportunities** for items you want to pursue, or archive them. Archived items remain available in a separate inbox tab.
+2. Open **Opportunities** to see only the opportunities you selected. Search, filter, and sort them, or add an opportunity directly. CSV import provides a preview before accepting valid rows.
+3. Open a selected opportunity and upload its RFP and addenda. PDF, DOCX, TXT, and Markdown are supported, with a 10 MiB limit per file and up to 10 files per opportunity. Inspect extracted text and download the original when needed. A sample is included at [`public/demo-rfp.txt`](public/demo-rfp.txt).
+4. In **Company knowledge**, upload company profiles, team resumes, previous proposals, templates, and other examples. Choose which files to include as references. Additional text notes are optional.
+5. Return to the opportunity and choose **Create editable draft**. This creates a clearly labeled manual starter, not an AI-written proposal. Readable RFP files are required; a deadline, fit assessment, acquisition record, and separate requirements checklist are not.
+6. Edit the proposal's title and free-text sections. Add, rename, reorder, or remove sections to match the RFP. Include the optional pricing table only when needed; commercial information can also be written directly in a section.
+7. Choose **Generate Word file** to save the latest edits and export one DOCX containing all sections in their displayed order. Review the document before using it externally.
+8. When appropriate, change the opportunity status in its details panel. **Preparing proposal** is set when a draft is created. **Submitted** records your manual action; the application never submits a bid.
 
-The preloaded proposal for the second opportunity is ready to exercise review; the first includes missing information to demonstrate blockers. Use **Settings → Demo role preview** to try Owner, Editor, and Reviewer behavior. This is a role simulation, not authentication.
+**Generate with AI** and **Rewrite with AI** explain that the backend is not connected. **Download agent input** creates a JSON handoff containing readable RFP text, enabled readable company files, company notes, and the draft or rewrite request when applicable. It does not contact an agent or provider. Original files, images, and document layout are not included in that JSON.
+
+### Update the Word table of contents
+
+The DOCX contains a native dynamic table of contents (TOC) and requests field updates on opening. In Word, select the entire document and update fields, then select the TOC and choose **Update Table → Update entire table**. Save the file and check pagination and headings. If Word asks whether to update fields, allow the update. The browser does not calculate final Word page numbers or produce a final PDF.
 
 ## Screens
 
-| Route                           | Purpose                                                                            |
-| ------------------------------- | ---------------------------------------------------------------------------------- |
-| `#/dashboard`                   | Pipeline snapshot, priorities, deadlines, and activity                             |
-| `#/opportunities`               | Search, filters, sorting, bookmarks, manual entry, CSV import/export               |
-| `#/opportunities/:id`           | Evidence, acquisition, documents, requirements, proposals, submission, and audit   |
-| `#/review`                      | Opportunity decisions, missing information, source approvals, and proposal reviews |
-| `#/proposals`                   | Proposal portfolio                                                                 |
-| `#/proposals/:id`               | Section editing, financial calculations, reviews, approval, and Word export        |
-| `#/sources` and `#/sources/:id` | Proposed/approved sources, access policy, and fixture tests                        |
-| `#/knowledge`                   | Capabilities, company facts, exclusions, rates, and templates                      |
-| `#/jobs`                        | Demo job states and local operational actions                                      |
-| `#/notifications`               | In-app messages and read state                                                     |
-| `#/settings`                    | Workspace preferences, simulated roles, backup, restore, and reset                 |
-| `#/setup`                       | Demo availability and explicit connected-mode dependencies                         |
+| Route                           | Purpose                                                                                           |
+| ------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `#/dashboard`                   | Inbox count, selected opportunities, recorded submission deadlines, and workflow guide            |
+| `#/review`                      | Incoming discoveries, selection decisions, and archived items                                     |
+| `#/opportunities`               | Selected opportunities, search, filtering, direct entry, and CSV import/export                    |
+| `#/opportunities/:id`           | RFP uploads, company-reference count, draft preparation, closing date, and status control         |
+| `#/proposals`                   | Proposal files with access to the editor and Word download                                        |
+| `#/proposals/:id`               | Free-text section editing, document preview, optional pricing, agent handoff, and Word generation |
+| `#/sources` and `#/sources/:id` | Website/RSS/JSON source configuration and local activation preferences                            |
+| `#/knowledge`                   | Original company files, extracted text, reference selection, and optional notes                   |
+| `#/jobs` and `#/notifications`  | Local activity, example jobs, and in-app notices                                                  |
+| `#/settings` and `#/setup`      | Preferences, simulated roles, backup/restore/reset, and connection requirements                   |
 
-## Data and privacy
+Sources can be websites, RSS feeds, or JSON feeds. **Added by you** is the built-in origin for manually entered or imported opportunities, not a collection connector. Enabling a source only saves its configuration; no live crawler runs in this release.
 
-- Workspace data is persisted in IndexedDB in the current browser and origin. It is not shared between devices or users.
-- File extraction occurs locally. Extracted text and its file hash are retained; original file bytes are not retained or uploaded.
-- The interface does not call a model, scraper, payment provider, or procurement portal. Testing an unconnected source records a visible blocked result.
-- Only public, nonpersonal, sanitized, or synthetic examples belong in this trial. The demo is not a secure production document repository.
-- Settings provides validated JSON backup/restore. Backups include workspace content; handle them accordingly. Clearing browser data removes local edits unless you have a backup.
-- Use one editing tab for the demo. Multi-tab conflict handling and server transactions are future backend work.
+## Data and storage
 
-## Implementation
+- Workspace metadata, extracted text, and original uploaded files are retained in IndexedDB in the current browser and origin. Original files are stored separately from the JSON workspace record through `src/lib/knowledgeFiles.ts`.
+- File extraction runs locally. Searchable PDF text is extracted with page markers; DOCX, TXT, and Markdown yield text. There is no optical character recognition (OCR), and images and formatting are not interpreted. Scanned or partially unreadable documents require a readable replacement.
+- Settings exports validated JSON backups containing records, edits, file metadata, and extracted text. **Backups do not contain original attachments.** Keep original files separately; restoring text does not restore original downloads.
+- Clearing browser data removes local work and attachments. Reset replaces the workspace with sample records and removes retained originals. There is no cross-device synchronization.
+- Only public, sanitized, or synthetic material belongs in this trial. Browser-local storage is not a production document repository or a server-enforced access control system.
+- Use one editing tab. Concurrent editing, durable server storage, and operational backups require a backend.
 
-React, TypeScript, Vite, Tailwind CSS, Radix Dialog, React Router, Lucide, IndexedDB (`idb-keyval`), Decimal.js, Zod, Papa Parse, PDF.js, Mammoth, and `docx`. Large document libraries and route pages are loaded on demand. The PDF worker is bundled locally. Package versions and the npm lockfile are committed.
+The Settings role selector demonstrates interface permissions only. It is not authentication.
 
-```text
-src/
-  components/       Shared controls, layout helpers, and opportunity table
-  pages/            Route-level screens and scoped styles
-  lib/              Store, fixtures, domain rules, finance, import, extraction, export
-  test/             Real component journeys with in-memory IndexedDB
-  types.ts          Shared frontend data contracts
-  styles.css        Responsive design system and application shell
-docs/
-  FRONTEND_HANDOFF.md
-  IMPLEMENTATION_SPEC.txt
-```
+## Implementation and deployment
 
-## Deployment
+The frontend uses React, TypeScript, Vite, Tailwind CSS, Radix Dialog, React Router, Lucide, IndexedDB (`idb-keyval`), Decimal.js, Zod, Papa Parse, PDF.js, Mammoth, and `docx`. Document libraries and route pages are loaded on demand. The PDF worker is bundled locally, and dependency versions are pinned in the lockfile.
 
-This repository saves the frontend source; it does not create a hosting account or activate billing. For a static host such as Cloudflare Pages, use build command `npm run build`, output directory `dist`, and Node.js 24. Hash-based navigation and a relative asset base allow deployment under a subdirectory without rewrite rules. No server secret belongs in a Vite environment variable or the compiled bundle.
+The existing [`Deploy frontend to GitHub Pages`](.github/workflows/deploy-pages.yml) workflow checks types, runs tests, builds `dist/`, and deploys through GitHub Actions. It runs on relevant pushes to `main` or manual dispatch; documentation-only changes are ignored. The repository's Pages source must be **GitHub Actions**. Hash-based navigation and relative asset paths support the `/tenders/` deployment without rewrite rules. No server secret belongs in the compiled frontend.
 
-## Verification and remaining work
+## Verification and project history
 
-The production build, TypeScript checks, domain tests, and React component journeys are part of the handoff. Tests cover finance, role behavior, backup validation, persistent manual entry, navigation, approval invalidation, and the absence of external calls in the tested workflows. They use jsdom, not a real browser. Automated browser screenshots, live cross-browser testing, and full visual accessibility certification were not performed in this environment. Validate the built interface at desktop and mobile widths before production use.
+Run the commands above before handoff. Component tests use jsdom and an in-memory IndexedDB implementation; they do not establish visual correctness in every browser, server authorization, AI output quality, or compatibility with every document format. Inspect the interface at desktop and mobile widths and review exported files in Word.
 
-The full project specification is retained in [`docs/IMPLEMENTATION_SPEC.txt`](docs/IMPLEMENTATION_SPEC.txt). Its backend, scheduling, authentication, model integration, immutable evidence/history, and production security requirements are **not claimed as implemented by this frontend release**. See [`docs/FRONTEND_HANDOFF.md`](docs/FRONTEND_HANDOFF.md) for the integration boundary and limitations.
+[`docs/IMPLEMENTATION_SPEC.txt`](docs/IMPLEMENTATION_SPEC.txt) is retained as the **historical implementation blueprint**. The subsequent user feedback and the workflow documented here supersede its earlier interface requirements for fit/evidence displays, acquisition steps, mandatory requirements forms, approval gates, and separate technical/financial exports. Its future backend requirements are not claims of completed functionality. See [`docs/FRONTEND_HANDOFF.md`](docs/FRONTEND_HANDOFF.md) for the current integration boundary.

@@ -1,249 +1,181 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
+  Archive,
   ArrowRight,
   Check,
-  FileText,
-  HelpCircle,
-  Radio,
-  Target,
-  X,
+  ExternalLink,
+  Search,
+  Undo2,
 } from "lucide-react";
 import { useApp } from "../lib/store";
 import { can } from "../lib/domain";
-import {
-  Badge,
-  Button,
-  EmptyState,
-  PageHeader,
-  Score,
-  Tabs,
-} from "../components/ui";
+import { date } from "../lib/format";
+import { deadlineSourceLabel } from "../lib/workflow";
+import type { Opportunity } from "../types";
+import { Badge, Button, EmptyState, PageHeader, Tabs } from "../components/ui";
+import "./simplified.css";
 export default function Review() {
   const { state, update, notify } = useApp();
-  const [tab, setTab] = useState("opportunities");
-  const pending = state.opportunities.filter((o) => o.status === "new");
-  const gaps = state.opportunities.flatMap((o) =>
-    o.gaps
-      .filter((g) => !g.answer.trim())
-      .map((g) => ({ opportunity: o, gap: g })),
+  const [tab, setTab] = useState("pending");
+  const [search, setSearch] = useState("");
+  const pending = state.opportunities.filter(
+    (o) => o.status === "new" || o.status === "deferred",
   );
-  const sources = state.sources.filter((s) => s.status === "proposed");
-  const proposals = state.proposals.filter((p) => p.status === "in_review");
+  const archived = state.opportunities.filter((o) => o.status === "declined");
+  const items = (tab === "pending" ? pending : archived).filter((o) =>
+    `${o.title} ${o.description} ${o.buyer}`
+      .toLowerCase()
+      .includes(search.toLowerCase()),
+  );
   const edit = can(state.settings.role, "edit");
+  function decide(o: Opportunity, status: Opportunity["status"]) {
+    update(
+      (s) => ({
+        ...s,
+        opportunities: s.opportunities.map((x) =>
+          x.id === o.id ? { ...x, status } : x,
+        ),
+      }),
+      status === "shortlisted"
+        ? "Selected opportunity"
+        : status === "declined"
+          ? "Archived discovery"
+          : "Returned discovery to inbox",
+      o.title,
+    );
+    notify(
+      status === "shortlisted"
+        ? "Added to Opportunities. Open it there to upload the RFP."
+        : status === "declined"
+          ? "Moved to archive. You can restore it at any time."
+          : "Restored to the Review inbox.",
+    );
+  }
   return (
     <>
       <PageHeader
-        eyebrow="HUMAN DECISIONS, CLEARLY RECORDED"
-        title="A little attention goes a long way."
-        description="Review the evidence and move the right opportunities forward. Every decision stays in your audit trail."
+        eyebrow="1 · CHOOSE WHAT TO PURSUE"
+        title="Review inbox"
+        description="New discoveries arrive here first. Add the ones you want to pursue to Opportunities, or archive them."
+        actions={
+          <Link className="btn btn-secondary" to="/opportunities">
+            Selected opportunities <ArrowRight size={16} />
+          </Link>
+        }
       />
-      <div className="review-intro">
-        <div>
-          <Target size={21} />
-          <strong>{pending.length}</strong>
-          <span>Opportunities</span>
-        </div>
-        <div>
-          <HelpCircle size={21} />
-          <strong>{gaps.length}</strong>
-          <span>Missing answers</span>
-        </div>
-        <div>
-          <Radio size={21} />
-          <strong>{sources.length}</strong>
-          <span>Source decisions</span>
-        </div>
-        <div>
-          <FileText size={21} />
-          <strong>{proposals.length}</strong>
-          <span>Proposal reviews</span>
-        </div>
+      <div className="simple-flow">
+        <strong>Discoveries</strong>
+        <ArrowRight size={15} />
+        <span>Your selection</span>
+        <ArrowRight size={15} />
+        <span>Upload RFP</span>
+        <ArrowRight size={15} />
+        <span>Proposal file</span>
       </div>
-      <Tabs
-        active={tab}
-        onChange={setTab}
-        items={[
-          {
-            id: "opportunities",
-            label: "Opportunity fit",
-            count: pending.length,
-          },
-          { id: "gaps", label: "Missing information", count: gaps.length },
-          { id: "sources", label: "Source approvals", count: sources.length },
-          {
-            id: "proposals",
-            label: "Proposal reviews",
-            count: proposals.length,
-          },
-        ]}
-      />
-      {tab === "opportunities" && (
-        <div className="review-grid">
-          {pending.map((o) => (
-            <article className="panel review-card" key={o.id}>
-              <div className="row between">
-                <Badge tone={o.coverage < 60 ? "amber" : "blue"}>
-                  {o.coverage < 60
-                    ? "Evidence needs a closer look"
-                    : "Decision needed"}
-                </Badge>
-                <Score value={o.score} />
-              </div>
-              <Link to={`/opportunities/${o.id}`}>
-                <h2>{o.title}</h2>
-              </Link>
-              <p className="muted small">
-                {o.buyer} · {o.reference}
-              </p>
-              <p className="review-description">{o.description}</p>
-              <div className="evidence-progress">
-                <span>
-                  Evidence coverage <strong>{o.coverage}%</strong>
-                </span>
-                <div>
-                  <i style={{ width: `${o.coverage}%` }} />
-                </div>
-              </div>
-              <div className="review-actions">
-                <Button
-                  variant="primary"
-                  size="sm"
-                  disabled={!edit}
-                  onClick={() => {
-                    update(
-                      (s) => ({
-                        ...s,
-                        opportunities: s.opportunities.map((x) =>
-                          x.id === o.id ? { ...x, status: "shortlisted" } : x,
-                        ),
-                      }),
-                      "Opportunity shortlisted",
-                      o.title,
-                    );
-                    notify("Added to your shortlist");
-                  }}
-                >
-                  <Check size={15} />
-                  Shortlist
+      <section className="panel">
+        <Tabs
+          active={tab}
+          onChange={setTab}
+          items={[
+            {
+              id: "pending",
+              label: "Awaiting your decision",
+              count: pending.length,
+            },
+            { id: "archived", label: "Archived", count: archived.length },
+          ]}
+        />
+        <div className="filter-bar">
+          <div className="search-field">
+            <Search size={16} />
+            <input
+              aria-label="Search discoveries"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search discoveries…"
+            />
+          </div>
+        </div>
+      </section>
+      <div className="review-grid simple-review-grid">
+        {items.map((o) => (
+          <article className="panel review-card" key={o.id}>
+            <div className="row between">
+              <Badge>{o.category}</Badge>
+              <span className="muted small">
+                {state.sources.find((s) => s.id === o.sourceId)?.name ||
+                  "Added by you"}
+              </span>
+            </div>
+            <Link to={`/opportunities/${o.id}`}>
+              <h2 dir="auto">{o.title}</h2>
+            </Link>
+            <p className="muted small">
+              {o.buyer} · {o.reference}
+            </p>
+            <p dir="auto" className="review-description">
+              {o.description ||
+                "No description supplied. Open the source for details."}
+            </p>
+            <p className="small">
+              Closing date: <strong>{date(o.deadline)}</strong>
+              <br />
+              <span className="muted">{deadlineSourceLabel(o)}</span>
+            </p>
+            {o.sourceUrl && (
+              <a
+                href={o.sourceUrl}
+                className="text-link"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Original notice <ExternalLink size={13} />
+              </a>
+            )}
+            <div className="review-actions">
+              <Button
+                variant="primary"
+                disabled={!edit}
+                onClick={() => decide(o, "shortlisted")}
+              >
+                <Check size={15} />
+                Add to opportunities
+              </Button>
+              {tab === "pending" ? (
+                <Button disabled={!edit} onClick={() => decide(o, "declined")}>
+                  <Archive size={15} />
+                  Archive
                 </Button>
-                <Button
-                  size="sm"
-                  disabled={!edit}
-                  onClick={() => {
-                    update(
-                      (s) => ({
-                        ...s,
-                        opportunities: s.opportunities.map((x) =>
-                          x.id === o.id ? { ...x, status: "deferred" } : x,
-                        ),
-                      }),
-                      "Opportunity deferred",
-                      o.title,
-                    );
-                    notify("Opportunity deferred");
-                  }}
-                >
-                  Defer
+              ) : (
+                <Button disabled={!edit} onClick={() => decide(o, "new")}>
+                  <Undo2 size={15} />
+                  Return to inbox
                 </Button>
-                <Link to={`/opportunities/${o.id}`} className="text-link">
-                  Review evidence <ArrowRight size={14} />
-                </Link>
-              </div>
-            </article>
-          ))}
-        </div>
-      )}
-      {tab === "gaps" && (
-        <div className="stack">
-          {gaps.map(({ opportunity: o, gap: g }) => (
-            <div className="panel task-row" key={g.id}>
-              <div className="attention-icon amber">
-                <HelpCircle size={20} />
-              </div>
-              <div>
-                <Badge tone={g.required ? "amber" : "neutral"}>
-                  {g.required ? "Required answer" : "Optional clarification"}
-                </Badge>
-                <h3>{g.question}</h3>
-                <p>{o.title}</p>
-              </div>
-              <Link
-                className="btn btn-secondary btn-sm"
-                to={`/opportunities/${o.id}?tab=requirements`}
-              >
-                Provide input <ArrowRight size={14} />
-              </Link>
+              )}
             </div>
-          ))}
-        </div>
-      )}
-      {tab === "sources" && (
-        <div className="stack">
-          {sources.map((s) => (
-            <div className="panel task-row" key={s.id}>
-              <div className="attention-icon green">
-                <Radio size={20} />
-              </div>
-              <div>
-                <h3>{s.name}</h3>
-                <p>
-                  {s.policy ||
-                    "Access policy must be reviewed before approval."}
-                </p>
-                <small>{s.url}</small>
-              </div>
-              <Link
-                className="btn btn-secondary btn-sm"
-                to={`/sources/${s.id}`}
-              >
-                Review source <ArrowRight size={14} />
-              </Link>
-            </div>
-          ))}
-        </div>
-      )}
-      {tab === "proposals" && (
-        <div className="stack">
-          {proposals.map((p) => (
-            <div className="panel task-row" key={p.id}>
-              <div className="attention-icon green">
-                <FileText size={20} />
-              </div>
-              <div>
-                <Badge tone="blue">Version {p.version} · In review</Badge>
-                <h3>{p.title}</h3>
-                <p>
-                  Check the scope, supporting evidence, and financial
-                  assumptions.
-                </p>
-              </div>
-              <Link
-                className="btn btn-secondary btn-sm"
-                to={`/proposals/${p.id}`}
-              >
-                Open proposal <ArrowRight size={14} />
-              </Link>
-            </div>
-          ))}
-        </div>
-      )}
-      {({
-        opportunities: pending.length,
-        gaps: gaps.length,
-        sources: sources.length,
-        proposals: proposals.length,
-      }[tab] ?? 0) === 0 && (
-        <div className="panel">
+          </article>
+        ))}
+      </div>
+      {!items.length && (
+        <section className="panel">
           <EmptyState
-            title="You're all caught up here"
-            description="New items that need your attention will appear in this queue."
+            title={
+              tab === "pending"
+                ? "No discoveries waiting for a decision"
+                : "No archived discoveries"
+            }
+            description={
+              search
+                ? "Try a different search."
+                : "Selected items appear in Opportunities. Automated collection will populate this inbox after the backend is connected."
+            }
           />
-        </div>
+        </section>
       )}
       <p className="help-caption">
-        <X size={13} /> A fit score never approves a tender, a source, or a
-        final proposal automatically.
+        Current examples are synthetic. No AI fit score is calculated and no
+        source is collected automatically in this frontend demo.
       </p>
     </>
   );

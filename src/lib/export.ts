@@ -1,11 +1,15 @@
 import type { Opportunity, Proposal } from "../types";
 import { calculateFinance } from "./finance";
 
-export async function exportProposal(
+export function proposalFileName(proposal: Proposal, opportunity: Opportunity) {
+  const reference = opportunity.reference.replace(/[^\w-]/g, "_") || "proposal";
+  return `${reference}_proposal_v${proposal.version}.docx`;
+}
+
+/** Produces one editable document containing exactly the user's section outline. */
+export async function createProposalDocumentBlob(
   proposal: Proposal,
   opportunity: Opportunity,
-  volume: "technical" | "financial",
-  isFinal: boolean,
   companyName: string,
 ) {
   const {
@@ -24,6 +28,10 @@ export async function exportProposal(
     AlignmentType,
   } = await import("docx");
   const rtl = opportunity.language === "ar";
+  const approved =
+    proposal.status === "approved" &&
+    proposal.approvalVersion === proposal.version;
+  const label = (en: string, ar: string) => (rtl ? ar : en);
   const paragraph = (text: string, heading?: typeof HeadingLevel.HEADING_1) =>
     new Paragraph({
       bidirectional: rtl,
@@ -50,7 +58,13 @@ export async function exportProposal(
                   children: [
                     new Paragraph({
                       bidirectional: rtl,
-                      children: [new TextRun({ text, bold: index === 0 })],
+                      children: [
+                        new TextRun({
+                          text,
+                          bold: index === 0,
+                          rightToLeft: rtl,
+                        }),
+                      ],
                     }),
                   ],
                 }),
@@ -58,128 +72,141 @@ export async function exportProposal(
           }),
       ),
     });
-  const total = calculateFinance(proposal);
   const children: (
     | InstanceType<typeof Paragraph>
     | InstanceType<typeof Table>
     | InstanceType<typeof TableOfContents>
   )[] = [
-    new Paragraph({ text: companyName, spacing: { after: 200 } }),
+    paragraph(companyName),
     new Paragraph({
-      text: opportunity.title,
+      text: proposal.title || opportunity.title,
       heading: HeadingLevel.TITLE,
       bidirectional: rtl,
     }),
+    paragraph(`${label("Prepared for", "مقدم إلى")}: ${opportunity.buyer}`),
     paragraph(
-      `${volume === "technical" ? "Technical" : "Financial"} proposal · ${isFinal ? "Approved content" : "DRAFT"} · Version ${proposal.version}`,
+      `${label("Reference", "المرجع")}: ${opportunity.reference} · ${label("Version", "النسخة")} ${proposal.version}`,
     ),
     paragraph(
-      `Prepared for ${opportunity.buyer} | Reference: ${opportunity.reference}`,
-    ),
-    paragraph(
-      `Generated ${new Date().toLocaleDateString("en-US")}. ${isFinal ? "Approved source content; review this exported file before submission." : "Working draft. Not approved for submission."}`,
+      approved
+        ? label(
+            "Approved content. Review the exported file before submission.",
+            "محتوى معتمد. تُراجع النسخة المصدرة قبل التقديم.",
+          )
+        : label(
+            "Working draft — review before external use.",
+            "مسودة عمل — تُراجع قبل الاستخدام الخارجي.",
+          ),
     ),
     new Paragraph({
-      text: "Contents",
-      heading: HeadingLevel.HEADING_1,
+      text: label("Contents", "المحتويات"),
       pageBreakBefore: true,
+      bidirectional: rtl,
+      spacing: { after: 240 },
+      children: [],
     }),
-    new TableOfContents("Contents", {
+    new TableOfContents(label("Contents", "المحتويات"), {
       hyperlink: true,
       headingStyleRange: "1-2",
     }),
-    paragraph(
-      "Before submission: open in Word, update the entire table of contents and all fields, save, and visually review every page.",
-    ),
   ];
-  if (volume === "technical") {
-    for (const section of proposal.sections.filter(
-      (s) =>
-        !/commercial|financial|pricing|payment|offer validity|تجاري|الدفع|صلاحية/i.test(
-          s.title,
+  proposal.sections.forEach((section, index) => {
+    children.push(
+      new Paragraph({
+        text:
+          section.title.trim() ||
+          label(`Untitled section ${index + 1}`, `قسم بدون عنوان ${index + 1}`),
+        heading: HeadingLevel.HEADING_1,
+        bidirectional: rtl,
+        pageBreakBefore: index === 0,
+      }),
+    );
+    (
+      section.body ||
+      label(
+        "[INPUT REQUIRED: section content]",
+        "[INPUT REQUIRED: محتوى القسم]",
+      )
+    )
+      .split("\n")
+      .forEach((line) => children.push(paragraph(line)));
+  });
+  if (proposal.includePricing) {
+    const total = calculateFinance(proposal);
+    children.push(
+      paragraph(
+        label("Pricing schedule", "جدول التسعير"),
+        HeadingLevel.HEADING_1,
+      ),
+    );
+    children.push(
+      paragraph(
+        label(
+          "Currency: SAR. Optional items are excluded from the base offer. The base cost is adjusted using the entered pricing assumptions.",
+          "العملة: الريال السعودي. لا تشمل قيمة العرض الأساسية البنود الاختيارية. تُعدل التكلفة الأساسية وفق افتراضات التسعير المدخلة.",
         ),
-    )) {
+      ),
+    );
+    children.push(
+      table([
+        [
+          label("Description", "الوصف"),
+          label("Quantity", "الكمية"),
+          label("Unit", "الوحدة"),
+          label("Unit cost (SAR)", "تكلفة الوحدة (ريال)"),
+          label("Treatment", "النوع"),
+        ],
+        ...proposal.lines.map((line) => [
+          line.description || "[INPUT REQUIRED]",
+          line.quantity || "[INPUT REQUIRED]",
+          line.unit || "[INPUT REQUIRED]",
+          line.rate || "[INPUT REQUIRED]",
+          line.optional ? label("Optional", "اختياري") : label("Base", "أساسي"),
+        ]),
+      ]),
+    );
+    if (total.isValid) {
       children.push(
-        new Paragraph({
-          text: section.title,
-          heading: HeadingLevel.HEADING_1,
-          bidirectional: rtl,
-        }),
+        table([
+          [label("Offer summary", "ملخص العرض"), "SAR"],
+          [
+            label("Base offer excluding tax", "قيمة العرض الأساسي قبل الضريبة"),
+            total.net.toFixed(2),
+          ],
+          [label("Tax", "الضريبة"), total.tax.toFixed(2)],
+          [
+            label("Total including tax", "الإجمالي شامل الضريبة"),
+            total.total.toFixed(2),
+          ],
+          [
+            label(
+              "Optional direct cost (excluded)",
+              "تكلفة البنود الاختيارية (مستبعدة)",
+            ),
+            total.optionalTotal.toFixed(2),
+          ],
+        ]),
       );
-      section.body
-        .split("\n")
-        .forEach((line) => children.push(paragraph(line)));
-    }
-    children.push(paragraph("Compliance matrix", HeadingLevel.HEADING_1));
-    children.push(
-      table([
-        ["Requirement", "Source", "Response", "Status"],
-        ...opportunity.requirements.map((r) => [
-          r.text,
-          r.source,
-          r.response || "[INPUT REQUIRED: response]",
-          r.status.replaceAll("_", " "),
-        ]),
-      ]),
-    );
-  } else {
-    children.push(paragraph("Pricing basis", HeadingLevel.HEADING_1));
-    children.push(
-      paragraph(
-        "Currency: SAR. Rates, quantities, tax treatment, and inclusions require owner confirmation. Optional items are excluded from the base total.",
-      ),
-    );
-    children.push(
-      table([
-        ["Description", "Quantity", "Unit", "Unit rate (SAR)", "Treatment"],
-        ...proposal.lines.map((l) => [
-          l.description,
-          l.quantity,
-          l.unit,
-          l.rate,
-          l.optional ? "Optional" : "Base",
-        ]),
-      ]),
-    );
-    children.push(paragraph("Commercial summary", HeadingLevel.HEADING_1));
-    children.push(
-      table([
-        ["Item", "SAR"],
-        ["Direct cost", String(total.subtotal)],
-        ["Contingency", String(total.contingency)],
-        ["Net price", String(total.net)],
-        ["Tax", String(total.tax)],
-        ["Gross total", String(total.total)],
-        ["Optional direct cost", String(total.optionalTotal)],
-      ]),
-    );
-    children.push(
-      paragraph(
-        `Method: ${proposal.pricingMode}. Percentage: ${proposal.percentage}%. Contingency: ${proposal.contingency}%. Tax input: ${proposal.tax}%.`,
-      ),
-    );
-    children.push(
-      paragraph("Commercial terms and assumptions", HeadingLevel.HEADING_1),
-    );
-    const commercialSections = proposal.sections.filter((s) =>
-      /commercial|payment|validity|financial|تجاري|الدفع|صلاحية/i.test(s.title),
-    );
-    if (commercialSections.length)
-      commercialSections.forEach((s) => {
-        children.push(paragraph(s.title, HeadingLevel.HEADING_1));
-        s.body.split("\n").forEach((line) => children.push(paragraph(line)));
-      });
-    else
       children.push(
         paragraph(
-          "[INPUT REQUIRED: Confirm payment schedule, offer validity, recurring periods, and commercial exclusions before external use.]",
+          `${label("Pricing method", "طريقة التسعير")}: ${proposal.pricingMode}; ${label("percentage", "النسبة")}: ${proposal.percentage}%; ${label("contingency", "احتياطي المخاطر")}: ${proposal.contingency}%; ${label("tax", "الضريبة")}: ${proposal.tax}%.`,
         ),
       );
+    } else {
+      children.push(
+        paragraph(
+          label(
+            "[INPUT REQUIRED: Pricing is incomplete. Totals have not been included.]",
+            "[INPUT REQUIRED: بيانات التسعير غير مكتملة؛ لم يتم إدراج الإجماليات.]",
+          ),
+        ),
+      );
+    }
   }
-  const doc = new Document({
+  const document = new Document({
     creator: companyName,
-    title: `${opportunity.title} — ${volume} proposal`,
-    description: `${isFinal ? "Approved" : "Draft"} version ${proposal.version}`,
+    title: proposal.title || opportunity.title,
+    description: `${approved ? "Approved" : "Draft"} version ${proposal.version}`,
     features: { updateFields: true },
     styles: {
       default: {
@@ -203,7 +230,7 @@ export async function exportProposal(
                 alignment: AlignmentType.CENTER,
                 children: [
                   new TextRun({
-                    text: `${isFinal ? "Approved" : "Draft"} · v${proposal.version} · `,
+                    text: `${approved ? label("Approved", "معتمد") : label("Draft", "مسودة")} · v${proposal.version} · `,
                   }),
                   new TextRun({ children: [PageNumber.CURRENT] }),
                 ],
@@ -215,11 +242,23 @@ export async function exportProposal(
       },
     ],
   });
-  const blob = await Packer.toBlob(doc);
+  return Packer.toBlob(document);
+}
+
+export async function exportProposal(
+  proposal: Proposal,
+  opportunity: Opportunity,
+  companyName: string,
+) {
+  const blob = await createProposalDocumentBlob(
+    proposal,
+    opportunity,
+    companyName,
+  );
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `${opportunity.reference.replace(/[^\w-]/g, "_")}_${volume}_v${proposal.version}_${isFinal ? "approved" : "draft"}.docx`;
+  anchor.download = proposalFileName(proposal, opportunity);
   anchor.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

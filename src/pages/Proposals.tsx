@@ -1,86 +1,77 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  FileText,
-  Search,
-  PenLine,
-  CheckCircle2,
-  Clock3,
-} from "lucide-react";
+import { ArrowRight, Download, FileText, Search } from "lucide-react";
 import { useApp } from "../lib/store";
-import {
-  EmptyState,
-  PageHeader,
-  Metric,
-  Tabs,
-  StatusBadge,
-} from "../components/ui";
+import { exportProposal, proposalFileName } from "../lib/export";
+import { Badge, Button, EmptyState, PageHeader } from "../components/ui";
+import type { Proposal } from "../types";
 import "./workspace.css";
+import "./proposal-files.css";
+
 export default function Proposals() {
-  const { state } = useApp();
-  const [filter, setFilter] = useState("all");
+  const { state, notify } = useApp();
   const [search, setSearch] = useState("");
-  const visible = state.proposals.filter(
-    (p) =>
-      (filter === "all" || p.status === filter) &&
-      p.title.toLowerCase().includes(search.toLowerCase()),
-  );
+  const [exporting, setExporting] = useState<string | null>(null);
+  const visible = state.proposals.filter((proposal) => {
+    const opportunity = state.opportunities.find(
+      (item) => item.id === proposal.opportunityId,
+    );
+    return [
+      proposal.title,
+      opportunity?.title,
+      opportunity?.buyer,
+      opportunity?.reference,
+    ]
+      .join(" ")
+      .toLowerCase()
+      .includes(search.toLowerCase());
+  });
+  async function download(proposal: Proposal) {
+    const opportunity = state.opportunities.find(
+      (item) => item.id === proposal.opportunityId,
+    );
+    if (!opportunity) return;
+    setExporting(proposal.id);
+    try {
+      await exportProposal(proposal, opportunity, state.settings.companyName);
+      notify(
+        "Word file downloaded from the saved content. Update all fields and the entire table of contents in Word, then review the file.",
+      );
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "The Word file could not be generated.",
+      );
+    } finally {
+      setExporting(null);
+    }
+  }
   return (
-    <div className="workspace-page">
+    <div className="workspace-page proposal-file-page">
       <PageHeader
-        eyebrow="FROM BRIEF TO BID"
-        title="Your proposal workspace"
-        description="A consistent voice. Traceable requirements. Every decision in your hands."
+        eyebrow="YOUR DOCUMENTS"
+        title="Proposal files"
+        description="Open a draft, add the information your RFP needs, and download one Word file."
         actions={
           <Link className="btn btn-primary" to="/opportunities">
-            Find an opportunity <ArrowRight size={16} />
+            Upload an RFP <ArrowRight size={16} />
           </Link>
         }
       />
-      <div className="workspace-metrics">
-        <Metric
-          label="In preparation"
-          value={state.proposals.filter((p) => p.status === "draft").length}
-          detail="Working drafts"
-          icon={<PenLine size={18} />}
-        />
-        <Metric
-          label="Awaiting review"
-          value={state.proposals.filter((p) => p.status === "in_review").length}
-          detail="Ready for a human decision"
-          icon={<Clock3 size={18} />}
-        />
-        <Metric
-          label="Approved"
-          value={state.proposals.filter((p) => p.status === "approved").length}
-          detail="Exact content version approved"
-          icon={<CheckCircle2 size={18} />}
-        />
-      </div>
       <section className="panel">
         <div className="workspace-proposal-toolbar">
-          <Tabs
-            active={filter}
-            onChange={setFilter}
-            items={[
-              {
-                id: "all",
-                label: "All proposals",
-                count: state.proposals.length,
-              },
-              { id: "draft", label: "Drafts" },
-              { id: "in_review", label: "In review" },
-              { id: "approved", label: "Approved" },
-            ]}
-          />
+          <p className="small muted">
+            {state.proposals.length} proposal{" "}
+            {state.proposals.length === 1 ? "document" : "documents"}
+          </p>
           <div className="workspace-search">
             <Search size={16} />
             <input
               aria-label="Search proposals"
-              placeholder="Search proposals…"
+              placeholder="Search proposal files…"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) => setSearch(event.target.value)}
             />
           </div>
         </div>
@@ -89,61 +80,74 @@ export default function Proposals() {
             <table className="data-table workspace-proposals-table">
               <thead>
                 <tr>
-                  <th>Proposal</th>
+                  <th>Document</th>
                   <th>Buyer</th>
-                  <th>Status</th>
-                  <th>Version</th>
-                  <th>Last updated</th>
-                  <th />
+                  <th>Content</th>
+                  <th>Updated</th>
+                  <th>File actions</th>
                 </tr>
               </thead>
               <tbody>
-                {visible.map((p) => {
+                {visible.map((proposal) => {
                   const opportunity = state.opportunities.find(
-                    (o) => o.id === p.opportunityId,
+                    (item) => item.id === proposal.opportunityId,
                   );
                   return (
-                    <tr key={p.id}>
+                    <tr key={proposal.id}>
                       <td>
                         <Link
                           className="workspace-proposal-title"
-                          to={`/proposals/${p.id}`}
+                          to={`/proposals/${proposal.id}`}
                         >
                           <span className="workspace-file-icon">
-                            <FileText size={19} />
+                            <FileText size={21} />
                           </span>
                           <span>
-                            <strong>{opportunity?.title || p.title}</strong>
+                            <strong>{proposal.title}</strong>
                             <small>
-                              {opportunity?.reference || "Local proposal"} ·{" "}
-                              {p.sections.length} sections
+                              {opportunity
+                                ? proposalFileName(proposal, opportunity)
+                                : "Proposal.docx"}
                             </small>
                           </span>
                         </Link>
                       </td>
                       <td>{opportunity?.buyer || "Not provided"}</td>
                       <td>
-                        <StatusBadge status={p.status} />
-                      </td>
-                      <td>
-                        <span className="workspace-version-pill">
-                          v{p.version}
-                        </span>
+                        <Badge tone="neutral">
+                          {proposal.sections.length} sections · v
+                          {proposal.version}
+                        </Badge>
                       </td>
                       <td className="muted">
-                        {new Date(p.updatedAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
+                        {new Date(proposal.updatedAt).toLocaleDateString(
+                          "en-US",
+                          { month: "short", day: "numeric" },
+                        )}
                       </td>
                       <td>
-                        <Link
-                          className="workspace-open"
-                          aria-label={`Open ${p.title}`}
-                          to={`/proposals/${p.id}`}
-                        >
-                          <ArrowRight size={18} />
-                        </Link>
+                        <div className="proposal-list-actions">
+                          <Link
+                            className="btn btn-secondary btn-sm"
+                            to={`/proposals/${proposal.id}`}
+                            aria-label={`Open ${proposal.title}`}
+                          >
+                            Open file <ArrowRight size={14} />
+                          </Link>
+                          <Button
+                            size="sm"
+                            aria-label={`Download ${proposal.title} as Word`}
+                            disabled={
+                              !!exporting ||
+                              (!proposal.sections.length &&
+                                !proposal.includePricing)
+                            }
+                            onClick={() => void download(proposal)}
+                          >
+                            <Download size={14} />
+                            {exporting === proposal.id ? "Generating…" : "Word"}
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -154,19 +158,19 @@ export default function Proposals() {
         ) : (
           <EmptyState
             title={
-              search || filter !== "all"
-                ? "No matching proposals"
-                : "Give your next proposal a head start"
+              search
+                ? "No matching proposal files"
+                : "Your next proposal starts with an RFP"
             }
             description={
-              search || filter !== "all"
-                ? "Try another filter or search term."
-                : "Choose an opportunity, add its RFP, and review the requirements to start an editable draft."
+              search
+                ? "Try another title, buyer, or reference."
+                : "Open an opportunity, upload its RFP, and create a local document draft. AI generation becomes available after the backend is connected."
             }
             action={
-              !search && filter === "all" ? (
+              !search ? (
                 <Link className="btn btn-primary" to="/opportunities">
-                  Browse opportunities
+                  Go to opportunities
                 </Link>
               ) : undefined
             }
@@ -174,9 +178,8 @@ export default function Proposals() {
         )}
       </section>
       <p className="workspace-bottom-note">
-        <FileText size={14} />
-        Local frontend trial · template drafts and browser exports · no live AI
-        or external submission
+        <FileText size={14} /> Files are generated from saved content on
+        download. AI drafting is not connected.
       </p>
     </div>
   );

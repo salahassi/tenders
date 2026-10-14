@@ -94,15 +94,25 @@ export default function Settings() {
   };
   const download = () => {
     if (!owner) return;
-    const url = URL.createObjectURL(
-      new Blob([serializeBackup(state)], { type: "application/json" }),
-    );
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `tender-desk-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    notify("Local workspace backup downloaded.");
+    try {
+      const url = URL.createObjectURL(
+        new Blob([serializeBackup(state)], { type: "application/json" }),
+      );
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `tender-desk-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      notify(
+        "Local workspace backup downloaded. Original attachments are not included.",
+      );
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "The workspace backup could not be downloaded.",
+      );
+    }
   };
   const chooseRestore = async (file?: File) => {
     setRestoreData(null);
@@ -129,7 +139,6 @@ export default function Settings() {
       reset();
       setDialog(null);
       setConfirmation("");
-      notify("Demo workspace reset.");
     }
     if (dialog === "restore" && confirmation === "RESTORE" && restoreData) {
       restore(restoreData);
@@ -304,9 +313,10 @@ export default function Settings() {
           <section className="panel admin-section">
             <h2>Backup & restore</h2>
             <p className="admin-help">
-              Download your local records, edits, and extracted text as JSON.
-              Files themselves are not stored in the backup. Restore replaces
-              this browser's current workspace.
+              Download your local records, edits, file details, and extracted
+              text as JSON. Original attachments are stored separately in this
+              browser and are not included in the backup. Keep copies of your
+              original files. Restore replaces this browser's current workspace.
             </p>
             <div className="row">
               <Button variant="secondary" onClick={download} disabled={!owner}>
@@ -361,8 +371,8 @@ export default function Settings() {
                   <strong>Owner</strong>
                   <br />
                   <span className="muted">
-                    Approves sources, knowledge, acquisition, and final
-                    proposals.
+                    Manages sources, company files, workspace settings, and
+                    proposal content.
                   </span>
                 </span>
               </li>
@@ -372,7 +382,7 @@ export default function Settings() {
                   <strong>Editor</strong>
                   <br />
                   <span className="muted">
-                    Researches, drafts, and prepares work for approval.
+                    Selects opportunities, uploads files, and edits proposals.
                   </span>
                 </span>
               </li>
@@ -382,7 +392,7 @@ export default function Settings() {
                   <strong>Reviewer</strong>
                   <br />
                   <span className="muted">
-                    Reads the workspace and contributes review comments.
+                    Reads opportunities, company references, and proposals.
                   </span>
                 </span>
               </li>
@@ -405,8 +415,9 @@ export default function Settings() {
           <section className="panel admin-section admin-danger">
             <h2>Reset demo workspace</h2>
             <p className="admin-help">
-              Replace your local edits with the original example data. Download
-              a backup first if you want to keep your work.
+              Replace your local edits with the sample data and remove uploaded
+              originals from this browser. Download a JSON backup and keep
+              separate copies of original files before resetting.
             </p>
             <Button
               variant="danger"
@@ -466,8 +477,9 @@ export default function Settings() {
         ) : (
           <>
             <p className="admin-help">
-              This removes local edits and restores the sample workspace. This
-              action cannot be undone without a backup.
+              This removes local edits and uploaded originals, then restores the
+              sample workspace. A JSON backup preserves extracted text but
+              cannot restore original attachments.
             </p>
             <Field label="Type RESET to confirm">
               <input

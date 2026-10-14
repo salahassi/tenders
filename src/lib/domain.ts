@@ -45,6 +45,7 @@ export function canApplyMutation(previous: AppState, next: AppState): boolean {
       !equal(previous.opportunities, next.opportunities) ||
       !equal(previous.sources, next.sources) ||
       !equal(previous.knowledge, next.knowledge) ||
+      !equal(previous.knowledgeDocuments, next.knowledgeDocuments) ||
       !equal(previous.jobs, next.jobs)
     )
       return false;
@@ -196,6 +197,7 @@ function content(proposal: Proposal) {
     title: proposal.title,
     sections: proposal.sections,
     lines: proposal.lines,
+    includePricing: proposal.includePricing,
     pricingMode: proposal.pricingMode,
     percentage: proposal.percentage,
     contingency: proposal.contingency,
@@ -221,7 +223,9 @@ export function invalidateChangedApprovals(
 ): AppState {
   const sharedChanged =
     previous.settings.companyName !== next.settings.companyName ||
-    JSON.stringify(previous.knowledge) !== JSON.stringify(next.knowledge);
+    JSON.stringify(previous.knowledge) !== JSON.stringify(next.knowledge) ||
+    JSON.stringify(previous.knowledgeDocuments) !==
+      JSON.stringify(next.knowledgeDocuments);
   return {
     ...next,
     proposals: next.proposals.map((proposal) => {

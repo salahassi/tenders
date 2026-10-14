@@ -143,66 +143,30 @@ export function suggestRequirements(document: DocumentRecord): Requirement[] {
 }
 
 export function createTemplateProposal(opportunity: Opportunity): Proposal {
-  const summary =
-    opportunity.language === "ar"
-      ? "مسودة أولية مبنية على المعلومات المتاحة. تتطلب مراجعة بشرية وتأكيد جميع الافتراضات قبل الاعتماد."
-      : "This preliminary response is based on the available opportunity information. Confirm the complete RFP scope and all assumptions before approval.";
+  // A manual starter, not an AI-generated response or an inferred RFP outline.
+  // Users add the sections their actual RFP requires; no fixed six-part form.
   const sections =
     opportunity.language === "ar"
       ? [
           [
-            "الملخص التنفيذي",
-            `${summary}\n\n${opportunity.title}\n${opportunity.description}`,
+            "فهم نطاق العمل",
+            opportunity.description ||
+              "[INPUT REQUIRED: اكتب فهمك لنطاق العمل من الكراسة المرفقة.]",
           ],
           [
-            "فهم المتطلبات",
-            opportunity.requirements
-              .map((r, i) => `${i + 1}. ${r.text}`)
-              .join("\n") || "[INPUT REQUIRED: راجع متطلبات الكراسة]",
-          ],
-          [
-            "الحل المقترح ونطاق العمل",
-            "[INPUT REQUIRED: حدد الحل المقترح والنطاق والاستثناءات والافتراضات بناءً على متطلبات الكراسة.]",
-          ],
-          [
-            "التنفيذ والفريق",
-            "[INPUT REQUIRED: أكد مراحل التنفيذ والجهد وتوافر الفريق والمدة الزمنية.]",
-          ],
-          [
-            "الاختبار والقبول والدعم",
-            "[INPUT REQUIRED: حدد معايير القبول والاختبارات والضمان والدعم وفق الكراسة.]",
-          ],
-          [
-            "Commercial terms / الشروط التجارية",
-            "[INPUT REQUIRED: أكد جدول الدفعات وصلاحية العرض ومدد التكاليف المتكررة والاستثناءات التجارية.]",
+            "الاستجابة المقترحة",
+            "[INPUT REQUIRED: أضف محتوى العرض هنا، وأنشئ الأقسام المطلوبة في الكراسة.]",
           ],
         ]
       : [
           [
-            "Executive summary",
-            `${summary}\n\n${opportunity.title}\n${opportunity.description}`,
+            "Understanding the request",
+            opportunity.description ||
+              "[INPUT REQUIRED: Describe the scope from the attached RFP.]",
           ],
           [
-            "Understanding of requirements",
-            opportunity.requirements
-              .map((r, i) => `${i + 1}. ${r.text}`)
-              .join("\n") || "[INPUT REQUIRED: Review the RFP requirements.]",
-          ],
-          [
-            "Proposed solution and scope",
-            "[INPUT REQUIRED: Define the architecture, scope, exclusions, dependencies, and assumptions against the RFP. Do not invent infrastructure quantities or credentials.]",
-          ],
-          [
-            "Delivery plan and team",
-            "[INPUT REQUIRED: Confirm work phases, role effort, staff availability, and the delivery schedule.]",
-          ],
-          [
-            "Testing, acceptance, and support",
-            "[INPUT REQUIRED: Define tests, acceptance evidence, warranty, and support according to the RFP.]",
-          ],
-          [
-            "Commercial terms",
-            "[INPUT REQUIRED: Confirm payment schedule, offer validity, recurring cost periods, and commercial exclusions.]",
+            "Proposed response",
+            "[INPUT REQUIRED: Write your response here and add the sections required by the RFP.]",
           ],
         ];
   return {
@@ -218,6 +182,7 @@ export function createTemplateProposal(opportunity: Opportunity): Proposal {
       evidence: opportunity.requirements.map((r) => r.id),
     })),
     lines: [],
+    includePricing: false,
     pricingMode: "markup",
     percentage: "",
     contingency: "",

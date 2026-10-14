@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
-import { ArrowUpRight, Bookmark, CalendarDays } from "lucide-react";
+import { ArrowUpRight, CalendarDays } from "lucide-react";
 import type { Opportunity } from "../types";
-import { useApp } from "../lib/store";
 import { date, deadlineLabel, daysLeft } from "../lib/format";
-import { EmptyState, Score, StatusBadge } from "./ui";
+import { deadlineSourceLabel, opportunityStatusLabel } from "../lib/workflow";
+import { EmptyState, Badge } from "./ui";
 export default function OpportunityTable({
   items,
   compact = false,
@@ -11,12 +11,16 @@ export default function OpportunityTable({
   items: Opportunity[];
   compact?: boolean;
 }) {
-  const { state, update, notify } = useApp();
   if (!items.length)
     return (
       <EmptyState
-        title="No opportunities match"
-        description="Try another filter, or add a public sample to start your pipeline."
+        title="No selected opportunities"
+        description="Choose opportunities from the Review inbox, or add one you already want to pursue."
+        action={
+          <Link className="btn btn-primary" to="/review">
+            Open Review inbox
+          </Link>
+        }
       />
     );
   return (
@@ -27,8 +31,8 @@ export default function OpportunityTable({
         <thead>
           <tr>
             <th scope="col">Opportunity</th>
-            <th scope="col">Fit score</th>
-            <th scope="col">Deadline</th>
+            <th scope="col">RFP files</th>
+            <th scope="col">Closing date</th>
             <th scope="col">Status</th>
             <th scope="col">
               <span className="sr-only">Actions</span>
@@ -40,9 +44,7 @@ export default function OpportunityTable({
             <tr key={o.id}>
               <td>
                 <div className="opportunity-title">
-                  <div
-                    className={`buyer-icon ${o.category === "Systems integration" ? "blue" : o.category === "AI & analytics" ? "green" : "sand"}`}
-                  >
+                  <div className="buyer-icon green">
                     {o.buyer
                       .split(" ")
                       .slice(0, 2)
@@ -62,58 +64,35 @@ export default function OpportunityTable({
                 </div>
               </td>
               <td>
-                <Score value={o.score} coverage={o.coverage} />
+                {o.documents.length
+                  ? `${o.documents.length} attached`
+                  : "Upload RFP to start"}
               </td>
               <td>
                 <div className="deadline-cell">
                   <span>
                     <CalendarDays size={13} />
-                    {date(o.deadline).replace(/, \d{4}/, "")}
+                    {date(o.deadline)}
                   </span>
                   <small className={daysLeft(o.deadline) <= 7 ? "urgent" : ""}>
                     {deadlineLabel(o.deadline)}
                   </small>
+                  <small>{deadlineSourceLabel(o)}</small>
                 </div>
               </td>
               <td>
-                <StatusBadge status={o.status} />
+                <Badge tone={o.status === "in_progress" ? "blue" : "neutral"}>
+                  {opportunityStatusLabel(o.status)}
+                </Badge>
               </td>
               <td>
-                <div className="row-actions">
-                  <button
-                    className={`icon-button save-button ${o.saved ? "saved" : ""}`}
-                    title={o.saved ? "Remove bookmark" : "Save opportunity"}
-                    aria-label={`${o.saved ? "Unsave" : "Save"} ${o.title}`}
-                    disabled={state.settings.role === "Reviewer"}
-                    onClick={() => {
-                      update(
-                        (s) => ({
-                          ...s,
-                          opportunities: s.opportunities.map((x) =>
-                            x.id === o.id ? { ...x, saved: !x.saved } : x,
-                          ),
-                        }),
-                        "Bookmark changed",
-                        o.title,
-                      );
-                      notify(
-                        o.saved ? "Bookmark removed" : "Opportunity saved",
-                      );
-                    }}
-                  >
-                    <Bookmark
-                      size={17}
-                      fill={o.saved ? "currentColor" : "none"}
-                    />
-                  </button>
-                  <Link
-                    to={`/opportunities/${o.id}`}
-                    className="icon-button"
-                    aria-label={`Open ${o.title}`}
-                  >
-                    <ArrowUpRight size={18} />
-                  </Link>
-                </div>
+                <Link
+                  className="btn btn-ghost btn-sm"
+                  to={`/opportunities/${o.id}`}
+                  aria-label={`Open ${o.title}`}
+                >
+                  Open <ArrowUpRight size={16} />
+                </Link>
               </td>
             </tr>
           ))}

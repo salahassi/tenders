@@ -1,674 +1,163 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
+  ArrowDown,
   ArrowLeft,
-  ArrowUpRight,
-  Check,
-  CheckCircle2,
+  ArrowUp,
   Download,
+  Eye,
   FileText,
-  MessageSquare,
+  PenLine,
   Plus,
   Save,
-  ShieldCheck,
+  Sparkles,
   Trash2,
-  AlertTriangle,
-  Send,
-  Clock3,
 } from "lucide-react";
 import { useApp } from "../lib/store";
-import { getApprovalBlockers } from "../lib/domain";
 import { calculateFinance } from "../lib/finance";
-import { exportProposal } from "../lib/export";
+import { exportProposal, proposalFileName } from "../lib/export";
+import { downloadAgentInput } from "../lib/agentInput";
 import {
   Badge,
   Button,
   EmptyState,
-  PageHeader,
-  Modal,
   Field,
-  Tabs,
-  StatusBadge,
+  Modal,
+  PageHeader,
 } from "../components/ui";
-import type { Proposal, ProposalSection } from "../types";
+import type { Opportunity, Proposal, ProposalSection } from "../types";
 import "./workspace.css";
+import "./proposal-files.css";
+
+type EditableContent = Pick<
+  Proposal,
+  | "title"
+  | "sections"
+  | "lines"
+  | "pricingMode"
+  | "percentage"
+  | "contingency"
+  | "tax"
+  | "includePricing"
+>;
+const contentOf = (proposal: Proposal): EditableContent => ({
+  title: proposal.title,
+  sections: proposal.sections,
+  lines: proposal.lines,
+  pricingMode: proposal.pricingMode,
+  percentage: proposal.percentage,
+  contingency: proposal.contingency,
+  tax: proposal.tax,
+  includePricing: !!proposal.includePricing,
+});
 const money = (value: number) =>
   new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+
 export default function ProposalEditor() {
   const { id } = useParams();
-  const { state, update, notify } = useApp();
-  const proposal = state.proposals.find((p) => p.id === id);
+  const { state } = useApp();
+  const proposal = state.proposals.find((item) => item.id === id);
   const opportunity = state.opportunities.find(
-    (o) => o.id === proposal?.opportunityId,
+    (item) => item.id === proposal?.opportunityId,
   );
-  const [tab, setTab] = useState("write");
-  const [selected, setSelected] = useState("");
-  const [comment, setComment] = useState("");
-  const [addOpen, setAddOpen] = useState(false);
-  const [sectionTitle, setSectionTitle] = useState("");
-  const [exporting, setExporting] = useState(false);
-  const [approvalOpen, setApprovalOpen] = useState(false);
-  const [attested, setAttested] = useState(false);
-  const canEdit = state.settings.role !== "Reviewer",
-    isOwner = state.settings.role === "Owner";
   if (!proposal || !opportunity)
     return (
       <EmptyState
         title="Proposal not found"
-        description="Choose a proposal from your workspace."
-        action={<Link to="/proposals">All proposals</Link>}
+        description="Choose a proposal file from your workspace."
+        action={<Link to="/proposals">All proposal files</Link>}
       />
     );
-  const p = proposal,
-    o = opportunity;
-  const blockers = getApprovalBlockers(state, p);
-  const currentSection =
-    p.sections.find((s) => s.id === selected) || p.sections[0];
-  const totals = calculateFinance(p);
-  const approved = p.status === "approved" && p.approvalVersion === p.version;
-  function patchProposal(
-    patch: Partial<Proposal>,
-    action: string,
-    contentChange = false,
-  ) {
-    if (contentChange && !canEdit) return;
-    update(
-      (s) => ({
-        ...s,
-        proposals: s.proposals.map((item) =>
-          item.id === p.id
-            ? {
-                ...item,
-                ...patch,
-                ...(contentChange
-                  ? {
-                      status: "draft" as const,
-                      approvalVersion: null,
-                      version: item.version + 1,
-                    }
-                  : {}),
-                updatedAt: new Date().toISOString(),
-              }
-            : item,
-        ),
-      }),
-      action,
-      p.id,
-    );
-  }
-  function saveSection(section: ProposalSection) {
-    patchProposal(
-      { sections: p.sections.map((s) => (s.id === section.id ? section : s)) },
-      `Saved section ${section.title}`,
-      true,
-    );
-    notify("Section saved. The current content version was updated.");
-  }
-  function addSection() {
-    if (!canEdit || !sectionTitle.trim()) return;
-    const section = {
-      id: crypto.randomUUID(),
-      title: sectionTitle.trim(),
-      body: "",
-      evidence: [],
-    };
-    patchProposal(
-      { sections: [...p.sections, section] },
-      `Added section ${section.title}`,
-      true,
-    );
-    setSelected(section.id);
-    setAddOpen(false);
-    setSectionTitle("");
-  }
-  function addComment() {
-    if (!comment.trim()) return;
-    patchProposal(
-      {
-        comments: [
-          ...p.comments,
-          {
-            id: crypto.randomUUID(),
-            body: comment.trim(),
-            at: new Date().toISOString(),
-            author: state.settings.role,
-          },
-        ],
-      },
-      "Added proposal review comment",
-    );
-    setComment("");
-    notify("Review comment saved.");
-  }
-  function submitReview() {
-    if (!canEdit) return;
-    patchProposal(
-      { status: "in_review" },
-      "Submitted current proposal version for local review",
-    );
-    setTab("review");
-    notify("Ready for human review. Approval remains a separate action.");
-  }
-  function approve() {
-    if (!isOwner || blockers.length || !attested) return;
-    patchProposal(
-      { status: "approved", approvalVersion: p.version },
-      `Owner approved exact proposal version ${p.version}`,
-    );
-    setApprovalOpen(false);
-    setAttested(false);
-    notify(
-      `Version ${p.version} approved. Any content change will invalidate approval.`,
-    );
-  }
-  async function download(volume: "technical" | "financial", final: boolean) {
-    if (final && (!isOwner || !approved || blockers.length)) return;
-    setExporting(true);
-    try {
-      await exportProposal(p, o, volume, final, state.settings.companyName);
-      update(
-        (s) => ({ ...s }),
-        `Exported ${final ? "approved" : "draft"} ${volume} DOCX · proposal version ${p.version}`,
-        p.id,
-      );
-      notify(
-        "DOCX downloaded. Update all fields and the full TOC in Word, then review the final file.",
-      );
-    } catch (e) {
-      notify(e instanceof Error ? e.message : "Document export failed.");
-    } finally {
-      setExporting(false);
-    }
-  }
   return (
-    <div className="workspace-page">
-      <Link className="workspace-back" to={`/opportunities/${o.id}`}>
-        <ArrowLeft size={15} /> {o.reference} · Opportunity workspace
-      </Link>
-      <PageHeader
-        eyebrow="PROPOSAL STUDIO"
-        title={o.title}
-        description={`${o.buyer} · ${o.language === "ar" ? "Arabic" : "English"} proposal`}
-        actions={
-          <>
-            <Badge tone="neutral">Version {p.version}</Badge>
-            <StatusBadge status={p.status} />
-            {p.status === "draft" && (
-              <Button
-                variant="primary"
-                disabled={!canEdit}
-                onClick={submitReview}
-              >
-                <Send size={15} /> Send for review
-              </Button>
-            )}
-          </>
-        }
-      />
-      <div className="workspace-studio-note">
-        <FileText size={15} />
-        <span>
-          Local template workspace. No AI provider is connected. Your edits are
-          saved in this browser.
-        </span>
-        <span className="workspace-autosave">
-          <Check size={13} /> Saved{" "}
-          {new Date(p.updatedAt).toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-          })}
-        </span>
-      </div>
-      <Tabs
-        active={tab}
-        onChange={setTab}
-        items={[
-          { id: "write", label: "Write proposal", count: p.sections.length },
-          { id: "finance", label: "Commercials" },
-          { id: "review", label: "Review & export", count: blockers.length },
-        ]}
-      />
-      {tab === "write" && (
-        <div className="workspace-studio">
-          <aside className="panel workspace-outline">
-            <div className="workspace-outline-header">
-              <span className="workspace-kicker">DOCUMENT OUTLINE</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Add section"
-                disabled={!canEdit}
-                onClick={() => setAddOpen(true)}
-              >
-                <Plus size={16} />
-              </Button>
-            </div>
-            <nav aria-label="Proposal sections">
-              {p.sections.map((section, index) => (
-                <button
-                  key={section.id}
-                  className={currentSection?.id === section.id ? "active" : ""}
-                  onClick={() => setSelected(section.id)}
-                >
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  <span>{section.title}</span>
-                  {section.body.trim() &&
-                  !/\[INPUT REQUIRED/i.test(section.body) ? (
-                    <CheckCircle2 size={14} />
-                  ) : (
-                    <span className="workspace-unfilled" />
-                  )}
-                </button>
-              ))}
-            </nav>
-            <div className="workspace-outline-footer">
-              <p className="small muted">
-                Structure and prose are editable. Claims and assumptions still
-                need evidence.
-              </p>
-              <Link
-                className="workspace-text-link"
-                to={`/opportunities/${o.id}`}
-              >
-                View RFP evidence <ArrowUpRight size={14} />
-              </Link>
-            </div>
-          </aside>
-          <section
-            aria-label="Proposal section editor"
-            className="panel workspace-paper"
-          >
-            {currentSection ? (
-              <SectionEditor
-                key={`${currentSection.id}-${p.version}`}
-                section={currentSection}
-                draftKey={`${p.id}-${currentSection.id}-${p.version}`}
-                disabled={!canEdit}
-                language={o.language}
-                onSave={saveSection}
-              />
-            ) : (
-              <EmptyState
-                title="Add your first section"
-                description="Build the outline from the RFP's required response structure."
-              />
-            )}
-          </section>
-          <aside className="workspace-writing-aside">
-            <div className="workspace-kicker">WRITING ASSIST</div>
-            <h3>Make every claim count.</h3>
-            <p className="muted small">
-              Use the RFP as the source of truth. Keep estimates separate from
-              confirmed commitments.
-            </p>
-            <div className="workspace-guidance">
-              <ShieldCheck size={19} />
-              <strong>Evidence first</strong>
-              <p>
-                Reference a requirement, verified company fact, or explicit
-                approved assumption.
-              </p>
-            </div>
-            <div className="workspace-guidance">
-              <AlertTriangle size={19} />
-              <strong>Keep gaps visible</strong>
-              <p>
-                Use [INPUT REQUIRED: detail] when information is missing. Final
-                approval will stay blocked.
-              </p>
-            </div>
-            <div className="workspace-guidance">
-              <FileText size={19} />
-              <strong>Separate pricing</strong>
-              <p>
-                Put offer validity and payment terms in a section titled
-                “Commercial terms.” It is exported only in the financial volume.
-              </p>
-            </div>
-            <div className="workspace-small-stat">
-              <strong>
-                {o.requirements.filter((r) => r.status === "addressed").length}/
-                {o.requirements.length}
-              </strong>
-              <span>requirements addressed</span>
-            </div>
-          </aside>
-        </div>
-      )}
-      {tab === "finance" && (
-        <FinanceEditor
-          key={`${p.id}-${p.version}`}
-          proposal={p}
-          disabled={!canEdit}
-          onSave={(patch) => {
-            patchProposal(
-              patch,
-              "Saved financial inputs; totals recalculated",
-              true,
-            );
-            notify("Financial inputs saved. Prior approval is invalidated.");
-          }}
-        />
-      )}
-      {tab === "review" && (
-        <div className="workspace-columns">
-          <div className="stack">
-            <section className="panel workspace-pad">
-              <div className="panel-header">
-                <div>
-                  <div className="workspace-kicker">FINALIZATION CHECK</div>
-                  <h2 className="section-title">
-                    {blockers.length
-                      ? "A few things need attention"
-                      : "Ready for your decision"}
-                  </h2>
-                </div>
-                <Badge tone={blockers.length ? "amber" : "green"}>
-                  {blockers.length} blockers
-                </Badge>
-              </div>
-              {blockers.length ? (
-                <ul className="workspace-blockers">
-                  {blockers.map((blocker, index) => (
-                    <li key={index}>
-                      <AlertTriangle size={15} />
-                      <span>{blocker}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <div className="notice">
-                  <CheckCircle2 size={20} />
-                  <p>
-                    Recorded inputs pass the local completeness checks. A person
-                    must still verify technical correctness, evidence, pricing,
-                    and the full RFP.
-                  </p>
-                </div>
-              )}
-              <div className="row workspace-review-actions">
-                <Button
-                  variant="primary"
-                  disabled={!isOwner || !!blockers.length || approved}
-                  onClick={() => setApprovalOpen(true)}
-                >
-                  <ShieldCheck size={16} /> Approve version {p.version}
-                </Button>
-                <Button
-                  disabled={approved}
-                  onClick={() =>
-                    patchProposal(
-                      { status: "draft" },
-                      "Requested changes to proposal",
-                    )
-                  }
-                >
-                  Request changes
-                </Button>
-              </div>
-              {!isOwner && (
-                <p className="small muted">
-                  Only the Owner can approve. You can leave a review
-                  recommendation below.
-                </p>
-              )}
-            </section>
-            <section className="panel workspace-pad">
-              <div className="panel-header">
-                <h2 className="section-title">Review conversation</h2>
-                <MessageSquare size={18} />
-              </div>
-              {p.comments.length ? (
-                <div className="workspace-comments">
-                  {p.comments.map((c) => (
-                    <article key={c.id}>
-                      <div className="row">
-                        <strong>{c.author}</strong>
-                        <span className="small muted">
-                          {new Date(c.at).toLocaleString("en-US")}
-                        </span>
-                      </div>
-                      <p>{c.body}</p>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <p className="muted">
-                  No comments yet. Record decisions, concerns, and approval
-                  recommendations here.
-                </p>
-              )}
-              <Field label="Add a comment">
-                <textarea
-                  className="textarea"
-                  rows={3}
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="What should the author change or verify?"
-                />
-              </Field>
-              <div className="workspace-comment-button">
-                <Button disabled={!comment.trim()} onClick={addComment}>
-                  <MessageSquare size={15} /> Post comment
-                </Button>
-              </div>
-            </section>
-            <section className="panel workspace-pad">
-              <h2 className="section-title">Version record</h2>
-              <div className="row">
-                <Badge>Current version {p.version}</Badge>
-                {approved && (
-                  <Badge tone="green">
-                    Approved version {p.approvalVersion}
-                  </Badge>
-                )}
-              </div>
-              <p className="small muted">
-                Content and pricing edits create a new current version and
-                invalidate approval. This frontend stores the current snapshot
-                and action trail; immutable historical document snapshots are a
-                backend integration step.
-              </p>
-              {state.audit
-                .filter((a) => a.target === p.id)
-                .slice(0, 6)
-                .map((a) => (
-                  <div className="workspace-version-event" key={a.id}>
-                    <Clock3 size={13} />
-                    <span>{a.action}</span>
-                    <time>{new Date(a.at).toLocaleDateString("en-US")}</time>
-                  </div>
-                ))}
-            </section>
-          </div>
-          <aside className="stack">
-            <section className="panel workspace-pad workspace-export-card">
-              <div className="workspace-file-icon">
-                <Download size={24} />
-              </div>
-              <h2>From workspace to Word.</h2>
-              <p className="muted">
-                Separate, editable documents with native headings, tables, and a
-                dynamic table of contents.
-              </p>
-              <div className="workspace-kicker">DRAFT DOWNLOADS</div>
-              <Button
-                disabled={exporting}
-                onClick={() => void download("technical", false)}
-              >
-                <FileText size={16} /> Technical DOCX <Download size={14} />
-              </Button>
-              <Button
-                disabled={exporting}
-                onClick={() => void download("financial", false)}
-              >
-                <FileText size={16} /> Financial DOCX <Download size={14} />
-              </Button>
-              <div className="workspace-kicker workspace-export-label">
-                APPROVED CONTENT
-              </div>
-              <Button
-                variant="primary"
-                disabled={
-                  !approved || !isOwner || !!blockers.length || exporting
-                }
-                onClick={() => void download("technical", true)}
-              >
-                Approved technical DOCX
-              </Button>
-              <Button
-                disabled={
-                  !approved || !isOwner || !!blockers.length || exporting
-                }
-                onClick={() => void download("financial", true)}
-              >
-                Approved financial DOCX
-              </Button>
-              <p className="small muted">
-                Approval is bound to version {p.version}. Downloading does not
-                submit a bid.
-              </p>
-            </section>
-            <div className="notice notice-warning">
-              <AlertTriangle size={18} />
-              <div>
-                <strong>One final check in Word</strong>
-                <p className="small">
-                  Update the entire TOC and all fields, save the document, and
-                  inspect each page. Pagination is not calculated in the
-                  browser.
-                </p>
-              </div>
-            </div>
-            <section className="panel workspace-pad">
-              <div className="workspace-kicker">PROPOSED COMMERCIAL TOTAL</div>
-              <strong className="workspace-total">
-                SAR {money(totals.total)}
-              </strong>
-              <p className="muted small">
-                {totals.errors.length
-                  ? "Incomplete financial inputs — not an approved price."
-                  : "Includes entered tax. Optional lines excluded."}
-              </p>
-            </section>
-          </aside>
-        </div>
-      )}
-      <Modal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        title="Add a proposal section"
-      >
-        <div className="stack">
-          <Field label="Section title">
-            <input
-              autoFocus
-              className="input"
-              value={sectionTitle}
-              onChange={(e) => setSectionTitle(e.target.value)}
-              placeholder="For example: Commercial terms"
-            />
-          </Field>
-          <Button
-            variant="primary"
-            disabled={!sectionTitle.trim()}
-            onClick={addSection}
-          >
-            Add section
-          </Button>
-        </div>
-      </Modal>
-      <Modal
-        open={approvalOpen}
-        onClose={() => setApprovalOpen(false)}
-        title={`Approve version ${p.version}`}
-      >
-        <div className="stack">
-          <p>
-            This records Owner approval of the current proposal content and
-            financial inputs. Subsequent edits invalidate this approval.
-          </p>
-          <label className="workspace-check">
-            <input
-              type="checkbox"
-              checked={attested}
-              onChange={(e) => setAttested(e.target.checked)}
-            />
-            I reviewed the RFP coverage, claims, assumptions, pricing,
-            commercial terms, and source references for this version.
-          </label>
-          <Button
-            variant="primary"
-            disabled={!attested || !!blockers.length}
-            onClick={approve}
-          >
-            Approve this exact version
-          </Button>
-        </div>
-      </Modal>
-    </div>
+    <DocumentEditor
+      key={proposal.id}
+      proposal={proposal}
+      opportunity={opportunity}
+    />
   );
 }
-function SectionEditor({
-  section,
-  draftKey,
-  disabled,
-  language,
-  onSave,
+
+function DocumentEditor({
+  proposal,
+  opportunity,
 }: {
-  section: ProposalSection;
-  draftKey: string;
-  disabled: boolean;
-  language: "en" | "ar";
-  onSave: (section: ProposalSection) => void;
+  proposal: Proposal;
+  opportunity: Opportunity;
 }) {
+  const { state, update, notify } = useApp();
+  const canEdit = state.settings.role !== "Reviewer";
+  const draftKey = `proposal-document-${proposal.id}`;
   const [storageError, setStorageError] = useState("");
-  const loadDraft = () => {
+  const [draft, setDraft] = useState<EditableContent>(() => {
+    if (!canEdit) return contentOf(proposal);
     try {
-      return JSON.parse(
-        sessionStorage.getItem(`proposal-section-${draftKey}`) || "null",
-      ) as { body: string; title: string } | null;
+      const cached = JSON.parse(sessionStorage.getItem(draftKey) || "null") as {
+        version: number;
+        content: EditableContent;
+      } | null;
+      if (
+        cached?.version === proposal.version &&
+        Array.isArray(cached.content?.sections)
+      )
+        return cached.content;
+      // Recover text left in the original section editor before this interface update.
+      const sections = proposal.sections.map((section) => {
+        const previous = JSON.parse(
+          sessionStorage.getItem(
+            `proposal-section-${proposal.id}-${section.id}-${proposal.version}`,
+          ) || "null",
+        );
+        return previous &&
+          typeof previous.title === "string" &&
+          typeof previous.body === "string"
+          ? { ...section, title: previous.title, body: previous.body }
+          : section;
+      });
+      return { ...contentOf(proposal), sections };
     } catch {
-      return null;
+      return contentOf(proposal);
     }
-  };
-  const [body, setBody] = useState(() => loadDraft()?.body ?? section.body);
-  const [title, setTitle] = useState(() => loadDraft()?.title ?? section.title);
-  const dirty = body !== section.body || title !== section.title;
+  });
+  const [selected, setSelected] = useState(draft.sections[0]?.id || "");
+  const [preview, setPreview] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [sectionTitle, setSectionTitle] = useState("");
+  const [rewriteOpen, setRewriteOpen] = useState(false);
+  const [rewriteInstruction, setRewriteInstruction] = useState(
+    "Improve the wording and structure while preserving the supplied facts and commitments.",
+  );
+  const [exporting, setExporting] = useState(false);
+  const [removed, setRemoved] = useState<{
+    section: ProposalSection;
+    index: number;
+  } | null>(null);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(contentOf(proposal));
+  const currentSection =
+    draft.sections.find((section) => section.id === selected) ||
+    draft.sections[0];
+  const currentIndex = draft.sections.findIndex(
+    (section) => section.id === currentSection?.id,
+  );
+  const workingProposal = { ...proposal, ...draft };
+  const pricing = calculateFinance(workingProposal);
+
   useEffect(() => {
     try {
-      if (dirty)
+      if (dirty && canEdit)
         sessionStorage.setItem(
-          `proposal-section-${draftKey}`,
-          JSON.stringify({ body, title }),
+          draftKey,
+          JSON.stringify({ version: proposal.version, content: draft }),
         );
-      else sessionStorage.removeItem(`proposal-section-${draftKey}`);
+      else sessionStorage.removeItem(draftKey);
     } catch {
       setStorageError(
-        "Your browser cannot preserve unsaved section edits. Save this section before leaving.",
+        "Your browser cannot preserve unfinished edits in this tab. Save the proposal before leaving this page.",
       );
     }
-  }, [body, title, dirty, draftKey]);
-  useEffect(() => {
-    const intercept = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (
-        dirty &&
-        target.closest("a,.tabs button,.workspace-outline nav button") &&
-        !window.confirm(
-          "You have unsaved section edits. Leave this editor? Your local draft is preserved on this device.",
-        )
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    };
-    document.addEventListener("click", intercept, true);
-    return () => document.removeEventListener("click", intercept, true);
-  }, [dirty]);
+  }, [draft, dirty, canEdit, draftKey, proposal.version]);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
       if (dirty) {
@@ -679,412 +168,842 @@ function SectionEditor({
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [dirty]);
-  return (
-    <>
-      <div className="workspace-paper-toolbar">
-        <Badge tone={dirty ? "amber" : "neutral"}>
-          {dirty ? "Unsaved changes" : "Current content"}
-        </Badge>
-        <Button
-          size="sm"
-          variant="primary"
-          disabled={disabled || !dirty || !title.trim()}
-          onClick={() => {
-            try {
-              sessionStorage.removeItem(`proposal-section-${draftKey}`);
-            } catch {
-              setStorageError(
-                "Browser draft storage is unavailable; saving to the workspace instead.",
-              );
-            }
-            onSave({ ...section, title, body });
-          }}
-        >
-          <Save size={14} /> Save section
-        </Button>
-      </div>
-      <div className="workspace-paper-inner">
-        {storageError && (
-          <p role="alert" className="workspace-error">
-            {storageError}
-          </p>
-        )}
-        <input
-          aria-label="Section title"
-          className="workspace-title-input"
-          value={title}
-          disabled={disabled}
-          onChange={(e) => setTitle(e.target.value)}
-          dir={language === "ar" ? "rtl" : "ltr"}
-        />
-        <div className="workspace-paper-divider" />
-        <textarea
-          aria-label="Section content"
-          className="workspace-body-input"
-          value={body}
-          disabled={disabled}
-          onChange={(e) => setBody(e.target.value)}
-          dir={language === "ar" ? "rtl" : "ltr"}
-          placeholder="Write the response to this part of the RFP…"
-        />
-        <div className="workspace-paper-foot">
-          <span>{body.trim() ? body.trim().split(/\s+/).length : 0} words</span>
-          <span>{section.evidence.length} linked requirement references</span>
-        </div>
-      </div>
-    </>
-  );
-}
-function FinanceEditor({
-  proposal,
-  disabled,
-  onSave,
-}: {
-  proposal: Proposal;
-  disabled: boolean;
-  onSave: (patch: Partial<Proposal>) => void;
-}) {
-  const cacheKey = `proposal-finance-${proposal.id}-${proposal.version}`;
-  const [storageError, setStorageError] = useState("");
-  const [draft, setDraft] = useState(() => {
-    try {
-      const saved = JSON.parse(sessionStorage.getItem(cacheKey) || "null");
-      return saved ? ({ ...proposal, ...saved } as Proposal) : proposal;
-    } catch {
-      return proposal;
-    }
-  });
-  const total = calculateFinance(draft);
-  const dirty =
-    JSON.stringify([
-      draft.lines,
-      draft.percentage,
-      draft.tax,
-      draft.contingency,
-      draft.pricingMode,
-    ]) !==
-    JSON.stringify([
-      proposal.lines,
-      proposal.percentage,
-      proposal.tax,
-      proposal.contingency,
-      proposal.pricingMode,
-    ]);
-  useEffect(() => {
-    try {
-      if (dirty)
-        sessionStorage.setItem(
-          cacheKey,
-          JSON.stringify({
-            lines: draft.lines,
-            pricingMode: draft.pricingMode,
-            percentage: draft.percentage,
-            contingency: draft.contingency,
-            tax: draft.tax,
-          }),
-        );
-      else sessionStorage.removeItem(cacheKey);
-    } catch {
-      setStorageError(
-        "Your browser cannot preserve unsaved financial inputs. Save them before leaving.",
-      );
-    }
-  }, [draft, dirty, cacheKey]);
-  useEffect(() => {
-    const warn = (event: BeforeUnloadEvent) => {
-      if (dirty) {
-        event.preventDefault();
-        event.returnValue = "";
-      }
-    };
-    const intercept = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (
-        dirty &&
-        target.closest("a,.tabs button") &&
-        !window.confirm(
-          "You have unsaved financial inputs. Leave this editor? Your local draft is preserved when browser storage is available.",
-        )
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    };
-    window.addEventListener("beforeunload", warn);
-    document.addEventListener("click", intercept, true);
-    return () => {
-      window.removeEventListener("beforeunload", warn);
-      document.removeEventListener("click", intercept, true);
-    };
-  }, [dirty]);
-  function saveFinance() {
-    try {
-      sessionStorage.removeItem(cacheKey);
-    } catch {
-      setStorageError(
-        "Browser draft storage is unavailable; saving to the workspace instead.",
-      );
-    }
-    onSave({
-      lines: draft.lines,
-      pricingMode: draft.pricingMode,
-      percentage: draft.percentage,
-      contingency: draft.contingency,
-      tax: draft.tax,
-    });
+
+  function patch(patch: Partial<EditableContent>) {
+    if (canEdit) setDraft((current) => ({ ...current, ...patch }));
   }
-  function line(id: string, key: string, value: string | boolean) {
-    setDraft({
+  function patchSection(patch: Partial<ProposalSection>) {
+    if (!currentSection || !canEdit) return;
+    setDraft((current) => ({
+      ...current,
+      sections: current.sections.map((section) =>
+        section.id === currentSection.id ? { ...section, ...patch } : section,
+      ),
+    }));
+  }
+  function saveDraft(showNotice = true): Proposal {
+    if (!dirty || !canEdit) return proposal;
+    const saved: Proposal = {
+      ...proposal,
       ...draft,
-      lines: draft.lines.map((l) => (l.id === id ? { ...l, [key]: value } : l)),
-    });
+      version: proposal.version + 1,
+      status: "draft",
+      approvalVersion: null,
+      updatedAt: new Date().toISOString(),
+    };
+    update(
+      (current) => ({
+        ...current,
+        proposals: current.proposals.map((item) =>
+          item.id === proposal.id
+            ? {
+                ...item,
+                ...draft,
+                version: item.version + 1,
+                status: "draft",
+                approvalVersion: null,
+                updatedAt: saved.updatedAt,
+              }
+            : item,
+        ),
+      }),
+      "Saved proposal document content",
+      proposal.id,
+    );
+    if (showNotice)
+      notify(
+        "Proposal saved in this browser. Any previous approval no longer applies to the edited version.",
+      );
+    return saved;
   }
+  async function download() {
+    setExporting(true);
+    try {
+      const latest = saveDraft(false);
+      await exportProposal(latest, opportunity, state.settings.companyName);
+      notify(
+        "Word file downloaded. In Word, update the entire table of contents and all fields, save, and review each page.",
+      );
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "The Word file could not be generated.",
+      );
+    } finally {
+      setExporting(false);
+    }
+  }
+  function addSection() {
+    if (!canEdit || !sectionTitle.trim() || draft.sections.length >= 100)
+      return;
+    const section: ProposalSection = {
+      id: crypto.randomUUID(),
+      title: sectionTitle.trim(),
+      body: "",
+      evidence: [],
+    };
+    patch({ sections: [...draft.sections, section] });
+    setSelected(section.id);
+    setSectionTitle("");
+    setAddOpen(false);
+    setPreview(false);
+  }
+  function moveSection(direction: -1 | 1) {
+    if (!canEdit || currentIndex < 0) return;
+    const target = currentIndex + direction;
+    if (target < 0 || target >= draft.sections.length) return;
+    const sections = [...draft.sections];
+    [sections[currentIndex], sections[target]] = [
+      sections[target],
+      sections[currentIndex],
+    ];
+    patch({ sections });
+  }
+  function removeSection() {
+    if (!canEdit || !currentSection) return;
+    setRemoved({ section: currentSection, index: currentIndex });
+    patch({
+      sections: draft.sections.filter(
+        (section) => section.id !== currentSection.id,
+      ),
+    });
+    setSelected(
+      draft.sections[currentIndex + 1]?.id ||
+        draft.sections[currentIndex - 1]?.id ||
+        "",
+    );
+  }
+  function downloadAgent(rewrite = false) {
+    try {
+      const latest = saveDraft(false);
+      downloadAgentInput(
+        state,
+        opportunity,
+        latest,
+        rewrite && currentSection
+          ? { sectionId: currentSection.id, instruction: rewriteInstruction }
+          : undefined,
+      );
+      notify(
+        "Agent input downloaded. It contains extracted RFP text, enabled company files, notes, and this draft. Nothing was sent to an AI service.",
+      );
+    } catch (error) {
+      notify(
+        error instanceof Error
+          ? error.message
+          : "Agent input could not be downloaded.",
+      );
+    }
+  }
+
   return (
-    <div className="stack">
-      <section className="panel workspace-pad">
-        <div className="panel-header">
-          <div>
-            <div className="workspace-kicker">DETERMINISTIC PRICING</div>
-            <h2 className="section-title">
-              Build the estimate, one input at a time.
-            </h2>
-            <p className="muted small">
-              SAR · decimal arithmetic · an empty field is unknown, not zero
-            </p>
-          </div>
+    <div className="workspace-page proposal-file-page">
+      <Link className="workspace-back" to="/proposals">
+        <ArrowLeft size={15} /> Proposal files
+      </Link>
+      <PageHeader
+        eyebrow="PROPOSAL DOCUMENT"
+        title={proposal.title || opportunity.title}
+        description={`${opportunity.buyer} · ${opportunity.reference} · ${opportunity.language === "ar" ? "Arabic" : "English"}`}
+        actions={
+          <>
+            <Button disabled={!canEdit || !dirty} onClick={() => saveDraft()}>
+              <Save size={15} /> Save proposal
+            </Button>
+            <Button
+              variant="primary"
+              disabled={
+                exporting || (!draft.sections.length && !draft.includePricing)
+              }
+              onClick={() => void download()}
+            >
+              <Download size={16} />{" "}
+              {exporting ? "Generating Word…" : "Generate Word file"}
+            </Button>
+          </>
+        }
+      />
+      <div className="proposal-file-summary panel">
+        <span className="workspace-file-icon">
+          <FileText size={24} />
+        </span>
+        <div>
+          <strong>{proposalFileName(workingProposal, opportunity)}</strong>
+          <p>
+            One editable Word document · {draft.sections.length} sections ·
+            dynamic table of contents
+          </p>
+        </div>
+        <Badge tone={dirty ? "amber" : "green"}>
+          {dirty ? "Unsaved changes" : "Saved in browser"}
+        </Badge>
+      </div>
+      <p className="proposal-local-note">
+        This is a local document draft. AI drafting and rewriting are not
+        connected yet. Edit your text below, then generate the file.
+      </p>
+      {storageError && (
+        <p role="alert" className="workspace-error">
+          {storageError}
+        </p>
+      )}
+      {!canEdit && (
+        <p className="notice">
+          Reviewer mode is read-only. You can preview and download the saved
+          document.
+        </p>
+      )}
+      <div className="proposal-tools">
+        <div className="proposal-view-switch" aria-label="Document view">
           <Button
-            variant="primary"
-            disabled={disabled || !dirty}
-            onClick={saveFinance}
+            variant={!preview ? "primary" : "ghost"}
+            aria-pressed={!preview}
+            onClick={() => setPreview(false)}
           >
-            <Save size={15} /> Save financial inputs
+            <PenLine size={15} /> Edit content
+          </Button>
+          <Button
+            variant={preview ? "primary" : "ghost"}
+            aria-pressed={preview}
+            onClick={() => setPreview(true)}
+          >
+            <Eye size={15} /> Preview document
           </Button>
         </div>
-        {storageError && (
-          <p role="alert" className="workspace-error">
-            {storageError}
-          </p>
-        )}
-        <div className="table-wrap">
-          <table className="data-table workspace-finance-table">
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Quantity</th>
-                <th>Unit</th>
-                <th>Rate · SAR</th>
-                <th>Optional</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {draft.lines.map((l) => (
-                <tr key={l.id}>
-                  <td>
-                    <input
-                      aria-label="Line description"
-                      className="input"
-                      value={l.description}
-                      disabled={disabled}
-                      onChange={(e) =>
-                        line(l.id, "description", e.target.value)
-                      }
-                    />
-                  </td>
-                  <td>
-                    <input
-                      aria-label="Quantity"
-                      className="input"
-                      inputMode="decimal"
-                      value={l.quantity}
-                      disabled={disabled}
-                      onChange={(e) => line(l.id, "quantity", e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      aria-label="Pricing unit"
-                      className="input"
-                      value={l.unit}
-                      disabled={disabled}
-                      onChange={(e) => line(l.id, "unit", e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      aria-label="Unit rate"
-                      className="input"
-                      inputMode="decimal"
-                      value={l.rate}
-                      disabled={disabled}
-                      onChange={(e) => line(l.id, "rate", e.target.value)}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      aria-label="Optional line"
-                      type="checkbox"
-                      checked={l.optional}
-                      disabled={disabled}
-                      onChange={(e) => line(l.id, "optional", e.target.checked)}
-                    />
-                  </td>
-                  <td>
+        <Link
+          className="workspace-text-link"
+          to={`/opportunities/${opportunity.id}`}
+        >
+          RFP & opportunity <ArrowUp size={14} />
+        </Link>
+      </div>
+      {preview ? (
+        <DocumentPreview
+          proposal={workingProposal}
+          opportunity={opportunity}
+          companyName={state.settings.companyName}
+        />
+      ) : (
+        <div className="proposal-edit-layout">
+          <aside className="panel workspace-outline">
+            <div className="workspace-outline-header">
+              <span className="workspace-kicker">DOCUMENT SECTIONS</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label="Add section"
+                disabled={!canEdit || draft.sections.length >= 100}
+                onClick={() => setAddOpen(true)}
+              >
+                <Plus size={16} />
+              </Button>
+            </div>
+            <nav aria-label="Proposal sections">
+              {draft.sections.map((section, index) => (
+                <button
+                  type="button"
+                  key={section.id}
+                  className={currentSection?.id === section.id ? "active" : ""}
+                  aria-current={
+                    currentSection?.id === section.id ? "true" : undefined
+                  }
+                  onClick={() => setSelected(section.id)}
+                >
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <span dir="auto">{section.title || "Untitled section"}</span>
+                </button>
+              ))}
+            </nav>
+            <div className="workspace-outline-footer">
+              <p className="small muted">
+                Keep only the sections your RFP needs. Rename, reorder, or
+                remove any section. Commercial details can be plain text too.
+              </p>
+              <Button
+                size="sm"
+                disabled={!canEdit || draft.sections.length >= 100}
+                onClick={() => setAddOpen(true)}
+              >
+                <Plus size={14} /> Add a section
+              </Button>
+            </div>
+          </aside>
+          <section
+            className="panel proposal-editor-panel"
+            aria-label="Proposal section editor"
+          >
+            <div className="proposal-title-field">
+              <Field label="Proposal title">
+                <input
+                  className="input"
+                  dir="auto"
+                  value={draft.title}
+                  disabled={!canEdit}
+                  onChange={(event) => patch({ title: event.target.value })}
+                />
+              </Field>
+            </div>
+            {currentSection ? (
+              <>
+                <div className="proposal-section-toolbar">
+                  <span className="small muted">
+                    Section {currentIndex + 1} of {draft.sections.length}
+                  </span>
+                  <div className="row">
                     <Button
-                      variant="ghost"
                       size="sm"
-                      aria-label={`Remove ${l.description || "pricing line"}`}
-                      disabled={disabled}
-                      onClick={() =>
-                        setDraft({
-                          ...draft,
-                          lines: draft.lines.filter((item) => item.id !== l.id),
-                        })
+                      variant="ghost"
+                      aria-label="Move section up"
+                      disabled={!canEdit || currentIndex === 0}
+                      onClick={() => moveSection(-1)}
+                    >
+                      <ArrowUp size={16} />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label="Move section down"
+                      disabled={
+                        !canEdit || currentIndex === draft.sections.length - 1
                       }
+                      onClick={() => moveSection(1)}
+                    >
+                      <ArrowDown size={16} />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      aria-label="Remove section"
+                      disabled={!canEdit}
+                      onClick={removeSection}
                     >
                       <Trash2 size={15} />
                     </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+                <div className="workspace-paper-inner">
+                  <Field label="Section title">
+                    <input
+                      className="workspace-title-input"
+                      aria-label="Section title"
+                      dir="auto"
+                      value={currentSection.title}
+                      disabled={!canEdit}
+                      onChange={(event) =>
+                        patchSection({ title: event.target.value })
+                      }
+                    />
+                  </Field>
+                  <div className="workspace-paper-divider" />
+                  <textarea
+                    className="workspace-body-input"
+                    aria-label="Section content"
+                    dir={opportunity.language === "ar" ? "rtl" : "auto"}
+                    value={currentSection.body}
+                    disabled={!canEdit}
+                    placeholder="Write or paste what this section needs. Add commercial details here only when requested by the RFP."
+                    onChange={(event) =>
+                      patchSection({ body: event.target.value })
+                    }
+                  />
+                  <div className="workspace-paper-foot">
+                    <span>
+                      {currentSection.body.trim()
+                        ? currentSection.body.trim().split(/\s+/).length
+                        : 0}{" "}
+                      words
+                    </span>
+                    <Button
+                      size="sm"
+                      disabled={!canEdit || !currentSection.body.trim()}
+                      onClick={() => setRewriteOpen(true)}
+                    >
+                      <Sparkles size={14} /> Rewrite with AI
+                    </Button>
+                  </div>
+                  <p className="small muted proposal-ai-caption">
+                    AI is not connected. You can download this section and its
+                    context for an agent.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <EmptyState
+                title="Add the sections your RFP needs"
+                description="Start with one section, or use the RFP's required response headings. No predefined sections are mandatory."
+                action={
+                  <Button disabled={!canEdit} onClick={() => setAddOpen(true)}>
+                    <Plus size={15} /> Add section
+                  </Button>
+                }
+              />
+            )}
+          </section>
         </div>
-        {!draft.lines.length && (
-          <p className="muted workspace-pad">
-            No pricing lines yet. Add labor, licensing, infrastructure, or other
-            costs.
-          </p>
-        )}
-        <Button
-          disabled={disabled}
-          onClick={() =>
-            setDraft({
-              ...draft,
-              lines: [
-                ...draft.lines,
-                {
-                  id: crypto.randomUUID(),
-                  description: "",
-                  quantity: "1",
-                  unit: "person-day",
-                  rate: "",
-                  optional: false,
-                },
-              ],
-            })
-          }
-        >
-          <Plus size={15} /> Add line item
-        </Button>
-      </section>
-      <div className="workspace-columns">
-        <section className="panel workspace-pad">
-          <h2 className="section-title">Commercial assumptions</h2>
-          <div className="form-grid">
-            <Field label="Pricing method">
-              <select
-                className="input"
-                disabled={disabled}
-                value={draft.pricingMode}
-                onChange={(e) =>
-                  setDraft({
-                    ...draft,
-                    pricingMode: e.target.value as "markup" | "margin",
-                  })
-                }
-              >
-                <option value="markup">Markup on cost</option>
-                <option value="margin">Margin on selling price</option>
-              </select>
-            </Field>
-            <Field
-              label={`${draft.pricingMode === "markup" ? "Markup" : "Margin"} percentage`}
-            >
-              <input
-                className="input"
-                inputMode="decimal"
-                value={draft.percentage}
-                disabled={disabled}
-                onChange={(e) =>
-                  setDraft({ ...draft, percentage: e.target.value })
-                }
-                placeholder="Unconfirmed"
-              />
-            </Field>
-            <Field label="Contingency percentage">
-              <input
-                className="input"
-                inputMode="decimal"
-                value={draft.contingency}
-                disabled={disabled}
-                onChange={(e) =>
-                  setDraft({ ...draft, contingency: e.target.value })
-                }
-                placeholder="Unconfirmed"
-              />
-            </Field>
-            <Field
-              label="Tax percentage"
-              hint="Enter only a confirmed rate; no rate is assumed."
-            >
-              <input
-                className="input"
-                inputMode="decimal"
-                value={draft.tax}
-                disabled={disabled}
-                onChange={(e) => setDraft({ ...draft, tax: e.target.value })}
-                placeholder="Unconfirmed"
-              />
-            </Field>
-          </div>
-          <div className="notice small">
-            This trial applies the entered tax to the complete base net price.
-            Record exceptions, recurring duration, offer validity, and payment
-            terms in a Commercial terms section. Optional direct costs are
-            displayed separately.
-          </div>
-        </section>
-        <section className="panel workspace-pad workspace-totals">
-          <div className="workspace-kicker">ESTIMATE SUMMARY</div>
-          {[
-            ["Direct costs", total.subtotal],
-            ["Contingency", total.contingency],
-            ["Net selling price", total.net],
-            ["Tax", total.tax],
-          ].map(([label, value]) => (
-            <div key={String(label)}>
-              <span>{label}</span>
-              <strong>{money(Number(value))}</strong>
-            </div>
-          ))}
-          <div className="workspace-total-row">
-            <span>Total · SAR</span>
-            <strong>{money(total.total)}</strong>
-          </div>
-          <div>
-            <span>Optional direct cost</span>
-            <span>{money(total.optionalTotal)}</span>
-          </div>
+      )}
+      {removed && (
+        <div className="proposal-undo notice">
+          <span>Removed “{removed.section.title}”.</span>
+          <Button
+            size="sm"
+            disabled={!canEdit}
+            onClick={() => {
+              const sections = [...draft.sections];
+              sections.splice(
+                Math.min(removed.index, sections.length),
+                0,
+                removed.section,
+              );
+              patch({ sections });
+              setSelected(removed.section.id);
+              setRemoved(null);
+            }}
+          >
+            Undo removal
+          </Button>
+        </div>
+      )}
+      <details className="panel proposal-pricing-details">
+        <summary>
+          Optional pricing table{" "}
+          <span>Use only if you need calculated amounts in the file</span>
+        </summary>
+        <div className="workspace-pad">
+          <label className="workspace-check">
+            <input
+              type="checkbox"
+              checked={!!draft.includePricing}
+              disabled={!canEdit}
+              onChange={(event) =>
+                patch({ includePricing: event.target.checked })
+              }
+            />
+            Include a pricing table
+          </label>
           <p className="small muted">
-            {dirty
-              ? "Preview includes unsaved inputs. Save before review."
-              : "Calculated from the saved inputs."}
+            You can also write all financial information in an ordinary section.
+            Turning this off keeps the saved values and excludes the calculator
+            from the Word file.
+          </p>
+          {draft.includePricing && (
+            <PricingInputs
+              proposal={workingProposal}
+              disabled={!canEdit}
+              onChange={patch}
+            />
+          )}
+        </div>
+      </details>
+      <div className="proposal-footer-grid">
+        <section className="panel workspace-pad">
+          <h2 className="section-title">Bring the draft into one file</h2>
+          <p className="small muted">
+            Generate Word includes every section in the order shown. It saves
+            your latest edits automatically. Empty sections stay visible as
+            input placeholders.
+          </p>
+          {draft.includePricing && !pricing.isValid && (
+            <p className="small muted">
+              Pricing inputs are incomplete. The file will include entered lines
+              and a placeholder; incomplete totals are omitted.
+            </p>
+          )}
+          <Button
+            variant="primary"
+            disabled={
+              exporting || (!draft.sections.length && !draft.includePricing)
+            }
+            onClick={() => void download()}
+          >
+            <Download size={16} /> Download proposal.docx
+          </Button>
+          <p className="small muted">
+            In Word: select all and update fields, then right-click the table of
+            contents → Update Field → Update entire table. Save and check every
+            page.
+          </p>
+        </section>
+        <section className="panel workspace-pad">
+          <h2 className="section-title">AI agent handoff</h2>
+          <p className="small muted">
+            Download the RFP text, enabled company files, company notes, and
+            this proposal as one JSON package. Extracted text is included;
+            original files, images, and page layout are not.
+          </p>
+          <Button onClick={() => downloadAgent()}>
+            <Download size={15} /> Download agent input
+          </Button>
+          <p className="small muted">
+            This only downloads a file. No AI request is sent and no rewrite is
+            applied.
           </p>
         </section>
       </div>
-      {total.errors.length > 0 && (
-        <section className="notice notice-warning workspace-finance-errors">
-          <AlertTriangle size={18} />
+      <Modal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        title="Add section"
+      >
+        <div className="stack">
+          <Field label="New section title">
+            <input
+              autoFocus
+              className="input"
+              dir="auto"
+              value={sectionTitle}
+              onChange={(event) => setSectionTitle(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") addSection();
+              }}
+              placeholder="For example: Implementation plan or Commercial terms"
+            />
+          </Field>
+          <Button
+            variant="primary"
+            disabled={!sectionTitle.trim()}
+            onClick={addSection}
+          >
+            Add to document
+          </Button>
+        </div>
+      </Modal>
+      <Modal
+        open={rewriteOpen}
+        onClose={() => setRewriteOpen(false)}
+        title="Rewrite with AI"
+      >
+        <div className="stack">
+          <div className="notice">
+            <Sparkles size={19} />
+            <p>
+              <strong>AI is not connected.</strong> No rewrite will run from
+              this frontend. Download the selected section with its RFP and
+              company context to use with your agent.
+            </p>
+          </div>
+          <Field label="Rewrite instructions">
+            <textarea
+              rows={4}
+              className="textarea"
+              value={rewriteInstruction}
+              onChange={(event) => setRewriteInstruction(event.target.value)}
+            />
+          </Field>
+          <Button
+            variant="primary"
+            disabled={!rewriteInstruction.trim()}
+            onClick={() => downloadAgent(true)}
+          >
+            <Download size={15} /> Download agent input
+          </Button>
+          <p className="small muted">
+            The package includes enabled, readable company files and notes.
+            Source material must be reviewed for relevance and extraction
+            accuracy.
+          </p>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+function DocumentPreview({
+  proposal,
+  opportunity,
+  companyName,
+}: {
+  proposal: Proposal;
+  opportunity: Opportunity;
+  companyName: string;
+}) {
+  const pricing = calculateFinance(proposal);
+  return (
+    <section
+      className="proposal-preview-wrap"
+      aria-label="Proposal document preview"
+    >
+      <p className="small muted">
+        Content preview — Word determines page breaks and table-of-contents page
+        numbers.
+      </p>
+      <article
+        className="proposal-document-preview"
+        dir={opportunity.language === "ar" ? "rtl" : "ltr"}
+      >
+        <header>
+          <p className="workspace-kicker" dir="auto">
+            {companyName}
+          </p>
+          <h2 dir="auto">{proposal.title || opportunity.title}</h2>
+          <p dir="auto">{opportunity.buyer}</p>
+          <p className="small muted">
+            {opportunity.reference} · Version {proposal.version} · Working
+            document
+          </p>
+        </header>
+        <div className="proposal-preview-contents">
+          <h3>{opportunity.language === "ar" ? "المحتويات" : "Contents"}</h3>
+          <ol>
+            {proposal.sections.map((section) => (
+              <li key={section.id} dir="auto">
+                {section.title || "Untitled section"}
+              </li>
+            ))}
+            {proposal.includePricing && <li>Pricing schedule</li>}
+          </ol>
+        </div>
+        {proposal.sections.map((section) => (
+          <section className="proposal-preview-section" key={section.id}>
+            <h3 dir="auto">{section.title || "Untitled section"}</h3>
+            <p dir="auto">
+              {section.body || "[INPUT REQUIRED: section content]"}
+            </p>
+          </section>
+        ))}
+        {proposal.includePricing && (
+          <section className="proposal-preview-section">
+            <h3>Pricing schedule · SAR</h3>
+            <div className="table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th>Quantity</th>
+                    <th>Unit cost</th>
+                    <th>Included</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {proposal.lines.map((line) => (
+                    <tr key={line.id}>
+                      <td>{line.description || "Not entered"}</td>
+                      <td>
+                        {line.quantity || "—"} {line.unit}
+                      </td>
+                      <td>{line.rate || "—"}</td>
+                      <td>{line.optional ? "Optional" : "Base"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {pricing.isValid ? (
+              <>
+                <p>Base offer excluding tax: SAR {money(pricing.net)}</p>
+                <p>
+                  Tax: SAR {money(pricing.tax)} · Total: SAR{" "}
+                  {money(pricing.total)}
+                </p>
+              </>
+            ) : (
+              <p>
+                [INPUT REQUIRED: Pricing is incomplete. Totals are omitted.]
+              </p>
+            )}
+          </section>
+        )}
+      </article>
+    </section>
+  );
+}
+
+function PricingInputs({
+  proposal,
+  disabled,
+  onChange,
+}: {
+  proposal: Proposal;
+  disabled: boolean;
+  onChange: (patch: Partial<EditableContent>) => void;
+}) {
+  const totals = calculateFinance(proposal);
+  function line(id: string, key: string, value: string | boolean) {
+    onChange({
+      lines: proposal.lines.map((item) =>
+        item.id === id ? { ...item, [key]: value } : item,
+      ),
+    });
+  }
+  return (
+    <div className="proposal-pricing-inputs">
+      <div className="table-wrap">
+        <table className="data-table workspace-finance-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Quantity</th>
+              <th>Unit</th>
+              <th>Unit cost · SAR</th>
+              <th>Optional</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {proposal.lines.map((item) => (
+              <tr key={item.id}>
+                <td>
+                  <input
+                    className="input"
+                    aria-label="Line description"
+                    value={item.description}
+                    disabled={disabled}
+                    onChange={(event) =>
+                      line(item.id, "description", event.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    className="input"
+                    inputMode="decimal"
+                    aria-label="Quantity"
+                    value={item.quantity}
+                    disabled={disabled}
+                    onChange={(event) =>
+                      line(item.id, "quantity", event.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    className="input"
+                    aria-label="Pricing unit"
+                    value={item.unit}
+                    disabled={disabled}
+                    onChange={(event) =>
+                      line(item.id, "unit", event.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    className="input"
+                    inputMode="decimal"
+                    aria-label="Unit rate"
+                    value={item.rate}
+                    disabled={disabled}
+                    onChange={(event) =>
+                      line(item.id, "rate", event.target.value)
+                    }
+                  />
+                </td>
+                <td>
+                  <input
+                    type="checkbox"
+                    aria-label="Optional line"
+                    checked={item.optional}
+                    disabled={disabled}
+                    onChange={(event) =>
+                      line(item.id, "optional", event.target.checked)
+                    }
+                  />
+                </td>
+                <td>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={`Remove ${item.description || "pricing line"}`}
+                    disabled={disabled}
+                    onClick={() =>
+                      onChange({
+                        lines: proposal.lines.filter(
+                          (entry) => entry.id !== item.id,
+                        ),
+                      })
+                    }
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <Button
+        disabled={disabled}
+        onClick={() =>
+          onChange({
+            lines: [
+              ...proposal.lines,
+              {
+                id: crypto.randomUUID(),
+                description: "",
+                quantity: "1",
+                unit: "item",
+                rate: "",
+                optional: false,
+              },
+            ],
+          })
+        }
+      >
+        <Plus size={15} /> Add line item
+      </Button>
+      <div className="form-grid proposal-pricing-assumptions">
+        <Field label="Pricing method">
+          <select
+            className="input"
+            disabled={disabled}
+            value={proposal.pricingMode}
+            onChange={(event) =>
+              onChange({
+                pricingMode: event.target.value as "markup" | "margin",
+              })
+            }
+          >
+            <option value="markup">Markup on cost</option>
+            <option value="margin">Margin on selling price</option>
+          </select>
+        </Field>
+        {(
+          [
+            {
+              key: "percentage",
+              label: `${proposal.pricingMode === "markup" ? "Markup" : "Margin"} percentage`,
+            },
+            { key: "contingency", label: "Contingency percentage" },
+            { key: "tax", label: "Tax percentage" },
+          ] as const
+        ).map(({ key, label }) => (
+          <Field key={key} label={label}>
+            <input
+              className="input"
+              inputMode="decimal"
+              value={proposal[key]}
+              disabled={disabled}
+              placeholder="Enter 0 only when confirmed"
+              onChange={(event) => onChange({ [key]: event.target.value })}
+            />
+          </Field>
+        ))}
+      </div>
+      <p className="small muted">
+        The pricing table and assumptions are included in the Word file when
+        enabled. Use a free-text commercial section instead if you do not want
+        to disclose this cost breakdown.
+      </p>
+      {totals.isValid ? (
+        <p className="proposal-calculated-total">
+          Base offer: SAR {money(totals.net)} + tax {money(totals.tax)} ={" "}
+          <strong>SAR {money(totals.total)}</strong>
+        </p>
+      ) : (
+        <div className="notice notice-warning">
           <div>
-            <strong>Inputs to confirm before approval</strong>
+            <strong>Complete these inputs for a calculated total</strong>
             <ul>
-              {total.errors.map((error, index) => (
-                <li key={index}>{error}</li>
+              {totals.errors.map((error) => (
+                <li key={error}>{error}</li>
               ))}
             </ul>
+            <p>
+              These inputs are optional for the document. Disable the pricing
+              table to exclude it.
+            </p>
           </div>
-        </section>
+        </div>
       )}
     </div>
   );
