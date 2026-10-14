@@ -2,7 +2,7 @@
 
 ## Scope and actual state
 
-**Activation blocker:** the Supabase connector declined the first new migration (`connected_workspace_commands`) without a reason. The four baseline migrations and api v2/worker v1 remain deployed. The new source is being published, but connected workspace/invitation activation remains unavailable until migration approval and API deployment.
+**Activation blocker:** the Supabase connector declined the first new migration (`connected_workspace_commands`) without a reason. The four baseline migrations and api v2/worker v1 remain deployed. Application commit `99e40cf` and Pages workflow `38617159700` are published successfully, but connected workspace/invitation activation remains unavailable until migration approval and API deployment.
 
 The stage-1 release adds connected core-record commands, email/password identities, Owner-issued invitations, and restricted first-Owner setup. Production frontend builds use the connected repository; `?mode=demo` retains the separate browser-local demo. Pending/error states and server-confirmed saves prevent local demo data from being presented as remote success.
 

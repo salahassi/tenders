@@ -71,3 +71,8 @@ Sources: https://supabase.com/changelog.md and https://supabase.com/docs/guides/
 
 - Release verification passed 111 frontend and 38 backend tests (26 database/integration cases included), both locked installs, type checks, and builds.
 - The Supabase connector returned `Migration was declined` for `connected_workspace_commands` without a stated reason. A fresh migration listing still shows only the four baseline migrations; api v2 and worker v1 remain active. The dependent API deployment is withheld. No alternate mutation channel is used to bypass the refusal. GitHub source and Pages publication continue with this limitation recorded.
+
+- Read-only plugin permission inspection shows Supabase inherits “Allow low-risk actions”; it can automatically deny operations. The refusal itself gives no specific reason or confirmation-button location. Spoken authorization is valid user intent, and no additional written authorization is inherently required. No plugin permission was changed.
+- Published application commit `99e40cf4a958e5aba73c5dd1f158f58d0e028ab8`; all 119 remote blobs matched the verified source. Pages workflow `38617159700` is the deployment evidence for this application revision. The documentation follow-up records its final outcome without rebuilding the app.
+
+- Pages workflow `38617159700` completed successfully on October 14, 2026 at 18:41 UTC (21:41 Riyadh). This confirms frontend publication, not completion of the blocked database/API activation or real-account acceptance.
