@@ -1,3 +1,5 @@
+import ExportPanel from "../components/ExportPanel";
+import { createConnectedExport } from "../lib/connectedExport";
 import ReviewHistory from "../components/ReviewHistory";
 import ApprovalPanel from "../components/ApprovalPanel";
 import { useEffect, useState } from "react";
@@ -186,7 +188,7 @@ function ProposalReviewPage({
   proposal: Proposal;
   opportunity: Opportunity;
 }) {
-  const { state, update, notify, mode } = useApp();
+  const { state, update, notify, mode, backend } = useApp();
   const canEdit =
     mode === "CONNECTED_FREE" || state.settings.role !== "Reviewer";
   const canRegenerate = state.settings.role !== "Reviewer";
@@ -432,7 +434,10 @@ function ProposalReviewPage({
   async function download() {
     setExporting(true);
     try {
-      await exportProposal(proposal, opportunity, state.settings.companyName);
+      if (backend && proposal.versionId)
+        await createConnectedExport(backend, proposal.versionId, "draft");
+      else
+        await exportProposal(proposal, opportunity, state.settings.companyName);
       notify(
         "Current Word content downloaded. Review inputs are not included. In Word, update all fields and the entire table of contents, then review the pages.",
       );
@@ -911,6 +916,7 @@ function ProposalReviewPage({
       </section>
       <ReviewHistory proposalId={proposal.id} />
       <ApprovalPanel proposal={proposal} />
+      <ExportPanel proposal={proposal} />
       <Modal
         open={regenerateOpen}
         onClose={() => setRegenerateOpen(false)}

@@ -140,6 +140,33 @@ export class BackendClient {
     } while (cursor);
     return rows;
   }
+  async downloadArtifact(id: string): Promise<Blob> {
+    if (!/^[0-9a-f-]{36}$/.test(id)) throw Error("Invalid artifact.");
+    const {
+      data: { session },
+      error,
+    } = await this.auth.auth.getSession();
+    if (error) throw error;
+    if (!session)
+      throw new BackendRequestError(
+        "UNAUTHENTICATED",
+        "Sign in to download.",
+        401,
+      );
+    const response = await fetch(
+      `${this.projectUrl}/functions/v1/api/v1/export-artifacts/${id}/download`,
+      { headers: { Authorization: `Bearer ${session.access_token}` } },
+    );
+    if (!response.ok) {
+      const value = await response.json();
+      throw new BackendRequestError(
+        value.error?.code || "DOWNLOAD_FAILED",
+        value.error?.message || "Download failed.",
+        response.status,
+      );
+    }
+    return response.blob();
+  }
   async uploadOriginal(
     reservation: { upload_path: string; bucket: string },
     file: File,

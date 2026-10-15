@@ -63,6 +63,9 @@ const host = z
   .max(253)
   .regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i);
 export const commandSchemas = {
+  "export.renew": z.object({id:uuid,expected_revision:revision}).strict(),
+  "export.prepare": z.object({proposal_version_id:uuid,expected_revision:revision,mode:z.enum(["draft","final"]),volume:z.enum(["combined","technical","financial"])}).strict(),
+  "export.reserve": z.object({export_id:uuid,kind:z.enum(["generated","reviewed"]),original_name:z.string().min(1).max(200),mime_type:z.enum(["application/pdf","application/vnd.openxmlformats-officedocument.wordprocessingml.document"]),size:z.number().int().positive().max(10485760),hash,review_attested:z.boolean()}).strict(),
   "rate.save": z
     .object({
       id: uuid.optional(),

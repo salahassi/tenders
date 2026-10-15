@@ -1,3 +1,4 @@
+import { buildExportModel, verifyExportDocx } from "../_shared/export.ts";
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
 import {
   commandSchemas,
@@ -20,6 +21,8 @@ import {
 } from "../_shared/finance.ts";
 
 const readTables: Record<string, string> = {
+  exports: "export_requests",
+  "export-artifacts": "export_artifacts",
   rates: "rate_records",
   templates: "templates",
   estimates: "estimate_records",
@@ -237,6 +240,7 @@ export function createApiHandler(
         const filters: Record<string, string> = {};
         if (
           [
+            "exports",
             "estimates",
             "deliveries",
             "compliance",
@@ -288,6 +292,27 @@ export function createApiHandler(
             cursor,
           ),
         );
+      }
+      const exportPath = path.match(/^\/v1\/exports\/([^/]+)\/context$/);
+      if (request.method === "GET" && exportPath) {
+        const record = await backend.userRpc(token,"export_context",{request_id:uuid.parse(exportPath[1])});
+        return respond({request:record,model:buildExportModel(record)});
+      }
+      const artifactPath = path.match(/^\/v1\/export-artifacts\/([^/]+)\/(complete|download)$/);
+      if (artifactPath && ((request.method === "POST" && artifactPath[2] === "complete") || (request.method === "GET" && artifactPath[2] === "download"))) {
+        const id=uuid.parse(artifactPath[1]), context=await backend.userRpc(token,"artifact_context",{artifact_id:id}), artifact=context.artifact;
+        const blob=await backend.object(artifact.storage_key);
+        if(blob.size!==Number(artifact.expected_size)||blob.size>10485760)throw new AppError(422,"ARTIFACT_MISMATCH","Uploaded bytes differ from the reserved artifact.");
+        const bytes=new Uint8Array(await blob.arrayBuffer()), hash=Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",bytes)),b=>b.toString(16).padStart(2,"0")).join("");
+        if(hash!==artifact.content_hash)throw new AppError(422,"ARTIFACT_MISMATCH","Artifact hash verification failed.");
+        if(artifactPath[2]==="complete"){
+          validateOriginal(artifact.original_name,artifact.mime_type,bytes);
+          if(artifact.mime_type==="application/pdf"){const pdf=await PDFDocument.load(bytes,{ignoreEncryption:false});if(pdf.getPageCount()>200)throw new AppError(422,"EXPORT_PAGE_CAP_REACHED","Split the reviewed PDF.");}
+          else verifyExportDocx(bytes,buildExportModel(context.request));
+          return respond(await backend.internal("complete_export_artifact",{artifact_id:id,actor_id:user.id,actual_hash:hash,actual_size:bytes.length,verification_kind:artifact.kind==="generated"?"generated_content":artifact.mime_type==="application/pdf"?"owner_reviewed_pdf":"reviewed_docx"}));
+        }
+        await backend.internal("authorize_artifact_download",{artifact_id:id,actor_id:user.id,actual_hash:hash});
+        const headers=corsHeaders(request,env.allowedOrigins);headers.set("content-type",artifact.mime_type);headers.set("content-disposition","attachment");return new Response(bytes,{headers});
       }
       const downloads = path.match(/^\/v1\/documents\/([^/]+)\/download$/);
       if (request.method === "GET" && downloads) {

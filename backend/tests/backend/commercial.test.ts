@@ -237,6 +237,14 @@ it("binds Owner approval to inventory, compliance, prices, delivery and review s
   });
   expect(approval.content_hash).toBe("a".repeat(64));
   expect(approval.pricing_hash).toBe(estimate.content_hash);
+  const revision=(await f.db.query<any>("select revision from public.proposal_versions where id=$1",[s.version])).rows[0].revision;
+  const exported=await f.command("export.prepare",{proposal_version_id:s.version,expected_revision:revision,mode:"final",volume:"combined"});
+  const artifact=await f.command("export.reserve",{export_id:exported.id,kind:"generated",original_name:"synthetic.docx",mime_type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",size:100,hash:"c".repeat(64),review_attested:false});
+  await f.db.exec("savepoint export_attempt");
+  await expect(f.rpc("complete_export_artifact",[artifact.id,f.owner,"d".repeat(64),100,"generated_content"])).rejects.toThrow("ARTIFACT_MISMATCH");
+  await f.db.exec("rollback to savepoint export_attempt; release savepoint export_attempt");
+  await f.rpc("complete_export_artifact",[artifact.id,f.owner,"c".repeat(64),100,"generated_content"]);
+  expect((await f.rpc("authorize_artifact_download",[artifact.id,f.owner,"c".repeat(64)])).status).toBe("ready");
   await f.command("review.verdict", {
     proposal_version_id: s.version,
     expected_revision: 0,
@@ -250,6 +258,9 @@ it("binds Owner approval to inventory, compliance, prices, delivery and review s
   expect(
     (await f.db.query<any>("select state from public.proposals")).rows[0].state,
   ).toBe("draft");
+  await f.db.exec("savepoint stale_export");
+  await expect(f.rpc("authorize_artifact_download",[artifact.id,f.owner,"c".repeat(64)])).rejects.toThrow("STALE_EXPORT_APPROVAL");
+  await f.db.exec("rollback to savepoint stale_export; release savepoint stale_export");
   expect(
     (await f.rpc("proposal_readiness", [s.version])).blockers.join(" "),
   ).toContain("reviewer");

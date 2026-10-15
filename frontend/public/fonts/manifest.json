@@ -1,0 +1,26 @@
+[
+  {
+    "file": "Amiri-Bold.ttf",
+    "sha256": "cfccb794268e7d573d857e6d6a67f89cf8a053e8ffd85dfa0c8ec1bb36fc4827",
+    "embedding_rights": 0,
+    "glyphs": 1548
+  },
+  {
+    "file": "Amiri-Regular.ttf",
+    "sha256": "ab391c4147d054c48976e98322ad0eefe1427aa0e0502a12a4c75d80a70cfcd7",
+    "embedding_rights": 0,
+    "glyphs": 1699
+  },
+  {
+    "file": "Carlito-Bold.ttf",
+    "sha256": "bb5d20f79b82599ec72983597437373a80f2d2085fa91fc144fd74e876a594db",
+    "embedding_rights": 0,
+    "glyphs": 2117
+  },
+  {
+    "file": "Carlito-Regular.ttf",
+    "sha256": "f6418f708baede9789daef5d458c0f53d2a888af9820e8062934e504fedc6595",
+    "embedding_rights": 0,
+    "glyphs": 2117
+  }
+]
