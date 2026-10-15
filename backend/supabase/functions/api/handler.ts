@@ -1,3 +1,4 @@
+import { recoveryRoute } from "../_shared/recovery.ts";
 import { buildExportModel, verifyExportDocx } from "../_shared/export.ts";
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
 import {
@@ -21,6 +22,7 @@ import {
 } from "../_shared/finance.ts";
 
 const readTables: Record<string, string> = {
+  "restore-sessions": "restore_sessions",
   acquisitions: "acquisitions",
   submissions: "submissions",
   "submission-events": "submission_events",
@@ -191,6 +193,17 @@ export function createApiHandler(
         return respond(await backend.acceptInvitation(token, input.token));
       }
       const membership = await backend.membership(token);
+      const recovery = await recoveryRoute(
+        request,
+        path,
+        backend,
+        token,
+        user.id,
+        membership.role,
+        headers,
+        respond,
+      );
+      if (recovery) return recovery;
       if (path === "/v1/bootstrap" && request.method === "GET")
         return respond({
           mode: "CONNECTED_FREE",

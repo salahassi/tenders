@@ -7,6 +7,7 @@ import "./admin.css";
 import MembersPanel from "../components/MembersPanel";
 import ModelControls from "../components/ModelControls";
 import TemplateManager from "../components/TemplateManager";
+import RecoveryPanel from "../components/RecoveryPanel";
 import RateCatalog from "../components/RateCatalog";
 
 export default function Settings() {
@@ -256,12 +257,7 @@ export default function Settings() {
               <span className="admin-toggle-off">DISABLED</span>
             </div>
           </section>
-          <section className="panel admin-section">
-            <h2>Backup & restore</h2>
-            <p className="admin-help">
-              Server backup and restore controls are not available yet.
-            </p>
-          </section>
+          <RecoveryPanel />
         </div>
         <div className="stack">
           <section className="panel admin-section">

@@ -16,6 +16,13 @@ The initial Owner email was supplied privately. Real Owner onboarding remains pe
 
 The full continuation must be reconstructed from this verified repository baseline, committed in small durable checkpoints, and re-tested before any new completeness or deployment claim. See [the recovery note](RECOVERY_CHECKPOINT.md).
 
+## Stage 6 original-inclusive recovery work — October 15, 2026
+
+- Added a bounded, hash-manifest backup of business records, originals and export files. A changed source aborts the export. Browser workers validate and package STORE-only archives; compressed/encrypted, oversized, duplicate, unexpected or overlapping archive entries are rejected before extraction.
+- Restores stage verified metadata and original bytes, require an empty target and matching schema, validate complete references, then commit business rows in one transaction. Partial or corrupted restores cannot create a partial workspace. Exact-manifest retries resume a staged restore; cancellation unlocks editing. Staged-file cleanup is being connected to maintenance.
+- Historical business actors use workspace-scoped pseudonymous references. They do not create Auth users, memberships or invitations. Existing accounts/access controls remain authoritative. Imported sources pause, model settings disable, content authorizations revoke, approvals invalidate, and facts/rates/templates require reapproval. Historical proposals and financial values remain available.
+- Local evidence so far: all 90 backend tests pass. A two-database fixture restores original hashes and an approved proposal’s 16,698.00 gross total, creates no users/access grants, rejects changed/missing files, and resets permissions. All 113 frontend tests pass, including corrupt/missing originals, changed metadata, duplicate records, unexpected archive paths and compressed archives. Both packages type-check and build. No cloud restore or hosted deployment is claimed.
+
 ## Stage 6 manual acquisition/submission work — October 15, 2026
 
 - Implemented transactional acquisition transitions, Owner-only paid-acquisition approval, and an accepted/confirmed RFP trigger that records document possession without starting a model job. Original documents remain versioned.

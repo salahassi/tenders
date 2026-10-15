@@ -83,6 +83,7 @@ for (const [path, method, name] of commands) {
   };
 }
 for (const table of [
+  "exports", "export-artifacts", "acquisitions", "submissions", "submission-events", "opportunity-relations", "restore-sessions",
   "rates",
   "templates",
   "estimates",
@@ -295,16 +296,31 @@ paths["/v1/documents/{id}/complete-upload"] = {
     responses,
   },
 };
+
+const recoveryPaths:Array<[string,string,string,unknown?]>=[
+ ["/v1/recovery/manifest","get","Owner-only exact row/file hashes; rejects excessive metadata"],
+ ["/v1/recovery/rows","post","Owner-only bounded metadata batch",z.object({keys:z.array(z.string()).min(1).max(30)})],
+ ["/v1/recovery/restore","post","Validate a manifest and stage into an empty matching-schema workspace",z.object({manifest:z.record(z.string(),z.unknown()),eligibility_attested:z.literal(true)})],
+ ["/v1/recovery/restore/{id}/rows","post","Check exact metadata hashes before staging",z.object({items:z.array(z.object({key:z.string(),data:z.string(),hash:z.string()})).min(1).max(30)})],
+ ["/v1/recovery/restore/{id}/commit","post","Atomically restore complete verified history; reset all operational authorizations"],
+ ["/v1/recovery/restore/{id}/cancel","post","Cancel staging and schedule object cleanup"],
+ ["/v1/recovery/restore-files/{id}/complete","post","Server-check actual private bytes, hash, size and file signature"],
+ ["/v1/recovery/files/{kind}/{id}","get","Owner-only original-inclusive backup download with actual hash and membership recheck"],
+ ["/v1/exports/{id}/context","get","Return a current bound export model"],
+ ["/v1/export-artifacts/{id}/complete","post","Verify exact artifact bytes and authorized Word content or Owner-reviewed PDF"],
+ ["/v1/export-artifacts/{id}/download","get","Recheck approval and actual hash immediately before private artifact download"],
+];
+for(const [path,method,summary,body]of recoveryPaths){paths[path]={[method]:{summary,security:[{userJWT:[]}],parameters:[...(path.includes("{id}")?[{in:"path",name:"id",required:true,schema:{type:"string",format:"uuid"}}]:[]),...(path.includes("{kind}")?[{in:"path",name:"kind",required:true,schema:{type:"string",enum:["documents","export_artifacts"]}}]:[])],...(body?{requestBody:{required:true,content:{"application/json":{schema:z.toJSONSchema(body as z.ZodType)}}}}:{}),responses}};}
 await writeFile(
   new URL("../../docs/openapi.json", import.meta.url),
   JSON.stringify(
     {
       openapi: "3.1.0",
       info: {
-        title: "Tenderdesk M2 foundation API",
-        version: "0.2.0",
+        title: "Tenderdesk connected trial API",
+        version: "0.3.0",
         description:
-          "Implemented authenticated foundation only. Unimplemented historical specification routes return an explicit capability error; model and source execution are inactive.",
+          "Authenticated connected workflows. Source collection and free model execution require explicit approved configuration; this contract is not evidence of hosted activation.",
       },
       servers: [
         {

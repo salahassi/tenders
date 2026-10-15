@@ -142,6 +142,15 @@ export class BackendClient {
   }
   async downloadArtifact(id: string): Promise<Blob> {
     if (!/^[0-9a-f-]{36}$/.test(id)) throw Error("Invalid artifact.");
+    return this.downloadBytes(`/v1/export-artifacts/${id}/download`);
+  }
+  async downloadBytes(path: string): Promise<Blob> {
+    if (
+      !/^\/v1\/(?:export-artifacts\/[0-9a-f-]{36}\/download|recovery\/files\/(?:documents|export_artifacts)\/[0-9a-f-]{36})$/.test(
+        path,
+      )
+    )
+      throw Error("Invalid file path.");
     const {
       data: { session },
       error,
@@ -153,10 +162,9 @@ export class BackendClient {
         "Sign in to download.",
         401,
       );
-    const response = await fetch(
-      `${this.projectUrl}/functions/v1/api/v1/export-artifacts/${id}/download`,
-      { headers: { Authorization: `Bearer ${session.access_token}` } },
-    );
+    const response = await fetch(`${this.projectUrl}/functions/v1/api${path}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
     if (!response.ok) {
       const value = await response.json();
       throw new BackendRequestError(

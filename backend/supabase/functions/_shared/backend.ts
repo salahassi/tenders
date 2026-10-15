@@ -146,11 +146,13 @@ export class Backend {
     cursor?: string,
   ) {
     const selection: string =
-      table === "generation_plans"
-        ? "id,workspace_id,opportunity_id,proposal_id,base_version_id,package_id,kind,stage,status,evidence_revision,input_hash,error_code,created_at,updated_at,revision"
-        : table === "workspace_invitations"
-          ? "id,workspace_id,email,role,status,expires_at,created_at,revision"
-          : "*";
+      table === "restore_sessions"
+        ? "id,state,created_at,expires_at,committed_at"
+        : table === "generation_plans"
+          ? "id,workspace_id,opportunity_id,proposal_id,base_version_id,package_id,kind,stage,status,evidence_revision,input_hash,error_code,created_at,updated_at,revision"
+          : table === "workspace_invitations"
+            ? "id,workspace_id,email,role,status,expires_at,created_at,revision"
+            : "*";
     let q = this.user(token)
       .from(table)
       .select(selection)

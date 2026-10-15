@@ -24,7 +24,17 @@ Keep the upload screen open while parsing originals and sending their extracted 
 
 The actual Owner must set their own password and confirm the already designated email. No test account or synthetic workspace is created in the cloud. Live source URLs, reviewed collection permission, the chosen free model and backend credential, eligible company evidence, commercial rates, and labeled evaluation examples must come from the Owner. These dependencies do not prevent code and synthetic local workflow testing. No external messages, payments, purchases, or bid submissions are automated.
 
-Full original-inclusive backup, clean-target restore, retention/purge, and model-quality evaluation are tracked in stages 4–7. Do not treat the historical metadata-only JSON format as a complete backup.
+## Complete backup and clean-project restoration
+
+In Workspace settings, the Owner can download a ZIP containing all supported business records, original uploaded files and registered exports. Auth users, access grants, invitations, credentials and scheduler secrets are excluded. Each metadata row and file has an exact SHA-256 entry. If records change during export, it stops and asks you to retry; pause processing and editing for a stable snapshot. Keep business backups privately, outside GitHub.
+
+Restore only into an empty project running the same migration schema and with the real Owner already registered. Select the unmodified ZIP, wait for local verification, inspect its originals and metadata, and confirm eligibility. The browser verifies every listed hash before uploading. The server stages records/files, checks hashes and references independently, and commits all business rows in one transaction. Retry the same file to resume a temporary failure, or cancel the pending session. A canceled/expired session is eligible for staged-object cleanup.
+
+Historical author IDs are workspace-scoped records, not accounts. Restoration preserves the documents, proposal history and financial amounts while pausing sources, canceling unfinished jobs, disabling models, revoking content authorizations and invalidating approval. Review company facts, templates, rates and extracted RFPs, regenerate from current evidence, and approve a new version before final use. Unknown model usage remains unknown until reconciled. Historical artifact bytes remain available to the Owner through complete backup even though they are not authorized for new final export.
+
+The bounded format allows 128 MiB of metadata and 250 MiB of original/export bytes, with a 400 MiB archive limit. ZIP entries use STORE; recompressed or edited archives are rejected. Large operations need sufficient desktop browser memory. The target checks database staging capacity before accepting a restore. The older metadata-only JSON is not a complete backup.
+
+Retention/purge and model-quality evaluation are tracked separately in the checklist.
 
 ## Free model activation
 
