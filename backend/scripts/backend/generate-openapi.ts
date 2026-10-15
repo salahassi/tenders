@@ -9,6 +9,8 @@ import {
   type CommandName,
 } from "../../supabase/functions/_shared/contracts.ts";
 const commands: Array<[string, string, CommandName]> = [
+  ["/v1/estimates", "post", "estimate.prepare"],
+  ["/v1/deliveries", "post", "delivery.prepare"],
   ["/v1/sources", "post", "source.create"],
   ["/v1/settings", "put", "workspace.settings"],
   ["/v1/opportunities/{id}", "patch", "opportunity.update"],
@@ -81,6 +83,14 @@ for (const [path, method, name] of commands) {
   };
 }
 for (const table of [
+  "rates",
+  "templates",
+  "estimates",
+  "deliveries",
+  "compliance",
+  "reviews",
+  "approvals",
+  "inventories",
   "generation-plans",
   "generation-steps",
   "fit-assessments",

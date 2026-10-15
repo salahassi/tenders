@@ -260,6 +260,11 @@ export class Backend {
       );
     return data.signedUrl;
   }
+  async userRpc(token: string, name: string, args: Record<string, unknown>) {
+    const { data, error } = await this.user(token).rpc(name, args);
+    if (error) throw databaseError(error);
+    return data;
+  }
   async eligibility(token: string, opportunity: string | null) {
     const { data, error } = await this.user(token).rpc(
       "eligibility_candidates",

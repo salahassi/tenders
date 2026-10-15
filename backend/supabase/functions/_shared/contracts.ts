@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  estimateInputSchema,
+  deliveryInputSchema,
+  decimalText,
+} from "./finance.ts";
 
 export const uuid = z.uuid();
 export const invitationTokenSchema = z
@@ -58,6 +63,148 @@ const host = z
   .max(253)
   .regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i);
 export const commandSchemas = {
+  "rate.save": z
+    .object({
+      id: uuid.optional(),
+      expected_revision: z.number().int().min(0),
+      title,
+      unit: z.string().min(1).max(100),
+      currency: z.string().regex(/^[A-Z]{3}$/),
+      unit_cost: decimalText,
+      zero_confirmed: z.boolean(),
+      valid_from: z.iso.date(),
+      valid_until: z.iso.date(),
+      source_reference: z.string().min(1).max(3000),
+      public_approved: z.boolean(),
+    })
+    .strict(),
+  "rate.approve": z.object({ id: uuid, expected_revision: revision }).strict(),
+  "template.save": z
+    .object({
+      id: uuid.optional(),
+      expected_revision: z.number().int().min(0),
+      title,
+      language: z.enum(["en", "ar"]),
+      volume_mode: z.enum(["combined", "separate"]),
+      required_sections: z
+        .array(
+          z
+            .object({
+              key: z.string().regex(/^[a-z0-9_-]{1,100}$/),
+              title,
+              purpose: z.string().max(3000),
+              volume: z.enum(["technical", "financial", "shared"]),
+              applicable: z.boolean(),
+              rationale: z.string().max(3000),
+            })
+            .strict()
+            .refine(
+              (v) => v.applicable || v.rationale.trim().length >= 10,
+              "Explain omitted sections.",
+            ),
+        )
+        .min(1)
+        .max(40),
+      fixed_blocks: z
+        .array(
+          z
+            .object({
+              key: z.string().regex(/^[a-z0-9_-]{1,100}$/),
+              title,
+              body: z.string().min(1).max(20000),
+              volume: z.enum(["technical", "financial", "shared"]),
+            })
+            .strict(),
+        )
+        .max(20),
+      style_config: z
+        .object({
+          accent_color: z.string().regex(/^#[0-9a-f]{6}$/i),
+          company_name: z.string().max(200),
+          footer: z.string().max(500),
+        })
+        .strict(),
+    })
+    .strict(),
+  "template.approve": z
+    .object({ id: uuid, expected_revision: revision })
+    .strict(),
+  "estimate.prepare": z
+    .object({
+      proposal_version_id: uuid,
+      expected_revision: revision,
+      input: estimateInputSchema,
+    })
+    .strict(),
+  "delivery.prepare": z
+    .object({
+      proposal_version_id: uuid,
+      expected_revision: revision,
+      input: deliveryInputSchema,
+    })
+    .strict(),
+  "estimate.approve": z
+    .object({ id: uuid, expected_revision: revision })
+    .strict(),
+  "delivery.approve": z
+    .object({ id: uuid, expected_revision: revision })
+    .strict(),
+  "inventory.confirm": z
+    .object({ proposal_version_id: uuid, expected_revision: revision })
+    .strict(),
+  "question.resolve": z
+    .object({
+      id: uuid,
+      expected_revision: revision,
+      status: z.enum(["resolved", "not_applicable_with_reason"]),
+      answer: text.min(1),
+      answer_source: z.string().min(1).max(3000),
+      reason: z.string().min(10).max(3000),
+    })
+    .strict(),
+  "compliance.save": z
+    .object({
+      proposal_version_id: uuid,
+      requirement_id: uuid,
+      expected_revision: z.number().int().min(0),
+      status: z.enum([
+        "answered",
+        "partial",
+        "missing",
+        "clarification_required",
+        "not_applicable_approved",
+      ]),
+      section_keys: z.array(z.string().min(1).max(200)).max(100),
+      evidence_refs: z
+        .array(
+          z.object({ id: uuid, quote: z.string().min(1).max(3000) }).strict(),
+        )
+        .max(100),
+      rationale: z.string().min(10).max(3000),
+    })
+    .strict(),
+  "review.verdict": z
+    .object({
+      proposal_version_id: uuid,
+      expected_revision: z.number().int().min(0),
+      verdict: z.enum(["recommend", "changes_requested"]),
+      comment: z.string().min(1).max(3000),
+    })
+    .strict(),
+  "review.resolve": z
+    .object({
+      id: uuid,
+      expected_revision: revision,
+      reason: z.string().min(10).max(3000),
+    })
+    .strict(),
+  "proposal.approve": z
+    .object({
+      proposal_version_id: uuid,
+      expected_revision: revision,
+      reason: z.string().min(10).max(3000),
+    })
+    .strict(),
   "opportunity.assess": z
     .object({ id: uuid, expected_revision: revision })
     .strict(),

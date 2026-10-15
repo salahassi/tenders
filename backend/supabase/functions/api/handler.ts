@@ -13,8 +13,21 @@ import { validateOriginal } from "../_shared/originals.ts";
 import { z } from "zod";
 import { adapterSchema, inertText, canonical } from "../_shared/collector.ts";
 import { PDFDocument } from "pdf-lib";
+import {
+  calculateEstimate,
+  calculateDelivery,
+  CommercialError,
+} from "../_shared/finance.ts";
 
 const readTables: Record<string, string> = {
+  rates: "rate_records",
+  templates: "templates",
+  estimates: "estimate_records",
+  deliveries: "delivery_versions",
+  inventories: "requirement_inventories",
+  compliance: "compliance_responses",
+  reviews: "reviews",
+  approvals: "approvals",
   sources: "sources",
   "generation-plans": "generation_plans",
   "generation-steps": "generation_steps",
@@ -195,6 +208,15 @@ export function createApiHandler(
               : null,
           ),
         );
+      const readiness = path.match(
+        /^\/v1\/proposal-versions\/([^/]+)\/readiness$/,
+      );
+      if (readiness && request.method === "GET")
+        return respond(
+          await backend.userRpc(token, "proposal_readiness", {
+            version_id: uuid.parse(readiness[1]),
+          }),
+        );
       const read = path.match(/^\/v1\/([a-z-]+)(?:\/([^/]+))?$/);
       if (request.method === "GET" && read && readTables[read[1]]) {
         if (read[2]) {
@@ -212,6 +234,23 @@ export function createApiHandler(
         const cursor = url.searchParams.get("cursor") || undefined;
         if (cursor) uuid.parse(cursor);
         const filters: Record<string, string> = {};
+        if (
+          [
+            "estimates",
+            "deliveries",
+            "compliance",
+            "reviews",
+            "approvals",
+            "questions",
+            "proposal-sections",
+          ].includes(read[1]) &&
+          url.searchParams.has("version")
+        )
+          filters.proposal_version_id = uuid.parse(
+            url.searchParams.get("version"),
+          );
+        if (read[1] === "review-inputs" && url.searchParams.has("proposal"))
+          filters.proposal_id = uuid.parse(url.searchParams.get("proposal"));
         if (
           ["generation-plans", "fit-assessments", "requirements"].includes(
             read[1],
@@ -277,6 +316,36 @@ export function createApiHandler(
           "IDEMPOTENCY_KEY_REQUIRED",
           "Supply an Idempotency-Key of at most 200 characters.",
         );
+      if (
+        request.method === "POST" &&
+        ["/v1/estimates", "/v1/deliveries"].includes(path)
+      ) {
+        const kind = path === "/v1/estimates" ? "estimate" : "delivery",
+          operation =
+            kind === "estimate" ? "estimate.prepare" : "delivery.prepare";
+        const input = commandSchemas[operation].parse(await readJson(request));
+        const pending = await backend.command(token, operation, input, key);
+        const context = await backend.userRpc(token, "calculation_context", {
+          record_id: pending.id,
+          kind,
+        });
+        if (context.record.status !== "pending") return respond(context.record);
+        const computed =
+          kind === "estimate"
+            ? calculateEstimate(context.record.input, context.rates)
+            : calculateDelivery(context.record.input);
+        return respond(
+          await backend.internal("complete_calculation", {
+            record_id: pending.id,
+            kind,
+            actor_id: user.id,
+            input_hash: context.record.input_hash,
+            rates_hash: context.rates_hash,
+            computed,
+          }),
+          201,
+        );
+      }
       if (request.method === "POST" && path === "/v1/commands") {
         const batch = z
           .object({
@@ -486,17 +555,24 @@ export function createApiHandler(
     } catch (error) {
       const invalid = error && typeof error === "object" && "issues" in error;
       const e =
-        error instanceof AppError
-          ? error
-          : invalid
-            ? new AppError(400, "INVALID_INPUT", "Check the request fields.")
-            : new AppError(
-                503,
-                "SERVICE_UNAVAILABLE",
-                "The request could not be completed.",
-                null,
-                true,
-              );
+        error instanceof CommercialError
+          ? new AppError(
+              422,
+              error.code,
+              "Resolve the commercial validation issues.",
+              { issues: error.issues },
+            )
+          : error instanceof AppError
+            ? error
+            : invalid
+              ? new AppError(400, "INVALID_INPUT", "Check the request fields.")
+              : new AppError(
+                  503,
+                  "SERVICE_UNAVAILABLE",
+                  "The request could not be completed.",
+                  null,
+                  true,
+                );
       return new Response(
         JSON.stringify({
           error: {
