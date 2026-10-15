@@ -132,6 +132,9 @@ export interface ProposalReview {
   regeneration?: ProposalRegenerationRequest;
 }
 export interface Proposal {
+  versionId?: string;
+  revision?: number;
+  planId?: string;
   id: string;
   opportunityId: string;
   title: string;

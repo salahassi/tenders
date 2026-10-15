@@ -175,7 +175,10 @@ export function taskInput(ctx: PlanContext) {
         }),
       ),
       section: input.section || null,
-      template: { id: frozen.template.id },
+      template: {
+        id: frozen.template.id,
+        required_sections: frozen.template.required_sections || [],
+      },
       review_notes: relevantReviews.map((r: Row) => ({
         id: r.id,
         target_kind: r.target_kind,
@@ -186,14 +189,14 @@ export function taskInput(ctx: PlanContext) {
     };
     if (task === "plan_proposal")
       context.instruction =
-        "Create an automatic professional section plan for these requirements. Do not invent fixed legal clauses or approvals. Map every requirement to a section or blocking question. Use financial volume for pricing and commercial responses.";
+        "Map these requirements to relevant provided template section keys. Include only keys that address this batch; empty required template sections will be retained by the application. Add a new key only for an RFP-specific form or structure. Do not invent fixed legal clauses or approvals. Map every requirement to a section or blocking question. Use financial volume for pricing and commercial responses.";
     if (task === "plan_commercial") {
-      context.section_titles = plannedSections(ctx).map((s) => ({
+      context.section_titles = draftedSections(ctx).map((s) => ({
         key: s.key,
         title: s.title,
         volume: s.volume,
       }));
-      evidence.push(...(frozen.rates || []));
+      evidence.push(...relevant(frozen.rates || [], query, 6));
       context.instruction =
         "Propose an auditable effort/rate breakdown and delivery dependency graph. Use only supplied verified rate IDs. Missing quantity, rate, period, tax or resource availability remains null and a finalization question. Do not calculate totals or infer availability.";
     }
@@ -244,11 +247,30 @@ function successful(ctx: PlanContext, task: ModelTask) {
     .map((s) => ({ input: s.input, output: s.output, ordinal: s.ordinal }));
 }
 export function plannedSections(ctx: PlanContext): Row[] {
-  const sections: Row[] = [];
+  const required: Row[] =
+      ctx.plan.frozen_context.template.required_sections || [],
+    sections = new Map<string, Row>();
+  for (const section of required.filter((s) => s.applicable))
+    sections.set(section.key, { ...section, requirement_ids: [] });
   for (const step of successful(ctx, "plan_proposal"))
-    for (const section of step.output.sections)
-      sections.push({ ...section, key: `s${step.ordinal}-${section.key}` });
-  return sections;
+    for (const section of step.output.sections) {
+      if (required.some((s) => s.key === section.key && !s.applicable))
+        throw new ModelError("TEMPLATE_APPLICABILITY_CONFLICT");
+      const existing = sections.get(section.key);
+      sections.set(
+        section.key,
+        existing
+          ? {
+              ...existing,
+              requirement_ids: unique([
+                ...existing.requirement_ids,
+                ...section.requirement_ids,
+              ]),
+            }
+          : { ...section },
+      );
+    }
+  return [...sections.values()];
 }
 export function draftedSections(ctx: PlanContext): Row[] {
   return successful(ctx, "draft_section").map((s) => ({
@@ -288,9 +310,7 @@ export function splitStep(ctx: PlanContext): Row[] | null {
       : {}),
   }));
 }
-export async function nextStage(
-  ctx: PlanContext,
-): Promise<{
+export async function nextStage(ctx: PlanContext): Promise<{
   next_stage: string;
   requirements: Row[];
   steps: Row[];
@@ -435,9 +455,9 @@ export async function nextStage(
         "[INPUT REQUIRED: Confirm the complete requirement inventory; none could be extracted.]",
       blocking_level: "finalization",
     });
-  const separate = successful(ctx, "analyze_chunk").some(
-    (s) => s.output.separate_volumes,
-  );
+  const separate =
+    frozen.template.volume_mode === "separate" ||
+    successful(ctx, "analyze_chunk").some((s) => s.output.separate_volumes);
   const sections: Row[] = drafts.map((s) => ({
     ...s,
     body: s.content_blocks
@@ -452,6 +472,20 @@ export async function nextStage(
       )
       .join("\n\n"),
   }));
+  for (const fixed of frozen.template.fixed_blocks || [])
+    sections.push({
+      key: "fixed-" + fixed.key,
+      title: fixed.title,
+      volume: fixed.volume,
+      body: fixed.body,
+      content_blocks: [{ type: "paragraph", text: fixed.body }],
+      requirement_ids: [],
+      evidence_refs: [],
+      company_claims: [],
+      assumptions: [],
+      questions: [],
+      fixed: true,
+    });
   if (separate)
     for (const s of sections)
       if (
@@ -602,28 +636,38 @@ export async function processGeneration(
       result.key !== ctx.step.input.section.key
     )
       throw new ModelError("MODEL_OUTPUT_INVALID");
+    if(input.task==="review_proposal"){
+      const sectionKeys=new Set((input.context.sections||[]).map((s:Row)=>s.key));
+      if(result.responses.some((r:Row)=>r.section_ids.some((key:string)=>!sectionKeys.has(key)))||result.findings.some((f:Row)=>f.section_ids.some((key:string)=>!sectionKeys.has(key))))throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+    }
+    if(input.task==="plan_commercial"){
+      const sectionKeys=new Set((input.context.section_titles||[]).map((s:Row)=>s.key));
+      const rateIds=new Set(input.evidence.filter(e=>e.kind==="rate").map(e=>e.id));
+      if(result.lines.some((l:Row)=>l.section_ids.some((key:string)=>!sectionKeys.has(key))||l.requirement_ids.some((id:string)=>!input.requiredIds.includes(id))||l.rate_id&&!rateIds.has(l.rate_id)))throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+    }
     await backend.internal("complete_generation_step", {
       job_id: job.id,
       lease: job.lease_token,
       result,
     });
   } catch (error) {
-    const error_code =
+    let error_code =
       error && typeof error === "object" && "code" in error
         ? String(error.code)
         : "GENERATION_HANDLER_FAILED";
+    const splitting =
+      ctx &&
+      ["MODEL_CONTEXT_TOO_LARGE", "MODEL_OUTPUT_TRUNCATED"].includes(
+        error_code,
+      );
+    const split_inputs = splitting ? splitStep(ctx!) : null;
+    if (splitting && !split_inputs) error_code = "MANUAL_REDUCTION_REQUIRED";
     await backend.internal("fail_generation", {
       job_id: job.id,
       lease: job.lease_token,
       error_code,
       retry_after: error instanceof ModelError ? error.retryAfter : null,
-      split_inputs:
-        ctx &&
-        ["MODEL_CONTEXT_TOO_LARGE", "MODEL_OUTPUT_TRUNCATED"].includes(
-          error_code,
-        )
-          ? splitStep(ctx)
-          : null,
+      split_inputs,
     });
   }
 }

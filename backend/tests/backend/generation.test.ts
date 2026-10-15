@@ -3,6 +3,7 @@ import { beforeAll, afterAll, beforeEach, afterEach, it, expect } from "vitest";
 import { workflowFixture } from "./workflowFixture";
 import {
   nextStage,
+  plannedSections,
   taskInput,
   splitStep,
 } from "../../supabase/functions/_shared/generation";
@@ -14,6 +15,23 @@ afterAll(async () => f?.db.close());
 beforeEach(async () => f.db.exec("begin"));
 afterEach(async () => f.db.exec("rollback"));
 async function setup(confirm = true) {
+  await f.db.query(
+    "insert into public.templates(workspace_id,title,language,volume_mode,required_sections,fixed_blocks,content_hash,approved,approved_by,approved_at,created_by) values($1,'Synthetic short template','en','combined',$2::jsonb,'[]',repeat('a',64),true,$3,now(),$3)",
+    [
+      f.w,
+      JSON.stringify([
+        {
+          key: "approach",
+          title: "Proposed approach",
+          purpose: "Explain implementation",
+          volume: "technical",
+          applicable: true,
+          rationale: "",
+        },
+      ]),
+      f.owner,
+    ],
+  );
   const source = await f.command("source.create", {
     name: "Synthetic manual",
     kind: "manual",
@@ -306,4 +324,29 @@ it("splits oversized work without dropping the original text boundaries", () => 
   expect(parts[1].end).toBe(12000);
   expect(parts[0].end).toBeGreaterThan(parts[1].start);
   expect(splitStep({ ...ctx, step: { ...ctx.step, depth: 8 } })).toBeNull();
+});
+
+it("keeps all standard sections and rejects an inapplicable section assignment", async () => {
+  await f.db.query("select set_config('request.jwt.claim.sub',$1,false)", [f.owner]);
+  const template = await f.rpc("template_defaults", ["ar"]);
+  expect(template.required_sections).toHaveLength(17);
+  expect(template.volume_mode).toBe("combined");
+  const ctx: any = { plan: { frozen_context: { template } }, steps: [] };
+  const sections = plannedSections(ctx);
+  expect(sections).toHaveLength(17);
+  expect(sections.find((s) => s.key === "financial")?.title).toBe(
+    "العرض المالي",
+  );
+  template.required_sections[0].applicable = false;
+  template.required_sections[0].rationale =
+    "Owner-approved omission for this fixture";
+  expect(plannedSections(ctx)).toHaveLength(16);
+  ctx.steps = [
+    {
+      task: "plan_proposal",
+      status: "completed",
+      output: { sections: [{ key: "executive_summary", requirement_ids: [] }] },
+    },
+  ];
+  expect(() => plannedSections(ctx)).toThrow("TEMPLATE_APPLICABILITY_CONFLICT");
 });

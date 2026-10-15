@@ -1,3 +1,5 @@
+import ReviewHistory from "../components/ReviewHistory";
+import ApprovalPanel from "../components/ApprovalPanel";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -185,7 +187,9 @@ function ProposalReviewPage({
   opportunity: Opportunity;
 }) {
   const { state, update, notify, mode } = useApp();
-  const canEdit = state.settings.role !== "Reviewer" && mode === "DEMO";
+  const canEdit =
+    mode === "CONNECTED_FREE" || state.settings.role !== "Reviewer";
+  const canRegenerate = state.settings.role !== "Reviewer";
   const storageKey = `proposal-review-${proposal.id}`;
   const currentSignature = getReviewSourceSignature(
     state,
@@ -357,7 +361,7 @@ function ProposalReviewPage({
     });
   }
   async function saveReview(regenerate = false): Promise<Proposal | null> {
-    if (!canEdit || uploading) return proposal;
+    if (!canEdit || uploading || (regenerate && !canRegenerate)) return null;
     const savedAt = new Date().toISOString();
     const sourceSignature = getReviewSourceSignature(
       state,
@@ -879,7 +883,9 @@ function ProposalReviewPage({
           </Button>
           <Button
             variant="primary"
-            disabled={!canEdit || uploading || !readableRfp || stale}
+            disabled={
+              !canEdit || !canRegenerate || uploading || !readableRfp || stale
+            }
             onClick={async () => {
               if (!(await saveReview(true))) return;
               setRegenerateOpen(true);
@@ -903,6 +909,8 @@ function ProposalReviewPage({
           unchanged until then.
         </p>
       </section>
+      <ReviewHistory proposalId={proposal.id} />
+      <ApprovalPanel proposal={proposal} />
       <Modal
         open={regenerateOpen}
         onClose={() => setRegenerateOpen(false)}

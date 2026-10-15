@@ -462,17 +462,15 @@ export function fitScore(
   };
 }
 export function exactExclusion(notice: string, rules: Evidence[]) {
-  const normalized = notice.normalize("NFKC").toLowerCase();
   for (const rule of rules) {
     if (!rule.verified || rule.kind !== "company") continue;
-    const needle = rule.text.trim().normalize("NFKC").toLowerCase();
-    const start = normalized.indexOf(needle);
-    if (needle.length >= 4 && start >= 0)
-      return {
-        rule_id: rule.id,
-        quote: notice.slice(start, start + needle.length),
-        routing: "excluded",
-      };
+    const needle = rule.text.trim();
+    // A literal case-insensitive match preserves exact Unicode quote offsets.
+    const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const match =
+      needle.length >= 4 ? new RegExp(escaped, "iu").exec(notice) : null;
+    if (match)
+      return { rule_id: rule.id, quote: match[0], routing: "excluded" };
   }
   return null;
 }

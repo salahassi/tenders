@@ -25,13 +25,11 @@ export default function GenerationPanel({
   async function load() {
     if (!backend) return;
     try {
-      const { data } = await backend.request<{ records: Plan[] }>(
-        `/v1/generation-plans?opportunity=${opportunity.id}&limit=100`,
-      );
-      if (!Array.isArray(data.records))
-        throw Error("Invalid progress response.");
+      const records = await backend.list<Plan>("generation-plans", {
+        opportunity: opportunity.id,
+      });
       setPlans(
-        data.records.sort((a, b) => b.created_at.localeCompare(a.created_at)),
+        records.sort((a, b) => b.created_at.localeCompare(a.created_at)),
       );
       setError("");
     } catch (e) {

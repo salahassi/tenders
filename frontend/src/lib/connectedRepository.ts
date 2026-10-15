@@ -410,6 +410,9 @@ export class ConnectedRepository {
       return [
         {
           review,
+          versionId: version.id,
+          revision: version.revision,
+          planId: str(version, "plan_id"),
           id: p.id,
           opportunityId: str(p, "opportunity_id"),
           title: str(p, "title"),

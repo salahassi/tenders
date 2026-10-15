@@ -1,3 +1,4 @@
+import AddendumOrder from "../components/AddendumOrder";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
@@ -320,6 +321,7 @@ export default function OpportunityDetail() {
                     </div>
                   </div>
                 ))}
+                <AddendumOrder files={o.documents} />
                 {!o.documents.length && (
                   <p className="simple-note">No RFP files attached yet.</p>
                 )}

@@ -208,6 +208,7 @@ export function createApiHandler(
               : null,
           ),
         );
+      if(path==="/v1/template-defaults"&&request.method==="GET")return respond(await backend.userRpc(token,"template_defaults",{language:z.enum(["en","ar"]).parse(url.searchParams.get("language")||"en")}));
       const readiness = path.match(
         /^\/v1\/proposal-versions\/([^/]+)\/readiness$/,
       );

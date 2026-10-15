@@ -1,0 +1,98 @@
+.commercial-panel {
+  padding: 24px;
+  margin: 24px 0;
+}
+.commercial-panel details {
+  margin: 16px 0;
+}
+.commercial-panel summary {
+  cursor: pointer;
+  font-weight: 650;
+  line-height: 1.6;
+}
+.commercial-panel fieldset {
+  border: 0;
+  padding: 0;
+  margin: 16px 0;
+  min-width: 0;
+}
+.commercial-card {
+  padding: 16px;
+  border: 1px solid var(--border, #d7dfdb);
+  border-radius: 10px;
+  margin: 14px 0;
+  background: var(--surface, #fff);
+}
+.commercial-panel label,
+.commercial-card label {
+  display: block;
+  margin: 10px 0;
+  line-height: 1.5;
+}
+.commercial-panel input[type="checkbox"],
+.commercial-card input[type="checkbox"] {
+  margin-inline-end: 8px;
+}
+.commercial-panel select[multiple] {
+  min-height: 110px;
+}
+.commercial-result {
+  background: var(--surface-alt, #f1f5f2);
+  padding: 18px;
+  border-radius: 10px;
+  margin-top: 18px;
+}
+.commercial-result dl {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) 1fr;
+  gap: 8px;
+  margin: 0;
+}
+.commercial-result dd {
+  margin: 0;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.commercial-panel .btn,
+.commercial-card .btn {
+  margin: 6px;
+}
+.table-scroll {
+  overflow-x: auto;
+}
+.table-scroll table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 500px;
+}
+.table-scroll th,
+.table-scroll td {
+  padding: 10px;
+  text-align: start;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border, #d7dfdb);
+}
+.commercial-panel textarea {
+  min-height: 90px;
+}
+.commercial-evidence {
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.commercial-panel .form-grid {
+  align-items: end;
+}
+@media (max-width: 640px) {
+  .commercial-panel {
+    padding: 16px;
+  }
+  .commercial-card {
+    padding: 12px;
+  }
+  .commercial-panel .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

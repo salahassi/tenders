@@ -110,6 +110,36 @@ export class BackendClient {
       );
     return payload;
   }
+  async list<T>(
+    resource: string,
+    filters: Record<string, string> = {},
+  ): Promise<T[]> {
+    const rows: T[] = [];
+    let cursor: string | null = null;
+    const seen = new Set<string>();
+    do {
+      const query = new URLSearchParams({
+        ...filters,
+        limit: "100",
+        ...(cursor ? { cursor } : {}),
+      });
+      const { data } = await this.request<{
+        records: T[];
+        next_cursor: string | null;
+      }>(`/v1/${resource}?${query}`);
+      if (
+        !Array.isArray(data.records) ||
+        (data.next_cursor !== null && typeof data.next_cursor !== "string")
+      )
+        throw new Error("Invalid list response.");
+      rows.push(...data.records);
+      cursor = data.next_cursor;
+      if (cursor && (seen.has(cursor) || rows.length >= 10000))
+        throw new Error("The list exceeded its supported boundary.");
+      if (cursor) seen.add(cursor);
+    } while (cursor);
+    return rows;
+  }
   async uploadOriginal(
     reservation: { upload_path: string; bucket: string },
     file: File,

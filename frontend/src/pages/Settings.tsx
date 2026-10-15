@@ -6,6 +6,8 @@ import type { AppState } from "../types";
 import "./admin.css";
 import MembersPanel from "../components/MembersPanel";
 import ModelControls from "../components/ModelControls";
+import TemplateManager from "../components/TemplateManager";
+import RateCatalog from "../components/RateCatalog";
 
 export default function Settings() {
   const { state, update, notify, storageError, mode, saving } = useApp();
@@ -320,6 +322,8 @@ export default function Settings() {
           </section>
           {connected && owner && <MembersPanel />}
           {connected && <ModelControls />}
+          {connected && <RateCatalog />}
+          {connected && <TemplateManager />}
         </div>
       </div>
     </>
