@@ -2,9 +2,19 @@
 
 Checkpoint: October 15, 2026. The owner resumed publication to Supabase, GitHub, and GitHub Pages after the plan review. Authority: [the implementation specification](IMPLEMENTATION_SPEC.txt), [the current interface handoff](../../frontend/docs/FRONTEND_HANDOFF.md), and later decisions in [DECISIONS.md](DECISIONS.md).
 
-**We are in continuation stage 1: identity and connected core records. Eight migrations and API v3 are now deployed. The owner has retired all demo access. Initial Owner email selection, real-account onboarding, email/callback behavior, and signed-in hosted desktop/mobile acceptance remain open.**
+**We are in continuation stage 1: identity and connected core records. Eight migrations and API v3 are now deployed. The owner has retired all demo access. The initial Owner email is supplied privately; real-account onboarding, email/callback behavior, and signed-in hosted desktop/mobile acceptance remain open.**
 
 The seven-stage sequence below remains the execution plan. The original specification's six milestones are requirement groups, not a second competing schedule. Later interface decisions and the owner's email/password-only instruction supersede earlier workflow and social-login prescriptions.
+
+## Recovery checkpoint — October 15, 2026, 10:06 UTC
+
+The owner requested a status update after an interrupted deployment. A fresh read confirms GitHub main is `099f5ec8d4ac4b7323ba82a540f3bb5dde98d3a1` and Supabase still contains the eight migrations listed below. No new deployment is confirmed.
+
+The preceding session reported 70 backend and 104 frontend tests passing, with both builds. However, its uncommitted implementation files are absent from the current filesystem. Those results **cannot be used as evidence for a saved or deployed release**. Only one complete migration text was recoverable from session state; it is preserved as `backend/recovery/durable_evidence_workflows.sql.txt` for review, outside the executable migration directory. It is not a complete release and must not be applied in isolation without reconstructing and validating its dependent contracts and application changes.
+
+The initial Owner email was supplied privately. Real Owner onboarding remains pending, but asking for the email again is unnecessary. No password or provider credential was supplied. Model selection and source activation remain deferred.
+
+The full continuation must be reconstructed from this verified repository baseline, committed in small durable checkpoints, and re-tested before any new completeness or deployment claim. See [the recovery note](RECOVERY_CHECKPOINT.md).
 
 ## October 15 connected-only release — stage 1
 

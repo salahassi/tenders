@@ -1,0 +1,308 @@
+alter table public.documents add column precedence integer not null default 0 check(precedence between 0 and 1000);
+alter table public.documents add column supersedes_id uuid;
+alter table public.documents add constraint document_supersedes_workspace foreign key(workspace_id,supersedes_id) references public.documents(workspace_id,id);
+-- Durable private evidence; no external inference or collection is activated.
+alter table public.documents add column archived boolean not null default false;
+alter table public.documents add column extraction_hash text;
+alter table public.documents add column extraction_confirmed_at timestamptz;
+alter table public.documents add column extraction_confirmed_by uuid references auth.users(id);
+create table public.document_blocks (
+ id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id), document_id uuid not null,
+ ordinal integer not null check(ordinal>=0), locator jsonb not null, text text not null check(length(text)<=12000), text_hash text not null check(length(text_hash)=64),
+ created_at timestamptz not null default now(), created_by uuid not null references auth.users(id), revision integer not null default 1,
+ unique(workspace_id,id),unique(workspace_id,document_id,ordinal),foreign key(workspace_id,document_id) references public.documents(workspace_id,id)
+);
+create table public.document_packages (
+ id uuid primary key default gen_random_uuid(),workspace_id uuid not null references public.workspaces(id),opportunity_id uuid not null,
+ ordinal integer not null,package_hash text not null check(length(package_hash)=64),manifest jsonb not null check(jsonb_array_length(manifest) between 1 and 10),
+ created_at timestamptz not null default now(),created_by uuid not null references auth.users(id),revision integer not null default 1,
+ unique(workspace_id,id),unique(workspace_id,opportunity_id,ordinal),unique(workspace_id,opportunity_id,package_hash),foreign key(workspace_id,opportunity_id) references public.opportunities(workspace_id,id)
+);
+create index document_blocks_document on public.document_blocks(workspace_id,document_id,ordinal);
+create index document_packages_opportunity on public.document_packages(workspace_id,opportunity_id,ordinal);
+do $$ declare t text; begin
+ foreach t in array array['document_blocks','document_packages'] loop
+ execute format('alter table public.%I enable row level security',t);
+ execute format('revoke all on public.%I from public,anon,authenticated',t);
+ execute format('grant select on public.%I to authenticated',t);
+ execute format('grant all on public.%I to service_role',t);
+ execute format('create policy member_read on public.%I for select to authenticated using(app_private.member_role(workspace_id) is not null)',t);
+ end loop;
+end $$;
+
+-- Finalized bytes and extraction are immutable. Corrections use a new original row.
+alter function public.accept_uploaded_document(uuid,uuid,text,bigint,text,text,text) rename to accept_uploaded_document_v1;
+revoke all on function public.accept_uploaded_document_v1(uuid,uuid,text,bigint,text,text,text) from public,anon,authenticated,service_role;
+create or replace function public.accept_uploaded_document(document_id uuid,actor_id uuid,actual_hash text,actual_size bigint,extraction_text text,extraction_status text,command_key text) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare d public.documents; answer jsonb; start_at integer:=1; ordinal integer:=0; fragment text; pages integer; characters bigint; chunks bigint;
+begin
+ select * into d from public.documents where id=document_id;
+ if d.id is null then raise exception 'NOT_FOUND'; end if;
+ perform 1 from public.workspaces where id=d.workspace_id for update;
+ if length(extraction_text)>1000000 then raise exception 'EXTRACTION_CAP_REACHED'; end if;
+ if d.kind='rfp' then
+   select coalesce(sum(length(x.extracted_text)),0),coalesce(sum(ceil(greatest(length(x.extracted_text)-1000,0)/11000.0)),0) into characters,chunks from public.documents x where x.workspace_id=d.workspace_id and x.opportunity_id=d.opportunity_id and x.kind='rfp' and x.id<>d.id and not x.archived;
+   if characters+length(extraction_text)>1000000 or chunks+ceil(greatest(length(extraction_text)-1000,0)/11000.0)>128 then raise exception 'PACKAGE_CAP_REACHED'; end if;
+   select count(*) into pages from regexp_matches(extraction_text,'\[Page [0-9]+\]','g');
+   select pages+coalesce(sum((select count(*) from regexp_matches(x.extracted_text,'\[Page [0-9]+\]','g'))),0) into pages from public.documents x where x.workspace_id=d.workspace_id and x.opportunity_id=d.opportunity_id and x.id<>d.id and not x.archived;
+   if pages>200 then raise exception 'PACKAGE_PAGE_CAP_REACHED'; end if;
+ end if;
+ answer:=public.accept_uploaded_document_v1(document_id,actor_id,actual_hash,actual_size,extraction_text,extraction_status,command_key);
+ if not exists(select 1 from public.document_blocks b where b.document_id=d.id) then
+   while start_at<=length(extraction_text) loop
+     fragment:=substr(extraction_text,start_at,12000);
+     insert into public.document_blocks(workspace_id,document_id,ordinal,locator,text,text_hash,created_by)
+     values(d.workspace_id,d.id,ordinal,jsonb_build_object('kind','extracted_character_range','start',start_at,'end',start_at+length(fragment)-1),fragment,encode(sha256(convert_to(fragment,'UTF8')),'hex'),actor_id);
+     exit when start_at+12000>length(extraction_text);
+     start_at:=start_at+11000;ordinal:=ordinal+1;
+   end loop;
+ end if;
+ update public.documents set extraction_hash=encode(sha256(convert_to(extraction_text,'UTF8')),'hex') where id=d.id and extraction_hash is distinct from encode(sha256(convert_to(extraction_text,'UTF8')),'hex');
+ select to_jsonb(x) into answer from public.documents x where x.id=d.id;
+ return answer;
+end $$;
+revoke all on function public.accept_uploaded_document(uuid,uuid,text,bigint,text,text,text) from public,anon,authenticated;
+grant execute on function public.accept_uploaded_document(uuid,uuid,text,bigint,text,text,text) to service_role;
+
+create function app_private.seal_package(w uuid,opportunity uuid,actor uuid) returns public.document_packages
+language plpgsql security definer set search_path='' as $$
+declare v_manifest jsonb; digest text; result public.document_packages;
+begin
+ perform 1 from public.workspaces where id=w for update;
+ if not exists(select 1 from public.documents where workspace_id=w and opportunity_id=opportunity and kind='rfp' and not archived and status='ready') then raise exception 'READABLE_RFP_REQUIRED'; end if;
+ if exists(select 1 from public.documents where workspace_id=w and opportunity_id=opportunity and kind='rfp' and not archived and (status<>'ready' or extraction_confirmed_at is null)) then raise exception 'EXTRACTION_REVIEW_REQUIRED'; end if;
+ select jsonb_agg(jsonb_build_object('id',id,'original_hash',original_hash,'extraction_hash',extraction_hash,'precedence',precedence,'supersedes_id',supersedes_id) order by id) into v_manifest from public.documents where workspace_id=w and opportunity_id=opportunity and kind='rfp' and not archived;
+ digest:=encode(sha256(convert_to(v_manifest::text,'UTF8')),'hex');
+ select * into result from public.document_packages where workspace_id=w and opportunity_id=opportunity and package_hash=digest;
+ if result.id is null then
+ insert into public.document_packages(workspace_id,opportunity_id,ordinal,package_hash,manifest,created_by)
+ select w,opportunity,coalesce(max(ordinal),0)+1,digest,v_manifest,actor from public.document_packages where workspace_id=w and opportunity_id=opportunity returning * into result;
+ end if;
+ return result;
+end $$;
+revoke all on function app_private.seal_package(uuid,uuid,uuid) from public,anon,authenticated;
+
+create or replace function public.accept_uploaded_document_v1(document_id uuid,actor_id uuid,actual_hash text,actual_size bigint,extraction_text text,extraction_status text,command_key text) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare d public.documents; result jsonb; replay app_private.idempotency_records; fingerprint text; command_route text; document_workspace uuid;
+begin
+  select workspace_id into document_workspace from public.documents where id=document_id;
+  if document_workspace is null then raise exception 'NOT_FOUND'; end if;
+  -- Use the same lock order as member changes and quota reservations. Recheck
+  -- admission after locking so a revoked identity cannot finalize an upload.
+  perform 1 from public.workspaces where id=document_workspace for update;
+  select * into d from public.documents where id=document_id for update;
+  if d.id is null or d.created_by<>actor_id or not exists(
+    select 1 from public.memberships m
+    join public.identity_allowlist a on a.workspace_id=m.workspace_id and a.user_id=m.user_id
+    where m.workspace_id=d.workspace_id and m.user_id=actor_id and m.active and (m.role in ('Owner','Editor') or (m.role='Reviewer' and d.kind='review' and exists(select 1 from public.review_inputs r where r.id=d.review_input_id and r.created_by=actor_id))) and a.status='active'
+  ) then raise exception 'NOT_FOUND'; end if;
+  if command_key is null or length(command_key) not between 1 and 200 then raise exception 'IDEMPOTENCY_KEY_REQUIRED'; end if;
+  command_route:='document.complete/'||document_id::text;
+  fingerprint:=encode(sha256(convert_to(jsonb_build_array(actual_hash,actual_size,extraction_text,extraction_status)::text,'UTF8')),'hex');
+  select * into replay from app_private.idempotency_records i where i.workspace_id=d.workspace_id and i.actor_id=accept_uploaded_document_v1.actor_id and i.method='POST' and i.route=command_route and i.key=command_key;
+  if replay.key is not null and replay.expires_at>now() then
+    if replay.body_hash<>fingerprint then raise exception 'IDEMPOTENCY_CONFLICT'; end if;
+    return replay.result;
+  end if;
+  if d.status<>'pending' then
+    if d.original_hash=actual_hash and d.uploaded_size=actual_size and d.extracted_text=extraction_text and d.status=extraction_status then return to_jsonb(d); end if;
+    raise exception 'UPLOAD_ALREADY_FINALIZED';
+  end if;
+  if d.expires_at<now() then raise exception 'UPLOAD_EXPIRED'; end if;
+  if d.original_hash<>actual_hash or d.expected_size<>actual_size then raise exception 'UPLOAD_MISMATCH'; end if;
+  if extraction_status not in ('ready','needs_ocr','needs_processing','error') or (extraction_status='ready' and length(trim(extraction_text))=0) then raise exception 'INVALID_EXTRACTION'; end if;
+  if (select coalesce(sum(octet_length(extracted_text)),0) from public.documents where workspace_id=d.workspace_id)+octet_length(extraction_text)>20971520 then raise exception 'EXTRACTION_CAP_REACHED'; end if;
+  update public.documents set status=extraction_status,uploaded_size=actual_size,extracted_text=extraction_text,revision=revision+1,updated_at=now() where id=document_id returning to_jsonb(documents.*) into result;
+  insert into public.audit_events(workspace_id,actor_id,action,entity_id,request_id) values(d.workspace_id,accept_uploaded_document_v1.actor_id,'document.accepted',d.id,gen_random_uuid());
+  delete from app_private.idempotency_records i where i.workspace_id=d.workspace_id and i.actor_id=accept_uploaded_document_v1.actor_id and i.method='POST' and i.route=command_route and i.key=command_key;
+  insert into app_private.idempotency_records(workspace_id,actor_id,method,route,key,body_hash,result) values(d.workspace_id,accept_uploaded_document_v1.actor_id,'POST',command_route,command_key,fingerprint,result);
+  return result;
+end $$;
+
+create or replace function app_private.app_command(operation text,input jsonb,idempotency_key text) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare
+  actor uuid:=auth.uid(); w uuid; actor_role text; body_hash text; replay app_private.idempotency_records;
+  result jsonb; target uuid; row_revision integer; affected integer; src public.sources; opp public.opportunities; prop public.proposals;
+  item jsonb; review_id uuid; version_id uuid; job_id uuid; object_path text; doc public.documents; member public.memberships;
+begin
+  if actor is null then raise exception 'UNAUTHENTICATED'; end if;
+  select m.workspace_id into w from public.memberships m where m.user_id=actor and app_private.member_role(m.workspace_id) is not null limit 1;
+  actor_role:=app_private.member_role(w);
+  if w is null or actor_role is null then raise exception 'ACCESS_PENDING'; end if;
+  if idempotency_key is null or length(idempotency_key) not between 1 and 200 then raise exception 'IDEMPOTENCY_KEY_REQUIRED'; end if;
+  if pg_column_size(input)>1048576 then raise exception 'PAYLOAD_TOO_LARGE'; end if;
+  -- One workspace lock serializes quota reservations and multi-record commands.
+  perform 1 from public.workspaces where id=w for update;
+  actor_role:=app_private.member_role(w);
+  if actor_role is null then raise exception 'ACCESS_PENDING'; end if;
+  body_hash:=encode(sha256(convert_to(input::text,'UTF8')),'hex');
+  select * into replay from app_private.idempotency_records where workspace_id=w and actor_id=actor and method='COMMAND' and route=operation and key=idempotency_key for update;
+  if replay.key is not null and replay.expires_at>now() then
+    if replay.body_hash<>body_hash then raise exception 'IDEMPOTENCY_CONFLICT'; end if;
+    return replay.result;
+  end if;
+  delete from app_private.idempotency_records where workspace_id=w and actor_id=actor and method='COMMAND' and route=operation and key=idempotency_key;
+  if input ? 'workspace_id' and input->>'workspace_id'<>w::text then raise exception 'WORKSPACE_MISMATCH'; end if;
+  target:=nullif(input->>'id','')::uuid;
+  if operation not in ('notification.read','review.save','document.prepare','document.archive') and actor_role='Reviewer' then raise exception 'ROLE_FORBIDDEN'; end if;
+  if operation in ('source.action','membership.set','knowledge.verify','workspace.settings') and actor_role<>'Owner' then raise exception 'ROLE_FORBIDDEN'; end if;
+  -- Keep reads/administration available when the application storage cap is hit.
+  if operation in ('source.create','opportunity.create','knowledge.save','review.save','document.prepare','proposal.regenerate') and (
+    select coalesce(sum(pg_total_relation_size(c.oid)),0)>262144000 from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('public','app_private') and c.relkind='r'
+  ) then raise exception 'DATABASE_CAP_REACHED'; end if;
+
+  case operation
+  when 'source.create' then
+    perform app_private.check_keys(input,array['client_id','name','kind','url','approved_hosts','policy_note','poll_interval_hours','tags']);
+    insert into public.sources(id,workspace_id,name,kind,url,approved_hosts,policy_note,poll_interval_hours,tags,created_by)
+    values(coalesce((input->>'client_id')::uuid,gen_random_uuid()),w,input->>'name',input->>'kind',nullif(input->>'url',''),array(select jsonb_array_elements_text(coalesce(input->'approved_hosts','[]'))),coalesce(input->>'policy_note',''),coalesce((input->>'poll_interval_hours')::integer,6),array(select jsonb_array_elements_text(coalesce(input->'tags','[]'))),actor) returning to_jsonb(sources.*) into result;
+  when 'source.action' then
+    perform app_private.check_keys(input,array['id','action','reason','expected_revision']);
+    select * into src from public.sources where workspace_id=w and id=target for update;
+    if src.id is null then raise exception 'NOT_FOUND'; end if;
+    if src.revision is distinct from (input->>'expected_revision')::integer then raise exception 'REVISION_CONFLICT' using detail=jsonb_build_object('current_revision',src.revision)::text; end if;
+    if input->>'action' not in ('approve','pause','reject') then raise exception 'ADAPTER_NOT_CONNECTED'; end if;
+    if input->>'action'='approve' and src.kind<>'manual' and (cardinality(src.approved_hosts)=0 or length(src.policy_note)=0) then raise exception 'SOURCE_POLICY_REQUIRED'; end if;
+    if input->>'action'='approve' and src.approval<>'approved' and (select count(*) from public.sources where workspace_id=w and approval='approved' and kind<>'manual')>=5 then raise exception 'SOURCE_CAP_REACHED'; end if;
+    update public.sources set approval=case input->>'action' when 'approve' then 'approved' when 'pause' then 'paused' else 'rejected' end,
+      next_due=null,revision=revision+1,updated_at=now() where workspace_id=w and id=target returning to_jsonb(sources.*) into result;
+  when 'opportunity.create' then
+    perform app_private.check_keys(input,array['client_id','source_id','title','description','buyer','reference','canonical_url','language','deadline_raw','deadline_at','deadline_timezone','category','tags','decision']);
+    if (select count(*) from public.opportunities where workspace_id=w)>=2000 then raise exception 'OPPORTUNITY_CAP_REACHED'; end if;
+    insert into public.opportunities(id,workspace_id,source_id,title,description,buyer,reference,canonical_url,language,deadline_raw,deadline_at,deadline_timezone,category,tags,decision,created_by)
+    values(coalesce((input->>'client_id')::uuid,gen_random_uuid()),w,(input->>'source_id')::uuid,input->>'title',coalesce(input->>'description',''),coalesce(input->>'buyer',''),coalesce(input->>'reference',''),nullif(input->>'canonical_url',''),coalesce(input->>'language','en'),input->>'deadline_raw',case when nullif(input->>'deadline_timezone','') is not null then (input->>'deadline_at')::timestamptz else null end,input->>'deadline_timezone',coalesce(input->>'category',''),array(select jsonb_array_elements_text(coalesce(input->'tags','[]'))),coalesce(input->>'decision','undecided'),actor) returning to_jsonb(opportunities.*) into result;
+  when 'opportunity.decision' then
+    perform app_private.check_keys(input,array['id','target_state','reason','expected_revision']);
+    if length(coalesce(input->>'reason',''))=0 then raise exception 'REASON_REQUIRED'; end if;
+    select * into opp from public.opportunities where workspace_id=w and id=target for update;
+    if opp.id is null then raise exception 'NOT_FOUND'; end if;
+    if opp.revision is distinct from (input->>'expected_revision')::integer then raise exception 'REVISION_CONFLICT' using detail=jsonb_build_object('current_revision',opp.revision)::text; end if;
+    update public.opportunities set decision=input->>'target_state',revision=revision+1,updated_at=now() where workspace_id=w and id=target returning to_jsonb(opportunities.*) into result;
+  when 'knowledge.save' then
+    perform app_private.check_keys(input,array['id','client_id','category','title','content','enabled','evidence','expected_revision']);
+    if target is null then
+      insert into public.knowledge_items(id,workspace_id,category,title,content,enabled,evidence,created_by) values(coalesce((input->>'client_id')::uuid,gen_random_uuid()),w,input->>'category',input->>'title',coalesce(input->>'content',''),coalesce((input->>'enabled')::boolean,true),coalesce(input->>'evidence',''),actor) returning to_jsonb(knowledge_items.*) into result;
+    else
+      select revision into row_revision from public.knowledge_items where workspace_id=w and id=target for update;
+      if row_revision is null then raise exception 'NOT_FOUND'; end if;
+      if row_revision is distinct from (input->>'expected_revision')::integer then raise exception 'REVISION_CONFLICT' using detail=jsonb_build_object('current_revision',row_revision)::text; end if;
+      update public.knowledge_items set title=input->>'title',category=input->>'category',content=coalesce(input->>'content',''),enabled=coalesce((input->>'enabled')::boolean,true),evidence=coalesce(input->>'evidence',''),verified=false,verified_at=null,verified_by=null,revision=revision+1,updated_at=now() where workspace_id=w and id=target returning to_jsonb(knowledge_items.*) into result;
+    end if;
+  when 'knowledge.verify' then
+    perform app_private.check_keys(input,array['id','expected_revision']);
+    update public.knowledge_items set verified=true,verified_by=actor,verified_at=now(),revision=revision+1,updated_at=now() where workspace_id=w and id=target and revision=(input->>'expected_revision')::integer returning to_jsonb(knowledge_items.*) into result;
+    if result is null then raise exception 'REVISION_CONFLICT'; end if;
+  when 'review.save' then
+    perform app_private.check_keys(input,array['id','base_version_id','source_signature','expected_revision','inputs']);
+    select * into prop from public.proposals where workspace_id=w and id=target for update;
+    if prop.id is null then raise exception 'NOT_FOUND'; end if;
+    if prop.revision is distinct from (input->>'expected_revision')::integer then raise exception 'REVISION_CONFLICT' using detail=jsonb_build_object('current_revision',prop.revision)::text; end if;
+    version_id:=(input->>'base_version_id')::uuid;
+    if prop.active_version_id is distinct from version_id then raise exception 'STALE_INPUT'; end if;
+    if jsonb_typeof(input->'inputs')<>'array' or jsonb_array_length(input->'inputs')>200 then raise exception 'INVALID_INPUT'; end if;
+    for item in select value from jsonb_array_elements(input->'inputs') loop
+      perform app_private.check_keys(item,array['id','client_id','target_kind','target_id','body','expected_revision']);
+      if item->>'target_kind'='section' and not exists(select 1 from public.proposal_sections where workspace_id=w and proposal_version_id=version_id and section_key=item->>'target_id') then raise exception 'REVIEW_TARGET_INVALID'; end if;
+      if item->>'target_kind'='question' and not exists(select 1 from public.questions where workspace_id=w and opportunity_id=prop.opportunity_id and (id::text=item->>'target_id' or 'gap:'||id::text=item->>'target_id')) and not exists(select 1 from public.proposal_sections where workspace_id=w and proposal_version_id=version_id and (item->>'target_id') like 'section:'||section_key||':%') and (item->>'target_id') not like 'pricing:%' and (item->>'target_id') not like 'requirement:%' then raise exception 'REVIEW_TARGET_INVALID'; end if;
+      if item->>'target_kind'='general' and item->>'target_id'<>'general' then raise exception 'REVIEW_TARGET_INVALID'; end if;
+      review_id:=coalesce(nullif(item->>'id','')::uuid,(item->>'client_id')::uuid,gen_random_uuid());
+      if exists(select 1 from public.review_inputs where id=review_id) then
+        update public.review_inputs set body=coalesce(item->>'body',''),base_version_id=version_id,source_signature=input->>'source_signature',updated_at=now(),revision=revision+1 where workspace_id=w and id=review_id and proposal_id=target and created_by=actor and target_kind=item->>'target_kind' and target_id=item->>'target_id' and revision=(item->>'expected_revision')::integer;
+        get diagnostics affected=row_count;
+        if affected<>1 then raise exception 'REVISION_CONFLICT'; end if;
+      else
+        insert into public.review_inputs(id,workspace_id,proposal_id,base_version_id,target_kind,target_id,body,source_signature,created_by) values(review_id,w,target,version_id,item->>'target_kind',item->>'target_id',coalesce(item->>'body',''),input->>'source_signature',actor);
+      end if;
+    end loop;
+    update public.proposals set revision=revision+1,updated_at=now() where workspace_id=w and id=target returning revision into row_revision;
+    select jsonb_build_object('id',target,'revision',row_revision,'inputs',coalesce(jsonb_agg(to_jsonb(r)),'[]')) into result from public.review_inputs r where workspace_id=w and proposal_id=target and created_by=actor;
+  when 'proposal.regenerate' then
+    perform app_private.check_keys(input,array['id','base_version_id','expected_revision','input_hash']);
+    select * into prop from public.proposals where workspace_id=w and id=target for update;
+    if prop.id is null then raise exception 'NOT_FOUND'; end if;
+    if prop.revision is distinct from (input->>'expected_revision')::integer then raise exception 'REVISION_CONFLICT'; end if;
+    version_id:=(input->>'base_version_id')::uuid;
+    if prop.active_version_id is distinct from version_id then raise exception 'STALE_INPUT'; end if;
+    if not exists(select 1 from public.documents where workspace_id=w and opportunity_id=prop.opportunity_id and kind='rfp' and status='ready') then raise exception 'READABLE_RFP_REQUIRED'; end if;
+    if (select count(*) from public.jobs where workspace_id=w and status in ('queued','running','retry_wait','quota_wait','blocked'))>=500 then raise exception 'JOB_CAP_REACHED'; end if;
+    insert into public.jobs(workspace_id,type,entity_id,input_hash,status,error_code,created_by) values(w,'plan_proposal',target,input->>'input_hash','blocked','MODEL_NOT_CONFIGURED',actor) returning id into job_id;
+    insert into public.regeneration_requests(workspace_id,proposal_id,base_version_id,job_id,review_snapshot,created_by)
+    select w,target,version_id,job_id,coalesce(jsonb_agg(to_jsonb(r)||jsonb_build_object('attachments',(select coalesce(jsonb_agg(jsonb_build_object('id',d.id,'hash',d.original_hash,'status',d.status)),'[]') from public.documents d where d.workspace_id=w and d.review_input_id=r.id and d.status<>'pending'))),'[]'),actor from public.review_inputs r where r.workspace_id=w and r.proposal_id=target and r.base_version_id=version_id;
+    result:=jsonb_build_object('id',target,'job_id',job_id,'status','blocked','blocker','MODEL_NOT_CONFIGURED','revision',prop.revision);
+  when 'document.prepare' then
+    if actor_role='Reviewer' and input->>'kind'<>'review' then raise exception 'ROLE_FORBIDDEN'; end if;
+    if input->>'kind'='company' and (select count(*) from public.documents where workspace_id=w and kind='company' and not archived and status<>'expired')>=200 then raise exception 'COMPANY_FILE_CAP_REACHED'; end if;
+    perform app_private.check_keys(input,array['client_id','kind','opportunity_id','knowledge_item_id','review_input_id','original_name','mime_type','size','hash']);
+    if (select coalesce(sum(expected_size),0) from public.documents where workspace_id=w and status<>'expired')+(input->>'size')::bigint>262144000 then raise exception 'STORAGE_CAP_REACHED'; end if;
+    if input->>'kind'='rfp' and (select count(*) from public.documents where workspace_id=w and opportunity_id=(input->>'opportunity_id')::uuid and kind='rfp' and not archived and status<>'expired')>=10 then raise exception 'RFP_FILE_CAP_REACHED'; end if;
+    if input->>'kind'='review' and not exists(select 1 from public.review_inputs where workspace_id=w and id=(input->>'review_input_id')::uuid and created_by=actor) then raise exception 'REVIEW_TARGET_INVALID'; end if;
+    if input->>'kind'='review' and (select count(*) from public.documents where workspace_id=w and review_input_id=(input->>'review_input_id')::uuid and not archived and status<>'expired')>=10 then raise exception 'INPUT_FILE_CAP_REACHED'; end if;
+    target:=coalesce((input->>'client_id')::uuid,gen_random_uuid());object_path:=w::text||'/'||target::text;
+    insert into public.documents(id,workspace_id,opportunity_id,knowledge_item_id,review_input_id,kind,original_name,mime_type,expected_size,original_hash,storage_key,created_by)
+    values(target,w,(input->>'opportunity_id')::uuid,(input->>'knowledge_item_id')::uuid,(input->>'review_input_id')::uuid,input->>'kind',input->>'original_name',input->>'mime_type',(input->>'size')::bigint,input->>'hash',object_path,actor) returning to_jsonb(documents.*) into result;
+
+  when 'document.confirm' then
+    perform app_private.check_keys(input,array['id','expected_revision']);
+    update public.documents set extraction_confirmed_at=now(),extraction_confirmed_by=actor,revision=revision+1,updated_at=now()
+      where workspace_id=w and id=target and revision=(input->>'expected_revision')::integer and status='ready' and not archived returning to_jsonb(documents.*) into result;
+    if result is null then raise exception 'REVISION_CONFLICT'; end if;
+  when 'document.archive' then
+    perform app_private.check_keys(input,array['id','expected_revision','reason']);
+    select * into doc from public.documents where workspace_id=w and id=target for update;
+    if doc.id is null then raise exception 'NOT_FOUND'; end if;
+    if actor_role='Reviewer' and (doc.kind<>'review' or doc.created_by<>actor) then raise exception 'ROLE_FORBIDDEN'; end if;
+    if doc.revision is distinct from (input->>'expected_revision')::integer then raise exception 'REVISION_CONFLICT'; end if;
+    update public.documents set archived=true,revision=revision+1,updated_at=now() where id=target returning to_jsonb(documents.*) into result;
+  when 'knowledge.document' then
+    perform app_private.check_keys(input,array['id','expected_revision','enabled','category']);
+    select * into doc from public.documents where workspace_id=w and id=target and kind='company' and not archived;
+    if doc.id is null then raise exception 'NOT_FOUND'; end if;
+    if doc.revision is distinct from (input->>'expected_revision')::integer then raise exception 'REVISION_CONFLICT'; end if;
+    update public.knowledge_items set enabled=(input->>'enabled')::boolean,category=input->>'category',verified=false,verified_by=null,verified_at=null,revision=revision+1,updated_at=now() where workspace_id=w and id=doc.knowledge_item_id;
+    update public.documents set revision=revision+1,updated_at=now() where id=target returning to_jsonb(documents.*) into result;
+
+  when 'notification.read' then
+    perform app_private.check_keys(input,array['id','expected_revision']);
+    update public.notifications set read_at=now(),updated_at=now(),revision=revision+1 where workspace_id=w and id=target and recipient_user_id=actor and revision=(input->>'expected_revision')::integer returning to_jsonb(notifications.*) into result;
+    if result is null then raise exception 'REVISION_CONFLICT'; end if;
+  when 'membership.set' then
+    perform app_private.check_keys(input,array['user_id','role','active','reason','expected_revision']);
+    target:=(input->>'user_id')::uuid;
+    select * into member from public.memberships where workspace_id=w and user_id=target for update;
+    if member.user_id is null then raise exception 'VERIFIED_IDENTITY_PROVISIONING_REQUIRED'; end if;
+    if member.revision is distinct from (input->>'expected_revision')::integer then raise exception 'REVISION_CONFLICT'; end if;
+    if member.role='Owner' and member.active and (input->>'role'<>'Owner' or not(input->>'active')::boolean) and (select count(*) from public.memberships where workspace_id=w and role='Owner' and active)<=1 then raise exception 'LAST_OWNER_REQUIRED'; end if;
+    if not member.active and (input->>'active')::boolean and (select count(*) from public.memberships where workspace_id=w and active)>=5 then raise exception 'USER_CAP_REACHED'; end if;
+    update public.memberships set role=input->>'role',active=(input->>'active')::boolean,revision=revision+1,updated_at=now() where workspace_id=w and user_id=target returning to_jsonb(memberships.*) into result;
+    update public.identity_allowlist set role=input->>'role',status=case when (input->>'active')::boolean then 'active' else 'inactive' end,revision=revision+1,updated_at=now() where workspace_id=w and user_id=target;
+
+  when 'workspace.settings' then
+    perform app_private.check_keys(input,array['name','daily_call_limit','input_token_limit','output_token_limit','poll_hours','retention_days','expected_revision']);
+    if ((input->>'daily_call_limit')::integer between 1 and 50 and (input->>'input_token_limit')::integer between 1000 and 250000 and (input->>'output_token_limit')::integer between 1000 and 50000 and (input->>'poll_hours')::integer between 6 and 168 and (input->>'retention_days')::integer between 7 and 365) is not true then raise exception 'INVALID_INPUT'; end if;
+    update public.workspaces set name=input->>'name',settings=input-'expected_revision'-'name',settings_version=settings_version+1,revision=revision+1,updated_at=now() where id=w and revision=(input->>'expected_revision')::integer returning to_jsonb(workspaces.*) into result;
+    if result is null then raise exception 'REVISION_CONFLICT'; end if;
+  when 'opportunity.update' then
+    perform app_private.check_keys(input,array['id','expected_revision','title','description','buyer','reference','canonical_url','language','category','tags','saved','deadline_raw','deadline_at','deadline_timezone']);
+    update public.opportunities set title=input->>'title',description=input->>'description',buyer=input->>'buyer',reference=input->>'reference',canonical_url=nullif(input->>'canonical_url',''),language=input->>'language',category=input->>'category',tags=array(select jsonb_array_elements_text(input->'tags')),saved=(input->>'saved')::boolean,deadline_raw=input->>'deadline_raw',deadline_timezone=input->>'deadline_timezone',deadline_at=case when nullif(input->>'deadline_timezone','') is not null then (input->>'deadline_at')::timestamptz else null end,revision=revision+1,updated_at=now() where workspace_id=w and id=target and revision=(input->>'expected_revision')::integer returning to_jsonb(opportunities.*) into result;
+    if result is null then raise exception 'REVISION_CONFLICT'; end if;
+  when 'job.action' then
+    perform app_private.check_keys(input,array['id','expected_revision','action','reason']);
+    if length(coalesce(input->>'reason',''))=0 then raise exception 'REASON_REQUIRED'; end if;
+    if input->>'action'='cancel' then
+      update public.jobs set cancel_requested=true,status=case when status='running' then 'running' else 'canceled' end,revision=revision+1,updated_at=now() where workspace_id=w and id=target and revision=(input->>'expected_revision')::integer and status in ('queued','running','retry_wait','quota_wait','blocked','failed') returning to_jsonb(jobs.*) into result;
+    elsif input->>'action'='retry' then
+      -- Missing handlers stay blocked; no fabricated attempt or execution.
+      update public.jobs set status='blocked',cancel_requested=false,error_code=case when type like 'source_%' then 'SOURCE_ADAPTER_NOT_CONFIGURED' else 'MODEL_NOT_CONFIGURED' end,revision=revision+1,updated_at=now() where workspace_id=w and id=target and revision=(input->>'expected_revision')::integer and status in ('blocked','failed','canceled') returning to_jsonb(jobs.*) into result;
+    else raise exception 'INVALID_INPUT'; end if;
+    if result is null then raise exception 'REVISION_CONFLICT'; end if;
+  else raise exception 'COMMAND_NOT_IMPLEMENTED';
+  end case;
+
+  insert into public.audit_events(workspace_id,actor_id,action,entity_id,reason,request_id) values(w,actor,operation,coalesce(target,nullif(result->>'id','')::uuid),left(coalesce(input->>'reason',''),100000),gen_random_uuid());
+  insert into app_private.idempotency_records(workspace_id,actor_id,method,route,key,body_hash,result) values(w,actor,'COMMAND',operation,idempotency_key,body_hash,result);
+  return result;
+end $$;
+
