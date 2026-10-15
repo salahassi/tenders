@@ -35,6 +35,25 @@ export interface KnowledgeDocument extends DocumentRecord {
   enabled: boolean;
 }
 export interface Opportunity {
+  revision?: number;
+  assessment?: {
+    score: number | null;
+    coverage: number;
+    routing: string;
+    summary: string;
+    stale: boolean;
+    factors: Record<
+      string,
+      {
+        rating: number | null;
+        reason: string;
+        notice_evidence: { id: string; quote: string }[];
+        company_evidence: { id: string; quote: string }[];
+      }
+    >;
+    missing: string[];
+    risks: string[];
+  };
   id: string;
   reference: string;
   title: string;

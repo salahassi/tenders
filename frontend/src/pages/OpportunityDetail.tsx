@@ -34,6 +34,7 @@ import {
 import { downloadOriginal } from "../lib/remoteFiles";
 import type { DocumentRecord, Opportunity } from "../types";
 import FitAssessment from "../components/FitAssessment";
+import GenerationPanel from "../components/GenerationPanel";
 import "./workspace.css";
 import "./simplified.css";
 export default function OpportunityDetail() {
@@ -323,6 +324,7 @@ export default function OpportunityDetail() {
                   <p className="simple-note">No RFP files attached yet.</p>
                 )}
               </section>
+              <GenerationPanel opportunity={o} />
               <section className="panel simple-section">
                 <span className="simple-step">STEP 2</span>
                 <h2>
@@ -364,8 +366,9 @@ export default function OpportunityDetail() {
                   <p className="small">
                     The agent will use the RFP and enabled company files to
                     prepare the complete proposal, flag review questions, and
-                    justify pricing against the requested scope. AI generation
-                    is not connected yet.
+                    justify pricing against the requested scope. Processing
+                    requires a verified free model and permission for the
+                    content it uses.
                   </p>
                 </div>
                 <div className="simple-inline-actions">
@@ -376,7 +379,7 @@ export default function OpportunityDetail() {
                     >
                       Open proposal <ArrowRight size={16} />
                     </Link>
-                  ) : (
+                  ) : !backend ? (
                     <Button
                       variant="primary"
                       disabled={!editable || !ready || busy}
@@ -384,7 +387,7 @@ export default function OpportunityDetail() {
                     >
                       <Sparkles size={16} /> Generate proposal
                     </Button>
-                  )}
+                  ) : null}
                 </div>
                 {!ready && (
                   <p className="simple-note">

@@ -58,6 +58,18 @@ const host = z
   .max(253)
   .regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i);
 export const commandSchemas = {
+  "opportunity.assess": z
+    .object({ id: uuid, expected_revision: revision })
+    .strict(),
+  "proposal.generate": z
+    .object({ id: uuid, expected_revision: revision })
+    .strict(),
+  "generation.retry": z
+    .object({ id: uuid, expected_revision: revision, reason: text.min(1) })
+    .strict(),
+  "generation.cancel": z
+    .object({ id: uuid, expected_revision: revision, reason: text.min(1) })
+    .strict(),
   "model.configure": z
     .object({
       expected_revision: z.number().int().min(0),

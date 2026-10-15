@@ -1,3 +1,4 @@
+import { processGeneration } from "../_shared/generation.ts";
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
 import { AppError, secretMatches } from "../_shared/http.ts";
 import {
@@ -62,6 +63,20 @@ export function createWorkerHandler(
           });
           return response({ data: { job_id: job.id, error_code: code } });
         }
+      }
+      if (
+        [
+          "classify_opportunity",
+          "analyze_chunk",
+          "plan_proposal",
+          "draft_section",
+          "plan_commercial",
+          "review_proposal",
+          "advance_plan",
+        ].includes(job.type)
+      ) {
+        await processGeneration(backend, env, job, fetcher);
+        return response({ data: { job_id: job.id, processed: true } });
       }
       await backend.finish(
         job.id,

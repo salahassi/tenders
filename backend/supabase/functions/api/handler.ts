@@ -16,6 +16,10 @@ import { PDFDocument } from "pdf-lib";
 
 const readTables: Record<string, string> = {
   sources: "sources",
+  "generation-plans": "generation_plans",
+  "generation-steps": "generation_steps",
+  requirements: "requirements",
+  "fit-assessments": "fit_assessments",
   "model-settings": "model_settings",
   "content-authorizations": "content_authorizations",
   "provider-usage": "provider_usage",
@@ -208,6 +212,15 @@ export function createApiHandler(
         const cursor = url.searchParams.get("cursor") || undefined;
         if (cursor) uuid.parse(cursor);
         const filters: Record<string, string> = {};
+        if (
+          ["generation-plans", "fit-assessments", "requirements"].includes(
+            read[1],
+          ) &&
+          url.searchParams.has("opportunity")
+        )
+          filters.opportunity_id = uuid.parse(
+            url.searchParams.get("opportunity"),
+          );
         if (read[1] === "provider-usage" && url.searchParams.has("state"))
           filters.state = z
             .enum(["reserved", "settled", "unknown"])

@@ -134,6 +134,8 @@ export class ConnectedRepository {
       "questions",
       "review-inputs",
       "regeneration-requests",
+      "requirements",
+      "fit-assessments",
     ];
     const tables = await Promise.all(
       paths.map(async (path) => [path, await this.list(path)] as const),
@@ -214,7 +216,41 @@ export class ConnectedRepository {
       const files = documents
         .filter((d) => d.opportunity_id === r.id && d.kind === "rfp")
         .map(document);
+      const assessment = this.rows["fit-assessments"]
+        .filter((a) => a.opportunity_id === r.id)
+        .sort((a, b) =>
+          str(b, "created_at").localeCompare(str(a, "created_at")),
+        )[0];
+      const currentVersion = this.rows["proposal-versions"].find((v) =>
+        this.rows.proposals.some(
+          (p) => p.opportunity_id === r.id && p.active_version_id === v.id,
+        ),
+      );
+      const assessed = assessment?.result as Record<string, any> | undefined;
       return {
+        revision: r.revision,
+        ...(assessment
+          ? {
+              assessment: {
+                score:
+                  assessment.fit_score == null
+                    ? null
+                    : Number(assessment.fit_score),
+                coverage: Number(assessment.evidence_coverage),
+                routing: str(assessment, "routing"),
+                summary: String(
+                  assessed?.reason_summary ||
+                    "Verified exclusion rule matched.",
+                ),
+                stale:
+                  assessment.evidence_revision !==
+                  this.workspace.evidence_revision,
+                factors: assessed?.factors || {},
+                missing: assessed?.missing_information || [],
+                risks: assessed?.risk_flags || [],
+              },
+            }
+          : {}),
         id: r.id,
         title: str(r, "title"),
         reference: str(r, "reference"),
@@ -224,8 +260,17 @@ export class ConnectedRepository {
         tags: strings(r.tags),
         deadline: str(r, "deadline_at"),
         deadlineSource: str(r, "deadline_raw"),
-        score: null,
-        coverage: 0,
+        score:
+          assessment &&
+          assessment.evidence_revision === this.workspace.evidence_revision &&
+          assessment.fit_score != null
+            ? Number(assessment.fit_score)
+            : null,
+        coverage:
+          assessment &&
+          assessment.evidence_revision === this.workspace.evidence_revision
+            ? Number(assessment.evidence_coverage)
+            : 0,
         status:
           r.decision === "undecided"
             ? "new"
@@ -235,7 +280,24 @@ export class ConnectedRepository {
         saved: r.saved === true,
         createdAt: str(r, "created_at"),
         documents: files,
-        requirements: [],
+        requirements: this.rows.requirements
+          .filter(
+            (x) =>
+              x.opportunity_id === r.id &&
+              x.plan_id === currentVersion?.plan_id,
+          )
+          .map((x) => ({
+            id: x.id,
+            text: str(x, "text"),
+            source: (
+              (x.source_refs as Array<{ id: string; quote: string }>) || []
+            )
+              .map((ref) => `${ref.id}: ${ref.quote}`)
+              .join("\n"),
+            mandatory: x.mandatory === true,
+            status: "open" as const,
+            response: str(x, "interpretation"),
+          })),
         gaps: this.rows.questions
           .filter((q) => q.opportunity_id === r.id)
           .map((q) => ({
@@ -365,7 +427,13 @@ export class ConnectedRepository {
               id: str(s, "section_key"),
               title: str(s, "title"),
               body: str(s, "body"),
-              evidence: strings(s.evidence_refs),
+              evidence: Array.isArray(s.evidence_refs)
+                ? s.evidence_refs.map((ref) =>
+                    typeof ref === "string"
+                      ? ref
+                      : `${(ref as { id: string }).id}: ${(ref as { quote: string }).quote}`,
+                  )
+                : [],
             })),
           lines: [],
           pricingMode: "markup" as const,

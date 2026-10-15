@@ -81,6 +81,10 @@ for (const [path, method, name] of commands) {
   };
 }
 for (const table of [
+  "generation-plans",
+  "generation-steps",
+  "fit-assessments",
+  "requirements",
   "model-settings",
   "content-authorizations",
   "provider-usage",

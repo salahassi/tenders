@@ -35,10 +35,18 @@ export default function FitAssessment({
           {fit.level}
         </Badge>
       </div>
-      <p className="fit-disclosure">AI assessment not activated</p>
+      <p className="fit-disclosure">
+        {fit.mode === "recorded"
+          ? "Recorded evidence-based assessment"
+          : "No recorded assessment"}
+      </p>
       <p className="fit-summary">{fit.summary}</p>
       <details open={!compact}>
-        <summary>What the assessment will use</summary>
+        <summary>
+          {fit.mode === "recorded"
+            ? "Evidence and gaps"
+            : "What the assessment will use"}
+        </summary>
         {fit.reasons.map((reason, index) => (
           <div className="fit-reason" key={index}>
             <strong>{reason.label}</strong>

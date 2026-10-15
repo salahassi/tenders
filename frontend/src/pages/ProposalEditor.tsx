@@ -410,7 +410,7 @@ function ProposalReviewPage({
           ),
         }),
         regenerate
-          ? "Saved regeneration request awaiting AI connection"
+          ? "Recorded proposal regeneration request"
           : "Saved proposal review inputs",
         proposal.id,
       ))
@@ -501,7 +501,9 @@ function ProposalReviewPage({
         </Button>
       </section>
       <p className="review-demo-note">
-        AI generation and regeneration are not connected yet. Existing proposal
+        {mode === "CONNECTED_FREE"
+          ? "Generation runs through your configured backend. Existing proposal"
+          : "AI generation and regeneration are not connected yet. Existing proposal"}
         content is preserved; new answers and requests remain pending until the
         agent creates a new version.
       </p>
@@ -904,17 +906,21 @@ function ProposalReviewPage({
       <Modal
         open={regenerateOpen}
         onClose={() => setRegenerateOpen(false)}
-        title="Regeneration is awaiting the AI connection"
+        title={
+          mode === "CONNECTED_FREE"
+            ? "Regeneration request recorded"
+            : "Regeneration is awaiting the AI connection"
+        }
       >
         <p>
-          Your answers, section comments, and attachments have been saved
-          together in this browser. No AI request has been sent and no new file
-          or version has been created.
+          {mode === "CONNECTED_FREE"
+            ? "Your review inputs are saved in your workspace. Follow processing progress on the linked opportunity. The current version remains available until the new version completes."
+            : "Your answers, section comments, and attachments have been saved together in this browser. No AI request has been sent and no new file or version has been created."}
         </p>
         <p>
-          Once connected, the agent will update the complete proposal and its
-          pricing from the RFP and your review inputs, then return a new file
-          version for review.
+          The agent uses the confirmed RFP and saved review inputs to prepare a
+          new version. Missing model configuration, data authorization or quota
+          appears as a blocker in processing progress.
         </p>
         <div className="modal-footer">
           <Button variant="primary" onClick={() => setRegenerateOpen(false)}>
