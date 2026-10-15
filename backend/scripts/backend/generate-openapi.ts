@@ -81,6 +81,9 @@ for (const [path, method, name] of commands) {
   };
 }
 for (const table of [
+  "model-settings",
+  "content-authorizations",
+  "provider-usage",
   "sources",
   "source-runs",
   "source-links",
@@ -236,7 +239,7 @@ paths["/v1/health"] = {
     responses: { "200": { description: "Minimal public availability" } },
   },
 };
-paths["/v1/status"] = {get:{security:[{userJWT:[]}],responses}};
+paths["/v1/status"] = { get: { security: [{ userJWT: [] }], responses } };
 paths["/v1/bootstrap"] = { get: { security: [{ userJWT: [] }], responses } };
 paths["/v1/documents/{id}/download"] = {
   get: {

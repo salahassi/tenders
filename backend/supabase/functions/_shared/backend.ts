@@ -7,6 +7,7 @@ export interface BackendEnvironment {
   allowedOrigins: string[];
   workerSecret: string;
   collectionHosts?: string[];
+  model?: { provider: string; model: string; projectRef: string; key: string };
 }
 function platformKey(value: string | undefined): string {
   if (!value) return "";
@@ -45,6 +46,12 @@ export function environment(
       .map((x) => x.trim())
       .filter(Boolean),
     workerSecret: get("APP_WORKER_SECRET") || "",
+    model: {
+      provider: get("APP_MODEL_PROVIDER") || "",
+      model: get("APP_MODEL_NAME") || "",
+      projectRef: get("APP_MODEL_PROJECT") || "",
+      key: get("APP_MODEL_KEY") || "",
+    },
     collectionHosts: (get("APP_COLLECTION_HOSTS") || "")
       .split(",")
       .map((x) => x.trim().toLowerCase())
@@ -250,6 +257,14 @@ export class Backend {
         "The original could not be opened.",
       );
     return data.signedUrl;
+  }
+  async eligibility(token: string, opportunity: string | null) {
+    const { data, error } = await this.user(token).rpc(
+      "eligibility_candidates",
+      { opportunity },
+    );
+    if (error) throw databaseError(error);
+    return data;
   }
   async status(token: string) {
     const { data, error } = await this.user(token).rpc("workspace_status");

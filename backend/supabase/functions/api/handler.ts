@@ -16,6 +16,9 @@ import { PDFDocument } from "pdf-lib";
 
 const readTables: Record<string, string> = {
   sources: "sources",
+  "model-settings": "model_settings",
+  "content-authorizations": "content_authorizations",
+  "provider-usage": "provider_usage",
   "source-runs": "source_runs",
   snapshots: "advertisement_snapshots",
   "source-links": "opportunity_source_links",
@@ -174,10 +177,20 @@ export function createApiHandler(
             membership.workspace_id,
           ),
           operations: await backend.operations(token),
-          model: { enabled: false, blocker: "MODEL_NOT_CONFIGURED" },
+          model: (await backend.list(token, "model_settings", {}, 1))
+            .records[0] || { enabled: false, blocker: "MODEL_NOT_CONFIGURED" },
         });
       if (path === "/v1/status" && request.method === "GET")
         return respond(await backend.status(token));
+      if (path === "/v1/eligibility" && request.method === "GET")
+        return respond(
+          await backend.eligibility(
+            token,
+            url.searchParams.has("opportunity")
+              ? uuid.parse(url.searchParams.get("opportunity"))
+              : null,
+          ),
+        );
       const read = path.match(/^\/v1\/([a-z-]+)(?:\/([^/]+))?$/);
       if (request.method === "GET" && read && readTables[read[1]]) {
         if (read[2]) {
@@ -195,6 +208,10 @@ export function createApiHandler(
         const cursor = url.searchParams.get("cursor") || undefined;
         if (cursor) uuid.parse(cursor);
         const filters: Record<string, string> = {};
+        if (read[1] === "provider-usage" && url.searchParams.has("state"))
+          filters.state = z
+            .enum(["reserved", "settled", "unknown"])
+            .parse(url.searchParams.get("state"));
         const decision = url.searchParams.get("decision");
         if (decision && read[1] === "opportunities") {
           if (

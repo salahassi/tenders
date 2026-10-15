@@ -5,6 +5,7 @@ import { Badge, Button, PageHeader, Field } from "../components/ui";
 import type { AppState } from "../types";
 import "./admin.css";
 import MembersPanel from "../components/MembersPanel";
+import ModelControls from "../components/ModelControls";
 
 export default function Settings() {
   const { state, update, notify, storageError, mode, saving } = useApp();
@@ -318,6 +319,7 @@ export default function Settings() {
             </div>
           </section>
           {connected && owner && <MembersPanel />}
+          {connected && <ModelControls />}
         </div>
       </div>
     </>

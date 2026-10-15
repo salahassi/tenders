@@ -25,3 +25,11 @@ Keep the upload screen open while parsing originals and sending their extracted 
 The actual Owner must set their own password and confirm the already designated email. No test account or synthetic workspace is created in the cloud. Live source URLs, reviewed collection permission, the chosen free model and backend credential, eligible company evidence, commercial rates, and labeled evaluation examples must come from the Owner. These dependencies do not prevent code and synthetic local workflow testing. No external messages, payments, purchases, or bid submissions are automated.
 
 Full original-inclusive backup, clean-target restore, retention/purge, and model-quality evaluation are tracked in stages 4–7. Do not treat the historical metadata-only JSON format as a complete backup.
+
+## Free model activation
+
+Model selection remains deferred. After the Owner chooses a provider, put `APP_MODEL_PROVIDER` (`gemini_free` or `qwen_free`), `APP_MODEL_NAME`, `APP_MODEL_PROJECT`, and `APP_MODEL_KEY` in the backend secret store. Never add credentials to repository files, the browser, or audit records. Match these exact non-secret identifiers in Workspace settings, verify billing and quota expiry, and authorize each exact content item after review. Qwen requires the Singapore workspace and effective Free Quota Only. A setting without matching server credentials remains blocked.
+
+Provider requests are one call per persistent claim. Unknown delivery/usage retains the reservation; use the provider usage ledger and the Owner reconciliation control before retrying. Rejections retain conservative reserved totals. Actual usage beyond a reservation disables the model until reviewed. Neither quota exhaustion nor malformed output permits a paid fallback. The application cannot independently inspect provider billing settings; verification is an explicit dated Owner attestation.
+
+Provider adapter references checked October 15, 2026: Gemini Interactions API (`https://ai.google.dev/api/interactions-api`), structured output and countTokens documentation; Alibaba Cloud Model Studio free quota, OpenAI compatibility and structured-output documentation. Adapters must be re-verified before changing model families or API versions.

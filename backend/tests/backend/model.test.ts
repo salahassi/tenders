@@ -1,0 +1,265 @@
+// @vitest-environment node
+import { it, expect, vi } from "vitest";
+import {
+  FreeModelProvider,
+  executeModel,
+  fitScore,
+  validateModelResult,
+  systemInstructions,
+  available,
+  type Ledger,
+  type Evidence,
+} from "../../supabase/functions/_shared/model";
+const env = {
+  provider: "qwen_free",
+  model: "synthetic-model",
+  projectRef: "synthetic-project",
+  key: "synthetic-placeholder",
+};
+const config = {
+  ...env,
+  provider: "qwen_free" as const,
+  project_ref: env.projectRef,
+  enabled: true,
+  free_only: true,
+  billing_verified: true,
+  free_quota_only: true,
+  verified_at: new Date().toISOString(),
+  quota_ends_at: new Date(Date.now() + 86400000).toISOString(),
+};
+const evidence: Evidence[] = [
+  {
+    id: "block-1",
+    text: "Implement an approval workflow.",
+    kind: "rfp",
+    verified: false,
+  },
+];
+const analysis = {
+  processed_block_ids: ["block-1"],
+  requirements: [
+    {
+      text: "Approval workflow",
+      category: "functional",
+      mandatory: true,
+      source_refs: [{ id: "block-1", quote: "approval workflow" }],
+      interpretation: "Approval workflow",
+      acceptance_evidence: "A test",
+      owner_question: null,
+    },
+  ],
+  questions: [],
+  separate_volumes: false,
+  summary: "Synthetic scope",
+};
+it("requires exactly the selected verified free provider and project", () => {
+  expect(() => available(config, env)).not.toThrow();
+  for (const changed of [
+    { free_only: false },
+    { free_quota_only: false },
+    { quota_ends_at: "2020-01-01" },
+  ])
+    expect(() => available({ ...config, ...changed }, env)).toThrow();
+  expect(() => available(config, { ...env, model: "another" })).toThrow(
+    "MODEL_NOT_CONFIGURED",
+  );
+});
+it("validates full coverage and verbatim quotations rather than accepting plausible evidence", () => {
+  expect(
+    validateModelResult("analyze_chunk", analysis, evidence, ["block-1"]),
+  ).toEqual(analysis);
+  expect(() =>
+    validateModelResult("analyze_chunk", analysis, evidence, [
+      "block-1",
+      "missing",
+    ]),
+  ).toThrow("MODEL_COVERAGE_INCOMPLETE");
+  expect(() =>
+    validateModelResult(
+      "analyze_chunk",
+      analysis,
+      [{ ...evidence[0], text: "Different text" }],
+      ["block-1"],
+    ),
+  ).toThrow("EVIDENCE_REFERENCE_INVALID");
+});
+it("routes title-only and weak-evidence assessments to review", () => {
+  const factor = {
+    rating: 4,
+    reason: "Synthetic",
+    notice_evidence: [],
+    company_evidence: [],
+  };
+  const value = {
+    factors: {
+      capability: factor,
+      scope: factor,
+      sector: factor,
+      prerequisite: factor,
+    },
+    critical_unknown: false,
+    reason_summary: "Synthetic",
+    missing_information: [],
+    risk_flags: [],
+    suggested_tags: [],
+  };
+  expect(fitScore(value, true).routing).toBe("needs_review");
+  expect(fitScore(value, false).fit_score).toBe(100);
+  expect(
+    fitScore(
+      {
+        ...value,
+        factors: {
+          ...value.factors,
+          capability: { ...factor, rating: null },
+          scope: { ...factor, rating: null },
+        },
+      },
+      false,
+    ),
+  ).toMatchObject({ evidence_coverage: 25, routing: "needs_review" });
+});
+it("counts Qwen using a conservative bound including the system and schema; sends no key in body", async () => {
+  const calls: any[] = [];
+  const provider = new FreeModelProvider(env, async (url, init) => {
+    calls.push({ url, init });
+    return new Response(
+      JSON.stringify({
+        choices: [
+          {
+            finish_reason: "stop",
+            message: { content: JSON.stringify(analysis) },
+          },
+        ],
+        usage: { prompt_tokens: 100, completion_tokens: 40 },
+      }),
+    );
+  });
+  expect(await provider.countTokens("مرحبا", {})).toBeGreaterThan(
+    new TextEncoder().encode(systemInstructions).length,
+  );
+  const output = await provider.generate("analyze_chunk", "JSON request", {});
+  expect(output.usage).toEqual({ input: 100, output: 40, thinking: null });
+  expect(calls[0].url).toContain(
+    "synthetic-project.ap-southeast-1.maas.aliyuncs.com",
+  );
+  expect(calls[0].init.body).not.toContain(env.key);
+  expect(JSON.parse(calls[0].init.body)).toMatchObject({
+    enable_thinking: false,
+    stream: false,
+    response_format: { type: "json_object" },
+  });
+});
+it("records Gemini thought usage and disables stored interactions", async () => {
+  const calls: any[] = [];
+  const provider = new FreeModelProvider(
+    { ...env, provider: "gemini_free" },
+    async (url, init) => {
+      calls.push({ url, body: JSON.parse(String(init?.body)) });
+      return new Response(
+        JSON.stringify({
+          status: "completed",
+          steps: [
+            { type: "model_output", content: [{ type: "text", text: "{}" }] },
+          ],
+          usage: {
+            total_input_tokens: 7,
+            total_output_tokens: 20,
+            total_thought_tokens: 22,
+          },
+        }),
+      );
+    },
+  );
+  expect((await provider.generate("analyze_chunk", "JSON", {})).usage).toEqual({
+    input: 7,
+    output: 42,
+    thinking: 22,
+  });
+  expect(calls[0].body).toMatchObject({
+    store: false,
+    stream: false,
+    response_format: { mime_type: "application/json" },
+  });
+});
+it("reserves before sending and settles actual usage before validating output", async () => {
+  const events: string[] = [];
+  const provider = new FreeModelProvider(env);
+  vi.spyOn(provider, "countTokens").mockResolvedValue(100);
+  vi.spyOn(provider, "generate").mockImplementation(async () => {
+    events.push("send");
+    return {
+      text: JSON.stringify(analysis),
+      usage: { input: 100, output: 90, thinking: 0 },
+      complete: true,
+    };
+  });
+  const ledger: Ledger = {
+    preflight: async () => {
+      events.push("preflight");
+      return config;
+    },
+    reserve: async () => {
+      events.push("reserve");
+      return "reservation";
+    },
+    settle: async () => {
+      events.push("settle");
+    },
+  };
+  await executeModel(
+    "analyze_chunk",
+    {},
+    evidence,
+    ["block-1"],
+    [],
+    provider,
+    ledger,
+    "en",
+  );
+  expect(events).toEqual(["preflight", "reserve", "send", "settle"]);
+});
+it("never sends rejected content and retains unknown usage on uncertain delivery", async () => {
+  const provider = new FreeModelProvider(env),
+    send = vi
+      .spyOn(provider, "generate")
+      .mockRejectedValue(new Error("Synthetic network error"));
+  vi.spyOn(provider, "countTokens").mockResolvedValue(100);
+  const settle = vi.fn();
+  const ledger: Ledger = {
+    preflight: async () => config,
+    reserve: async () => "reservation",
+    settle,
+  };
+  await expect(
+    executeModel(
+      "analyze_chunk",
+      { email: "person@example.test" },
+      evidence,
+      ["block-1"],
+      [],
+      provider,
+      ledger,
+      "en",
+    ),
+  ).rejects.toThrow("DATA_POLICY_BLOCKED");
+  expect(send).not.toHaveBeenCalled();
+  await expect(
+    executeModel(
+      "analyze_chunk",
+      {},
+      evidence,
+      ["block-1"],
+      [],
+      provider,
+      ledger,
+      "en",
+    ),
+  ).rejects.toThrow();
+  expect(settle).toHaveBeenCalledWith(
+    "reservation",
+    { input: null, output: null, thinking: null },
+    "MODEL_NETWORK_UNCERTAIN",
+  );
+  expect(send).toHaveBeenCalledTimes(1);
+});

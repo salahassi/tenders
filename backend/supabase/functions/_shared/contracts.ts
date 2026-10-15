@@ -58,6 +58,51 @@ const host = z
   .max(253)
   .regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i);
 export const commandSchemas = {
+  "model.configure": z
+    .object({
+      expected_revision: z.number().int().min(0),
+      enabled: z.boolean(),
+      provider: z.enum(["gemini_free", "qwen_free"]),
+      model: z.string().regex(/^[a-zA-Z0-9._-]{1,120}$/),
+      project_ref: z.string().min(1).max(120),
+      free_only: z.literal(true),
+      billing_verified: z.boolean(),
+      free_quota_only: z.boolean(),
+      quota_ends_at: z.iso.datetime({ offset: true }),
+      quota_remaining_tokens: z.number().int().positive().max(1e12),
+      calls_per_day: z.number().int().min(1).max(50),
+      input_per_day: z.number().int().min(1000).max(250000),
+      output_per_day: z.number().int().min(1000).max(50000),
+    })
+    .strict(),
+  "content.authorize": z
+    .object({
+      entity_kind: z.enum([
+        "document",
+        "knowledge",
+        "notice",
+        "review",
+        "rate",
+      ]),
+      entity_id: uuid,
+      content_hash: hash,
+      provider: z.enum(["gemini_free", "qwen_free"]),
+      attestation: z.literal("nonconfidential_nonpersonal"),
+    })
+    .strict(),
+  "content.revoke": z
+    .object({ id: uuid, expected_revision: revision })
+    .strict(),
+  "usage.resolve": z
+    .object({
+      id: uuid,
+      expected_revision: revision,
+      actual_input: z.number().int().min(0).max(1e12),
+      actual_output: z.number().int().min(0).max(1e12),
+      thinking_tokens: z.number().int().min(0).max(1e12).nullable(),
+      reason: z.string().trim().min(10).max(3000),
+    })
+    .strict(),
   "source.create": z
     .object({
       client_id: uuid.optional(),
