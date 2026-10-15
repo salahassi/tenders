@@ -238,23 +238,21 @@ export function parseSource(
     if (!Array.isArray(list))
       throw new CollectionError("SOURCE_SCHEMA_CHANGED");
     const content = (v: any) => (typeof v === "object" ? v?.["#text"] : v);
-    rows = list
-      .slice(0, 100)
-      .map((r: any) => ({
-        title: content(r.title),
-        description: content(r.description || r.summary || r.content),
-        url:
-          typeof r.link === "string"
-            ? r.link
-            : Array.isArray(r.link)
-              ? r.link.find(
-                  (x: any) => !x["@_rel"] || x["@_rel"] === "alternate",
-                )?.["@_href"]
-              : r.link?.["@_href"],
-        reference: content(r.guid || r.id),
-        buyer: content(r.buyer),
-        deadline_raw: content(r.deadline),
-      }));
+    rows = list.slice(0, 100).map((r: any) => ({
+      title: content(r.title),
+      description: content(r.description || r.summary || r.content),
+      url:
+        typeof r.link === "string"
+          ? r.link
+          : Array.isArray(r.link)
+            ? r.link.find(
+                (x: any) => !x["@_rel"] || x["@_rel"] === "alternate",
+              )?.["@_href"]
+            : r.link?.["@_href"],
+      reference: content(r.guid || r.id),
+      buyer: content(r.buyer),
+      deadline_raw: content(r.deadline),
+    }));
     if (list.length > 100) warnings.push("ITEM_LIMIT_REACHED");
   } else throw new CollectionError("ADAPTER_REQUIRED");
   if (
@@ -291,7 +289,17 @@ export async function collect(
         !deploymentHosts.includes(host)
       )
         throw new CollectionError("DEPLOYMENT_HOST_APPROVAL_REQUIRED");
-      const addresses = await resolve(host);
+      const addresses = await new Promise<string[]>((resolveResult, reject) => {
+        const abort = () => reject(new CollectionError("SOURCE_TIMEOUT"));
+        if (controller.signal.aborted) {
+          abort();
+          return;
+        }
+        controller.signal.addEventListener("abort", abort, { once: true });
+        resolve(host)
+          .then(resolveResult, reject)
+          .finally(() => controller.signal.removeEventListener("abort", abort));
+      });
       if (!addresses.length || addresses.some((a) => !publicAddress(a)))
         throw new CollectionError("UNSAFE_DESTINATION");
       const headers: Record<string, string> = {

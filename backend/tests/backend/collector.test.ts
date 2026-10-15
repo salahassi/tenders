@@ -184,7 +184,11 @@ it("worker authenticates before claiming and commits only the validated source r
   const backend = {
     claim: vi.fn(async () => job),
     internal: vi.fn(async (name: string) =>
-      name === "collection_context" ? source : { processed: 1 },
+      name === "collection_context"
+        ? source
+        : name === "claim_storage_cleanup"
+          ? []
+          : { processed: 1 },
     ),
     finish: vi.fn(),
   };
@@ -218,4 +222,23 @@ it("worker authenticates before claiming and commits only the validated source r
       result: expect.objectContaining({ items: expect.any(Array) }),
     }),
   );
+});
+
+it("bounds DNS lookup time before any outbound HTTP request", async () => {
+  vi.useFakeTimers();
+  try {
+    const fetcher = vi.fn();
+    const promise = collect(
+      source,
+      source.approved_hosts,
+      () => new Promise(() => {}),
+      fetcher,
+    );
+    const assertion = expect(promise).rejects.toThrow("SOURCE_TIMEOUT");
+    await vi.advanceTimersByTimeAsync(20001);
+    await assertion;
+    expect(fetcher).not.toHaveBeenCalled();
+  } finally {
+    vi.useRealTimers();
+  }
 });

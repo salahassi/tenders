@@ -290,6 +290,35 @@ export class Backend {
     if (error) throw databaseError(error);
     return data;
   }
+  async removeObject(path: string) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const { error } = await Promise.race([
+        this.admin.storage.from("tenderdesk-private").remove([path]),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(
+            () =>
+              reject(
+                new AppError(
+                  503,
+                  "STORAGE_DELETE_FAILED",
+                  "Private object cleanup timed out.",
+                ),
+              ),
+            10000,
+          );
+        }),
+      ]);
+      if (error)
+        throw new AppError(
+          503,
+          "STORAGE_DELETE_FAILED",
+          "Private object cleanup failed.",
+        );
+    } finally {
+      clearTimeout(timer);
+    }
+  }
   async internal(name: string, args: Record<string, unknown> = {}) {
     const { data, error } = await this.admin.rpc(name, args);
     if (error) throw databaseError(error);

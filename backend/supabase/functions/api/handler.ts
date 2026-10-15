@@ -22,6 +22,7 @@ import {
 } from "../_shared/finance.ts";
 
 const readTables: Record<string, string> = {
+  "storage-cleanup": "storage_cleanup_queue",
   "restore-sessions": "restore_sessions",
   acquisitions: "acquisitions",
   submissions: "submissions",
@@ -219,6 +220,58 @@ export function createApiHandler(
         });
       if (path === "/v1/status" && request.method === "GET")
         return respond(await backend.status(token));
+      const maintenanceAction = path.match(
+        /^\/v1\/opportunities\/([^/]+)\/(archive|purge-preview|purge)$/,
+      );
+      if (maintenanceAction) {
+        const opportunity_id = uuid.parse(maintenanceAction[1]),
+          action = maintenanceAction[2];
+        if (action === "purge-preview" && request.method === "GET")
+          return respond(
+            await backend.userRpc(token, "preview_opportunity_purge", {
+              opportunity_id,
+            }),
+          );
+        if (request.method === "POST" && action !== "purge-preview") {
+          const body =
+            action === "archive"
+              ? z
+                  .object({
+                    expected_revision: z.number().int().positive(),
+                    archive: z.boolean(),
+                    reason: z.string().trim().min(10).max(3000),
+                  })
+                  .strict()
+                  .parse(await readJson(request, 16384))
+              : z
+                  .object({
+                    preview_hash: z.string().regex(/^[0-9a-f]{64}$/),
+                    confirmed_title: z.string().max(1000),
+                    reason: z.string().trim().min(10).max(3000),
+                    acknowledge_history: z.literal(true),
+                  })
+                  .strict()
+                  .parse(await readJson(request, 16384));
+          return respond(
+            await backend.userRpc(
+              token,
+              action === "archive"
+                ? "archive_opportunity"
+                : "purge_opportunity",
+              { opportunity_id, ...body },
+            ),
+          );
+        }
+      }
+      const cleanupRetry = path.match(
+        /^\/v1\/storage-cleanup\/([^/]+)\/retry$/,
+      );
+      if (cleanupRetry && request.method === "POST")
+        return respond(
+          await backend.userRpc(token, "retry_storage_cleanup", {
+            cleanup_id: uuid.parse(cleanupRetry[1]),
+          }),
+        );
       if (path === "/v1/eligibility" && request.method === "GET")
         return respond(
           await backend.eligibility(

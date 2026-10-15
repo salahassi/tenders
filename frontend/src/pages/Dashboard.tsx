@@ -11,6 +11,7 @@ import {
   Radio,
   Target,
 } from "lucide-react";
+import OperationsPanel from "../components/OperationsPanel";
 import { useApp } from "../lib/store";
 import { date, daysLeft } from "../lib/format";
 import { EmptyState, Metric, PageHeader } from "../components/ui";
@@ -55,6 +56,7 @@ export default function Dashboard() {
         {date(new Date().toISOString())}
         <span>·</span>Workspace overview
       </div>
+      <OperationsPanel compact />
       <section className="focus-banner">
         <div className="focus-icon">
           <Inbox size={25} />

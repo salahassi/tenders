@@ -7,6 +7,7 @@ import "./admin.css";
 import MembersPanel from "../components/MembersPanel";
 import ModelControls from "../components/ModelControls";
 import TemplateManager from "../components/TemplateManager";
+import OperationsPanel from "../components/OperationsPanel";
 import RecoveryPanel from "../components/RecoveryPanel";
 import RateCatalog from "../components/RateCatalog";
 
@@ -257,6 +258,7 @@ export default function Settings() {
               <span className="admin-toggle-off">DISABLED</span>
             </div>
           </section>
+          <OperationsPanel />
           <RecoveryPanel />
         </div>
         <div className="stack">

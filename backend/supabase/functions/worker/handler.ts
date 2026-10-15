@@ -31,6 +31,28 @@ export function createWorkerHandler(
         ? await secretMatches(supplied, env.workerSecret)
         : await backend.internal("verify_dispatcher_secret", { supplied });
       if (!allowed) return response({ error: "UNAUTHORIZED" }, 401);
+      await backend.internal("maintenance_tick");
+      const cleanup = await backend.internal("claim_storage_cleanup");
+      if (!Array.isArray(cleanup))
+        throw new AppError(
+          503,
+          "MAINTENANCE_RESPONSE_INVALID",
+          "Maintenance returned an invalid batch.",
+        );
+      for (const item of cleanup) {
+        let succeeded = false;
+        try {
+          await backend.removeObject(item.storage_key);
+          succeeded = true;
+        } catch {
+          /* Keep the reservation and retry bounded cleanup. */
+        }
+        await backend.internal("complete_storage_cleanup", {
+          cleanup_id: item.id,
+          lease: item.lease_token,
+          succeeded,
+        });
+      }
       const job = await backend.claim();
       if (!job) return response({ data: { claimed: false } });
       if (job.type === "source_collect" || job.type === "source_candidates") {

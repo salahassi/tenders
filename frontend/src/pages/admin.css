@@ -557,3 +557,16 @@
     flex-wrap: wrap;
   }
 }
+.operations-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 18px 0;
+}
+.operations-metrics dt {
+  font-weight: 600;
+}
+.operations-metrics dd {
+  margin: 5px 0;
+  color: var(--text-secondary);
+}

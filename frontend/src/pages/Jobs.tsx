@@ -19,7 +19,7 @@ import {
 import type { Job } from "../types";
 import "./admin.css";
 export default function Jobs() {
-  const { state, update, notify, mode } = useApp();
+  const { state, update, notify } = useApp();
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const canEdit = state.settings.role !== "Reviewer";
@@ -39,8 +39,7 @@ export default function Jobs() {
               ? {
                   ...j,
                   status: "cancelled",
-                  message:
-                    "Cancelled in this local demo. No connected worker was contacted.",
+                  message: "Cancellation requested.",
                 }
               : j,
           ),
@@ -52,9 +51,7 @@ export default function Jobs() {
       return;
     }
     notify(
-      mode === "CONNECTED_FREE"
-        ? "Cancellation recorded. A running task stops at its next safe checkpoint."
-        : "Local job cancelled.",
+      "Cancellation recorded. A running task stops at its next safe checkpoint.",
     );
   };
   const retry = async (job: Job) => {
@@ -71,7 +68,7 @@ export default function Jobs() {
                   attempt: j.attempt + 1,
                   progress: 0,
                   message:
-                    "Retry checked locally: a connected backend is required. No external request was made.",
+                    "Retry requested. The backend checks the current processing requirements.",
                 }
               : j,
           ),
@@ -82,11 +79,7 @@ export default function Jobs() {
     ) {
       return;
     }
-    notify(
-      mode === "CONNECTED_FREE"
-        ? "Retry checked. See the task blocker; processing is not configured yet."
-        : "Retry is blocked until a backend is connected. Your work is preserved.",
-    );
+    notify("Retry checked. See the task status for any remaining blocker.");
   };
   const tone = (s: Job["status"]) =>
     s === "completed"
@@ -118,21 +111,13 @@ export default function Jobs() {
               (j) => j.status === "queued" || j.status === "running",
             ).length
           }
-          detail={
-            mode === "CONNECTED_FREE"
-              ? "Server job records"
-              : "Illustrative demo job records"
-          }
+          detail="Server job records"
           icon={<Clock3 size={18} />}
         />
         <Metric
           label="Completed"
           value={state.jobs.filter((j) => j.status === "completed").length}
-          detail={
-            mode === "CONNECTED_FREE"
-              ? "Recorded completions"
-              : "Local demo history"
-          }
+          detail="Recorded completions"
           icon={<CheckCircle2 size={18} />}
         />
         <Metric
@@ -147,9 +132,9 @@ export default function Jobs() {
         />
       </div>
       <div className="notice notice-warning">
-        {mode === "CONNECTED_FREE"
-          ? "Background handlers and scheduling are not active yet. A blocked job remains blocked until its dependency is configured."
-          : "Background processing is not running in this frontend demo. Test and retry controls record truthful local states; they do not call a model or collector."}
+        A blocked job remains blocked until its dependency is resolved.
+        Processing health on the dashboard reports the actual scheduler
+        heartbeat and current usage.
       </div>
       <div className="admin-toolbar" style={{ marginTop: 24 }}>
         <div className="admin-search">

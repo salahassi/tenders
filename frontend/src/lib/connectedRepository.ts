@@ -213,105 +213,109 @@ export class ConnectedRepository {
       precedence: Number(d.precedence || 0),
       supersedesId: str(d, "supersedes_id") || null,
     });
-    state.opportunities = this.rows.opportunities.map((r) => {
-      const files = documents
-        .filter((d) => d.opportunity_id === r.id && d.kind === "rfp")
-        .map(document);
-      const assessment = this.rows["fit-assessments"]
-        .filter((a) => a.opportunity_id === r.id)
-        .sort((a, b) =>
-          str(b, "created_at").localeCompare(str(a, "created_at")),
-        )[0];
-      const currentVersion = this.rows["proposal-versions"].find((v) =>
-        this.rows.proposals.some(
-          (p) => p.opportunity_id === r.id && p.active_version_id === v.id,
-        ),
-      );
-      const assessed = assessment?.result as Record<string, any> | undefined;
-      return {
-        revision: r.revision,
-        ...(assessment
-          ? {
-              assessment: {
-                score:
-                  assessment.fit_score == null
-                    ? null
-                    : Number(assessment.fit_score),
-                coverage: Number(assessment.evidence_coverage),
-                routing: str(assessment, "routing"),
-                summary: String(
-                  assessed?.reason_summary ||
-                    "Verified exclusion rule matched.",
-                ),
-                stale:
-                  assessment.evidence_revision !==
-                  this.workspace.evidence_revision,
-                factors: assessed?.factors || {},
-                missing: assessed?.missing_information || [],
-                risks: assessed?.risk_flags || [],
-              },
-            }
-          : {}),
-        id: r.id,
-        title: str(r, "title"),
-        reference: str(r, "reference"),
-        buyer: str(r, "buyer"),
-        description: str(r, "description"),
-        category: str(r, "category"),
-        tags: strings(r.tags),
-        deadline: str(r, "deadline_at"),
-        deadlineSource: str(r, "deadline_raw"),
-        score:
-          assessment &&
-          assessment.evidence_revision === this.workspace.evidence_revision &&
-          assessment.fit_score != null
-            ? Number(assessment.fit_score)
-            : null,
-        coverage:
-          assessment &&
-          assessment.evidence_revision === this.workspace.evidence_revision
-            ? Number(assessment.evidence_coverage)
-            : 0,
-        status:
-          r.decision === "undecided"
-            ? "new"
-            : z.enum(["shortlisted", "deferred", "declined"]).parse(r.decision),
-        sourceId: str(r, "source_id"),
-        value: null,
-        saved: r.saved === true,
-        createdAt: str(r, "created_at"),
-        documents: files,
-        requirements: this.rows.requirements
-          .filter(
-            (x) =>
-              x.opportunity_id === r.id &&
-              x.plan_id === currentVersion?.plan_id,
-          )
-          .map((x) => ({
-            id: x.id,
-            text: str(x, "text"),
-            source: (
-              (x.source_refs as Array<{ id: string; quote: string }>) || []
+    state.opportunities = this.rows.opportunities
+      .filter((r) => !r.archived)
+      .map((r) => {
+        const files = documents
+          .filter((d) => d.opportunity_id === r.id && d.kind === "rfp")
+          .map(document);
+        const assessment = this.rows["fit-assessments"]
+          .filter((a) => a.opportunity_id === r.id)
+          .sort((a, b) =>
+            str(b, "created_at").localeCompare(str(a, "created_at")),
+          )[0];
+        const currentVersion = this.rows["proposal-versions"].find((v) =>
+          this.rows.proposals.some(
+            (p) => p.opportunity_id === r.id && p.active_version_id === v.id,
+          ),
+        );
+        const assessed = assessment?.result as Record<string, any> | undefined;
+        return {
+          revision: r.revision,
+          ...(assessment
+            ? {
+                assessment: {
+                  score:
+                    assessment.fit_score == null
+                      ? null
+                      : Number(assessment.fit_score),
+                  coverage: Number(assessment.evidence_coverage),
+                  routing: str(assessment, "routing"),
+                  summary: String(
+                    assessed?.reason_summary ||
+                      "Verified exclusion rule matched.",
+                  ),
+                  stale:
+                    assessment.evidence_revision !==
+                    this.workspace.evidence_revision,
+                  factors: assessed?.factors || {},
+                  missing: assessed?.missing_information || [],
+                  risks: assessed?.risk_flags || [],
+                },
+              }
+            : {}),
+          id: r.id,
+          title: str(r, "title"),
+          reference: str(r, "reference"),
+          buyer: str(r, "buyer"),
+          description: str(r, "description"),
+          category: str(r, "category"),
+          tags: strings(r.tags),
+          deadline: str(r, "deadline_at"),
+          deadlineSource: str(r, "deadline_raw"),
+          score:
+            assessment &&
+            assessment.evidence_revision === this.workspace.evidence_revision &&
+            assessment.fit_score != null
+              ? Number(assessment.fit_score)
+              : null,
+          coverage:
+            assessment &&
+            assessment.evidence_revision === this.workspace.evidence_revision
+              ? Number(assessment.evidence_coverage)
+              : 0,
+          status:
+            r.decision === "undecided"
+              ? "new"
+              : z
+                  .enum(["shortlisted", "deferred", "declined"])
+                  .parse(r.decision),
+          sourceId: str(r, "source_id"),
+          value: null,
+          saved: r.saved === true,
+          createdAt: str(r, "created_at"),
+          documents: files,
+          requirements: this.rows.requirements
+            .filter(
+              (x) =>
+                x.opportunity_id === r.id &&
+                x.plan_id === currentVersion?.plan_id,
             )
-              .map((ref) => `${ref.id}: ${ref.quote}`)
-              .join("\n"),
-            mandatory: x.mandatory === true,
-            status: "open" as const,
-            response: str(x, "interpretation"),
-          })),
-        gaps: this.rows.questions
-          .filter((q) => q.opportunity_id === r.id)
-          .map((q) => ({
-            id: q.id,
-            question: str(q, "question"),
-            answer: str(q, "answer"),
-            required: q.blocking_level !== "advisory",
-          })),
-        acquisition: files.length ? "document_available" : "not_requested",
-        language: z.enum(["en", "ar"]).parse(r.language),
-        sourceUrl: str(r, "canonical_url"),
-      };
-    });
+            .map((x) => ({
+              id: x.id,
+              text: str(x, "text"),
+              source: (
+                (x.source_refs as Array<{ id: string; quote: string }>) || []
+              )
+                .map((ref) => `${ref.id}: ${ref.quote}`)
+                .join("\n"),
+              mandatory: x.mandatory === true,
+              status: "open" as const,
+              response: str(x, "interpretation"),
+            })),
+          gaps: this.rows.questions
+            .filter((q) => q.opportunity_id === r.id)
+            .map((q) => ({
+              id: q.id,
+              question: str(q, "question"),
+              answer: str(q, "answer"),
+              required: q.blocking_level !== "advisory",
+            })),
+          acquisition: files.length ? "document_available" : "not_requested",
+          language: z.enum(["en", "ar"]).parse(r.language),
+          sourceUrl: str(r, "canonical_url"),
+        };
+      });
     const linkedKnowledge = new Set(
       documents
         .filter((d) => d.kind === "company")

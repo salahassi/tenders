@@ -11413,6 +11413,299 @@
         }
       }
     },
+    "/v1/opportunities/{id}/archive": {
+      "post": {
+        "summary": "Archive or restore with revision and reason",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "expected_revision": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "archive": {
+                    "type": "boolean"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 3000
+                  }
+                },
+                "required": [
+                  "expected_revision",
+                  "archive",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
+    "/v1/opportunities/{id}/purge-preview": {
+      "get": {
+        "summary": "Owner-only dependency counts, files and content-bound preview hash",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
+    "/v1/opportunities/{id}/purge": {
+      "post": {
+        "summary": "Owner-confirmed permanent purge after archive; preserve minimal usage accounting",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "preview_hash": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  "confirmed_title": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 3000
+                  },
+                  "acknowledge_history": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": [
+                  "preview_hash",
+                  "confirmed_title",
+                  "reason",
+                  "acknowledge_history"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
+    "/v1/storage-cleanup/{id}/retry": {
+      "post": {
+        "summary": "Owner queues another reference-checked cleanup attempt",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
     "/v1/recovery/manifest": {
       "get": {
         "summary": "Owner-only exact row/file hashes; rejects excessive metadata",

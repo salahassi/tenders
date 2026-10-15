@@ -43,3 +43,11 @@ Model selection remains deferred. After the Owner chooses a provider, put `APP_M
 Provider requests are one call per persistent claim. Unknown delivery/usage retains the reservation; use the provider usage ledger and the Owner reconciliation control before retrying. Rejections retain conservative reserved totals. Actual usage beyond a reservation disables the model until reviewed. Neither quota exhaustion nor malformed output permits a paid fallback. The application cannot independently inspect provider billing settings; verification is an explicit dated Owner attestation.
 
 Provider adapter references checked October 15, 2026: Gemini Interactions API (`https://ai.google.dev/api/interactions-api`), structured output and countTokens documentation; Alibaba Cloud Model Studio free quota, OpenAI compatibility and structured-output documentation. Adapters must be re-verified before changing model families or API versions.
+
+## Maintenance and deletion
+
+The private worker checks hourly maintenance before claiming ordinary work. It emits version-keyed deadline reminders, expires uploads after 24 hours and stages object deletion. Cleanup processes at most five objects per invocation with 10-second per-object waits, 180-second leases and five attempts. Retries recheck live document, export and restore references. A timed-out delete can be retried safely; quota is not freed until Storage returns success.
+
+The dashboard reports the actual server heartbeat. More than ten minutes without one means background processing is delayed. Check project pause state, scheduled dispatcher, Vault configuration and worker logs before retrying jobs. A missing heartbeat alone does not identify the cause.
+
+Settings provides reversible opportunity archival and an Owner-only purge preview. Permanent purge requires a fresh preview, exact typed title, acknowledgement and reason after all live leases stop. This removes opportunity evidence, proposal versions, submission history and cached result copies. It preserves shared company/source records, minimal audit hashes and provider usage accounting, including unresolved usage, so deletion cannot reset budgets. Object deletion is tracked separately; its pending bytes count against capacity. No external messages are sent.
