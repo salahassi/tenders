@@ -14,6 +14,13 @@ import {
   clearPendingInvitation,
   invitationChangedEvent,
 } from "./invitations";
+import {
+  clearPasswordRecovery,
+  markPasswordRecovery,
+  passwordRecoveryError,
+  passwordRecoveryPending,
+  takeRecoveryTokens,
+} from "./authCallback";
 
 const message = (error: unknown) =>
   error instanceof Error ? error.message : "The workspace request failed.";
@@ -43,9 +50,9 @@ export function ConnectedProvider({
     window.addEventListener(invitationChangedEvent, sync);
     return () => window.removeEventListener(invitationChangedEvent, sync);
   }, []);
-  const [recovery, setRecovery] = useState(
-    () =>
-      new URLSearchParams(window.location.search).get("auth") === "recovery",
+  const [recovery, setRecovery] = useState(passwordRecoveryPending);
+  const [recoveryError, setRecoveryError] = useState<string | null>(
+    passwordRecoveryError,
   );
   const refresh = async () => {
     if (phase !== "ready") {
@@ -119,12 +126,26 @@ export function ConnectedProvider({
       if (error) setError(message(error));
       receive(data.session);
     });
+    const tokens = takeRecoveryTokens();
+    const code = new URLSearchParams(window.location.search).get("code");
+    if (passwordRecoveryPending() && !tokens && !code && !passwordRecoveryError())
+      setRecoveryError(
+        "This reset link did not include a sign-in session. Request a new password reset and open the newest email.",
+      );
+    if (tokens)
+      void client.auth.auth.setSession(tokens).then(({ error: sessionError }) => {
+        if (!active) return;
+        if (sessionError) setRecoveryError(sessionError.message);
+      });
     const {
       data: { subscription },
     } = client.auth.auth.onAuthStateChange((event, next) => {
       // Keep Supabase calls outside this synchronous Auth callback.
       authEvents++;
-      if (event === "PASSWORD_RECOVERY") setRecovery(true);
+      if (event === "PASSWORD_RECOVERY") {
+        markPasswordRecovery();
+        setRecovery(true);
+      }
       if (active) receive(next);
     });
     return () => {
@@ -136,6 +157,7 @@ export function ConnectedProvider({
     const current = ++generation.current;
     setError(null);
     setPhase("loading");
+    if (passwordRecoveryPending()) return;
     if (!session) {
       stateRef.current = emptyConnectedState();
       setState(stateRef.current);
@@ -172,7 +194,7 @@ export function ConnectedProvider({
     return () => {
       generation.current++;
     };
-  }, [repository, session?.access_token, retry, invitation]);
+  }, [repository, session?.access_token, retry, invitation, recovery]);
   useEffect(() => {
     if (phase !== "ready" || !session) return;
     let active = true,
@@ -262,20 +284,50 @@ export function ConnectedProvider({
       setSaving(false);
     }
   };
-  if (session && recovery)
+  if (recovery)
     return (
       <AccessLayout>
-        <AuthPanel
-          client={client}
-          recovery
-          onRecoveryDone={() => {
-            setRecovery(false);
-            const url = new URL(window.location.href);
-            url.searchParams.delete("auth");
-            window.history.replaceState(null, "", url.href);
-            void refresh();
-          }}
-        />
+        {session ? (
+          <AuthPanel
+            client={client}
+            recovery
+            onRecoveryDone={() => {
+              clearPasswordRecovery();
+              setRecovery(false);
+              const url = new URL(window.location.href);
+              url.searchParams.delete("auth");
+              url.searchParams.delete("code");
+              url.searchParams.delete("type");
+              url.hash = "#/";
+              window.history.replaceState(null, "", url.href);
+            }}
+          />
+        ) : (
+          <section className="auth-panel" aria-label="Reset password">
+            <h1>Choose a new password</h1>
+            {recoveryError ? (
+              <p role="alert" className="notice notice-error">
+                {recoveryError}
+              </p>
+            ) : (
+              <p role="status" className="notice">
+                Confirming your reset link…
+              </p>
+            )}
+            {recoveryError && (
+              <button
+                className="btn btn-secondary"
+                onClick={() => {
+                  clearPasswordRecovery();
+                  setRecovery(false);
+                  setRecoveryError(null);
+                }}
+              >
+                Back to sign in
+              </button>
+            )}
+          </section>
+        )}
       </AccessLayout>
     );
   if (!session || phase !== "ready")
