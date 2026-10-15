@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../lib/store";
 import { Button, Field } from "./ui";
+import "../pages/admin.css";
 type Status = {
   server_time: string;
   last_heartbeat_at: string | null;

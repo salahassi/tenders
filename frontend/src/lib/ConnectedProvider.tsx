@@ -170,9 +170,17 @@ export function ConnectedProvider({
           body: { token: invitation },
         });
         clearPendingInvitation();
-      } else {
-        // The designated Owner's password reset is enough. Ignore a refusal
-        // when this session is not that first account.
+        return repository.refresh();
+      }
+      try {
+        return await repository.refresh();
+      } catch (cause) {
+        if (
+          !(cause instanceof BackendRequestError) ||
+          cause.code !== "ACCESS_PENDING"
+        )
+          throw cause;
+        // First Owner entry only. A normal refresh already has a membership.
         const { error: claimError } = await client.auth.rpc(
           "claim_designated_owner",
         );
@@ -183,8 +191,8 @@ export function ConnectedProvider({
           )
         )
           throw claimError;
+        return repository.refresh();
       }
-      return repository.refresh();
     };
     void open()
       .then((next) => {
@@ -369,7 +377,7 @@ export function ConnectedProvider({
                   ? "You’re signed in, but this account doesn’t have workspace access yet. Open your invitation link or contact your workspace administrator."
                   : "We couldn’t open your workspace. Please try again. Your saved data has not been changed."}
             </p>
-            {session && (
+            {session && phase !== "loading" && (
               <div className="access-state-actions">
                 <button
                   className="btn btn-primary"
