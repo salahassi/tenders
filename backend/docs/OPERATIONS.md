@@ -2,6 +2,10 @@
 
 The application runs from GitHub Pages and stores authorized records and originals in the selected Supabase project. The repository checklist records whether a specific revision has been deployed. Building code locally does not configure the hosted scheduler or create an Owner account.
 
+## Recorded activation state
+
+At the October 15, 2026 20:58 UTC verification, the application and API/worker were published, but the private dispatcher was absent. The explicit-schema correction is saved and tested locally, not applied to the hosted project. Follow [DEPLOYMENT.md](DEPLOYMENT.md) and the current checklist before activating it. A published worker alone does not establish that jobs execute while the browser is closed.
+
 ## Background collection
 
 An administrator deploys the migrations and worker, then invokes `public.configure_dispatcher(project_url, collection_hosts)` through a trusted database administration session. This function is unavailable to browser and service-role callers. It rotates the dispatcher credential in Vault and registers `tenderdesk-dispatch` once per minute. Do not print the credential. An empty host list safely disables external collection while allowing the worker to report its actual heartbeat.

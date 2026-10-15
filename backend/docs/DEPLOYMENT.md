@@ -2,7 +2,7 @@
 
 ## Scope and actual state
 
-**Current activation:** twenty-two hosted migrations (through operations/retention plus repair tail), **API v4** / **worker v2**, and GitHub Pages at commit `f338c44` ([run 38770181985](https://github.com/salahassi/tenders/actions/runs/38770181985)). Hosted health and anonymous `/v1/me` denial passed October 15, 2026. Restricted Owner setup is prepared; Auth still has zero users until sign-up and invite acceptance. Cron, worker secret, model, and sources remain off — see the checklist.
+**Verified October 15, 2026:** 22 hosted migrations, API v4 and worker v2; Pages application `a5bf967` passed [run 38788862592](https://github.com/salahassi/tenders/actions/runs/38788862592). One actual confirmed Auth identity exists, with restricted Owner setup pending and no workspace at the 20:58 UTC read. The hosted dispatcher is not configured. Its explicit-schema correction is saved in `20261015220000_dispatcher_extension_schema.sql` and passed local migration/tests, but two connector application attempts returned no successful result; read-back confirmed it is not applied. Models and real sources remain inactive. See the current checklist for complete acceptance limits.
 
 All frontend builds are connected-only. Demo query parameters, sample workspaces, and local reset/restore are retired. Pending/error states and server-confirmed saves prevent local data from being presented as remote success.
 
@@ -30,7 +30,7 @@ npm --prefix backend run build
 
 ## Account-dependent activation
 
-1. Recheck the selected project before cloud changes. Apply migrations in dependency order; keep local migration versions aligned to hosted history. Keep Storage private, browser table writes revoked, and checked RPC boundaries intact.
+1. Recheck the selected project before cloud changes. For a clean project, apply canonical migrations in dependency order. For this existing project, reconcile the mapping below before any migration; do not replay the canonical filenames against differently timestamped hosted records. Keep Storage private, browser table writes revoked, and checked RPC boundaries intact.
 2. Use **email/password only**. Do not activate social login. Email confirmation is required. Verify the hosted Site URL and confirmation/recovery redirect allowlist for `https://salahassi.github.io/tenders/`; the local `config.toml` is not evidence of hosted Auth configuration. Verify email delivery and any required SMTP setup with the real account.
 3. Use the initial administrator email already supplied privately by the owner. Generate a cryptographically random 256-bit token and store only its SHA-256 digest through administrative `prepare_owner_setup(email,token_hash,workspace_name)`. Share the resulting `https://salahassi.github.io/tenders/#/invite/<token>` privately with the owner; never commit the token or email. Setup expires after 24 hours and closes after workspace creation. The confirmed matching email accepts through the regular invitation API. There is no first-visitor promotion.
 4. After setup, Owners issue role-scoped invitation links and manage members in the app. Invitation links require the same confirmed email and expire; revoked or mismatched links fail. The workspace allows at most five active users, including the Owner. Generating/copying a link does not itself send email.
@@ -38,7 +38,7 @@ npm --prefix backend run build
 6. Deploy `api` and `worker` from `backend/supabase/functions`, including `deno.json` and relative dependencies. Both use custom authentication: the API calls Auth `getUser` on every protected request; the worker requires its separate application secret. Public health and invitation preview never grant membership.
 7. Verify minimal health, anonymous 401, unapproved 403, actual Owner/Editor/Reviewer behavior, invitation denial/revocation, revision/idempotency conflicts, reload/second-session persistence, and mobile/desktop flows. Use the Supabase connector for supported operations; explain any specific unsupported setting before requesting browser fallback.
 8. Deploy the continuation migrations and worker before calling the administrative `configure_dispatcher(project_url, collection_hosts)` function. It generates a new private credential in Vault and registers the minute dispatcher. Supply an empty host list until actual collection permissions and destinations have been reviewed. Verify the cron response and heartbeat separately. No keepalive traffic is added merely to avoid provider pausing.
-9. Agree on and implement the model in stage 4. Current jobs remain blocked with `MODEL_NOT_CONFIGURED` or `SOURCE_ADAPTER_NOT_CONFIGURED`; no external inference, collection, or generated version is fabricated.
+9. The Gemini/Qwen adapters and collector handlers are already implemented. Activate a model only after the Owner selects it and approves its account, effective free quota and exact content. Missing policy/credentials or source permission remains a blocker; no inference, collection, or generated version is fabricated.
 
 ## Original-file protocol
 
@@ -51,3 +51,35 @@ The legacy completion payload accepts up to 200,000 extracted characters. The co
 Current official Supabase pricing lists 500 MB database, 1 GB Storage, 500,000 monthly Edge Function invocations, and pausing after inactivity. The application enforces lower caps: 250 MiB retained originals/exports, 250 MiB application tables, 500 pending jobs, 10 MiB per file, ten RFP files. No recurring traffic is added solely to prevent provider pausing.
 
 Sources checked 2026-10-14: https://supabase.com/pricing, https://supabase.com/docs/guides/functions/limits, https://supabase.com/docs/guides/functions/auth, https://supabase.com/docs/guides/storage/buckets/fundamentals.
+
+## Existing hosted migration reconciliation
+
+The connector assigned hosted versions to the 12 continuation migrations. The first eight canonical versions already match the server. The following mapping is deployment history, not an instruction to rename or replay migrations.
+
+| Canonical migration name | Hosted version |
+| --- | --- |
+| durable_evidence_workflows | 20261015165238 |
+| collection_and_dispatch | 20261015170322 |
+| model_policy_and_budget | 20261015170410 |
+| persistent_generation | 20261015170600 |
+| commercial_and_approval | 20261015171032 |
+| generation_assets | 20261015171153 |
+| cloud_content_eligibility | 20261015171207 |
+| export_authorization | 20261015171541 |
+| acquisition_and_submission | 20261015171648 |
+| workspace_recovery | 20261015172105 |
+| reassessment_and_feedback | 20261015172337 |
+| operations_and_retention | 20261015173911 |
+
+The existing project additionally records `20261015182218_production_operations_repair` and `20261015182509_hosted_operations_repair_tail_oct15`. These repair records are not a complete clean-project migration sequence: the placeholder dropped functions and the actual repair restored the canonical bodies. Reconciliation compared all 98 current canonical function bodies with the hosted definitions: 96 matched exactly and two differed only in comments. The canonical operations migration remains the clean-project authority. Do not copy/replay the incomplete placeholder repair or assume a filename match proves identical schema.
+
+The only saved unapplied correction at this checkpoint is `20261015220000_dispatcher_extension_schema.sql`. It specifies `pg_catalog`, `extensions` and `vault` when enabling the required extensions and preserves the deliberately empty function search path. After applying it through the authorized connector, use a trusted administrative connection to invoke:
+
+```sql
+select public.configure_dispatcher(
+  'https://nqfwbqeozmuiuwbiowil.supabase.co',
+  array[]::text[]
+);
+```
+
+Verify the enabled cron job and the private dispatch/worker timestamps without selecting decrypted Vault values or request headers. The worker supports Vault-backed credential verification; a separate `APP_WORKER_SECRET` is optional and must not disagree with the configured dispatcher credential. Inspect the active worker configuration if authenticated dispatch is rejected. The application never grants browser/service-role permission to run `configure_dispatcher`.
