@@ -18,8 +18,11 @@ export class BackendClient {
     private readonly publishableKey: string,
   ) {
     const url = new URL(projectUrl);
+    const localDev =
+      import.meta.env.DEV &&
+      (url.hostname === "localhost" || url.hostname === "127.0.0.1");
     if (
-      url.protocol !== "https:" ||
+      (url.protocol !== "https:" && !localDev) ||
       url.username ||
       url.password ||
       url.pathname !== "/"

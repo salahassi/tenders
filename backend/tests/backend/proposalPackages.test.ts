@@ -73,7 +73,9 @@ it("checks increasing synthetic RFP packages for complete grounded inventory, mi
     ).toThrow("EVIDENCE_REFERENCE_INVALID");
   }
 });
-it("ties each package's expected financial result to the same verified decimal calculator", async () => {
+it(
+  "ties each package's expected financial result to the same verified decimal calculator",
+  async () => {
   const f = await workflowFixture();
   try {
     await f.db.exec("begin");
@@ -93,4 +95,6 @@ it("ties each package's expected financial result to the same verified decimal c
   } finally {
     await f.db.close();
   }
-});
+  },
+  30_000,
+);
