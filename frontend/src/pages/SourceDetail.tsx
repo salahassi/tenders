@@ -1,3 +1,4 @@
+import SourceConfiguration from "../components/SourceConfiguration";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Globe2, ExternalLink, ShieldCheck } from "lucide-react";
 import { useApp } from "../lib/store";
@@ -20,7 +21,7 @@ export default function SourceDetail() {
       />
     );
   const owner = state.settings.role === "Owner";
-  const isManual = source.type === "manual";
+  const isManual = source.type === "manual" && !source.adapterRequired;
   const sourceTypeLabel = {
     link_directory: "Website",
     rss: "RSS feed",
@@ -37,7 +38,7 @@ export default function SourceDetail() {
     (o) => o.sourceId === source.id,
   ).length;
   const audit = state.audit.filter((a) => a.target === id).slice(0, 8);
-  const jobs = state.jobs.filter((j) => j.target === source.name);
+  const jobs = state.jobs.filter((j) => j.target === source.id);
   const setStatus = async (status: typeof source.status) => {
     if (!owner || isManual) return;
     if (
@@ -68,7 +69,7 @@ export default function SourceDetail() {
     }
     notify(
       status === "approved"
-        ? "Source enabled in your saved configuration. Live collection is not connected."
+        ? "Source enabled. Collection runs on the backend when its access checks pass."
         : `Source ${status}${mode === "DEMO" ? " locally" : ""}.`,
     );
   };
@@ -84,7 +85,7 @@ export default function SourceDetail() {
         description={
           isManual
             ? "The built-in origin for opportunities you enter or import yourself."
-            : "A website or feed saved for future monitoring by the agent."
+            : "A permitted feed or directory collected on a schedule."
         }
         actions={
           <div className="row">
@@ -114,6 +115,7 @@ export default function SourceDetail() {
       />
       <div className="split-layout">
         <div className="stack">
+          {!isManual && <SourceConfiguration key={source.id} source={source} />}
           <div className="panel admin-section">
             <div className="admin-icon-title">
               <span className="admin-source-icon">
@@ -144,19 +146,21 @@ export default function SourceDetail() {
               <dd>
                 {isManual
                   ? "Not applicable"
-                  : `Every ${state.settings.pollHours} hours, when connected`}
+                  : `Every ${source.pollHours || state.settings.pollHours} hours`}
               </dd>
               <dt>Last collection</dt>
               <dd>
                 {source.lastRun
-                  ? `${new Date(source.lastRun).toLocaleString()} (demo record)`
+                  ? new Date(source.lastRun).toLocaleString()
                   : "Not run"}
               </dd>
               <dt>Next collection</dt>
               <dd>
                 {isManual
                   ? "Not applicable — you add these opportunities"
-                  : "Not scheduled — live collection is not connected"}
+                  : source.nextRun
+                    ? new Date(source.nextRun).toLocaleString()
+                    : "Not scheduled"}
               </dd>
               <dt>Opportunities</dt>
               <dd>{opportunityCount} recorded in this workspace</dd>
@@ -189,7 +193,7 @@ export default function SourceDetail() {
             <div className="admin-rate-note">
               {isManual
                 ? "You can enter a public opportunity or upload its RFP from the workspace."
-                : "Enabling this source saves your configuration locally. The backend must be connected before websites and feeds can be monitored. No live collection runs in this demo."}
+                : "Only permitted, approved sources are collected. Review Jobs for host-approval or access blockers."}
             </div>
             {owner && !isManual && source.status === "proposed" && (
               <div className="admin-form-actions">

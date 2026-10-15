@@ -3,6 +3,8 @@ import type { Opportunity } from "../types";
 import { uid } from "./format";
 export interface ImportRow {
   row: number;
+  deadlineRaw?: string;
+  sourceName?: string;
   title: string;
   buyer: string;
   reference: string;
@@ -56,6 +58,8 @@ export function parseOpportunityCsv(
     seen.add(key);
     return {
       row: i + 2,
+      deadlineRaw: r.deadline_raw || "",
+      sourceName: r.source_name || "",
       title,
       buyer: r.buyer_name?.trim() || "Buyer not provided",
       reference,

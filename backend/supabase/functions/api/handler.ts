@@ -11,10 +11,15 @@ import {
 import { AppError, corsHeaders, readJson } from "../_shared/http.ts";
 import { validateOriginal } from "../_shared/originals.ts";
 import { z } from "zod";
+import { adapterSchema, inertText, canonical } from "../_shared/collector.ts";
 import { PDFDocument } from "pdf-lib";
 
 const readTables: Record<string, string> = {
   sources: "sources",
+  "source-runs": "source_runs",
+  snapshots: "advertisement_snapshots",
+  "source-links": "opportunity_source_links",
+  imports: "import_batches",
   opportunities: "opportunities",
   knowledge: "knowledge_items",
   jobs: "jobs",
@@ -171,6 +176,8 @@ export function createApiHandler(
           operations: await backend.operations(token),
           model: { enabled: false, blocker: "MODEL_NOT_CONFIGURED" },
         });
+      if (path === "/v1/status" && request.method === "GET")
+        return respond(await backend.status(token));
       const read = path.match(/^\/v1\/([a-z-]+)(?:\/([^/]+))?$/);
       if (request.method === "GET" && read && readTables[read[1]]) {
         if (read[2]) {
@@ -262,10 +269,61 @@ export function createApiHandler(
           })
           .strict()
           .parse(await readJson(request));
-        const commands = batch.commands.map(({ operation, input }) => ({
-          operation,
-          input: commandSchemas[operation].parse(input),
-        }));
+        const commands = batch.commands.map(({ operation, input }) => {
+          const parsed = commandSchemas[operation].parse(input);
+          if (operation === "source.configure") {
+            const config = parsed as z.infer<
+              (typeof commandSchemas)["source.configure"]
+            >;
+            if (config.kind === "json_feed")
+              config.adapter_config = adapterSchema.parse(
+                config.adapter_config,
+              );
+          }
+          if (operation === "import.preview") {
+            const preview = parsed as z.infer<
+              (typeof commandSchemas)["import.preview"]
+            >;
+            preview.rows = preview.rows.map((row, index) => {
+              if (preview.kind === "sources") {
+                const url = canonical(row.url);
+                if (!url)
+                  throw new AppError(
+                    422,
+                    "INVALID_IMPORT_ROW",
+                    `Row ${index + 1}: a public HTTPS URL is required.`,
+                  );
+                return {
+                  url,
+                  name: inertText(row.name, 200) || new URL(url).hostname,
+                };
+              }
+              const title = inertText(row.title, 1000),
+                url = canonical(row.canonical_url),
+                reference = inertText(row.external_id || row.reference, 1000);
+              if (!title || (!url && !reference))
+                throw new AppError(
+                  422,
+                  "INVALID_IMPORT_ROW",
+                  `Row ${index + 1}: title and a URL or reference are required.`,
+                );
+              return {
+                title,
+                canonical_url: url,
+                reference,
+                identity_key: reference
+                  ? `external:${reference}`
+                  : `url:${url}`,
+                description: inertText(row.description),
+                buyer: inertText(row.buyer_name || row.buyer, 1000),
+                deadline_raw: inertText(row.deadline_raw, 1000) || null,
+                source_name: inertText(row.source_name, 200),
+                language: /[\u0600-\u06ff]/.test(title) ? "ar" : "en",
+              };
+            });
+          }
+          return { operation, input: parsed };
+        });
         return respond(await backend.batch(token, commands, key));
       }
       if (path === "/v1/invitations" && request.method === "POST")

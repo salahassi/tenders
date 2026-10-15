@@ -17,7 +17,7 @@ import { EmptyState, Metric, PageHeader } from "../components/ui";
 import OpportunityTable from "../components/OpportunityTable";
 
 export default function Dashboard() {
-  const { state, mode } = useApp();
+  const { state, mode, operations } = useApp();
   const inbox = state.opportunities.filter(
     (o) => o.status === "new" || o.status === "deferred",
   );
@@ -252,9 +252,28 @@ export default function Dashboard() {
             </div>
             <p>
               {mode === "CONNECTED_FREE"
-                ? "Core records are saved to your account. File workflows, scheduled collection, and AI drafting remain pending."
+                ? "Records and original files are saved to your account. AI drafting requires the model you choose to be activated."
                 : "Editing, uploads, and Word export work in this browser. Live source collection and AI drafting require a backend connection."}
             </p>
+            {operations && (
+              <>
+                <p>
+                  Last collection:{" "}
+                  {operations.lastCollection
+                    ? new Date(operations.lastCollection).toLocaleString()
+                    : "No successful collection yet"}
+                </p>
+                <p role="status">
+                  {!operations.schedulerEnabled
+                    ? "Background schedule awaiting activation"
+                    : !operations.lastHeartbeat ||
+                        Date.now() - Date.parse(operations.lastHeartbeat) >
+                          600000
+                      ? "Background processing delayed — check the backend and schedule."
+                      : `Background heartbeat: ${new Date(operations.lastHeartbeat).toLocaleString()}`}
+                </p>
+              </>
+            )}
             <Link to="/setup">
               Connection details <ArrowUpRight size={14} />
             </Link>

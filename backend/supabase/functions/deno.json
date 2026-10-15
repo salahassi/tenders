@@ -2,6 +2,7 @@
   "imports": {
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.117.3",
     "zod": "npm:zod@4.6.7",
-    "pdf-lib": "npm:pdf-lib@1.17.1"
+    "pdf-lib": "npm:pdf-lib@1.17.1",
+    "fast-xml-parser": "npm:fast-xml-parser@5.11.2"
   }
 }

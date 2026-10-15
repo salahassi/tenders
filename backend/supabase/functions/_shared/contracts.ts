@@ -74,6 +74,30 @@ export const commandSchemas = {
       (v) => v.kind === "manual" || !!v.url,
       "A collection source needs its URL.",
     ),
+  "source.configure": z
+    .object({
+      id: uuid,
+      expected_revision: revision,
+      url: safeUrl,
+      kind: z.enum(["rss", "json_feed", "link_directory"]),
+      approved_hosts: z.array(host).min(1).max(10),
+      policy_note: text.min(1),
+      poll_interval_hours: z.number().int().min(1).max(168),
+      adapter_config: z.record(z.string(), z.unknown()).default({}),
+    })
+    .strict(),
+  "source.collect": z
+    .object({ id: uuid, expected_revision: revision })
+    .strict(),
+  "import.preview": z
+    .object({
+      kind: z.enum(["sources", "tenders"]),
+      rows: z.array(z.record(z.string(), z.unknown())).min(1).max(100),
+    })
+    .strict(),
+  "import.commit": z
+    .object({ id: uuid, expected_revision: revision, preview_hash: hash })
+    .strict(),
   "source.action": z
     .object({
       id: uuid,

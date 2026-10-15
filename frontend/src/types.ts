@@ -132,6 +132,11 @@ export interface Proposal {
   review?: ProposalReview;
 }
 export interface Source {
+  revision?: number;
+  approvedHosts?: string[];
+  adapterConfig?: Record<string, unknown>;
+  adapterRequired?: boolean;
+  pollHours?: number;
   id: string;
   name: string;
   type: "rss" | "json_feed" | "link_directory" | "manual";

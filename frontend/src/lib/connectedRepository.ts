@@ -168,6 +168,11 @@ export class ConnectedRepository {
       retentionDays: number("retention_days", 90),
     };
     state.sources = this.rows.sources.map((r) => ({
+      revision: r.revision,
+      approvedHosts: strings(r.approved_hosts),
+      adapterConfig: (r.adapter_config || {}) as Record<string, unknown>,
+      adapterRequired: r.adapter_required === true,
+      pollHours: Number(r.poll_interval_hours || 6),
       id: r.id,
       name: str(r, "name"),
       type: z

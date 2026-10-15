@@ -47,7 +47,7 @@ const stages: OpportunityStage[] = [
 ];
 
 export default function Opportunities() {
-  const { state, update, notify, mode } = useApp();
+  const { state, update, notify, mode, runCommand, saving } = useApp();
   const [params, setParams] = useSearchParams();
   const initialStage = params.get("stage") as OpportunityStage;
   const [tab, setTab] = useState<OpportunityStage | "all">(
@@ -61,6 +61,10 @@ export default function Opportunities() {
   const [importOpen, setImportOpen] = useState(false);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [error, setError] = useState("");
+  const [serverPreview, setServerPreview] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
   const [previewName, setPreviewName] = useState("");
   const [form, setForm] = useState({
     title: "",
@@ -523,6 +527,7 @@ export default function Opportunities() {
                     parseOpportunityCsv(await f.text(), state.opportunities),
                   );
                   setPreviewName(f.name);
+                  setServerPreview(null);
                 } catch (err) {
                   setError(
                     err instanceof Error
@@ -570,6 +575,13 @@ export default function Opportunities() {
               </table>
             </div>
           )}
+          {serverPreview && (
+            <p role="status">
+              Server validated {(serverPreview.rows as unknown[]).length} rows.
+              Dates with unresolved timezones remain unknown; contact details
+              are removed. Commit to add these discoveries.
+            </p>
+          )}
           {error && (
             <p className="form-error" role="alert">
               {error}
@@ -580,9 +592,52 @@ export default function Opportunities() {
             <Button
               variant="primary"
               disabled={
-                !rows.some((r) => !r.error && !r.duplicate) || !editable
+                !rows.some((r) => !r.error && !r.duplicate) ||
+                !editable ||
+                saving
               }
               onClick={async () => {
+                if (runCommand) {
+                  try {
+                    if (!serverPreview) {
+                      const result = await runCommand("import.preview", {
+                        kind: "tenders",
+                        rows: rows
+                          .filter((r) => !r.error && !r.duplicate)
+                          .map((r) => ({
+                            title: r.title,
+                            description: r.description,
+                            buyer_name: r.buyer,
+                            external_id: r.reference,
+                            canonical_url: r.url,
+                            deadline_raw: r.deadlineRaw,
+                            source_name: r.sourceName,
+                          })),
+                      });
+                      setServerPreview(result);
+                      return;
+                    }
+                    const result = await runCommand(
+                      "import.commit",
+                      {
+                        id: serverPreview.id,
+                        expected_revision: serverPreview.revision,
+                        preview_hash: serverPreview.preview_hash,
+                      },
+                      `import:${serverPreview.id}`,
+                    );
+                    notify(
+                      `${result.processed} rows processed; discoveries are in Review.`,
+                    );
+                    setImportOpen(false);
+                    setRows([]);
+                    setServerPreview(null);
+                    return;
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : "Import failed.");
+                    return;
+                  }
+                }
                 const good = rows
                   .filter((r) => !r.error && !r.duplicate)
                   .map(fromImportRow);
@@ -606,7 +661,11 @@ export default function Opportunities() {
                 setTab("all");
               }}
             >
-              Import valid rows
+              {runCommand
+                ? serverPreview
+                  ? "Commit validated preview"
+                  : "Validate import with server"
+                : "Import valid rows"}
             </Button>
           </div>
         </div>

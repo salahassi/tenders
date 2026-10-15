@@ -1,3 +1,4 @@
+import SourceImport from "../components/SourceImport";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -88,7 +89,7 @@ export default function Sources() {
     }
     notify(
       status === "approved"
-        ? "Source enabled in your saved configuration. Live collection is not connected."
+        ? "Source enabled. Check Jobs for collection results or access blockers."
         : `Source ${status}.`,
     );
   };
@@ -350,6 +351,7 @@ export default function Sources() {
         opportunities you enter or import yourself; it is not a website
         connector.
       </p>
+      <SourceImport />
       <Modal open={open} onClose={() => setOpen(false)} title="Add source">
         <p className="admin-help">
           Save a public website or feed. An Owner can enable it in the source

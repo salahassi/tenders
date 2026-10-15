@@ -39,7 +39,46 @@ export function ConnectedProvider({
       new URLSearchParams(window.location.search).get("auth") === "recovery",
   );
   const refresh = async () => {
-    setRetry((n) => n + 1);
+    if (phase !== "ready") {
+      setRetry((n) => n + 1);
+      return;
+    }
+    const current = generation.current;
+    const next = await repository.refresh();
+    if (current === generation.current) {
+      stateRef.current = next;
+      setState(next);
+      setError(null);
+    }
+  };
+  const runCommand = async (
+    operation: string,
+    input: Record<string, unknown>,
+    key: string = crypto.randomUUID(),
+  ) => {
+    if (savingRef.current)
+      throw new Error("Wait for the current save to finish.");
+    savingRef.current = true;
+    setSaving(true);
+    setError(null);
+    try {
+      const { data } = await client.request<Record<string, unknown>[]>(
+        "/v1/commands",
+        {
+          method: "POST",
+          body: { commands: [{ operation, input }] },
+          idempotencyKey: key,
+        },
+      );
+      await refresh();
+      return data[0];
+    } catch (error) {
+      setError(message(error));
+      throw error;
+    } finally {
+      savingRef.current = false;
+      setSaving(false);
+    }
   };
   const signOut = async () => {
     generation.current++;
@@ -125,6 +164,57 @@ export function ConnectedProvider({
       generation.current++;
     };
   }, [repository, session?.access_token, retry, invitation]);
+  useEffect(() => {
+    if (phase !== "ready" || !session) return;
+    let active = true,
+      busy = false,
+      changeToken: string | null = null;
+    const poll = async () => {
+      if (!active || busy || savingRef.current || document.hidden) return;
+      busy = true;
+      try {
+        const { data } = await client.request<{
+          change_token: string;
+          last_heartbeat_at: string | null;
+          last_source_success_at: string | null;
+          scheduler_enabled: boolean;
+        }>("/v1/status");
+        if (!active || savingRef.current) return;
+        repository.operations = {
+          lastHeartbeat: data.last_heartbeat_at,
+          lastCollection: data.last_source_success_at,
+          schedulerEnabled: data.scheduler_enabled,
+        };
+        if (changeToken !== data.change_token) {
+          const next = await repository.load();
+          if (active && !savingRef.current) {
+            stateRef.current = next;
+            setState(next);
+          }
+          changeToken = data.change_token;
+        } else setState((current) => ({ ...current }));
+      } catch (cause) {
+        if (
+          active &&
+          cause instanceof BackendRequestError &&
+          (cause.status === 401 || cause.code === "ACCESS_PENDING")
+        ) {
+          setError(message(cause));
+          setPhase("pending");
+        }
+      } finally {
+        busy = false;
+      }
+    };
+    const timer = window.setInterval(
+      () => void poll(),
+      window.location.hash.includes("/jobs") ? 10000 : 60000,
+    );
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [client, repository, phase, session?.user.id]);
   const update = async (mutation: StateMutation): Promise<boolean> => {
     if (savingRef.current || phase !== "ready" || !session) return false;
     savingRef.current = true;
@@ -234,6 +324,7 @@ export function ConnectedProvider({
         mode: "CONNECTED_FREE",
         saving,
         backend: client,
+        runCommand,
         storageError: error,
         toast,
         notify: setToast,

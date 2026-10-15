@@ -19,6 +19,11 @@ export interface AppContextValue {
   mode: "DEMO" | "CONNECTED_FREE";
   saving: boolean;
   backend?: BackendClient;
+  runCommand?: (
+    operation: string,
+    input: Record<string, unknown>,
+    key?: string,
+  ) => Promise<Record<string, unknown>>;
   userLabel?: string;
   refresh?: () => Promise<void>;
   signOut?: () => Promise<void>;

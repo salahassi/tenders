@@ -462,7 +462,7 @@ describe("UI journeys with a test-only workspace", () => {
       within(row).getByText("Enabled", { exact: true }),
     ).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Source enabled in your saved configuration. Live collection is not connected.",
+      "Source enabled. Check Jobs for collection results or access blockers.",
     );
     await waitFor(async () => {
       const state = await stored();

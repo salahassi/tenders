@@ -6,6 +6,7 @@ export interface BackendEnvironment {
   serviceKey: string;
   allowedOrigins: string[];
   workerSecret: string;
+  collectionHosts?: string[];
 }
 function platformKey(value: string | undefined): string {
   if (!value) return "";
@@ -44,6 +45,10 @@ export function environment(
       .map((x) => x.trim())
       .filter(Boolean),
     workerSecret: get("APP_WORKER_SECRET") || "",
+    collectionHosts: (get("APP_COLLECTION_HOSTS") || "")
+      .split(",")
+      .map((x) => x.trim().toLowerCase())
+      .filter(Boolean),
   };
 }
 export class Backend {
@@ -246,6 +251,11 @@ export class Backend {
       );
     return data.signedUrl;
   }
+  async status(token: string) {
+    const { data, error } = await this.user(token).rpc("workspace_status");
+    if (error) throw databaseError(error);
+    return data;
+  }
   async operations(token: string) {
     const { data, error } = await this.user(token)
       .from("operations")
@@ -253,6 +263,11 @@ export class Backend {
         "last_heartbeat_at,last_source_success_at,scheduler_enabled,last_error_code",
       )
       .maybeSingle();
+    if (error) throw databaseError(error);
+    return data;
+  }
+  async internal(name: string, args: Record<string, unknown> = {}) {
+    const { data, error } = await this.admin.rpc(name, args);
     if (error) throw databaseError(error);
     return data;
   }
