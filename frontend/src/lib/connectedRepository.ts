@@ -1,6 +1,16 @@
 import { z } from "zod";
-import type { AppState, Opportunity, Role, Source } from "../types";
+import type {
+  AppState,
+  Opportunity,
+  Role,
+  Source,
+  DocumentRecord,
+  ProposalReview,
+} from "../types";
 import { BackendClient, BackendRequestError } from "./backendClient";
+
+import { getLocalFile } from "./knowledgeFiles";
+import { getReviewDocuments } from "./proposalReview";
 
 type Row = Record<string, unknown> & { id: string; revision: number };
 type Command = { operation: string; input: Record<string, unknown> };
@@ -43,6 +53,8 @@ export class ConnectedRepository {
   private rows: Record<string, Row[]> = {};
   private workspace!: Row;
   private loadGeneration = 0;
+  private actorId = "";
+  private steps = new Map<string, unknown>();
   private pending: {
     signature: string;
     key: string;
@@ -88,6 +100,7 @@ export class ConnectedRepository {
     const boot = z
       .object({
         membership: z.object({
+          user_id: z.uuid().optional(),
           workspace_id: z.uuid(),
           role: z.enum(["Owner", "Editor", "Reviewer"]),
         }),
@@ -129,6 +142,7 @@ export class ConnectedRepository {
       throw new Error("A newer workspace request replaced this response.");
     this.rows = Object.fromEntries(tables);
     this.workspace = boot.workspace;
+    this.actorId = boot.membership.user_id || "";
     this.operations = {
       lastHeartbeat: boot.operations?.last_heartbeat_at ?? null,
       lastCollection: boot.operations?.last_source_success_at ?? null,
@@ -173,7 +187,7 @@ export class ConnectedRepository {
       tags: strings(r.tags),
     }));
     const documents = this.rows.documents.filter(
-      (d) => !["pending", "expired"].includes(str(d, "status")),
+      (d) => !d.archived && !["pending", "expired"].includes(str(d, "status")),
     );
     const document = (d: Row) => ({
       id: d.id,
@@ -186,6 +200,10 @@ export class ConnectedRepository {
         .parse(d.status),
       classification: "unspecified" as const,
       hash: str(d, "original_hash"),
+      persisted: true,
+      extractionConfirmed: !!d.extraction_confirmed_at,
+      precedence: Number(d.precedence || 0),
+      supersedesId: str(d, "supersedes_id") || null,
     });
     state.opportunities = this.rows.opportunities.map((r) => {
       const files = documents
@@ -269,6 +287,7 @@ export class ConnectedRepository {
               ? (knowledge.category as AppState["knowledgeDocuments"][number]["category"])
               : "other",
           enabled: knowledge?.enabled === true,
+          verified: knowledge?.verified === true,
         };
       });
     state.proposals = this.rows.proposals.flatMap((p) => {
@@ -276,8 +295,54 @@ export class ConnectedRepository {
         (v) => v.id === p.active_version_id,
       );
       if (!version) return [];
+      const own = this.rows["review-inputs"].filter(
+        (x) => x.proposal_id === p.id && x.created_by === this.actorId,
+      );
+      const attachments = (id: string) =>
+        documents.filter((d) => d.review_input_id === id).map(document);
+      const review: ProposalReview | undefined = own.length
+        ? {
+            baseVersion: Number(
+              this.rows["proposal-versions"].find(
+                (v) => v.id === own[0].base_version_id,
+              )?.ordinal || version.ordinal,
+            ),
+            sourceSignature: str(own[0], "source_signature"),
+            savedAt: str(own[0], "updated_at"),
+            answers: own
+              .filter((x) => x.target_kind === "question")
+              .map((x) => ({
+                questionId: str(x, "target_id"),
+                answer: str(x, "body"),
+                attachments: attachments(x.id),
+              })),
+            sectionChanges: own
+              .filter((x) => x.target_kind === "section")
+              .map((x) => ({
+                sectionId: str(x, "target_id"),
+                sectionTitle: str(
+                  this.rows["proposal-sections"].find(
+                    (s) =>
+                      s.proposal_version_id === version.id &&
+                      s.section_key === x.target_id,
+                  ) || {},
+                  "title",
+                ),
+                comment: str(x, "body"),
+                attachments: attachments(x.id),
+              })),
+            instructions: str(
+              own.find((x) => x.target_kind === "general") || {},
+              "body",
+            ),
+            attachments: attachments(
+              own.find((x) => x.target_kind === "general")?.id || "",
+            ),
+          }
+        : undefined;
       return [
         {
+          review,
           id: p.id,
           opportunityId: str(p, "opportunity_id"),
           title: str(p, "title"),
@@ -352,6 +417,36 @@ export class ConnectedRepository {
   }
 
   plan(previous: AppState, next: AppState): Command[] {
+    next = structuredClone(next);
+    next.knowledgeDocuments = previous.knowledgeDocuments;
+    next.opportunities = next.opportunities.map((o) => {
+      const before = previous.opportunities.find((x) => x.id === o.id);
+      if (
+        before &&
+        before.acquisition !== o.acquisition &&
+        equal(before.documents, o.documents)
+      )
+        blocked("This change requires a separate connected workflow.");
+      for (const d of o.documents) {
+        const old = before?.documents.find((x) => x.id === d.id);
+        if (
+          old &&
+          !equal({ ...old, extractionConfirmed: d.extractionConfirmed }, d)
+        )
+          blocked(
+            "Accepted originals are immutable. Attach a replacement instead.",
+          );
+      }
+      return before
+        ? { ...o, documents: before.documents, acquisition: before.acquisition }
+        : o;
+    });
+    next.proposals = next.proposals.map((p) => {
+      const before = previous.proposals.find((x) => x.id === p.id);
+      if (!before || !equal({ ...p, review: before.review }, before))
+        blocked("Proposal content changes require versioned generation.");
+      return before!;
+    });
     const commands: Command[] = [];
     const add = (operation: string, input: Record<string, unknown>) =>
       commands.push({ operation, input });
@@ -608,14 +703,18 @@ export class ConnectedRepository {
       };
     const pending = this.pending;
     try {
-      if (pending.commands.length)
+      if (pending.commands.length && !this.steps.has(pending.key)) {
         await this.client.request("/v1/commands", {
           method: "POST",
           body: { commands: pending.commands },
           idempotencyKey: pending.key,
         });
+        this.steps.set(pending.key, true);
+      }
+      await this.saveFilesAndReview(previous, next, pending.key);
       const saved = await this.load();
       this.pending = null;
+      this.steps.clear();
       return saved;
     } catch (error) {
       if (
@@ -628,9 +727,276 @@ export class ConnectedRepository {
     }
   }
 
+  private async command(
+    operation: string,
+    input: Record<string, unknown>,
+    key: string,
+  ): Promise<Row> {
+    if (this.steps.has(key)) return this.steps.get(key) as Row;
+    const { data } = await this.client.request<Row[]>("/v1/commands", {
+      method: "POST",
+      body: { commands: [{ operation, input }] },
+      idempotencyKey: key,
+    });
+    // app_batch returns an ordered result array.
+    const row = Array.isArray(data)
+      ? data[0]
+      : (data as unknown as { results: Row[] }).results[0];
+    this.steps.set(key, row);
+    return row;
+  }
+  private async upload(
+    document: DocumentRecord,
+    target: Record<string, string>,
+  ) {
+    if (document.persisted) return;
+    const blob = await getLocalFile(document.id);
+    if (!blob)
+      blocked(
+        "The original is missing from this browser. Attach it again before saving.",
+      );
+    const types: Record<string, string> = {
+      pdf: "application/pdf",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      txt: "text/plain",
+      md: "text/markdown",
+      csv: "text/csv",
+      png: "image/png",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      webp: "image/webp",
+      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    };
+    const mime = types[document.name.split(".").pop()!.toLowerCase()];
+    const reservation = await this.command(
+      "document.prepare",
+      {
+        client_id: document.id,
+        ...target,
+        original_name: document.name,
+        mime_type: mime,
+        size: document.size,
+        hash: document.hash,
+      },
+      `prepare:${document.id}`,
+    );
+    const uploadKey = `bytes:${document.id}`;
+    if (!this.steps.has(uploadKey)) {
+      try {
+        await this.client.uploadOriginal(
+          {
+            bucket: "tenderdesk-private",
+            upload_path: str(reservation, "storage_key"),
+          },
+          new File([blob!], document.name, { type: mime }),
+        );
+      } catch (error) {
+        if (
+          !error ||
+          typeof error !== "object" ||
+          !("statusCode" in error) ||
+          String(error.statusCode) !== "409"
+        )
+          throw error;
+      }
+      this.steps.set(uploadKey, true);
+    }
+    const chars = Array.from(document.text),
+      parts = [];
+    for (let offset = 0; offset < chars.length; offset += 12000)
+      parts.push({
+        ordinal: parts.length,
+        text: chars.slice(offset, offset + 12000).join(""),
+      });
+    for (let offset = 0; offset < parts.length; offset += 4)
+      await this.command(
+        "document.extraction",
+        { id: document.id, parts: parts.slice(offset, offset + 4) },
+        `extract:${document.id}:${offset}`,
+      );
+    await this.client.request(`/v1/documents/${document.id}/complete-upload`, {
+      method: "POST",
+      body: { from_parts: true, status: document.status },
+      idempotencyKey: `complete:${document.id}`,
+    });
+  }
+  private async saveFilesAndReview(
+    previous: AppState,
+    next: AppState,
+    key: string,
+  ) {
+    const archive = async (d: DocumentRecord) => {
+      await this.command(
+        "document.archive",
+        {
+          id: d.id,
+          expected_revision: this.revision("documents", d.id),
+          reason: "Removed from current evidence",
+        },
+        `${key}:archive:${d.id}`,
+      );
+    };
+    for (const o of next.opportunities) {
+      const before = previous.opportunities.find((x) => x.id === o.id);
+      for (const d of before?.documents || [])
+        if (!o.documents.some((x) => x.id === d.id)) await archive(d);
+      for (const d of o.documents) {
+        const old = before?.documents.find((x) => x.id === d.id);
+        if (!old) await this.upload(d, { kind: "rfp", opportunity_id: o.id });
+        else if (!old.extractionConfirmed && d.extractionConfirmed)
+          await this.command(
+            "document.confirm",
+            { id: d.id, expected_revision: this.revision("documents", d.id) },
+            `${key}:confirm:${d.id}`,
+          );
+      }
+    }
+    for (const d of previous.knowledgeDocuments)
+      if (!next.knowledgeDocuments.some((x) => x.id === d.id)) await archive(d);
+    for (const d of next.knowledgeDocuments) {
+      const before = previous.knowledgeDocuments.find((x) => x.id === d.id);
+      if (!before) {
+        // A distinct stable knowledge ID avoids collisions between record namespaces.
+        const knowledgeId =
+          d.id.slice(0, -1) + (parseInt(d.id.slice(-1), 16) ^ 8).toString(16);
+        await this.command(
+          "knowledge.save",
+          {
+            client_id: knowledgeId,
+            title: d.name,
+            category: d.category,
+            enabled: d.enabled,
+            content: "",
+            evidence: `Document ${d.id}`,
+          },
+          `company:${d.id}`,
+        );
+        await this.upload(d, {
+          kind: "company",
+          knowledge_item_id: knowledgeId,
+        });
+      } else if (before.category !== d.category || before.enabled !== d.enabled)
+        await this.command(
+          "knowledge.document",
+          {
+            id: d.id,
+            expected_revision: this.revision("documents", d.id),
+            category: d.category,
+            enabled: d.enabled,
+          },
+          `${key}:knowledge:${d.id}`,
+        );
+      else if (!before.verified && d.verified) {
+        const doc = this.rows.documents.find((x) => x.id === d.id)!;
+        await this.command(
+          "knowledge.verify",
+          {
+            id: doc.knowledge_item_id,
+            expected_revision: this.revision(
+              "knowledge",
+              str(doc, "knowledge_item_id"),
+            ),
+          },
+          `${key}:verify:${d.id}`,
+        );
+      }
+    }
+    for (const p of next.proposals) {
+      const before = previous.proposals.find((x) => x.id === p.id);
+      if (equal(before?.review, p.review) || !p.review) continue;
+      const row = this.rows.proposals.find((x) => x.id === p.id)!;
+      const existing = this.rows["review-inputs"].filter(
+        (x) => x.proposal_id === p.id && x.created_by === this.actorId,
+      );
+      const inputs = [
+        ...p.review.answers.map((x) => ({
+          target_kind: "question",
+          target_id: x.questionId,
+          body: x.answer,
+        })),
+        ...(p.review.sectionChanges || []).map((x) => ({
+          target_kind: "section",
+          target_id: x.sectionId,
+          body: x.comment,
+        })),
+        {
+          target_kind: "general",
+          target_id: "general",
+          body: p.review.instructions,
+        },
+      ].map((input) => {
+        const old = existing.find(
+          (x) =>
+            x.target_kind === input.target_kind &&
+            x.target_id === input.target_id,
+        );
+        return {
+          ...input,
+          ...(old ? { id: old.id, expected_revision: old.revision } : {}),
+        };
+      });
+      const result = await this.command(
+        "review.save",
+        {
+          id: p.id,
+          base_version_id: row.active_version_id,
+          expected_revision: row.revision,
+          source_signature: p.review.sourceSignature,
+          inputs,
+        },
+        `${key}:review:${p.id}`,
+      );
+      const saved = result.inputs as Row[];
+      for (const input of saved) {
+        const desired = getReviewDocuments(p.review)
+          .filter(
+            (x) =>
+              x.target.kind === input.target_kind &&
+              (x.target.kind === "general" || x.target.id === input.target_id),
+          )
+          .map((x) => x.document);
+        for (const d of this.rows.documents.filter(
+          (x) => x.review_input_id === input.id && !x.archived,
+        ))
+          if (!desired.some((x) => x.id === d.id))
+            await archive({ id: d.id } as DocumentRecord);
+        for (const d of desired)
+          if (!this.rows.documents.some((x) => x.id === d.id))
+            await this.upload(d, { kind: "review", review_input_id: input.id });
+      }
+      if (
+        p.review.regeneration &&
+        p.review.regeneration.id !== before?.review?.regeneration?.id
+      ) {
+        const hash = Array.from(
+          new Uint8Array(
+            await crypto.subtle.digest(
+              "SHA-256",
+              new TextEncoder().encode(JSON.stringify(p.review)),
+            ),
+          ),
+        )
+          .map((x) => x.toString(16).padStart(2, "0"))
+          .join("");
+        await this.command(
+          "proposal.regenerate",
+          {
+            id: p.id,
+            base_version_id: row.active_version_id,
+            expected_revision: result.revision,
+            input_hash: hash,
+          },
+          `${key}:regenerate:${p.id}`,
+        );
+      }
+    }
+  }
+
   async refresh(): Promise<AppState> {
     const state = await this.load();
     this.pending = null;
+    this.steps.clear();
     return state;
   }
 }

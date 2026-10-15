@@ -1,5 +1,11 @@
 # Frontend handoff
 
+## Reconstruction checkpoint (October 15, 2026)
+
+The continuation branch implements durable original upload/download, extraction batches and confirmation, company evidence verification, and scoped review text/attachments. Storage and API acceptance are required before UI success. Originals staged in IndexedDB are upload buffers, not a fallback workspace. Removed files are archived server-side to preserve evidence. Accepted bytes and extraction cannot be edited in place.
+
+The paragraphs below describe the last published stage-1 boundary until this branch is deployed. Check IMPLEMENTATION_CHECKLIST for exact test/deployment status. Generation remains blocked by the explicitly deferred model configuration while the later stages are rebuilt.
+
 ## Current delivery boundary
 
 Production builds now use a connected Supabase repository for email/password authentication, invitation-only workspace membership, and core records. The first Owner requires a restricted setup invitation tied to a confirmed email. Owner-issued invitations are limited to five active users. Saves wait for the server; errors keep entered values, and failure never silently falls back to local persistence.

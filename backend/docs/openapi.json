@@ -65,7 +65,12 @@
                   },
                   "kind": {
                     "type": "string",
-                    "enum": ["rss", "json_feed", "link_directory", "manual"]
+                    "enum": [
+                      "rss",
+                      "json_feed",
+                      "link_directory",
+                      "manual"
+                    ]
                   },
                   "url": {
                     "type": "string",
@@ -394,7 +399,10 @@
                   },
                   "language": {
                     "type": "string",
-                    "enum": ["en", "ar"]
+                    "enum": [
+                      "en",
+                      "ar"
+                    ]
                   },
                   "category": {
                     "type": "string",
@@ -575,7 +583,10 @@
                   },
                   "action": {
                     "type": "string",
-                    "enum": ["cancel", "retry"]
+                    "enum": [
+                      "cancel",
+                      "retry"
+                    ]
                   },
                   "reason": {
                     "type": "string",
@@ -583,7 +594,11 @@
                     "maxLength": 100000
                   }
                 },
-                "required": ["expected_revision", "action", "reason"],
+                "required": [
+                  "expected_revision",
+                  "action",
+                  "reason"
+                ],
                 "additionalProperties": false
               }
             }
@@ -665,7 +680,11 @@
                 "properties": {
                   "action": {
                     "type": "string",
-                    "enum": ["approve", "pause", "reject"]
+                    "enum": [
+                      "approve",
+                      "pause",
+                      "reject"
+                    ]
                   },
                   "reason": {
                     "type": "string",
@@ -678,7 +697,11 @@
                     "maximum": 9007199254740991
                   }
                 },
-                "required": ["action", "reason", "expected_revision"],
+                "required": [
+                  "action",
+                  "reason",
+                  "expected_revision"
+                ],
                 "additionalProperties": false
               }
             }
@@ -786,7 +809,10 @@
                   "language": {
                     "default": "en",
                     "type": "string",
-                    "enum": ["en", "ar"]
+                    "enum": [
+                      "en",
+                      "ar"
+                    ]
                   },
                   "deadline_raw": {
                     "type": "string",
@@ -818,7 +844,12 @@
                   "decision": {
                     "default": "undecided",
                     "type": "string",
-                    "enum": ["undecided", "shortlisted", "deferred", "declined"]
+                    "enum": [
+                      "undecided",
+                      "shortlisted",
+                      "deferred",
+                      "declined"
+                    ]
                   }
                 },
                 "required": [
@@ -975,7 +1006,12 @@
                 "properties": {
                   "target_state": {
                     "type": "string",
-                    "enum": ["undecided", "shortlisted", "deferred", "declined"]
+                    "enum": [
+                      "undecided",
+                      "shortlisted",
+                      "deferred",
+                      "declined"
+                    ]
                   },
                   "reason": {
                     "type": "string",
@@ -988,7 +1024,11 @@
                     "maximum": 9007199254740991
                   }
                 },
-                "required": ["target_state", "reason", "expected_revision"],
+                "required": [
+                  "target_state",
+                  "reason",
+                  "expected_revision"
+                ],
                 "additionalProperties": false
               }
             }
@@ -1443,7 +1483,9 @@
                     "maximum": 9007199254740991
                   }
                 },
-                "required": ["expected_revision"],
+                "required": [
+                  "expected_revision"
+                ],
                 "additionalProperties": false
               }
             }
@@ -1549,9 +1591,18 @@
                           "format": "uuid",
                           "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                         },
+                        "client_id": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
                         "target_kind": {
                           "type": "string",
-                          "enum": ["section", "question", "general"]
+                          "enum": [
+                            "section",
+                            "question",
+                            "general"
+                          ]
                         },
                         "target_id": {
                           "type": "string",
@@ -1569,7 +1620,11 @@
                           "maximum": 9007199254740991
                         }
                       },
-                      "required": ["target_kind", "target_id", "body"],
+                      "required": [
+                        "target_kind",
+                        "target_id",
+                        "body"
+                      ],
                       "additionalProperties": false
                     }
                   }
@@ -1749,9 +1804,18 @@
                 "$schema": "https://json-schema.org/draft/2020-12/schema",
                 "type": "object",
                 "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
                   "kind": {
                     "type": "string",
-                    "enum": ["rfp", "company", "review"]
+                    "enum": [
+                      "rfp",
+                      "company",
+                      "review"
+                    ]
                   },
                   "opportunity_id": {
                     "type": "string",
@@ -1890,7 +1954,9 @@
                     "maximum": 9007199254740991
                   }
                 },
-                "required": ["expected_revision"],
+                "required": [
+                  "expected_revision"
+                ],
                 "additionalProperties": false
               }
             }
@@ -2021,7 +2087,11 @@
                   },
                   "role": {
                     "type": "string",
-                    "enum": ["Owner", "Editor", "Reviewer"]
+                    "enum": [
+                      "Owner",
+                      "Editor",
+                      "Reviewer"
+                    ]
                   },
                   "active": {
                     "type": "boolean"
@@ -3366,14 +3436,22 @@
                   "email": {},
                   "role": {
                     "type": "string",
-                    "enum": ["Owner", "Editor", "Reviewer"]
+                    "enum": [
+                      "Owner",
+                      "Editor",
+                      "Reviewer"
+                    ]
                   },
                   "token_hash": {
                     "type": "string",
                     "pattern": "^[a-f0-9]{64}$"
                   }
                 },
-                "required": ["email", "role", "token_hash"],
+                "required": [
+                  "email",
+                  "role",
+                  "token_hash"
+                ],
                 "additionalProperties": false
               }
             }
@@ -3617,7 +3695,9 @@
               "schema": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["commands"],
+                "required": [
+                  "commands"
+                ],
                 "properties": {
                   "commands": {
                     "type": "array",
@@ -3628,7 +3708,10 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "source.create"
@@ -3706,7 +3789,10 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "source.action"
@@ -3722,7 +3808,11 @@
                                 },
                                 "action": {
                                   "type": "string",
-                                  "enum": ["approve", "pause", "reject"]
+                                  "enum": [
+                                    "approve",
+                                    "pause",
+                                    "reject"
+                                  ]
                                 },
                                 "reason": {
                                   "type": "string",
@@ -3748,7 +3838,10 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "opportunity.create"
@@ -3794,7 +3887,10 @@
                                 "language": {
                                   "default": "en",
                                   "type": "string",
-                                  "enum": ["en", "ar"]
+                                  "enum": [
+                                    "en",
+                                    "ar"
+                                  ]
                                 },
                                 "deadline_raw": {
                                   "type": "string",
@@ -3852,7 +3948,10 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "opportunity.decision"
@@ -3899,7 +3998,10 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "knowledge.save"
@@ -3970,7 +4072,10 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "knowledge.verify"
@@ -3990,7 +4095,10 @@
                                   "maximum": 9007199254740991
                                 }
                               },
-                              "required": ["id", "expected_revision"],
+                              "required": [
+                                "id",
+                                "expected_revision"
+                              ],
                               "additionalProperties": false
                             }
                           }
@@ -3998,7 +4106,10 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "review.save"
@@ -4034,6 +4145,11 @@
                                     "type": "object",
                                     "properties": {
                                       "id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "client_id": {
                                         "type": "string",
                                         "format": "uuid",
                                         "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -4085,7 +4201,10 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "proposal.regenerate"
@@ -4127,7 +4246,10 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "document.prepare"
@@ -4136,9 +4258,18 @@
                               "$schema": "https://json-schema.org/draft/2020-12/schema",
                               "type": "object",
                               "properties": {
+                                "client_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
                                 "kind": {
                                   "type": "string",
-                                  "enum": ["rfp", "company", "review"]
+                                  "enum": [
+                                    "rfp",
+                                    "company",
+                                    "review"
+                                  ]
                                 },
                                 "opportunity_id": {
                                   "type": "string",
@@ -4199,7 +4330,240 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "document.confirm"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "expected_revision"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "document.archive"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 100000
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "expected_revision",
+                                "reason"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "document.precedence"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "precedence": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 1000
+                                },
+                                "supersedes_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "expected_revision",
+                                "precedence",
+                                "supersedes_id"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "document.extraction"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "parts": {
+                                  "minItems": 1,
+                                  "maxItems": 20,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "ordinal": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 127
+                                      },
+                                      "text": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 12000
+                                      }
+                                    },
+                                    "required": [
+                                      "ordinal",
+                                      "text"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "parts"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "knowledge.document"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "category": {
+                                  "type": "string",
+                                  "enum": [
+                                    "company",
+                                    "team",
+                                    "previous_proposal",
+                                    "template",
+                                    "other"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "expected_revision",
+                                "enabled",
+                                "category"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "notification.read"
@@ -4219,7 +4583,10 @@
                                   "maximum": 9007199254740991
                                 }
                               },
-                              "required": ["id", "expected_revision"],
+                              "required": [
+                                "id",
+                                "expected_revision"
+                              ],
                               "additionalProperties": false
                             }
                           }
@@ -4227,7 +4594,10 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "membership.set"
@@ -4243,7 +4613,11 @@
                                 },
                                 "role": {
                                   "type": "string",
-                                  "enum": ["Owner", "Editor", "Reviewer"]
+                                  "enum": [
+                                    "Owner",
+                                    "Editor",
+                                    "Reviewer"
+                                  ]
                                 },
                                 "active": {
                                   "type": "boolean"
@@ -4273,7 +4647,10 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "workspace.settings"
@@ -4334,7 +4711,10 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "opportunity.update"
@@ -4376,7 +4756,10 @@
                                 },
                                 "language": {
                                   "type": "string",
-                                  "enum": ["en", "ar"]
+                                  "enum": [
+                                    "en",
+                                    "ar"
+                                  ]
                                 },
                                 "category": {
                                   "type": "string",
@@ -4426,7 +4809,10 @@
                         {
                           "type": "object",
                           "additionalProperties": false,
-                          "required": ["operation", "input"],
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
                           "properties": {
                             "operation": {
                               "const": "job.action"
@@ -4447,7 +4833,10 @@
                                 },
                                 "action": {
                                   "type": "string",
-                                  "enum": ["cancel", "retry"]
+                                  "enum": [
+                                    "cancel",
+                                    "retry"
+                                  ]
                                 },
                                 "reason": {
                                   "type": "string",
@@ -4550,7 +4939,9 @@
                     "maximum": 9007199254740991
                   }
                 },
-                "required": ["expected_revision"],
+                "required": [
+                  "expected_revision"
+                ],
                 "additionalProperties": false
               }
             }
@@ -4610,7 +5001,9 @@
                     "pattern": "^[a-f0-9]{64}$"
                   }
                 },
-                "required": ["token"],
+                "required": [
+                  "token"
+                ],
                 "additionalProperties": false
               }
             }
@@ -4674,7 +5067,9 @@
                     "pattern": "^[a-f0-9]{64}$"
                   }
                 },
-                "required": ["token"],
+                "required": [
+                  "token"
+                ],
                 "additionalProperties": false
               }
             }
@@ -4865,13 +5260,24 @@
                     "type": "string",
                     "maxLength": 200000
                   },
+                  "from_parts": {
+                    "type": "boolean"
+                  },
                   "status": {
                     "default": "needs_processing",
                     "type": "string",
-                    "enum": ["ready", "needs_ocr", "needs_processing", "error"]
+                    "enum": [
+                      "ready",
+                      "needs_ocr",
+                      "needs_processing",
+                      "error"
+                    ]
                   }
                 },
-                "required": ["extracted_text", "status"],
+                "required": [
+                  "extracted_text",
+                  "status"
+                ],
                 "additionalProperties": false
               }
             }

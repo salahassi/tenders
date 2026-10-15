@@ -24,8 +24,13 @@ export interface DocumentRecord {
   status: "ready" | "needs_ocr" | "needs_processing" | "error";
   classification: "synthetic" | "public" | "sanitized" | "unspecified";
   hash: string;
+  persisted?: boolean;
+  extractionConfirmed?: boolean;
+  precedence?: number;
+  supersedesId?: string | null;
 }
 export interface KnowledgeDocument extends DocumentRecord {
+  verified?: boolean;
   category: "company" | "team" | "previous_proposal" | "template" | "other";
   enabled: boolean;
 }

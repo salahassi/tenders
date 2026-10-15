@@ -11,6 +11,7 @@ import {
 import { AppError, corsHeaders, readJson } from "../_shared/http.ts";
 import { validateOriginal } from "../_shared/originals.ts";
 import { z } from "zod";
+import { PDFDocument } from "pdf-lib";
 
 const readTables: Record<string, string> = {
   sources: "sources",
@@ -21,6 +22,8 @@ const readTables: Record<string, string> = {
   "audit-events": "audit_events",
   proposals: "proposals",
   documents: "documents",
+  "document-blocks": "document_blocks",
+  packages: "document_packages",
   "proposal-versions": "proposal_versions",
   "proposal-sections": "proposal_sections",
   questions: "questions",
@@ -159,7 +162,7 @@ export function createApiHandler(
       if (path === "/v1/bootstrap" && request.method === "GET")
         return respond({
           mode: "CONNECTED_FREE",
-          membership,
+          membership: { ...membership, user_id: user.id },
           workspace: await backend.one(
             token,
             "workspaces",
@@ -289,12 +292,6 @@ export function createApiHandler(
           ),
         );
       if (request.method === "POST" && complete) {
-        if (membership.role === "Reviewer")
-          throw new AppError(
-            403,
-            "ROLE_FORBIDDEN",
-            "Your role cannot upload files.",
-          );
         const id = uuid.parse(complete[1]),
           input = completeUploadSchema.parse(await readJson(request));
         const document = await backend.one(token, "documents", id);
@@ -303,6 +300,12 @@ export function createApiHandler(
             403,
             "ROLE_FORBIDDEN",
             "Only the uploader can accept this original.",
+          );
+        if (membership.role === "Reviewer" && document.kind !== "review")
+          throw new AppError(
+            403,
+            "ROLE_FORBIDDEN",
+            "Only your review attachments may be uploaded.",
           );
         const original = await backend.object(document.storage_key);
         if (original.size !== Number(document.expected_size))
@@ -313,6 +316,21 @@ export function createApiHandler(
           );
         const bytes = new Uint8Array(await original.arrayBuffer());
         validateOriginal(document.original_name, document.mime_type, bytes);
+        let pages = 0;
+        if (document.mime_type === "application/pdf") {
+          try {
+            pages = (
+              await PDFDocument.load(bytes, { ignoreEncryption: false })
+            ).getPageCount();
+          } catch {
+            throw new AppError(
+              422,
+              "PDF_UNREADABLE",
+              "Replace the encrypted or corrupt PDF with a readable original.",
+            );
+          }
+        }
+        await backend.verifyPages(id, pages);
         const hash = Array.from(
           new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
         )
@@ -323,7 +341,9 @@ export function createApiHandler(
           user.id,
           hash,
           bytes.length,
-          input.extracted_text,
+          input.from_parts
+            ? await backend.extraction(token, id)
+            : input.extracted_text,
           input.status,
           key,
         );

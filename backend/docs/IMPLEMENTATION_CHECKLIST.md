@@ -16,6 +16,14 @@ The initial Owner email was supplied privately. Real Owner onboarding remains pe
 
 The full continuation must be reconstructed from this verified repository baseline, committed in small durable checkpoints, and re-tested before any new completeness or deployment claim. See [the recovery note](RECOVERY_CHECKPOINT.md).
 
+## Rebuilt stage 2 checkpoint — October 15, 2026
+
+- Implementation: connected original upload/download, server byte/hash/MIME checks, bounded extraction batches (four 12,000-character parts per browser request; server maximum 20 parts/256 KiB), immutable accepted text and source blocks, explicit extraction confirmation, sealed package hashes, addendum precedence command, and company/RFP archival. Review text and file-only feedback persist on their exact section/question, scoped to the author. Company facts require Owner verification; historical examples do not gain fact verification.
+- The reconstructed migration now lives in the active migration directory with matching API/contracts/UI. Its recovery copy remains historical. Actual PDF page totals are checked independently of browser extraction markers. Evidence changes invalidate approved proposal state. The original backend completion protocol remains compatible.
+- Local evidence: 43 backend tests and 103 frontend tests pass, including five new real PostgreSQL evidence/role tests and three connected repository upload/failure tests. Both package type checks and production builds pass. These test fixtures are confined to the test tree and are never seeded into hosted workspaces.
+- Publication: this checkpoint is being preserved on `implementation/complete-plan-20261015`. It is **not yet a Supabase or Pages deployment**. Hosted authenticated Storage and account acceptance remain pending. No model, collection source, or scheduler has been activated.
+- Remaining stage 2 verification: confirm authenticated hosted uploads/downloads and review reload with the real account; exercise addendum management in the full generation journey. Continue stages 3–7; this checkpoint does not close the full project.
+
 ## October 15 connected-only release — stage 1
 
 - The owner requested removing demo access and all sample UI/data while continuing the plan. Removed login and configuration-error demo links, the `?mode=demo` bypass, development demo mode, sample assessment/review links, canned fit/pricing evidence, role preview, local reset/restore controls, and the published sample RFP. Synthetic records and the local provider now live in the test tree only. Existing browser data is neither loaded, imported, nor erased by the app.

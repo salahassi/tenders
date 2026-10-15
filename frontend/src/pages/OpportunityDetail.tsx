@@ -13,11 +13,7 @@ import {
 import { useApp } from "../lib/store";
 import { can } from "../lib/domain";
 import { extractLocalDocument } from "../lib/documents";
-import {
-  downloadLocalFile,
-  saveLocalFile,
-  removeLocalFile,
-} from "../lib/knowledgeFiles";
+import { saveLocalFile, removeLocalFile } from "../lib/knowledgeFiles";
 import { downloadAgentInput } from "../lib/agentInput";
 import {
   isSelected,
@@ -35,13 +31,14 @@ import {
   Modal,
   PageHeader,
 } from "../components/ui";
+import { downloadOriginal } from "../lib/remoteFiles";
 import type { DocumentRecord, Opportunity } from "../types";
 import FitAssessment from "../components/FitAssessment";
 import "./workspace.css";
 import "./simplified.css";
 export default function OpportunityDetail() {
   const { id } = useParams();
-  const { state, update, notify, mode } = useApp();
+  const { state, update, notify, mode, backend } = useApp();
   const o = state.opportunities.find((item) => item.id === id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -86,12 +83,6 @@ export default function OpportunityDetail() {
     }
   }
   async function upload(files: File[]) {
-    if (mode === "CONNECTED_FREE") {
-      setError(
-        "Connected file upload is still being prepared. No file was saved.",
-      );
-      return;
-    }
     if (!editable || !files.length || busy) return;
     setBusy(true);
     setError("");
@@ -146,7 +137,7 @@ export default function OpportunityDetail() {
         return;
       }
       notify(
-        `${added.length} RFP file${added.length === 1 ? "" : "s"} saved locally. No AI request was made.`,
+        `${added.length} RFP file${added.length === 1 ? "" : "s"} saved. Review the extracted text before analysis.`,
       );
     }
     if (restored)
@@ -257,6 +248,16 @@ export default function OpportunityDetail() {
                       </Badge>
                     </div>
                     <div className="simple-file-actions">
+                      {backend &&
+                        d.status === "ready" &&
+                        !d.extractionConfirmed && (
+                          <Button size="sm" onClick={() => setView(d)}>
+                            Review extraction
+                          </Button>
+                        )}
+                      {d.extractionConfirmed && (
+                        <Badge tone="green">Extraction confirmed</Badge>
+                      )}
                       <Button size="sm" onClick={() => setView(d)}>
                         View text
                       </Button>
@@ -264,20 +265,13 @@ export default function OpportunityDetail() {
                         size="sm"
                         aria-label={`Download ${d.name}`}
                         onClick={() =>
-                          void (
-                            mode === "CONNECTED_FREE"
-                              ? Promise.reject(
-                                  new Error(
-                                    "Connected downloads are not available in this screen yet.",
-                                  ),
-                                )
-                              : downloadLocalFile(d.id, d.name)
-                          ).catch((err) =>
-                            notify(
-                              err instanceof Error
-                                ? err.message
-                                : "Original file unavailable. Please attach it again.",
-                            ),
+                          void downloadOriginal(backend, d.id, d.name).catch(
+                            (err) =>
+                              notify(
+                                err instanceof Error
+                                  ? err.message
+                                  : "Original file unavailable. Please attach it again.",
+                              ),
                           )
                         }
                       >
@@ -288,14 +282,8 @@ export default function OpportunityDetail() {
                         aria-label={`Remove ${d.name}`}
                         disabled={!editable || busy}
                         onClick={async () => {
-                          if (mode === "CONNECTED_FREE") {
-                            notify(
-                              "Connected file removal is not available yet.",
-                            );
-                            return;
-                          }
                           try {
-                            await removeLocalFile(d.id);
+                            if (!backend) await removeLocalFile(d.id);
                             if (
                               !(await update(
                                 (s) => ({
@@ -575,6 +563,40 @@ export default function OpportunityDetail() {
           {view?.text ||
             "No readable text extracted. Attach an OCR-processed copy."}
         </pre>
+        {backend &&
+          view?.status === "ready" &&
+          !view.extractionConfirmed &&
+          editable && (
+            <Button
+              variant="primary"
+              onClick={async () => {
+                if (
+                  await update(
+                    (s) => ({
+                      ...s,
+                      opportunities: s.opportunities.map((x) =>
+                        x.id === o.id
+                          ? {
+                              ...x,
+                              documents: x.documents.map((d) =>
+                                d.id === view.id
+                                  ? { ...d, extractionConfirmed: true }
+                                  : d,
+                              ),
+                            }
+                          : x,
+                      ),
+                    }),
+                    "Confirmed extraction",
+                    view.id,
+                  )
+                )
+                  setView(null);
+              }}
+            >
+              I checked this text against the original; extraction is complete
+            </Button>
+          )}
       </Modal>
       <Modal
         open={editDetails}

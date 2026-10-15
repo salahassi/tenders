@@ -19,7 +19,6 @@ import { useApp } from "../lib/store";
 import { extractLocalDocument } from "../lib/documents";
 import { date } from "../lib/format";
 import {
-  downloadLocalFile,
   getLocalFile,
   removeLocalFile,
   saveLocalFile,
@@ -33,6 +32,7 @@ import {
   Field,
   Tabs,
 } from "../components/ui";
+import { downloadOriginal } from "../lib/remoteFiles";
 import type { KnowledgeDocument, KnowledgeFact } from "../types";
 import "./admin.css";
 import "./knowledge.css";
@@ -65,7 +65,7 @@ const messageFor = (error: unknown) =>
   error instanceof Error ? error.message : "The file could not be processed.";
 
 export default function Knowledge() {
-  const { state, update, notify, ready, mode } = useApp();
+  const { state, update, notify, ready, mode, backend } = useApp();
   const [active, setActive] = useState("all");
   const [search, setSearch] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -104,7 +104,12 @@ export default function Knowledge() {
   ).length;
 
   useEffect(() => {
-    if (mode === "CONNECTED_FREE") return;
+    if (mode === "CONNECTED_FREE") {
+      setFileAvailability(
+        Object.fromEntries(documents.map((d) => [d.id, true])),
+      );
+      return;
+    }
     let cancelled = false;
     void Promise.all(
       documents.map(async (item) => {
@@ -123,12 +128,6 @@ export default function Knowledge() {
   }, [documents, mode]);
 
   const launchUpload = () => {
-    if (mode === "CONNECTED_FREE") {
-      notify(
-        "Connected file upload is still being prepared. Company notes can be saved now.",
-      );
-      return;
-    }
     setSelectedFiles([]);
     setErrors([]);
     setUploadMessage("");
@@ -169,7 +168,7 @@ export default function Knowledge() {
       }
     }
     if (added.length) {
-      update(
+      const saved = await update(
         (s) => ({
           ...s,
           knowledgeDocuments: [...added, ...s.knowledgeDocuments],
@@ -177,6 +176,13 @@ export default function Knowledge() {
         "Company reference files uploaded",
         `${added.length} file(s)`,
       );
+      if (!saved) {
+        setUploading(false);
+        setUploadMessage(
+          "The files have not all been accepted. Refresh to check accepted files, then retry missing files.",
+        );
+        return;
+      }
     }
     setErrors(failures);
     setUploading(false);
@@ -196,15 +202,11 @@ export default function Knowledge() {
     else setSelectedFiles([]);
   };
   const remove = async () => {
-    if (mode === "CONNECTED_FREE") {
-      notify("Connected file removal is not available yet.");
-      return;
-    }
     if (!removing || !canEdit || removeBusy) return;
     setRemoveBusy(true);
     try {
-      await removeLocalFile(removing.id);
-      update(
+      if (!backend) await removeLocalFile(removing.id);
+      const saved = await update(
         (s) => ({
           ...s,
           knowledgeDocuments: s.knowledgeDocuments.filter(
@@ -214,8 +216,9 @@ export default function Knowledge() {
         "Company reference removed",
         removing.id,
       );
+      if (!saved) return;
       setRemoving(null);
-      notify("The reference file and extracted text were removed.");
+      notify("The reference was archived; earlier evidence remains available.");
     } catch (error) {
       notify(messageFor(error));
     } finally {
@@ -223,12 +226,8 @@ export default function Knowledge() {
     }
   };
   const download = async (item: KnowledgeDocument) => {
-    if (mode === "CONNECTED_FREE") {
-      notify("Connected downloads are not available in this screen yet.");
-      return;
-    }
     try {
-      await downloadLocalFile(item.id, item.name);
+      await downloadOriginal(backend, item.id, item.name);
     } catch (error) {
       notify(messageFor(error));
     }
@@ -635,6 +634,33 @@ export default function Knowledge() {
             "No readable text was extracted from this file."}
         </div>
         <div className="admin-form-actions">
+          {backend &&
+            preview &&
+            preview.status === "ready" &&
+            !preview.verified &&
+            state.settings.role === "Owner" &&
+            !["previous_proposal", "template"].includes(preview.category) && (
+              <Button
+                variant="primary"
+                onClick={async () => {
+                  if (
+                    await update(
+                      (s) => ({
+                        ...s,
+                        knowledgeDocuments: s.knowledgeDocuments.map((d) =>
+                          d.id === preview.id ? { ...d, verified: true } : d,
+                        ),
+                      }),
+                      "Verified company evidence",
+                      preview.id,
+                    )
+                  )
+                    setPreview(null);
+                }}
+              >
+                Verify current company evidence
+              </Button>
+            )}
           <Button variant="secondary" onClick={() => setPreview(null)}>
             Close
           </Button>

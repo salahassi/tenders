@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Download, Paperclip, Trash2 } from "lucide-react";
+import { AppContext } from "../lib/appContext";
+import { downloadOriginal } from "../lib/remoteFiles";
 import type { DocumentRecord } from "../types";
-import { downloadLocalFile, getLocalFile } from "../lib/knowledgeFiles";
+import { getLocalFile } from "../lib/knowledgeFiles";
 import {
   attachReviewFile,
   MAX_REVIEW_ATTACHMENTS,
@@ -34,6 +36,7 @@ function attachmentStatus(file: DocumentRecord) {
 }
 
 export default function ReviewInput(props: ReviewInputProps) {
+  const app = useContext(AppContext);
   const {
     id,
     label,
@@ -62,7 +65,11 @@ export default function ReviewInput(props: ReviewInputProps) {
     void Promise.all(
       ids.map(async (fileId) => {
         try {
-          return [fileId, !!(await getLocalFile(fileId))] as const;
+          return [
+            fileId,
+            !!attachments.find((d) => d.id === fileId)?.persisted ||
+              !!(await getLocalFile(fileId)),
+          ] as const;
         } catch {
           return [fileId, false] as const;
         }
@@ -142,7 +149,11 @@ export default function ReviewInput(props: ReviewInputProps) {
 
   async function download(file: DocumentRecord) {
     try {
-      await downloadLocalFile(file.id, file.name);
+      await downloadOriginal(
+        file.persisted ? app?.backend : undefined,
+        file.id,
+        file.name,
+      );
     } catch (error) {
       if (mounted.current)
         setErrors([

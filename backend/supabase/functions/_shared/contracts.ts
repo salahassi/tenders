@@ -158,6 +158,7 @@ export const commandSchemas = {
           z
             .object({
               id: uuid.optional(),
+              client_id: uuid.optional(),
               target_kind: z.enum(["section", "question", "general"]),
               target_id: z.string().min(1).max(200),
               body: text.default(""),
@@ -182,6 +183,7 @@ export const commandSchemas = {
     .strict(),
   "document.prepare": z
     .object({
+      client_id: uuid.optional(),
       kind: z.enum(["rfp", "company", "review"]),
       opportunity_id: uuid.optional(),
       knowledge_item_id: uuid.optional(),
@@ -215,6 +217,50 @@ export const commandSchemas = {
           message: "Supply exactly the file's target record.",
         });
     }),
+  "document.confirm": z
+    .object({ id: uuid, expected_revision: revision })
+    .strict(),
+  "document.archive": z
+    .object({ id: uuid, expected_revision: revision, reason: text.min(1) })
+    .strict(),
+  "document.precedence": z
+    .object({
+      id: uuid,
+      expected_revision: revision,
+      precedence: z.number().int().min(0).max(1000),
+      supersedes_id: uuid.nullable(),
+    })
+    .strict(),
+  "document.extraction": z
+    .object({
+      id: uuid,
+      parts: z
+        .array(
+          z
+            .object({
+              ordinal: z.number().int().min(0).max(127),
+              text: z.string().min(1).max(12000),
+            })
+            .strict(),
+        )
+        .min(1)
+        .max(20),
+    })
+    .strict(),
+  "knowledge.document": z
+    .object({
+      id: uuid,
+      expected_revision: revision,
+      enabled: z.boolean(),
+      category: z.enum([
+        "company",
+        "team",
+        "previous_proposal",
+        "template",
+        "other",
+      ]),
+    })
+    .strict(),
   "notification.read": z
     .object({ id: uuid, expected_revision: revision })
     .strict(),
@@ -269,13 +315,14 @@ export type CommandName = keyof typeof commandSchemas;
 export const completeUploadSchema = z
   .object({
     extracted_text: z.string().max(200000).default(""),
+    from_parts: z.boolean().optional(),
     status: z
       .enum(["ready", "needs_ocr", "needs_processing", "error"])
       .default("needs_processing"),
   })
   .strict()
   .refine(
-    (v) => v.status !== "ready" || !!v.extracted_text.trim(),
+    (v) => v.status !== "ready" || v.from_parts || !!v.extracted_text.trim(),
     "Readable extraction text is required for ready status.",
   );
 export const applicationLimits = {

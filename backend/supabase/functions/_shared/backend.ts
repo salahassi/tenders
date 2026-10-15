@@ -220,6 +220,20 @@ export class Backend {
     if (error) throw databaseError(error);
     return data;
   }
+  async extraction(token: string, id: string) {
+    const { data, error } = await this.user(token).rpc("upload_extraction", {
+      document_id: id,
+    });
+    if (error) throw databaseError(error);
+    return data as string;
+  }
+  async verifyPages(id: string, pages: number) {
+    const { error } = await this.admin.rpc("verify_document_pages", {
+      document_id: id,
+      actual_pages: pages,
+    });
+    if (error) throw databaseError(error);
+  }
   async download(path: string) {
     const { data, error } = await this.admin.storage
       .from("tenderdesk-private")

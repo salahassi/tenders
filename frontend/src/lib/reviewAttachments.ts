@@ -63,7 +63,7 @@ export async function attachReviewFile(file: File): Promise<DocumentRecord> {
       if (view.getUint32(offset, true) !== 0x02014b50) continue;
       entries++;
       expandedBytes += view.getUint32(offset + 24, true);
-      if (entries > 2000 || expandedBytes > 50 * 1024 * 1024)
+      if (entries > 256 || expandedBytes > 40 * 1024 * 1024)
         throw new Error(
           "The archive exceeds safe local file limits. Choose a smaller document.",
         );

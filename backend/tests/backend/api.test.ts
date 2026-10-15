@@ -32,6 +32,8 @@ function fixture() {
     one: vi.fn(),
     download: vi.fn(),
     object: vi.fn(),
+    verifyPages: vi.fn(),
+    extraction: vi.fn(),
     accept: vi.fn(async () => ({ id: source, revision: 2 })),
   };
   const factory = vi.fn(() => backend as unknown as Backend);

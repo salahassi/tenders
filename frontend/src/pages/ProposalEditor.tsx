@@ -421,7 +421,7 @@ function ProposalReviewPage({
     setLegacyCache(false);
     if (!regenerate)
       notify(
-        "Review inputs saved in this browser. They have not been applied to the proposal file.",
+        "Review inputs saved. They have not been applied to the proposal file.",
       );
     return { ...proposal, review };
   }
