@@ -16,6 +16,13 @@ The initial Owner email was supplied privately. Real Owner onboarding remains pe
 
 The full continuation must be reconstructed from this verified repository baseline, committed in small durable checkpoints, and re-tested before any new completeness or deployment claim. See [the recovery note](RECOVERY_CHECKPOINT.md).
 
+## Original-content boundary and extraction checkpoint — October 15, 2026
+
+- Original upload now requires an in-browser review of exact bytes and metadata before even reserving cloud Storage. Known confidential/contact/secret patterns fail before upload; a checkbox cannot override detection. The reservation records the original hash, actor and time, and Storage RLS requires a current matching review. Unknown reviewer availability and canceled review fail closed. Detection assists review and does not certify arbitrary files safe.
+- Database triggers reject detected prohibited content in extracted parts, business notes, reviews, opportunity text, rates, templates, calculation inputs and generated sections. Auth identity metadata remains a separate access-administration record. Model payload checks remain independently enforced.
+- Browser extraction runs in a dedicated worker. DOCX conversion disables external files, embedded style maps and image loading, and preserves heading/paragraph/table-cell markers from the document structure. Source blocks retain character ranges plus structural anchors. Long extraction is bounded by a two-minute worker limit; original files remain unchanged.
+- Local verification: 88 backend tests and 108 frontend tests pass, including no-reservation/no-upload-before-review, exact-byte review, canceled/unavailable review, storage policy and structured Arabic table extraction. Both packages type-check and build. Worker packaging is verified by the production build; actual hosted browser worker and Storage acceptance are still pending deployment/account setup.
+
 ## Stage 5B interface and template checkpoint — October 15, 2026
 
 - Connected rate/template management, deterministic estimate and delivery forms, requirement confirmation, quoted compliance evidence, reviewer verdicts, question resolution and Owner exact-version approval are implemented. Reviewers can save scoped comments and attachments; only Owner/Editor can request regeneration. Shared feedback shows all authors and original base versions. Addendum precedence and supersession are editable with server revision checks.

@@ -145,22 +145,17 @@ it("disables the provider when measured usage exceeds its reservation", async ()
       .enabled,
   ).toBe(false);
 });
-it("rejects personal content even when the Owner attempts attestation", async () => {
-  await f.command("knowledge.save", {
-    category: "company",
-    title: "Synthetic contact",
-    content: "person@example.test",
-    enabled: true,
-    evidence: "",
-  });
-  const candidate = (await f.rpc("eligibility_candidates")).items[0];
+it("rejects personal content at storage before any Owner model attestation", async () => {
   await expect(
-    f.command("content.authorize", {
-      entity_kind: candidate.entity_kind,
-      entity_id: candidate.entity_id,
-      content_hash: candidate.content_hash,
-      provider: "gemini_free",
-      attestation: "nonconfidential_nonpersonal",
+    f.command("knowledge.save", {
+      category: "company",
+      title: "Synthetic contact",
+      content: "person@example.test",
+      enabled: true,
+      evidence: "",
     }),
   ).rejects.toThrow("DATA_POLICY_BLOCKED");
+  expect(
+    (await f.db.query("select id from public.knowledge_items")).rows,
+  ).toHaveLength(0);
 });

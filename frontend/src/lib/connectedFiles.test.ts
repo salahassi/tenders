@@ -1,7 +1,11 @@
+import { reviewOriginalEligibility } from "./contentEligibility";
 import { it, expect, vi, beforeEach } from "vitest";
 import { ConnectedRepository } from "./connectedRepository";
 import type { BackendClient } from "./backendClient";
 import type { DocumentRecord } from "../types";
+vi.mock("./contentEligibility", () => ({
+  reviewOriginalEligibility: vi.fn(async () => true),
+}));
 const originals = new Map<string, Blob>();
 vi.mock("./knowledgeFiles", () => ({
   getLocalFile: async (id: string) => originals.get(id),
@@ -150,4 +154,21 @@ it("rejects a file without actual original bytes before any upload or accepted-s
   );
   expect(f.uploadOriginal).not.toHaveBeenCalled();
   expect(f.commands).toEqual([]);
+});
+
+it("sends neither a reservation nor original bytes before original eligibility is confirmed", async () => {
+  const f = fixture(),
+    previous = await f.repository.load(),
+    next = structuredClone(previous),
+    d = file("Synthetic text");
+  originals.set(d.id, new Blob(["Synthetic original"]));
+  next.opportunities[0].documents.push(d);
+  vi.mocked(reviewOriginalEligibility).mockRejectedValueOnce(
+    new Error("Original review canceled"),
+  );
+  await expect(f.repository.save(previous, next)).rejects.toThrow(
+    "Original review canceled",
+  );
+  expect(f.commands).toHaveLength(0);
+  expect(f.uploadOriginal).not.toHaveBeenCalled();
 });

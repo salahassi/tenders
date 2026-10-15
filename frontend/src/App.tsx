@@ -1,3 +1,4 @@
+import OriginalEligibility from "./components/OriginalEligibility";
 import { useEffect, useState, lazy, Suspense } from "react";
 import {
   Link,
@@ -127,6 +128,7 @@ export default function App() {
     : [];
   return (
     <ErrorBoundary>
+      {connected && <OriginalEligibility />}
       <a href="#main" className="skip-link">
         Skip to content
       </a>

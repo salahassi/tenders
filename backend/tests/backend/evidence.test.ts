@@ -32,6 +32,7 @@ async function prepare(
   actor = owner,
 ) {
   return command(actor, "document.prepare", {
+    eligibility_attested: true,
     client_id: crypto.randomUUID(),
     kind,
     ...target,

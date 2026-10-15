@@ -1,3 +1,4 @@
+import { reviewOriginalEligibility } from "./contentEligibility";
 import { z } from "zod";
 import type {
   AppState,
@@ -845,6 +846,10 @@ export class ConnectedRepository {
       pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     };
     const mime = types[document.name.split(".").pop()!.toLowerCase()];
+    const eligibility_attested = await reviewOriginalEligibility(
+      document,
+      blob!,
+    );
     const reservation = await this.command(
       "document.prepare",
       {
@@ -854,6 +859,7 @@ export class ConnectedRepository {
         mime_type: mime,
         size: document.size,
         hash: document.hash,
+        eligibility_attested,
       },
       `prepare:${document.id}`,
     );

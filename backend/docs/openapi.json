@@ -2508,6 +2508,10 @@
                     "minLength": 1,
                     "maxLength": 1000
                   },
+                  "eligibility_attested": {
+                    "type": "boolean",
+                    "const": true
+                  },
                   "mime_type": {
                     "type": "string",
                     "enum": [
@@ -2536,6 +2540,7 @@
                 "required": [
                   "kind",
                   "original_name",
+                  "eligibility_attested",
                   "mime_type",
                   "size",
                   "hash"
@@ -9069,6 +9074,10 @@
                                   "minLength": 1,
                                   "maxLength": 1000
                                 },
+                                "eligibility_attested": {
+                                  "type": "boolean",
+                                  "const": true
+                                },
                                 "mime_type": {
                                   "type": "string",
                                   "enum": [
@@ -9097,6 +9106,7 @@
                               "required": [
                                 "kind",
                                 "original_name",
+                                "eligibility_attested",
                                 "mime_type",
                                 "size",
                                 "hash"

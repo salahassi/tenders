@@ -45,6 +45,7 @@ async function setup(confirm = true) {
     language: "en",
   });
   const document = await f.command("document.prepare", {
+    eligibility_attested: true,
     kind: "rfp",
     opportunity_id: opp.id,
     original_name: "synthetic.txt",
@@ -327,7 +328,9 @@ it("splits oversized work without dropping the original text boundaries", () => 
 });
 
 it("keeps all standard sections and rejects an inapplicable section assignment", async () => {
-  await f.db.query("select set_config('request.jwt.claim.sub',$1,false)", [f.owner]);
+  await f.db.query("select set_config('request.jwt.claim.sub',$1,false)", [
+    f.owner,
+  ]);
   const template = await f.rpc("template_defaults", ["ar"]);
   expect(template.required_sections).toHaveLength(17);
   expect(template.volume_mode).toBe("combined");

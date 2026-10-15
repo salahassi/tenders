@@ -170,6 +170,7 @@ describe("real PostgreSQL migrations and authorization", () => {
     });
     const id = (knowledge.rows[0] as { data: { id: string } }).data.id;
     const reservation = await command(editor, "document.prepare", {
+      eligibility_attested: true,
       kind: "company",
       knowledge_item_id: id,
       original_name: "team.txt",
@@ -195,6 +196,7 @@ describe("real PostgreSQL migrations and authorization", () => {
     );
     await expect(
       command(editor, "document.prepare", {
+        eligibility_attested: true,
         kind: "company",
         knowledge_item_id: id,
         original_name: "large.txt",
@@ -264,6 +266,7 @@ describe("real PostgreSQL migrations and authorization", () => {
     const empty = inputs.rows.find((x) => x.target_id === question)!;
     expect(empty.body).toBe("");
     await command(editor, "document.prepare", {
+      eligibility_attested: true,
       kind: "review",
       review_input_id: empty.id,
       original_name: "answer.txt",
@@ -298,6 +301,7 @@ describe("real PostgreSQL migrations and authorization", () => {
     });
     const knowledgeId = (knowledge.rows[0] as { data: { id: string } }).data.id;
     const reservation = await command(editor, "document.prepare", {
+      eligibility_attested: true,
       kind: "company",
       knowledge_item_id: knowledgeId,
       original_name: "evidence.txt",

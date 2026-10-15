@@ -417,6 +417,7 @@ export const commandSchemas = {
       knowledge_item_id: uuid.optional(),
       review_input_id: uuid.optional(),
       original_name: z.string().min(1).max(1000),
+      eligibility_attested: z.literal(true),
       mime_type: z.enum(Object.values(MIME_TYPES)),
       size: z.number().int().positive().max(10485760),
       hash,
