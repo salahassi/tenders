@@ -9,7 +9,11 @@ import {
 } from "./connectedRepository";
 import { AuthPanel } from "./AuthPanel";
 import { AccessLayout } from "./AccessLayout";
-import { pendingInvitation, clearPendingInvitation } from "./invitations";
+import {
+  readPendingInvitation,
+  clearPendingInvitation,
+  invitationChangedEvent,
+} from "./invitations";
 
 const message = (error: unknown) =>
   error instanceof Error ? error.message : "The workspace request failed.";
@@ -33,7 +37,12 @@ export function ConnectedProvider({
   const savingRef = useRef(false);
   const generation = useRef(0);
   const [retry, setRetry] = useState(0);
-  const [invitation, setInvitation] = useState(pendingInvitation);
+  const [invitation, setInvitation] = useState(() => readPendingInvitation());
+  useEffect(() => {
+    const sync = () => setInvitation(readPendingInvitation());
+    window.addEventListener(invitationChangedEvent, sync);
+    return () => window.removeEventListener(invitationChangedEvent, sync);
+  }, []);
   const [recovery, setRecovery] = useState(
     () =>
       new URLSearchParams(window.location.search).get("auth") === "recovery",

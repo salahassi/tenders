@@ -1,9 +1,16 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { BackendClient } from "./backendClient";
+import { deployment } from "./deployment";
 import { ArrowRight, Eye, EyeOff, LockKeyhole } from "lucide-react";
 
 export function authRedirect(recovery = false, invitationToken = "") {
-  const url = new URL(window.location.href);
+  const base =
+    import.meta.env.DEV &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1")
+      ? window.location.origin
+      : deployment.appOrigin;
+  const url = new URL(base.endsWith("/") ? base : `${base}/`);
   url.search = "";
   url.hash = "";
   url.searchParams.set("mode", "connected");
@@ -11,6 +18,20 @@ export function authRedirect(recovery = false, invitationToken = "") {
   if (!recovery && /^[a-f0-9]{64}$/.test(invitationToken))
     url.hash = `/invite/${invitationToken}`;
   return url.href;
+}
+
+function authErrorMessage(cause: unknown): string {
+  if (!(cause instanceof Error)) {
+    return "The sign-in request failed. Please try again.";
+  }
+  const text = cause.message.toLowerCase();
+  if (text.includes("email not confirmed")) {
+    return "Confirm your email first, then sign in. Check your inbox and spam folder for the Supabase link.";
+  }
+  if (text.includes("invalid login credentials")) {
+    return "Email or password is incorrect. If you have not created an account yet, open your invitation link and choose Create account.";
+  }
+  return cause.message;
 }
 export function AuthPanel({
   client,
@@ -133,11 +154,7 @@ export function AuthPanel({
         );
       }
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "The sign-in request failed. Please try again.",
-      );
+      setError(authErrorMessage(cause));
     } finally {
       setBusy(false);
     }

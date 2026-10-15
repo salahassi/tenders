@@ -160,7 +160,7 @@ describe("invitation-only email authentication", () => {
       "Synthetic-wrong-password",
     );
     await user.click(screen.getByRole("button", { name: "Sign in" }));
-    await screen.findByText("Invalid login credentials");
+    await screen.findByText(/Email or password is incorrect/i);
     expect(screen.getByLabelText("Email address")).toHaveValue(
       "invited@example.test",
     );

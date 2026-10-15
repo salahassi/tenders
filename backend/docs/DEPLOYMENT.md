@@ -2,7 +2,7 @@
 
 ## Scope and actual state
 
-**Current activation:** eight migrations and API v3/worker v1 are deployed. Hosted health, anonymous access denial, and invalid-invitation handling passed. The first Owner's selected email and real account/email/callback acceptance remain pending; see the checklist for the current frontend revision and Pages result.
+**Current activation:** twenty-two hosted migrations (through operations/retention plus repair tail), **API v4** / **worker v2**, and GitHub Pages at commit `f338c44` ([run 38770181985](https://github.com/salahassi/tenders/actions/runs/38770181985)). Hosted health and anonymous `/v1/me` denial passed October 15, 2026. Restricted Owner setup is prepared; Auth still has zero users until sign-up and invite acceptance. Cron, worker secret, model, and sources remain off — see the checklist.
 
 All frontend builds are connected-only. Demo query parameters, sample workspaces, and local reset/restore are retired. Pending/error states and server-confirmed saves prevent local data from being presented as remote success.
 
