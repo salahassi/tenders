@@ -1,5 +1,163 @@
-export function exportFixture(language="en",volume="combined",mode="draft"){
- const ar=language==="ar",section={section_key:"approach",title:ar?"منهجية التنفيذ":"Implementation approach",body:"",volume:"technical",content_blocks:[{type:"paragraph",text:ar?"يقسم هذا العرض التجريبي العمل إلى مراحل واضحة، تبدأ بتحليل المتطلبات وتنتهي باختبار القبول وتسليم الوثائق. يُربط كل مخرج بمتطلب محدد ومعيار يمكن التحقق منه.":"This synthetic proposal divides delivery into defined phases, from requirements analysis through acceptance testing and document handover. Each deliverable is linked to a specific requirement and a verifiable acceptance criterion."},{type:"table",headers:ar?["المرحلة","المخرج","معيار القبول"]:["Phase","Deliverable","Acceptance criterion"],rows:ar?[["تحليل المتطلبات","قائمة متطلبات قابلة للتتبع","مراجعة مالك المتطلب والموافقة"],["التنفيذ والاختبار","مسار موافقات مع سجل تدقيق","نجاح حالات الاختبار المتفق عليها"]]:[["Requirements analysis","Traceable requirement inventory","Requirement owner review and approval"],["Implementation and testing","Approval workflow and audit trail","Agreed acceptance scenarios pass"]]}]};
- const e={input:{lines:[{id:"line1",description:ar?"تنفيذ مسار الموافقات":"Approval workflow implementation",quantity:"10",unit:ar?"يوم":"day",period_count:"1",included_in_base:true,charge_group:"one_time"}],validity_date:"2099-01-01",commercial_terms:ar?"شروط تجريبية لمراجعة تنسيق المستند فقط.":"Synthetic terms for document-format verification only."},calculated:{currency:"SAR",net_price:"14520.00000000",tax:"2178.00000000",display_gross:"16698.00",optional_gross:"0.00000000",rounding_adjustment:"0.00",payment_basis:"base_gross",payments:[{title:ar?"القبول":"Acceptance",percent:"100",amount:"16698.00"}],lines:[{id:"line1",net_price:"14520.00000000",tax:"2178.00000000",gross_total:"16698.00000000"}]}};
- return{id:"00000000-0000-4000-8000-000000000099",created_at:"2026-10-15T12:00:00Z",mode,volume,snapshot:{title:ar?"عرض تجريبي لنظام الموافقات":"Synthetic approval workflow proposal",ordinal:1,language,opportunity_title:ar?"تحسين إجراءات اعتماد الطلبات":"Improving request approval procedures",template:{style_config:{company_name:"",footer:ar?"مستند اختبار اصطناعي":"Synthetic test document"}},sections:[section,{section_key:"legal",title:ar?"نص معتمد ثابت":"Fixed approved wording",body:ar?"هذا مثال اصطناعي لا ينشئ أي التزام تعاقدي.":"This synthetic example creates no contractual commitment.",volume:"shared"}],estimate:e,delivery:{calculated:{effort_person_days:"10.000000",duration_workdays:"12.000000",tasks:[{key:"build",title:ar?"تنفيذ المسار":"Implement workflow",role:ar?"مهندس برمجيات":"Software engineer",effort_days:"10",start_workday:"0",end_workday:"12"}]}},requirements:[{id:"req1",text:ar?"تسجيل قرارات الموافقة وإمكانية تتبعها":"Record approval decisions and preserve traceability",category:"functional"}],compliance:[{requirement_id:"req1",status:"answered",section_keys:["approach"]}]}};
+export function exportFixture(
+  language = "en",
+  volume = "combined",
+  mode = "draft",
+) {
+  const ar = language === "ar",
+    section = {
+      section_key: "approach",
+      title: ar ? "منهجية التنفيذ" : "Implementation approach",
+      body: "",
+      volume: "technical",
+      content_blocks: [
+        {
+          type: "paragraph",
+          text: ar
+            ? "يقسم هذا العرض التجريبي العمل إلى مراحل واضحة، تبدأ بتحليل المتطلبات وتنتهي باختبار القبول وتسليم الوثائق. يُربط كل مخرج بمتطلب محدد ومعيار يمكن التحقق منه."
+            : "This synthetic proposal divides delivery into defined phases, from requirements analysis through acceptance testing and document handover. Each deliverable is linked to a specific requirement and a verifiable acceptance criterion.",
+        },
+        {
+          type: "table",
+          headers: ar
+            ? ["المرحلة", "المخرج", "معيار القبول"]
+            : ["Phase", "Deliverable", "Acceptance criterion"],
+          rows: ar
+            ? [
+                [
+                  "تحليل المتطلبات",
+                  "قائمة متطلبات قابلة للتتبع",
+                  "مراجعة مالك المتطلب والموافقة",
+                ],
+                [
+                  "التنفيذ والاختبار",
+                  "مسار موافقات مع سجل تدقيق",
+                  "نجاح حالات الاختبار المتفق عليها",
+                ],
+              ]
+            : [
+                [
+                  "Requirements analysis",
+                  "Traceable requirement inventory",
+                  "Requirement owner review and approval",
+                ],
+                [
+                  "Implementation and testing",
+                  "Approval workflow and audit trail",
+                  "Agreed acceptance scenarios pass",
+                ],
+              ],
+        },
+      ],
+    };
+  const e = {
+    input: {
+      lines: [
+        {
+          id: "line1",
+          description: ar
+            ? "تنفيذ مسار الموافقات"
+            : "Approval workflow implementation",
+          quantity: "10",
+          unit: ar ? "يوم" : "day",
+          period_count: "1",
+          included_in_base: true,
+          charge_group: "one_time",
+        },
+      ],
+      validity_date: "2099-01-01",
+      commercial_terms: ar
+        ? "شروط تجريبية لمراجعة تنسيق المستند فقط."
+        : "Synthetic terms for document-format verification only.",
+    },
+    calculated: {
+      currency: "SAR",
+      net_price: "14520.00000000",
+      tax: "2178.00000000",
+      display_gross: "16698.00",
+      optional_gross: "0.00000000",
+      rounding_adjustment: "0.00",
+      payment_basis: "base_gross",
+      payments: [
+        {
+          title: ar ? "القبول" : "Acceptance",
+          percent: "100",
+          amount: "16698.00",
+        },
+      ],
+      lines: [
+        {
+          id: "line1",
+          net_price: "14520.00000000",
+          tax: "2178.00000000",
+          gross_total: "16698.00000000",
+        },
+      ],
+    },
+  };
+  return {
+    id: "00000000-0000-4000-8000-000000000099",
+    created_at: "2026-10-15T12:00:00Z",
+    mode,
+    volume,
+    snapshot: {
+      title: ar
+        ? "عرض تجريبي لنظام الموافقات"
+        : "Synthetic approval workflow proposal",
+      ordinal: 1,
+      language,
+      opportunity_title: ar
+        ? "تحسين إجراءات اعتماد الطلبات"
+        : "Improving request approval procedures",
+      template: {
+        style_config: {
+          company_name: "",
+          footer: ar ? "مستند اختبار اصطناعي" : "Synthetic test document",
+        },
+      },
+      sections: [
+        section,
+        {
+          section_key: "legal",
+          title: ar ? "نص معتمد ثابت" : "Fixed approved wording",
+          body: ar
+            ? "هذا مثال اصطناعي لا ينشئ أي التزام تعاقدي."
+            : "This synthetic example creates no contractual commitment.",
+          volume: "shared",
+        },
+      ],
+      estimate: e,
+      delivery: {
+        calculated: {
+          effort_person_days: "10.000000",
+          duration_workdays: "12.000000",
+          tasks: [
+            {
+              key: "build",
+              title: ar ? "تنفيذ المسار" : "Implement workflow",
+              role: ar ? "مهندس برمجيات" : "Software engineer",
+              effort_days: "10",
+              start_workday: "0",
+              end_workday: "12",
+            },
+          ],
+        },
+      },
+      requirements: [
+        {
+          id: "req1",
+          text: ar
+            ? "تسجيل قرارات الموافقة وإمكانية تتبعها"
+            : "Record approval decisions and preserve traceability",
+          category: "functional",
+        },
+      ],
+      compliance: [
+        {
+          requirement_id: "req1",
+          status: "answered",
+          section_keys: ["approach"],
+        },
+      ],
+    },
+  };
 }

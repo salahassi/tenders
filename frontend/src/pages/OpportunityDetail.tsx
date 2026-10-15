@@ -1,3 +1,4 @@
+import ProcurementHistory from "../components/ProcurementHistory";
 import AddendumOrder from "../components/AddendumOrder";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -326,6 +327,7 @@ export default function OpportunityDetail() {
                   <p className="simple-note">No RFP files attached yet.</p>
                 )}
               </section>
+              <ProcurementHistory opportunityId={o.id} />
               <GenerationPanel opportunity={o} />
               <section className="panel simple-section">
                 <span className="simple-step">STEP 2</span>

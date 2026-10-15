@@ -103,7 +103,7 @@ export function databaseError(error: {
         ? 403
         : code === "NOT_FOUND"
           ? 404
-          : /CONFLICT|STALE_|ALREADY/.test(code)
+          : /CONFLICT|STALE_|ALREADY|INVALID_TRANSITION/.test(code)
             ? 409
             : /CAP_REACHED/.test(code)
               ? 429

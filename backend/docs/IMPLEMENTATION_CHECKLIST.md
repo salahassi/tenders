@@ -16,12 +16,18 @@ The initial Owner email was supplied privately. Real Owner onboarding remains pe
 
 The full continuation must be reconstructed from this verified repository baseline, committed in small durable checkpoints, and re-tested before any new completeness or deployment claim. See [the recovery note](RECOVERY_CHECKPOINT.md).
 
+## Stage 6 manual acquisition/submission work — October 15, 2026
+
+- Implemented transactional acquisition transitions, Owner-only paid-acquisition approval, and an accepted/confirmed RFP trigger that records document possession without starting a model job. Original documents remain versioned.
+- Added Owner-only manual submission records with exact approved versions and final export artifact hashes, combined/separate-volume validation, explicit reviewed/unverified artifact status, append-only result/correction events, and cross-source related-opportunity records that preserve both originals.
+- Original and export reservations now share the same workspace storage cap under a lock. Local verification: 89 backend and 109 frontend tests pass; both packages type-check and build. Tests cover manual acquisition without jobs, immutable submission history, invalid terminal transitions, and stale-approval submission denial. Authenticated hosted UI acceptance remains pending; no hosted deployment is claimed.
+
 ## Stage 6 export work-in-progress checkpoint — October 15, 2026
 
 - Preserved on the continuation branch; not deployed to Supabase or Pages. This checkpoint prevents local work from being lost and does not close stage 6.
 - Added server-bound export snapshots, short-lived authorizations, exact-byte artifact verification, approval rechecks before downloads, draft/final and combined/separate-volume handling, worker-based Word packaging, and licensed embedded Amiri/Carlito fonts. Reviewed Word uploads must retain the authorized content; reviewed PDF uploads are explicitly Owner-attested.
 - Local evidence: all 88 backend tests pass, including artifact hash mismatch and stale approval denial; the new renderer test passes for four Arabic/English and combined/separate fixtures with embedded fonts and body-tampering rejection. Full frontend release checks remain pending for this checkpoint.
-- Visual review is **not complete**: rendered examples expose a missing visible contents heading, Arabic date/direction issues, untranslated internal labels, and wrapped monetary amounts. These defects must be fixed and all rendered pages re-inspected before release. Acquisition/submission, full backup/restore, retention, evaluation, hosted deployment and real-account acceptance remain open.
+- The follow-up corrects visible contents headings, Arabic direction/date spacing, internal labels, and monetary wrapping. All 15 rendered pages across four synthetic exports were visually inspected after correction: Arabic combined (5), English combined (4), English technical (3), English financial (3). Fonts embed and visible amounts agree with the deterministic fixture. See EXPORT_QA.md. Word must still update the live contents fields; neither browser generation nor this check establishes final Word pagination. Full backup/restore, retention, evaluation, hosted deployment and real-account acceptance remain open.
 
 ## Original-content boundary and extraction checkpoint — October 15, 2026
 

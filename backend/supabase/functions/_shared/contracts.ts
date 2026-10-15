@@ -63,9 +63,95 @@ const host = z
   .max(253)
   .regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i);
 export const commandSchemas = {
-  "export.renew": z.object({id:uuid,expected_revision:revision}).strict(),
-  "export.prepare": z.object({proposal_version_id:uuid,expected_revision:revision,mode:z.enum(["draft","final"]),volume:z.enum(["combined","technical","financial"])}).strict(),
-  "export.reserve": z.object({export_id:uuid,kind:z.enum(["generated","reviewed"]),original_name:z.string().min(1).max(200),mime_type:z.enum(["application/pdf","application/vnd.openxmlformats-officedocument.wordprocessingml.document"]),size:z.number().int().positive().max(10485760),hash,review_attested:z.boolean()}).strict(),
+  "export.renew": z.object({ id: uuid, expected_revision: revision }).strict(),
+  "acquisition.transition": z
+    .object({
+      opportunity_id: uuid,
+      expected_revision: z.number().int().min(0),
+      state: z.enum(["requested", "approved", "awaiting_document", "failed"]),
+      method: z
+        .enum(["manual_upload", "free_public", "paid_manual"])
+        .optional(),
+      fee: z
+        .string()
+        .regex(/^\d+(?:\.\d{1,6})?$/)
+        .max(30)
+        .nullable()
+        .optional(),
+      currency: z
+        .string()
+        .regex(/^[A-Z]{3}$/)
+        .nullable()
+        .optional(),
+      instructions: z.string().max(5000).optional(),
+      note: z.string().min(5).max(3000),
+      external_reference: z.string().max(1000).optional(),
+    })
+    .strict(),
+  "submission.record": z
+    .object({
+      proposal_version_id: uuid,
+      expected_revision: z.number().int().positive(),
+      artifact_ids: z.array(uuid).min(1).max(2),
+      submitted_at: z.iso.datetime({ offset: true }),
+      channel: z.string().min(2).max(200),
+      external_reference: z.string().min(1).max(1000),
+      sanitized_receipt: z.string().max(1000).optional(),
+    })
+    .strict(),
+  "submission.event": z
+    .object({
+      id: uuid,
+      expected_revision: z.number().int().positive(),
+      event_type: z.enum([
+        "withdrawn",
+        "won",
+        "lost",
+        "canceled",
+        "correction",
+      ]),
+      occurred_at: z.iso.datetime({ offset: true }),
+      reason: z.string().min(10).max(3000),
+      correction: z
+        .object({
+          submitted_at: z.iso.datetime({ offset: true }).optional(),
+          channel: z.string().min(2).max(200).optional(),
+          external_reference: z.string().min(1).max(1000).optional(),
+          sanitized_receipt: z.string().max(1000).optional(),
+        })
+        .strict()
+        .optional(),
+    })
+    .strict(),
+  "opportunity.relate": z
+    .object({
+      opportunity_id: uuid,
+      related_opportunity_id: uuid,
+      reason: z.string().min(10).max(3000),
+    })
+    .strict(),
+  "export.prepare": z
+    .object({
+      proposal_version_id: uuid,
+      expected_revision: revision,
+      mode: z.enum(["draft", "final"]),
+      volume: z.enum(["combined", "technical", "financial"]),
+    })
+    .strict(),
+  "export.reserve": z
+    .object({
+      export_id: uuid,
+      kind: z.enum(["generated", "reviewed"]),
+      original_name: z.string().min(1).max(200),
+      mime_type: z.enum([
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ]),
+      size: z.number().int().positive().max(10485760),
+      hash,
+      review_attested: z.boolean(),
+    })
+    .strict(),
   "rate.save": z
     .object({
       id: uuid.optional(),

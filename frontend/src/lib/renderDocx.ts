@@ -43,15 +43,18 @@ export async function renderDocx(
     size = rtl ? 29 : 23;
   function runs(text: string, bold = false, runSize = size) {
     return text
-      .split(/([A-Za-z0-9][A-Za-z0-9 .,:%_/@()+\-]*)/g)
+      .split(/([A-Za-z0-9](?:[A-Za-z0-9 .,:%_/@()+\-]*[A-Za-z0-9%])?)/g)
       .filter(Boolean)
       .map(
         (t) =>
           new TextRun({
-            text: t,
+            text: rtl && /^[A-Za-z0-9]/.test(t) ? "\u200e" + t + "\u200e" : t,
             bold,
             font,
-            size: runSize,
+            size:
+              rtl && runSize === size && !/[\u0600-\u06ff]/.test(t)
+                ? 23
+                : runSize,
             rightToLeft: /[\u0600-\u06ff]/.test(t),
             highlight: /\[INPUT REQUIRED/i.test(text) ? "yellow" : undefined,
           }),
@@ -60,6 +63,7 @@ export async function renderDocx(
   const para = (
     text: string,
     heading?: typeof HeadingLevel.HEADING_1 | typeof HeadingLevel.TITLE,
+    keepNext = false,
   ) =>
     new Paragraph({
       children: runs(
@@ -78,14 +82,22 @@ export async function renderDocx(
       bidirectional: rtl,
       heading,
       spacing: { after: heading ? 180 : 120, line: rtl ? 360 : 300 },
-      keepNext: !!heading,
+      keepNext: !!heading || keepNext,
       widowControl: true,
     });
   const children: (Paragraph | Table | TableOfContents)[] = [];
   let afterToc = false;
-  for (const b of model.blocks) {
+  for (const [blockIndex,b] of model.blocks.entries()) {
     if (b.type === "toc") {
       children.push(new Paragraph({ children: [], pageBreakBefore: true }));
+      children.push(
+        new Paragraph({
+          children: runs(b.text, true, rtl ? 36 : 30),
+          bidirectional: rtl,
+          spacing: { after: 240 },
+          keepNext: true,
+        }),
+      );
       children.push(
         new TableOfContents(b.text, {
           hyperlink: true,
@@ -100,17 +112,36 @@ export async function renderDocx(
       afterToc = false;
     }
     if (b.type === "table") {
-      const weights = b.headers.map((header,i) => Math.min(45, Math.max(8, header.length, ...b.rows.map(row => Math.min((row[i]||"").length, i===0?45:28)))));
-      const sum = weights.reduce((a,b)=>a+b,0), widths=weights.map(x=>Math.floor(9360*x/sum));
-      widths[widths.length-1]+=9360-widths.reduce((a,b)=>a+b,0);
-      const border={style:BorderStyle.SINGLE,size:4,color:"D9D9D9"};
+      const weights = b.headers.map((header, i) =>
+        Math.min(
+          45,
+          Math.max(
+            14,
+            header.length,
+            ...b.rows.map((row) =>
+              Math.min((row[i] || "").length, i === 0 ? 45 : 28),
+            ),
+          ),
+        ),
+      );
+      const sum = weights.reduce((a, b) => a + b, 0),
+        widths = weights.map((x) => Math.floor((9360 * x) / sum));
+      widths[widths.length - 1] += 9360 - widths.reduce((a, b) => a + b, 0);
+      const border = { style: BorderStyle.SINGLE, size: 4, color: "D9D9D9" };
       children.push(
         new Table({
           width: { size: 9360, type: WidthType.DXA },
           layout: TableLayoutType.FIXED,
           visuallyRightToLeft: rtl,
           columnWidths: widths,
-          borders:{top:border,bottom:border,left:border,right:border,insideHorizontal:border,insideVertical:border},
+          borders: {
+            top: border,
+            bottom: border,
+            left: border,
+            right: border,
+            insideHorizontal: border,
+            insideVertical: border,
+          },
           rows: [b.headers, ...b.rows].map(
             (row, index) =>
               new TableRow({
@@ -121,7 +152,7 @@ export async function renderDocx(
                     new TableCell({
                       width: { size: widths[i], type: WidthType.DXA },
                       verticalAlign: VerticalAlign.CENTER,
-                  margins: { top: 100, bottom: 100, left: 100, right: 100 },
+                      margins: { top: 100, bottom: 100, left: 100, right: 100 },
                       shading: index === 0 ? { fill: "DCE8F2" } : undefined,
                       children: [
                         new Paragraph({
@@ -129,6 +160,10 @@ export async function renderDocx(
                           spacing: { after: 60, line: rtl ? 340 : 280 },
                           children: runs(row[i] || "", index === 0),
                           widowControl: true,
+                          keepNext:
+                            b.headers.length === 2 &&
+                            b.rows.length <= 7 &&
+                            index < b.rows.length,
                         }),
                       ],
                     }),
@@ -157,6 +192,7 @@ export async function renderDocx(
             : b.type === "title"
               ? HeadingLevel.TITLE
               : undefined,
+          model.blocks[blockIndex+1]?.type === "table",
         ),
       );
   }
@@ -183,6 +219,17 @@ export async function renderDocx(
       },
     ],
     styles: {
+      paragraphStyles: [1, 2].map((level) => ({
+        id: `TOC${level}`,
+        name: `toc ${level}`,
+        basedOn: "Normal",
+        run: { font, size },
+        paragraph: {
+          bidirectional: rtl,
+          alignment: rtl ? AlignmentType.RIGHT : AlignmentType.LEFT,
+          spacing: { after: 140 },
+        } as any,
+      })),
       default: {
         document: {
           run: { font, size, color: "000000" },
