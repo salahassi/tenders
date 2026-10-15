@@ -4,12 +4,9 @@ import { deployment } from "./deployment";
 import { ArrowRight, Eye, EyeOff, LockKeyhole } from "lucide-react";
 
 export function authRedirect(recovery = false, invitationToken = "") {
-  const base =
-    import.meta.env.DEV &&
-    (window.location.hostname === "localhost" ||
-      window.location.hostname === "127.0.0.1")
-      ? window.location.origin
-      : deployment.appOrigin;
+  // Always use the published app origin: this build talks to hosted Supabase even
+  // when you run `npm run dev` locally, so email links must not point at localhost.
+  const base = deployment.appOrigin;
   const url = new URL(base.endsWith("/") ? base : `${base}/`);
   url.search = "";
   url.hash = "";

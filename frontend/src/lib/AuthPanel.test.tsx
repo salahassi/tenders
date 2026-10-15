@@ -3,6 +3,7 @@ import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AuthPanel, authRedirect } from "./AuthPanel";
 import type { BackendClient } from "./backendClient";
+import { deployment } from "./deployment";
 afterEach(cleanup);
 function fixture() {
   const auth = {
@@ -25,6 +26,9 @@ describe("invitation-only email authentication", () => {
   it("retains the invitation in the confirmation redirect without placing it in the query string", () => {
     const token = "a".repeat(64);
     const redirect = new URL(authRedirect(false, token));
+    expect(redirect.origin + redirect.pathname.replace(/\/$/, "")).toBe(
+      deployment.appOrigin,
+    );
     expect(redirect.hash).toBe(`#/invite/${token}`);
     expect(redirect.search).not.toContain(token);
     expect(new URL(authRedirect(true, token)).hash).toBe("");
