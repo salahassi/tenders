@@ -113,6 +113,7 @@ function fixture() {
     request,
     enabledLoginProviders: async () => [],
     auth: {
+      rpc: async () => ({ data: null, error: null }),
       auth: {
         getSession: async () => ({ data: { session }, error: null }),
         onAuthStateChange: (cb: typeof authListener) => {

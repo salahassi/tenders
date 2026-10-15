@@ -170,6 +170,19 @@ export function ConnectedProvider({
           body: { token: invitation },
         });
         clearPendingInvitation();
+      } else {
+        // The designated Owner's password reset is enough. Ignore a refusal
+        // when this session is not that first account.
+        const { error: claimError } = await client.auth.rpc(
+          "claim_designated_owner",
+        );
+        if (
+          claimError &&
+          !/ACCESS_PENDING|VERIFIED_USER_REQUIRED|Could not find the function|schema cache/i.test(
+            claimError.message,
+          )
+        )
+          throw claimError;
       }
       return repository.refresh();
     };

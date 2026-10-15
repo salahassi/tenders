@@ -165,6 +165,35 @@ describe("HTTP invitation onboarding with real PostgreSQL authorization", () => 
       (await api(outsider)("invitations/accept", { token }, false)).status,
     ).toBe(401);
   });
+  it("opens the workspace when the designated Owner sets a password, without an invitation click", async () => {
+    await expect(
+      asUser(outsider, "select public.claim_designated_owner()"),
+    ).rejects.toThrow("ACCESS_PENDING");
+    expect(
+      (await db.query("select * from public.workspaces")).rows,
+    ).toHaveLength(0);
+    const claimed = await asUser(
+      owner,
+      "select public.claim_designated_owner() as data",
+    );
+    expect(claimed.rows[0].data).toMatchObject({ role: "Owner" });
+    const again = await asUser(
+      owner,
+      "select public.claim_designated_owner() as data",
+    );
+    expect(again.rows[0].data).toMatchObject({
+      role: "Owner",
+      workspace_id: (claimed.rows[0].data as { workspace_id: string })
+        .workspace_id,
+    });
+    expect(
+      (await db.query("select * from public.workspaces")).rows,
+    ).toHaveLength(1);
+    expect(
+      (await asUser(owner, "select role from public.current_membership()"))
+        .rows[0].role,
+    ).toBe("Owner");
+  });
   it("keeps access locked until the designated email is confirmed, then bootstraps once", async () => {
     const preview = await api()("invitations/check", { token }, false);
     expect(preview.status).toBe(200);
