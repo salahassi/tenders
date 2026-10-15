@@ -353,3 +353,142 @@ it("keeps all standard sections and rejects an inapplicable section assignment",
   ];
   expect(() => plannedSections(ctx)).toThrow("TEMPLATE_APPLICABILITY_CONFLICT");
 });
+
+it("queues material/profile reassessment only when enabled and preserves a declined decision", async () => {
+  const s = await setup();
+  await f.command("opportunity.decision", {
+    id: s.opp.id,
+    expected_revision: s.opp.revision,
+    target_state: "declined",
+    reason: "Synthetic decision preserved",
+  });
+  expect((await f.rpc("schedule_assessment_refresh")).scheduled).toBe(0);
+  await f.command("model.configure", {
+    expected_revision: 0,
+    enabled: true,
+    provider: "qwen_free",
+    model: "synthetic-model",
+    project_ref: "synthetic",
+    free_only: true,
+    billing_verified: true,
+    free_quota_only: true,
+    quota_ends_at: new Date(Date.now() + 86400000).toISOString(),
+    quota_remaining_tokens: 100000,
+    calls_per_day: 50,
+    input_per_day: 250000,
+    output_per_day: 50000,
+  });
+  expect((await f.rpc("schedule_assessment_refresh")).scheduled).toBe(1);
+  expect((await f.rpc("schedule_assessment_refresh")).scheduled).toBe(0);
+  const first = (
+    await f.db.query<any>(
+      "select * from public.generation_plans where kind='assessment'",
+    )
+  ).rows[0];
+  await f.db.query(
+    "update public.opportunities set description='Updated synthetic scope with more detail' where id=$1",
+    [s.opp.id],
+  );
+  expect((await f.rpc("schedule_assessment_refresh")).scheduled).toBe(1);
+  expect(
+    (
+      await f.db.query<any>(
+        "select status from public.generation_plans where id=$1",
+        [first.id],
+      )
+    ).rows[0].status,
+  ).toBe("canceled");
+  await f.command("knowledge.save", {
+    category: "company",
+    title: "Updated synthetic company profile",
+    content: "Synthetic software capability",
+    enabled: true,
+  });
+  expect((await f.rpc("schedule_assessment_refresh")).scheduled).toBe(1);
+  expect(
+    (
+      await f.db.query<any>(
+        "select decision from public.opportunities where id=$1",
+        [s.opp.id],
+      )
+    ).rows[0].decision,
+  ).toBe("declined");
+  expect(
+    (await f.db.query("select * from public.provider_usage")).rows,
+  ).toHaveLength(0);
+});
+it("checkpoints every long review segment and gives later tasks grounded directives instead of unbounded raw comments", async () => {
+  const s = await start();
+  await runPlan();
+  const proposal = (await f.db.query<any>("select * from public.proposals"))
+    .rows[0];
+  const review = await f.command("review.save", {
+    id: proposal.id,
+    expected_revision: proposal.revision,
+    base_version_id: proposal.active_version_id,
+    source_signature: "synthetic",
+    inputs: [
+      {
+        client_id: crypto.randomUUID(),
+        target_kind: "general",
+        target_id: "general",
+        body: "Explain acceptance testing. ".repeat(500),
+      },
+    ],
+  });
+  const current = (await f.db.query<any>("select * from public.proposals"))
+    .rows[0];
+  await f.command("proposal.regenerate", {
+    id: current.id,
+    expected_revision: current.revision,
+    base_version_id: current.active_version_id,
+    input_hash: "b".repeat(64),
+  });
+  const plan = (
+    await f.db.query<any>(
+      "select * from public.generation_plans where status='queued' order by created_at desc",
+    )
+  ).rows[0];
+  const steps = (
+    await f.db.query<any>(
+      "select * from public.generation_steps where plan_id=$1 and task='summarize_review' order by ordinal",
+      [plan.id],
+    )
+  ).rows;
+  expect(steps.length).toBeGreaterThan(1);
+  const text = plan.frozen_context.reviews[0].text;
+  expect(steps[0].input.start).toBe(0);
+  expect(steps.at(-1).input.end).toBe(Array.from(text).length);
+  for (let i = 1; i < steps.length; i++)
+    expect(steps[i].input.start).toBeLessThan(steps[i - 1].input.end);
+  const ctx: any = { plan, step: steps[0], steps, requirements: [] };
+  const input = taskInput(ctx);
+  expect(input.task).toBe("summarize_review");
+  expect(Array.from(input.evidence[0].text).length).toBe(6000);
+  expect(splitStep(ctx)![0].start).toBe(0);
+  const completed = steps.map((step) => ({
+    ...step,
+    status: "completed",
+    output: {
+      processed_review_ids: [step.input.review_id],
+      directives: [
+        {
+          instruction: "Explain acceptance tests",
+          source_refs: [
+            { id: step.input.review_id, quote: "Explain acceptance testing." },
+          ],
+        },
+      ],
+      questions: [],
+    },
+  }));
+  const planned = taskInput({
+    ...ctx,
+    steps: completed,
+    step: { task: "plan_proposal", input: { requirement_ids: [] } },
+  });
+  expect(planned.context.review_directives.length).toBe(steps.length);
+  expect(
+    planned.evidence.filter((e) => e.kind === "review")[0].text.length,
+  ).toBeLessThan(text.length);
+});

@@ -32,6 +32,7 @@ export function createWorkerHandler(
         : await backend.internal("verify_dispatcher_secret", { supplied });
       if (!allowed) return response({ error: "UNAUTHORIZED" }, 401);
       await backend.internal("maintenance_tick");
+      await backend.internal("schedule_assessment_refresh");
       const cleanup = await backend.internal("claim_storage_cleanup");
       if (!Array.isArray(cleanup))
         throw new AppError(
@@ -90,6 +91,7 @@ export function createWorkerHandler(
         [
           "classify_opportunity",
           "analyze_chunk",
+          "summarize_review",
           "plan_proposal",
           "draft_section",
           "plan_commercial",

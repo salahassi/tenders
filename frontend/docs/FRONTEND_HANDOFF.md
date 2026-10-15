@@ -1,22 +1,14 @@
 # Frontend handoff
 
-## Reconstruction checkpoint (October 15, 2026)
+## Release implementation (October 15, 2026)
 
-The continuation branch implements durable original upload/download, extraction batches and confirmation, company evidence verification, and scoped review text/attachments. Storage and API acceptance are required before UI success. Originals staged in IndexedDB are upload buffers, not a fallback workspace. Removed files are archived server-side to preserve evidence. Accepted bytes and extraction cannot be edited in place.
+The connected application implements invitations/members, source permissions and collection/imports, original upload and extraction, evidence verification, fit assessment, persistent generation/regeneration, commercial and delivery review, approval, bilingual Word export, manual acquisition/submission, operational status and original-inclusive backup/restore. Source and model execution require deliberate authorized activation. See [the implementation checklist](../../backend/docs/IMPLEMENTATION_CHECKLIST.md) for the exact published revision and hosted acceptance; implementation alone is not deployment.
 
-The paragraphs below describe the last published stage-1 boundary until this branch is deployed. Check IMPLEMENTATION_CHECKLIST for exact test/deployment status. Generation remains blocked by the explicitly deferred model configuration while the later stages are rebuilt.
+The user journey is **Review fit → select opportunity → upload and confirm the buyer’s RFP → generate the full linked proposal → review content and unresolved questions → supply scoped inputs or changes → regenerate a new version → approve and export → record manual submission**. The previous active version stays available until all regeneration stages succeed. The user does not manually build an outline. Actual prices and resource assumptions require explicit review.
 
-## Current delivery boundary
+All builds are connected-only. The old demo query cannot create a workspace. Saves await authenticated API/Storage acceptance; errors preserve entered values. Synthetic fixtures are confined to tests. Accounts use invitation-only email/password; historical actors imported by recovery never become users. Pending original files in IndexedDB are temporary upload buffers, not local workspace persistence.
 
-Production builds now use a connected Supabase repository for email/password authentication, invitation-only workspace membership, and core records. The first Owner requires a restricted setup invitation tied to a confirmed email. Owner-issued invitations are limited to five active users. Saves wait for the server; errors keep entered values, and failure never silently falls back to local persistence.
-
-All builds are connected-only. `?mode=demo` cannot open a local workspace. Login demo links, sample review/fit modals, canned fit and pricing evidence, local role switching, and reset/restore tools have been removed. Synthetic workspace data and its provider are test fixtures only. Connected file/proposal/review mutations, submission, removal, and restore remain blocked until their stages are implemented. No connected AI provider, crawler, scheduler, or procurement portal executes.
-
-Use [the implementation checklist](../../backend/docs/IMPLEMENTATION_CHECKLIST.md) for deployment evidence and remaining work, and update it with every project change.
-
-The current user journey is **Review fit → select opportunity → upload buyer’s RFP → generate its full linked proposal → review the file and identified issues → supply missing inputs or request changes → regenerate a new version**. Generation and regeneration remain disconnected boundaries. The UI no longer asks the user to create an outline, add sections, or fill an optional pricing form. It preserves current content separately from pending review inputs.
-
-`backend/docs/IMPLEMENTATION_SPEC.txt` remains a historical blueprint. The later user feedback and this handoff supersede its earlier interface workflow. Do not restore the removed screens or gates merely because the old specification describes them. Reconcile any future backend contract with this simpler interface.
+The later user decisions in DECISIONS and this handoff supersede historical outline/manual-section/demo instructions. Owner-only controls include provider policy, content eligibility, rates/templates, final approval, backup/restore and confirmed permanent purge. UI controls never replace server authorization.
 
 ## Workflow and data compatibility
 

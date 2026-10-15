@@ -40,6 +40,22 @@ export const blockSchema = z.discriminatedUnion("type", [
     .strict(),
 ]);
 export const modelSchemas = {
+  summarize_review: z
+    .object({
+      processed_review_ids: ids,
+      directives: z
+        .array(
+          z
+            .object({
+              instruction: short.min(1),
+              source_refs: z.array(quote).min(1).max(8),
+            })
+            .strict(),
+        )
+        .max(30),
+      questions: z.array(question).max(30),
+    })
+    .strict(),
   classify_opportunity: z
     .object({
       factors: z
@@ -253,6 +269,7 @@ export type Usage = {
   thinking: number | null;
 };
 export const caps: Record<ModelTask, number> = {
+  summarize_review: 4096,
   classify_opportunity: 2048,
   analyze_chunk: 4096,
   plan_proposal: 2048,
@@ -344,6 +361,16 @@ export function validateModelResult(
   const result = modelSchemas[task].parse(value) as any;
   if (blockedContent(JSON.stringify(result)))
     throw new ModelError("MODEL_OUTPUT_POLICY_BLOCKED");
+  if (task === "summarize_review") {
+    if (!sameIds(result.processed_review_ids, requiredIds))
+      throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+    for (const directive of result.directives)
+      validateQuotes(directive.source_refs, evidence, "review");
+    if (result.questions.some((q: any) => q.requirement_ids.length))
+      throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+    if (!result.directives.length && !result.questions.length)
+      throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+  }
   if (task === "classify_opportunity")
     for (const factor of Object.values(result.factors) as any[]) {
       validateQuotes(factor.notice_evidence, evidence, "notice");
@@ -675,7 +702,7 @@ export async function executeModel(
   available(config, provider.env);
   const prompt = JSON.stringify({
     task,
-    prompt_version: "tenderdesk-v2",
+    prompt_version: "tenderdesk-v3",
     writing_guide: writingGuide[language],
     repair_instruction: repair
       ? "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."

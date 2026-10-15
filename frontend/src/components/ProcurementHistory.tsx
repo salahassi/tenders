@@ -42,6 +42,29 @@ export default function ProcurementHistory({
     [correctionRef, setCorrectionRef] = useState(""),
     [related, setRelated] = useState(""),
     [relationReason, setRelationReason] = useState("");
+  const currentOpportunity = state.opportunities.find(
+    (o) => o.id === opportunityId,
+  );
+  const normalize = (value: string) =>
+    value
+      .normalize("NFKC")
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim();
+  const duplicateCandidates = currentOpportunity
+    ? state.opportunities.filter(
+        (o) =>
+          o.id !== opportunityId &&
+          o.sourceId !== currentOpportunity.sourceId &&
+          ((normalize(o.reference) &&
+            normalize(o.reference) ===
+              normalize(currentOpportunity.reference)) ||
+            (normalize(o.title) &&
+              normalize(o.title) === normalize(currentOpportunity.title)) ||
+            (normalize(o.buyer) &&
+              normalize(o.buyer) === normalize(currentOpportunity.buyer))),
+      )
+    : [];
   async function load() {
     if (!backend) return;
     const [a, s, h, v, p, e, f, r] = await Promise.all([
@@ -453,6 +476,33 @@ export default function ProcurementHistory({
       )}
       <details>
         <summary>Related advertisements from other sources</summary>
+        {duplicateCandidates.length > 0 && (
+          <>
+            <p>
+              Possible related advertisements match the buyer, procurement
+              reference or normalized title. Review their evidence before
+              linking; both records are preserved.
+            </p>
+            <ul>
+              {duplicateCandidates.map((o) => (
+                <li key={o.id}>
+                  {o.title} · {o.reference} · {o.buyer}
+                  {editor && (
+                    <Button
+                      disabled={busy}
+                      onClick={() => {
+                        setRelated(o.id);
+                        setRelationReason("");
+                      }}
+                    >
+                      Review relationship
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
         {relations.map((r) => (
           <p key={r.id}>
             {state.opportunities.find(

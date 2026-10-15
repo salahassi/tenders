@@ -1,0 +1,484 @@
+{
+  "kind": "synthetic",
+  "id": "large",
+  "buyer": "SYNTHETIC LARGE BUYER",
+  "blocks": [
+    {
+      "id": "large-block-1",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R001: The supplier shall demonstrate workflow step 1 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-2",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R002: The supplier shall demonstrate workflow step 2 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-3",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R003: The supplier shall demonstrate workflow step 3 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-4",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R004: The supplier shall demonstrate workflow step 4 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-5",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R005: The supplier shall demonstrate workflow step 5 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-6",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R006: The supplier shall demonstrate workflow step 6 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-7",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R007: The supplier shall demonstrate workflow step 7 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-8",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R008: The supplier shall demonstrate workflow step 8 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-9",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R009: The supplier shall demonstrate workflow step 9 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-10",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R010: The supplier shall demonstrate workflow step 10 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-11",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R011: The supplier shall demonstrate workflow step 11 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-12",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R012: The supplier shall demonstrate workflow step 12 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-13",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R013: The supplier shall demonstrate workflow step 13 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-14",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R014: The supplier shall demonstrate workflow step 14 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-15",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R015: The supplier shall demonstrate workflow step 15 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-16",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R016: The supplier shall demonstrate workflow step 16 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-17",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R017: The supplier shall demonstrate workflow step 17 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-18",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R018: The supplier shall demonstrate workflow step 18 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-19",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R019: The supplier shall demonstrate workflow step 19 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-20",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R020: The supplier shall demonstrate workflow step 20 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-21",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R021: The supplier shall demonstrate workflow step 21 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-22",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R022: The supplier shall demonstrate workflow step 22 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-23",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R023: The supplier shall demonstrate workflow step 23 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-24",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R024: The supplier shall demonstrate workflow step 24 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-25",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R025: The supplier shall demonstrate workflow step 25 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-26",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R026: The supplier shall demonstrate workflow step 26 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-27",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R027: The supplier shall demonstrate workflow step 27 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-28",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R028: The supplier shall demonstrate workflow step 28 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-29",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R029: The supplier shall demonstrate workflow step 29 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-30",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R030: The supplier shall demonstrate workflow step 30 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-31",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R031: The supplier shall demonstrate workflow step 31 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-32",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R032: The supplier shall demonstrate workflow step 32 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-33",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R033: The supplier shall demonstrate workflow step 33 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-34",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R034: The supplier shall demonstrate workflow step 34 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-35",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R035: The supplier shall demonstrate workflow step 35 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    },
+    {
+      "id": "large-block-36",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R036: The supplier shall demonstrate workflow step 36 and record acceptance evidence.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\nSynthetic explanatory context. No real organization, employee or credential is represented.\n",
+      "kind": "rfp",
+      "verified": false
+    }
+  ],
+  "requirements": [
+    {
+      "id": "large-requirement-1",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R001: The supplier shall demonstrate workflow step 1 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-1",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R001: The supplier shall demonstrate workflow step 1 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-2",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R002: The supplier shall demonstrate workflow step 2 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-2",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R002: The supplier shall demonstrate workflow step 2 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-3",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R003: The supplier shall demonstrate workflow step 3 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-3",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R003: The supplier shall demonstrate workflow step 3 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-4",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R004: The supplier shall demonstrate workflow step 4 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-4",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R004: The supplier shall demonstrate workflow step 4 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-5",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R005: The supplier shall demonstrate workflow step 5 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-5",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R005: The supplier shall demonstrate workflow step 5 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-6",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R006: The supplier shall demonstrate workflow step 6 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-6",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R006: The supplier shall demonstrate workflow step 6 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-7",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R007: The supplier shall demonstrate workflow step 7 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-7",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R007: The supplier shall demonstrate workflow step 7 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-8",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R008: The supplier shall demonstrate workflow step 8 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-8",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R008: The supplier shall demonstrate workflow step 8 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-9",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R009: The supplier shall demonstrate workflow step 9 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-9",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R009: The supplier shall demonstrate workflow step 9 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-10",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R010: The supplier shall demonstrate workflow step 10 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-10",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R010: The supplier shall demonstrate workflow step 10 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-11",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R011: The supplier shall demonstrate workflow step 11 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-11",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R011: The supplier shall demonstrate workflow step 11 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-12",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R012: The supplier shall demonstrate workflow step 12 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-12",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R012: The supplier shall demonstrate workflow step 12 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-13",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R013: The supplier shall demonstrate workflow step 13 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-13",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R013: The supplier shall demonstrate workflow step 13 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-14",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R014: The supplier shall demonstrate workflow step 14 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-14",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R014: The supplier shall demonstrate workflow step 14 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-15",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R015: The supplier shall demonstrate workflow step 15 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-15",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R015: The supplier shall demonstrate workflow step 15 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-16",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R016: The supplier shall demonstrate workflow step 16 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-16",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R016: The supplier shall demonstrate workflow step 16 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-17",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R017: The supplier shall demonstrate workflow step 17 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-17",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R017: The supplier shall demonstrate workflow step 17 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-18",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R018: The supplier shall demonstrate workflow step 18 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-18",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R018: The supplier shall demonstrate workflow step 18 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-19",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R019: The supplier shall demonstrate workflow step 19 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-19",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R019: The supplier shall demonstrate workflow step 19 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-20",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R020: The supplier shall demonstrate workflow step 20 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-20",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R020: The supplier shall demonstrate workflow step 20 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-21",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R021: The supplier shall demonstrate workflow step 21 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-21",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R021: The supplier shall demonstrate workflow step 21 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-22",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R022: The supplier shall demonstrate workflow step 22 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-22",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R022: The supplier shall demonstrate workflow step 22 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-23",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R023: The supplier shall demonstrate workflow step 23 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-23",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R023: The supplier shall demonstrate workflow step 23 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-24",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R024: The supplier shall demonstrate workflow step 24 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-24",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R024: The supplier shall demonstrate workflow step 24 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-25",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R025: The supplier shall demonstrate workflow step 25 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-25",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R025: The supplier shall demonstrate workflow step 25 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-26",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R026: The supplier shall demonstrate workflow step 26 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-26",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R026: The supplier shall demonstrate workflow step 26 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-27",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R027: The supplier shall demonstrate workflow step 27 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-27",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R027: The supplier shall demonstrate workflow step 27 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-28",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R028: The supplier shall demonstrate workflow step 28 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-28",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R028: The supplier shall demonstrate workflow step 28 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-29",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R029: The supplier shall demonstrate workflow step 29 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-29",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R029: The supplier shall demonstrate workflow step 29 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-30",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R030: The supplier shall demonstrate workflow step 30 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-30",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R030: The supplier shall demonstrate workflow step 30 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-31",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R031: The supplier shall demonstrate workflow step 31 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-31",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R031: The supplier shall demonstrate workflow step 31 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-32",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R032: The supplier shall demonstrate workflow step 32 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-32",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R032: The supplier shall demonstrate workflow step 32 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-33",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R033: The supplier shall demonstrate workflow step 33 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-33",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R033: The supplier shall demonstrate workflow step 33 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-34",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R034: The supplier shall demonstrate workflow step 34 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-34",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R034: The supplier shall demonstrate workflow step 34 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-35",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R035: The supplier shall demonstrate workflow step 35 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-35",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R035: The supplier shall demonstrate workflow step 35 and record acceptance evidence."
+    },
+    {
+      "id": "large-requirement-36",
+      "text": "SYNTHETIC LARGE BUYER \u2014 R036: The supplier shall demonstrate workflow step 36 and record acceptance evidence.",
+      "mandatory": true,
+      "source_id": "large-block-36",
+      "quote": "SYNTHETIC LARGE BUYER \u2014 R036: The supplier shall demonstrate workflow step 36 and record acceptance evidence."
+    }
+  ],
+  "required_questions": [
+    "Confirm independently verified company credentials.",
+    "Confirm resource availability."
+  ],
+  "expected_commercial_gross": "16698.00",
+  "editorial_review_minutes": null,
+  "owner_decision": "pending"
+}

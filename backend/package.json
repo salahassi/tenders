@@ -13,7 +13,8 @@
     "db:reset": "supabase db reset",
     "serve": "supabase functions serve",
     "deploy": "supabase functions deploy api && supabase functions deploy worker",
-    "contracts:generate": "node --experimental-strip-types scripts/backend/generate-openapi.ts"
+    "contracts:generate": "node --experimental-strip-types scripts/backend/generate-openapi.ts",
+    "evaluate": "node --experimental-strip-types scripts/backend/evaluate.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.117.3",

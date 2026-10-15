@@ -263,3 +263,53 @@ it("never sends rejected content and retains unknown usage on uncertain delivery
   );
   expect(send).toHaveBeenCalledTimes(1);
 });
+
+it("rejects invented feedback quotations and incomplete segment coverage", () => {
+  const evidence: any = [
+      {
+        id: "review-1",
+        kind: "review",
+        verified: false,
+        text: "Explain acceptance testing.",
+      },
+    ],
+    valid = {
+      processed_review_ids: ["review-1"],
+      directives: [
+        {
+          instruction: "Explain tests",
+          source_refs: [
+            { id: "review-1", quote: "Explain acceptance testing." },
+          ],
+        },
+      ],
+      questions: [],
+    };
+  expect(
+    validateModelResult("summarize_review", valid, evidence, ["review-1"]),
+  ).toEqual(valid);
+  expect(() =>
+    validateModelResult(
+      "summarize_review",
+      { ...valid, processed_review_ids: [] },
+      evidence,
+      ["review-1"],
+    ),
+  ).toThrow("MODEL_COVERAGE_INCOMPLETE");
+  expect(() =>
+    validateModelResult(
+      "summarize_review",
+      {
+        ...valid,
+        directives: [
+          {
+            instruction: "Invented",
+            source_refs: [{ id: "review-1", quote: "Company is certified" }],
+          },
+        ],
+      },
+      evidence,
+      ["review-1"],
+    ),
+  ).toThrow("EVIDENCE_REFERENCE_INVALID");
+});
