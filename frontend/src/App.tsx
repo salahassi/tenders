@@ -32,6 +32,7 @@ import {
 import { useApp } from "./lib/store";
 import { Button, EmptyState, Modal } from "./components/ui";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { WorkspaceSkeleton } from "./components/WorkspaceSkeleton";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Opportunities = lazy(() => import("./pages/Opportunities"));
 const OpportunityDetail = lazy(() => import("./pages/OpportunityDetail"));
@@ -106,17 +107,7 @@ export default function App() {
     const timer = setTimeout(clearToast, 5000);
     return () => clearTimeout(timer);
   }, [toast, clearToast]);
-  if (!ready)
-    return (
-      <div className="app-loading">
-        <div className="brand-mark">
-          t<span>.</span>
-        </div>
-        <h2>Opening your workspace</h2>
-        <p>Loading your saved opportunities…</p>
-        <span className="loading-line" />
-      </div>
-    );
+  if (!ready) return <WorkspaceSkeleton />;
   const results = query.trim()
     ? state.opportunities
         .filter((o) =>

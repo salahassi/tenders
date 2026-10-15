@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../lib/store";
+import {
+  setOverviewHealthVisible,
+  useOverviewHealthVisible,
+} from "../lib/overviewHealth";
 import { Button, Field } from "./ui";
 import "../pages/admin.css";
 type Status = {
@@ -111,10 +115,34 @@ export default function OperationsPanel({
       (!status.last_heartbeat_at ||
         Date.parse(status.server_time) - Date.parse(status.last_heartbeat_at) >
           600000);
+  const showOnOverview = useOverviewHealthVisible();
   if (!backend) return null;
   return (
     <section className="panel admin-section">
-      <h2>Processing health</h2>
+      <div className="admin-spread operations-heading">
+        <h2>Processing health</h2>
+        {compact ? (
+          <button
+            type="button"
+            className="btn btn-sm"
+            aria-label="Hide processing health"
+            onClick={() => setOverviewHealthVisible(false)}
+          >
+            Hide
+          </button>
+        ) : (
+          <label className="admin-inline-check">
+            <input
+              type="checkbox"
+              checked={showOnOverview}
+              onChange={(event) =>
+                setOverviewHealthVisible(event.target.checked)
+              }
+            />
+            Show on the overview
+          </label>
+        )}
+      </div>
       {error && (
         <p className="admin-error" role="alert">
           {error}

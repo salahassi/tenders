@@ -9,6 +9,7 @@ import { BackendClient, BackendRequestError } from "./backendClient";
 import { useApp } from "./store";
 import Settings from "../pages/Settings";
 import Sources from "../pages/Sources";
+import Dashboard from "../pages/Dashboard";
 import type { Session } from "@supabase/supabase-js";
 vi.mock("idb-keyval", () => ({
   get: vi.fn(() => {
@@ -22,6 +23,7 @@ vi.mock("idb-keyval", () => ({
 }));
 afterEach(() => {
   cleanup();
+  localStorage.clear();
   vi.clearAllMocks();
 });
 const workspace = "00000000-0000-4000-8000-000000000010";
@@ -354,8 +356,143 @@ describe("connected screens", () => {
       </ConnectedProvider>,
     );
     await screen.findByText("Workspace access pending");
+    expect(
+      screen.getByRole("button", { name: "Check access again" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Opening your workspace" }),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText(/server opportunities/)).not.toBeInTheDocument();
     expect(get).not.toHaveBeenCalled();
+  });
+  it("shows the workspace skeleton while the session and workspace are loading", async () => {
+    const f = fixture();
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const original = f.request.getMockImplementation();
+    f.request.mockImplementation(async (path, options) => {
+      await gate;
+      return original!(path, options);
+    });
+    render(
+      <MemoryRouter>
+        <ConnectedProvider client={f.client}>
+          <Probe />
+        </ConnectedProvider>
+      </MemoryRouter>,
+    );
+    expect(
+      screen.getByRole("heading", { name: "Opening your workspace" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Checking your account and loading the workspace.",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Check access again" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Sign in to Tenderdesk" }),
+    ).not.toBeInTheDocument();
+    await act(async () => release());
+    await screen.findByText("1 server opportunities");
+    expect(
+      screen.queryByRole("heading", { name: "Opening your workspace" }),
+    ).not.toBeInTheDocument();
+  });
+  it("shows sign-in after the session check finds no account", async () => {
+    const f = fixture();
+    const auth = f.client.auth.auth as {
+      getSession: () => Promise<{
+        data: { session: Session | null };
+        error: null;
+      }>;
+    };
+    auth.getSession = async () => ({ data: { session: null }, error: null });
+    render(
+      <ConnectedProvider client={f.client}>
+        <Probe />
+      </ConnectedProvider>,
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Sign in to Tenderdesk" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Opening your workspace" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Check access again" }),
+    ).not.toBeInTheDocument();
+  });
+  it("lets the overview hide processing health and turn it back on", async () => {
+    const f = fixture();
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ConnectedProvider client={f.client}>
+          <Dashboard />
+        </ConnectedProvider>
+      </MemoryRouter>,
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Processing health" }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Hide processing health" }),
+    );
+    expect(
+      screen.queryByRole("heading", { name: "Processing health" }),
+    ).not.toBeInTheDocument();
+    expect(localStorage.getItem("tenderdesk:overview-processing-health")).toBe(
+      "hidden",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Show processing health" }),
+    );
+    expect(
+      screen.getByRole("heading", { name: "Processing health" }),
+    ).toBeInTheDocument();
+    expect(
+      localStorage.getItem("tenderdesk:overview-processing-health"),
+    ).toBeNull();
+  });
+  it("keeps processing health off on the next overview visit", async () => {
+    localStorage.setItem("tenderdesk:overview-processing-health", "hidden");
+    const f = fixture();
+    render(
+      <MemoryRouter>
+        <ConnectedProvider client={f.client}>
+          <Dashboard />
+        </ConnectedProvider>
+      </MemoryRouter>,
+    );
+    expect(
+      await screen.findByRole("button", { name: "Show processing health" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("heading", { name: "Processing health" }),
+    ).not.toBeInTheDocument();
+  });
+  it("turns overview processing health off from settings", async () => {
+    const f = fixture();
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ConnectedProvider client={f.client}>
+          <Settings />
+        </ConnectedProvider>
+      </MemoryRouter>,
+    );
+    const toggle = await screen.findByRole("checkbox", {
+      name: "Show on the overview",
+    });
+    expect(toggle).toBeChecked();
+    await user.click(toggle);
+    expect(toggle).not.toBeChecked();
+    expect(localStorage.getItem("tenderdesk:overview-processing-health")).toBe(
+      "hidden",
+    );
   });
   it("removes workspace data immediately on sign out and on revoked membership", async () => {
     const f = fixture();

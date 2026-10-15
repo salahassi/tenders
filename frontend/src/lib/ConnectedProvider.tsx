@@ -9,6 +9,7 @@ import {
 } from "./connectedRepository";
 import { AuthPanel } from "./AuthPanel";
 import { AccessLayout } from "./AccessLayout";
+import { WorkspaceSkeleton } from "../components/WorkspaceSkeleton";
 import {
   readPendingInvitation,
   clearPendingInvitation,
@@ -128,15 +129,22 @@ export function ConnectedProvider({
     });
     const tokens = takeRecoveryTokens();
     const code = new URLSearchParams(window.location.search).get("code");
-    if (passwordRecoveryPending() && !tokens && !code && !passwordRecoveryError())
+    if (
+      passwordRecoveryPending() &&
+      !tokens &&
+      !code &&
+      !passwordRecoveryError()
+    )
       setRecoveryError(
         "This reset link did not include a sign-in session. Request a new password reset and open the newest email.",
       );
     if (tokens)
-      void client.auth.auth.setSession(tokens).then(({ error: sessionError }) => {
-        if (!active) return;
-        if (sessionError) setRecoveryError(sessionError.message);
-      });
+      void client.auth.auth
+        .setSession(tokens)
+        .then(({ error: sessionError }) => {
+          if (!active) return;
+          if (sessionError) setRecoveryError(sessionError.message);
+        });
     const {
       data: { subscription },
     } = client.auth.auth.onAuthStateChange((event, next) => {
@@ -351,6 +359,8 @@ export function ConnectedProvider({
         )}
       </AccessLayout>
     );
+  if (session === undefined || (session && phase === "loading"))
+    return <WorkspaceSkeleton />;
   if (!session || phase !== "ready")
     return (
       <AccessLayout>
@@ -364,35 +374,29 @@ export function ConnectedProvider({
         ) : (
           <section className="access-state" aria-live="polite">
             <h1>
-              {session === undefined || phase === "loading"
-                ? "Opening your workspace"
-                : phase === "pending"
-                  ? "Workspace access pending"
-                  : "Workspace unavailable"}
+              {phase === "pending"
+                ? "Workspace access pending"
+                : "Workspace unavailable"}
             </h1>
             <p>
-              {session === undefined || phase === "loading"
-                ? "Checking your account and workspace access…"
-                : phase === "pending"
-                  ? "You’re signed in, but this account doesn’t have workspace access yet. Open your invitation link or contact your workspace administrator."
-                  : "We couldn’t open your workspace. Please try again. Your saved data has not been changed."}
+              {phase === "pending"
+                ? "You’re signed in, but this account doesn’t have workspace access yet. Open your invitation link or contact your workspace administrator."
+                : "We couldn’t open your workspace. Please try again. Your saved data has not been changed."}
             </p>
-            {session && phase !== "loading" && (
-              <div className="access-state-actions">
-                <button
-                  className="btn btn-primary"
-                  onClick={() => void refresh()}
-                >
-                  Check access again
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  onClick={() => void signOut()}
-                >
-                  Sign out
-                </button>
-              </div>
-            )}
+            <div className="access-state-actions">
+              <button
+                className="btn btn-primary"
+                onClick={() => void refresh()}
+              >
+                Check access again
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={() => void signOut()}
+              >
+                Sign out
+              </button>
+            </div>
           </section>
         )}
       </AccessLayout>

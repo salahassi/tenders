@@ -557,6 +557,17 @@
     flex-wrap: wrap;
   }
 }
+.operations-heading {
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+.operations-heading h2 {
+  margin: 0;
+}
+.operations-heading .admin-inline-check {
+  flex-shrink: 0;
+  margin: 0;
+}
 .operations-metrics {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));

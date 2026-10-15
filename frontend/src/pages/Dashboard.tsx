@@ -12,6 +12,10 @@ import {
   Target,
 } from "lucide-react";
 import OperationsPanel from "../components/OperationsPanel";
+import {
+  setOverviewHealthVisible,
+  useOverviewHealthVisible,
+} from "../lib/overviewHealth";
 import { useApp } from "../lib/store";
 import { date, daysLeft } from "../lib/format";
 import { EmptyState, Metric, PageHeader } from "../components/ui";
@@ -19,6 +23,7 @@ import OpportunityTable from "../components/OpportunityTable";
 
 export default function Dashboard() {
   const { state, mode, operations } = useApp();
+  const showHealth = useOverviewHealthVisible();
   const inbox = state.opportunities.filter(
     (o) => o.status === "new" || o.status === "deferred",
   );
@@ -46,9 +51,20 @@ export default function Dashboard() {
         title="From opportunity to proposal."
         description="Review incoming opportunities, upload an RFP, and prepare your proposal file."
         actions={
-          <Link to="/opportunities?new=1" className="btn btn-primary">
-            <Plus size={16} /> Add opportunity
-          </Link>
+          <>
+            {!showHealth && (
+              <button
+                type="button"
+                className="btn"
+                onClick={() => setOverviewHealthVisible(true)}
+              >
+                Show processing health
+              </button>
+            )}
+            <Link to="/opportunities?new=1" className="btn btn-primary">
+              <Plus size={16} /> Add opportunity
+            </Link>
+          </>
         }
       />
       <div className="dashboard-date">
@@ -56,7 +72,7 @@ export default function Dashboard() {
         {date(new Date().toISOString())}
         <span>·</span>Workspace overview
       </div>
-      <OperationsPanel compact />
+      {showHealth && <OperationsPanel compact />}
       <section className="focus-banner">
         <div className="focus-icon">
           <Inbox size={25} />
