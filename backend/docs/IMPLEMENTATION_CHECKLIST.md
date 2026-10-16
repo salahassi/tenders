@@ -23,7 +23,7 @@ The user supplied a `BootFailure` at `2026-10-16T23:46:11.127Z` (October 17 at 0
 
 The canonical `api/handler.ts` exports `createApiHandler`. It was independently imported using Deno **2.1.4**, and its health handler returned 200. A recovery archive containing the tracked functions and import map from `37a0872` was extracted to a clean temporary directory; importing the actual `api/index.ts` with a test listener on the same runtime returned health 200 and anonymous bootstrap 401. This verifies the canonical source and recovery archive, not the hosted artifact. Both the complete function files and their relative paths must be preserved during redeployment. See the focused recovery command in [DEPLOYMENT.md](DEPLOYMENT.md#api-v6-bootfailure-recovery).
 
-Repository application code is unchanged by this diagnosis. Hosted health still returns 503; actual redeployment, new function version, protected-route acceptance, and Gemini execution remain unverified while management access is unavailable.
+Repository application code is unchanged by this diagnosis. Hosted health still returns 503; actual redeployment, new function version, protected-route acceptance, and Gemini execution remain unverified while management access is unavailable. The authorized CLI deployment was subsequently executed and stopped with `AccessTokenRequiredError` before upload. Setting the supported `SUPABASE_HOME=/workspace/.supabase-cli` resolved the read-only home-directory error. Browser login could be initiated, but it required an interactive verification code; the incomplete flow was cancelled without collecting credentials in chat. No backend deployment succeeded.
 
 | Component | Verified evidence | Remaining limitation |
 | --- | --- | --- |
