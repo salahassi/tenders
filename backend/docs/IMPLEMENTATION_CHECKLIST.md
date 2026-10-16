@@ -6,6 +6,16 @@ Verified October 15, 2026. This file separates implemented code, local verificat
 
 ## Verified release state
 
+### Gemini continuation — October 17, 2026
+
+The latest remote branch at inspection was `cursor/dual-model-failover-3283` (`87b0ca5`), two commits ahead of `main`. This continuation completes its provider-policy and runtime corrections for stages 4, 5, and 7: Gemini-only saves, accepted failover ranks, expired-profile selection, bounded quota failover, pinned proposal identity after measured/uncertain usage, single settlement of measured usage, supplied worker transport, and specific HTTP provider error codes. A new forward migration, `20261016220000_model_pool_runtime_fixes.sql`, preserves the earlier migration history. Google documentation confirms `gemini-3.8-flash`; the user selected it and reported adding its secrets to Supabase Edge Function Secrets. No other provider is activated by this change.
+
+Deno 2.9.6 found type incompatibilities in the default Decimal imports that Node's TypeScript check did not report. Named Decimal imports pass the Edge Function check, which is now part of the Pages workflow. Local Deno startup returned health 200, anonymous API 401, and unauthenticated worker 401. This does not identify the hosted startup failure's cause.
+
+Final local verification on Node 24.19.0 passed: 125 frontend tests across 23 files, 119 backend tests across 16 files, both TypeScript checks, both builds, generated OpenAPI contracts, and Deno 2.9.6 checks for both function entry points. Backend checks execute all migrations in embedded PostgreSQL, including real quota-failover and identity-pinning assertions. The frontend build retains its existing large-chunk warning. Publication evidence will be reconciled after the workflow completes.
+
+The current hosted API returned HTTP 503 `BOOT_ERROR` on its public health route, before any Gemini call. Supabase management credentials and startup logs are unavailable to this session; a secure `SUPABASE_ACCESS_TOKEN` requirement was saved in the environment draft. The three new provider migrations and current functions must be reconciled and deployed before hosted model acceptance. The earlier dispatcher correction remains pending. No hosted scheduler, model output, authenticated journey, or secret value has been verified in this continuation.
+
 | Component | Verified evidence | Remaining limitation |
 | --- | --- | --- |
 | Published application | `aec73775c397411eddbf2c4256e752ea4dd253fb`; [Pages run 38825944454](https://github.com/salahassi/tenders/actions/runs/38825944454) completed successfully October 15 at 23:51 UTC. Build passed on Node 24, then the deploy job finished in 19 seconds. [Open Tenderdesk](https://salahassi.github.io/tenders/). | Pages publishes the frontend only. The scheduler migration still requires a separate hosted application. |

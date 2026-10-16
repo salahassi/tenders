@@ -1,6 +1,8 @@
 # Free and free-tier model providers
 
-TenderDesk runs **connected-only** with **no paid fallback**. The worker uses **enabled** free provider profiles in `failover_rank` order and switches when a call cannot complete on the current endpoint (network uncertainty, provider quota wait, or token-count failure on that endpoint).
+TenderDesk runs **connected-only** with **no paid fallback**. The worker uses verified, **enabled** free provider profiles in `failover_rank` order. Gemini can be configured on its own; an unused Qwen or optional provider does not need a policy or credentials.
+
+Google's [model catalog](https://ai.google.dev/gemini-api/docs/models) and [Interactions API guide](https://ai.google.dev/gemini-api/docs/interactions), checked October 17, 2026, list Gemini 3.8 Flash as `gemini-3.8-flash`. Keep that exact identifier in both the backend secret and workspace policy. This verifies the identifier, not access or free quota for a particular account.
 
 ## Active adapters
 
@@ -42,7 +44,23 @@ Structured output uses OpenAI-style `response_format: { type: "json_object" }` w
 
 1. Load enabled profiles from `model_settings` ordered by `failover_rank`.
 2. Skip profiles that fail attestation, quota expiry, or secret mismatch.
-3. Fail over on `MODEL_NETWORK_UNCERTAIN`, `PROVIDER_QUOTA_WAIT`, or `TOKEN_COUNT_UNAVAILABLE`.
-4. Do **not** fail over on validation, policy, or authorization errors.
+3. Before reserving generation, try the next profile if token counting is unavailable or the provider quota is exhausted. After an explicit HTTP 429 generation rejection, the worker may reserve a different provider for the same job. All attempts still count against conservative daily limits.
+4. A timeout, disconnected response, or server error during generation can have consumed tokens. Retain unknown usage and stop; the Owner must reconcile it before another generation. Do **not** fail over on validation, policy, or authorization errors.
+5. A proposal can select another provider after its initial explicit rejection. Once a reservation has measured usage or uncertain delivery, its provider/model/project identity stays pinned for subsequent proposal steps.
 
 Unknown usage still blocks further calls until Owner reconciliation.
+
+## Activation and diagnosis
+
+The three Gemini secrets must exist in **Supabase Edge Function Secrets**, and the matching workspace policy must have an Owner-verified free quota and expiry. The provider-pool migrations (`20261016120000`, `20261016130000`, and `20261016220000`) and current `api`/`worker` functions must be deployed. Adding secrets alone does not apply migrations, enable a workspace policy, approve content, or activate the dispatcher. Keep other providers disabled unless separately verified.
+
+| Error | Meaning and next action |
+| --- | --- |
+| `PROVIDER_AUTH_FAILED` | Google returned HTTP 401 or 403. Verify the key, project access, and applicable API restrictions in the provider console. |
+| `PROVIDER_MODEL_NOT_FOUND` | The provider returned HTTP 404. Verify the exact model identifier and account availability. |
+| `PROVIDER_REQUEST_INVALID` | The provider returned HTTP 400. Check the deployed adapter's request against the current API contract. |
+| `PROVIDER_QUOTA_WAIT` | The provider returned HTTP 429 or the verified local quota cannot cover the reservation. Check quota and retry timing. |
+| `MODEL_NOT_CONFIGURED` | No usable enabled policy matches the backend credentials. Check all three secret names and the workspace policy. |
+| `MODEL_NETWORK_UNCERTAIN` / `USAGE_REVIEW_REQUIRED` | Delivery or usage could not be established. Reconcile the existing reservation before retrying. |
+
+`GET /functions/v1/api/v1/health` should return HTTP 200 without an account. A platform HTTP 503 `BOOT_ERROR` occurs before application routing and before Gemini processing. It requires the Edge Function startup log and a verified deployment; it is not evidence that a Gemini key or model was rejected. Never include secret values or raw provider response bodies in diagnostics.

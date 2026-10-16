@@ -1,9 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { AppError, databaseError } from "./http.ts";
-import {
-  MODEL_PROVIDER_IDS,
-  type ModelProviderId,
-} from "./modelProviders.ts";
+import { MODEL_PROVIDER_IDS, type ModelProviderId } from "./modelProviders.ts";
 export type ModelEnvironmentSlot = {
   provider: string;
   model: string;

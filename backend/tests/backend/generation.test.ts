@@ -194,6 +194,69 @@ it("requires extraction review before recording generation", async () => {
     (await f.db.query("select * from public.generation_plans")).rows,
   ).toHaveLength(0);
 });
+it("allows initial quota failover but pins a proposal after measured model usage", async () => {
+  await start();
+  const job = await f.rpc("claim_backend_job");
+  const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
+  const manifest = taskInput(ctx).manifest;
+  for (const [provider, rank] of [
+    ["gemini_free", 1],
+    ["qwen_free", 2],
+  ] as const) {
+    await f.command("model.configure", {
+      expected_revision: 0,
+      enabled: true,
+      provider,
+      model: "synthetic-model",
+      project_ref: "synthetic-project",
+      free_only: true,
+      billing_verified: true,
+      free_quota_only: true,
+      quota_ends_at: new Date(Date.now() + 86400000).toISOString(),
+      quota_remaining_tokens: 100000,
+      calls_per_day: 50,
+      input_per_day: 250000,
+      output_per_day: 50000,
+      failover_rank: rank,
+    });
+    for (const ref of manifest)
+      await f.command("content.authorize", {
+        ...ref,
+        provider,
+        attestation: "nonconfidential_nonpersonal",
+      });
+  }
+  const reserve = (provider: string, key: string) =>
+    f.rpc("reserve_model_call", [
+      job.id,
+      job.lease_token,
+      key,
+      "a".repeat(64),
+      1000,
+      2048,
+      JSON.stringify(manifest),
+      provider,
+    ]);
+  const rejected = await reserve("gemini_free", "initial");
+  await f.rpc("settle_model_call", [
+    rejected.id,
+    null,
+    null,
+    null,
+    "PROVIDER_QUOTA_WAIT",
+  ]);
+  const fallback = await reserve("qwen_free", "fallback");
+  await f.rpc("settle_model_call", [fallback.id, 100, 100, 0, null]);
+  const pool = await f.rpc("model_preflight", [
+    job.id,
+    job.lease_token,
+    JSON.stringify(manifest),
+  ]);
+  expect(pool.providers.map((p: any) => p.provider)).toEqual(["qwen_free"]);
+  await expect(reserve("gemini_free", "changed-identity")).rejects.toThrow(
+    "MODEL_IDENTITY_CHANGED",
+  );
+});
 it("persists all automatic stages and switches versions only after completion", async () => {
   const s = await start();
   expect(

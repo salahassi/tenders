@@ -594,9 +594,15 @@ export class FreeModelProvider {
         throw new ModelError(
           response.status === 429
             ? "PROVIDER_QUOTA_WAIT"
-            : response.status >= 500
-              ? "MODEL_NETWORK_UNCERTAIN"
-              : "PROVIDER_REQUEST_REJECTED",
+            : response.status === 401 || response.status === 403
+              ? "PROVIDER_AUTH_FAILED"
+              : response.status === 404
+                ? "PROVIDER_MODEL_NOT_FOUND"
+                : response.status === 400
+                  ? "PROVIDER_REQUEST_INVALID"
+                  : response.status >= 500
+                    ? "MODEL_NETWORK_UNCERTAIN"
+                    : "PROVIDER_REQUEST_REJECTED",
           after,
         );
       }
@@ -804,6 +810,7 @@ export async function executeModel(
   ledger: Ledger,
   language: "en" | "ar",
   repair = false,
+  fetcher: typeof fetch = fetch,
 ) {
   const pool = await ledger.preflight(manifest);
   const prompt = JSON.stringify({
@@ -827,8 +834,9 @@ export async function executeModel(
       lastError = new ModelError("MODEL_NOT_CONFIGURED");
       continue;
     }
-    const provider = new FreeModelProvider(env);
+    const provider = new FreeModelProvider(env, fetcher);
     let reservation: string | null = null;
+    let settled = false;
     try {
       const tokens = await provider.countTokens(prompt, schema);
       if (tokens > 20000) throw new ModelError("MODEL_CONTEXT_TOO_LARGE");
@@ -841,6 +849,7 @@ export async function executeModel(
       );
       const result = await provider.generate(task, prompt, schema);
       await ledger.settle(reservation, result.usage);
+      settled = true;
       if (result.usage.input === null || result.usage.output === null)
         throw new ModelError("USAGE_UNKNOWN");
       if (!result.complete) throw new ModelError("MODEL_OUTPUT_TRUNCATED");
@@ -858,13 +867,16 @@ export async function executeModel(
     } catch (error) {
       const code =
         error instanceof ModelError ? error.code : "MODEL_NETWORK_UNCERTAIN";
-      if (reservation)
+      if (reservation && !settled)
         await ledger.settle(
           reservation,
           { input: null, output: null, thinking: null },
           code,
         );
       lastError = error instanceof ModelError ? error : new ModelError(code);
+      // An uncertain generation may have consumed quota. Keep its reservation
+      // for reconciliation instead of sending the same content a second time.
+      if (reservation && code !== "PROVIDER_QUOTA_WAIT") throw lastError;
       if (isFailoverError(code)) continue;
       throw lastError;
     }

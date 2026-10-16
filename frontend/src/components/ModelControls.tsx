@@ -206,7 +206,7 @@ export default function ModelControls() {
   }
   async function saveAll() {
     for (const p of PROVIDERS) {
-      if (p.optional && !providerTouched(p.id)) continue;
+      if (!providerTouched(p.id) && revisions[p.id] === 0) continue;
       if (!(await saveProvider(p.id))) return;
     }
   }
@@ -317,9 +317,7 @@ export default function ModelControls() {
               (meta.id === "qwen_free" && !form.free_quota_only)
             }
             checked={form.enabled}
-            onChange={(e) =>
-              patchForm(meta.id, { enabled: e.target.checked })
-            }
+            onChange={(e) => patchForm(meta.id, { enabled: e.target.checked })}
           />{" "}
           Enable matching backend credentials after verification
         </label>
@@ -331,7 +329,8 @@ export default function ModelControls() {
     <section className="panel admin-section">
       <h2>Free model and data permissions</h2>
       <p>
-        Enable Gemini and Qwen for the primary failover pair when you can.
+        Configure one or more providers. Gemini can run on its own; add Qwen or
+        another provider only when you want an additional verified fallback.
         Groq, Mistral, and Cloudflare Workers AI are optional extra slots in the
         same ordered pool. The worker skips disabled profiles and tries the next
         enabled provider when one endpoint is unreachable or waiting on quota.

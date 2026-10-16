@@ -671,6 +671,7 @@ export async function processGeneration(
       },
       ctx.plan.frozen_context.language,
       ctx.step.repair_count === 1,
+      fetcher,
     );
     // Revalidate quotations against whole immutable source blocks; excerpt separators cannot become fabricated quotes.
     validateModelResult(

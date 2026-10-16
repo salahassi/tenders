@@ -45,6 +45,9 @@ jobs:
       - name: Check backend TypeScript
         working-directory: backend
         run: npm run typecheck
+      - name: Check Edge Functions with Deno
+        working-directory: backend
+        run: npm exec --yes --package=deno@2.9.6 -- deno check --no-lock --config supabase/functions/deno.json supabase/functions/api/index.ts supabase/functions/worker/index.ts
       - name: Run frontend tests
         working-directory: frontend
         run: npm test

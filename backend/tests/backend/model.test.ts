@@ -288,7 +288,7 @@ it("never sends rejected content and retains unknown usage on uncertain delivery
   );
   expect(send).toHaveBeenCalledTimes(1);
 });
-it("failures over to the next configured provider on network uncertainty", async () => {
+it("fails over before reservation when a provider token-count endpoint is unreachable", async () => {
   const geminiConfig = {
     ...config,
     provider: "gemini_free" as const,
@@ -297,11 +297,15 @@ it("failures over to the next configured provider on network uncertainty", async
   };
   const qwenConfig = { ...config, failover_rank: 2 };
   const reserved: string[] = [];
-  vi.spyOn(FreeModelProvider.prototype, "countTokens").mockResolvedValue(100);
-  vi.spyOn(FreeModelProvider.prototype, "generate").mockImplementation(
+  vi.spyOn(FreeModelProvider.prototype, "countTokens").mockImplementation(
     async function (this: FreeModelProvider) {
       if (this.env.provider === "gemini_free")
         throw new ModelError("MODEL_NETWORK_UNCERTAIN");
+      return 100;
+    },
+  );
+  vi.spyOn(FreeModelProvider.prototype, "generate").mockImplementation(
+    async function (this: FreeModelProvider) {
       return {
         text: JSON.stringify(analysis),
         usage: { input: 100, output: 90, thinking: 0 },
@@ -334,7 +338,143 @@ it("failures over to the next configured provider on network uncertainty", async
     ledger,
     "en",
   );
-  expect(reserved).toEqual(["gemini_free", "qwen_free"]);
+  expect(reserved).toEqual(["qwen_free"]);
+});
+
+it.each([
+  [400, "PROVIDER_REQUEST_INVALID"],
+  [401, "PROVIDER_AUTH_FAILED"],
+  [403, "PROVIDER_AUTH_FAILED"],
+  [404, "PROVIDER_MODEL_NOT_FOUND"],
+  [429, "PROVIDER_QUOTA_WAIT"],
+  [503, "MODEL_NETWORK_UNCERTAIN"],
+])(
+  "reports actionable provider errors for HTTP %i without exposing the response body",
+  async (status, code) => {
+    const provider = new FreeModelProvider(
+      env,
+      async () =>
+        new Response("sensitive provider response", { status: Number(status) }),
+    );
+    await expect(
+      provider.generate("analyze_chunk", "JSON", {}),
+    ).rejects.toThrow(String(code));
+  },
+);
+
+it("preserves measured usage when the returned JSON fails validation", async () => {
+  vi.spyOn(FreeModelProvider.prototype, "countTokens").mockResolvedValue(100);
+  vi.spyOn(FreeModelProvider.prototype, "generate").mockResolvedValue({
+    text: "{}",
+    usage: { input: 100, output: 20, thinking: 0 },
+    complete: true,
+  });
+  const ledger: Ledger = {
+    preflight: async () => ({ providers: [config] }),
+    reserve: async () => "measured-reservation",
+    settle: vi.fn(),
+  };
+  await expect(
+    executeModel(
+      "analyze_chunk",
+      {},
+      evidence,
+      ["block-1"],
+      [],
+      { qwen_free: env },
+      ledger,
+      "en",
+    ),
+  ).rejects.toThrow("MODEL_OUTPUT_INVALID");
+  expect(ledger.settle).toHaveBeenCalledExactlyOnceWith(
+    "measured-reservation",
+    { input: 100, output: 20, thinking: 0 },
+  );
+});
+
+it("does not try another provider after uncertain generation delivery", async () => {
+  vi.spyOn(FreeModelProvider.prototype, "countTokens").mockResolvedValue(100);
+  const generate = vi
+    .spyOn(FreeModelProvider.prototype, "generate")
+    .mockRejectedValue(new ModelError("MODEL_NETWORK_UNCERTAIN"));
+  const ledger: Ledger = {
+    preflight: async () => ({
+      providers: [config, { ...config, provider: "gemini_free" }],
+    }),
+    reserve: vi.fn(async () => "uncertain-reservation"),
+    settle: vi.fn(),
+  };
+  await expect(
+    executeModel(
+      "analyze_chunk",
+      {},
+      evidence,
+      ["block-1"],
+      [],
+      { qwen_free: env, gemini_free: { ...env, provider: "gemini_free" } },
+      ledger,
+      "en",
+    ),
+  ).rejects.toThrow("MODEL_NETWORK_UNCERTAIN");
+  expect(generate).toHaveBeenCalledTimes(1);
+  expect(ledger.reserve).toHaveBeenCalledTimes(1);
+  expect(ledger.settle).toHaveBeenCalledExactlyOnceWith(
+    "uncertain-reservation",
+    { input: null, output: null, thinking: null },
+    "MODEL_NETWORK_UNCERTAIN",
+  );
+});
+
+it("uses the supplied transport and tries the next provider after explicit HTTP quota rejection", async () => {
+  const gemini = { ...env, provider: "gemini_free" };
+  const transport = vi.fn<typeof fetch>(async (url) => {
+    if (String(url).endsWith(":countTokens"))
+      return Response.json({ totalTokens: 100 });
+    if (String(url).endsWith("/interactions"))
+      return new Response(null, { status: 429 });
+    return Response.json({
+      choices: [
+        {
+          finish_reason: "stop",
+          message: { content: JSON.stringify(analysis) },
+        },
+      ],
+      usage: { prompt_tokens: 100, completion_tokens: 50 },
+    });
+  });
+  const ledger: Ledger = {
+    preflight: async () => ({
+      providers: [{ ...config, provider: "gemini_free" }, config],
+    }),
+    reserve: vi.fn(async (_i, _o, _h, _m, provider) => provider),
+    settle: vi.fn(),
+  };
+  expect(
+    await executeModel(
+      "analyze_chunk",
+      {},
+      evidence,
+      ["block-1"],
+      [],
+      { gemini_free: gemini, qwen_free: env },
+      ledger,
+      "en",
+      false,
+      transport,
+    ),
+  ).toEqual(analysis);
+  expect(transport).toHaveBeenCalledTimes(3);
+  expect(ledger.settle).toHaveBeenNthCalledWith(
+    1,
+    "gemini_free",
+    { input: null, output: null, thinking: null },
+    "PROVIDER_QUOTA_WAIT",
+  );
+  expect(ledger.settle).toHaveBeenNthCalledWith(2, "qwen_free", {
+    input: 100,
+    output: 50,
+    thinking: null,
+  });
 });
 
 it("rejects invented feedback quotations and incomplete segment coverage", () => {

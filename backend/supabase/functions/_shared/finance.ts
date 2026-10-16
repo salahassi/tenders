@@ -1,4 +1,4 @@
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 import { z } from "zod";
 const D = Decimal.clone({ precision: 48, rounding: Decimal.ROUND_HALF_UP });
 export const decimalText = z.string().regex(/^\d{1,12}(?:\.\d{1,6})?$/);

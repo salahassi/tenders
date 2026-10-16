@@ -9330,12 +9330,15 @@
                                   "type": "string",
                                   "enum": [
                                     "gemini_free",
-                                    "qwen_free"
+                                    "qwen_free",
+                                    "groq_free",
+                                    "mistral_free",
+                                    "cloudflare_free"
                                   ]
                                 },
                                 "model": {
                                   "type": "string",
-                                  "pattern": "^[a-zA-Z0-9._-]{1,120}$"
+                                  "pattern": "^[a-zA-Z0-9._@/-]{1,120}$"
                                 },
                                 "project_ref": {
                                   "type": "string",
@@ -9376,6 +9379,11 @@
                                   "type": "integer",
                                   "minimum": 1000,
                                   "maximum": 50000
+                                },
+                                "failover_rank": {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 10
                                 }
                               },
                               "required": [
@@ -9435,7 +9443,10 @@
                                   "type": "string",
                                   "enum": [
                                     "gemini_free",
-                                    "qwen_free"
+                                    "qwen_free",
+                                    "groq_free",
+                                    "mistral_free",
+                                    "cloudflare_free"
                                   ]
                                 },
                                 "attestation": {

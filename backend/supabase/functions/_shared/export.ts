@@ -1,4 +1,4 @@
-import Decimal from "decimal.js";
+import { Decimal } from "decimal.js";
 import { XMLParser } from "fast-xml-parser";
 import { unzipSync } from "fflate";
 import { AppError } from "./http.ts";
