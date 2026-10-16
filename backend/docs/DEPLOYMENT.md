@@ -83,3 +83,19 @@ select public.configure_dispatcher(
 ```
 
 Verify the enabled cron job and the private dispatch/worker timestamps without selecting decrypted Vault values or request headers. The worker supports Vault-backed credential verification; a separate `APP_WORKER_SECRET` is optional and must not disagree with the configured dispatcher credential. Inspect the active worker configuration if authenticated dispatch is rejected. The application never grants browser/service-role permission to run `configure_dispatcher`.
+
+
+## API v6 BootFailure recovery
+
+The user-supplied API version 6 startup log on October 17, 2026 reports that deployed `api/handler.ts` does not export `createApiHandler`, which its `api/index.ts` imports. The canonical repository file does export that function. A clean extracted copy of the tracked function tree passed actual entry-point loading, health 200, and anonymous bootstrap 401 on Deno 2.1.4, matching the reported hosted runtime. Restore the complete canonical API source and dependencies rather than copying an entry point without its matching handler.
+
+From an authenticated Supabase CLI session with the current `main` checkout and backend dependencies installed:
+
+```sh
+cd backend
+npx supabase functions deploy api --project-ref nqfwbqeozmuiuwbiowil --import-map supabase/functions/deno.json --no-verify-jwt --use-api
+```
+
+These flags are documented in the [Supabase CLI function deployment reference](https://supabase.com/docs/reference/cli/supabase-functions-deploy). The API intentionally performs its own Auth and membership checks; preserve the existing `verify_jwt = false` configuration. The command deploys the API function and does not replay database migrations. For MCP deployment, upload the matching `api/index.ts`, `api/handler.ts`, all referenced `_shared` modules, and the import map with their relative paths intact. Inspect the deployed source first if the same export error persists.
+
+After deployment, record the new version and verify `GET /functions/v1/api/v1/health` returns 200 with `data.status = available`, and anonymous `GET /functions/v1/api/v1/bootstrap` returns 401. Then verify authenticated behavior separately. Reconcile the pending provider migrations against the hosted history before Gemini execution; a successful function restart alone does not establish model readiness.
