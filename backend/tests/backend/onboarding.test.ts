@@ -13,6 +13,7 @@ import { databaseWithMigrations } from "./databaseFixture";
 import { createApiHandler } from "../../supabase/functions/api/handler";
 import { AppError, databaseError } from "../../supabase/functions/_shared/http";
 import type { Backend } from "../../supabase/functions/_shared/backend";
+import { modelEnvironments } from "../../supabase/functions/_shared/backend";
 
 let db: PGlite;
 const owner = "11111111-1111-4111-8111-111111111111";
@@ -126,6 +127,7 @@ function api(id = owner) {
       serviceKey: "fixture",
       allowedOrigins: ["https://app.example.test"],
       workerSecret: "",
+      models: modelEnvironments(() => undefined),
     },
     () => backend as unknown as Backend,
   );

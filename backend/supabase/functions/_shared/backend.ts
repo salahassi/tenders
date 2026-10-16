@@ -7,7 +7,33 @@ export interface BackendEnvironment {
   allowedOrigins: string[];
   workerSecret: string;
   collectionHosts?: string[];
-  model?: { provider: string; model: string; projectRef: string; key: string };
+  models: Record<
+    "gemini_free" | "qwen_free",
+    { provider: string; model: string; projectRef: string; key: string }
+  >;
+}
+export function modelEnvironments(
+  get: (name: string) => string | undefined,
+): BackendEnvironment["models"] {
+  const legacyProvider = get("APP_MODEL_PROVIDER") || "",
+    legacyModel = get("APP_MODEL_NAME") || "",
+    legacyProject = get("APP_MODEL_PROJECT") || "",
+    legacyKey = get("APP_MODEL_KEY") || "";
+  const slot = (provider: "gemini_free" | "qwen_free", prefix: string) => ({
+    provider,
+    model:
+      get(`${prefix}_NAME`) ||
+      (legacyProvider === provider ? legacyModel : ""),
+    projectRef:
+      get(`${prefix}_PROJECT`) ||
+      (legacyProvider === provider ? legacyProject : ""),
+    key:
+      get(`${prefix}_KEY`) || (legacyProvider === provider ? legacyKey : ""),
+  });
+  return {
+    gemini_free: slot("gemini_free", "APP_MODEL_GEMINI"),
+    qwen_free: slot("qwen_free", "APP_MODEL_QWEN"),
+  };
 }
 function platformKey(value: string | undefined): string {
   if (!value) return "";
@@ -46,12 +72,7 @@ export function environment(
       .map((x) => x.trim())
       .filter(Boolean),
     workerSecret: get("APP_WORKER_SECRET") || "",
-    model: {
-      provider: get("APP_MODEL_PROVIDER") || "",
-      model: get("APP_MODEL_NAME") || "",
-      projectRef: get("APP_MODEL_PROJECT") || "",
-      key: get("APP_MODEL_KEY") || "",
-    },
+    models: modelEnvironments(get),
     collectionHosts: (get("APP_COLLECTION_HOSTS") || "")
       .split(",")
       .map((x) => x.trim().toLowerCase())

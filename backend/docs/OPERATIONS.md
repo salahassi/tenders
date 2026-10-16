@@ -42,9 +42,20 @@ Retention/purge and model-quality evaluation are tracked separately in the check
 
 ## Free model activation
 
-Model selection remains deferred. After the Owner chooses a provider, put `APP_MODEL_PROVIDER` (`gemini_free` or `qwen_free`), `APP_MODEL_NAME`, `APP_MODEL_PROJECT`, and `APP_MODEL_KEY` in the backend secret store. Never add credentials to repository files, the browser, or audit records. Match these exact non-secret identifiers in Workspace settings, verify billing and quota expiry, and authorize each exact content item after review. Qwen requires the Singapore workspace and effective Free Quota Only. A setting without matching server credentials remains blocked.
+Configure **both** supported free providers when possible so the worker can fail over if one endpoint is unreachable or waiting on quota.
 
-Provider requests are one call per persistent claim. Unknown delivery/usage retains the reservation; use the provider usage ledger and the Owner reconciliation control before retrying. Rejections retain conservative reserved totals. Actual usage beyond a reservation disables the model until reviewed. Neither quota exhaustion nor malformed output permits a paid fallback. The application cannot independently inspect provider billing settings; verification is an explicit dated Owner attestation.
+**Backend secrets (Supabase Edge, never in the repo or browser):**
+
+- Gemini: `APP_MODEL_GEMINI_NAME`, `APP_MODEL_GEMINI_PROJECT`, `APP_MODEL_GEMINI_KEY`
+- Qwen (Singapore free quota): `APP_MODEL_QWEN_NAME`, `APP_MODEL_QWEN_PROJECT`, `APP_MODEL_QWEN_KEY`
+
+Legacy `APP_MODEL_PROVIDER` + `APP_MODEL_NAME` + `APP_MODEL_PROJECT` + `APP_MODEL_KEY` still fill one slot for older setups.
+
+In Workspace settings, enable and verify **each** provider row (exact model id, project/workspace id, quota expiry, billing attestation; Qwen also requires Free Quota Only). Authorize each content item **for each provider** that may process it. A profile without matching secrets is skipped at runtime; if none match, jobs remain blocked.
+
+Additional free-tier vendors are catalogued in [FREE_MODEL_PROVIDERS.md](FREE_MODEL_PROVIDERS.md); only Gemini and Qwen have adapters today.
+
+Provider requests are one call per persistent claim. Unknown delivery/usage retains the reservation; use the provider usage ledger and the Owner reconciliation control before retrying. Rejections retain conservative reserved totals. Actual usage beyond a reservation disables **that provider profile** until reviewed. Neither quota exhaustion nor malformed output permits a paid fallback. The application cannot independently inspect provider billing settings; verification is an explicit dated Owner attestation.
 
 Provider adapter references checked October 15, 2026: Gemini Interactions API (`https://ai.google.dev/api/interactions-api`), structured output and countTokens documentation; Alibaba Cloud Model Studio free quota, OpenAI compatibility and structured-output documentation. Adapters must be re-verified before changing model families or API versions.
 

@@ -1,5 +1,6 @@
 // @vitest-environment node
-import { it, expect, vi } from "vitest";
+import { it, expect, vi, afterEach } from "vitest";
+afterEach(() => vi.restoreAllMocks());
 import {
   FreeModelProvider,
   executeModel,
@@ -7,6 +8,7 @@ import {
   validateModelResult,
   systemInstructions,
   available,
+  ModelError,
   type Ledger,
   type Evidence,
 } from "../../supabase/functions/_shared/model";
@@ -184,20 +186,21 @@ it("records Gemini thought usage and disables stored interactions", async () => 
 });
 it("reserves before sending and settles actual usage before validating output", async () => {
   const events: string[] = [];
-  const provider = new FreeModelProvider(env);
-  vi.spyOn(provider, "countTokens").mockResolvedValue(100);
-  vi.spyOn(provider, "generate").mockImplementation(async () => {
-    events.push("send");
-    return {
-      text: JSON.stringify(analysis),
-      usage: { input: 100, output: 90, thinking: 0 },
-      complete: true,
-    };
-  });
+  vi.spyOn(FreeModelProvider.prototype, "countTokens").mockResolvedValue(100);
+  vi.spyOn(FreeModelProvider.prototype, "generate").mockImplementation(
+    async () => {
+      events.push("send");
+      return {
+        text: JSON.stringify(analysis),
+        usage: { input: 100, output: 90, thinking: 0 },
+        complete: true,
+      };
+    },
+  );
   const ledger: Ledger = {
     preflight: async () => {
       events.push("preflight");
-      return config;
+      return { providers: [config] };
     },
     reserve: async () => {
       events.push("reserve");
@@ -213,21 +216,20 @@ it("reserves before sending and settles actual usage before validating output", 
     evidence,
     ["block-1"],
     [],
-    provider,
+    { qwen_free: env },
     ledger,
     "en",
   );
   expect(events).toEqual(["preflight", "reserve", "send", "settle"]);
 });
 it("never sends rejected content and retains unknown usage on uncertain delivery", async () => {
-  const provider = new FreeModelProvider(env),
-    send = vi
-      .spyOn(provider, "generate")
-      .mockRejectedValue(new Error("Synthetic network error"));
-  vi.spyOn(provider, "countTokens").mockResolvedValue(100);
+  const send = vi
+    .spyOn(FreeModelProvider.prototype, "generate")
+    .mockRejectedValue(new Error("Synthetic network error"));
+  vi.spyOn(FreeModelProvider.prototype, "countTokens").mockResolvedValue(100);
   const settle = vi.fn();
   const ledger: Ledger = {
-    preflight: async () => config,
+    preflight: async () => ({ providers: [config] }),
     reserve: async () => "reservation",
     settle,
   };
@@ -238,7 +240,7 @@ it("never sends rejected content and retains unknown usage on uncertain delivery
       evidence,
       ["block-1"],
       [],
-      provider,
+      { qwen_free: env },
       ledger,
       "en",
     ),
@@ -251,7 +253,7 @@ it("never sends rejected content and retains unknown usage on uncertain delivery
       evidence,
       ["block-1"],
       [],
-      provider,
+      { qwen_free: env },
       ledger,
       "en",
     ),
@@ -262,6 +264,54 @@ it("never sends rejected content and retains unknown usage on uncertain delivery
     "MODEL_NETWORK_UNCERTAIN",
   );
   expect(send).toHaveBeenCalledTimes(1);
+});
+it("failures over to the next configured provider on network uncertainty", async () => {
+  const geminiConfig = {
+    ...config,
+    provider: "gemini_free" as const,
+    project_ref: "gemini-project",
+    failover_rank: 1,
+  };
+  const qwenConfig = { ...config, failover_rank: 2 };
+  const reserved: string[] = [];
+  vi.spyOn(FreeModelProvider.prototype, "countTokens").mockResolvedValue(100);
+  vi.spyOn(FreeModelProvider.prototype, "generate").mockImplementation(
+    async function (this: FreeModelProvider) {
+      if (this.env.provider === "gemini_free")
+        throw new ModelError("MODEL_NETWORK_UNCERTAIN");
+      return {
+        text: JSON.stringify(analysis),
+        usage: { input: 100, output: 90, thinking: 0 },
+        complete: true,
+      };
+    },
+  );
+  const ledger: Ledger = {
+    preflight: async () => ({ providers: [geminiConfig, qwenConfig] }),
+    reserve: async (_i, _o, _h, _m, provider) => {
+      reserved.push(provider);
+      return `reservation-${provider}`;
+    },
+    settle: async () => {},
+  };
+  await executeModel(
+    "analyze_chunk",
+    {},
+    evidence,
+    ["block-1"],
+    [],
+    {
+      gemini_free: {
+        ...env,
+        provider: "gemini_free",
+        projectRef: "gemini-project",
+      },
+      qwen_free: env,
+    },
+    ledger,
+    "en",
+  );
+  expect(reserved).toEqual(["gemini_free", "qwen_free"]);
 });
 
 it("rejects invented feedback quotations and incomplete segment coverage", () => {

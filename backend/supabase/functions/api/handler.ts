@@ -215,8 +215,20 @@ export function createApiHandler(
             membership.workspace_id,
           ),
           operations: await backend.operations(token),
-          model: (await backend.list(token, "model_settings", {}, 1))
-            .records[0] || { enabled: false, blocker: "MODEL_NOT_CONFIGURED" },
+          model: await (async () => {
+            const { records } = await backend.list(
+              token,
+              "model_settings",
+              {},
+              10,
+            );
+            const enabled = records.some(
+              (row) => Boolean(row.enabled),
+            );
+            return records.length
+              ? { enabled, providers: records }
+              : { enabled: false, blocker: "MODEL_NOT_CONFIGURED" };
+          })(),
         });
       if (path === "/v1/status" && request.method === "GET")
         return respond(await backend.status(token));

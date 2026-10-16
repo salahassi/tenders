@@ -11,6 +11,7 @@ import type {
   Backend,
   BackendEnvironment,
 } from "../../supabase/functions/_shared/backend";
+import { modelEnvironments } from "../../supabase/functions/_shared/backend";
 const source: SourceInput = {
   id: crypto.randomUUID(),
   url: "https://feed.example.test/rss",
@@ -175,6 +176,7 @@ it("worker authenticates before claiming and commits only the validated source r
     workerSecret: "fixture-only-secret",
     allowedOrigins: [],
     collectionHosts: source.approved_hosts,
+    models: modelEnvironments(() => undefined),
   };
   const job = {
     id: crypto.randomUUID(),

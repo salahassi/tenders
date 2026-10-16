@@ -5,7 +5,10 @@ import type {
   Backend,
   BackendEnvironment,
 } from "../../supabase/functions/_shared/backend";
-import { environment } from "../../supabase/functions/_shared/backend";
+import {
+  environment,
+  modelEnvironments,
+} from "../../supabase/functions/_shared/backend";
 import {
   AppError,
   readJson,
@@ -21,6 +24,7 @@ const env: BackendEnvironment = {
   serviceKey: "synthetic-server-test-value",
   allowedOrigins: ["https://app.example.test"],
   workerSecret: "synthetic-worker-secret",
+  models: modelEnvironments(() => undefined),
 };
 function fixture() {
   const backend = {

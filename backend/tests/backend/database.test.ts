@@ -571,6 +571,8 @@ describe("connected UI commands through HTTP and PostgreSQL", () => {
         }
       },
     };
+    const { modelEnvironments } =
+      await import("../../supabase/functions/_shared/backend.ts");
     const handler = createApiHandler(
       {
         url: "https://example.supabase.co",
@@ -578,6 +580,7 @@ describe("connected UI commands through HTTP and PostgreSQL", () => {
         serviceKey: "fixture",
         allowedOrigins: ["https://app.example.test"],
         workerSecret: "",
+        models: modelEnvironments(() => undefined),
       },
       () =>
         backend as unknown as import("../../supabase/functions/_shared/backend.ts").Backend,

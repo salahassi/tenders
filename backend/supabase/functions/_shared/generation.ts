@@ -3,8 +3,8 @@ import {
   type Reference,
   type ModelTask,
   ModelError,
-  FreeModelProvider,
   executeModel,
+  parseModelPool,
   fitScore,
   sha256,
   validateModelResult,
@@ -624,34 +624,39 @@ export async function processGeneration(
         return;
       }
     }
-    const provider = new FreeModelProvider(
-      env.model || { provider: "", model: "", projectRef: "", key: "" },
-      fetcher,
-    );
     const result = await executeModel(
       input.task,
       input.context,
       input.evidence,
       input.requiredIds,
       input.manifest,
-      provider,
+      env.models,
       {
-        preflight: (manifest) =>
-          backend.internal("model_preflight", {
-            job_id: job.id,
-            lease: job.lease_token,
-            manifest,
-          }),
-        reserve: async (input_tokens, output_tokens, input_hash, manifest) =>
+        preflight: async (manifest) =>
+          parseModelPool(
+            await backend.internal("model_preflight", {
+              job_id: job.id,
+              lease: job.lease_token,
+              manifest,
+            }),
+          ),
+        reserve: async (
+          input_tokens,
+          output_tokens,
+          input_hash,
+          manifest,
+          provider,
+        ) =>
           (
             await backend.internal("reserve_model_call", {
               job_id: job.id,
               lease: job.lease_token,
-              call_key: `step:${ctx!.step.id}:attempt:${job.attempts}`,
+              call_key: `step:${ctx!.step.id}:attempt:${job.attempts}:${provider}`,
               input_tokens,
               output_tokens,
               input_hash,
               manifest,
+              target_provider: provider,
             })
           ).id,
         settle: async (reservation, usage, error_code) => {

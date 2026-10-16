@@ -57,6 +57,7 @@ async function reserve(s: Awaited<ReturnType<typeof setup>>, key = "first") {
     1000,
     2048,
     JSON.stringify([s.ref]),
+    "qwen_free",
   ]);
 }
 it("binds consent to the exact content and provider; rejects stale hashes", async () => {
@@ -68,7 +69,7 @@ it("binds consent to the exact content and provider; rejects stale hashes", asyn
         s.job.lease_token,
         JSON.stringify([s.ref]),
       ])
-    ).provider,
+    ).providers[0].provider,
   ).toBe("qwen_free");
   await f.command("knowledge.save", {
     id: s.item.id,
@@ -141,8 +142,11 @@ it("disables the provider when measured usage exceeds its reservation", async ()
     u = await reserve(s);
   await f.rpc("settle_model_call", [u.id, 2000, 2048, 0, null]);
   expect(
-    (await f.db.query<any>("select enabled from public.model_settings")).rows[0]
-      .enabled,
+    (
+      await f.db.query<any>(
+        "select enabled from public.model_settings where provider='qwen_free'",
+      )
+    ).rows[0].enabled,
   ).toBe(false);
 });
 it("rejects personal content at storage before any Owner model attestation", async () => {

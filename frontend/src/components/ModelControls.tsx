@@ -2,9 +2,24 @@ import { useEffect, useState } from "react";
 import { useApp } from "../lib/store";
 import { Button, Field } from "./ui";
 type Row = Record<string, any>;
+const PROVIDERS = [
+  {
+    id: "gemini_free",
+    label: "Gemini free tier",
+    rank: 1,
+    secretHint: "APP_MODEL_GEMINI_*",
+  },
+  {
+    id: "qwen_free",
+    label: "Qwen Singapore free quota",
+    rank: 2,
+    secretHint: "APP_MODEL_QWEN_*",
+  },
+] as const;
+type ProviderId = (typeof PROVIDERS)[number]["id"];
 const initial = {
   enabled: false,
-  provider: "",
+  provider: "" as ProviderId | "",
   model: "",
   project_ref: "",
   free_only: true,
@@ -15,23 +30,38 @@ const initial = {
   calls_per_day: 50,
   input_per_day: 250000,
   output_per_day: 50000,
+  failover_rank: 1,
 };
+const emptyForms = (): Record<ProviderId, typeof initial> => ({
+  gemini_free: { ...initial, provider: "gemini_free", failover_rank: 1 },
+  qwen_free: { ...initial, provider: "qwen_free", failover_rank: 2 },
+});
 export default function ModelControls() {
   const { backend, runCommand, state, saving, notify } = useApp();
-  const [form, setForm] = useState(initial),
-    [revision, setRevision] = useState(0),
-    [items, setItems] = useState<Row[]>([]),
-    [authorizations, setAuthorizations] = useState<Row[]>([]),
-    [usage, setUsage] = useState<Row[]>([]),
-    [error, setError] = useState(""),
-    [ready, setReady] = useState(false),
-    [selected, setSelected] = useState<Row | null>(null),
-    [attest, setAttest] = useState(false),
-    [resolution, setResolution] = useState<Row | null>(null),
-    [actualInput, setActualInput] = useState(""),
-    [actualOutput, setActualOutput] = useState(""),
-    [reason, setReason] = useState("");
+  const [forms, setForms] = useState(emptyForms);
+  const [revisions, setRevisions] = useState<Record<ProviderId, number>>({
+    gemini_free: 0,
+    qwen_free: 0,
+  });
+  const [items, setItems] = useState<Row[]>([]);
+  const [authorizations, setAuthorizations] = useState<Row[]>([]);
+  const [usage, setUsage] = useState<Row[]>([]);
+  const [error, setError] = useState("");
+  const [ready, setReady] = useState(false);
+  const [selected, setSelected] = useState<Row | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<ProviderId | "">("");
+  const [attest, setAttest] = useState(false);
+  const [resolution, setResolution] = useState<Row | null>(null);
+  const [actualInput, setActualInput] = useState("");
+  const [actualOutput, setActualOutput] = useState("");
+  const [reason, setReason] = useState("");
   const owner = state.settings.role === "Owner";
+  function patchForm(id: ProviderId, patch: Partial<typeof initial>) {
+    setForms((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], ...patch },
+    }));
+  }
   async function load() {
     if (!backend) return;
     try {
@@ -42,16 +72,29 @@ export default function ModelControls() {
         ),
         backend.request<{ records: Row[] }>("/v1/provider-usage?state=unknown"),
       ]);
-      if(!Array.isArray(settings.data.records)||!Array.isArray(eligibility.data.items)||!Array.isArray(eligibility.data.authorizations)||!Array.isArray(ledger.data.records))throw new Error("The model controls received an invalid response. Reload to retry.");
-      const m = settings.data.records[0];
-      if (m) {
-        setRevision(m.revision);
-        setForm({
-          ...initial,
+      if (
+        !Array.isArray(settings.data.records) ||
+        !Array.isArray(eligibility.data.items) ||
+        !Array.isArray(eligibility.data.authorizations) ||
+        !Array.isArray(ledger.data.records)
+      )
+        throw new Error(
+          "The model controls received an invalid response. Reload to retry.",
+        );
+      const next = emptyForms();
+      const nextRevisions = { gemini_free: 0, qwen_free: 0 };
+      for (const m of settings.data.records) {
+        const id = m.provider as ProviderId;
+        if (id !== "gemini_free" && id !== "qwen_free") continue;
+        nextRevisions[id] = m.revision;
+        next[id] = {
+          ...next[id],
           ...m,
           quota_ends_at: m.quota_ends_at?.slice(0, 16) || "",
-        });
+        };
       }
+      setForms(next);
+      setRevisions(nextRevisions);
       setItems(eligibility.data.items);
       setAuthorizations(eligibility.data.authorizations);
       setUsage(ledger.data.records);
@@ -78,39 +121,46 @@ export default function ModelControls() {
       return false;
     }
   }
-  async function save() {
-    if (
-      !form.provider ||
-      !form.model ||
-      !form.project_ref ||
-      !form.quota_ends_at
-    ) {
+  async function saveProvider(id: ProviderId) {
+    const form = forms[id];
+    if (!form.model || !form.project_ref || !form.quota_ends_at) {
       setError(
-        "Select a provider and record the exact model, project and verified quota expiry.",
+        `Complete model, project, and quota expiry for ${PROVIDERS.find((p) => p.id === id)?.label}.`,
       );
-      return;
+      return false;
     }
     const date = new Date(form.quota_ends_at + "Z");
     if (!Number.isFinite(date.getTime())) {
       setError("Enter a valid UTC expiry.");
-      return;
+      return false;
     }
-    await command("model.configure", {
+    return command("model.configure", {
       ...Object.fromEntries(
         Object.keys(initial).map((k) => [k, (form as Row)[k]]),
       ),
-      expected_revision: revision,
+      provider: id,
+      expected_revision: revisions[id],
       quota_ends_at: date.toISOString(),
     });
+  }
+  async function saveAll() {
+    for (const p of PROVIDERS) {
+      if (!(await saveProvider(p.id))) return;
+    }
   }
   if (!backend) return null;
   return (
     <section className="panel admin-section">
       <h2>Free model and data permissions</h2>
       <p>
-        Model selection is pending until you choose and verify a free account.
-        Credentials belong in the backend secret store. This form stores no API
-        key. No paid fallback is available.
+        Keep <strong>both</strong> Gemini and Qwen verified and enabled when you
+        can. The worker tries them in failover order when one endpoint is
+        unreachable or waiting on quota. Store{" "}
+        <code>APP_MODEL_GEMINI_*</code> and <code>APP_MODEL_QWEN_*</code> in
+        the backend secret store (legacy single <code>APP_MODEL_*</code> keys
+        still fill one slot). This form stores no API key. No paid fallback is
+        available. See <code>backend/docs/FREE_MODEL_PROVIDERS.md</code> for
+        other free-tier vendors not yet wired in the product.
       </p>
       {error && (
         <div role="alert" className="admin-error">
@@ -121,178 +171,180 @@ export default function ModelControls() {
         <p>Loading model settings…</p>
       ) : (
         <>
-          <div className="form-grid">
-            <Field label="Provider">
-              <select
-                disabled={!owner || saving}
-                value={form.provider}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    provider: e.target.value,
-                    enabled: false,
-                    billing_verified: false,
-                    free_quota_only: false,
-                  })
-                }
-              >
-                <option value="">Choose later</option>
-                <option value="gemini_free">Gemini free tier</option>
-                <option value="qwen_free">Qwen Singapore free quota</option>
-              </select>
-            </Field>
-            <Field label="Exact model identifier">
-              <input
-                disabled={!owner}
-                value={form.model}
-                onChange={(e) =>
-                  setForm({ ...form, model: e.target.value, enabled: false })
-                }
-              />
-            </Field>
-            <Field label="Verified project / workspace identifier">
-              <input
-                disabled={!owner}
-                value={form.project_ref}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    project_ref: e.target.value,
-                    enabled: false,
-                  })
-                }
-              />
-            </Field>
-            <Field label="Free quota expiry (UTC)">
-              <input
-                type="datetime-local"
-                disabled={!owner}
-                value={form.quota_ends_at}
-                onChange={(e) =>
-                  setForm({ ...form, quota_ends_at: e.target.value })
-                }
-              />
-            </Field>
-            {(
-              [
-                "quota_remaining_tokens",
-                "calls_per_day",
-                "input_per_day",
-                "output_per_day",
-              ] as const
-            ).map((k) => (
-              <Field key={k} label={k.replaceAll("_", " ")}>
-                <input
-                  type="number"
-                  min={1}
-                  disabled={!owner}
-                  value={form[k]}
-                  onChange={(e) =>
-                    setForm({ ...form, [k]: Number(e.target.value) })
-                  }
-                />
-              </Field>
-            ))}
-          </div>
-          <label>
-            <input
-              type="checkbox"
-              disabled={!owner}
-              checked={form.billing_verified}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  billing_verified: e.target.checked,
-                  enabled: false,
-                })
-              }
-            />{" "}
-            I verified this project's free billing status and the remaining
-            quota in the provider console.
-          </label>
-          {form.provider === "qwen_free" && (
-            <label>
-              <input
-                type="checkbox"
-                disabled={!owner}
-                checked={form.free_quota_only}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    free_quota_only: e.target.checked,
-                    enabled: false,
-                  })
-                }
-              />{" "}
-              Free Quota Only is enabled and effective for this Singapore model.
-            </label>
-          )}
-          <label>
-            <input
-              type="checkbox"
-              disabled={
-                !owner ||
-                !form.billing_verified ||
-                (form.provider === "qwen_free" && !form.free_quota_only)
-              }
-              checked={form.enabled}
-              onChange={(e) => setForm({ ...form, enabled: e.target.checked })}
-            />{" "}
-            Enable matching backend credentials after verification
-          </label>
-          <Button disabled={!owner || saving} onClick={save}>
-            Save model policy
+          {PROVIDERS.map((meta) => {
+            const form = forms[meta.id];
+            return (
+              <div key={meta.id} className="admin-muted-surface stack">
+                <h3>{meta.label}</h3>
+                <p className="admin-hint">
+                  Failover rank {form.failover_rank} · backend{" "}
+                  <code>{meta.secretHint}</code>
+                </p>
+                <div className="form-grid">
+                  <Field label="Exact model identifier">
+                    <input
+                      disabled={!owner}
+                      value={form.model}
+                      onChange={(e) =>
+                        patchForm(meta.id, {
+                          model: e.target.value,
+                          enabled: false,
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field label="Verified project / workspace identifier">
+                    <input
+                      disabled={!owner}
+                      value={form.project_ref}
+                      onChange={(e) =>
+                        patchForm(meta.id, {
+                          project_ref: e.target.value,
+                          enabled: false,
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field label="Free quota expiry (UTC)">
+                    <input
+                      type="datetime-local"
+                      disabled={!owner}
+                      value={form.quota_ends_at}
+                      onChange={(e) =>
+                        patchForm(meta.id, { quota_ends_at: e.target.value })
+                      }
+                    />
+                  </Field>
+                  {(
+                    [
+                      "quota_remaining_tokens",
+                      "calls_per_day",
+                      "input_per_day",
+                      "output_per_day",
+                    ] as const
+                  ).map((k) => (
+                    <Field key={k} label={k.replaceAll("_", " ")}>
+                      <input
+                        type="number"
+                        min={1}
+                        disabled={!owner}
+                        value={form[k]}
+                        onChange={(e) =>
+                          patchForm(meta.id, { [k]: Number(e.target.value) })
+                        }
+                      />
+                    </Field>
+                  ))}
+                </div>
+                <label>
+                  <input
+                    type="checkbox"
+                    disabled={!owner}
+                    checked={form.billing_verified}
+                    onChange={(e) =>
+                      patchForm(meta.id, {
+                        billing_verified: e.target.checked,
+                        enabled: false,
+                      })
+                    }
+                  />{" "}
+                  I verified this project's free billing status and the
+                  remaining quota in the provider console.
+                </label>
+                {meta.id === "qwen_free" && (
+                  <label>
+                    <input
+                      type="checkbox"
+                      disabled={!owner}
+                      checked={form.free_quota_only}
+                      onChange={(e) =>
+                        patchForm(meta.id, {
+                          free_quota_only: e.target.checked,
+                          enabled: false,
+                        })
+                      }
+                    />{" "}
+                    Free Quota Only is enabled and effective for this Singapore
+                    model.
+                  </label>
+                )}
+                <label>
+                  <input
+                    type="checkbox"
+                    disabled={
+                      !owner ||
+                      !form.billing_verified ||
+                      (meta.id === "qwen_free" && !form.free_quota_only)
+                    }
+                    checked={form.enabled}
+                    onChange={(e) =>
+                      patchForm(meta.id, { enabled: e.target.checked })
+                    }
+                  />{" "}
+                  Enable matching backend credentials after verification
+                </label>
+              </div>
+            );
+          })}
+          <Button disabled={!owner || saving} onClick={saveAll}>
+            Save both provider policies
           </Button>
+          <h3>Additional free-tier providers (documentation only)</h3>
+          <p>
+            Groq, Mistral La Plateforme, Cloudflare Workers AI, and Hugging Face
+            Inference offer limited free access with different JSON and data
+            terms. TenderDesk does not call them until a future adapter stage.
+            Full comparison lives in{" "}
+            <code>backend/docs/FREE_MODEL_PROVIDERS.md</code>.
+          </p>
           <h3>Content permitted for model processing</h3>
           <p>
-            Open each item and check its complete text. Approval is tied to its
-            current content and the selected provider. Changes require new
-            approval. Personal or confidential content must stay out of
-            free-provider requests; a checkbox does not make it suitable.
+            Authorize each item for <strong>every</strong> provider that may
+            process it. Failover requires matching approvals on all enabled
+            providers.
           </p>
           {items.length === 0 && <p>No eligible content has been added.</p>}
           <div className="stack">
-            {items.map((item) => {
-              const auth = authorizations.find(
-                (a) =>
-                  a.entity_id === item.entity_id &&
-                  a.entity_kind === item.entity_kind &&
-                  a.content_hash === item.content_hash &&
-                  a.provider === form.provider,
-              );
-              return (
-                <div key={item.entity_kind + item.entity_id}>
-                  <strong>{item.title}</strong> · {item.entity_kind} ·{" "}
-                  {auth ? "Authorized for selected provider" : "Not authorized"}{" "}
+            {items.map((item) => (
+              <div key={item.entity_kind + item.entity_id}>
+                <strong>{item.title}</strong> · {item.entity_kind} ·{" "}
+                {PROVIDERS.map((p) => {
+                  const auth = authorizations.find(
+                    (a) =>
+                      a.entity_id === item.entity_id &&
+                      a.entity_kind === item.entity_kind &&
+                      a.content_hash === item.content_hash &&
+                      a.provider === p.id,
+                  );
+                  return (
+                    <span key={p.id}>
+                      {p.label}: {auth ? "authorized" : "not authorized"}{" "}
+                    </span>
+                  );
+                })}
+                {PROVIDERS.map((p) => (
                   <Button
-                    disabled={!owner || !form.provider || saving}
+                    key={p.id}
+                    disabled={!owner || saving}
                     onClick={() => {
                       setSelected(item);
+                      setSelectedProvider(p.id);
                       setAttest(false);
                     }}
                   >
-                    Review text
+                    Review for {p.label}
                   </Button>
-                  {auth && (
-                    <Button
-                      disabled={!owner || saving}
-                      onClick={() =>
-                        command("content.revoke", {
-                          id: auth.id,
-                          expected_revision: auth.revision,
-                        })
-                      }
-                    >
-                      Revoke
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
+                ))}
+              </div>
+            ))}
           </div>
-          {selected && (
+          {selected && selectedProvider && (
             <div className="admin-muted-surface">
               <h3>{selected.title}</h3>
+              <p>
+                Provider:{" "}
+                {PROVIDERS.find((p) => p.id === selectedProvider)?.label}
+              </p>
               <pre
                 style={{
                   whiteSpace: "pre-wrap",
@@ -311,8 +363,8 @@ export default function ModelControls() {
                   onChange={(e) => setAttest(e.target.checked)}
                 />{" "}
                 I reviewed this exact text. It contains no personal or
-                confidential information and may be processed by {form.provider}
-                .
+                confidential information and may be processed by{" "}
+                {selectedProvider}.
               </label>
               <Button
                 disabled={!attest || saving}
@@ -322,16 +374,25 @@ export default function ModelControls() {
                       entity_kind: selected.entity_kind,
                       entity_id: selected.entity_id,
                       content_hash: selected.content_hash,
-                      provider: form.provider,
+                      provider: selectedProvider,
                       attestation: "nonconfidential_nonpersonal",
                     })
-                  )
+                  ) {
                     setSelected(null);
+                    setSelectedProvider("");
+                  }
                 }}
               >
                 Authorize this text
               </Button>
-              <Button onClick={() => setSelected(null)}>Close</Button>
+              <Button
+                onClick={() => {
+                  setSelected(null);
+                  setSelectedProvider("");
+                }}
+              >
+                Close
+              </Button>
             </div>
           )}
           <h3>Usage requiring review</h3>
@@ -344,8 +405,8 @@ export default function ModelControls() {
             .map((u) => (
               <div key={u.id}>
                 <p>
-                  {u.model} · {u.created_at} · reserved {u.reserved_input} input
-                  / {u.reserved_output} output
+                  {u.provider} · {u.model} · {u.created_at} · reserved{" "}
+                  {u.reserved_input} input / {u.reserved_output} output
                 </p>
                 <Button
                   disabled={!owner || saving}

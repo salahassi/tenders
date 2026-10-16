@@ -321,6 +321,7 @@ export const commandSchemas = {
       calls_per_day: z.number().int().min(1).max(50),
       input_per_day: z.number().int().min(1000).max(250000),
       output_per_day: z.number().int().min(1000).max(50000),
+      failover_rank: z.number().int().min(1).max(10).optional(),
     })
     .strict(),
   "content.authorize": z

@@ -246,9 +246,10 @@ export type Reference = {
   entity_id: string;
   content_hash: string;
 };
+export type ModelProviderId = "gemini_free" | "qwen_free";
 export type ModelConfiguration = {
   enabled: boolean;
-  provider: "gemini_free" | "qwen_free";
+  provider: ModelProviderId;
   model: string;
   project_ref: string;
   free_only: boolean;
@@ -256,7 +257,9 @@ export type ModelConfiguration = {
   free_quota_only: boolean;
   verified_at: string;
   quota_ends_at: string;
+  failover_rank?: number;
 };
+export type ModelPool = { providers: ModelConfiguration[] };
 export type ModelEnvironment = {
   provider: string;
   model: string;
@@ -502,14 +505,47 @@ export function exactExclusion(notice: string, rules: Evidence[]) {
   return null;
 }
 export interface Ledger {
-  preflight(manifest: Reference[]): Promise<ModelConfiguration>;
+  preflight(manifest: Reference[]): Promise<ModelPool>;
   reserve(
     input: number,
     output: number,
     hash: string,
     manifest: Reference[],
+    provider: ModelProviderId,
   ): Promise<string>;
   settle(id: string, usage: Usage, error?: string): Promise<void>;
+}
+export function tryAvailable(
+  config: ModelConfiguration,
+  env: ModelEnvironment,
+  now = Date.now(),
+) {
+  try {
+    available(config, env, now);
+    return true;
+  } catch {
+    return false;
+  }
+}
+const failoverErrors = new Set([
+  "MODEL_NETWORK_UNCERTAIN",
+  "PROVIDER_QUOTA_WAIT",
+  "TOKEN_COUNT_UNAVAILABLE",
+]);
+export function isFailoverError(code: string) {
+  return failoverErrors.has(code);
+}
+export function parseModelPool(value: unknown): ModelPool {
+  if (
+    value &&
+    typeof value === "object" &&
+    "providers" in value &&
+    Array.isArray((value as ModelPool).providers)
+  )
+    return value as ModelPool;
+  if (value && typeof value === "object" && "provider" in value)
+    return { providers: [value as ModelConfiguration] };
+  throw new ModelError("MODEL_NOT_CONFIGURED");
 }
 export class FreeModelProvider {
   constructor(
@@ -686,20 +722,19 @@ export class FreeModelProvider {
 }
 const validCount = (v: unknown): number | null =>
   typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null;
-/** One real call per queue claim. A repair is scheduled by the persistent job handler. */
+/** One real call per queue claim. Tries enabled providers in failover order. */
 export async function executeModel(
   task: ModelTask,
   context: unknown,
   evidence: Evidence[],
   requiredIds: string[],
   manifest: Reference[],
-  provider: FreeModelProvider,
+  environments: Partial<Record<ModelProviderId, ModelEnvironment>>,
   ledger: Ledger,
   language: "en" | "ar",
   repair = false,
 ) {
-  const config = await ledger.preflight(manifest);
-  available(config, provider.env);
+  const pool = await ledger.preflight(manifest);
   const prompt = JSON.stringify({
     task,
     prompt_version: "tenderdesk-v3",
@@ -712,39 +747,56 @@ export async function executeModel(
     evidence,
   });
   if (blockedContent(prompt)) throw new ModelError("DATA_POLICY_BLOCKED");
-  const schema = z.toJSONSchema(modelSchemas[task]),
-    tokens = await provider.countTokens(prompt, schema);
-  if (tokens > 20000) throw new ModelError("MODEL_CONTEXT_TOO_LARGE");
-  const reservation = await ledger.reserve(
-    tokens,
-    caps[task],
-    await sha256(prompt),
-    manifest,
-  );
-  let result: Awaited<ReturnType<FreeModelProvider["generate"]>>;
-  try {
-    result = await provider.generate(task, prompt, schema);
-  } catch (error) {
-    await ledger.settle(
-      reservation,
-      { input: null, output: null, thinking: null },
-      error instanceof ModelError ? error.code : "MODEL_NETWORK_UNCERTAIN",
-    );
-    throw error;
+  const schema = z.toJSONSchema(modelSchemas[task]);
+  const inputHash = await sha256(prompt);
+  let lastError: ModelError = new ModelError("MODEL_NOT_CONFIGURED");
+  for (const config of pool.providers) {
+    const env = environments[config.provider];
+    if (!env || !tryAvailable(config, env)) {
+      lastError = new ModelError("MODEL_NOT_CONFIGURED");
+      continue;
+    }
+    const provider = new FreeModelProvider(env);
+    let reservation: string | null = null;
+    try {
+      const tokens = await provider.countTokens(prompt, schema);
+      if (tokens > 20000) throw new ModelError("MODEL_CONTEXT_TOO_LARGE");
+      reservation = await ledger.reserve(
+        tokens,
+        caps[task],
+        inputHash,
+        manifest,
+        config.provider,
+      );
+      const result = await provider.generate(task, prompt, schema);
+      await ledger.settle(reservation, result.usage);
+      if (result.usage.input === null || result.usage.output === null)
+        throw new ModelError("USAGE_UNKNOWN");
+      if (!result.complete) throw new ModelError("MODEL_OUTPUT_TRUNCATED");
+      try {
+        return validateModelResult(
+          task,
+          JSON.parse(result.text),
+          evidence,
+          requiredIds,
+        );
+      } catch (error) {
+        if (error instanceof ModelError) throw error;
+        throw new ModelError("MODEL_OUTPUT_INVALID");
+      }
+    } catch (error) {
+      const code =
+        error instanceof ModelError ? error.code : "MODEL_NETWORK_UNCERTAIN";
+      if (reservation)
+        await ledger.settle(
+          reservation,
+          { input: null, output: null, thinking: null },
+          code,
+        );
+      lastError = error instanceof ModelError ? error : new ModelError(code);
+      if (isFailoverError(code)) continue;
+      throw lastError;
+    }
   }
-  await ledger.settle(reservation, result.usage);
-  if (result.usage.input === null || result.usage.output === null)
-    throw new ModelError("USAGE_UNKNOWN");
-  if (!result.complete) throw new ModelError("MODEL_OUTPUT_TRUNCATED");
-  try {
-    return validateModelResult(
-      task,
-      JSON.parse(result.text),
-      evidence,
-      requiredIds,
-    );
-  } catch (error) {
-    if (error instanceof ModelError) throw error;
-    throw new ModelError("MODEL_OUTPUT_INVALID");
-  }
+  throw lastError;
 }
