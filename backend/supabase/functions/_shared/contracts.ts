@@ -310,8 +310,14 @@ export const commandSchemas = {
     .object({
       expected_revision: z.number().int().min(0),
       enabled: z.boolean(),
-      provider: z.enum(["gemini_free", "qwen_free"]),
-      model: z.string().regex(/^[a-zA-Z0-9._-]{1,120}$/),
+      provider: z.enum([
+        "gemini_free",
+        "qwen_free",
+        "groq_free",
+        "mistral_free",
+        "cloudflare_free",
+      ]),
+      model: z.string().regex(/^[a-zA-Z0-9._@/-]{1,120}$/),
       project_ref: z.string().min(1).max(120),
       free_only: z.literal(true),
       billing_verified: z.boolean(),
@@ -335,7 +341,13 @@ export const commandSchemas = {
       ]),
       entity_id: uuid,
       content_hash: hash,
-      provider: z.enum(["gemini_free", "qwen_free"]),
+      provider: z.enum([
+        "gemini_free",
+        "qwen_free",
+        "groq_free",
+        "mistral_free",
+        "cloudflare_free",
+      ]),
       attestation: z.literal("nonconfidential_nonpersonal"),
     })
     .strict(),

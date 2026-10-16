@@ -1,4 +1,15 @@
 import { z } from "zod";
+import {
+  MODEL_PROVIDER_IDS,
+  type ModelProviderId,
+  defaultFailoverRank,
+} from "./modelProviders.ts";
+export {
+  MODEL_PROVIDER_IDS,
+  type ModelProviderId,
+  defaultFailoverRank,
+  isModelProviderId,
+} from "./modelProviders.ts";
 export class ModelError extends Error {
   constructor(
     public code: string,
@@ -246,7 +257,6 @@ export type Reference = {
   entity_id: string;
   content_hash: string;
 };
-export type ModelProviderId = "gemini_free" | "qwen_free";
 export type ModelConfiguration = {
   enabled: boolean;
   provider: ModelProviderId;
@@ -318,8 +328,8 @@ export function available(
   )
     throw new ModelError("FREE_ONLY_REQUIRED");
   if (
-    !["gemini_free", "qwen_free"].includes(config.provider) ||
-    !/^[a-zA-Z0-9._-]{1,120}$/.test(config.model)
+    !MODEL_PROVIDER_IDS.includes(config.provider) ||
+    !/^[a-zA-Z0-9._@/-]{1,120}$/.test(config.model)
   )
     throw new ModelError("PROVIDER_NOT_ALLOWED");
   if (
@@ -332,6 +342,11 @@ export function available(
   if (
     config.provider === "qwen_free" &&
     !/^[a-zA-Z0-9-]{1,80}$/.test(config.project_ref)
+  )
+    throw new ModelError("PROVIDER_WORKSPACE_REQUIRED");
+  if (
+    config.provider === "cloudflare_free" &&
+    !/^[a-zA-Z0-9]{1,64}$/.test(config.project_ref)
   )
     throw new ModelError("PROVIDER_WORKSPACE_REQUIRED");
 }
@@ -613,6 +628,15 @@ export class FreeModelProvider {
       clearTimeout(timer);
     }
   }
+  private conservativeTokenEstimate(prompt: string, schema: unknown) {
+    const full =
+      systemInstructions +
+      "\n" +
+      prompt +
+      "\nJSON schema: " +
+      JSON.stringify(schema);
+    return new TextEncoder().encode(full).length + 256;
+  }
   async countTokens(prompt: string, schema: unknown): Promise<number> {
     const full =
       systemInstructions +
@@ -620,8 +644,8 @@ export class FreeModelProvider {
       prompt +
       "\nJSON schema: " +
       JSON.stringify(schema);
-    if (this.env.provider === "qwen_free")
-      return new TextEncoder().encode(full).length + 256;
+    if (this.env.provider !== "gemini_free")
+      return this.conservativeTokenEstimate(prompt, schema);
     const response = await this.post(
       `https://generativelanguage.googleapis.com/v1beta/models/${this.env.model}:countTokens`,
       { contents: [{ parts: [{ text: full }] }] },
@@ -631,6 +655,45 @@ export class FreeModelProvider {
     if (!Number.isInteger(response.totalTokens) || response.totalTokens < 1)
       throw new ModelError("TOKEN_COUNT_UNAVAILABLE");
     return response.totalTokens + 256;
+  }
+  private async openAiChatJson(
+    task: ModelTask,
+    prompt: string,
+    schema: unknown,
+    url: string,
+    headers: Record<string, string>,
+    extraBody: Record<string, unknown> = {},
+  ) {
+    const result = await this.post(
+      url,
+      {
+        model: this.env.model,
+        messages: [
+          { role: "system", content: systemInstructions },
+          {
+            role: "user",
+            content: prompt + "\nJSON schema: " + JSON.stringify(schema),
+          },
+        ],
+        max_tokens: caps[task],
+        stream: false,
+        response_format: { type: "json_object" },
+        ...extraBody,
+      },
+      headers,
+    );
+    const usage = result.usage || {},
+      choice = result.choices?.[0];
+    return {
+      text: choice?.message?.content || "",
+      usage: {
+        input: validCount(usage.prompt_tokens),
+        output: validCount(usage.completion_tokens),
+        thinking: validCount(usage.completion_tokens_details?.reasoning_tokens),
+      },
+      complete:
+        choice?.finish_reason === "stop" && !choice.message?.tool_calls?.length,
+    };
   }
   async generate(
     task: ModelTask,
@@ -688,36 +751,44 @@ export class FreeModelProvider {
           !(result.steps || []).some((s: any) => s.type === "function_call"),
       };
     }
-    const result = await this.post(
-      `https://${this.env.projectRef}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/chat/completions`,
-      {
-        model: this.env.model,
-        messages: [
-          { role: "system", content: systemInstructions },
-          {
-            role: "user",
-            content: prompt + "\nJSON schema: " + JSON.stringify(schema),
-          },
-        ],
-        max_tokens: caps[task],
-        enable_thinking: false,
-        stream: false,
-        response_format: { type: "json_object" },
-      },
-      { Authorization: `Bearer ${this.env.key}` },
-    );
-    const usage = result.usage || {},
-      choice = result.choices?.[0];
-    return {
-      text: choice?.message?.content || "",
-      usage: {
-        input: validCount(usage.prompt_tokens),
-        output: validCount(usage.completion_tokens),
-        thinking: validCount(usage.completion_tokens_details?.reasoning_tokens),
-      },
-      complete:
-        choice?.finish_reason === "stop" && !choice.message?.tool_calls?.length,
-    };
+    if (this.env.provider === "qwen_free") {
+      return this.openAiChatJson(
+        task,
+        prompt,
+        schema,
+        `https://${this.env.projectRef}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/chat/completions`,
+        { Authorization: `Bearer ${this.env.key}` },
+        { enable_thinking: false },
+      );
+    }
+    if (this.env.provider === "groq_free") {
+      return this.openAiChatJson(
+        task,
+        prompt,
+        schema,
+        "https://api.groq.com/openai/v1/chat/completions",
+        { Authorization: `Bearer ${this.env.key}` },
+      );
+    }
+    if (this.env.provider === "mistral_free") {
+      return this.openAiChatJson(
+        task,
+        prompt,
+        schema,
+        "https://api.mistral.ai/v1/chat/completions",
+        { Authorization: `Bearer ${this.env.key}` },
+      );
+    }
+    if (this.env.provider === "cloudflare_free") {
+      return this.openAiChatJson(
+        task,
+        prompt,
+        schema,
+        `https://api.cloudflare.com/client/v4/accounts/${this.env.projectRef}/ai/v1/chat/completions`,
+        { Authorization: `Bearer ${this.env.key}` },
+      );
+    }
+    throw new ModelError("PROVIDER_NOT_ALLOWED");
   }
 }
 const validCount = (v: unknown): number | null =>

@@ -1,40 +1,48 @@
 # Free and free-tier model providers
 
-TenderDesk runs **connected-only** with **no paid fallback**. The worker may use **multiple enabled free providers** in failover order when a call cannot reach the primary (network uncertainty, provider quota wait, or token-count failure on that endpoint).
+TenderDesk runs **connected-only** with **no paid fallback**. The worker uses **enabled** free provider profiles in `failover_rank` order and switches when a call cannot complete on the current endpoint (network uncertainty, provider quota wait, or token-count failure on that endpoint).
 
-## Active adapters (configure both for failover)
+## Active adapters
 
-| Provider id | Console / region | Backend secrets (Supabase Edge) | Workspace settings |
-|-------------|------------------|----------------------------------|--------------------|
-| `gemini_free` | [Google AI Studio](https://aistudio.google.com/) / Gemini API free tier | `APP_MODEL_GEMINI_NAME`, `APP_MODEL_GEMINI_PROJECT`, `APP_MODEL_GEMINI_KEY` | Exact model id, Google Cloud project id, verified quota expiry, billing attestation |
-| `qwen_free` | [Alibaba Model Studio](https://www.alibabacloud.com/) Singapore, **Free Quota Only** | `APP_MODEL_QWEN_NAME`, `APP_MODEL_QWEN_PROJECT`, `APP_MODEL_QWEN_KEY` | Exact model id, workspace id, free-quota attestation |
+| Provider id | Console | Backend secrets | Workspace `project_ref` |
+|-------------|---------|-----------------|-------------------------|
+| `gemini_free` | [Google AI Studio](https://aistudio.google.com/) | `APP_MODEL_GEMINI_NAME`, `APP_MODEL_GEMINI_PROJECT`, `APP_MODEL_GEMINI_KEY` | Google Cloud project id |
+| `qwen_free` | [Alibaba Model Studio](https://www.alibabacloud.com/) Singapore, **Free Quota Only** | `APP_MODEL_QWEN_NAME`, `APP_MODEL_QWEN_PROJECT`, `APP_MODEL_QWEN_KEY` | Singapore workspace id |
+| `groq_free` *(optional)* | [Groq Console](https://console.groq.com/) | `APP_MODEL_GROQ_NAME`, `APP_MODEL_GROQ_PROJECT`, `APP_MODEL_GROQ_KEY` | Owner-verified account label |
+| `mistral_free` *(optional)* | [Mistral Console](https://console.mistral.ai/) | `APP_MODEL_MISTRAL_NAME`, `APP_MODEL_MISTRAL_PROJECT`, `APP_MODEL_MISTRAL_KEY` | Owner-verified account label |
+| `cloudflare_free` *(optional)* | [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) | `APP_MODEL_CLOUDFLARE_NAME`, `APP_MODEL_CLOUDFLARE_PROJECT`, `APP_MODEL_CLOUDFLARE_KEY` | Cloudflare **account ID** (`project_ref`) |
 
-Legacy single-slot secrets (`APP_MODEL_PROVIDER`, `APP_MODEL_NAME`, `APP_MODEL_PROJECT`, `APP_MODEL_KEY`) still populate **one** provider slot for existing deployments; prefer the per-provider names above.
+Legacy `APP_MODEL_PROVIDER` + `APP_MODEL_NAME` + `APP_MODEL_PROJECT` + `APP_MODEL_KEY` still fill **one** slot for older deployments.
 
-Enable **both** rows in Settings, store **both** secret sets in the backend, and authorize content **per provider**. Failover tries lower `failover_rank` first (default: Gemini 1, Qwen 2).
+Default failover ranks: Gemini 1, Qwen 2, Groq 3, Mistral 4, Cloudflare 5. Only **enabled** rows with matching secrets participate; optional providers can stay disabled.
 
-## Documented free-tier options (no adapter yet)
+Authorize each content item **per provider** that may process it.
 
-These are **not** wired in the product until an adapter, policy review, and Owner attestation flow exist. They are listed so you can compare quotas before asking for a future stage.
+### API endpoints (adapters)
 
-| Vendor | Typical free access | Structured JSON / notes | Fit for TenderDesk |
-|--------|---------------------|-------------------------|-------------------|
-| [Groq](https://console.groq.com/) | Free tier with rate limits on select open models | OpenAI-compatible chat; JSON mode varies by model | Possible future `groq_free` adapter; verify data-processing terms |
-| [Mistral La Plateforme](https://console.mistral.ai/) | Limited free credits / experimentation tier | Chat + JSON schema on some models | Possible `mistral_free`; EU hosting may matter for data residency |
-| [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) | Free daily neurons on Workers | Limited models; schema support varies | Possible `cloudflare_free` if egress from Supabase Edge is acceptable |
-| [Hugging Face Inference](https://huggingface.co/inference-api) | Free tier with caps | Model-dependent; often weaker JSON guarantees | Only with strict output validation already in TenderDesk |
-| [Cohere trial](https://cohere.com/) | Trial credits (not ongoing free) | Chat API | **Not** recommended as “free-only” |
-| [OpenRouter](https://openrouter.ai/) | Mostly paid; occasional promos | Router, not a single free policy | **Out of scope** for free-only policy |
+| Provider | Generation endpoint |
+|----------|---------------------|
+| `gemini_free` | Gemini Interactions API |
+| `qwen_free` | Alibaba compatible-mode `chat/completions` |
+| `groq_free` | `https://api.groq.com/openai/v1/chat/completions` |
+| `mistral_free` | `https://api.mistral.ai/v1/chat/completions` |
+| `cloudflare_free` | `https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1/chat/completions` |
 
-Adapters must be re-verified against vendor docs before enablement. TenderDesk will not auto-upgrade any call to a paid model.
+Structured output uses OpenAI-style `response_format: { type: "json_object" }` where supported; TenderDesk still validates JSON against the task schema.
+
+## Other free-tier options (not wired)
+
+| Vendor | Notes |
+|--------|--------|
+| [Hugging Face Inference](https://huggingface.co/inference-api) | Model-dependent JSON; weaker guarantees |
+| [Cohere trial](https://cohere.com/) | Trial credits, not ongoing free-only |
+| [OpenRouter](https://openrouter.ai/) | Out of scope (paid router) |
 
 ## Failover behavior (runtime)
 
-For each generation step the worker:
+1. Load enabled profiles from `model_settings` ordered by `failover_rank`.
+2. Skip profiles that fail attestation, quota expiry, or secret mismatch.
+3. Fail over on `MODEL_NETWORK_UNCERTAIN`, `PROVIDER_QUOTA_WAIT`, or `TOKEN_COUNT_UNAVAILABLE`.
+4. Do **not** fail over on validation, policy, or authorization errors.
 
-1. Loads enabled provider profiles from `model_settings` (ordered by `failover_rank`).
-2. Skips a profile when workspace attestation, quota expiry, or backend secrets do not match that profile.
-3. On `MODEL_NETWORK_UNCERTAIN`, `PROVIDER_QUOTA_WAIT`, or `TOKEN_COUNT_UNAVAILABLE`, settles or abandons the attempt and tries the next enabled profile.
-4. Does **not** failover on validation, policy, or authorization errors (same prompt on another provider would not fix those).
-
-Unknown usage after a failed delivery still blocks further calls until Owner reconciliation, per provider ledger rules.
+Unknown usage still blocks further calls until Owner reconciliation.

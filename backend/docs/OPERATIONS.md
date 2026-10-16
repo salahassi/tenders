@@ -48,6 +48,7 @@ Configure **both** supported free providers when possible so the worker can fail
 
 - Gemini: `APP_MODEL_GEMINI_NAME`, `APP_MODEL_GEMINI_PROJECT`, `APP_MODEL_GEMINI_KEY`
 - Qwen (Singapore free quota): `APP_MODEL_QWEN_NAME`, `APP_MODEL_QWEN_PROJECT`, `APP_MODEL_QWEN_KEY`
+- Optional: `APP_MODEL_GROQ_*`, `APP_MODEL_MISTRAL_*`, `APP_MODEL_CLOUDFLARE_*` (account ID in `PROJECT` for Cloudflare)
 
 Legacy `APP_MODEL_PROVIDER` + `APP_MODEL_NAME` + `APP_MODEL_PROJECT` + `APP_MODEL_KEY` still fill one slot for older setups.
 

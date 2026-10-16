@@ -1,5 +1,15 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { AppError, databaseError } from "./http.ts";
+import {
+  MODEL_PROVIDER_IDS,
+  type ModelProviderId,
+} from "./modelProviders.ts";
+export type ModelEnvironmentSlot = {
+  provider: string;
+  model: string;
+  projectRef: string;
+  key: string;
+};
 export interface BackendEnvironment {
   url: string;
   publishableKey: string;
@@ -7,11 +17,15 @@ export interface BackendEnvironment {
   allowedOrigins: string[];
   workerSecret: string;
   collectionHosts?: string[];
-  models: Record<
-    "gemini_free" | "qwen_free",
-    { provider: string; model: string; projectRef: string; key: string }
-  >;
+  models: Record<ModelProviderId, ModelEnvironmentSlot>;
 }
+const SECRET_PREFIX: Record<ModelProviderId, string> = {
+  gemini_free: "APP_MODEL_GEMINI",
+  qwen_free: "APP_MODEL_QWEN",
+  groq_free: "APP_MODEL_GROQ",
+  mistral_free: "APP_MODEL_MISTRAL",
+  cloudflare_free: "APP_MODEL_CLOUDFLARE",
+};
 export function modelEnvironments(
   get: (name: string) => string | undefined,
 ): BackendEnvironment["models"] {
@@ -19,21 +33,23 @@ export function modelEnvironments(
     legacyModel = get("APP_MODEL_NAME") || "",
     legacyProject = get("APP_MODEL_PROJECT") || "",
     legacyKey = get("APP_MODEL_KEY") || "";
-  const slot = (provider: "gemini_free" | "qwen_free", prefix: string) => ({
-    provider,
-    model:
-      get(`${prefix}_NAME`) ||
-      (legacyProvider === provider ? legacyModel : ""),
-    projectRef:
-      get(`${prefix}_PROJECT`) ||
-      (legacyProvider === provider ? legacyProject : ""),
-    key:
-      get(`${prefix}_KEY`) || (legacyProvider === provider ? legacyKey : ""),
-  });
-  return {
-    gemini_free: slot("gemini_free", "APP_MODEL_GEMINI"),
-    qwen_free: slot("qwen_free", "APP_MODEL_QWEN"),
+  const slot = (provider: ModelProviderId) => {
+    const prefix = SECRET_PREFIX[provider];
+    return {
+      provider,
+      model:
+        get(`${prefix}_NAME`) ||
+        (legacyProvider === provider ? legacyModel : ""),
+      projectRef:
+        get(`${prefix}_PROJECT`) ||
+        (legacyProvider === provider ? legacyProject : ""),
+      key:
+        get(`${prefix}_KEY`) || (legacyProvider === provider ? legacyKey : ""),
+    };
   };
+  return Object.fromEntries(
+    MODEL_PROVIDER_IDS.map((id) => [id, slot(id)]),
+  ) as Record<ModelProviderId, ModelEnvironmentSlot>;
 }
 function platformKey(value: string | undefined): string {
   if (!value) return "";

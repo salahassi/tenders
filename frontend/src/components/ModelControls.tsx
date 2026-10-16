@@ -2,21 +2,66 @@ import { useEffect, useState } from "react";
 import { useApp } from "../lib/store";
 import { Button, Field } from "./ui";
 type Row = Record<string, any>;
-const PROVIDERS = [
+const PROVIDER_IDS = [
+  "gemini_free",
+  "qwen_free",
+  "groq_free",
+  "mistral_free",
+  "cloudflare_free",
+] as const;
+type ProviderId = (typeof PROVIDER_IDS)[number];
+type ProviderMeta = {
+  id: ProviderId;
+  label: string;
+  rank: number;
+  secretHint: string;
+  optional: boolean;
+  projectLabel: string;
+};
+const PROVIDERS: ProviderMeta[] = [
   {
     id: "gemini_free",
     label: "Gemini free tier",
     rank: 1,
     secretHint: "APP_MODEL_GEMINI_*",
+    optional: false,
+    projectLabel: "Verified Google Cloud project identifier",
   },
   {
     id: "qwen_free",
     label: "Qwen Singapore free quota",
     rank: 2,
     secretHint: "APP_MODEL_QWEN_*",
+    optional: false,
+    projectLabel: "Verified Singapore workspace identifier",
   },
-] as const;
-type ProviderId = (typeof PROVIDERS)[number]["id"];
+  {
+    id: "groq_free",
+    label: "Groq free tier (optional)",
+    rank: 3,
+    secretHint: "APP_MODEL_GROQ_*",
+    optional: true,
+    projectLabel: "Verified account label (for your records)",
+  },
+  {
+    id: "mistral_free",
+    label: "Mistral free tier (optional)",
+    rank: 4,
+    secretHint: "APP_MODEL_MISTRAL_*",
+    optional: true,
+    projectLabel: "Verified account label (for your records)",
+  },
+  {
+    id: "cloudflare_free",
+    label: "Cloudflare Workers AI (optional)",
+    rank: 5,
+    secretHint: "APP_MODEL_CLOUDFLARE_*",
+    optional: true,
+    projectLabel: "Cloudflare account ID",
+  },
+];
+const isProviderId = (value: string): value is ProviderId =>
+  (PROVIDER_IDS as readonly string[]).includes(value);
 const initial = {
   enabled: false,
   provider: "" as ProviderId | "",
@@ -32,17 +77,22 @@ const initial = {
   output_per_day: 50000,
   failover_rank: 1,
 };
-const emptyForms = (): Record<ProviderId, typeof initial> => ({
-  gemini_free: { ...initial, provider: "gemini_free", failover_rank: 1 },
-  qwen_free: { ...initial, provider: "qwen_free", failover_rank: 2 },
-});
+const emptyForms = (): Record<ProviderId, typeof initial> =>
+  Object.fromEntries(
+    PROVIDERS.map((p) => [
+      p.id,
+      { ...initial, provider: p.id, failover_rank: p.rank },
+    ]),
+  ) as Record<ProviderId, typeof initial>;
 export default function ModelControls() {
   const { backend, runCommand, state, saving, notify } = useApp();
   const [forms, setForms] = useState(emptyForms);
-  const [revisions, setRevisions] = useState<Record<ProviderId, number>>({
-    gemini_free: 0,
-    qwen_free: 0,
-  });
+  const [revisions, setRevisions] = useState<Record<ProviderId, number>>(
+    Object.fromEntries(PROVIDER_IDS.map((id) => [id, 0])) as Record<
+      ProviderId,
+      number
+    >,
+  );
   const [items, setItems] = useState<Row[]>([]);
   const [authorizations, setAuthorizations] = useState<Row[]>([]);
   const [usage, setUsage] = useState<Row[]>([]);
@@ -82,10 +132,12 @@ export default function ModelControls() {
           "The model controls received an invalid response. Reload to retry.",
         );
       const next = emptyForms();
-      const nextRevisions = { gemini_free: 0, qwen_free: 0 };
+      const nextRevisions = Object.fromEntries(
+        PROVIDER_IDS.map((id) => [id, 0]),
+      ) as Record<ProviderId, number>;
       for (const m of settings.data.records) {
-        const id = m.provider as ProviderId;
-        if (id !== "gemini_free" && id !== "qwen_free") continue;
+        const id = m.provider as string;
+        if (!isProviderId(id)) continue;
         nextRevisions[id] = m.revision;
         next[id] = {
           ...next[id],
@@ -143,24 +195,149 @@ export default function ModelControls() {
       quota_ends_at: date.toISOString(),
     });
   }
+  function providerTouched(id: ProviderId) {
+    const form = forms[id];
+    return (
+      form.enabled ||
+      form.billing_verified ||
+      Boolean(form.model) ||
+      Boolean(form.project_ref)
+    );
+  }
   async function saveAll() {
     for (const p of PROVIDERS) {
+      if (p.optional && !providerTouched(p.id)) continue;
       if (!(await saveProvider(p.id))) return;
     }
+  }
+  function renderProviderPanel(meta: ProviderMeta) {
+    const form = forms[meta.id];
+    return (
+      <div key={meta.id} className="admin-muted-surface stack">
+        <h3>{meta.label}</h3>
+        <p className="admin-hint">
+          Failover rank {form.failover_rank} · backend{" "}
+          <code>{meta.secretHint}</code>
+          {meta.optional &&
+            " · leave disabled until you add secrets and verify free quota"}
+        </p>
+        <div className="form-grid">
+          <Field label="Exact model identifier">
+            <input
+              disabled={!owner}
+              value={form.model}
+              onChange={(e) =>
+                patchForm(meta.id, {
+                  model: e.target.value,
+                  enabled: false,
+                })
+              }
+            />
+          </Field>
+          <Field label={meta.projectLabel}>
+            <input
+              disabled={!owner}
+              value={form.project_ref}
+              onChange={(e) =>
+                patchForm(meta.id, {
+                  project_ref: e.target.value,
+                  enabled: false,
+                })
+              }
+            />
+          </Field>
+          <Field label="Free quota expiry (UTC)">
+            <input
+              type="datetime-local"
+              disabled={!owner}
+              value={form.quota_ends_at}
+              onChange={(e) =>
+                patchForm(meta.id, { quota_ends_at: e.target.value })
+              }
+            />
+          </Field>
+          {(
+            [
+              "quota_remaining_tokens",
+              "calls_per_day",
+              "input_per_day",
+              "output_per_day",
+            ] as const
+          ).map((k) => (
+            <Field key={k} label={k.replaceAll("_", " ")}>
+              <input
+                type="number"
+                min={1}
+                disabled={!owner}
+                value={form[k]}
+                onChange={(e) =>
+                  patchForm(meta.id, { [k]: Number(e.target.value) })
+                }
+              />
+            </Field>
+          ))}
+        </div>
+        <label>
+          <input
+            type="checkbox"
+            disabled={!owner}
+            checked={form.billing_verified}
+            onChange={(e) =>
+              patchForm(meta.id, {
+                billing_verified: e.target.checked,
+                enabled: false,
+              })
+            }
+          />{" "}
+          I verified this project's free billing status and the remaining quota
+          in the provider console.
+        </label>
+        {meta.id === "qwen_free" && (
+          <label>
+            <input
+              type="checkbox"
+              disabled={!owner}
+              checked={form.free_quota_only}
+              onChange={(e) =>
+                patchForm(meta.id, {
+                  free_quota_only: e.target.checked,
+                  enabled: false,
+                })
+              }
+            />{" "}
+            Free Quota Only is enabled and effective for this Singapore model.
+          </label>
+        )}
+        <label>
+          <input
+            type="checkbox"
+            disabled={
+              !owner ||
+              !form.billing_verified ||
+              (meta.id === "qwen_free" && !form.free_quota_only)
+            }
+            checked={form.enabled}
+            onChange={(e) =>
+              patchForm(meta.id, { enabled: e.target.checked })
+            }
+          />{" "}
+          Enable matching backend credentials after verification
+        </label>
+      </div>
+    );
   }
   if (!backend) return null;
   return (
     <section className="panel admin-section">
       <h2>Free model and data permissions</h2>
       <p>
-        Keep <strong>both</strong> Gemini and Qwen verified and enabled when you
-        can. The worker tries them in failover order when one endpoint is
-        unreachable or waiting on quota. Store{" "}
-        <code>APP_MODEL_GEMINI_*</code> and <code>APP_MODEL_QWEN_*</code> in
-        the backend secret store (legacy single <code>APP_MODEL_*</code> keys
-        still fill one slot). This form stores no API key. No paid fallback is
-        available. See <code>backend/docs/FREE_MODEL_PROVIDERS.md</code> for
-        other free-tier vendors not yet wired in the product.
+        Enable Gemini and Qwen for the primary failover pair when you can.
+        Groq, Mistral, and Cloudflare Workers AI are optional extra slots in the
+        same ordered pool. The worker skips disabled profiles and tries the next
+        enabled provider when one endpoint is unreachable or waiting on quota.
+        Store per-provider <code>APP_MODEL_*</code> secrets in the backend (see
+        each panel). This form stores no API key. No paid fallback is available.
+        Details: <code>backend/docs/FREE_MODEL_PROVIDERS.md</code>.
       </p>
       {error && (
         <div role="alert" className="admin-error">
@@ -171,132 +348,17 @@ export default function ModelControls() {
         <p>Loading model settings…</p>
       ) : (
         <>
-          {PROVIDERS.map((meta) => {
-            const form = forms[meta.id];
-            return (
-              <div key={meta.id} className="admin-muted-surface stack">
-                <h3>{meta.label}</h3>
-                <p className="admin-hint">
-                  Failover rank {form.failover_rank} · backend{" "}
-                  <code>{meta.secretHint}</code>
-                </p>
-                <div className="form-grid">
-                  <Field label="Exact model identifier">
-                    <input
-                      disabled={!owner}
-                      value={form.model}
-                      onChange={(e) =>
-                        patchForm(meta.id, {
-                          model: e.target.value,
-                          enabled: false,
-                        })
-                      }
-                    />
-                  </Field>
-                  <Field label="Verified project / workspace identifier">
-                    <input
-                      disabled={!owner}
-                      value={form.project_ref}
-                      onChange={(e) =>
-                        patchForm(meta.id, {
-                          project_ref: e.target.value,
-                          enabled: false,
-                        })
-                      }
-                    />
-                  </Field>
-                  <Field label="Free quota expiry (UTC)">
-                    <input
-                      type="datetime-local"
-                      disabled={!owner}
-                      value={form.quota_ends_at}
-                      onChange={(e) =>
-                        patchForm(meta.id, { quota_ends_at: e.target.value })
-                      }
-                    />
-                  </Field>
-                  {(
-                    [
-                      "quota_remaining_tokens",
-                      "calls_per_day",
-                      "input_per_day",
-                      "output_per_day",
-                    ] as const
-                  ).map((k) => (
-                    <Field key={k} label={k.replaceAll("_", " ")}>
-                      <input
-                        type="number"
-                        min={1}
-                        disabled={!owner}
-                        value={form[k]}
-                        onChange={(e) =>
-                          patchForm(meta.id, { [k]: Number(e.target.value) })
-                        }
-                      />
-                    </Field>
-                  ))}
-                </div>
-                <label>
-                  <input
-                    type="checkbox"
-                    disabled={!owner}
-                    checked={form.billing_verified}
-                    onChange={(e) =>
-                      patchForm(meta.id, {
-                        billing_verified: e.target.checked,
-                        enabled: false,
-                      })
-                    }
-                  />{" "}
-                  I verified this project's free billing status and the
-                  remaining quota in the provider console.
-                </label>
-                {meta.id === "qwen_free" && (
-                  <label>
-                    <input
-                      type="checkbox"
-                      disabled={!owner}
-                      checked={form.free_quota_only}
-                      onChange={(e) =>
-                        patchForm(meta.id, {
-                          free_quota_only: e.target.checked,
-                          enabled: false,
-                        })
-                      }
-                    />{" "}
-                    Free Quota Only is enabled and effective for this Singapore
-                    model.
-                  </label>
-                )}
-                <label>
-                  <input
-                    type="checkbox"
-                    disabled={
-                      !owner ||
-                      !form.billing_verified ||
-                      (meta.id === "qwen_free" && !form.free_quota_only)
-                    }
-                    checked={form.enabled}
-                    onChange={(e) =>
-                      patchForm(meta.id, { enabled: e.target.checked })
-                    }
-                  />{" "}
-                  Enable matching backend credentials after verification
-                </label>
-              </div>
-            );
-          })}
-          <Button disabled={!owner || saving} onClick={saveAll}>
-            Save both provider policies
-          </Button>
-          <h3>Additional free-tier providers (documentation only)</h3>
+          <h3>Primary free providers</h3>
+          {PROVIDERS.filter((p) => !p.optional).map(renderProviderPanel)}
+          <h3>Optional free-tier providers</h3>
           <p>
-            Groq, Mistral La Plateforme, Cloudflare Workers AI, and Hugging Face
-            Inference offer limited free access with different JSON and data
-            terms. TenderDesk does not call them until a future adapter stage.
-            Full comparison lives in{" "}
-            <code>backend/docs/FREE_MODEL_PROVIDERS.md</code>.
+            Configure only if you verified a free quota and stored matching
+            secrets. Untouched optional rows are skipped when you save.
           </p>
+          {PROVIDERS.filter((p) => p.optional).map(renderProviderPanel)}
+          <Button disabled={!owner || saving} onClick={saveAll}>
+            Save provider policies
+          </Button>
           <h3>Content permitted for model processing</h3>
           <p>
             Authorize each item for <strong>every</strong> provider that may

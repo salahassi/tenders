@@ -121,6 +121,29 @@ it("routes title-only and weak-evidence assessments to review", () => {
     ),
   ).toMatchObject({ evidence_coverage: 25, routing: "needs_review" });
 });
+it("calls Groq through the OpenAI-compatible chat completions endpoint", async () => {
+  const calls: any[] = [];
+  const provider = new FreeModelProvider(
+    { ...env, provider: "groq_free", projectRef: "groq-label" },
+    async (url, init) => {
+      calls.push({ url, init });
+      return new Response(
+        JSON.stringify({
+          choices: [
+            {
+              finish_reason: "stop",
+              message: { content: JSON.stringify(analysis) },
+            },
+          ],
+          usage: { prompt_tokens: 80, completion_tokens: 30 },
+        }),
+      );
+    },
+  );
+  await provider.generate("analyze_chunk", "JSON request", {});
+  expect(calls[0].url).toBe("https://api.groq.com/openai/v1/chat/completions");
+  expect(calls[0].init.body).not.toContain(env.key);
+});
 it("counts Qwen using a conservative bound including the system and schema; sends no key in body", async () => {
   const calls: any[] = [];
   const provider = new FreeModelProvider(env, async (url, init) => {
