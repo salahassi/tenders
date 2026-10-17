@@ -52,6 +52,8 @@ Unknown usage still blocks further calls until Owner reconciliation.
 
 ## Activation and diagnosis
 
+Owner settings now read `GET /v1/model-environment` to prefill the model and project when no workspace policy exists. The authenticated route requires actual Owner membership and returns only provider/model/project and `key_configured`; it never returns keys, changes configuration, calls a provider, or claims to verify billing/quota. Existing policies are preserved and mismatches are shown. Untouched optional slots remain unsaved and disabled. Google console login is not required for this check; an Owner may supply verified free-tier/quota facts without giving the assistant Google account access.
+
 The three Gemini secrets must exist in **Supabase Edge Function Secrets**, and the matching workspace policy must have an Owner-verified free quota and expiry. The provider-pool migrations (`20261016120000`, `20261016130000`, and `20261016220000`) and current `api`/`worker` functions must be deployed. Adding secrets alone does not apply migrations, enable a workspace policy, approve content, or activate the dispatcher. Keep other providers disabled unless separately verified.
 
 | Error | Meaning and next action |

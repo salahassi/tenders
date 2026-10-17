@@ -162,6 +162,14 @@ for (const table of [
     };
   }
 }
+paths["/v1/model-environment"] = {
+  get: {
+    security: [{ userJWT: [] }],
+    description:
+      "Owner-only model setup metadata: provider, model, project_ref and key_configured. Never returns API keys or verifies provider billing/quota. Performs no provider request or write.",
+    responses,
+  },
+};
 paths["/v1/commands"] = {
   post: {
     security: [{ userJWT: [] }],

@@ -2,9 +2,17 @@
 
 Verified October 17, 2026. This file separates implemented code, local verification, deployed components, and actual hosted acceptance. Requirements remain in [IMPLEMENTATION_SPEC.txt](IMPLEMENTATION_SPEC.txt); later decisions in [DECISIONS.md](DECISIONS.md) and the current [frontend handoff](../../frontend/docs/FRONTEND_HANDOFF.md) take precedence where explicitly recorded. Earlier chronological checkpoints remain in Git history.
 
-**The application features in stages 1–7 are implemented. The complete hosted trial is not yet accepted.** API startup was restored with version 7 on October 17. The model runtime correction, compatible worker deployment, and minute scheduler are now applied and verified. Remaining acceptance requires an actual Owner session, approved sources/content, and a verified Gemini policy and quota. The user has selected Gemini 3.8 Flash and reported adding its hosted secrets; a successful live model call is not yet verified. Do not describe the project as fully operational or its model quality as validated.
+**The application features in stages 1–7 are implemented. The complete hosted trial is not yet accepted.** API startup was restored with version 7 on October 17. The model runtime correction, compatible worker deployment, and minute scheduler are now applied and verified. The actual Owner browser session, directory, preference persistence, navigation and anonymous route boundaries are now verified. Remaining acceptance requires collection adapters, eligible content, and a verified Gemini policy and quota. The user has selected Gemini 3.8 Flash and reported adding its hosted secrets; a successful live model call is not yet verified. Do not describe the project as fully operational or its model quality as validated.
 
 ## Verified release state
+
+### Owner browser acceptance and existing model secrets — October 17, 2026
+
+Stages 1–4 and 7: TinyFish reused the Owner-saved session successfully. All country counts (14/11/10), Arabic search, Royal Jordanian source details/reload, desktop navigation, and anonymous protected/demo-route denial passed. The Owner changed the polling preference 6 → 12 → 6 with reload checks; independent SQL confirmed two actual-Owner audit events and revision 3. Effective defaults are restored, now explicit JSON values. No synthetic business data or model calls were created. Exact run identifiers and limitations are in [INTEGRATION_TEST_REPORT.md](INTEGRATION_TEST_REPORT.md). Mobile viewport testing was unavailable.
+
+The Owner clarified that Gemini configuration already exists in Supabase Secrets. Added an authenticated **Owner-only** `GET /v1/model-environment` route returning provider/model/project and a key-presence boolean, never keys. Settings prefill missing policy identity from that metadata, preserve saved policies, report mismatch/missing configuration, and leave quota/verification/activation unset. Reading configured optional slots does not save or activate them. Existing environment parsing supports both provider-specific and legacy secrets. Google account login is not a prerequisite for this inspection; actual free-tier/quota facts still need evidence or Owner attestation.
+
+Local verification passed **130 backend tests in 18 files**, **131 frontend tests in 23 files**, both type checks/builds and Deno entry-point checks. Targeted UI tests also verify that an enabled mismatched policy can still be disabled. Deployment and hosted metadata inspection are next. No database migration or worker change is required. The existing API authentication, membership checks and no-store response policy remain in effect.
 
 ### Official source catalog and workspace seeding — October 17, 2026
 
@@ -103,8 +111,8 @@ The applied scheduler correction supplies explicit extension schemas while prese
 ## Exact continuation point
 
 1. API v7, worker v4, both database corrections, minute scheduling, the 35-source reference directory, and its updated frontend are deployed. Preserve the migration mapping and verify the remote branch head before another source change. [Pull request #3](https://github.com/salahassi/tenders/pull/3) is merged.
-2. Validate the real Owner's hosted sign-in and business/Storage workflows using the existing confirmed identity. Do not fabricate a test account, reset the password, or rotate a valid invitation merely to obtain a session.
-3. Full model/source activation is authorized. Verify the selected Gemini account, effective free quota, expiry, and eligible content using the Owner's browser session, then save its matching policy. Backend secrets alone do not supply those account facts. Keep unused optional providers inactive.
+2. The actual Owner session, directory, preference persistence, desktop navigation and anonymous route denial are verified. Continue business/Storage acceptance using that confirmed identity. Do not fabricate a test account, reset the password, or rotate a valid invitation merely to obtain a session.
+3. Full model/source activation is authorized. Read existing Gemini name/project/key-presence from server configuration first. Confirm the effective free quota, expiry, and eligible content, then save its matching policy. Google login is optional when the Owner can provide these facts; backend name/project/key secrets do not by themselves supply them. Keep unused optional providers inactive.
 4. The 35-source official reference directory is now seeded. Implement/verify suitable collection adapters for selected public listings, then configure their reviewed hosts and verify actual collection. The current allowlist is empty; supplier-registration pages are not automatically collected.
 5. Complete the generation, review, export, recovery, and held-out evaluation journeys using eligible business inputs. Existing deterministic tests and scheduler heartbeats do not establish business-output accuracy.
 

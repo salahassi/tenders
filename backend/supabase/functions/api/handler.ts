@@ -194,6 +194,22 @@ export function createApiHandler(
         return respond(await backend.acceptInvitation(token, input.token));
       }
       const membership = await backend.membership(token);
+      if (path === "/v1/model-environment" && request.method === "GET") {
+        if (membership.role !== "Owner")
+          throw new AppError(
+            403,
+            "OWNER_REQUIRED",
+            "Only the Owner can inspect model setup.",
+          );
+        return respond({
+          providers: Object.values(env.models).map((slot) => ({
+            provider: slot.provider,
+            model: slot.model,
+            project_ref: slot.projectRef,
+            key_configured: Boolean(slot.key),
+          })),
+        });
+      }
       const recovery = await recoveryRoute(
         request,
         path,
@@ -222,9 +238,7 @@ export function createApiHandler(
               {},
               10,
             );
-            const enabled = records.some(
-              (row) => Boolean(row.enabled),
-            );
+            const enabled = records.some((row) => Boolean(row.enabled));
             return records.length
               ? { enabled, providers: records }
               : { enabled: false, blocker: "MODEL_NOT_CONFIGURED" };

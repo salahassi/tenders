@@ -10,6 +10,12 @@ const PROVIDER_IDS = [
   "cloudflare_free",
 ] as const;
 type ProviderId = (typeof PROVIDER_IDS)[number];
+type ServerModel = {
+  provider: ProviderId;
+  model: string;
+  project_ref: string;
+  key_configured: boolean;
+};
 type ProviderMeta = {
   id: ProviderId;
   label: string;
@@ -87,6 +93,7 @@ const emptyForms = (): Record<ProviderId, typeof initial> =>
 export default function ModelControls() {
   const { backend, runCommand, state, saving, notify } = useApp();
   const [forms, setForms] = useState(emptyForms);
+  const [serverModels, setServerModels] = useState<ServerModel[]>([]);
   const [revisions, setRevisions] = useState<Record<ProviderId, number>>(
     Object.fromEntries(PROVIDER_IDS.map((id) => [id, 0])) as Record<
       ProviderId,
@@ -115,23 +122,37 @@ export default function ModelControls() {
   async function load() {
     if (!backend) return;
     try {
-      const [settings, eligibility, ledger] = await Promise.all([
+      const [settings, eligibility, ledger, setup] = await Promise.all([
         backend.request<{ records: Row[] }>("/v1/model-settings"),
         backend.request<{ items: Row[]; authorizations: Row[] }>(
           "/v1/eligibility",
         ),
         backend.request<{ records: Row[] }>("/v1/provider-usage?state=unknown"),
+        owner
+          ? backend.request<{ providers: ServerModel[] }>(
+              "/v1/model-environment",
+            )
+          : Promise.resolve({ data: { providers: [] as ServerModel[] } }),
       ]);
       if (
         !Array.isArray(settings.data.records) ||
         !Array.isArray(eligibility.data.items) ||
         !Array.isArray(eligibility.data.authorizations) ||
-        !Array.isArray(ledger.data.records)
+        !Array.isArray(ledger.data.records) ||
+        !Array.isArray(setup.data.providers)
       )
         throw new Error(
           "The model controls received an invalid response. Reload to retry.",
         );
       const next = emptyForms();
+      for (const slot of setup.data.providers) {
+        if (!isProviderId(slot.provider)) continue;
+        next[slot.provider] = {
+          ...next[slot.provider],
+          model: slot.model,
+          project_ref: slot.project_ref,
+        };
+      }
       const nextRevisions = Object.fromEntries(
         PROVIDER_IDS.map((id) => [id, 0]),
       ) as Record<ProviderId, number>;
@@ -146,6 +167,7 @@ export default function ModelControls() {
         };
       }
       setForms(next);
+      setServerModels(setup.data.providers);
       setRevisions(nextRevisions);
       setItems(eligibility.data.items);
       setAuthorizations(eligibility.data.authorizations);
@@ -159,7 +181,7 @@ export default function ModelControls() {
   }
   useEffect(() => {
     void load();
-  }, [backend]);
+  }, [backend, owner]);
   async function command(operation: string, input: Row) {
     if (!runCommand) return;
     setError("");
@@ -197,11 +219,14 @@ export default function ModelControls() {
   }
   function providerTouched(id: ProviderId) {
     const form = forms[id];
+    const slot = serverModels.find((entry) => entry.provider === id);
     return (
       form.enabled ||
       form.billing_verified ||
-      Boolean(form.model) ||
-      Boolean(form.project_ref)
+      form.model !== (slot?.model || "") ||
+      form.project_ref !== (slot?.project_ref || "") ||
+      Boolean(form.quota_ends_at) ||
+      form.quota_remaining_tokens > 0
     );
   }
   async function saveAll() {
@@ -212,6 +237,7 @@ export default function ModelControls() {
   }
   function renderProviderPanel(meta: ProviderMeta) {
     const form = forms[meta.id];
+    const slot = serverModels.find((entry) => entry.provider === meta.id);
     return (
       <div key={meta.id} className="admin-muted-surface stack">
         <h3>{meta.label}</h3>
@@ -221,6 +247,21 @@ export default function ModelControls() {
           {meta.optional &&
             " · leave disabled until you add secrets and verify free quota"}
         </p>
+        {slot && (
+          <p className="admin-hint" role="status">
+            {slot.key_configured
+              ? "API key is configured on the server."
+              : "API key is missing from the server configuration."}{" "}
+            {slot.model && slot.project_ref
+              ? revisions[meta.id] === 0
+                ? "Model and project loaded from server configuration. Verify free quota before enabling."
+                : slot.model === form.model &&
+                    slot.project_ref === form.project_ref
+                  ? "Model and project match the server configuration."
+                  : "Model or project differs from the server configuration; update them before enabling."
+              : "Model or project is missing from the server configuration."}
+          </p>
+        )}
         <div className="form-grid">
           <Field label="Exact model identifier">
             <input
@@ -313,8 +354,12 @@ export default function ModelControls() {
             type="checkbox"
             disabled={
               !owner ||
-              !form.billing_verified ||
-              (meta.id === "qwen_free" && !form.free_quota_only)
+              (!form.enabled &&
+                (!slot?.key_configured ||
+                  slot.model !== form.model ||
+                  slot.project_ref !== form.project_ref ||
+                  !form.billing_verified ||
+                  (meta.id === "qwen_free" && !form.free_quota_only)))
             }
             checked={form.enabled}
             onChange={(e) => patchForm(meta.id, { enabled: e.target.checked })}

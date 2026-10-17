@@ -7548,6 +7548,51 @@
         }
       }
     },
+    "/v1/model-environment": {
+      "get": {
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "description": "Owner-only model setup metadata: provider, model, project_ref and key_configured. Never returns API keys or verifies provider billing/quota. Performs no provider request or write.",
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
     "/v1/commands": {
       "post": {
         "security": [

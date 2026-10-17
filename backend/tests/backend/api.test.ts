@@ -65,6 +65,65 @@ function request(
   });
 }
 describe("backend HTTP boundaries without a live provider", () => {
+  it("reads provider and legacy secret metadata for the Owner without returning secret values", async () => {
+    const f = fixture();
+    const secrets: Record<string, string> = {
+      APP_MODEL_PROVIDER: "gemini_free",
+      APP_MODEL_NAME: "legacy-model",
+      APP_MODEL_PROJECT: "legacy-project",
+      APP_MODEL_KEY: "synthetic-legacy-key-never-return",
+      APP_MODEL_GEMINI_NAME: "gemini-3.8-flash",
+      APP_MODEL_GROQ_KEY: "synthetic-other-key-never-return",
+    };
+    const handle = createApiHandler(
+      { ...env, models: modelEnvironments((name) => secrets[name]) },
+      f.factory,
+    );
+    const response = await handle(request("model-environment"));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    const body = await response.json();
+    expect(body.data.providers).toHaveLength(5);
+    expect(body.data.providers[0]).toEqual({
+      provider: "gemini_free",
+      model: "gemini-3.8-flash",
+      project_ref: "legacy-project",
+      key_configured: true,
+    });
+    expect(body.data.providers[1]).toEqual({
+      provider: "qwen_free",
+      model: "",
+      project_ref: "",
+      key_configured: false,
+    });
+    expect(JSON.stringify(body)).not.toContain(secrets.APP_MODEL_KEY);
+    expect(JSON.stringify(body)).not.toContain(secrets.APP_MODEL_GROQ_KEY);
+    expect(JSON.stringify(body)).not.toContain(env.serviceKey);
+    expect(f.backend.command).not.toHaveBeenCalled();
+  });
+  it("denies model setup metadata to anonymous users and non-Owners", async () => {
+    const f = fixture();
+    expect(
+      (
+        await f.handle(
+          request("model-environment", undefined, { authorization: "" }),
+        )
+      ).status,
+    ).toBe(401);
+    f.backend.authenticate.mockRejectedValueOnce(
+      new AppError(401, "UNAUTHENTICATED", "Invalid token."),
+    );
+    expect((await f.handle(request("model-environment"))).status).toBe(401);
+    for (const role of ["Editor", "Reviewer"]) {
+      f.backend.membership.mockResolvedValueOnce({
+        workspace_id: source,
+        role,
+      });
+      const response = await f.handle(request("model-environment"));
+      expect(response.status).toBe(403);
+      expect((await response.json()).error.code).toBe("OWNER_REQUIRED");
+    }
+  });
   it("reads current platform key maps and supports existing legacy deployments", () => {
     const values: Record<string, string> = {
       SUPABASE_URL: env.url,
