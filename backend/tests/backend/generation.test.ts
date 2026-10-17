@@ -612,7 +612,8 @@ it("completes the proposal pipeline through persisted background Gemini requests
     },
   } as unknown as Backend;
   let creates = 0,
-    gets = 0;
+    gets = 0,
+    deletes = 0;
   const responses = new Map<string, unknown>();
   for (let i = 0; i < 60; i++) {
     await f.db.exec(
@@ -629,6 +630,18 @@ it("completes the proposal pipeline through persisted background Gemini requests
           attestation: "nonconfidential_nonpersonal",
         });
     await processGeneration(backend, env, job, async (url, init) => {
+      if (init?.method === "DELETE") {
+        expect(
+          (
+            await f.db.query<any>(
+              "select status from public.jobs where id=$1",
+              [job.id],
+            )
+          ).rows[0].status,
+        ).toBe("succeeded");
+        deletes++;
+        return new Response(null, { status: 204 });
+      }
       if (String(url).endsWith(":countTokens"))
         return Response.json({ totalTokens: 100 });
       if (init?.method === "POST") {
@@ -666,6 +679,7 @@ it("completes the proposal pipeline through persisted background Gemini requests
   expect(plan.status).toBe("completed");
   expect(creates).toBeGreaterThan(4);
   expect(gets).toBe(creates);
+  expect(deletes).toBe(creates);
   expect(
     (
       await f.db.query<any>(

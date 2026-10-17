@@ -10,6 +10,7 @@ export async function processModelProbe(
   job: { id: string; lease_token: string; attempts: number },
   fetcher: typeof fetch,
 ) {
+  const ledger = modelLedger(backend, job, `probe:${job.id}`);
   try {
     await executeModel(
       "connection_probe",
@@ -21,12 +22,15 @@ export async function processModelProbe(
       [],
       [],
       env.models,
-      modelLedger(backend, job, `probe:${job.id}`),
+      ledger,
       "en",
       false,
       fetcher,
     );
     await backend.finish(job.id, job.lease_token, "succeeded", null);
+    await ledger
+      .cleanup?.()
+      .catch(() => console.warn("provider_request_cleanup_pending"));
   } catch (error) {
     if (error instanceof ModelDeferred) return;
     await backend.internal("fail_generation", {

@@ -638,6 +638,11 @@ export async function processGeneration(
         return;
       }
     }
+    const ledger = modelLedger(
+      backend,
+      { id: job.id, lease_token: job.lease_token, attempts: job.attempts },
+      `step:${ctx.step.id}`,
+    );
     const result = await executeModel(
       input.task,
       input.context,
@@ -645,11 +650,7 @@ export async function processGeneration(
       input.requiredIds,
       input.manifest,
       env.models,
-      modelLedger(
-        backend,
-        { id: job.id, lease_token: job.lease_token, attempts: job.attempts },
-        `step:${ctx.step.id}`,
-      ),
+      ledger,
       ctx.plan.frozen_context.language,
       ctx.step.repair_count === 1,
       fetcher,
@@ -704,6 +705,9 @@ export async function processGeneration(
       lease: job.lease_token,
       result,
     });
+    await ledger
+      .cleanup?.()
+      .catch(() => console.warn("provider_request_cleanup_pending"));
   } catch (error) {
     if (error instanceof ModelDeferred) return;
     let error_code =

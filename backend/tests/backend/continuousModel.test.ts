@@ -78,7 +78,10 @@ const env: BackendEnvironment = {
       })[name],
   ),
 };
-function worker(fetcher: typeof fetch) {
+function worker(
+  fetcher: typeof fetch,
+  cleanup: typeof fetch = async () => new Response(null, { status: 204 }),
+) {
   const backend = {
     internal: rpc,
     claim: () => rpc("claim_backend_job"),
@@ -94,7 +97,8 @@ function worker(fetcher: typeof fetch) {
     env,
     async () => [],
     () => backend as unknown as Backend,
-    fetcher,
+    (url, init) =>
+      init?.method === "DELETE" ? cleanup(url, init) : fetcher(url, init),
   );
   return async () => {
     const response = await handle(
@@ -473,7 +477,7 @@ it("polls one persisted background generation across leases and transient networ
     if (init!.method === "POST") {
       expect(JSON.parse(String(init!.body))).toMatchObject({
         background: true,
-        store: false,
+        store: true,
         generation_config: { thinking_level: "low", max_output_tokens: 256 },
       });
       expect(new Headers(init!.headers).get("Api-Revision")).toBe("2026-05-20");
@@ -679,4 +683,40 @@ it("pins background identity and conservatively retains canceled usage", async (
     actual_input: null,
     remote_request_id: "synthetic-pinned",
   });
+});
+
+it("deletes stored provider output only after the verified job result commits", async () => {
+  await f.command("model.configure", policy);
+  const queued = await f.command("model.probe", {});
+  let deleted = false;
+  await worker(
+    async (url) =>
+      String(url).endsWith(":countTokens")
+        ? Response.json({ totalTokens: 20 })
+        : ready("synthetic-delete"),
+    async (url, init) => {
+      expect(init?.method).toBe("DELETE");
+      expect(String(url)).toMatch(/interactions\/synthetic-delete$/);
+      expect((await job(queued.id)).status).toBe("succeeded");
+      deleted = true;
+      return new Response(null, { status: 204 });
+    },
+  )();
+  expect(deleted).toBe(true);
+});
+
+it("keeps committed model success if provider cleanup is temporarily unavailable", async () => {
+  await f.command("model.configure", policy);
+  const queued = await f.command("model.probe", {});
+  const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+  await worker(
+    async (url) =>
+      String(url).endsWith(":countTokens")
+        ? Response.json({ totalTokens: 20 })
+        : ready("synthetic-cleanup-failure"),
+    async () => new Response(null, { status: 503 }),
+  )();
+  expect((await job(queued.id)).status).toBe("succeeded");
+  expect(warning).toHaveBeenCalledWith("provider_request_cleanup_pending");
+  warning.mockRestore();
 });

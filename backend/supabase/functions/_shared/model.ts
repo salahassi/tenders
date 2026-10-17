@@ -556,6 +556,7 @@ export interface Ledger {
   } | null>;
   checkpoint?(reservation: string, remoteId: string): Promise<void>;
   defer?(reservation: string, retryAfter?: string | null): Promise<void>;
+  cleanup?(): Promise<void>;
 }
 export function tryAvailable(
   config: ModelConfiguration,
@@ -614,6 +615,9 @@ export class FreeModelProvider {
       }
       const labels: Record<string, RegExp> = {
         interactions: /interactions/i,
+        background: /background/i,
+        storage: /\bstore\b|storage/i,
+        api_revision: /api.?revision/i,
         unsupported: /not supported|unsupported|only supported/i,
         unknown_field: /unknown name|unknown field|unrecognized/i,
         invalid_json: /invalid json/i,
@@ -649,7 +653,7 @@ export class FreeModelProvider {
     body: unknown,
     headers: Record<string, string>,
     timeout = 90000,
-    method: "POST" | "GET" = "POST",
+    method: "POST" | "GET" | "DELETE" = "POST",
   ): Promise<any> {
     const controller = new AbortController(),
       timer = setTimeout(() => controller.abort(), timeout);
@@ -658,9 +662,11 @@ export class FreeModelProvider {
         method,
         redirect: "error",
         headers: { "content-type": "application/json", ...headers },
-        body: method === "GET" ? undefined : JSON.stringify(body),
+        body: method === "POST" ? JSON.stringify(body) : undefined,
         signal: controller.signal,
       });
+      if (method === "DELETE" && (response.ok || response.status === 404))
+        return {};
       if (!response.ok) {
         if (response.status === 400 && this.env.provider === "gemini_free")
           await this.diagnoseRejectedRequest(response);
@@ -727,7 +733,7 @@ export class FreeModelProvider {
         system_instruction: systemInstructions,
         input: prompt,
         background: true,
-        store: false,
+        store: true,
         stream: false,
         generation_config: {
           max_output_tokens: caps[task],
@@ -759,6 +765,17 @@ export class FreeModelProvider {
       { "x-goog-api-key": this.env.key, "Api-Revision": "2026-05-20" },
       20000,
       "GET",
+    );
+  }
+  async deleteBackground(id: string) {
+    if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(id))
+      throw new ModelError("PROVIDER_REQUEST_INVALID");
+    await this.post(
+      `https://generativelanguage.googleapis.com/v1beta/interactions/${encodeURIComponent(id)}`,
+      undefined,
+      { "x-goog-api-key": this.env.key, "Api-Revision": "2026-05-20" },
+      20000,
+      "DELETE",
     );
   }
   backgroundResult(result: any): {
@@ -998,6 +1015,7 @@ export async function executeModel(
     const provider = new FreeModelProvider(env, fetcher);
     let reservation: string | null = null;
     let settled = false;
+    let remoteId: string | null = null;
     try {
       let result: { text: string; usage: Usage; complete: boolean };
       const background =
@@ -1010,6 +1028,7 @@ export async function executeModel(
         : null;
       if (pending) {
         reservation = pending.id;
+        remoteId = pending.remote_request_id;
         settled = pending.state === "settled";
       } else {
         const tokens = await provider.countTokens(prompt, schema);
@@ -1053,6 +1072,7 @@ export async function executeModel(
           )
             throw new ModelError("MODEL_NETWORK_UNCERTAIN");
           await ledger.checkpoint!(reservation!, interaction.id);
+          remoteId = interaction.id;
         }
         if (["in_progress", "queued"].includes(interaction.status)) {
           await ledger.defer!(reservation!);
@@ -1066,12 +1086,17 @@ export async function executeModel(
         throw new ModelError("USAGE_UNKNOWN");
       if (!result.complete) throw new ModelError("MODEL_OUTPUT_TRUNCATED");
       try {
-        return validateModelResult(
+        const validated = validateModelResult(
           task,
           JSON.parse(result.text),
           evidence,
           requiredIds,
         );
+        if (remoteId) {
+          const completedId = remoteId;
+          ledger.cleanup = () => provider.deleteBackground(completedId);
+        }
+        return validated;
       } catch (error) {
         if (error instanceof ModelError) throw error;
         throw new ModelError("MODEL_OUTPUT_INVALID");
