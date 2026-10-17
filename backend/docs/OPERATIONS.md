@@ -4,7 +4,7 @@ The application runs from GitHub Pages and stores authorized records and origina
 
 ## Recorded activation state
 
-At the October 15, 2026 20:58 UTC verification, the application and API/worker were published, but the private dispatcher was absent. The explicit-schema correction is saved and tested locally, not applied to the hosted project. Follow [DEPLOYMENT.md](DEPLOYMENT.md) and the current checklist before activating it. A published worker alone does not establish that jobs execute while the browser is closed.
+At the October 17, 2026 verification, API version 7 passes hosted health, preflight, and authentication-denial checks. Worker version 3 remains deployed and the private dispatcher is absent. The dispatcher and model runtime corrections are locally tested, but automatic approval review requires explicit approval before application. No model policy is configured. Follow [DEPLOYMENT.md](DEPLOYMENT.md) and the current checklist before activation. A published worker alone does not establish that jobs execute while the browser is closed.
 
 ## Background collection
 
@@ -42,7 +42,7 @@ Retention/purge and model-quality evaluation are tracked separately in the check
 
 ## Free model activation
 
-Configure **both** supported free providers when possible so the worker can fail over if one endpoint is unreachable or waiting on quota.
+Configure the Owner-selected provider first; Gemini can run alone. Add another provider only after separately verifying its credentials, free quota, and content authorization. The worker can select a verified alternative only under the bounded failover rules below.
 
 **Backend secrets (Supabase Edge, never in the repo or browser):**
 

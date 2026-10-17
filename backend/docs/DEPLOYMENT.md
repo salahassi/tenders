@@ -2,6 +2,8 @@
 
 ## Scope and actual state
 
+**Current checkpoint — October 17, 2026:** API version 7 was deployed through the connected Supabase MCP from `8c2a4b22704351d380953762922b557b729527cb`. All 13 retained source files match the canonical repository. Hosted health returns 200, allowed-origin preflight returns 204, missing/invalid-token bootstrap returns 401, and disallowed origins return 403. The former version 6 bundle contained placeholder handler/backend files; replacing it with complete files resolved `BOOT_ERROR`. The database has 25 recorded migrations and worker version 3 remains deployed. Automatic approval review rejected the two remaining database corrections pending explicit approval; no migration or scheduler activation occurred. See the current checklist before proceeding. The dated paragraph below describes the earlier deployment.
+
 **Verified October 15, 2026:** 22 hosted migrations, API v4 and worker v2; Pages application `d450c8c` passed [run 38807118314](https://github.com/salahassi/tenders/actions/runs/38807118314), completed October 15 at 21:06 UTC. One actual confirmed Auth identity exists, with restricted Owner setup pending and no workspace at the 20:58 UTC read. The hosted dispatcher is not configured. Its explicit-schema correction is saved in `20261015220000_dispatcher_extension_schema.sql` and passed local migration/tests, but two connector application attempts returned no successful result; read-back confirmed it is not applied. Models and real sources remain inactive. See the current checklist for complete acceptance limits.
 
 All frontend builds are connected-only. Demo query parameters, sample workspaces, and local reset/restore are retired. Pending/error states and server-confirmed saves prevent local data from being presented as remote success.
@@ -10,7 +12,7 @@ The selected project is **TenderDesk**, reference `nqfwbqeozmuiuwbiowil`, Mumbai
 
 [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md) is the current authority for exact migration/function versions, source commit, workflow result, test counts, and remaining activation work. Update it with every project change and after each deployment. Historical deployment statements in DECISIONS.md remain dated records.
 
-Connected file/proposal/review writes, submission, and restore are still blocked. No collector or model handler executes; the worker reports the missing dependency. Cron and worker credentials are not activated. Do not equate deployment with completion of stage 1 or the full application.
+API startup and its public/authentication boundary now pass hosted checks. Signed-in file/proposal/review writes, submission, and restore still need real-account acceptance. Cron and worker credentials are not activated, and no model profile is configured. Do not equate deployment with completion of stage 1 or the full application.
 
 ## Reproduce local verification
 
