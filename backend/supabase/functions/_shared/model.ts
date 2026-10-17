@@ -577,6 +577,56 @@ export class FreeModelProvider {
     readonly env: ModelEnvironment,
     private fetcher: typeof fetch = fetch,
   ) {}
+  private async diagnoseRejectedRequest(response: Response) {
+    // Emit only fixed diagnostic labels, never provider text, credentials or prompts.
+    const reader = response.body?.getReader();
+    if (!reader) return;
+    let text = "",
+      size = 0;
+    try {
+      const decoder = new TextDecoder();
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        size += value.length;
+        if (size > 16384) {
+          await reader.cancel();
+          break;
+        }
+        text += decoder.decode(value, { stream: true });
+      }
+      const labels: Record<string, RegExp> = {
+        interactions: /interactions/i,
+        unsupported: /not supported|unsupported|only supported/i,
+        unknown_field: /unknown name|unknown field|unrecognized/i,
+        invalid_json: /invalid json/i,
+        thinking: /thinking/i,
+        json_schema: /response.?json.?schema|schema/i,
+        response_format: /response.?format/i,
+        const_keyword: /\bconst\b/i,
+        output_limit: /max.?output.?tokens|output.?token|token.?limit/i,
+        candidate_count: /candidate.?count/i,
+        credentials: /api.?key|credential/i,
+        location: /location|region|country/i,
+        billing: /billing|payment/i,
+        model: /\bmodel\b/i,
+      };
+      console.warn(
+        "provider_request_diagnostic",
+        JSON.stringify({
+          provider: this.env.provider,
+          status: response.status,
+          labels: Object.entries(labels)
+            .filter(([, pattern]) => pattern.test(text))
+            .map(([label]) => label),
+        }),
+      );
+    } catch {
+      /* Diagnostics cannot change the definitive HTTP rejection. */
+    } finally {
+      reader.releaseLock();
+    }
+  }
   private async post(
     url: string,
     body: unknown,
@@ -594,6 +644,8 @@ export class FreeModelProvider {
         signal: controller.signal,
       });
       if (!response.ok) {
+        if (response.status === 400 && this.env.provider === "gemini_free")
+          await this.diagnoseRejectedRequest(response);
         const raw = response.headers.get("retry-after");
         const after =
           raw &&
@@ -734,11 +786,9 @@ export class FreeModelProvider {
               ? {
                   thinkingConfig: {
                     thinkingLevel:
-                      task === "connection_probe"
-                        ? "MINIMAL"
-                        : task === "draft_section" || task === "review_proposal"
-                          ? "MEDIUM"
-                          : "LOW",
+                      task === "draft_section" || task === "review_proposal"
+                        ? "MEDIUM"
+                        : "LOW",
                   },
                 }
               : {}),

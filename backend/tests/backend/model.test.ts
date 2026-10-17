@@ -198,7 +198,7 @@ it("counts Qwen using a conservative bound including the system and schema; send
 it("records Gemini thought usage through stateless structured generation", async () => {
   const calls: any[] = [];
   const provider = new FreeModelProvider(
-    { ...env, provider: "gemini_free" },
+    { ...env, provider: "gemini_free", model: "gemini-3.8-flash" },
     async (url, init) => {
       calls.push({ url, body: JSON.parse(String(init?.body)) });
       return new Response(
@@ -216,7 +216,7 @@ it("records Gemini thought usage through stateless structured generation", async
       );
     },
   );
-  expect((await provider.generate("analyze_chunk", "JSON", {})).usage).toEqual({
+  expect((await provider.generate("connection_probe", "JSON", {})).usage).toEqual({
     input: 7,
     output: 42,
     thinking: 22,
@@ -225,6 +225,7 @@ it("records Gemini thought usage through stateless structured generation", async
     generationConfig: {
       responseMimeType: "application/json",
       candidateCount: 1,
+      thinkingConfig: { thinkingLevel: "LOW" },
     },
   });
 });
@@ -265,6 +266,37 @@ it("keeps missing Gemini usage unknown and rejects incomplete or tool output", a
     usage: { input: 7, output: 20, thinking: 0 },
     complete: false,
   });
+});
+it("diagnoses rejected Gemini settings without logging provider text or secrets", async () => {
+  const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  const provider = new FreeModelProvider(
+    { ...env, provider: "gemini_free" },
+    async () =>
+      Response.json(
+        {
+          error: {
+            message: `Unknown field responseJsonSchema for model. Synthetic credential ${env.key} and private customer text`,
+          },
+        },
+        { status: 400 },
+      ),
+  );
+  await expect(
+    provider.generate("connection_probe", "private customer text", {}),
+  ).rejects.toMatchObject({ code: "PROVIDER_REQUEST_INVALID" });
+  expect(warn).toHaveBeenCalledWith(
+    "provider_request_diagnostic",
+    JSON.stringify({
+      provider: "gemini_free",
+      status: 400,
+      labels: ["unknown_field", "json_schema", "credentials", "model"],
+    }),
+  );
+  expect(JSON.stringify(warn.mock.calls)).not.toContain(env.key);
+  expect(JSON.stringify(warn.mock.calls)).not.toContain(
+    "private customer text",
+  );
+  warn.mockRestore();
 });
 it("reserves before sending and settles actual usage before validating output", async () => {
   const events: string[] = [];
