@@ -18,6 +18,11 @@ export class ModelError extends Error {
     super(code);
   }
 }
+export class ModelDeferred extends ModelError {
+  constructor() {
+    super("MODEL_IN_PROGRESS");
+  }
+}
 const short = z.string().max(3000),
   id = z.string().min(1).max(200),
   ids = z.array(id).max(128),
@@ -539,6 +544,18 @@ export interface Ledger {
     provider: ModelProviderId,
   ): Promise<string>;
   settle(id: string, usage: Usage, error?: string): Promise<void>;
+  resume?(
+    provider: ModelProviderId,
+    hash: string,
+    manifest: Reference[],
+  ): Promise<{
+    id: string;
+    remote_request_id: string;
+    remote_deadline: string;
+    state?: string;
+  } | null>;
+  checkpoint?(reservation: string, remoteId: string): Promise<void>;
+  defer?(reservation: string, retryAfter?: string | null): Promise<void>;
 }
 export function tryAvailable(
   config: ModelConfiguration,
@@ -632,15 +649,16 @@ export class FreeModelProvider {
     body: unknown,
     headers: Record<string, string>,
     timeout = 90000,
+    method: "POST" | "GET" = "POST",
   ): Promise<any> {
     const controller = new AbortController(),
       timer = setTimeout(() => controller.abort(), timeout);
     try {
       const response = await this.fetcher(url, {
-        method: "POST",
+        method,
         redirect: "error",
         headers: { "content-type": "application/json", ...headers },
-        body: JSON.stringify(body),
+        body: method === "GET" ? undefined : JSON.stringify(body),
         signal: controller.signal,
       });
       if (!response.ok) {
@@ -662,7 +680,9 @@ export class FreeModelProvider {
             : response.status === 401 || response.status === 403
               ? "PROVIDER_AUTH_FAILED"
               : response.status === 404
-                ? "PROVIDER_MODEL_NOT_FOUND"
+                ? method === "GET"
+                  ? "MODEL_RESULT_EXPIRED"
+                  : "PROVIDER_MODEL_NOT_FOUND"
                 : response.status === 400
                   ? "PROVIDER_REQUEST_INVALID"
                   : response.status >= 500
@@ -698,6 +718,74 @@ export class FreeModelProvider {
     } finally {
       clearTimeout(timer);
     }
+  }
+  async startBackground(task: ModelTask, prompt: string, schema: unknown) {
+    return this.post(
+      "https://generativelanguage.googleapis.com/v1beta/interactions",
+      {
+        model: this.env.model,
+        system_instruction: systemInstructions,
+        input: prompt,
+        background: true,
+        store: false,
+        stream: false,
+        generation_config: {
+          max_output_tokens: caps[task],
+          ...(/^gemini-[34]/.test(this.env.model)
+            ? {
+                thinking_level:
+                  task === "draft_section" || task === "review_proposal"
+                    ? "medium"
+                    : "low",
+              }
+            : {}),
+        },
+        response_format: {
+          type: "text",
+          mime_type: "application/json",
+          schema,
+        },
+      },
+      { "x-goog-api-key": this.env.key, "Api-Revision": "2026-05-20" },
+      20000,
+    );
+  }
+  async pollBackground(id: string) {
+    if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(id))
+      throw new ModelError("PROVIDER_REQUEST_INVALID");
+    return this.post(
+      `https://generativelanguage.googleapis.com/v1beta/interactions/${encodeURIComponent(id)}`,
+      undefined,
+      { "x-goog-api-key": this.env.key, "Api-Revision": "2026-05-20" },
+      20000,
+      "GET",
+    );
+  }
+  backgroundResult(result: any): {
+    text: string;
+    usage: Usage;
+    complete: boolean;
+  } {
+    const usage = result.usage || {},
+      input = validCount(usage.total_input_tokens),
+      output = validCount(usage.total_output_tokens),
+      thinking = validCount(usage.total_thought_tokens);
+    return {
+      text: (result.steps || [])
+        .filter((s: any) => s.type === "model_output")
+        .flatMap((s: any) => s.content || [])
+        .filter((c: any) => c.type === "text")
+        .map((c: any) => c.text)
+        .join(""),
+      usage: {
+        input,
+        output: output === null || thinking === null ? null : output + thinking,
+        thinking,
+      },
+      complete:
+        result.status === "completed" &&
+        !(result.steps || []).some((s: any) => s.type === "function_call"),
+    };
   }
   private conservativeTokenEstimate(prompt: string, schema: unknown) {
     const full =
@@ -911,16 +999,67 @@ export async function executeModel(
     let reservation: string | null = null;
     let settled = false;
     try {
-      const tokens = await provider.countTokens(prompt, schema);
-      if (tokens > 20000) throw new ModelError("MODEL_CONTEXT_TOO_LARGE");
-      reservation = await ledger.reserve(
-        tokens,
-        caps[task],
-        inputHash,
-        manifest,
-        config.provider,
-      );
-      const result = await provider.generate(task, prompt, schema);
+      let result: { text: string; usage: Usage; complete: boolean };
+      const background =
+        config.provider === "gemini_free" &&
+        ledger.resume &&
+        ledger.checkpoint &&
+        ledger.defer;
+      const pending = background
+        ? await ledger.resume!(config.provider, inputHash, manifest)
+        : null;
+      if (pending) {
+        reservation = pending.id;
+        settled = pending.state === "settled";
+      } else {
+        const tokens = await provider.countTokens(prompt, schema);
+        if (tokens > 20000) throw new ModelError("MODEL_CONTEXT_TOO_LARGE");
+        reservation = await ledger.reserve(
+          tokens,
+          caps[task],
+          inputHash,
+          manifest,
+          config.provider,
+        );
+      }
+      if (background) {
+        if (pending && Date.parse(pending.remote_deadline) <= Date.now())
+          throw new ModelError("MODEL_RESULT_EXPIRED");
+        let interaction: any;
+        if (pending) {
+          try {
+            interaction = await provider.pollBackground(
+              pending.remote_request_id,
+            );
+          } catch (error) {
+            if (
+              error instanceof ModelError &&
+              ["MODEL_NETWORK_UNCERTAIN", "PROVIDER_QUOTA_WAIT"].includes(
+                error.code,
+              )
+            ) {
+              await ledger.defer!(reservation!, error.retryAfter);
+              throw new ModelDeferred();
+            }
+            throw error;
+          }
+          if (interaction.id !== pending.remote_request_id)
+            throw new ModelError("MODEL_IDENTITY_CHANGED");
+        } else {
+          interaction = await provider.startBackground(task, prompt, schema);
+          if (
+            typeof interaction.id !== "string" ||
+            !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(interaction.id)
+          )
+            throw new ModelError("MODEL_NETWORK_UNCERTAIN");
+          await ledger.checkpoint!(reservation!, interaction.id);
+        }
+        if (["in_progress", "queued"].includes(interaction.status)) {
+          await ledger.defer!(reservation!);
+          throw new ModelDeferred();
+        }
+        result = provider.backgroundResult(interaction);
+      } else result = await provider.generate(task, prompt, schema);
       await ledger.settle(reservation, result.usage);
       settled = true;
       if (result.usage.input === null || result.usage.output === null)
@@ -938,6 +1077,7 @@ export async function executeModel(
         throw new ModelError("MODEL_OUTPUT_INVALID");
       }
     } catch (error) {
+      if (error instanceof ModelDeferred) throw error;
       // Ledger errors use the API error type; retain their quota/authorization
       // code instead of misclassifying a rejected reservation as a sent request.
       const code =

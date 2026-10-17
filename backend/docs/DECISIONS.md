@@ -1,5 +1,14 @@
 # Decisions
 
+## 2026-10-17: Durable Gemini background execution
+
+- Real synchronous Gemini requests exceeded the 90-second worker HTTP budget over both Interactions and generateContent. Gemini 3.8 also explicitly rejects `minimal` thinking; operational checks use the supported `low` setting.
+- Production Gemini tasks use Interactions background execution with the documented `Api-Revision: 2026-05-20`, `background=true`, `store=false`, no tools, and the existing exact content permissions/output caps. The dedicated background guide documents temporary result retrieval for 24 hours with `store=false`; application retrieval expires after 23 hours. Initial requests without a recorded ID still remain unknown and are never automatically resubmitted.
+- A saved provider ID permits GET-only continuation after deferral, a lost read response, quota rejection on retrieval, or a worker lease expiry. Polls reuse one generation reservation and do not increment generation call budgets. Cancellation stops application continuation and retains unmeasured consumption conservatively; it does not assert that Google stopped an already accepted computation.
+- Independent continuous requests remain possible alongside prior unknown usage. Same-job/hash protections and conservative budget accounting remain. The application never invents measured tokens to unblock work.
+
+Sources: https://ai.google.dev/gemini-api/docs/background-execution and https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash.
+
 ## 2026-10-17: Continuous Gemini free tier
 
 - The Owner confirmed the configured Gemini 3.8 Flash project is on the free tier and explicitly requested continuous operation without supplying manual quota balances or expiry dates. This supersedes the earlier requirement to obtain console quota/renewal facts before activation. No additional Google login or general activation permission is required.

@@ -1,10 +1,11 @@
+import { modelLedger } from "./modelLedger.ts";
 import {
   type Evidence,
   type Reference,
   type ModelTask,
   ModelError,
   executeModel,
-  parseModelPool,
+  ModelDeferred,
   fitScore,
   sha256,
   validateModelResult,
@@ -215,7 +216,20 @@ export function taskInput(ctx: PlanContext) {
       context.instruction =
         "Map these requirements to relevant provided template section keys. Include only keys that address this batch; empty required template sections will be retained by the application. Add a new key only for an RFP-specific form or structure. Do not invent fixed legal clauses or approvals. Map every requirement to a section or blocking question. Use financial volume for pricing and commercial responses.";
     if (task === "plan_commercial") {
-      context.section_titles = draftedSections(ctx).map((s) => ({
+      const sections = draftedSections(ctx);
+      // Section scope remains derived from the RFP even when no explicit
+      // commercial requirement or approved rate was supplied.
+      const scopeIds = sections.flatMap((s) => s.requirement_ids);
+      evidence.push(
+        ...refsFor(
+          all,
+          sections.flatMap((s) =>
+            (s.evidence_refs || []).map((r: Row) => r.id),
+          ),
+          ctx.requirements.filter((r) => scopeIds.includes(r.id)),
+        ),
+      );
+      context.section_titles = sections.map((s) => ({
         key: s.key,
         title: s.title,
         volume: s.volume,
@@ -631,44 +645,11 @@ export async function processGeneration(
       input.requiredIds,
       input.manifest,
       env.models,
-      {
-        preflight: async (manifest) =>
-          parseModelPool(
-            await backend.internal("model_preflight", {
-              job_id: job.id,
-              lease: job.lease_token,
-              manifest,
-            }),
-          ),
-        reserve: async (
-          input_tokens,
-          output_tokens,
-          input_hash,
-          manifest,
-          provider,
-        ) =>
-          (
-            await backend.internal("reserve_model_call", {
-              job_id: job.id,
-              lease: job.lease_token,
-              call_key: `step:${ctx!.step.id}:attempt:${job.attempts}:${provider}`,
-              input_tokens,
-              output_tokens,
-              input_hash,
-              manifest,
-              target_provider: provider,
-            })
-          ).id,
-        settle: async (reservation, usage, error_code) => {
-          await backend.internal("settle_model_call", {
-            reservation,
-            actual_input: usage.input,
-            actual_output: usage.output,
-            thinking: usage.thinking,
-            error_code: error_code || null,
-          });
-        },
-      },
+      modelLedger(
+        backend,
+        { id: job.id, lease_token: job.lease_token, attempts: job.attempts },
+        `step:${ctx.step.id}`,
+      ),
       ctx.plan.frozen_context.language,
       ctx.step.repair_count === 1,
       fetcher,
@@ -724,6 +705,7 @@ export async function processGeneration(
       result,
     });
   } catch (error) {
+    if (error instanceof ModelDeferred) return;
     let error_code =
       error && typeof error === "object" && "code" in error
         ? String(error.code)

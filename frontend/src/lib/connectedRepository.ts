@@ -474,16 +474,18 @@ export class ConnectedRepository {
       progress: r.status === "succeeded" ? 100 : 0,
       attempt: Number(r.attempts),
       message:
-        r.status === "quota_wait" &&
-        [
-          "MODEL_RATE_WAIT",
-          "MODEL_DAILY_QUOTA_WAIT",
-          "PROVIDER_QUOTA_WAIT",
-        ].includes(str(r, "error_code"))
-          ? `Waiting for quota. Automatically retries after ${str(r, "next_attempt_at")}.`
-          : r.type === "model_probe" && r.status === "succeeded"
-            ? "Gemini connection verified; measured usage recorded."
-            : str(r, "error_code"),
+        r.status === "retry_wait" && r.error_code === "MODEL_IN_PROGRESS"
+          ? "Gemini is processing this request. Its result will be checked automatically."
+          : r.status === "quota_wait" &&
+              [
+                "MODEL_RATE_WAIT",
+                "MODEL_DAILY_QUOTA_WAIT",
+                "PROVIDER_QUOTA_WAIT",
+              ].includes(str(r, "error_code"))
+            ? `Waiting for quota. Automatically retries after ${str(r, "next_attempt_at")}.`
+            : r.type === "model_probe" && r.status === "succeeded"
+              ? "Gemini connection verified; measured usage recorded."
+              : str(r, "error_code"),
       createdAt: str(r, "created_at"),
     }));
     state.notifications = this.rows.notifications.map((r) => ({

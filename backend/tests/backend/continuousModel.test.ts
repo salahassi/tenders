@@ -107,22 +107,23 @@ function worker(fetcher: typeof fetch) {
     return response.json();
   };
 }
-const ready = () =>
-  new Response(
-    JSON.stringify({
-      candidates: [
-        {
-          finishReason: "STOP",
-          content: { parts: [{ text: '{"status":"ready"}' }] },
-        },
-      ],
-      usageMetadata: {
-        promptTokenCount: 20,
-        candidatesTokenCount: 7,
-        totalTokenCount: 27,
+const ready = (id = "synthetic-check") =>
+  Response.json({
+    id,
+    status: "completed",
+    steps: [
+      {
+        type: "model_output",
+        content: [{ type: "text", text: '{"status":"ready"}' }],
       },
-    }),
-  );
+    ],
+    usage: {
+      total_input_tokens: 20,
+      total_output_tokens: 7,
+      total_thought_tokens: 0,
+    },
+  });
+
 async function job(id: string) {
   return (await f.db.query<any>("select * from public.jobs where id=$1", [id]))
     .rows[0];
@@ -458,4 +459,224 @@ it("retains daily application limits and resumes after the next application day"
   );
   await tick();
   expect((await job(queued.id)).status).toBe("succeeded");
+});
+
+it("polls one persisted background generation across leases and transient network failures", async () => {
+  await f.command("model.configure", { ...policy, calls_per_day: 1 });
+  const queued = await f.command("model.probe", {});
+  const methods: string[] = [];
+  let polls = 0;
+  const tick = worker(async (url, init) => {
+    if (String(url).endsWith(":countTokens"))
+      return Response.json({ totalTokens: 20 });
+    methods.push(init!.method!);
+    if (init!.method === "POST") {
+      expect(JSON.parse(String(init!.body))).toMatchObject({
+        background: true,
+        store: false,
+        generation_config: { thinking_level: "low", max_output_tokens: 256 },
+      });
+      expect(new Headers(init!.headers).get("Api-Revision")).toBe("2026-05-20");
+      return Response.json({
+        id: "synthetic-background",
+        status: "in_progress",
+      });
+    }
+    expect(String(url)).toMatch(/interactions\/synthetic-background$/);
+    expect(init?.body).toBeUndefined();
+    polls++;
+    if (polls === 1) throw Error("Synthetic dropped GET response");
+    if (polls === 2)
+      return new Response(null, {
+        status: 429,
+        headers: { "retry-after": "180" },
+      });
+    if (polls === 3)
+      return Response.json({
+        id: "synthetic-background",
+        status: "in_progress",
+      });
+    return ready("synthetic-background");
+  });
+  for (let i = 0; i < 5; i++) {
+    await f.db.exec(
+      "update public.jobs set next_attempt_at=now()-interval '1 second' where status='retry_wait'",
+    );
+    await tick();
+    if (i < 4) {
+      expect(await job(queued.id)).toMatchObject({
+        status: "retry_wait",
+        error_code: "MODEL_IN_PROGRESS",
+      });
+      expect(
+        (
+          await f.db.query<any>(
+            "select state,remote_request_id from public.provider_usage",
+          )
+        ).rows,
+      ).toEqual([
+        { state: "reserved", remote_request_id: "synthetic-background" },
+      ]);
+    }
+  }
+  expect(methods).toEqual(["POST", "GET", "GET", "GET", "GET"]);
+  expect(await job(queued.id)).toMatchObject({
+    status: "succeeded",
+    attempts: 5,
+  });
+  expect(
+    (
+      await f.db.query<any>(
+        "select state,actual_input,actual_output from public.provider_usage",
+      )
+    ).rows,
+  ).toEqual([{ state: "settled", actual_input: 20, actual_output: 7 }]);
+});
+
+it("recovers a lost worker lease by retrieving the recorded request instead of creating another", async () => {
+  await f.command("model.configure", policy);
+  const queued = await f.command("model.probe", {});
+  let creates = 0,
+    gets = 0;
+  const tick = worker(async (url, init) => {
+    if (String(url).endsWith(":countTokens"))
+      return Response.json({ totalTokens: 20 });
+    if (init!.method === "POST") {
+      creates++;
+      return Response.json({ id: "synthetic-crash", status: "in_progress" });
+    }
+    gets++;
+    return ready("synthetic-crash");
+  });
+  await tick();
+  await f.db.exec(
+    "update public.jobs set next_attempt_at=now()-interval '1 second'",
+  );
+  const claimed = await rpc("claim_backend_job");
+  const usage = (await f.db.query<any>("select * from public.provider_usage"))
+    .rows[0];
+  await rpc("resume_model_request", {
+    job_id: queued.id,
+    lease: claimed.lease_token,
+    input_hash: usage.input_hash,
+    target_provider: "gemini_free",
+    manifest: [],
+  });
+  await f.db.exec(
+    "update public.jobs set lease_until=now()-interval '1 second' where status='running'",
+  );
+  await tick();
+  expect(creates).toBe(1);
+  expect(gets).toBe(1);
+  expect(await job(queued.id)).toMatchObject({
+    status: "succeeded",
+    attempts: 3,
+  });
+  expect(
+    (await f.db.query<any>("select count(*)::int n from public.provider_usage"))
+      .rows[0].n,
+  ).toBe(1);
+});
+
+it("keeps an expired background result unknown without resubmitting and rejects browser checkpoint writes", async () => {
+  await f.command("model.configure", policy);
+  const queued = await f.command("model.probe", {});
+  let creates = 0;
+  const tick = worker(async (url) => {
+    if (String(url).endsWith(":countTokens"))
+      return Response.json({ totalTokens: 20 });
+    creates++;
+    return Response.json({ id: "synthetic-expired", status: "in_progress" });
+  });
+  await tick();
+  for (const name of [
+    "resume_model_request",
+    "checkpoint_model_request",
+    "defer_model_request",
+  ]) {
+    expect(
+      (
+        await f.db.query<any>(
+          "select has_function_privilege('authenticated',p.oid,'execute') allowed from pg_proc p where proname=$1",
+          [name],
+        )
+      ).rows[0].allowed,
+    ).toBe(false);
+  }
+  await f.db.exec(
+    "update public.provider_usage set remote_deadline=now()-interval '1 second'; update public.jobs set next_attempt_at=now()-interval '1 second'",
+  );
+  await tick();
+  expect(creates).toBe(1);
+  expect(await job(queued.id)).toMatchObject({
+    status: "blocked",
+    error_code: "MODEL_RESULT_EXPIRED",
+  });
+  expect(
+    (
+      await f.db.query<any>(
+        "select state,actual_input from public.provider_usage",
+      )
+    ).rows[0],
+  ).toEqual({ state: "unknown", actual_input: null });
+});
+
+it("pins background identity and conservatively retains canceled usage", async () => {
+  await f.command("model.configure", policy);
+  const queued = await f.command("model.probe", {});
+  await worker(async (url) =>
+    String(url).endsWith(":countTokens")
+      ? Response.json({ totalTokens: 20 })
+      : Response.json({ id: "synthetic-pinned", status: "in_progress" }),
+  )();
+  await f.db.exec(
+    "update public.jobs set next_attempt_at=now()-interval '1 second'",
+  );
+  const claimed = await rpc("claim_backend_job");
+  const usage = (await f.db.query<any>("select * from public.provider_usage"))
+    .rows[0];
+  const args = {
+    job_id: queued.id,
+    lease: claimed.lease_token,
+    input_hash: "e".repeat(64),
+    target_provider: "gemini_free",
+    manifest: [],
+  };
+  await expect(rpc("resume_model_request", args)).rejects.toMatchObject({
+    code: "MODEL_IDENTITY_CHANGED",
+  });
+  args.input_hash = usage.input_hash;
+  await rpc("resume_model_request", args);
+  await expect(
+    rpc("checkpoint_model_request", {
+      job_id: queued.id,
+      lease: claimed.lease_token,
+      reservation: usage.id,
+      remote_id: "synthetic-other",
+    }),
+  ).rejects.toMatchObject({ code: "IDEMPOTENCY_CONFLICT" });
+  await rpc("defer_model_request", {
+    job_id: queued.id,
+    lease: claimed.lease_token,
+    reservation: usage.id,
+  });
+  const current = await job(queued.id);
+  await f.command("job.action", {
+    id: queued.id,
+    expected_revision: current.revision,
+    action: "cancel",
+    reason: "Synthetic cancellation acceptance",
+  });
+  expect(await job(queued.id)).toMatchObject({ status: "canceled" });
+  expect(
+    (
+      await f.db.query<any>(
+        "select state,actual_input,remote_request_id from public.provider_usage",
+      )
+    ).rows[0],
+  ).toEqual({
+    state: "unknown",
+    actual_input: null,
+    remote_request_id: "synthetic-pinned",
+  });
 });
