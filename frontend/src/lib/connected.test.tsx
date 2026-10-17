@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { get, set } from "idb-keyval";
 import { ConnectedProvider } from "./ConnectedProvider";
 import { ConnectedRepository } from "./connectedRepository";
@@ -9,6 +9,7 @@ import { BackendClient, BackendRequestError } from "./backendClient";
 import { useApp } from "./store";
 import Settings from "../pages/Settings";
 import Sources from "../pages/Sources";
+import SourceDetail from "../pages/SourceDetail";
 import Dashboard from "../pages/Dashboard";
 import type { Session } from "@supabase/supabase-js";
 vi.mock("idb-keyval", () => ({
@@ -36,7 +37,7 @@ const session = {
     email: "owner@example.test",
   },
 } as Session;
-function fixture() {
+function fixture(sourceRows?: Record<string, unknown>[]) {
   let authListener: (
     _event: string,
     session: Session | null,
@@ -88,7 +89,7 @@ function fixture() {
       const table = path.split("?")[0];
       const records =
         table === "/v1/sources"
-          ? [
+          ? (sourceRows ?? [
               {
                 id: source,
                 revision: 1,
@@ -97,7 +98,7 @@ function fixture() {
                 approval: "approved",
                 tags: [],
               },
-            ]
+            ])
           : table === "/v1/opportunities"
             ? [opportunityRow]
             : [];
@@ -170,6 +171,50 @@ function Probe() {
 }
 
 describe("connected repository", () => {
+  it("does not attribute user-entered opportunities to a manual tender portal", async () => {
+    const f = fixture([
+      {
+        id: source,
+        revision: 1,
+        name: "Synthetic official portal",
+        kind: "manual",
+        url: "https://example.test/tenders",
+        approval: "proposed",
+        adapter_required: true,
+        tags: ["country:JO"],
+      },
+    ]);
+    const repository = new ConnectedRepository(f.client);
+    const previous = await repository.load(),
+      next = structuredClone(previous);
+    next.opportunities.push({
+      ...next.opportunities[0],
+      id: crypto.randomUUID(),
+      sourceId: "manual",
+      title: "New user entry",
+    });
+    await repository.save(previous, next);
+    const request = f.commands[0] as {
+      body: {
+        commands: { operation: string; input: Record<string, unknown> }[];
+      };
+    };
+    const createdSource = request.body.commands.find(
+      (c) => c.operation === "source.create",
+    )!;
+    const createdOpportunity = request.body.commands.find(
+      (c) => c.operation === "opportunity.create",
+    )!;
+    expect(createdSource.input).toMatchObject({
+      name: "Added by you",
+      kind: "manual",
+      approved_hosts: [],
+    });
+    expect(createdSource.input.client_id).not.toBe(source);
+    expect(createdOpportunity.input.source_id).toBe(
+      createdSource.input.client_id,
+    );
+  });
   it("loads only server records, maps decision to status and submits the expected revision", async () => {
     const f = fixture(),
       r = new ConnectedRepository(f.client),
@@ -251,6 +296,95 @@ describe("connected repository", () => {
 });
 
 describe("connected screens", () => {
+  it("shows manual portal names, country filtering, and manual access without an Enable button", async () => {
+    const f = fixture([
+      {
+        id: source,
+        revision: 1,
+        name: "بوابة عطاءات اختبارية",
+        kind: "manual",
+        url: "https://example.test/tenders",
+        approval: "proposed",
+        adapter_required: true,
+        tags: ["country:JO", "الأردن", "بنك"],
+      },
+    ]);
+    render(
+      <MemoryRouter>
+        <ConnectedProvider client={f.client}>
+          <Sources />
+        </ConnectedProvider>
+      </MemoryRouter>,
+    );
+    const link = await screen.findByRole("link", {
+      name: "بوابة عطاءات اختبارية",
+    });
+    expect(link).toHaveAttribute("href", `/sources/${source}`);
+    expect(
+      screen.getByText("Manual review", { exact: true }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Built-in origin")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Enable" }),
+    ).not.toBeInTheDocument();
+    const user = userEvent.setup();
+    await user.selectOptions(
+      screen.getByLabelText("Filter source country"),
+      "SA",
+    );
+    expect(
+      screen.queryByRole("link", { name: "بوابة عطاءات اختبارية" }),
+    ).not.toBeInTheDocument();
+    await user.selectOptions(
+      screen.getByLabelText("Filter source country"),
+      "JO",
+    );
+    expect(
+      screen.getByRole("link", { name: "بوابة عطاءات اختبارية" }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens manual portal details with the actual access note and no misleading collection action", async () => {
+    const f = fixture([
+      {
+        id: source,
+        revision: 1,
+        name: "Synthetic supplier portal",
+        kind: "manual",
+        url: "https://example.test/suppliers",
+        approval: "proposed",
+        adapter_required: true,
+        policy_note: "Synthetic registration instructions",
+        tags: ["country:SA"],
+      },
+    ]);
+    render(
+      <MemoryRouter initialEntries={[`/sources/${source}`]}>
+        <ConnectedProvider client={f.client}>
+          <Routes>
+            <Route path="/sources/:id" element={<SourceDetail />} />
+          </Routes>
+        </ConnectedProvider>
+      </MemoryRouter>,
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Synthetic supplier portal" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /https:\/\/example.test\/suppliers/ }),
+    ).toHaveAttribute("href", "https://example.test/suppliers");
+    expect(
+      screen.getByText("Synthetic registration instructions", {
+        selector: "p",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Enable source" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Manual review — collection adapter required"),
+    ).toBeInTheDocument();
+  });
   it("keeps the source dialog and entered details open after a rejected save", async () => {
     const f = fixture();
     f.beforeWrite(async () => {

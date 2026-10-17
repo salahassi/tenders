@@ -12,6 +12,7 @@ import { BackendClient, BackendRequestError } from "./backendClient";
 
 import { getLocalFile } from "./knowledgeFiles";
 import { getReviewDocuments } from "./proposalReview";
+import { isBuiltInSource } from "./sources";
 
 type Row = Record<string, unknown> & { id: string; revision: number };
 type Command = { operation: string; input: Record<string, unknown> };
@@ -593,7 +594,7 @@ export class ConnectedRepository {
         });
       }
     }
-    let manual = next.sources.find((s) => s.type === "manual")?.id;
+    let manual = next.sources.find(isBuiltInSource)?.id;
     for (const opportunity of next.opportunities) {
       const before = previous.opportunities.find(
         (o) => o.id === opportunity.id,

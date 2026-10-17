@@ -6,6 +6,23 @@ Verified October 17, 2026. This file separates implemented code, local verificat
 
 ## Verified release state
 
+### Official source catalog and workspace seeding — October 17, 2026
+
+The Owner explicitly requested real official sources in the seeders for Saudi Arabia, Jordan, and Palestine. This authorizes curated reference records in the selected workspace; synthetic business records remain prohibited. The source URL is no longer an input the Owner must supply to get an initial directory.
+
+Added `backend/seeders/official-sources.json` with **35 official sources: SA 14, JO 11, PS 10**, covering central procurement platforms, ministries, banks, public enterprises, large companies, funds, municipalities, and universities. The reusable `npm run seed:sources` command generates validated administrator SQL for an explicit workspace and active Owner. It preserves existing URLs, stable source identities, edits, approvals, revisions, and audit history; insertion and audit are atomic with a workspace lock and a 500-source capacity check. It does not run automatically at signup or deployment. See [the catalog and instructions](../seeders/README.md).
+
+Official-page research and bounded HTTPS checks identified the reference destinations. Thirty returned 200; SAMA, SHIRAA, Palestine General Supplies, and MDLF returned 503; Birzeit Ritaj returned 403. Etimad returned a human-verification page with 200. Individual notes retain these access limits. No protected access, supplier registration, payment, or automated tender collection was attempted. HTML portals are accurately represented as manual references requiring an appropriate collection adapter; the source-directory adapter is not a tender parser.
+
+The Sources UI now retains real portal names, supports country filtering, displays access notes, and hides the unsupported collection action for manual portals. The connected repository creates/reuses only a manual origin without a URL for user-entered opportunities, preventing accidental attribution to the first seeded portal. Stale browser-only/disconnected persistence messages were removed from Sources.
+
+Local verification passed **128 backend tests in 18 files**, **128 frontend tests in 23 files**, both type checks, and both builds. Six new PostgreSQL seeder tests cover catalog validation, atomic audit, replay and edit preservation, capacity rollback, active-Owner/browser-role denial, and safe SQL quoting; three frontend tests cover portal display/filtering, detail access, and correct manual attribution. These are local integration/jsdom results, not authenticated browser E2E.
+
+Applied the tested seeder through Supabase SQL to the existing TenderDesk workspace. At **14:07:21 UTC**, read-back confirmed 35 distinct sources (14/11/10), 35 source audit events, zero opportunities, and zero jobs. All sources are `manual`, `proposed`, `adapter_required=true`, with no collection hosts or due schedule. A second application at **14:07:49 UTC** retained exactly 35 sources and 35 audit events; the ordered row hash remained `597be706a186c46a5c47f97380cc2bbc`. This verifies real database seeding and replay, not collection activation.
+
+Frontend changes and the reusable seeder are prepared for publication on [PR #3](https://github.com/salahassi/tenders/pull/3). The currently published frontend predates the portal-name/filter fix; frontend deployment and authenticated browser acceptance remain pending. API v7, worker v4, and the minute scheduler are unchanged. The remaining collection work is to implement/verify suitable adapters for selected public listings, while registration-only and human-verification portals retain their actual access restrictions. Model account/quota verification and a connected browser session remain outstanding for full-system acceptance.
+
+
 ### Full activation authorization and integration verification — October 17, 2026
 
 The Owner clarified that the scope is full system activation, followed by integration and browser end-to-end testing, and offered to sign in directly in a browser. This supersedes the earlier restricted activation scope: no further general permission for model/source activation is needed. Actual project/quota details, eligible content, source destinations, and a usable browser session remain necessary inputs.
@@ -88,7 +105,7 @@ The applied scheduler correction supplies explicit extension schemas while prese
 1. API v7, worker v4, both database corrections, and minute scheduling are deployed. Preserve the actual migration mapping and verify the remote branch head before another source change. Deployment documentation is tracked in [pull request #3](https://github.com/salahassi/tenders/pull/3).
 2. Validate the real Owner's hosted sign-in and business/Storage workflows using the existing confirmed identity. Do not fabricate a test account, reset the password, or rotate a valid invitation merely to obtain a session.
 3. Full model/source activation is authorized. Verify the selected Gemini account, effective free quota, expiry, and eligible content using the Owner's browser session, then save its matching policy. Backend secrets alone do not supply those account facts. Keep unused optional providers inactive.
-4. Add reviewed source destinations to the collection allowlist and verify collection with real permitted inputs. The current allowlist is empty.
+4. The 35-source official reference directory is now seeded. Implement/verify suitable collection adapters for selected public listings, then configure their reviewed hosts and verify actual collection. The current allowlist is empty; supplier-registration pages are not automatically collected.
 5. Complete the generation, review, export, recovery, and held-out evaluation journeys using eligible business inputs. Existing deterministic tests and scheduler heartbeats do not establish business-output accuracy.
 
 ## Decisions that are already settled
@@ -108,7 +125,7 @@ The applied scheduler correction supplies explicit extension schemas while prese
 | --- | --- | --- |
 | M1: local workspace | 1–7 interface | Superseded by connected-only operation; synthetic local persistence is confined to tests. |
 | M2: authenticated persistence | 1–2 | Durable records/files are implemented and deployed; actual Owner/session/Storage acceptance is pending. |
-| M3: sources and queue | 3–5 | Adapters, persistent queue, and minute scheduling are deployed; a reviewed real source remains pending. |
+| M3: sources and queue | 3–5 | Adapters, persistent queue, minute scheduling, and 35 real official source references are deployed. A verified collector for a selected public listing remains pending. |
 | M4: analysis and writing | 4–5 | Full generation/regeneration and calculation pipeline is implemented; model activation and business evaluation remain pending. |
 | M5: export and operations | 3, 6, 7 | Export, submission history, complete recovery and maintenance are implemented; scheduler operation is verified and real-account acceptance remains pending. |
 | M6: activation/evaluation | All, especially 7 | Deterministic checks and deployment evidence are recorded; no blanket hosted or model-quality acceptance. |

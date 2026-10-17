@@ -42,3 +42,10 @@ The available tool registry has neither the connected Browser control tool nor a
 | Export and recovery | Authorized Word download and field/pagination review; complete backup and controlled restore into an empty matching-schema target | Depends on actual proposal/artifact inputs and restore target |
 
 Full hosted acceptance remains open. The latest instruction supplies activation authorization; completing it requires the missing access and inputs above.
+
+
+## Official source catalog continuation — October 17, 2026
+
+The current complete local suites pass 128 backend tests (18 files) and 128 frontend tests (23 files), with both type checks and builds. `sourceCatalog.test.ts` adds six PostgreSQL seeder tests: catalog validation, reference/audit insertion without business jobs, replay/user-edit preservation, capacity rollback, active-Owner and browser-role denial, and SQL text quoting. Three connected frontend regressions verify manual portal names/country filtering, actual access details without a misleading Enable action, and creation of a separate built-in origin for user-entered opportunities.
+
+Hosted SQL verified 35 real source references (SA 14, JO 11, PS 10) and 35 corresponding audit events at 14:07 UTC. Replaying the same seeder preserved count, audit count, and ordered row hash `597be706a186c46a5c47f97380cc2bbc`. No opportunities or jobs were synthesized. All catalog entries require manual access until suitable collection adapters are verified. This is real database reference-data acceptance, not authenticated API/browser or live collection acceptance. The updated frontend is pending publication through PR #3.

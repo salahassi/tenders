@@ -7,14 +7,15 @@
     "typecheck": "tsc -b",
     "build": "tsc -b",
     "test": "vitest run tests/backend",
-    "test:integration": "vitest run tests/backend/database.test.ts tests/backend/onboarding.test.ts tests/backend/httpDatabase.integration.test.ts",
+    "test:integration": "vitest run tests/backend/database.test.ts tests/backend/onboarding.test.ts tests/backend/httpDatabase.integration.test.ts tests/backend/sourceCatalog.test.ts",
     "test:watch": "vitest tests/backend",
     "db:migrate": "supabase db push --linked",
     "db:reset": "supabase db reset",
     "serve": "supabase functions serve",
     "deploy": "supabase functions deploy api && supabase functions deploy worker",
     "contracts:generate": "node --experimental-strip-types scripts/backend/generate-openapi.ts",
-    "evaluate": "node --experimental-strip-types scripts/backend/evaluate.ts"
+    "evaluate": "node --experimental-strip-types scripts/backend/evaluate.ts",
+    "seed:sources": "node --experimental-strip-types scripts/backend/seed-sources.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "2.117.3",

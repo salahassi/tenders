@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Globe2, ExternalLink, ShieldCheck } from "lucide-react";
 import { useApp } from "../lib/store";
 import { Badge, Button, EmptyState, PageHeader } from "../components/ui";
+import { isBuiltInSource, canCollectSource } from "../lib/sources";
 import "./admin.css";
 export default function SourceDetail() {
   const { id } = useParams();
@@ -21,12 +22,14 @@ export default function SourceDetail() {
       />
     );
   const owner = state.settings.role === "Owner";
-  const isManual = source.type === "manual" && !source.adapterRequired;
+  const isManual = isBuiltInSource(source);
+  const manualPortal = source.type === "manual" && !isManual;
+  const collectable = canCollectSource(source);
   const sourceTypeLabel = {
     link_directory: "Website",
     rss: "RSS feed",
     json_feed: "JSON feed",
-    manual: "Added by you",
+    manual: isManual ? "Added by you" : "Manual review",
   }[source.type];
   const statusLabel = {
     approved: "Enabled",
@@ -40,7 +43,7 @@ export default function SourceDetail() {
   const audit = state.audit.filter((a) => a.target === id).slice(0, 8);
   const jobs = state.jobs.filter((j) => j.target === source.id);
   const setStatus = async (status: typeof source.status) => {
-    if (!owner || isManual) return;
+    if (!owner || isManual || (status === "approved" && !collectable)) return;
     if (
       status === "approved" &&
       source.type !== "manual" &&
@@ -85,7 +88,9 @@ export default function SourceDetail() {
         description={
           isManual
             ? "The built-in origin for opportunities you enter or import yourself."
-            : "A permitted feed or directory collected on a schedule."
+            : manualPortal
+              ? "Open the official page to review tenders, supplier registration, and participation requirements."
+              : "A feed or source directory with collection settings and access notes."
         }
         actions={
           <div className="row">
@@ -100,7 +105,7 @@ export default function SourceDetail() {
             >
               {isManual ? "Built-in origin" : statusLabel}
             </Badge>
-            {owner && !isManual && source.status !== "approved" && (
+            {owner && collectable && source.status !== "approved" && (
               <Button onClick={() => setStatus("approved")}>
                 Enable source
               </Button>
@@ -144,7 +149,7 @@ export default function SourceDetail() {
               <dd>{sourceTypeLabel}</dd>
               <dt>Polling preference</dt>
               <dd>
-                {isManual
+                {source.type === "manual"
                   ? "Not applicable"
                   : `Every ${source.pollHours || state.settings.pollHours} hours`}
               </dd>
@@ -158,9 +163,11 @@ export default function SourceDetail() {
               <dd>
                 {isManual
                   ? "Not applicable — you add these opportunities"
-                  : source.nextRun
-                    ? new Date(source.nextRun).toLocaleString()
-                    : "Not scheduled"}
+                  : manualPortal
+                    ? "Manual review — collection adapter required"
+                    : source.nextRun
+                      ? new Date(source.nextRun).toLocaleString()
+                      : "Not scheduled"}
               </dd>
               <dt>Opportunities</dt>
               <dd>{opportunityCount} recorded in this workspace</dd>
@@ -169,7 +176,7 @@ export default function SourceDetail() {
                 <div className="admin-tag-row">
                   {source.tags.map((t) => (
                     <span className="tag" key={t}>
-                      {t}
+                      {t.startsWith("country:") ? t.slice(8) : t}
                     </span>
                   ))}
                 </div>
@@ -193,16 +200,20 @@ export default function SourceDetail() {
             <div className="admin-rate-note">
               {isManual
                 ? "You can enter a public opportunity or upload its RFP from the workspace."
-                : "Only permitted, approved sources are collected. Review Jobs for host-approval or access blockers."}
+                : manualPortal
+                  ? "Review this source from its official link. Automatic collection needs a supported feed or a site-specific adapter."
+                  : "Only permitted, approved sources are collected. Review Jobs for host-approval or access blockers."}
             </div>
             {owner && !isManual && source.status === "proposed" && (
               <div className="admin-form-actions">
                 <Button variant="danger" onClick={() => setStatus("rejected")}>
                   Reject source
                 </Button>
-                <Button onClick={() => setStatus("approved")}>
-                  Enable source
-                </Button>
+                {collectable && (
+                  <Button onClick={() => setStatus("approved")}>
+                    Enable source
+                  </Button>
+                )}
               </div>
             )}
           </div>

@@ -21,13 +21,18 @@ import {
   Metric,
 } from "../components/ui";
 import type { Source } from "../types";
+import {
+  isBuiltInSource,
+  canCollectSource,
+  sourceCountry,
+} from "../lib/sources";
 import "./admin.css";
 
 const sourceTypeLabel: Record<Source["type"], string> = {
   link_directory: "Website",
   rss: "RSS feed",
   json_feed: "JSON feed",
-  manual: "Added by you",
+  manual: "Manual review",
 };
 const sourceStatusLabel: Record<Source["status"], string> = {
   approved: "Enabled",
@@ -40,6 +45,7 @@ export default function Sources() {
   const { state, update, notify } = useApp();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("all");
+  const [country, setCountry] = useState("all");
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
@@ -54,12 +60,18 @@ export default function Sources() {
   const sources = state.sources.filter(
     (s) =>
       (filter === "all" || s.status === filter) &&
+      (country === "all" || sourceCountry(s) === country) &&
       `${s.name} ${sourceTypeLabel[s.type]} ${s.tags.join(" ")}`
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
   const changeStatus = async (id: string, status: Source["status"]) => {
-    if (!owner || state.sources.find((s) => s.id === id)?.type === "manual")
+    const source = state.sources.find((s) => s.id === id);
+    if (
+      !owner ||
+      !source ||
+      (status === "approved" && !canCollectSource(source))
+    )
       return;
     if (
       status === "approved" &&
@@ -143,7 +155,7 @@ export default function Sources() {
     });
     setError("");
     notify(
-      "Source saved. An Owner can enable it in Sources. Live collection is not connected.",
+      "Source saved to your workspace. Review its collection settings and access notes before enabling it.",
     );
   };
   return (
@@ -151,7 +163,7 @@ export default function Sources() {
       <PageHeader
         eyebrow="DISCOVERY"
         title="Sources"
-        description="Add the websites, RSS feeds, and JSON feeds you want the agent to monitor."
+        description="Browse official tender sources and supplier portals, or add a feed to monitor."
         actions={
           canEdit ? (
             <Button
@@ -174,13 +186,13 @@ export default function Sources() {
               (s) => s.status === "approved" && s.type !== "manual",
             ).length
           }
-          detail="Saved configuration; collection not connected"
+          detail="Scheduled collection; see Jobs for results"
           icon={<Radio size={18} />}
         />
         <Metric
           label="Not enabled"
           value={state.sources.filter((s) => s.status === "proposed").length}
-          detail="An Owner can enable these sources"
+          detail="Review access and collection settings"
           icon={<Globe2 size={18} />}
         />
         <Metric
@@ -198,9 +210,20 @@ export default function Sources() {
             aria-label="Search sources"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search sources or sectors…"
+            placeholder="Search sources, countries, or sectors…"
           />
         </div>
+        <select
+          className="input"
+          aria-label="Filter source country"
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+        >
+          <option value="all">All countries</option>
+          <option value="SA">السعودية · Saudi Arabia</option>
+          <option value="JO">الأردن · Jordan</option>
+          <option value="PS">فلسطين · Palestine</option>
+        </select>
         <select
           className="input"
           aria-label="Filter source status"
@@ -219,8 +242,8 @@ export default function Sources() {
           <div>
             <h2 className="section-title">Your source directory</h2>
             <span className="small muted">
-              {sources.length} sources · collection requires the connected
-              backend
+              {sources.length} sources · open a source for its official link and
+              access notes
             </span>
           </div>
         </div>
@@ -249,22 +272,23 @@ export default function Sources() {
                             className="admin-link"
                             to={`/sources/${source.id}`}
                           >
-                            {source.type === "manual"
-                              ? "Added by you"
-                              : source.name}
+                            {source.name}
                           </Link>
                           <small>
-                            {source.type === "manual"
+                            {isBuiltInSource(source)
                               ? "Opportunities you enter or import yourself"
-                              : source.tags.join(" · ") ||
-                                "No sectors specified"}
+                              : source.tags
+                                  .filter((tag) => !tag.startsWith("country:"))
+                                  .join(" · ") || "No sectors specified"}
                           </small>
                         </div>
                       </div>
                     </td>
                     <td>
                       <span className="tag">
-                        {sourceTypeLabel[source.type]}
+                        {isBuiltInSource(source)
+                          ? "Added by you"
+                          : sourceTypeLabel[source.type]}
                       </span>
                     </td>
                     <td>
@@ -279,7 +303,7 @@ export default function Sources() {
                                 : "neutral"
                         }
                       >
-                        {source.type === "manual"
+                        {isBuiltInSource(source)
                           ? "Built-in origin"
                           : sourceStatusLabel[source.status]}
                       </Badge>
@@ -294,7 +318,7 @@ export default function Sources() {
                     <td>
                       <div className="admin-cell-actions">
                         {owner &&
-                          source.type !== "manual" &&
+                          canCollectSource(source) &&
                           source.status === "proposed" && (
                             <Button
                               variant="secondary"
@@ -307,7 +331,7 @@ export default function Sources() {
                             </Button>
                           )}
                         {owner &&
-                          source.type !== "manual" &&
+                          !isBuiltInSource(source) &&
                           source.status === "approved" && (
                             <Button
                               variant="ghost"
@@ -319,7 +343,7 @@ export default function Sources() {
                             </Button>
                           )}
                         {owner &&
-                          source.type !== "manual" &&
+                          canCollectSource(source) &&
                           source.status === "paused" && (
                             <Button
                               variant="secondary"
@@ -346,16 +370,17 @@ export default function Sources() {
         )}
       </div>
       <p className="admin-help">
-        Live collection is not connected. Enabling a source saves your
-        preference in this browser. "Added by you" is the built-in origin for
-        opportunities you enter or import yourself; it is not a website
-        connector.
+        Manual review sources open the official tender page or supplier portal.
+        Automated collection requires a supported feed or collection adapter.
+        Supplier registration and tender participation follow each institution's
+        own process. "Added by you" groups opportunities you enter or import
+        yourself.
       </p>
       <SourceImport />
       <Modal open={open} onClose={() => setOpen(false)} title="Add source">
         <p className="admin-help">
-          Save a public website or feed. An Owner can enable it in the source
-          list. Live monitoring requires the backend connection.
+          Save a public website or feed to your workspace. An Owner can review
+          its collection settings and access requirements before enabling it.
         </p>
         <div className="stack">
           <Field label="Source name">
