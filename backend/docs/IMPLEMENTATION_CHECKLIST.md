@@ -6,6 +6,14 @@ Verified October 17, 2026. This file separates implemented code, local verificat
 
 ## Verified release state
 
+### Full activation authorization and integration verification — October 17, 2026
+
+The Owner clarified that the scope is full system activation, followed by integration and browser end-to-end testing, and offered to sign in directly in a browser. This supersedes the earlier restricted activation scope: no further general permission for model/source activation is needed. Actual project/quota details, eligible content, source destinations, and a usable browser session remain necessary inputs.
+
+Added `httpDatabase.integration.test.ts`, connecting the production API and worker handlers to the canonical PostgreSQL commands and RLS. Its three passing scenarios cover collection and deduplication, Gemini-only policy persistence and role/revision denial, and original-byte verification with durable extraction and replay protection. Auth verification and remote transports remain explicit local test doubles. The backend integration command now includes this suite. Full verification passed **122 backend tests across 17 files**, **125 frontend tests across 23 files**, both type checks, and both builds. Sixteen hosted HTTP checks passed. At 13:40 UTC the scheduler heartbeat was current, with three recent successful runs and no recorded operational error.
+
+Hosted inspection found no source, model policy, document, opportunity, or business job. Browser control tools are unavailable in this session after tool discovery, so no browser was opened and no authenticated browser acceptance is claimed. The Owner was asked to connect Browser and identify the first source URL. Account billing/quota facts are not replaced with guessed values. See [INTEGRATION_TEST_REPORT.md](INTEGRATION_TEST_REPORT.md) for exact evidence and the remaining browser journeys. These changes add tests/documentation only; deployed API v7, worker v4, and application source `8c2a4b2` are unchanged.
+
 ### Approved worker and scheduler activation — October 17, 2026
 
 The user explicitly approved both prepared database corrections, compatible worker deployment, and minute scheduling. This approval resolved the earlier automatic-review block. The dispatcher correction was applied as `20261017121842_dispatcher_extension_schema`. The complete model correction encountered connector `Invalid or expired requestState` errors; migration history and function read-back confirmed those calls made no change. The same approved correction was then applied through the same migration connector in three parts: `20261017130519_model_runtime_preflight`, `20261017130531_model_runtime_usage`, and `20261017131059_model_runtime_policy`. The final part changed only the accepted `failover_rank` input key and checked the function body's exact pre-change and canonical post-change hashes. All seven affected function bodies now exactly match the two canonical migration files. Their empty search paths and intended execution privileges were verified. Hosted history contains **29** entries; do not replay the canonical files merely because connector-assigned names differ.
@@ -79,7 +87,7 @@ The applied scheduler correction supplies explicit extension schemas while prese
 
 1. API v7, worker v4, both database corrections, and minute scheduling are deployed. Preserve the actual migration mapping and verify the remote branch head before another source change. Deployment documentation is tracked in [pull request #3](https://github.com/salahassi/tenders/pull/3).
 2. Validate the real Owner's hosted sign-in and business/Storage workflows using the existing confirmed identity. Do not fabricate a test account, reset the password, or rotate a valid invitation merely to obtain a session.
-3. Configure the selected model only after the Owner confirms its account, effective free quota, expiry, and exact-content authorization. Backend secrets alone do not enable a model policy. Keep optional providers inactive until separately approved.
+3. Full model/source activation is authorized. Verify the selected Gemini account, effective free quota, expiry, and eligible content using the Owner's browser session, then save its matching policy. Backend secrets alone do not supply those account facts. Keep unused optional providers inactive.
 4. Add reviewed source destinations to the collection allowlist and verify collection with real permitted inputs. The current allowlist is empty.
 5. Complete the generation, review, export, recovery, and held-out evaluation journeys using eligible business inputs. Existing deterministic tests and scheduler heartbeats do not establish business-output accuracy.
 
@@ -91,7 +99,7 @@ The applied scheduler correction supplies explicit extension schemas while prese
 - First-Owner setup must be restricted to the owner's selected email, require confirmed identity, expire, and close after initialization. No first-visitor promotion or invented owner account.
 - Preserve the approved interface: select an opportunity, upload its request for proposal (RFP), generate the complete linked proposal, then review section/question-specific text and attachments and request a new version. Do not restore manual outlines or removed classification selectors.
 - No automatic purchase, payment, external bid submission, or external notification. No paid dependency or paid fallback.
-- Model selection remains an explicit later decision. Do not activate the historical model named in the specification.
+- The Owner selected Gemini 3.8 Flash and authorized activation. Verify the actual account and free quota before saving its matching policy; unused optional providers stay inactive.
 - Every stage requires relevant integration tests. A stage is complete only when its stated acceptance evidence exists; code, tests, and deployment are tracked separately.
 
 ## Mapping to the original specification
@@ -100,9 +108,9 @@ The applied scheduler correction supplies explicit extension schemas while prese
 | --- | --- | --- |
 | M1: local workspace | 1–7 interface | Superseded by connected-only operation; synthetic local persistence is confined to tests. |
 | M2: authenticated persistence | 1–2 | Durable records/files are implemented and deployed; actual Owner/session/Storage acceptance is pending. |
-| M3: sources and queue | 3–5 | Adapters and persistent queue are deployed; scheduler activation and approved real source remain pending. |
+| M3: sources and queue | 3–5 | Adapters, persistent queue, and minute scheduling are deployed; a reviewed real source remains pending. |
 | M4: analysis and writing | 4–5 | Full generation/regeneration and calculation pipeline is implemented; model activation and business evaluation remain pending. |
-| M5: export and operations | 3, 6, 7 | Export, submission history, complete recovery and maintenance are implemented; hosted scheduler/real-account acceptance remains pending. |
+| M5: export and operations | 3, 6, 7 | Export, submission history, complete recovery and maintenance are implemented; scheduler operation is verified and real-account acceptance remains pending. |
 | M6: activation/evaluation | All, especially 7 | Deterministic checks and deployment evidence are recorded; no blanket hosted or model-quality acceptance. |
 
 ## Acceptance mapping: AT01–AT30
