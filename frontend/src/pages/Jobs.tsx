@@ -23,11 +23,17 @@ export default function Jobs() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const canEdit = state.settings.role !== "Reviewer";
-  const jobs = state.jobs.filter(
-    (j) =>
-      (filter === "all" || j.status === filter) &&
-      `${j.target} ${j.type}`.toLowerCase().includes(search.toLowerCase()),
-  );
+  const jobs = state.jobs
+    .filter(
+      (j) =>
+        (filter === "all" || j.status === filter) &&
+        `${j.target} ${j.type}`.toLowerCase().includes(search.toLowerCase()),
+    )
+    .sort(
+      (a, b) =>
+        Date.parse(b.createdAt) - Date.parse(a.createdAt) ||
+        a.id.localeCompare(b.id),
+    );
   const cancel = async (job: Job) => {
     if (!canEdit) return;
     if (
@@ -207,7 +213,12 @@ export default function Jobs() {
                       <div className="admin-job-message">{j.message}</div>
                       <span className="small muted">
                         Attempt {j.attempt} ·{" "}
-                        {new Date(j.createdAt).toLocaleDateString()}
+                        {new Date(j.createdAt).toLocaleString(undefined, {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                          timeZone: "Asia/Riyadh",
+                        })}{" "}
+                        · Riyadh
                       </span>
                     </td>
                     <td>
