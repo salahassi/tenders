@@ -2,7 +2,7 @@
 
 ## Scope and actual state
 
-**Current checkpoint — October 17, 2026:** API **v13** and worker **v10** are ACTIVE from `8c41a58af897439194f02ae2a46ef8363870b750`, with all 13 files in each deployment matching source. Hosted history has **35 migration entries**. Gemini 3.8 Flash is enabled in continuous free-tier mode; a real background check completed with **294 input / 11 output tokens** and one settled generation reservation. The minute scheduler is enabled, with heartbeat `18:55:02.189077 UTC` and no operational error at read-back. Health 200, anonymous metadata denial 401 and missing/invalid worker credential denial 401 passed again. The newest-first Jobs UI is published from `e9b40e66267834463494c5bbd818246aa7df3c9e` by successful [Pages run 39060051090](https://github.com/salahassi/tenders/actions/runs/39060051090); its index, Jobs and Settings bundles match the local build byte-for-byte. The 35 official sources remain reference records requiring collection adapters; no real opportunity or document has been imported. Earlier paragraphs below are dated deployment history.
+**Current checkpoint — October 17, 2026:** API **v14** and worker **v11** are ACTIVE from `a6056db95dff6d9463b0bb7b6150d9955ab17cd9`, with all 13 retained files in each matching source. Hosted history has **46 migration entries**; automatic Gemini/Qwen/Mistral/Groq routing is implemented and deployed. All 160 backend/133 frontend tests, both typechecks/builds and Deno checks passed. [Pages run 39070202922](https://github.com/salahassi/tenders/actions/runs/39070202922) passed, and the public index, Jobs and Settings bundles match the local build. Health/authentication boundaries and the active minute scheduler passed verification. Actual Owner activation persisted after reload; a real check completed through Gemini, recording all three alternatives as missing configuration. A forward cursor correction is also deployed; final browser result verification is pending. Earlier verified Gemini inference and historical deployments follow. The 35 official sources still require collection adapters; no business opportunity or document has been fabricated.
 
 **Verified October 15, 2026:** 22 hosted migrations, API v4 and worker v2; Pages application `d450c8c` passed [run 38807118314](https://github.com/salahassi/tenders/actions/runs/38807118314), completed October 15 at 21:06 UTC. One actual confirmed Auth identity exists, with restricted Owner setup pending and no workspace at the 20:58 UTC read. The hosted dispatcher is not configured. Its explicit-schema correction is saved in `20261015220000_dispatcher_extension_schema.sql` and passed local migration/tests, but two connector application attempts returned no successful result; read-back confirmed it is not applied. Models and real sources remain inactive. See the current checklist for complete acceptance limits.
 
@@ -139,3 +139,26 @@ Current API **v13** and worker **v10** use application source `8c41a58af89743919
 `model.routing` is an audited Owner command with an expected revision. It is independent of per-provider `enabled` controls. The worker reads these existing secret prefixes: `APP_MODEL_GEMINI`, `APP_MODEL_QWEN`, `APP_MODEL_MISTRAL`, `APP_MODEL_GROQ`, each with `_NAME`, `_PROJECT` and `_KEY`. Add `_FREE_ONLY=true` only for an account confirmed to stop at free limits; a matching saved free-only policy is also accepted. Qwen's actual Free Quota Only console setting must be enabled. Groq/Mistral project values identify the configured account locally; Qwen uses its workspace in the Singapore endpoint. No default model, credential, quota balance or account identity is invented.
 
 The fixed rotation is Gemini → Qwen → Mistral → Groq. Missing configuration is visible in job details and skipped without an unauthenticated HTTP request. The round uses 20-second provider requests to fit the worker lease; a valid background request defers to scheduled retrieval. Four provider failures exhaust the round and schedule a bounded retry. Daily application caps are shared across providers. Server-only preparation/attempt RPCs retain exact content authorization, active leases and unknown-use accounting. Cloudflare retains its existing manual support but is outside this requested automatic pool.
+
+
+Automatic routing release `a6056db95dff6d9463b0bb7b6150d9955ab17cd9` deploys API **v14** and worker **v11**. All 13 retained files in each function match the tested source. Bundle SHA-256: API `9316514c599ca1477c78be3cbc143446ca5d32bb6cff927692b6c96026c7ea3a`, worker `001f66803e058dd341a8f193e8c8babe0f424e7371a0fc4a96ebd3a28b01fdd7`. Health returned 200; anonymous routing and missing/invalid worker credentials returned 401.
+
+Canonical `20261017191753_round_robin_model_routing.sql` was applied in the following ten hosted entries (45 entries total). Early owner-wrapper submissions returned `Invalid or expired requestState`; read-back proved they made no changes. The final implementation extends the existing model-policy command, avoiding a command-function rename. All ten final function bodies match canonical MD5 values, with empty search paths and browser denial on internal RPCs.
+
+| Hosted version | Name |
+| --- | --- |
+| 20261017205247 | round_robin_configuration_table |
+| 20261017211138 | round_robin_server_preparation |
+| 20261017211235 | round_robin_attempt_journal |
+| 20261017211300 | round_robin_effective_preflight |
+| 20261017211307 | round_robin_reservations |
+| 20261017211329 | round_robin_generation_provenance |
+| 20261017211336 | round_robin_retry_schedule |
+| 20261017211343 | round_robin_result_checkpoint |
+| 20261017211349 | round_robin_restore_pause |
+| 20261017211454 | round_robin_owner_policy |
+
+The owner-policy update was guarded by prior body MD5 `35f2c31b1d622f5b5942310080630f83`; the resulting canonical body is `8475641f1167604a09546706fa5033fe`. Do not replay the clean-project file merely because hosted timestamps/names differ. Local acceptance passed all **160 backend tests in 20 files**, **133 frontend tests in 23 files**, both typechecks/builds and Deno checks. [Pages run 39070202922](https://github.com/salahassi/tenders/actions/runs/39070202922) passed. Public `index-BH2H6zrM.js`, `Jobs-Bqizp6nn.js` and `Settings-BZPaphm5.js` match the local build byte-for-byte. Security advisor categories/counts are unchanged. Actual-browser switch/probe acceptance is in progress.
+
+
+Forward cursor correction: `20261017212026_preserve_round_robin_cursor_on_poll.sql` is deployed. Current `public.prepare_model_routing` body MD5 is `727088b5071b6a1be10fb45433ad03d5`, matching source; browser execution remains denied and service execution granted. Polling no longer consumes another turn in the round robin. The complete backend 160/20 and frontend 133/23 checks passed again. Edge Function source remains unchanged from API v14/worker v11; the small follow-up frontend label uses “Model connection check” for every provider.

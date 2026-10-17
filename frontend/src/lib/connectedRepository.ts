@@ -461,7 +461,7 @@ export class ConnectedRepository {
       type: str(r, "type"),
       target:
         r.type === "model_probe"
-          ? "Gemini connection check"
+          ? "Model connection check"
           : str(r, "entity_id"),
       status:
         r.status === "succeeded"

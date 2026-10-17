@@ -344,11 +344,20 @@ it("keeps a known pending Gemini request first after a lease change instead of s
   );
   await tick();
   expect((await job(q.id)).error_code).toBe("MODEL_IN_PROGRESS");
+  expect(
+    (await f.db.query<any>("select next_position from public.model_routing"))
+      .rows[0].next_position,
+  ).toBe(1);
+  await f.db.exec("update public.model_routing set next_position=3");
   await age();
   await tick();
   expect((await job(q.id)).status).toBe("succeeded");
   expect(create).toBe(1);
   expect(poll).toBe(1);
+  expect(
+    (await f.db.query<any>("select next_position from public.model_routing"))
+      .rows[0].next_position,
+  ).toBe(3);
   expect(await usage(q.id)).toHaveLength(1);
 });
 it("falls back after a failed retrieval of a saved Gemini request without creating Gemini again", async () => {
