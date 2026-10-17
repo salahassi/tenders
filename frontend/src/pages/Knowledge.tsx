@@ -65,7 +65,7 @@ const messageFor = (error: unknown) =>
   error instanceof Error ? error.message : "The file could not be processed.";
 
 export default function Knowledge() {
-  const { state, update, notify, ready, mode, backend } = useApp();
+  const { state, update, notify, ready, mode, backend, saving } = useApp();
   const [active, setActive] = useState("all");
   const [search, setSearch] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -302,9 +302,10 @@ export default function Knowledge() {
         <div>
           <h2>Give every proposal the right background.</h2>
           <p>
-            {mode === "CONNECTED_FREE"
-              ? "Company notes are saved to your account. Connected file uploads and AI processing are still being prepared."
-              : "Choose the references to include in proposal preparation. Originals and readable text are saved in this browser. The AI agent is not connected yet."}
+            Choose eligible company references for proposal preparation. Notes,
+            original files and readable text are saved to your private
+            workspace. Verify current company facts before using them as
+            proposal evidence.
           </p>
           <div className="knowledge-summary">
             <span>
@@ -476,8 +477,8 @@ export default function Knowledge() {
         />
       )}
       <p className="knowledge-storage-note">
-        Files stay on this device. JSON backups retain extracted text and file
-        details, but do not contain the original attachments.
+        Accepted originals are stored privately and downloaded after an access
+        check. Workspace backups include their verified original bytes.
       </p>
       <section className="knowledge-notes">
         <div className="knowledge-section-heading">
@@ -511,7 +512,41 @@ export default function Knowledge() {
                   <h3 dir="auto">{item.title}</h3>
                   <p dir="auto">{item.content}</p>
                   {item.evidence && <small>Reference: {item.evidence}</small>}
+                  <p className="muted small">
+                    {item.verified
+                      ? "Verified company evidence"
+                      : "Not yet verified as company evidence"}
+                  </p>
                 </div>
+                {backend &&
+                  state.settings.role === "Owner" &&
+                  !item.verified &&
+                  item.evidence &&
+                  !["previous_proposal", "template"].includes(
+                    item.category,
+                  ) && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={saving}
+                      onClick={async () => {
+                        await update(
+                          (s) => ({
+                            ...s,
+                            knowledge: s.knowledge.map((fact) =>
+                              fact.id === item.id
+                                ? { ...fact, verified: true }
+                                : fact,
+                            ),
+                          }),
+                          "Verified company evidence",
+                          item.id,
+                        );
+                      }}
+                    >
+                      Verify company fact
+                    </Button>
+                  )}
                 {canEdit && (
                   <Button
                     variant="ghost"

@@ -1,6 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
 import { z } from "zod";
 import { safeUrl } from "./contracts.ts";
+import { parseOfficialListing } from "./officialListings.ts";
 
 export class CollectionError extends Error {
   constructor(
@@ -171,7 +172,28 @@ export function parseSource(
 ): Pick<CollectionResult, "items" | "candidates" | "warnings"> {
   const warnings: string[] = [];
   let rows: Record<string, unknown>[] = [];
-  if (source.kind === "link_directory") {
+  const official =
+    source.adapter_config &&
+    typeof source.adapter_config === "object" &&
+    "official_listing" in source.adapter_config
+      ? source.adapter_config.official_listing
+      : undefined;
+  if (source.kind === "link_directory" && official !== undefined) {
+    try {
+      const parsed = parseOfficialListing(official, source.url, body);
+      rows = parsed.rows;
+      warnings.push(...parsed.warnings);
+    } catch (error) {
+      throw new CollectionError(
+        error instanceof Error &&
+          ["ADAPTER_REQUIRED", "OFFICIAL_ADAPTER_URL_MISMATCH"].includes(
+            error.message,
+          )
+          ? error.message
+          : "SOURCE_SCHEMA_CHANGED",
+      );
+    }
+  } else if (source.kind === "link_directory") {
     const candidates: { url: string; name: string }[] = [],
       seen = new Set<string>();
     const clean = body.replace(
@@ -194,8 +216,7 @@ export function parseSource(
       });
     }
     return { items: [], candidates, warnings };
-  }
-  if (source.kind === "json_feed") {
+  } else if (source.kind === "json_feed") {
     const config = adapterSchema.parse(source.adapter_config);
     let value: unknown;
     try {

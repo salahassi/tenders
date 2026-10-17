@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import { useApp } from "../lib/store";
 import { Button, Field } from "./ui";
+import { tenderCurrency } from "../lib/tenderCurrency";
+import TenderCostInput from "./TenderCostInput";
 import "./commercial.css";
 type Row = Record<string, any>;
 const line = () => ({
@@ -21,6 +23,7 @@ const line = () => ({
 });
 export default function CommercialReview({
   version,
+  opportunityId,
   rates,
   estimates,
   deliveries,
@@ -29,6 +32,7 @@ export default function CommercialReview({
   onSaved,
 }: {
   version: Row;
+  opportunityId: string;
   rates: Row[];
   estimates: Row[];
   deliveries: Row[];
@@ -49,8 +53,8 @@ export default function CommercialReview({
   const [estimate, setEstimate] = useState<Row>(
     () =>
       latest?.input || {
-        currency: "SAR",
-        precision: 2,
+        currency: tenderCurrency(state, opportunityId),
+        precision: tenderCurrency(state, opportunityId) === "JOD" ? 3 : 2,
         method: "markup",
         percentage: "",
         contingency: "",
@@ -392,6 +396,17 @@ export default function CommercialReview({
                       ))}
                   </select>
                 </Field>
+                {owner && runCommand && (
+                  <TenderCostInput
+                    description={l.description}
+                    currency={estimate.currency}
+                    opportunityId={opportunityId}
+                    onSaved={async (rate) => {
+                      patchLine(index, { rate_id: rate.id, unit: rate.unit });
+                      await onSaved();
+                    }}
+                  />
+                )}
                 <Field label={`Quantity (${l.unit || "unit not selected"})`}>
                   <input
                     inputMode="decimal"

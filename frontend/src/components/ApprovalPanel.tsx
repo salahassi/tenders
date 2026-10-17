@@ -101,6 +101,7 @@ export default function ApprovalPanel({ proposal }: { proposal: Proposal }) {
           <CommercialReview
             key={proposal.versionId}
             version={data.version}
+            opportunityId={proposal.opportunityId}
             rates={data.rates}
             estimates={data.estimates}
             deliveries={data.deliveries}

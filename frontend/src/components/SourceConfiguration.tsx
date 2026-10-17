@@ -12,6 +12,9 @@ export default function SourceConfiguration({ source }: { source: Source }) {
     [config, setConfig] = useState(
       JSON.stringify(source.adapterConfig || {}, null, 2),
     ),
+    [official, setOfficial] = useState(
+      String(source.adapterConfig?.official_listing || ""),
+    ),
     [error, setError] = useState("");
   if (!runCommand || state.settings.role !== "Owner") return null;
   async function save() {
@@ -28,7 +31,17 @@ export default function SourceConfiguration({ source }: { source: Source }) {
           .filter(Boolean),
         policy_note: policy,
         poll_interval_hours: hours,
-        adapter_config: kind === "json_feed" ? JSON.parse(config) : {},
+        adapter_config:
+          kind === "json_feed"
+            ? JSON.parse(config)
+            : {
+                ...(source.adapterConfig?.catalog
+                  ? { catalog: source.adapterConfig.catalog }
+                  : {}),
+                ...(kind === "link_directory" && official
+                  ? { official_listing: official }
+                  : {}),
+              },
       });
       notify(
         "Configuration saved. Review and enable the source to schedule collection.",
@@ -41,8 +54,9 @@ export default function SourceConfiguration({ source }: { source: Source }) {
     <section className="panel admin-section">
       <h2>Collection settings</h2>
       <p>
-        Use an RSS or JSON feed, or a directory of candidate links. A directory
-        discovers sources for review; it does not crawl every linked website.
+        Choose a feed, a supported official tender listing, or a directory of
+        candidate sources. Official listings collect notices from the latest
+        page; review each original notice for complete terms and dates.
       </p>
       <Field label="Collection URL">
         <input
@@ -58,9 +72,28 @@ export default function SourceConfiguration({ source }: { source: Source }) {
         >
           <option value="rss">RSS / Atom</option>
           <option value="json_feed">JSON feed</option>
-          <option value="link_directory">Link directory</option>
+          <option value="link_directory">
+            Website listing / link directory
+          </option>
         </select>
       </Field>
+      {kind === "link_directory" && (
+        <Field label="Website listing">
+          <select
+            value={official}
+            onChange={(e) => setOfficial(e.target.value)}
+          >
+            <option value="">Discover candidate source links</option>
+            <option value="jo-gtd">Jordan Government Tenders Department</option>
+            <option value="ps-najah">An-Najah National University</option>
+            <option value="ps-ramallah">Ramallah Municipality</option>
+            <option value="sa-isdb">IsDB corporate procurement</option>
+          </select>
+          <p className="muted small">
+            Supported listings require their exact official listing URL.
+          </p>
+        </Field>
+      )}
       <Field label="Permitted hostnames, separated by commas">
         <input value={hosts} onChange={(e) => setHosts(e.target.value)} />
       </Field>
