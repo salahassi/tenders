@@ -1,5 +1,12 @@
 # Decisions
 
+## 2026-10-17: Continuous Gemini free tier
+
+- The Owner confirmed the configured Gemini 3.8 Flash project is on the free tier and explicitly requested continuous operation without supplying manual quota balances or expiry dates. This supersedes the earlier requirement to obtain console quota/renewal facts before activation. No additional Google login or general activation permission is required.
+- New Gemini policies can use `provider_managed` quota mode: the project free-tier attestation is retained, provider quota fields are null, and the policy does not expire automatically after 30 days. Existing verified-budget policies and other providers retain their rules.
+- Provider 429 responses preserve queued work and retry automatically, using bounded Retry-After or exponential waits capped at one hour when missing. Daily application limits remain 50 calls, 250,000 input tokens and 50,000 output tokens, renewing at midnight Asia/Riyadh. A free tier is not a promise of uninterrupted provider availability.
+- Uncertain generation usage remains reserved/blocked to avoid duplicate requests. No paid fallback or billing change is introduced. Operational model probes use the existing authenticated queue, quota ledger and worker with a bounded fixed connection-check prompt; they create no fake opportunities or customer evidence.
+
 ## 2026-10-14: Backend activation
 
 - Keep the existing React/Vite application and the same user-owned GitHub repository. Do not move existing frontend files merely to match a proposed directory layout.

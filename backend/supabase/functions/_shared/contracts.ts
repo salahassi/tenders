@@ -322,14 +322,27 @@ export const commandSchemas = {
       free_only: z.literal(true),
       billing_verified: z.boolean(),
       free_quota_only: z.boolean(),
-      quota_ends_at: z.iso.datetime({ offset: true }),
-      quota_remaining_tokens: z.number().int().positive().max(1e12),
+      quota_mode: z
+        .enum(["verified_budget", "provider_managed"])
+        .default("verified_budget"),
+      quota_ends_at: z.iso.datetime({ offset: true }).nullable(),
+      quota_remaining_tokens: z.number().int().positive().max(1e12).nullable(),
       calls_per_day: z.number().int().min(1).max(50),
       input_per_day: z.number().int().min(1000).max(250000),
       output_per_day: z.number().int().min(1000).max(50000),
       failover_rank: z.number().int().min(1).max(10).optional(),
     })
-    .strict(),
+    .strict()
+    .refine(
+      (v) =>
+        v.quota_mode === "provider_managed"
+          ? v.provider === "gemini_free" &&
+            v.quota_ends_at === null &&
+            v.quota_remaining_tokens === null
+          : v.quota_ends_at !== null && v.quota_remaining_tokens !== null,
+      "Use provider-managed quota only for Gemini; verified budgets require quota and expiry.",
+    ),
+  "model.probe": z.object({}).strict(),
   "content.authorize": z
     .object({
       entity_kind: z.enum([

@@ -50,11 +50,17 @@ Structured output uses OpenAI-style `response_format: { type: "json_object" }` w
 
 Unknown usage still blocks further calls until Owner reconciliation.
 
+## Continuous Gemini free tier
+
+The Owner confirmed the configured Gemini project is on the free tier and requested continuous operation. New Gemini policies use `quota_mode=provider_managed`, with `quota_ends_at` and `quota_remaining_tokens` null. Those nulls mean unknown/provider-enforced limits, not unlimited or verified token credit. An Owner confirms free-tier billing and saves the matching identity; no Google account login or manual renewal date is required. Existing verified budgets and other providers retain their expiry rules.
+
+Application limits still renew at midnight Asia/Riyadh. An explicit provider 429 waits and retries the same durable task, with Retry-After bounded to 1 minute–1 day or exponential 1 minute–1 hour waits when absent. Uncertain post-send usage blocks automatic resend. A connection check is an operational job using the same ledger and worker, capped at 256 output tokens, with no customer content or fake business records. Its result is visible in Activity & jobs.
+
 ## Activation and diagnosis
 
 Owner settings now read `GET /v1/model-environment` to prefill the model and project when no workspace policy exists. The authenticated route requires actual Owner membership and returns only provider/model/project and `key_configured`; it never returns keys, changes configuration, calls a provider, or claims to verify billing/quota. Existing policies are preserved and mismatches are shown. Untouched optional slots remain unsaved and disabled. Google console login is not required for this check; an Owner may supply verified free-tier/quota facts without giving the assistant Google account access.
 
-The three Gemini secrets must exist in **Supabase Edge Function Secrets**, and the matching workspace policy must have an Owner-verified free quota and expiry. The provider-pool migrations (`20261016120000`, `20261016130000`, and `20261016220000`) and current `api`/`worker` functions must be deployed. Adding secrets alone does not apply migrations, enable a workspace policy, approve content, or activate the dispatcher. Keep other providers disabled unless separately verified.
+The three Gemini secrets must exist in **Supabase Edge Function Secrets**, and the matching workspace policy must have Owner-confirmed free-tier billing. Gemini provider-managed mode does not require a manual free quota or expiry. The provider-pool migrations (`20261016120000`, `20261016130000`, and `20261016220000`) and current `api`/`worker` functions must be deployed. Adding secrets alone does not apply migrations, enable a workspace policy, approve content, or activate the dispatcher. Keep other providers disabled unless separately verified.
 
 | Error | Meaning and next action |
 | --- | --- |

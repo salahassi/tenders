@@ -363,7 +363,12 @@ export class Backend {
     if (error) throw databaseError(error);
     return data;
   }
-  async finish(id: string, lease: string, status: string, errorCode: string) {
+  async finish(
+    id: string,
+    lease: string,
+    status: string,
+    errorCode: string | null,
+  ) {
     const { error } = await this.admin.rpc("finish_backend_job", {
       job_id: id,
       lease,

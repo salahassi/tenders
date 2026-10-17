@@ -37,6 +37,26 @@ const evidence: Evidence[] = [
     verified: false,
   },
 ];
+it("keeps Owner-attested provider-managed Gemini available without an invented quota expiry", () => {
+  const geminiEnv = { ...env, provider: "gemini_free" };
+  const continuous = {
+    ...config,
+    provider: "gemini_free" as const,
+    quota_mode: "provider_managed" as const,
+    quota_ends_at: null,
+    verified_at: "2020-01-01T00:00:00Z",
+  };
+  expect(() => available(continuous, geminiEnv)).not.toThrow();
+  expect(() =>
+    available({ ...continuous, billing_verified: false }, geminiEnv),
+  ).toThrow("FREE_ONLY_REQUIRED");
+  expect(() =>
+    available({ ...continuous, provider: "qwen_free" }, env),
+  ).toThrow("FREE_ONLY_REQUIRED");
+  expect(() =>
+    available({ ...continuous, quota_mode: "verified_budget" }, geminiEnv),
+  ).toThrow("PROVIDER_VERIFICATION_EXPIRED");
+});
 const analysis = {
   processed_block_ids: ["block-1"],
   requirements: [

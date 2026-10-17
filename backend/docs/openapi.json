@@ -9400,15 +9400,37 @@
                                 "free_quota_only": {
                                   "type": "boolean"
                                 },
-                                "quota_ends_at": {
+                                "quota_mode": {
+                                  "default": "verified_budget",
                                   "type": "string",
-                                  "format": "date-time",
-                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                  "enum": [
+                                    "verified_budget",
+                                    "provider_managed"
+                                  ]
+                                },
+                                "quota_ends_at": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date-time",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "quota_remaining_tokens": {
-                                  "type": "integer",
-                                  "exclusiveMinimum": 0,
-                                  "maximum": 1000000000000
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "exclusiveMinimum": 0,
+                                      "maximum": 1000000000000
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
                                 },
                                 "calls_per_day": {
                                   "type": "integer",
@@ -9440,12 +9462,32 @@
                                 "free_only",
                                 "billing_verified",
                                 "free_quota_only",
+                                "quota_mode",
                                 "quota_ends_at",
                                 "quota_remaining_tokens",
                                 "calls_per_day",
                                 "input_per_day",
                                 "output_per_day"
                               ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "model.probe"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {},
                               "additionalProperties": false
                             }
                           }

@@ -1,4 +1,5 @@
 import { processGeneration } from "../_shared/generation.ts";
+import { processModelProbe } from "../_shared/modelProbe.ts";
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
 import { AppError, secretMatches } from "../_shared/http.ts";
 import {
@@ -56,6 +57,10 @@ export function createWorkerHandler(
       }
       const job = await backend.claim();
       if (!job) return response({ data: { claimed: false } });
+      if (job.type === "model_probe") {
+        await processModelProbe(backend, env, job, fetcher);
+        return response({ data: { job_id: job.id, processed: true } });
+      }
       if (job.type === "source_collect" || job.type === "source_candidates") {
         try {
           const source = (await backend.internal("collection_context", {

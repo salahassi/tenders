@@ -459,7 +459,10 @@ export class ConnectedRepository {
     state.jobs = this.rows.jobs.map((r) => ({
       id: r.id,
       type: str(r, "type"),
-      target: str(r, "entity_id"),
+      target:
+        r.type === "model_probe"
+          ? "Gemini connection check"
+          : str(r, "entity_id"),
       status:
         r.status === "succeeded"
           ? "completed"
@@ -470,7 +473,17 @@ export class ConnectedRepository {
               : "queued",
       progress: r.status === "succeeded" ? 100 : 0,
       attempt: Number(r.attempts),
-      message: str(r, "error_code"),
+      message:
+        r.status === "quota_wait" &&
+        [
+          "MODEL_RATE_WAIT",
+          "MODEL_DAILY_QUOTA_WAIT",
+          "PROVIDER_QUOTA_WAIT",
+        ].includes(str(r, "error_code"))
+          ? `Waiting for quota. Automatically retries after ${str(r, "next_attempt_at")}.`
+          : r.type === "model_probe" && r.status === "succeeded"
+            ? "Gemini connection verified; measured usage recorded."
+            : str(r, "error_code"),
       createdAt: str(r, "created_at"),
     }));
     state.notifications = this.rows.notifications.map((r) => ({

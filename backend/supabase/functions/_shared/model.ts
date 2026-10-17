@@ -51,6 +51,7 @@ export const blockSchema = z.discriminatedUnion("type", [
     .strict(),
 ]);
 export const modelSchemas = {
+  connection_probe: z.object({ status: z.literal("ready") }).strict(),
   summarize_review: z
     .object({
       processed_review_ids: ids,
@@ -266,7 +267,8 @@ export type ModelConfiguration = {
   billing_verified: boolean;
   free_quota_only: boolean;
   verified_at: string;
-  quota_ends_at: string;
+  quota_mode?: "verified_budget" | "provider_managed";
+  quota_ends_at: string | null;
   failover_rank?: number;
 };
 export type ModelPool = { providers: ModelConfiguration[] };
@@ -282,6 +284,7 @@ export type Usage = {
   thinking: number | null;
 };
 export const caps: Record<ModelTask, number> = {
+  connection_probe: 256,
   summarize_review: 4096,
   classify_opportunity: 2048,
   analyze_chunk: 4096,
@@ -333,10 +336,17 @@ export function available(
   )
     throw new ModelError("PROVIDER_NOT_ALLOWED");
   if (
+    config.quota_mode === "provider_managed" &&
+    config.provider !== "gemini_free"
+  )
+    throw new ModelError("FREE_ONLY_REQUIRED");
+  if (
     !Number.isFinite(Date.parse(config.verified_at)) ||
-    now - Date.parse(config.verified_at) > 30 * 86400000 ||
-    Date.parse(config.quota_ends_at) <= now ||
-    !Number.isFinite(Date.parse(config.quota_ends_at))
+    (config.quota_mode !== "provider_managed" &&
+      (now - Date.parse(config.verified_at) > 30 * 86400000 ||
+        !config.quota_ends_at ||
+        Date.parse(config.quota_ends_at) <= now ||
+        !Number.isFinite(Date.parse(config.quota_ends_at))))
   )
     throw new ModelError("PROVIDER_VERIFICATION_EXPIRED");
   if (
@@ -586,7 +596,10 @@ export class FreeModelProvider {
       if (!response.ok) {
         const raw = response.headers.get("retry-after");
         const after =
-          raw && /^\d+$/.test(raw)
+          raw &&
+          /^\d+$/.test(raw) &&
+          Number.isSafeInteger(Number(raw)) &&
+          Number(raw) <= 86400
             ? new Date(Date.now() + Number(raw) * 1000).toISOString()
             : raw && Number.isFinite(Date.parse(raw))
               ? new Date(raw).toISOString()
@@ -865,8 +878,16 @@ export async function executeModel(
         throw new ModelError("MODEL_OUTPUT_INVALID");
       }
     } catch (error) {
+      // Ledger errors use the API error type; retain their quota/authorization
+      // code instead of misclassifying a rejected reservation as a sent request.
       const code =
-        error instanceof ModelError ? error.code : "MODEL_NETWORK_UNCERTAIN";
+        error &&
+        typeof error === "object" &&
+        "code" in error &&
+        typeof error.code === "string" &&
+        /^[A-Z][A-Z0-9_]{1,100}$/.test(error.code)
+          ? error.code
+          : "MODEL_NETWORK_UNCERTAIN";
       if (reservation && !settled)
         await ledger.settle(
           reservation,

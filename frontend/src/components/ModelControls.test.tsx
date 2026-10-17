@@ -115,10 +115,14 @@ it("prefills server model identity without inventing quota or activating optiona
     screen.getByRole("heading", { name: "Gemini free tier" }).parentElement!,
   );
   expect(
-    panel.getByLabelText(/I verified this project's free billing/),
+    panel.getByLabelText(/I confirm this Gemini project uses the free tier/),
   ).not.toBeChecked();
-  expect(panel.getByLabelText("Free quota expiry (UTC)")).toHaveValue("");
-  expect(panel.getByLabelText("quota remaining tokens")).toHaveValue(0);
+  expect(
+    panel.queryByLabelText("Free quota expiry (UTC)"),
+  ).not.toBeInTheDocument();
+  expect(
+    panel.queryByLabelText("quota remaining tokens"),
+  ).not.toBeInTheDocument();
   expect(
     panel.getByLabelText(
       "Enable matching backend credentials after verification",
@@ -128,14 +132,8 @@ it("prefills server model identity without inventing quota or activating optiona
     screen.getByRole("button", { name: "Save provider policies" }),
   );
   expect(f.runCommand).not.toHaveBeenCalled();
-  await userEvent.type(
-    panel.getByLabelText("Free quota expiry (UTC)"),
-    "2099-01-01T00:00",
-  );
-  await userEvent.clear(panel.getByLabelText("quota remaining tokens"));
-  await userEvent.type(panel.getByLabelText("quota remaining tokens"), "10000");
   await userEvent.click(
-    panel.getByLabelText(/I verified this project's free billing/),
+    panel.getByLabelText(/I confirm this Gemini project uses the free tier/),
   );
   await userEvent.click(
     panel.getByLabelText(
@@ -153,6 +151,9 @@ it("prefills server model identity without inventing quota or activating optiona
       model: "gemini-3.8-flash",
       project_ref: "synthetic-project",
       enabled: true,
+      quota_mode: "provider_managed",
+      quota_ends_at: null,
+      quota_remaining_tokens: null,
     }),
   );
 });
@@ -191,4 +192,26 @@ it("does not request Owner-only metadata for other roles", async () => {
   expect(
     screen.getByRole("button", { name: "Save provider policies" }),
   ).toBeDisabled();
+});
+
+it("queues a bounded connection check only after Gemini has been saved enabled", async () => {
+  const f = setup("Owner", [
+    {
+      provider: "gemini_free",
+      model: "gemini-3.8-flash",
+      project_ref: "synthetic-project",
+      enabled: true,
+      revision: 1,
+      quota_mode: "provider_managed",
+      quota_ends_at: null,
+      quota_remaining_tokens: null,
+    },
+  ]);
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Check Gemini connection" }),
+  );
+  expect(f.runCommand).toHaveBeenCalledWith("model.probe", {});
+  expect(
+    await screen.findByText(/Connection check queued/),
+  ).toBeInTheDocument();
 });

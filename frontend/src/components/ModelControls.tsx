@@ -76,6 +76,7 @@ const initial = {
   free_only: true,
   billing_verified: false,
   free_quota_only: false,
+  quota_mode: "verified_budget" as "verified_budget" | "provider_managed",
   quota_ends_at: "",
   quota_remaining_tokens: 0,
   calls_per_day: 50,
@@ -87,13 +88,21 @@ const emptyForms = (): Record<ProviderId, typeof initial> =>
   Object.fromEntries(
     PROVIDERS.map((p) => [
       p.id,
-      { ...initial, provider: p.id, failover_rank: p.rank },
+      {
+        ...initial,
+        provider: p.id,
+        failover_rank: p.rank,
+        quota_mode:
+          p.id === "gemini_free" ? "provider_managed" : "verified_budget",
+      },
     ]),
   ) as Record<ProviderId, typeof initial>;
 export default function ModelControls() {
   const { backend, runCommand, state, saving, notify } = useApp();
   const [forms, setForms] = useState(emptyForms);
   const [serverModels, setServerModels] = useState<ServerModel[]>([]);
+  const [geminiSavedEnabled, setGeminiSavedEnabled] = useState(false);
+  const [probeQueued, setProbeQueued] = useState(false);
   const [revisions, setRevisions] = useState<Record<ProviderId, number>>(
     Object.fromEntries(PROVIDER_IDS.map((id) => [id, 0])) as Record<
       ProviderId,
@@ -163,11 +172,18 @@ export default function ModelControls() {
         next[id] = {
           ...next[id],
           ...m,
+          quota_mode: m.quota_mode || "verified_budget",
           quota_ends_at: m.quota_ends_at?.slice(0, 16) || "",
+          quota_remaining_tokens: m.quota_remaining_tokens ?? 0,
         };
       }
       setForms(next);
       setServerModels(setup.data.providers);
+      setGeminiSavedEnabled(
+        settings.data.records.some(
+          (m) => m.provider === "gemini_free" && m.enabled,
+        ),
+      );
       setRevisions(nextRevisions);
       setItems(eligibility.data.items);
       setAuthorizations(eligibility.data.authorizations);
@@ -197,14 +213,19 @@ export default function ModelControls() {
   }
   async function saveProvider(id: ProviderId) {
     const form = forms[id];
-    if (!form.model || !form.project_ref || !form.quota_ends_at) {
+    const continuous = form.quota_mode === "provider_managed";
+    if (
+      !form.model ||
+      !form.project_ref ||
+      (!continuous && !form.quota_ends_at)
+    ) {
       setError(
         `Complete model, project, and quota expiry for ${PROVIDERS.find((p) => p.id === id)?.label}.`,
       );
       return false;
     }
     const date = new Date(form.quota_ends_at + "Z");
-    if (!Number.isFinite(date.getTime())) {
+    if (!continuous && !Number.isFinite(date.getTime())) {
       setError("Enter a valid UTC expiry.");
       return false;
     }
@@ -214,7 +235,8 @@ export default function ModelControls() {
       ),
       provider: id,
       expected_revision: revisions[id],
-      quota_ends_at: date.toISOString(),
+      quota_ends_at: continuous ? null : date.toISOString(),
+      quota_remaining_tokens: continuous ? null : form.quota_remaining_tokens,
     });
   }
   function providerTouched(id: ProviderId) {
@@ -237,6 +259,7 @@ export default function ModelControls() {
   }
   function renderProviderPanel(meta: ProviderMeta) {
     const form = forms[meta.id];
+    const continuous = form.quota_mode === "provider_managed";
     const slot = serverModels.find((entry) => entry.provider === meta.id);
     return (
       <div key={meta.id} className="admin-muted-surface stack">
@@ -254,7 +277,7 @@ export default function ModelControls() {
               : "API key is missing from the server configuration."}{" "}
             {slot.model && slot.project_ref
               ? revisions[meta.id] === 0
-                ? "Model and project loaded from server configuration. Verify free quota before enabling."
+                ? "Model and project loaded from server configuration. Confirm the free tier before enabling."
                 : slot.model === form.model &&
                     slot.project_ref === form.project_ref
                   ? "Model and project match the server configuration."
@@ -287,16 +310,35 @@ export default function ModelControls() {
               }
             />
           </Field>
-          <Field label="Free quota expiry (UTC)">
-            <input
-              type="datetime-local"
-              disabled={!owner}
-              value={form.quota_ends_at}
-              onChange={(e) =>
-                patchForm(meta.id, { quota_ends_at: e.target.value })
-              }
-            />
-          </Field>
+          {meta.id === "gemini_free" && (
+            <Field label="Quota management">
+              <select
+                disabled={!owner}
+                value={form.quota_mode}
+                onChange={(e) =>
+                  patchForm(meta.id, {
+                    quota_mode: e.target.value as typeof form.quota_mode,
+                    enabled: false,
+                  })
+                }
+              >
+                <option value="provider_managed">Continuous free tier</option>
+                <option value="verified_budget">Verified quota budget</option>
+              </select>
+            </Field>
+          )}
+          {!continuous && (
+            <Field label="Free quota expiry (UTC)">
+              <input
+                type="datetime-local"
+                disabled={!owner}
+                value={form.quota_ends_at}
+                onChange={(e) =>
+                  patchForm(meta.id, { quota_ends_at: e.target.value })
+                }
+              />
+            </Field>
+          )}
           {(
             [
               "quota_remaining_tokens",
@@ -304,20 +346,30 @@ export default function ModelControls() {
               "input_per_day",
               "output_per_day",
             ] as const
-          ).map((k) => (
-            <Field key={k} label={k.replaceAll("_", " ")}>
-              <input
-                type="number"
-                min={1}
-                disabled={!owner}
-                value={form[k]}
-                onChange={(e) =>
-                  patchForm(meta.id, { [k]: Number(e.target.value) })
-                }
-              />
-            </Field>
-          ))}
+          )
+            .filter((k) => !continuous || k !== "quota_remaining_tokens")
+            .map((k) => (
+              <Field key={k} label={k.replaceAll("_", " ")}>
+                <input
+                  type="number"
+                  min={1}
+                  disabled={!owner}
+                  value={form[k]}
+                  onChange={(e) =>
+                    patchForm(meta.id, { [k]: Number(e.target.value) })
+                  }
+                />
+              </Field>
+            ))}
         </div>
+        {continuous && (
+          <p className="admin-hint">
+            Gemini enforces its free-tier quota. Tasks wait and resume
+            automatically when quota is available. Daily application limits
+            still apply and renew at midnight Riyadh time. No manual quota
+            expiry is required.
+          </p>
+        )}
         <label>
           <input
             type="checkbox"
@@ -330,8 +382,9 @@ export default function ModelControls() {
               })
             }
           />{" "}
-          I verified this project's free billing status and the remaining quota
-          in the provider console.
+          {continuous
+            ? "I confirm this Gemini project uses the free tier without paid billing."
+            : "I verified this project's free billing status and the remaining quota in the provider console."}
         </label>
         {meta.id === "qwen_free" && (
           <label>
@@ -403,6 +456,20 @@ export default function ModelControls() {
           <Button disabled={!owner || saving} onClick={saveAll}>
             Save provider policies
           </Button>
+          <Button
+            disabled={!owner || saving || !geminiSavedEnabled}
+            onClick={async () => {
+              if (await command("model.probe", {})) setProbeQueued(true);
+            }}
+          >
+            Check Gemini connection
+          </Button>
+          {probeQueued && (
+            <p role="status">
+              Connection check queued. Follow its result in{" "}
+              <a href="#/jobs">Activity &amp; jobs</a>.
+            </p>
+          )}
           <h3>Content permitted for model processing</h3>
           <p>
             Authorize each item for <strong>every</strong> provider that may
