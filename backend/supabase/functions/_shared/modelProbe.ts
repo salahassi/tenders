@@ -13,6 +13,7 @@ export async function processModelProbe(
       "connection_probe",
       {
         purpose: "Verify the TenderDesk model connection. Return status ready.",
+        check_id: job.id,
       },
       [],
       [],

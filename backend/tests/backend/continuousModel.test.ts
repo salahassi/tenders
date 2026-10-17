@@ -110,17 +110,16 @@ function worker(fetcher: typeof fetch) {
 const ready = () =>
   new Response(
     JSON.stringify({
-      status: "completed",
-      steps: [
+      candidates: [
         {
-          type: "model_output",
-          content: [{ type: "text", text: '{"status":"ready"}' }],
+          finishReason: "STOP",
+          content: { parts: [{ text: '{"status":"ready"}' }] },
         },
       ],
-      usage: {
-        total_input_tokens: 20,
-        total_output_tokens: 7,
-        total_thought_tokens: 0,
+      usageMetadata: {
+        promptTokenCount: 20,
+        candidatesTokenCount: 7,
+        totalTokenCount: 27,
       },
     }),
   );
@@ -269,29 +268,116 @@ it("resumes the same durable probe after a headerless 429 and records measured u
   ).toHaveLength(0);
 });
 
-it("keeps uncertain generation usage blocked instead of repeating the request", async () => {
+it("retains uncertain requests while independent continuous Gemini checks can complete", async () => {
   await f.command("model.configure", policy);
-  const queued = await f.command("model.probe", {});
+  const original = await f.command("model.probe", {});
   let generations = 0;
   const tick = worker(async (url) => {
     if (String(url).endsWith(":countTokens"))
-      return new Response('{"totalTokens":20}');
+      return Response.json({ totalTokens: 20 });
     generations++;
-    throw Error("Synthetic connection lost after send");
+    if (generations === 1) throw Error("Synthetic connection lost after send");
+    return ready();
   });
   await tick();
-  expect((await job(queued.id)).status).toBe("blocked");
-  expect(
-    (await f.db.query<any>("select state from public.provider_usage")).rows[0]
-      .state,
-  ).toBe("unknown");
-  await f.command("model.probe", {});
+  expect((await job(original.id)).status).toBe("blocked");
+  await f.db.exec(
+    "update public.provider_usage set created_at=now()-interval '2 minutes'",
+  );
+  // Even a new attempt/lease for the same job must never resend uncertain work.
+  await f.db.query(
+    "update public.jobs set status='queued',next_attempt_at=now() where id=$1",
+    [original.id],
+  );
   await tick();
+  expect((await job(original.id)).error_code).toBe("USAGE_REVIEW_REQUIRED");
   expect(generations).toBe(1);
-  expect(
-    (await f.db.query<any>("select count(*)::int n from public.provider_usage"))
-      .rows[0].n,
-  ).toBe(1);
+  const independent = await f.command("model.probe", {});
+  expect(independent.id).not.toBe(original.id);
+  await tick();
+  expect((await job(independent.id)).status).toBe("succeeded");
+  expect(generations).toBe(2);
+  const usage = (
+    await f.db.query<any>(
+      "select * from public.provider_usage order by created_at",
+    )
+  ).rows;
+  expect(usage).toHaveLength(2);
+  expect(usage[0]).toMatchObject({
+    state: "unknown",
+    actual_input: null,
+    actual_output: null,
+    reserved_input: 276,
+    reserved_output: 256,
+  });
+  expect(usage[1]).toMatchObject({
+    state: "settled",
+    actual_input: 20,
+    actual_output: 7,
+  });
+  expect(usage[0].input_hash).not.toBe(usage[1].input_hash);
+});
+
+it("does not bypass unknown request hashes, pending reservations, legacy policies or daily accounting", async () => {
+  await f.command("model.configure", policy);
+  await f.command("model.probe", {});
+  await worker(async (url) => {
+    if (String(url).endsWith(":countTokens"))
+      return Response.json({ totalTokens: 20 });
+    throw Error("Synthetic uncertain delivery");
+  })();
+  const original = (
+    await f.db.query<any>("select * from public.provider_usage")
+  ).rows[0];
+  await f.db.exec(
+    "update public.provider_usage set created_at=now()-interval '2 minutes'",
+  );
+  await f.command("model.probe", {});
+  const claimed = await rpc("claim_backend_job");
+  const args = {
+    job_id: claimed.id,
+    lease: claimed.lease_token,
+    call_key: "independent",
+    input_hash: original.input_hash,
+    input_tokens: 276,
+    output_tokens: 256,
+    manifest: [],
+    target_provider: "gemini_free",
+  };
+  await expect(rpc("reserve_model_call", args)).rejects.toMatchObject({
+    code: "USAGE_REVIEW_REQUIRED",
+  });
+  args.input_hash = "f".repeat(64);
+  await f.db.exec("update public.provider_usage set state='reserved'");
+  await expect(rpc("reserve_model_call", args)).rejects.toMatchObject({
+    code: "USAGE_REVIEW_REQUIRED",
+  });
+  await f.db.exec(
+    "update public.provider_usage set state='unknown'; update public.model_settings set quota_mode='verified_budget',quota_ends_at=now()+interval '1 day',quota_remaining_tokens=100000",
+  );
+  await expect(rpc("reserve_model_call", args)).rejects.toMatchObject({
+    code: "USAGE_REVIEW_REQUIRED",
+  });
+  await f.db.exec(
+    "update public.model_settings set quota_mode='provider_managed',quota_ends_at=null,quota_remaining_tokens=null,calls_per_day=1",
+  );
+  await expect(rpc("reserve_model_call", args)).rejects.toMatchObject({
+    code: "MODEL_DAILY_QUOTA_WAIT",
+  });
+  args.input_tokens = 800;
+  args.output_tokens = 800;
+  await f.db.exec(
+    "update public.model_settings set calls_per_day=50,input_per_day=1000",
+  );
+  await expect(rpc("reserve_model_call", args)).rejects.toMatchObject({
+    code: "MODEL_DAILY_QUOTA_WAIT",
+  });
+  await f.db.exec(
+    "update public.model_settings set input_per_day=250000,output_per_day=1000",
+  );
+  await expect(rpc("reserve_model_call", args)).rejects.toMatchObject({
+    code: "MODEL_DAILY_QUOTA_WAIT",
+  });
 });
 
 it("honors finite Retry-After and bounds invalid or repeated provider quota waits", async () => {

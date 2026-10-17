@@ -721,40 +721,49 @@ export class FreeModelProvider {
   ): Promise<{ text: string; usage: Usage; complete: boolean }> {
     if (this.env.provider === "gemini_free") {
       const result = await this.post(
-        "https://generativelanguage.googleapis.com/v1beta/interactions",
+        `https://generativelanguage.googleapis.com/v1beta/models/${this.env.model}:generateContent`,
         {
-          model: this.env.model,
-          system_instruction: systemInstructions,
-          input: prompt,
-          store: false,
-          stream: false,
-          generation_config: {
-            max_output_tokens: caps[task],
+          systemInstruction: { parts: [{ text: systemInstructions }] },
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+          generationConfig: {
+            candidateCount: 1,
+            maxOutputTokens: caps[task],
+            responseMimeType: "application/json",
+            responseJsonSchema: schema,
             ...(/^gemini-[34]/.test(this.env.model)
               ? {
-                  thinking_level:
-                    task === "draft_section" || task === "review_proposal"
-                      ? "medium"
-                      : "low",
+                  thinkingConfig: {
+                    thinkingLevel:
+                      task === "connection_probe"
+                        ? "MINIMAL"
+                        : task === "draft_section" || task === "review_proposal"
+                          ? "MEDIUM"
+                          : "LOW",
+                  },
                 }
               : {}),
-          },
-          response_format: {
-            type: "text",
-            mime_type: "application/json",
-            schema,
           },
         },
         { "x-goog-api-key": this.env.key },
       );
-      const usage = result.usage || {},
-        input = validCount(usage.total_input_tokens),
-        output = validCount(usage.total_output_tokens),
-        thinking = validCount(usage.total_thought_tokens);
-      const text = (result.steps || [])
-        .filter((s: any) => s.type === "model_output")
-        .flatMap((s: any) => s.content || [])
-        .filter((c: any) => c.type === "text")
+      const usage = result.usageMetadata || {},
+        input = validCount(usage.promptTokenCount),
+        output = validCount(usage.candidatesTokenCount),
+        total = validCount(usage.totalTokenCount),
+        reportedThinking = validCount(usage.thoughtsTokenCount),
+        // No tools are configured. Infer omitted thought counts only from measured totals.
+        thinking =
+          reportedThinking ??
+          (input !== null &&
+          output !== null &&
+          total !== null &&
+          total >= input + output
+            ? total - input - output
+            : null),
+        candidate = result.candidates?.[0],
+        parts = candidate?.content?.parts || [];
+      const text = parts
+        .filter((c: any) => typeof c.text === "string" && !c.thought)
         .map((c: any) => c.text)
         .join("");
       return {
@@ -766,8 +775,9 @@ export class FreeModelProvider {
           thinking,
         },
         complete:
-          result.status === "completed" &&
-          !(result.steps || []).some((s: any) => s.type === "function_call"),
+          result.candidates?.length === 1 &&
+          candidate.finishReason === "STOP" &&
+          !parts.some((p: any) => p.functionCall || p.executableCode),
       };
     }
     if (this.env.provider === "qwen_free") {

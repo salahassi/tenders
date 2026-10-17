@@ -195,7 +195,7 @@ it("counts Qwen using a conservative bound including the system and schema; send
     response_format: { type: "json_object" },
   });
 });
-it("records Gemini thought usage and disables stored interactions", async () => {
+it("records Gemini thought usage through stateless structured generation", async () => {
   const calls: any[] = [];
   const provider = new FreeModelProvider(
     { ...env, provider: "gemini_free" },
@@ -203,14 +203,14 @@ it("records Gemini thought usage and disables stored interactions", async () => 
       calls.push({ url, body: JSON.parse(String(init?.body)) });
       return new Response(
         JSON.stringify({
-          status: "completed",
-          steps: [
-            { type: "model_output", content: [{ type: "text", text: "{}" }] },
+          candidates: [
+            { finishReason: "STOP", content: { parts: [{ text: "{}" }] } },
           ],
-          usage: {
-            total_input_tokens: 7,
-            total_output_tokens: 20,
-            total_thought_tokens: 22,
+          usageMetadata: {
+            promptTokenCount: 7,
+            candidatesTokenCount: 20,
+            thoughtsTokenCount: 22,
+            totalTokenCount: 49,
           },
         }),
       );
@@ -222,9 +222,48 @@ it("records Gemini thought usage and disables stored interactions", async () => 
     thinking: 22,
   });
   expect(calls[0].body).toMatchObject({
-    store: false,
-    stream: false,
-    response_format: { mime_type: "application/json" },
+    generationConfig: {
+      responseMimeType: "application/json",
+      candidateCount: 1,
+    },
+  });
+});
+it("keeps missing Gemini usage unknown and rejects incomplete or tool output", async () => {
+  const provider = new FreeModelProvider(
+    { ...env, provider: "gemini_free" },
+    async () =>
+      Response.json({
+        candidates: [
+          { finishReason: "MAX_TOKENS", content: { parts: [{ text: "{}" }] } },
+        ],
+        usageMetadata: { promptTokenCount: 7, candidatesTokenCount: 20 },
+      }),
+  );
+  expect(await provider.generate("connection_probe", "JSON", {})).toMatchObject(
+    { usage: { input: 7, output: null, thinking: null }, complete: false },
+  );
+  const toolProvider = new FreeModelProvider(
+    { ...env, provider: "gemini_free" },
+    async () =>
+      Response.json({
+        candidates: [
+          {
+            finishReason: "STOP",
+            content: { parts: [{ functionCall: { name: "unexpected" } }] },
+          },
+        ],
+        usageMetadata: {
+          promptTokenCount: 7,
+          candidatesTokenCount: 20,
+          totalTokenCount: 27,
+        },
+      }),
+  );
+  expect(
+    await toolProvider.generate("connection_probe", "JSON", {}),
+  ).toMatchObject({
+    usage: { input: 7, output: 20, thinking: 0 },
+    complete: false,
   });
 });
 it("reserves before sending and settles actual usage before validating output", async () => {
@@ -450,7 +489,7 @@ it("uses the supplied transport and tries the next provider after explicit HTTP 
   const transport = vi.fn<typeof fetch>(async (url) => {
     if (String(url).endsWith(":countTokens"))
       return Response.json({ totalTokens: 100 });
-    if (String(url).endsWith("/interactions"))
+    if (String(url).endsWith(":generateContent"))
       return new Response(null, { status: 429 });
     return Response.json({
       choices: [
