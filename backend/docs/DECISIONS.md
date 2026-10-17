@@ -1,5 +1,15 @@
 # Decisions
 
+## 2026-10-17: Owner-requested automatic round robin
+
+- The Owner explicitly requested Gemini → Qwen → Mistral → Groq failover even without individual provider activation. A separate audited Owner switch authorizes this mode; disabling it restores the prior manual-policy path. The cursor persists across jobs and rotates again after an exhausted round.
+- The worker prepares effective policies from existing server metadata. API keys are never sent to the database. Inactive or absent individual policies do not prevent use of a configured provider. Account free-only confirmation must come from a saved policy or the corresponding `APP_MODEL_<PROVIDER>_FREE_ONLY=true` server setting; key presence alone is not a billing attestation. Qwen still requires its provider-side Free Quota Only setting. Unknown balances remain unknown.
+- Each round visits at most four providers. Missing metadata and provider errors are recorded. Automatic mode can move to a different provider after uncertain delivery while retaining all unknown usage and reserved tokens. It never resends an ambiguous same-job/input request to that same provider. A pending recorded Gemini request is retrieved first; a failed retrieval can now fail over. Exhausted rounds retry with finite backoff, and workspace daily limits remain global across providers.
+- Exact content hashes and per-provider authorization remain mandatory. Provider/model identity is recorded on each usage reservation, allowing a generation plan to span providers in automatic mode. Legacy manual plans retain identity pinning. Successful results still pass the same evidence/schema validation.
+- Automatic routing is operational configuration, excluded from portable business backups and disabled when a restore commits. No paid account, top-up, new credential or external subscription is created by this feature.
+
+Provider references checked October 17, 2026: https://www.alibabacloud.com/help/en/model-studio/new-free-quota, https://console.groq.com/docs/rate-limits and https://docs.mistral.ai/admin/billing-usage/usage-limits.
+
 ## 2026-10-17: Durable Gemini background execution
 
 - Real synchronous Gemini requests exceeded the 90-second worker HTTP budget over both Interactions and generateContent. Gemini 3.8 also explicitly rejects `minimal` thinking; operational checks use the supported `low` setting.

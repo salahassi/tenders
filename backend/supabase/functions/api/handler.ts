@@ -44,6 +44,7 @@ const readTables: Record<string, string> = {
   requirements: "requirements",
   "fit-assessments": "fit_assessments",
   "model-settings": "model_settings",
+  "model-routing": "model_routing",
   "content-authorizations": "content_authorizations",
   "provider-usage": "provider_usage",
   "source-runs": "source_runs",

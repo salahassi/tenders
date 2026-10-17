@@ -121,6 +121,7 @@ export default function ModelControls() {
   const [actualInput, setActualInput] = useState("");
   const [actualOutput, setActualOutput] = useState("");
   const [reason, setReason] = useState("");
+  const [routing, setRouting] = useState<Row>({ enabled: false, revision: 0 });
   const owner = state.settings.role === "Owner";
   function patchForm(id: ProviderId, patch: Partial<typeof initial>) {
     setForms((prev) => ({
@@ -131,7 +132,7 @@ export default function ModelControls() {
   async function load() {
     if (!backend) return;
     try {
-      const [settings, eligibility, ledger, setup] = await Promise.all([
+      const [settings, eligibility, ledger, setup, route] = await Promise.all([
         backend.request<{ records: Row[] }>("/v1/model-settings"),
         backend.request<{ items: Row[]; authorizations: Row[] }>(
           "/v1/eligibility",
@@ -142,7 +143,11 @@ export default function ModelControls() {
               "/v1/model-environment",
             )
           : Promise.resolve({ data: { providers: [] as ServerModel[] } }),
+        owner
+          ? backend.request<{ records: Row[] }>("/v1/model-routing")
+          : Promise.resolve({ data: { records: [] } }),
       ]);
+      setRouting(route.data.records?.[0] || { enabled: false, revision: 0 });
       if (
         !Array.isArray(settings.data.records) ||
         !Array.isArray(eligibility.data.items) ||
@@ -268,7 +273,9 @@ export default function ModelControls() {
           Failover rank {form.failover_rank} · backend{" "}
           <code>{meta.secretHint}</code>
           {meta.optional &&
-            " · leave disabled until you add secrets and verify free quota"}
+            (routing.enabled
+              ? " · automatic routing can use matching free-only server configuration while this individual switch is off"
+              : " · leave disabled until you add secrets and verify free quota")}
         </p>
         {slot && (
           <p className="admin-hint" role="status">
@@ -445,6 +452,32 @@ export default function ModelControls() {
         <p>Loading model settings…</p>
       ) : (
         <>
+          <h3>Automatic round robin</h3>
+          <p>
+            Gemini → Qwen → Mistral → Groq. Rotates the starting provider and
+            tries the next after a provider error, including providers whose
+            individual enable box is off. Missing server configuration is
+            recorded and skipped. Free-only account confirmation and content
+            permissions still apply.
+          </p>
+          <p role="status">
+            {routing.enabled
+              ? "Automatic round robin is enabled."
+              : "Automatic round robin is disabled."}
+          </p>
+          <Button
+            disabled={!owner || saving}
+            onClick={() =>
+              command("model.routing", {
+                enabled: !routing.enabled,
+                expected_revision: routing.revision,
+              })
+            }
+          >
+            {routing.enabled
+              ? "Disable automatic round robin"
+              : "Enable automatic round robin"}
+          </Button>
           <h3>Primary free providers</h3>
           {PROVIDERS.filter((p) => !p.optional).map(renderProviderPanel)}
           <h3>Optional free-tier providers</h3>
@@ -457,12 +490,16 @@ export default function ModelControls() {
             Save provider policies
           </Button>
           <Button
-            disabled={!owner || saving || !geminiSavedEnabled}
+            disabled={
+              !owner || saving || (!geminiSavedEnabled && !routing.enabled)
+            }
             onClick={async () => {
               if (await command("model.probe", {})) setProbeQueued(true);
             }}
           >
-            Check Gemini connection
+            {routing.enabled
+              ? "Check model routing"
+              : "Check Gemini connection"}
           </Button>
           {probeQueued && (
             <p role="status">
@@ -473,8 +510,8 @@ export default function ModelControls() {
           <h3>Content permitted for model processing</h3>
           <p>
             Authorize each item for <strong>every</strong> provider that may
-            process it. Failover requires matching approvals on all enabled
-            providers.
+            process it. Automatic routing skips providers without matching
+            content approval.
           </p>
           {items.length === 0 && <p>No eligible content has been added.</p>}
           <div className="stack">

@@ -6,6 +6,7 @@ export type ModelEnvironmentSlot = {
   model: string;
   projectRef: string;
   key: string;
+  freeTierConfirmed?: boolean;
 };
 export interface BackendEnvironment {
   url: string;
@@ -34,6 +35,9 @@ export function modelEnvironments(
     const prefix = SECRET_PREFIX[provider];
     return {
       provider,
+      ...(get(`${prefix}_FREE_ONLY`) === "true"
+        ? { freeTierConfirmed: true }
+        : {}),
       model:
         get(`${prefix}_NAME`) ||
         (legacyProvider === provider ? legacyModel : ""),

@@ -343,6 +343,12 @@ export const commandSchemas = {
       "Use provider-managed quota only for Gemini; verified budgets require quota and expiry.",
     ),
   "model.probe": z.object({}).strict(),
+  "model.routing": z
+    .object({
+      enabled: z.boolean(),
+      expected_revision: z.number().int().min(0),
+    })
+    .strict(),
   "content.authorize": z
     .object({
       entity_kind: z.enum([

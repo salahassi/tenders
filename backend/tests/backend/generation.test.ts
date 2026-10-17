@@ -562,140 +562,184 @@ it("checkpoints every long review segment and gives later tasks grounded directi
   ).toBeLessThan(text.length);
 });
 
-it("completes the proposal pipeline through persisted background Gemini requests", async () => {
-  const started = await start();
-  await f.command("model.configure", {
-    expected_revision: 0,
-    enabled: true,
-    provider: "gemini_free",
-    model: "gemini-3.8-flash",
-    project_ref: "synthetic-project",
-    free_only: true,
-    billing_verified: true,
-    free_quota_only: false,
-    quota_mode: "provider_managed",
-    quota_ends_at: null,
-    quota_remaining_tokens: null,
-    calls_per_day: 50,
-    input_per_day: 250000,
-    output_per_day: 50000,
-  });
-  const env = {
-    models: {
-      gemini_free: {
-        provider: "gemini_free",
-        model: "gemini-3.8-flash",
-        projectRef: "synthetic-project",
-        key: "synthetic-key",
-      },
-    },
-  } as BackendEnvironment;
-  const backend = {
-    internal: async (name: string, args: Record<string, unknown>) => {
-      const entries = Object.entries(args);
-      await f.db.exec("savepoint background_rpc");
-      try {
-        return (
-          await f.db.query<any>(
-            `select public.${name}(${entries.map(([key], i) => `${key}=>$${i + 1}`).join(",")}) data`,
-            entries.map(([, v]) =>
-              v && typeof v === "object" ? JSON.stringify(v) : v,
-            ),
-          )
-        ).rows[0]?.data;
-      } catch (e) {
-        await f.db.exec("rollback to savepoint background_rpc");
-        throw databaseError(e as Error);
-      } finally {
-        await f.db.exec("release savepoint background_rpc");
-      }
-    },
-  } as unknown as Backend;
-  let creates = 0,
-    gets = 0,
-    deletes = 0;
-  const responses = new Map<string, unknown>();
-  for (let i = 0; i < 60; i++) {
-    await f.db.exec(
-      "update public.jobs set next_attempt_at=now()-interval '1 second' where status in ('retry_wait','quota_wait');update public.provider_usage set created_at=now()-interval '2 minutes'",
-    );
-    const job = await f.rpc("claim_backend_job");
-    if (!job) break;
-    const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
-    if (ctx.step.task !== "advance_plan")
-      for (const ref of taskInput(ctx).manifest)
-        await f.command("content.authorize", {
-          ...ref,
-          provider: "gemini_free",
-          attestation: "nonconfidential_nonpersonal",
-        });
-    await processGeneration(backend, env, job, async (url, init) => {
-      if (init?.method === "DELETE") {
-        expect(
-          (
-            await f.db.query<any>(
-              "select status from public.jobs where id=$1",
-              [job.id],
-            )
-          ).rows[0].status,
-        ).toBe("succeeded");
-        deletes++;
-        return new Response(null, { status: 204 });
-      }
-      if (String(url).endsWith(":countTokens"))
-        return Response.json({ totalTokens: 100 });
-      if (init?.method === "POST") {
-        const id = `synthetic-pipeline-${++creates}`;
-        responses.set(id, resultFor(ctx));
-        return Response.json({ id, status: "in_progress" });
-      }
-      gets++;
-      const id = String(url).split("/").at(-1)!;
-      return Response.json({
-        id,
-        status: "completed",
-        steps: [
-          {
-            type: "model_output",
-            content: [
-              { type: "text", text: JSON.stringify(responses.get(id)) },
-            ],
-          },
-        ],
-        usage: {
-          total_input_tokens: 100,
-          total_output_tokens: 50,
-          total_thought_tokens: 0,
-        },
-      });
+it.each([false, true])(
+  "completes the proposal pipeline with background retrieval and round-robin=%s",
+  async (automatic) => {
+    const started = await start();
+    await f.command("model.configure", {
+      expected_revision: 0,
+      enabled: true,
+      provider: "gemini_free",
+      model: "gemini-3.8-flash",
+      project_ref: "synthetic-project",
+      free_only: true,
+      billing_verified: true,
+      free_quota_only: false,
+      quota_mode: "provider_managed",
+      quota_ends_at: null,
+      quota_remaining_tokens: null,
+      calls_per_day: 50,
+      input_per_day: 250000,
+      output_per_day: 50000,
     });
-  }
-  const plan = (
-    await f.db.query<any>(
-      "select status from public.generation_plans where id=$1",
-      [started.plan.id],
-    )
-  ).rows[0];
-  expect(plan.status).toBe("completed");
-  expect(creates).toBeGreaterThan(4);
-  expect(gets).toBe(creates);
-  expect(deletes).toBe(creates);
-  expect(
-    (
+    if (automatic)
+      await f.command("model.routing", { enabled: true, expected_revision: 0 });
+    const env = {
+      models: {
+        gemini_free: {
+          provider: "gemini_free",
+          model: "gemini-3.8-flash",
+          projectRef: "synthetic-project",
+          key: "synthetic-key",
+        },
+      },
+    } as BackendEnvironment;
+    if (automatic)
+      for (const provider of [
+        "qwen_free",
+        "mistral_free",
+        "groq_free",
+      ] as const)
+        env.models[provider] = {
+          provider,
+          model: provider === "qwen_free" ? "qwen3.5-plus" : "synthetic-model",
+          projectRef:
+            provider === "qwen_free" ? "synthetic" : "synthetic-project",
+          key: "synthetic-key",
+          freeTierConfirmed: true,
+        };
+    const backend = {
+      internal: async (name: string, args: Record<string, unknown>) => {
+        const entries = Object.entries(args);
+        await f.db.exec("savepoint background_rpc");
+        try {
+          return (
+            await f.db.query<any>(
+              `select public.${name}(${entries.map(([key], i) => `${key}=>$${i + 1}`).join(",")}) data`,
+              entries.map(([, v]) =>
+                v && typeof v === "object" ? JSON.stringify(v) : v,
+              ),
+            )
+          ).rows[0]?.data;
+        } catch (e) {
+          await f.db.exec("rollback to savepoint background_rpc");
+          throw databaseError(e as Error);
+        } finally {
+          await f.db.exec("release savepoint background_rpc");
+        }
+      },
+    } as unknown as Backend;
+    let creates = 0,
+      gets = 0,
+      deletes = 0;
+    let alternateCalls = 0,
+      rejected = 0;
+    const responses = new Map<string, unknown>();
+    for (let i = 0; i < 60; i++) {
+      await f.db.exec(
+        "update public.jobs set next_attempt_at=now()-interval '1 second' where status in ('retry_wait','quota_wait');update public.provider_usage set created_at=now()-interval '2 minutes'",
+      );
+      const job = await f.rpc("claim_backend_job");
+      if (!job) break;
+      const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
+      if (ctx.step.task !== "advance_plan")
+        for (const ref of taskInput(ctx).manifest)
+          for (const provider of automatic
+            ? ["gemini_free", "qwen_free", "mistral_free", "groq_free"]
+            : ["gemini_free"])
+            await f.command("content.authorize", {
+              ...ref,
+              provider,
+              attestation: "nonconfidential_nonpersonal",
+            });
+      await processGeneration(backend, env, job, async (url, init) => {
+        if (init?.method === "DELETE") {
+          expect(
+            (
+              await f.db.query<any>(
+                "select status from public.jobs where id=$1",
+                [job.id],
+              )
+            ).rows[0].status,
+          ).toBe("succeeded");
+          deletes++;
+          return new Response(null, { status: 204 });
+        }
+        if (String(url).endsWith(":countTokens"))
+          return Response.json({ totalTokens: 100 });
+        if (!String(url).includes("googleapis")) {
+          alternateCalls++;
+          return Response.json({
+            choices: [
+              {
+                finish_reason: "stop",
+                message: { content: JSON.stringify(resultFor(ctx)) },
+              },
+            ],
+            usage: { prompt_tokens: 100, completion_tokens: 50 },
+          });
+        }
+        if (automatic && !rejected && init?.method === "POST") {
+          rejected++;
+          return new Response(null, { status: 400 });
+        }
+        if (init?.method === "POST") {
+          const id = `synthetic-pipeline-${++creates}`;
+          responses.set(id, resultFor(ctx));
+          return Response.json({ id, status: "in_progress" });
+        }
+        gets++;
+        const id = String(url).split("/").at(-1)!;
+        return Response.json({
+          id,
+          status: "completed",
+          steps: [
+            {
+              type: "model_output",
+              content: [
+                { type: "text", text: JSON.stringify(responses.get(id)) },
+              ],
+            },
+          ],
+          usage: {
+            total_input_tokens: 100,
+            total_output_tokens: 50,
+            total_thought_tokens: 0,
+          },
+        });
+      });
+    }
+    const plan = (
       await f.db.query<any>(
-        "select count(*)::int n from public.provider_usage where state='settled'",
+        "select status from public.generation_plans where id=$1",
+        [started.plan.id],
       )
-    ).rows[0].n,
-  ).toBe(creates);
-  expect(
-    (
-      await f.db.query<any>(
-        "select count(*)::int n from public.provider_usage where state<>'settled'",
-      )
-    ).rows[0].n,
-  ).toBe(0);
-  expect(
-    (await f.db.query<any>("select count(*)::int n from public.requirements"))
-      .rows[0].n,
-  ).toBeGreaterThan(0);
-});
+    ).rows[0];
+    expect(plan.status).toBe("completed");
+    expect(creates + alternateCalls).toBeGreaterThan(4);
+    if (automatic) {
+      expect(alternateCalls).toBeGreaterThan(0);
+      expect(rejected).toBe(1);
+    }
+    expect(gets).toBe(creates);
+    expect(deletes).toBe(creates);
+    expect(
+      (
+        await f.db.query<any>(
+          "select count(*)::int n from public.provider_usage where state='settled'",
+        )
+      ).rows[0].n,
+    ).toBe(creates + alternateCalls + rejected);
+    expect(
+      (
+        await f.db.query<any>(
+          "select count(*)::int n from public.provider_usage where state<>'settled'",
+        )
+      ).rows[0].n,
+    ).toBe(0);
+    expect(
+      (await f.db.query<any>("select count(*)::int n from public.requirements"))
+        .rows[0].n,
+    ).toBeGreaterThan(0);
+  },
+);

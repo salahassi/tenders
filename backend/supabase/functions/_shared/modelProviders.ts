@@ -6,6 +6,12 @@ export const MODEL_PROVIDER_IDS = [
   "cloudflare_free",
 ] as const;
 export type ModelProviderId = (typeof MODEL_PROVIDER_IDS)[number];
+export const ROUND_ROBIN_PROVIDERS = [
+  "gemini_free",
+  "qwen_free",
+  "mistral_free",
+  "groq_free",
+] as const;
 
 export function defaultFailoverRank(provider: ModelProviderId): number {
   switch (provider) {

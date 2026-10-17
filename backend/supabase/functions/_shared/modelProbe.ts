@@ -10,7 +10,7 @@ export async function processModelProbe(
   job: { id: string; lease_token: string; attempts: number },
   fetcher: typeof fetch,
 ) {
-  const ledger = modelLedger(backend, job, `probe:${job.id}`);
+  const ledger = modelLedger(backend, job, `probe:${job.id}`, env.models);
   try {
     await executeModel(
       "connection_probe",

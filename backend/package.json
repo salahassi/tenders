@@ -7,7 +7,7 @@
     "typecheck": "tsc -b",
     "build": "tsc -b",
     "test": "vitest run tests/backend",
-    "test:integration": "vitest run tests/backend/database.test.ts tests/backend/onboarding.test.ts tests/backend/httpDatabase.integration.test.ts tests/backend/sourceCatalog.test.ts tests/backend/continuousModel.test.ts",
+    "test:integration": "vitest run tests/backend/database.test.ts tests/backend/onboarding.test.ts tests/backend/httpDatabase.integration.test.ts tests/backend/sourceCatalog.test.ts tests/backend/continuousModel.test.ts tests/backend/roundRobin.test.ts",
     "test:watch": "vitest tests/backend",
     "db:migrate": "supabase db push --linked",
     "db:reset": "supabase db reset",

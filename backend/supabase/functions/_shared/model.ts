@@ -264,6 +264,7 @@ export type Reference = {
   content_hash: string;
 };
 export type ModelConfiguration = {
+  automatic?: boolean;
   enabled: boolean;
   provider: ModelProviderId;
   model: string;
@@ -276,7 +277,10 @@ export type ModelConfiguration = {
   quota_ends_at: string | null;
   failover_rank?: number;
 };
-export type ModelPool = { providers: ModelConfiguration[] };
+export type ModelPool = {
+  providers: ModelConfiguration[];
+  routing_mode?: "round_robin";
+};
 export type ModelEnvironment = {
   provider: string;
   model: string;
@@ -331,7 +335,7 @@ export function available(
     throw new ModelError("MODEL_NOT_CONFIGURED");
   if (
     !config.free_only ||
-    !config.billing_verified ||
+    (!config.billing_verified && !config.automatic) ||
     (config.provider === "qwen_free" && !config.free_quota_only)
   )
     throw new ModelError("FREE_ONLY_REQUIRED");
@@ -342,7 +346,8 @@ export function available(
     throw new ModelError("PROVIDER_NOT_ALLOWED");
   if (
     config.quota_mode === "provider_managed" &&
-    config.provider !== "gemini_free"
+    config.provider !== "gemini_free" &&
+    !config.automatic
   )
     throw new ModelError("FREE_ONLY_REQUIRED");
   if (
@@ -535,6 +540,11 @@ export function exactExclusion(notice: string, rules: Evidence[]) {
   return null;
 }
 export interface Ledger {
+  attempt?(
+    provider: ModelProviderId,
+    code: string,
+    sent: boolean,
+  ): Promise<void>;
   preflight(manifest: Reference[]): Promise<ModelPool>;
   reserve(
     input: number,
@@ -575,6 +585,25 @@ const failoverErrors = new Set([
   "PROVIDER_QUOTA_WAIT",
   "TOKEN_COUNT_UNAVAILABLE",
 ]);
+const automaticFailoverErrors = new Set([
+  ...failoverErrors,
+  "MODEL_NOT_CONFIGURED",
+  "FREE_ONLY_REQUIRED",
+  "PROVIDER_AUTH_FAILED",
+  "PROVIDER_MODEL_NOT_FOUND",
+  "PROVIDER_REQUEST_INVALID",
+  "PROVIDER_REQUEST_REJECTED",
+  "MODEL_RESULT_EXPIRED",
+  "USAGE_REVIEW_REQUIRED",
+  "MODEL_OUTPUT_INVALID",
+  "MODEL_OUTPUT_TRUNCATED",
+  "MODEL_OUTPUT_TOO_LARGE",
+  "MODEL_COVERAGE_INCOMPLETE",
+  "EVIDENCE_REFERENCE_INVALID",
+  "UNSUPPORTED_COMPANY_CLAIM",
+  "USAGE_UNKNOWN",
+  "PROVIDER_VERIFICATION_EXPIRED",
+]);
 export function isFailoverError(code: string) {
   return failoverErrors.has(code);
 }
@@ -594,6 +623,7 @@ export class FreeModelProvider {
   constructor(
     readonly env: ModelEnvironment,
     private fetcher: typeof fetch = fetch,
+    private requestTimeout = 90000,
   ) {}
   private async diagnoseRejectedRequest(response: Response) {
     // Emit only fixed diagnostic labels, never provider text, credentials or prompts.
@@ -652,7 +682,7 @@ export class FreeModelProvider {
     url: string,
     body: unknown,
     headers: Record<string, string>,
-    timeout = 90000,
+    timeout = this.requestTimeout,
     method: "POST" | "GET" | "DELETE" = "POST",
   ): Promise<any> {
     const controller = new AbortController(),
@@ -991,6 +1021,7 @@ export async function executeModel(
   fetcher: typeof fetch = fetch,
 ) {
   const pool = await ledger.preflight(manifest);
+  const automatic = pool.routing_mode === "round_robin";
   const prompt = JSON.stringify({
     task,
     prompt_version: "tenderdesk-v3",
@@ -1010,9 +1041,15 @@ export async function executeModel(
     const env = environments[config.provider];
     if (!env || !tryAvailable(config, env)) {
       lastError = new ModelError("MODEL_NOT_CONFIGURED");
+      if (automatic)
+        await ledger.attempt?.(config.provider, lastError.code, false);
       continue;
     }
-    const provider = new FreeModelProvider(env, fetcher);
+    const provider = new FreeModelProvider(
+      env,
+      fetcher,
+      automatic ? 20000 : 90000,
+    );
     let reservation: string | null = null;
     let settled = false;
     let remoteId: string | null = null;
@@ -1052,6 +1089,7 @@ export async function executeModel(
             );
           } catch (error) {
             if (
+              !automatic &&
               error instanceof ModelError &&
               ["MODEL_NETWORK_UNCERTAIN", "PROVIDER_QUOTA_WAIT"].includes(
                 error.code,
@@ -1096,6 +1134,8 @@ export async function executeModel(
           const completedId = remoteId;
           ledger.cleanup = () => provider.deleteBackground(completedId);
         }
+        if (automatic)
+          await ledger.attempt?.(config.provider, "SUCCEEDED", true);
         return validated;
       } catch (error) {
         if (error instanceof ModelError) throw error;
@@ -1120,6 +1160,11 @@ export async function executeModel(
           code,
         );
       lastError = error instanceof ModelError ? error : new ModelError(code);
+      if (automatic) {
+        await ledger.attempt?.(config.provider, code, Boolean(reservation));
+        if (automaticFailoverErrors.has(code)) continue;
+        throw lastError;
+      }
       // An uncertain generation may have consumed quota. Keep its reservation
       // for reconciliation instead of sending the same content a second time.
       if (reservation && code !== "PROVIDER_QUOTA_WAIT") throw lastError;
@@ -1127,5 +1172,7 @@ export async function executeModel(
       throw lastError;
     }
   }
-  throw lastError;
+  throw automatic
+    ? new ModelError("MODEL_ROUND_EXHAUSTED", lastError.retryAfter)
+    : lastError;
 }

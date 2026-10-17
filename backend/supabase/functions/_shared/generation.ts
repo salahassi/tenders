@@ -642,6 +642,7 @@ export async function processGeneration(
       backend,
       { id: job.id, lease_token: job.lease_token, attempts: job.attempts },
       `step:${ctx.step.id}`,
+      env.models,
     );
     const result = await executeModel(
       input.task,

@@ -215,3 +215,46 @@ it("queues a bounded connection check only after Gemini has been saved enabled",
     await screen.findByText(/Connection check queued/),
   ).toBeInTheDocument();
 });
+
+it("enables round robin without individual enabled policies and can queue its operational check", async () => {
+  let routing: Record<string, unknown> | undefined;
+  const runCommand = vi.fn(async (operation: string, input: any) => {
+    if (operation === "model.routing") routing = { ...input, revision: 1 };
+    return {};
+  });
+  vi.mocked(useApp).mockReturnValue({
+    state: { settings: { role: "Owner" } },
+    saving: false,
+    notify: vi.fn(),
+    runCommand,
+    backend: {
+      request: vi.fn(async (path: string) => ({
+        data:
+          path === "/v1/model-routing"
+            ? { records: routing ? [routing] : [] }
+            : path === "/v1/model-environment"
+              ? { providers: [] }
+              : path === "/v1/eligibility"
+                ? { items: [], authorizations: [] }
+                : { records: [] },
+      })),
+    },
+  } as any);
+  render(<ModelControls />);
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Enable automatic round robin" }),
+  );
+  expect(runCommand).toHaveBeenCalledWith("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+  });
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Check model routing" }),
+  );
+  expect(runCommand).toHaveBeenCalledWith("model.probe", {});
+  expect(
+    await screen.findByRole("button", {
+      name: "Disable automatic round robin",
+    }),
+  ).toBeEnabled();
+});
