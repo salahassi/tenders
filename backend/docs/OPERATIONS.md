@@ -4,7 +4,7 @@ The application runs from GitHub Pages and stores authorized records and origina
 
 ## Recorded activation state
 
-At the October 17, 2026 verification, API version 7 passes hosted health, preflight, and authentication-denial checks. Worker version 3 remains deployed and the private dispatcher is absent. The dispatcher and model runtime corrections are locally tested, but automatic approval review requires explicit approval before application. No model policy is configured. Follow [DEPLOYMENT.md](DEPLOYMENT.md) and the current checklist before activation. A published worker alone does not establish that jobs execute while the browser is closed.
+At the October 17, 2026 verification, API v7 and worker v4 are deployed, both database corrections are applied, and `tenderdesk-dispatch` runs every minute. A real scheduled request returned HTTP 200 and advanced worker authentication, maintenance, and heartbeat timestamps. The queue was empty, so the response reported no claimed job. Collection hosts and model policy rows remain empty. Review [DEPLOYMENT.md](DEPLOYMENT.md) and the current checklist before enabling business sources or a provider; scheduler success alone does not verify collection or generation.
 
 ## Background collection
 

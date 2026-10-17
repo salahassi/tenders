@@ -2,7 +2,7 @@
 
 ## Scope and actual state
 
-**Current checkpoint — October 17, 2026:** API version 7 was deployed through the connected Supabase MCP from `8c2a4b22704351d380953762922b557b729527cb`. All 13 retained source files match the canonical repository. Hosted health returns 200, allowed-origin preflight returns 204, missing/invalid-token bootstrap returns 401, and disallowed origins return 403. The former version 6 bundle contained placeholder handler/backend files; replacing it with complete files resolved `BOOT_ERROR`. The database has 25 recorded migrations and worker version 3 remains deployed. Automatic approval review rejected the two remaining database corrections pending explicit approval; no migration or scheduler activation occurred. See the current checklist before proceeding. The dated paragraph below describes the earlier deployment.
+**Current checkpoint — October 17, 2026:** API v7 and worker v4 are deployed through Supabase MCP from `8c2a4b22704351d380953762922b557b729527cb`; all retained files match the canonical source. Hosted API health returns 200, allowed-origin preflight 204, and missing/invalid-token bootstrap 401. The two explicitly approved database corrections are applied across four hosted migration records, bringing the total to 29; all affected function bodies match the canonical files. Minute scheduling is enabled, and its 13:13 UTC run reached the worker with HTTP 200 and updated the application heartbeat. Collection hosts and model policies remain empty. The dated paragraph below describes the earlier deployment.
 
 **Verified October 15, 2026:** 22 hosted migrations, API v4 and worker v2; Pages application `d450c8c` passed [run 38807118314](https://github.com/salahassi/tenders/actions/runs/38807118314), completed October 15 at 21:06 UTC. One actual confirmed Auth identity exists, with restricted Owner setup pending and no workspace at the 20:58 UTC read. The hosted dispatcher is not configured. Its explicit-schema correction is saved in `20261015220000_dispatcher_extension_schema.sql` and passed local migration/tests, but two connector application attempts returned no successful result; read-back confirmed it is not applied. Models and real sources remain inactive. See the current checklist for complete acceptance limits.
 
@@ -12,7 +12,7 @@ The selected project is **TenderDesk**, reference `nqfwbqeozmuiuwbiowil`, Mumbai
 
 [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md) is the current authority for exact migration/function versions, source commit, workflow result, test counts, and remaining activation work. Update it with every project change and after each deployment. Historical deployment statements in DECISIONS.md remain dated records.
 
-API startup and its public/authentication boundary now pass hosted checks. Signed-in file/proposal/review writes, submission, and restore still need real-account acceptance. Cron and worker credentials are not activated, and no model profile is configured. Do not equate deployment with completion of stage 1 or the full application.
+API startup and its public/authentication boundary now pass hosted checks. Signed-in file/proposal/review writes, submission, and restore still need real-account acceptance. The minute scheduler and internal worker credential are active; no model profile is configured. Do not equate deployment with completion of stage 1 or the full application.
 
 ## Reproduce local verification
 
@@ -75,7 +75,16 @@ The connector assigned hosted versions to the 12 continuation migrations. The fi
 
 The existing project additionally records `20261015182218_production_operations_repair` and `20261015182509_hosted_operations_repair_tail_oct15`. These repair records are not a complete clean-project migration sequence: the placeholder dropped functions and the actual repair restored the canonical bodies. Reconciliation compared all 98 current canonical function bodies with the hosted definitions: 96 matched exactly and two differed only in comments. The canonical operations migration remains the clean-project authority. Do not copy/replay the incomplete placeholder repair or assume a filename match proves identical schema.
 
-The only saved unapplied correction at this checkpoint is `20261015220000_dispatcher_extension_schema.sql`. It specifies `pg_catalog`, `extensions` and `vault` when enabling the required extensions and preserves the deliberately empty function search path. After applying it through the authorized connector, use a trusted administrative connection to invoke:
+The dispatcher correction is now applied and activation is complete. The following newer mappings extend the historical table above. They record the existing project state; retain the canonical files for clean-project setup and do not blindly replay them.
+
+| Canonical correction | Hosted migration record |
+| --- | --- |
+| `20261015220000_dispatcher_extension_schema.sql` | `20261017121842_dispatcher_extension_schema` |
+| `20261016220000_model_pool_runtime_fixes.sql`: preflight and private helper privileges | `20261017130519_model_runtime_preflight` |
+| Same canonical file: reservation, settlement, and generation identity | `20261017130531_model_runtime_usage` |
+| Same canonical file: provider policy input keys | `20261017131059_model_runtime_policy` |
+
+The model correction was split because large connector requests expired before execution. All six model function bodies were compared with the canonical source after deployment, and the dispatcher body also matches exactly. The dispatcher supplies explicit extension schemas while preserving the empty search path. The administrative command below has already been executed for this project; rerunning it rotates the internal credential, so it is not a read-only health check:
 
 ```sql
 select public.configure_dispatcher(
