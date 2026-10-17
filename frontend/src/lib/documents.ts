@@ -35,6 +35,10 @@ export async function extractLocalDocument(
       );
     }, 120000);
     worker.onmessage = ({ data }) => {
+      // PDF.js can emit its own worker handshake on this channel while setting
+      // up its fallback inside our background worker. Only our envelope ends
+      // extraction; a library handshake is not an empty successful document.
+      if (data?.kind !== "document-result") return;
       finish();
       data.error ? reject(new Error(data.error)) : resolve(data.document);
     };
