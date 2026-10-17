@@ -4,11 +4,11 @@ Verified October 17, 2026. Full system activation and integration/browser E2E te
 
 ## Current deployed and local baseline
 
-- API v7 and worker v4 use application source `8c2a4b22704351d380953762922b557b729527cb`; 29 hosted migration entries include the approved corrections. Minute scheduling is active.
-- The frontend source `55327cbd37bc47dd44718377ea929c431874e9d1` was published by [Pages run 39039577266](https://github.com/salahassi/tenders/actions/runs/39039577266). The public entry is `index-CS2TYTey.js`; the entry and both source-page bundles matched the tested build byte-for-byte.
+- API **v8** is ACTIVE from source `01e839f45bd1d36007d5316825b109d002230e40`; all 13 retained deployment files match the tested source. Worker v4 remains from `8c2a4b22704351d380953762922b557b729527cb`. The 29 hosted migrations and minute scheduling remain unchanged.
+- Frontend/API source `01e839f45bd1d36007d5316825b109d002230e40` is on main. [Pages run 39044204445](https://github.com/salahassi/tenders/actions/runs/39044204445) passed and published the frontend. Public `index-CLRBkJkD.js` and `Settings-FnptsMS7.js` matched the tested build byte-for-byte. Earlier source browser runs used catalog release `55327cb`; the model metadata acceptance uses the new release.
 - Latest application checks: **130 backend tests across 18 files**, **131 frontend tests across 23 files**, both type checks and builds, plus Deno checks in CI. These counts exclude live browser checks below. The existing large frontend chunk warning remains.
-- Sixteen hosted HTTP checks passed earlier: health 200, allowed-origin preflight 204, protected anonymous/invalid-token reads 401, forbidden-origin request 403, and missing/invalid worker credentials 401.
-- Hosted scheduler dispatch and maintenance are verified. A read at 14:47 UTC showed heartbeat `14:47:01.584144+00`, scheduler enabled and no recorded operational error. Empty-queue maintenance does not establish successful collection or generation.
+- Four additional hosted checks after API v8 passed: health 200, model-environment anonymous/invalid-token 401, and forbidden origin 403. Local tests additionally cover Editor/Reviewer denial and secret-value exclusion. Sixteen hosted HTTP checks passed earlier: health 200, allowed-origin preflight 204, protected anonymous/invalid-token reads 401, forbidden-origin request 403, and missing/invalid worker credentials 401.
+- Hosted scheduler dispatch and maintenance are verified. A read at 15:19 UTC showed heartbeat `15:19:01.619511+00`, scheduler enabled and no recorded operational error. Empty-queue maintenance does not establish successful collection or generation.
 
 ## Local integration coverage
 
@@ -41,6 +41,8 @@ Fresh anonymous run `08ed8172-8641-4515-b296-531748e63190` opened `#/sources`, `
 
 At the post-write database check, there were still 35 sources and **zero** jobs, opportunities, documents, and model policies. The preference test created no fabricated business records or provider calls. Saving writes explicit default preference values into the settings object; it does not restore the original empty JSON representation. It restores the original effective settings.
 
+TinyFish run `c10e3e26-c210-4681-9da3-5cdd04dafc77` clicked **Download complete backup** once. The UI confirmed `Backup verified and downloaded, including all listed originals.` The tool did not return a filename or archive bytes. This verifies the live backup flow for the current reference-only workspace; it does not establish original-byte backup or restore. No restore was attempted. The model fields in this run were from the earlier bundle, and its ambiguous accessibility report is not configuration evidence.
+
 Browser run summaries are the evidence available from TinyFish. No screenshot files were returned for independent image inspection, even though capture was requested. Do not claim pixel-level or mobile acceptance from these desktop summaries alone.
 
 ## Remaining acceptance
@@ -52,6 +54,10 @@ Browser run summaries are the evidence available from TinyFish. No screenshot fi
 | Original evidence | Local exact-byte hash and eligibility workflows | Eligible real RFP upload/download, extraction review and hosted original-byte persistence |
 | Model and generation | Model runtime correction and compatible worker deployed; local policy and quota tests | Actual project/free-quota/billing verification, matching model policy, eligible content authorization, measured provider usage and persisted generation |
 | Review and commercial flow | Local supported-claim, feedback, calculation and approval tests | Real RFP/company inputs, scoped feedback/regeneration, approved rates/assumptions and evidence-bound approval |
-| Export and recovery | Local bilingual Word and two-database recovery tests | Actual artifact download/Word field review, current-workspace backup, and restore to an empty matching-schema target |
+| Export and recovery | Local bilingual Word and two-database recovery tests; live current-workspace backup completion | Actual artifact download/Word field review, archived-byte/original inspection, and restore to an empty matching-schema target |
 
-The Owner confirmed the required Gemini values were already saved in Supabase Secrets. Google account login is not required to read the configured model identity. The existing environment loader reads provider-specific or legacy name/project/key settings; it does not read billing attestations or quota values from secrets. An Owner-only metadata route and settings prefill passed local security and UI tests to use that configuration without returning keys. This is a presence/matching check, not proof of provider authentication, free billing, or remaining quota. No billing or quota facts have been invented.
+The Owner confirmed the required Gemini values were already saved in Supabase Secrets. Google account login is not required to read the configured model identity. The existing environment loader reads provider-specific or legacy name/project/key settings; it does not read billing attestations or quota values from secrets. An Owner-only metadata route and settings prefill passed local security and UI tests and were deployed to use that configuration without returning keys. This is a presence/matching check, not proof of provider authentication, free billing, or remaining quota. No billing or quota facts have been invented.
+
+Actual Owner browser run `f5b476d6-ac19-4372-ab26-b2795428c395` loaded the new deployed panel. It read exact model `gemini-3.8-flash`, a populated project input and the status `API key is configured on the server. Model and project loaded from server configuration. Verify free quota before enabling.` Billing verification and activation were unchecked. No load or authorization error occurred. The account-specific project identifier is intentionally omitted from this report. This confirms configured secret presence/identity, not successful Google authentication or inference. The Owner was asked only for free-tier/quota facts without Google login or key disclosure.
+
+Independent SQL at **15:19:38 UTC** confirmed workspace revision 3, polling interval 6, 35 sources, and zero model policies, provider usage, jobs, opportunities and documents. Heartbeat was fresh. Current model execution and real collection therefore remain explicitly unaccepted despite the passing infrastructure, settings and directory journeys.
