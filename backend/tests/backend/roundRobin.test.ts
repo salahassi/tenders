@@ -525,3 +525,32 @@ it("denies routing configuration and visibility to a non-Owner, and disables rou
   ).toHaveLength(0);
   await f.db.exec("reset role");
 });
+
+it("uses the global next provider when a retry interleaves with another completed job", async () => {
+  await enable();
+  const first = await queue();
+  await worker(transport(() => new Response(null, { status: 429 })))();
+  expect((await job(first.id)).error_code).toBe("MODEL_ROUND_EXHAUSTED");
+  await f.db.query("update public.jobs set status='blocked' where id=$1", [
+    first.id,
+  ]);
+  const second = await queue();
+  await age();
+  const calls: string[] = [];
+  const tick = worker(
+    transport((p) => {
+      calls.push(p);
+      return success(p);
+    }),
+  );
+  await tick();
+  expect((await job(second.id)).status).toBe("succeeded");
+  expect(calls).toEqual(["qwen_free"]);
+  await f.db.query("update public.jobs set status='quota_wait' where id=$1", [
+    first.id,
+  ]);
+  await age();
+  await tick();
+  expect((await job(first.id)).status).toBe("succeeded");
+  expect(calls).toEqual(["qwen_free", "mistral_free"]);
+});
