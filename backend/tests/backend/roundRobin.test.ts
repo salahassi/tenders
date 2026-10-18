@@ -1070,3 +1070,30 @@ it("records missing targeted credentials without calling a different provider", 
     actual_input: null,
   });
 });
+
+it("never substitutes a manual Gemini profile if routing is disabled after a z.ai check is queued", async () => {
+  await enable();
+  const q = await f.command("model.probe", { provider: "zai_free" });
+  await f.command("model.configure", {
+    expected_revision: 0,
+    enabled: true,
+    provider: "gemini_free",
+    model: "gemini-3.8-flash",
+    project_ref: "synthetic-project",
+    free_only: false,
+    billing_verified: false,
+    free_quota_only: false,
+    quota_mode: "provider_managed",
+    quota_ends_at: null,
+    quota_remaining_tokens: null,
+    calls_per_day: 50,
+    input_per_day: 250000,
+    output_per_day: 50000,
+  });
+  await f.command("model.routing", { enabled: false, expected_revision: 1 });
+  const send = vi.fn<typeof fetch>();
+  await worker(send)();
+  expect(send).not.toHaveBeenCalled();
+  expect((await job(q.id)).status).not.toBe("succeeded");
+  expect(await usage(q.id)).toHaveLength(0);
+});
