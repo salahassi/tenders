@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ServiceScope } from "./discovery.ts";
 import {
   MODEL_PROVIDER_IDS,
   type ModelProviderId,
@@ -88,6 +89,18 @@ export const modelSchemas = {
           status: z.enum(["in_scope", "out_of_scope", "uncertain"]),
           reason: short.min(1),
           notice_evidence: z.array(quote).min(1).max(8),
+          company_evidence: z.array(quote).max(8).optional(),
+          keyword_evidence: z
+            .array(
+              z
+                .object({
+                  kind: z.enum(["include", "exclude"]),
+                  keyword: z.string().min(1).max(100),
+                })
+                .strict(),
+            )
+            .max(24)
+            .optional(),
         })
         .strict()
         .optional(),
@@ -409,8 +422,14 @@ export function validateModelResult(
     if (!result.directives.length && !result.questions.length)
       throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
   }
-  if (task === "classify_opportunity" && result.scope_decision)
+  if (task === "classify_opportunity" && result.scope_decision) {
     validateQuotes(result.scope_decision.notice_evidence, evidence, "notice");
+    validateQuotes(
+      result.scope_decision.company_evidence || [],
+      evidence,
+      "company",
+    );
+  }
   if (task === "classify_opportunity")
     for (const factor of Object.values(result.factors) as any[]) {
       validateQuotes(factor.notice_evidence, evidence, "notice");
@@ -1254,7 +1273,10 @@ export async function executeModel(
   const automatic = pool.routing_mode === "round_robin";
   const prompt = JSON.stringify({
     task,
-    prompt_version: "tenderdesk-v3",
+    prompt_version:
+      task === "classify_opportunity"
+        ? "tenderdesk-v6-configurable-service-scope"
+        : "tenderdesk-v3",
     writing_guide: writingGuide[language],
     repair_instruction: repair
       ? "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
@@ -1386,6 +1408,10 @@ export async function executeModel(
           evidence,
           requiredIds,
         );
+        const scopePolicy = (context as { scope_policy?: ServiceScope } | null)
+          ?.scope_policy;
+        if (task === "classify_opportunity" && scopePolicy)
+          validateScopeDecision(validated, scopePolicy);
         if (remoteId) {
           const completedId = remoteId;
           ledger.cleanup = () => provider.deleteBackground(completedId);
@@ -1439,4 +1465,24 @@ export async function executeModel(
   throw automatic
     ? new ModelError("MODEL_ROUND_EXHAUSTED", lastError.retryAfter)
     : lastError;
+}
+
+export function validateScopeDecision(result: any, policy: ServiceScope) {
+  const decision = result.scope_decision;
+  if (!decision) throw new ModelError("MODEL_OUTPUT_INVALID");
+  const company = decision.company_evidence || [];
+  const terms = decision.keyword_evidence || [];
+  if (
+    (policy.scope === "company_knowledge" && terms.length) ||
+    (policy.scope === "keywords" && company.length) ||
+    terms.some(
+      (ref: { kind: "include" | "exclude"; keyword: string }) =>
+        !policy[
+          ref.kind === "include" ? "include_keywords" : "exclude_keywords"
+        ].includes(ref.keyword),
+    )
+  )
+    throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+  if (decision.status !== "uncertain" && !company.length && !terms.length)
+    throw new ModelError("EVIDENCE_REFERENCE_INVALID");
 }

@@ -2,17 +2,31 @@ import { useEffect, useState } from "react";
 import { useApp } from "../lib/store";
 import { Button, Field } from "./ui";
 import { MODEL_PROVIDERS } from "../lib/modelProviders";
+import {
+  SCOPE_LABELS,
+  parseScopeKeywords,
+  scopeError,
+  type ScopeSource,
+} from "../lib/discoveryScope";
 export default function DiscoveryControls() {
   const { backend, runCommand, state, saving, notify } = useApp();
-  const [scope, setScope] = useState("all");
+  const [scope, setScope] = useState<ScopeSource>("company_knowledge");
+  const [includeKeywords, setIncludeKeywords] = useState("");
+  const [excludeKeywords, setExcludeKeywords] = useState("");
   const [automatic, setAutomatic] = useState(false);
   const [companyKnowledge, setCompanyKnowledge] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [revision, setRevision] = useState(0);
   const [error, setError] = useState("");
-  const [savedScope, setSavedScope] = useState("all");
+  const [savedScope, setSavedScope] = useState("");
   const [busy, setBusy] = useState(false);
   const owner = state.settings.role === "Owner";
+  const scopePolicy = {
+    scope,
+    include_keywords: parseScopeKeywords(includeKeywords),
+    exclude_keywords: parseScopeKeywords(excludeKeywords),
+  };
+  const validationError = scopeError(scopePolicy);
   async function load() {
     if (!backend) return;
     try {
@@ -20,7 +34,9 @@ export default function DiscoveryControls() {
         workspace: {
           revision: number;
           discovery_policy?: {
-            scope: string;
+            scope: ScopeSource;
+            include_keywords?: string[];
+            exclude_keywords?: string[];
             auto_public_notices: boolean;
             auto_company_knowledge?: boolean;
             providers: string[];
@@ -29,8 +45,20 @@ export default function DiscoveryControls() {
       }>("/v1/bootstrap");
       const policy = response.data.workspace.discovery_policy;
       setRevision(response.data.workspace.revision);
-      setScope(policy?.scope || "all");
-      setSavedScope(policy?.scope || "all");
+      const source =
+        policy?.scope && policy.scope in SCOPE_LABELS
+          ? policy.scope
+          : "company_knowledge";
+      setScope(source);
+      setIncludeKeywords((policy?.include_keywords || []).join("\n"));
+      setExcludeKeywords((policy?.exclude_keywords || []).join("\n"));
+      setSavedScope(
+        JSON.stringify({
+          scope: source,
+          include_keywords: policy?.include_keywords || [],
+          exclude_keywords: policy?.exclude_keywords || [],
+        }),
+      );
       setAutomatic(policy?.auto_public_notices || false);
       setCompanyKnowledge(policy?.auto_company_knowledge || false);
       setSelected(policy?.providers || []);
@@ -45,14 +73,14 @@ export default function DiscoveryControls() {
   }, [backend]);
   if (!backend) return null;
   async function save() {
-    if (!owner || !runCommand || busy || saving) return;
+    if (!owner || !runCommand || busy || saving || validationError) return;
     setBusy(true);
-    const scopeChanged = scope !== savedScope;
+    const scopeChanged = JSON.stringify(scopePolicy) !== savedScope;
     setError("");
     try {
       await runCommand("discovery.configure", {
         expected_revision: revision,
-        scope,
+        ...scopePolicy,
         auto_public_notices: automatic,
         auto_company_knowledge: companyKnowledge,
         providers: selected,
@@ -85,14 +113,56 @@ export default function DiscoveryControls() {
           aria-label="Company service scope"
           value={scope}
           disabled={!owner || saving || busy || !revision}
-          onChange={(e) => setScope(e.target.value)}
+          onChange={(e) => setScope(e.target.value as ScopeSource)}
         >
-          <option value="all">Use verified company profile</option>
-          <option value="software_services">
-            Software, digital transformation and AI — no hardware
-          </option>
+          {Object.entries(SCOPE_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
         </select>
       </Field>
+      <p className="muted small">
+        {scope === "company_knowledge"
+          ? "The model derives your service scope from enabled, verified Company Knowledge files and notes. Missing evidence stays uncertain."
+          : scope === "keywords"
+            ? "The model interprets your keywords against the purchased services. Keywords describe your interests, not proof of company expertise."
+            : "The model considers services in Company Knowledge and your interest keywords. Exclusion keywords take precedence; ambiguous or mixed requirements need review."}
+      </p>
+      {scope !== "company_knowledge" && (
+        <>
+          <Field label="Interest keywords">
+            <textarea
+              aria-label="Interest keywords"
+              dir="auto"
+              rows={4}
+              value={includeKeywords}
+              disabled={!owner || saving || busy || !revision}
+              onChange={(e) => setIncludeKeywords(e.target.value)}
+            />
+          </Field>
+          <Field label="Exclusion keywords">
+            <textarea
+              aria-label="Exclusion keywords"
+              dir="auto"
+              rows={3}
+              value={excludeKeywords}
+              disabled={!owner || saving || busy || !revision}
+              onChange={(e) => setExcludeKeywords(e.target.value)}
+            />
+          </Field>
+          <p className="muted small">
+            One term or phrase per line, or separated by commas. Arabic and
+            English are supported. Up to 24 terms per list, 100 characters each.
+          </p>
+          {validationError && <p role="alert">{validationError}</p>}
+        </>
+      )}
+      <p className="muted small">
+        Company expertise and qualifications always require evidence from
+        Company Knowledge, regardless of the scope source. Changes to the scope
+        or keywords trigger reassessment.
+      </p>
       <label>
         <input
           type="checkbox"
@@ -154,6 +224,7 @@ export default function DiscoveryControls() {
           !revision ||
           saving ||
           busy ||
+          !!validationError ||
           ((automatic || companyKnowledge) && !selected.length)
         }
       >

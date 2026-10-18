@@ -249,7 +249,9 @@ export interface AuditEntry {
   actor: string;
 }
 export interface AppSettings {
-  discoveryScope?: "all" | "software_services";
+  discoveryScope?: "company_knowledge" | "keywords" | "combined";
+  discoveryIncludeKeywords?: string[];
+  discoveryExcludeKeywords?: string[];
   role: Role;
   companyName: string;
   dailyCallLimit: number;

@@ -108,13 +108,34 @@ export default function Review() {
           </>
         }
       />
-      {state.settings.discoveryScope === "software_services" && (
-        <p className="notice">
-          Software, digital transformation and AI services. Hardware and
-          unrelated procurement are filtered out. Mixed or unclear scope
-          requires review.
-        </p>
-      )}
+      <p className="notice">
+        Service scope:{" "}
+        {state.settings.discoveryScope === "keywords"
+          ? "keywords"
+          : state.settings.discoveryScope === "combined"
+            ? "Company Knowledge + keywords"
+            : "Company Knowledge"}
+        .
+        {state.settings.discoveryScope !== "company_knowledge" && (
+          <>
+            {!!state.settings.discoveryIncludeKeywords?.length && (
+              <>
+                {" "}
+                Interests: {state.settings.discoveryIncludeKeywords.join(", ")}.
+              </>
+            )}
+            {!!state.settings.discoveryExcludeKeywords?.length && (
+              <>
+                {" "}
+                Exclusions: {state.settings.discoveryExcludeKeywords.join(", ")}
+                .
+              </>
+            )}
+          </>
+        )}{" "}
+        Unclear scope requires review.{" "}
+        <Link to="/settings?section=data">Manage scope</Link>
+      </p>
       <div className="simple-flow">
         <strong>Discoveries</strong>
         <ArrowRight size={15} />

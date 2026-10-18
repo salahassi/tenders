@@ -7947,9 +7947,28 @@
                                 "scope": {
                                   "type": "string",
                                   "enum": [
-                                    "all",
-                                    "software_services"
+                                    "company_knowledge",
+                                    "keywords",
+                                    "combined"
                                   ]
+                                },
+                                "include_keywords": {
+                                  "maxItems": 24,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                  }
+                                },
+                                "exclude_keywords": {
+                                  "maxItems": 24,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                  }
                                 },
                                 "auto_public_notices": {
                                   "type": "boolean"
@@ -7978,6 +7997,8 @@
                               "required": [
                                 "expected_revision",
                                 "scope",
+                                "include_keywords",
+                                "exclude_keywords",
                                 "auto_public_notices",
                                 "providers"
                               ],

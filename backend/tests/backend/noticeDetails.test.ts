@@ -375,7 +375,9 @@ it("reserves a larger notice assessment while preserving other-task and daily li
   ).rows[0].revision;
   await f.command("discovery.configure", {
     expected_revision: revision,
-    scope: "software_services",
+    scope: "keywords",
+    include_keywords: ["Synthetic software services"],
+    exclude_keywords: ["Synthetic physical supply"],
     auto_public_notices: true,
     providers: ["gemini_free"],
   });

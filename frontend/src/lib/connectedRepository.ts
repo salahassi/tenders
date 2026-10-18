@@ -176,8 +176,17 @@ export class ConnectedRepository {
       discoveryScope:
         (
           this.workspace.discovery_policy as
-            { scope?: "all" | "software_services" } | undefined
-        )?.scope || "all",
+            | { scope?: "company_knowledge" | "keywords" | "combined" }
+            | undefined
+        )?.scope || "company_knowledge",
+      discoveryIncludeKeywords: strings(
+        (this.workspace.discovery_policy as Record<string, unknown> | undefined)
+          ?.include_keywords,
+      ),
+      discoveryExcludeKeywords: strings(
+        (this.workspace.discovery_policy as Record<string, unknown> | undefined)
+          ?.exclude_keywords,
+      ),
       companyName: str(this.workspace, "name"),
       dailyCallLimit: number("daily_call_limit", 50),
       inputTokenLimit: number("input_token_limit", 250000),

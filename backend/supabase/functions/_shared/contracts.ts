@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { serviceScopeShape } from "./discovery.ts";
 import { MODEL_PROVIDER_IDS, ROUND_ROBIN_PROVIDERS } from "./modelProviders.ts";
 import {
   estimateInputSchema,
@@ -67,7 +68,7 @@ export const commandSchemas = {
   "discovery.configure": z
     .object({
       expected_revision: revision,
-      scope: z.enum(["all", "software_services"]),
+      ...serviceScopeShape,
       auto_public_notices: z.boolean(),
       auto_company_knowledge: z.boolean().optional(),
       providers: z

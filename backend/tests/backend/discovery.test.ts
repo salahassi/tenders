@@ -23,7 +23,9 @@ async function configure() {
   ).rows[0].revision;
   return f.command("discovery.configure", {
     expected_revision: revision,
-    scope: "software_services",
+    scope: "keywords",
+    include_keywords: ["Synthetic software services"],
+    exclude_keywords: ["Synthetic physical supply"],
     auto_public_notices: true,
     providers: ["gemini_free", "qwen_free", "mistral_free", "groq_free"],
   });
@@ -191,7 +193,12 @@ it("keeps pending and blocked work out of the inbox and requeues superseded noti
       [o],
     )
   ).rows[0];
-  expect(p.frozen_context.discovery_scope).toBe("software_services");
+  expect(p.frozen_context.discovery_scope).toBe("keywords");
+  expect(p.frozen_context.discovery_scope_policy).toEqual({
+    scope: "keywords",
+    include_keywords: ["Synthetic software services"],
+    exclude_keywords: ["Synthetic physical supply"],
+  });
   expect(
     (
       await f.db.query<any>(
@@ -261,7 +268,9 @@ it("requires Owner authority and revision, with audited idempotent configuration
   ).rows[0];
   const input = {
     expected_revision: w.revision,
-    scope: "software_services",
+    scope: "keywords",
+    include_keywords: ["Synthetic software services"],
+    exclude_keywords: ["Synthetic physical supply"],
     auto_public_notices: false,
     providers: [],
   };
@@ -324,6 +333,9 @@ it("validates scope citations and excludes even when title-only fit is unknown",
     scope_decision: {
       status: "out_of_scope",
       reason: "Stone supply",
+      keyword_evidence: [
+        { kind: "exclude", keyword: "Synthetic physical supply" },
+      ],
       notice_evidence: [{ id: notice.id, quote: "supply of stone" }],
     },
   };
@@ -353,7 +365,11 @@ it("validates scope citations and excludes even when title-only fit is unknown",
         knowledge: [],
         blocks: [],
         reviews: [],
-        discovery_scope: "software_services",
+        discovery_scope_policy: {
+          scope: "keywords",
+          include_keywords: ["Synthetic software services"],
+          exclude_keywords: ["Synthetic physical supply"],
+        },
       },
     },
     step: { task: "classify_opportunity", input: {} },
@@ -367,7 +383,9 @@ it("validates scope citations and excludes even when title-only fit is unknown",
     ],
     requirements: [],
   };
-  expect(taskInput(ctx).context.scope_policy).toContain("Hardware");
+  expect(taskInput(ctx).context.scope_policy).toEqual(
+    ctx.plan.frozen_context.discovery_scope_policy,
+  );
   expect((await nextStage(ctx)).final_result).toMatchObject({
     routing: "excluded",
     fit_score: null,
@@ -448,7 +466,14 @@ it("does not expose discovery rows without membership or retain automatic permis
         [f.w],
       )
     ).rows[0].discovery_policy,
-  ).toEqual({ scope: "all", auto_public_notices: false, providers: [] });
+  ).toEqual({
+    scope: "company_knowledge",
+    include_keywords: [],
+    exclude_keywords: [],
+    auto_public_notices: false,
+    auto_company_knowledge: false,
+    providers: [],
+  });
 });
 
 async function companyPolicy(enabled: boolean) {
@@ -460,7 +485,9 @@ async function companyPolicy(enabled: boolean) {
   ).rows[0].revision;
   return f.command("discovery.configure", {
     expected_revision: revision,
-    scope: "software_services",
+    scope: "keywords",
+    include_keywords: ["Synthetic software services"],
+    exclude_keywords: ["Synthetic physical supply"],
     auto_public_notices: true,
     auto_company_knowledge: enabled,
     providers: ["gemini_free", "groq_free", "zai_free"],
@@ -620,4 +647,133 @@ it("keeps evidence revisions stable for permission-only changes and rejects Edit
     [f.owner],
   );
   await expect(companyPolicy(false)).rejects.toThrow("ROLE_FORBIDDEN");
+});
+
+it("normalizes custom terms, freezes them, and reassesses after a keyword change while preserving decisions", async () => {
+  const { o } = await collect("Synthetic landscape design tender");
+  await configure();
+  await model();
+  const getWorkspace = async () =>
+    (
+      await f.db.query<any>("select * from public.workspaces where id=$1", [
+        f.w,
+      ])
+    ).rows[0];
+  const before = await getWorkspace();
+  const configured = await f.command("discovery.configure", {
+    expected_revision: before.revision,
+    scope: "combined",
+    include_keywords: [" تصميم  الحدائق ", "Garden design", "garden design"],
+    exclude_keywords: ["صيانة المباني"],
+    auto_public_notices: true,
+    auto_company_knowledge: true,
+    providers: ["gemini_free"],
+  });
+  expect(configured.discovery_policy).toMatchObject({
+    scope: "combined",
+    include_keywords: ["تصميم الحدائق", "Garden design"],
+    exclude_keywords: ["صيانة المباني"],
+  });
+  expect(configured.evidence_revision).toBe(before.evidence_revision + 1);
+  await f.rpc("schedule_assessment_refresh");
+  const plan = (
+    await f.db.query<any>(
+      "select * from public.generation_plans where opportunity_id=$1 order by created_at desc limit 1",
+      [o],
+    )
+  ).rows[0];
+  expect(plan.frozen_context.discovery_scope_policy).toEqual({
+    scope: "combined",
+    include_keywords: ["تصميم الحدائق", "Garden design"],
+    exclude_keywords: ["صيانة المباني"],
+  });
+  await f.db.query(
+    "update public.opportunities set decision='shortlisted',assessment_pending=false where id=$1",
+    [o],
+  );
+  await f.command("discovery.configure", {
+    expected_revision: configured.revision,
+    scope: "combined",
+    include_keywords: ["Garden design"],
+    exclude_keywords: ["Planting"],
+    auto_public_notices: true,
+    auto_company_knowledge: true,
+    providers: ["gemini_free"],
+  });
+  expect(
+    (
+      await f.db.query<any>(
+        "select decision,assessment_pending from public.opportunities where id=$1",
+        [o],
+      )
+    ).rows[0],
+  ).toEqual({ decision: "shortlisted", assessment_pending: true });
+  expect((await getWorkspace()).evidence_revision).toBe(
+    configured.evidence_revision + 1,
+  );
+  await f.rpc("schedule_assessment_refresh");
+  expect(
+    (
+      await f.db.query<any>(
+        "select status from public.generation_plans where id=$1",
+        [plan.id],
+      )
+    ).rows[0].status,
+  ).toBe("canceled");
+});
+
+it("rejects invalid criteria at the database boundary and gates every scope source on a model decision", async () => {
+  const revision = (
+    await f.db.query<any>(
+      "select revision from public.workspaces where id=$1",
+      [f.w],
+    )
+  ).rows[0].revision;
+  const base = {
+    expected_revision: revision,
+    auto_public_notices: false,
+    providers: [],
+    include_keywords: [],
+    exclude_keywords: [],
+  };
+  for (const fields of [
+    { scope: "software_services" },
+    { scope: "keywords" },
+    { scope: "combined" },
+    {
+      scope: "keywords",
+      include_keywords: ["Garden design"],
+      exclude_keywords: ["garden design"],
+    },
+    { scope: "keywords", include_keywords: [42] },
+    { scope: "keywords", include_keywords: ["x".repeat(101)] },
+    {
+      scope: "keywords",
+      include_keywords: Array.from({ length: 25 }, (_, i) => String(i)),
+    },
+  ])
+    await expect(
+      f.command("discovery.configure", { ...base, ...fields }),
+    ).rejects.toThrow("INVALID_INPUT");
+  const definition = (
+    await f.db.query<any>(
+      "select pg_get_viewdef('public.opportunity_discovery'::regclass) text",
+    )
+  ).rows[0].text;
+  expect(definition).not.toContain("software_services");
+  expect(definition).toContain("in_scope");
+  expect(
+    (
+      await f.db.query<any>(
+        "select reloptions from pg_class where oid='public.opportunity_discovery'::regclass",
+      )
+    ).rows[0].reloptions,
+  ).toContain("security_invoker=true");
+  expect(
+    (
+      await f.db.query<any>(
+        "select has_function_privilege('authenticated','app_private.discovery_scope(jsonb)','execute') allowed",
+      )
+    ).rows[0].allowed,
+  ).toBe(false);
 });
