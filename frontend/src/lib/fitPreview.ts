@@ -17,7 +17,7 @@ export interface FitPreview {
   message?: string;
 }
 
-/** Until real assessment is activated, never manufacture fit from local fixtures. */
+/** Display only recorded evidence; an absent result does not imply disconnection. */
 export function getFitPreview(
   _state: AppState,
   _opportunity: Opportunity,
@@ -54,10 +54,10 @@ export function getFitPreview(
     level: "Not assessed",
     confidence: "Not assessed",
     basis: "No assessment performed",
-    summary:
-      "This opportunity has no assessment yet. AI assessment is not activated.",
+    summary: "This opportunity has no recorded assessment yet.",
     reasons: [],
     unknowns: [],
-    message: "Assessment needed — AI is not connected",
+    message:
+      "Open the opportunity to request an assessment or follow its processing progress.",
   };
 }

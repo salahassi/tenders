@@ -132,7 +132,7 @@ export default function Settings() {
               </div>
               <Field
                 label="Daily model-call limit"
-                hint="1–50 calls. Model execution is not activated."
+                hint="1–50 calls across configured providers each day."
               >
                 <input
                   className="input"

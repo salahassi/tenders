@@ -182,8 +182,8 @@ export default function Review() {
         </section>
       )}
       <p className="help-caption">
-        AI assessment and automatic source collection are not activated.
-        Opportunities remain unassessed until those services are available.
+        Approved sources collect on their saved schedule. Assessments use the
+        notice and authorized company evidence; your bid decision remains yours.
       </p>
     </>
   );

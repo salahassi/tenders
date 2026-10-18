@@ -62,6 +62,50 @@ it("does not schedule proposed sources; due approved jobs are exclusive and paus
     f.rpc("collection_context", [j.id, j.lease_token]),
   ).rejects.toThrow("SOURCE_PERMISSION_REQUIRED");
 });
+it.each(["queued", "blocked"])(
+  "collects before routine assessments and replaces %s stale source jobs after resume",
+  async (previousStatus) => {
+    const s = await approve(await source());
+    await f.db.query(
+      "insert into public.jobs(workspace_id,type,entity_id,input_hash,status,created_by,created_at) values($1,'classify_opportunity',$2,'synthetic','queued',$3,now()-interval '10 minutes')",
+      [f.w, crypto.randomUUID(), f.owner],
+    );
+    const queued = await f.command("source.collect", {
+      id: s.id,
+      expected_revision: s.revision,
+    });
+    const paused = await f.command("source.action", {
+      id: s.id,
+      expected_revision: s.revision,
+      action: "pause",
+      reason: "Synthetic pause while queued",
+    });
+    const resumed = await approve(paused);
+    if (previousStatus === "blocked")
+      await f.db.query(
+        "update public.jobs set status='blocked',error_code='STALE_INPUT' where id=$1",
+        [queued.job_id],
+      );
+    const job = await f.rpc("claim_backend_job");
+    expect(job.type).toBe("source_collect");
+    expect(job.id).not.toBe(queued.job_id);
+    expect(job.input_hash).toBe(String(resumed.revision));
+    expect(
+      (
+        await f.db.query<any>(
+          "select status,error_code from public.jobs where id=$1",
+          [queued.job_id],
+        )
+      ).rows[0],
+    ).toEqual({
+      status: "canceled",
+      error_code: "SOURCE_CONFIGURATION_CHANGED",
+    });
+    expect(
+      (await f.rpc("collection_context", [job.id, job.lease_token])).revision,
+    ).toBe(resumed.revision);
+  },
+);
 it("deduplicates collections, preserves human decisions, and snapshots material changes", async () => {
   const s = await approve(await source());
   let j = await f.rpc("claim_backend_job");
@@ -216,4 +260,12 @@ it("candidates require an adapter and cannot grant collection or worker privileg
   await expect(
     f.rpc("configure_dispatcher", ["https://synthetic.supabase.co", []]),
   ).rejects.toThrow("permission denied");
+});
+
+it("finishes a saved generation stage before routine discovery assessments", async () => {
+  await f.db.query(
+    "insert into public.jobs(workspace_id,type,entity_id,input_hash,status,created_by,created_at) values($1,'classify_opportunity',$2,'synthetic','queued',$3,now()-interval '10 minutes'),($1,'advance_plan',$4,'synthetic','queued',$3,now())",
+    [f.w, crypto.randomUUID(), f.owner, crypto.randomUUID()],
+  );
+  expect((await f.rpc("claim_backend_job")).type).toBe("advance_plan");
 });

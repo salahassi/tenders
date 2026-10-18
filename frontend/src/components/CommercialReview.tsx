@@ -286,7 +286,10 @@ export default function CommercialReview({
         <summary>Financial estimate</summary>
         <fieldset disabled={!editor || busy}>
           <div className="form-grid">
-            <Field label="Offer currency">
+            <Field
+              label="Offer currency"
+              hint="Suggested from the tender country. Use the currency required by the tender documents."
+            >
               <input
                 value={estimate.currency}
                 maxLength={3}

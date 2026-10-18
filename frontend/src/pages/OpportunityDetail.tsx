@@ -163,6 +163,7 @@ export default function OpportunityDetail() {
         }
       />
       <FitAssessment state={state} opportunity={o} compact={selected} />
+      {!selected && <GenerationPanel opportunity={o} />}
       {!selected ? (
         <section className="panel simple-section">
           <h2>Your decision</h2>
