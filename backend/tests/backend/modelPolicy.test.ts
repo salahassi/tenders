@@ -199,7 +199,7 @@ it("retains uncertain reservations after lease termination and permits documente
   expect(result.state).toBe("settled");
   expect(result.reserved_output).toBe(2048);
 });
-it("keeps rejected-call reservations in accounting without inventing measured zeros", async () => {
+it("keeps reservations without rejection telemetry and never invents measured zeros", async () => {
   const s = await setup(),
     u = await reserve(s);
   await f.rpc("settle_model_call", [
@@ -217,7 +217,129 @@ it("keeps rejected-call reservations in accounting without inventing measured ze
   expect(usage.state).toBe("settled");
   expect(usage.actual_input).toBeNull();
   expect(usage.reserved_input).toBe(1000);
+  expect(
+    (
+      await f.db.query<any>(
+        "select app_private.generation_reservation_rejected(u) released from public.provider_usage u where id=$1",
+        [u.id],
+      )
+    ).rows[0].released,
+  ).toBe(false);
   await expect(reserve(s, "second")).rejects.toThrow("MODEL_RATE_WAIT");
+});
+
+it("releases confirmed initial 429 reservations, preserves null usage, and keeps ambiguous/poll requests reserved", async () => {
+  const s = await setup(),
+    u = await reserve(s);
+  const attempt = await f.rpc("start_model_attempt", [
+    s.job.id,
+    s.job.lease_token,
+    "qwen_free",
+    "synthetic-model",
+    "synthetic",
+    "classify_opportunity",
+  ]);
+  await f.rpc("settle_model_call", [
+    u.id,
+    null,
+    null,
+    null,
+    "PROVIDER_QUOTA_WAIT",
+  ]);
+  await f.rpc("finish_model_attempt", [
+    attempt,
+    s.job.lease_token,
+    "PROVIDER_QUOTA_WAIT",
+    true,
+    u.id,
+    JSON.stringify({ http_status: 429, request_phase: "generation" }),
+  ]);
+  const released = async () =>
+    (
+      await f.db.query<any>(
+        "select app_private.generation_reservation_rejected(u) released from public.provider_usage u where id=$1",
+        [u.id],
+      )
+    ).rows[0].released;
+  const status = async () => {
+    await f.db.query("select set_config('request.jwt.claim.sub',$1,false)", [
+      f.owner,
+    ]);
+    await f.db.exec("set role authenticated");
+    try {
+      return await f.rpc("workspace_status");
+    } finally {
+      await f.db.exec("reset role");
+    }
+  };
+  expect(await released()).toBe(true);
+  expect(await status()).toMatchObject({
+    calls_today: 1,
+    input_tokens_today: "0",
+    output_tokens_today: "0",
+    estimated_usage_records: 0,
+  });
+  expect(
+    (
+      await f.db.query<any>(
+        "select actual_input,actual_output,reserved_output from public.provider_usage where id=$1",
+        [u.id],
+      )
+    ).rows[0],
+  ).toEqual({ actual_input: null, actual_output: null, reserved_output: 2048 });
+  await f.db.query(
+    "update public.model_attempts set request_phase='poll' where id=$1",
+    [attempt],
+  );
+  expect(await released()).toBe(false);
+  await f.db.query(
+    "update public.model_attempts set request_phase='generation',http_status=503 where id=$1",
+    [attempt],
+  );
+  expect(await released()).toBe(false);
+  await f.db.query(
+    "update public.model_attempts set http_status=429 where id=$1",
+    [attempt],
+  );
+  await f.db.query(
+    "update public.provider_usage set provider='gemini_free',remote_request_id='accepted-request',remote_deadline=now()+interval '1 hour' where id=$1",
+    [u.id],
+  );
+  await f.db.query(
+    "update public.model_attempts set provider='gemini_free' where id=$1",
+    [attempt],
+  );
+  expect(await released()).toBe(false);
+  await f.db.query(
+    "update public.provider_usage set provider='qwen_free',remote_request_id=null,remote_deadline=null,state='unknown' where id=$1",
+    [u.id],
+  );
+  await f.db.query(
+    "update public.model_attempts set provider='qwen_free' where id=$1",
+    [attempt],
+  );
+  expect(await released()).toBe(false);
+  expect(await status()).toMatchObject({
+    input_tokens_today: "1000",
+    output_tokens_today: "2048",
+    unknown_usage: 1,
+    estimated_usage_records: 1,
+  });
+  await f.db.query(
+    "update public.provider_usage set state='settled',actual_input=100,actual_output=20 where id=$1",
+    [u.id],
+  );
+  expect(await status()).toMatchObject({
+    input_tokens_today: "100",
+    output_tokens_today: "20",
+  });
+  expect(
+    (
+      await f.db.query<any>(
+        "select has_function_privilege('authenticated','app_private.generation_reservation_rejected(public.provider_usage)','execute') allowed",
+      )
+    ).rows[0].allowed,
+  ).toBe(false);
 });
 it("blocks duplicate or concurrent calls while one reservation is unresolved", async () => {
   const s = await setup();

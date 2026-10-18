@@ -451,6 +451,35 @@ it("keeps workspace daily limits across providers, including uncertain attempts"
   expect((await job(q.id)).error_code).toBe("MODEL_DAILY_QUOTA_WAIT");
   expect(await usage(q.id)).toHaveLength(2);
 });
+
+it("can fail over within a one-request token budget after a proven initial 429 rejection", async () => {
+  await enable();
+  await f.db.exec(
+    "update public.workspaces set settings=settings||'{\"output_token_limit\":1024}'::jsonb",
+  );
+  const q = await queue(),
+    calls: string[] = [];
+  await worker(
+    transport((p) => {
+      calls.push(p);
+      return p === "gemini_free"
+        ? new Response(null, { status: 429 })
+        : success(p);
+    }),
+  )();
+  expect(calls).toEqual(["gemini_free", "qwen_free"]);
+  expect((await job(q.id)).status).toBe("succeeded");
+  const records = await usage(q.id);
+  expect(records.find((x) => x.provider === "gemini_free")).toMatchObject({
+    state: "settled",
+    actual_output: null,
+    reserved_output: 1024,
+  });
+  expect(records.find((x) => x.provider === "qwen_free")).toMatchObject({
+    state: "settled",
+    actual_output: 10,
+  });
+});
 it("requires exact per-provider content permission and service-only metadata preparation", async () => {
   await enable();
   const q = await queue();
