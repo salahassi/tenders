@@ -271,3 +271,32 @@ it("denies maintenance and purge operations to ordinary members", async () => {
     "permission denied",
   );
 });
+
+it("reports health with multiple providers and routing-only configuration", async () => {
+  expect((await userRpc("workspace_status")).model_enabled).toBe(false);
+  for (const provider of ["gemini_free", "groq_free"]) {
+    await f.command("model.configure", {
+      expected_revision: 0,
+      enabled: true,
+      provider,
+      model: "synthetic-model",
+      project_ref: "synthetic-account",
+      free_only: true,
+      billing_verified: true,
+      free_quota_only: false,
+      quota_mode: "provider_managed",
+      quota_ends_at: null,
+      quota_remaining_tokens: null,
+      calls_per_day: 50,
+      input_per_day: 250000,
+      output_per_day: 50000,
+    });
+  }
+  const status = await userRpc("workspace_status");
+  expect(status.model_enabled).toBe(true);
+  expect(status.calls_today).toBe(0);
+  await f.db.exec("update public.model_settings set enabled=false");
+  expect((await userRpc("workspace_status")).model_enabled).toBe(false);
+  await f.command("model.routing", { enabled: true, expected_revision: 0 });
+  expect((await userRpc("workspace_status")).model_enabled).toBe(true);
+});
