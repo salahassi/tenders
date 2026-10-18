@@ -930,3 +930,143 @@ it("automatically resumes a failed round when a provider becomes available", asy
   expect(calls).toEqual(["qwen_free"]);
   expect((await job(q.id)).checkpoint.model_routing.round_attempts).toBe(2);
 });
+
+it("targets z.ai only, persists measured validation outcome and safe request metadata", async () => {
+  await enable();
+  const q = await f.command("model.probe", { provider: "zai_free" });
+  const sent: string[] = [];
+  await worker(
+    transport((provider) => {
+      sent.push(provider);
+      return Response.json(
+        {
+          id: "synthetic-response",
+          model: "synthetic-reported",
+          choices: [
+            {
+              finish_reason: "stop",
+              message: { content: '{"status":"ready"}' },
+            },
+          ],
+          usage: {
+            prompt_tokens: 123,
+            completion_tokens: 8,
+            completion_tokens_details: { reasoning_tokens: 2 },
+          },
+        },
+        { headers: { "x-request-id": "synthetic-request" } },
+      );
+    }),
+  )();
+  expect(sent).toEqual(["zai_free"]);
+  expect((await job(q.id)).status).toBe("succeeded");
+  const rows = (
+    await f.db.query<any>(
+      "select * from public.model_activity where job_id=$1",
+      [q.id],
+    )
+  ).rows;
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({
+    provider: "zai_free",
+    model: "synthetic-model",
+    status: "succeeded",
+    result_code: "SUCCEEDED",
+    actual_input: 123,
+    actual_output: 8,
+    thinking_tokens: 2,
+    http_status: 200,
+    request_id: "synthetic-request",
+    response_id: "synthetic-response",
+    finish_reason: "stop",
+    round_number: 1,
+    operation: "connection_probe",
+  });
+  expect(Number(rows[0].duration_ms)).toBeGreaterThanOrEqual(0);
+  // Browser members can read this workspace, cannot write telemetry or see another workspace.
+  await f.db.query("select set_config('request.jwt.claim.sub',$1,false)", [
+    f.owner,
+  ]);
+  await f.db.exec("set local role authenticated");
+  expect(
+    (await f.db.query("select * from public.model_activity")).rows,
+  ).toHaveLength(1);
+  expect(
+    (
+      await f.db.query<any>(
+        "select has_table_privilege('authenticated','public.model_attempts','insert') allowed",
+      )
+    ).rows[0].allowed,
+  ).toBe(false);
+  await f.db.exec("reset role");
+  await f.db.query("select set_config('request.jwt.claim.sub',$1,false)", [
+    crypto.randomUUID(),
+  ]);
+  await f.db.exec("set local role authenticated");
+  expect(
+    (await f.db.query("select * from public.model_activity")).rows,
+  ).toHaveLength(0);
+  await f.db.exec("reset role");
+});
+it("keeps failure history across retry rounds and distinguishes invalid JSON from measured usage", async () => {
+  await enable();
+  const q = await f.command("model.probe", { provider: "zai_free" });
+  await worker(
+    transport(() =>
+      Response.json({
+        choices: [
+          { finish_reason: "stop", message: { content: '{"status":"wrong"}' } },
+        ],
+        usage: { prompt_tokens: 50, completion_tokens: 5 },
+      }),
+    ),
+  )();
+  let rows = (
+    await f.db.query<any>(
+      "select * from public.model_activity where job_id=$1 order by sequence",
+      [q.id],
+    )
+  ).rows;
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({
+    status: "failed",
+    result_code: "MODEL_OUTPUT_INVALID",
+    actual_input: 50,
+    actual_output: 5,
+    usage_state: "settled",
+  });
+  await age();
+  await worker(transport((p) => success(p)))();
+  rows = (
+    await f.db.query<any>(
+      "select * from public.model_activity where job_id=$1 order by sequence",
+      [q.id],
+    )
+  ).rows;
+  expect(rows.map((r) => r.status)).toEqual(["failed", "succeeded"]);
+  expect(rows.map((r) => r.round_number)).toEqual([1, 2]);
+});
+it("records missing targeted credentials without calling a different provider", async () => {
+  await enable();
+  const q = await f.command("model.probe", { provider: "zai_free" });
+  const send = vi.fn<typeof fetch>();
+  await worker(send, {
+    ...environment,
+    models: { ...models, zai_free: { ...models.zai_free, key: "" } },
+  })();
+  expect(send).not.toHaveBeenCalled();
+  const rows = (
+    await f.db.query<any>(
+      "select * from public.model_activity where job_id=$1",
+      [q.id],
+    )
+  ).rows;
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({
+    provider: "zai_free",
+    status: "skipped",
+    sent: false,
+    result_code: "MODEL_NOT_CONFIGURED",
+    actual_input: null,
+  });
+});

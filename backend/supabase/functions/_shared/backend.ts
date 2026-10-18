@@ -191,10 +191,16 @@ export class Backend {
     let q = this.user(token)
       .from(table)
       .select(selection)
-      .order("id", { ascending: true })
+      .order(table === "model_activity" ? "sequence" : "id", {
+        ascending: table !== "model_activity",
+      })
       .limit(limit + 1);
     for (const [key, value] of Object.entries(filters)) q = q.eq(key, value);
-    if (cursor) q = q.gt("id", cursor);
+    if (cursor)
+      q =
+        table === "model_activity"
+          ? q.lt("sequence", cursor)
+          : q.gt("id", cursor);
     const { data, error } = await q;
     if (error) throw databaseError(error);
     const rows = (data || []) as unknown as Array<{

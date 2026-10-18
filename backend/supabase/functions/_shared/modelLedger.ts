@@ -10,6 +10,31 @@ export function modelLedger(
 ): Ledger {
   const identity = { job_id: job.id, lease: job.lease_token };
   return {
+    beginAttempt: async (
+      provider_id,
+      model_name,
+      project_name,
+      operation_name,
+    ) =>
+      String(
+        await backend.internal("start_model_attempt", {
+          ...identity,
+          provider_id,
+          model_name,
+          project_name,
+          operation_name,
+        }),
+      ),
+    endAttempt: async (attempt_id, result_code, sent, usage_id, metadata) => {
+      await backend.internal("finish_model_attempt", {
+        attempt_id,
+        lease: job.lease_token,
+        result_code,
+        sent,
+        usage_id,
+        metadata,
+      });
+    },
     preflight: async (manifest) => {
       if (environments)
         await backend.internal("prepare_model_routing", {

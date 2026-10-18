@@ -47,6 +47,7 @@ const readTables: Record<string, string> = {
   "model-routing": "model_routing",
   "content-authorizations": "content_authorizations",
   "provider-usage": "provider_usage",
+  "model-activity": "model_activity",
   "source-runs": "source_runs",
   snapshots: "advertisement_snapshots",
   "source-links": "opportunity_source_links",
@@ -329,7 +330,13 @@ export function createApiHandler(
       const read = path.match(/^\/v1\/([a-z-]+)(?:\/([^/]+))?$/);
       if (request.method === "GET" && read && readTables[read[1]]) {
         if (read[2]) {
-          const id = uuid.parse(read[2]);
+          const id =
+            read[1] === "model-activity"
+              ? z
+                  .string()
+                  .regex(/^[1-9][0-9]{0,18}$/)
+                  .parse(read[2])
+              : uuid.parse(read[2]);
           const record = await backend.one(token, readTables[read[1]], id);
           return respond(record, 200, { revision: record.revision });
         }
@@ -341,7 +348,13 @@ export function createApiHandler(
             "Limit must be between 1 and 100.",
           );
         const cursor = url.searchParams.get("cursor") || undefined;
-        if (cursor) uuid.parse(cursor);
+        if (cursor) {
+          if (read[1] === "model-activity")
+            z.string()
+              .regex(/^[1-9][0-9]{0,18}$/)
+              .parse(cursor);
+          else uuid.parse(cursor);
+        }
         const filters: Record<string, string> = {};
         if (
           [
@@ -379,6 +392,35 @@ export function createApiHandler(
           filters.state = z
             .enum(["reserved", "settled", "unknown"])
             .parse(url.searchParams.get("state"));
+        if (read[1] === "model-activity") {
+          for (const key of ["job", "opportunity", "proposal"]) {
+            if (url.searchParams.has(key))
+              filters[`${key}_id`] = uuid.parse(url.searchParams.get(key));
+          }
+          if (url.searchParams.has("provider"))
+            filters.provider = z
+              .enum([
+                "gemini_free",
+                "groq_free",
+                "zai_free",
+                "mistral_free",
+                "qwen_free",
+                "cloudflare_free",
+              ])
+              .parse(url.searchParams.get("provider"));
+          if (url.searchParams.has("status"))
+            filters.status = z
+              .enum([
+                "running",
+                "succeeded",
+                "failed",
+                "skipped",
+                "waiting",
+                "historical",
+                "interrupted",
+              ])
+              .parse(url.searchParams.get("status"));
+        }
         const decision = url.searchParams.get("decision");
         if (decision && read[1] === "opportunities") {
           if (

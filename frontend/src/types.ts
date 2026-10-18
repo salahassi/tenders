@@ -220,7 +220,14 @@ export interface Job {
   type: string;
   target: string;
   status:
-    "queued" | "running" | "completed" | "failed" | "blocked" | "cancelled";
+    | "queued"
+    | "running"
+    | "retry_wait"
+    | "quota_wait"
+    | "completed"
+    | "failed"
+    | "blocked"
+    | "cancelled";
   progress: number;
   attempt: number;
   message: string;

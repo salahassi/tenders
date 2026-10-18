@@ -471,6 +471,9 @@ function ProposalReviewPage({
       <Link className="workspace-back" to="/proposals">
         <ArrowLeft size={15} /> Proposal files
       </Link>
+      <Link className="text-link" to={`/jobs?proposal=${proposal.id}`}>
+        Model activity for this proposal →
+      </Link>
       <PageHeader
         eyebrow="REVIEW & REGENERATE"
         title={proposal.title || opportunity.title}

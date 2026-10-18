@@ -362,3 +362,32 @@ describe("backend HTTP boundaries without a live provider", () => {
       ).toBe(false);
   });
 });
+
+it("validates model log filters and a descending numeric cursor before querying tenant-scoped records", async () => {
+  const f = fixture();
+  const response = await f.handle(
+    request(
+      `model-activity?provider=zai_free&status=failed&opportunity=${source}&cursor=123&limit=25`,
+    ),
+  );
+  expect(response.status).toBe(200);
+  expect(f.backend.list).toHaveBeenCalledWith(
+    "synthetic-user-token",
+    "model_activity",
+    { provider: "zai_free", status: "failed", opportunity_id: source },
+    25,
+    "123",
+  );
+  for (const query of [
+    "cursor=abc",
+    "provider=arbitrary",
+    "status=anything",
+    "opportunity=bad",
+  ]) {
+    const calls = f.backend.list.mock.calls.length;
+    expect((await f.handle(request("model-activity?" + query))).status).toBe(
+      400,
+    );
+    expect(f.backend.list).toHaveBeenCalledTimes(calls);
+  }
+});

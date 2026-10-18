@@ -300,3 +300,34 @@ it("reports health with multiple providers and routing-only configuration", asyn
   await f.command("model.routing", { enabled: true, expected_revision: 0 });
   expect((await userRpc("workspace_status")).model_enabled).toBe(true);
 });
+
+it("separates automatic quota/retry waiting from jobs needing intervention", async () => {
+  for (const status of [
+    "quota_wait",
+    "retry_wait",
+    "blocked",
+    "running",
+    "queued",
+  ]) {
+    await f.db.query(
+      "insert into public.jobs(workspace_id,type,entity_id,created_by,input_hash,status,error_code,next_attempt_at) values($1,'model_probe',$1,$2,repeat('e',64),$3,$4,now()+interval '1 hour')",
+      [
+        f.w,
+        f.owner,
+        status,
+        status === "quota_wait"
+          ? "MODEL_DAILY_QUOTA_WAIT"
+          : "MODEL_ROUND_EXHAUSTED",
+      ],
+    );
+  }
+  const result = await userRpc("workspace_status");
+  expect(result).toMatchObject({
+    queued_jobs: 1,
+    running_jobs: 1,
+    quota_wait_jobs: 1,
+    retry_wait_jobs: 1,
+    blocked_jobs: 1,
+  });
+  expect(result.job_wait_reasons).toHaveLength(3);
+});

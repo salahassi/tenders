@@ -106,6 +106,7 @@ for (const table of [
   "model-settings",
   "content-authorizations",
   "provider-usage",
+  "model-activity",
   "sources",
   "source-runs",
   "source-links",
@@ -139,7 +140,10 @@ for (const table of [
               in: "path",
               name: "id",
               required: true,
-              schema: { type: "string", format: "uuid" },
+              schema:
+                table === "model-activity"
+                  ? { type: "string", pattern: "^[1-9][0-9]{0,18}$" }
+                  : { type: "string", format: "uuid" },
             },
           ]
         : [
@@ -156,13 +160,60 @@ for (const table of [
             {
               in: "query",
               name: "cursor",
-              schema: { type: "string", format: "uuid" },
+              schema:
+                table === "model-activity"
+                  ? { type: "string", pattern: "^[1-9][0-9]{0,18}$" }
+                  : { type: "string", format: "uuid" },
             },
           ],
       responses,
     };
   }
 }
+const activityGet = paths["/v1/model-activity"].get as {
+  description: string;
+  parameters: unknown[];
+};
+activityGet.description =
+  "Tenant-scoped provider attempts, newest first. Measured tokens remain null if unknown; reservations are estimates. Historical records do not assert validation success.";
+activityGet.parameters.push(
+  ...["job", "opportunity", "proposal"].map((name) => ({
+    in: "query",
+    name,
+    schema: { type: "string", format: "uuid" },
+  })),
+  {
+    in: "query",
+    name: "provider",
+    schema: {
+      type: "string",
+      enum: [
+        "gemini_free",
+        "qwen_free",
+        "mistral_free",
+        "groq_free",
+        "zai_free",
+        "cloudflare_free",
+      ],
+    },
+  },
+  {
+    in: "query",
+    name: "status",
+    schema: {
+      type: "string",
+      enum: [
+        "running",
+        "succeeded",
+        "failed",
+        "skipped",
+        "waiting",
+        "interrupted",
+        "historical",
+      ],
+    },
+  },
+);
 paths["/v1/model-environment"] = {
   get: {
     security: [{ userJWT: [] }],

@@ -7,6 +7,7 @@ import {
   X,
   Search,
 } from "lucide-react";
+import ModelActivity from "../components/ModelActivity";
 import { Link } from "react-router-dom";
 import { useApp } from "../lib/store";
 import {
@@ -109,12 +110,15 @@ export default function Jobs() {
           </Link>
         }
       />
+      <ModelActivity />
       <div className="admin-metrics">
         <Metric
           label="Waiting or active"
           value={
-            state.jobs.filter(
-              (j) => j.status === "queued" || j.status === "running",
+            state.jobs.filter((j) =>
+              ["queued", "running", "retry_wait", "quota_wait"].includes(
+                j.status,
+              ),
             ).length
           }
           detail="Server job records"
@@ -163,6 +167,8 @@ export default function Jobs() {
           {[
             "queued",
             "running",
+            "retry_wait",
+            "quota_wait",
             "completed",
             "failed",
             "blocked",
@@ -191,7 +197,12 @@ export default function Jobs() {
                 {jobs.map((j) => (
                   <tr key={j.id}>
                     <td>
-                      <div className="admin-job-target">{j.target}</div>
+                      <Link
+                        to={`/jobs?job=${j.id}`}
+                        className="admin-job-target"
+                      >
+                        {j.target}
+                      </Link>
                       <span className="small muted">
                         {j.type.replaceAll("_", " ")}
                       </span>
@@ -224,7 +235,12 @@ export default function Jobs() {
                     <td>
                       {canEdit && (
                         <div className="admin-cell-actions">
-                          {["queued", "running"].includes(j.status) && (
+                          {[
+                            "queued",
+                            "running",
+                            "retry_wait",
+                            "quota_wait",
+                          ].includes(j.status) && (
                             <Button
                               variant="ghost"
                               size="sm"

@@ -155,6 +155,9 @@ export default function OpportunityDetail() {
       <Link className="text-link" to={selected ? "/opportunities" : "/review"}>
         <ArrowLeft size={14} /> {selected ? "Opportunities" : "Review inbox"}
       </Link>
+      <Link className="text-link" to={`/jobs?opportunity=${id}`}>
+        Model activity for this opportunity →
+      </Link>
       <PageHeader
         eyebrow={`${o.reference} · ${o.buyer}`}
         title={o.title}

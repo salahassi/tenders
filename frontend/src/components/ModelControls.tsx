@@ -550,6 +550,30 @@ export default function ModelControls() {
               ? "Check model routing"
               : "Check Gemini connection"}
           </Button>
+          {routing.enabled && (
+            <div className="admin-toolbar">
+              {[
+                "gemini_free",
+                "qwen_free",
+                "mistral_free",
+                "groq_free",
+                "zai_free",
+              ].map((provider) => (
+                <Button
+                  key={provider}
+                  variant="secondary"
+                  disabled={!owner || saving}
+                  onClick={async () => {
+                    if (await command("model.probe", { provider }))
+                      setProbeQueued(true);
+                  }}
+                >
+                  Check {provider.replace("_free", "").replace("zai", "z.ai")}{" "}
+                  only
+                </Button>
+              ))}
+            </div>
+          )}
           {probeQueued && (
             <p role="status">
               Connection check queued. Follow its result in{" "}

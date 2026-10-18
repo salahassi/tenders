@@ -346,7 +346,19 @@ export const commandSchemas = {
           : v.quota_ends_at !== null && v.quota_remaining_tokens !== null,
       "Provider-managed quota has no declared balance or expiry; verified budgets require both.",
     ),
-  "model.probe": z.object({}).strict(),
+  "model.probe": z
+    .object({
+      provider: z
+        .enum([
+          "gemini_free",
+          "qwen_free",
+          "mistral_free",
+          "groq_free",
+          "zai_free",
+        ])
+        .optional(),
+    })
+    .strict(),
   "model.routing": z
     .object({
       free_providers: z.array(z.enum(ROUND_ROBIN_PROVIDERS)).max(5).optional(),

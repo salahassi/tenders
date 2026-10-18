@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useApp } from "../lib/store";
 import {
@@ -18,6 +19,16 @@ type Status = {
   database_bytes: string;
   queued_jobs: number;
   blocked_jobs: number;
+  running_jobs?: number;
+  retry_wait_jobs?: number;
+  quota_wait_jobs?: number;
+  estimated_usage_records?: number;
+  job_wait_reasons?: {
+    status: string;
+    error_code: string;
+    count: number;
+    next_attempt_at: string | null;
+  }[];
   cleanup_pending: number;
   cleanup_blocked: number;
   calls_today: number;
@@ -43,7 +54,10 @@ type Preview = {
   files: { id: string; name: string; size: number; hash: string }[];
 };
 const when = (v: string | null) =>
-  v ? new Date(v).toLocaleString() : "No recorded run";
+  v
+    ? new Date(v).toLocaleString(undefined, { timeZone: "Asia/Riyadh" }) +
+      " Riyadh"
+    : "No recorded run";
 const mib = (v: string | number | undefined) =>
   (Number(v || 0) / 1048576).toFixed(1) + " MiB";
 export default function OperationsPanel({
@@ -177,7 +191,14 @@ export default function OperationsPanel({
             <div>
               <dt>Jobs</dt>
               <dd>
-                {status.queued_jobs} queued · {status.blocked_jobs} blocked
+                {status.queued_jobs} queued · {status.running_jobs ?? 0} running
+                <br />
+                {status.quota_wait_jobs ?? 0} waiting for quota ·{" "}
+                {status.retry_wait_jobs ?? 0} waiting to retry
+                <br />
+                {status.blocked_jobs} need attention
+                <br />
+                <Link to="/jobs">View jobs and model activity →</Link>
               </dd>
             </div>
             <div>
@@ -200,6 +221,11 @@ export default function OperationsPanel({
                 {status.calls_today} calls · {status.input_tokens_today} input /{" "}
                 {status.output_tokens_today} output tokens ·{" "}
                 {status.unknown_usage} unresolved usage records
+                <div className="small">
+                  Budget accounting includes reservations when measured usage is
+                  unavailable ({status.estimated_usage_records ?? 0} records
+                  today).
+                </div>
               </dd>
             </div>
             <div>
@@ -210,6 +236,44 @@ export default function OperationsPanel({
               </dd>
             </div>
           </dl>
+          {!!status.job_wait_reasons?.length && (
+            <details>
+              <summary>Why jobs are waiting or stopped</summary>
+              <ul>
+                {status.job_wait_reasons.map((r) => (
+                  <li key={`${r.status}:${r.error_code}`}>
+                    {r.count} ·{" "}
+                    {r.status === "blocked"
+                      ? "Needs attention"
+                      : "Retries automatically"}{" "}
+                    ·{" "}
+                    {(
+                      {
+                        MODEL_DAILY_QUOTA_WAIT:
+                          "Application daily limit reached",
+                        MODEL_RATE_WAIT: "Application request-rate limit",
+                        PROVIDER_QUOTA_WAIT: "Provider rate / quota limit",
+                        MODEL_ROUND_EXHAUSTED:
+                          "No provider completed the round",
+                        MANUAL_REDUCTION_REQUIRED: "Input needs reduction",
+                        PROVIDER_REQUEST_INVALID:
+                          "Provider rejected the request format",
+                        MODEL_NETWORK_UNCERTAIN:
+                          "Connection ended without a confirmed result",
+                      } as Record<string, string>
+                    )[r.error_code] || r.error_code}
+                    {r.next_attempt_at
+                      ? ` · Next: ${when(r.next_attempt_at)}`
+                      : ""}
+                  </li>
+                ))}
+              </ul>
+              <p>
+                Counts refer to processing jobs. An opportunity can have several
+                jobs.
+              </p>
+            </details>
+          )}
           {delayed && (
             <p>
               Check whether the Supabase project is paused, then review the

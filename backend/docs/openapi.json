@@ -5441,6 +5441,181 @@
         }
       }
     },
+    "/v1/model-activity": {
+      "get": {
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,18}$"
+            }
+          },
+          {
+            "in": "query",
+            "name": "job",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "opportunity",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "proposal",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provider",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "gemini_free",
+                "qwen_free",
+                "mistral_free",
+                "groq_free",
+                "zai_free",
+                "cloudflare_free"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "running",
+                "succeeded",
+                "failed",
+                "skipped",
+                "waiting",
+                "interrupted",
+                "historical"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        },
+        "description": "Tenant-scoped provider attempts, newest first. Measured tokens remain null if unknown; reservations are estimates. Historical records do not assert validation success."
+      }
+    },
+    "/v1/model-activity/{id}": {
+      "get": {
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,18}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
     "/v1/sources/{id}": {
       "get": {
         "security": [
@@ -9665,7 +9840,18 @@
                             "input": {
                               "$schema": "https://json-schema.org/draft/2020-12/schema",
                               "type": "object",
-                              "properties": {},
+                              "properties": {
+                                "provider": {
+                                  "type": "string",
+                                  "enum": [
+                                    "gemini_free",
+                                    "qwen_free",
+                                    "mistral_free",
+                                    "groq_free",
+                                    "zai_free"
+                                  ]
+                                }
+                              },
                               "additionalProperties": false
                             }
                           }

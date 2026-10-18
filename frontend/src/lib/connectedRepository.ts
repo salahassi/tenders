@@ -547,11 +547,25 @@ export class ConnectedRepository {
           ? "completed"
           : r.status === "canceled"
             ? "cancelled"
-            : ["running", "failed", "blocked"].includes(str(r, "status"))
-              ? (r.status as "running" | "failed" | "blocked")
+            : [
+                  "running",
+                  "failed",
+                  "blocked",
+                  "retry_wait",
+                  "quota_wait",
+                ].includes(str(r, "status"))
+              ? (r.status as
+                  | "running"
+                  | "failed"
+                  | "blocked"
+                  | "retry_wait"
+                  | "quota_wait")
               : "queued",
       progress: r.status === "succeeded" ? 100 : 0,
-      attempt: Number((r.checkpoint as {model_routing?:{round_attempts?:number}} | null)?.model_routing?.round_attempts ?? r.attempts),
+      attempt: Number(
+        (r.checkpoint as { model_routing?: { round_attempts?: number } } | null)
+          ?.model_routing?.round_attempts ?? r.attempts,
+      ),
       message:
         (r.error_code === "MODEL_ROUND_EXHAUSTED"
           ? `Waiting for an available provider. Automatically retries after ${str(r, "next_attempt_at")}.`

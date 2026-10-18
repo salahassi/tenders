@@ -527,7 +527,29 @@ export function fitScore(
             : "low_fit",
   };
 }
+export type AttemptMetadata = {
+  http_status?: number;
+  request_id?: string;
+  response_id?: string;
+  reported_model?: string;
+  finish_reason?: string;
+  request_phase?: string;
+  retry_after?: string | null;
+};
 export interface Ledger {
+  beginAttempt?(
+    provider: ModelProviderId,
+    model: string,
+    project: string,
+    task: ModelTask,
+  ): Promise<string>;
+  endAttempt?(
+    id: string,
+    code: string,
+    sent: boolean,
+    usageId: string | null,
+    metadata: AttemptMetadata,
+  ): Promise<void>;
   attempt?(
     provider: ModelProviderId,
     code: string,
@@ -616,6 +638,13 @@ export function parseModelPool(value: unknown): ModelPool {
   throw new ModelError("MODEL_NOT_CONFIGURED");
 }
 export class FreeModelProvider {
+  telemetry: AttemptMetadata = {};
+  generationSent = false;
+  private safeMetadata(value: unknown): string | undefined {
+    return typeof value === "string" && /^[A-Za-z0-9._:/@-]{1,200}$/.test(value)
+      ? value
+      : undefined;
+  }
   constructor(
     readonly env: ModelEnvironment,
     private fetcher: typeof fetch = fetch,
@@ -684,6 +713,16 @@ export class FreeModelProvider {
     const controller = new AbortController(),
       timer = setTimeout(() => controller.abort(), timeout);
     try {
+      this.telemetry = {
+        request_phase:
+          method === "GET"
+            ? "poll"
+            : url.includes(":countTokens")
+              ? "count_tokens"
+              : "generation",
+      };
+      if (this.telemetry.request_phase !== "count_tokens")
+        this.generationSent = true;
       const response = await this.fetcher(url, {
         method,
         redirect: "error",
@@ -691,6 +730,12 @@ export class FreeModelProvider {
         body: method === "POST" ? JSON.stringify(body) : undefined,
         signal: controller.signal,
       });
+      this.telemetry.http_status = response.status;
+      this.telemetry.request_id = this.safeMetadata(
+        response.headers.get("x-request-id") ||
+          response.headers.get("request-id") ||
+          response.headers.get("x-goog-request-id"),
+      );
       if (method === "DELETE" && (response.ok || response.status === 404))
         return {};
       if (!response.ok) {
@@ -743,7 +788,19 @@ export class FreeModelProvider {
         bytes.set(c, offset);
         offset += c.length;
       }
-      return JSON.parse(new TextDecoder().decode(bytes));
+      const result = JSON.parse(new TextDecoder().decode(bytes));
+      this.telemetry.response_id = this.safeMetadata(
+        result.id || result.responseId,
+      );
+      this.telemetry.reported_model = this.safeMetadata(
+        result.model || result.modelVersion,
+      );
+      this.telemetry.finish_reason = this.safeMetadata(
+        result.choices?.[0]?.finish_reason ||
+          result.candidates?.[0]?.finishReason ||
+          result.status,
+      );
+      return result;
     } catch (error) {
       if (error instanceof ModelError) throw error;
       throw new ModelError("MODEL_NETWORK_UNCERTAIN");
@@ -1044,9 +1101,17 @@ export async function executeModel(
   let lastError: ModelError = new ModelError("MODEL_NOT_CONFIGURED");
   let outputError: ModelError | null = null;
   for (const config of pool.providers) {
+    const attemptId = await ledger.beginAttempt?.(
+      config.provider,
+      config.model,
+      config.project_ref,
+      task,
+    );
     const env = environments[config.provider];
     if (!env || !tryAvailable(config, env)) {
       lastError = new ModelError("MODEL_NOT_CONFIGURED");
+      if (attemptId)
+        await ledger.endAttempt?.(attemptId, lastError.code, false, null, {});
       if (automatic)
         await ledger.attempt?.(config.provider, lastError.code, false);
       continue;
@@ -1059,6 +1124,16 @@ export async function executeModel(
     let reservation: string | null = null;
     let settled = false;
     let remoteId: string | null = null;
+    const finishAttempt = async (code: string, retryAfter?: string | null) => {
+      if (attemptId)
+        await ledger.endAttempt?.(
+          attemptId,
+          code,
+          provider.generationSent,
+          reservation,
+          { ...provider.telemetry, retry_after: retryAfter },
+        );
+    };
     try {
       let result: { text: string; usage: Usage; complete: boolean };
       const background =
@@ -1102,6 +1177,7 @@ export async function executeModel(
                 error.code,
               )
             ) {
+              await finishAttempt("MODEL_IN_PROGRESS", error.retryAfter);
               await ledger.defer!(reservation!, error.retryAfter);
               throw new ModelDeferred();
             }
@@ -1120,6 +1196,7 @@ export async function executeModel(
           remoteId = interaction.id;
         }
         if (["in_progress", "queued"].includes(interaction.status)) {
+          await finishAttempt("MODEL_IN_PROGRESS");
           await ledger.defer!(reservation!);
           throw new ModelDeferred();
         }
@@ -1141,6 +1218,7 @@ export async function executeModel(
           const completedId = remoteId;
           ledger.cleanup = () => provider.deleteBackground(completedId);
         }
+        await finishAttempt("SUCCEEDED");
         if (automatic)
           await ledger.attempt?.(config.provider, "SUCCEEDED", true);
         return validated;
@@ -1167,6 +1245,7 @@ export async function executeModel(
           code,
         );
       lastError = error instanceof ModelError ? error : new ModelError(code);
+      await finishAttempt(code, lastError.retryAfter);
       // A measured invalid response needs the persisted, bounded repair path.
       // Still try the remaining providers, but do not hide this behind a
       // missing-slot error and poll the same completed response forever.
