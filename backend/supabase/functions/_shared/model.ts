@@ -303,7 +303,7 @@ export type Usage = {
 export const caps: Record<ModelTask, number> = {
   connection_probe: 256,
   summarize_review: 4096,
-  classify_opportunity: 2048,
+  classify_opportunity: 6144,
   analyze_chunk: 4096,
   plan_proposal: 2048,
   draft_section: 8192,
@@ -600,6 +600,13 @@ const automaticFailoverErrors = new Set([
   "UNSUPPORTED_COMPANY_CLAIM",
   "USAGE_UNKNOWN",
   "PROVIDER_VERIFICATION_EXPIRED",
+]);
+const repairableOutputErrors = new Set([
+  "MODEL_OUTPUT_INVALID",
+  "MODEL_OUTPUT_TRUNCATED",
+  "MODEL_COVERAGE_INCOMPLETE",
+  "EVIDENCE_REFERENCE_INVALID",
+  "UNSUPPORTED_COMPANY_CLAIM",
 ]);
 export function isFailoverError(code: string) {
   return failoverErrors.has(code);
@@ -1034,6 +1041,7 @@ export async function executeModel(
   const schema = z.toJSONSchema(modelSchemas[task]);
   const inputHash = await sha256(prompt);
   let lastError: ModelError = new ModelError("MODEL_NOT_CONFIGURED");
+  let outputError: ModelError | null = null;
   for (const config of pool.providers) {
     const env = environments[config.provider];
     if (!env || !tryAvailable(config, env)) {
@@ -1158,6 +1166,11 @@ export async function executeModel(
           code,
         );
       lastError = error instanceof ModelError ? error : new ModelError(code);
+      // A measured invalid response needs the persisted, bounded repair path.
+      // Still try the remaining providers, but do not hide this behind a
+      // missing-slot error and poll the same completed response forever.
+      if (settled && repairableOutputErrors.has(code))
+        outputError ??= lastError;
       if (automatic) {
         await ledger.attempt?.(config.provider, code, Boolean(reservation));
         if (automaticFailoverErrors.has(code)) continue;
@@ -1170,6 +1183,7 @@ export async function executeModel(
       throw lastError;
     }
   }
+  if (outputError) throw outputError;
   throw automatic
     ? new ModelError("MODEL_ROUND_EXHAUSTED", lastError.retryAfter)
     : lastError;

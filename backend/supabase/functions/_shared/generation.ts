@@ -770,6 +770,10 @@ export async function processGeneration(
         : "GENERATION_HANDLER_FAILED";
     const splitting =
       ctx &&
+      !(
+        ctx.step.task === "classify_opportunity" &&
+        error_code === "MODEL_OUTPUT_TRUNCATED"
+      ) &&
       ["MODEL_CONTEXT_TOO_LARGE", "MODEL_OUTPUT_TRUNCATED"].includes(
         error_code,
       );

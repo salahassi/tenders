@@ -216,7 +216,9 @@ it("records Gemini thought usage through stateless structured generation", async
       );
     },
   );
-  expect((await provider.generate("connection_probe", "JSON", {})).usage).toEqual({
+  expect(
+    (await provider.generate("connection_probe", "JSON", {})).usage,
+  ).toEqual({
     input: 7,
     output: 42,
     thinking: 22,
@@ -481,6 +483,70 @@ it("preserves measured usage when the returned JSON fails validation", async () 
     "measured-reservation",
     { input: 100, output: 20, thinking: 0 },
   );
+});
+
+it("surfaces a measured truncated background response for bounded repair after visiting missing slots", async () => {
+  const gemini = { ...config, provider: "gemini_free" as const };
+  const resume = vi.fn(async () => ({
+    id: "settled-reservation",
+    remote_request_id: "synthetic-truncated",
+    remote_deadline: new Date(Date.now() + 60000).toISOString(),
+    state: "settled",
+  }));
+  const ledger: Ledger = {
+    preflight: async () => ({
+      routing_mode: "round_robin",
+      providers: [gemini, config],
+    }),
+    reserve: vi.fn(),
+    settle: vi.fn(),
+    resume,
+    checkpoint: vi.fn(),
+    defer: vi.fn(),
+    attempt: vi.fn(),
+  };
+  const send = vi.spyOn(FreeModelProvider.prototype, "startBackground");
+  vi.spyOn(FreeModelProvider.prototype, "pollBackground").mockResolvedValue({
+    id: "synthetic-truncated",
+    status: "incomplete",
+    usage: {
+      total_input_tokens: 100,
+      total_output_tokens: 2048,
+      total_thought_tokens: 0,
+    },
+    steps: [],
+  });
+  await expect(
+    executeModel(
+      "classify_opportunity",
+      {},
+      [],
+      [],
+      [],
+      { gemini_free: { ...env, provider: "gemini_free" } },
+      ledger,
+      "en",
+    ),
+  ).rejects.toThrow("MODEL_OUTPUT_TRUNCATED");
+  expect(ledger.attempt).toHaveBeenNthCalledWith(
+    1,
+    "gemini_free",
+    "MODEL_OUTPUT_TRUNCATED",
+    true,
+  );
+  expect(ledger.attempt).toHaveBeenNthCalledWith(
+    2,
+    "qwen_free",
+    "MODEL_NOT_CONFIGURED",
+    false,
+  );
+  expect(ledger.settle).toHaveBeenCalledExactlyOnceWith("settled-reservation", {
+    input: 100,
+    output: 2048,
+    thinking: 0,
+  });
+  expect(send).not.toHaveBeenCalled();
+  expect(ledger.reserve).not.toHaveBeenCalled();
 });
 
 it("does not try another provider after uncertain generation delivery", async () => {

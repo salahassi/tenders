@@ -2,6 +2,7 @@ import { processGeneration } from "../_shared/generation.ts";
 import { processModelProbe } from "../_shared/modelProbe.ts";
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
 import { AppError, secretMatches } from "../_shared/http.ts";
+import { FreeModelProvider } from "../_shared/model.ts";
 import {
   collect,
   CollectionError,
@@ -34,6 +35,36 @@ export function createWorkerHandler(
       if (!allowed) return response({ error: "UNAUTHORIZED" }, 401);
       await backend.internal("maintenance_tick");
       await backend.internal("schedule_assessment_refresh");
+      // Superseded plans may still have a recorded provider request. Retrieve
+      // its measured usage without resubmitting content or publishing its output.
+      const abandoned = await backend.internal("claim_abandoned_model_request");
+      if (abandoned) {
+        const model = env.models.gemini_free;
+        if (model?.key && model.model === abandoned.model) {
+          try {
+            const provider = new FreeModelProvider(model, fetcher, 20000);
+            const result = await provider.pollBackground(
+              abandoned.remote_request_id,
+            );
+            if (
+              result.id === abandoned.remote_request_id &&
+              !["queued", "in_progress"].includes(result.status)
+            ) {
+              const { usage } = provider.backgroundResult(result);
+              if (usage.input !== null && usage.output !== null)
+                await backend.internal("settle_model_call", {
+                  reservation: abandoned.id,
+                  actual_input: usage.input,
+                  actual_output: usage.output,
+                  thinking: usage.thinking,
+                  error_code: "SUPERSEDED_RESULT_RECONCILED",
+                });
+            }
+          } catch {
+            // Retain unknown usage and retry GET later; never infer zero use.
+          }
+        }
+      }
       const cleanup = await backend.internal("claim_storage_cleanup");
       if (!Array.isArray(cleanup))
         throw new AppError(

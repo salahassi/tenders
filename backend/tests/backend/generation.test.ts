@@ -337,49 +337,60 @@ it("rejects changed supporting evidence even if a worker still holds its lease",
     f.rpc("generation_context", [job.id, job.lease_token]),
   ).rejects.toThrow("STALE_INPUT");
 });
-it("persists one repair and then blocks invalid output; retry preserves previous steps", async () => {
-  const s = await start();
-  let job = await f.rpc("claim_backend_job");
-  await f.rpc("fail_generation", [
-    job.id,
-    job.lease_token,
-    "MODEL_OUTPUT_INVALID",
-    null,
-    null,
-  ]);
-  expect(
-    (await f.db.query<any>("select repair_count from public.generation_steps"))
-      .rows[0].repair_count,
-  ).toBe(1);
-  await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
-    job.id,
-  ]);
-  job = await f.rpc("claim_backend_job");
-  await f.rpc("fail_generation", [
-    job.id,
-    job.lease_token,
-    "MODEL_OUTPUT_INVALID",
-    null,
-    null,
-  ]);
-  expect(
-    (await f.db.query<any>("select status from public.jobs")).rows[0].status,
-  ).toBe("blocked");
-  const plan = (await f.db.query<any>("select * from public.generation_plans"))
-    .rows[0];
-  await f.command("generation.retry", {
-    id: plan.id,
-    expected_revision: plan.revision,
-    reason: "Owner reviewed the blocker",
-  });
-  expect(
-    (await f.db.query<any>("select repair_count from public.generation_steps"))
-      .rows[0].repair_count,
-  ).toBe(1);
-  expect(
-    (await f.db.query<any>("select status from public.jobs")).rows[0].status,
-  ).toBe("queued");
-});
+it.each(["MODEL_OUTPUT_INVALID", "MODEL_OUTPUT_TRUNCATED"])(
+  "persists one repair for %s and then blocks; retry preserves previous steps",
+  async (outputError) => {
+    const s = await start();
+    let job = await f.rpc("claim_backend_job");
+    await f.rpc("fail_generation", [
+      job.id,
+      job.lease_token,
+      outputError,
+      null,
+      null,
+    ]);
+    expect(
+      (
+        await f.db.query<any>(
+          "select repair_count from public.generation_steps",
+        )
+      ).rows[0].repair_count,
+    ).toBe(1);
+    await f.db.query(
+      "update public.jobs set next_attempt_at=now() where id=$1",
+      [job.id],
+    );
+    job = await f.rpc("claim_backend_job");
+    await f.rpc("fail_generation", [
+      job.id,
+      job.lease_token,
+      outputError,
+      null,
+      null,
+    ]);
+    expect(
+      (await f.db.query<any>("select status from public.jobs")).rows[0].status,
+    ).toBe("blocked");
+    const plan = (
+      await f.db.query<any>("select * from public.generation_plans")
+    ).rows[0];
+    await f.command("generation.retry", {
+      id: plan.id,
+      expected_revision: plan.revision,
+      reason: "Owner reviewed the blocker",
+    });
+    expect(
+      (
+        await f.db.query<any>(
+          "select repair_count from public.generation_steps",
+        )
+      ).rows[0].repair_count,
+    ).toBe(1);
+    expect(
+      (await f.db.query<any>("select status from public.jobs")).rows[0].status,
+    ).toBe("queued");
+  },
+);
 it("splits oversized work without dropping the original text boundaries", () => {
   const ctx: any = {
     step: {

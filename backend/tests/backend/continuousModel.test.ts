@@ -685,6 +685,71 @@ it("pins background identity and conservatively retains canceled usage", async (
   });
 });
 
+it("reconciles canceled background usage by GET only and never publishes the canceled result", async () => {
+  await f.command("model.configure", policy);
+  const queued = await f.command("model.probe", {});
+  let posts = 0,
+    gets = 0;
+  const tick = worker(async (url, init) => {
+    if (String(url).endsWith(":countTokens"))
+      return Response.json({ totalTokens: 20 });
+    if (init?.method === "POST") {
+      posts++;
+      return Response.json({
+        id: "synthetic-abandoned",
+        status: "in_progress",
+      });
+    }
+    gets++;
+    return gets === 1
+      ? new Response(null, { status: 503 })
+      : ready("synthetic-abandoned");
+  });
+  await tick();
+  const current = await job(queued.id);
+  await f.command("job.action", {
+    id: queued.id,
+    expected_revision: current.revision,
+    action: "cancel",
+    reason: "Synthetic evidence superseded",
+  });
+  await tick();
+  await tick();
+  expect(gets).toBe(1); // Throttled after a failed GET, with unknown usage retained.
+  expect(
+    (await f.db.query<any>("select state from public.provider_usage")).rows[0]
+      .state,
+  ).toBe("unknown");
+  await f.db.exec(
+    "update public.provider_usage set reconciliation_after=now()-interval '1 second'",
+  );
+  await tick();
+  expect(posts).toBe(1);
+  expect(gets).toBe(2);
+  expect((await job(queued.id)).status).toBe("canceled");
+  expect(
+    (
+      await f.db.query<any>(
+        "select state,actual_input,actual_output,error_code from public.provider_usage",
+      )
+    ).rows,
+  ).toEqual([
+    {
+      state: "settled",
+      actual_input: 20,
+      actual_output: 7,
+      error_code: "SUPERSEDED_RESULT_RECONCILED",
+    },
+  ]);
+  expect(
+    (
+      await f.db.query<any>(
+        "select has_function_privilege('authenticated','public.claim_abandoned_model_request()','execute') allowed",
+      )
+    ).rows[0].allowed,
+  ).toBe(false);
+});
+
 it("deletes stored provider output only after the verified job result commits", async () => {
   await f.command("model.configure", policy);
   const queued = await f.command("model.probe", {});
