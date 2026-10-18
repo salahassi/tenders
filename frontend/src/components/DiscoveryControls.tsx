@@ -1,16 +1,7 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../lib/store";
 import { Button, Field } from "./ui";
-const providers = [
-  "gemini_free",
-  "qwen_free",
-  "mistral_free",
-  "groq_free",
-  "cloudflare_free",
-  "zai_free",
-  "openai",
-  "anthropic",
-];
+import { MODEL_PROVIDERS } from "../lib/modelProviders";
 export default function DiscoveryControls() {
   const { backend, runCommand, state, saving, notify } = useApp();
   const [scope, setScope] = useState("all");
@@ -19,6 +10,8 @@ export default function DiscoveryControls() {
   const [selected, setSelected] = useState<string[]>([]);
   const [revision, setRevision] = useState(0);
   const [error, setError] = useState("");
+  const [savedScope, setSavedScope] = useState("all");
+  const [busy, setBusy] = useState(false);
   const owner = state.settings.role === "Owner";
   async function load() {
     if (!backend) return;
@@ -37,6 +30,7 @@ export default function DiscoveryControls() {
       const policy = response.data.workspace.discovery_policy;
       setRevision(response.data.workspace.revision);
       setScope(policy?.scope || "all");
+      setSavedScope(policy?.scope || "all");
       setAutomatic(policy?.auto_public_notices || false);
       setCompanyKnowledge(policy?.auto_company_knowledge || false);
       setSelected(policy?.providers || []);
@@ -51,7 +45,9 @@ export default function DiscoveryControls() {
   }, [backend]);
   if (!backend) return null;
   async function save() {
-    if (!owner || !runCommand) return;
+    if (!owner || !runCommand || busy || saving) return;
+    setBusy(true);
+    const scopeChanged = scope !== savedScope;
     setError("");
     try {
       await runCommand("discovery.configure", {
@@ -62,16 +58,22 @@ export default function DiscoveryControls() {
         providers: selected,
       });
       await load();
-      notify("Discovery scope saved. Existing notices will be reassessed.");
+      notify(
+        scopeChanged
+          ? "Service scope saved. Existing notices will be reassessed."
+          : "Data-sharing settings saved. Existing assessments are preserved.",
+      );
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Unable to save discovery settings.",
       );
+    } finally {
+      setBusy(false);
     }
   }
   return (
     <section className="panel admin-section">
-      <h2>Discovery scope</h2>
+      <h2>Assessment & data sharing</h2>
       <p>
         Collected notices enter the review inbox after assessment. Exclusions
         remain available under Outside scope; blocked work appears under Needs
@@ -82,7 +84,7 @@ export default function DiscoveryControls() {
         <select
           aria-label="Company service scope"
           value={scope}
-          disabled={!owner}
+          disabled={!owner || saving || busy || !revision}
           onChange={(e) => setScope(e.target.value)}
         >
           <option value="all">Use verified company profile</option>
@@ -95,7 +97,7 @@ export default function DiscoveryControls() {
         <input
           type="checkbox"
           checked={automatic}
-          disabled={!owner}
+          disabled={!owner || saving || busy || !revision}
           onChange={(e) => setAutomatic(e.target.checked)}
         />{" "}
         Automatically assess public collector notices
@@ -108,7 +110,7 @@ export default function DiscoveryControls() {
         <input
           type="checkbox"
           checked={companyKnowledge}
-          disabled={!owner}
+          disabled={!owner || saving || busy || !revision}
           onChange={(e) => setCompanyKnowledge(e.target.checked)}
         />{" "}
         Include Company Knowledge in model processing
@@ -120,37 +122,42 @@ export default function DiscoveryControls() {
         enabled and verified. Disabled, expired and explicitly revoked evidence
         stays excluded.
       </p>
-      {providers.map((provider) => (
-        <label className="row" key={provider}>
-          <input
-            type="checkbox"
-            checked={selected.includes(provider)}
-            disabled={!owner}
-            onChange={(e) =>
-              setSelected(
-                e.target.checked
-                  ? [...selected, provider]
-                  : selected.filter((p) => p !== provider),
-              )
-            }
-          />
-          {provider === "openai"
-            ? "OpenAI"
-            : provider === "anthropic"
-              ? "Claude"
-              : provider.replace("_free", "")}
-        </label>
-      ))}
+      <h3>Providers allowed to receive this data</h3>
+      <p>
+        These choices grant data-processing permission. They do not configure an
+        API key, enable a connection or change provider order. Manage those
+        under <a href="#/settings?section=models">Models &amp; providers</a>.
+      </p>
+      <div className="permission-providers">
+        {MODEL_PROVIDERS.map(({ id: provider, label }) => (
+          <label className="admin-inline-check" key={provider}>
+            <input
+              type="checkbox"
+              checked={selected.includes(provider)}
+              disabled={!owner || saving || busy || !revision}
+              onChange={(e) =>
+                setSelected(
+                  e.target.checked
+                    ? [...selected, provider]
+                    : selected.filter((p) => p !== provider),
+                )
+              }
+            />
+            {label}
+          </label>
+        ))}
+      </div>
       <Button
         onClick={() => void save()}
         disabled={
           !owner ||
           !revision ||
           saving ||
+          busy ||
           ((automatic || companyKnowledge) && !selected.length)
         }
       >
-        Save discovery settings
+        Save assessment & sharing settings
       </Button>
     </section>
   );

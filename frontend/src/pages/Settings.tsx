@@ -1,3 +1,6 @@
+import { useSearchParams } from "react-router-dom";
+import ContentPermissions from "../components/ContentPermissions";
+import ModelUsageReview from "../components/ModelUsageReview";
 import DiscoveryControls from "../components/DiscoveryControls";
 import { useEffect, useState } from "react";
 import { ShieldCheck, Users, Check, LockKeyhole } from "lucide-react";
@@ -14,6 +17,22 @@ import RateCatalog from "../components/RateCatalog";
 
 export default function Settings() {
   const { state, update, notify, storageError, mode, saving } = useApp();
+  const sections = [
+    ["workspace", "Workspace"],
+    ["models", "Models & providers"],
+    ["data", "Assessment & data"],
+    ["team", "Team & access"],
+    ["proposals", "Proposal defaults"],
+    ["operations", "Operations & recovery"],
+  ] as const;
+  const [params, setParams] = useSearchParams();
+  const section = sections.some(([id]) => id === params.get("section"))
+    ? params.get("section")!
+    : "workspace";
+  const [visited, setVisited] = useState(() => new Set(["workspace", section]));
+  useEffect(() => {
+    setVisited((previous) => new Set([...previous, section]));
+  }, [section]);
   const connected = mode === "CONNECTED_FREE";
   const owner = state.settings.role === "Owner";
   const toForm = (s: AppState) => ({
@@ -67,7 +86,7 @@ export default function Settings() {
       next.retentionDays <= 365;
     if (!valid) {
       setError(
-        "Check the company name and numeric limits. Values must stay within the displayed trial bounds.",
+        "Check the company name and numeric limits. Values must stay within the displayed application limits.",
       );
       return;
     }
@@ -90,241 +109,251 @@ export default function Settings() {
   return (
     <>
       <PageHeader
-        eyebrow="MAKE IT YOURS"
+        eyebrow="WORKSPACE CONTROLS"
         title="Workspace settings"
-        description="Set your preferences and manage workspace access."
+        description="Manage connections, processing, data access and workspace administration."
       />
       {storageError && (
         <div className="admin-error" role="alert">
-          {connected
-            ? "The server could not confirm this request: "
-            : "Browser storage could not save your changes: "}
-          {String(storageError)}
+          The server could not confirm this request: {String(storageError)}
         </div>
       )}
-      <div className="split-layout">
-        <div className="stack">
-          <DiscoveryControls />
-          <section className="panel admin-section">
-            <div className="admin-spread">
-              <div>
-                <h2>Workspace preferences</h2>
-                <p className="admin-help">
-                  {connected
-                    ? "Preferences are saved to your workspace. Processing stays inactive until its services are configured."
-                    : "These settings are saved locally for the free trial."}
-                </p>
-              </div>
-              <Badge tone="green">Free only</Badge>
-            </div>
-            <div className="admin-form-grid">
-              <div className="wide">
-                <Field label="Workspace / company name">
-                  <input
-                    dir="auto"
-                    className="input"
-                    disabled={!owner}
-                    maxLength={120}
-                    value={form.companyName}
-                    onChange={(e) =>
-                      setForm({ ...form, companyName: e.target.value })
-                    }
-                  />
-                </Field>
-              </div>
-              <Field
-                label="Daily model-call limit"
-                hint="1–50 calls across configured providers each day."
-              >
-                <input
-                  className="input"
-                  type="number"
-                  min={1}
-                  max={50}
-                  disabled={!owner}
-                  value={form.dailyCallLimit}
-                  onChange={(e) =>
-                    setForm({ ...form, dailyCallLimit: e.target.value })
-                  }
-                />
-              </Field>
-              <Field
-                label="Source polling interval"
-                hint="6–168 hours, when the backend is connected."
-              >
-                <input
-                  className="input"
-                  type="number"
-                  min={6}
-                  max={168}
-                  disabled={!owner}
-                  value={form.pollHours}
-                  onChange={(e) =>
-                    setForm({ ...form, pollHours: e.target.value })
-                  }
-                />
-              </Field>
-              <Field
-                label="Daily input-token limit"
-                hint="1,000–250,000 tokens."
-              >
-                <input
-                  className="input"
-                  type="number"
-                  min={1000}
-                  max={250000}
-                  disabled={!owner}
-                  value={form.inputTokenLimit}
-                  onChange={(e) =>
-                    setForm({ ...form, inputTokenLimit: e.target.value })
-                  }
-                />
-              </Field>
-              <Field
-                label="Daily output-token limit"
-                hint="1,000–50,000 tokens."
-              >
-                <input
-                  className="input"
-                  type="number"
-                  min={1000}
-                  max={50000}
-                  disabled={!owner}
-                  value={form.outputTokenLimit}
-                  onChange={(e) =>
-                    setForm({ ...form, outputTokenLimit: e.target.value })
-                  }
-                />
-              </Field>
-              <Field
-                label="History-retention preference"
-                hint="7–365 days. Automatic retention is not activated."
-              >
-                <input
-                  className="input"
-                  type="number"
-                  min={7}
-                  max={365}
-                  disabled={!owner}
-                  value={form.retentionDays}
-                  onChange={(e) =>
-                    setForm({ ...form, retentionDays: e.target.value })
-                  }
-                />
-              </Field>
-            </div>
-            {error && (
-              <div className="admin-error" role="alert">
-                {error}
-              </div>
-            )}
-            <div className="admin-form-actions">
-              <Button
-                variant="primary"
-                onClick={save}
-                disabled={!owner || saving}
-              >
-                <Check size={15} /> Save preferences
-              </Button>
-            </div>
-          </section>
-          <section className="panel admin-section">
-            <h2>Automation boundaries</h2>
-            <div className="admin-toggle-row">
-              <div>
-                <h3>Paid provider fallback</h3>
-                <p>
-                  Quota exhaustion stops work; it never switches to a paid
-                  model.
-                </p>
-              </div>
-              <span className="admin-toggle-off">DISABLED</span>
-            </div>
-            <div className="admin-toggle-row">
-              <div>
-                <h3>Automatic purchase or submission</h3>
-                <p>
-                  Buying an RFP and submitting a bid require your manual action.
-                </p>
-              </div>
-              <span className="admin-toggle-off">DISABLED</span>
-            </div>
-            <div className="admin-toggle-row">
-              <div>
-                <h3>External notifications</h3>
-                <p>
-                  In-app updates only. No emails, texts, or third-party
-                  messages.
-                </p>
-              </div>
-              <span className="admin-toggle-off">DISABLED</span>
-            </div>
-          </section>
-          <OperationsPanel />
-          <RecoveryPanel />
-        </div>
-        <div className="stack">
-          <section className="panel admin-section">
-            <div className="admin-spread">
-              <h2>Workspace permissions</h2>
-              <Badge tone="amber">{state.settings.role}</Badge>
-            </div>
-            <p className="admin-help">
-              Your verified workspace membership determines permissions.
-            </p>
-            <div className="admin-divider" />
-            <ul className="admin-feature-list">
-              <li>
-                <ShieldCheck />
-                <span>
-                  <strong>Owner</strong>
-                  <br />
-                  <span className="muted">
-                    Manages sources, company files, workspace settings, and
-                    proposal content.
-                  </span>
-                </span>
-              </li>
-              <li>
-                <Users />
-                <span>
-                  <strong>Editor</strong>
-                  <br />
-                  <span className="muted">
-                    Selects opportunities, uploads files, and edits proposals.
-                  </span>
-                </span>
-              </li>
-              <li>
-                <LockKeyhole />
-                <span>
-                  <strong>Reviewer</strong>
-                  <br />
-                  <span className="muted">
-                    Reads opportunities, company references, and proposals.
-                  </span>
-                </span>
-              </li>
-            </ul>
-          </section>
-          <section className="panel admin-section">
-            <h2>Users & identity</h2>
-            <p className="admin-help">
-              Your account’s workspace membership and permissions are checked by
-              the server.
-            </p>
-            <div className="admin-muted-surface">
-              <span className="admin-mini-label">Current workspace role</span>
-              <p style={{ margin: "8px 0 0", fontWeight: 600 }}>
-                {state.settings.role}
+      <nav className="settings-navigation" aria-label="Settings sections">
+        {sections.map(([id, label]) => (
+          <button
+            type="button"
+            key={id}
+            aria-current={section === id ? "page" : undefined}
+            aria-controls={`settings-${id}`}
+            onClick={() => setParams({ section: id })}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
+      <div
+        id="settings-workspace"
+        className="stack settings-page-section"
+        hidden={section !== "workspace"}
+      >
+        <section className="panel admin-section">
+          <div className="admin-spread">
+            <div>
+              <h2>Workspace preferences</h2>
+              <p className="admin-help">
+                {connected
+                  ? "Application-wide preferences are saved to your workspace. Model connection details are managed under Models & providers."
+                  : "These settings are saved locally for the free trial."}
               </p>
             </div>
-          </section>
-          {connected && owner && <MembersPanel />}
-          {connected && <ModelControls />}
-          {connected && <RateCatalog />}
-          {connected && <TemplateManager />}
-        </div>
+            <Badge tone="green">Workspace-wide</Badge>
+          </div>
+          <p className="admin-hint">
+            Daily model limits are TenderDesk application ceilings across all
+            providers, separate from provider-side rate limits or billing.
+            Advanced provider policies may lower these ceilings.
+          </p>
+          <div className="admin-form-grid">
+            <div className="wide">
+              <Field label="Workspace / company name">
+                <input
+                  dir="auto"
+                  className="input"
+                  disabled={!owner}
+                  maxLength={120}
+                  value={form.companyName}
+                  onChange={(e) =>
+                    setForm({ ...form, companyName: e.target.value })
+                  }
+                />
+              </Field>
+            </div>
+            <Field
+              label="Daily model-call limit"
+              hint="1–50 calls shared across all providers. Resets at midnight Riyadh time."
+            >
+              <input
+                className="input"
+                type="number"
+                min={1}
+                max={50}
+                disabled={!owner}
+                value={form.dailyCallLimit}
+                onChange={(e) =>
+                  setForm({ ...form, dailyCallLimit: e.target.value })
+                }
+              />
+            </Field>
+            <Field
+              label="Default source polling interval"
+              hint="6–168 hours for newly added sources. Existing sources keep their own schedule in Sources."
+            >
+              <input
+                className="input"
+                type="number"
+                min={6}
+                max={168}
+                disabled={!owner}
+                value={form.pollHours}
+                onChange={(e) =>
+                  setForm({ ...form, pollHours: e.target.value })
+                }
+              />
+            </Field>
+            <Field label="Daily input-token limit" hint="1,000–250,000 tokens.">
+              <input
+                className="input"
+                type="number"
+                min={1000}
+                max={250000}
+                disabled={!owner}
+                value={form.inputTokenLimit}
+                onChange={(e) =>
+                  setForm({ ...form, inputTokenLimit: e.target.value })
+                }
+              />
+            </Field>
+            <Field label="Daily output-token limit" hint="1,000–50,000 tokens.">
+              <input
+                className="input"
+                type="number"
+                min={1000}
+                max={50000}
+                disabled={!owner}
+                value={form.outputTokenLimit}
+                onChange={(e) =>
+                  setForm({ ...form, outputTokenLimit: e.target.value })
+                }
+              />
+            </Field>
+            <Field
+              label="Operational history retention"
+              hint="7–365 days for eligible completed operational history. Referenced evidence and usage records are retained."
+            >
+              <input
+                className="input"
+                type="number"
+                min={7}
+                max={365}
+                disabled={!owner}
+                value={form.retentionDays}
+                onChange={(e) =>
+                  setForm({ ...form, retentionDays: e.target.value })
+                }
+              />
+            </Field>
+          </div>
+          {error && (
+            <div className="admin-error" role="alert">
+              {error}
+            </div>
+          )}
+          <div className="admin-form-actions">
+            <Button
+              variant="primary"
+              onClick={save}
+              disabled={!owner || saving}
+            >
+              <Check size={15} /> Save preferences
+            </Button>
+          </div>
+        </section>
+
+        <section className="panel admin-section">
+          <h2>Procurement & notifications</h2>
+          <p>
+            Buying tender documents and submitting a bid remain manual actions.
+            Operational notifications appear in the app; no external email or
+            messaging service is configured here.
+          </p>
+        </section>
+      </div>
+      <div
+        id="settings-models"
+        className="stack settings-page-section"
+        hidden={section !== "models"}
+      >
+        {connected && visited.has("models") && <ModelControls />}
+      </div>
+      <div
+        id="settings-data"
+        className="stack settings-page-section"
+        hidden={section !== "data"}
+      >
+        {visited.has("data") && <DiscoveryControls />}
+        {connected && visited.has("data") && <ContentPermissions />}
+      </div>
+      <div
+        id="settings-team"
+        className="stack settings-page-section"
+        hidden={section !== "team"}
+      >
+        {" "}
+        <section className="panel admin-section">
+          <div className="admin-spread">
+            <h2>Team roles & access</h2>
+            <Badge tone="amber">{state.settings.role}</Badge>
+          </div>
+          <p className="admin-help">
+            Your verified workspace membership determines permissions.
+          </p>
+          <div className="admin-divider" />
+          <ul className="admin-feature-list">
+            <li>
+              <ShieldCheck />
+              <span>
+                <strong>Owner</strong>
+                <br />
+                <span className="muted">
+                  Manages sources, company files, workspace settings, and
+                  proposal content.
+                </span>
+              </span>
+            </li>
+            <li>
+              <Users />
+              <span>
+                <strong>Editor</strong>
+                <br />
+                <span className="muted">
+                  Selects opportunities, uploads files, and edits proposals.
+                </span>
+              </span>
+            </li>
+            <li>
+              <LockKeyhole />
+              <span>
+                <strong>Reviewer</strong>
+                <br />
+                <span className="muted">
+                  Reads opportunities, company references, and proposals.
+                </span>
+              </span>
+            </li>
+          </ul>
+        </section>
+        {connected && owner && visited.has("team") && <MembersPanel />}
+      </div>
+      <div
+        id="settings-proposals"
+        className="stack settings-page-section"
+        hidden={section !== "proposals"}
+      >
+        <p className="admin-help">
+          Optional shared rates and document templates. Tender-specific prices
+          are entered and reviewed in each proposal.
+        </p>
+        {connected && visited.has("proposals") && <RateCatalog />}
+        {connected && visited.has("proposals") && <TemplateManager />}
+      </div>
+      <div
+        id="settings-operations"
+        className="stack settings-page-section"
+        hidden={section !== "operations"}
+      >
+        {visited.has("operations") && <OperationsPanel />}
+        {connected && visited.has("operations") && <ModelUsageReview />}
+        {visited.has("operations") && <RecoveryPanel />}
       </div>
     </>
   );

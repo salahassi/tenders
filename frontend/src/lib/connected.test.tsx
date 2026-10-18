@@ -669,6 +669,9 @@ describe("connected screens", () => {
         </ConnectedProvider>
       </MemoryRouter>,
     );
+    await user.click(
+      await screen.findByRole("button", { name: "Operations & recovery" }),
+    );
     const toggle = await screen.findByRole("checkbox", {
       name: "Show on the overview",
     });
@@ -760,4 +763,36 @@ it("does not admit a notice when progress arrives before its matching assessment
   const row = (await repository.refresh()).opportunities[0];
   expect(row.discovery?.inboxVisible).toBe(true);
   expect(row.assessment?.stale).toBe(false);
+});
+
+it("separates settings sections and retains unsaved workspace input while navigating", async () => {
+  const f = fixture();
+  const user = userEvent.setup();
+  render(
+    <MemoryRouter initialEntries={["/settings"]}>
+      <ConnectedProvider client={f.client}>
+        <Settings />
+      </ConnectedProvider>
+    </MemoryRouter>,
+  );
+  const name = await screen.findByLabelText("Workspace / company name");
+  await waitFor(() => expect(name).toHaveValue("Connected fixture workspace"));
+  await user.clear(name);
+  await user.type(name, "Unsaved workspace draft");
+  expect(
+    screen.queryByRole("heading", { name: "Models & providers" }),
+  ).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Models & providers" }));
+  expect(
+    await screen.findByRole("heading", { name: "Models & providers" }),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole("button", { name: "Save preferences" }),
+  ).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Workspace" }));
+  expect(screen.getByLabelText("Workspace / company name")).toHaveValue(
+    "Unsaved workspace draft",
+  );
+  expect(f.commands).toHaveLength(0);
+  expect(screen.queryByText("Free only")).not.toBeInTheDocument();
 });

@@ -9,333 +9,122 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { useApp } from "../lib/store";
 import ModelControls from "./ModelControls";
-
+import { DEFAULT_PROVIDER_ORDER } from "../lib/modelProviders";
 vi.mock("../lib/store", () => ({ useApp: vi.fn() }));
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
-
-it("saves an existing Gemini policy without requiring an unused Qwen profile", async () => {
-  const runCommand = vi.fn(async () => ({}));
-  const model = {
-    provider: "gemini_free",
-    model: "gemini-3.8-flash",
-    project_ref: "synthetic-project",
-    enabled: true,
-    free_only: true,
-    billing_verified: true,
-    free_quota_only: false,
-    quota_ends_at: "2099-01-01T00:00:00Z",
-    quota_remaining_tokens: 10000,
-    calls_per_day: 10,
-    input_per_day: 20000,
-    output_per_day: 10000,
-    failover_rank: 1,
-    revision: 3,
-  };
-  vi.mocked(useApp).mockReturnValue({
-    state: { settings: { role: "Owner" } },
-    saving: false,
-    notify: vi.fn(),
-    runCommand,
-    backend: {
-      request: vi.fn(async (path: string) => ({
-        data:
-          path === "/v1/model-settings"
-            ? { records: [model] }
-            : path === "/v1/model-environment"
-              ? { providers: [{ ...model, key_configured: true }] }
-              : path === "/v1/eligibility"
-                ? { items: [], authorizations: [] }
-                : { records: [] },
-      })),
-    },
-  } as any);
-  render(<ModelControls />);
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Save provider policies" }),
-  );
-  await waitFor(() => expect(runCommand).toHaveBeenCalledTimes(1));
-  expect(runCommand).toHaveBeenCalledWith(
-    "model.configure",
-    expect.objectContaining({
-      provider: "gemini_free",
-      model: "gemini-3.8-flash",
-      expected_revision: 3,
-      failover_rank: 1,
-    }),
-  );
-  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-});
-
-function setup(role = "Owner", saved: Record<string, unknown>[] = []) {
-  const runCommand = vi.fn(async () => ({}));
-  const request = vi.fn(async (path: string) => ({
-    data:
-      path === "/v1/model-settings"
-        ? { records: saved }
-        : path === "/v1/model-environment"
-          ? {
-              providers: [
-                {
-                  provider: "openai",
-                  model: "owner-openai-model",
-                  project_ref: "default",
-                  key_configured: true,
-                },
-                {
-                  provider: "anthropic",
-                  model: "owner-claude-model",
-                  project_ref: "default",
-                  key_configured: true,
-                },
-                {
-                  provider: "gemini_free",
-                  model: "gemini-3.8-flash",
-                  project_ref: "synthetic-project",
-                  key_configured: true,
-                },
-                {
-                  provider: "zai_free",
-                  model: "owner-chosen-zai-model",
-                  project_ref: "synthetic-zai-account",
-                  key_configured: true,
-                },
-                {
-                  provider: "groq_free",
-                  model: "synthetic-optional-model",
-                  project_ref: "synthetic-optional-project",
-                  key_configured: true,
-                },
-              ],
-            }
-          : path === "/v1/eligibility"
-            ? { items: [], authorizations: [] }
-            : { records: [] },
-  }));
-  vi.mocked(useApp).mockReturnValue({
-    state: { settings: { role } },
-    saving: false,
-    notify: vi.fn(),
-    runCommand,
-    backend: { request },
-  } as any);
-  render(<ModelControls />);
-  return { runCommand, request };
-}
-
-it("prefills server model identity without inventing quota or activating optional providers", async () => {
-  const f = setup();
-  await screen.findByDisplayValue("gemini-3.8-flash");
-  expect(screen.getByDisplayValue("synthetic-project")).toBeInTheDocument();
-  const panel = within(
-    screen.getByRole("heading", { name: "Gemini" }).parentElement!,
-  );
-  expect(panel.queryByLabelText("Quota expiry (UTC)")).not.toBeInTheDocument();
-  expect(
-    panel.queryByLabelText("quota remaining tokens"),
-  ).not.toBeInTheDocument();
-  expect(
-    panel.getByLabelText("Enable matching backend credentials"),
-  ).toBeEnabled();
-  await userEvent.click(
-    screen.getByRole("button", { name: "Save provider policies" }),
-  );
-  expect(f.runCommand).not.toHaveBeenCalled();
-  await userEvent.click(
-    panel.getByLabelText("Enable matching backend credentials"),
-  );
-  await userEvent.click(
-    screen.getByRole("button", { name: "Save provider policies" }),
-  );
-  await waitFor(() => expect(f.runCommand).toHaveBeenCalledTimes(1));
-  expect(f.runCommand).toHaveBeenCalledWith(
-    "model.configure",
-    expect.objectContaining({
-      provider: "gemini_free",
-      model: "gemini-3.8-flash",
-      project_ref: "synthetic-project",
-      enabled: true,
-      quota_mode: "provider_managed",
-      quota_ends_at: null,
-      quota_remaining_tokens: null,
-    }),
-  );
-});
-
-it("preserves an existing policy identity and permits disabling a mismatched policy", async () => {
-  setup("Owner", [
-    {
-      provider: "gemini_free",
-      model: "saved-model",
-      project_ref: "saved-project",
-      revision: 2,
-      enabled: true,
-    },
-  ]);
-  await screen.findByDisplayValue("saved-model");
-  expect(screen.getByDisplayValue("saved-project")).toBeInTheDocument();
-  expect(
-    screen.getByText(/Model or project differs from the server configuration/),
-  ).toBeInTheDocument();
-  const panel = within(
-    screen.getByRole("heading", { name: "Gemini" }).parentElement!,
-  );
-  const toggle = panel.getByLabelText("Enable matching backend credentials");
-  expect(toggle).toBeChecked();
-  await userEvent.click(toggle);
-  expect(toggle).not.toBeChecked();
-  expect(toggle).toBeDisabled();
-});
-
-it("does not request Owner-only metadata for other roles", async () => {
-  const f = setup("Reviewer");
-  await screen.findByRole("button", { name: "Save provider policies" });
-  expect(f.request).not.toHaveBeenCalledWith("/v1/model-environment");
-  expect(
-    screen.getByRole("button", { name: "Save provider policies" }),
-  ).toBeDisabled();
-});
-
-it("queues a bounded connection check only after Gemini has been saved enabled", async () => {
-  const f = setup("Owner", [
-    {
-      provider: "gemini_free",
-      model: "gemini-3.8-flash",
-      project_ref: "synthetic-project",
-      enabled: true,
-      revision: 1,
-      quota_mode: "provider_managed",
-      quota_ends_at: null,
-      quota_remaining_tokens: null,
-    },
-  ]);
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Check Gemini connection" }),
-  );
-  expect(f.runCommand).toHaveBeenCalledWith("model.probe", {});
-  expect(
-    await screen.findByText(/Connection check queued/),
-  ).toBeInTheDocument();
-});
-
-it("enables round robin without individual enabled policies and can queue its operational check", async () => {
-  let routing: Record<string, unknown> | undefined;
-  const runCommand = vi.fn(async (operation: string, input: any) => {
-    if (operation === "model.routing") routing = { ...input, revision: 1 };
-    return {};
-  });
-  vi.mocked(useApp).mockReturnValue({
-    state: { settings: { role: "Owner" } },
-    saving: false,
-    notify: vi.fn(),
-    runCommand,
-    backend: {
-      request: vi.fn(async (path: string) => ({
-        data:
-          path === "/v1/model-routing"
-            ? { records: routing ? [routing] : [] }
-            : path === "/v1/model-environment"
-              ? { providers: [] }
-              : path === "/v1/eligibility"
-                ? { items: [], authorizations: [] }
-                : { records: [] },
-      })),
-    },
-  } as any);
-  render(<ModelControls />);
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Enable automatic routing" }),
-  );
-  expect(runCommand).toHaveBeenCalledWith("model.routing", {
-    enabled: true,
-    expected_revision: 0,
-  });
-  await userEvent.click(
-    await screen.findByRole("button", { name: "Check model routing" }),
-  );
-  expect(runCommand).toHaveBeenCalledWith("model.probe", {});
-  expect(
-    await screen.findByRole("button", {
-      name: "Disable automatic routing",
-    }),
-  ).toBeEnabled();
-});
-
-it("loads an Owner-selected z.ai model and saves free continuous policy without fabricated quota", async () => {
-  const f = setup();
-  await screen.findByDisplayValue("owner-chosen-zai-model");
-  const panel = within(
-    screen.getByRole("heading", { name: "z.ai (optional)" }).parentElement!,
-  );
-  expect(panel.queryByLabelText("Quota expiry (UTC)")).not.toBeInTheDocument();
-  await userEvent.click(
-    panel.getByLabelText("Enable matching backend credentials"),
-  );
-  await userEvent.click(
-    screen.getByRole("button", { name: "Save provider policies" }),
-  );
-  await waitFor(() =>
-    expect(f.runCommand).toHaveBeenCalledWith(
-      "model.configure",
-      expect.objectContaining({
-        provider: "zai_free",
-        model: "owner-chosen-zai-model",
-        project_ref: "synthetic-zai-account",
-        enabled: true,
-        billing_verified: false,
-        quota_mode: "provider_managed",
-        quota_ends_at: null,
-        quota_remaining_tokens: null,
-      }),
-    ),
-  );
-});
-
-it("persists provider priority and rotation mode with no billing-confirmation UI", async () => {
-  let routing: Record<string, unknown> = {
-    enabled: true,
+function setup(
+  options: {
+    role?: string;
+    enabled?: boolean;
+    policies?: any[];
+    fail?: boolean;
+  } = {},
+) {
+  let routing = {
+    enabled: options.enabled ?? true,
     revision: 7,
     strategy: "priority",
-    provider_order: [
-      "gemini_free",
-      "qwen_free",
-      "mistral_free",
-      "groq_free",
-      "zai_free",
-      "openai",
-      "anthropic",
-    ],
+    provider_order: [...DEFAULT_PROVIDER_ORDER],
   };
-  const runCommand = vi.fn(async (_op: string, input: any) => {
-    routing = { ...input, revision: 8 };
-    return {};
+  const servers = [
+    {
+      provider: "gemini_free",
+      model: "owner-gemini-model",
+      project_ref: "test-project",
+      key_configured: true,
+    },
+    {
+      provider: "groq_free",
+      model: "owner-groq-model",
+      project_ref: "test-groq-account",
+      key_configured: true,
+    },
+    {
+      provider: "openai",
+      model: "owner-openai-model",
+      project_ref: "default",
+      key_configured: true,
+    },
+    {
+      provider: "anthropic",
+      model: "owner-claude-model",
+      project_ref: "default",
+      key_configured: true,
+    },
+  ];
+  const runCommand = vi.fn(async (op, input) => {
+    if (options.fail) throw new Error("A newer revision exists");
+    if (op === "model.routing")
+      routing = { ...routing, ...input, revision: routing.revision + 1 };
+    return { ...input, revision: (input.expected_revision || 0) + 1 };
   });
   const request = vi.fn(async (path: string) => ({
     data:
       path === "/v1/model-routing"
         ? { records: [routing] }
         : path === "/v1/model-environment"
-          ? { providers: [] }
-          : path === "/v1/eligibility"
-            ? { items: [], authorizations: [] }
-            : { records: [] },
+          ? { providers: servers }
+          : { records: options.policies || [] },
   }));
   vi.mocked(useApp).mockReturnValue({
-    state: { settings: { role: "Owner" } },
+    state: { settings: { role: options.role || "Owner" } },
     saving: false,
     notify: vi.fn(),
     runCommand,
     backend: { request },
   } as any);
   const view = render(<ModelControls />);
-  await screen.findByRole("button", { name: "Save provider order" });
-  expect(screen.queryByText(/Accounts confirmed free/)).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Move Gemini up" })).toBeDisabled();
-  await userEvent.click(
-    screen.getByRole("button", { name: "Move z.ai (optional) up" }),
+  return { view, runCommand, request };
+}
+const panel = (name: string) =>
+  within(screen.getByRole("article", { name: `${name} provider` }));
+const openPolicy = async (name: string) =>
+  userEvent.click(
+    panel(name).getByText("Connection setup and advanced policy"),
   );
+it("shows actual server identity read-only and one card per automatic provider without ineffective toggles", async () => {
+  const f = setup();
+  await screen.findByText("owner-gemini-model");
+  expect(
+    screen.queryByRole("textbox", { name: "Exact model identifier" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByLabelText(/Enable matching backend/),
+  ).not.toBeInTheDocument();
+  expect(screen.queryByText(/Failover rank/)).not.toBeInTheDocument();
+  expect(
+    screen.getAllByRole("button", { name: "Save provider order" }),
+  ).toHaveLength(1);
+  expect(
+    within(screen.getByRole("list", { name: "Provider order" })).getAllByRole(
+      "article",
+    ),
+  ).toHaveLength(7);
+  expect(f.runCommand).not.toHaveBeenCalled();
+});
+it("checks the selected provider only and disables checks with missing credentials", async () => {
+  const f = setup();
+  await screen.findByText("owner-openai-model");
+  await userEvent.click(
+    panel("OpenAI").getByRole("button", { name: "Check OpenAI only" }),
+  );
+  expect(f.runCommand).toHaveBeenCalledWith("model.probe", {
+    provider: "openai",
+  });
+  expect(
+    panel("Qwen").getByRole("button", { name: "Check Qwen only" }),
+  ).toBeDisabled();
+  expect(
+    await screen.findByText(/Connection check queued. Follow/),
+  ).toBeInTheDocument();
+});
+it("persists provider order and strategy without writing credentials or permissions", async () => {
+  const f = setup();
+  await screen.findByText("owner-gemini-model");
+  await userEvent.click(screen.getByRole("button", { name: "Move z.ai up" }));
   await userEvent.selectOptions(
     screen.getByLabelText("Provider selection"),
     "round_robin",
@@ -343,27 +132,26 @@ it("persists provider priority and rotation mode with no billing-confirmation UI
   await userEvent.click(
     screen.getByRole("button", { name: "Save provider order" }),
   );
-  await waitFor(() =>
-    expect(runCommand).toHaveBeenCalledWith("model.routing", {
-      enabled: true,
-      expected_revision: 7,
-      strategy: "round_robin",
-      provider_order: [
-        "gemini_free",
-        "qwen_free",
-        "mistral_free",
-        "zai_free",
-        "groq_free",
-        "openai",
-        "anthropic",
-      ],
-    }),
-  );
-  view.unmount();
+  expect(f.runCommand).toHaveBeenCalledWith("model.routing", {
+    enabled: true,
+    expected_revision: 7,
+    strategy: "round_robin",
+    provider_order: [
+      "gemini_free",
+      "qwen_free",
+      "mistral_free",
+      "zai_free",
+      "groq_free",
+      "openai",
+      "anthropic",
+    ],
+  });
+  f.view.unmount();
   render(<ModelControls />);
-  await screen.findByRole("button", { name: "Save provider order" });
-  expect(screen.getByLabelText("Provider selection")).toHaveValue(
-    "round_robin",
+  await waitFor(() =>
+    expect(screen.getByLabelText("Provider selection")).toHaveValue(
+      "round_robin",
+    ),
   );
   expect(
     within(screen.getByRole("list", { name: "Provider order" })).getAllByRole(
@@ -371,40 +159,152 @@ it("persists provider priority and rotation mode with no billing-confirmation UI
     )[3],
   ).toHaveTextContent("z.ai");
 });
-
 it.each([
-  ["openai", "OpenAI", "owner-openai-model"],
-  ["anthropic", "Claude", "owner-claude-model"],
+  ["OpenAI", "openai", "owner-openai-model"],
+  ["Claude", "anthropic", "owner-claude-model"],
 ])(
-  "loads and saves %s with the supplied model and no extra account requirement",
-  async (provider, label, model) => {
+  "saves %s limits with the server identity and no billing attestation",
+  async (name, provider, model) => {
     const f = setup();
-    await screen.findByDisplayValue(model);
-    const panel = within(
-      screen.getByRole("heading", { name: label + " (optional)" })
-        .parentElement!,
+    await screen.findByText(model);
+    await openPolicy(name);
+    await userEvent.clear(
+      panel(name).getByLabelText(`${name} Daily call ceiling`),
     );
-    expect(
-      panel.queryByLabelText("Quota expiry (UTC)"),
-    ).not.toBeInTheDocument();
-    await userEvent.click(
-      panel.getByLabelText("Enable matching backend credentials"),
+    await userEvent.type(
+      panel(name).getByLabelText(`${name} Daily call ceiling`),
+      "12",
     );
     await userEvent.click(
-      screen.getByRole("button", { name: "Save provider policies" }),
+      panel(name).getByRole("button", { name: `Save ${name} policy` }),
     );
-    await waitFor(() =>
-      expect(f.runCommand).toHaveBeenCalledWith(
-        "model.configure",
-        expect.objectContaining({
-          provider,
-          model,
-          project_ref: "default",
-          quota_mode: "provider_managed",
-          enabled: true,
-          billing_verified: false,
-        }),
-      ),
+    expect(f.runCommand).toHaveBeenCalledWith(
+      "model.configure",
+      expect.objectContaining({
+        provider,
+        model,
+        project_ref: "default",
+        calls_per_day: 12,
+        enabled: false,
+        quota_mode: "provider_managed",
+        billing_verified: false,
+      }),
     );
   },
 );
+it("saving one provider preserves other provider and routing drafts", async () => {
+  const f = setup();
+  await screen.findByText("owner-gemini-model");
+  await openPolicy("Gemini");
+  await openPolicy("Groq");
+  await userEvent.clear(
+    panel("Groq").getByLabelText("Groq Daily call ceiling"),
+  );
+  await userEvent.type(
+    panel("Groq").getByLabelText("Groq Daily call ceiling"),
+    "17",
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Move Groq up" }));
+  await userEvent.click(
+    panel("Gemini").getByRole("button", { name: "Save Gemini policy" }),
+  );
+  await waitFor(() => expect(f.runCommand).toHaveBeenCalledTimes(1));
+  expect(panel("Groq").getByLabelText("Groq Daily call ceiling")).toHaveValue(
+    17,
+  );
+  expect(
+    within(screen.getByRole("list", { name: "Provider order" })).getAllByRole(
+      "listitem",
+    )[2],
+  ).toHaveTextContent("Groq");
+});
+it("requires explicit policy review after a server account changes", async () => {
+  const f = setup({
+    policies: [
+      {
+        provider: "gemini_free",
+        revision: 2,
+        model: "old-model",
+        project_ref: "old-project",
+      },
+    ],
+  });
+  await screen.findByText("owner-gemini-model");
+  expect(
+    panel("Gemini").getByText("Account change needs review"),
+  ).toBeInTheDocument();
+  expect(
+    panel("Gemini").getByRole("button", { name: "Check Gemini only" }),
+  ).toBeDisabled();
+  await openPolicy("Gemini");
+  await userEvent.click(
+    panel("Gemini").getByRole("button", { name: "Save Gemini policy" }),
+  );
+  expect(f.runCommand).toHaveBeenCalledWith(
+    "model.configure",
+    expect.objectContaining({
+      expected_revision: 2,
+      model: "owner-gemini-model",
+      project_ref: "test-project",
+    }),
+  );
+  await waitFor(() =>
+    expect(
+      panel("Gemini").getByRole("button", { name: "Check Gemini only" }),
+    ).toBeEnabled(),
+  );
+});
+it("preserves edits when saving fails", async () => {
+  setup({ fail: true });
+  await screen.findByText("owner-gemini-model");
+  await openPolicy("Gemini");
+  await userEvent.clear(
+    panel("Gemini").getByLabelText("Gemini Daily call ceiling"),
+  );
+  await userEvent.type(
+    panel("Gemini").getByLabelText("Gemini Daily call ceiling"),
+    "13",
+  );
+  await userEvent.click(
+    panel("Gemini").getByRole("button", { name: "Save Gemini policy" }),
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "A newer revision exists",
+  );
+  expect(
+    panel("Gemini").getByLabelText("Gemini Daily call ceiling"),
+  ).toHaveValue(13);
+});
+it("separates legacy manual activation when automatic selection is off", async () => {
+  const f = setup({
+    enabled: false,
+    policies: [
+      {
+        provider: "gemini_free",
+        revision: 1,
+        enabled: true,
+        model: "owner-gemini-model",
+        project_ref: "test-project",
+        quota_mode: "provider_managed",
+      },
+    ],
+  });
+  await screen.findByText("owner-gemini-model");
+  await openPolicy("Gemini");
+  expect(
+    panel("Gemini").getByLabelText("Enable Gemini for manual routing"),
+  ).toBeChecked();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Check Gemini connection" }),
+  );
+  expect(f.runCommand).toHaveBeenCalledWith("model.probe", {});
+});
+it("does not read Owner-only setup or permit Reviewer changes", async () => {
+  const f = setup({ role: "Reviewer" });
+  await screen.findByRole("button", { name: "Save provider order" });
+  expect(f.request).not.toHaveBeenCalledWith("/v1/model-environment");
+  expect(f.request).not.toHaveBeenCalledWith("/v1/model-routing");
+  expect(
+    screen.getByRole("button", { name: "Save provider order" }),
+  ).toBeDisabled();
+});

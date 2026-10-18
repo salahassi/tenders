@@ -581,3 +581,127 @@
   margin: 5px 0;
   color: var(--text-secondary);
 }
+.settings-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.settings-navigation button {
+  background: var(--surface, #fff);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 15px;
+  font: inherit;
+  cursor: pointer;
+}
+.settings-navigation button[aria-current="page"] {
+  background: #2c5140;
+  color: #fff;
+  border-color: #2c5140;
+}
+.settings-navigation button:focus-visible,
+.settings-details summary:focus-visible {
+  outline: 3px solid #8db39c;
+  outline-offset: 3px;
+}
+.settings-page-section[hidden] {
+  display: none !important;
+}
+.settings-page-section {
+  max-width: 1120px;
+}
+.provider-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.provider-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 0;
+}
+.provider-card h3 {
+  margin: 0 0 8px;
+}
+.provider-identity {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 8px 16px;
+}
+.provider-identity dt {
+  color: var(--text-secondary);
+}
+.provider-identity dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.settings-details {
+  margin: 16px 0;
+}
+.settings-details summary {
+  cursor: pointer;
+  font-weight: 650;
+  padding: 10px 0;
+}
+.settings-details[open] > summary {
+  margin-bottom: 12px;
+}
+.settings-details code {
+  overflow-wrap: anywhere;
+}
+.permission-providers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 14px;
+  margin: 18px 0;
+}
+.permission-list {
+  list-style: none;
+  padding: 0;
+}
+.permission-list li {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.permission-list li > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.permission-list button {
+  flex-shrink: 0;
+}
+.permission-preview {
+  white-space: pre-wrap;
+  max-height: 360px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .provider-card {
+    padding: 15px;
+  }
+  .provider-identity {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .provider-identity dd {
+    margin-bottom: 10px;
+  }
+  .permission-list li {
+    flex-direction: column;
+  }
+  .settings-navigation button {
+    flex: 1 1 auto;
+    font-size: 13px;
+  }
+}

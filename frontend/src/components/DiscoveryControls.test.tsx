@@ -40,7 +40,7 @@ it("persists continuing company evidence permission with selected destinations",
     screen.getByLabelText("Include Company Knowledge in model processing"),
   );
   await userEvent.click(
-    screen.getByRole("button", { name: "Save discovery settings" }),
+    screen.getByRole("button", { name: "Save assessment & sharing settings" }),
   );
   await waitFor(() =>
     expect(runCommand).toHaveBeenCalledWith("discovery.configure", {
