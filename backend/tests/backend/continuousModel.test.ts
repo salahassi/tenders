@@ -323,7 +323,7 @@ it("retains uncertain requests while independent continuous Gemini checks can co
     actual_input: null,
     actual_output: null,
     reserved_input: 276,
-    reserved_output: 256,
+    reserved_output: 1024,
   });
   expect(usage[1]).toMatchObject({
     state: "settled",
@@ -488,7 +488,7 @@ it("polls one persisted background generation across leases and transient networ
       expect(JSON.parse(String(init!.body))).toMatchObject({
         background: true,
         store: true,
-        generation_config: { thinking_level: "low", max_output_tokens: 256 },
+        generation_config: { thinking_level: "low", max_output_tokens: 1024 },
       });
       expect(new Headers(init!.headers).get("Api-Revision")).toBe("2026-05-20");
       return Response.json({

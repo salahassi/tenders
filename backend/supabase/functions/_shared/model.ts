@@ -301,7 +301,8 @@ export type Usage = {
   thinking: number | null;
 };
 export const caps: Record<ModelTask, number> = {
-  connection_probe: 256,
+  // Includes a small reasoning budget for providers that count it as output.
+  connection_probe: 1024,
   summarize_review: 4096,
   classify_opportunity: 6144,
   analyze_chunk: 4096,
