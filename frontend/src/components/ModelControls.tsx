@@ -127,7 +127,7 @@ export default function ModelControls() {
   async function savePolicy(id: ProviderId) {
     const form = forms[id],
       server = serverModels.find((p) => p.provider === id);
-    const automatic = routing.enabled && id !== "cloudflare_free";
+    const automatic = routing.enabled;
     const model = server?.model || form.model,
       project = server?.project_ref || form.project_ref;
     if (!model || !project) {
@@ -217,7 +217,7 @@ export default function ModelControls() {
       slot?.project_ref &&
       form.project_ref !== slot.project_ref,
     );
-    const automatic = routing.enabled && id !== "cloudflare_free";
+    const automatic = routing.enabled;
     const legacy = !automatic;
     return (
       <article className="provider-card" aria-label={`${meta.label} provider`}>
@@ -587,14 +587,6 @@ export default function ModelControls() {
               <a href="#/jobs">Activity &amp; jobs</a>.
             </p>
           )}
-          <details className="settings-details">
-            <summary>Legacy manual fallback: Cloudflare Workers AI</summary>
-            <p>
-              Cloudflare is supported by manual routing and is not part of the
-              seven-provider automatic order.
-            </p>
-            {card("cloudflare_free")}
-          </details>
         </>
       )}
     </section>
