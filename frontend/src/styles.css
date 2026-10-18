@@ -792,6 +792,7 @@ ol {
   text-decoration: underline;
 }
 .table-wrap {
+  position: relative;
   width: 100%;
   overflow: auto;
 }
@@ -1361,6 +1362,8 @@ ol {
   line-height: 1.6;
 }
 .tabs {
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   gap: 24px;
   padding: 0 22px;

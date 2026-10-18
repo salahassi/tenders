@@ -22,6 +22,15 @@ export function date(value: string | null) {
       }).format(new Date(value))
     : "Not provided";
 }
+export function dateTime(value: string) {
+  return (
+    new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Asia/Riyadh",
+    }).format(new Date(value)) + " Riyadh"
+  );
+}
 export function daysLeft(value: string) {
   return value
     ? Math.ceil((new Date(value).getTime() - Date.now()) / 86400000)

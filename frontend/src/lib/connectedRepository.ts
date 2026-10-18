@@ -24,6 +24,13 @@ const equal = (a: unknown, b: unknown) =>
 const str = (row: Record<string, unknown>, key: string, fallback = "") =>
   row[key] == null ? fallback : z.string().parse(row[key]);
 const strings = (value: unknown) => z.array(z.string()).parse(value ?? []);
+function collectionSummary(run: Row | undefined): string {
+  if (run?.status !== "succeeded") return "";
+  const counts = z
+    .object({ processed: z.number().int().nonnegative() })
+    .safeParse(run.counts);
+  return counts.success ? `${counts.data.processed} notices processed.` : "";
+}
 const blocked = (message: string): never => {
   throw new BackendRequestError("CAPABILITY_NOT_ACTIVE", message, 422);
 };
@@ -124,6 +131,7 @@ export class ConnectedRepository {
       );
     const paths = [
       "sources",
+      "source-runs",
       "opportunities",
       "knowledge",
       "jobs",
@@ -456,6 +464,9 @@ export class ConnectedRepository {
         },
       ];
     });
+    const sourceRuns = new Map(
+      this.rows["source-runs"].map((r) => [r.job_id, r]),
+    );
     state.jobs = this.rows.jobs.map((r) => ({
       id: r.id,
       type: str(r, "type"),
@@ -489,7 +500,9 @@ export class ConnectedRepository {
                 ? (r.checkpoint as any)?.model_routing?.mode === "round_robin"
                   ? "Model connection verified; measured usage recorded."
                   : "Gemini connection verified; measured usage recorded."
-                : str(r, "error_code")) + modelRoutingSummary(r.checkpoint),
+                : str(r, "error_code")) +
+        collectionSummary(sourceRuns.get(r.id)) +
+        modelRoutingSummary(r.checkpoint),
       createdAt: str(r, "created_at"),
     }));
     state.notifications = this.rows.notifications.map((r) => ({

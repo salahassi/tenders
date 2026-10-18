@@ -98,3 +98,22 @@ it("keeps assessment actions disabled for a Reviewer", async () => {
   ).toBeDisabled();
   expect(command).not.toHaveBeenCalled();
 });
+it("does not offer to resume an assessment superseded by changed evidence", async () => {
+  setup("Owner", [
+    {
+      id: "old-plan",
+      kind: "assessment",
+      stage: "assessment",
+      status: "canceled",
+      revision: 3,
+      error_code: "REASSESSMENT_SUPERSEDED",
+      created_at: "2026-10-17",
+    },
+  ]);
+  expect(
+    await screen.findByRole("button", { name: "Assess current evidence" }),
+  ).toBeEnabled();
+  expect(
+    screen.queryByRole("button", { name: "Resume saved work" }),
+  ).not.toBeInTheDocument();
+});

@@ -137,19 +137,31 @@ export default function GenerationPanel({
                   ? ` · ${p.error_code.replaceAll("_", " ").toLowerCase()}`
                   : ""}
               </p>
-              {["blocked", "failed", "canceled"].includes(p.status) && (
-                <Button
-                  disabled={!editable || saving}
-                  onClick={() =>
-                    action("generation.retry", {
-                      id: p.id,
-                      expected_revision: p.revision,
-                      reason: "User reviewed the blocker and requested resume.",
-                    })
-                  }
-                >
-                  Resume saved work
-                </Button>
+              {["blocked", "failed", "canceled"].includes(p.status) &&
+                !["STALE_INPUT", "REASSESSMENT_SUPERSEDED"].includes(
+                  p.error_code || "",
+                ) && (
+                  <Button
+                    disabled={!editable || saving}
+                    onClick={() =>
+                      action("generation.retry", {
+                        id: p.id,
+                        expected_revision: p.revision,
+                        reason:
+                          "User reviewed the blocker and requested resume.",
+                      })
+                    }
+                  >
+                    Resume saved work
+                  </Button>
+                )}
+              {["STALE_INPUT", "REASSESSMENT_SUPERSEDED"].includes(
+                p.error_code || "",
+              ) && (
+                <p>
+                  Evidence changed. Use a current assessment or request a new
+                  proposal version.
+                </p>
               )}
               {["queued", "running", "blocked"].includes(p.status) && (
                 <Button

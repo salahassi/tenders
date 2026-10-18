@@ -4,6 +4,7 @@ import { ArrowLeft, Globe2, ExternalLink, ShieldCheck } from "lucide-react";
 import { useApp } from "../lib/store";
 import { Badge, Button, EmptyState, PageHeader } from "../components/ui";
 import { isBuiltInSource, canCollectSource } from "../lib/sources";
+import { dateTime } from "../lib/format";
 import "./admin.css";
 export default function SourceDetail() {
   const { id } = useParams();
@@ -41,7 +42,9 @@ export default function SourceDetail() {
     (o) => o.sourceId === source.id,
   ).length;
   const audit = state.audit.filter((a) => a.target === id).slice(0, 8);
-  const jobs = state.jobs.filter((j) => j.target === source.id);
+  const jobs = state.jobs
+    .filter((j) => j.target === source.id)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const setStatus = async (status: typeof source.status) => {
     if (!owner || isManual || (status === "approved" && !collectable)) return;
     if (
@@ -154,11 +157,7 @@ export default function SourceDetail() {
                   : `Every ${source.pollHours || state.settings.pollHours} hours`}
               </dd>
               <dt>Last collection</dt>
-              <dd>
-                {source.lastRun
-                  ? new Date(source.lastRun).toLocaleString()
-                  : "Not run"}
-              </dd>
+              <dd>{source.lastRun ? dateTime(source.lastRun) : "Not run"}</dd>
               <dt>Next collection</dt>
               <dd>
                 {isManual
@@ -166,7 +165,7 @@ export default function SourceDetail() {
                   : manualPortal
                     ? "Manual review — collection adapter required"
                     : source.nextRun
-                      ? new Date(source.nextRun).toLocaleString()
+                      ? dateTime(source.nextRun)
                       : "Not scheduled"}
               </dd>
               <dt>Opportunities</dt>
@@ -240,7 +239,7 @@ export default function SourceDetail() {
                       </Badge>
                     </div>
                     <p className="admin-job-message">{j.message}</p>
-                    <span>{new Date(j.createdAt).toLocaleString()}</span>
+                    <span>{dateTime(j.createdAt)}</span>
                   </li>
                 ))}
               </ul>
@@ -260,7 +259,7 @@ export default function SourceDetail() {
                   <li key={a.id}>
                     {a.action}
                     <span>
-                      {a.actor} · {new Date(a.at).toLocaleString()}
+                      {a.actor} · {dateTime(a.at)}
                     </span>
                   </li>
                 ))}

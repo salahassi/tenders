@@ -171,6 +171,51 @@ function Probe() {
 }
 
 describe("connected repository", () => {
+  it("shows recorded source processing counts, including zero, without inventing an absent count", async () => {
+    const f = fixture();
+    const original = f.request.getMockImplementation()!;
+    const ids = [
+      "00000000-0000-4000-8000-000000000021",
+      "00000000-0000-4000-8000-000000000022",
+      "00000000-0000-4000-8000-000000000023",
+    ];
+    f.request.mockImplementation(async (path, options) => {
+      const table = path.split("?")[0];
+      if (table === "/v1/jobs" || table === "/v1/source-runs") {
+        const records = ids.map((id, i) =>
+          table === "/v1/jobs"
+            ? {
+                id,
+                revision: 1,
+                type: "source_collect",
+                entity_id: source,
+                status: "succeeded",
+                attempts: 1,
+                created_at: "2026-10-18T00:00:00Z",
+              }
+            : {
+                id,
+                revision: 1,
+                job_id: id,
+                source_id: source,
+                status: "succeeded",
+                counts: i < 2 ? { processed: i === 0 ? 10 : 0 } : {},
+              },
+        );
+        return {
+          data: { records, next_cursor: null },
+          meta: { request_id: "fixture" },
+        };
+      }
+      return original(path, options);
+    });
+    const state = await new ConnectedRepository(f.client).load();
+    expect(state.jobs.map((j) => j.message)).toEqual([
+      "10 notices processed.",
+      "0 notices processed.",
+      "",
+    ]);
+  });
   it("does not attribute user-entered opportunities to a manual tender portal", async () => {
     const f = fixture([
       {
