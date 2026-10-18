@@ -297,6 +297,7 @@ export class ConnectedRepository {
             error: discovery
               ? str(discovery, "assessment_error") || undefined
               : undefined,
+            attempts: Number(discovery?.assessment_attempts || 0),
             nextAttempt: discovery
               ? str(discovery, "next_attempt_at") || undefined
               : undefined,
@@ -550,10 +551,10 @@ export class ConnectedRepository {
               ? (r.status as "running" | "failed" | "blocked")
               : "queued",
       progress: r.status === "succeeded" ? 100 : 0,
-      attempt: Number(r.attempts),
+      attempt: Number((r.checkpoint as {model_routing?:{round_attempts?:number}} | null)?.model_routing?.round_attempts ?? r.attempts),
       message:
         (r.error_code === "MODEL_ROUND_EXHAUSTED"
-          ? `All configured providers were tried. Automatically retries after ${str(r, "next_attempt_at")}.`
+          ? `Waiting for an available provider. Automatically retries after ${str(r, "next_attempt_at")}.`
           : r.status === "retry_wait" && r.error_code === "MODEL_IN_PROGRESS"
             ? "Gemini is processing this request. Its result will be checked automatically."
             : r.status === "quota_wait" &&
@@ -1203,7 +1204,6 @@ function modelRoutingSummary(checkpoint: unknown): string {
   };
   const reasons: Record<string, string> = {
     MODEL_NOT_CONFIGURED: "server configuration missing",
-    FREE_ONLY_REQUIRED: "free-only account confirmation needed",
     PROVIDER_AUTH_FAILED: "credentials rejected",
     PROVIDER_REQUEST_INVALID: "request rejected",
     PROVIDER_MODEL_NOT_FOUND: "model not found",

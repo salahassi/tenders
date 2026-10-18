@@ -19,8 +19,6 @@ export function modelLedger(
             model: environments[provider]?.model || "",
             project_ref: environments[provider]?.projectRef || "",
             key_configured: Boolean(environments[provider]?.key),
-            free_tier_confirmed:
-              environments[provider]?.freeTierConfirmed === true,
           })),
         });
       return parseModelPool(

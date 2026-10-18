@@ -1,27 +1,19 @@
-# Free and free-tier model providers
+# Model providers and routing
 
-TenderDesk runs **connected-only** with **no paid fallback**. Automatic round robin reads configured free provider slots directly from secrets; manual mode uses verified, **enabled** profiles in `failover_rank` order. Gemini can be configured on its own; an unused Qwen or optional provider does not need a policy or credentials.
+TenderDesk uses configured credentials and Owner-selected model names. Billing confirmation, free-tier metadata and `APP_MODEL_*_FREE_ONLY` are not runtime prerequisites; the worker no longer reads those secrets. Legacy `_free` provider IDs and billing columns remain for compatibility, not pricing enforcement. Vendor billing and quota are controlled by the configured account; the application does not inspect them.
 
-Google's [model catalog](https://ai.google.dev/gemini-api/docs/models) and [Interactions API guide](https://ai.google.dev/gemini-api/docs/interactions), checked October 17, 2026, list Gemini 3.8 Flash as `gemini-3.8-flash`. Keep that exact identifier in both the backend secret and workspace policy. This verifies the identifier, not access or free quota for a particular account.
-
-## Active adapters
+## Provider configuration
 
 | Provider id | Console | Backend secrets | Workspace `project_ref` |
 |-------------|---------|-----------------|-------------------------|
 | `gemini_free` | [Google AI Studio](https://aistudio.google.com/) | `APP_MODEL_GEMINI_NAME`, `APP_MODEL_GEMINI_PROJECT`, `APP_MODEL_GEMINI_KEY` | Google Cloud project id |
-| `qwen_free` | [Alibaba Model Studio](https://www.alibabacloud.com/) Singapore, **Free Quota Only** | `APP_MODEL_QWEN_NAME`, `APP_MODEL_QWEN_PROJECT`, `APP_MODEL_QWEN_KEY` | Singapore workspace id |
-| `groq_free` *(optional)* | [Groq Console](https://console.groq.com/) | `APP_MODEL_GROQ_NAME`, `APP_MODEL_GROQ_PROJECT`, `APP_MODEL_GROQ_KEY` | Owner-verified account label |
-| `mistral_free` *(optional)* | [Mistral Console](https://console.mistral.ai/) | `APP_MODEL_MISTRAL_NAME`, `APP_MODEL_MISTRAL_PROJECT`, `APP_MODEL_MISTRAL_KEY` | Owner-verified account label |
-| `zai_free` *(optional)* | [z.ai](https://z.ai/) | `APP_MODEL_ZAI_NAME`, `APP_MODEL_ZAI_PROJECT`, `APP_MODEL_ZAI_KEY` | Owner-verified account label |
+| `qwen_free` | [Alibaba Model Studio](https://www.alibabacloud.com/) Singapore | `APP_MODEL_QWEN_NAME`, `APP_MODEL_QWEN_PROJECT`, `APP_MODEL_QWEN_KEY` | Singapore workspace id |
+| `groq_free` *(optional)* | [Groq Console](https://console.groq.com/) | `APP_MODEL_GROQ_NAME`, `APP_MODEL_GROQ_PROJECT`, `APP_MODEL_GROQ_KEY` | Account label |
+| `mistral_free` *(optional)* | [Mistral Console](https://console.mistral.ai/) | `APP_MODEL_MISTRAL_NAME`, `APP_MODEL_MISTRAL_PROJECT`, `APP_MODEL_MISTRAL_KEY` | Account label |
+| `zai_free` *(optional)* | [z.ai](https://z.ai/) | `APP_MODEL_ZAI_NAME`, `APP_MODEL_ZAI_PROJECT`, `APP_MODEL_ZAI_KEY` | Account label |
 | `cloudflare_free` *(optional)* | [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) | `APP_MODEL_CLOUDFLARE_NAME`, `APP_MODEL_CLOUDFLARE_PROJECT`, `APP_MODEL_CLOUDFLARE_KEY` | Cloudflare **account ID** (`project_ref`) |
 
-Legacy `APP_MODEL_PROVIDER` + `APP_MODEL_NAME` + `APP_MODEL_PROJECT` + `APP_MODEL_KEY` still fill **one** slot for older deployments.
-
-Default failover ranks: Gemini 1, Qwen 2, Groq 3, Mistral 4, Cloudflare 5, z.ai 6. In manual mode, only **enabled** rows with matching secrets participate; optional providers can stay disabled.
-
-Authorize each content item **per provider** that may process it.
-
-### API endpoints (adapters)
+Legacy `APP_MODEL_PROVIDER`, `APP_MODEL_NAME`, `APP_MODEL_PROJECT` and `APP_MODEL_KEY` can still populate one slot. Server metadata exposes model/project and whether a key exists, never the key. No model name or account identity is invented. Model names are sent verbatim; there is no exact-name allowlist.
 
 | Provider | Generation endpoint |
 |----------|---------------------|
@@ -32,53 +24,43 @@ Authorize each content item **per provider** that may process it.
 | `zai_free` | `https://api.z.ai/api/paas/v4/chat/completions` |
 | `cloudflare_free` | `https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1/chat/completions` |
 
-Model identifiers always come from the Owner’s `_NAME` secret and are sent verbatim. No exact model allowlist is maintained. The z.ai adapter uses the standard API endpoint with provider defaults for optional thinking; it does not choose capabilities based on a model-name allowlist. Official [API](https://docs.z.ai/api-reference/llm/chat-completion.md) and [pricing](https://docs.z.ai/guides/overview/pricing.md) were checked October 18, 2026; GLM-4.7-Flash is listed free, but the Owner controls the selected model and confirms its free billing status.
+The z.ai adapter uses provider defaults for optional thinking and the standard JSON chat-completion endpoint. Changing a model name does not introduce a model-specific toggle. Qwen uses its Singapore workspace; Cloudflare requires its account ID. Groq, Mistral and z.ai project labels are local identity records.
 
-Structured output uses OpenAI-style `response_format: { type: "json_object" }` where supported; TenderDesk still validates JSON against the task schema.
+## Automatic routing
 
-## Other free-tier options (not wired)
+Settings provides an ordered list of Gemini, Qwen, Mistral, Groq and z.ai with accessible Move up/Move down controls. The Owner saves the complete order and strategy through the revision-checked, audited `model.routing` command. Duplicate, unknown or missing providers are rejected. Older clients that only toggle routing preserve the saved order.
 
-| Vendor | Notes |
-|--------|--------|
-| [Hugging Face Inference](https://huggingface.co/inference-api) | Model-dependent JSON; weaker guarantees |
-| [Cohere trial](https://cohere.com/) | Trial credits, not ongoing free-only |
-| [OpenRouter](https://openrouter.ai/) | Out of scope (paid router) |
+- **Priority** starts each new round with the first configured provider in the saved order. This is the default.
+- **Round robin** rotates the starting position through that same saved order. Polling an existing background request preserves its identity and does not advance the rotation or round-attempt count.
 
-## Automatic round robin
+Automatic routing can use configured server slots even if their manual profile switch is off. Missing credentials are recorded and skipped. Provider authentication, model availability, HTTP quota/network and invalid-output failures continue to the next candidate. An authorized valid result completes the task. All provider outcomes are retained for diagnosis.
 
-When enabled, Gemini → Qwen → Mistral → Groq → z.ai rotates its starting provider globally. Configured credentials, model and account identity plus `_FREE_ONLY=true` (or a saved Owner-attested free-only profile) make a slot eligible without a separate enable switch. Missing slots are skipped with a visible reason. Model name changes in the same attested account apply to new requests automatically; saved remote requests keep their identity. Provider errors move to alternatives, while unknown usage remains reserved and is never blindly resent to that provider. Daily application ceilings are shared across the pool.
+If no candidate yields a valid result, the task records `MODEL_ROUND_EXHAUSTED` in `retry_wait`. The plan stays active; the UI says **Waiting for an available provider**, shows the actual round-attempt count and next attempt time, and retries with bounded exponential delay (one minute to one hour, honoring a bounded Retry-After). A recovered provider can complete the same task without a manual unblock. No fit assessment is fabricated during this wait.
 
-Each provider still needs exact-content consent; public collector permission and Company Knowledge permission are distinct. Groq/z.ai can use provider-managed quotas like Gemini with null expiry/balance, keeping actual provider rate limits and app budgets.
+Actual application daily ceilings and rate controls remain enforced across the pool and renew at midnight Asia/Riyadh. They are separate from vendor billing declarations. Unknown usage stays recorded conservatively and the same uncertain request is not blindly resent; another eligible provider may proceed. Known Gemini request IDs are retrieved instead of creating duplicates.
 
-## Manual failover behavior (runtime)
+## Company evidence
 
-1. Load enabled profiles from `model_settings` ordered by `failover_rank`.
-2. Skip profiles that fail attestation, quota expiry, or secret mismatch.
-3. Before reserving generation, try the next profile if token counting is unavailable or the provider quota is exhausted. After an explicit HTTP 429 generation rejection, the worker may reserve a different provider for the same job. All attempts still count against conservative daily limits.
-4. A timeout, disconnected response, or server error during generation can have consumed tokens. Retain unknown usage and stop; the Owner must reconcile it before another generation. Do **not** fail over on validation, policy, or authorization errors.
-5. A proposal can select another provider after its initial explicit rejection. Once a reservation has measured usage or uncertain delivery, its provider/model/project identity stays pinned for subsequent proposal steps.
+The Owner can permit current and future enabled, verified, unexpired Company Knowledge files and notes for selected destinations. Each request checks the current exact hashes, workspace membership and explicit revocations. Turning off the policy stops policy-derived authorization. The real comparison receives company expertise, capabilities, projects and qualifications from those sources, together with the tender evidence. Classification includes complete eligible source text instead of silently limiting large company profiles to twelve keyword-selected excerpts; context limits are checked before sending.
 
-Unknown usage still blocks further calls until Owner reconciliation.
+Disabled, unverified, expired and style-only materials do not establish company qualifications. Explicit one-off approvals remain separate. The model must cite exact supplied evidence; absent proof remains unknown and fit ratings are not hardcoded.
 
-## Continuous Gemini free tier
+A connection probe is a separate operational diagnostic with no company payload. It tests transport and credentials, never substitutes for an assessment or claims to verify billing.
 
-The Owner confirmed the configured Gemini project is on the free tier and requested continuous operation. New Gemini policies use `quota_mode=provider_managed`, with `quota_ends_at` and `quota_remaining_tokens` null. Those nulls mean unknown/provider-enforced limits, not unlimited or verified token credit. An Owner confirms free-tier billing and saves the matching identity; no Google account login or manual renewal date is required. Existing verified budgets and other providers retain their expiry rules.
+## Manual profiles
 
-Application limits still renew at midnight Asia/Riyadh. An explicit provider 429 waits and retries the same durable task, with Retry-After bounded to 1 minute–1 day or exponential 1 minute–1 hour waits when absent. Uncertain post-send usage blocks automatic resend. A connection check is an operational job using the same ledger and worker, capped at 256 output tokens, with no customer content or fake business records. Its result is visible in Activity & jobs.
+With automatic routing disabled, enabled profiles use their existing `failover_rank`, saved model/account identity and proposal identity rules. Every supported provider accepts provider-managed quota without a billing attestation or fabricated balance/expiry. An explicitly configured verified budget still enforces its declared expiry and balance. Manual uncertain requests retain the existing reconciliation workflow.
 
-## Activation and diagnosis
+## Diagnosis
 
-Owner settings now read `GET /v1/model-environment` to prefill the model and project when no workspace policy exists. The authenticated route requires actual Owner membership and returns only provider/model/project and `key_configured`; it never returns keys, changes configuration, calls a provider, or claims to verify billing/quota. Existing policies are preserved and mismatches are shown. Untouched optional slots remain unsaved and disabled. Google console login is not required for this check; an Owner may supply verified free-tier/quota facts without giving the assistant Google account access.
-
-The three Gemini secrets must exist in **Supabase Edge Function Secrets**, and the matching workspace policy must have Owner-confirmed free-tier billing. Gemini provider-managed mode does not require a manual free quota or expiry. The provider-pool migrations (`20261016120000`, `20261016130000`, and `20261016220000`) and current `api`/`worker` functions must be deployed. Adding secrets alone does not apply migrations, enable a workspace policy, approve content, or activate the dispatcher. Keep other providers disabled unless separately verified.
-
-| Error | Meaning and next action |
+| Error | Meaning |
 | --- | --- |
-| `PROVIDER_AUTH_FAILED` | Google returned HTTP 401 or 403. Verify the key, project access, and applicable API restrictions in the provider console. |
-| `PROVIDER_MODEL_NOT_FOUND` | The provider returned HTTP 404. Verify the exact model identifier and account availability. |
-| `PROVIDER_REQUEST_INVALID` | The provider returned HTTP 400. Check the deployed adapter's request against the current API contract. |
-| `PROVIDER_QUOTA_WAIT` | The provider returned HTTP 429 or the verified local quota cannot cover the reservation. Check quota and retry timing. |
-| `MODEL_NOT_CONFIGURED` | No usable enabled policy matches the backend credentials. Check all three secret names and the workspace policy. |
-| `MODEL_NETWORK_UNCERTAIN` / `USAGE_REVIEW_REQUIRED` | Delivery or usage could not be established. Reconcile the existing reservation before retrying. |
+| `PROVIDER_AUTH_FAILED` | Provider rejected credentials or account access. |
+| `PROVIDER_MODEL_NOT_FOUND` | Configured model was not found. |
+| `PROVIDER_REQUEST_INVALID` | Provider rejected the request shape. |
+| `PROVIDER_QUOTA_WAIT` | Provider returned a quota response or an explicitly declared budget cannot cover the request. |
+| `MODEL_NOT_CONFIGURED` | Credentials, model or account identity are missing/mismatched. |
+| `MODEL_ROUND_EXHAUSTED` | No candidate returned a valid result; another round is scheduled. |
+| `USAGE_REVIEW_REQUIRED` | An earlier uncertain request remains reserved for reconciliation. |
 
-`GET /functions/v1/api/v1/health` should return HTTP 200 without an account. A platform HTTP 503 `BOOT_ERROR` occurs before application routing and before Gemini processing. It requires the Edge Function startup log and a verified deployment; it is not evidence that a Gemini key or model was rejected. Never include secret values or raw provider response bodies in diagnostics.
+Never include secret values, raw provider bodies or company prompts in diagnostics. Hosted health, deployed source equality, local integration tests and browser acceptance are separate verification steps.

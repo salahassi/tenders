@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { MODEL_PROVIDER_IDS } from "./modelProviders.ts";
+import { MODEL_PROVIDER_IDS, ROUND_ROBIN_PROVIDERS } from "./modelProviders.ts";
 import {
   estimateInputSchema,
   deliveryInputSchema,
@@ -69,6 +69,7 @@ export const commandSchemas = {
       expected_revision: revision,
       scope: z.enum(["all", "software_services"]),
       auto_public_notices: z.boolean(),
+      auto_company_knowledge: z.boolean().optional(),
       providers: z
         .array(z.enum(MODEL_PROVIDER_IDS))
         .max(MODEL_PROVIDER_IDS.length),
@@ -324,7 +325,7 @@ export const commandSchemas = {
       provider: z.enum(MODEL_PROVIDER_IDS),
       model: z.string().regex(/^[a-zA-Z0-9._@/-]{1,120}$/),
       project_ref: z.string().min(1).max(120),
-      free_only: z.literal(true),
+      free_only: z.boolean(),
       billing_verified: z.boolean(),
       free_quota_only: z.boolean(),
       quota_mode: z
@@ -341,15 +342,23 @@ export const commandSchemas = {
     .refine(
       (v) =>
         v.quota_mode === "provider_managed"
-          ? ["gemini_free", "groq_free", "zai_free"].includes(v.provider) &&
-            v.quota_ends_at === null &&
-            v.quota_remaining_tokens === null
+          ? v.quota_ends_at === null && v.quota_remaining_tokens === null
           : v.quota_ends_at !== null && v.quota_remaining_tokens !== null,
-      "Use provider-managed quota only for Gemini, Groq or z.ai; verified budgets require quota and expiry.",
+      "Provider-managed quota has no declared balance or expiry; verified budgets require both.",
     ),
   "model.probe": z.object({}).strict(),
   "model.routing": z
     .object({
+      free_providers: z.array(z.enum(ROUND_ROBIN_PROVIDERS)).max(5).optional(),
+      strategy: z.enum(["priority", "round_robin"]).optional(),
+      provider_order: z
+        .array(z.enum(ROUND_ROBIN_PROVIDERS))
+        .length(5)
+        .refine(
+          (ids) => new Set(ids).size === 5,
+          "Each provider must appear once.",
+        )
+        .optional(),
       enabled: z.boolean(),
       expected_revision: z.number().int().min(0),
     })

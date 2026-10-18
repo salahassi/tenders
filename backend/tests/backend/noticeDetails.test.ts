@@ -460,3 +460,52 @@ it("reads pending detail pages before starting an older ready-to-model assessmen
   expect(ctx.plan.opportunity_id).toBe(newer);
   expect(ctx.detail_source).toBeDefined();
 });
+
+it("keeps expertise after the former twelve-source and 32k excerpt boundaries", () => {
+  const company = Array.from({ length: 14 }, (_, i) => ({
+    id: `source-${i}`,
+    text:
+      "Synthetic source text. ".repeat(160) +
+      (i === 13
+        ? "Essential uncommon Arabic integration expertise at the end."
+        : ""),
+    kind: "company",
+    verified: true,
+    reference: {
+      entity_kind: "knowledge",
+      entity_id: `note-${i}`,
+      content_hash: "a".repeat(64),
+    },
+  }));
+  const input = taskInput({
+    plan: {
+      frozen_context: {
+        notice: {
+          id: "notice",
+          text: "متطلبات مشروع جديد",
+          kind: "notice",
+          reference: {
+            entity_kind: "notice",
+            entity_id: "notice",
+            content_hash: "b".repeat(64),
+          },
+        },
+        knowledge: company,
+        blocks: [],
+        reviews: [],
+      },
+    },
+    step: { task: "classify_opportunity", input: {} },
+    steps: [],
+    requirements: [],
+  });
+  expect(input.evidence).toHaveLength(15);
+  expect(input.evidence.find((x) => x.id === "source-13")?.text).toBe(
+    company[13].text,
+  );
+  expect(input.context.company_evidence_coverage).toEqual({
+    available_sources: 14,
+    supplied_sources: 14,
+    complete_text: true,
+  });
+});

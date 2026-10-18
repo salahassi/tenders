@@ -450,3 +450,174 @@ it("does not expose discovery rows without membership or retain automatic permis
     ).rows[0].discovery_policy,
   ).toEqual({ scope: "all", auto_public_notices: false, providers: [] });
 });
+
+async function companyPolicy(enabled: boolean) {
+  const revision = (
+    await f.db.query<any>(
+      "select revision from public.workspaces where id=$1",
+      [f.w],
+    )
+  ).rows[0].revision;
+  return f.command("discovery.configure", {
+    expected_revision: revision,
+    scope: "software_services",
+    auto_public_notices: true,
+    auto_company_knowledge: enabled,
+    providers: ["gemini_free", "groq_free", "zai_free"],
+  });
+}
+async function knowledgeRef(id: string, kind = "knowledge") {
+  return (
+    await f.db.query<any>(
+      "select app_private.content_record($1,$2,$3)-'content'-'title' ref",
+      [f.w, kind, id],
+    )
+  ).rows[0].ref;
+}
+it("permits future verified company files and notes, while honoring revocations and policy removal", async () => {
+  await companyPolicy(true);
+  const note = await f.command("knowledge.save", {
+    category: "company",
+    title: "Synthetic delivery evidence",
+    content: "Delivered an approval application and data integration.",
+    enabled: true,
+  });
+  const ref = await knowledgeRef(note.id);
+  await expect(check([ref], "groq_free")).rejects.toThrow(
+    "DATA_AUTHORIZATION_REQUIRED",
+  );
+  await f.command("knowledge.verify", {
+    id: note.id,
+    expected_revision: note.revision,
+  });
+  await check([ref], "groq_free");
+  await check([ref], "zai_free");
+  const d = await f.command("document.prepare", {
+    eligibility_attested: true,
+    kind: "company",
+    knowledge_item_id: note.id,
+    original_name: "synthetic-projects.txt",
+    mime_type: "text/plain",
+    size: 60,
+    hash: "b".repeat(64),
+  });
+  await f.rpc("accept_uploaded_document", [
+    d.id,
+    f.owner,
+    "b".repeat(64),
+    60,
+    "Synthetic verified file: ERP and workflow delivery expertise.",
+    "ready",
+    crypto.randomUUID(),
+  ]);
+  await check([await knowledgeRef(d.id, "document")], "zai_free");
+  await expect(check([ref], "mistral_free")).rejects.toThrow(
+    "DATA_AUTHORIZATION_REQUIRED",
+  );
+  const auth = (
+    await f.db.query<any>(
+      "select * from public.content_authorizations where entity_id=$1 and provider='groq_free'",
+      [note.id],
+    )
+  ).rows[0];
+  expect(auth.authorization_basis).toBe("company_knowledge_policy");
+  await f.command("content.revoke", {
+    id: auth.id,
+    expected_revision: auth.revision,
+  });
+  await expect(check([ref], "groq_free")).rejects.toThrow(
+    "DATA_AUTHORIZATION_REQUIRED",
+  );
+  await companyPolicy(false);
+  await expect(check([ref], "zai_free")).rejects.toThrow(
+    "DATA_AUTHORIZATION_REQUIRED",
+  );
+  await expect(
+    check([await knowledgeRef(d.id, "document")], "zai_free"),
+  ).rejects.toThrow("DATA_AUTHORIZATION_REQUIRED");
+  await f.command("content.authorize", {
+    ...ref,
+    provider: "zai_free",
+    attestation: "nonconfidential_nonpersonal",
+  });
+  await check([ref], "zai_free");
+});
+it("excludes expired/style evidence and preserves/reset company policy appropriately", async () => {
+  await companyPolicy(true);
+  const note = await f.command("knowledge.save", {
+    category: "company",
+    title: "Synthetic claim",
+    content: "Synthetic delivery claim.",
+    enabled: true,
+  });
+  const ref = await knowledgeRef(note.id);
+  await f.command("knowledge.verify", {
+    id: note.id,
+    expected_revision: note.revision,
+  });
+  await f.db.query(
+    "update public.knowledge_items set expiry_date=current_date-1 where id=$1",
+    [note.id],
+  );
+  await expect(check([ref], "groq_free")).rejects.toThrow(
+    "DATA_AUTHORIZATION_REQUIRED",
+  );
+  await f.db.query(
+    "update public.knowledge_items set expiry_date=null,category='previous_proposal' where id=$1",
+    [note.id],
+  );
+  await expect(check([ref], "groq_free")).rejects.toThrow(
+    "DATA_AUTHORIZATION_REQUIRED",
+  );
+  expect(
+    (
+      await f.db.query<any>(
+        "select has_function_privilege('authenticated','app_private.authorize_company_knowledge(uuid,jsonb,text)','execute') allowed",
+      )
+    ).rows[0].allowed,
+  ).toBe(false);
+  await configure();
+  expect(
+    (
+      await f.db.query<any>(
+        "select discovery_policy from public.workspaces where id=$1",
+        [f.w],
+      )
+    ).rows[0].discovery_policy.auto_company_knowledge,
+  ).toBe(true);
+  await f.db.query(
+    "update public.workspaces set restore_origin=jsonb_build_object('fixture','restore') where id=$1",
+    [f.w],
+  );
+  expect(
+    (
+      await f.db.query<any>(
+        "select discovery_policy from public.workspaces where id=$1",
+        [f.w],
+      )
+    ).rows[0].discovery_policy.auto_company_knowledge,
+  ).not.toBe(true);
+});
+it("keeps evidence revisions stable for permission-only changes and rejects Editor consent", async () => {
+  await configure();
+  const before = (
+    await f.db.query<any>(
+      "select evidence_revision from public.workspaces where id=$1",
+      [f.w],
+    )
+  ).rows[0].evidence_revision;
+  await companyPolicy(true);
+  expect(
+    (
+      await f.db.query<any>(
+        "select evidence_revision from public.workspaces where id=$1",
+        [f.w],
+      )
+    ).rows[0].evidence_revision,
+  ).toBe(before);
+  await f.db.query(
+    "update public.memberships set role='Editor' where user_id=$1",
+    [f.owner],
+  );
+  await expect(companyPolicy(false)).rejects.toThrow("ROLE_FORBIDDEN");
+});

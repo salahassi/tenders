@@ -118,33 +118,21 @@ it("prefills server model identity without inventing quota or activating optiona
   await screen.findByDisplayValue("gemini-3.8-flash");
   expect(screen.getByDisplayValue("synthetic-project")).toBeInTheDocument();
   const panel = within(
-    screen.getByRole("heading", { name: "Gemini free tier" }).parentElement!,
+    screen.getByRole("heading", { name: "Gemini" }).parentElement!,
   );
-  expect(
-    panel.getByLabelText(/I confirm this Gemini project uses the free tier/),
-  ).not.toBeChecked();
-  expect(
-    panel.queryByLabelText("Free quota expiry (UTC)"),
-  ).not.toBeInTheDocument();
+  expect(panel.queryByLabelText("Quota expiry (UTC)")).not.toBeInTheDocument();
   expect(
     panel.queryByLabelText("quota remaining tokens"),
   ).not.toBeInTheDocument();
   expect(
-    panel.getByLabelText(
-      "Enable matching backend credentials after verification",
-    ),
-  ).toBeDisabled();
+    panel.getByLabelText("Enable matching backend credentials"),
+  ).toBeEnabled();
   await userEvent.click(
     screen.getByRole("button", { name: "Save provider policies" }),
   );
   expect(f.runCommand).not.toHaveBeenCalled();
   await userEvent.click(
-    panel.getByLabelText(/I confirm this Gemini project uses the free tier/),
-  );
-  await userEvent.click(
-    panel.getByLabelText(
-      "Enable matching backend credentials after verification",
-    ),
+    panel.getByLabelText("Enable matching backend credentials"),
   );
   await userEvent.click(
     screen.getByRole("button", { name: "Save provider policies" }),
@@ -180,11 +168,9 @@ it("preserves an existing policy identity and permits disabling a mismatched pol
     screen.getByText(/Model or project differs from the server configuration/),
   ).toBeInTheDocument();
   const panel = within(
-    screen.getByRole("heading", { name: "Gemini free tier" }).parentElement!,
+    screen.getByRole("heading", { name: "Gemini" }).parentElement!,
   );
-  const toggle = panel.getByLabelText(
-    "Enable matching backend credentials after verification",
-  );
+  const toggle = panel.getByLabelText("Enable matching backend credentials");
   expect(toggle).toBeChecked();
   await userEvent.click(toggle);
   expect(toggle).not.toBeChecked();
@@ -248,7 +234,7 @@ it("enables round robin without individual enabled policies and can queue its op
   } as any);
   render(<ModelControls />);
   await userEvent.click(
-    await screen.findByRole("button", { name: "Enable automatic round robin" }),
+    await screen.findByRole("button", { name: "Enable automatic routing" }),
   );
   expect(runCommand).toHaveBeenCalledWith("model.routing", {
     enabled: true,
@@ -260,7 +246,7 @@ it("enables round robin without individual enabled policies and can queue its op
   expect(runCommand).toHaveBeenCalledWith("model.probe", {});
   expect(
     await screen.findByRole("button", {
-      name: "Disable automatic round robin",
+      name: "Disable automatic routing",
     }),
   ).toBeEnabled();
 });
@@ -269,19 +255,11 @@ it("loads an Owner-selected z.ai model and saves free continuous policy without 
   const f = setup();
   await screen.findByDisplayValue("owner-chosen-zai-model");
   const panel = within(
-    screen.getByRole("heading", { name: "z.ai GLM free tier (optional)" })
-      .parentElement!,
+    screen.getByRole("heading", { name: "z.ai (optional)" }).parentElement!,
   );
-  expect(
-    panel.queryByLabelText("Free quota expiry (UTC)"),
-  ).not.toBeInTheDocument();
+  expect(panel.queryByLabelText("Quota expiry (UTC)")).not.toBeInTheDocument();
   await userEvent.click(
-    panel.getByLabelText(/I confirm this account uses the free tier/),
-  );
-  await userEvent.click(
-    panel.getByLabelText(
-      "Enable matching backend credentials after verification",
-    ),
+    panel.getByLabelText("Enable matching backend credentials"),
   );
   await userEvent.click(
     screen.getByRole("button", { name: "Save provider policies" }),
@@ -294,11 +272,86 @@ it("loads an Owner-selected z.ai model and saves free continuous policy without 
         model: "owner-chosen-zai-model",
         project_ref: "synthetic-zai-account",
         enabled: true,
-        billing_verified: true,
+        billing_verified: false,
         quota_mode: "provider_managed",
         quota_ends_at: null,
         quota_remaining_tokens: null,
       }),
     ),
   );
+});
+
+it("persists provider priority and rotation mode with no billing-confirmation UI", async () => {
+  let routing: Record<string, unknown> = {
+    enabled: true,
+    revision: 7,
+    strategy: "priority",
+    provider_order: [
+      "gemini_free",
+      "qwen_free",
+      "mistral_free",
+      "groq_free",
+      "zai_free",
+    ],
+  };
+  const runCommand = vi.fn(async (_op: string, input: any) => {
+    routing = { ...input, revision: 8 };
+    return {};
+  });
+  const request = vi.fn(async (path: string) => ({
+    data:
+      path === "/v1/model-routing"
+        ? { records: [routing] }
+        : path === "/v1/model-environment"
+          ? { providers: [] }
+          : path === "/v1/eligibility"
+            ? { items: [], authorizations: [] }
+            : { records: [] },
+  }));
+  vi.mocked(useApp).mockReturnValue({
+    state: { settings: { role: "Owner" } },
+    saving: false,
+    notify: vi.fn(),
+    runCommand,
+    backend: { request },
+  } as any);
+  const view = render(<ModelControls />);
+  await screen.findByRole("button", { name: "Save provider order" });
+  expect(screen.queryByText(/Accounts confirmed free/)).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Move Gemini up" })).toBeDisabled();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Move z.ai (optional) up" }),
+  );
+  await userEvent.selectOptions(
+    screen.getByLabelText("Provider selection"),
+    "round_robin",
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "Save provider order" }),
+  );
+  await waitFor(() =>
+    expect(runCommand).toHaveBeenCalledWith("model.routing", {
+      enabled: true,
+      expected_revision: 7,
+      strategy: "round_robin",
+      provider_order: [
+        "gemini_free",
+        "qwen_free",
+        "mistral_free",
+        "zai_free",
+        "groq_free",
+      ],
+    }),
+  );
+  view.unmount();
+  render(<ModelControls />);
+  await screen.findByRole("button", { name: "Save provider order" });
+  expect(screen.getByLabelText("Provider selection")).toHaveValue(
+    "round_robin",
+  );
+  expect(
+    within(screen.getByRole("list", { name: "Provider order" })).getAllByRole(
+      "listitem",
+    )[3],
+  ).toHaveTextContent("z.ai");
 });

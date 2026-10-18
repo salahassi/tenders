@@ -191,29 +191,39 @@ it("saves an attested continuous Gemini policy without an invented quota or peri
   ).rejects.toMatchObject({ code: "DATA_AUTHORIZATION_REQUIRED" });
 });
 
-it("keeps provider-managed mode restricted to Gemini and requires the Owner's free-tier attestation", async () => {
-  for (const patch of [
-    { provider: "qwen_free", free_quota_only: true },
-    { billing_verified: false },
-    { quota_remaining_tokens: 100 },
+it("supports provider-managed quotas without billing attestations while retaining valid quota shape and Owner authority", async () => {
+  for (const provider of [
+    "gemini_free",
+    "qwen_free",
+    "mistral_free",
+    "groq_free",
+    "zai_free",
   ]) {
-    await expect(
-      f.command("model.configure", { ...policy, ...patch }),
-    ).rejects.toThrow();
-  }
-  expect(
-    commandSchemas["model.configure"].safeParse({
+    const input = {
       ...policy,
-      provider: "qwen_free",
-    }).success,
-  ).toBe(false);
+      provider,
+      free_only: false,
+      billing_verified: false,
+      free_quota_only: false,
+    };
+    expect(commandSchemas["model.configure"].safeParse(input).success).toBe(
+      true,
+    );
+    expect((await f.command("model.configure", input)).enabled).toBe(true);
+  }
+  await expect(
+    f.command("model.configure", {
+      ...policy,
+      expected_revision: 1,
+      quota_remaining_tokens: 100,
+    }),
+  ).rejects.toThrow();
   expect(
     commandSchemas["model.configure"].safeParse({
       ...policy,
       quota_mode: "verified_budget",
     }).success,
   ).toBe(false);
-  await f.command("model.configure", policy);
   await f.db.query(
     "update public.memberships set role='Reviewer' where user_id=$1",
     [f.owner],

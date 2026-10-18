@@ -342,22 +342,10 @@ export function available(
   )
     throw new ModelError("MODEL_NOT_CONFIGURED");
   if (
-    !config.free_only ||
-    (!config.billing_verified && !config.automatic) ||
-    (config.provider === "qwen_free" && !config.free_quota_only)
-  )
-    throw new ModelError("FREE_ONLY_REQUIRED");
-  if (
     !MODEL_PROVIDER_IDS.includes(config.provider) ||
     !/^[a-zA-Z0-9._@/-]{1,120}$/.test(config.model)
   )
     throw new ModelError("PROVIDER_NOT_ALLOWED");
-  if (
-    config.quota_mode === "provider_managed" &&
-    !["gemini_free", "groq_free", "zai_free"].includes(config.provider) &&
-    !config.automatic
-  )
-    throw new ModelError("FREE_ONLY_REQUIRED");
   if (
     !Number.isFinite(Date.parse(config.verified_at)) ||
     (config.quota_mode !== "provider_managed" &&
@@ -588,7 +576,6 @@ const failoverErrors = new Set([
 const automaticFailoverErrors = new Set([
   ...failoverErrors,
   "MODEL_NOT_CONFIGURED",
-  "FREE_ONLY_REQUIRED",
   "PROVIDER_AUTH_FAILED",
   "PROVIDER_MODEL_NOT_FOUND",
   "PROVIDER_REQUEST_INVALID",
@@ -603,6 +590,8 @@ const automaticFailoverErrors = new Set([
   "UNSUPPORTED_COMPANY_CLAIM",
   "USAGE_UNKNOWN",
   "PROVIDER_VERIFICATION_EXPIRED",
+  "MODEL_CONTEXT_TOO_LARGE",
+  "MODEL_IDENTITY_CHANGED",
 ]);
 const repairableOutputErrors = new Set([
   "MODEL_OUTPUT_INVALID",
@@ -1023,7 +1012,7 @@ export class FreeModelProvider {
 }
 const validCount = (v: unknown): number | null =>
   typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null;
-/** One real call per queue claim. Tries enabled providers in failover order. */
+/** Try each configured provider once per round; retain per-provider outcomes. */
 export async function executeModel(
   task: ModelTask,
   context: unknown,
@@ -1195,7 +1184,7 @@ export async function executeModel(
       throw lastError;
     }
   }
-  if (outputError) throw outputError;
+  if (outputError && !automatic) throw outputError;
   throw automatic
     ? new ModelError("MODEL_ROUND_EXHAUSTED", lastError.retryAfter)
     : lastError;

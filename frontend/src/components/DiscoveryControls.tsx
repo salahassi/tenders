@@ -13,6 +13,7 @@ export default function DiscoveryControls() {
   const { backend, runCommand, state, saving, notify } = useApp();
   const [scope, setScope] = useState("all");
   const [automatic, setAutomatic] = useState(false);
+  const [companyKnowledge, setCompanyKnowledge] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [revision, setRevision] = useState(0);
   const [error, setError] = useState("");
@@ -26,6 +27,7 @@ export default function DiscoveryControls() {
           discovery_policy?: {
             scope: string;
             auto_public_notices: boolean;
+            auto_company_knowledge?: boolean;
             providers: string[];
           };
         };
@@ -34,6 +36,7 @@ export default function DiscoveryControls() {
       setRevision(response.data.workspace.revision);
       setScope(policy?.scope || "all");
       setAutomatic(policy?.auto_public_notices || false);
+      setCompanyKnowledge(policy?.auto_company_knowledge || false);
       setSelected(policy?.providers || []);
     } catch (e) {
       setError(
@@ -53,6 +56,7 @@ export default function DiscoveryControls() {
         expected_revision: revision,
         scope,
         auto_public_notices: automatic,
+        auto_company_knowledge: companyKnowledge,
         providers: selected,
       });
       await load();
@@ -96,9 +100,23 @@ export default function DiscoveryControls() {
       </label>
       <p className="muted small">
         Allows exact public notices from approved collectors to be sent to the
-        selected providers. Edited notices, company evidence and private files
-        keep their separate content permissions. Revoked permissions remain
-        revoked.
+        selected providers. Explicitly revoked content remains excluded.
+      </p>
+      <label>
+        <input
+          type="checkbox"
+          checked={companyKnowledge}
+          disabled={!owner}
+          onChange={(e) => setCompanyKnowledge(e.target.checked)}
+        />{" "}
+        Include Company Knowledge in model processing
+      </label>
+      <p className="muted small">
+        Allows the selected providers to compare tenders with enabled, verified
+        company files and notes, including expertise, projects, capabilities and
+        qualifications. New files and updated notes follow this setting once
+        enabled and verified. Disabled, expired and explicitly revoked evidence
+        stays excluded.
       </p>
       {providers.map((provider) => (
         <label className="row" key={provider}>
@@ -120,7 +138,10 @@ export default function DiscoveryControls() {
       <Button
         onClick={() => void save()}
         disabled={
-          !owner || !revision || saving || (automatic && !selected.length)
+          !owner ||
+          !revision ||
+          saving ||
+          ((automatic || companyKnowledge) && !selected.length)
         }
       >
         Save discovery settings

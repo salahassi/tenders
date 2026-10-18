@@ -67,10 +67,13 @@ const meta = (slots = environment.models) =>
     model: slots[provider].model,
     project_ref: slots[provider].projectRef,
     key_configured: Boolean(slots[provider].key),
-    free_tier_confirmed: slots[provider].freeTierConfirmed === true,
   }));
 async function enable() {
-  return f.command("model.routing", { enabled: true, expected_revision: 0 });
+  return f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "round_robin",
+  });
 }
 async function queue() {
   return f.command("model.probe", {});
@@ -168,7 +171,7 @@ async function age() {
   );
 }
 
-it("visits all five missing slots without sending unauthenticated requests and schedules a finite retry", async () => {
+it("records all five missing slots and schedules retry without unauthenticated requests", async () => {
   await enable();
   const q = await queue();
   const send = vi.fn<typeof fetch>();
@@ -177,7 +180,7 @@ it("visits all five missing slots without sending unauthenticated requests and s
     models: modelEnvironments(() => undefined),
   })();
   const j = await job(q.id);
-  expect(j.status).toBe("quota_wait");
+  expect(j.status).toBe("retry_wait");
   expect(j.error_code).toBe("MODEL_ROUND_EXHAUSTED");
   expect(Number.isFinite(Date.parse(j.next_attempt_at))).toBe(true);
   expect(j.checkpoint.model_routing.checks).toHaveLength(5);
@@ -245,7 +248,7 @@ it("uses configured free providers even when their individual policy is disabled
     ...environment,
     models: {
       ...models,
-      qwen_free: { ...models.qwen_free, freeTierConfirmed: undefined },
+      qwen_free: { ...models.qwen_free },
     },
   };
   await worker(
@@ -311,12 +314,16 @@ it("retries an exhausted round with a rotated start, but never resends ambiguous
   });
   const tick = worker(send);
   await tick();
-  expect((await job(q.id)).status).toBe("quota_wait");
+  expect((await job(q.id)).status).toBe("retry_wait");
   expect(await usage(q.id)).toHaveLength(5);
+  await f.db.query(
+    "update public.jobs set status='queued',next_attempt_at=now() where id=$1",
+    [q.id],
+  );
   await age();
   const before = vi.mocked(send).mock.calls.length;
   await tick();
-  expect((await job(q.id)).status).toBe("quota_wait");
+  expect((await job(q.id)).status).toBe("retry_wait");
   expect(await usage(q.id)).toHaveLength(5);
   // Gemini token counting is allowed; generation must not be repeated.
   expect(
@@ -361,6 +368,7 @@ it("keeps a known pending Gemini request first after a lease change instead of s
       .rows[0].next_position,
   ).toBe(3);
   expect(await usage(q.id)).toHaveLength(1);
+  expect((await job(q.id)).checkpoint.model_routing.round_attempts).toBe(1);
 });
 it("falls back after a failed retrieval of a saved Gemini request without creating Gemini again", async () => {
   await enable();
@@ -468,7 +476,7 @@ it("requires exact per-provider content permission and service-only metadata pre
     ).providers.map((x: any) => x.provider),
   ).toEqual(["qwen_free"]);
 });
-it("does not infer free billing from API-key presence and can disable automatic routing with revision checks", async () => {
+it("runs configured models without a billing attestation and retains routing revision checks", async () => {
   const saved = await enable();
   const q = await queue();
   const withoutAttestation = modelEnvironments((n) =>
@@ -482,14 +490,13 @@ it("does not infer free billing from API-key presence and can disable automatic 
             ? "synthetic-project"
             : undefined,
   );
-  const send = vi.fn<typeof fetch>();
+  const send = transport((p) => success(p));
   await worker(send, { ...environment, models: withoutAttestation })();
-  expect(send).not.toHaveBeenCalled();
-  expect(
-    (await job(q.id)).checkpoint.model_routing.checks.every(
-      (x: any) => x.code === "FREE_ONLY_REQUIRED",
-    ),
-  ).toBe(true);
+  expect(send).toHaveBeenCalled();
+  expect((await job(q.id)).status).toBe("succeeded");
+  expect((await job(q.id)).checkpoint.model_routing.checks).toContainEqual(
+    expect.objectContaining({ provider: "gemini_free", code: "SUCCEEDED" }),
+  );
   await expect(
     f.command("model.routing", { enabled: false, expected_revision: 0 }),
   ).rejects.toThrow("REVISION_CONFLICT");
@@ -624,7 +631,6 @@ it.each(["groq_free", "zai_free"] as const)(
       [provider]: {
         ...models[provider],
         model: "owner-selected-new-model",
-        freeTierConfirmed: undefined,
       },
     };
     await worker(
@@ -688,4 +694,239 @@ it("keeps z.ai exact-content consent separate from Gemini consent", async () => 
       })
     ).providers.map((x: any) => x.provider),
   ).toEqual(["zai_free"]);
+});
+
+it("ignores legacy free-account metadata and runs z.ai without a FREE_ONLY secret or profile", async () => {
+  const route = await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    free_providers: ["zai_free"],
+  });
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: route.revision,
+  });
+  const slots = modelEnvironments((name) =>
+    name.startsWith("APP_MODEL_ZAI_")
+      ? name.endsWith("_KEY")
+        ? "synthetic-key"
+        : name.endsWith("_NAME")
+          ? "owner-selected-model"
+          : name.endsWith("_PROJECT")
+            ? "synthetic-account"
+            : undefined
+      : undefined,
+  );
+  const q = await queue();
+  const calls: string[] = [];
+  await worker(
+    transport((p) => {
+      calls.push(p);
+      return success(p);
+    }),
+    { ...environment, models: slots },
+  )();
+  expect(calls).toEqual(["zai_free"]);
+  expect((await job(q.id)).status).toBe("succeeded");
+  expect(
+    (await f.db.query("select * from public.model_settings")).rows,
+  ).toHaveLength(0);
+  expect(
+    (await f.db.query<any>("select free_providers from public.model_routing"))
+      .rows[0].free_providers,
+  ).toEqual(["zai_free"]);
+  await f.db.query(
+    "insert into public.restore_sessions(workspace_id,manifest,created_by) values($1,'{}',$2)",
+    [f.w, f.owner],
+  );
+  await f.db.exec("update public.restore_sessions set state='committed'");
+  expect(
+    (
+      await f.db.query<any>(
+        "select free_providers,enabled from public.model_routing",
+      )
+    ).rows[0],
+  ).toEqual({ free_providers: [], enabled: false });
+});
+
+it("uses the saved priority on every new job and skips failures in that order", async () => {
+  const order = [
+    "groq_free",
+    "zai_free",
+    "gemini_free",
+    "mistral_free",
+    "qwen_free",
+  ];
+  const route = await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "priority",
+    provider_order: order,
+  });
+  const readback = (
+    await f.db.query<any>(
+      "select provider_order,strategy from public.model_routing",
+    )
+  ).rows[0];
+  expect(readback).toEqual({ provider_order: order, strategy: "priority" });
+  for (let round = 0; round < 2; round++) {
+    await age();
+    const q = await queue();
+    const calls: string[] = [];
+    await worker(
+      transport((p) => {
+        calls.push(p);
+        return p === "groq_free"
+          ? new Response(null, { status: 401 })
+          : success(p);
+      }),
+    )();
+    expect(calls).toEqual(["groq_free", "zai_free"]);
+    expect((await job(q.id)).status).toBe("succeeded");
+  }
+  await expect(
+    f.command("model.routing", {
+      enabled: true,
+      expected_revision: route.revision,
+      provider_order: [...order.slice(0, 4), "groq_free"],
+    }),
+  ).rejects.toThrow("INVALID_INPUT");
+  await expect(
+    f.command("model.routing", {
+      enabled: true,
+      expected_revision: 0,
+      strategy: "round_robin",
+    }),
+  ).rejects.toThrow("REVISION_CONFLICT");
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: route.revision,
+  });
+  expect(
+    (
+      await f.db.query<any>(
+        "select provider_order,strategy from public.model_routing",
+      )
+    ).rows[0],
+  ).toEqual(readback);
+});
+
+it("rotates within the saved provider order when round robin is selected", async () => {
+  const order = [
+    "zai_free",
+    "groq_free",
+    "mistral_free",
+    "qwen_free",
+    "gemini_free",
+  ];
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "round_robin",
+    provider_order: order,
+  });
+  const calls: string[] = [];
+  for (let i = 0; i < 3; i++) {
+    await age();
+    await queue();
+    await worker(
+      transport((p) => {
+        calls.push(p);
+        return success(p);
+      }),
+    )();
+  }
+  expect(calls).toEqual(order.slice(0, 3));
+});
+
+it("keeps an assessment pending after all providers error and schedules automatic reassessment", async () => {
+  await enable();
+  const source = await f.command("source.create", {
+    name: "Synthetic manual source",
+    kind: "manual",
+  });
+  const opportunity = await f.command("opportunity.create", {
+    source_id: source.id,
+    title: "Synthetic software procurement",
+    reference: "TEST-FAILOVER",
+    description: "Implement a software approval workflow.",
+    language: "en",
+    decision: "undecided",
+  });
+  const ref = (await f.rpc("eligibility_candidates")).items.find(
+    (x: any) => x.entity_id === opportunity.id && x.entity_kind === "notice",
+  );
+  for (const provider of ROUND_ROBIN_PROVIDERS)
+    await f.command("content.authorize", {
+      entity_kind: ref.entity_kind,
+      entity_id: ref.entity_id,
+      content_hash: ref.content_hash,
+      provider,
+      attestation: "nonconfidential_nonpersonal",
+    });
+  await f.command("opportunity.assess", {
+    id: opportunity.id,
+    expected_revision: opportunity.revision,
+  });
+  const calls: string[] = [];
+  await worker(
+    transport((p) => {
+      calls.push(p);
+      return new Response(null, {
+        status:
+          p === "gemini_free"
+            ? 400
+            : p === "qwen_free"
+              ? 401
+              : p === "mistral_free"
+                ? 404
+                : 429,
+      });
+    }),
+  )();
+  expect(calls).toEqual(ROUND_ROBIN_PROVIDERS);
+  const plan = (
+    await f.db.query<any>(
+      "select * from public.generation_plans where opportunity_id=$1",
+      [opportunity.id],
+    )
+  ).rows[0];
+  expect(plan).toMatchObject({
+    status: "running",
+    error_code: "MODEL_ROUND_EXHAUSTED",
+  });
+  const discovery = (
+    await f.db.query<any>(
+      "select * from public.opportunity_discovery where id=$1",
+      [opportunity.id],
+    )
+  ).rows[0];
+  expect(discovery).toMatchObject({
+    assessment_state: "retry_wait",
+    assessment_attempts: 1,
+    assessment_error: "MODEL_ROUND_EXHAUSTED",
+    inbox_visible: false,
+  });
+  expect(
+    (await f.db.query("select * from public.fit_assessments")).rows,
+  ).toHaveLength(0);
+  expect(Number.isFinite(Date.parse(discovery.next_attempt_at))).toBe(true);
+});
+
+it("automatically resumes a failed round when a provider becomes available", async () => {
+  await enable();
+  const q = await queue();
+  await worker(transport(() => new Response(null, { status: 429 })))();
+  expect((await job(q.id)).status).toBe("retry_wait");
+  await age();
+  const calls: string[] = [];
+  await worker(
+    transport((p) => {
+      calls.push(p);
+      return success(p);
+    }),
+  )();
+  expect((await job(q.id)).status).toBe("succeeded");
+  expect(calls).toEqual(["qwen_free"]);
+  expect((await job(q.id)).checkpoint.model_routing.round_attempts).toBe(2);
 });

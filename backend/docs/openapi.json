@@ -7779,6 +7779,9 @@
                                 "auto_public_notices": {
                                   "type": "boolean"
                                 },
+                                "auto_company_knowledge": {
+                                  "type": "boolean"
+                                },
                                 "providers": {
                                   "maxItems": 6,
                                   "type": "array",
@@ -9567,8 +9570,7 @@
                                   "maxLength": 120
                                 },
                                 "free_only": {
-                                  "type": "boolean",
-                                  "const": true
+                                  "type": "boolean"
                                 },
                                 "billing_verified": {
                                   "type": "boolean"
@@ -9683,6 +9685,42 @@
                               "$schema": "https://json-schema.org/draft/2020-12/schema",
                               "type": "object",
                               "properties": {
+                                "free_providers": {
+                                  "maxItems": 5,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "gemini_free",
+                                      "qwen_free",
+                                      "mistral_free",
+                                      "groq_free",
+                                      "zai_free"
+                                    ]
+                                  }
+                                },
+                                "strategy": {
+                                  "type": "string",
+                                  "enum": [
+                                    "priority",
+                                    "round_robin"
+                                  ]
+                                },
+                                "provider_order": {
+                                  "minItems": 5,
+                                  "maxItems": 5,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "enum": [
+                                      "gemini_free",
+                                      "qwen_free",
+                                      "mistral_free",
+                                      "groq_free",
+                                      "zai_free"
+                                    ]
+                                  }
+                                },
                                 "enabled": {
                                   "type": "boolean"
                                 },

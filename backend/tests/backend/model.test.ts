@@ -37,7 +37,7 @@ const evidence: Evidence[] = [
     verified: false,
   },
 ];
-it("keeps Owner-attested provider-managed Gemini available without an invented quota expiry", () => {
+it("accepts configured provider-managed models without billing confirmation or invented quota expiry", () => {
   const geminiEnv = { ...env, provider: "gemini_free" };
   const continuous = {
     ...config,
@@ -49,10 +49,10 @@ it("keeps Owner-attested provider-managed Gemini available without an invented q
   expect(() => available(continuous, geminiEnv)).not.toThrow();
   expect(() =>
     available({ ...continuous, billing_verified: false }, geminiEnv),
-  ).toThrow("FREE_ONLY_REQUIRED");
+  ).not.toThrow();
   expect(() =>
     available({ ...continuous, provider: "qwen_free" }, env),
-  ).toThrow("FREE_ONLY_REQUIRED");
+  ).not.toThrow();
   expect(() =>
     available({ ...continuous, quota_mode: "verified_budget" }, geminiEnv),
   ).toThrow("PROVIDER_VERIFICATION_EXPIRED");
@@ -74,13 +74,9 @@ const analysis = {
   separate_volumes: false,
   summary: "Synthetic scope",
 };
-it("requires exactly the selected verified free provider and project", () => {
+it("requires the selected provider identity and honors an explicitly configured quota expiry", () => {
   expect(() => available(config, env)).not.toThrow();
-  for (const changed of [
-    { free_only: false },
-    { free_quota_only: false },
-    { quota_ends_at: "2020-01-01" },
-  ])
+  for (const changed of [{ quota_ends_at: "2020-01-01" }])
     expect(() => available({ ...config, ...changed }, env)).toThrow();
   expect(() => available(config, { ...env, model: "another" })).toThrow(
     "MODEL_NOT_CONFIGURED",
@@ -509,7 +505,7 @@ it("preserves measured usage when the returned JSON fails validation", async () 
   );
 });
 
-it("surfaces a measured truncated background response for bounded repair after visiting missing slots", async () => {
+it("reports an exhausted automatic round while retaining the truncated-provider diagnostic", async () => {
   const gemini = { ...config, provider: "gemini_free" as const };
   const resume = vi.fn(async () => ({
     id: "settled-reservation",
@@ -551,7 +547,7 @@ it("surfaces a measured truncated background response for bounded repair after v
       ledger,
       "en",
     ),
-  ).rejects.toThrow("MODEL_OUTPUT_TRUNCATED");
+  ).rejects.toThrow("MODEL_ROUND_EXHAUSTED");
   expect(ledger.attempt).toHaveBeenNthCalledWith(
     1,
     "gemini_free",

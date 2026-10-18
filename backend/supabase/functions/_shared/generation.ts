@@ -108,18 +108,17 @@ export function taskInput(ctx: PlanContext) {
     const company = frozen.knowledge.filter(
       (x: Row) => x.kind === "company" && x.verified === true,
     );
-    const companySelection =
-      company.reduce((n: number, x: Row) => n + x.text.length, 0) <= 32000
-        ? company
-        : relevant(company, frozen.notice.text, 12);
-    evidence = [frozen.notice, ...companySelection];
+    // Every verified company source is available to the comparison. Do not silently
+    // discard experience based on listing-language keyword overlap or source order.
+    // The normal model/context boundary is enforced before any provider request.
+    evidence = [frozen.notice, ...company];
     context = {
       company_evidence_source:
         "Company Knowledge files and notes only. Cite the supplied company evidence IDs and exact quotes for company capabilities, experience and eligibility. Buyer notices and service-scope preferences are requirements/criteria, never proof of company credentials. Previous proposals classified as style do not establish company facts.",
       company_evidence_coverage: {
         available_sources: company.length,
-        supplied_sources: companySelection.length,
-        complete_text: companySelection === company,
+        supplied_sources: company.length,
+        complete_text: true,
       },
       notice_evidence: frozen.notice_evidence || null,
       evidence_instruction:

@@ -197,3 +197,24 @@ it("separates eligible, excluded, active and blocked notices without changing de
   expect(screen.getByText("Submission deadline passed")).toBeInTheDocument();
   expect(state).toEqual(before);
 });
+
+it("shows provider wait, actual attempt count and scheduled retry without inventing an assessment", () => {
+  const state = createSeedState();
+  const notice: Opportunity = {
+    ...state.opportunities[0],
+    assessment: undefined,
+    discovery: {
+      state: "retry_wait",
+      inboxVisible: false,
+      error: "MODEL_ROUND_EXHAUSTED",
+      attempts: 4,
+      nextAttempt: "2026-10-18T12:30:00Z",
+    },
+  };
+  const preview = getFitPreview(state, notice);
+  expect(preview.level).toBe("Waiting for an available provider");
+  expect(preview.summary).toContain("Attempts: 4");
+  expect(preview.summary).toContain("15:30");
+  expect(preview.summary).toContain("Riyadh");
+  expect(inReviewInbox(notice)).toBe(false);
+});

@@ -594,7 +594,11 @@ it.each([false, true])(
       output_per_day: 50000,
     });
     if (automatic)
-      await f.command("model.routing", { enabled: true, expected_revision: 0 });
+      await f.command("model.routing", {
+        enabled: true,
+        expected_revision: 0,
+        strategy: "round_robin",
+      });
     const env = {
       models: {
         gemini_free: {
@@ -617,7 +621,6 @@ it.each([false, true])(
           projectRef:
             provider === "qwen_free" ? "synthetic" : "synthetic-project",
           key: "synthetic-key",
-          freeTierConfirmed: true,
         };
     const backend = {
       internal: async (name: string, args: Record<string, unknown>) => {

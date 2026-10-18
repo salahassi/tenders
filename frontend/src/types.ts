@@ -51,6 +51,7 @@ export interface Opportunity {
     expired?: boolean;
     error?: string;
     nextAttempt?: string;
+    attempts?: number;
   };
   noticeEvidence?: {
     status: string;

@@ -25,47 +25,54 @@ type ProviderMeta = {
   optional: boolean;
   projectLabel: string;
 };
-const continuousProviders = ["gemini_free", "groq_free", "zai_free"];
+const DEFAULT_ORDER: ProviderId[] = [
+  "gemini_free",
+  "qwen_free",
+  "mistral_free",
+  "groq_free",
+  "zai_free",
+];
+const continuousProviders: readonly string[] = PROVIDER_IDS;
 const PROVIDERS: ProviderMeta[] = [
   {
     id: "gemini_free",
-    label: "Gemini free tier",
+    label: "Gemini",
     rank: 1,
     secretHint: "APP_MODEL_GEMINI_*",
     optional: false,
-    projectLabel: "Verified Google Cloud project identifier",
+    projectLabel: "Google Cloud project identifier",
   },
   {
     id: "qwen_free",
-    label: "Qwen Singapore free quota",
+    label: "Qwen (Singapore)",
     rank: 2,
     secretHint: "APP_MODEL_QWEN_*",
     optional: false,
-    projectLabel: "Verified Singapore workspace identifier",
+    projectLabel: "Singapore workspace identifier",
   },
   {
     id: "groq_free",
-    label: "Groq free tier (optional)",
+    label: "Groq (optional)",
     rank: 3,
     secretHint: "APP_MODEL_GROQ_*",
     optional: true,
-    projectLabel: "Verified account label (for your records)",
+    projectLabel: "Account label (for your records)",
   },
   {
     id: "mistral_free",
-    label: "Mistral free tier (optional)",
+    label: "Mistral (optional)",
     rank: 4,
     secretHint: "APP_MODEL_MISTRAL_*",
     optional: true,
-    projectLabel: "Verified account label (for your records)",
+    projectLabel: "Account label (for your records)",
   },
   {
     id: "zai_free",
-    label: "z.ai GLM free tier (optional)",
+    label: "z.ai (optional)",
     rank: 6,
     secretHint: "APP_MODEL_ZAI_*",
     optional: true,
-    projectLabel: "Verified account label (for your records)",
+    projectLabel: "Account label (for your records)",
   },
   {
     id: "cloudflare_free",
@@ -83,7 +90,7 @@ const initial = {
   provider: "" as ProviderId | "",
   model: "",
   project_ref: "",
-  free_only: true,
+  free_only: false,
   billing_verified: false,
   free_quota_only: false,
   quota_mode: "verified_budget" as "verified_budget" | "provider_managed",
@@ -133,6 +140,18 @@ export default function ModelControls() {
   const [actualOutput, setActualOutput] = useState("");
   const [reason, setReason] = useState("");
   const [routing, setRouting] = useState<Row>({ enabled: false, revision: 0 });
+  const [providerOrder, setProviderOrder] =
+    useState<ProviderId[]>(DEFAULT_ORDER);
+  const [strategy, setStrategy] = useState<"priority" | "round_robin">(
+    "priority",
+  );
+  function moveProvider(index: number, change: number) {
+    setProviderOrder((previous) => {
+      const next = [...previous];
+      [next[index], next[index + change]] = [next[index + change], next[index]];
+      return next;
+    });
+  }
   const owner = state.settings.role === "Owner";
   function patchForm(id: ProviderId, patch: Partial<typeof initial>) {
     setForms((prev) => ({
@@ -158,7 +177,11 @@ export default function ModelControls() {
           ? backend.request<{ records: Row[] }>("/v1/model-routing")
           : Promise.resolve({ data: { records: [] } }),
       ]);
-      setRouting(route.data.records?.[0] || { enabled: false, revision: 0 });
+      const savedRoute = route.data.records?.[0];
+      setRouting(savedRoute || { enabled: false, revision: 0 });
+      setProviderOrder(savedRoute?.provider_order || DEFAULT_ORDER);
+      setStrategy(savedRoute?.strategy || "priority");
+
       if (
         !Array.isArray(settings.data.records) ||
         !Array.isArray(eligibility.data.items) ||
@@ -285,8 +308,8 @@ export default function ModelControls() {
           <code>{meta.secretHint}</code>
           {meta.optional &&
             (routing.enabled
-              ? " · automatic routing can use matching free-only server configuration while this individual switch is off"
-              : " · leave disabled until you add secrets and verify free quota")}
+              ? " · automatic routing can use server credentials while this individual switch is off"
+              : " · add matching server credentials to use this provider")}
         </p>
         {slot && (
           <p className="admin-hint" role="status">
@@ -295,7 +318,7 @@ export default function ModelControls() {
               : "API key is missing from the server configuration."}{" "}
             {slot.model && slot.project_ref
               ? revisions[meta.id] === 0
-                ? "Model and project loaded from server configuration. Confirm the free tier before enabling."
+                ? "Model and project loaded from server configuration."
                 : slot.model === form.model &&
                     slot.project_ref === form.project_ref
                   ? "Model and project match the server configuration."
@@ -340,13 +363,13 @@ export default function ModelControls() {
                   })
                 }
               >
-                <option value="provider_managed">Continuous free tier</option>
+                <option value="provider_managed">Provider-managed quota</option>
                 <option value="verified_budget">Verified quota budget</option>
               </select>
             </Field>
           )}
           {!continuous && (
-            <Field label="Free quota expiry (UTC)">
+            <Field label="Quota expiry (UTC)">
               <input
                 type="datetime-local"
                 disabled={!owner}
@@ -382,43 +405,11 @@ export default function ModelControls() {
         </div>
         {continuous && (
           <p className="admin-hint">
-            The provider enforces its free-tier quota. Tasks wait and resume
-            automatically when quota is available. Daily application limits
+            The provider reports its quota through API responses. Provider
+            errors move to the next configured model. Daily application limits
             still apply and renew at midnight Riyadh time. No manual quota
             expiry is required.
           </p>
-        )}
-        <label>
-          <input
-            type="checkbox"
-            disabled={!owner}
-            checked={form.billing_verified}
-            onChange={(e) =>
-              patchForm(meta.id, {
-                billing_verified: e.target.checked,
-                enabled: false,
-              })
-            }
-          />{" "}
-          {continuous
-            ? `I confirm this ${meta.id === "gemini_free" ? "Gemini project" : "account"} uses the free tier without paid billing.`
-            : "I verified this project's free billing status and the remaining quota in the provider console."}
-        </label>
-        {meta.id === "qwen_free" && (
-          <label>
-            <input
-              type="checkbox"
-              disabled={!owner}
-              checked={form.free_quota_only}
-              onChange={(e) =>
-                patchForm(meta.id, {
-                  free_quota_only: e.target.checked,
-                  enabled: false,
-                })
-              }
-            />{" "}
-            Free Quota Only is enabled and effective for this Singapore model.
-          </label>
         )}
         <label>
           <input
@@ -428,14 +419,12 @@ export default function ModelControls() {
               (!form.enabled &&
                 (!slot?.key_configured ||
                   slot.model !== form.model ||
-                  slot.project_ref !== form.project_ref ||
-                  !form.billing_verified ||
-                  (meta.id === "qwen_free" && !form.free_quota_only)))
+                  slot.project_ref !== form.project_ref))
             }
             checked={form.enabled}
             onChange={(e) => patchForm(meta.id, { enabled: e.target.checked })}
           />{" "}
-          Enable matching backend credentials after verification
+          Enable matching backend credentials
         </label>
       </div>
     );
@@ -443,16 +432,11 @@ export default function ModelControls() {
   if (!backend) return null;
   return (
     <section className="panel admin-section">
-      <h2>Free model and data permissions</h2>
+      <h2>Models and data permissions</h2>
       <p>
-        Configure one or more providers. Gemini can run on its own; add Qwen or
-        another provider only when you want an additional verified fallback.
-        Groq, Mistral, and Cloudflare Workers AI are optional extra slots in the
-        same ordered pool. The worker skips disabled profiles and tries the next
-        enabled provider when one endpoint is unreachable or waiting on quota.
-        Store per-provider <code>APP_MODEL_*</code> secrets in the backend (see
-        each panel). This form stores no API key. No paid fallback is available.
-        Details: <code>backend/docs/FREE_MODEL_PROVIDERS.md</code>.
+        Configure model names and credentials on the server. Automatic routing
+        uses your selected order and moves to another provider after an error.
+        Billing confirmation is not required. This form stores no API keys.
       </p>
       {error && (
         <div role="alert" className="admin-error">
@@ -463,18 +447,70 @@ export default function ModelControls() {
         <p>Loading model settings…</p>
       ) : (
         <>
-          <h3>Automatic round robin</h3>
+          <h3>Automatic model routing</h3>
           <p>
-            Gemini → Qwen → Mistral → Groq → z.ai. Rotates the starting provider
-            and tries the next after a provider error, including providers whose
-            individual enable box is off. Missing server configuration is
-            recorded and skipped. Free-only account confirmation and content
-            permissions still apply.
+            Priority starts with the first configured provider in your order.
+            Round robin rotates the starting position through the same order.
+            Missing configuration is skipped. If no provider returns a valid
+            result, the task waits and retries automatically.
           </p>
+          <Field label="Provider selection">
+            <select
+              disabled={!owner || saving}
+              value={strategy}
+              onChange={(e) => setStrategy(e.target.value as typeof strategy)}
+            >
+              <option value="priority">
+                Priority: always start with the first provider
+              </option>
+              <option value="round_robin">
+                Round robin: rotate the starting provider
+              </option>
+            </select>
+          </Field>
+          <ol aria-label="Provider order" className="stack">
+            {providerOrder.map((id, index) => {
+              const label = PROVIDERS.find((p) => p.id === id)!.label;
+              return (
+                <li key={id}>
+                  <span>{label}</span>{" "}
+                  <Button
+                    disabled={!owner || saving || index === 0}
+                    aria-label={`Move ${label} up`}
+                    onClick={() => moveProvider(index, -1)}
+                  >
+                    Move up
+                  </Button>{" "}
+                  <Button
+                    disabled={
+                      !owner || saving || index === providerOrder.length - 1
+                    }
+                    aria-label={`Move ${label} down`}
+                    onClick={() => moveProvider(index, 1)}
+                  >
+                    Move down
+                  </Button>
+                </li>
+              );
+            })}
+          </ol>
+          <Button
+            disabled={!owner || saving}
+            onClick={() =>
+              command("model.routing", {
+                enabled: routing.enabled,
+                expected_revision: routing.revision,
+                provider_order: providerOrder,
+                strategy,
+              })
+            }
+          >
+            Save provider order
+          </Button>
           <p role="status">
             {routing.enabled
-              ? "Automatic round robin is enabled."
-              : "Automatic round robin is disabled."}
+              ? "Automatic model routing is enabled."
+              : "Automatic model routing is disabled."}
           </p>
           <Button
             disabled={!owner || saving}
@@ -486,15 +522,17 @@ export default function ModelControls() {
             }
           >
             {routing.enabled
-              ? "Disable automatic round robin"
-              : "Enable automatic round robin"}
+              ? "Disable automatic routing"
+              : "Enable automatic routing"}
           </Button>
-          <h3>Primary free providers</h3>
+
+          <h3>Primary providers</h3>
           {PROVIDERS.filter((p) => !p.optional).map(renderProviderPanel)}
-          <h3>Optional free-tier providers</h3>
+          <h3>Additional providers</h3>
           <p>
-            Configure only if you verified a free quota and stored matching
-            secrets. Untouched optional rows are skipped when you save.
+            Models use the credentials and model names you configure. Billing
+            confirmation is not required. Untouched rows are skipped when you
+            save.
           </p>
           {PROVIDERS.filter((p) => p.optional).map(renderProviderPanel)}
           <Button disabled={!owner || saving} onClick={saveAll}>
@@ -520,9 +558,10 @@ export default function ModelControls() {
           )}
           <h3>Content permitted for model processing</h3>
           <p>
-            Authorize each item for <strong>every</strong> provider that may
-            process it. Automatic routing skips providers without matching
-            content approval.
+            Discovery scope can permit enabled, verified Company Knowledge files
+            and notes for the selected providers, including future updates.
+            Other content can be authorized individually below. Explicit
+            revocations take priority over the workspace policy.
           </p>
           {items.length === 0 && <p>No eligible content has been added.</p>}
           <div className="stack">
