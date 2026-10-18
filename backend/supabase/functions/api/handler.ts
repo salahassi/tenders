@@ -52,6 +52,7 @@ const readTables: Record<string, string> = {
   "source-links": "opportunity_source_links",
   imports: "import_batches",
   opportunities: "opportunities",
+  "opportunity-discovery": "opportunity_discovery",
   knowledge: "knowledge_items",
   jobs: "jobs",
   notifications: "notifications",

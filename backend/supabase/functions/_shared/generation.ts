@@ -1,3 +1,4 @@
+import { SOFTWARE_SCOPE, screenSoftwareScope } from "./discovery.ts";
 import { modelLedger } from "./modelLedger.ts";
 import {
   type Evidence,
@@ -106,6 +107,13 @@ export function taskInput(ctx: PlanContext) {
       ),
     ];
     context = {
+      ...(frozen.discovery_scope === "software_services"
+        ? {
+            scope_policy: SOFTWARE_SCOPE,
+            instruction:
+              "Return scope_decision with a verbatim notice quote. Decide based on what is being procured, not the buyer's sector. Unrelated physical procurement is out_of_scope even when titled IT or smart. Software licensing, applications and software security are in_scope. Ambiguous descriptions and mixed software/hardware are uncertain until separately biddable software scope is evidenced. Missing details never prove exclusion. This scope screen is separate from fit score and qualifications.",
+          }
+        : {}),
       title_only:
         frozen.notice.text.trim().split("\n").filter(Boolean).length < 3,
     };
@@ -372,7 +380,7 @@ export async function nextStage(ctx: PlanContext): Promise<{
       ...result,
       metadata: {
         model_identity: ctx.plan.model_identity || null,
-        prompt_version: "tenderdesk-v3",
+        prompt_version: "tenderdesk-v4-scope",
         rules_version: "fit-50-25-15-10-v1",
         profile_hash: await sha256(JSON.stringify(frozen.knowledge)),
         input_hash: ctx.plan.input_hash,
@@ -380,20 +388,24 @@ export async function nextStage(ctx: PlanContext): Promise<{
       },
     };
     output.next_stage = "completed";
-    output.final_result = result.rule_exclusion
-      ? {
-          fit_score: null,
-          evidence_coverage: 0,
-          routing: "excluded",
-          result: annotatedResult,
-        }
-      : {
-          ...fitScore(
-            result,
-            frozen.notice.text.trim().split("\n").filter(Boolean).length < 3,
-          ),
-          result: annotatedResult,
-        };
+    output.final_result =
+      result.rule_exclusion || result.scope_decision?.status === "out_of_scope"
+        ? {
+            fit_score: null,
+            evidence_coverage: 0,
+            routing: "excluded",
+            result: annotatedResult,
+          }
+        : {
+            ...fitScore(
+              result,
+              frozen.notice.text.trim().split("\n").filter(Boolean).length < 3,
+            ),
+            ...(result.scope_decision?.status === "uncertain"
+              ? { routing: "needs_review" }
+              : {}),
+            result: annotatedResult,
+          };
     return output;
   }
   if (stage === "analysis") {
@@ -614,6 +626,34 @@ export async function processGeneration(
     }
     const input = taskInput(ctx);
     if (input.task === "classify_opportunity") {
+      const screened = screenSoftwareScope(
+        ctx.plan.frozen_context.notice.text,
+        ctx.plan.frozen_context.discovery_scope,
+      );
+      if (screened) {
+        await backend.internal("complete_generation_step", {
+          job_id: job.id,
+          lease: job.lease_token,
+          result: {
+            scope_decision: {
+              status: screened.status,
+              reason: screened.reason,
+              notice_evidence: [
+                { id: ctx.plan.opportunity_id, quote: screened.quote },
+              ],
+            },
+            rule_exclusion: {
+              policy: "software_services",
+              method: screened.method,
+              quote: screened.quote,
+            },
+            reason_summary: screened.reason,
+            missing_information: [],
+            risk_flags: [],
+          },
+        });
+        return;
+      }
       const match = exactExclusion(
         ctx.plan.frozen_context.notice.text,
         ctx.plan.frozen_context.knowledge
@@ -656,6 +696,12 @@ export async function processGeneration(
       ctx.step.repair_count === 1,
       fetcher,
     );
+    if (
+      input.task === "classify_opportunity" &&
+      ctx.plan.frozen_context.discovery_scope === "software_services" &&
+      !result.scope_decision
+    )
+      throw new ModelError("MODEL_OUTPUT_INVALID");
     // Revalidate quotations against whole immutable source blocks; excerpt separators cannot become fabricated quotes.
     validateModelResult(
       input.task,

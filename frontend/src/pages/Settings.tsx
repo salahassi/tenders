@@ -1,3 +1,4 @@
+import DiscoveryControls from "../components/DiscoveryControls";
 import { useEffect, useState } from "react";
 import { ShieldCheck, Users, Check, LockKeyhole } from "lucide-react";
 import { useApp } from "../lib/store";
@@ -103,6 +104,7 @@ export default function Settings() {
       )}
       <div className="split-layout">
         <div className="stack">
+          <DiscoveryControls />
           <section className="panel admin-section">
             <div className="admin-spread">
               <div>

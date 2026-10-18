@@ -149,7 +149,7 @@ it("deduplicates collections, preserves human decisions, and snapshots material 
   ).toEqual({ decision: "declined", deadline_at: null });
   expect(
     (await f.db.query("select * from public.notifications")).rows,
-  ).toHaveLength(2);
+  ).toHaveLength(0); // Discovery notifications wait for a recorded assessment.
   await expect(
     f.rpc("complete_collection", [
       j.id,

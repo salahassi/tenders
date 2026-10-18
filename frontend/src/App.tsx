@@ -1,3 +1,4 @@
+import { inReviewInbox } from "./lib/discovery";
 import OriginalEligibility from "./components/OriginalEligibility";
 import { useEffect, useState, lazy, Suspense } from "react";
 import {
@@ -77,7 +78,7 @@ export default function App() {
   const [offline, setOffline] = useState(!navigator.onLine);
   const unread = state.notifications.filter((n) => !n.read).length;
   const reviewCount = state.opportunities.filter(
-    (o) => o.status === "new" || o.status === "deferred",
+    inReviewInbox,
   ).length;
   useEffect(() => {
     setMenu(false);

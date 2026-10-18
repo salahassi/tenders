@@ -1,3 +1,4 @@
+import { inReviewInbox } from "../lib/discovery";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -25,7 +26,7 @@ export default function Dashboard() {
   const { state, mode, operations } = useApp();
   const showHealth = useOverviewHealthVisible();
   const inbox = state.opportunities.filter(
-    (o) => o.status === "new" || o.status === "deferred",
+    inReviewInbox,
   );
   const selected = state.opportunities.filter((o) =>
     ["shortlisted", "in_progress", "submitted"].includes(o.status),

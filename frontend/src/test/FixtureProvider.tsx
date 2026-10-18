@@ -17,6 +17,20 @@ import {
   getApprovalBlockers,
   invalidateChangedApprovals,
 } from "../lib/domain";
+// Preserve explicitly supplied test observations; the legacy backup schema intentionally drops cloud-only fields.
+function validateFixtureState(value: unknown): AppState {
+  const restored = validateState(value);
+  const observations = (value as AppState).opportunities;
+  restored.opportunities = restored.opportunities.map((o) => {
+    const original = observations.find((x) => x.id === o.id);
+    return {
+      ...o,
+      ...(original?.assessment ? { assessment: original.assessment } : {}),
+      ...(original?.discovery ? { discovery: original.discovery } : {}),
+    };
+  });
+  return restored;
+}
 export const STORAGE_KEY = "tender-desk-demo-state-v1";
 
 const messageFor = (error: unknown) =>
@@ -52,7 +66,7 @@ export function FixtureProvider({ children }: { children: ReactNode }) {
         const saved = await get<unknown>(STORAGE_KEY);
         if (!active) return;
         if (saved !== undefined) {
-          const restored = validateState(saved);
+          const restored = validateFixtureState(saved);
           stateRef.current = restored;
           setState(restored);
         } else persist(stateRef.current);
@@ -90,7 +104,7 @@ export function FixtureProvider({ children }: { children: ReactNode }) {
       const previous = stateRef.current;
       let next: AppState;
       try {
-        next = validateState(
+        next = validateFixtureState(
           invalidateChangedApprovals(
             previous,
             mutation(structuredClone(previous)),
@@ -176,7 +190,7 @@ export function FixtureProvider({ children }: { children: ReactNode }) {
         return;
       }
       try {
-        const next = validateState(backup);
+        const next = validateFixtureState(backup);
         for (const proposal of next.proposals)
           if (
             proposal.status === "approved" &&

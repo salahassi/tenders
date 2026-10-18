@@ -1,3 +1,9 @@
+import {
+  inReviewInbox,
+  needsDecision,
+  outOfScope,
+  assessmentActive,
+} from "../lib/discovery";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -20,11 +26,34 @@ export default function Review() {
   const { state, update, notify } = useApp();
   const [tab, setTab] = useState("pending");
   const [search, setSearch] = useState("");
-  const pending = state.opportunities.filter(
-    (o) => o.status === "new" || o.status === "deferred",
+  const pending = state.opportunities.filter(inReviewInbox);
+  const excluded = state.opportunities.filter(outOfScope);
+  const processing = state.opportunities.filter(
+    (o) =>
+      needsDecision(o) &&
+      !inReviewInbox(o) &&
+      !outOfScope(o) &&
+      assessmentActive(o),
+  );
+  const attention = state.opportunities.filter(
+    (o) =>
+      needsDecision(o) &&
+      !inReviewInbox(o) &&
+      !outOfScope(o) &&
+      !assessmentActive(o),
   );
   const archived = state.opportunities.filter((o) => o.status === "declined");
-  const items = (tab === "pending" ? pending : archived).filter((o) =>
+  const items = (
+    tab === "pending"
+      ? pending
+      : tab === "processing"
+        ? processing
+        : tab === "attention"
+          ? attention
+          : tab === "excluded"
+            ? excluded
+            : archived
+  ).filter((o) =>
     `${o.title} ${o.description} ${o.buyer}`
       .toLowerCase()
       .includes(search.toLowerCase()),
@@ -71,6 +100,13 @@ export default function Review() {
           </>
         }
       />
+      {state.settings.discoveryScope === "software_services" && (
+        <p className="notice">
+          Software, digital transformation and AI services. Hardware and
+          unrelated procurement are filtered out. Mixed or unclear scope
+          requires review.
+        </p>
+      )}
       <div className="simple-flow">
         <strong>Discoveries</strong>
         <ArrowRight size={15} />
@@ -90,6 +126,13 @@ export default function Review() {
               label: "Awaiting your decision",
               count: pending.length,
             },
+            { id: "processing", label: "Assessing", count: processing.length },
+            {
+              id: "attention",
+              label: "Needs attention",
+              count: attention.length,
+            },
+            { id: "excluded", label: "Outside scope", count: excluded.length },
             { id: "archived", label: "Archived", count: archived.length },
           ]}
         />
@@ -150,7 +193,7 @@ export default function Review() {
                 <Check size={15} />
                 Add to opportunities
               </Button>
-              {tab === "pending" ? (
+              {tab !== "archived" ? (
                 <Button disabled={!edit} onClick={() => decide(o, "declined")}>
                   <Archive size={15} />
                   Archive
@@ -171,12 +214,18 @@ export default function Review() {
             title={
               tab === "pending"
                 ? "No discoveries waiting for a decision"
-                : "No archived discoveries"
+                : tab === "processing"
+                  ? "No assessments in progress"
+                  : tab === "attention"
+                    ? "No assessment blockers"
+                    : tab === "excluded"
+                      ? "No excluded discoveries"
+                      : "No archived discoveries"
             }
             description={
               search
                 ? "Try a different search."
-                : "Selected items appear in Opportunities. Automated collection will populate this inbox after collection is activated."
+                : "Collected notices enter this inbox after assessment. Track queued work under Assessing and blockers under Needs attention."
             }
           />
         </section>

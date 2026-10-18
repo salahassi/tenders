@@ -101,6 +101,7 @@ for (const table of [
   "generation-plans",
   "generation-steps",
   "fit-assessments",
+  "opportunity-discovery",
   "requirements",
   "model-settings",
   "content-authorizations",

@@ -83,6 +83,14 @@ export const modelSchemas = {
           prerequisite: factor,
         })
         .strict(),
+      scope_decision: z
+        .object({
+          status: z.enum(["in_scope", "out_of_scope", "uncertain"]),
+          reason: short.min(1),
+          notice_evidence: z.array(quote).min(1).max(8),
+        })
+        .strict()
+        .optional(),
       critical_unknown: z.boolean(),
       reason_summary: short,
       missing_information: z.array(short).max(20),
@@ -409,6 +417,8 @@ export function validateModelResult(
     if (!result.directives.length && !result.questions.length)
       throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
   }
+  if (task === "classify_opportunity" && result.scope_decision)
+    validateQuotes(result.scope_decision.notice_evidence, evidence, "notice");
   if (task === "classify_opportunity")
     for (const factor of Object.values(result.factors) as any[]) {
       validateQuotes(factor.notice_evidence, evidence, "notice");

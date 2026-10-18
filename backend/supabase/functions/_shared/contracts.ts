@@ -63,6 +63,24 @@ const host = z
   .max(253)
   .regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i);
 export const commandSchemas = {
+  "discovery.configure": z
+    .object({
+      expected_revision: revision,
+      scope: z.enum(["all", "software_services"]),
+      auto_public_notices: z.boolean(),
+      providers: z
+        .array(
+          z.enum([
+            "gemini_free",
+            "qwen_free",
+            "mistral_free",
+            "groq_free",
+            "cloudflare_free",
+          ]),
+        )
+        .max(5),
+    })
+    .strict(),
   "export.renew": z.object({ id: uuid, expected_revision: revision }).strict(),
   "acquisition.transition": z
     .object({

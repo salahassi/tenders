@@ -85,7 +85,20 @@ beforeEach(async () => {
   network.mockClear();
   vi.stubGlobal("fetch", network);
   vi.stubGlobal("crypto", webcrypto);
-  await set(STORAGE_KEY, createSeedState());
+  const fixture = createSeedState();
+  fixture.opportunities.forEach((o) => {
+    o.assessment = {
+      score: null,
+      coverage: 0,
+      routing: "needs_review",
+      summary: "Synthetic assessed notice requiring review",
+      stale: false,
+      factors: {},
+      missing: [],
+      risks: [],
+    };
+  });
+  await set(STORAGE_KEY, fixture);
 });
 
 afterEach(async () => {
@@ -403,6 +416,8 @@ describe("UI journeys with a test-only workspace", () => {
     });
     expect(screen.queryByRole("link", { name: title })).not.toBeInTheDocument();
     await user.click(navigation().getByRole("link", { name: /^Review inbox/ }));
+    expect(screen.queryByRole("link", { name: title })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^Needs attention/ }));
     expect(
       await screen.findByRole("link", { name: title }),
     ).toBeInTheDocument();

@@ -146,6 +146,7 @@ export class ConnectedRepository {
       "regeneration-requests",
       "requirements",
       "fit-assessments",
+      "opportunity-discovery",
     ];
     const tables = await Promise.all(
       paths.map(async (path) => [path, await this.list(path)] as const),
@@ -172,6 +173,11 @@ export class ConnectedRepository {
       settings[key] == null ? fallback : z.number().parse(settings[key]);
     state.settings = {
       role,
+      discoveryScope:
+        (
+          this.workspace.discovery_policy as
+            { scope?: "all" | "software_services" } | undefined
+        )?.scope || "all",
       companyName: str(this.workspace, "name"),
       dailyCallLimit: number("daily_call_limit", 50),
       inputTokenLimit: number("input_token_limit", 250000),
@@ -238,9 +244,34 @@ export class ConnectedRepository {
             (p) => p.opportunity_id === r.id && p.active_version_id === v.id,
           ),
         );
+        const discovery = this.rows["opportunity-discovery"].find(
+          (d) => d.id === r.id,
+        );
         const assessed = assessment?.result as Record<string, any> | undefined;
         return {
           revision: r.revision,
+          discovery: {
+            state: z
+              .enum([
+                "queued",
+                "running",
+                "retry_wait",
+                "quota_wait",
+                "assessed",
+                "blocked",
+                "failed",
+                "pending_schedule",
+                "not_started",
+              ])
+              .parse(discovery?.assessment_state || "not_started"),
+            inboxVisible: discovery?.inbox_visible === true,
+            error: discovery
+              ? str(discovery, "assessment_error") || undefined
+              : undefined,
+            nextAttempt: discovery
+              ? str(discovery, "next_attempt_at") || undefined
+              : undefined,
+          },
           ...(assessment
             ? {
                 assessment: {
@@ -250,13 +281,19 @@ export class ConnectedRepository {
                       : Number(assessment.fit_score),
                   coverage: Number(assessment.evidence_coverage),
                   routing: str(assessment, "routing"),
+                  scope: assessed?.scope_decision?.status,
+                  scopeEvidence:
+                    assessed?.scope_decision?.notice_evidence?.map(
+                      (e: { quote: string }) => e.quote,
+                    ) || [],
+                  method: assessed?.rule_exclusion
+                    ? "Rule-based scope assessment"
+                    : "Model assessment",
                   summary: String(
                     assessed?.reason_summary ||
                       "Verified exclusion rule matched.",
                   ),
-                  stale:
-                    assessment.evidence_revision !==
-                    this.workspace.evidence_revision,
+                  stale: discovery?.assessment_current !== true,
                   factors: assessed?.factors || {},
                   missing: assessed?.missing_information || [],
                   risks: assessed?.risk_flags || [],

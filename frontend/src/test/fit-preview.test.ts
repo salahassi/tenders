@@ -10,7 +10,7 @@ describe("fit assessment without an activated provider", () => {
     for (const opportunity of state.opportunities) {
       expect(getFitPreview(state, opportunity)).toMatchObject({
         mode: "unassessed",
-        level: "Not assessed",
+        level: "Assessment required",
         reasons: [],
       });
     }
@@ -23,9 +23,9 @@ describe("fit assessment without an activated provider", () => {
         ...state.opportunities[1],
         id: "imported-real-opportunity",
       }),
-    ).toMatchObject({ mode: "unassessed", level: "Not assessed", reasons: [] });
+    ).toMatchObject({ mode: "unassessed", level: "Assessment required", reasons: [] });
     expect(
       getFitPreview(state, { ...state.opportunities[1], sourceId: "manual" }),
-    ).toMatchObject({ mode: "unassessed", level: "Not assessed", reasons: [] });
+    ).toMatchObject({ mode: "unassessed", level: "Assessment required", reasons: [] });
   });
 });

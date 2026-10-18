@@ -71,3 +71,12 @@ Company notes now expose Owner verification, using the existing audited command,
 Assessment processing controls also appear before shortlisting, with saved retry/cancel and role gates. Unknown assessment data no longer implies that AI is disconnected. Currency defaults are suggestions; tender documents take precedence. PDF extraction resolves only tagged application results and ignores library handshakes.
 
 Final completion UI release `2fb0482fcadcbb7d8242960694f32ee97d9c5331` is published by successful [Pages 39081884914](https://github.com/salahassi/tenders/actions/runs/39081884914). 143 frontend tests passed. Collection history now includes actual run counts, including zero, and Riyadh timestamps; superseded assessments do not offer stale resume. Table labels stay within horizontal scroll containers and Knowledge tabs remain within mobile width. 28 isolated Chromium checks and real Owner collection/assessment/profile reload checks passed; fixture UI and hosted transport evidence remain distinct.
+
+
+## Software scope and assessed discovery admission — October 18
+
+Discovery settings support a software/digital transformation/AI services scope excluding hardware. Owner-selected automatic public-notice permission is exact-hash and collector-snapshot bound, preserves explicit revocations, and does not authorize private files or company notes. The actual workspace is configured for Gemini only; optional-provider code support is distinct from provider content consent.
+
+Review inbox, dashboard and navigation counts use current recorded assessments. New queued work appears under Assessing; unqueued/blocked/failed work appears under Needs attention; excluded records remain under Outside scope. Human decisions remain independent. Clear physical-only procurement has a cited rule-based scope assessment without an inference call; ambiguous or mixed scope proceeds to the model and stays explicitly uncertain when details are missing. New-discovery notifications wait for assessment. `opportunity-discovery` exposes compact progress through an RLS-invoker view, without sending frozen plan contents to the inbox.
+
+191 backend and 145 frontend tests passed, both package checks and Deno entry checks passed. API v16 and worker v13 source readback matched. Hosted policy activation queued all 35 original notices; full completion and browser acceptance are recorded separately in the implementation checklist.

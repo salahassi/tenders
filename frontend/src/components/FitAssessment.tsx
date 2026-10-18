@@ -27,7 +27,7 @@ export default function FitAssessment({
               ? "green"
               : fit.level === "Medium"
                 ? "amber"
-                : fit.level === "Low"
+                : fit.level === "Low" || fit.level === "Outside scope"
                   ? "red"
                   : "neutral"
           }
@@ -37,9 +37,16 @@ export default function FitAssessment({
       </div>
       <p className="fit-disclosure">
         {fit.mode === "recorded"
-          ? "Recorded evidence-based assessment"
-          : "No recorded assessment"}
+          ? fit.basis
+          : fit.mode === "processing"
+            ? "Assessment processing"
+            : "Assessment needs attention"}
       </p>
+      {opportunity.assessment?.scope === "uncertain" && (
+        <p className="fit-disclosure">
+          Software scope needs confirmation from the full notice or RFP.
+        </p>
+      )}
       <p className="fit-summary">{fit.summary}</p>
       <details open={!compact}>
         <summary>

@@ -36,10 +36,28 @@ export interface KnowledgeDocument extends DocumentRecord {
 }
 export interface Opportunity {
   revision?: number;
+  discovery?: {
+    state:
+      | "queued"
+      | "running"
+      | "retry_wait"
+      | "quota_wait"
+      | "assessed"
+      | "blocked"
+      | "failed"
+      | "pending_schedule"
+      | "not_started";
+    inboxVisible: boolean;
+    error?: string;
+    nextAttempt?: string;
+  };
   assessment?: {
     score: number | null;
     coverage: number;
     routing: string;
+    scope?: string;
+    scopeEvidence?: string[];
+    method?: string;
     summary: string;
     stale: boolean;
     factors: Record<
@@ -206,6 +224,7 @@ export interface AuditEntry {
   actor: string;
 }
 export interface AppSettings {
+  discoveryScope?: "all" | "software_services";
   role: Role;
   companyName: string;
   dailyCallLimit: number;
