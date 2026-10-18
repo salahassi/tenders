@@ -311,6 +311,7 @@ it("diagnoses rejected Gemini settings without logging provider text or secrets"
     JSON.stringify({
       provider: "gemini_free",
       status: 400,
+      provider_error_reason: "provider_rejected",
       labels: ["unknown_field", "json_schema", "credentials", "model"],
     }),
   );
@@ -734,4 +735,107 @@ it("sends the configured z.ai model verbatim and counts only returned usage", as
     complete: true,
     usage: { input: 80, output: 30, thinking: null },
   });
+});
+
+it.each([
+  ["1302", "rate_limit"],
+  ["1305", "overloaded"],
+  ["1113", "insufficient_balance"],
+])(
+  "records z.ai rejection %s independently of HTTP 429 without retaining raw text",
+  async (code, reason) => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const provider = new FreeModelProvider(
+      { ...env, provider: "zai_free" },
+      async () =>
+        Response.json(
+          { error: { code, message: `private customer text ${env.key}` } },
+          {
+            status: 429,
+            headers: { "retry-after": "60", "x-request-id": "synthetic-429" },
+          },
+        ),
+    );
+    await expect(
+      provider.generate("connection_probe", "JSON", {}),
+    ).rejects.toMatchObject({ code: "PROVIDER_QUOTA_WAIT" });
+    expect(provider.telemetry).toMatchObject({
+      http_status: 429,
+      request_id: "synthetic-429",
+      provider_error_code: code,
+      provider_error_reason: reason,
+    });
+    expect(JSON.stringify(warn.mock.calls)).not.toContain(env.key);
+    expect(JSON.stringify(warn.mock.calls)).not.toContain(
+      "private customer text",
+    );
+    warn.mockRestore();
+  },
+);
+it("retains a definitive 429 when the rejection body is malformed and does not invent a quota cause", async () => {
+  const provider = new FreeModelProvider(
+    env,
+    async () => new Response("not JSON", { status: 429 }),
+  );
+  await expect(
+    provider.generate("connection_probe", "JSON", {}),
+  ).rejects.toMatchObject({ code: "PROVIDER_QUOTA_WAIT" });
+  expect(provider.telemetry.provider_error_reason).toBe("unspecified_429");
+  expect(provider.telemetry.provider_error_code).toBeUndefined();
+});
+
+it("allows a single-provider connection check to return after 20 seconds", async () => {
+  vi.useFakeTimers();
+  try {
+    vi.spyOn(FreeModelProvider.prototype, "countTokens").mockResolvedValue(100);
+    const fetcher = vi.fn<typeof fetch>(
+      async (_url, init) =>
+        new Promise((resolve, reject) => {
+          const timer = setTimeout(
+            () =>
+              resolve(
+                Response.json({
+                  choices: [
+                    {
+                      finish_reason: "stop",
+                      message: { content: '{"status":"ready"}' },
+                    },
+                  ],
+                  usage: { prompt_tokens: 100, completion_tokens: 10 },
+                }),
+              ),
+            21000,
+          );
+          init?.signal?.addEventListener("abort", () => {
+            clearTimeout(timer);
+            reject(new Error("aborted"));
+          });
+        }),
+    );
+    const ledger: Ledger = {
+      preflight: async () => ({
+        routing_mode: "round_robin",
+        providers: [config],
+      }),
+      reserve: async () => "synthetic-reservation",
+      settle: vi.fn(),
+    };
+    const pending = executeModel(
+      "connection_probe",
+      {},
+      [],
+      [],
+      [],
+      { qwen_free: env },
+      ledger,
+      "en",
+      false,
+      fetcher,
+    );
+    await vi.waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
+    await vi.advanceTimersByTimeAsync(21000);
+    expect(await pending).toEqual({ status: "ready" });
+  } finally {
+    vi.useRealTimers();
+  }
 });

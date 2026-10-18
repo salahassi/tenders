@@ -571,18 +571,20 @@ export class ConnectedRepository {
           ? `Waiting for an available provider. Automatically retries after ${str(r, "next_attempt_at")}.`
           : r.status === "retry_wait" && r.error_code === "MODEL_IN_PROGRESS"
             ? "Gemini is processing this request. Its result will be checked automatically."
-            : r.status === "quota_wait" &&
-                [
-                  "MODEL_RATE_WAIT",
-                  "MODEL_DAILY_QUOTA_WAIT",
-                  "PROVIDER_QUOTA_WAIT",
-                ].includes(str(r, "error_code"))
-              ? `Waiting for quota. Automatically retries after ${str(r, "next_attempt_at")}.`
-              : r.type === "model_probe" && r.status === "succeeded"
-                ? (r.checkpoint as any)?.model_routing?.mode === "round_robin"
-                  ? "Model connection verified; measured usage recorded."
-                  : "Gemini connection verified; measured usage recorded."
-                : str(r, "error_code")) +
+            : r.error_code === "PROVIDER_QUOTA_WAIT"
+              ? `Provider rejected the request (429). Automatically retries after ${str(r, "next_attempt_at")}. See Model activity for the provider reason.`
+              : r.status === "quota_wait" &&
+                  [
+                    "MODEL_RATE_WAIT",
+                    "MODEL_DAILY_QUOTA_WAIT",
+                    "PROVIDER_QUOTA_WAIT",
+                  ].includes(str(r, "error_code"))
+                ? `Waiting for quota. Automatically retries after ${str(r, "next_attempt_at")}.`
+                : r.type === "model_probe" && r.status === "succeeded"
+                  ? (r.checkpoint as any)?.model_routing?.mode === "round_robin"
+                    ? "Model connection verified; measured usage recorded."
+                    : "Gemini connection verified; measured usage recorded."
+                  : str(r, "error_code")) +
         collectionSummary(sourceRuns.get(r.id)) +
         modelRoutingSummary(r.checkpoint),
       createdAt: str(r, "created_at"),
@@ -1221,7 +1223,7 @@ function modelRoutingSummary(checkpoint: unknown): string {
     PROVIDER_AUTH_FAILED: "credentials rejected",
     PROVIDER_REQUEST_INVALID: "request rejected",
     PROVIDER_MODEL_NOT_FOUND: "model not found",
-    PROVIDER_QUOTA_WAIT: "quota limit",
+    PROVIDER_QUOTA_WAIT: "provider rejected request (429)",
     MODEL_NETWORK_UNCERTAIN: "connection failed; usage unknown",
     USAGE_REVIEW_REQUIRED: "previous uncertain request retained",
     SUCCEEDED: "completed",

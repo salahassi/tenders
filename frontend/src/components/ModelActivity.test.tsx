@@ -112,3 +112,51 @@ it("keeps a provider hash deep-link selected in the live DOM after loading", asy
   view.unmount();
   window.history.replaceState(null, "", "/");
 });
+
+it("distinguishes a provider overload from an older 429 with no recorded cause", async () => {
+  vi.mocked(useApp).mockReturnValue({
+    backend: {
+      request: vi.fn(async () => ({
+        data: {
+          records: [
+            {
+              id: "2",
+              provider: "zai_free",
+              model: "configured-model",
+              operation: "connection_probe",
+              status: "failed",
+              http_status: 429,
+              provider_error_code: "1305",
+              provider_error_reason: "overloaded",
+              result_code: "PROVIDER_QUOTA_WAIT",
+            },
+            {
+              id: "1",
+              provider: "zai_free",
+              model: "configured-model",
+              operation: "connection_probe",
+              status: "failed",
+              http_status: 429,
+              result_code: "PROVIDER_QUOTA_WAIT",
+            },
+          ],
+          next_cursor: null,
+        },
+      })),
+    },
+  } as any);
+  render(
+    <MemoryRouter>
+      <ModelActivity />
+    </MemoryRouter>,
+  );
+  expect(
+    await screen.findByText("Provider servers temporarily overloaded"),
+  ).toBeInTheDocument();
+  expect(screen.getByText("1305")).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      "Provider rejected the request (429); specific reason unavailable",
+    ),
+  ).toBeInTheDocument();
+});

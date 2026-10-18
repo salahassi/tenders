@@ -1097,3 +1097,90 @@ it("never substitutes a manual Gemini profile if routing is disabled after a z.a
   expect((await job(q.id)).status).not.toBe("succeeded");
   expect(await usage(q.id)).toHaveLength(0);
 });
+
+it("persists z.ai's overload reason, fails over in configured order, and retains the failed attempt", async () => {
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "priority",
+    provider_order: [
+      "zai_free",
+      "groq_free",
+      "gemini_free",
+      "qwen_free",
+      "mistral_free",
+    ],
+  });
+  const q = await queue();
+  const calls: string[] = [];
+  await worker(
+    transport((p) => {
+      calls.push(p);
+      return p === "zai_free"
+        ? Response.json(
+            {
+              error: {
+                code: "1305",
+                message: "The service may be temporarily overloaded",
+              },
+            },
+            { status: 429, headers: { "x-request-id": "synthetic-overload" } },
+          )
+        : success(p);
+    }),
+  )();
+  expect(calls).toEqual(["zai_free", "groq_free"]);
+  expect((await job(q.id)).status).toBe("succeeded");
+  const rows = (
+    await f.db.query<any>(
+      "select * from public.model_activity where job_id=$1 order by sequence",
+      [q.id],
+    )
+  ).rows;
+  expect(rows).toHaveLength(2);
+  expect(rows[0]).toMatchObject({
+    provider: "zai_free",
+    status: "failed",
+    http_status: 429,
+    provider_error_code: "1305",
+    provider_error_reason: "overloaded",
+    request_id: "synthetic-overload",
+    actual_input: null,
+    actual_output: null,
+    round_number: 1,
+  });
+  expect(rows[1]).toMatchObject({
+    provider: "groq_free",
+    status: "succeeded",
+    actual_input: 100,
+    actual_output: 10,
+    provider_error_code: null,
+  });
+});
+it("keeps a targeted overload check waiting, counts its retry, and succeeds when z.ai recovers", async () => {
+  await enable();
+  const q = await f.command("model.probe", { provider: "zai_free" });
+  await worker(
+    transport(() =>
+      Response.json(
+        { error: { code: "1305", message: "overloaded" } },
+        { status: 429, headers: { "retry-after": "90" } },
+      ),
+    ),
+  )();
+  expect((await job(q.id)).status).toBe("retry_wait");
+  expect((await job(q.id)).checkpoint.model_routing.round_attempts).toBe(1);
+  await age();
+  await worker(transport((p) => success(p)))();
+  expect((await job(q.id)).status).toBe("succeeded");
+  const rows = (
+    await f.db.query<any>(
+      "select * from public.model_activity where job_id=$1 order by sequence",
+      [q.id],
+    )
+  ).rows;
+  expect(rows.map((r) => r.round_number)).toEqual([1, 2]);
+  expect(rows[0].provider_error_code).toBe("1305");
+  expect(rows[0].retry_after).not.toBeNull();
+  expect(rows[1].status).toBe("succeeded");
+});

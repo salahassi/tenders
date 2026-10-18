@@ -535,6 +535,9 @@ export type AttemptMetadata = {
   finish_reason?: string;
   request_phase?: string;
   retry_after?: string | null;
+  provider_error_code?: string;
+  provider_error_type?: string;
+  provider_error_reason?: string;
 };
 export interface Ledger {
   beginAttempt?(
@@ -668,6 +671,69 @@ export class FreeModelProvider {
         }
         text += decoder.decode(value, { stream: true });
       }
+      // Capture structured identifiers only. Error messages can echo prompts or keys.
+      const identifier = (value: unknown) => {
+        const candidate = typeof value === "number" ? String(value) : value;
+        return typeof candidate === "string" &&
+          /^(?:[0-9]{3,8}|[a-zA-Z][a-zA-Z_]{1,63})$/.test(candidate) &&
+          candidate !== this.env.key
+          ? candidate
+          : undefined;
+      };
+      let message = "";
+      try {
+        const error = JSON.parse(text)?.error;
+        this.telemetry.provider_error_code = identifier(error?.code);
+        this.telemetry.provider_error_type = identifier(
+          error?.type || error?.status,
+        );
+        message = typeof error?.message === "string" ? error.message : "";
+      } catch {
+        /* Non-JSON errors retain the HTTP status without fabricated detail. */
+      }
+      const zaiReasons: Record<string, string> = {
+        "1113": "insufficient_balance",
+        "1302": "rate_limit",
+        "1305": "overloaded",
+        "1308": "usage_limit",
+        "1309": "subscription_expired",
+        "1310": "usage_limit",
+        "1311": "model_access",
+        "1313": "account_rate_restriction",
+        "1314": "subscription_expired",
+        "1315": "key_product_mismatch",
+        "1316": "usage_limit",
+        "1317": "usage_limit",
+        "1318": "usage_limit",
+        "1319": "usage_limit",
+        "1320": "usage_limit",
+        "1321": "usage_limit",
+      };
+      const reasons: [string, RegExp][] = [
+        ["overloaded", /overload|capacity|server.*busy/i],
+        ["concurrency_limit", /concurren|simultaneous/i],
+        [
+          "insufficient_balance",
+          /insufficient.*balance|no resource package|billing.*limit/i,
+        ],
+        [
+          "usage_limit",
+          /quota.*exhaust|usage limit|insufficient_quota|daily.*limit/i,
+        ],
+        [
+          "rate_limit",
+          /rate.?limit|too many requests|requests per|tokens per/i,
+        ],
+      ];
+      this.telemetry.provider_error_reason =
+        (this.env.provider === "zai_free" &&
+          zaiReasons[this.telemetry.provider_error_code || ""]) ||
+        reasons.find(([, pattern]) =>
+          pattern.test(
+            message + " " + (this.telemetry.provider_error_type || ""),
+          ),
+        )?.[0] ||
+        (response.status === 429 ? "unspecified_429" : "provider_rejected");
       const labels: Record<string, RegExp> = {
         interactions: /interactions/i,
         background: /background/i,
@@ -692,6 +758,10 @@ export class FreeModelProvider {
         JSON.stringify({
           provider: this.env.provider,
           status: response.status,
+          request_id: this.telemetry.request_id,
+          provider_error_code: this.telemetry.provider_error_code,
+          provider_error_type: this.telemetry.provider_error_type,
+          provider_error_reason: this.telemetry.provider_error_reason,
           labels: Object.entries(labels)
             .filter(([, pattern]) => pattern.test(text))
             .map(([label]) => label),
@@ -739,8 +809,7 @@ export class FreeModelProvider {
       if (method === "DELETE" && (response.ok || response.status === 404))
         return {};
       if (!response.ok) {
-        if (response.status === 400 && this.env.provider === "gemini_free")
-          await this.diagnoseRejectedRequest(response);
+        await this.diagnoseRejectedRequest(response);
         const raw = response.headers.get("retry-after");
         const after =
           raw &&
@@ -1119,7 +1188,11 @@ export async function executeModel(
     const provider = new FreeModelProvider(
       env,
       fetcher,
-      automatic ? 20000 : 90000,
+      // A single-provider diagnostic has the full request budget; multi-provider
+      // work keeps short attempts so one slow provider cannot consume the round.
+      automatic && !(task === "connection_probe" && pool.providers.length === 1)
+        ? 20000
+        : 90000,
     );
     let reservation: string | null = null;
     let settled = false;

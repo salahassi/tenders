@@ -193,8 +193,8 @@ export default function OperationsPanel({
               <dd>
                 {status.queued_jobs} queued · {status.running_jobs ?? 0} running
                 <br />
-                {status.quota_wait_jobs ?? 0} waiting for quota ·{" "}
-                {status.retry_wait_jobs ?? 0} waiting to retry
+                {status.quota_wait_jobs ?? 0} waiting for limits / availability
+                · {status.retry_wait_jobs ?? 0} waiting to retry
                 <br />
                 {status.blocked_jobs} need attention
                 <br />
@@ -252,7 +252,7 @@ export default function OperationsPanel({
                         MODEL_DAILY_QUOTA_WAIT:
                           "Application daily limit reached",
                         MODEL_RATE_WAIT: "Application request-rate limit",
-                        PROVIDER_QUOTA_WAIT: "Provider rate / quota limit",
+                        PROVIDER_QUOTA_WAIT: "Provider rejected request (429)",
                         MODEL_ROUND_EXHAUSTED:
                           "No provider completed the round",
                         MANUAL_REDUCTION_REQUIRED: "Input needs reduction",

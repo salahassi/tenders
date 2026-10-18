@@ -30,6 +30,9 @@ export type ModelAttempt = {
   usage_id: string | null;
   http_status: number | null;
   request_id: string | null;
+  provider_error_code?: string | null;
+  provider_error_type?: string | null;
+  provider_error_reason?: string | null;
   response_id: string | null;
   remote_request_id: string | null;
   reported_model: string | null;
@@ -46,6 +49,21 @@ const when = (v: string | null) =>
     : "Not recorded";
 const count = (v: number | null) =>
   v == null ? "Not reported" : v.toLocaleString();
+const rejectionReasons: Record<string, string> = {
+  overloaded: "Provider servers temporarily overloaded",
+  rate_limit: "Provider request rate limit",
+  concurrency_limit: "Provider concurrent request limit",
+  usage_limit: "Provider usage limit",
+  insufficient_balance:
+    "Provider reported insufficient balance or resource package",
+  subscription_expired: "Provider reported an expired subscription",
+  model_access: "Provider reported no access to this model",
+  account_rate_restriction: "Provider restricted this account's request rate",
+  key_product_mismatch: "Provider reported a key for a different product",
+  unspecified_429:
+    "Provider rejected the request (429); specific reason unavailable",
+  provider_rejected: "Provider rejected the request",
+};
 export default function ModelActivity() {
   const { backend } = useApp();
   const [params, setParams] = useSearchParams();
@@ -242,6 +260,13 @@ export default function ModelActivity() {
                     {a.status}
                   </Badge>
                   <div>{a.result_code}</div>
+                  {(a.provider_error_reason || a.http_status === 429) && (
+                    <p className="small">
+                      {rejectionReasons[
+                        a.provider_error_reason || "unspecified_429"
+                      ] || "Provider rejected the request"}
+                    </p>
+                  )}
                   {a.status === "historical" && (
                     <p className="small">
                       Historical usage; response validation outcome was not
@@ -272,6 +297,8 @@ export default function ModelActivity() {
                       {Object.entries({
                         "Generation request sent": a.sent ? "Yes" : "No",
                         "HTTP status": a.http_status,
+                        "Provider error code": a.provider_error_code,
+                        "Provider error type": a.provider_error_type,
                         "Request phase": a.request_phase,
                         "Provider request ID": a.request_id,
                         "Response ID": a.response_id,
