@@ -7,6 +7,7 @@ const providers = [
   "mistral_free",
   "groq_free",
   "cloudflare_free",
+  "zai_free",
 ];
 export default function DiscoveryControls() {
   const { backend, runCommand, state, saving, notify } = useApp();

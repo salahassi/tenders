@@ -1,6 +1,6 @@
 # Free and free-tier model providers
 
-TenderDesk runs **connected-only** with **no paid fallback**. The worker uses verified, **enabled** free provider profiles in `failover_rank` order. Gemini can be configured on its own; an unused Qwen or optional provider does not need a policy or credentials.
+TenderDesk runs **connected-only** with **no paid fallback**. Automatic round robin reads configured free provider slots directly from secrets; manual mode uses verified, **enabled** profiles in `failover_rank` order. Gemini can be configured on its own; an unused Qwen or optional provider does not need a policy or credentials.
 
 Google's [model catalog](https://ai.google.dev/gemini-api/docs/models) and [Interactions API guide](https://ai.google.dev/gemini-api/docs/interactions), checked October 17, 2026, list Gemini 3.8 Flash as `gemini-3.8-flash`. Keep that exact identifier in both the backend secret and workspace policy. This verifies the identifier, not access or free quota for a particular account.
 
@@ -12,11 +12,12 @@ Google's [model catalog](https://ai.google.dev/gemini-api/docs/models) and [Inte
 | `qwen_free` | [Alibaba Model Studio](https://www.alibabacloud.com/) Singapore, **Free Quota Only** | `APP_MODEL_QWEN_NAME`, `APP_MODEL_QWEN_PROJECT`, `APP_MODEL_QWEN_KEY` | Singapore workspace id |
 | `groq_free` *(optional)* | [Groq Console](https://console.groq.com/) | `APP_MODEL_GROQ_NAME`, `APP_MODEL_GROQ_PROJECT`, `APP_MODEL_GROQ_KEY` | Owner-verified account label |
 | `mistral_free` *(optional)* | [Mistral Console](https://console.mistral.ai/) | `APP_MODEL_MISTRAL_NAME`, `APP_MODEL_MISTRAL_PROJECT`, `APP_MODEL_MISTRAL_KEY` | Owner-verified account label |
+| `zai_free` *(optional)* | [z.ai](https://z.ai/) | `APP_MODEL_ZAI_NAME`, `APP_MODEL_ZAI_PROJECT`, `APP_MODEL_ZAI_KEY` | Owner-verified account label |
 | `cloudflare_free` *(optional)* | [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) | `APP_MODEL_CLOUDFLARE_NAME`, `APP_MODEL_CLOUDFLARE_PROJECT`, `APP_MODEL_CLOUDFLARE_KEY` | Cloudflare **account ID** (`project_ref`) |
 
 Legacy `APP_MODEL_PROVIDER` + `APP_MODEL_NAME` + `APP_MODEL_PROJECT` + `APP_MODEL_KEY` still fill **one** slot for older deployments.
 
-Default failover ranks: Gemini 1, Qwen 2, Groq 3, Mistral 4, Cloudflare 5. Only **enabled** rows with matching secrets participate; optional providers can stay disabled.
+Default failover ranks: Gemini 1, Qwen 2, Groq 3, Mistral 4, Cloudflare 5, z.ai 6. In manual mode, only **enabled** rows with matching secrets participate; optional providers can stay disabled.
 
 Authorize each content item **per provider** that may process it.
 
@@ -28,7 +29,10 @@ Authorize each content item **per provider** that may process it.
 | `qwen_free` | Alibaba compatible-mode `chat/completions` |
 | `groq_free` | `https://api.groq.com/openai/v1/chat/completions` |
 | `mistral_free` | `https://api.mistral.ai/v1/chat/completions` |
+| `zai_free` | `https://api.z.ai/api/paas/v4/chat/completions` |
 | `cloudflare_free` | `https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1/chat/completions` |
+
+Model identifiers always come from the Owner’s `_NAME` secret and are sent verbatim. No exact model allowlist is maintained. The z.ai adapter uses the standard API endpoint with provider defaults for optional thinking; it does not choose capabilities based on a model-name allowlist. Official [API](https://docs.z.ai/api-reference/llm/chat-completion.md) and [pricing](https://docs.z.ai/guides/overview/pricing.md) were checked October 18, 2026; GLM-4.7-Flash is listed free, but the Owner controls the selected model and confirms its free billing status.
 
 Structured output uses OpenAI-style `response_format: { type: "json_object" }` where supported; TenderDesk still validates JSON against the task schema.
 
@@ -40,7 +44,13 @@ Structured output uses OpenAI-style `response_format: { type: "json_object" }` w
 | [Cohere trial](https://cohere.com/) | Trial credits, not ongoing free-only |
 | [OpenRouter](https://openrouter.ai/) | Out of scope (paid router) |
 
-## Failover behavior (runtime)
+## Automatic round robin
+
+When enabled, Gemini → Qwen → Mistral → Groq → z.ai rotates its starting provider globally. Configured credentials, model and account identity plus `_FREE_ONLY=true` (or a saved Owner-attested free-only profile) make a slot eligible without a separate enable switch. Missing slots are skipped with a visible reason. Model name changes in the same attested account apply to new requests automatically; saved remote requests keep their identity. Provider errors move to alternatives, while unknown usage remains reserved and is never blindly resent to that provider. Daily application ceilings are shared across the pool.
+
+Each provider still needs exact-content consent; public collector permission and Company Knowledge permission are distinct. Groq/z.ai can use provider-managed quotas like Gemini with null expiry/balance, keeping actual provider rate limits and app budgets.
+
+## Manual failover behavior (runtime)
 
 1. Load enabled profiles from `model_settings` ordered by `failover_rank`.
 2. Skip profiles that fail attestation, quota expiry, or secret mismatch.

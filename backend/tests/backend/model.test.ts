@@ -707,3 +707,35 @@ it("rejects invented feedback quotations and incomplete segment coverage", () =>
     ),
   ).toThrow("EVIDENCE_REFERENCE_INVALID");
 });
+
+it("sends the configured z.ai model verbatim and counts only returned usage", async () => {
+  const send = vi.fn<typeof fetch>(async () =>
+    Response.json({
+      choices: [
+        {
+          finish_reason: "stop",
+          message: { content: JSON.stringify(analysis) },
+        },
+      ],
+      usage: { prompt_tokens: 80, completion_tokens: 30 },
+    }),
+  );
+  const provider = new FreeModelProvider(
+    { ...env, provider: "zai_free", model: "owner-selected/model.v2" },
+    send,
+  );
+  const result = await provider.generate("analyze_chunk", "JSON request", {});
+  const [url, init] = send.mock.calls[0];
+  expect(url).toBe("https://api.z.ai/api/paas/v4/chat/completions");
+  expect(JSON.parse(String(init?.body))).toMatchObject({
+    model: "owner-selected/model.v2",
+    response_format: { type: "json_object" },
+    stream: false,
+  });
+  expect(JSON.parse(String(init?.body))).not.toHaveProperty("thinking");
+  expect(init?.body).not.toContain(env.key);
+  expect(result).toMatchObject({
+    complete: true,
+    usage: { input: 80, output: 30, thinking: null },
+  });
+});

@@ -74,6 +74,9 @@ describe("backend HTTP boundaries without a live provider", () => {
       APP_MODEL_KEY: "synthetic-legacy-key-never-return",
       APP_MODEL_GEMINI_NAME: "gemini-3.8-flash",
       APP_MODEL_GROQ_KEY: "synthetic-other-key-never-return",
+      APP_MODEL_ZAI_KEY: "synthetic-zai-key-never-return",
+      APP_MODEL_ZAI_NAME: "owner-selected-model",
+      APP_MODEL_ZAI_PROJECT: "synthetic-account",
     };
     const handle = createApiHandler(
       { ...env, models: modelEnvironments((name) => secrets[name]) },
@@ -83,7 +86,7 @@ describe("backend HTTP boundaries without a live provider", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
     const body = await response.json();
-    expect(body.data.providers).toHaveLength(5);
+    expect(body.data.providers).toHaveLength(6);
     expect(body.data.providers[0]).toEqual({
       provider: "gemini_free",
       model: "gemini-3.8-flash",
@@ -98,6 +101,15 @@ describe("backend HTTP boundaries without a live provider", () => {
     });
     expect(JSON.stringify(body)).not.toContain(secrets.APP_MODEL_KEY);
     expect(JSON.stringify(body)).not.toContain(secrets.APP_MODEL_GROQ_KEY);
+    expect(
+      body.data.providers.find((p: any) => p.provider === "zai_free"),
+    ).toEqual({
+      provider: "zai_free",
+      model: "owner-selected-model",
+      project_ref: "synthetic-account",
+      key_configured: true,
+    });
+    expect(JSON.stringify(body)).not.toContain(secrets.APP_MODEL_ZAI_KEY);
     expect(JSON.stringify(body)).not.toContain(env.serviceKey);
     expect(f.backend.command).not.toHaveBeenCalled();
   });

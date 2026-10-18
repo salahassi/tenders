@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MODEL_PROVIDER_IDS } from "./modelProviders.ts";
 import {
   estimateInputSchema,
   deliveryInputSchema,
@@ -69,16 +70,8 @@ export const commandSchemas = {
       scope: z.enum(["all", "software_services"]),
       auto_public_notices: z.boolean(),
       providers: z
-        .array(
-          z.enum([
-            "gemini_free",
-            "qwen_free",
-            "mistral_free",
-            "groq_free",
-            "cloudflare_free",
-          ]),
-        )
-        .max(5),
+        .array(z.enum(MODEL_PROVIDER_IDS))
+        .max(MODEL_PROVIDER_IDS.length),
     })
     .strict(),
   "export.renew": z.object({ id: uuid, expected_revision: revision }).strict(),
@@ -328,13 +321,7 @@ export const commandSchemas = {
     .object({
       expected_revision: z.number().int().min(0),
       enabled: z.boolean(),
-      provider: z.enum([
-        "gemini_free",
-        "qwen_free",
-        "groq_free",
-        "mistral_free",
-        "cloudflare_free",
-      ]),
+      provider: z.enum(MODEL_PROVIDER_IDS),
       model: z.string().regex(/^[a-zA-Z0-9._@/-]{1,120}$/),
       project_ref: z.string().min(1).max(120),
       free_only: z.literal(true),
@@ -354,11 +341,11 @@ export const commandSchemas = {
     .refine(
       (v) =>
         v.quota_mode === "provider_managed"
-          ? v.provider === "gemini_free" &&
+          ? ["gemini_free", "groq_free", "zai_free"].includes(v.provider) &&
             v.quota_ends_at === null &&
             v.quota_remaining_tokens === null
           : v.quota_ends_at !== null && v.quota_remaining_tokens !== null,
-      "Use provider-managed quota only for Gemini; verified budgets require quota and expiry.",
+      "Use provider-managed quota only for Gemini, Groq or z.ai; verified budgets require quota and expiry.",
     ),
   "model.probe": z.object({}).strict(),
   "model.routing": z
@@ -378,13 +365,7 @@ export const commandSchemas = {
       ]),
       entity_id: uuid,
       content_hash: hash,
-      provider: z.enum([
-        "gemini_free",
-        "qwen_free",
-        "groq_free",
-        "mistral_free",
-        "cloudflare_free",
-      ]),
+      provider: z.enum(MODEL_PROVIDER_IDS),
       attestation: z.literal("nonconfidential_nonpersonal"),
     })
     .strict(),

@@ -7780,16 +7780,17 @@
                                   "type": "boolean"
                                 },
                                 "providers": {
-                                  "maxItems": 5,
+                                  "maxItems": 6,
                                   "type": "array",
                                   "items": {
                                     "type": "string",
                                     "enum": [
                                       "gemini_free",
                                       "qwen_free",
-                                      "mistral_free",
                                       "groq_free",
-                                      "cloudflare_free"
+                                      "mistral_free",
+                                      "cloudflare_free",
+                                      "zai_free"
                                     ]
                                   }
                                 }
@@ -9552,7 +9553,8 @@
                                     "qwen_free",
                                     "groq_free",
                                     "mistral_free",
-                                    "cloudflare_free"
+                                    "cloudflare_free",
+                                    "zai_free"
                                   ]
                                 },
                                 "model": {
@@ -9739,7 +9741,8 @@
                                     "qwen_free",
                                     "groq_free",
                                     "mistral_free",
-                                    "cloudflare_free"
+                                    "cloudflare_free",
+                                    "zai_free"
                                   ]
                                 },
                                 "attestation": {

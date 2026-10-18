@@ -120,7 +120,9 @@ function providerOf(url: string) {
       ? "qwen_free"
       : url.includes("mistral.ai")
         ? "mistral_free"
-        : "groq_free";
+        : url.includes("api.z.ai")
+          ? "zai_free"
+          : "groq_free";
 }
 function success(provider: string, id = "synthetic-request") {
   return provider === "gemini_free"
@@ -166,7 +168,7 @@ async function age() {
   );
 }
 
-it("visits all four missing slots without sending unauthenticated requests and schedules a finite retry", async () => {
+it("visits all five missing slots without sending unauthenticated requests and schedules a finite retry", async () => {
   await enable();
   const q = await queue();
   const send = vi.fn<typeof fetch>();
@@ -178,7 +180,7 @@ it("visits all four missing slots without sending unauthenticated requests and s
   expect(j.status).toBe("quota_wait");
   expect(j.error_code).toBe("MODEL_ROUND_EXHAUSTED");
   expect(Number.isFinite(Date.parse(j.next_attempt_at))).toBe(true);
-  expect(j.checkpoint.model_routing.checks).toHaveLength(4);
+  expect(j.checkpoint.model_routing.checks).toHaveLength(5);
   expect(
     j.checkpoint.model_routing.checks.every(
       (x: any) => x.code === "MODEL_NOT_CONFIGURED" && !x.sent,
@@ -201,7 +203,7 @@ it("falls through 400, 401 and 429 to Groq with all individual policies absent",
           });
     }),
   )();
-  expect(calls).toEqual([...ROUND_ROBIN_PROVIDERS]);
+  expect(calls).toEqual(ROUND_ROBIN_PROVIDERS.slice(0, 4));
   const j = await job(q.id);
   expect(j.status).toBe("succeeded");
   const rows = await usage(q.id);
@@ -272,7 +274,7 @@ it("rotates the first provider across independent jobs without resetting the dur
       return success(p);
     }),
   );
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < ROUND_ROBIN_PROVIDERS.length; i++) {
     const q = await queue();
     await tick();
     expect((await job(q.id)).status).toBe("succeeded");
@@ -291,7 +293,7 @@ it("continues after uncertain delivery while retaining each unknown reservation 
       throw new TypeError("synthetic network interruption");
     }),
   )();
-  expect(calls).toEqual([...ROUND_ROBIN_PROVIDERS]);
+  expect(calls).toEqual(ROUND_ROBIN_PROVIDERS.slice(0, 4));
   expect((await job(q.id)).status).toBe("succeeded");
   const rows = await usage(q.id);
   expect(rows.filter((x) => x.state === "unknown")).toHaveLength(3);
@@ -310,12 +312,12 @@ it("retries an exhausted round with a rotated start, but never resends ambiguous
   const tick = worker(send);
   await tick();
   expect((await job(q.id)).status).toBe("quota_wait");
-  expect(await usage(q.id)).toHaveLength(4);
+  expect(await usage(q.id)).toHaveLength(5);
   await age();
   const before = vi.mocked(send).mock.calls.length;
   await tick();
   expect((await job(q.id)).status).toBe("quota_wait");
-  expect(await usage(q.id)).toHaveLength(4);
+  expect(await usage(q.id)).toHaveLength(5);
   // Gemini token counting is allowed; generation must not be repeated.
   expect(
     vi
@@ -553,4 +555,137 @@ it("uses the global next provider when a retry interleaves with another complete
   await tick();
   expect((await job(first.id)).status).toBe("succeeded");
   expect(calls).toEqual(["qwen_free", "mistral_free"]);
+});
+
+it("fails over through four unavailable providers to z.ai using an arbitrary configured model", async () => {
+  await enable();
+  const q = await queue();
+  const calls: string[] = [];
+  await worker(
+    transport((provider, url, init) => {
+      calls.push(provider);
+      if (provider !== "zai_free") return new Response(null, { status: 429 });
+      expect(url).toBe("https://api.z.ai/api/paas/v4/chat/completions");
+      expect(JSON.parse(String(init?.body))).toMatchObject({
+        model: "synthetic-model",
+      });
+      return success(provider);
+    }),
+  )();
+  expect(calls).toEqual([...ROUND_ROBIN_PROVIDERS]);
+  expect((await job(q.id)).status).toBe("succeeded");
+  expect(
+    (await usage(q.id)).find((x) => x.provider === "zai_free"),
+  ).toMatchObject({ state: "settled", actual_input: 100, actual_output: 10 });
+});
+it("accepts four-slot workers during deployment even when the new cursor points at z.ai", async () => {
+  await enable();
+  await f.db.exec("update public.model_routing set next_position=4");
+  const q = await queue();
+  const claimed = await rpc("claim_backend_job");
+  await rpc("prepare_model_routing", {
+    job_id: q.id,
+    lease: claimed.lease_token,
+    server_models: meta().filter((x) => x.provider !== "zai_free"),
+  });
+  expect(
+    (await job(q.id)).checkpoint.model_routing.providers.map(
+      (x: any) => x.provider,
+    ),
+  ).toEqual(ROUND_ROBIN_PROVIDERS.slice(0, 4));
+});
+it.each(["groq_free", "zai_free"] as const)(
+  "uses saved free-only attestation for %s and reads a changed model from secrets",
+  async (provider) => {
+    await enable();
+    await f.command("model.configure", {
+      expected_revision: 0,
+      enabled: true,
+      provider,
+      model: "previous-model",
+      project_ref: "synthetic-project",
+      free_only: true,
+      billing_verified: true,
+      free_quota_only: false,
+      quota_mode: "provider_managed",
+      quota_ends_at: null,
+      quota_remaining_tokens: null,
+      calls_per_day: 50,
+      input_per_day: 250000,
+      output_per_day: 50000,
+    });
+    await f.db.query("update public.model_routing set next_position=$1", [
+      ROUND_ROBIN_PROVIDERS.indexOf(provider),
+    ]);
+    const q = await queue();
+    const calls: string[] = [];
+    const changed = {
+      ...models,
+      [provider]: {
+        ...models[provider],
+        model: "owner-selected-new-model",
+        freeTierConfirmed: undefined,
+      },
+    };
+    await worker(
+      transport((p, _url, init) => {
+        calls.push(p);
+        expect(JSON.parse(String(init?.body)).model).toBe(
+          "owner-selected-new-model",
+        );
+        return success(p);
+      }),
+      { ...environment, models: changed },
+    )();
+    expect(calls).toEqual([provider]);
+    expect((await job(q.id)).status).toBe("succeeded");
+    expect((await usage(q.id))[0].model).toBe("owner-selected-new-model");
+  },
+);
+it("keeps z.ai exact-content consent separate from Gemini consent", async () => {
+  await enable();
+  const item = await f.command("knowledge.save", {
+    title: "Synthetic z.ai permission evidence",
+    content: "Builds workflow software.",
+    category: "company",
+    enabled: true,
+    evidence: "Fixture only",
+  });
+  const ref = (await f.rpc("eligibility_candidates")).items.find(
+    (x: any) => x.entity_id === item.id,
+  );
+  const q = await queue();
+  const claimed = await rpc("claim_backend_job");
+  await f.db.query(
+    "update public.jobs set type='classify_opportunity' where id=$1",
+    [q.id],
+  );
+  await rpc("prepare_model_routing", {
+    job_id: q.id,
+    lease: claimed.lease_token,
+    server_models: meta(),
+  });
+  await expect(
+    rpc("model_preflight", {
+      job_id: q.id,
+      lease: claimed.lease_token,
+      manifest: [ref],
+    }),
+  ).rejects.toMatchObject({ code: "DATA_AUTHORIZATION_REQUIRED" });
+  await f.command("content.authorize", {
+    entity_kind: ref.entity_kind,
+    entity_id: ref.entity_id,
+    content_hash: ref.content_hash,
+    provider: "zai_free",
+    attestation: "nonconfidential_nonpersonal",
+  });
+  expect(
+    (
+      await rpc("model_preflight", {
+        job_id: q.id,
+        lease: claimed.lease_token,
+        manifest: [ref],
+      })
+    ).providers.map((x: any) => x.provider),
+  ).toEqual(["zai_free"]);
 });

@@ -23,6 +23,7 @@ const SECRET_PREFIX: Record<ModelProviderId, string> = {
   groq_free: "APP_MODEL_GROQ",
   mistral_free: "APP_MODEL_MISTRAL",
   cloudflare_free: "APP_MODEL_CLOUDFLARE",
+  zai_free: "APP_MODEL_ZAI",
 };
 export function modelEnvironments(
   get: (name: string) => string | undefined,

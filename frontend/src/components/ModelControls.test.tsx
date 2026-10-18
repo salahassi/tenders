@@ -85,6 +85,12 @@ function setup(role = "Owner", saved: Record<string, unknown>[] = []) {
                   key_configured: true,
                 },
                 {
+                  provider: "zai_free",
+                  model: "owner-chosen-zai-model",
+                  project_ref: "synthetic-zai-account",
+                  key_configured: true,
+                },
+                {
                   provider: "groq_free",
                   model: "synthetic-optional-model",
                   project_ref: "synthetic-optional-project",
@@ -257,4 +263,42 @@ it("enables round robin without individual enabled policies and can queue its op
       name: "Disable automatic round robin",
     }),
   ).toBeEnabled();
+});
+
+it("loads an Owner-selected z.ai model and saves free continuous policy without fabricated quota", async () => {
+  const f = setup();
+  await screen.findByDisplayValue("owner-chosen-zai-model");
+  const panel = within(
+    screen.getByRole("heading", { name: "z.ai GLM free tier (optional)" })
+      .parentElement!,
+  );
+  expect(
+    panel.queryByLabelText("Free quota expiry (UTC)"),
+  ).not.toBeInTheDocument();
+  await userEvent.click(
+    panel.getByLabelText(/I confirm this account uses the free tier/),
+  );
+  await userEvent.click(
+    panel.getByLabelText(
+      "Enable matching backend credentials after verification",
+    ),
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "Save provider policies" }),
+  );
+  await waitFor(() =>
+    expect(f.runCommand).toHaveBeenCalledWith(
+      "model.configure",
+      expect.objectContaining({
+        provider: "zai_free",
+        model: "owner-chosen-zai-model",
+        project_ref: "synthetic-zai-account",
+        enabled: true,
+        billing_verified: true,
+        quota_mode: "provider_managed",
+        quota_ends_at: null,
+        quota_remaining_tokens: null,
+      }),
+    ),
+  );
 });

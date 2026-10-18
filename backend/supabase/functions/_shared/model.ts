@@ -354,7 +354,7 @@ export function available(
     throw new ModelError("PROVIDER_NOT_ALLOWED");
   if (
     config.quota_mode === "provider_managed" &&
-    config.provider !== "gemini_free" &&
+    !["gemini_free", "groq_free", "zai_free"].includes(config.provider) &&
     !config.automatic
   )
     throw new ModelError("FREE_ONLY_REQUIRED");
@@ -988,6 +988,15 @@ export class FreeModelProvider {
         prompt,
         schema,
         "https://api.groq.com/openai/v1/chat/completions",
+        { Authorization: `Bearer ${this.env.key}` },
+      );
+    }
+    if (this.env.provider === "zai_free") {
+      return this.openAiChatJson(
+        task,
+        prompt,
+        schema,
+        "https://api.z.ai/api/paas/v4/chat/completions",
         { Authorization: `Bearer ${this.env.key}` },
       );
     }

@@ -1199,6 +1199,7 @@ function modelRoutingSummary(checkpoint: unknown): string {
     qwen_free: "Qwen",
     mistral_free: "Mistral",
     groq_free: "Groq",
+    zai_free: "z.ai",
   };
   const reasons: Record<string, string> = {
     MODEL_NOT_CONFIGURED: "server configuration missing",

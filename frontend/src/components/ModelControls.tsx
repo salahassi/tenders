@@ -8,6 +8,7 @@ const PROVIDER_IDS = [
   "groq_free",
   "mistral_free",
   "cloudflare_free",
+  "zai_free",
 ] as const;
 type ProviderId = (typeof PROVIDER_IDS)[number];
 type ServerModel = {
@@ -24,6 +25,7 @@ type ProviderMeta = {
   optional: boolean;
   projectLabel: string;
 };
+const continuousProviders = ["gemini_free", "groq_free", "zai_free"];
 const PROVIDERS: ProviderMeta[] = [
   {
     id: "gemini_free",
@@ -54,6 +56,14 @@ const PROVIDERS: ProviderMeta[] = [
     label: "Mistral free tier (optional)",
     rank: 4,
     secretHint: "APP_MODEL_MISTRAL_*",
+    optional: true,
+    projectLabel: "Verified account label (for your records)",
+  },
+  {
+    id: "zai_free",
+    label: "z.ai GLM free tier (optional)",
+    rank: 6,
+    secretHint: "APP_MODEL_ZAI_*",
     optional: true,
     projectLabel: "Verified account label (for your records)",
   },
@@ -92,8 +102,9 @@ const emptyForms = (): Record<ProviderId, typeof initial> =>
         ...initial,
         provider: p.id,
         failover_rank: p.rank,
-        quota_mode:
-          p.id === "gemini_free" ? "provider_managed" : "verified_budget",
+        quota_mode: continuousProviders.includes(p.id)
+          ? "provider_managed"
+          : "verified_budget",
       },
     ]),
   ) as Record<ProviderId, typeof initial>;
@@ -317,7 +328,7 @@ export default function ModelControls() {
               }
             />
           </Field>
-          {meta.id === "gemini_free" && (
+          {continuousProviders.includes(meta.id) && (
             <Field label="Quota management">
               <select
                 disabled={!owner}
@@ -371,7 +382,7 @@ export default function ModelControls() {
         </div>
         {continuous && (
           <p className="admin-hint">
-            Gemini enforces its free-tier quota. Tasks wait and resume
+            The provider enforces its free-tier quota. Tasks wait and resume
             automatically when quota is available. Daily application limits
             still apply and renew at midnight Riyadh time. No manual quota
             expiry is required.
@@ -390,7 +401,7 @@ export default function ModelControls() {
             }
           />{" "}
           {continuous
-            ? "I confirm this Gemini project uses the free tier without paid billing."
+            ? `I confirm this ${meta.id === "gemini_free" ? "Gemini project" : "account"} uses the free tier without paid billing.`
             : "I verified this project's free billing status and the remaining quota in the provider console."}
         </label>
         {meta.id === "qwen_free" && (
@@ -454,8 +465,8 @@ export default function ModelControls() {
         <>
           <h3>Automatic round robin</h3>
           <p>
-            Gemini → Qwen → Mistral → Groq. Rotates the starting provider and
-            tries the next after a provider error, including providers whose
+            Gemini → Qwen → Mistral → Groq → z.ai. Rotates the starting provider
+            and tries the next after a provider error, including providers whose
             individual enable box is off. Missing server configuration is
             recorded and skipped. Free-only account confirmation and content
             permissions still apply.
