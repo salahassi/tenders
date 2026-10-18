@@ -61,7 +61,9 @@ export function getFitPreview(
                 noticeEvidence: a.scopeEvidence.join("; "),
                 knowledgeTitle: "Configured service scope",
                 knowledgeEvidence:
-                  "Software, digital transformation and AI services; hardware and unrelated procurement excluded.",
+                  _state.settings.discoveryScope === "software_services"
+                    ? "Software, digital transformation and AI services; hardware and unrelated procurement excluded."
+                    : "Verified company service scope.",
               },
             ]
           : []),

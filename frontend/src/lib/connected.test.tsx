@@ -699,3 +699,59 @@ describe("connected screens", () => {
     await screen.findByText("Sign in to Tenderdesk");
   });
 });
+
+it("does not admit a notice when progress arrives before its matching assessment row", async () => {
+  const f = fixture();
+  const request = f.request.getMockImplementation()!;
+  let includeAssessment = false;
+  f.request.mockImplementation(async (path, options) => {
+    const table = path.split("?")[0];
+    if (table === "/v1/opportunity-discovery")
+      return {
+        data: {
+          records: [
+            {
+              id: opportunity,
+              revision: 1,
+              assessment_id: "00000000-0000-4000-8000-000000000055",
+              assessment_current: true,
+              inbox_visible: true,
+              assessment_state: "assessed",
+            },
+          ],
+          next_cursor: null,
+        },
+        meta: { request_id: "fixture" },
+      };
+    if (table === "/v1/fit-assessments")
+      return {
+        data: {
+          records: includeAssessment
+            ? [
+                {
+                  id: "00000000-0000-4000-8000-000000000055",
+                  revision: 1,
+                  opportunity_id: opportunity,
+                  routing: "needs_review",
+                  fit_score: null,
+                  evidence_coverage: 0,
+                  result: {},
+                  created_at: "2026-10-18T00:00:00Z",
+                },
+              ]
+            : [],
+          next_cursor: null,
+        },
+        meta: { request_id: "fixture" },
+      };
+    return request(path, options);
+  });
+  const repository = new ConnectedRepository(f.client);
+  expect(
+    (await repository.refresh()).opportunities[0].discovery?.inboxVisible,
+  ).toBe(false);
+  includeAssessment = true;
+  const row = (await repository.refresh()).opportunities[0];
+  expect(row.discovery?.inboxVisible).toBe(true);
+  expect(row.assessment?.stale).toBe(false);
+});

@@ -247,6 +247,10 @@ export class ConnectedRepository {
         const discovery = this.rows["opportunity-discovery"].find(
           (d) => d.id === r.id,
         );
+        const assessmentCurrent =
+          !!assessment &&
+          assessment.id === discovery?.assessment_id &&
+          discovery?.assessment_current === true;
         const assessed = assessment?.result as Record<string, any> | undefined;
         return {
           revision: r.revision,
@@ -264,7 +268,8 @@ export class ConnectedRepository {
                 "not_started",
               ])
               .parse(discovery?.assessment_state || "not_started"),
-            inboxVisible: discovery?.inbox_visible === true,
+            inboxVisible:
+              assessmentCurrent && discovery?.inbox_visible === true,
             error: discovery
               ? str(discovery, "assessment_error") || undefined
               : undefined,
@@ -293,7 +298,7 @@ export class ConnectedRepository {
                     assessed?.reason_summary ||
                       "Verified exclusion rule matched.",
                   ),
-                  stale: discovery?.assessment_current !== true,
+                  stale: !assessmentCurrent,
                   factors: assessed?.factors || {},
                   missing: assessed?.missing_information || [],
                   risks: assessed?.risk_flags || [],

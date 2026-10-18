@@ -272,7 +272,11 @@ it("requires Owner authority and revision, with audited idempotent configuration
     "00000000-0000-4000-8000-000000000088",
   );
   expect(
-    await f.command("discovery.configure", input, "00000000-0000-4000-8000-000000000088"),
+    await f.command(
+      "discovery.configure",
+      input,
+      "00000000-0000-4000-8000-000000000088",
+    ),
   ).toEqual(first);
   await expect(f.command("discovery.configure", input)).rejects.toThrow(
     "REVISION_CONFLICT",
@@ -446,6 +450,23 @@ it("records deterministic scope assessment through real worker RPCs without call
       )
     ).rows[0].n,
   ).toBe(0);
+  for (const [status, visible] of [
+    ["uncertain", false],
+    ["in_scope", true],
+  ] as const) {
+    await f.db.query(
+      "update public.fit_assessments set routing='needs_review',result=jsonb_set(result,'{scope_decision,status}',to_jsonb($2::text)) where opportunity_id=$1",
+      [o, status],
+    );
+    expect(
+      (
+        await f.db.query<any>(
+          "select inbox_visible from public.opportunity_discovery where id=$1",
+          [o],
+        )
+      ).rows[0].inbox_visible,
+    ).toBe(visible);
+  }
   await f.db.query(
     "update public.opportunities set title='Synthetic software development' where id=$1",
     [o],
@@ -461,12 +482,35 @@ it("records deterministic scope assessment through real worker RPCs without call
 });
 
 it("does not expose discovery rows without membership or retain automatic permission after restore", async () => {
-  await collect(); await configure();
+  await collect();
+  await configure();
   await f.db.exec("set role authenticated");
-  expect((await f.db.query("select id from public.opportunity_discovery")).rows).toHaveLength(1);
-  await f.db.query("select set_config('request.jwt.claim.sub',$1,false)",["00000000-0000-4000-8000-000000000099"]);
-  expect((await f.db.query("select id from public.opportunity_discovery")).rows).toHaveLength(0);
+  expect(
+    (await f.db.query("select id from public.opportunity_discovery")).rows,
+  ).toHaveLength(1);
+  await f.db.query("select set_config('request.jwt.claim.sub',$1,false)", [
+    "00000000-0000-4000-8000-000000000099",
+  ]);
+  expect(
+    (await f.db.query("select id from public.opportunity_discovery")).rows,
+  ).toHaveLength(0);
   await f.db.exec("reset role");
-  await f.db.query("update public.workspaces set restore_origin=$2::jsonb where id=$1",[f.w,JSON.stringify({source_workspace:crypto.randomUUID(),authorizations_reset:true})]);
-  expect((await f.db.query<any>("select discovery_policy from public.workspaces where id=$1",[f.w])).rows[0].discovery_policy).toEqual({scope:"all",auto_public_notices:false,providers:[]});
+  await f.db.query(
+    "update public.workspaces set restore_origin=$2::jsonb where id=$1",
+    [
+      f.w,
+      JSON.stringify({
+        source_workspace: crypto.randomUUID(),
+        authorizations_reset: true,
+      }),
+    ],
+  );
+  expect(
+    (
+      await f.db.query<any>(
+        "select discovery_policy from public.workspaces where id=$1",
+        [f.w],
+      )
+    ).rows[0].discovery_policy,
+  ).toEqual({ scope: "all", auto_public_notices: false, providers: [] });
 });
