@@ -383,11 +383,14 @@ function validateQuotes(
   evidence: Evidence[],
   kind?: Evidence["kind"],
 ) {
+  const canonicalText = (value: string) =>
+    value.normalize("NFC").replace(/\s+/gu, " ").trim();
   for (const ref of refs) {
     const source = evidence.find((e) => e.id === ref.id);
     if (
       !source ||
-      !source.text.includes(ref.quote) ||
+      !canonicalText(ref.quote) ||
+      !canonicalText(source.text).includes(canonicalText(ref.quote)) ||
       (kind && source.kind !== kind) ||
       (source.kind === "company" && !source.verified)
     )

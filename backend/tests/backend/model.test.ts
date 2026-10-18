@@ -105,6 +105,30 @@ it("validates full coverage and verbatim quotations rather than accepting plausi
     ),
   ).toThrow("EVIDENCE_REFERENCE_INVALID");
 });
+it("accepts PDF line wrapping in citations but rejects changed amounts, negation and blank quotes", () => {
+  const source = [
+    {
+      ...evidence[0],
+      text: "كفالة دخول\u00a0العطاء بقيمة\n20,000 شيكل. لا تُقبل العطاءات الإلكترونية.",
+    },
+  ];
+  const result = structuredClone(analysis);
+  result.requirements[0].source_refs[0].quote =
+    "كفالة دخول العطاء بقيمة 20,000 شيكل";
+  expect(() =>
+    validateModelResult("analyze_chunk", result, source, ["block-1"]),
+  ).not.toThrow();
+  for (const quote of [
+    "كفالة دخول العطاء بقيمة 2,000 شيكل",
+    "العطاءات الإلكترونية مقبولة",
+    " \n ",
+  ]) {
+    result.requirements[0].source_refs[0].quote = quote;
+    expect(() =>
+      validateModelResult("analyze_chunk", result, source, ["block-1"]),
+    ).toThrow("EVIDENCE_REFERENCE_INVALID");
+  }
+});
 it("routes title-only and weak-evidence assessments to review", () => {
   const factor = {
     rating: 4,
