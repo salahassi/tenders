@@ -2,14 +2,17 @@ import type { Opportunity } from "../types";
 
 export const needsDecision = (o: Opportunity) =>
   o.status === "new" || o.status === "deferred";
+export const isExpired = (o: Opportunity) => o.discovery?.expired === true;
 export const inReviewInbox = (o: Opportunity) =>
   needsDecision(o) &&
+  !isExpired(o) &&
   (o.discovery?.inboxVisible ??
     (!!o.assessment &&
       !o.assessment.stale &&
       o.assessment.routing !== "excluded"));
 export const outOfScope = (o: Opportunity) =>
   needsDecision(o) &&
+  !isExpired(o) &&
   !!o.assessment &&
   !o.assessment.stale &&
   o.assessment.routing === "excluded";

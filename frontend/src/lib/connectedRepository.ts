@@ -254,7 +254,31 @@ export class ConnectedRepository {
         const assessed = assessment?.result as Record<string, any> | undefined;
         return {
           revision: r.revision,
+          ...(r.notice_evidence &&
+          typeof r.notice_evidence === "object" &&
+          (r.notice_evidence as any).version === 1
+            ? {
+                noticeEvidence: {
+                  status: String((r.notice_evidence as any).status),
+                  fetchedAt: String(
+                    (r.notice_evidence as any).fetched_at || "",
+                  ),
+                  attachments: (
+                    (r.notice_evidence as any).attachments || []
+                  ).map((a: any) => ({
+                    url: String(a.url),
+                    status: String(a.status),
+                    includedPages: Array.isArray(a.included_pages)
+                      ? a.included_pages.length
+                      : 0,
+                    totalPages:
+                      typeof a.total_pages === "number" ? a.total_pages : null,
+                  })),
+                },
+              }
+            : {}),
           discovery: {
+            expired: discovery?.is_expired === true,
             state: z
               .enum([
                 "queued",
@@ -294,6 +318,7 @@ export class ConnectedRepository {
                   method: assessed?.rule_exclusion
                     ? "Rule-based scope assessment"
                     : "Model assessment",
+                  companySources: assessed?.metadata?.company_sources || [],
                   summary: String(
                     assessed?.reason_summary ||
                       "Verified exclusion rule matched.",

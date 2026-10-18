@@ -24,6 +24,7 @@
     "fast-xml-parser": "5.11.2",
     "fflate": "0.8.2",
     "pdf-lib": "1.17.1",
+    "unpdf": "1.9.0",
     "zod": "4.6.7"
   },
   "devDependencies": {

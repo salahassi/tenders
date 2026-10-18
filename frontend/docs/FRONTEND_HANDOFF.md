@@ -80,3 +80,10 @@ Discovery settings support a software/digital transformation/AI services scope e
 Review inbox, dashboard and navigation counts use current recorded assessments. New queued work appears under Assessing; unqueued/blocked/failed work appears under Needs attention; excluded records remain under Outside scope. Human decisions remain independent. Clear physical-only procurement has a cited rule-based scope assessment without an inference call; ambiguous or mixed scope proceeds to the model and stays explicitly uncertain when details are missing. New-discovery notifications wait for assessment. `opportunity-discovery` exposes compact progress through an RLS-invoker view, without sending frozen plan contents to the inbox.
 
 191 backend and 145 frontend tests passed, both package checks and Deno entry checks passed. API v16 and worker v13 source readback matched. Hosted policy activation queued all 35 original notices; full completion and browser acceptance are recorded separately in the implementation checklist.
+
+
+## Notice details and model-only assessment — October 18 follow-up
+
+Owner requires every fit/scope assessment to come from the model. Keyword and exact-phrase automatic exclusions are removed; historical rule-based results become stale. The connected inbox adds a Closed tab using server-resolved submission expiry without archiving or changing the user's decision. Detail/PDF provenance displays actual included page counts and partial/unread/OCR state. Known notice requirements and company proof remain distinct. Deployment and browser acceptance must be reconciled in the implementation checklist.
+
+Company evidence comes from enabled, current, verified Company Knowledge notes and extracted company-file blocks. Small evidence sets are supplied completely; larger selections expose partial coverage. Assessment metadata binds citation IDs to their note/document IDs and hashes; the UI names each cited note/file. Configured scope preferences are no longer rendered as Company Knowledge evidence. Local verification: 147 frontend tests/27 files, typecheck/build.

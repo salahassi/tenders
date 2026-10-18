@@ -3,6 +3,7 @@ import {
   needsDecision,
   outOfScope,
   assessmentActive,
+  isExpired,
 } from "../lib/discovery";
 import { useState } from "react";
 import { Link } from "react-router-dom";
@@ -31,6 +32,7 @@ export default function Review() {
   const processing = state.opportunities.filter(
     (o) =>
       needsDecision(o) &&
+      !isExpired(o) &&
       !inReviewInbox(o) &&
       !outOfScope(o) &&
       assessmentActive(o),
@@ -38,11 +40,15 @@ export default function Review() {
   const attention = state.opportunities.filter(
     (o) =>
       needsDecision(o) &&
+      !isExpired(o) &&
       !inReviewInbox(o) &&
       !outOfScope(o) &&
       !assessmentActive(o),
   );
   const archived = state.opportunities.filter((o) => o.status === "declined");
+  const expired = state.opportunities.filter(
+    (o) => needsDecision(o) && isExpired(o),
+  );
   const items = (
     tab === "pending"
       ? pending
@@ -52,7 +58,9 @@ export default function Review() {
           ? attention
           : tab === "excluded"
             ? excluded
-            : archived
+            : tab === "expired"
+              ? expired
+              : archived
   ).filter((o) =>
     `${o.title} ${o.description} ${o.buyer}`
       .toLowerCase()
@@ -133,6 +141,7 @@ export default function Review() {
               count: attention.length,
             },
             { id: "excluded", label: "Outside scope", count: excluded.length },
+            { id: "expired", label: "Closed", count: expired.length },
             { id: "archived", label: "Archived", count: archived.length },
           ]}
         />
@@ -153,6 +162,9 @@ export default function Review() {
           <article className="panel review-card" key={o.id}>
             <div className="row between">
               <Badge>{o.category}</Badge>
+              {isExpired(o) && (
+                <Badge tone="red">Submission deadline passed</Badge>
+              )}
               <span className="muted small">
                 {state.sources.find((s) => s.id === o.sourceId)?.name ||
                   "Added by you"}
@@ -220,7 +232,9 @@ export default function Review() {
                     ? "No assessment blockers"
                     : tab === "excluded"
                       ? "No excluded discoveries"
-                      : "No archived discoveries"
+                      : tab === "expired"
+                        ? "No closed discoveries"
+                        : "No archived discoveries"
             }
             description={
               search

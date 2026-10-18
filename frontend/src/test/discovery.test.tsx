@@ -9,6 +9,81 @@ import { AppContext } from "../lib/appContext";
 import Review from "../pages/Review";
 import type { Opportunity } from "../types";
 afterEach(cleanup);
+it("names the Company Knowledge file and note behind company citations", () => {
+  const state = createSeedState();
+  state.knowledge = [
+    {
+      id: "note",
+      category: "company",
+      title: "Synthetic experience note",
+      content: "Synthetic verified note",
+      evidence: "",
+      verified: true,
+    },
+  ];
+  state.knowledgeDocuments = [
+    {
+      id: "file",
+      name: "Synthetic capability file.txt",
+      size: 10,
+      uploadedAt: "2026-01-01",
+      text: "Synthetic verified file",
+      status: "ready",
+      classification: "synthetic",
+      hash: "x",
+      category: "company",
+      enabled: true,
+      verified: true,
+    },
+  ];
+  const o: Opportunity = {
+    ...state.opportunities[0],
+    assessment: {
+      score: 80,
+      coverage: 100,
+      routing: "recommended",
+      summary: "Synthetic assessment",
+      stale: false,
+      missing: [],
+      risks: [],
+      companySources: [
+        {
+          id: "block",
+          entity_kind: "document",
+          entity_id: "file",
+          content_hash: "x",
+        },
+        {
+          id: "note",
+          entity_kind: "knowledge",
+          entity_id: "note",
+          content_hash: "y",
+        },
+      ],
+      factors: {
+        capability: {
+          rating: 4,
+          reason: "Synthetic",
+          notice_evidence: [],
+          company_evidence: [
+            { id: "block", quote: "Synthetic verified file" },
+            { id: "note", quote: "Synthetic verified note" },
+          ],
+        },
+      },
+    },
+  };
+  const preview = getFitPreview(state, o);
+  expect(preview.reasons[0].knowledgeTitle).toContain(
+    "Synthetic capability file.txt",
+  );
+  expect(preview.reasons[0].knowledgeTitle).toContain(
+    "Synthetic experience note",
+  );
+  expect(preview.reasons[0].knowledgeEvidence).toContain(
+    "Synthetic verified note",
+  );
+});
 it("never presents a blocked or unscheduled assessment as running", () => {
   const state = createSeedState();
   const o = state.opportunities[0];
@@ -50,6 +125,14 @@ it("separates eligible, excluded, active and blocked notices without changing de
       status: "new",
       assessment: assessed,
       discovery: { state: "assessed", inboxVisible: true },
+    },
+    {
+      ...base,
+      id: "closed",
+      title: "Synthetic closed software",
+      status: "new",
+      assessment: assessed,
+      discovery: { state: "assessed", inboxVisible: false, expired: true },
     },
     {
       ...base,
@@ -107,5 +190,10 @@ it("separates eligible, excluded, active and blocked notices without changing de
   await user.click(screen.getByRole("button", { name: /^Needs attention/ }));
   expect(screen.getByText("Assessment blocked")).toBeInTheDocument();
   expect(screen.queryByText("Not assessed")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: /^Closed/ }));
+  expect(
+    screen.getByRole("link", { name: "Synthetic closed software" }),
+  ).toBeInTheDocument();
+  expect(screen.getByText("Submission deadline passed")).toBeInTheDocument();
   expect(state).toEqual(before);
 });

@@ -48,8 +48,19 @@ export interface Opportunity {
       | "pending_schedule"
       | "not_started";
     inboxVisible: boolean;
+    expired?: boolean;
     error?: string;
     nextAttempt?: string;
+  };
+  noticeEvidence?: {
+    status: string;
+    fetchedAt: string;
+    attachments: {
+      url: string;
+      status: string;
+      includedPages: number;
+      totalPages: number | null;
+    }[];
   };
   assessment?: {
     score: number | null;
@@ -58,6 +69,12 @@ export interface Opportunity {
     scope?: string;
     scopeEvidence?: string[];
     method?: string;
+    companySources?: {
+      id: string;
+      entity_kind: string;
+      entity_id: string;
+      content_hash: string;
+    }[];
     summary: string;
     stale: boolean;
     factors: Record<

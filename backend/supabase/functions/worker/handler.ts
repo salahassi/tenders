@@ -104,7 +104,7 @@ export function createWorkerHandler(
           "advance_plan",
         ].includes(job.type)
       ) {
-        await processGeneration(backend, env, job, fetcher);
+        await processGeneration(backend, env, job, fetcher, resolve);
         return response({ data: { job_id: job.id, processed: true } });
       }
       await backend.finish(

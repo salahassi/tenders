@@ -1,7 +1,6 @@
 // @vitest-environment node
 import { beforeAll, afterAll, beforeEach, afterEach, it, expect } from "vitest";
 import { workflowFixture } from "./workflowFixture";
-import { screenSoftwareScope } from "../../supabase/functions/_shared/discovery";
 import {
   nextStage,
   taskInput,
@@ -292,31 +291,6 @@ it("requires Owner authority and revision, with audited idempotent configuration
     }),
   ).rejects.toThrow("ROLE_FORBIDDEN");
 });
-it.each([
-  "توريد أجهزة حاسوب",
-  "Supply of LCD monitors",
-  "تنفيذ مبنى مركز ثقافي",
-  "توريد مواد كيميائية ومستلزمات مخبرية",
-  "Supplying solar systems with vehicle chargers",
-])("screens explicit physical scope: %s", (title) => {
-  expect(screenSoftwareScope(title, "software_services")).toMatchObject({
-    status: "out_of_scope",
-    method: "scope-rule-v1",
-  });
-  expect(screenSoftwareScope(title, "all")).toBeNull();
-});
-it.each([
-  "تجديد تراخيص برامج وتعزيز أمن المعلومات",
-  "Digital transformation for hospitals",
-  "AI applications for construction",
-  "توريد حواسيب وتطوير برمجيات",
-  "نظام توسعة لمركز البيانات",
-  "منصة لإدارة مشتريات الأجهزة",
-  "Consulting services",
-  "استقطاب خبراء الأمن الرقمي وتطبيقات الهاتف المحمول",
-])("preserves software, mixed and uncertain scope: %s", (title) => {
-  expect(screenSoftwareScope(title, "software_services")).toBeNull();
-});
 it("validates scope citations and excludes even when title-only fit is unknown", async () => {
   const notice = {
     id: "notice",
@@ -400,7 +374,7 @@ it("validates scope citations and excludes even when title-only fit is unknown",
   });
 });
 
-it("records deterministic scope assessment through real worker RPCs without calling a model", async () => {
+it("never fabricates a scope assessment from hardware keywords when the model is unavailable", async () => {
   const { o } = await collect("Synthetic supply of LCD monitors");
   await configure();
   await model();
@@ -420,65 +394,27 @@ it("records deterministic scope assessment through real worker RPCs without call
   };
   const env: any = { models: {} };
   const fetcher: typeof fetch = async () => {
-    throw Error("Physical scope must not call an external model");
+    throw Error("No external calls in this fixture");
   };
-  for (let i = 0; i < 2; i++) {
-    const job = await f.rpc("claim_backend_job");
-    expect(job).not.toBeNull();
-    await processGeneration(backend, env, job, fetcher);
-  }
+  const job = await f.rpc("claim_backend_job");
+  await processGeneration(backend, env, job, fetcher);
   const view = (
     await f.db.query<any>(
       "select * from public.opportunity_discovery where id=$1",
       [o],
     )
   ).rows[0];
-  expect(view).toMatchObject({
-    assessment_state: "assessed",
-    assessment_current: true,
-    routing: "excluded",
-    inbox_visible: false,
-  });
-  expect(
-    (await f.db.query<any>("select count(*)::int n from public.provider_usage"))
-      .rows[0].n,
-  ).toBe(0);
+  expect(view.assessment_current).toBe(false);
+  expect(view.inbox_visible).toBe(false);
+  expect(view.assessment_state).toBe("blocked");
   expect(
     (
       await f.db.query<any>(
-        "select count(*)::int n from public.notifications where dedupe_key like 'notice:%' or dedupe_key like 'assessment:%'",
+        "select count(*)::int n from public.fit_assessments where opportunity_id=$1",
+        [o],
       )
     ).rows[0].n,
   ).toBe(0);
-  for (const [status, visible] of [
-    ["uncertain", false],
-    ["in_scope", true],
-  ] as const) {
-    await f.db.query(
-      "update public.fit_assessments set routing='needs_review',result=jsonb_set(result,'{scope_decision,status}',to_jsonb($2::text)) where opportunity_id=$1",
-      [o, status],
-    );
-    expect(
-      (
-        await f.db.query<any>(
-          "select inbox_visible from public.opportunity_discovery where id=$1",
-          [o],
-        )
-      ).rows[0].inbox_visible,
-    ).toBe(visible);
-  }
-  await f.db.query(
-    "update public.opportunities set title='Synthetic software development' where id=$1",
-    [o],
-  );
-  expect(
-    (
-      await f.db.query<any>(
-        "select assessment_current,inbox_visible from public.opportunity_discovery where id=$1",
-        [o],
-      )
-    ).rows[0],
-  ).toEqual({ assessment_current: false, inbox_visible: false });
 });
 
 it("does not expose discovery rows without membership or retain automatic permission after restore", async () => {

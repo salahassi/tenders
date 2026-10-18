@@ -54,24 +54,31 @@ export function getFitPreview(
       basis: a.method || "Recorded assessment",
       summary: a.summary,
       reasons: [
-        ...(a.scopeEvidence?.length
-          ? [
-              {
-                label: "Scope assessment",
-                noticeEvidence: a.scopeEvidence.join("; "),
-                knowledgeTitle: "Configured service scope",
-                knowledgeEvidence:
-                  _state.settings.discoveryScope === "software_services"
-                    ? "Software, digital transformation and AI services; hardware and unrelated procurement excluded."
-                    : "Verified company service scope.",
-              },
-            ]
-          : []),
         ...Object.entries(a.factors).map(([label, f]) => ({
           label: `${label} · ${f.rating === null ? "Unknown" : f.rating + " / 4"}`,
           noticeEvidence:
             f.notice_evidence.map((e) => e.quote).join("; ") || "Unknown",
-          knowledgeTitle: "Verified evidence",
+          knowledgeTitle:
+            [
+              ...new Set(
+                f.company_evidence.map((e) => {
+                  const ref = a.companySources?.find(
+                    (source) => source.id === e.id,
+                  );
+                  if (ref?.entity_kind === "document")
+                    return (
+                      _state.knowledgeDocuments.find(
+                        (d) => d.id === ref.entity_id,
+                      )?.name || "Company file"
+                    );
+                  return (
+                    _state.knowledge.find(
+                      (k) => k.id === (ref?.entity_id || e.id),
+                    )?.title || "Company note"
+                  );
+                }),
+              ),
+            ].join("; ") || "No supporting company evidence",
           knowledgeEvidence:
             f.company_evidence.map((e) => e.quote).join("; ") || "Unknown",
         })),

@@ -48,6 +48,38 @@ export default function FitAssessment({
         </p>
       )}
       <p className="fit-summary">{fit.summary}</p>
+      {!!opportunity.assessment?.scopeEvidence?.length && (
+        <p className="fit-disclosure" dir="auto">
+          Published scope: {opportunity.assessment.scopeEvidence.join("; ")}
+        </p>
+      )}
+      {opportunity.discovery?.expired && (
+        <p className="fit-disclosure">
+          The published submission deadline has passed.
+        </p>
+      )}
+      {opportunity.noticeEvidence && (
+        <div className="fit-disclosure">
+          <p>
+            Original notice details retrieved. Company eligibility still
+            requires verified company evidence.
+          </p>
+          {opportunity.noticeEvidence.attachments.map((a, i) => (
+            <p key={a.url}>
+              <a href={a.url} target="_blank" rel="noreferrer">
+                Public attachment {i + 1}
+              </a>
+              {a.status === "read"
+                ? ` · ${a.includedPages} pages read`
+                : a.includedPages
+                  ? ` · ${a.includedPages} of ${a.totalPages ?? "unknown"} pages available to assessment; partial evidence`
+                  : a.status === "needs_ocr"
+                    ? " · Requires OCR"
+                    : " · Not available to assessment"}
+            </p>
+          ))}
+        </div>
+      )}
       <details open={!compact}>
         <summary>
           {fit.mode === "recorded"
