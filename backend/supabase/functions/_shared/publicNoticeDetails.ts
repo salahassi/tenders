@@ -182,7 +182,8 @@ export function parseNoticeDetails(adapter: string, url: string, html: string) {
   )
     throw new CollectionError("MANUAL_SOURCE_REQUIRED");
   const $ = load(html);
-  $("script,style,header,footer,nav,form").remove();
+  // ASP.NET portals wrap their public article in a form. Remove controls, not the article container.
+  $("script,style,header,footer,nav,input,textarea,button").remove();
   const root =
     adapter === "ps-ramallah"
       ? $("#all_body")
@@ -217,7 +218,7 @@ export function parseNoticeDetails(adapter: string, url: string, html: string) {
     adapter === "ps-ramallah"
       ? $("h1").first().text().trim()
       : adapter === "jo-gtd"
-        ? root.find("[id$=lblTitle]").text().trim()
+        ? root.find("[id$=lblTitle]").first().text().trim()
         : "";
   let closing =
     adapter === "jo-gtd" ? root.find("[id$=lblDepositDate]").text().trim() : "";

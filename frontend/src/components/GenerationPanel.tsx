@@ -138,9 +138,12 @@ export default function GenerationPanel({
                   : ""}
               </p>
               {["blocked", "failed", "canceled"].includes(p.status) &&
-                !["STALE_INPUT", "REASSESSMENT_SUPERSEDED"].includes(
-                  p.error_code || "",
-                ) && (
+                ![
+                  "STALE_INPUT",
+                  "REASSESSMENT_SUPERSEDED",
+                  "NOTICE_DETAILS_REFRESHED",
+                  "NOTICE_DETAILS_REQUIRED",
+                ].includes(p.error_code || "") && (
                   <Button
                     disabled={!editable || saving}
                     onClick={() =>
@@ -155,9 +158,12 @@ export default function GenerationPanel({
                     Resume saved work
                   </Button>
                 )}
-              {["STALE_INPUT", "REASSESSMENT_SUPERSEDED"].includes(
-                p.error_code || "",
-              ) && (
+              {[
+                "STALE_INPUT",
+                "REASSESSMENT_SUPERSEDED",
+                "NOTICE_DETAILS_REFRESHED",
+                "NOTICE_DETAILS_REQUIRED",
+              ].includes(p.error_code || "") && (
                 <p>
                   Evidence changed. Use a current assessment or request a new
                   proposal version.

@@ -1066,7 +1066,8 @@ export async function executeModel(
         settled = pending.state === "settled";
       } else {
         const tokens = await provider.countTokens(prompt, schema);
-        if (tokens > 20000) throw new ModelError("MODEL_CONTEXT_TOO_LARGE");
+        if (tokens > (task === "classify_opportunity" ? 64000 : 20000))
+          throw new ModelError("MODEL_CONTEXT_TOO_LARGE");
         reservation = await ledger.reserve(
           tokens,
           caps[task],

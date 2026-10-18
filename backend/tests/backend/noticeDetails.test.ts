@@ -68,6 +68,16 @@ it("reads the Najah labeled desktop/mobile detail fields without confusing publi
   expect(result.deadline.local).toBe("2026-10-18T13:00:00");
   expect(result.text).toContain("الموعد النهائي: 2026-10-18 13:00:00");
 });
+it("retains public GTD details inside an ASP.NET form while removing form controls", () => {
+  const result = parseNoticeDetails(
+    "jo-gtd",
+    "https://gtd.gov.jo/Ar/tendersunderofferingdetails/synthetic",
+    `<form><input value="synthetic hidden form token"><div id="page_divtendersDetails"><div>اسم العطاء: <span id="page_lblTitle">Synthetic public procurement detail</span></div><div>تاريخ الايداع: <span id="page_lblDepositDate">02/11/2026</span></div><p>Synthetic public procurement terms and sufficient announcement details for the fixture.</p></div></form>`,
+  );
+  expect(result.title).toBe("Synthetic public procurement detail");
+  expect(result.deadline).toMatchObject({ date: "2026-11-02", local: null });
+  expect(result.text).not.toContain("form token");
+});
 it("keeps hostname, redirect, private DNS and streamed byte boundaries for public details", async () => {
   const hosts = source.approved_hosts,
     signal = new AbortController().signal;
@@ -355,4 +365,98 @@ it("grounds company judgments in both verified Company Knowledge notes and extra
   expect(input.context.company_evidence_source).toContain(
     "files and notes only",
   );
+});
+it("reserves a larger notice assessment while preserving other-task and daily limits", async () => {
+  const revision = (
+    await f.db.query<any>(
+      "select revision from public.workspaces where id=$1",
+      [f.w],
+    )
+  ).rows[0].revision;
+  await f.command("discovery.configure", {
+    expected_revision: revision,
+    scope: "software_services",
+    auto_public_notices: true,
+    providers: ["gemini_free"],
+  });
+  const { o, job } = await fixture();
+  const ref = (
+    await f.db.query<any>(
+      "select app_private.content_record($1,'notice',$2)-'content'-'title' ref",
+      [f.w, o],
+    )
+  ).rows[0].ref;
+  const reserve = (tokens: number) =>
+    f.rpc("reserve_model_call", [
+      job.id,
+      job.lease_token,
+      "synthetic-large-notice",
+      "a".repeat(64),
+      tokens,
+      1000,
+      JSON.stringify([ref]),
+      "gemini_free",
+    ]);
+  await f.db.exec("savepoint too_large");
+  await expect(reserve(64001)).rejects.toThrow("MODEL_CONTEXT_TOO_LARGE");
+  await f.db.exec("rollback to savepoint too_large");
+  await f.db.query("update public.jobs set type='analyze_chunk' where id=$1", [
+    job.id,
+  ]);
+  await f.db.exec("savepoint smaller_task");
+  await expect(reserve(30000)).rejects.toThrow("MODEL_CONTEXT_TOO_LARGE");
+  await f.db.exec("rollback to savepoint smaller_task");
+  await f.db.query(
+    "update public.jobs set type='classify_opportunity' where id=$1",
+    [job.id],
+  );
+  const reservation = await reserve(30000);
+  expect(reservation.reserved_input).toBe(30000);
+  expect(reservation.state).toBe("reserved");
+  expect(
+    (
+      await f.db.query<any>(
+        "select input_per_day from public.model_settings where workspace_id=$1 and provider='gemini_free'",
+        [f.w],
+      )
+    ).rows[0].input_per_day,
+  ).toBe(250000);
+});
+it("reads pending detail pages before starting an older ready-to-model assessment", async () => {
+  const { o, s, item, job } = await fixture();
+  const hash = (
+    await f.db.query<any>(
+      "select app_private.content_record($1,'notice',$2)->>'content_hash' hash",
+      [f.w, o],
+    )
+  ).rows[0].hash;
+  await f.db.query(
+    "update public.opportunities set notice_evidence=jsonb_build_object('version',1,'notice_hash',$2::text,'fetched_at',now()) where id=$1",
+    [o, hash],
+  );
+  await f.db.query(
+    "update public.jobs set status='queued',lease_token=null,lease_until=null where id=$1",
+    [job.id],
+  );
+  const newer = (
+    await f.db.query<any>(
+      "select app_private.ingest_notice($1,s,$3::jsonb,$4) id from public.sources s where id=$2",
+      [
+        f.w,
+        s.id,
+        JSON.stringify({
+          ...item,
+          identity_key: "external:2",
+          reference: "article:2",
+          title: "Synthetic second public notice",
+        }),
+        f.owner,
+      ],
+    )
+  ).rows[0].id;
+  await f.rpc("schedule_assessment_refresh");
+  const next = await f.rpc("claim_backend_job");
+  const ctx = await f.rpc("generation_context", [next.id, next.lease_token]);
+  expect(ctx.plan.opportunity_id).toBe(newer);
+  expect(ctx.detail_source).toBeDefined();
 });
