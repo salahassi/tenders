@@ -123,11 +123,46 @@ function providerOf(url: string) {
       ? "qwen_free"
       : url.includes("mistral.ai")
         ? "mistral_free"
-        : url.includes("api.z.ai")
-          ? "zai_free"
-          : "groq_free";
+        : url.includes("api.openai.com")
+          ? "openai"
+          : url.includes("api.anthropic.com")
+            ? "anthropic"
+            : url.includes("api.z.ai")
+              ? "zai_free"
+              : "groq_free";
 }
 function success(provider: string, id = "synthetic-request") {
+  if (provider === "openai")
+    return Response.json({
+      id,
+      model: "synthetic-model",
+      status: "completed",
+      output: [
+        {
+          type: "message",
+          content: [{ type: "output_text", text: '{"status":"ready"}' }],
+        },
+      ],
+      usage: {
+        input_tokens: 100,
+        output_tokens: 10,
+        output_tokens_details: { reasoning_tokens: 2 },
+      },
+    });
+  if (provider === "anthropic")
+    return Response.json({
+      id,
+      model: "synthetic-model",
+      type: "message",
+      stop_reason: "end_turn",
+      content: [{ type: "text", text: '{"status":"ready"}' }],
+      usage: {
+        input_tokens: 80,
+        cache_creation_input_tokens: 5,
+        cache_read_input_tokens: 15,
+        output_tokens: 10,
+      },
+    });
   return provider === "gemini_free"
     ? Response.json({
         id,
@@ -171,7 +206,7 @@ async function age() {
   );
 }
 
-it("records all five missing slots and schedules retry without unauthenticated requests", async () => {
+it("records all seven missing slots and schedules retry without unauthenticated requests", async () => {
   await enable();
   const q = await queue();
   const send = vi.fn<typeof fetch>();
@@ -183,7 +218,7 @@ it("records all five missing slots and schedules retry without unauthenticated r
   expect(j.status).toBe("retry_wait");
   expect(j.error_code).toBe("MODEL_ROUND_EXHAUSTED");
   expect(Number.isFinite(Date.parse(j.next_attempt_at))).toBe(true);
-  expect(j.checkpoint.model_routing.checks).toHaveLength(5);
+  expect(j.checkpoint.model_routing.checks).toHaveLength(7);
   expect(
     j.checkpoint.model_routing.checks.every(
       (x: any) => x.code === "MODEL_NOT_CONFIGURED" && !x.sent,
@@ -315,7 +350,7 @@ it("retries an exhausted round with a rotated start, but never resends ambiguous
   const tick = worker(send);
   await tick();
   expect((await job(q.id)).status).toBe("retry_wait");
-  expect(await usage(q.id)).toHaveLength(5);
+  expect(await usage(q.id)).toHaveLength(7);
   await f.db.query(
     "update public.jobs set status='queued',next_attempt_at=now() where id=$1",
     [q.id],
@@ -324,7 +359,7 @@ it("retries an exhausted round with a rotated start, but never resends ambiguous
   const before = vi.mocked(send).mock.calls.length;
   await tick();
   expect((await job(q.id)).status).toBe("retry_wait");
-  expect(await usage(q.id)).toHaveLength(5);
+  expect(await usage(q.id)).toHaveLength(7);
   // Gemini token counting is allowed; generation must not be repeated.
   expect(
     vi
@@ -579,7 +614,7 @@ it("fails over through four unavailable providers to z.ai using an arbitrary con
       return success(provider);
     }),
   )();
-  expect(calls).toEqual([...ROUND_ROBIN_PROVIDERS]);
+  expect(calls).toEqual(ROUND_ROBIN_PROVIDERS.slice(0, 5));
   expect((await job(q.id)).status).toBe("succeeded");
   expect(
     (await usage(q.id)).find((x) => x.provider === "zai_free"),
@@ -593,7 +628,11 @@ it("accepts four-slot workers during deployment even when the new cursor points 
   await rpc("prepare_model_routing", {
     job_id: q.id,
     lease: claimed.lease_token,
-    server_models: meta().filter((x) => x.provider !== "zai_free"),
+    server_models: meta().filter((x) =>
+      ["gemini_free", "qwen_free", "mistral_free", "groq_free"].includes(
+        x.provider,
+      ),
+    ),
   });
   expect(
     (await job(q.id)).checkpoint.model_routing.providers.map(
@@ -768,7 +807,10 @@ it("uses the saved priority on every new job and skips failures in that order", 
       "select provider_order,strategy from public.model_routing",
     )
   ).rows[0];
-  expect(readback).toEqual({ provider_order: order, strategy: "priority" });
+  expect(readback).toEqual({
+    provider_order: [...order, "openai", "anthropic"],
+    strategy: "priority",
+  });
   for (let round = 0; round < 2; round++) {
     await age();
     const q = await queue();
@@ -1183,4 +1225,140 @@ it("keeps a targeted overload check waiting, counts its retry, and succeeds when
   expect(rows[0].provider_error_code).toBe("1305");
   expect(rows[0].retry_after).not.toBeNull();
   expect(rows[1].status).toBe("succeeded");
+});
+
+it.each(["openai", "anthropic"] as const)(
+  "runs a targeted %s probe with durable native usage and model identity",
+  async (provider) => {
+    await enable();
+    const q = await f.command("model.probe", { provider });
+    const calls: string[] = [];
+    await worker(
+      transport((p) => {
+        calls.push(p);
+        return success(p);
+      }),
+    )();
+    expect(calls).toEqual([provider]);
+    expect((await job(q.id)).status).toBe("succeeded");
+    const row = (
+      await f.db.query<any>(
+        "select * from public.model_activity where job_id=$1",
+        [q.id],
+      )
+    ).rows[0];
+    expect(row).toMatchObject({
+      provider,
+      model: "synthetic-model",
+      actual_input: 100,
+      actual_output: 10,
+      status: "succeeded",
+      round_number: 1,
+      http_status: 200,
+    });
+  },
+);
+it("fails over from OpenAI rate rejection to Claude while retaining the rejection and native usage", async () => {
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "priority",
+    provider_order: [
+      "openai",
+      "anthropic",
+      "gemini_free",
+      "qwen_free",
+      "mistral_free",
+      "groq_free",
+      "zai_free",
+    ],
+  });
+  const q = await queue();
+  const calls: string[] = [];
+  await worker(
+    transport((p) => {
+      calls.push(p);
+      return p === "openai"
+        ? Response.json(
+            {
+              error: {
+                type: "rate_limit_error",
+                code: "rate_limit_exceeded",
+                message: "Rate limit reached",
+              },
+            },
+            { status: 429, headers: { "retry-after": "60" } },
+          )
+        : success(p);
+    }),
+  )();
+  expect(calls).toEqual(["openai", "anthropic"]);
+  expect((await job(q.id)).status).toBe("succeeded");
+  const rows = (
+    await f.db.query<any>(
+      "select * from public.model_activity where job_id=$1 order by sequence",
+      [q.id],
+    )
+  ).rows;
+  expect(rows[0]).toMatchObject({
+    provider: "openai",
+    provider_error_code: "rate_limit_exceeded",
+    provider_error_reason: "rate_limit",
+    status: "failed",
+  });
+  expect(rows[1]).toMatchObject({
+    provider: "anthropic",
+    status: "succeeded",
+    actual_input: 100,
+    actual_output: 10,
+  });
+});
+it("skips unconfigured OpenAI and Claude without external requests", async () => {
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "priority",
+    provider_order: [
+      "openai",
+      "anthropic",
+      "gemini_free",
+      "qwen_free",
+      "mistral_free",
+      "groq_free",
+      "zai_free",
+    ],
+  });
+  const q = await queue();
+  const calls: string[] = [];
+  await worker(
+    transport((p) => {
+      calls.push(p);
+      return success(p);
+    }),
+    {
+      ...environment,
+      models: {
+        ...models,
+        openai: { ...models.openai, key: "" },
+        anthropic: { ...models.anthropic, model: "" },
+      },
+    },
+  )();
+  expect(calls).toEqual(["gemini_free"]);
+  expect((await job(q.id)).status).toBe("succeeded");
+  const rows = (
+    await f.db.query<any>(
+      "select * from public.model_activity where job_id=$1 and provider in ('openai','anthropic')",
+      [q.id],
+    )
+  ).rows;
+  expect(rows).toHaveLength(2);
+  expect(
+    rows.every(
+      (r) =>
+        r.status === "skipped" &&
+        r.result_code === "MODEL_NOT_CONFIGURED" &&
+        !r.sent,
+    ),
+  ).toBe(true);
 });

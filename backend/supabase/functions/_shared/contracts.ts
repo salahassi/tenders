@@ -348,26 +348,26 @@ export const commandSchemas = {
     ),
   "model.probe": z
     .object({
-      provider: z
-        .enum([
-          "gemini_free",
-          "qwen_free",
-          "mistral_free",
-          "groq_free",
-          "zai_free",
-        ])
-        .optional(),
+      provider: z.enum(ROUND_ROBIN_PROVIDERS).optional(),
     })
     .strict(),
   "model.routing": z
     .object({
-      free_providers: z.array(z.enum(ROUND_ROBIN_PROVIDERS)).max(5).optional(),
+      free_providers: z
+        .array(z.enum(ROUND_ROBIN_PROVIDERS))
+        .max(ROUND_ROBIN_PROVIDERS.length)
+        .optional(),
       strategy: z.enum(["priority", "round_robin"]).optional(),
       provider_order: z
         .array(z.enum(ROUND_ROBIN_PROVIDERS))
-        .length(5)
+        .min(5)
+        .max(ROUND_ROBIN_PROVIDERS.length)
         .refine(
-          (ids) => new Set(ids).size === 5,
+          (ids) =>
+            new Set(ids).size === ids.length &&
+            (ids.length === ROUND_ROBIN_PROVIDERS.length ||
+              (ids.length === 5 &&
+                ids.every((id) => id !== "openai" && id !== "anthropic"))),
           "Each provider must appear once.",
         )
         .optional(),

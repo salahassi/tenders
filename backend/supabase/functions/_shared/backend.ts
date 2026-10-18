@@ -23,6 +23,8 @@ const SECRET_PREFIX: Record<ModelProviderId, string> = {
   mistral_free: "APP_MODEL_MISTRAL",
   cloudflare_free: "APP_MODEL_CLOUDFLARE",
   zai_free: "APP_MODEL_ZAI",
+  openai: "APP_MODEL_OPENAI",
+  anthropic: "APP_MODEL_CLAUDE",
 };
 export function modelEnvironments(
   get: (name: string) => string | undefined,
@@ -40,7 +42,8 @@ export function modelEnvironments(
         (legacyProvider === provider ? legacyModel : ""),
       projectRef:
         get(`${prefix}_PROJECT`) ||
-        (legacyProvider === provider ? legacyProject : ""),
+        (legacyProvider === provider ? legacyProject : "") ||
+        (provider === "openai" || provider === "anthropic" ? "default" : ""),
       key:
         get(`${prefix}_KEY`) || (legacyProvider === provider ? legacyKey : ""),
     };

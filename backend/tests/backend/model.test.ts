@@ -839,3 +839,156 @@ it("allows a single-provider connection check to return after 20 seconds", async
     vi.useRealTimers();
   }
 });
+
+it("uses OpenAI Responses with the supplied model and preserves reasoning usage without extracting reasoning text", async () => {
+  const send = vi.fn<typeof fetch>(async () =>
+    Response.json(
+      {
+        id: "resp_test",
+        model: "owner-model",
+        status: "completed",
+        output: [
+          { type: "reasoning", summary: [{ text: "not output" }] },
+          {
+            type: "message",
+            content: [{ type: "output_text", text: '{"status":"ready"}' }],
+          },
+        ],
+        usage: {
+          input_tokens: 11,
+          output_tokens: 19,
+          output_tokens_details: { reasoning_tokens: 9 },
+        },
+      },
+      { headers: { "x-request-id": "req_test" } },
+    ),
+  );
+  const provider = new FreeModelProvider(
+    { ...env, provider: "openai", model: "owner-selected.model" },
+    send,
+  );
+  expect(await provider.generate("connection_probe", "JSON", {})).toEqual({
+    text: '{"status":"ready"}',
+    complete: true,
+    usage: { input: 11, output: 19, thinking: 9 },
+  });
+  const [url, init] = send.mock.calls[0];
+  const body = JSON.parse(String(init?.body));
+  expect(url).toBe("https://api.openai.com/v1/responses");
+  expect(body).toMatchObject({
+    model: "owner-selected.model",
+    store: false,
+    stream: false,
+    max_output_tokens: 1024,
+  });
+  expect(body).not.toHaveProperty("temperature");
+  expect(body).not.toHaveProperty("reasoning");
+  expect(new Headers(init?.headers).get("authorization")).toBe(
+    `Bearer ${env.key}`,
+  );
+  expect(provider.telemetry).toMatchObject({
+    request_id: "req_test",
+    response_id: "resp_test",
+    reported_model: "owner-model",
+    finish_reason: "completed",
+  });
+});
+it("uses Claude Messages and totals uncached and cached input without inventing thinking counts", async () => {
+  const send = vi.fn<typeof fetch>(async () =>
+    Response.json(
+      {
+        id: "msg_test",
+        model: "owner-model",
+        stop_reason: "end_turn",
+        content: [
+          { type: "thinking", thinking: "not output" },
+          { type: "text", text: '{"status":"ready"}' },
+        ],
+        usage: {
+          input_tokens: 11,
+          cache_creation_input_tokens: 7,
+          cache_read_input_tokens: 13,
+          output_tokens: 19,
+        },
+      },
+      { headers: { "request-id": "req_claude" } },
+    ),
+  );
+  const provider = new FreeModelProvider(
+    { ...env, provider: "anthropic", model: "owner-selected.model" },
+    send,
+  );
+  expect(await provider.generate("connection_probe", "JSON", {})).toEqual({
+    text: '{"status":"ready"}',
+    complete: true,
+    usage: { input: 31, output: 19, thinking: null },
+  });
+  const [url, init] = send.mock.calls[0];
+  const body = JSON.parse(String(init?.body));
+  expect(url).toBe("https://api.anthropic.com/v1/messages");
+  expect(body).toMatchObject({
+    model: "owner-selected.model",
+    stream: false,
+    max_tokens: 1024,
+  });
+  expect(body).not.toHaveProperty("thinking");
+  expect(body).not.toHaveProperty("response_format");
+  expect(new Headers(init?.headers).get("x-api-key")).toBe(env.key);
+  expect(new Headers(init?.headers).get("anthropic-version")).toBe(
+    "2023-06-01",
+  );
+  expect(provider.telemetry).toMatchObject({
+    request_id: "req_claude",
+    response_id: "msg_test",
+    finish_reason: "end_turn",
+  });
+});
+it.each([
+  [
+    "openai",
+    {
+      status: "incomplete",
+      output: [
+        { type: "message", content: [{ type: "output_text", text: "{}" }] },
+      ],
+      usage: { input_tokens: 2, output_tokens: 4 },
+    },
+  ],
+  [
+    "openai",
+    {
+      status: "completed",
+      output: [
+        {
+          type: "message",
+          content: [{ type: "refusal", refusal: "declined" }],
+        },
+      ],
+    },
+  ],
+  [
+    "anthropic",
+    {
+      stop_reason: "max_tokens",
+      content: [{ type: "text", text: "{}" }],
+      usage: { input_tokens: 2, output_tokens: 4 },
+    },
+  ],
+  [
+    "anthropic",
+    {
+      stop_reason: "tool_use",
+      content: [{ type: "tool_use", name: "unexpected" }],
+    },
+  ],
+] as const)(
+  "does not validate incomplete or non-text %s output as success",
+  async (provider, result) => {
+    const adapter = new FreeModelProvider({ ...env, provider }, async () =>
+      Response.json(result),
+    );
+    expect(
+      (await adapter.generate("connection_probe", "JSON", {})).complete,
+    ).toBe(false);
+  },
+);

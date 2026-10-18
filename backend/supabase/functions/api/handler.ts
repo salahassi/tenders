@@ -403,6 +403,8 @@ export function createApiHandler(
                 "gemini_free",
                 "groq_free",
                 "zai_free",
+                "openai",
+                "anthropic",
                 "mistral_free",
                 "qwen_free",
                 "cloudflare_free",

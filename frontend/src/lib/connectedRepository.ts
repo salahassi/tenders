@@ -1217,6 +1217,8 @@ function modelRoutingSummary(checkpoint: unknown): string {
     mistral_free: "Mistral",
     groq_free: "Groq",
     zai_free: "z.ai",
+    openai: "OpenAI",
+    anthropic: "Claude",
   };
   const reasons: Record<string, string> = {
     MODEL_NOT_CONFIGURED: "server configuration missing",

@@ -5,6 +5,8 @@ export const MODEL_PROVIDER_IDS = [
   "mistral_free",
   "cloudflare_free",
   "zai_free",
+  "openai",
+  "anthropic",
 ] as const;
 export type ModelProviderId = (typeof MODEL_PROVIDER_IDS)[number];
 export const ROUND_ROBIN_PROVIDERS = [
@@ -13,6 +15,8 @@ export const ROUND_ROBIN_PROVIDERS = [
   "mistral_free",
   "groq_free",
   "zai_free",
+  "openai",
+  "anthropic",
 ] as const;
 
 export function defaultFailoverRank(provider: ModelProviderId): number {
@@ -29,6 +33,10 @@ export function defaultFailoverRank(provider: ModelProviderId): number {
       return 5;
     case "zai_free":
       return 6;
+    case "openai":
+      return 7;
+    case "anthropic":
+      return 8;
   }
 }
 

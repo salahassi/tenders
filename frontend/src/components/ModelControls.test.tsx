@@ -79,6 +79,18 @@ function setup(role = "Owner", saved: Record<string, unknown>[] = []) {
           ? {
               providers: [
                 {
+                  provider: "openai",
+                  model: "owner-openai-model",
+                  project_ref: "default",
+                  key_configured: true,
+                },
+                {
+                  provider: "anthropic",
+                  model: "owner-claude-model",
+                  project_ref: "default",
+                  key_configured: true,
+                },
+                {
                   provider: "gemini_free",
                   model: "gemini-3.8-flash",
                   project_ref: "synthetic-project",
@@ -292,6 +304,8 @@ it("persists provider priority and rotation mode with no billing-confirmation UI
       "mistral_free",
       "groq_free",
       "zai_free",
+      "openai",
+      "anthropic",
     ],
   };
   const runCommand = vi.fn(async (_op: string, input: any) => {
@@ -340,6 +354,8 @@ it("persists provider priority and rotation mode with no billing-confirmation UI
         "mistral_free",
         "zai_free",
         "groq_free",
+        "openai",
+        "anthropic",
       ],
     }),
   );
@@ -355,3 +371,40 @@ it("persists provider priority and rotation mode with no billing-confirmation UI
     )[3],
   ).toHaveTextContent("z.ai");
 });
+
+it.each([
+  ["openai", "OpenAI", "owner-openai-model"],
+  ["anthropic", "Claude", "owner-claude-model"],
+])(
+  "loads and saves %s with the supplied model and no extra account requirement",
+  async (provider, label, model) => {
+    const f = setup();
+    await screen.findByDisplayValue(model);
+    const panel = within(
+      screen.getByRole("heading", { name: label + " (optional)" })
+        .parentElement!,
+    );
+    expect(
+      panel.queryByLabelText("Quota expiry (UTC)"),
+    ).not.toBeInTheDocument();
+    await userEvent.click(
+      panel.getByLabelText("Enable matching backend credentials"),
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Save provider policies" }),
+    );
+    await waitFor(() =>
+      expect(f.runCommand).toHaveBeenCalledWith(
+        "model.configure",
+        expect.objectContaining({
+          provider,
+          model,
+          project_ref: "default",
+          quota_mode: "provider_managed",
+          enabled: true,
+          billing_verified: false,
+        }),
+      ),
+    );
+  },
+);

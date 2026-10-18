@@ -185,3 +185,14 @@ Mobile table/tab containment, recorded source-run counts, Riyadh source timestam
 Automatic routing supports five slots after `20261018101911_zai_free_provider.sql`. The API/worker must both be deployed. z.ai uses its standard API endpoint; `_NAME` is Owner supplied, `_PROJECT` is the Owner’s account label, and `_KEY` stays only in Edge Function secrets. Same-account model changes are applied to new automatic calls without resaving the policy. Existing requests retain identity checks.
 
 Migration `20261018104130_company_knowledge_processing_policy.sql` stores provider confirmations on model_routing and adds continuing Company Knowledge consent to discovery_policy. The Owner command preserves the confirmation for older clients, clears it on restore, and records audited changes. Company policy applies to enabled, verified, unexpired company evidence; explicit revocations win. Policy-only changes preserve evidence revisions and completed assessments because they do not change business facts.
+
+### OpenAI and Claude credentials
+
+Automatic routing accepts these optional Supabase Edge Function secrets:
+
+| Provider | API key | Model name | Optional account label |
+| --- | --- | --- | --- |
+| OpenAI | `APP_MODEL_OPENAI_KEY` | `APP_MODEL_OPENAI_NAME` | `APP_MODEL_OPENAI_PROJECT` |
+| Claude (Anthropic) | `APP_MODEL_CLAUDE_KEY` | `APP_MODEL_CLAUDE_NAME` | `APP_MODEL_CLAUDE_PROJECT` |
+
+The account label defaults to `default`; it is used for local identity tracking and is not sent as an API project identifier. Names are passed verbatim. Both key and model are required. No FREE_ONLY secret or billing attestation is used. OpenAI uses `https://api.openai.com/v1/responses` with response storage disabled; Claude uses `https://api.anthropic.com/v1/messages` with the stable `2023-06-01` API version. Unsupported models/requests are logged and fail over like other provider errors. Company/tender evidence permissions, workspace daily limits and unknown-usage protections remain in force.

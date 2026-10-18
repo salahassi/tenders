@@ -156,6 +156,8 @@ export default function ModelActivity() {
               </option>
             ),
           )}
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Claude</option>
         </select>
         <select
           className="input"
@@ -244,7 +246,11 @@ export default function ModelActivity() {
                   </div>
                 </td>
                 <td>
-                  {a.provider.replace("_free", "").replace("zai", "z.ai")}
+                  {a.provider === "openai"
+                    ? "OpenAI"
+                    : a.provider === "anthropic"
+                      ? "Claude"
+                      : a.provider.replace("_free", "").replace("zai", "z.ai")}
                   <div dir="auto">{a.model || "No model configured"}</div>
                 </td>
                 <td>

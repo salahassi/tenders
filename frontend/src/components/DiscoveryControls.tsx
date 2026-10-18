@@ -8,6 +8,8 @@ const providers = [
   "groq_free",
   "cloudflare_free",
   "zai_free",
+  "openai",
+  "anthropic",
 ];
 export default function DiscoveryControls() {
   const { backend, runCommand, state, saving, notify } = useApp();
@@ -132,7 +134,11 @@ export default function DiscoveryControls() {
               )
             }
           />
-          {provider.replace("_free", "")}
+          {provider === "openai"
+            ? "OpenAI"
+            : provider === "anthropic"
+              ? "Claude"
+              : provider.replace("_free", "")}
         </label>
       ))}
       <Button

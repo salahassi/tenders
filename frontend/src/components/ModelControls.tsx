@@ -9,6 +9,8 @@ const PROVIDER_IDS = [
   "mistral_free",
   "cloudflare_free",
   "zai_free",
+  "openai",
+  "anthropic",
 ] as const;
 type ProviderId = (typeof PROVIDER_IDS)[number];
 type ServerModel = {
@@ -31,6 +33,8 @@ const DEFAULT_ORDER: ProviderId[] = [
   "mistral_free",
   "groq_free",
   "zai_free",
+  "openai",
+  "anthropic",
 ];
 const continuousProviders: readonly string[] = PROVIDER_IDS;
 const PROVIDERS: ProviderMeta[] = [
@@ -73,6 +77,22 @@ const PROVIDERS: ProviderMeta[] = [
     secretHint: "APP_MODEL_ZAI_*",
     optional: true,
     projectLabel: "Account label (for your records)",
+  },
+  {
+    id: "openai",
+    label: "OpenAI (optional)",
+    rank: 7,
+    secretHint: "APP_MODEL_OPENAI_KEY / APP_MODEL_OPENAI_NAME",
+    optional: true,
+    projectLabel: "Account label (optional; defaults to default)",
+  },
+  {
+    id: "anthropic",
+    label: "Claude (optional)",
+    rank: 8,
+    secretHint: "APP_MODEL_CLAUDE_KEY / APP_MODEL_CLAUDE_NAME",
+    optional: true,
+    projectLabel: "Account label (optional; defaults to default)",
   },
   {
     id: "cloudflare_free",
@@ -558,6 +578,8 @@ export default function ModelControls() {
                 "mistral_free",
                 "groq_free",
                 "zai_free",
+                "openai",
+                "anthropic",
               ].map((provider) => (
                 <Button
                   key={provider}
@@ -568,7 +590,14 @@ export default function ModelControls() {
                       setProbeQueued(true);
                   }}
                 >
-                  Check {provider.replace("_free", "").replace("zai", "z.ai")}{" "}
+                  Check{" "}
+                  {provider === "openai"
+                    ? "OpenAI"
+                    : provider === "anthropic"
+                      ? "Claude"
+                      : provider
+                          .replace("_free", "")
+                          .replace("zai", "z.ai")}{" "}
                   only
                 </Button>
               ))}

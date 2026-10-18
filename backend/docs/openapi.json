@@ -7958,7 +7958,7 @@
                                   "type": "boolean"
                                 },
                                 "providers": {
-                                  "maxItems": 6,
+                                  "maxItems": 8,
                                   "type": "array",
                                   "items": {
                                     "type": "string",
@@ -7968,7 +7968,9 @@
                                       "groq_free",
                                       "mistral_free",
                                       "cloudflare_free",
-                                      "zai_free"
+                                      "zai_free",
+                                      "openai",
+                                      "anthropic"
                                     ]
                                   }
                                 }
@@ -9732,7 +9734,9 @@
                                     "groq_free",
                                     "mistral_free",
                                     "cloudflare_free",
-                                    "zai_free"
+                                    "zai_free",
+                                    "openai",
+                                    "anthropic"
                                   ]
                                 },
                                 "model": {
@@ -9848,7 +9852,9 @@
                                     "qwen_free",
                                     "mistral_free",
                                     "groq_free",
-                                    "zai_free"
+                                    "zai_free",
+                                    "openai",
+                                    "anthropic"
                                   ]
                                 }
                               },
@@ -9872,7 +9878,7 @@
                               "type": "object",
                               "properties": {
                                 "free_providers": {
-                                  "maxItems": 5,
+                                  "maxItems": 7,
                                   "type": "array",
                                   "items": {
                                     "type": "string",
@@ -9881,7 +9887,9 @@
                                       "qwen_free",
                                       "mistral_free",
                                       "groq_free",
-                                      "zai_free"
+                                      "zai_free",
+                                      "openai",
+                                      "anthropic"
                                     ]
                                   }
                                 },
@@ -9894,7 +9902,7 @@
                                 },
                                 "provider_order": {
                                   "minItems": 5,
-                                  "maxItems": 5,
+                                  "maxItems": 7,
                                   "type": "array",
                                   "items": {
                                     "type": "string",
@@ -9903,7 +9911,9 @@
                                       "qwen_free",
                                       "mistral_free",
                                       "groq_free",
-                                      "zai_free"
+                                      "zai_free",
+                                      "openai",
+                                      "anthropic"
                                     ]
                                   }
                                 },
@@ -9966,7 +9976,9 @@
                                     "groq_free",
                                     "mistral_free",
                                     "cloudflare_free",
-                                    "zai_free"
+                                    "zai_free",
+                                    "openai",
+                                    "anthropic"
                                   ]
                                 },
                                 "attestation": {

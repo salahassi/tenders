@@ -868,6 +868,7 @@ export class FreeModelProvider {
       this.telemetry.finish_reason = this.safeMetadata(
         result.choices?.[0]?.finish_reason ||
           result.candidates?.[0]?.finishReason ||
+          result.stop_reason ||
           result.status,
       );
       return result;
@@ -1029,6 +1030,103 @@ export class FreeModelProvider {
     prompt: string,
     schema: unknown,
   ): Promise<{ text: string; usage: Usage; complete: boolean }> {
+    if (this.env.provider === "openai") {
+      const result = await this.post(
+        "https://api.openai.com/v1/responses",
+        {
+          model: this.env.model,
+          instructions: systemInstructions,
+          input: prompt + "\nJSON schema: " + JSON.stringify(schema),
+          max_output_tokens: caps[task],
+          text: { format: { type: "json_object" } },
+          store: false,
+          stream: false,
+        },
+        { Authorization: `Bearer ${this.env.key}` },
+      );
+      const output = Array.isArray(result.output) ? result.output : [];
+      const parts = output
+        .filter((item: any) => item.type === "message")
+        .flatMap((item: any) =>
+          Array.isArray(item.content) ? item.content : [],
+        );
+      return {
+        text: parts
+          .filter(
+            (part: any) =>
+              part.type === "output_text" && typeof part.text === "string",
+          )
+          .map((part: any) => part.text)
+          .join(""),
+        usage: {
+          input: validCount(result.usage?.input_tokens),
+          output: validCount(result.usage?.output_tokens),
+          thinking: validCount(
+            result.usage?.output_tokens_details?.reasoning_tokens,
+          ),
+        },
+        complete:
+          result.status === "completed" &&
+          !result.error &&
+          output.every(
+            (item: any) => item.type === "message" || item.type === "reasoning",
+          ) &&
+          parts.length > 0 &&
+          parts.every((part: any) => part.type === "output_text"),
+      };
+    }
+    if (this.env.provider === "anthropic") {
+      const result = await this.post(
+        "https://api.anthropic.com/v1/messages",
+        {
+          model: this.env.model,
+          system: systemInstructions,
+          messages: [
+            {
+              role: "user",
+              content: prompt + "\nJSON schema: " + JSON.stringify(schema),
+            },
+          ],
+          max_tokens: caps[task],
+          stream: false,
+        },
+        { "x-api-key": this.env.key, "anthropic-version": "2023-06-01" },
+      );
+      const parts = Array.isArray(result.content) ? result.content : [];
+      const usage = result.usage || {};
+      const inputParts = [
+        validCount(usage.input_tokens),
+        usage.cache_creation_input_tokens == null
+          ? 0
+          : validCount(usage.cache_creation_input_tokens),
+        usage.cache_read_input_tokens == null
+          ? 0
+          : validCount(usage.cache_read_input_tokens),
+      ];
+      return {
+        text: parts
+          .filter(
+            (part: any) =>
+              part.type === "text" && typeof part.text === "string",
+          )
+          .map((part: any) => part.text)
+          .join(""),
+        usage: {
+          input: inputParts.every((v) => v !== null)
+            ? inputParts.reduce<number>((sum, v) => sum + v!, 0)
+            : null,
+          output: validCount(usage.output_tokens),
+          // Anthropic includes thinking in output_tokens without a separate measured count.
+          thinking: null,
+        },
+        complete:
+          result.stop_reason === "end_turn" &&
+          parts.length > 0 &&
+          parts.every((part: any) =>
+            ["text", "thinking", "redacted_thinking"].includes(part.type),
+          ),
+      };
+    }
     if (this.env.provider === "gemini_free") {
       const result = await this.post(
         `https://generativelanguage.googleapis.com/v1beta/models/${this.env.model}:generateContent`,

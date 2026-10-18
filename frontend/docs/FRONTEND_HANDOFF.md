@@ -2,7 +2,7 @@
 
 ## Current implementation
 
-The Owner-requested automatic round-robin switch runs Gemini → Qwen → Mistral → Groq without requiring individual enable toggles. Server configuration and free-only account confirmation remain necessary. Each job displays missing-provider and failure reasons; an exhausted round waits and retries. Turning the switch off restores manual provider policies. Exact content permission is still required for each provider.
+Automatic routing uses the saved provider order (priority or round robin). It supports Gemini, Qwen, Mistral, Groq, z.ai, OpenAI and Claude without requiring individual enable toggles. Configured API keys and owner-supplied model names determine availability; billing attestations do not gate requests. Missing credentials are skipped. An exhausted round waits and retries with visible attempts. Company/tender evidence permissions and workspace daily limits remain in force.
 
 Owner model settings read safe server setup metadata to prefill an unsaved model/project identity. New Gemini setup defaults to Continuous free tier: Owner free-tier attestation replaces manual provider quota/expiry entry, while application daily limits and exact content authorization remain. Gemini requests run in the background with saved request IDs and automatic result checks; a network interruption resumes retrieval instead of resending generation. Check Gemini connection queues a bounded operational probe; Activity & jobs shows newest records first with Riyadh creation times, actual results and scheduled quota retries. Existing policies remain authoritative; server mismatches are visible. Keys never enter the browser, and prefill does not attest free quota or enable a provider. Untouched optional providers remain unsaved.
 

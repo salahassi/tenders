@@ -198,6 +198,8 @@ it("supports provider-managed quotas without billing attestations while retainin
     "mistral_free",
     "groq_free",
     "zai_free",
+    "openai",
+    "anthropic",
   ]) {
     const input = {
       ...policy,

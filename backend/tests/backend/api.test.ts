@@ -74,6 +74,10 @@ describe("backend HTTP boundaries without a live provider", () => {
       APP_MODEL_KEY: "synthetic-legacy-key-never-return",
       APP_MODEL_GEMINI_NAME: "gemini-3.8-flash",
       APP_MODEL_GROQ_KEY: "synthetic-other-key-never-return",
+      APP_MODEL_OPENAI_KEY: "synthetic-openai-key-never-return",
+      APP_MODEL_OPENAI_NAME: "owner-openai-model",
+      APP_MODEL_CLAUDE_KEY: "synthetic-claude-key-never-return",
+      APP_MODEL_CLAUDE_NAME: "owner-claude-model",
       APP_MODEL_ZAI_KEY: "synthetic-zai-key-never-return",
       APP_MODEL_ZAI_NAME: "owner-selected-model",
       APP_MODEL_ZAI_PROJECT: "synthetic-account",
@@ -86,7 +90,7 @@ describe("backend HTTP boundaries without a live provider", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
     const body = await response.json();
-    expect(body.data.providers).toHaveLength(6);
+    expect(body.data.providers).toHaveLength(8);
     expect(body.data.providers[0]).toEqual({
       provider: "gemini_free",
       model: "gemini-3.8-flash",
@@ -110,6 +114,20 @@ describe("backend HTTP boundaries without a live provider", () => {
       key_configured: true,
     });
     expect(JSON.stringify(body)).not.toContain(secrets.APP_MODEL_ZAI_KEY);
+    for (const [provider, model, key] of [
+      ["openai", "owner-openai-model", secrets.APP_MODEL_OPENAI_KEY],
+      ["anthropic", "owner-claude-model", secrets.APP_MODEL_CLAUDE_KEY],
+    ]) {
+      expect(
+        body.data.providers.find((p: any) => p.provider === provider),
+      ).toEqual({
+        provider,
+        model,
+        project_ref: "default",
+        key_configured: true,
+      });
+      expect(JSON.stringify(body)).not.toContain(key);
+    }
     expect(JSON.stringify(body)).not.toContain(env.serviceKey);
     expect(f.backend.command).not.toHaveBeenCalled();
   });
