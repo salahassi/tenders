@@ -482,6 +482,9 @@ describe("connected screens", () => {
       </MemoryRouter>,
     );
     const input = await screen.findByLabelText("Workspace / company name");
+    await waitFor(() =>
+      expect(input).toHaveValue("Connected fixture workspace"),
+    );
     const user = userEvent.setup();
     await user.clear(input);
     await user.type(input, "Keep my changes");
