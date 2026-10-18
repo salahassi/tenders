@@ -44,11 +44,14 @@ async function rpc(name: string, args: Record<string, unknown> = {}) {
   }
 }
 const models = modelEnvironments((name) => {
-  if (name.startsWith("APP_MODEL_") && !name.includes("CLOUDFLARE")) {
+  if (name.startsWith("APP_MODEL_")) {
     if (name.endsWith("_KEY")) return "synthetic-key";
     if (name.endsWith("_NAME"))
       return name.includes("GEMINI") ? "gemini-3.8-flash" : "synthetic-model";
-    if (name.endsWith("_PROJECT")) return "synthetic-project";
+    if (name.endsWith("_PROJECT"))
+      return name.includes("CLOUDFLARE")
+        ? "syntheticaccount"
+        : "synthetic-project";
     if (name.endsWith("_FREE_ONLY")) return "true";
   }
   return undefined;
@@ -117,19 +120,21 @@ function worker(fetcher: typeof fetch, env = environment) {
     );
 }
 function providerOf(url: string) {
-  return url.includes("googleapis")
-    ? "gemini_free"
-    : url.includes("aliyuncs")
-      ? "qwen_free"
-      : url.includes("mistral.ai")
-        ? "mistral_free"
-        : url.includes("api.openai.com")
-          ? "openai"
-          : url.includes("api.anthropic.com")
-            ? "anthropic"
-            : url.includes("api.z.ai")
-              ? "zai_free"
-              : "groq_free";
+  return url.includes("api.cloudflare.com")
+    ? "cloudflare_free"
+    : url.includes("googleapis")
+      ? "gemini_free"
+      : url.includes("aliyuncs")
+        ? "qwen_free"
+        : url.includes("mistral.ai")
+          ? "mistral_free"
+          : url.includes("api.openai.com")
+            ? "openai"
+            : url.includes("api.anthropic.com")
+              ? "anthropic"
+              : url.includes("api.z.ai")
+                ? "zai_free"
+                : "groq_free";
 }
 function success(provider: string, id = "synthetic-request") {
   if (provider === "openai")
@@ -206,7 +211,7 @@ async function age() {
   );
 }
 
-it("records all seven missing slots and schedules retry without unauthenticated requests", async () => {
+it("records all eight missing slots and schedules retry without unauthenticated requests", async () => {
   await enable();
   const q = await queue();
   const send = vi.fn<typeof fetch>();
@@ -218,7 +223,7 @@ it("records all seven missing slots and schedules retry without unauthenticated 
   expect(j.status).toBe("retry_wait");
   expect(j.error_code).toBe("MODEL_ROUND_EXHAUSTED");
   expect(Number.isFinite(Date.parse(j.next_attempt_at))).toBe(true);
-  expect(j.checkpoint.model_routing.checks).toHaveLength(7);
+  expect(j.checkpoint.model_routing.checks).toHaveLength(8);
   expect(
     j.checkpoint.model_routing.checks.every(
       (x: any) => x.code === "MODEL_NOT_CONFIGURED" && !x.sent,
@@ -350,7 +355,7 @@ it("retries an exhausted round with a rotated start, but never resends ambiguous
   const tick = worker(send);
   await tick();
   expect((await job(q.id)).status).toBe("retry_wait");
-  expect(await usage(q.id)).toHaveLength(7);
+  expect(await usage(q.id)).toHaveLength(8);
   await f.db.query(
     "update public.jobs set status='queued',next_attempt_at=now() where id=$1",
     [q.id],
@@ -359,7 +364,7 @@ it("retries an exhausted round with a rotated start, but never resends ambiguous
   const before = vi.mocked(send).mock.calls.length;
   await tick();
   expect((await job(q.id)).status).toBe("retry_wait");
-  expect(await usage(q.id)).toHaveLength(7);
+  expect(await usage(q.id)).toHaveLength(8);
   // Gemini token counting is allowed; generation must not be repeated.
   expect(
     vi
@@ -808,7 +813,7 @@ it("uses the saved priority on every new job and skips failures in that order", 
     )
   ).rows[0];
   expect(readback).toEqual({
-    provider_order: [...order, "openai", "anthropic"],
+    provider_order: [...order, "openai", "anthropic", "cloudflare_free"],
     strategy: "priority",
   });
   for (let round = 0; round < 2; round++) {
@@ -1227,7 +1232,7 @@ it("keeps a targeted overload check waiting, counts its retry, and succeeds when
   expect(rows[1].status).toBe("succeeded");
 });
 
-it.each(["openai", "anthropic"] as const)(
+it.each(["openai", "anthropic", "cloudflare_free"] as const)(
   "runs a targeted %s probe with durable native usage and model identity",
   async (provider) => {
     await enable();
@@ -1258,6 +1263,112 @@ it.each(["openai", "anthropic"] as const)(
     });
   },
 );
+it("uses the supplied Cloudflare account and model, fails over, and retains measured usage", async () => {
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "priority",
+    provider_order: [
+      "cloudflare_free",
+      ...ROUND_ROBIN_PROVIDERS.filter((p) => p !== "cloudflare_free"),
+    ],
+  });
+  const q = await queue();
+  const calls: string[] = [];
+  await worker(
+    transport((p, url, init) => {
+      calls.push(p);
+      if (p === "cloudflare_free") {
+        expect(url).toBe(
+          "https://api.cloudflare.com/client/v4/accounts/syntheticaccount/ai/v1/chat/completions",
+        );
+        expect(new Headers(init?.headers).get("Authorization")).toBe(
+          "Bearer synthetic-key",
+        );
+        expect(JSON.parse(String(init?.body)).model).toBe(
+          "@cf/owner/chosen-model",
+        );
+        return Response.json(
+          { error: { code: "rate_limit_exceeded" } },
+          { status: 429 },
+        );
+      }
+      return success(p);
+    }),
+    {
+      ...environment,
+      models: {
+        ...models,
+        cloudflare_free: {
+          ...models.cloudflare_free,
+          model: "@cf/owner/chosen-model",
+        },
+      },
+    },
+  )();
+  expect(calls).toEqual(["cloudflare_free", "gemini_free"]);
+  expect((await job(q.id)).status).toBe("succeeded");
+  const rows = (
+    await f.db.query<any>(
+      "select * from public.model_activity where job_id=$1 order by sequence",
+      [q.id],
+    )
+  ).rows;
+  expect(rows[0]).toMatchObject({
+    provider: "cloudflare_free",
+    model: "@cf/owner/chosen-model",
+    status: "failed",
+    http_status: 429,
+  });
+  expect(rows[1]).toMatchObject({
+    provider: "gemini_free",
+    status: "succeeded",
+    actual_input: 100,
+    actual_output: 10,
+  });
+});
+it("skips Cloudflare with a missing account ID without sending a request", async () => {
+  await enable();
+  const q = await f.command("model.probe", { provider: "cloudflare_free" });
+  const send = vi.fn<typeof fetch>();
+  await worker(send, {
+    ...environment,
+    models: {
+      ...models,
+      cloudflare_free: { ...models.cloudflare_free, projectRef: "" },
+    },
+  })();
+  expect(send).not.toHaveBeenCalled();
+  expect((await job(q.id)).status).toBe("retry_wait");
+  const rows = (
+    await f.db.query<any>(
+      "select * from public.model_activity where job_id=$1 and provider='cloudflare_free'",
+      [q.id],
+    )
+  ).rows;
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({
+    status: "skipped",
+    result_code: "MODEL_NOT_CONFIGURED",
+    sent: false,
+  });
+});
+it("accepts a seven-slot worker with a cursor at Cloudflare without removing the saved slot", async () => {
+  await enable();
+  await f.db.exec("update public.model_routing set next_position=7");
+  const q = await queue();
+  const claimed = await rpc("claim_backend_job");
+  await rpc("prepare_model_routing", {
+    job_id: q.id,
+    lease: claimed.lease_token,
+    server_models: meta().filter((p) => p.provider !== "cloudflare_free"),
+  });
+  expect((await job(q.id)).checkpoint.model_routing.provider_count).toBe(7);
+  expect(
+    (await f.db.query<any>("select provider_order from public.model_routing"))
+      .rows[0].provider_order,
+  ).toEqual(ROUND_ROBIN_PROVIDERS);
+});
 it("fails over from OpenAI rate rejection to Claude while retaining the rejection and native usage", async () => {
   await f.command("model.routing", {
     enabled: true,

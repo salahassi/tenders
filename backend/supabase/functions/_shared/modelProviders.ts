@@ -17,6 +17,7 @@ export const ROUND_ROBIN_PROVIDERS = [
   "zai_free",
   "openai",
   "anthropic",
+  "cloudflare_free",
 ] as const;
 
 export function defaultFailoverRank(provider: ModelProviderId): number {

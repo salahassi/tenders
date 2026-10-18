@@ -54,6 +54,12 @@ function setup(
       project_ref: "default",
       key_configured: true,
     },
+    {
+      provider: "cloudflare_free",
+      model: "@cf/owner/chosen-model",
+      project_ref: "syntheticaccount",
+      key_configured: true,
+    },
   ];
   const runCommand = vi.fn(async (op, input) => {
     if (options.fail) throw new Error("A newer revision exists");
@@ -102,7 +108,8 @@ it("shows actual server identity read-only and one card per automatic provider w
     within(screen.getByRole("list", { name: "Provider order" })).getAllByRole(
       "article",
     ),
-  ).toHaveLength(7);
+  ).toHaveLength(8);
+  expect(screen.queryByText(/Legacy manual fallback/)).not.toBeInTheDocument();
   expect(f.runCommand).not.toHaveBeenCalled();
 });
 it("checks the selected provider only and disables checks with missing credentials", async () => {
@@ -144,6 +151,7 @@ it("persists provider order and strategy without writing credentials or permissi
       "groq_free",
       "openai",
       "anthropic",
+      "cloudflare_free",
     ],
   });
   f.view.unmount();
@@ -162,6 +170,7 @@ it("persists provider order and strategy without writing credentials or permissi
 it.each([
   ["OpenAI", "openai", "owner-openai-model"],
   ["Claude", "anthropic", "owner-claude-model"],
+  ["Cloudflare Workers AI", "cloudflare_free", "@cf/owner/chosen-model"],
 ])(
   "saves %s limits with the server identity and no billing attestation",
   async (name, provider, model) => {
@@ -183,7 +192,8 @@ it.each([
       expect.objectContaining({
         provider,
         model,
-        project_ref: "default",
+        project_ref:
+          provider === "cloudflare_free" ? "syntheticaccount" : "default",
         calls_per_day: 12,
         enabled: false,
         quota_mode: "provider_managed",

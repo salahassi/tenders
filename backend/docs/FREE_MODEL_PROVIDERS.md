@@ -12,6 +12,8 @@ TenderDesk uses configured credentials and Owner-selected model names. Billing c
 | `mistral_free` *(optional)* | [Mistral Console](https://console.mistral.ai/) | `APP_MODEL_MISTRAL_NAME`, `APP_MODEL_MISTRAL_PROJECT`, `APP_MODEL_MISTRAL_KEY` | Account label |
 | `zai_free` *(optional)* | [z.ai](https://z.ai/) | `APP_MODEL_ZAI_NAME`, `APP_MODEL_ZAI_PROJECT`, `APP_MODEL_ZAI_KEY` | Account label |
 | `cloudflare_free` *(optional)* | [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) | `APP_MODEL_CLOUDFLARE_NAME`, `APP_MODEL_CLOUDFLARE_PROJECT`, `APP_MODEL_CLOUDFLARE_KEY` | Cloudflare **account ID** (`project_ref`) |
+| `openai` *(optional)* | [OpenAI Platform](https://platform.openai.com/) | `APP_MODEL_OPENAI_NAME`, `APP_MODEL_OPENAI_PROJECT`, `APP_MODEL_OPENAI_KEY` | Optional account label; defaults to `default` |
+| `anthropic` *(optional)* | [Claude Console](https://console.anthropic.com/) | `APP_MODEL_CLAUDE_NAME`, `APP_MODEL_CLAUDE_PROJECT`, `APP_MODEL_CLAUDE_KEY` | Optional account label; defaults to `default` |
 
 Legacy `APP_MODEL_PROVIDER`, `APP_MODEL_NAME`, `APP_MODEL_PROJECT` and `APP_MODEL_KEY` can still populate one slot. Server metadata exposes model/project and whether a key exists, never the key. No model name or account identity is invented. Model names are sent verbatim; there is no exact-name allowlist.
 
@@ -23,12 +25,14 @@ Legacy `APP_MODEL_PROVIDER`, `APP_MODEL_NAME`, `APP_MODEL_PROJECT` and `APP_MODE
 | `mistral_free` | `https://api.mistral.ai/v1/chat/completions` |
 | `zai_free` | `https://api.z.ai/api/paas/v4/chat/completions` |
 | `cloudflare_free` | `https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1/chat/completions` |
+| `openai` | `https://api.openai.com/v1/responses` |
+| `anthropic` | `https://api.anthropic.com/v1/messages` |
 
 The z.ai adapter uses provider defaults for optional thinking and the standard JSON chat-completion endpoint. Changing a model name does not introduce a model-specific toggle. Qwen uses its Singapore workspace; Cloudflare requires its account ID. Groq, Mistral and z.ai project labels are local identity records.
 
 ## Automatic routing
 
-Settings provides an ordered list of Gemini, Qwen, Mistral, Groq and z.ai with accessible Move up/Move down controls. The Owner saves the complete order and strategy through the revision-checked, audited `model.routing` command. Duplicate, unknown or missing providers are rejected. Older clients that only toggle routing preserve the saved order.
+Settings provides one ordered list of Gemini, Qwen, Mistral, Groq, z.ai, OpenAI, Claude and Cloudflare Workers AI with accessible Move up/Move down controls. Cloudflare uses the same automatic routing, targeted connection checks and activity logs as the other providers. The Owner saves the complete order and strategy through the revision-checked, audited `model.routing` command. Duplicate, unknown or missing providers are rejected, except that legacy five/seven-provider clients are normalized by appending the newly supported providers during publication. Older clients that only toggle routing preserve the saved order.
 
 - **Priority** starts each new round with the first configured provider in the saved order. This is the default.
 - **Round robin** rotates the starting position through that same saved order. Polling an existing background request preserves its identity and does not advance the rotation or round-attempt count.

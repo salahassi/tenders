@@ -40,25 +40,15 @@ The bounded format allows 128 MiB of metadata and 250 MiB of original/export byt
 
 Retention/purge and model-quality evaluation are tracked separately in the checklist.
 
-## Free model activation
+## Model activation and routing
 
-Configure the Owner-selected provider first; Gemini can run alone. Add another provider only after separately verifying its credentials, free quota, and content authorization. The worker can select a verified alternative only under the bounded failover rules below.
+Configure the Owner-selected providers in Supabase Edge Function Secrets. Each provider uses `APP_MODEL_<PROVIDER>_KEY`, `_NAME` and `_PROJECT`; see [Model providers and routing](FREE_MODEL_PROVIDERS.md) for exact names. Cloudflare's `APP_MODEL_CLOUDFLARE_PROJECT` must be its actual account ID because it forms part of the API URL. OpenAI and Claude allow the account label to be omitted. Keys never enter the browser.
 
-**Backend secrets (Supabase Edge, never in the repo or browser):**
+Settings → Models & providers contains one automatic order for Gemini, Qwen, Mistral, Groq, z.ai, OpenAI, Claude and Cloudflare. Choose priority or round robin, save the order, and use provider-specific connection checks. Missing credentials skip without requests. Model names come from Secrets verbatim. Automatic selection does not require individual manual enable toggles, free-tier confirmation or billing attestations. Application daily ceilings remain separate from provider quotas.
 
-- Gemini: `APP_MODEL_GEMINI_NAME`, `APP_MODEL_GEMINI_PROJECT`, `APP_MODEL_GEMINI_KEY`
-- Qwen (Singapore free quota): `APP_MODEL_QWEN_NAME`, `APP_MODEL_QWEN_PROJECT`, `APP_MODEL_QWEN_KEY`
-- Optional: `APP_MODEL_GROQ_*`, `APP_MODEL_MISTRAL_*`, `APP_MODEL_ZAI_*`, `APP_MODEL_CLOUDFLARE_*` (account ID in `PROJECT` for Cloudflare)
+Settings → Assessment & data controls which providers may receive tender and eligible Company Knowledge evidence. A configured connection does not grant content authorization. Authorized requests may fail over to another eligible provider. If all providers fail, work waits and retries with visible attempt counts. Unknown usage remains conservatively reserved, and the same uncertain request is not blindly resent to that provider; known Gemini request IDs are retrieved. Activity & jobs retains results and measured usage, while Operations & recovery provides verified usage reconciliation.
 
-Legacy `APP_MODEL_PROVIDER` + `APP_MODEL_NAME` + `APP_MODEL_PROJECT` + `APP_MODEL_KEY` still fill one slot for older setups.
-
-In Workspace settings, enable and verify **each** provider row (exact model id, project/workspace id, quota expiry, billing attestation; Qwen also requires Free Quota Only). Authorize each content item **for each provider** that may process it. A profile without matching secrets is skipped at runtime; if none match, jobs remain blocked.
-
-Gemini can run alone. Optional Groq, Mistral, and Cloudflare adapters share the same policy pool; leave them disabled unless their free quota and credentials are separately verified. See [FREE_MODEL_PROVIDERS.md](FREE_MODEL_PROVIDERS.md) for exact secret names, activation prerequisites, and error meanings.
-
-An explicit quota rejection may select another verified provider within the same claim. Once a generation request has uncertain delivery or unknown usage, stop and retain its reservation; use the provider usage ledger and the Owner reconciliation control before retrying. Rejections retain conservative reserved totals. Measured usage is settled once even when subsequent JSON validation fails. Actual usage beyond a reservation disables **that provider profile** until reviewed. Neither quota exhaustion nor malformed output permits a paid fallback. The application cannot independently inspect provider billing settings; verification is an explicit dated Owner attestation.
-
-Provider adapter references checked October 15, 2026: Gemini Interactions API (`https://ai.google.dev/api/interactions-api`), structured output and countTokens documentation; Alibaba Cloud Model Studio free quota, OpenAI compatibility and structured-output documentation. Adapters must be re-verified before changing model families or API versions.
+Legacy `APP_MODEL_PROVIDER`, `APP_MODEL_NAME`, `APP_MODEL_PROJECT` and `APP_MODEL_KEY` still fill one slot. Disabling automatic routing restores the existing manual-policy behavior. See the provider guide for bounds and error meanings.
 
 ## Maintenance and deletion
 

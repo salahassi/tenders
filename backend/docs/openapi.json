@@ -9854,7 +9854,8 @@
                                     "groq_free",
                                     "zai_free",
                                     "openai",
-                                    "anthropic"
+                                    "anthropic",
+                                    "cloudflare_free"
                                   ]
                                 }
                               },
@@ -9878,7 +9879,7 @@
                               "type": "object",
                               "properties": {
                                 "free_providers": {
-                                  "maxItems": 7,
+                                  "maxItems": 8,
                                   "type": "array",
                                   "items": {
                                     "type": "string",
@@ -9889,7 +9890,8 @@
                                       "groq_free",
                                       "zai_free",
                                       "openai",
-                                      "anthropic"
+                                      "anthropic",
+                                      "cloudflare_free"
                                     ]
                                   }
                                 },
@@ -9902,7 +9904,7 @@
                                 },
                                 "provider_order": {
                                   "minItems": 5,
-                                  "maxItems": 7,
+                                  "maxItems": 8,
                                   "type": "array",
                                   "items": {
                                     "type": "string",
@@ -9913,7 +9915,8 @@
                                       "groq_free",
                                       "zai_free",
                                       "openai",
-                                      "anthropic"
+                                      "anthropic",
+                                      "cloudflare_free"
                                     ]
                                   }
                                 },

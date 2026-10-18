@@ -65,6 +65,7 @@ export const DEFAULT_PROVIDER_ORDER: ProviderId[] = [
   "zai_free",
   "openai",
   "anthropic",
+  "cloudflare_free",
 ];
 export const providerLabel = (id: string) =>
   MODEL_PROVIDERS.find((p) => p.id === id)?.label || id;

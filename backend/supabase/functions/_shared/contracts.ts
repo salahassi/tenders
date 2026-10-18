@@ -366,8 +366,14 @@ export const commandSchemas = {
           (ids) =>
             new Set(ids).size === ids.length &&
             (ids.length === ROUND_ROBIN_PROVIDERS.length ||
+              (ids.length === 7 && !ids.includes("cloudflare_free")) ||
               (ids.length === 5 &&
-                ids.every((id) => id !== "openai" && id !== "anthropic"))),
+                ids.every(
+                  (id) =>
+                    id !== "openai" &&
+                    id !== "anthropic" &&
+                    id !== "cloudflare_free",
+                ))),
           "Each provider must appear once.",
         )
         .optional(),
