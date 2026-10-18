@@ -314,6 +314,17 @@ export default function Knowledge() {
             <span>
               <strong>{readyCount}</strong> readable & included
             </span>
+            <button
+              type="button"
+              className="text-link"
+              onClick={() =>
+                document
+                  .getElementById("company-notes")
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
+            >
+              {state.knowledge.length} company notes
+            </button>
           </div>
         </div>
       </section>
@@ -480,7 +491,7 @@ export default function Knowledge() {
         Accepted originals are stored privately and downloaded after an access
         check. Workspace backups include their verified original bytes.
       </p>
-      <section className="knowledge-notes">
+      <section id="company-notes" className="knowledge-notes">
         <div className="knowledge-section-heading">
           <div>
             <h2>
