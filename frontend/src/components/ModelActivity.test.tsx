@@ -6,7 +6,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter } from "react-router-dom";
+import { HashRouter, MemoryRouter } from "react-router-dom";
 import { afterEach, it, expect, vi } from "vitest";
 import { useApp } from "../lib/store";
 import ModelActivity from "./ModelActivity";
@@ -91,4 +91,24 @@ it("surfaces read errors without claiming an empty or successful history", async
   expect(
     screen.queryByText("No model attempts match these filters."),
   ).not.toBeInTheDocument();
+});
+
+it("keeps a provider hash deep-link selected in the live DOM after loading", async () => {
+  window.history.replaceState(null, "", "/#/jobs?provider=zai_free");
+  const request = vi.fn(async () => ({
+    data: { records: [], next_cursor: null },
+  }));
+  vi.mocked(useApp).mockReturnValue({ backend: { request } } as any);
+  const view = render(
+    <HashRouter>
+      <ModelActivity />
+    </HashRouter>,
+  );
+  await screen.findByText("No model attempts match these filters.");
+  const select = screen.getByLabelText("Model provider") as HTMLSelectElement;
+  expect(select.value).toBe("zai_free");
+  expect(select.selectedOptions[0].text).toBe("z.ai");
+  expect(request.mock.calls.length).toBeGreaterThan(0);
+  view.unmount();
+  window.history.replaceState(null, "", "/");
 });
