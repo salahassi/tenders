@@ -199,7 +199,7 @@ export default function Proposals() {
             description={
               search
                 ? "Try another title, buyer, or reference."
-                : "Select an opportunity in Review, obtain and upload the buyer’s RFP, then generate its linked proposal. AI generation becomes available after the backend is connected."
+                : "Choose an opportunity, upload and review the buyer’s RFP, then generate its complete proposal. You can start without a saved template or Company Knowledge; missing information will appear as review questions."
             }
             action={
               !search ? (

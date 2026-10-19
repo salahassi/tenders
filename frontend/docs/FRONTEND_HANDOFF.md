@@ -2,6 +2,8 @@
 
 ## Current implementation
 
+The proposal-list empty state describes the connected upload/review/generate flow and makes clear that saved templates and Company Knowledge are optional starting inputs. It does not ask a signed-in workspace to connect its backend. The October 19 hosted session verified Owner access and the existing extracted RFP, but its NHCI project does not match the linked An-Najah opportunity; full hosted generation/download remains pending.
+
 Failure email preferences default to at most daily. New affected tasks do not repeat email for an already reported ongoing cause; recovered causes may notify again if they recur. A pending summary rechecks recovery and the current interval before sending. The activity log retains every attempt, and review reminders keep their separate schedule.
 
 RFP-first preparation does not require a saved template, rates or Company Knowledge. The neutral document structure is automatic. Missing company facts remain unknown; buyer-specific mandatory evidence and commercial commitments still need review. The opportunity distinguishes extracted-but-unconfirmed files from generation-ready files and links directly to pending extraction review. Generation sits beside its language and input controls, refreshes workspace data when a plan completes, and exposes the full draft download before the separate final-approval controls. Hosted upload-to-download acceptance is recorded separately in the checklist.
