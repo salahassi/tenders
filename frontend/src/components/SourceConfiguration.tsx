@@ -5,15 +5,28 @@ import { Button, Field } from "./ui";
 export default function SourceConfiguration({ source }: { source: Source }) {
   const { runCommand, saving, notify, state } = useApp();
   const [url, setUrl] = useState(source.url),
-    [kind, setKind] = useState(source.type === "manual" ? "rss" : source.type),
+    [kind, setKind] = useState(
+      source.type === "manual"
+        ? source.adapterConfig?.extraction
+          ? "link_directory"
+          : "rss"
+        : source.type,
+    ),
     [hosts, setHosts] = useState((source.approvedHosts || []).join(", ")),
     [policy, setPolicy] = useState(source.policy),
     [hours, setHours] = useState(source.pollHours || 6),
     [config, setConfig] = useState(
-      JSON.stringify(source.adapterConfig || {}, null, 2),
+      JSON.stringify(
+        source.adapterConfig?.extraction || source.adapterConfig || {},
+        null,
+        2,
+      ),
     ),
     [official, setOfficial] = useState(
-      String(source.adapterConfig?.official_listing || ""),
+      source.adapterConfig?.official_listing ||
+        (source.type === "manual" && source.adapterConfig?.extraction)
+        ? "configured"
+        : "",
     ),
     [error, setError] = useState("");
   if (!runCommand || state.settings.role !== "Owner") return null;
@@ -38,8 +51,15 @@ export default function SourceConfiguration({ source }: { source: Source }) {
                 ...(source.adapterConfig?.catalog
                   ? { catalog: source.adapterConfig.catalog }
                   : {}),
+                ...(source.adapterConfig?.extraction
+                  ? { extraction: source.adapterConfig.extraction }
+                  : {}),
                 ...(kind === "link_directory" && official
-                  ? { official_listing: official }
+                  ? {
+                      official_listing:
+                        source.adapterConfig?.official_listing || "configured",
+                      extraction: JSON.parse(config),
+                    }
                   : {}),
               },
       });
@@ -84,13 +104,13 @@ export default function SourceConfiguration({ source }: { source: Source }) {
             onChange={(e) => setOfficial(e.target.value)}
           >
             <option value="">Discover candidate source links</option>
-            <option value="jo-gtd">Jordan Government Tenders Department</option>
-            <option value="ps-najah">An-Najah National University</option>
-            <option value="ps-ramallah">Ramallah Municipality</option>
-            <option value="sa-isdb">IsDB corporate procurement</option>
+            <option value="configured">
+              Collect notices using saved extraction settings
+            </option>
           </select>
           <p className="muted small">
-            Supported listings require their exact official listing URL.
+            Extraction settings are stored with this source in the database.
+            Their URL must match the collection URL.
           </p>
         </Field>
       )}
@@ -113,17 +133,24 @@ export default function SourceConfiguration({ source }: { source: Source }) {
           onChange={(e) => setHours(Number(e.target.value))}
         />
       </Field>
-      {kind === "json_feed" && (
-        <Field label="JSON field map">
+      {(kind === "json_feed" || (kind === "link_directory" && official)) && (
+        <Field
+          label={
+            kind === "json_feed"
+              ? "JSON field map"
+              : "Website extraction settings (JSON)"
+          }
+        >
           <textarea
             rows={8}
             value={config}
             onChange={(e) => setConfig(e.target.value)}
           />
           <p className="muted small">
-            Use dotted field paths: items and fields (title, description, url,
-            reference, buyer, deadline_raw). Empty configuration uses those
-            default field names. Expressions are not executed.
+            {kind === "json_feed"
+              ? "Use dotted field paths: items and fields (title, description, url, reference, buyer, deadline_raw). Empty configuration uses those default field names."
+              : "The seed supplies supported source settings. URL, buyer, timezone and listing/detail selectors are editable here. Saving pauses collection until you review and enable it."}{" "}
+            Expressions are not executed.
           </p>
         </Field>
       )}

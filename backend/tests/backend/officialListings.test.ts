@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { expect, it } from "vitest";
+import { seedExtraction } from "./sourceExtractionFixture";
 import {
   parseSource,
   collect,
@@ -12,7 +13,7 @@ const source = (id: string, url: string): SourceInput => ({
   approval: "approved",
   approved_hosts: [new URL(url).hostname],
   policy_note: "Synthetic public-listing adapter test",
-  adapter_config: { official_listing: id },
+  adapter_config: { official_listing: id, extraction: seedExtraction(id) },
 });
 const najah = source("ps-najah", "https://www.najah.edu/ar/tenders/");
 const row = (deadline: string, href = "/ar/tenders/synthetic-1/") =>
@@ -125,4 +126,27 @@ it("accepts the browser-valid omitted closing row in the published Arabic table 
     "</th></thead>",
   );
   expect(parseSource(najah, html).items).toHaveLength(1);
+});
+
+it("reads a previously unknown source entirely from its saved extraction settings", () => {
+  const extraction = seedExtraction("ps-najah");
+  extraction.url = "https://new-source.example.test/opportunities";
+  extraction.buyer = "Synthetic configurable buyer";
+  if (extraction.listing.layout !== "table") throw new Error("fixture");
+  extraction.listing.container = "table.custom-feed";
+  const configured = {
+    ...najah,
+    url: extraction.url,
+    adapter_config: { official_listing: "owner-created", extraction },
+  };
+  const result = parseSource(
+    configured,
+    table(row("2026-10-25")).replace("table-bordered", "custom-feed"),
+  );
+  expect(result.items[0].buyer).toBe("Synthetic configurable buyer");
+  expect(result.items[0].canonical_url).toContain("new-source.example.test");
+  extraction.listing.container = "table.missing";
+  expect(() => parseSource(configured, table(row("2026-10-25")))).toThrow(
+    "SOURCE_SCHEMA_CHANGED",
+  );
 });

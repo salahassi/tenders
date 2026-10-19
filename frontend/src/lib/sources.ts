@@ -9,4 +9,4 @@ export const canCollectSource = (source: Source) =>
   source.type !== "manual" && !source.adapterRequired;
 
 export const sourceCountry = (source: Source) =>
-  source.tags.find((tag) => /^country:(SA|JO|PS)$/.test(tag))?.slice(8);
+  source.tags.find((tag) => /^country:[A-Z]{2}$/.test(tag))?.slice(8);

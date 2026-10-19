@@ -353,6 +353,16 @@ describe("connected screens", () => {
         adapter_required: true,
         tags: ["country:JO", "الأردن", "بنك"],
       },
+      {
+        id: "00000000-0000-4000-8000-000000000099",
+        revision: 1,
+        name: "Synthetic additional country",
+        kind: "manual",
+        url: "https://example.test/other",
+        approval: "proposed",
+        adapter_required: true,
+        tags: ["country:AE"],
+      },
     ]);
     render(
       <MemoryRouter>
@@ -366,7 +376,7 @@ describe("connected screens", () => {
     });
     expect(link).toHaveAttribute("href", `/sources/${source}`);
     expect(
-      screen.getByText("Manual review", { exact: true }),
+      screen.getAllByText("Manual review", { exact: true })[0],
     ).toBeInTheDocument();
     expect(screen.queryByText("Built-in origin")).not.toBeInTheDocument();
     expect(
@@ -375,7 +385,7 @@ describe("connected screens", () => {
     const user = userEvent.setup();
     await user.selectOptions(
       screen.getByLabelText("Filter source country"),
-      "SA",
+      "AE",
     );
     expect(
       screen.queryByRole("link", { name: "بوابة عطاءات اختبارية" }),

@@ -8,6 +8,7 @@ import {
   readPublicPdf,
   submissionDeadline,
 } from "../../supabase/functions/_shared/publicNoticeDetails";
+import { seedExtraction } from "./sourceExtractionFixture";
 import { workflowFixture } from "./workflowFixture";
 import { taskInput } from "../../supabase/functions/_shared/generation";
 const url = "https://www.ramallah.ps/ar/Article/1/synthetic";
@@ -18,11 +19,14 @@ const source: any = {
   approval: "approved",
   policy_note: "Synthetic reviewed source",
   approved_hosts: ["www.ramallah.ps"],
-  adapter_config: { official_listing: "ps-ramallah" },
+  adapter_config: {
+    official_listing: "ps-ramallah",
+    extraction: seedExtraction("ps-ramallah"),
+  },
 };
 const html = `<h1>Synthetic software licenses</h1><div id="all_body"><p>تجديد تراخيص برامج وتطوير تطبيقات. شروط اصطناعية للاختبار فقط.</p><ol><li>رسوم شراء الوثيقة 150 شيقل.</li><li>آخر موعد لشراء وثيقة المناقصة 9/3/2026 الساعة 11:00 صباحاً.</li><li>يجب تسليم العطاءات قبل الساعة 11:00 صباحاً يوم 10/3/2026؛ صلاحية العطاءات 90 يوما.</li><li>تقديم رخصة مهن سارية المفعول.</li><li>كفالة بنكية بقيمة 10,000 شيقل لمدة 120 يوم.</li></ol><table><tr><td>هاتف 02-111-2222 test@example.test</td></tr></table><p>Synthetic signatory</p><p>رئيس البلدية</p><a href="/public/files\\synthetic.pdf">وثيقة</a></div>`;
 it("reads all labeled notice conditions, correct submission date, links and excludes contact/signature blocks", () => {
-  const result = parseNoticeDetails("ps-ramallah", url, html);
+  const result = parseNoticeDetails(seedExtraction("ps-ramallah"), url, html);
   expect(result.text).toContain("150 شيقل");
   expect(result.text).toContain("120 يوم");
   expect(result.text).toContain("رخصة مهن");
@@ -38,29 +42,33 @@ it("reads all labeled notice conditions, correct submission date, links and excl
 });
 it("never mistakes a purchase date for submission, invents a missing time or accepts an invalid date", () => {
   expect(
-    submissionDeadline("ps-ramallah", "آخر موعد لشراء 9/3/2026 الساعة 11:00")
+    submissionDeadline("Asia/Hebron", "آخر موعد لشراء 9/3/2026 الساعة 11:00")
       .date,
   ).toBeNull();
-  expect(submissionDeadline("jo-gtd", "", "02/11/2026")).toMatchObject({
+  expect(submissionDeadline("Asia/Amman", "", "02/11/2026")).toMatchObject({
     date: "2026-11-02",
     local: null,
     timezone: "Asia/Amman",
   });
   expect(
-    submissionDeadline("ps-najah", "", "2026-10-18 الساعة 1:00 م").local,
+    submissionDeadline("Asia/Hebron", "", "2026-10-18 الساعة 1:00 م").local,
   ).toBe("2026-10-18T13:00:00");
   expect(
-    submissionDeadline("ps-ramallah", "يجب تسليم العطاءات 31/2/2026").date,
+    submissionDeadline("Asia/Hebron", "يجب تسليم العطاءات 31/2/2026").date,
   ).toBeNull();
 });
 it("rejects a missing detail selector instead of evaluating site navigation as evidence", () => {
   expect(() =>
-    parseNoticeDetails("ps-ramallah", url, "<header>11:00 10/3/2026</header>"),
+    parseNoticeDetails(
+      seedExtraction("ps-ramallah"),
+      url,
+      "<header>11:00 10/3/2026</header>",
+    ),
   ).toThrow("NOTICE_DETAIL_SCHEMA_CHANGED");
 });
 it("reads the Najah labeled desktop/mobile detail fields without confusing publication and submission", () => {
   const result = parseNoticeDetails(
-    "ps-najah",
+    seedExtraction("ps-najah"),
     "https://www.najah.edu/ar/tenders/synthetic/",
     `<div class="page-content"><div class="content"><p>Synthetic procurement announcement with sufficient public description and conditions.</p><dl><dt>الموضوع</dt><dd>Synthetic mobile application services</dd><dt>تم النشر في</dt><dd>2026-10-13</dd><dt>الموعد النهائي</dt><dd>2026-10-18 13:00:00</dd></dl></div></div>`,
   );
@@ -70,7 +78,7 @@ it("reads the Najah labeled desktop/mobile detail fields without confusing publi
 });
 it("retains public GTD details inside an ASP.NET form while removing form controls", () => {
   const result = parseNoticeDetails(
-    "jo-gtd",
+    seedExtraction("jo-gtd"),
     "https://gtd.gov.jo/Ar/tendersunderofferingdetails/synthetic",
     `<form><input value="synthetic hidden form token"><div id="page_divtendersDetails"><div>اسم العطاء: <span id="page_lblTitle">Synthetic public procurement detail</span></div><div>تاريخ الايداع: <span id="page_lblDepositDate">02/11/2026</span></div><p>Synthetic public procurement terms and sufficient announcement details for the fixture.</p></div></form>`,
   );
@@ -510,4 +518,18 @@ it("keeps expertise after the former twelve-source and 32k excerpt boundaries", 
     supplied_sources: 14,
     complete_text: true,
   });
+});
+
+it("uses saved detail selectors and timezone for a new source without a runtime source registry", () => {
+  const extraction = seedExtraction("ps-ramallah");
+  extraction.url = "https://new-source.example.test/listing";
+  extraction.timezone = "Europe/Paris";
+  extraction.detail.root = "#custom_notice";
+  const result = parseNoticeDetails(
+    extraction,
+    "https://new-source.example.test/notice/1",
+    html.replace("all_body", "custom_notice"),
+  );
+  expect(result.deadline.timezone).toBe("Europe/Paris");
+  expect(result.text).toContain("150 شيقل");
 });

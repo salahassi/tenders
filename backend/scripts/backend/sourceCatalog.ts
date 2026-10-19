@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { z } from "zod";
+import { extractionSchema } from "../../supabase/functions/_shared/officialListings.ts";
 import { safeUrl, uuid } from "../../supabase/functions/_shared/contracts.ts";
 
 export const catalogSchema = z
@@ -11,8 +12,8 @@ export const catalogSchema = z
       .array(
         z
           .object({
-            key: z.string().regex(/^(sa|jo|ps)-[a-z0-9-]+$/),
-            country: z.enum(["SA", "JO", "PS"]),
+            key: z.string().regex(/^[a-z]{2}-[a-z0-9-]+$/),
+            country: z.string().regex(/^[A-Z]{2}$/),
             name: z.string().min(1).max(200),
             name_en: z.string().min(1).max(200),
             sector: z.enum([
@@ -36,6 +37,7 @@ export const catalogSchema = z
             checked_at: z.iso.date(),
             http_status: z.number().int().min(100).max(599).nullable(),
             access_note: z.string().min(1).max(3000),
+            extraction: extractionSchema.optional(),
           })
           .strict(),
       )
@@ -90,7 +92,7 @@ export function catalogSourceId(workspaceId: string, key: string): string {
   const hex = bytes.toString("hex");
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
-const countries = { SA: "السعودية", JO: "الأردن", PS: "فلسطين" };
+const countries = new Intl.DisplayNames(["ar"], { type: "region" });
 const sectors = {
   government: "حكومي",
   ministry: "وزارة",
@@ -115,6 +117,7 @@ export function buildSourceSeedSql(
   input: unknown,
   workspaceId: string,
   actorId: string,
+  backfillExtraction = false,
 ): string {
   const catalog = catalogSchema.parse(input),
     workspace = uuid.parse(workspaceId),
@@ -125,9 +128,10 @@ export function buildSourceSeedSql(
     name: source.name,
     url: new URL(source.url).href,
     original_url: source.url,
+    extraction: source.extraction,
     tags: [
       `country:${source.country}`,
-      countries[source.country],
+      countries.of(source.country) || source.country,
       sectors[source.sector],
       entryTypes[source.entry_type],
       source.name_en,
@@ -152,6 +156,7 @@ declare
   request uuid := gen_random_uuid();
   inserted integer := 0;
   skipped integer := 0;
+  current_source public.sources;
 begin
   perform 1 from public.workspaces where id=w for update;
   if not found then raise exception 'WORKSPACE_NOT_FOUND'; end if;
@@ -161,14 +166,26 @@ begin
     for share;
   if not found then raise exception 'ACTIVE_OWNER_REQUIRED'; end if;
   for entry in select value from jsonb_array_elements(${literal(JSON.stringify(entries))}::jsonb) loop
-    if exists(select 1 from public.sources s where s.workspace_id=w and (
+    select * into current_source from public.sources s where s.workspace_id=w and (
       s.id=(entry->>'id')::uuid or s.adapter_config->'catalog'->>'key'=entry->>'key'
       or rtrim(split_part(s.url,'#',1),'/') in (rtrim(entry->>'url','/'),rtrim(entry->>'original_url','/'))
-    )) then skipped := skipped+1; continue; end if;
+    ) order by s.id limit 1 for update;
+    if current_source.id is not null then
+      if ${backfillExtraction ? "true" : "false"} and entry ? 'extraction'
+        and current_source.adapter_config->>'official_listing'=entry->>'key'
+        and not (current_source.adapter_config ? 'extraction')
+        and rtrim(split_part(current_source.url,'#',1),'/') in (rtrim(entry->>'url','/'),rtrim(entry->>'original_url','/')) then
+        update public.sources set adapter_config=adapter_config||jsonb_build_object('extraction',entry->'extraction'),revision=revision+1,updated_at=now() where id=current_source.id;
+        insert into public.audit_events(workspace_id,actor_id,action,entity_type,entity_id,reason,request_id,details)
+          values(w,actor,'source.catalog.extraction.seed','source',current_source.id,'Move existing collector configuration from runtime code to database',request,
+            jsonb_build_object('catalog',entry->'metadata','execution','administrative_seeder'));
+      end if;
+      skipped := skipped+1; continue;
+    end if;
     if (select count(*) from public.sources where workspace_id=w)>=500 then raise exception 'SOURCE_CAP_REACHED'; end if;
     insert into public.sources(id,workspace_id,name,kind,url,approved_hosts,approval,health,policy_note,adapter_config,adapter_required,tags,created_by)
       values((entry->>'id')::uuid,w,entry->>'name','manual',entry->>'url','{}','proposed','unknown',entry->>'policy',
-        jsonb_build_object('catalog',entry->'metadata'),true,array(select jsonb_array_elements_text(entry->'tags')),actor);
+        jsonb_build_object('catalog',entry->'metadata')||case when entry ? 'extraction' then jsonb_build_object('extraction',entry->'extraction') else '{}'::jsonb end,true,array(select jsonb_array_elements_text(entry->'tags')),actor);
     insert into public.audit_events(workspace_id,actor_id,action,entity_type,entity_id,reason,request_id,details)
       values(w,actor,'source.catalog.seed','source',(entry->>'id')::uuid,'Owner-requested official source directory; manual access pending collection adapter',request,
         jsonb_build_object('catalog',entry->'metadata','execution','administrative_seeder'));
@@ -180,5 +197,5 @@ end;
   // A content-dependent delimiter prevents catalog text from terminating the DO body.
   let delimiter = "$source_seed$";
   while (body.includes(delimiter)) delimiter = delimiter.slice(0, -1) + "_$";
-  return `-- TenderDesk official catalog ${catalog.catalog_version}; administrative, atomic, insert-only.\nDO ${delimiter}${body}${delimiter};\n`;
+  return `-- TenderDesk official catalog ${catalog.catalog_version}; administrative, atomic; backfill extraction: ${backfillExtraction}.\nDO ${delimiter}${body}${delimiter};\n`;
 }

@@ -15,6 +15,10 @@ import { validateOriginal } from "../_shared/originals.ts";
 import { z } from "zod";
 import { adapterSchema, inertText, canonical } from "../_shared/collector.ts";
 import { PDFDocument } from "pdf-lib";
+import {
+  sourceExtraction,
+  extractionMatchesUrl,
+} from "../_shared/officialListings.ts";
 import { smtpStatus } from "../_shared/notifications.ts";
 import {
   calculateEstimate,
@@ -618,6 +622,25 @@ export function createApiHandler(
             const config = parsed as z.infer<
               (typeof commandSchemas)["source.configure"]
             >;
+            if (
+              config.kind === "link_directory" &&
+              config.adapter_config.official_listing
+            ) {
+              try {
+                const extraction = sourceExtraction(
+                  config.adapter_config.extraction,
+                );
+                if (!extractionMatchesUrl(extraction, config.url))
+                  throw new Error("OFFICIAL_ADAPTER_URL_MISMATCH");
+                config.adapter_config.extraction = extraction;
+              } catch {
+                throw new AppError(
+                  422,
+                  "SOURCE_EXTRACTION_INVALID",
+                  "Source extraction settings must be valid and match the collection URL.",
+                );
+              }
+            }
             if (config.kind === "json_feed")
               config.adapter_config = adapterSchema.parse(
                 config.adapter_config,

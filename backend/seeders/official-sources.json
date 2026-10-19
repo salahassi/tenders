@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalog_version": "2026-10-17",
+  "catalog_version": "2026-10-19",
   "sources": [
     {
       "key": "sa-etimad",
@@ -178,11 +178,48 @@
       "name_en": "Islamic Development Bank corporate procurement",
       "sector": "bank",
       "entry_type": "public_tenders",
-      "url": "https://www.isdb.org/corporate-procurement",
+      "url": "https://www.isdb.org/corporate-procurement/tenders-and-opportunities",
       "evidence_url": "https://www.isdb.org/corporate-procurement",
       "checked_at": "2026-10-17",
       "access_note": "معلومات وفرص المشتريات المؤسسية للبنك في جدة؛ قد تمتد التغطية جغرافيًا وتختلف عن مشتريات المشروعات الممولة.",
-      "http_status": 200
+      "http_status": 200,
+      "extraction": {
+        "version": 1,
+        "url": "https://www.isdb.org/corporate-procurement/tenders-and-opportunities",
+        "buyer": "Islamic Development Bank",
+        "timezone": null,
+        "description_template": "{title}\nCountry: {country}\nStatus: {status}\nCorporate procurement can concern countries outside Saudi Arabia. Review the original notice.",
+        "listing": {
+          "layout": "cards",
+          "container": ".cloudsearch-teasers",
+          "rows": "article.type-corporate_procurement_tender",
+          "title": ".field-title",
+          "link": ".field-title a",
+          "reference_attribute": "data-nid",
+          "status": ".field--name-field-tender-status",
+          "open_statuses": [
+            "open",
+            "active",
+            "published"
+          ],
+          "closed_statuses": [
+            "closed",
+            "cancelled",
+            "canceled",
+            "awarded"
+          ],
+          "deadline": ".field--name-field-submission-deadline",
+          "country": ".field--name-field-world-country",
+          "empty_messages": [
+            "no results",
+            "no tenders",
+            "no opportunities"
+          ]
+        },
+        "detail": {
+          "root": "article.type-corporate_procurement_tender .field--name-body"
+        }
+      }
     },
     {
       "key": "jo-joneps",
@@ -221,7 +258,34 @@
       "evidence_url": "https://gtd.gov.jo/AR/Modules/TendersUnderOffering",
       "checked_at": "2026-10-17",
       "access_note": "قائمة عطاءات الأشغال والخدمات الفنية المطروحة مع تواريخ ووثائق؛ الإعلان الأصلي هو المرجع.",
-      "http_status": 200
+      "http_status": 200,
+      "extraction": {
+        "version": 1,
+        "url": "https://gtd.gov.jo/AR/Modules/TendersUnderOffering",
+        "buyer": "دائرة العطاءات الحكومية الأردنية",
+        "timezone": "Asia/Amman",
+        "description_template": "{title}\nتاريخ نشر الإعلان: {published}\nهذه بيانات القائمة العامة؛ راجع الإعلان الأصلي والوثائق والشروط قبل اتخاذ قرار المشاركة.",
+        "listing": {
+          "layout": "table",
+          "container": "table.table-tender",
+          "rows": "tbody tr",
+          "header_contains": "رقم العطاء",
+          "column_count": 9,
+          "reference_column": 0,
+          "reference_format": "number_year",
+          "title_column": 1,
+          "published_column": 2,
+          "deadline_columns": [
+            3
+          ],
+          "link": "a.tender-link"
+        },
+        "detail": {
+          "root": "[id$=divtendersDetails]",
+          "title": "[id$=lblTitle]",
+          "deadline": "[id$=lblDepositDate]"
+        }
+      }
     },
     {
       "key": "jo-mwi",
@@ -416,7 +480,43 @@
       "evidence_url": "https://www.najah.edu/ar/tenders/",
       "checked_at": "2026-10-17",
       "access_note": "قائمة العطاءات ونظام علاقات الموردين الرسمي للجامعة؛ تُراجع متطلبات المورد ووثائق العطاء.",
-      "http_status": 200
+      "http_status": 200,
+      "extraction": {
+        "version": 1,
+        "url": "https://www.najah.edu/ar/tenders/",
+        "buyer": "جامعة النجاح الوطنية",
+        "timezone": "Asia/Hebron",
+        "description_template": "{title}\nتاريخ نشر الإعلان: {published}\nهذه بيانات القائمة العامة؛ راجع الإعلان الأصلي والوثائق والشروط قبل اتخاذ قرار المشاركة.",
+        "listing": {
+          "layout": "table",
+          "container": "table.table-bordered",
+          "rows": "tbody tr",
+          "header_contains": "رقم العطاء",
+          "column_count": 5,
+          "reference_column": 0,
+          "reference_format": "text",
+          "title_column": 1,
+          "published_column": 2,
+          "deadline_columns": [
+            3,
+            4
+          ],
+          "link": "td:nth-child(2) a"
+        },
+        "detail": {
+          "root": ".page-content .content",
+          "title_labels": [
+            "الموضوع"
+          ],
+          "deadline_labels": [
+            "الموعد النهائي"
+          ],
+          "remove": [
+            ".article-info",
+            ".hidden-xs"
+          ]
+        }
+      }
     },
     {
       "key": "ps-ramallah",
@@ -429,7 +529,48 @@
       "evidence_url": "https://www.ramallah.ps/ar/Category/33/عطاءات",
       "checked_at": "2026-10-17",
       "access_note": "إعلانات المناقصات وطلبات الأسعار والتمديدات الرسمية للبلدية؛ يعتمد تاريخ وحالة الإعلان الأصلي.",
-      "http_status": 200
+      "http_status": 200,
+      "extraction": {
+        "version": 1,
+        "url": "https://www.ramallah.ps/ar/Category/33/عطاءات",
+        "buyer": "بلدية رام الله",
+        "timezone": "Asia/Hebron",
+        "description_template": "{title}\nتاريخ نشر الإعلان: {published}\nالموعد النهائي غير مبين في القائمة؛ راجع الإعلان الأصلي.",
+        "listing": {
+          "layout": "links",
+          "rows": ".home_center .cat-title a.btitle",
+          "published": ".news_icon",
+          "reference_segment": 3,
+          "reference_prefix": "article:",
+          "excluded_title_terms": [
+            "مزاد",
+            "إلغاء",
+            "الغاء"
+          ]
+        },
+        "detail": {
+          "root": "#all_body",
+          "title": "h1",
+          "title_scope": "document",
+          "remove_matching": [
+            {
+              "selector": "table",
+              "contains": [
+                "هاتف",
+                "فاكس",
+                "tenders@"
+              ]
+            },
+            {
+              "selector": "p",
+              "contains": [
+                "رئيس البلد"
+              ],
+              "previous": true
+            }
+          ]
+        }
+      }
     },
     {
       "key": "ps-ooredoo",

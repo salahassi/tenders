@@ -204,3 +204,78 @@ describe("official source catalog administrative seeder", () => {
     );
   });
 });
+
+it("seeds extraction settings and explicitly backfills only unchanged legacy configurations", async () => {
+  await db.exec(buildSourceSeedSql(catalog, workspace, owner));
+  expect(
+    (
+      await db.query(
+        "select id from public.sources where adapter_config ? 'extraction'",
+      )
+    ).rows,
+  ).toHaveLength(4);
+  const entry = catalog.sources.find((s) => s.extraction)!;
+  const id = catalogSourceId(workspace, entry.key);
+  const changed = catalog.sources.find(
+    (s) => s.extraction && s.key !== entry.key,
+  )!;
+  const changedId = catalogSourceId(workspace, changed.key);
+  await db.query(
+    "update public.sources set url='https://example.test/owner-changed',adapter_config=(adapter_config-'extraction')||jsonb_build_object('official_listing',$2::text) where id=$1",
+    [changedId, changed.key],
+  );
+  await db.query(
+    "update public.sources set name='Owner custom name',kind='link_directory',approval='paused',revision=9,adapter_config=(adapter_config-'extraction')||jsonb_build_object('official_listing',$2::text) where id=$1",
+    [id, entry.key],
+  );
+  // Default replay never edits existing rows.
+  await db.exec(buildSourceSeedSql(catalog, workspace, owner));
+  expect(
+    (
+      await db.query<any>(
+        "select adapter_config ? 'extraction' configured from public.sources where id=$1",
+        [id],
+      )
+    ).rows[0].configured,
+  ).toBe(false);
+  await db.exec(buildSourceSeedSql(catalog, workspace, owner, true));
+  expect(
+    (
+      await db.query<any>(
+        "select adapter_config ? 'extraction' configured from public.sources where id=$1",
+        [changedId],
+      )
+    ).rows[0].configured,
+  ).toBe(false);
+  const before = (
+    await db.query<any>(
+      "select name,approval,revision,adapter_config from public.sources where id=$1",
+      [id],
+    )
+  ).rows[0];
+  expect(before).toMatchObject({
+    name: "Owner custom name",
+    approval: "paused",
+    revision: 10,
+    adapter_config: { extraction: entry.extraction },
+  });
+  await db.query(
+    "update public.sources set adapter_config=jsonb_set(adapter_config,'{extraction,buyer}',to_jsonb('Owner edited buyer'::text)) where id=$1",
+    [id],
+  );
+  await db.exec(buildSourceSeedSql(catalog, workspace, owner, true));
+  const after = (
+    await db.query<any>(
+      "select revision,adapter_config#>>'{extraction,buyer}' buyer from public.sources where id=$1",
+      [id],
+    )
+  ).rows[0];
+  expect(after).toEqual({ revision: 10, buyer: "Owner edited buyer" });
+  expect(
+    (
+      await db.query(
+        "select * from public.audit_events where action='source.catalog.extraction.seed'",
+      )
+    ).rows,
+  ).toHaveLength(1);
+});

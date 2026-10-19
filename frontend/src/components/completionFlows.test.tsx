@@ -30,7 +30,8 @@ it("retains the reviewed listing adapter and catalog metadata when editing colle
           policy: "Reviewed public listing",
           pollHours: 6,
           adapterConfig: {
-            official_listing: "ps-najah",
+            official_listing: "custom-source",
+            extraction: { version: 1, buyer: "Synthetic configurable buyer" },
             catalog: { key: "ps-najah" },
           },
         } as any
@@ -44,7 +45,8 @@ it("retains the reviewed listing adapter and catalog metadata when editing colle
     "source.configure",
     expect.objectContaining({
       adapter_config: {
-        official_listing: "ps-najah",
+        official_listing: "custom-source",
+        extraction: { version: 1, buyer: "Synthetic configurable buyer" },
         catalog: { key: "ps-najah" },
       },
     }),

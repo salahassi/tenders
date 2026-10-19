@@ -57,6 +57,15 @@ export default function Sources() {
   });
   const owner = state.settings.role === "Owner",
     canEdit = state.settings.role !== "Reviewer";
+  const countries = [
+    ...new Set(
+      state.sources
+        .map(sourceCountry)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  ].sort();
+  const countryNamesAr = new Intl.DisplayNames(["ar"], { type: "region" });
+  const countryNamesEn = new Intl.DisplayNames(["en"], { type: "region" });
   const sources = state.sources.filter(
     (s) =>
       (filter === "all" || s.status === filter) &&
@@ -220,9 +229,11 @@ export default function Sources() {
           onChange={(e) => setCountry(e.target.value)}
         >
           <option value="all">All countries</option>
-          <option value="SA">السعودية · Saudi Arabia</option>
-          <option value="JO">الأردن · Jordan</option>
-          <option value="PS">فلسطين · Palestine</option>
+          {countries.map((code) => (
+            <option key={code} value={code}>
+              {countryNamesAr.of(code)} · {countryNamesEn.of(code)}
+            </option>
+          ))}
         </select>
         <select
           className="input"

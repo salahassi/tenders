@@ -180,7 +180,11 @@ export function parseSource(
       : undefined;
   if (source.kind === "link_directory" && official !== undefined) {
     try {
-      const parsed = parseOfficialListing(official, source.url, body);
+      const parsed = parseOfficialListing(
+        (source.adapter_config as Record<string, unknown>).extraction,
+        source.url,
+        body,
+      );
       rows = parsed.rows;
       warnings.push(...parsed.warnings);
     } catch (error) {

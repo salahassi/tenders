@@ -10,7 +10,7 @@ From `backend/`:
 npm run seed:sources -- --workspace-id WORKSPACE_UUID --actor-id ACTIVE_OWNER_UUID --output /absolute/path/official-sources.sql
 ```
 
-The command validates the catalog and generates SQL only. Execute the reviewed SQL using the administrative Supabase SQL connector or SQL editor on the selected project. It never connects to a database or requests credentials itself. Optional `--country SA`, `JO`, or `PS` limits a batch. No seed runs automatically during signup, migration, build, or deployment. Generated SQL is workspace-specific and should stay outside Git.
+The command validates the catalog and generates SQL only. Execute the reviewed SQL using the administrative Supabase SQL connector or SQL editor on the selected project. It never connects to a database or requests credentials itself. Optional `--country ISO_CODE` limits a batch to a country present in the catalog. No seed runs automatically during signup, migration, build, or deployment. Generated SQL is workspace-specific and should stay outside Git.
 
 Each application is atomic, locks the workspace against concurrent app commands, verifies an active Owner and identity allowlist entry, and appends an audit event for every inserted source. Audit details identify administrative execution on the Owner's request; no session or JWT is fabricated. The script creates no privileges or persistent SQL functions. Browser roles cannot execute its administrative writes.
 
@@ -20,7 +20,7 @@ Re-running preserves existing records, approval/pause decisions, collection sett
 
 Each entry records its country, institution type, purpose, official URL/evidence reference, review date, HTTP observation, and Arabic access note. Source tags support country filtering and institution search. Metadata is retained under `adapter_config.catalog`; notes remain visible in source details.
 
-These destinations are HTML tender listings, central procurement portals, referrals to a central portal, or supplier registration pages. They are stored as `manual`, `proposed`, `adapter_required=true`, with no approved collection host or schedule. Supported RSS/JSON collection can be configured later when an actual feed and access basis are known. The existing link-directory adapter discovers candidate sources, not individual tenders, so these pages must not be mislabeled as working tender collectors.
+These destinations are HTML tender listings, central procurement portals, referrals to a central portal, or supplier registration pages. They are stored as `manual`, `proposed`, `adapter_required=true`, with no approved collection host or schedule. Supported RSS/JSON collection can be configured later when an actual feed and access basis are known. A link directory can discover candidate sources or collect notices using its saved extraction settings. The catalog currently supplies reviewed extraction profiles for four public listings; a profile alone does not approve or enable collection.
 
 Supplier registration does not guarantee invitation or award. Ministry referrals to Etimad should resolve to the same original notice when collection is implemented, avoiding duplicated opportunities. A successful HTTP response does not establish access rights, complete content, or a working collector.
 
@@ -51,7 +51,7 @@ Applied to the existing TenderDesk workspace through Supabase SQL on October 17 
 | SA | [مصرف الراجحي — الموردون](https://www.alrajhibank.com.sa/en/About-alrajhi-bank/Vendors) | supplier_registration | 200 |
 | SA | [مصرف الإنماء — علاقات الموردين](https://www.alinma.com/Quick-Links/Vendor-Relations) | supplier_registration | 200 |
 | SA | [صندوق الاستثمارات العامة — بوابة الموردين](https://www.pif.gov.sa/ar/private-sector-hub/become-a-supplier/register-interest/) | supplier_registration | 200 |
-| SA | [البنك الإسلامي للتنمية — المشتريات المؤسسية](https://www.isdb.org/corporate-procurement) | public_tenders | 200 |
+| SA | [البنك الإسلامي للتنمية — المشتريات المؤسسية](https://www.isdb.org/corporate-procurement/tenders-and-opportunities) | public_tenders | 200 |
 | JO | [نظام الشراء الإلكتروني الأردني — JONEPS](https://www.joneps.gov.jo/) | central_platform | 200 |
 | JO | [دائرة المشتريات الحكومية الأردنية — العطاءات](https://www.gpd.gov.jo/Ar/Modules/Tenders) | public_tenders | 200 |
 | JO | [دائرة العطاءات الحكومية الأردنية — عطاءات قيد الطرح](https://gtd.gov.jo/AR/Modules/TendersUnderOffering) | public_tenders | 200 |
@@ -73,3 +73,17 @@ Applied to the existing TenderDesk workspace through Supabase SQL on October 17 
 | PS | [بلدية رام الله — العطاءات](https://www.ramallah.ps/ar/Category/33/عطاءات) | public_tenders | 200 |
 | PS | [Ooredoo فلسطين — دليل الموردين](https://www.ooredoo.ps/عن-ooredoo/دليل-الموردين.html) | supplier_registration | 200 |
 | PS | [سلطة المياه الفلسطينية — العطاءات](https://www.pwa.ps/ar/Bids) | public_tenders | 200 |
+
+## Database-owned collection settings (October 19, 2026)
+
+The catalog owns source-specific configuration: collection URL, buyer, timezone, description template, listing/detail selectors and field labels. These optional `extraction` objects are seeded into `sources.adapter_config.extraction`. The worker reads the current source row through `collection_context` and `generation_context`; it never imports this JSON catalog or a runtime registry of institutions. The generic parser supports table, link and card layouts, validates CSS selectors and URLs, and retains host permissions, bounded fetching and schema-change errors. A source with an unsupported page structure still needs an appropriate extraction strategy.
+
+The source editor reads and saves the database profile. Source names, links, country filter options and selectable profile content are not fixed frontend lists. Country names are localized from stored country codes. Editing configuration retains catalog metadata, pauses collection and requires review before re-enabling.
+
+For the explicit one-time transition of existing collectors:
+
+```sh
+npm run seed:sources -- --workspace-id WORKSPACE_UUID --actor-id ACTIVE_OWNER_UUID --backfill-extraction --output /absolute/path/source-extraction.sql
+```
+
+This additionally fills a **missing** extraction profile only when the stored legacy listing key and URL still match the catalog. It preserves every other source field and increments the revision with a `source.catalog.extraction.seed` audit event. Changed URLs and existing profiles are never overwritten. Repeating the command is idempotent. Ordinary seed replay remains insert-only. No schema migration or automatic startup seed is involved.

@@ -7,7 +7,7 @@ import {
   type SourceInput,
 } from "./collector.ts";
 import { safeUrl } from "./contracts.ts";
-import { officialListings } from "./officialListings.ts";
+import { sourceExtraction } from "./officialListings.ts";
 
 type Row = Record<string, any>;
 const MAX_TEXT = 50000;
@@ -120,7 +120,7 @@ export function minimizedNotice(text: string) {
 
 // Parse a labeled submission clause, never the first date (often the purchase deadline).
 export function submissionDeadline(
-  adapter: string,
+  timezone: string | null,
   text: string,
   labeled?: string,
 ) {
@@ -154,12 +154,6 @@ export function submissionDeadline(
   if (hour !== null && /مساء|\bPM\b|\sم(?:\s|$)/i.test(normalized) && hour < 12)
     hour += 12;
   if (hour === 12 && /صباح|\bAM\b/i.test(normalized)) hour = 0;
-  const timezone =
-    adapter === "jo-gtd"
-      ? "Asia/Amman"
-      : adapter.startsWith("ps-")
-        ? "Asia/Hebron"
-        : null;
   const validTime = hour !== null && hour < 24 && Number(time![2]) < 60;
   return {
     raw: normalized,
@@ -171,9 +165,12 @@ export function submissionDeadline(
   };
 }
 
-export function parseNoticeDetails(adapter: string, url: string, html: string) {
-  const config = officialListings[adapter as keyof typeof officialListings];
-  if (!config || new URL(url).hostname !== config.host)
+export function parseNoticeDetails(input: unknown, url: string, html: string) {
+  const config = sourceExtraction(input);
+  if (
+    !safeUrl.safeParse(url).success ||
+    new URL(url).hostname !== new URL(config.url).hostname
+  )
     throw new CollectionError("OFFICIAL_ADAPTER_URL_MISMATCH");
   if (
     /captcha|type\s*=\s*["']password|automated access (?:is )?(?:prohibited|forbidden)/i.test(
@@ -184,14 +181,8 @@ export function parseNoticeDetails(adapter: string, url: string, html: string) {
   const $ = load(html);
   // ASP.NET portals wrap their public article in a form. Remove controls, not the article container.
   $("script,style,header,footer,nav,input,textarea,button").remove();
-  const root =
-    adapter === "ps-ramallah"
-      ? $("#all_body")
-      : adapter === "ps-najah"
-        ? $(".page-content .content")
-        : adapter === "jo-gtd"
-          ? $("[id$=divtendersDetails]")
-          : $("article.type-corporate_procurement_tender .field--name-body");
+  const rules = config.detail;
+  const root = $(rules.root);
   if (root.length !== 1)
     throw new CollectionError("NOTICE_DETAIL_SCHEMA_CHANGED");
   const attachments = [
@@ -214,45 +205,43 @@ export function parseNoticeDetails(adapter: string, url: string, html: string) {
         .filter(Boolean),
     ),
   ] as string[];
-  let title =
-    adapter === "ps-ramallah"
-      ? $("h1").first().text().trim()
-      : adapter === "jo-gtd"
-        ? root.find("[id$=lblTitle]").first().text().trim()
-        : "";
-  let closing =
-    adapter === "jo-gtd" ? root.find("[id$=lblDepositDate]").text().trim() : "";
-  if (adapter === "ps-najah") {
-    root.find("dl dt").each((_, term) => {
-      const label = $(term).text().trim(),
-        value = $(term).next("dd").text().trim();
-      if (label === "الموضوع") title = value;
-      if (label === "الموعد النهائي") closing = value;
-    });
-    root.find("tr").each((_, row) => {
-      const cells = $(row).find("td,th");
-      const label = cells.first().text().trim();
-      if (label === "الموضوع") title = cells.last().text().trim();
-      if (label === "الموعد النهائي") closing = cells.last().text().trim();
-    });
-    root.find(".article-info,.hidden-xs").remove();
-    root.find("dt").append(": ");
-    root.find("dd").append("\n");
-  }
-  if (adapter === "ps-ramallah") {
-    // Contact/signature block is not procurement evidence. Keep every numbered condition.
+  let title = rules.title
+    ? (rules.title_scope === "document"
+        ? $(rules.title)
+        : root.find(rules.title)
+      )
+        .first()
+        .text()
+        .trim()
+    : "";
+  let closing = rules.deadline ? root.find(rules.deadline).text().trim() : "";
+  root.find("dl dt").each((_, term) => {
+    const label = $(term).text().trim(),
+      value = $(term).next("dd").text().trim();
+    if (rules.title_labels.includes(label)) title = value;
+    if (rules.deadline_labels.includes(label)) closing = value;
+  });
+  root.find("tr").each((_, row) => {
+    const cells = $(row).find("td,th"),
+      label = cells.first().text().trim();
+    if (rules.title_labels.includes(label)) title = cells.last().text().trim();
+    if (rules.deadline_labels.includes(label))
+      closing = cells.last().text().trim();
+  });
+  for (const selector of rules.remove) root.find(selector).remove();
+  for (const rule of rules.remove_matching) {
     root
-      .find("table")
-      .filter((_, table) => /هاتف|فاكس|tenders@/.test($(table).text()))
-      .remove();
-    root
-      .find("p")
-      .filter((_, p) => /رئيس البلد/.test($(p).text()))
-      .each((_, p) => {
-        $(p).prev("p").remove();
-        $(p).remove();
+      .find(rule.selector)
+      .filter((_, node) =>
+        rule.contains.some((term) => $(node).text().includes(term)),
+      )
+      .each((_, node) => {
+        if (rule.previous) $(node).prev(rule.selector).remove();
+        $(node).remove();
       });
   }
+  root.find("dt").append(": ");
+  root.find("dd").append("\n");
   root.find("br").replaceWith("\n");
   root.find("p,li,tr,div").append("\n");
   const text = minimizedNotice(root.text())
@@ -265,7 +254,7 @@ export function parseNoticeDetails(adapter: string, url: string, html: string) {
     title,
     text,
     attachments,
-    deadline: submissionDeadline(adapter, text, closing),
+    deadline: submissionDeadline(config.timezone, text, closing),
   };
 }
 
@@ -318,7 +307,12 @@ export async function enrichPublicNotice(
 ) {
   if (source.approval !== "approved" || !source.policy_note.trim())
     throw new CollectionError("SOURCE_PERMISSION_REQUIRED");
-  const adapter = (source.adapter_config as Row).official_listing as string;
+  let extraction;
+  try {
+    extraction = sourceExtraction((source.adapter_config as Row).extraction);
+  } catch {
+    throw new CollectionError("ADAPTER_REQUIRED");
+  }
   const controller = new AbortController(),
     timeout = setTimeout(() => controller.abort(), 55000);
   try {
@@ -332,7 +326,7 @@ export async function enrichPublicNotice(
       1048576,
     );
     const detail = parseNoticeDetails(
-      adapter,
+      extraction,
       page.url,
       new TextDecoder("utf-8", { fatal: true }).decode(page.bytes),
     );
