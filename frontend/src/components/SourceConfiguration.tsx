@@ -27,7 +27,9 @@ export default function SourceConfiguration({ source }: { source: Source }) {
     [official, setOfficial] = useState(
       source.adapterConfig?.official_listing ||
         (source.type === "manual" && source.adapterConfig?.extraction)
-        ? "configured"
+        ? source.adapterConfig?.discover_source_links === true
+          ? "combined"
+          : "configured"
         : "",
     ),
     [error, setError] = useState("");
@@ -65,6 +67,9 @@ export default function SourceConfiguration({ source }: { source: Source }) {
                       official_listing:
                         source.adapterConfig?.official_listing || "configured",
                       extraction: JSON.parse(config),
+                      ...(official === "combined"
+                        ? { discover_source_links: true }
+                        : {}),
                     }
                   : {}),
               },
@@ -116,8 +121,14 @@ export default function SourceConfiguration({ source }: { source: Source }) {
             <option value="configured">
               Collect notices using saved extraction settings
             </option>
+            <option value="combined">
+              Collect notices and discover candidate sources
+            </option>
           </select>
           <p className="muted small">
+            {official === "combined"
+              ? "Both use the same fetched page. Notices enter assessment; discovered sources stay proposed until configured and enabled. "
+              : ""}
             Extraction settings are stored with this source in the database.
             Their URL must match the collection URL.
           </p>

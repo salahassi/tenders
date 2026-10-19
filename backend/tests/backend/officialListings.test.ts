@@ -150,3 +150,46 @@ it("reads a previously unknown source entirely from its saved extraction setting
     "SOURCE_SCHEMA_CHANGED",
   );
 });
+
+it("collects notices and source candidates in one fetch without promoting notice links or attachments", async () => {
+  const combined = {
+    ...najah,
+    adapter_config: {
+      ...(najah.adapter_config as Record<string, unknown>),
+      discover_source_links: true,
+    },
+  };
+  const html =
+    table(row("2026-10-25") + row("2026-10-20", "/ar/tenders/superseded/")) +
+    `
+    <nav><a href="/about">About</a></nav><footer><a href="https://social.example.test/">Social</a></footer>
+    <a href="/ar/tenders/">Self</a><a href="#top">Top</a>
+    <a href="/ar/tenders/synthetic-1/?utm_source=duplicate">Duplicate notice</a>
+    <a href="/ar/tenders/superseded/">Superseded notice</a>
+    <a href="/terms.pdf">Attachment</a><a download href="/download?id=1">Download</a>
+    <a href="https://other.example.test/tenders?utm_source=listing">Other tenders</a>
+    <a href="https://other.example.test/tenders">Duplicate source</a>
+    <a href="javascript:alert(1)">Invalid</a><a href="https://127.0.0.1/">Private</a>`;
+  let fetches = 0;
+  const result = await collect(
+    combined,
+    combined.approved_hosts,
+    async () => ["93.184.216.34"],
+    async () => {
+      fetches++;
+      return new Response(html);
+    },
+  );
+  expect(fetches).toBe(1);
+  expect(result.items).toHaveLength(1);
+  expect(result.candidates).toEqual([
+    { url: "https://other.example.test/tenders", name: "Other tenders" },
+  ]);
+  expect(parseSource(najah, html).candidates).toEqual([]);
+  expect(() =>
+    parseSource(
+      combined,
+      "<h1>Changed page</h1><a href='https://other.example.test/'>Other</a>",
+    ),
+  ).toThrow("SOURCE_SCHEMA_CHANGED");
+});

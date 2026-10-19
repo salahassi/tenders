@@ -1,7 +1,12 @@
+import { load } from "cheerio";
 import { XMLParser } from "fast-xml-parser";
 import { z } from "zod";
 import { safeUrl } from "./contracts.ts";
-import { parseOfficialListing } from "./officialListings.ts";
+import {
+  parseOfficialListing,
+  sourceExtraction,
+  type ExtractionConfig,
+} from "./officialListings.ts";
 
 export class CollectionError extends Error {
   constructor(
@@ -166,12 +171,70 @@ function item(
     language: /[\u0600-\u06ff]/.test(title) ? "ar" : "en",
   };
 }
+function directoryCandidates(
+  source: SourceInput,
+  body: string,
+  warnings: string[],
+  extraction?: ExtractionConfig,
+) {
+  const $ = load(body);
+  $("script,style").remove();
+  const key = (url: string) => url.replace(/\/$/, "");
+  const excluded = new Set([
+    key(canonical(source.url, source.url) || source.url),
+  ]);
+  if (extraction) {
+    // Every listing row is excluded, including closed, filtered and superseded notices.
+    $("header,footer,nav").remove();
+    const rules = extraction.listing;
+    const nodes =
+      rules.layout === "links"
+        ? $(rules.rows)
+        : $(rules.container).find(rules.rows);
+    nodes
+      .find("a[href]")
+      .add(nodes.filter("a[href]"))
+      .each((_, node) => {
+        const url = canonical($(node).attr("href"), source.url);
+        if (url) excluded.add(key(url));
+      });
+    nodes.remove();
+  }
+  const candidates: { url: string; name: string }[] = [],
+    seen = new Set<string>();
+  for (const node of $("a[href]").toArray()) {
+    const anchor = $(node),
+      href = anchor.attr("href")!;
+    if (href.trim().startsWith("#") || anchor.attr("download") !== undefined)
+      continue;
+    const url = canonical(href, source.url);
+    if (!url || excluded.has(key(url)) || seen.has(key(url))) continue;
+    if (
+      /\.(?:pdf|docx?|xlsx?|pptx?|zip|rar|7z|png|jpe?g|gif|svg|webp)(?:$)/i.test(
+        new URL(url).pathname,
+      )
+    )
+      continue;
+    seen.add(key(url));
+    if (candidates.length === 100) {
+      warnings.push("ITEM_LIMIT_REACHED");
+      break;
+    }
+    candidates.push({
+      url,
+      name: inertText(anchor.text(), 200) || new URL(url).hostname,
+    });
+  }
+  return candidates;
+}
+
 export function parseSource(
   source: SourceInput,
   body: string,
 ): Pick<CollectionResult, "items" | "candidates" | "warnings"> {
   const warnings: string[] = [];
   let rows: Record<string, unknown>[] = [];
+  let discoveryProfile: ExtractionConfig | undefined;
   const official =
     source.adapter_config &&
     typeof source.adapter_config === "object" &&
@@ -187,6 +250,13 @@ export function parseSource(
       );
       rows = parsed.rows;
       warnings.push(...parsed.warnings);
+      if (
+        (source.adapter_config as Record<string, unknown>)
+          .discover_source_links === true
+      )
+        discoveryProfile = sourceExtraction(
+          (source.adapter_config as Record<string, unknown>).extraction,
+        );
     } catch (error) {
       throw new CollectionError(
         error instanceof Error &&
@@ -198,28 +268,11 @@ export function parseSource(
       );
     }
   } else if (source.kind === "link_directory") {
-    const candidates: { url: string; name: string }[] = [],
-      seen = new Set<string>();
-    const clean = body.replace(
-      /<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi,
-      "",
-    );
-    for (const match of clean.matchAll(
-      /<a\b[^>]*\bhref\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a\s*>/gi,
-    )) {
-      const url = canonical(match[1], source.url);
-      if (!url || seen.has(url)) continue;
-      seen.add(url);
-      if (candidates.length === 100) {
-        warnings.push("ITEM_LIMIT_REACHED");
-        break;
-      }
-      candidates.push({
-        url,
-        name: inertText(match[2], 200) || new URL(url).hostname,
-      });
-    }
-    return { items: [], candidates, warnings };
+    return {
+      items: [],
+      candidates: directoryCandidates(source, body, warnings),
+      warnings,
+    };
   } else if (source.kind === "json_feed") {
     const config = adapterSchema.parse(source.adapter_config);
     let value: unknown;
@@ -291,7 +344,10 @@ export function parseSource(
     .filter((r): r is CollectedItem => !!r);
   if (items.length < rows.length)
     warnings.push(`INVALID_ITEMS:${rows.length - items.length}`);
-  return { items, candidates: [], warnings };
+  const candidates = discoveryProfile
+    ? directoryCandidates(source, body, warnings, discoveryProfile)
+    : [];
+  return { items, candidates, warnings };
 }
 export async function collect(
   source: SourceInput,

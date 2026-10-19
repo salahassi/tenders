@@ -8,6 +8,7 @@ import {
   it,
   vi,
 } from "vitest";
+import { seedExtraction } from "./sourceExtractionFixture";
 import { workflowFixture } from "./workflowFixture";
 import { createApiHandler } from "../../supabase/functions/api/handler";
 import { createWorkerHandler } from "../../supabase/functions/worker/handler";
@@ -344,6 +345,86 @@ it("connects a manual source through HTTP and SQL, enables it, collects with the
   expect((await request("snapshots")).data.records).toHaveLength(1);
   expect((await request("source-runs")).data.records).toHaveLength(2);
   expect(feed).toHaveBeenCalledTimes(2);
+});
+
+it("persists combined collection and keeps discovered sources proposed through the real worker", async () => {
+  const created = await request("sources", "POST", {
+    name: "Synthetic combined listing",
+    kind: "manual",
+    url: "https://feed.example.test/listing",
+  });
+  const extraction = {
+    ...seedExtraction("ps-najah"),
+    url: "https://feed.example.test/listing",
+    buyer: "Synthetic buyer",
+  };
+  const input = {
+    id: created.data.id,
+    expected_revision: created.data.revision,
+    kind: "link_directory",
+    url: extraction.url,
+    approved_hosts: ["feed.example.test"],
+    policy_note: "Synthetic permission",
+    poll_interval_hours: 6,
+    adapter_config: {
+      official_listing: "configured",
+      extraction,
+      discover_source_links: true,
+    },
+  };
+  expect(
+    (
+      await command("source.configure", {
+        ...input,
+        adapter_config: {
+          ...input.adapter_config,
+          discover_source_links: "true",
+        },
+      })
+    ).status,
+  ).toBe(400);
+  expect((await command("source.configure", input)).status).toBe(200);
+  const saved = (await request("sources")).data.records.find(
+    (s: any) => s.id === created.data.id,
+  );
+  expect(saved.adapter_config.discover_source_links).toBe(true);
+  const approved = await request(`sources/${saved.id}/actions`, "POST", {
+    expected_revision: saved.revision,
+    action: "approve",
+    reason: "Synthetic permission",
+  });
+  expect(approved.status).toBe(200);
+  const html = `<table class="table-bordered"><thead><tr><th>رقم العطاء</th></tr></thead><tbody><tr><td>SYN-1</td><td><a href="/notice/1">Synthetic software procurement</a></td><td>2026-10-19</td><td>2026-11-10</td><td>11:00</td></tr></tbody></table><a href="https://other.example.test/tenders">Other tender source</a>`;
+  for (let i = 0; i < 2; i++) {
+    if (i)
+      await command("source.collect", {
+        id: saved.id,
+        expected_revision: approved.data.revision,
+      });
+    feed.mockResolvedValueOnce(new Response(html));
+    const result = await runWorker();
+    expect(result.data).toMatchObject({ processed: 1, candidates: i ? 0 : 1 });
+  }
+  expect((await request("opportunities")).data.records).toHaveLength(1);
+  const sources = (await request("sources")).data.records;
+  expect(sources).toHaveLength(2);
+  const candidate = sources.find((s: any) => s.id !== saved.id);
+  expect(candidate).toMatchObject({
+    kind: "manual",
+    approval: "proposed",
+    adapter_required: true,
+    next_due: null,
+    approved_hosts: [],
+  });
+  expect(
+    (
+      await request(`sources/${candidate.id}/actions`, "POST", {
+        expected_revision: candidate.revision,
+        action: "approve",
+        reason: "Synthetic attempted activation",
+      })
+    ).error.code,
+  ).toBe("ADAPTER_REQUIRED");
 });
 
 it("persists a Gemini-only policy through the UI command route and enforces real SQL roles and revisions", async () => {

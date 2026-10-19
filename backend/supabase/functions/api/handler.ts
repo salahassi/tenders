@@ -624,6 +624,20 @@ export function createApiHandler(
             >;
             if (
               config.kind === "link_directory" &&
+              config.adapter_config.discover_source_links !== undefined
+            ) {
+              const discover = z
+                .boolean()
+                .parse(config.adapter_config.discover_source_links);
+              if (discover && !config.adapter_config.official_listing)
+                throw new AppError(
+                  422,
+                  "SOURCE_EXTRACTION_INVALID",
+                  "Combined collection requires saved notice extraction settings.",
+                );
+            }
+            if (
+              config.kind === "link_directory" &&
               config.adapter_config.official_listing
             ) {
               try {

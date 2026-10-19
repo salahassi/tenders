@@ -52,6 +52,76 @@ it("retains the reviewed listing adapter and catalog metadata when editing colle
     }),
   );
 });
+it("saves and reloads combined collection, then switches back to either individual mode", async () => {
+  const runCommand = vi.fn(async (..._args: any[]) => ({}));
+  vi.mocked(useApp).mockReturnValue({
+    runCommand,
+    state: { settings: { role: "Owner" } },
+    notify: vi.fn(),
+    saving: false,
+  } as any);
+  const source = {
+    id: "synthetic",
+    revision: 2,
+    url: "https://example.test/tenders",
+    type: "link_directory",
+    approvedHosts: ["example.test"],
+    policy: "Synthetic permitted listing",
+    pollHours: 6,
+    adapterConfig: {
+      official_listing: "custom-source",
+      extraction: { version: 1, buyer: "Synthetic buyer" },
+      catalog: { key: "synthetic" },
+    },
+  } as any;
+  const user = userEvent.setup();
+  const first = render(<SourceConfiguration source={source} />);
+  await user.selectOptions(
+    screen.getByRole("combobox", { name: /^Website listing/ }),
+    "combined",
+  );
+  expect(
+    screen.getByText(/Both use the same fetched page/),
+  ).toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", { name: "Save settings and pause" }),
+  );
+  const saved = runCommand.mock.lastCall![1];
+  expect(saved.adapter_config).toEqual({
+    ...source.adapterConfig,
+    discover_source_links: true,
+  });
+  first.unmount();
+  render(
+    <SourceConfiguration
+      source={{ ...source, revision: 3, adapterConfig: saved.adapter_config }}
+    />,
+  );
+  expect(
+    screen.getByRole("combobox", { name: /^Website listing/ }),
+  ).toHaveValue("combined");
+  await user.selectOptions(
+    screen.getByRole("combobox", { name: /^Website listing/ }),
+    "configured",
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Save settings and pause" }),
+  );
+  expect(runCommand.mock.lastCall![1].adapter_config).toEqual(
+    source.adapterConfig,
+  );
+  await user.selectOptions(
+    screen.getByRole("combobox", { name: /^Website listing/ }),
+    "",
+  );
+  await user.click(
+    screen.getByRole("button", { name: "Save settings and pause" }),
+  );
+  expect(runCommand.mock.lastCall![1].adapter_config).toEqual({
+    extraction: source.adapterConfig.extraction,
+    catalog: source.adapterConfig.catalog,
+  });
+});
 it("suggests tender-country currencies without assigning a currency to an unknown country", () => {
   for (const [country, currency] of [
     ["SA", "SAR"],
