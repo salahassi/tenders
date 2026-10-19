@@ -206,8 +206,10 @@ function transport(
   }) as typeof fetch;
 }
 async function age() {
+  // Advance inferred provider backoff along with the reservation clock.
+  // Explicit Retry-After timestamps remain under each test's control.
   await f.db.exec(
-    "update public.provider_usage set created_at=now()-interval '2 minutes'; update public.jobs set next_attempt_at=now()-interval '1 second' where status in ('quota_wait','retry_wait')",
+    "update public.provider_usage set created_at=now()-interval '2 minutes'; update public.model_attempts set started_at=now()-interval '2 minutes'; update public.jobs set next_attempt_at=now()-interval '1 second' where status in ('quota_wait','retry_wait')",
   );
 }
 

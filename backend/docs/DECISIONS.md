@@ -147,3 +147,9 @@ Owner direction supersedes the combined source-mode UI: adding/editing a source 
 ## 2026-10-19 — RFP-first proposal preparation
 
 The Owner requests an actual upload-to-download trial and a simpler process that works without custom templates or sufficient Company Knowledge. An RFP can produce a complete review draft using the built-in document structure and the information available. Missing company evidence is an advisory personalization gap, not a universal prerequisite; actual mandatory buyer credentials, unsupported claims, prices and delivery commitments retain their specific review/approval requirements. No company facts or prices may be invented. Full draft download remains available before final approval. Custom templates and Company Knowledge improve the result but are optional inputs.
+
+## 2026-10-19 — Alert incidents and provider outage recovery
+
+Processing failure email is tied to an ongoing failure cause, not each affected job. More tasks or attempts do not reopen the same cause. After the cause disappears from active failures, a recurrence may notify again within the selected maximum frequency. New preferences default to at most daily, and the Owner's inherited hourly setting was changed to daily following the email-noise complaint. Existing sent/ambiguous deliveries are retained and seed suppression; the application rechecks recovery and frequency immediately before SMTP. Review digests remain independent.
+
+When a provider omits Retry-After, consecutive 429/server/uncertain-network failures share bounded exponential backoff across jobs for that exact provider, model and account. Other providers remain eligible; successful responses clear the outage backoff. This does not infer a provider's free-tier quota or fabricate a successful assessment.

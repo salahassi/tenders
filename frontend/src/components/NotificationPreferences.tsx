@@ -73,7 +73,7 @@ export default function NotificationPreferences() {
           expected_revision: draft.revision,
           email_enabled: draft.email_enabled,
           failure_alerts: draft.failure_alerts,
-          failure_interval_hours: draft.failure_interval_hours ?? 1,
+          failure_interval_hours: draft.failure_interval_hours ?? 24,
           review_reminders: draft.review_reminders,
           review_interval_hours: draft.review_interval_hours,
           language: draft.language,
@@ -157,9 +157,10 @@ export default function NotificationPreferences() {
               Alert me when collection or assessment keeps failing
             </label>
             <p className="admin-help">
-              Persistent failures are grouped into one email at the selected
-              frequency. Resolved issues are excluded, and the same task is not
-              emailed again. Automatic recovery continues after the alert.
+              One email summarizes new failure causes. More affected tasks do
+              not repeat an alert while the same issue continues. A recovered
+              issue can alert again if it returns, subject to the frequency
+              below. Automatic recovery continues; resolved issues are excluded.
             </p>
             <label>
               <input
@@ -177,7 +178,7 @@ export default function NotificationPreferences() {
             <Field label="Failure alert frequency">
               <select
                 aria-label="Failure alert frequency"
-                value={draft.failure_interval_hours ?? 1}
+                value={draft.failure_interval_hours ?? 24}
                 disabled={busy}
                 onChange={(e) =>
                   setDraft({

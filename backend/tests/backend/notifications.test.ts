@@ -484,7 +484,7 @@ async function failedTask() {
   await f.db.query("select app_private.recover_processing_job($1)", [id]);
   return id;
 }
-it("batches concurrent failures, rechecks resolved jobs and throttles only new failure emails", async () => {
+it("batches concurrent failures without re-emailing an outage for newly affected tasks", async () => {
   await pref();
   await f.command("model.routing", {
     enabled: true,
@@ -522,11 +522,10 @@ it("batches concurrent failures, rechecks resolved jobs and throttles only new f
   await f.rpc("automation_notification_tick");
   expect(await deliveries()).toHaveLength(1);
   await f.db.exec(
-    "update public.notification_deliveries set started_at=now()-interval '2 hours',created_at=now()-interval '2 hours'",
+    "update public.notification_deliveries set started_at=now()-interval '26 hours',sent_at=now()-interval '26 hours',created_at=now()-interval '26 hours'",
   );
   await f.rpc("automation_notification_tick");
-  expect(await deliveries()).toHaveLength(2);
-  expect((await deliveries())[1].payload.total).toBe(1);
+  expect(await deliveries()).toHaveLength(1);
 });
 it("cancels a fully recovered summary and does not re-email legacy sent notifications", async () => {
   await pref();
@@ -546,15 +545,21 @@ it("cancels a fully recovered summary and does not re-email legacy sent notifica
   expect(await deliveries()).toHaveLength(1);
   const fresh = await failedTask();
   await f.rpc("automation_notification_tick");
-  await f.db.query("update public.jobs set status='canceled' where id=$1", [
-    fresh,
-  ]);
+  expect(await deliveries()).toHaveLength(1);
+  await f.db.exec("update public.jobs set status='succeeded'");
+  await f.rpc("automation_notification_tick");
+  await failedTask();
+  await f.rpc("automation_notification_tick");
+  expect(await deliveries()).toHaveLength(2);
+  await f.db.exec(
+    "update public.jobs set status='succeeded'; update public.notification_deliveries set next_attempt_at=now() where status='queued'",
+  );
   expect(await f.rpc("claim_notification_delivery")).toBeNull();
   expect((await deliveries())[1]).toMatchObject({
     status: "canceled",
     error_code: "PROCESSING_RECOVERED",
   });
-  expect((await current(id)).status).toBe("retry_wait");
+  expect((await current(id)).status).toBe("succeeded");
 });
 
 it("upgrades existing long pool waits with an audit actor and preserves canceled work", async () => {
@@ -604,4 +609,118 @@ it("upgrades existing long pool waits with an audit actor and preserves canceled
       )
     ).rows[0].actor_id,
   ).toBe(f.owner);
+});
+
+it("rechecks the interval at send time and safely retries the same SMTP delivery", async () => {
+  await f.command("notification.preferences", {
+    ...settings,
+    failure_interval_hours: 1,
+  });
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "round_robin",
+  });
+  await failedTask();
+  await f.rpc("automation_notification_tick");
+  const sent = await f.rpc("claim_notification_delivery");
+  await f.rpc("finish_notification_delivery", [
+    sent.id,
+    sent.lease_token,
+    "sent",
+    null,
+    "synthetic",
+  ]);
+  await f.db.exec(
+    "update public.notification_deliveries set started_at=now()-interval '2 hours',sent_at=now()-interval '2 hours',created_at=now()-interval '2 hours'",
+  );
+  const different = await failedTask();
+  await f.db.query(
+    "update public.jobs set error_code='SOURCE_TEMPORARY_FAILURE' where id=$1",
+    [different],
+  );
+  await f.rpc("automation_notification_tick");
+  await f.command("notification.preferences", {
+    ...settings,
+    expected_revision: 1,
+    failure_interval_hours: 24,
+  });
+  expect(await f.rpc("claim_notification_delivery")).toBeNull();
+  const pending = (await deliveries()).find((d) => d.status === "queued");
+  expect(pending.attempts).toBe(0);
+  expect(pending.payload.total).toBe(2);
+  expect(new Date(pending.next_attempt_at).getTime()).toBeGreaterThan(
+    Date.now() + 21 * 3600000,
+  );
+  await f.db.exec(
+    "update public.notification_deliveries set sent_at=now()-interval '26 hours',started_at=now()-interval '26 hours' where status='sent'; update public.notification_deliveries set next_attempt_at=now() where status='queued'",
+  );
+  const first = await f.rpc("claim_notification_delivery");
+  expect(first.payload.total).toBe(2);
+  expect(await f.rpc("claim_notification_delivery")).toBeNull();
+  await f.rpc("finish_notification_delivery", [
+    first.id,
+    first.lease_token,
+    "retry",
+    "SMTP_REJECTED",
+    null,
+  ]);
+  await f.db.exec(
+    "update public.notification_deliveries set next_attempt_at=now() where status='retry_wait'",
+  );
+  await f.rpc("automation_notification_tick");
+  const retry = await f.rpc("claim_notification_delivery");
+  expect(retry.id).toBe(first.id);
+  expect(retry.attempts).toBe(2);
+});
+
+it("does not replace an ambiguous SMTP send with another email for the same outage", async () => {
+  await pref();
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "round_robin",
+  });
+  expect(
+    (await f.rpc("notification_settings")).preferences.failure_interval_hours,
+  ).toBe(24);
+  await failedTask();
+  await f.rpc("automation_notification_tick");
+  const d = await f.rpc("claim_notification_delivery");
+  await f.rpc("finish_notification_delivery", [
+    d.id,
+    d.lease_token,
+    "unknown",
+    "SMTP_DELIVERY_UNCONFIRMED",
+    null,
+  ]);
+  await f.db.exec(
+    "update public.notification_deliveries set started_at=now()-interval '26 hours'",
+  );
+  await failedTask();
+  await f.rpc("automation_notification_tick");
+  expect(await deliveries()).toHaveLength(1);
+  expect((await deliveries())[0].status).toBe("delivery_unknown");
+  expect(await f.rpc("claim_notification_delivery")).toBeNull();
+});
+
+it("does not backfill pre-opt-in failures or expose incident state", async () => {
+  await pref();
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "round_robin",
+  });
+  await failedTask();
+  await f.db.exec(
+    "update public.notifications set created_at=now()-interval '1 day'",
+  );
+  await f.rpc("automation_notification_tick");
+  expect(await deliveries()).toEqual([]);
+  const access = (
+    await f.db.query<any>(
+      "select has_table_privilege('authenticated','app_private.notification_failure_state','SELECT') browser, has_function_privilege('authenticated','app_private.reported_failure_keys(uuid,uuid)','EXECUTE') callable",
+    )
+  ).rows[0];
+  expect(access).toEqual({ browser: false, callable: false });
 });

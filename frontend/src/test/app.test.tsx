@@ -288,8 +288,14 @@ describe("UI journeys with a test-only workspace", () => {
         name: `View opportunity: ${opportunity.title}`,
       }),
     );
+    await screen.findByRole("heading", {
+      level: 1,
+      name: opportunity.title,
+    });
     await user.click(
-      await screen.findByRole("link", { name: new RegExp(proposal.title) }),
+      screen.getByRole("link", {
+        name: `${proposal.title}· v${proposal.version}`,
+      }),
     );
     expect(
       await screen.findByRole("region", { name: "Current proposal file" }),

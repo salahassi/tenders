@@ -2,6 +2,8 @@
 
 ## Current implementation
 
+Failure email preferences default to at most daily. New affected tasks do not repeat email for an already reported ongoing cause; recovered causes may notify again if they recur. A pending summary rechecks recovery and the current interval before sending. The activity log retains every attempt, and review reminders keep their separate schedule.
+
 RFP-first preparation does not require a saved template, rates or Company Knowledge. The neutral document structure is automatic. Missing company facts remain unknown; buyer-specific mandatory evidence and commercial commitments still need review. The opportunity distinguishes extracted-but-unconfirmed files from generation-ready files and links directly to pending extraction review. Generation sits beside its language and input controls, refreshes workspace data when a plan completes, and exposes the full draft download before the separate final-approval controls. Hosted upload-to-download acceptance is recorded separately in the checklist.
 
 Company service scope is configurable: Company Knowledge, keywords, or both. Owners can enter interest and exclusion phrases in Arabic or English. In combined mode, company services and interest terms define interests; exclusions take precedence. The model interprets purchased deliverables and cites the selected sources; no keyword classifier sets scores or routes. Keywords are preferences, not company credentials. Definite scope requires cited notice evidence plus verified company quotations or configured terms. Missing or conflicting evidence stays uncertain. Scope and keyword edits queue reassessment and invalidate dependent approvals while preserving human bid decisions; permission-only edits preserve evidence revisions.
