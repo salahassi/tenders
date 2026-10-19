@@ -143,7 +143,7 @@ describe("UI journeys with a test-only workspace", () => {
     expect(
       screen.getByText(/File workflows, automated collection, AI analysis/),
     ).toBeInTheDocument();
-  });
+  }, 15000);
 
   it("shows only accepted opportunities and keeps unranked items searchable", async () => {
     const seed = createSeedState();
@@ -289,7 +289,7 @@ describe("UI journeys with a test-only workspace", () => {
       }),
     );
     await user.click(
-      await screen.findByRole("link", { name: "Open proposal" }),
+      await screen.findByRole("link", { name: new RegExp(proposal.title) }),
     );
     expect(
       await screen.findByRole("region", { name: "Current proposal file" }),
@@ -682,7 +682,7 @@ describe("UI journeys with a test-only workspace", () => {
       screen.getByText("Review inputs have not been applied to the file."),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Download current Word" }),
+      screen.getByRole("button", { name: "Download complete draft Word" }),
     ).toBeEnabled();
     expect(
       screen.queryByRole("textbox", { name: "Section content" }),

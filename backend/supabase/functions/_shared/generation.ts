@@ -234,7 +234,7 @@ export function taskInput(ctx: PlanContext) {
       })),
       review_directives: feedback,
       instruction:
-        "Use the required IDs exactly. Every proposed approach must distinguish verified facts from assumptions. Ask an explicit question for each missing input. Historical proposals are style references only.",
+        "Use the required IDs exactly. Draft the substantive RFP response even when company evidence or a custom template is unavailable. Describe the proposed solution, methodology and deliverables from the requirements; do not replace the whole section with requests for company information. Distinguish proposed work from verified company facts. Never invent credentials, past projects, named staff, approved prices or commitments. Ask targeted questions for missing facts needed by this RFP. Historical proposals are style references only.",
     };
     if (task === "plan_proposal")
       context.instruction =
@@ -544,8 +544,11 @@ export async function nextStage(ctx: PlanContext): Promise<{
   const commercial = successful(ctx, "plan_commercial").map((s) => s.output);
   if (!frozen.knowledge.some((x: Row) => x.kind === "company" && x.verified))
     questions.push({
-      question: "[INPUT REQUIRED: Verify company capabilities and evidence.]",
-      blocking_level: "finalization",
+      question:
+        frozen.language === "ar"
+          ? "أُعدّت المسودة من وثائق العطاء دون أدلة شركة موثّقة. يمكن إضافة ملفات الشركة وملاحظاتها لتحسين التخصيص؛ تبقى المتطلبات الإلزامية الخاصة بالعطاء بحاجة إلى إثباتها."
+          : "This draft uses the RFP without verified company evidence. Company files and notes can improve personalization; any mandatory buyer-specific credentials still need evidence.",
+      blocking_level: "advisory",
     });
   if (ctx.requirements.length === 0)
     questions.push({

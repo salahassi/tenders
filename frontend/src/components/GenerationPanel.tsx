@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../lib/store";
 import { Button } from "./ui";
-import type { Opportunity } from "../types";
+import { isSelected } from "../lib/workflow";
+import type { DocumentRecord, Opportunity } from "../types";
 type Plan = {
   id: string;
   kind: string;
@@ -14,13 +15,21 @@ type Plan = {
 };
 export default function GenerationPanel({
   opportunity,
+  embedded = false,
+  onReviewFile,
+  showOpenLink = true,
 }: {
   opportunity: Opportunity;
+  embedded?: boolean;
+  onReviewFile?: (file: DocumentRecord) => void;
+  showOpenLink?: boolean;
 }) {
-  const { backend, runCommand, state, saving, notify } = useApp(),
+  const { backend, runCommand, state, saving, notify, refresh } = useApp(),
     [plans, setPlans] = useState<Plan[]>([]),
     [error, setError] = useState(""),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [requesting, setRequesting] = useState(false),
+    completed = useRef("");
   const editable = state.settings.role !== "Reviewer";
   async function load() {
     if (!backend) return;
@@ -31,6 +40,11 @@ export default function GenerationPanel({
       setPlans(
         records.sort((a, b) => b.created_at.localeCompare(a.created_at)),
       );
+      const latest = records.find((p) => p.kind === "proposal");
+      if (latest?.status === "completed" && completed.current !== latest.id) {
+        await refresh?.();
+        completed.current = latest.id;
+      }
       setError("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Cannot load progress.");
@@ -39,6 +53,8 @@ export default function GenerationPanel({
     }
   }
   useEffect(() => {
+    completed.current = "";
+    setLoading(true);
     void load();
     const timer = setInterval(() => {
       if (!document.hidden) void load();
@@ -46,15 +62,27 @@ export default function GenerationPanel({
     return () => clearInterval(timer);
   }, [backend, opportunity.id]);
   async function action(operation: string, input: Record<string, unknown>) {
+    setRequesting(true);
     try {
       await runCommand!(operation, input);
       await load();
-      notify("Request recorded. Follow its actual status below.");
+      notify(
+        "Preparation requested. You can leave this page; processing continues automatically.",
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "The request failed.");
+    } finally {
+      setRequesting(false);
     }
   }
   if (!backend || !runCommand) return null;
+  const selected = isSelected(opportunity),
+    linked = state.proposals.find((p) => p.opportunityId === opportunity.id),
+    pendingReview = opportunity.documents.find(
+      (d) => d.status === "ready" && !d.extractionConfirmed,
+    ),
+    busy = saving || requesting,
+    Panel = embedded ? "div" : "section";
   const active = plans.find(
       (p) =>
         p.kind === "proposal" &&
@@ -66,13 +94,8 @@ export default function GenerationPanel({
         ["queued", "running", "blocked"].includes(p.status),
     );
   return (
-    <section className="panel simple-section">
-      <h2>Processing progress</h2>
-      <p>
-        Each completed step is saved. Your active proposal stays available while
-        a new version is prepared. A blocked task needs the reason below to be
-        resolved.
-      </p>
+    <Panel className={embedded ? "stack" : "panel simple-section"}>
+      <h3>{selected ? "Proposal preparation" : "Assessment progress"}</h3>
       {error && (
         <p role="alert" className="admin-error">
           {error}
@@ -83,25 +106,25 @@ export default function GenerationPanel({
       ) : (
         <>
           <div className="simple-inline-actions">
-            <Button
-              disabled={!editable || saving || !!assessment}
-              onClick={() =>
-                action("opportunity.assess", {
-                  id: opportunity.id,
-                  expected_revision: opportunity.revision,
-                })
-              }
-            >
-              Assess current evidence
-            </Button>
-            {!state.proposals.some(
-              (p) => p.opportunityId === opportunity.id,
-            ) && (
+            {!selected && (
+              <Button
+                disabled={!editable || busy || !!assessment}
+                onClick={() =>
+                  action("opportunity.assess", {
+                    id: opportunity.id,
+                    expected_revision: opportunity.revision,
+                  })
+                }
+              >
+                Assess current evidence
+              </Button>
+            )}
+            {selected && !linked?.versionId && (
               <Button
                 variant="primary"
                 disabled={
                   !editable ||
-                  saving ||
+                  busy ||
                   !!active ||
                   opportunity.status !== "shortlisted" ||
                   !opportunity.documents.length ||
@@ -116,78 +139,109 @@ export default function GenerationPanel({
                   })
                 }
               >
-                Generate complete proposal
+                {requesting
+                  ? "Starting preparation…"
+                  : "Generate complete proposal"}
               </Button>
             )}
+            {selected && pendingReview && onReviewFile && (
+              <Button
+                disabled={!editable || busy}
+                onClick={() => onReviewFile(pendingReview)}
+              >
+                Review {pendingReview.name}
+              </Button>
+            )}
+            {showOpenLink && linked?.versionId && (
+              <Link className="btn btn-primary" to={`/proposals/${linked.id}`}>
+                Open proposal and download Word
+              </Link>
+            )}
           </div>
-          <p>
-            Confirm the extracted text of every RFP file. Review model and
-            content permissions in{" "}
-            <Link to="/settings">Workspace settings</Link>.
-          </p>
-          {plans.slice(0, 10).map((p) => (
-            <div className="admin-muted-surface" key={p.id}>
-              <strong>
-                {p.kind === "proposal" ? "Proposal" : "Fit assessment"} ·{" "}
-                {p.stage}
-              </strong>
-              <p>
-                {p.status}
-                {p.error_code
-                  ? ` · ${p.error_code.replaceAll("_", " ").toLowerCase()}`
-                  : ""}
-              </p>
-              {["blocked", "failed", "canceled"].includes(p.status) &&
-                ![
+          {selected && !linked?.versionId && (
+            <p className="simple-note">
+              {!opportunity.documents.length
+                ? "Upload the RFP to begin."
+                : opportunity.documents.some((d) => d.status !== "ready")
+                  ? "Replace or remove unreadable files before generation."
+                  : pendingReview
+                    ? "Review and confirm the extracted text of each RFP file to enable generation."
+                    : "Ready to generate. No custom template or company knowledge is required. Missing facts become review questions."}
+            </p>
+          )}
+          {plans
+            .filter((p) => p.kind === (selected ? "proposal" : "assessment"))
+            .slice(0, 3)
+            .map((p) => (
+              <div className="admin-muted-surface" key={p.id}>
+                <strong>
+                  {p.kind === "proposal" ? "Proposal" : "Fit assessment"} ·{" "}
+                  {p.stage}
+                </strong>
+                <p>
+                  {p.status}
+                  {p.error_code
+                    ? ` · ${p.error_code.replaceAll("_", " ").toLowerCase()}`
+                    : ""}
+                </p>
+                {["blocked", "failed", "canceled"].includes(p.status) &&
+                  ![
+                    "STALE_INPUT",
+                    "REASSESSMENT_SUPERSEDED",
+                    "NOTICE_DETAILS_REFRESHED",
+                    "NOTICE_DETAILS_REQUIRED",
+                  ].includes(p.error_code || "") && (
+                    <Button
+                      disabled={!editable || busy}
+                      onClick={() =>
+                        action("generation.retry", {
+                          id: p.id,
+                          expected_revision: p.revision,
+                          reason:
+                            "User reviewed the blocker and requested resume.",
+                        })
+                      }
+                    >
+                      Resume saved work
+                    </Button>
+                  )}
+                {[
                   "STALE_INPUT",
                   "REASSESSMENT_SUPERSEDED",
                   "NOTICE_DETAILS_REFRESHED",
                   "NOTICE_DETAILS_REQUIRED",
                 ].includes(p.error_code || "") && (
+                  <p>
+                    Evidence changed. Use a current assessment or request a new
+                    proposal version.
+                  </p>
+                )}
+                {["queued", "running", "blocked"].includes(p.status) && (
                   <Button
-                    disabled={!editable || saving}
+                    disabled={!editable || busy}
                     onClick={() =>
-                      action("generation.retry", {
+                      action("generation.cancel", {
                         id: p.id,
                         expected_revision: p.revision,
-                        reason:
-                          "User reviewed the blocker and requested resume.",
+                        reason: "User canceled this generation plan.",
                       })
                     }
                   >
-                    Resume saved work
+                    Cancel plan
                   </Button>
                 )}
-              {[
-                "STALE_INPUT",
-                "REASSESSMENT_SUPERSEDED",
-                "NOTICE_DETAILS_REFRESHED",
-                "NOTICE_DETAILS_REQUIRED",
-              ].includes(p.error_code || "") && (
-                <p>
-                  Evidence changed. Use a current assessment or request a new
-                  proposal version.
-                </p>
-              )}
-              {["queued", "running", "blocked"].includes(p.status) && (
-                <Button
-                  disabled={!editable || saving}
-                  onClick={() =>
-                    action("generation.cancel", {
-                      id: p.id,
-                      expected_revision: p.revision,
-                      reason: "User canceled this generation plan.",
-                    })
-                  }
-                >
-                  Cancel plan
-                </Button>
-              )}
-            </div>
-          ))}
-          {!plans.length && <p>No processing plan has been requested.</p>}
+              </div>
+            ))}
+          <p className="simple-note">
+            Processing continues automatically. Temporary model failures retry;
+            completed steps are saved.{" "}
+            <Link to={`/jobs?opportunity=${opportunity.id}`}>
+              View attempts and details
+            </Link>
+            .
+          </p>
         </>
       )}
-    </section>
+    </Panel>
   );
 }

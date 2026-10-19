@@ -14,7 +14,11 @@ export const opportunityStatusLabel = (status: Opportunity["status"]) =>
   })[status];
 
 export type OpportunityStage =
-  "awaiting_rfp" | "rfp_needs_text" | "ready_to_generate" | "proposal_created";
+  | "awaiting_rfp"
+  | "rfp_needs_text"
+  | "rfp_needs_review"
+  | "ready_to_generate"
+  | "proposal_created";
 
 export function getOpportunityStage(
   opportunity: Opportunity,
@@ -25,6 +29,8 @@ export function getOpportunityStage(
   if (!opportunity.documents.length) return "awaiting_rfp";
   if (opportunity.documents.some((document) => document.status !== "ready"))
     return "rfp_needs_text";
+  if (opportunity.documents.some((document) => !document.extractionConfirmed))
+    return "rfp_needs_review";
   return "ready_to_generate";
 }
 
@@ -32,6 +38,7 @@ export const opportunityStageLabel = (stage: OpportunityStage) =>
   ({
     awaiting_rfp: "Awaiting RFP",
     rfp_needs_text: "Needs readable RFP",
+    rfp_needs_review: "Review extracted text",
     ready_to_generate: "Ready to generate",
     proposal_created: "Has proposal",
   })[stage];
@@ -42,8 +49,10 @@ export const opportunityStageHelp: Record<OpportunityStage | "all", string> = {
     "No RFP has been uploaded for this opportunity. Obtain the buyer’s RFP from the original notice or buyer, then upload it inside the opportunity.",
   rfp_needs_text:
     "An uploaded RFP file could not be fully read. Open the opportunity and replace or remove unreadable files so the agent can use the RFP text.",
+  rfp_needs_review:
+    "The RFP text is extracted. Review it against the original and confirm completeness to enable generation.",
   ready_to_generate:
-    "The uploaded RFP files are readable and no proposal exists yet. Open the opportunity and choose Generate proposal. AI generation is awaiting the backend connection.",
+    "Your RFP is ready. Generate the complete proposal using the available information; custom templates and company knowledge are optional.",
   proposal_created:
     "A proposal is already linked to this opportunity. Open it from the opportunity or Proposals to edit its sections and generate a Word file. External submission can be recorded separately inside the opportunity.",
 };

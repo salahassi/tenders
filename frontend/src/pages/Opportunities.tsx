@@ -42,6 +42,7 @@ import OpportunityTable from "../components/OpportunityTable";
 const stages: OpportunityStage[] = [
   "awaiting_rfp",
   "rfp_needs_text",
+  "rfp_needs_review",
   "ready_to_generate",
   "proposal_created",
 ];

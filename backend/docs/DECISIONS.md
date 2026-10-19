@@ -142,3 +142,8 @@ The Owner asked to use both website-listing modes together. A third mode stores 
 ## 2026-10-19 — Generic collection and independent source discovery
 
 Owner direction supersedes the combined source-mode UI: adding/editing a source controls collection of that source and its schedule. Finding additional source URLs is a separate Owner action in Sources and produces suggestions for review. Legacy saved combined configurations remain readable by the backend, but new configuration saves collection-only settings. Public URLs with no saved feed/extraction can be enabled using generic model-assisted reading. Website markup determines what can actually be read; JavaScript, authentication and OCR requirements remain explicit blockers, not fabricated success. Existing model routing and data-processing policy apply to the frozen public page.
+
+
+## 2026-10-19 — RFP-first proposal preparation
+
+The Owner requests an actual upload-to-download trial and a simpler process that works without custom templates or sufficient Company Knowledge. An RFP can produce a complete review draft using the built-in document structure and the information available. Missing company evidence is an advisory personalization gap, not a universal prerequisite; actual mandatory buyer credentials, unsupported claims, prices and delivery commitments retain their specific review/approval requirements. No company facts or prices may be invented. Full draft download remains available before final approval. Custom templates and Company Knowledge improve the result but are optional inputs.

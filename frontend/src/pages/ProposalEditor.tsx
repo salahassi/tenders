@@ -1,6 +1,7 @@
 import ExportPanel from "../components/ExportPanel";
 import { createConnectedExport } from "../lib/connectedExport";
 import ReviewHistory from "../components/ReviewHistory";
+import GenerationPanel from "../components/GenerationPanel";
 import ApprovalPanel from "../components/ApprovalPanel";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -509,9 +510,12 @@ function ProposalReviewPage({
           onClick={() => void download()}
         >
           <Download size={16} />
-          {exporting ? "Preparing Word…" : "Download current Word"}
+          {exporting ? "Preparing Word…" : "Download complete draft Word"}
         </Button>
       </section>
+      {backend && (
+        <GenerationPanel opportunity={opportunity} showOpenLink={false} />
+      )}
       <p className="review-demo-note">
         {mode === "CONNECTED_FREE"
           ? "Generation runs through your configured backend. Existing proposal"
@@ -527,7 +531,7 @@ function ProposalReviewPage({
             <p>
               {dirty
                 ? "You have unsaved review inputs."
-                : "Your review inputs are saved in this browser."}{" "}
+                : "Your review inputs are saved in your workspace."}{" "}
               The current document is still version {proposal.version}.
               {proposal.review?.regeneration &&
                 " The regeneration request is saved locally, awaiting the AI connection."}
@@ -918,8 +922,16 @@ function ProposalReviewPage({
         </p>
       </section>
       <ReviewHistory proposalId={proposal.id} />
-      <ApprovalPanel proposal={proposal} />
-      <ExportPanel proposal={proposal} />
+      <details className="panel simple-section">
+        <summary>Final approval and submission files</summary>
+        <p>
+          You can download the complete draft above at any time. Use these
+          controls when the content, prices and delivery commitments are ready
+          for final approval.
+        </p>
+        <ApprovalPanel proposal={proposal} />
+        <ExportPanel proposal={proposal} />
+      </details>
       <Modal
         open={regenerateOpen}
         onClose={() => setRegenerateOpen(false)}

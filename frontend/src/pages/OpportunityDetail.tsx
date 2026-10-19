@@ -205,7 +205,7 @@ export default function OpportunityDetail() {
                 <h2>RFP files</h2>
                 <p className="muted">
                   Attach the tender document and any addenda. Files and
-                  extracted text stay in this browser.
+                  extracted text are saved securely to your workspace.
                 </p>
                 <div className="simple-upload">
                   <Upload size={25} />
@@ -227,7 +227,9 @@ export default function OpportunityDetail() {
                   </Field>
                 </div>
                 {busy && (
-                  <p role="status">Reading and saving files on this device…</p>
+                  <p role="status">
+                    Reading the files and saving them to your workspace…
+                  </p>
                 )}
                 {error && (
                   <p
@@ -332,7 +334,6 @@ export default function OpportunityDetail() {
                 )}
               </section>
               <ProcurementHistory opportunityId={o.id} />
-              <GenerationPanel opportunity={o} />
               <section className="panel simple-section">
                 <span className="simple-step">STEP 2</span>
                 <h2>
@@ -363,7 +364,8 @@ export default function OpportunityDetail() {
                   </select>
                 </Field>
                 <p className="simple-note">
-                  {knowledge.length} readable company file
+                  Company knowledge is optional. {knowledge.length} readable
+                  company file
                   {knowledge.length === 1 ? "" : "s"} enabled.{" "}
                   <Link className="text-link" to="/knowledge">
                     Manage company knowledge
@@ -372,22 +374,20 @@ export default function OpportunityDetail() {
                 <div className="notice">
                   <Sparkles size={18} />
                   <p className="small">
-                    The agent will use the RFP and enabled company files to
-                    prepare the complete proposal, flag review questions, and
-                    justify pricing against the requested scope. Processing
-                    requires a verified free model and permission for the
-                    content it uses.
+                    Start with the RFP. A custom template and company files are
+                    optional. The proposal uses the information available and
+                    flags missing company facts or prices for review.
                   </p>
                 </div>
+                {backend && (
+                  <GenerationPanel
+                    opportunity={o}
+                    embedded
+                    onReviewFile={setView}
+                  />
+                )}
                 <div className="simple-inline-actions">
-                  {proposals.length ? (
-                    <Link
-                      className="btn btn-primary"
-                      to={`/proposals/${proposals[0].id}`}
-                    >
-                      Open proposal <ArrowRight size={16} />
-                    </Link>
-                  ) : !backend ? (
+                  {!proposals.length && !backend ? (
                     <Button
                       variant="primary"
                       disabled={!editable || !ready || busy}

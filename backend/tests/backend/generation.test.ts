@@ -6,6 +6,8 @@ import type {
 // @vitest-environment node
 import { beforeAll, afterAll, beforeEach, afterEach, it, expect } from "vitest";
 import { workflowFixture } from "./workflowFixture";
+import { buildExportModel } from "../../supabase/functions/_shared/export";
+import { mkdir, writeFile } from "node:fs/promises";
 import {
   processGeneration,
   nextStage,
@@ -199,6 +201,76 @@ it("requires extraction review before recording generation", async () => {
   expect(
     (await f.db.query("select * from public.generation_plans")).rows,
   ).toHaveLength(0);
+});
+it("completes and exports a full RFP draft without templates, company knowledge or rates", async () => {
+  const s = await setup();
+  await f.db.exec("delete from public.templates");
+  expect(
+    (await f.db.query("select id from public.knowledge_items")).rows,
+  ).toHaveLength(0);
+  expect(
+    (await f.db.query("select id from public.rate_catalog")).rows,
+  ).toHaveLength(0);
+  const plan = await f.command("proposal.generate", {
+    id: s.opp.id,
+    expected_revision: s.opp.revision,
+  });
+  expect(plan.frozen_context.template.id).toBe("professional-v1");
+  expect(plan.frozen_context.knowledge).toEqual([]);
+  await runPlan();
+  const version = (
+    await f.db.query<any>("select * from public.proposal_versions")
+  ).rows[0];
+  const sections = (
+    await f.db.query<any>(
+      "select * from public.proposal_sections order by ordinal",
+    )
+  ).rows;
+  expect(sections.length).toBeGreaterThanOrEqual(17);
+  expect(sections.every((s: any) => s.body.trim().length > 0)).toBe(true);
+  const questions = (await f.db.query<any>("select * from public.questions"))
+    .rows;
+  expect(
+    questions.find((q: any) =>
+      q.question.includes("without verified company evidence"),
+    )?.blocking_level,
+  ).toBe("advisory");
+  expect(
+    questions.some(
+      (q: any) =>
+        q.blocking_level === "finalization" && q.question.includes("rates"),
+    ),
+  ).toBe(true);
+  const request = await f.command("export.prepare", {
+    proposal_version_id: version.id,
+    expected_revision: version.revision,
+    mode: "draft",
+    volume: "combined",
+  });
+  const model = buildExportModel(request);
+  for (const section of sections)
+    expect(
+      model.blocks.some(
+        (b: any) => b.type === "heading" && b.text === section.title,
+      ),
+    ).toBe(true);
+  expect(model.blocks.some((b: any) => b.text?.includes("DRAFT"))).toBe(true);
+  expect(JSON.stringify(model)).not.toContain("Invented certification");
+  if (process.env.TENDERDESK_EXPORT_QA_DIR) {
+    await mkdir(process.env.TENDERDESK_EXPORT_QA_DIR, { recursive: true });
+    await writeFile(
+      `${process.env.TENDERDESK_EXPORT_QA_DIR}/rfp-only-model.json`,
+      JSON.stringify(model),
+    );
+  }
+  await expect(
+    f.command("export.prepare", {
+      proposal_version_id: version.id,
+      expected_revision: version.revision,
+      mode: "final",
+      volume: "combined",
+    }),
+  ).rejects.toThrow("APPROVAL_REQUIRED");
 });
 it("allows initial quota failover but pins a proposal after measured model usage", async () => {
   await start();
