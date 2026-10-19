@@ -305,6 +305,7 @@ export async function readPublicPdf(bytes: Uint8Array) {
 
 export function parseAutomaticNoticeDetails(url: string, html: string) {
   const $ = load(html);
+  removePrivacyNavigation($);
   const requiresLogin = $("input[type=password]").length > 0;
   $(
     "script,style,header,footer,nav,input,textarea,button,noscript,template",
@@ -335,6 +336,22 @@ export function parseAutomaticNoticeDetails(url: string, html: string) {
   if (text.length > MAX_TEXT)
     throw new CollectionError("NOTICE_DETAIL_TOO_LARGE");
   return { title, text, attachments, deadline: submissionDeadline(null, text) };
+}
+
+// A link to the site's privacy policy is navigation, not a confidentiality marking
+// on a tender. Keep privacy-related tender text/documents and all other markers intact.
+export function removePrivacyNavigation($: ReturnType<typeof load>) {
+  $("a[href]").each((_, node) => {
+    const label = $(node).text().replace(/\s+/g, " ").trim();
+    const href = $(node).attr("href") || "";
+    if (
+      /privacy/i.test(href) &&
+      /^(privacy (policy|statement)|سياسة الخصوصية(?: وسرية المعلومات)?)$/i.test(
+        label,
+      )
+    )
+      $(node).remove();
+  });
 }
 
 export async function enrichPublicNotice(

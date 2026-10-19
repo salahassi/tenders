@@ -17,7 +17,10 @@ import {
 } from "../../supabase/functions/_shared/backend";
 import { databaseError } from "../../supabase/functions/_shared/http";
 import { readableSourcePage } from "../../supabase/functions/_shared/automaticSources";
-import { validateModelResult } from "../../supabase/functions/_shared/model";
+import {
+  validateModelResult,
+  blockedContent,
+} from "../../supabase/functions/_shared/model";
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
   f = await workflowFixture();
@@ -382,7 +385,10 @@ it("requires an Owner for discovery and keeps page-writing RPCs worker-only", as
 
 it("gives waiting collection a turn ahead of old model retries and yields again after an attempt", async () => {
   const s = await source();
-  await f.command("source.collect", {id:s.id,expected_revision:s.revision});
+  await f.command("source.collect", {
+    id: s.id,
+    expected_revision: s.revision,
+  });
   await f.db.exec(
     "update public.jobs set updated_at=now()-interval '3 minutes' where type='source_collect'",
   );
@@ -407,4 +413,23 @@ it("gives waiting collection a turn ahead of old model retries and yields again 
     id: oldJob.id,
     type: "model_probe",
   });
+});
+
+it("omits privacy-policy navigation and contact details without suppressing confidentiality marks on tenders", () => {
+  const page = readableSourcePage(
+    `<p>${detail}</p><a href="/Portal/Pages/Privacy.aspx">سياسة الخصوصية وسرية المعلومات</a><a href="/privacy-impact.pdf">Privacy impact assessment tender</a><p>Contact buyer@example.test</p>`,
+    "https://source.example.test/",
+  );
+  expect(blockedContent(JSON.stringify(page))).toBe(false);
+  expect(page.text).not.toContain("buyer@example.test");
+  expect(page.links).toEqual([
+    expect.objectContaining({
+      url: "https://source.example.test/privacy-impact.pdf",
+    }),
+  ]);
+  const restricted = readableSourcePage(
+    `<p>${detail} Confidential — سرية</p>`,
+    "https://source.example.test/",
+  );
+  expect(blockedContent(restricted.text)).toBe(true);
 });

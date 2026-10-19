@@ -8,11 +8,16 @@ import {
   type Evidence,
 } from "./model.ts";
 import { modelLedger } from "./modelLedger.ts";
-import { fetchPublicNotice, readPublicPdf } from "./publicNoticeDetails.ts";
+import {
+  fetchPublicNotice,
+  readPublicPdf,
+  removePrivacyNavigation,
+} from "./publicNoticeDetails.ts";
 
 type Row = Record<string, any>;
 export function readableSourcePage(html: string, url: string) {
   const $ = load(html);
+  removePrivacyNavigation($);
   const hasScript = $("script").length > 0;
   const hasImage = $("img,canvas").length > 0;
   $("script,style,noscript,template,input,textarea,button").remove();
