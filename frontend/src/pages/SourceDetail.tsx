@@ -53,18 +53,6 @@ export default function SourceDetail() {
   const setStatus = async (status: typeof source.status) => {
     if (!owner || isManual || (status === "approved" && !collectable)) return;
     if (
-      status === "approved" &&
-      source.type !== "manual" &&
-      state.sources.filter(
-        (x) => x.status === "approved" && x.type !== "manual",
-      ).length >= 5
-    ) {
-      notify(
-        "This trial configuration supports five enabled sources. Pause one before enabling another.",
-      );
-      return;
-    }
-    if (
       !(await update(
         (s) => ({
           ...s,

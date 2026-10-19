@@ -45,6 +45,62 @@ const result = (description?: string) => ({
   candidates: [],
   warnings: [],
 });
+it("enables and resumes more than five sources while keeping activation checks and scheduling", async () => {
+  const enabled = [];
+  for (let i = 0; i < 7; i++) {
+    enabled.push(
+      await approve(
+        await f.command("source.create", {
+          name: `Synthetic feed ${i}`,
+          kind: "rss",
+          url: `https://feed.example.test/${i}`,
+          approved_hosts: ["feed.example.test"],
+          policy_note: "Synthetic collection permission",
+        }),
+      ),
+    );
+  }
+  const paused = await f.command("source.action", {
+    id: enabled[0].id,
+    expected_revision: enabled[0].revision,
+    action: "pause",
+    reason: "Synthetic pause",
+  });
+  const resumed = await approve(paused);
+  expect(resumed.approval).toBe("approved");
+  expect(
+    (
+      await f.db.query(
+        "select id from public.sources where approval='approved' and kind<>'manual'",
+      )
+    ).rows,
+  ).toHaveLength(7);
+  await expect(approve(enabled[0])).rejects.toThrow("REVISION_CONFLICT");
+  const manual = await f.command("source.create", {
+    name: "Synthetic unconnected portal",
+    kind: "manual",
+    url: "https://feed.example.test/portal",
+  });
+  await expect(approve(manual)).rejects.toThrow("ADAPTER_REQUIRED");
+  const unreviewed = await f.command("source.create", {
+    name: "Synthetic unreviewed feed",
+    kind: "rss",
+    url: "https://feed.example.test/unreviewed",
+    approved_hosts: [],
+    policy_note: "",
+  });
+  await expect(approve(unreviewed)).rejects.toThrow("SOURCE_POLICY_REQUIRED");
+  const job = await f.rpc("claim_backend_job");
+  expect(job.type).toBe("source_collect");
+  expect(
+    (
+      await f.db.query(
+        "select id from public.jobs where type='source_collect' and status in ('queued','running')",
+      )
+    ).rows,
+  ).toHaveLength(7);
+});
+
 it("does not schedule proposed sources; due approved jobs are exclusive and paused sources cannot execute", async () => {
   const s = await source();
   expect(await f.rpc("claim_backend_job")).toBeNull();

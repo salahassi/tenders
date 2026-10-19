@@ -128,3 +128,8 @@ The Owner requires seeded sources read from the database without hardcoded runti
 ## October 19, 2026 — actionable source activation prerequisites
 
 Unconnected source records must explain why activation is unavailable and expose the path to connection settings. No missing action may imply that a saved directory link is already a working collector. Guidance uses stored source metadata to distinguish public listings, procurement platforms, central redirects and supplier-registration portals. Sources without an extraction profile must choose a collection method explicitly. Existing Owner authorization, connection prerequisites, revision checks and the five-enabled-source cap remain unchanged; the current blockage is missing integrations, not the cap.
+
+
+## October 19, 2026 — remove the enabled-source trial ceiling
+
+The Owner explicitly requested removal of the five-enabled-source limit. Source activation and resume no longer depend on the count of other enabled sources, in either UI entry point or the database command chain. Both collection_command and the legacy evidence_command lose only that guard. Owner permissions, source connection/access requirements, optimistic revisions, audit/idempotency and scheduling remain. Removing the ceiling does not activate sources or provide missing collection integrations.

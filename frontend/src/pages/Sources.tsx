@@ -84,18 +84,6 @@ export default function Sources() {
     )
       return;
     if (
-      status === "approved" &&
-      state.sources.find((x) => x.id === id)?.type !== "manual" &&
-      state.sources.filter(
-        (x) => x.status === "approved" && x.type !== "manual",
-      ).length >= 5
-    ) {
-      notify(
-        "This trial configuration supports five enabled sources. Pause one before enabling another.",
-      );
-      return;
-    }
-    if (
       !(await update(
         (s) => ({
           ...s,

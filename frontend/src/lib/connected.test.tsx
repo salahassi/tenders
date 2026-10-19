@@ -543,6 +543,75 @@ describe("connected screens", () => {
     });
   });
 
+  it.each(["directory", "details"])(
+    "enables a sixth source from %s without a client-side source ceiling",
+    async (screenName) => {
+      const rows = Array.from({ length: 5 }, (_, i) => ({
+        id: `00000000-0000-4000-8000-00000000010${i}`,
+        revision: 2,
+        name: `Synthetic active feed ${i}`,
+        kind: "rss",
+        url: `https://example.test/feed-${i}`,
+        approval: "approved",
+        adapter_required: false,
+        approved_hosts: ["example.test"],
+        policy_note: "Synthetic permission",
+        tags: [],
+      }));
+      rows.push({
+        id: source,
+        revision: 3,
+        name: "Synthetic sixth source",
+        kind: "rss",
+        url: "https://example.test/sixth",
+        approval: "paused",
+        adapter_required: false,
+        approved_hosts: ["example.test"],
+        policy_note: "Synthetic permission",
+        tags: [],
+      });
+      const f = fixture(rows);
+      render(
+        <MemoryRouter
+          initialEntries={[
+            screenName === "directory" ? "/sources" : `/sources/${source}`,
+          ]}
+        >
+          <ConnectedProvider client={f.client}>
+            <Routes>
+              <Route path="/sources" element={<Sources />} />
+              <Route path="/sources/:id" element={<SourceDetail />} />
+            </Routes>
+          </ConnectedProvider>
+        </MemoryRouter>,
+      );
+      await userEvent.click(
+        await screen.findByRole("button", {
+          name: screenName === "directory" ? "Resume" : "Enable source",
+        }),
+      );
+      await waitFor(() => expect(f.commands).toHaveLength(1));
+      expect(f.commands[0]).toMatchObject({
+        body: {
+          commands: [
+            {
+              operation: "source.action",
+              input: { id: source, expected_revision: 3, action: "approve" },
+            },
+          ],
+        },
+      });
+      expect(
+        await screen.findByRole("button", {
+          name:
+            screenName === "directory"
+              ? "Pause Synthetic sixth source"
+              : "Pause source",
+        }),
+      ).toBeInTheDocument();
+    },
+  );
+
   it("keeps the source dialog and entered details open after a rejected save", async () => {
     const f = fixture();
     f.beforeWrite(async () => {
