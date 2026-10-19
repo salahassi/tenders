@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { useApp } from "../lib/store";
 import SourceConfiguration from "./SourceConfiguration";
-import SourceDiscovery from "./SourceDiscovery";
+import SourceDiscovery, { SourceSuggestions } from "./SourceDiscovery";
 import { MemoryRouter } from "react-router-dom";
 import TenderCostInput from "./TenderCostInput";
 import { tenderCurrency } from "../lib/tenderCurrency";
@@ -32,6 +32,7 @@ it("queues discovery separately and keeps suggestions available for Owner review
   const view = render(
     <MemoryRouter>
       <SourceDiscovery />
+      <SourceSuggestions />
     </MemoryRouter>,
   );
   expect(
@@ -55,6 +56,7 @@ it("queues discovery separately and keeps suggestions available for Owner review
   view.rerender(
     <MemoryRouter>
       <SourceDiscovery />
+      <SourceSuggestions />
     </MemoryRouter>,
   );
   expect(

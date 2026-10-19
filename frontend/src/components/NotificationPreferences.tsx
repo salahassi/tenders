@@ -6,6 +6,7 @@ type Preferences = {
   revision: number;
   email_enabled: boolean;
   failure_alerts: boolean;
+  failure_interval_hours: number;
   review_reminders: boolean;
   review_interval_hours: number;
   language: "ar" | "en";
@@ -72,6 +73,7 @@ export default function NotificationPreferences() {
           expected_revision: draft.revision,
           email_enabled: draft.email_enabled,
           failure_alerts: draft.failure_alerts,
+          failure_interval_hours: draft.failure_interval_hours ?? 1,
           review_reminders: draft.review_reminders,
           review_interval_hours: draft.review_interval_hours,
           language: draft.language,
@@ -124,9 +126,13 @@ export default function NotificationPreferences() {
               ? "Credentials are configured. Delivery history confirms whether the mail server accepted a message."
               : "Email delivery will start after SMTP is configured on the server. Collection, assessment and in-app notifications continue."}
           </p>
-          {!data.transport.configured && Boolean(data.transport.issues?.length) && (
-            <p className="admin-help">Missing or invalid server settings: {data.transport.issues?.join(", ")}</p>
-          )}
+          {!data.transport.configured &&
+            Boolean(data.transport.issues?.length) && (
+              <p className="admin-help">
+                Missing or invalid server settings:{" "}
+                {data.transport.issues?.join(", ")}
+              </p>
+            )}
           <div className="stack">
             <label>
               <input
@@ -151,9 +157,9 @@ export default function NotificationPreferences() {
               Alert me when collection or assessment keeps failing
             </label>
             <p className="admin-help">
-              A persistent issue sends one alert after repeated failures.
-              Temporary errors retry automatically; slower recovery continues
-              after the alert.
+              Persistent failures are grouped into one email at the selected
+              frequency. Resolved issues are excluded, and the same task is not
+              emailed again. Automatic recovery continues after the alert.
             </p>
             <label>
               <input
@@ -168,6 +174,24 @@ export default function NotificationPreferences() {
             </label>
           </div>
           <div className="admin-form-grid">
+            <Field label="Failure alert frequency">
+              <select
+                aria-label="Failure alert frequency"
+                value={draft.failure_interval_hours ?? 1}
+                disabled={busy}
+                onChange={(e) =>
+                  setDraft({
+                    ...draft,
+                    failure_interval_hours: Number(e.target.value),
+                  })
+                }
+              >
+                <option value={1}>At most once an hour</option>
+                <option value={6}>At most every 6 hours</option>
+                <option value={12}>At most every 12 hours</option>
+                <option value={24}>At most daily</option>
+              </select>
+            </Field>
             <Field label="Review reminder frequency">
               <select
                 aria-label="Review reminder frequency"

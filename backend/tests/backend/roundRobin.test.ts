@@ -1257,6 +1257,15 @@ it("keeps a targeted overload check waiting, counts its retry, and succeeds when
   expect((await job(q.id)).status).toBe("retry_wait");
   expect((await job(q.id)).checkpoint.model_routing.round_attempts).toBe(1);
   await age();
+  const coolingNetwork = vi.fn<typeof fetch>();
+  await worker(coolingNetwork)();
+  expect(coolingNetwork).not.toHaveBeenCalled();
+  expect((await job(q.id)).status).toBe("retry_wait");
+  await f.db.query(
+    "update public.model_attempts set retry_after=now()-interval '1 second' where job_id=$1",
+    [q.id],
+  );
+  await age();
   await worker(transport((p) => success(p)))();
   expect((await job(q.id)).status).toBe("succeeded");
   const rows = (
@@ -1265,10 +1274,15 @@ it("keeps a targeted overload check waiting, counts its retry, and succeeds when
       [q.id],
     )
   ).rows;
-  expect(rows.map((r) => r.round_number)).toEqual([1, 2]);
+  expect(rows.map((r) => r.round_number)).toEqual([1, 2, 3]);
   expect(rows[0].provider_error_code).toBe("1305");
   expect(rows[0].retry_after).not.toBeNull();
-  expect(rows[1].status).toBe("succeeded");
+  expect(rows[1]).toMatchObject({
+    status: "skipped",
+    sent: false,
+    result_code: "PROVIDER_QUOTA_WAIT",
+  });
+  expect(rows[2].status).toBe("succeeded");
 });
 
 it.each(["openai", "anthropic", "cloudflare_free"] as const)(

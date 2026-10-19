@@ -36,6 +36,14 @@ type Delivery = {
   language: "ar" | "en";
   kind: "processing_failure" | "review_digest" | "test";
   payload: {
+    total?: number;
+    groups?: {
+      error_code: string;
+      job_type: string;
+      count: number;
+      max_attempts: number;
+      retrying: boolean;
+    }[];
     discoveries?: number;
     proposals?: number;
     title?: string;
@@ -69,7 +77,57 @@ export function notificationMessage(d: Delivery, env: BackendEnvironment) {
       ? "TenderDesk: مشكلة مستمرة في المعالجة"
       : "TenderDesk: processing needs attention";
     base.hash = "/jobs";
-    text = `${d.payload.title || "Processing needs attention"}\n${d.payload.detail || ""}\n${base.href}`;
+    const causes: Record<string, [string, string]> = {
+      MODEL_ROUND_EXHAUSTED: [
+        "لم ينجح أي مزوّد في إكمال جولة المعالجة",
+        "No provider completed the processing round",
+      ],
+      EVIDENCE_REFERENCE_INVALID: [
+        "رد الموديل لم يجتز التحقق من الأدلة",
+        "The model response failed evidence validation",
+      ],
+      MODEL_OUTPUT_INVALID: [
+        "رد الموديل لم يطابق الصيغة المطلوبة",
+        "The model response did not match the required format",
+      ],
+      SOURCE_TEMPORARY_FAILURE: [
+        "تعذّر جلب موقع المصدر",
+        "The source website could not be fetched",
+      ],
+      SOURCE_NOT_A_TENDER_LISTING: [
+        "الصفحة لا تحتوي قائمة عطاءات قابلة للقراءة",
+        "The page does not contain a readable tender listing",
+      ],
+      SOURCE_BROWSER_REQUIRED: [
+        "المصدر يحتاج عرض الصفحة باستخدام JavaScript",
+        "The source requires JavaScript rendering",
+      ],
+      SOURCE_LOGIN_REQUIRED: [
+        "المصدر يحتاج تسجيل الدخول",
+        "The source requires sign-in",
+      ],
+      STALE_INPUT: [
+        "تغيّرت البيانات التي تعتمد عليها المهمة",
+        "The task input has changed",
+      ],
+    };
+    if (d.payload.groups) {
+      const lines = d.payload.groups.map((g) => {
+        const cause = causes[g.error_code]?.[ar ? 0 : 1] || g.error_code;
+        const kind = g.job_type.startsWith("source_")
+          ? ar
+            ? "جمع المصادر"
+            : "Source collection"
+          : ar
+            ? "التقييم وإعداد العروض"
+            : "Assessment and proposals";
+        return ar
+          ? `${kind}: ${g.count} مهمة — ${cause} (${g.error_code}). المحاولات: حتى ${g.max_attempts}. ${g.retrying ? "إعادة المحاولة تلقائية." : "تحتاج مراجعة من صفحة المهام."}`
+          : `${kind}: ${g.count} tasks — ${cause} (${g.error_code}). Up to ${g.max_attempts} attempts. ${g.retrying ? "Automatic retries continue." : "Review these tasks in the app."}`;
+      });
+      text = `${ar ? `ملخص ${d.payload.total} مهمة ما زالت تحتاج متابعة:` : `${d.payload.total} tasks still need attention:`}\n${lines.join("\n")}\n${base.href}`;
+    } else
+      text = `${d.payload.title || "Processing needs attention"}\n${d.payload.detail || ""}\n${base.href}`;
   } else {
     subject = ar
       ? "TenderDesk: اختبار بريد التنبيهات"
@@ -195,7 +253,10 @@ export async function processNotificationEmail(
     };
   } catch (error) {
     const failure = smtpFailure(error);
-    const diagnostic = (error || {}) as { responseCode?: number; command?: string };
+    const diagnostic = (error || {}) as {
+      responseCode?: number;
+      command?: string;
+    };
     console.warn(
       "smtp_delivery_result",
       JSON.stringify({

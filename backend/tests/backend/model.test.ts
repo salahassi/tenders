@@ -507,7 +507,11 @@ it("preserves measured usage when the returned JSON fails validation", async () 
 });
 
 it("reports an exhausted automatic round while retaining the truncated-provider diagnostic", async () => {
-  const gemini = { ...config, provider: "gemini_free" as const };
+  const gemini = {
+    ...config,
+    provider: "gemini_free" as const,
+    retry_after: new Date(Date.now() + 3600000).toISOString(),
+  };
   const resume = vi.fn(async () => ({
     id: "settled-reservation",
     remote_request_id: "synthetic-truncated",
@@ -992,3 +996,92 @@ it.each([
     ).toBe(false);
   },
 );
+
+it("skips only the provider in Retry-After cooldown and uses the next configured model", async () => {
+  const later = new Date(Date.now() + 12 * 3600000).toISOString();
+  const ledger: Ledger = {
+    preflight: async () => ({
+      routing_mode: "round_robin",
+      providers: [
+        { ...config, retry_after: later },
+        { ...config, provider: "groq_free" },
+      ],
+    }),
+    reserve: vi.fn(async () => "synthetic"),
+    settle: vi.fn(),
+    attempt: vi.fn(),
+    beginAttempt: vi.fn(async () => "1"),
+    endAttempt: vi.fn(),
+  };
+  const generate = vi
+    .spyOn(FreeModelProvider.prototype, "generate")
+    .mockResolvedValue({
+      text: JSON.stringify(analysis),
+      usage: { input: 50, output: 30, thinking: 0 },
+      complete: true,
+    });
+  expect(
+    await executeModel(
+      "analyze_chunk",
+      {},
+      evidence,
+      ["block-1"],
+      [],
+      { qwen_free: env, groq_free: { ...env, provider: "groq_free" } },
+      ledger,
+      "en",
+    ),
+  ).toEqual(analysis);
+  expect(generate).toHaveBeenCalledTimes(1);
+  expect(ledger.endAttempt).toHaveBeenCalledWith(
+    "1",
+    "PROVIDER_QUOTA_WAIT",
+    false,
+    null,
+    { retry_after: later },
+  );
+});
+it("does not apply the last provider's long wait to another provider's temporary failure", async () => {
+  const later = new Date(Date.now() + 12 * 3600000).toISOString();
+  const ledger: Ledger = {
+    preflight: async () => ({
+      routing_mode: "round_robin",
+      providers: [
+        config,
+        { ...config, provider: "groq_free", retry_after: later },
+      ],
+    }),
+    reserve: vi.fn(async () => "synthetic"),
+    settle: vi.fn(),
+    attempt: vi.fn(),
+  };
+  vi.spyOn(FreeModelProvider.prototype, "generate").mockRejectedValue(
+    new ModelError("MODEL_NETWORK_UNCERTAIN"),
+  );
+  await expect(
+    executeModel(
+      "analyze_chunk",
+      {},
+      evidence,
+      ["block-1"],
+      [],
+      { qwen_free: env, groq_free: { ...env, provider: "groq_free" } },
+      ledger,
+      "en",
+    ),
+  ).rejects.toMatchObject({ code: "MODEL_ROUND_EXHAUSTED", retryAfter: null });
+});
+it("normalizes invisible page formatting in citations while still rejecting invented facts", () => {
+  const supplied = [
+    { ...evidence[0], text: "Implement an approval\u200b workflow." },
+  ];
+  expect(() =>
+    validateModelResult("analyze_chunk", analysis, supplied, ["block-1"]),
+  ).not.toThrow();
+  const changed = structuredClone(analysis);
+  changed.requirements[0].source_refs[0].quote =
+    "Implement no approval workflow";
+  expect(() =>
+    validateModelResult("analyze_chunk", changed, supplied, ["block-1"]),
+  ).toThrow("EVIDENCE_REFERENCE_INVALID");
+});

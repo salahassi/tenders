@@ -1,5 +1,7 @@
 import SourceImport from "../components/SourceImport";
-import SourceDiscovery from "../components/SourceDiscovery";
+import SourceDiscovery, {
+  SourceSuggestions,
+} from "../components/SourceDiscovery";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -166,19 +168,22 @@ export default function Sources() {
         description="Browse official tender sources and supplier portals, or add a feed to monitor."
         actions={
           canEdit ? (
-            <Button
-              variant="primary"
-              onClick={() => {
-                setOpen(true);
-                setError("");
-              }}
-            >
-              <Plus size={16} /> Add source
-            </Button>
+            <div className="source-header-actions">
+              <SourceDiscovery />
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setOpen(true);
+                  setError("");
+                }}
+              >
+                <Plus size={16} /> Add source
+              </Button>
+            </div>
           ) : undefined
         }
       />
-      <SourceDiscovery />
+      <SourceSuggestions />
       <div className="admin-metrics">
         <Metric
           label="Enabled sources"

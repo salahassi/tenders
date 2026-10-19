@@ -70,6 +70,9 @@ export const commandSchemas = {
       expected_revision: z.number().int().min(0),
       email_enabled: z.boolean(),
       failure_alerts: z.boolean(),
+      failure_interval_hours: z
+        .union([z.literal(1), z.literal(6), z.literal(12), z.literal(24)])
+        .optional(),
       review_reminders: z.boolean(),
       review_interval_hours: z.union([
         z.literal(6),

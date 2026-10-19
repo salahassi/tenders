@@ -175,7 +175,7 @@ export async function processAutomaticSource(
       env.models,
       ledger,
       "ar",
-      false,
+      job.failure_count > 0,
       fetcher,
     );
     const blockers: Record<string, string> = {

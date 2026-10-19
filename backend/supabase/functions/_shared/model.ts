@@ -1,6 +1,8 @@
 import {
   sourcePageSchema,
-  sourceReadingInstruction,
+  sourceReadingPrompt,
+  sourceSystemInstructions,
+  normalizedEvidence,
   validateSourcePageResult,
 } from "./sourceModel.ts";
 import { z } from "zod";
@@ -291,6 +293,7 @@ export type Reference = {
   content_hash: string;
 };
 export type ModelConfiguration = {
+  retry_after?: string;
   automatic?: boolean;
   enabled: boolean;
   provider: ModelProviderId;
@@ -392,8 +395,7 @@ function validateQuotes(
   evidence: Evidence[],
   kind?: Evidence["kind"],
 ) {
-  const canonicalText = (value: string) =>
-    value.normalize("NFC").replace(/\s+/gu, " ").trim();
+  const canonicalText = (value: string) => normalizedEvidence(value);
   for (const ref of refs) {
     const source = evidence.find((e) => e.id === ref.id);
     if (
@@ -417,8 +419,13 @@ export function validateModelResult(
   requiredIds: string[] = [],
 ): any {
   const result = modelSchemas[task].parse(value) as any;
-  if (task === "inspect_source_page")
-    validateSourcePageResult(result, evidence);
+  if (task === "inspect_source_page") {
+    try {
+      validateSourcePageResult(result, evidence);
+    } catch {
+      throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+    }
+  }
   if (blockedContent(JSON.stringify(result)))
     throw new ModelError("MODEL_OUTPUT_POLICY_BLOCKED");
   if (task === "summarize_review") {
@@ -912,7 +919,10 @@ export class FreeModelProvider {
       "https://generativelanguage.googleapis.com/v1beta/interactions",
       {
         model: this.env.model,
-        system_instruction: systemInstructions,
+        system_instruction:
+          task === "inspect_source_page"
+            ? sourceSystemInstructions
+            : systemInstructions,
         input: prompt,
         background: true,
         store: true,
@@ -1027,7 +1037,13 @@ export class FreeModelProvider {
       {
         model: this.env.model,
         messages: [
-          { role: "system", content: systemInstructions },
+          {
+            role: "system",
+            content:
+              task === "inspect_source_page"
+                ? sourceSystemInstructions
+                : systemInstructions,
+          },
           {
             role: "user",
             content: prompt + "\nJSON schema: " + JSON.stringify(schema),
@@ -1063,7 +1079,10 @@ export class FreeModelProvider {
         "https://api.openai.com/v1/responses",
         {
           model: this.env.model,
-          instructions: systemInstructions,
+          instructions:
+            task === "inspect_source_page"
+              ? sourceSystemInstructions
+              : systemInstructions,
           input: prompt + "\nJSON schema: " + JSON.stringify(schema),
           max_output_tokens: caps[task],
           text: { format: { type: "json_object" } },
@@ -1108,7 +1127,10 @@ export class FreeModelProvider {
         "https://api.anthropic.com/v1/messages",
         {
           model: this.env.model,
-          system: systemInstructions,
+          system:
+            task === "inspect_source_page"
+              ? sourceSystemInstructions
+              : systemInstructions,
           messages: [
             {
               role: "user",
@@ -1159,7 +1181,16 @@ export class FreeModelProvider {
       const result = await this.post(
         `https://generativelanguage.googleapis.com/v1beta/models/${this.env.model}:generateContent`,
         {
-          systemInstruction: { parts: [{ text: systemInstructions }] },
+          systemInstruction: {
+            parts: [
+              {
+                text:
+                  task === "inspect_source_page"
+                    ? sourceSystemInstructions
+                    : systemInstructions,
+              },
+            ],
+          },
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: {
             candidateCount: 1,
@@ -1280,27 +1311,29 @@ export async function executeModel(
 ) {
   const pool = await ledger.preflight(manifest);
   const automatic = pool.routing_mode === "round_robin";
-  const prompt = JSON.stringify({
-    task,
-    prompt_version:
-      task === "classify_opportunity"
-        ? "tenderdesk-v6-configurable-service-scope"
-        : "tenderdesk-v3",
-    writing_guide: writingGuide[language],
-    repair_instruction: repair
-      ? "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
-      : null,
-    required_ids: requiredIds,
-    task_instruction:
-      task === "inspect_source_page" ? sourceReadingInstruction : undefined,
-    untrusted_data: context,
-    evidence,
-  });
+  const prompt =
+    task === "inspect_source_page"
+      ? sourceReadingPrompt(context, evidence, repair)
+      : JSON.stringify({
+          task,
+          prompt_version:
+            task === "classify_opportunity"
+              ? "tenderdesk-v6-configurable-service-scope"
+              : "tenderdesk-v3",
+          writing_guide: writingGuide[language],
+          repair_instruction: repair
+            ? "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
+            : null,
+          required_ids: requiredIds,
+          untrusted_data: context,
+          evidence,
+        });
   if (blockedContent(prompt)) throw new ModelError("DATA_POLICY_BLOCKED");
   const schema = z.toJSONSchema(modelSchemas[task]);
   const inputHash = await sha256(prompt);
   let lastError: ModelError = new ModelError("MODEL_NOT_CONFIGURED");
   let outputError: ModelError | null = null;
+  const retryWindows: (string | null)[] = [];
   for (const config of pool.providers) {
     const attemptId = await ledger.beginAttempt?.(
       config.provider,
@@ -1349,6 +1382,15 @@ export async function executeModel(
       const pending = background
         ? await ledger.resume!(config.provider, inputHash, manifest)
         : null;
+      // A generation cooldown must not prevent polling an already accepted request.
+      if (
+        !pending &&
+        automatic &&
+        config.retry_after &&
+        Date.parse(config.retry_after) > Date.now()
+      ) {
+        throw new ModelError("PROVIDER_QUOTA_WAIT", config.retry_after);
+      }
       if (pending) {
         reservation = pending.id;
         remoteId = pending.remote_request_id;
@@ -1458,6 +1500,12 @@ export async function executeModel(
           await ledger.attempt?.(config.provider, "SUCCEEDED", true);
         return validated;
       } catch (error) {
+        provider.telemetry.provider_error_reason =
+          error instanceof ModelError
+            ? "response_evidence_invalid"
+            : error instanceof z.ZodError
+              ? "response_schema_invalid"
+              : "response_json_invalid";
         if (error instanceof ModelError) throw error;
         throw new ModelError("MODEL_OUTPUT_INVALID");
       }
@@ -1480,6 +1528,7 @@ export async function executeModel(
           code,
         );
       lastError = error instanceof ModelError ? error : new ModelError(code);
+      retryWindows.push(lastError.retryAfter);
       await finishAttempt(code, lastError.retryAfter);
       // A measured invalid response needs the persisted, bounded repair path.
       // Still try the remaining providers, but do not hide this behind a
@@ -1500,7 +1549,15 @@ export async function executeModel(
   }
   if (outputError && !automatic) throw outputError;
   throw automatic
-    ? new ModelError("MODEL_ROUND_EXHAUSTED", lastError.retryAfter)
+    ? new ModelError(
+        "MODEL_ROUND_EXHAUSTED",
+        retryWindows.length &&
+          retryWindows.every((t) => t && Date.parse(t) > Date.now())
+          ? new Date(
+              Math.min(...retryWindows.map((t) => Date.parse(t!))),
+            ).toISOString()
+          : null,
+      )
     : lastError;
 }
 

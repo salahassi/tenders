@@ -722,3 +722,11 @@
   max-width: 48rem;
   white-space: normal;
 }
+
+.source-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}

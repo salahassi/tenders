@@ -8,9 +8,6 @@ export default function SourceDiscovery() {
   const [open, setOpen] = useState(false),
     [url, setUrl] = useState(""),
     [error, setError] = useState("");
-  const suggestions = state.sources.filter(
-    (s) => s.status === "proposed" && s.adapterConfig?.discovery_job,
-  );
   async function discover() {
     setError("");
     try {
@@ -28,7 +25,7 @@ export default function SourceDiscovery() {
     }
   }
   return (
-    <section className="admin-section">
+    <>
       {state.settings.role === "Owner" && (
         <Button
           variant="secondary"
@@ -39,26 +36,6 @@ export default function SourceDiscovery() {
         >
           Discover sources
         </Button>
-      )}
-      {suggestions.length > 0 && (
-        <div className="panel admin-section">
-          <h2>Suggested sources</h2>
-          <p>
-            Review a suggestion and enable it to begin automatic collection.
-          </p>
-          <ul>
-            {suggestions.map((s) => (
-              <li key={s.id}>
-                <Link to={`/sources/${s.id}`} className="admin-link">
-                  {s.name}
-                </Link>
-                <p className="small muted" style={{ overflowWrap: "anywhere" }}>
-                  {s.url}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
       <Modal
         open={open}
@@ -94,6 +71,37 @@ export default function SourceDiscovery() {
           </Button>
         </div>
       </Modal>
-    </section>
+    </>
+  );
+}
+
+export function SourceSuggestions() {
+  const { state } = useApp();
+  const suggestions = state.sources.filter(
+    (s) => s.status === "proposed" && s.adapterConfig?.discovery_job,
+  );
+  return (
+    <>
+      {suggestions.length > 0 && (
+        <div className="panel admin-section">
+          <h2>Suggested sources</h2>
+          <p>
+            Review a suggestion and enable it to begin automatic collection.
+          </p>
+          <ul>
+            {suggestions.map((s) => (
+              <li key={s.id}>
+                <Link to={`/sources/${s.id}`} className="admin-link">
+                  {s.name}
+                </Link>
+                <p className="small muted" style={{ overflowWrap: "anywhere" }}>
+                  {s.url}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
   );
 }

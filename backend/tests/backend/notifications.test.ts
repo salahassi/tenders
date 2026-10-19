@@ -473,3 +473,135 @@ it("identifies SMTP sender verification and sandbox restrictions without returni
   expect(sandbox.code).toBe("SMTP_TEST_RECIPIENT_RESTRICTED");
   expect(JSON.stringify(verification)).not.toContain("synthetic.test");
 });
+
+async function failedTask() {
+  const id = (
+    await f.db.query<any>(
+      "insert into public.jobs(workspace_id,type,entity_id,status,created_by,input_hash,error_code,failure_count,attempts) values($1,'classify_opportunity',$2,'blocked',$3,repeat('a',64),'MODEL_ROUND_EXHAUSTED',3,4) returning id",
+      [f.w, crypto.randomUUID(), f.owner],
+    )
+  ).rows[0].id;
+  await f.db.query("select app_private.recover_processing_job($1)", [id]);
+  return id;
+}
+it("batches concurrent failures, rechecks resolved jobs and throttles only new failure emails", async () => {
+  await pref();
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "round_robin",
+  });
+  const ids = [];
+  for (let i = 0; i < 5; i++) ids.push(await failedTask());
+  await f.rpc("automation_notification_tick");
+  await f.rpc("automation_notification_tick");
+  expect(await deliveries()).toHaveLength(1);
+  expect((await deliveries())[0].payload).toMatchObject({
+    total: 5,
+    groups: [{ error_code: "MODEL_ROUND_EXHAUSTED", count: 5, retrying: true }],
+  });
+  await f.db.query("update public.jobs set status='succeeded' where id=$1", [
+    ids[0],
+  ]);
+  await f.db.query("update public.jobs set cancel_requested=true where id=$1", [
+    ids[1],
+  ]);
+  const d = await f.rpc("claim_notification_delivery");
+  expect(d.payload.total).toBe(3);
+  const message = notificationMessage(d, env);
+  expect(message.text).toContain("ملخص 3");
+  expect(message.text).toContain("إعادة المحاولة تلقائية");
+  await f.rpc("finish_notification_delivery", [
+    d.id,
+    d.lease_token,
+    "sent",
+    null,
+    "synthetic",
+  ]);
+  await failedTask();
+  await f.rpc("automation_notification_tick");
+  expect(await deliveries()).toHaveLength(1);
+  await f.db.exec(
+    "update public.notification_deliveries set started_at=now()-interval '2 hours',created_at=now()-interval '2 hours'",
+  );
+  await f.rpc("automation_notification_tick");
+  expect(await deliveries()).toHaveLength(2);
+  expect((await deliveries())[1].payload.total).toBe(1);
+});
+it("cancels a fully recovered summary and does not re-email legacy sent notifications", async () => {
+  await pref();
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "round_robin",
+  });
+  const id = await failedTask();
+  await f.db.exec(
+    "insert into public.notification_deliveries(workspace_id,recipient_user_id,kind,dedupe_key,notification_id,status) select workspace_id,recipient_user_id,'processing_failure',dedupe_key,id,'sent' from public.notifications where dedupe_key like 'automation-failure:%'",
+  );
+  await f.db.exec(
+    "update public.notification_deliveries set created_at=now()-interval '2 hours'",
+  );
+  await f.rpc("automation_notification_tick");
+  expect(await deliveries()).toHaveLength(1);
+  const fresh = await failedTask();
+  await f.rpc("automation_notification_tick");
+  await f.db.query("update public.jobs set status='canceled' where id=$1", [
+    fresh,
+  ]);
+  expect(await f.rpc("claim_notification_delivery")).toBeNull();
+  expect((await deliveries())[1]).toMatchObject({
+    status: "canceled",
+    error_code: "PROCESSING_RECOVERED",
+  });
+  expect((await current(id)).status).toBe("retry_wait");
+});
+
+it("upgrades existing long pool waits with an audit actor and preserves canceled work", async () => {
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "round_robin",
+  });
+  const id = await failedTask(),
+    canceled = await failedTask();
+  await f.db.query(
+    "update public.jobs set next_attempt_at=now()+interval '20 hours',cancel_requested=(id=$2) where id in ($1,$2)",
+    [id, canceled],
+  );
+  const { readFileSync } = await import("node:fs");
+  const migration = readFileSync(
+    new URL(
+      "../../supabase/migrations/20261019141931_provider_specific_retry_wait.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  await f.db.exec(
+    migration.slice(migration.indexOf("-- Repair old pool-wide delays")),
+  );
+  expect(
+    (
+      await f.db.query<any>(
+        "select next_attempt_at<=now()+interval '1 hour' as repaired from public.jobs where id=$1",
+        [id],
+      )
+    ).rows[0].repaired,
+  ).toBe(true);
+  expect(
+    (
+      await f.db.query<any>(
+        "select next_attempt_at>now()+interval '19 hours' as preserved from public.jobs where id=$1",
+        [canceled],
+      )
+    ).rows[0].preserved,
+  ).toBe(true);
+  expect(
+    (
+      await f.db.query<any>(
+        "select actor_id from public.audit_events where action='job.retry_policy.corrected' and entity_id=$1",
+        [id],
+      )
+    ).rows[0].actor_id,
+  ).toBe(f.owner);
+});

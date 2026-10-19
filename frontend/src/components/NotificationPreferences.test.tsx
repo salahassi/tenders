@@ -13,6 +13,7 @@ function setup(configured = true, fail = false) {
     revision: 1,
     email_enabled: true,
     failure_alerts: true,
+    failure_interval_hours: 6,
     review_reminders: true,
     review_interval_hours: 24,
     language: "ar",
@@ -50,6 +51,10 @@ it("saves account preferences and reminder interval, then reloads the persisted 
     screen.getByLabelText("Review reminder frequency"),
     "12",
   );
+  await userEvent.selectOptions(
+    screen.getByLabelText("Failure alert frequency"),
+    "6",
+  );
   await userEvent.selectOptions(screen.getByLabelText("Email language"), "en");
   await userEvent.click(
     screen.getByRole("button", { name: "Save notification preferences" }),
@@ -59,6 +64,7 @@ it("saves account preferences and reminder interval, then reloads the persisted 
       expected_revision: 1,
       email_enabled: true,
       failure_alerts: true,
+      failure_interval_hours: 6,
       review_reminders: true,
       review_interval_hours: 12,
       language: "en",

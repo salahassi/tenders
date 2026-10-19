@@ -46,9 +46,30 @@ export function modelLedger(
             key_configured: Boolean(environments[provider]?.key),
           })),
         });
-      return parseModelPool(
+      const pool = parseModelPool(
         await backend.internal("model_preflight", { ...identity, manifest }),
       );
+      if (pool.routing_mode === "round_robin") {
+        const windows = (await backend.internal(
+          "model_retry_windows",
+          identity,
+        )) as {
+          provider: string;
+          model: string;
+          project_ref: string;
+          retry_after: string;
+        }[];
+        pool.providers = pool.providers.map((p) => ({
+          ...p,
+          retry_after: windows.find(
+            (w) =>
+              w.provider === p.provider &&
+              w.model === p.model &&
+              w.project_ref === p.project_ref,
+          )?.retry_after,
+        }));
+      }
+      return pool;
     },
     attempt: async (provider_id, result_code, sent) => {
       await backend.internal("record_model_attempt", {
