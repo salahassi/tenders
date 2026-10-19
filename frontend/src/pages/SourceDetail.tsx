@@ -3,7 +3,11 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Globe2, ExternalLink, ShieldCheck } from "lucide-react";
 import { useApp } from "../lib/store";
 import { Badge, Button, EmptyState, PageHeader } from "../components/ui";
-import { isBuiltInSource, canCollectSource } from "../lib/sources";
+import {
+  isBuiltInSource,
+  canCollectSource,
+  sourceSetupGuidance,
+} from "../lib/sources";
 import { dateTime } from "../lib/format";
 import "./admin.css";
 export default function SourceDetail() {
@@ -26,6 +30,7 @@ export default function SourceDetail() {
   const isManual = isBuiltInSource(source);
   const manualPortal = source.type === "manual" && !isManual;
   const collectable = canCollectSource(source);
+  const setupGuidance = sourceSetupGuidance(source);
   const sourceTypeLabel = {
     link_directory: "Website",
     rss: "RSS feed",
@@ -106,7 +111,11 @@ export default function SourceDetail() {
                     : "neutral"
               }
             >
-              {isManual ? "Built-in origin" : statusLabel}
+              {isManual
+                ? "Built-in origin"
+                : source.status === "proposed" && !collectable
+                  ? "Setup required"
+                  : statusLabel}
             </Badge>
             {owner && collectable && source.status !== "approved" && (
               <Button onClick={() => setStatus("approved")}>
@@ -123,6 +132,20 @@ export default function SourceDetail() {
       />
       <div className="split-layout">
         <div className="stack">
+          {setupGuidance && (
+            <section
+              className="panel admin-section"
+              aria-labelledby="source-setup-heading"
+            >
+              <h2 id="source-setup-heading">Collection setup required</h2>
+              <p>{setupGuidance}</p>
+              <p className="admin-help">
+                {owner
+                  ? "Saving valid collection settings pauses this source. Then use Enable source to start its schedule."
+                  : "Ask a workspace Owner to configure and enable this source."}
+              </p>
+            </section>
+          )}
           {!isManual && <SourceConfiguration key={source.id} source={source} />}
           <div className="panel admin-section">
             <div className="admin-icon-title">

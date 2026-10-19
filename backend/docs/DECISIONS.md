@@ -123,3 +123,8 @@ The Owner selected generic SMTP (using Resend credentials), confirmed APP_SMTP_*
 ## October 19, 2026 — source definitions belong to seed data and the database
 
 The Owner requires seeded sources read from the database without hardcoded runtime definitions. Source URLs, buyers, timezones, selectors and field labels now live in the official catalog's optional extraction profiles and in each source's adapter configuration. Generic table/link/card parsing replaces named institutional branches. The frontend derives country options from saved rows and edits a saved profile rather than selecting a fixed institution. Seed replay preserves user changes; explicit missing-profile backfill checks the original URL and listing key, audits changes, and does not approve or enable sources. Generic parsers, schema validation, host permissions and bounded network access remain application logic.
+
+
+## October 19, 2026 — actionable source activation prerequisites
+
+Unconnected source records must explain why activation is unavailable and expose the path to connection settings. No missing action may imply that a saved directory link is already a working collector. Guidance uses stored source metadata to distinguish public listings, procurement platforms, central redirects and supplier-registration portals. Sources without an extraction profile must choose a collection method explicitly. Existing Owner authorization, connection prerequisites, revision checks and the five-enabled-source cap remain unchanged; the current blockage is missing integrations, not the cap.

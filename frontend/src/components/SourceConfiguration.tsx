@@ -9,7 +9,7 @@ export default function SourceConfiguration({ source }: { source: Source }) {
       source.type === "manual"
         ? source.adapterConfig?.extraction
           ? "link_directory"
-          : "rss"
+          : ""
         : source.type,
     ),
     [hosts, setHosts] = useState((source.approvedHosts || []).join(", ")),
@@ -17,7 +17,9 @@ export default function SourceConfiguration({ source }: { source: Source }) {
     [hours, setHours] = useState(source.pollHours || 6),
     [config, setConfig] = useState(
       JSON.stringify(
-        source.adapterConfig?.extraction || source.adapterConfig || {},
+        source.adapterConfig?.extraction ||
+          (source.type === "json_feed" ? source.adapterConfig : {}) ||
+          {},
         null,
         2,
       ),
@@ -33,6 +35,10 @@ export default function SourceConfiguration({ source }: { source: Source }) {
   async function save() {
     setError("");
     try {
+      if (!kind)
+        throw new Error(
+          "Choose a collection method. Saving a portal link alone does not configure automatic collection.",
+        );
       await runCommand!("source.configure", {
         id: source.id,
         expected_revision: source.revision,
@@ -90,6 +96,9 @@ export default function SourceConfiguration({ source }: { source: Source }) {
           value={kind}
           onChange={(e) => setKind(e.target.value as typeof kind)}
         >
+          <option value="" disabled>
+            Choose a collection method
+          </option>
           <option value="rss">RSS / Atom</option>
           <option value="json_feed">JSON feed</option>
           <option value="link_directory">

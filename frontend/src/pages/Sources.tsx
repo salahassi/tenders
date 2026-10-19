@@ -25,6 +25,7 @@ import {
   isBuiltInSource,
   canCollectSource,
   sourceCountry,
+  sourceSetupGuidance,
 } from "../lib/sources";
 import "./admin.css";
 
@@ -292,6 +293,11 @@ export default function Sources() {
                                   .filter((tag) => !tag.startsWith("country:"))
                                   .join(" · ") || "No sectors specified"}
                           </small>
+                          {sourceSetupGuidance(source) && (
+                            <small className="source-setup-reason">
+                              {sourceSetupGuidance(source)}
+                            </small>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -316,7 +322,10 @@ export default function Sources() {
                       >
                         {isBuiltInSource(source)
                           ? "Built-in origin"
-                          : sourceStatusLabel[source.status]}
+                          : source.status === "proposed" &&
+                              !canCollectSource(source)
+                            ? "Setup required"
+                            : sourceStatusLabel[source.status]}
                       </Badge>
                     </td>
                     <td>
@@ -328,6 +337,18 @@ export default function Sources() {
                     </td>
                     <td>
                       <div className="admin-cell-actions">
+                        {!isBuiltInSource(source) &&
+                          !canCollectSource(source) && (
+                            <Link
+                              className="btn btn-secondary btn-sm"
+                              to={`/sources/${source.id}`}
+                              aria-label={`${owner ? "Set up collection" : "View setup requirements"} for ${source.name}`}
+                            >
+                              {owner
+                                ? "Set up collection"
+                                : "View requirements"}
+                            </Link>
+                          )}
                         {owner &&
                           canCollectSource(source) &&
                           source.status === "proposed" && (

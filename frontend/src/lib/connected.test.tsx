@@ -69,11 +69,25 @@ function fixture(sourceRows?: Record<string, unknown>[]) {
         const body = options!.body as {
           commands: { operation: string; input: Record<string, unknown> }[];
         };
-        for (const command of body.commands)
+        for (const command of body.commands) {
           if (command.operation === "workspace.settings") {
             name = String(command.input.name);
             revision++;
           }
+          const row = sourceRows?.find((row) => row.id === command.input.id);
+          if (row && command.operation === "source.configure") {
+            Object.assign(row, command.input, {
+              revision: Number(row.revision) + 1,
+              approval: "paused",
+              adapter_required: false,
+            });
+          }
+          if (row && command.operation === "source.action") {
+            row.approval =
+              command.input.action === "approve" ? "approved" : "paused";
+            row.revision = Number(row.revision) + 1;
+          }
+        }
         return { data: [], meta: { request_id: "fixture" } };
       }
       if (loadError) throw loadError;
@@ -341,7 +355,7 @@ describe("connected repository", () => {
 });
 
 describe("connected screens", () => {
-  it("shows manual portal names, country filtering, and manual access without an Enable button", async () => {
+  it("shows manual portal names, country filtering and actionable setup requirements", async () => {
     const f = fixture([
       {
         id: source,
@@ -382,6 +396,12 @@ describe("connected screens", () => {
     expect(
       screen.queryByRole("button", { name: "Enable" }),
     ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", {
+        name: "Set up collection for بوابة عطاءات اختبارية",
+      }),
+    ).toHaveAttribute("href", `/sources/${source}`);
+    expect(screen.getAllByText("Setup required")).toHaveLength(2);
     const user = userEvent.setup();
     await user.selectOptions(
       screen.getByLabelText("Filter source country"),
@@ -410,6 +430,7 @@ describe("connected screens", () => {
         approval: "proposed",
         adapter_required: true,
         policy_note: "Synthetic registration instructions",
+        adapter_config: { catalog: { entry_type: "supplier_registration" } },
         tags: ["country:SA"],
       },
     ]);
@@ -439,7 +460,89 @@ describe("connected screens", () => {
     expect(
       screen.getByText("Manual review — collection adapter required"),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Collection setup required" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/This link is a supplier registration portal/),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Adapter")).toHaveValue("");
   });
+  it("opens source setup, saves a chosen feed and enables the reloaded source", async () => {
+    const f = fixture([
+      {
+        id: source,
+        revision: 1,
+        name: "Synthetic unconnected source",
+        kind: "manual",
+        url: "https://example.test/tenders",
+        approval: "proposed",
+        adapter_required: true,
+        policy_note: "Synthetic permission",
+        tags: [],
+      },
+    ]);
+    render(
+      <MemoryRouter initialEntries={["/sources"]}>
+        <ConnectedProvider client={f.client}>
+          <Routes>
+            <Route path="/sources" element={<Sources />} />
+            <Route path="/sources/:id" element={<SourceDetail />} />
+          </Routes>
+        </ConnectedProvider>
+      </MemoryRouter>,
+    );
+    const user = userEvent.setup();
+    await user.click(
+      await screen.findByRole("link", {
+        name: "Set up collection for Synthetic unconnected source",
+      }),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Collection setup required" }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "Save settings and pause" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Choose a collection method",
+    );
+    expect(f.commands).toHaveLength(0);
+    await user.selectOptions(screen.getByLabelText("Adapter"), "rss");
+    await user.clear(screen.getByLabelText("Collection URL"));
+    await user.type(
+      screen.getByLabelText("Collection URL"),
+      "https://example.test/rss",
+    );
+    await user.type(
+      screen.getByLabelText("Permitted hostnames, separated by commas"),
+      "example.test",
+    );
+    await user.click(
+      screen.getByRole("button", { name: "Save settings and pause" }),
+    );
+    const enable = await screen.findByRole("button", { name: "Enable source" });
+    expect(
+      screen.queryByRole("heading", { name: "Collection setup required" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Paused", { exact: true })).toBeInTheDocument();
+    await user.click(enable);
+    expect(
+      await screen.findByRole("button", { name: "Pause source" }),
+    ).toBeInTheDocument();
+    expect(f.commands).toHaveLength(2);
+    expect(f.commands[1]).toMatchObject({
+      body: {
+        commands: [
+          {
+            operation: "source.action",
+            input: { id: source, expected_revision: 2, action: "approve" },
+          },
+        ],
+      },
+    });
+  });
+
   it("keeps the source dialog and entered details open after a rejected save", async () => {
     const f = fixture();
     f.beforeWrite(async () => {

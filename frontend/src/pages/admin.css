@@ -717,3 +717,8 @@
 .notification-preferences details {
   margin-top: 1.25rem;
 }
+
+.source-setup-reason {
+  max-width: 48rem;
+  white-space: normal;
+}

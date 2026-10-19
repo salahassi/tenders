@@ -254,10 +254,10 @@ beforeEach(async () => {
 });
 afterEach(async () => f.db.exec("rollback"));
 
-it("collects through HTTP, SQL and the worker, then reloads and deduplicates persisted opportunities", async () => {
+it("connects a manual source through HTTP and SQL, enables it, collects with the worker and deduplicates opportunities", async () => {
   const input = {
     name: "Synthetic feed",
-    kind: "rss",
+    kind: "manual",
     url: "https://feed.example.test/rss",
     approved_hosts: ["feed.example.test"],
     policy_note: "Synthetic fixture permission",
@@ -279,8 +279,37 @@ it("collects through HTTP, SQL and the worker, then reloads and deduplicates per
       )
     ).status,
   ).toBe(409);
-  const approved = await request(`sources/${created.data.id}/actions`, "POST", {
+  const premature = await request(
+    `sources/${created.data.id}/actions`,
+    "POST",
+    {
+      expected_revision: created.data.revision,
+      action: "approve",
+      reason: "Synthetic fixture permission",
+    },
+  );
+  expect(premature.error.code).toBe("ADAPTER_REQUIRED");
+  const configured = await command("source.configure", {
+    id: created.data.id,
     expected_revision: created.data.revision,
+    kind: "rss",
+    url: input.url,
+    approved_hosts: input.approved_hosts,
+    policy_note: input.policy_note,
+    poll_interval_hours: 6,
+    adapter_config: {},
+  });
+  expect(configured.status).toBe(200);
+  const saved = (await request("sources")).data.records.find(
+    (s: any) => s.id === created.data.id,
+  );
+  expect(saved).toMatchObject({
+    kind: "rss",
+    approval: "paused",
+    adapter_required: false,
+  });
+  const approved = await request(`sources/${created.data.id}/actions`, "POST", {
+    expected_revision: saved.revision,
     action: "approve",
     reason: "Synthetic fixture permission",
   });
