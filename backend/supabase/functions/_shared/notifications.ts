@@ -98,6 +98,14 @@ export function notificationMessage(d: Delivery, env: BackendEnvironment) {
         "الصفحة لا تحتوي قائمة عطاءات قابلة للقراءة",
         "The page does not contain a readable tender listing",
       ],
+      SOURCE_NOTICE_REDIRECTED: [
+        "رابط الإعلان يحوّل إلى صفحة لا يمكن قراءة تفاصيل الإعلان منها",
+        "The notice redirects to a page without readable notice details",
+      ],
+      NOTICE_DETAILS_CONTENT_UNRESOLVED: [
+        "الصفحة تحتوي نصًا لكن لم تُحدّد تفاصيل الإعلان فيها",
+        "The page has text but its notice details could not be identified",
+      ],
       SOURCE_BROWSER_REQUIRED: [
         "المصدر يحتاج عرض الصفحة باستخدام JavaScript",
         "The source requires JavaScript rendering",

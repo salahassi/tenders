@@ -27,6 +27,10 @@ const strings = (value: unknown) => z.array(z.string()).parse(value ?? []);
 const sourceReadingMessages: Record<string, string> = {
   SOURCE_LOGIN_REQUIRED:
     "This source requires sign-in. Use an accessible public tender listing.",
+  SOURCE_NOTICE_REDIRECTED:
+    "The notice link redirected to a page without readable notice details. Check the original source link.",
+  NOTICE_DETAILS_CONTENT_UNRESOLVED:
+    "The page contains text, but the notice details could not be identified. Review the original notice; OCR is not confirmed.",
   SOURCE_BROWSER_REQUIRED:
     "This source requires browser JavaScript; the current reader could not obtain its notices.",
   SOURCE_OCR_REQUIRED:

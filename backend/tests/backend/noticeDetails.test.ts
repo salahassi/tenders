@@ -5,6 +5,7 @@ import {
   enrichPublicNotice,
   fetchPublicNotice,
   parseNoticeDetails,
+  parseAutomaticNoticeDetails,
   readPublicPdf,
   submissionDeadline,
 } from "../../supabase/functions/_shared/publicNoticeDetails";
@@ -532,4 +533,39 @@ it("uses saved detail selectors and timezone for a new source without a runtime 
   );
   expect(result.deadline.timezone).toBe("Europe/Paris");
   expect(result.text).toContain("150 شيقل");
+});
+
+it("does not mislabel a redirected landing page or a short article as scanned content", () => {
+  const html =
+    "<body><section>" +
+    "Public procurement navigation and other notices. ".repeat(8) +
+    "</section><article>Short unrelated card</article></body>";
+  expect(() =>
+    parseAutomaticNoticeDetails(
+      "https://buyer.example.test/home",
+      html,
+      "https://buyer.example.test/notice?id=1",
+    ),
+  ).toThrow("SOURCE_NOTICE_REDIRECTED");
+  expect(() =>
+    parseAutomaticNoticeDetails("https://buyer.example.test/notice", html),
+  ).toThrow("NOTICE_DETAILS_CONTENT_UNRESOLVED");
+  expect(() =>
+    parseAutomaticNoticeDetails(
+      "https://buyer.example.test/notice",
+      '<body><img src="notice.png"></body>',
+    ),
+  ).toThrow("NOTICE_DETAILS_NEED_OCR");
+  expect(() =>
+    parseAutomaticNoticeDetails(
+      "https://buyer.example.test/notice",
+      "<body><script>render()</script></body>",
+    ),
+  ).toThrow("SOURCE_BROWSER_REQUIRED");
+  expect(() =>
+    parseAutomaticNoticeDetails(
+      "https://buyer.example.test/notice",
+      "<body></body>",
+    ),
+  ).toThrow("SOURCE_EMPTY");
 });

@@ -303,10 +303,15 @@ export async function readPublicPdf(bytes: Uint8Array) {
   }
 }
 
-export function parseAutomaticNoticeDetails(url: string, html: string) {
+export function parseAutomaticNoticeDetails(
+  url: string,
+  html: string,
+  requestedUrl = url,
+) {
   const $ = load(html);
   removePrivacyNavigation($);
   const requiresLogin = $("input[type=password]").length > 0;
+  const hasScript = $("script").length > 0;
   $(
     "script,style,header,footer,nav,input,textarea,button,noscript,template",
   ).remove();
@@ -329,10 +334,23 @@ export function parseAutomaticNoticeDetails(url: string, html: string) {
   const text = minimizedNotice(root.text())
     .replace(/\n[ \t]*\n+/g, "\n")
     .trim();
-  if (text.length < 80)
+  if (text.length < 80) {
+    // A short article/sidebar on a redirected landing page is not proof of a scanned notice.
+    const otherText = minimizedNotice($("body").text()).trim();
     throw new CollectionError(
-      requiresLogin ? "SOURCE_LOGIN_REQUIRED" : "NOTICE_DETAILS_NEED_OCR",
+      requiresLogin
+        ? "SOURCE_LOGIN_REQUIRED"
+        : url !== requestedUrl
+          ? "SOURCE_NOTICE_REDIRECTED"
+          : otherText.length >= 80
+            ? "NOTICE_DETAILS_CONTENT_UNRESOLVED"
+            : $("img,canvas").length
+              ? "NOTICE_DETAILS_NEED_OCR"
+              : hasScript
+                ? "SOURCE_BROWSER_REQUIRED"
+                : "SOURCE_EMPTY",
     );
+  }
   if (text.length > MAX_TEXT)
     throw new CollectionError("NOTICE_DETAIL_TOO_LARGE");
   return { title, text, attachments, deadline: submissionDeadline(null, text) };
@@ -405,6 +423,7 @@ export async function enrichPublicNotice(
         ? parseAutomaticNoticeDetails(
             page.url,
             new TextDecoder("utf-8", { fatal: true }).decode(page.bytes),
+            notice.canonical_url,
           )
         : parseNoticeDetails(
             extraction,
