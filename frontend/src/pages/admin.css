@@ -705,3 +705,15 @@
     font-size: 13px;
   }
 }
+.notification-preferences .admin-form-actions {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0.75rem;
+}
+.notification-preferences .admin-form-actions button {
+  max-width: 100%;
+  white-space: normal;
+}
+.notification-preferences details {
+  margin-top: 1.25rem;
+}

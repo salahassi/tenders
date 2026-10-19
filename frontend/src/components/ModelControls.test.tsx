@@ -172,9 +172,9 @@ it.each([
   ["Claude", "anthropic", "owner-claude-model"],
   ["Cloudflare Workers AI", "cloudflare_free", "@cf/owner/chosen-model"],
 ])(
-  "saves %s limits with the server identity and no billing attestation",
+  "saves %s legacy manual limits with the server identity and no billing attestation",
   async (name, provider, model) => {
-    const f = setup();
+    const f = setup({ enabled: false });
     await screen.findByText(model);
     await openPolicy(name);
     await userEvent.clear(
@@ -203,7 +203,7 @@ it.each([
   },
 );
 it("saving one provider preserves other provider and routing drafts", async () => {
-  const f = setup();
+  const f = setup({ enabled: false });
   await screen.findByText("owner-gemini-model");
   await openPolicy("Gemini");
   await openPolicy("Groq");
@@ -228,14 +228,16 @@ it("saving one provider preserves other provider and routing drafts", async () =
     )[2],
   ).toHaveTextContent("Groq");
 });
-it("requires explicit policy review after a server account changes", async () => {
+it("requires explicit policy review after a server account changes in manual mode", async () => {
   const f = setup({
+    enabled: false,
     policies: [
       {
         provider: "gemini_free",
         revision: 2,
         model: "old-model",
         project_ref: "old-project",
+        quota_mode: "provider_managed",
       },
     ],
   });
@@ -244,8 +246,8 @@ it("requires explicit policy review after a server account changes", async () =>
     panel("Gemini").getByText("Account change needs review"),
   ).toBeInTheDocument();
   expect(
-    panel("Gemini").getByRole("button", { name: "Check Gemini only" }),
-  ).toBeDisabled();
+    panel("Gemini").queryByRole("button", { name: "Check Gemini only" }),
+  ).not.toBeInTheDocument();
   await openPolicy("Gemini");
   await userEvent.click(
     panel("Gemini").getByRole("button", { name: "Save Gemini policy" }),
@@ -260,12 +262,12 @@ it("requires explicit policy review after a server account changes", async () =>
   );
   await waitFor(() =>
     expect(
-      panel("Gemini").getByRole("button", { name: "Check Gemini only" }),
-    ).toBeEnabled(),
+      panel("Gemini").queryByText("Account change needs review"),
+    ).not.toBeInTheDocument(),
   );
 });
 it("preserves edits when saving fails", async () => {
-  setup({ fail: true });
+  setup({ fail: true, enabled: false });
   await screen.findByText("owner-gemini-model");
   await openPolicy("Gemini");
   await userEvent.clear(
@@ -317,4 +319,28 @@ it("does not read Owner-only setup or permit Reviewer changes", async () => {
   expect(
     screen.getByRole("button", { name: "Save provider order" }),
   ).toBeDisabled();
+});
+
+it("uses the supplied server account directly in automatic routing without quota controls", async () => {
+  setup({
+    policies: [
+      {
+        provider: "gemini_free",
+        revision: 2,
+        model: "old-model",
+        project_ref: "old-project",
+      },
+    ],
+  });
+  await screen.findByText("owner-gemini-model");
+  expect(
+    panel("Gemini").getByRole("button", { name: "Check Gemini only" }),
+  ).toBeEnabled();
+  await openPolicy("Gemini");
+  expect(
+    screen.queryByText("Account change needs review"),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByLabelText("Gemini Daily call ceiling"),
+  ).not.toBeInTheDocument();
 });

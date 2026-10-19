@@ -1,5 +1,9 @@
 import { processGeneration } from "../_shared/generation.ts";
 import { processModelProbe } from "../_shared/modelProbe.ts";
+import {
+  processNotificationEmail,
+  smtpStatus,
+} from "../_shared/notifications.ts";
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
 import { AppError, secretMatches } from "../_shared/http.ts";
 import { FreeModelProvider } from "../_shared/model.ts";
@@ -35,6 +39,20 @@ export function createWorkerHandler(
       if (!allowed) return response({ error: "UNAUTHORIZED" }, 401);
       await backend.internal("maintenance_tick");
       await backend.internal("schedule_assessment_refresh");
+      try {
+        const transport = smtpStatus(env);
+        if (!transport.configured)
+          console.warn(
+            "smtp_configuration_incomplete",
+            transport.issues.join(","),
+          );
+        await backend.internal("automation_notification_tick", {
+          transport_ready: transport.configured,
+        });
+        await processNotificationEmail(backend, env);
+      } catch {
+        console.warn("notification_delivery_pending");
+      }
       // Superseded plans may still have a recorded provider request. Retrieve
       // its measured usage without resubmitting content or publishing its output.
       const abandoned = await backend.internal("claim_abandoned_model_request");
@@ -107,6 +125,9 @@ export function createWorkerHandler(
             lease: job.lease_token,
             result,
           });
+          await backend
+            .internal("schedule_assessment_refresh")
+            .catch(() => console.warn("assessment_scheduling_pending"));
           return response({ data: { job_id: job.id, ...saved } });
         } catch (error) {
           const code =

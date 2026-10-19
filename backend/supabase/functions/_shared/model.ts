@@ -1343,7 +1343,21 @@ export async function executeModel(
         remoteId = pending.remote_request_id;
         settled = pending.state === "settled";
       } else {
-        const tokens = await provider.countTokens(prompt, schema);
+        // Automatic routing does not call a token-count endpoint or enforce a
+        // daily token budget. This bounded local estimate is ledger metadata;
+        // the provider reports actual usage and accepts/rejects its own context.
+        const tokens = automatic
+          ? Math.min(
+              task === "classify_opportunity" ? 64000 : 20000,
+              Math.max(
+                1,
+                Math.ceil(
+                  new TextEncoder().encode(prompt + JSON.stringify(schema))
+                    .length / 3,
+                ),
+              ),
+            )
+          : await provider.countTokens(prompt, schema);
         if (tokens > (task === "classify_opportunity" ? 64000 : 20000))
           throw new ModelError("MODEL_CONTEXT_TOO_LARGE");
         reservation = await ledger.reserve(
@@ -1398,7 +1412,10 @@ export async function executeModel(
       } else result = await provider.generate(task, prompt, schema);
       await ledger.settle(reservation, result.usage);
       settled = true;
-      if (result.usage.input === null || result.usage.output === null)
+      if (
+        !automatic &&
+        (result.usage.input === null || result.usage.output === null)
+      )
         throw new ModelError("USAGE_UNKNOWN");
       if (!result.complete) throw new ModelError("MODEL_OUTPUT_TRUNCATED");
       try {

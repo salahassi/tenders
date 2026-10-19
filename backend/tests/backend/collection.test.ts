@@ -180,7 +180,7 @@ it("disappearance or 304 retains earlier records and never marks lost/canceled",
     (await f.db.query("select * from public.opportunities")).rows,
   ).toHaveLength(1);
 });
-it("honors unknown quota reset and caps network retries", async () => {
+it("automatically rechecks a headerless quota error and continues bounded network retries", async () => {
   await approve(await source());
   let j = await f.rpc("claim_backend_job");
   await f.rpc("fail_collection", [
@@ -192,7 +192,7 @@ it("honors unknown quota reset and caps network retries", async () => {
   expect(
     (
       await f.db.query<{ waiting: boolean }>(
-        "select next_attempt_at='infinity'::timestamptz waiting from public.jobs where id=$1",
+        "select isfinite(next_attempt_at) and next_attempt_at>now() waiting from public.jobs where id=$1",
         [j.id],
       )
     ).rows[0].waiting,
@@ -216,7 +216,7 @@ it("honors unknown quota reset and caps network retries", async () => {
         [j.id],
       )
     ).rows[0].status,
-  ).toBe("failed");
+  ).toBe("retry_wait");
 });
 it("commits validated import previews idempotently across repeated batches", async () => {
   for (let i = 0; i < 2; i++) {

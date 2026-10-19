@@ -15,6 +15,7 @@ import { validateOriginal } from "../_shared/originals.ts";
 import { z } from "zod";
 import { adapterSchema, inertText, canonical } from "../_shared/collector.ts";
 import { PDFDocument } from "pdf-lib";
+import { smtpStatus } from "../_shared/notifications.ts";
 import {
   calculateEstimate,
   calculateDelivery,
@@ -213,6 +214,11 @@ export function createApiHandler(
           })),
         });
       }
+      if (path === "/v1/notification-settings" && request.method === "GET")
+        return respond({
+          ...(await backend.userRpc(token, "notification_settings", {})),
+          transport: smtpStatus(env),
+        });
       const recovery = await recoveryRoute(
         request,
         path,

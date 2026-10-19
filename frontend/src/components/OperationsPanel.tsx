@@ -33,6 +33,7 @@ type Status = {
   cleanup_blocked: number;
   calls_today: number;
   input_tokens_today: string;
+  automatic_usage_reporting_only?: boolean;
   output_tokens_today: string;
   unknown_usage: number;
   usage_day: string;
@@ -222,9 +223,9 @@ export default function OperationsPanel({
                 {status.output_tokens_today} output tokens ·{" "}
                 {status.unknown_usage} unresolved usage records
                 <div className="small">
-                  Budget accounting includes reservations when measured usage is
-                  unavailable ({status.estimated_usage_records ?? 0} records
-                  today).
+                  {status.automatic_usage_reporting_only
+                    ? `Reported usage only; ${status.estimated_usage_records ?? 0} records today have unreported usage. Automatic processing has no internal daily token limit.`
+                    : `Budget accounting includes reservations when measured usage is unavailable (${status.estimated_usage_records ?? 0} records today).`}
                 </div>
               </dd>
             </div>

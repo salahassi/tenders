@@ -14,6 +14,7 @@ import TemplateManager from "../components/TemplateManager";
 import OperationsPanel from "../components/OperationsPanel";
 import RecoveryPanel from "../components/RecoveryPanel";
 import RateCatalog from "../components/RateCatalog";
+import NotificationPreferences from "../components/NotificationPreferences";
 
 export default function Settings() {
   const { state, update, notify, storageError, mode, saving } = useApp();
@@ -21,6 +22,7 @@ export default function Settings() {
     ["workspace", "Workspace"],
     ["models", "Models & providers"],
     ["data", "Assessment & data"],
+    ["notifications", "Notifications"],
     ["team", "Team & access"],
     ["proposals", "Proposal defaults"],
     ["operations", "Operations & recovery"],
@@ -149,9 +151,8 @@ export default function Settings() {
             <Badge tone="green">Workspace-wide</Badge>
           </div>
           <p className="admin-hint">
-            Daily model limits are TenderDesk application ceilings across all
-            providers, separate from provider-side rate limits or billing.
-            Advanced provider policies may lower these ceilings.
+            Automatic processing follows provider responses. Reported token
+            usage is logged for visibility and does not stop automatic work.
           </p>
           <div className="admin-form-grid">
             <div className="wide">
@@ -169,22 +170,6 @@ export default function Settings() {
               </Field>
             </div>
             <Field
-              label="Daily model-call limit"
-              hint="1–50 calls shared across all providers. Resets at midnight Riyadh time."
-            >
-              <input
-                className="input"
-                type="number"
-                min={1}
-                max={50}
-                disabled={!owner}
-                value={form.dailyCallLimit}
-                onChange={(e) =>
-                  setForm({ ...form, dailyCallLimit: e.target.value })
-                }
-              />
-            </Field>
-            <Field
               label="Default source polling interval"
               hint="6–168 hours for newly added sources. Existing sources keep their own schedule in Sources."
             >
@@ -197,32 +182,6 @@ export default function Settings() {
                 value={form.pollHours}
                 onChange={(e) =>
                   setForm({ ...form, pollHours: e.target.value })
-                }
-              />
-            </Field>
-            <Field label="Daily input-token limit" hint="1,000–250,000 tokens.">
-              <input
-                className="input"
-                type="number"
-                min={1000}
-                max={250000}
-                disabled={!owner}
-                value={form.inputTokenLimit}
-                onChange={(e) =>
-                  setForm({ ...form, inputTokenLimit: e.target.value })
-                }
-              />
-            </Field>
-            <Field label="Daily output-token limit" hint="1,000–50,000 tokens.">
-              <input
-                className="input"
-                type="number"
-                min={1000}
-                max={50000}
-                disabled={!owner}
-                value={form.outputTokenLimit}
-                onChange={(e) =>
-                  setForm({ ...form, outputTokenLimit: e.target.value })
                 }
               />
             </Field>
@@ -260,13 +219,21 @@ export default function Settings() {
         </section>
 
         <section className="panel admin-section">
-          <h2>Procurement & notifications</h2>
+          <h2>Procurement</h2>
           <p>
             Buying tender documents and submitting a bid remain manual actions.
-            Operational notifications appear in the app; no external email or
-            messaging service is configured here.
+            Email alerts and review reminders are managed under Notifications.
           </p>
         </section>
+      </div>
+      <div
+        id="settings-notifications"
+        className="stack settings-page-section"
+        hidden={section !== "notifications"}
+      >
+        {connected && visited.has("notifications") && (
+          <NotificationPreferences />
+        )}
       </div>
       <div
         id="settings-models"

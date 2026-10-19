@@ -213,6 +213,7 @@ export default function ModelControls() {
       slot?.key_configured && slot.model && slot.project_ref,
     );
     const changedAccount = Boolean(
+      !routing.enabled &&
       form.revision &&
       slot?.project_ref &&
       form.project_ref !== slot.project_ref,
@@ -311,7 +312,7 @@ export default function ModelControls() {
                 ? "Required for the API endpoint."
                 : "Required for account tracking."}
           </p>
-          {owner && (
+          {owner && legacy && (
             <>
               <p>
                 Server account identifier:{" "}
@@ -461,7 +462,8 @@ export default function ModelControls() {
       <p>
         <strong>Supabase Secrets</strong> hold the API key, exact model name and
         account identifier. <strong>Settings</strong> control provider order,
-        selection strategy, application limits and data permissions. Saving here
+        selection strategy and data permissions. Automatic routing uses provider
+        responses without application token or daily-call ceilings. Saving here
         never changes Secrets.
       </p>
       <p>

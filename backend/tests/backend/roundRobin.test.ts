@@ -346,7 +346,7 @@ it("continues after uncertain delivery while retaining each unknown reservation 
       .every((x) => x.actual_input === null && x.reserved_input > 0),
   ).toBe(true);
 });
-it("retries an exhausted round with a rotated start, but never resends ambiguous calls to the same provider", async () => {
+it("retries with rotation, prevents immediate ambiguous duplicates, then permits a fresh round after cooldown", async () => {
   await enable();
   const q = await queue();
   const send = transport(() => {
@@ -365,12 +365,16 @@ it("retries an exhausted round with a rotated start, but never resends ambiguous
   await tick();
   expect((await job(q.id)).status).toBe("retry_wait");
   expect(await usage(q.id)).toHaveLength(8);
-  // Gemini token counting is allowed; generation must not be repeated.
+  expect(vi.mocked(send).mock.calls.slice(before)).toHaveLength(0);
+  await f.db.exec(
+    "update public.provider_usage set created_at=now()-interval '16 minutes'; update public.jobs set next_attempt_at=now() where status='retry_wait'",
+  );
+  await tick();
+  expect(await usage(q.id)).toHaveLength(16);
   expect(
-    vi
-      .mocked(send)
-      .mock.calls.slice(before)
-      .every(([u]) => String(u).endsWith(":countTokens")),
+    (await usage(q.id)).every(
+      (u) => u.actual_input === null && u.actual_output === null,
+    ),
   ).toBe(true);
 });
 it("keeps a known pending Gemini request first after a lease change instead of starting the next provider", async () => {
@@ -434,7 +438,7 @@ it("falls back after a failed retrieval of a saved Gemini request without creati
     (await usage(q.id)).find((x) => x.provider === "gemini_free").state,
   ).toBe("unknown");
 });
-it("keeps workspace daily limits across providers, including uncertain attempts", async () => {
+it("tries every automatic provider despite old daily ceilings and retains unknown usage", async () => {
   await enable();
   await f.db.exec(
     "update public.workspaces set settings=settings||'{\"daily_call_limit\":2}'::jsonb",
@@ -447,9 +451,15 @@ it("keeps workspace daily limits across providers, including uncertain attempts"
       throw new TypeError("synthetic loss");
     }),
   )();
-  expect(calls).toHaveLength(2);
-  expect((await job(q.id)).error_code).toBe("MODEL_DAILY_QUOTA_WAIT");
-  expect(await usage(q.id)).toHaveLength(2);
+  expect(calls).toHaveLength(8);
+  expect((await job(q.id)).error_code).toBe("MODEL_ROUND_EXHAUSTED");
+  expect((await job(q.id)).status).toBe("retry_wait");
+  expect(await usage(q.id)).toHaveLength(8);
+  expect(
+    (await usage(q.id)).every(
+      (u) => u.actual_input === null && u.actual_output === null,
+    ),
+  ).toBe(true);
 });
 
 it("can fail over within a one-request token budget after a proven initial 429 rejection", async () => {
@@ -1501,4 +1511,37 @@ it("skips unconfigured OpenAI and Claude without external requests", async () =>
         !r.sent,
     ),
   ).toBe(true);
+});
+
+it("accepts validated automatic output with unknown usage and never calls a count-token endpoint", async () => {
+  await enable();
+  const q = await queue();
+  const fetcher = vi.fn(
+    async (url: string | URL | Request, init?: RequestInit) => {
+      expect(String(url)).not.toContain(":countTokens");
+      return Response.json({
+        id: "synthetic-no-usage",
+        status: "completed",
+        steps: [
+          {
+            type: "model_output",
+            content: [{ type: "text", text: '{"status":"ready"}' }],
+          },
+        ],
+      });
+    },
+  );
+  expect((await worker(fetcher as typeof fetch)()).status).toBe(200);
+  expect((await job(q.id)).status).toBe("succeeded");
+  expect(
+    fetcher.mock.calls.filter(([, init]) => init?.method === "POST"),
+  ).toHaveLength(1);
+  expect(
+    fetcher.mock.calls.filter(([, init]) => init?.method === "DELETE"),
+  ).toHaveLength(1);
+  expect((await usage(q.id))[0]).toMatchObject({
+    state: "unknown",
+    actual_input: null,
+    actual_output: null,
+  });
 });

@@ -14,6 +14,14 @@ export interface BackendEnvironment {
   allowedOrigins: string[];
   workerSecret: string;
   collectionHosts?: string[];
+  smtp?: {
+    host: string;
+    port: number;
+    user: string;
+    password: string;
+    from: string;
+    publicUrl: string;
+  };
   models: Record<ModelProviderId, ModelEnvironmentSlot>;
 }
 const SECRET_PREFIX: Record<ModelProviderId, string> = {
@@ -89,6 +97,15 @@ export function environment(
       .map((x) => x.trim())
       .filter(Boolean),
     workerSecret: get("APP_WORKER_SECRET") || "",
+    smtp: {
+      host: get("APP_SMTP_HOST") || "",
+      port: Number(get("APP_SMTP_PORT") || "465"),
+      user: get("APP_SMTP_USER") || "",
+      password: get("APP_SMTP_PASSWORD") || "",
+      from: get("APP_SMTP_FROM") || "",
+      publicUrl:
+        get("APP_PUBLIC_URL") || "https://salahassi.github.io/tenders/",
+    },
     models: modelEnvironments(get),
     collectionHosts: (get("APP_COLLECTION_HOSTS") || "")
       .split(",")

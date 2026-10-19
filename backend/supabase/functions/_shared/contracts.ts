@@ -65,6 +65,23 @@ const host = z
   .max(253)
   .regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i);
 export const commandSchemas = {
+  "notification.preferences": z
+    .object({
+      expected_revision: z.number().int().min(0),
+      email_enabled: z.boolean(),
+      failure_alerts: z.boolean(),
+      review_reminders: z.boolean(),
+      review_interval_hours: z.union([
+        z.literal(6),
+        z.literal(12),
+        z.literal(24),
+        z.literal(48),
+        z.literal(168),
+      ]),
+      language: z.enum(["ar", "en"]),
+    })
+    .strict(),
+  "notification.test": z.object({}).strict(),
   "discovery.configure": z
     .object({
       expected_revision: revision,
