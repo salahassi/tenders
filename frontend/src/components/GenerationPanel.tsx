@@ -166,7 +166,11 @@ export default function GenerationPanel({
                   ? "Replace or remove unreadable files before generation."
                   : pendingReview
                     ? "Review and confirm the extracted text of each RFP file to enable generation."
-                    : "Ready to generate. No custom template or company knowledge is required. Missing facts become review questions."}
+                    : active
+                      ? active.status === "blocked"
+                        ? "Preparation is paused. Review the reason below, then resume the saved work."
+                        : "Your proposal is being prepared. Completed steps are saved, and temporary provider failures retry automatically."
+                      : "Ready to generate. No custom template or company knowledge is required. Missing facts become review questions."}
             </p>
           )}
           {plans
@@ -179,10 +183,13 @@ export default function GenerationPanel({
                   {p.stage}
                 </strong>
                 <p>
-                  {p.status}
-                  {p.error_code
-                    ? ` · ${p.error_code.replaceAll("_", " ").toLowerCase()}`
-                    : ""}
+                  {p.error_code === "MODEL_ROUND_EXHAUSTED" &&
+                  ["queued", "running"].includes(p.status)
+                    ? "Waiting for an available provider. The system will retry automatically; your completed work is saved."
+                    : p.status +
+                      (p.error_code
+                        ? ` · ${p.error_code.replaceAll("_", " ").toLowerCase()}`
+                        : "")}
                 </p>
                 {["blocked", "failed", "canceled"].includes(p.status) &&
                   ![

@@ -861,6 +861,107 @@ it("allows a single-provider connection check to return after 20 seconds", async
   }
 });
 
+it.each(["only available", "failover", "all time out"] as const)(
+  "bounds the automatic round while allowing slow proposal responses: %s",
+  async (scenario) => {
+    vi.useFakeTimers();
+    try {
+      const waiting = new Date(Date.now() + 3600000).toISOString();
+      const zai = { ...env, provider: "zai_free" };
+      const providers =
+        scenario === "only available"
+          ? [
+              { ...config, retry_after: waiting },
+              { ...config, provider: "groq_free" as const },
+              { ...config, provider: "zai_free" as const },
+            ]
+          : [config, { ...config, provider: "zai_free" as const }];
+      const endAttempt = vi.fn();
+      const settle = vi.fn();
+      const ledger: Ledger = {
+        preflight: async () => ({ routing_mode: "round_robin", providers }),
+        beginAttempt: async (provider) => provider,
+        endAttempt,
+        reserve: async (_input, _output, _hash, _manifest, provider) =>
+          provider,
+        settle,
+      };
+      const fetcher = vi.fn<typeof fetch>(
+        async (url, init) =>
+          new Promise((resolve, reject) => {
+            const succeeds =
+              scenario !== "all time out" && String(url).includes("api.z.ai");
+            const timer = setTimeout(
+              () =>
+                resolve(
+                  Response.json({
+                    choices: [
+                      {
+                        finish_reason: "stop",
+                        message: { content: JSON.stringify(analysis) },
+                      },
+                    ],
+                    usage: { prompt_tokens: 100, completion_tokens: 90 },
+                  }),
+                ),
+              succeeds ? 25000 : 120000,
+            );
+            init?.signal?.addEventListener("abort", () => {
+              clearTimeout(timer);
+              reject(new Error("aborted"));
+            });
+          }),
+      );
+      const outcome = executeModel(
+        "analyze_chunk",
+        {},
+        evidence,
+        ["block-1"],
+        [],
+        { qwen_free: env, zai_free: zai },
+        ledger,
+        "en",
+        false,
+        fetcher,
+      ).then(
+        (value) => ({ value }),
+        (error: ModelError) => ({ error }),
+      );
+      await vi.waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
+      await vi.advanceTimersByTimeAsync(
+        scenario === "only available" ? 25000 : 90000,
+      );
+      const result = await outcome;
+      expect(fetcher).toHaveBeenCalledTimes(
+        scenario === "only available" ? 1 : 2,
+      );
+      if (scenario === "all time out") {
+        expect(result).toMatchObject({
+          error: { code: "MODEL_ROUND_EXHAUSTED" },
+        });
+      } else {
+        expect(result).toMatchObject({ value: analysis });
+      }
+      if (scenario !== "only available") {
+        expect(endAttempt).toHaveBeenCalledWith(
+          "qwen_free",
+          "MODEL_NETWORK_UNCERTAIN",
+          true,
+          "qwen_free",
+          expect.objectContaining({ provider_error_reason: "request_timeout" }),
+        );
+        expect(settle).toHaveBeenCalledWith(
+          "qwen_free",
+          { input: null, output: null, thinking: null },
+          "MODEL_NETWORK_UNCERTAIN",
+        );
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  },
+);
+
 it("uses OpenAI Responses with the supplied model and preserves reasoning usage without extracting reasoning text", async () => {
   const send = vi.fn<typeof fetch>(async () =>
     Response.json(

@@ -463,6 +463,65 @@ it.each(["MODEL_OUTPUT_INVALID", "MODEL_OUTPUT_TRUNCATED"])(
     ).toBe("queued");
   },
 );
+it.each([
+  { automatic: true, state: "unknown", resumes: true },
+  { automatic: false, state: "unknown", resumes: false },
+  { automatic: true, state: "reserved", resumes: false },
+  { automatic: false, state: "reserved", resumes: false },
+])(
+  "resuming a proposal with $state usage and automatic=$automatic preserves the reservation policy",
+  async ({ automatic, state, resumes }) => {
+    await start();
+    if (automatic)
+      await f.command("model.routing", {
+        enabled: true,
+        expected_revision: 0,
+        strategy: "round_robin",
+      });
+    const job = await f.rpc("claim_backend_job");
+    await f.rpc("fail_generation", [
+      job.id,
+      job.lease_token,
+      "DATA_AUTHORIZATION_REQUIRED",
+      null,
+      null,
+    ]);
+    const plan = (
+      await f.db.query<any>("select * from public.generation_plans")
+    ).rows[0];
+    // An unrelated historical call, with unknown actual usage kept intact.
+    const usage = (
+      await f.db.query<any>(
+        "insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,created_by) values($1,null,gen_random_uuid(),'unrelated-call','zai_free','synthetic-model',repeat('b',64),current_date,1,100,100,$2,$3) returning *",
+        [f.w, state, f.owner],
+      )
+    ).rows[0];
+    const retry = f.command("generation.retry", {
+      id: plan.id,
+      expected_revision: plan.revision,
+      reason: "Resume after granting the missing file permission",
+    });
+    if (resumes) {
+      await expect(retry).resolves.toMatchObject({
+        id: plan.id,
+        status: "queued",
+      });
+      const resumed = await f.rpc("claim_backend_job");
+      expect(resumed.id).toBe(job.id);
+      expect(resumed.attempts).toBe(2);
+    } else {
+      await expect(retry).rejects.toThrow("USAGE_REVIEW_REQUIRED");
+    }
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from public.provider_usage where id=$1",
+          [usage.id],
+        )
+      ).rows[0],
+    ).toEqual(usage);
+  },
+);
 it("splits oversized work without dropping the original text boundaries", () => {
   const ctx: any = {
     step: {

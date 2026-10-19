@@ -909,6 +909,9 @@ export class FreeModelProvider {
       return result;
     } catch (error) {
       if (error instanceof ModelError) throw error;
+      this.telemetry.provider_error_reason = controller.signal.aborted
+        ? "request_timeout"
+        : "network_error";
       throw new ModelError("MODEL_NETWORK_UNCERTAIN");
     } finally {
       clearTimeout(timer);
@@ -1331,6 +1334,21 @@ export async function executeModel(
   if (blockedContent(prompt)) throw new ModelError("DATA_POLICY_BLOCKED");
   const schema = z.toJSONSchema(modelSchemas[task]);
   const inputHash = await sha256(prompt);
+  const roundStarted = Date.now();
+  const eligibleProviders = pool.providers.filter((config) => {
+    const env = environments[config.provider];
+    return (
+      env &&
+      tryAvailable(config, env, roundStarted) &&
+      !(config.retry_after && Date.parse(config.retry_after) > roundStarted)
+    );
+  }).length;
+  // Share a bounded request budget among providers that can actually send.
+  // Missing keys and provider cooldowns must not shorten the remaining
+  // provider's request. Background GETs retain their own short timeout.
+  const requestTimeout = automatic
+    ? Math.floor(90000 / Math.max(1, eligibleProviders))
+    : 90000;
   let lastError: ModelError = new ModelError("MODEL_NOT_CONFIGURED");
   let outputError: ModelError | null = null;
   const retryWindows: (string | null)[] = [];
@@ -1350,15 +1368,7 @@ export async function executeModel(
         await ledger.attempt?.(config.provider, lastError.code, false);
       continue;
     }
-    const provider = new FreeModelProvider(
-      env,
-      fetcher,
-      // A single-provider diagnostic has the full request budget; multi-provider
-      // work keeps short attempts so one slow provider cannot consume the round.
-      automatic && !(task === "connection_probe" && pool.providers.length === 1)
-        ? 20000
-        : 90000,
-    );
+    const provider = new FreeModelProvider(env, fetcher, requestTimeout);
     let reservation: string | null = null;
     let settled = false;
     let remoteId: string | null = null;
@@ -1387,7 +1397,7 @@ export async function executeModel(
         !pending &&
         automatic &&
         config.retry_after &&
-        Date.parse(config.retry_after) > Date.now()
+        Date.parse(config.retry_after) > roundStarted
       ) {
         throw new ModelError("PROVIDER_QUOTA_WAIT", config.retry_after);
       }
