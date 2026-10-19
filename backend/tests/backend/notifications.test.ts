@@ -455,3 +455,21 @@ it("keeps the processing queue running if notification infrastructure fails", as
     warn.mockRestore();
   }
 });
+
+it("identifies SMTP sender verification and sandbox restrictions without returning raw responses", () => {
+  const verification = smtpFailure({
+    responseCode: 550,
+    response:
+      "The synthetic.test domain is not verified. Please add and verify your domain.",
+  });
+  expect(verification).toEqual({
+    outcome: "failed",
+    code: "SMTP_SENDER_DOMAIN_UNVERIFIED",
+  });
+  const sandbox = smtpFailure({
+    responseCode: 550,
+    response: "You can only send testing emails to your own email address.",
+  });
+  expect(sandbox.code).toBe("SMTP_TEST_RECIPIENT_RESTRICTED");
+  expect(JSON.stringify(verification)).not.toContain("synthetic.test");
+});

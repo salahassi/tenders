@@ -123,14 +123,35 @@ export function smtpFailure(error: unknown): {
   outcome: "retry" | "failed" | "unknown";
   code: string;
 } {
-  const e = error as { code?: string; command?: string; responseCode?: number };
+  const e = error as {
+    code?: string;
+    command?: string;
+    responseCode?: number;
+    response?: string;
+  };
   const code = e?.code || "";
   const response = e?.responseCode;
   if (code === "EAUTH") return { outcome: "failed", code: "SMTP_AUTH_FAILED" };
   if (response && response >= 400 && response < 500)
     return { outcome: "retry", code: "SMTP_TEMPORARY_REJECTION" };
-  if (response && response >= 500)
-    return { outcome: "failed", code: "SMTP_REJECTED" };
+  if (response && response >= 500) {
+    const reason = e.response || "";
+    const specific =
+      /domain.{0,100}(not verified|unverified)|verify.{0,50}domain/i.test(
+        reason,
+      )
+        ? "SMTP_SENDER_DOMAIN_UNVERIFIED"
+        : /only send.{0,80}(testing|own email)|testing emails.{0,100}(own|verified)|test.{0,50}recipient/i.test(
+              reason,
+            )
+          ? "SMTP_TEST_RECIPIENT_RESTRICTED"
+          : e.command === "MAIL FROM"
+            ? "SMTP_SENDER_REJECTED"
+            : e.command === "RCPT TO"
+              ? "SMTP_RECIPIENT_REJECTED"
+              : "SMTP_REJECTED";
+    return { outcome: "failed", code: specific };
+  }
   if (
     [
       "CONN",
@@ -174,6 +195,31 @@ export async function processNotificationEmail(
     };
   } catch (error) {
     const failure = smtpFailure(error);
+    const diagnostic = (error || {}) as { responseCode?: number; command?: string };
+    console.warn(
+      "smtp_delivery_result",
+      JSON.stringify({
+        delivery_id: d.id,
+        outcome: failure.outcome,
+        code: failure.code,
+        response_code:
+          typeof diagnostic.responseCode === "number"
+            ? diagnostic.responseCode
+            : null,
+        command: [
+          "CONN",
+          "EHLO",
+          "HELO",
+          "STARTTLS",
+          "AUTH",
+          "MAIL FROM",
+          "RCPT TO",
+          "DATA",
+        ].includes(diagnostic.command || "")
+          ? diagnostic.command
+          : null,
+      }),
+    );
     result = {
       outcome: failure.outcome,
       result_code: failure.code,
