@@ -383,6 +383,35 @@ it("requires an Owner for discovery and keeps page-writing RPCs worker-only", as
   });
 });
 
+it("can retry an independent discovery job without requiring a source row", async () => {
+  await f.command("source.discover", {
+    url: "https://directory.example.test/",
+  });
+  const j = await rpc("claim_backend_job");
+  await rpc("fail_source_reading", {
+    job_id: j.id,
+    lease: j.lease_token,
+    error_code: "SOURCE_LOGIN_REQUIRED",
+    retry_after: null,
+  });
+  const saved = (
+    await f.db.query<any>("select * from public.jobs where id=$1", [j.id])
+  ).rows[0];
+  expect(saved.status).toBe("blocked");
+  const retry = await f.command("job.action", {
+    id: j.id,
+    expected_revision: saved.revision,
+    action: "retry",
+    reason: "Synthetic connection repaired",
+  });
+  expect(retry).toMatchObject({
+    status: "queued",
+    input_hash: j.input_hash,
+    checkpoint: { discovery_url: "https://directory.example.test/" },
+  });
+  expect((await rpc("claim_backend_job")).id).toBe(j.id);
+});
+
 it("gives waiting collection a turn ahead of old model retries and yields again after an attempt", async () => {
   const s = await source();
   await f.command("source.collect", {
