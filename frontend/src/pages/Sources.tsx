@@ -1,4 +1,5 @@
 import SourceImport from "../components/SourceImport";
+import SourceDiscovery from "../components/SourceDiscovery";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -33,7 +34,7 @@ const sourceTypeLabel: Record<Source["type"], string> = {
   link_directory: "Website",
   rss: "RSS feed",
   json_feed: "JSON feed",
-  manual: "Manual review",
+  manual: "Automatic website",
 };
 const sourceStatusLabel: Record<Source["status"], string> = {
   approved: "Enabled",
@@ -69,6 +70,7 @@ export default function Sources() {
   const countryNamesEn = new Intl.DisplayNames(["en"], { type: "region" });
   const sources = state.sources.filter(
     (s) =>
+      !(s.status === "proposed" && s.adapterConfig?.discovery_job) &&
       (filter === "all" || s.status === filter) &&
       (country === "all" || sourceCountry(s) === country) &&
       `${s.name} ${sourceTypeLabel[s.type]} ${s.tags.join(" ")}`
@@ -176,6 +178,7 @@ export default function Sources() {
           ) : undefined
         }
       />
+      <SourceDiscovery />
       <div className="admin-metrics">
         <Metric
           label="Enabled sources"
@@ -390,11 +393,9 @@ export default function Sources() {
         )}
       </div>
       <p className="admin-help">
-        Manual review sources open the official tender page or supplier portal.
-        Automated collection requires a supported feed or collection adapter.
-        Supplier registration and tender participation follow each institution's
-        own process. "Added by you" groups opportunities you enter or import
-        yourself.
+        Enable a public website to start automatic reading. Collection history
+        shows results and any login, browser or document-reading requirements.
+        "Added by you" groups opportunities you enter or import yourself.
       </p>
       <SourceImport />
       <Modal open={open} onClose={() => setOpen(false)} title="Add source">
@@ -424,7 +425,7 @@ export default function Sources() {
                 })
               }
             >
-              <option value="link_directory">Website</option>
+              <option value="link_directory">Automatic public website</option>
               <option value="rss">RSS feed</option>
               <option value="json_feed">JSON feed</option>
             </select>

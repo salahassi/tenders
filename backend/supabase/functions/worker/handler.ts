@@ -1,4 +1,5 @@
 import { processGeneration } from "../_shared/generation.ts";
+import { processAutomaticSource } from "../_shared/automaticSources.ts";
 import { processModelProbe } from "../_shared/modelProbe.ts";
 import {
   processNotificationEmail,
@@ -111,11 +112,35 @@ export function createWorkerHandler(
         return response({ data: { job_id: job.id, processed: true } });
       }
       if (job.type === "source_collect" || job.type === "source_candidates") {
+        if (job.type === "source_candidates" && job.checkpoint?.discovery_url) {
+          const saved = await processAutomaticSource(
+            backend,
+            env,
+            job,
+            resolve,
+            fetcher,
+          );
+          return response({ data: { job_id: job.id, ...saved } });
+        }
         try {
           const source = (await backend.internal("collection_context", {
             job_id: job.id,
             lease: job.lease_token,
           })) as SourceInput;
+          if (
+            source.kind === "link_directory" &&
+            (source.adapter_config as Record<string, unknown>)?.automatic ===
+              true
+          ) {
+            const saved = await processAutomaticSource(
+              backend,
+              env,
+              job,
+              resolve,
+              fetcher,
+            );
+            return response({ data: { job_id: job.id, ...saved } });
+          }
           const hosts = env.collectionHosts?.length
             ? env.collectionHosts
             : await backend.internal("worker_collection_hosts");

@@ -24,12 +24,54 @@ const equal = (a: unknown, b: unknown) =>
 const str = (row: Record<string, unknown>, key: string, fallback = "") =>
   row[key] == null ? fallback : z.string().parse(row[key]);
 const strings = (value: unknown) => z.array(z.string()).parse(value ?? []);
+const sourceReadingMessages: Record<string, string> = {
+  SOURCE_LOGIN_REQUIRED:
+    "This source requires sign-in. Use an accessible public tender listing.",
+  SOURCE_BROWSER_REQUIRED:
+    "This source requires browser JavaScript; the current reader could not obtain its notices.",
+  SOURCE_OCR_REQUIRED:
+    "This page or PDF requires OCR before its notices can be read.",
+  SOURCE_DOCUMENT_RESTRICTED:
+    "This document contains restricted content and could not be used for automatic reading.",
+  SOURCE_NOT_A_TENDER_LISTING:
+    "No readable tender listing was found at this URL or its observed links.",
+  SOURCE_NAVIGATION_LIMIT:
+    "The reading limit was reached. Review the source URL and collection history for coverage.",
+  SOURCE_PAGE_PARTIAL:
+    "Only part of this page could be read; complete coverage is not confirmed.",
+  SOURCE_PAGE_CONTINUATION:
+    "Continuing automatically to the next observed tender-listing page.",
+};
 function collectionSummary(run: Row | undefined): string {
   if (run?.status !== "succeeded") return "";
   const counts = z
     .object({ processed: z.number().int().nonnegative() })
     .safeParse(run.counts);
   return counts.success ? `${counts.data.processed} notices processed.` : "";
+}
+function sourceReadingSummary(checkpoint: unknown): string {
+  const data = checkpoint as {
+    source_reading_result?: {
+      pages_read?: number;
+      candidates?: number;
+      warnings?: string[];
+    };
+    discovery_url?: string;
+  } | null;
+  const result = data?.source_reading_result;
+  if (!result)
+    return data?.discovery_url
+      ? ` Source discovery: ${data.discovery_url}`
+      : "";
+  return (
+    ` ${result.pages_read ?? 0} source pages read.` +
+    (result.candidates == null
+      ? ""
+      : ` ${result.candidates} source suggestions saved for review.`) +
+    (result.warnings?.length
+      ? " Coverage is partial; check the source for additional results."
+      : "")
+  );
 }
 const blocked = (message: string): never => {
   throw new BackendRequestError("CAPABILITY_NOT_ACTIVE", message, 422);
@@ -593,8 +635,10 @@ export class ConnectedRepository {
                   ? (r.checkpoint as any)?.model_routing?.mode === "round_robin"
                     ? "Model connection verified; measured usage recorded."
                     : "Gemini connection verified; measured usage recorded."
-                  : str(r, "error_code")) +
+                  : sourceReadingMessages[str(r, "error_code")] ||
+                    str(r, "error_code")) +
         collectionSummary(sourceRuns.get(r.id)) +
+        sourceReadingSummary(r.checkpoint) +
         modelRoutingSummary(r.checkpoint),
       createdAt: str(r, "created_at"),
     }));

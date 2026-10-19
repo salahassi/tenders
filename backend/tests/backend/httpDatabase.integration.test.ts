@@ -289,10 +289,11 @@ it("connects a manual source through HTTP and SQL, enables it, collects with the
       reason: "Synthetic fixture permission",
     },
   );
-  expect(premature.error.code).toBe("ADAPTER_REQUIRED");
+  expect(premature.status).toBe(200);
+  expect(premature.data.adapter_config.automatic).toBe(true);
   const configured = await command("source.configure", {
     id: created.data.id,
-    expected_revision: created.data.revision,
+    expected_revision: premature.data.revision,
     kind: "rss",
     url: input.url,
     approved_hosts: input.approved_hosts,
@@ -423,8 +424,8 @@ it("persists combined collection and keeps discovered sources proposed through t
         action: "approve",
         reason: "Synthetic attempted activation",
       })
-    ).error.code,
-  ).toBe("ADAPTER_REQUIRED");
+    ).status,
+  ).toBe(200);
 });
 
 it("persists a Gemini-only policy through the UI command route and enforces real SQL roles and revisions", async () => {

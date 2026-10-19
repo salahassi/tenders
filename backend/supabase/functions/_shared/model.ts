@@ -1,3 +1,8 @@
+import {
+  sourcePageSchema,
+  sourceReadingInstruction,
+  validateSourcePageResult,
+} from "./sourceModel.ts";
 import { z } from "zod";
 import type { ServiceScope } from "./discovery.ts";
 import {
@@ -57,6 +62,7 @@ export const blockSchema = z.discriminatedUnion("type", [
     .strict(),
 ]);
 export const modelSchemas = {
+  inspect_source_page: sourcePageSchema,
   connection_probe: z.object({ status: z.literal("ready") }).strict(),
   summarize_review: z
     .object({
@@ -314,6 +320,7 @@ export type Usage = {
   thinking: number | null;
 };
 export const caps: Record<ModelTask, number> = {
+  inspect_source_page: 8192,
   // Includes a small reasoning budget for providers that count it as output.
   connection_probe: 1024,
   summarize_review: 4096,
@@ -410,6 +417,8 @@ export function validateModelResult(
   requiredIds: string[] = [],
 ): any {
   const result = modelSchemas[task].parse(value) as any;
+  if (task === "inspect_source_page")
+    validateSourcePageResult(result, evidence);
   if (blockedContent(JSON.stringify(result)))
     throw new ModelError("MODEL_OUTPUT_POLICY_BLOCKED");
   if (task === "summarize_review") {
@@ -1282,6 +1291,8 @@ export async function executeModel(
       ? "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
       : null,
     required_ids: requiredIds,
+    task_instruction:
+      task === "inspect_source_page" ? sourceReadingInstruction : undefined,
     untrusted_data: context,
     evidence,
   });
@@ -1425,6 +1436,15 @@ export async function executeModel(
           evidence,
           requiredIds,
         );
+        if (task === "inspect_source_page") {
+          const mode = (context as { mode?: string }).mode;
+          if (
+            (mode === "collect_notices" &&
+              validated.candidate_link_ids.length) ||
+            (mode === "discover_sources" && validated.notices.length)
+          )
+            throw new ModelError("MODEL_OUTPUT_INVALID");
+        }
         const scopePolicy = (context as { scope_policy?: ServiceScope } | null)
           ?.scope_policy;
         if (task === "classify_opportunity" && scopePolicy)

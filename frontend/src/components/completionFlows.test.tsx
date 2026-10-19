@@ -3,9 +3,67 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { useApp } from "../lib/store";
 import SourceConfiguration from "./SourceConfiguration";
+import SourceDiscovery from "./SourceDiscovery";
+import { MemoryRouter } from "react-router-dom";
 import TenderCostInput from "./TenderCostInput";
 import { tenderCurrency } from "../lib/tenderCurrency";
 vi.mock("../lib/store", () => ({ useApp: vi.fn() }));
+it("queues discovery separately and keeps suggestions available for Owner review", async () => {
+  const runCommand = vi.fn(async () => ({})),
+    notify = vi.fn();
+  const state = {
+    settings: { role: "Owner" },
+    sources: [
+      {
+        id: "suggestion",
+        name: "Suggested public portal",
+        url: "https://buyer.example.test/",
+        status: "proposed",
+        adapterConfig: { discovery_job: "synthetic" },
+      },
+    ],
+  };
+  vi.mocked(useApp).mockReturnValue({
+    runCommand,
+    state,
+    notify,
+    saving: false,
+  } as any);
+  const view = render(
+    <MemoryRouter>
+      <SourceDiscovery />
+    </MemoryRouter>,
+  );
+  expect(
+    screen.getByRole("link", { name: "Suggested public portal" }),
+  ).toHaveAttribute("href", "/sources/suggestion");
+  await userEvent.click(
+    screen.getByRole("button", { name: "Discover sources" }),
+  );
+  await userEvent.type(
+    screen.getByLabelText("Directory or procurement page URL"),
+    "https://directory.example.test/",
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "Find source suggestions" }),
+  );
+  expect(runCommand).toHaveBeenCalledExactlyOnceWith("source.discover", {
+    url: "https://directory.example.test/",
+  });
+  expect(notify).toHaveBeenCalledWith(expect.stringContaining("queued"));
+  state.settings.role = "Reviewer";
+  view.rerender(
+    <MemoryRouter>
+      <SourceDiscovery />
+    </MemoryRouter>,
+  );
+  expect(
+    screen.queryByRole("button", { name: "Discover sources" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("link", { name: "Suggested public portal" }),
+  ).toBeInTheDocument();
+});
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -52,7 +110,7 @@ it("retains the reviewed listing adapter and catalog metadata when editing colle
     }),
   );
 });
-it("saves and reloads combined collection, then switches back to either individual mode", async () => {
+it("saves automatic reading without source-specific settings and keeps discovery out of source configuration", async () => {
   const runCommand = vi.fn(async (..._args: any[]) => ({}));
   vi.mocked(useApp).mockReturnValue({
     runCommand,
@@ -62,65 +120,46 @@ it("saves and reloads combined collection, then switches back to either individu
   } as any);
   const source = {
     id: "synthetic",
-    revision: 2,
+    revision: 1,
     url: "https://example.test/tenders",
-    type: "link_directory",
-    approvedHosts: ["example.test"],
-    policy: "Synthetic permitted listing",
+    type: "manual",
+    approvedHosts: [],
+    policy: "",
     pollHours: 6,
-    adapterConfig: {
-      official_listing: "custom-source",
-      extraction: { version: 1, buyer: "Synthetic buyer" },
-      catalog: { key: "synthetic" },
-    },
+    adapterConfig: { catalog: { key: "synthetic" } },
   } as any;
-  const user = userEvent.setup();
   const first = render(<SourceConfiguration source={source} />);
-  await user.selectOptions(
-    screen.getByRole("combobox", { name: /^Website listing/ }),
-    "combined",
-  );
   expect(
-    screen.getByText(/Both use the same fetched page/),
-  ).toBeInTheDocument();
-  await user.click(
+    screen.getByRole("combobox", { name: "Collection method" }),
+  ).toHaveValue("automatic");
+  expect(
+    screen.queryByRole("combobox", { name: /Website listing/ }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByText(/Discover candidate source links/),
+  ).not.toBeInTheDocument();
+  await userEvent.click(
     screen.getByRole("button", { name: "Save settings and pause" }),
   );
   const saved = runCommand.mock.lastCall![1];
-  expect(saved.adapter_config).toEqual({
-    ...source.adapterConfig,
-    discover_source_links: true,
+  expect(saved).toMatchObject({
+    kind: "link_directory",
+    approved_hosts: ["example.test"],
+    adapter_config: { automatic: true, catalog: { key: "synthetic" } },
   });
   first.unmount();
   render(
     <SourceConfiguration
-      source={{ ...source, revision: 3, adapterConfig: saved.adapter_config }}
+      source={{
+        ...source,
+        type: "link_directory",
+        adapterConfig: saved.adapter_config,
+      }}
     />,
   );
   expect(
-    screen.getByRole("combobox", { name: /^Website listing/ }),
-  ).toHaveValue("combined");
-  await user.selectOptions(
-    screen.getByRole("combobox", { name: /^Website listing/ }),
-    "configured",
-  );
-  await user.click(
-    screen.getByRole("button", { name: "Save settings and pause" }),
-  );
-  expect(runCommand.mock.lastCall![1].adapter_config).toEqual(
-    source.adapterConfig,
-  );
-  await user.selectOptions(
-    screen.getByRole("combobox", { name: /^Website listing/ }),
-    "",
-  );
-  await user.click(
-    screen.getByRole("button", { name: "Save settings and pause" }),
-  );
-  expect(runCommand.mock.lastCall![1].adapter_config).toEqual({
-    extraction: source.adapterConfig.extraction,
-    catalog: source.adapterConfig.catalog,
-  });
+    screen.getByRole("combobox", { name: "Collection method" }),
+  ).toHaveValue("automatic");
 });
 it("suggests tender-country currencies without assigning a currency to an unknown country", () => {
   for (const [country, currency] of [

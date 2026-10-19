@@ -355,7 +355,7 @@ describe("connected repository", () => {
 });
 
 describe("connected screens", () => {
-  it("shows manual portal names, country filtering and actionable setup requirements", async () => {
+  it("shows seeded public URLs with automatic activation and country filtering", async () => {
     const f = fixture([
       {
         id: source,
@@ -390,18 +390,11 @@ describe("connected screens", () => {
     });
     expect(link).toHaveAttribute("href", `/sources/${source}`);
     expect(
-      screen.getAllByText("Manual review", { exact: true })[0],
+      screen.getAllByText("Automatic website", { exact: true })[0],
     ).toBeInTheDocument();
     expect(screen.queryByText("Built-in origin")).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Enable" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("link", {
-        name: "Set up collection for بوابة عطاءات اختبارية",
-      }),
-    ).toHaveAttribute("href", `/sources/${source}`);
-    expect(screen.getAllByText("Setup required")).toHaveLength(2);
+    expect(screen.getAllByRole("button", { name: "Enable" })).toHaveLength(2);
+    expect(screen.queryByText("Setup required")).not.toBeInTheDocument();
     const user = userEvent.setup();
     await user.selectOptions(
       screen.getByLabelText("Filter source country"),
@@ -419,7 +412,7 @@ describe("connected screens", () => {
     ).toBeInTheDocument();
   });
 
-  it("opens manual portal details with the actual access note and no misleading collection action", async () => {
+  it("opens a saved portal with automatic reading selected and retains access notes", async () => {
     const f = fixture([
       {
         id: source,
@@ -455,18 +448,11 @@ describe("connected screens", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Enable source" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByText("Manual review — collection adapter required"),
+      screen.getAllByRole("button", { name: "Enable source" })[0],
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Collection setup required" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/This link is a supplier registration portal/),
-    ).toBeInTheDocument();
-    expect(screen.getByLabelText("Adapter")).toHaveValue("");
+      screen.getByRole("combobox", { name: "Collection method" }),
+    ).toHaveValue("automatic");
   });
   it("opens source setup, saves a chosen feed and enables the reloaded source", async () => {
     const f = fixture([
@@ -495,20 +481,19 @@ describe("connected screens", () => {
     const user = userEvent.setup();
     await user.click(
       await screen.findByRole("link", {
-        name: "Set up collection for Synthetic unconnected source",
+        name: "Synthetic unconnected source",
       }),
     );
     expect(
-      await screen.findByRole("heading", { name: "Collection setup required" }),
+      await screen.findByRole("heading", {
+        name: "Synthetic unconnected source",
+      }),
     ).toBeInTheDocument();
-    await user.click(
-      screen.getByRole("button", { name: "Save settings and pause" }),
+    await user.selectOptions(
+      screen.getByRole("combobox", { name: "Collection method" }),
+      "rss",
     );
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Choose a collection method",
-    );
-    expect(f.commands).toHaveLength(0);
-    await user.selectOptions(screen.getByLabelText("Adapter"), "rss");
+    await user.click(screen.getByText("Advanced access settings"));
     await user.clear(screen.getByLabelText("Collection URL"));
     await user.type(
       screen.getByLabelText("Collection URL"),

@@ -6,11 +6,13 @@ export default function SourceConfiguration({ source }: { source: Source }) {
   const { runCommand, saving, notify, state } = useApp();
   const [url, setUrl] = useState(source.url),
     [kind, setKind] = useState(
-      source.type === "manual"
-        ? source.adapterConfig?.extraction
+      source.adapterConfig?.automatic === true ||
+        ((source.type === "manual" || source.type === "link_directory") &&
+          !source.adapterConfig?.extraction)
+        ? "automatic"
+        : source.type === "manual"
           ? "link_directory"
-          : ""
-        : source.type,
+          : source.type,
     ),
     [hosts, setHosts] = useState((source.approvedHosts || []).join(", ")),
     [policy, setPolicy] = useState(source.policy),
@@ -23,14 +25,6 @@ export default function SourceConfiguration({ source }: { source: Source }) {
         null,
         2,
       ),
-    ),
-    [official, setOfficial] = useState(
-      source.adapterConfig?.official_listing ||
-        (source.type === "manual" && source.adapterConfig?.extraction)
-        ? source.adapterConfig?.discover_source_links === true
-          ? "combined"
-          : "configured"
-        : "",
     ),
     [error, setError] = useState("");
   if (!runCommand || state.settings.role !== "Owner") return null;
@@ -45,12 +39,16 @@ export default function SourceConfiguration({ source }: { source: Source }) {
         id: source.id,
         expected_revision: source.revision,
         url,
-        kind,
-        approved_hosts: hosts
-          .split(",")
-          .map((x) => x.trim().toLowerCase())
-          .filter(Boolean),
-        policy_note: policy,
+        kind: kind === "automatic" ? "link_directory" : kind,
+        approved_hosts:
+          kind === "automatic"
+            ? [new URL(url).hostname]
+            : hosts
+                .split(",")
+                .map((x) => x.trim().toLowerCase())
+                .filter(Boolean),
+        policy_note:
+          policy.trim() || "Owner configured automatic public source reading.",
         poll_interval_hours: hours,
         adapter_config:
           kind === "json_feed"
@@ -62,14 +60,12 @@ export default function SourceConfiguration({ source }: { source: Source }) {
                 ...(source.adapterConfig?.extraction
                   ? { extraction: source.adapterConfig.extraction }
                   : {}),
-                ...(kind === "link_directory" && official
+                ...(kind === "automatic" ? { automatic: true } : {}),
+                ...(kind === "link_directory"
                   ? {
                       official_listing:
                         source.adapterConfig?.official_listing || "configured",
                       extraction: JSON.parse(config),
-                      ...(official === "combined"
-                        ? { discover_source_links: true }
-                        : {}),
                     }
                   : {}),
               },
@@ -85,9 +81,9 @@ export default function SourceConfiguration({ source }: { source: Source }) {
     <section className="panel admin-section">
       <h2>Collection settings</h2>
       <p>
-        Choose a feed, a supported official tender listing, or a directory of
-        candidate sources. Official listings collect notices from the latest
-        page; review each original notice for complete terms and dates.
+        Automatic reading identifies notices and follows tender-listing links
+        using the configured models. Enable the source to start collection; Jobs
+        shows progress and any access requirements.
       </p>
       <Field label="Collection URL">
         <input
@@ -96,53 +92,18 @@ export default function SourceConfiguration({ source }: { source: Source }) {
           type="url"
         />
       </Field>
-      <Field label="Adapter">
+      <Field label="Collection method">
         <select
           value={kind}
           onChange={(e) => setKind(e.target.value as typeof kind)}
         >
-          <option value="" disabled>
-            Choose a collection method
-          </option>
+          <option value="automatic">Automatic public website reading</option>
           <option value="rss">RSS / Atom</option>
           <option value="json_feed">JSON feed</option>
           <option value="link_directory">
-            Website listing / link directory
+            Saved website extraction (advanced)
           </option>
         </select>
-      </Field>
-      {kind === "link_directory" && (
-        <Field label="Website listing">
-          <select
-            value={official}
-            onChange={(e) => setOfficial(e.target.value)}
-          >
-            <option value="">Discover candidate source links</option>
-            <option value="configured">
-              Collect notices using saved extraction settings
-            </option>
-            <option value="combined">
-              Collect notices and discover candidate sources
-            </option>
-          </select>
-          <p className="muted small">
-            {official === "combined"
-              ? "Both use the same fetched page. Notices enter assessment; discovered sources stay proposed until configured and enabled. "
-              : ""}
-            Extraction settings are stored with this source in the database.
-            Their URL must match the collection URL.
-          </p>
-        </Field>
-      )}
-      <Field label="Permitted hostnames, separated by commas">
-        <input value={hosts} onChange={(e) => setHosts(e.target.value)} />
-      </Field>
-      <Field label="Collection permission and last review">
-        <textarea
-          value={policy}
-          onChange={(e) => setPolicy(e.target.value)}
-          placeholder="Record the permitted access basis and date you checked it."
-        />
       </Field>
       <Field label="Hours between collections">
         <input
@@ -153,7 +114,7 @@ export default function SourceConfiguration({ source }: { source: Source }) {
           onChange={(e) => setHours(Number(e.target.value))}
         />
       </Field>
-      {(kind === "json_feed" || (kind === "link_directory" && official)) && (
+      {(kind === "json_feed" || kind === "link_directory") && (
         <Field
           label={
             kind === "json_feed"
@@ -174,10 +135,20 @@ export default function SourceConfiguration({ source }: { source: Source }) {
           </p>
         </Field>
       )}
-      <p className="muted small">
-        Fetching also requires these hosts to be allowed in the backend
-        deployment. Until then, a collection job shows the exact blocker.
-      </p>
+      <details>
+        <summary>Advanced access settings</summary>
+        {kind !== "automatic" && (
+          <Field label="Permitted hostnames, separated by commas">
+            <input value={hosts} onChange={(e) => setHosts(e.target.value)} />
+          </Field>
+        )}
+        <Field label="Collection permission and last review">
+          <textarea
+            value={policy}
+            onChange={(e) => setPolicy(e.target.value)}
+          />
+        </Field>
+      </details>
       {error && (
         <p role="alert" className="form-error">
           {error}

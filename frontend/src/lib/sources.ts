@@ -6,7 +6,7 @@ export const isBuiltInSource = (source: Source) =>
   source.type === "manual" && !source.url;
 
 export const canCollectSource = (source: Source) =>
-  source.type !== "manual" && !source.adapterRequired;
+  !isBuiltInSource(source) && source.url.startsWith("https://");
 
 export const sourceCountry = (source: Source) =>
   source.tags.find((tag) => /^country:[A-Z]{2}$/.test(tag))?.slice(8);

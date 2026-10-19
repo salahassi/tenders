@@ -150,7 +150,7 @@ const at = (value: unknown, key: string): unknown =>
           : undefined,
       value,
     );
-function item(
+export function item(
   row: Record<string, unknown>,
   base: string,
 ): CollectedItem | null {

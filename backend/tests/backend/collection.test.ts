@@ -81,7 +81,8 @@ it("enables and resumes more than five sources while keeping activation checks a
     kind: "manual",
     url: "https://feed.example.test/portal",
   });
-  await expect(approve(manual)).rejects.toThrow("ADAPTER_REQUIRED");
+  const automatic = await approve(manual);
+  expect(automatic.adapter_config.automatic).toBe(true);
   const unreviewed = await f.command("source.create", {
     name: "Synthetic unreviewed feed",
     kind: "rss",
@@ -98,7 +99,7 @@ it("enables and resumes more than five sources while keeping activation checks a
         "select id from public.jobs where type='source_collect' and status in ('queued','running')",
       )
     ).rows,
-  ).toHaveLength(7);
+  ).toHaveLength(8);
 });
 
 it("does not schedule proposed sources; due approved jobs are exclusive and paused sources cannot execute", async () => {
@@ -296,7 +297,7 @@ it("commits validated import previews idempotently across repeated batches", asy
     (await f.db.query("select * from public.opportunity_source_links")).rows,
   ).toHaveLength(1);
 });
-it("candidates require an adapter and cannot grant collection or worker privileges", async () => {
+it("candidates stay proposed until an Owner enables automatic reading and cannot grant worker privileges", async () => {
   const batch = await f.command("import.preview", {
     kind: "sources",
     rows: [{ name: "Candidate", url: "https://candidate.example.test" }],
@@ -310,7 +311,7 @@ it("candidates require an adapter and cannot grant collection or worker privileg
     .rows[0];
   expect(candidate.adapter_required).toBe(true);
   expect(candidate.next_due).toBeNull();
-  await expect(approve(candidate)).rejects.toThrow("ADAPTER_REQUIRED");
+  expect((await approve(candidate)).adapter_config.automatic).toBe(true);
   await f.db.exec("reset role");
   await f.db.exec("set role authenticated");
   await expect(

@@ -2,6 +2,7 @@ import { load } from "cheerio";
 import { getDocumentProxy } from "unpdf";
 import {
   CollectionError,
+  canonical,
   inertText,
   publicAddress,
   type SourceInput,
@@ -29,12 +30,16 @@ export async function fetchPublicNotice(
   fetcher: typeof fetch,
   signal: AbortSignal,
   maxBytes: number,
+  observedPublicUrl = false,
 ) {
   for (let hop = 0; hop <= 3; hop++) {
     if (!safeUrl.safeParse(url).success)
       throw new CollectionError("UNSAFE_DESTINATION");
     const host = new URL(url).hostname;
-    if (!source.approved_hosts.includes(host) || !hosts.includes(host))
+    if (
+      !observedPublicUrl &&
+      (!source.approved_hosts.includes(host) || !hosts.includes(host))
+    )
       throw new CollectionError("DEPLOYMENT_HOST_APPROVAL_REQUIRED");
     const ips = await Promise.race([
       resolve(host),
@@ -298,6 +303,40 @@ export async function readPublicPdf(bytes: Uint8Array) {
   }
 }
 
+export function parseAutomaticNoticeDetails(url: string, html: string) {
+  const $ = load(html);
+  const requiresLogin = $("input[type=password]").length > 0;
+  $(
+    "script,style,header,footer,nav,input,textarea,button,noscript,template",
+  ).remove();
+  const main = $("main,article,[role=main]").first();
+  const root = main.length ? main : $("body");
+  const title = root.find("h1").first().text().trim();
+  const attachments = [
+    ...new Set(
+      root
+        .find("a[href]")
+        .toArray()
+        .map((node) => canonical($(node).attr("href"), url))
+        .filter((link): link is string =>
+          Boolean(link && /\.(pdf|docx?|xlsx?)(?:$|\?)/i.test(link)),
+        ),
+    ),
+  ];
+  root.find("br").replaceWith("\n");
+  root.find("p,li,tr,div,dt,dd").append("\n");
+  const text = minimizedNotice(root.text())
+    .replace(/\n[ \t]*\n+/g, "\n")
+    .trim();
+  if (text.length < 80)
+    throw new CollectionError(
+      requiresLogin ? "SOURCE_LOGIN_REQUIRED" : "NOTICE_DETAILS_NEED_OCR",
+    );
+  if (text.length > MAX_TEXT)
+    throw new CollectionError("NOTICE_DETAIL_TOO_LARGE");
+  return { title, text, attachments, deadline: submissionDeadline(null, text) };
+}
+
 export async function enrichPublicNotice(
   source: SourceInput,
   notice: Row,
@@ -307,9 +346,11 @@ export async function enrichPublicNotice(
 ) {
   if (source.approval !== "approved" || !source.policy_note.trim())
     throw new CollectionError("SOURCE_PERMISSION_REQUIRED");
+  const automatic = (source.adapter_config as Row)?.automatic === true;
   let extraction;
   try {
-    extraction = sourceExtraction((source.adapter_config as Row).extraction);
+    if (!automatic)
+      extraction = sourceExtraction((source.adapter_config as Row).extraction);
   } catch {
     throw new CollectionError("ADAPTER_REQUIRED");
   }
@@ -323,13 +364,38 @@ export async function enrichPublicNotice(
       resolve,
       fetcher,
       controller.signal,
-      1048576,
+      automatic ? MAX_PDF : 1048576,
+      automatic,
     );
-    const detail = parseNoticeDetails(
-      extraction,
-      page.url,
-      new TextDecoder("utf-8", { fatal: true }).decode(page.bytes),
-    );
+    const isPdf = new TextDecoder().decode(page.bytes.slice(0, 5)) === "%PDF-";
+    const directPages =
+      automatic && isPdf ? await readPublicPdf(page.bytes) : null;
+    if (directPages?.some((p) => p.restricted))
+      throw new CollectionError("SOURCE_DOCUMENT_RESTRICTED");
+    if (directPages?.some((p) => !p.restricted && p.text.length < 30))
+      throw new CollectionError("NOTICE_DETAILS_NEED_OCR");
+    const detail = directPages
+      ? {
+          title: "",
+          text: directPages.map((p) => p.text).join("\n"),
+          attachments: [] as string[],
+          deadline: submissionDeadline(
+            null,
+            directPages.map((p) => p.text).join("\n"),
+          ),
+        }
+      : automatic
+        ? parseAutomaticNoticeDetails(
+            page.url,
+            new TextDecoder("utf-8", { fatal: true }).decode(page.bytes),
+          )
+        : parseNoticeDetails(
+            extraction,
+            page.url,
+            new TextDecoder("utf-8", { fatal: true }).decode(page.bytes),
+          );
+    if (detail.text.length > MAX_TEXT)
+      throw new CollectionError("NOTICE_DETAIL_TOO_LARGE");
     let description = `[Public notice: ${page.url}]\n${detail.text}`;
     const attachments: Row[] = [];
     for (const url of detail.attachments.slice(0, 3)) {
@@ -346,6 +412,7 @@ export async function enrichPublicNotice(
           fetcher,
           controller.signal,
           MAX_PDF,
+          automatic,
         );
         record.sha256 = await digest(file.bytes);
         const pages = await readPublicPdf(file.bytes);

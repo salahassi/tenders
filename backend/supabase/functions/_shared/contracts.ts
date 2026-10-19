@@ -455,6 +455,7 @@ export const commandSchemas = {
       adapter_config: z.record(z.string(), z.unknown()).default({}),
     })
     .strict(),
+  "source.discover": z.object({ url: safeUrl }).strict(),
   "source.collect": z
     .object({ id: uuid, expected_revision: revision })
     .strict(),

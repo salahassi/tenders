@@ -35,7 +35,7 @@ export default function SourceDetail() {
     link_directory: "Website",
     rss: "RSS feed",
     json_feed: "JSON feed",
-    manual: isManual ? "Added by you" : "Manual review",
+    manual: isManual ? "Added by you" : "Automatic website",
   }[source.type];
   const statusLabel = {
     approved: "Enabled",
@@ -85,8 +85,8 @@ export default function SourceDetail() {
           isManual
             ? "The built-in origin for opportunities you enter or import yourself."
             : manualPortal
-              ? "Open the official page to review tenders, supplier registration, and participation requirements."
-              : "A feed or source directory with collection settings and access notes."
+              ? "Enable automatic reading to collect notices from this public website."
+              : "Automatic collection, schedule and source access details."
         }
         actions={
           <div className="row">
@@ -163,7 +163,7 @@ export default function SourceDetail() {
               <dd>{sourceTypeLabel}</dd>
               <dt>Polling preference</dt>
               <dd>
-                {source.type === "manual"
+                {isManual
                   ? "Not applicable"
                   : `Every ${source.pollHours || state.settings.pollHours} hours`}
               </dd>
@@ -174,7 +174,7 @@ export default function SourceDetail() {
                 {isManual
                   ? "Not applicable — you add these opportunities"
                   : manualPortal
-                    ? "Manual review — collection adapter required"
+                    ? "Enable to schedule automatic reading"
                     : source.nextRun
                       ? dateTime(source.nextRun)
                       : "Not scheduled"}
@@ -211,7 +211,7 @@ export default function SourceDetail() {
               {isManual
                 ? "You can enter a public opportunity or upload its RFP from the workspace."
                 : manualPortal
-                  ? "Review this source from its official link. Automatic collection needs a supported feed or a site-specific adapter."
+                  ? "Enable automatic reading to inspect this public website. Collection history reports results and any login, browser or document-reading requirements."
                   : "Only permitted, approved sources are collected. Review Jobs for host-approval or access blockers."}
             </div>
             {owner && !isManual && source.status === "proposed" && (
