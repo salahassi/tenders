@@ -379,3 +379,32 @@ it("requires an Owner for discovery and keeps page-writing RPCs worker-only", as
     can_insert: false,
   });
 });
+
+it("gives waiting collection a turn ahead of old model retries and yields again after an attempt", async () => {
+  const s = await source();
+  await f.command("source.collect", {id:s.id,expected_revision:s.revision});
+  await f.db.exec(
+    "update public.jobs set updated_at=now()-interval '3 minutes' where type='source_collect'",
+  );
+  const oldJob = (
+    await f.db.query<any>(
+      "insert into public.jobs(workspace_id,type,entity_id,input_hash,status,created_by,created_at,updated_at) values($1,'model_probe',$1,'synthetic-queue-test','retry_wait',$2,now()-interval '2 hours',now()-interval '1 hour') returning id",
+      [f.w, f.owner],
+    )
+  ).rows[0];
+  const first = await rpc("claim_backend_job");
+  expect(first).toMatchObject({ type: "source_collect", entity_id: s.id });
+  await rpc("fail_collection", {
+    job_id: first.id,
+    lease: first.lease_token,
+    error_code: "SOURCE_TEMPORARY_FAILURE",
+    retry_after: null,
+  });
+  await f.db.exec(
+    "update public.jobs set next_attempt_at=now() where type='source_collect'",
+  );
+  expect(await rpc("claim_backend_job")).toMatchObject({
+    id: oldJob.id,
+    type: "model_probe",
+  });
+});
