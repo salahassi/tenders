@@ -48,6 +48,56 @@ async function setup() {
   ).rows[0];
   return { item, ref, job };
 }
+it("uses the stored-content check for an authorized confidentiality requirement and keeps explicit consent necessary", async () => {
+  const item = await f.command("knowledge.save", {
+    title: "Synthetic handling requirements",
+    content: "The supplier shall maintain confidentiality of project data.",
+    category: "company",
+    enabled: true,
+    evidence: "Synthetic fixture only",
+  });
+  const ref = (await f.rpc("eligibility_candidates")).items.find(
+    (x: any) => x.entity_id === item.id,
+  );
+  expect(
+    (
+      await f.db.query(
+        "select id from public.content_authorizations where entity_id=$1",
+        [item.id],
+      )
+    ).rows,
+  ).toHaveLength(0);
+  const result = await f.command("content.authorize", {
+    entity_kind: ref.entity_kind,
+    entity_id: ref.entity_id,
+    content_hash: ref.content_hash,
+    provider: "qwen_free",
+    attestation: "nonconfidential_nonpersonal",
+  });
+  expect(result).toMatchObject({
+    entity_id: item.id,
+    provider: "qwen_free",
+    revoked_at: null,
+  });
+  await expect(
+    f.command("content.authorize", {
+      entity_kind: ref.entity_kind,
+      entity_id: ref.entity_id,
+      content_hash: "a".repeat(64),
+      provider: "qwen_free",
+      attestation: "nonconfidential_nonpersonal",
+    }),
+  ).rejects.toThrow("STALE_INPUT");
+  await expect(
+    f.command("knowledge.save", {
+      title: "Synthetic restricted file",
+      content: "Confidential: internal information",
+      category: "company",
+      enabled: true,
+      evidence: "Fixture",
+    }),
+  ).rejects.toThrow("DATA_POLICY_BLOCKED");
+});
 async function reserve(s: Awaited<ReturnType<typeof setup>>, key = "first") {
   return f.rpc("reserve_model_call", [
     s.job.id,

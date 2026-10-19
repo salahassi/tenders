@@ -124,11 +124,14 @@ export class ConnectedRepository {
 
   private async list(path: string): Promise<Row[]> {
     const rows: Row[] = [];
+    // Operational history grows on every scheduled run. Keep complete history,
+    // but avoid a serial HTTP round trip for every 100 old jobs on each refresh.
+    const pageSize = ["jobs", "audit-events"].includes(path) ? 500 : 100;
     let cursor: string | null = null;
     const seen = new Set<string>();
     do {
       const { data } = await this.client.request<unknown>(
-        `/v1/${path}?limit=100${cursor ? `&cursor=${cursor}` : ""}`,
+        `/v1/${path}?limit=${pageSize}${cursor ? `&cursor=${cursor}` : ""}`,
       );
       const schema = ["audit-events", "regeneration-requests"].includes(path)
         ? rowSchema.extend({ revision: z.number().int().positive().default(1) })

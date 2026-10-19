@@ -65,6 +65,26 @@ function request(
   });
 }
 describe("backend HTTP boundaries without a live provider", () => {
+  it("batches operational history while keeping bounded authenticated pagination", async () => {
+    const f = fixture();
+    for (const resource of ["jobs", "audit-events"]) {
+      expect(
+        (await f.handle(request(`${resource}?limit=500&cursor=${source}`)))
+          .status,
+      ).toBe(200);
+      expect(f.backend.list).toHaveBeenLastCalledWith(
+        "synthetic-user-token",
+        resource.replaceAll("-", "_"),
+        {},
+        500,
+        source,
+      );
+      expect((await f.handle(request(`${resource}?limit=501`))).status).toBe(
+        400,
+      );
+    }
+    expect((await f.handle(request("documents?limit=500"))).status).toBe(400);
+  });
   it("reads provider and legacy secret metadata for the Owner without returning secret values", async () => {
     const f = fixture();
     const secrets: Record<string, string> = {

@@ -185,6 +185,40 @@ function Probe() {
 }
 
 describe("connected repository", () => {
+  it("loads every operational page using larger batches without truncating history", async () => {
+    const f = fixture(),
+      original = f.request.getMockImplementation()!;
+    const first = "00000000-0000-4000-8000-000000000031",
+      second = "00000000-0000-4000-8000-000000000032";
+    f.request.mockImplementation(async (path, options) => {
+      if (path.startsWith("/v1/jobs?"))
+        return {
+          data: {
+            records: [
+              {
+                id: path.includes("cursor=") ? second : first,
+                revision: 1,
+                type: "source_collect",
+                entity_id: source,
+                status: "succeeded",
+                attempts: 1,
+                created_at: "2026-10-19T00:00:00Z",
+              },
+            ],
+            next_cursor: path.includes("cursor=") ? null : first,
+          },
+          meta: { request_id: "fixture" },
+        };
+      return original(path, options);
+    });
+    const state = await new ConnectedRepository(f.client).load();
+    expect(state.jobs.map((j) => j.id)).toEqual([first, second]);
+    expect(f.request).toHaveBeenCalledWith(
+      `/v1/jobs?limit=500&cursor=${first}`,
+    );
+    expect(f.request).toHaveBeenCalledWith("/v1/audit-events?limit=500");
+    expect(f.request).toHaveBeenCalledWith("/v1/documents?limit=100");
+  });
   it("shows recorded source processing counts, including zero, without inventing an absent count", async () => {
     const f = fixture();
     const original = f.request.getMockImplementation()!;

@@ -462,3 +462,35 @@ it("omits privacy-policy navigation and contact details without suppressing conf
   );
   expect(blockedContent(restricted.text)).toBe(true);
 });
+
+it("alternates a requested proposal with old assessment work and respects provider waiting time", async () => {
+  const insert = async (type: string, wait = false) =>
+    (
+      await f.db.query<any>(
+        "insert into public.jobs(workspace_id,type,entity_id,input_hash,status,created_by,created_at,updated_at,next_attempt_at) values($1,$2,$1,'synthetic-priority','queued',$3,now()-interval '2 hours',now()-interval '10 minutes',case when $4 then now()+interval '1 hour' else now() end) returning id",
+        [f.w, type, f.owner, wait],
+      )
+    ).rows[0].id;
+  const assessment = await insert("classify_opportunity");
+  const delayed = await insert("analyze_chunk", true);
+  const proposal = await insert("analyze_chunk");
+  expect(await rpc("claim_backend_job")).toMatchObject({ id: proposal });
+  expect(await rpc("claim_backend_job")).toBeNull();
+  await f.db.query(
+    "update public.jobs set status='retry_wait',lease_token=null,lease_until=null,next_attempt_at=now() where id=$1",
+    [proposal],
+  );
+  expect(await rpc("claim_backend_job")).toMatchObject({ id: assessment });
+  await f.db.query(
+    "update public.jobs set status='succeeded',lease_token=null,lease_until=null,updated_at=now()+interval '1 second' where id=$1",
+    [assessment],
+  );
+  expect(await rpc("claim_backend_job")).toMatchObject({ id: proposal });
+  expect(
+    (
+      await f.db.query<any>("select attempts from public.jobs where id=$1", [
+        delayed,
+      ])
+    ).rows[0].attempts,
+  ).toBe(0);
+});

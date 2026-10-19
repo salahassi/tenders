@@ -351,11 +351,12 @@ export function createApiHandler(
           return respond(record, 200, { revision: record.revision });
         }
         const limit = Number(url.searchParams.get("limit") || 25);
-        if (!Number.isInteger(limit) || limit < 1 || limit > 100)
+        const maxLimit = ["jobs", "audit-events"].includes(read[1]) ? 500 : 100;
+        if (!Number.isInteger(limit) || limit < 1 || limit > maxLimit)
           throw new AppError(
             400,
             "INVALID_PAGINATION",
-            "Limit must be between 1 and 100.",
+            `Limit must be between 1 and ${maxLimit}.`,
           );
         const cursor = url.searchParams.get("cursor") || undefined;
         if (cursor) {

@@ -4,7 +4,9 @@ project_id = "tenderdesk"
 enabled = true
 schemas = ["public", "graphql_public"]
 extra_search_path = ["public", "extensions"]
-max_rows = 100
+# The authenticated application API pages jobs/audit in batches of 500 and
+# requests one additional row to detect continuation. Other resources cap at 100.
+max_rows = 1000
 
 [auth]
 enabled = true

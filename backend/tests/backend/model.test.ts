@@ -11,7 +11,24 @@ import {
   ModelError,
   type Ledger,
   type Evidence,
+  blockedContent,
 } from "../../supabase/functions/_shared/model";
+it("allows confidentiality requirements without accepting a Confidential marking or a secret", () => {
+  expect(
+    blockedContent(
+      "The supplier shall maintain confidentiality of project data.",
+    ),
+  ).toBe(false);
+  for (const text of [
+    "CONFIDENTIAL: project data",
+    "Strictly private document",
+    "سرية",
+    "api_key=example",
+    "person@example.test",
+  ]) {
+    expect(blockedContent(text)).toBe(true);
+  }
+});
 const env = {
   provider: "qwen_free",
   model: "synthetic-model",

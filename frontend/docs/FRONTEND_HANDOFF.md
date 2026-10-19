@@ -2,7 +2,9 @@
 
 ## Current implementation
 
-The proposal-list empty state describes the connected upload/review/generate flow and makes clear that saved templates and Company Knowledge are optional starting inputs. It does not ask a signed-in workspace to connect its backend. The October 19 hosted session verified Owner access and the existing extracted RFP, but its NHCI project does not match the linked An-Najah opportunity; full hosted generation/download remains pending.
+The proposal-list empty state describes the connected upload/review/generate flow and makes clear that saved templates and Company Knowledge are optional starting inputs. It does not ask a signed-in workspace to connect its backend. The Owner explicitly authorized the mismatched NHCI RFP/An-Najah opportunity for this trial. A temporary invited Editor downloaded the exact original through the live app, reviewed its extraction and created a proposal generation request. Exact-file model permission and full hosted generation/download remain pending; see the current checklist.
+
+Workspace refresh batches complete job/audit history in pages of 500, reducing serial network requests while retaining pagination and every history row. Proposal jobs alternate with waiting assessments; accepted remote requests and waiting source work retain priority. Ordinary confidentiality requirements no longer conflict with the file upload policy, while explicit model-processing permission and restrictions on marked content remain enforced.
 
 Failure email preferences default to at most daily. New affected tasks do not repeat email for an already reported ongoing cause; recovered causes may notify again if they recur. A pending summary rechecks recovery and the current interval before sending. The activity log retains every attempt, and review reminders keep their separate schedule.
 
