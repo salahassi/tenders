@@ -2141,8 +2141,10 @@ ol {
     display: inline-flex;
   }
   .topbar {
-    height: 61px;
-    padding: 0 14px;
+    min-height: 61px;
+    height: auto;
+    padding: 10px 14px;
+    flex-wrap: wrap;
   }
   .breadcrumb {
     font-size: 11px;
@@ -2150,6 +2152,8 @@ ol {
   }
   .topbar-actions {
     gap: 9px;
+    max-width: 100%;
+    flex-wrap: wrap;
   }
   .global-search {
     min-width: 0;
