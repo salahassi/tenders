@@ -2,6 +2,35 @@
 
 ## October 20 — paid-model acceptance and runtime recovery
 
+Follow-up at 21:58 UTC: published source `4e6faacad7f55deeb6b8eac526fbc09fb4ed8f64`
+passed [Pages 39502080808](https://github.com/salahassi/tenders/actions/runs/39502080808),
+including all 415 backend / 191 frontend tests. API v61 / worker v68 add
+content-free evidence-failure diagnostics. One actual analysis part completed
+verification, writer correction and verification again: a reported requirement
+count was corrected against the stored requirements. Another verifier supplied
+a quote absent from its cited evidence; the guard rejected it, correctly.
+
+P5/P6 follow-up implemented: retain a schema-valid, policy-safe invalid verifier
+report privately and allow exactly one corrective verifier result for that
+candidate. Original analysis, evidence validation, usage history and prior
+candidate budgets remain intact. The corrective request must fix its report,
+retain justified unsupported findings and quote exact evidence; a second invalid
+report stops for review. This does not accept unverifiable output or reset an
+exhausted writer budget. Activity distinguishes local evidence/coverage failure
+after HTTP 200 from provider request rejection. Two real PostgreSQL/LangGraph
+fixtures prove successful correction and terminal failure, each with one writer
+and one corrective report. Policy-blocked output cannot enter the correction
+cache. Focused 82 backend tests and typecheck passed; frontend 192 tests passed.
+Runtime API v62 / worker v69 are ACTIVE. The QA trial was resumed with explicit
+audit entries after deployment, preserving writer results, original verifier
+budgets and request history. Its first corrective report was accepted as an
+OpenAI background request; completion remains pending. Full backend regression
+passed 397 tests, with 22 interrupted by 30-second fixture/test timeouts; all 22
+passed in an isolated rerun after closing the idle browser (419 total). Both
+package typechecks/builds and Deno entrypoint checks passed. New frontend
+publication and live corrective acceptance remain pending. The real three-part
+trial is still incomplete; no complete proposal or DOCX acceptance is claimed.
+
 P6 / stages 5–7: Owner configured three paid task models and requested a real RFP
 journey with source/usage observation. The original confirmed file is unchanged.
 The earlier legacy plan was canceled through the authenticated UI, preserving

@@ -61,8 +61,13 @@ export function validateGroundingReport(
   if (units.length && !report.claims.length)
     throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
   for (const claim of report.claims) {
-    if (!text.includes(normalizedEvidence(claim.candidate_quote)))
+    if (!text.includes(normalizedEvidence(claim.candidate_quote))) {
+      console.warn(
+        "model_evidence_diagnostic",
+        JSON.stringify({ reason: "candidate_quote_mismatch" }),
+      );
       throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+    }
     if (
       claim.status === "supported" &&
       ["company_fact", "tender_fact", "commercial_commitment"].includes(
@@ -76,16 +81,26 @@ export function validateGroundingReport(
         numericLiterals(claim.candidate_quote).some(
           (n) => !quotedNumbers.includes(n),
         )
-      )
+      ) {
+        console.warn(
+          "model_evidence_diagnostic",
+          JSON.stringify({ reason: "numeric_evidence_mismatch" }),
+        );
         throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+      }
     }
   }
   for (const check of report.requirement_checks)
     if (
       check.candidate_quote &&
       !text.includes(normalizedEvidence(check.candidate_quote))
-    )
+    ) {
+      console.warn(
+        "model_evidence_diagnostic",
+        JSON.stringify({ reason: "requirement_quote_mismatch" }),
+      );
       throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+    }
   for (const declared of candidate.company_claims ?? [])
     if (
       !report.claims.some(

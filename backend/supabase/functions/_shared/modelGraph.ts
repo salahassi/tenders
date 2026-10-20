@@ -238,6 +238,13 @@ async function runGuardedModel(o: Options): Promise<{
     const cached = await store.action("result_get", { key });
     if (cached) return cached;
     const ledger = ledgerFor(key, unit, task === "repair_result");
+    if (key.startsWith("verification-repair-")) {
+      ledger.beforeSend = async () => {
+        const budget = await store.action("candidate_budget", { unit });
+        if (budget.count >= 1)
+          throw new ModelError("MODEL_CORRECTION_EXHAUSTED");
+      };
+    }
     ledger.validateCandidate = validate;
     if (writerModel) {
       const preflight = ledger.preflight;
@@ -260,6 +267,19 @@ async function runGuardedModel(o: Options): Promise<{
       producer = request.target;
       await prepared?.(request);
     };
+    if (
+      task === "verify_grounding" &&
+      !key.startsWith("verification-repair-")
+    ) {
+      ledger.invalidCandidate = async (result, code) => {
+        const invalidKey = `invalid-${key}`;
+        if (!(await store.action("result_get", { key: invalidKey })))
+          await store.action("result_put", {
+            key: invalidKey,
+            value: { result, code, producer: producer ?? null },
+          });
+      };
+    }
     const result = await executeModel(
       task,
       context,
@@ -321,28 +341,66 @@ async function runGuardedModel(o: Options): Promise<{
         : stored.result;
       const hash = await sha256(JSON.stringify(candidate));
       const units = candidateContent(candidate);
-      const report = await cachedCall(
-        `verification-${hash}`,
-        "verify_grounding",
-        {
-          original_task: o.task,
-          original_context: o.context,
-          candidate,
-          candidate_hash: hash,
-          candidate_text: units.map((u) => u.text).join("\n"),
-          content_units: units,
-        },
-        `verifier-${hash}`,
-        (value) =>
-          validateGroundingReport(
-            value,
-            candidate,
-            hash,
-            o.evidence,
-            o.requiredIds,
-          ),
-        stored.producer?.modelId,
-      );
+      const reportKey = `verification-${hash}`;
+      const existingReport = await store.action("result_get", {
+        key: reportKey,
+      });
+      if (existingReport) return { reportRef: existingReport.id };
+      const invalid = await store.action("result_get", {
+        key: `invalid-${reportKey}`,
+      });
+      const context = {
+        original_task: o.task,
+        original_context: o.context,
+        candidate,
+        candidate_hash: hash,
+        candidate_text: units.map((u) => u.text).join("\n"),
+        content_units: units,
+        ...(invalid
+          ? {
+              invalid_verification_result: invalid.value.result,
+              validation_error: invalid.value.code,
+              correction_instruction:
+                "Correct this verification report, not the original candidate. Recheck every citation against the supplied evidence and every candidate quote against content_units. Copy exact contiguous quotations, without paraphrase or ellipses. Keep unsupported/contradicted findings where justified; never change a verdict merely to pass validation. Return complete coverage IDs and the same candidate hash.",
+            }
+          : {}),
+      };
+      let report;
+      try {
+        report = await cachedCall(
+          invalid ? `verification-repair-${hash}` : reportKey,
+          "verify_grounding",
+          context,
+          invalid ? `verifier-repair-${hash}` : `verifier-${hash}`,
+          (value) =>
+            validateGroundingReport(
+              value,
+              candidate,
+              hash,
+              o.evidence,
+              o.requiredIds,
+            ),
+          invalid ? invalid.value.producer?.modelId : stored.producer?.modelId,
+        );
+      } catch (error) {
+        if (
+          !invalid &&
+          error instanceof ModelError &&
+          [
+            "EVIDENCE_REFERENCE_INVALID",
+            "MODEL_COVERAGE_INCOMPLETE",
+            "MODEL_ROUND_EXHAUSTED",
+            "MODEL_CORRECTION_EXHAUSTED",
+          ].includes(error.code) &&
+          (await store.action("result_get", { key: `invalid-${reportKey}` }))
+        ) {
+          // Checkpoint first, then yield. The next lease gets one bounded chance
+          // to repair the verifier's report; it never rewrites the candidate.
+          release = () => store.action("yield").then(() => {});
+          throw new ModelDeferred();
+        }
+        throw error;
+      }
       return { reportRef: report.id };
     })
     .addNode("decide", async (state) => {

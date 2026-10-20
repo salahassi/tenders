@@ -227,8 +227,23 @@ function validateQuotes(
       !canonicalText(source.text).includes(canonicalText(ref.quote)) ||
       (kind && source.kind !== kind) ||
       (source.kind === "company" && !source.verified)
-    )
+    ) {
+      console.warn(
+        "model_evidence_diagnostic",
+        JSON.stringify({
+          reason: !source
+            ? "source_missing"
+            : !canonicalText(ref.quote)
+              ? "quote_empty"
+              : !canonicalText(source.text).includes(canonicalText(ref.quote))
+                ? "source_quote_mismatch"
+                : kind && source.kind !== kind
+                  ? "source_kind_mismatch"
+                  : "company_not_verified",
+        }),
+      );
       throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+    }
   }
 }
 const sameIds = (actual: string[], expected: string[]) =>
@@ -291,8 +306,13 @@ export function validateModelResult(
           claim.kind,
         ) &&
         !claim.source_refs.length
-      )
+      ) {
+        console.warn(
+          "model_evidence_diagnostic",
+          JSON.stringify({ reason: "supported_fact_without_evidence" }),
+        );
         throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+      }
     }
     for (const requirement of result.requirement_checks)
       validateQuotes(requirement.source_refs, evidence);
@@ -492,6 +512,7 @@ export interface Ledger {
   candidateReceived?(usageId: string): Promise<void>;
   backgroundAllowed?(config: ModelConfiguration): Promise<boolean>;
   validateCandidate?(result: unknown): void;
+  invalidCandidate?(result: unknown, code: string): Promise<void>;
   loadRound?(inputHash: string): Promise<ModelRoundProgress | null>;
   saveRound?(
     progress: ModelRoundProgress | null,
@@ -1365,12 +1386,14 @@ export async function executeModel(
         if (result.kind === "cancelled")
           throw new ModelError("MODEL_CANCELLED");
         if (!result.complete) throw new ModelError("MODEL_OUTPUT_TRUNCATED");
+        let parsedCandidate: unknown;
         try {
+          parsedCandidate = taskOutputSchema(task, targetTask).parse(
+            normalizeOptionalNulls(JSON.parse(result.text), schema),
+          );
           const validated = validateModelResult(
             task,
-            taskOutputSchema(task, targetTask).parse(
-              normalizeOptionalNulls(JSON.parse(result.text), schema),
-            ),
+            parsedCandidate,
             evidence,
             requiredIds,
           );
@@ -1398,6 +1421,16 @@ export async function executeModel(
             await ledger.attempt?.(config.provider, "SUCCEEDED", true, config);
           return validated;
         } catch (error) {
+          if (
+            parsedCandidate &&
+            error instanceof ModelError &&
+            [
+              "EVIDENCE_REFERENCE_INVALID",
+              "MODEL_COVERAGE_INCOMPLETE",
+            ].includes(error.code) &&
+            !blockedContent(JSON.stringify(parsedCandidate))
+          )
+            await ledger.invalidCandidate?.(parsedCandidate, error.code);
           provider.telemetry.provider_error_reason =
             error instanceof ModelError
               ? "response_evidence_invalid"

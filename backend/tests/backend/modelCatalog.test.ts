@@ -857,6 +857,121 @@ it.each(["corrected", "unchanged", "evolving"])(
   },
 );
 
+it.each([false, true])(
+  "repairs an invalid verifier report once without rewriting the candidate (repair invalid: %s)",
+  async (stillInvalid) => {
+    const { executeGuardedModel } =
+      await import("../../supabase/functions/_shared/modelGraph");
+    const { job, backend, envs } = await configure();
+    const candidate = {
+      key: "approach",
+      title: "Approach",
+      content_blocks: [
+        { type: "paragraph", text: "Proposed team requires confirmation." },
+      ],
+      requirement_ids: [],
+      evidence_refs: [],
+      company_claims: [],
+      assumptions: [],
+      questions: [],
+    };
+    let writes = 0,
+      reviews = 0,
+      corrections = 0;
+    const fetcher: typeof fetch = async (_url, init) => {
+      const prompt = JSON.parse(
+        JSON.parse(String(init?.body)).messages[1].content.split(
+          "\nJSON schema: ",
+        )[0],
+      );
+      let result: any;
+      if (prompt.task === "draft_section") {
+        writes++;
+        result = candidate;
+      } else {
+        const c = prompt.untrusted_data;
+        const correcting = Boolean(c.invalid_verification_result);
+        if (correcting) {
+          corrections++;
+          expect(c.validation_error).toBe("EVIDENCE_REFERENCE_INVALID");
+        } else reviews++;
+        result = {
+          checked_candidate_hash: c.candidate_hash,
+          reviewed_all_content: true,
+          processed_content_ids: c.content_units.map((u: any) => u.id),
+          claims: [
+            {
+              id: "claim",
+              claim: candidate.content_blocks[0].text,
+              candidate_quote: candidate.content_blocks[0].text,
+              kind: "assumption",
+              status: "supported",
+              source_refs:
+                correcting && !stillInvalid
+                  ? []
+                  : [{ id: "invented-source", quote: "Fabricated citation" }],
+              finding: "Explicit missing input.",
+            },
+          ],
+          processed_requirement_ids: [],
+          requirement_checks: [],
+          findings: [],
+        };
+      }
+      return Response.json({
+        choices: [
+          {
+            finish_reason: "stop",
+            message: { content: JSON.stringify(result) },
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 8 },
+      });
+    };
+    const options = {
+      backend,
+      job,
+      prefix: `step:${job.id}`,
+      task: "draft_section" as const,
+      context: {},
+      evidence: [],
+      requiredIds: [],
+      manifest: [],
+      environments: envs,
+      language: "en" as const,
+      repair: false,
+      fetcher,
+    };
+    let current = job,
+      outcome,
+      terminal;
+    for (let i = 0; i < 8; i++) {
+      try {
+        outcome = await executeGuardedModel({ ...options, job: current });
+        break;
+      } catch (error) {
+        if ((error as any).code === "MODEL_CORRECTION_EXHAUSTED") {
+          terminal = error;
+          break;
+        }
+        if (!(error instanceof ModelDeferred)) throw error;
+        current = await rpc("claim_backend_job_v2");
+        expect(current.id).toBe(job.id);
+      }
+    }
+    expect(writes).toBe(1);
+    expect(reviews).toBe(2);
+    expect(corrections).toBe(1);
+    if (stillInvalid) {
+      expect(terminal).toBeTruthy();
+      expect(outcome).toBeUndefined();
+    } else {
+      expect(terminal).toBeUndefined();
+      expect(outcome?.result).toEqual(candidate);
+    }
+  },
+);
+
 it("lets legacy workers skip graph work and resumes it with a capable worker after rollback disables admission", async () => {
   const { job, ledger } = await configure();
   await ledger.preflight([], "connection_probe");

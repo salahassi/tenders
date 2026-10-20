@@ -131,6 +131,45 @@ it("explains that a failed poll is an existing request and its duration is not g
   expect(screen.getByText(/Not reported means unknown/)).toBeInTheDocument();
 });
 
+it("distinguishes local validation from a provider rejection after HTTP 200", async () => {
+  vi.mocked(useApp).mockReturnValue({
+    backend: {
+      request: vi.fn(async () => ({
+        data: {
+          records: [
+            {
+              id: "1",
+              provider: "openai",
+              model: "configured-model",
+              operation: "verify_grounding",
+              status: "failed",
+              result_code: "EVIDENCE_REFERENCE_INVALID",
+              provider_error_reason: "response_evidence_invalid",
+              request_phase: "poll",
+              sent: false,
+              http_status: 200,
+            },
+          ],
+          next_cursor: null,
+        },
+      })),
+    },
+  } as any);
+  render(
+    <MemoryRouter>
+      <ModelActivity />
+    </MemoryRouter>,
+  );
+  expect(
+    await screen.findByText(
+      "Response failed local evidence or coverage validation",
+    ),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByText("Provider rejected the request"),
+  ).not.toBeInTheDocument();
+});
+
 it("keeps a provider hash deep-link selected in the live DOM after loading", async () => {
   window.history.replaceState(null, "", "/#/jobs?provider=zai_free");
   const request = vi.fn(async () => ({

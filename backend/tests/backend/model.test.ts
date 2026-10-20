@@ -227,6 +227,52 @@ const analysis = {
   separate_volumes: false,
   summary: "Synthetic scope",
 };
+it.each([false, true])(
+  "only retains policy-safe invalid candidates for bounded correction (unsafe: %s)",
+  async (unsafe) => {
+    const candidate = {
+      ...analysis,
+      summary: unsafe ? "person@example.test" : analysis.summary,
+      requirements: [
+        {
+          ...analysis.requirements[0],
+          source_refs: [{ id: "missing", quote: "invented" }],
+        },
+      ],
+    };
+    vi.spyOn(FreeModelProvider.prototype, "countTokens").mockResolvedValue(100);
+    vi.spyOn(FreeModelProvider.prototype, "generate").mockResolvedValue({
+      text: JSON.stringify(candidate),
+      usage: { input: 100, output: 90, thinking: 0 },
+      complete: true,
+    });
+    const invalidCandidate = vi.fn();
+    const ledger: Ledger = {
+      preflight: async () => ({ providers: [config] }),
+      reserve: async () => "reservation",
+      settle: async () => {},
+      invalidCandidate,
+    };
+    await expect(
+      executeModel(
+        "analyze_chunk",
+        {},
+        evidence,
+        ["block-1"],
+        [],
+        { qwen_free: env },
+        ledger,
+        "en",
+      ),
+    ).rejects.toThrow();
+    expect(invalidCandidate).toHaveBeenCalledTimes(unsafe ? 0 : 1);
+    if (!unsafe)
+      expect(invalidCandidate).toHaveBeenCalledWith(
+        candidate,
+        "EVIDENCE_REFERENCE_INVALID",
+      );
+  },
+);
 it("requires the selected provider identity and honors an explicitly configured quota expiry", () => {
   expect(() => available(config, env)).not.toThrow();
   for (const changed of [{ quota_ends_at: "2020-01-01" }])
