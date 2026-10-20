@@ -27,6 +27,23 @@ const numericLiterals = (text: string): string[] => {
     .replace(/٫/g, ".");
   return normalized.match(/\d+(?:\.\d+)?/g) ?? [];
 };
+function adjacentItemNumbers(
+  ref: { id: string; quote: string },
+  evidence: Evidence[],
+) {
+  const source = evidence.find((e) => e.id === ref.id)?.text;
+  if (!source || !ref.quote) return [];
+  const start = source.indexOf(ref.quote);
+  // Require one exact occurrence and a directly adjacent row/list label. Never
+  // search unrelated parts of a source merely to find a convenient number.
+  if (start < 0 || start !== source.lastIndexOf(ref.quote)) return [];
+  const prefix = source
+    .slice(0, start)
+    .match(/(?:^|\n)[ \t]*([0-9٠-٩۰-۹]{1,4})[.)]?[ \t]*(?:\r?\n[ \t]*)?$/u);
+  return prefix ? numericLiterals(prefix[1]) : [];
+}
+const itemLabel =
+  /(?:\b(?:BOQ\s+)?(?:item|line|row|section|clause)|(?:البند|بند|الصف|صف|الفقرة|فقرة))\s*(?:رقم\s+)?([0-9٠-٩۰-۹]{1,4})(?![0-9٠-٩۰-۹])/giu;
 export function validateGroundingReport(
   report: any,
   candidate: any,
@@ -77,10 +94,25 @@ export function validateGroundingReport(
       const quotedNumbers = numericLiterals(
         claim.source_refs.map((ref: any) => ref.quote).join("\n"),
       );
+      const adjacentLabels = claim.source_refs.flatMap((ref: any) =>
+        adjacentItemNumbers(ref, evidence),
+      );
+      let unsupportedLabel = false;
+      const factualText = claim.candidate_quote.replace(
+        itemLabel,
+        (_match: string, label: string) => {
+          const number = numericLiterals(label)[0];
+          if (
+            !quotedNumbers.includes(number) &&
+            !adjacentLabels.includes(number)
+          )
+            unsupportedLabel = true;
+          return "";
+        },
+      );
       if (
-        numericLiterals(claim.candidate_quote).some(
-          (n) => !quotedNumbers.includes(n),
-        )
+        unsupportedLabel ||
+        numericLiterals(factualText).some((n) => !quotedNumbers.includes(n))
       ) {
         console.warn(
           "model_evidence_diagnostic",

@@ -2,6 +2,43 @@
 
 ## October 20 — paid-model acceptance and runtime recovery
 
+Current acceptance result at 22:25 UTC: **incomplete, not a successful RFP-to-Word
+journey**. The real trial has one completed analysis part out of three. A
+corrective verifier response for another part reached its 16,384-output-token
+limit; the remaining part has genuine semantic findings after citation checks.
+The plan is stopped at its existing correction limit, with original analysis,
+provider IDs and usage retained. No budget was reset and no finished proposal,
+business approval, submission or DOCX download is asserted.
+
+Trial usage, counted by unique provider_usage rows: OpenAI gpt-6-luna six requests
+with 102,379 input / 58,213 output tokens; gpt-6.1-sol eight requests with 121,445
+input / 113,406 output tokens. Four accepted Gemini requests still have unknown
+usage after HTTP 400 on retrieval. Poll activity rows are not additional
+generations. No dollar total is inferred. No new opportunities were recorded
+during the observation window beginning 20:25 UTC.
+
+Remaining P5/P6 acceptance work: reduce or durably batch large verification
+reports within the configured output profile; address Gemini accepted-request
+retrieval without duplicating unknown work; then complete planning, drafting,
+commercial missing-input handling, review and real Word inspection. The Owner's
+model routes, credentials, profiles and original RFP remain unchanged.
+
+Private inspection of the rejected corrective report found four missing numeric
+matches were actual BOQ row identifiers immediately preceding the exact cited
+text. Grounding now checks explicit English/Arabic item labels against that
+adjacent label in the same source and requires a unique exact citation. It does
+not use row numbers as support for quantities, prices, dates or other numeric
+claims, and does not alter the verifier's semantic findings. Six fixtures cover
+valid labels, Arabic digits, wrong/nonadjacent/ambiguous labels and invented
+quantities. Worker v71 is ACTIVE and all 31 files match the submitted source.
+The original real corrective response was rechecked locally against its frozen
+evidence: all 68 claims passed structural/citation validation, while four
+semantic defects remained for correction. This required zero external requests
+and did not alter the stored response or accept the proposal. All **427 backend
+tests** passed in one run, along with typecheck/build and both Deno checks.
+Frontend remains at 192 passing tests with unchanged code since its verified
+Pages release. Final source publication follows.
+
 Source observation exposed a separate local-capacity bug: automatic source
 failure handling marked MODEL_RATE_WAIT as blocked, while the recovery helper
 assumed generation had already scheduled it. The new additive
@@ -53,6 +90,17 @@ Worker v70 additionally retains policy-safe rejected corrective reports in the
 private graph store for diagnosis, without recursively correcting them. A
 GET-only replay was audit-requested with the exhausted budget preserved. The
 other incomplete analysis part is now processing; no finished Word is claimed.
+
+Source/capacity release `3afaffc3828b9975a373746eed041eb28310cc79` passed
+[Pages 39506563063](https://github.com/salahassi/tenders/actions/runs/39506563063),
+including 421 backend / 192 frontend tests. Hosted source recovery has zero
+non-canceled jobs blocked solely on MODEL_RATE_WAIT; the service-only failure
+RPC still denies anon/authenticated execution. Authenticated Chromium observed
+the original attachment, optional company knowledge/templates, disabled
+duplicate generation and current processing state. Model activity loaded 25
+linked rows, showed local-validation failures and GET-only polling distinctly,
+and had no document overflow at 1440px or 390px. This is hosted UI smoke evidence,
+not full proposal/export acceptance.
 
 P6 / stages 5–7: Owner configured three paid task models and requested a real RFP
 journey with source/usage observation. The original confirmed file is unchanged.

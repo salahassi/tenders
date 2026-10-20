@@ -40,6 +40,60 @@ function report() {
     findings: [],
   };
 }
+it.each([
+  {
+    text: "2\nArchitecture design\nPackage 1",
+    claim: "BOQ item 2 requires architecture design.",
+    pass: true,
+  },
+  {
+    text: "2 Architecture design\nPackage 1",
+    claim: "البند ٢ يتطلب تصميم المعمارية.",
+    pass: true,
+  },
+  {
+    text: "3\nArchitecture design\nPackage 1",
+    claim: "BOQ item 2 requires architecture design.",
+    pass: false,
+  },
+  {
+    text: "2\nUnrelated heading\nArchitecture design\nPackage 1",
+    claim: "BOQ item 2 requires architecture design.",
+    pass: false,
+  },
+  {
+    text: "2\nArchitecture design\nPackage 1",
+    claim: "BOQ item 2 requires 2 engineers.",
+    pass: false,
+  },
+  {
+    text: "2\nArchitecture design\nPackage 1\n3\nArchitecture design\nPackage 1",
+    claim: "BOQ item 2 requires architecture design.",
+    pass: false,
+  },
+])(
+  "checks adjacent item labels without using them to justify quantities: $claim ($pass)",
+  ({ text, claim, pass }) => {
+    const c = { content_blocks: [{ type: "paragraph", text: claim }] };
+    const r = report();
+    r.claims[0] = {
+      ...r.claims[0],
+      claim,
+      candidate_quote: claim,
+      source_refs: [{ id: "notice", quote: "Architecture design\nPackage 1" }],
+    };
+    const check = () =>
+      validateGroundingReport(
+        r,
+        c,
+        "a".repeat(64),
+        [{ ...evidence[0], text }],
+        [],
+      );
+    if (pass) expect(check).not.toThrow();
+    else expect(check).toThrow("EVIDENCE_REFERENCE_INVALID");
+  },
+);
 it("validates a supported deadline and checks undeclared text, including tables", () => {
   expect(() =>
     validateGroundingReport(report(), candidate, "a".repeat(64), evidence, []),
