@@ -116,7 +116,10 @@ export function environment(
 export class Backend {
   readonly invocationStartedAt = Date.now();
   private admin: SupabaseClient;
-  constructor(private env: BackendEnvironment) {
+  constructor(
+    private env: BackendEnvironment,
+    readonly invocationBudgetMs = 110000,
+  ) {
     if (!env.url || !env.publishableKey || !env.serviceKey)
       throw new AppError(
         503,

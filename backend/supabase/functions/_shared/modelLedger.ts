@@ -11,6 +11,7 @@ export function modelLedger(
   const identity = { job_id: job.id, lease: job.lease_token };
   return {
     invocationStartedAt: backend.invocationStartedAt,
+    invocationBudgetMs: backend.invocationBudgetMs,
     loadRound: (input_hash) =>
       backend.internal("load_model_round", { ...identity, input_hash }),
     saveRound: async (progress, release_job) => {

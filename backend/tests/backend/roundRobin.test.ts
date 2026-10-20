@@ -548,7 +548,7 @@ it("keeps a known pending Gemini request first after a lease change instead of s
   expect(await usage(q.id)).toHaveLength(1);
   expect((await job(q.id)).checkpoint.model_routing.round_attempts).toBe(1);
 });
-it("falls back after a failed retrieval of a saved Gemini request without creating Gemini again", async () => {
+it("keeps polling an accepted request through a transient GET failure without a duplicate or failover", async () => {
   await enable();
   const q = await queue();
   let phase = 0;
@@ -557,7 +557,10 @@ it("falls back after a failed retrieval of a saved Gemini request without creati
     transport((p, u, init) => {
       calls.push(p);
       if (p !== "gemini_free") return success(p);
-      if (init?.method === "GET") return new Response(null, { status: 503 });
+      if (init?.method === "GET")
+        return calls.length === 2
+          ? new Response(null, { status: 503 })
+          : success(p);
       phase++;
       return Response.json({ id: "synthetic-request", status: "in_progress" });
     }),
@@ -565,12 +568,118 @@ it("falls back after a failed retrieval of a saved Gemini request without creati
   await tick();
   await age();
   await tick();
+  expect((await job(q.id)).error_code).toBe("MODEL_IN_PROGRESS");
+  expect((await usage(q.id))[0].state).toBe("reserved");
+  await age();
+  await tick();
   expect((await job(q.id)).status).toBe("succeeded");
   expect(phase).toBe(1);
-  expect(calls).toEqual(["gemini_free", "gemini_free", "qwen_free"]);
+  expect(calls).toEqual(["gemini_free", "gemini_free", "gemini_free"]);
   expect(
     (await usage(q.id)).find((x) => x.provider === "gemini_free").state,
-  ).toBe("unknown");
+  ).toBe("settled");
+});
+it.each(["gemini_free", "openai"] as const)(
+  "retrieves the same %s background request through quota polling and a worker restart",
+  async (provider) => {
+    await enable();
+    const q = await queue();
+    const configured = {
+      ...environment,
+      models: Object.fromEntries(
+        Object.entries(environment.models).map(([id, slot]) => [
+          id,
+          { ...slot, key: id === provider ? slot.key : "" },
+        ]),
+      ) as BackendEnvironment["models"],
+    };
+    const methods: string[] = [];
+    const tick = worker(
+      transport((p, _url, init) => {
+        expect(p).toBe(provider);
+        methods.push(init!.method!);
+        if (init?.method === "POST") {
+          expect(JSON.parse(String(init.body))).toMatchObject({
+            background: true,
+            store: true,
+          });
+          return Response.json({ id: "synthetic-durable", status: "queued" });
+        }
+        return methods.length === 2
+          ? new Response(null, {
+              status: 429,
+              headers: { "retry-after": "120" },
+            })
+          : success(provider, "synthetic-durable");
+      }),
+      configured,
+    );
+    await tick();
+    await age();
+    await tick();
+    expect((await job(q.id)).error_code).toBe("MODEL_IN_PROGRESS");
+    expect((await usage(q.id))[0]).toMatchObject({
+      state: "reserved",
+      remote_request_id: "synthetic-durable",
+    });
+    await age();
+    const claimed = await rpc("claim_backend_job");
+    expect(claimed.id).toBe(q.id);
+    await f.db.exec(
+      "update public.jobs set lease_until=now()-interval '1 second' where status='running'",
+    );
+    await tick();
+    expect((await job(q.id)).status).toBe("succeeded");
+    expect(methods).toEqual(["POST", "GET", "GET"]);
+    expect(await usage(q.id)).toHaveLength(1);
+    expect((await usage(q.id))[0]).toMatchObject({
+      state: "settled",
+      actual_input: 100,
+      actual_output: 10,
+    });
+  },
+);
+
+it("falls back after a terminal remote failure and retains measured failed-request usage", async () => {
+  await enable();
+  const q = await queue();
+  const methods: string[] = [];
+  const tick = worker(
+    transport((p, _url, init) => {
+      methods.push(`${p}:${init?.method}`);
+      if (p !== "gemini_free") return success(p);
+      return Response.json(
+        init?.method === "POST"
+          ? { id: "synthetic-failed", status: "queued" }
+          : {
+              id: "synthetic-failed",
+              status: "failed",
+              usage: {
+                total_input_tokens: 100,
+                total_output_tokens: 3,
+                total_thought_tokens: 0,
+              },
+            },
+      );
+    }),
+  );
+  await tick();
+  await age();
+  await tick();
+  expect((await job(q.id)).status).toBe("succeeded");
+  expect(methods).toEqual([
+    "gemini_free:POST",
+    "gemini_free:GET",
+    "qwen_free:POST",
+  ]);
+  expect(
+    (await usage(q.id)).find((u) => u.provider === "gemini_free"),
+  ).toMatchObject({
+    state: "settled",
+    actual_input: 100,
+    actual_output: 3,
+    error_code: "PROVIDER_REQUEST_REJECTED",
+  });
 });
 it("tries every automatic provider despite old daily ceilings and retains unknown usage", async () => {
   await enable();

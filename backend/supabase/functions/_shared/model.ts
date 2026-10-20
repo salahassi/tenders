@@ -6,6 +6,7 @@ import {
   validateSourcePageResult,
 } from "./sourceModel.ts";
 import { z } from "zod";
+import { readModelStream, ModelStreamError } from "./modelStream.ts";
 import type { ServiceScope } from "./discovery.ts";
 import {
   MODEL_PROVIDER_IDS,
@@ -586,6 +587,7 @@ export type ModelRoundProgress = {
 };
 export interface Ledger {
   invocationStartedAt?: number;
+  invocationBudgetMs?: number;
   loadRound?(inputHash: string): Promise<ModelRoundProgress | null>;
   saveRound?(
     progress: ModelRoundProgress | null,
@@ -703,6 +705,7 @@ export class FreeModelProvider {
     readonly env: ModelEnvironment,
     private fetcher: typeof fetch = fetch,
     private requestTimeout = 90000,
+    private streamResponses = false,
   ) {}
   private async diagnoseRejectedRequest(response: Response) {
     // Emit only fixed diagnostic labels, never provider text, credentials or prompts.
@@ -831,8 +834,17 @@ export class FreeModelProvider {
     timeout = this.requestTimeout,
     method: "POST" | "GET" | "DELETE" = "POST",
   ): Promise<any> {
-    const controller = new AbortController(),
-      timer = setTimeout(() => controller.abort(), timeout);
+    const controller = new AbortController();
+    let idleTimer: ReturnType<typeof setTimeout> | undefined;
+    let timeoutReason = "request_timeout";
+    const progress = () => {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        timeoutReason = "stream_idle_timeout";
+        controller.abort();
+      }, 90000);
+    };
+    const timer = setTimeout(() => controller.abort(), timeout);
     try {
       this.telemetry = {
         request_phase:
@@ -842,7 +854,7 @@ export class FreeModelProvider {
               ? "count_tokens"
               : "generation",
       };
-      if (this.telemetry.request_phase !== "count_tokens")
+      if (this.telemetry.request_phase === "generation")
         this.generationSent = true;
       const response = await this.fetcher(url, {
         method,
@@ -890,25 +902,38 @@ export class FreeModelProvider {
       }
       const reader = response.body?.getReader();
       if (!reader) throw new ModelError("MODEL_OUTPUT_INVALID");
-      let size = 0;
-      const chunks: Uint8Array[] = [];
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        size += value.length;
-        if (size > 1048576) {
-          await reader.cancel();
-          throw new ModelError("MODEL_OUTPUT_TOO_LARGE");
+      const streaming = response.headers
+        .get("content-type")
+        ?.includes("text/event-stream");
+      let result: any;
+      if (streaming) {
+        progress();
+        result = await readModelStream(
+          reader,
+          this.env.provider === "anthropic" ? "anthropic" : "chat",
+          progress,
+        );
+      } else {
+        let size = 0;
+        const chunks: Uint8Array[] = [];
+        for (;;) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          size += value.length;
+          if (size > 1048576) {
+            await reader.cancel();
+            throw new ModelError("MODEL_OUTPUT_TOO_LARGE");
+          }
+          chunks.push(value);
         }
-        chunks.push(value);
+        const bytes = new Uint8Array(size);
+        let offset = 0;
+        for (const c of chunks) {
+          bytes.set(c, offset);
+          offset += c.length;
+        }
+        result = JSON.parse(new TextDecoder().decode(bytes));
       }
-      const bytes = new Uint8Array(size);
-      let offset = 0;
-      for (const c of chunks) {
-        bytes.set(c, offset);
-        offset += c.length;
-      }
-      const result = JSON.parse(new TextDecoder().decode(bytes));
       this.telemetry.response_id = this.safeMetadata(
         result.id || result.responseId,
       );
@@ -924,15 +949,36 @@ export class FreeModelProvider {
       return result;
     } catch (error) {
       if (error instanceof ModelError) throw error;
+      if (error instanceof ModelStreamError) throw new ModelError(error.code);
       this.telemetry.provider_error_reason = controller.signal.aborted
-        ? "request_timeout"
+        ? timeoutReason
         : "network_error";
       throw new ModelError("MODEL_NETWORK_UNCERTAIN");
     } finally {
       clearTimeout(timer);
+      clearTimeout(idleTimer);
     }
   }
   async startBackground(task: ModelTask, prompt: string, schema: unknown) {
+    if (this.env.provider === "openai") {
+      return this.post(
+        "https://api.openai.com/v1/responses",
+        {
+          model: this.env.model,
+          instructions:
+            task === "inspect_source_page"
+              ? sourceSystemInstructions
+              : systemInstructions,
+          input: prompt + "\nJSON schema: " + JSON.stringify(schema),
+          max_output_tokens: caps[task],
+          text: { format: { type: "json_object" } },
+          background: true,
+          store: true,
+          stream: false,
+        },
+        { Authorization: `Bearer ${this.env.key}` },
+      );
+    }
     return this.post(
       "https://generativelanguage.googleapis.com/v1beta/interactions",
       {
@@ -970,9 +1016,13 @@ export class FreeModelProvider {
     if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(id))
       throw new ModelError("PROVIDER_REQUEST_INVALID");
     return this.post(
-      `https://generativelanguage.googleapis.com/v1beta/interactions/${encodeURIComponent(id)}`,
+      this.env.provider === "openai"
+        ? `https://api.openai.com/v1/responses/${encodeURIComponent(id)}`
+        : `https://generativelanguage.googleapis.com/v1beta/interactions/${encodeURIComponent(id)}`,
       undefined,
-      { "x-goog-api-key": this.env.key, "Api-Revision": "2026-05-20" },
+      this.env.provider === "openai"
+        ? { Authorization: `Bearer ${this.env.key}` }
+        : { "x-goog-api-key": this.env.key, "Api-Revision": "2026-05-20" },
       20000,
       "GET",
     );
@@ -981,9 +1031,13 @@ export class FreeModelProvider {
     if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(id))
       throw new ModelError("PROVIDER_REQUEST_INVALID");
     await this.post(
-      `https://generativelanguage.googleapis.com/v1beta/interactions/${encodeURIComponent(id)}`,
+      this.env.provider === "openai"
+        ? `https://api.openai.com/v1/responses/${encodeURIComponent(id)}`
+        : `https://generativelanguage.googleapis.com/v1beta/interactions/${encodeURIComponent(id)}`,
       undefined,
-      { "x-goog-api-key": this.env.key, "Api-Revision": "2026-05-20" },
+      this.env.provider === "openai"
+        ? { Authorization: `Bearer ${this.env.key}` }
+        : { "x-goog-api-key": this.env.key, "Api-Revision": "2026-05-20" },
       20000,
       "DELETE",
     );
@@ -993,6 +1047,7 @@ export class FreeModelProvider {
     usage: Usage;
     complete: boolean;
   } {
+    if (this.env.provider === "openai") return this.openAiResult(result);
     const usage = result.usage || {},
       input = validCount(usage.total_input_tokens),
       output = validCount(usage.total_output_tokens),
@@ -1068,7 +1123,7 @@ export class FreeModelProvider {
           },
         ],
         max_tokens: caps[task],
-        stream: false,
+        stream: this.streamResponses,
         response_format: { type: "json_object" },
         ...extraBody,
       },
@@ -1085,6 +1140,42 @@ export class FreeModelProvider {
       },
       complete:
         choice?.finish_reason === "stop" && !choice.message?.tool_calls?.length,
+    };
+  }
+  private openAiResult(result: any): {
+    text: string;
+    usage: Usage;
+    complete: boolean;
+  } {
+    const output = Array.isArray(result.output) ? result.output : [];
+    const parts = output
+      .filter((item: any) => item.type === "message")
+      .flatMap((item: any) =>
+        Array.isArray(item.content) ? item.content : [],
+      );
+    return {
+      text: parts
+        .filter(
+          (part: any) =>
+            part.type === "output_text" && typeof part.text === "string",
+        )
+        .map((part: any) => part.text)
+        .join(""),
+      usage: {
+        input: validCount(result.usage?.input_tokens),
+        output: validCount(result.usage?.output_tokens),
+        thinking: validCount(
+          result.usage?.output_tokens_details?.reasoning_tokens,
+        ),
+      },
+      complete:
+        result.status === "completed" &&
+        !result.error &&
+        output.every(
+          (item: any) => item.type === "message" || item.type === "reasoning",
+        ) &&
+        parts.length > 0 &&
+        parts.every((part: any) => part.type === "output_text"),
     };
   }
   async generate(
@@ -1109,36 +1200,7 @@ export class FreeModelProvider {
         },
         { Authorization: `Bearer ${this.env.key}` },
       );
-      const output = Array.isArray(result.output) ? result.output : [];
-      const parts = output
-        .filter((item: any) => item.type === "message")
-        .flatMap((item: any) =>
-          Array.isArray(item.content) ? item.content : [],
-        );
-      return {
-        text: parts
-          .filter(
-            (part: any) =>
-              part.type === "output_text" && typeof part.text === "string",
-          )
-          .map((part: any) => part.text)
-          .join(""),
-        usage: {
-          input: validCount(result.usage?.input_tokens),
-          output: validCount(result.usage?.output_tokens),
-          thinking: validCount(
-            result.usage?.output_tokens_details?.reasoning_tokens,
-          ),
-        },
-        complete:
-          result.status === "completed" &&
-          !result.error &&
-          output.every(
-            (item: any) => item.type === "message" || item.type === "reasoning",
-          ) &&
-          parts.length > 0 &&
-          parts.every((part: any) => part.type === "output_text"),
-      };
+      return this.openAiResult(result);
     }
     if (this.env.provider === "anthropic") {
       const result = await this.post(
@@ -1156,7 +1218,7 @@ export class FreeModelProvider {
             },
           ],
           max_tokens: caps[task],
-          stream: false,
+          stream: this.streamResponses,
         },
         { "x-api-key": this.env.key, "anthropic-version": "2023-06-01" },
       );
@@ -1400,9 +1462,9 @@ export async function executeModel(
         env &&
         tryAvailable(config, env) &&
         !(config.retry_after && Date.parse(config.retry_after) > Date.now()) &&
-        // 20s setup + 90s generation leaves settlement time inside the
-        // dispatcher's 120s request deadline (and the 180s job lease).
-        Date.now() - invocationStarted >= 20000
+        // Preserve at least 90s for a fresh attempt and time for settlement.
+        Date.now() - invocationStarted >=
+          (ledger.invocationBudgetMs ?? 110000) - 90000
       ) {
         await checkpointRound(index, true);
         throw new ModelDeferred();
@@ -1421,7 +1483,19 @@ export async function executeModel(
           await ledger.attempt?.(config.provider, lastError.code, false);
         continue;
       }
-      const provider = new FreeModelProvider(env, fetcher, 90000);
+      const provider = new FreeModelProvider(
+        env,
+        fetcher,
+        Math.min(
+          (ledger.invocationBudgetMs ?? 110000) > 110000 ? 120000 : 90000,
+          Math.max(
+            90000,
+            (ledger.invocationBudgetMs ?? 110000) -
+              (Date.now() - invocationStarted),
+          ),
+        ),
+        (ledger.invocationBudgetMs ?? 110000) > 110000,
+      );
       let reservation: string | null = null;
       let settled = false;
       let remoteId: string | null = null;
@@ -1441,7 +1515,7 @@ export async function executeModel(
       try {
         let result: { text: string; usage: Usage; complete: boolean };
         const background =
-          config.provider === "gemini_free" &&
+          ["gemini_free", "openai"].includes(config.provider) &&
           ledger.resume &&
           ledger.checkpoint &&
           ledger.defer;
@@ -1498,13 +1572,13 @@ export async function executeModel(
               );
             } catch (error) {
               if (
-                !automatic &&
                 error instanceof ModelError &&
                 ["MODEL_NETWORK_UNCERTAIN", "PROVIDER_QUOTA_WAIT"].includes(
                   error.code,
                 )
               ) {
                 await finishAttempt("MODEL_IN_PROGRESS", error.retryAfter);
+                await checkpointRound(index, false);
                 await ledger.defer!(reservation!, error.retryAfter);
                 throw new ModelDeferred();
               }
@@ -1529,6 +1603,17 @@ export async function executeModel(
             throw new ModelDeferred();
           }
           result = provider.backgroundResult(interaction);
+          if (
+            ["failed", "cancelled", "canceled"].includes(interaction.status)
+          ) {
+            await ledger.settle(
+              reservation!,
+              result.usage,
+              "PROVIDER_REQUEST_REJECTED",
+            );
+            settled = true;
+            throw new ModelError("PROVIDER_REQUEST_REJECTED");
+          }
         } else result = await provider.generate(task, prompt, schema);
         await ledger.settle(reservation, result.usage);
         settled = true;
