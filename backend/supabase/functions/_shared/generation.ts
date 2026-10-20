@@ -1,12 +1,12 @@
 import { scopeInstruction } from "./discovery.ts";
 import { enrichPublicNotice } from "./publicNoticeDetails.ts";
-import { modelLedger } from "./modelLedger.ts";
+import { executeGuardedModel } from "./modelGraph.ts";
+import type { PrimaryModelTask } from "./modelSchemas.ts";
 import {
   type Evidence,
   type Reference,
   type ModelTask,
   ModelError,
-  executeModel,
   ModelDeferred,
   fitScore,
   sha256,
@@ -280,6 +280,19 @@ export function taskInput(ctx: PlanContext) {
       context.instruction =
         "Audit each required requirement ID against the actual supplied sections. Check unsupported company claims, contradictions, placeholders, missing acceptance evidence, scope/price mismatch and unrealistic delivery. Never approve not-applicable status. Every mandatory requirement must have a coverage record, even when missing.";
     }
+  }
+  // Generic proposal sections may have no mapped requirement or company source.
+  // Keep their real notice context and authorization; never send an empty
+  // business manifest or manufacture company facts to make drafting proceed.
+  if (
+    task === "draft_section" &&
+    !evidence.length &&
+    frozen.notice?.reference
+  ) {
+    evidence.push(frozen.notice);
+    context.unmapped_section = true;
+    context.instruction +=
+      " This section has no mapped tender requirement. Use the supplied notice only for proposal context and retain missing company facts as explicit questions.";
   }
   evidence = Array.from(new Map(evidence.map((e) => [e.id, e])).values());
   // All evidence actually in the prompt and provenance of generated paragraphs stay gated.
@@ -690,75 +703,81 @@ export async function processGeneration(
       return;
     }
     const input = taskInput(ctx);
-    const ledger = modelLedger(
+    const validate = (result: any) => {
+      // Revalidate quotations against whole immutable source blocks; excerpt separators cannot become fabricated quotes.
+      validateModelResult(
+        input.task,
+        result,
+        allEvidence(ctx!) as Evidence[],
+        input.requiredIds,
+      );
+      if (
+        input.task === "draft_section" &&
+        result.key !== ctx!.step.input.section.key
+      )
+        throw new ModelError("MODEL_OUTPUT_INVALID");
+      if (input.task === "review_proposal") {
+        const sectionKeys = new Set(
+          (input.context.sections || []).map((s: Row) => s.key),
+        );
+        if (
+          result.responses.some((r: Row) =>
+            r.section_ids.some((key: string) => !sectionKeys.has(key)),
+          ) ||
+          result.findings.some((f: Row) =>
+            f.section_ids.some((key: string) => !sectionKeys.has(key)),
+          )
+        )
+          throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+      }
+      if (input.task === "plan_commercial") {
+        const sectionKeys = new Set(
+          (input.context.section_titles || []).map((s: Row) => s.key),
+        );
+        const rateIds = new Set(
+          input.evidence.filter((e) => e.kind === "rate").map((e) => e.id),
+        );
+        if (
+          result.lines.some(
+            (l: Row) =>
+              l.section_ids.some((key: string) => !sectionKeys.has(key)) ||
+              l.requirement_ids.some(
+                (id: string) => !input.requiredIds.includes(id),
+              ) ||
+              (l.rate_id && !rateIds.has(l.rate_id)),
+          )
+        )
+          throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+      }
+    };
+    const outcome = await executeGuardedModel({
       backend,
-      { id: job.id, lease_token: job.lease_token, attempts: job.attempts },
-      `step:${ctx.step.id}`,
-      env.models,
-    );
-    const result = await executeModel(
-      input.task,
-      input.context,
-      input.evidence,
-      input.requiredIds,
-      input.manifest,
-      env.models,
-      ledger,
-      ctx.plan.frozen_context.language,
-      ctx.step.repair_count === 1,
+      job: job as any,
+      prefix: `step:${ctx.step.id}`,
+      task: input.task as PrimaryModelTask,
+      context: input.context,
+      evidence: input.evidence,
+      requiredIds: input.requiredIds,
+      manifest: input.manifest,
+      environments: env.models,
+      language: ctx.plan.frozen_context.language,
+      repair: ctx.step.repair_count === 1,
       fetcher,
-    );
-    // Revalidate quotations against whole immutable source blocks; excerpt separators cannot become fabricated quotes.
-    validateModelResult(
-      input.task,
-      result,
-      allEvidence(ctx) as Evidence[],
-      input.requiredIds,
-    );
-    if (
-      input.task === "draft_section" &&
-      result.key !== ctx.step.input.section.key
-    )
-      throw new ModelError("MODEL_OUTPUT_INVALID");
-    if (input.task === "review_proposal") {
-      const sectionKeys = new Set(
-        (input.context.sections || []).map((s: Row) => s.key),
-      );
-      if (
-        result.responses.some((r: Row) =>
-          r.section_ids.some((key: string) => !sectionKeys.has(key)),
-        ) ||
-        result.findings.some((f: Row) =>
-          f.section_ids.some((key: string) => !sectionKeys.has(key)),
-        )
-      )
-        throw new ModelError("EVIDENCE_REFERENCE_INVALID");
-    }
-    if (input.task === "plan_commercial") {
-      const sectionKeys = new Set(
-        (input.context.section_titles || []).map((s: Row) => s.key),
-      );
-      const rateIds = new Set(
-        input.evidence.filter((e) => e.kind === "rate").map((e) => e.id),
-      );
-      if (
-        result.lines.some(
-          (l: Row) =>
-            l.section_ids.some((key: string) => !sectionKeys.has(key)) ||
-            l.requirement_ids.some(
-              (id: string) => !input.requiredIds.includes(id),
-            ) ||
-            (l.rate_id && !rateIds.has(l.rate_id)),
-        )
-      )
-        throw new ModelError("EVIDENCE_REFERENCE_INVALID");
-    }
-    await backend.internal("complete_generation_step", {
-      job_id: job.id,
-      lease: job.lease_token,
-      result,
+      validate,
     });
-    await ledger
+    validate(outcome.result);
+    await backend.internal(
+      outcome.threadId
+        ? "complete_generation_graph"
+        : "complete_generation_step",
+      {
+        job_id: job.id,
+        lease: job.lease_token,
+        result: outcome.result,
+        ...(outcome.threadId ? { thread_id: outcome.threadId } : {}),
+      },
+    );
+    await outcome
       .cleanup?.()
       .catch(() => console.warn("provider_request_cleanup_pending"));
   } catch (error) {

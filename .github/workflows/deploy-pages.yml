@@ -19,7 +19,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Check out source
         uses: actions/checkout@v7.0.1
@@ -50,10 +50,10 @@ jobs:
         run: npm exec --yes --package=deno@2.9.6 -- deno check --no-lock --config supabase/functions/deno.json supabase/functions/api/index.ts supabase/functions/worker/index.ts
       - name: Run frontend tests
         working-directory: frontend
-        run: npm test
+        run: npm test -- --maxWorkers=2
       - name: Run backend tests
         working-directory: backend
-        run: npm test
+        run: npm test -- --maxWorkers=1
       - name: Build frontend
         working-directory: frontend
         run: npm run build

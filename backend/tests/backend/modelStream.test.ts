@@ -101,6 +101,7 @@ it("retains Anthropic cache and output usage while excluding reasoning", async (
     true,
   );
   expect(await provider.generate("connection_probe", "JSON", {})).toEqual({
+    kind: "completed_candidate",
     text: '{"status":"ready"}',
     complete: true,
     usage: { input: 13, output: 7, thinking: null },

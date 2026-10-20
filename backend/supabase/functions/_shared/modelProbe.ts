@@ -1,7 +1,7 @@
 import { Backend, type BackendEnvironment } from "./backend.ts";
-import { executeModel, ModelError, ModelDeferred } from "./model.ts";
+import { ModelError, ModelDeferred } from "./model.ts";
 
-import { modelLedger } from "./modelLedger.ts";
+import { executeGuardedModel } from "./modelGraph.ts";
 
 /** A bounded operational check, with no customer content or fabricated business records. */
 export async function processModelProbe(
@@ -10,25 +10,33 @@ export async function processModelProbe(
   job: { id: string; lease_token: string; attempts: number },
   fetcher: typeof fetch,
 ) {
-  const ledger = modelLedger(backend, job, `probe:${job.id}`, env.models);
   try {
-    await executeModel(
-      "connection_probe",
-      {
+    const outcome = await executeGuardedModel({
+      backend,
+      job,
+      prefix: `probe:${job.id}`,
+      task: "connection_probe",
+      context: {
         purpose: "Verify the TenderDesk model connection. Return status ready.",
         check_id: job.id,
       },
-      [],
-      [],
-      [],
-      env.models,
-      ledger,
-      "en",
-      false,
+      evidence: [],
+      requiredIds: [],
+      manifest: [],
+      environments: env.models,
+      language: "en",
+      repair: false,
       fetcher,
-    );
-    await backend.finish(job.id, job.lease_token, "succeeded", null);
-    await ledger
+    });
+    if (outcome.threadId)
+      await backend.internal("complete_model_probe_graph", {
+        job_id: job.id,
+        lease: job.lease_token,
+        thread_id: outcome.threadId,
+        result: outcome.result,
+      });
+    else await backend.finish(job.id, job.lease_token, "succeeded", null);
+    await outcome
       .cleanup?.()
       .catch(() => console.warn("provider_request_cleanup_pending"));
   } catch (error) {

@@ -265,7 +265,6 @@ it("records Gemini thought usage through stateless structured generation", async
     generationConfig: {
       responseMimeType: "application/json",
       candidateCount: 1,
-      thinkingConfig: { thinkingLevel: "LOW" },
     },
   });
 });
@@ -590,12 +589,14 @@ it.each([
       "gemini_free",
       "MODEL_OUTPUT_TRUNCATED",
       true,
+      gemini,
     );
     expect(ledger.attempt).toHaveBeenNthCalledWith(
       2,
       "qwen_free",
       "MODEL_NOT_CONFIGURED",
       false,
+      config,
     );
     expect(ledger.settle).toHaveBeenCalledExactlyOnceWith(
       "settled-reservation",
@@ -1090,6 +1091,7 @@ it("uses OpenAI Responses with the supplied model and preserves reasoning usage 
     send,
   );
   expect(await provider.generate("connection_probe", "JSON", {})).toEqual({
+    kind: "completed_candidate",
     text: '{"status":"ready"}',
     complete: true,
     usage: { input: 11, output: 19, thinking: 9 },
@@ -1141,6 +1143,7 @@ it("uses Claude Messages and totals uncached and cached input without inventing 
     send,
   );
   expect(await provider.generate("connection_probe", "JSON", {})).toEqual({
+    kind: "completed_candidate",
     text: '{"status":"ready"}',
     complete: true,
     usage: { input: 31, output: 19, thinking: null },

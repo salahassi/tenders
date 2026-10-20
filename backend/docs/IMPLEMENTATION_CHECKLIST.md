@@ -1,5 +1,78 @@
 # Implementation status and continuation plan
 
+## October 20 — unified execution implementation, local verification
+
+P0–P5 / stages 4–7: canonical task schemas, eight API adapters, configurable
+connections/models/task routes and profiles, target-aware attempts/usage and
+whole-text grounded verification/correction are implemented. LangGraph 1.5.1,
+checkpoint 1.2.0 and Core 1.2.18 use lease-bound private database persistence,
+pending writes, immutable result caching and atomic domain commits. Inherited
+external tracing is disabled. Old workers skip graph jobs; a compatible worker
+can drain both executors. New-work admission is initially disabled.
+
+The new [runbook](MODEL_EXECUTION_RUNBOOK.md) documents configuration, execution,
+rollback, recovery and the paid-model acceptance handoff. New metadata and graph
+state are included in hashed workspace backup; isolated restore disables model
+connections/admission and cancels active work. Explicit grants/RLS remain in
+each new migration. API and Pages deployment workflows now check both functions;
+the backend deployment workflow also deploys/verifies the worker.
+
+Local evidence: **386 backend tests / 33 files** passed, followed by **15 targeted
+catalog/batch/recovery checks** after the final command-dispatch fix, **41 existing
+database/API integration checks**, and **18 graph/catalog checks** proving no
+external tracing network request even with inherited tracing flags enabled; **187 frontend
+tests / 34 files**, both package typechecks/builds and Deno checks for API/worker
+passed. The actual graph executor passes native pending-request resume, same-
+provider fallback, bounded correction, early repeated-defect termination,
+old-worker exclusion and admission rollback fixtures. A full isolated proposal
+pipeline completes all stages and prepares a draft export without custom
+company/template data. Empty-reference generic sections now carry their original
+notice context instead of failing data authorization. Browser fixture checks
+passed model creation, same-provider ordering, profile/admission saves, reload
+persistence, 390px layout and absence of browser errors; desktop/mobile screenshots
+were inspected. Synthetic fixture output is not live business acceptance.
+
+Deployment update at **18:26 UTC / 21:26 Riyadh**: all additive migrations
+are applied. Fresh connector requests accepted the unchanged graph RPC/domain
+and recovery SQL after the earlier MCP `Invalid or expired requestState` errors.
+No new secret, permission relaxation, database reset or queue reset was needed.
+The request-state error came from the connector confirmation path; its exact
+server-side cause is not proven by the client response.
+
+Hosted migrations: `20261020155016` (`model_catalog_and_task_routes`),
+`20261020155037` (`model_target_identity_and_execution`),
+`20261020160954` (`durable_model_graph_storage`),
+`20261020181506` (`durable_model_graph_store_rpc`),
+`20261020181537` (`durable_model_graph_domain_commits`) and
+`20261020182128` (`model_graph_recovery_and_retention`). The three graph parts
+are the exact statement boundaries of local `20261020143042`. The optional
+release runner now recognizes all three parts as complete and rejects incomplete
+out-of-order history, so a later release does not replay their DDL. All **8 release-runner tests**
+passed, including the actual completed split-history shape.
+
+Runtime source `5e3e088e5977facd245b3119a17053451b7acf1a`: API **v54** and
+worker **v56** are ACTIVE. All **26 API / 31 worker reachable files** returned by
+Supabase match the submitted source exactly. Health returns HTTP 200; anonymous bootstrap and worker requests return 401. Minute
+worker dispatches return 202; the 18:26 database heartbeat confirms background
+execution. New catalog tables have member-read RLS and no anonymous grants;
+private graph tables deny browser reads, and claim/store/commit RPCs remain
+service-role-only. Original RFP hash is unchanged. New-work admission remains off
+for the staged paid-model acceptance; existing jobs retain legacy execution.
+Frontend publication and authenticated hosted settings checks are being completed.
+
+Historical fallback [workflow 39457435238](https://github.com/salahassi/tenders/actions/runs/39457435238)
+stopped at its Actions credential check and deployed nothing. This release instead
+used the already connected Supabase tools successfully. `SUPABASE_ACCESS_TOKEN`
+is needed only if choosing that separate Actions deployment path; it is not a
+new application requirement or a blocker for this connector release.
+
+Security-advisor counts remain 22 pre-existing authenticated-definer warnings,
+one Auth warning and nine intentionally private no-policy informational entries.
+No new exposed graph RPC or table was found. Full fresh MAIN-01–14 and E2E-01–10,
+actual inference quality and downloaded Word acceptance remain pending the
+Owner-provided paid models. The complete isolated pipeline and browser fixtures
+are implementation evidence, not a live business proposal pass.
+
 ## October 20 — staged release and paid-model acceptance order
 
 The Owner clarified that the application must keep working throughout the model

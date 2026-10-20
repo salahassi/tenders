@@ -13,6 +13,8 @@ import {
 import { AppError, corsHeaders, readJson } from "../_shared/http.ts";
 import { validateOriginal } from "../_shared/originals.ts";
 import { z } from "zod";
+import { taskRegistry } from "../_shared/modelContract.ts";
+import type { ModelProviderId } from "../_shared/modelProviders.ts";
 import { adapterSchema, inertText, canonical } from "../_shared/collector.ts";
 import { PDFDocument } from "pdf-lib";
 import {
@@ -49,6 +51,10 @@ const readTables: Record<string, string> = {
   requirements: "requirements",
   "fit-assessments": "fit_assessments",
   "model-settings": "model_settings",
+  "model-connections": "model_connections",
+  "model-configurations": "model_configurations",
+  "model-task-routes": "model_task_routes",
+  "model-execution-settings": "model_execution_settings",
   "model-routing": "model_routing",
   "content-authorizations": "content_authorizations",
   "provider-usage": "provider_usage",
@@ -202,6 +208,38 @@ export function createApiHandler(
         return respond(await backend.acceptInvitation(token, input.token));
       }
       const membership = await backend.membership(token);
+      if (path === "/v1/model-catalog-status" && request.method === "GET") {
+        if (membership.role !== "Owner")
+          throw new AppError(
+            403,
+            "OWNER_REQUIRED",
+            "Only the Owner can inspect model setup.",
+          );
+        const connections = await backend.list(
+          token,
+          "model_connections",
+          {},
+          100,
+        );
+        return respond({
+          connections: connections.records.map((row) => ({
+            id: row.id,
+            key_configured: Boolean(
+              backend.resolveModelEnvironment({
+                provider: row.provider as ModelProviderId,
+                model: "",
+                project_ref: String(row.project_ref),
+                connection_id: row.id,
+                credential_alias: String(row.credential_alias),
+              }).key,
+            ),
+          })),
+          tasks: Object.entries(taskRegistry).map(([task, definition]) => ({
+            task,
+            profile: definition.profile,
+          })),
+        });
+      }
       if (path === "/v1/model-environment" && request.method === "GET") {
         if (membership.role !== "Owner")
           throw new AppError(

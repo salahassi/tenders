@@ -23,6 +23,7 @@ export interface BackendEnvironment {
     publicUrl: string;
   };
   models: Record<ModelProviderId, ModelEnvironmentSlot>;
+  modelCredential?: (alias: string) => string;
 }
 const SECRET_PREFIX: Record<ModelProviderId, string> = {
   gemini_free: "APP_MODEL_GEMINI",
@@ -107,6 +108,8 @@ export function environment(
         get("APP_PUBLIC_URL") || "https://salahassi.github.io/tenders/",
     },
     models: modelEnvironments(get),
+    modelCredential: (alias) =>
+      /^APP_MODEL_[A-Z0-9_]{1,80}_KEY$/.test(alias) ? get(alias) || "" : "",
     collectionHosts: (get("APP_COLLECTION_HOSTS") || "")
       .split(",")
       .map((x) => x.trim().toLowerCase())
@@ -115,6 +118,26 @@ export function environment(
 }
 export class Backend {
   readonly invocationStartedAt = Date.now();
+  resolveModelEnvironment(config: {
+    provider: ModelProviderId;
+    model: string;
+    project_ref: string;
+    credential_alias?: string;
+    connection_id?: string;
+  }) {
+    const legacy = this.env.models[config.provider];
+    if (!config.connection_id) return legacy;
+    const key =
+      config.credential_alias === `${SECRET_PREFIX[config.provider]}_KEY`
+        ? legacy?.key
+        : this.env.modelCredential?.(config.credential_alias || "") || "";
+    return {
+      provider: config.provider,
+      model: config.model,
+      projectRef: config.project_ref,
+      key: key || "",
+    };
+  }
   private admin: SupabaseClient;
   constructor(
     private env: BackendEnvironment,
@@ -390,7 +413,7 @@ export class Backend {
     return data;
   }
   async claim() {
-    const { data, error } = await this.admin.rpc("claim_backend_job");
+    const { data, error } = await this.admin.rpc("claim_backend_job_v2");
     if (error) throw databaseError(error);
     return data;
   }

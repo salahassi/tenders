@@ -620,6 +620,29 @@
   display: grid;
   gap: 14px;
 }
+.model-catalog > .panel {
+  padding: 24px;
+  margin-block: 20px;
+}
+.model-catalog .table-scroll {
+  overflow-x: auto;
+  max-width: 100%;
+  margin-block: 16px;
+}
+.model-catalog table {
+  min-width: 620px;
+}
+.model-catalog form {
+  margin-top: 20px;
+  display: grid;
+  gap: 14px;
+}
+.model-catalog details {
+  margin-block: 16px;
+}
+.model-catalog p, .model-catalog code, .model-catalog li {
+  overflow-wrap: anywhere;
+}
 .provider-card {
   border: 1px solid var(--border);
   border-radius: 12px;

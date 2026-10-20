@@ -67,14 +67,19 @@ function setup(
       routing = { ...routing, ...input, revision: routing.revision + 1 };
     return { ...input, revision: (input.expected_revision || 0) + 1 };
   });
-  const request = vi.fn(async (path: string) => ({
-    data:
-      path === "/v1/model-routing"
-        ? { records: [routing] }
-        : path === "/v1/model-environment"
-          ? { providers: servers }
-          : { records: options.policies || [] },
-  }));
+  const request = vi.fn(async (path: string) => {
+    // Exercise the supported old-API compatibility view.
+    if (path === "/v1/model-execution-settings")
+      throw new Error("Route not available on previous API");
+    return {
+      data:
+        path === "/v1/model-routing"
+          ? { records: [routing] }
+          : path === "/v1/model-environment"
+            ? { providers: servers }
+            : { records: options.policies || [] },
+    };
+  });
   vi.mocked(useApp).mockReturnValue({
     state: { settings: { role: options.role || "Owner" } },
     saving: false,

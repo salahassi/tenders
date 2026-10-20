@@ -1,12 +1,12 @@
 # Frontend handoff
 
-## Planned model configuration and acceptance extension
+## Model configuration and acceptance extension
 
 The October 20 [Model Execution Plan](../../backend/docs/MODEL_EXECUTION_PLAN.md)
-defines the upcoming Connections → Models → Task routing settings, effective
-profiles, validation/repair activity and E2E-01–E2E-10. It maps to the original
-milestones and acceptance tests. These are planned changes; the implementation
-below and the dated checklist remain the current-runtime evidence.
+defines Connections → Models → Task routing settings, effective profiles,
+validation/repair activity and E2E-01–E2E-10. These features are implemented and
+map to the original milestones and acceptance tests. The dated checklist
+distinguishes deployed runtime, local tests and pending live paid-model acceptance.
 
 ## Current implementation
 
@@ -22,7 +22,7 @@ Company service scope is configurable: Company Knowledge, keywords, or both. Own
 
 Automatic routing uses the saved provider order (priority or round robin). It supports Gemini, Qwen, Mistral, Groq, z.ai, OpenAI, Claude and Cloudflare Workers AI without requiring individual enable toggles. Configured API keys and owner-supplied model names determine availability; billing attestations do not gate requests. Missing credentials are skipped. An exhausted round waits and retries with visible attempts. Company/tender evidence permissions remain in force. Automatic processing does not enforce internal daily call/token limits; reported usage stays in activity logs, including unknown values.
 
-Settings separates Workspace, Models & providers, Assessment & data, Notifications, Team & access, Proposal defaults, and Operations & recovery. Sections load on first visit and keep drafts when switching. Server setup metadata supplies read-only model/account identities and key-presence status; keys never enter the browser. Supabase Secrets determine the actual API model and credentials. The single ordered list controls automatic priority/round robin and contains each provider's connection check. A configured badge means values are present, not that inference has succeeded. Legacy manual policies keep their separate ceilings; automatic provider cards expose only connection setup and routing. Data-sharing checkboxes grant content permission; they do not activate credentials. Gemini background requests retain request IDs and automatic result checks. Activity & jobs records attempts, results, measured usage and Riyadh retry times; unknown-usage reconciliation lives under Operations & recovery.
+Settings separates Workspace, Models & providers, Assessment & data, Notifications, Team & access, Proposal defaults, and Operations & recovery. Sections load on first visit and keep drafts when switching. Server setup metadata supplies read-only model/account identities and key-presence status; keys never enter the browser. The model catalog stores connection metadata, model identifiers/capabilities and per-task priority/round-robin routes in the database. Secrets hold credential values only; existing `_NAME` values are imported once for compatibility. Several models from one provider can appear in a task route. New-work admission is separate from the legacy ordered provider controls, which remain for existing jobs. See [the model execution runbook](../../backend/docs/MODEL_EXECUTION_RUNBOOK.md). A configured badge means values are present, not that inference has succeeded. Legacy manual policies keep their separate ceilings; automatic provider cards expose only connection setup and routing. Data-sharing checkboxes grant content permission; they do not activate credentials. Gemini background requests retain request IDs and automatic result checks. Activity & jobs records attempts, results, measured usage and Riyadh retry times; unknown-usage reconciliation lives under Operations & recovery.
 
 The connected application implements invitations and members, source review and collection/imports, original upload and extraction, company evidence, fit assessment, persistent generation/regeneration, commercial and delivery review, approval, bilingual Word export, manual acquisition/submission, operational status and complete backup/restore. See [the implementation checklist](../../backend/docs/IMPLEMENTATION_CHECKLIST.md) for source revisions, deployed components, local tests and the distinct hosted acceptance requirements. A feature being implemented does not establish that its model or source is activated.
 
