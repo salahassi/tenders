@@ -7,7 +7,7 @@ import type {
 import { beforeAll, afterAll, beforeEach, afterEach, it, expect } from "vitest";
 import { workflowFixture } from "./workflowFixture";
 import { buildExportModel } from "../../supabase/functions/_shared/export";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import {
   processGeneration,
   nextStage,
@@ -398,17 +398,176 @@ it("rejects completion after cancellation without publishing a partial version",
 it("rejects changed supporting evidence even if a worker still holds its lease", async () => {
   await start();
   const job = await f.rpc("claim_backend_job");
-  await f.command("knowledge.save", {
+  const knowledge = await f.command("knowledge.save", {
     category: "company",
     title: "Changed company facts",
     content: "Synthetic evidence change",
     enabled: true,
     evidence: "",
   });
+  await f.db.query(
+    "update public.knowledge_items set verified=true,verified_at=now(),verified_by=$1 where id=$2",
+    [f.owner, knowledge.id],
+  );
   await expect(
     f.rpc("generation_context", [job.id, job.lease_token]),
   ).rejects.toThrow("STALE_INPUT");
 });
+
+it("retains saved proposal work after unrelated evidence and collection metadata changes", async () => {
+  const s = await start();
+  let job = await f.rpc("claim_backend_job");
+  const before = await f.rpc("generation_context", [job.id, job.lease_token]);
+  await f.db.query(
+    "update public.opportunities set notice_evidence=$2::jsonb where id=$1",
+    [
+      s.opp.id,
+      JSON.stringify({
+        fetched_at: new Date().toISOString(),
+        detail_sha256: "b".repeat(64),
+      }),
+    ],
+  );
+  const unrelated = await f.command("opportunity.create", {
+    source_id: s.opp.source_id,
+    title: "Unrelated synthetic notice",
+    reference: "S2",
+    description: "Different procurement",
+    language: "en",
+  });
+  await f.db.query(
+    "update public.opportunities set description='Updated unrelated procurement' where id=$1",
+    [unrelated.id],
+  );
+  const after = await f.rpc("generation_context", [job.id, job.lease_token]);
+  expect(after.plan.input_hash).toBe(before.plan.input_hash);
+  expect(after.plan.frozen_context).toEqual(before.plan.frozen_context);
+  expect(after.plan.evidence_revision).toBeGreaterThan(
+    before.plan.evidence_revision,
+  );
+  await f.rpc("fail_generation", [
+    job.id,
+    job.lease_token,
+    "MODEL_NOT_CONFIGURED",
+    null,
+    null,
+  ]);
+  await f.db.query(
+    "update public.opportunities set notice_evidence=$2::jsonb where id=$1",
+    [
+      s.opp.id,
+      JSON.stringify({
+        fetched_at: "2026-10-20T00:00:00Z",
+        detail_sha256: "c".repeat(64),
+      }),
+    ],
+  );
+  const current = (
+    await f.db.query<any>("select * from public.generation_plans where id=$1", [
+      s.plan.id,
+    ])
+  ).rows[0];
+  await f.db.query(
+    "update public.opportunities set description='Another unrelated update' where id=$1",
+    [unrelated.id],
+  );
+  await f.command("generation.retry", {
+    id: current.id,
+    expected_revision: current.revision,
+    reason: "Synthetic same-input retry",
+  });
+  await runPlan();
+  expect(
+    (
+      await f.db.query<any>(
+        "select status from public.generation_plans where id=$1",
+        [s.plan.id],
+      )
+    ).rows[0].status,
+  ).toBe("completed");
+}, 15000);
+
+it("migration recovery queues only stale proposals whose actual inputs are unchanged", async () => {
+  const s = await start();
+  const migration = await readFile(
+    new URL(
+      "../../supabase/migrations/20261020070522_scoped_proposal_evidence_refresh.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const recovery = migration.match(
+    /do \$recovery\$[\s\S]*?end \$recovery\$;/,
+  )![0];
+  const block = async () => {
+    await f.db.query(
+      "update public.generation_plans set status='blocked',error_code='STALE_INPUT' where id=$1",
+      [s.plan.id],
+    );
+    await f.db.query(
+      "update public.jobs set status='blocked',error_code='STALE_INPUT' where entity_id=$1",
+      [s.plan.id],
+    );
+  };
+  await f.db.query(
+    "update public.workspaces set evidence_revision=evidence_revision+1 where id=$1",
+    [f.w],
+  );
+  await block();
+  await f.db.exec(recovery);
+  expect(
+    (
+      await f.db.query<any>(
+        "select status,input_hash,frozen_context from public.generation_plans where id=$1",
+        [s.plan.id],
+      )
+    ).rows[0],
+  ).toEqual({
+    status: "queued",
+    input_hash: s.plan.input_hash,
+    frozen_context: s.plan.frozen_context,
+  });
+  await f.db.query(
+    "update public.opportunities set description='Changed required work' where id=$1",
+    [s.opp.id],
+  );
+  await block();
+  await f.db.exec(recovery);
+  expect(
+    (
+      await f.db.query<any>(
+        "select status from public.generation_plans where id=$1",
+        [s.plan.id],
+      )
+    ).rows[0].status,
+  ).toBe("blocked");
+});
+
+it.each(["rfp", "notice", "template"])(
+  "still rejects a changed proposal input: %s",
+  async (kind) => {
+    const s = await start();
+    const job = await f.rpc("claim_backend_job");
+    if (kind === "rfp")
+      await f.db.query(
+        "update public.documents set archived=true where id=$1",
+        [s.document.id],
+      );
+    if (kind === "notice")
+      await f.db.query(
+        "update public.opportunities set description='Changed buyer requirements' where id=$1",
+        [s.opp.id],
+      );
+    if (kind === "template")
+      await f.db.query(
+        'update public.templates set content_hash=repeat(\'b\',64),fixed_blocks=\'[{"key":"changed","title":"Changed","body":"New requirement","volume":"technical"}]\'::jsonb where workspace_id=$1',
+        [f.w],
+      );
+    await expect(
+      f.rpc("generation_context", [job.id, job.lease_token]),
+    ).rejects.toThrow("STALE_INPUT");
+  },
+);
 it.each(["MODEL_OUTPUT_INVALID", "MODEL_OUTPUT_TRUNCATED"])(
   "persists one repair for %s and then blocks; retry preserves previous steps",
   async (outputError) => {

@@ -326,13 +326,16 @@ export const caps: Record<ModelTask, number> = {
   inspect_source_page: 8192,
   // Includes a small reasoning budget for providers that count it as output.
   connection_probe: 1024,
-  summarize_review: 4096,
+  summarize_review: 8192,
   classify_opportunity: 6144,
-  analyze_chunk: 4096,
-  plan_proposal: 2048,
+  // Reasoning-enabled models can consume most of 4K before writing JSON.
+  // Allow the existing 8K per-call ceiling; retain measured usage and the
+  // bounded split/repair path when an individual response still truncates.
+  analyze_chunk: 8192,
+  plan_proposal: 8192,
   draft_section: 8192,
-  plan_commercial: 4096,
-  review_proposal: 4096,
+  plan_commercial: 8192,
+  review_proposal: 8192,
 };
 export const writingGuide = {
   en: "Write clear professional American English. Explain scope, assumptions, dependencies and validation. Use native headings and concise connected prose. Define abbreviations at first use. Never invent a customer, certification, available employee, registration, rate or commitment.",
