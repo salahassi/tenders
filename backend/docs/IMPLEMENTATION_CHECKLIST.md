@@ -2,6 +2,19 @@
 
 ## October 20 — paid-model acceptance and runtime recovery
 
+Source observation exposed a separate local-capacity bug: automatic source
+failure handling marked MODEL_RATE_WAIT as blocked, while the recovery helper
+assumed generation had already scheduled it. The new additive
+`source_model_capacity_recovery` migration schedules a one-minute retry without
+incrementing outage failures or sending an outage notice, preserves explicit
+provider retry times, and repairs only inactive non-canceled blocked capacity
+jobs with an audit record. Source and independent discovery regression tests
+cover reclaiming the same job with no outage notification. Verification and
+deployment: all 421 backend tests passed in one full run, with backend typecheck
+and build. The migration is applied; the real Aramco collection job moved from
+blocked to retry_wait / MODEL_RATE_WAIT with an audit entry. Existing login,
+browser-rendering and non-listing source blockers remain distinct.
+
 Follow-up at 21:58 UTC: published source `4e6faacad7f55deeb6b8eac526fbc09fb4ed8f64`
 passed [Pages 39502080808](https://github.com/salahassi/tenders/actions/runs/39502080808),
 including all 415 backend / 191 frontend tests. API v61 / worker v68 add
@@ -30,6 +43,16 @@ passed in an isolated rerun after closing the idle browser (419 total). Both
 package typechecks/builds and Deno entrypoint checks passed. New frontend
 publication and live corrective acceptance remain pending. The real three-part
 trial is still incomplete; no complete proposal or DOCX acceptance is claimed.
+
+Source `1a3f5aeadc55a67177713b503da09f881b33611d` passed
+[Pages 39505405656](https://github.com/salahassi/tenders/actions/runs/39505405656),
+including a clean 419 backend / 192 frontend test run. Runtime readback matched
+all 31 worker and 26 API files exactly. The corrective verifier report completed
+but failed numeric evidence validation; its one-result allowance was not reset.
+Worker v70 additionally retains policy-safe rejected corrective reports in the
+private graph store for diagnosis, without recursively correcting them. A
+GET-only replay was audit-requested with the exhausted budget preserved. The
+other incomplete analysis part is now processing; no finished Word is claimed.
 
 P6 / stages 5–7: Owner configured three paid task models and requested a real RFP
 journey with source/usage observation. The original confirmed file is unchanged.

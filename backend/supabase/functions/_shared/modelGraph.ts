@@ -267,10 +267,7 @@ async function runGuardedModel(o: Options): Promise<{
       producer = request.target;
       await prepared?.(request);
     };
-    if (
-      task === "verify_grounding" &&
-      !key.startsWith("verification-repair-")
-    ) {
+    if (task === "verify_grounding") {
       ledger.invalidCandidate = async (result, code) => {
         const invalidKey = `invalid-${key}`;
         if (!(await store.action("result_get", { key: invalidKey })))

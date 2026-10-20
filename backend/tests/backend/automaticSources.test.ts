@@ -383,6 +383,55 @@ it("requires an Owner for discovery and keeps page-writing RPCs worker-only", as
   });
 });
 
+it.each(["collect", "discover"])(
+  "automatically retries local model capacity for %s without an outage notification",
+  async (mode) => {
+    if (mode === "collect") {
+      const s = await source();
+      await f.command("source.collect", {
+        id: s.id,
+        expected_revision: s.revision,
+      });
+    } else
+      await f.command("source.discover", {
+        url: "https://directory.example.test/",
+      });
+    const j = await rpc("claim_backend_job");
+    const failureCount = j.failure_count;
+    const notifications = (
+      await f.db.query<any>("select count(*) n from public.notifications")
+    ).rows[0].n;
+    await rpc("fail_source_reading", {
+      job_id: j.id,
+      lease: j.lease_token,
+      error_code: "MODEL_RATE_WAIT",
+      retry_after: null,
+    });
+    const saved = (
+      await f.db.query<any>(
+        "select *,next_attempt_at between now()+interval '59 seconds' and now()+interval '61 seconds' soon from public.jobs where id=$1",
+        [j.id],
+      )
+    ).rows[0];
+    expect(saved).toMatchObject({
+      status: "retry_wait",
+      error_code: "MODEL_RATE_WAIT",
+      failure_count: failureCount,
+      lease_token: null,
+      soon: true,
+    });
+    expect(
+      (await f.db.query<any>("select count(*) n from public.notifications"))
+        .rows[0].n,
+    ).toBe(notifications);
+    await f.db.query(
+      "update public.jobs set next_attempt_at=now() where id=$1",
+      [j.id],
+    );
+    expect((await rpc("claim_backend_job")).id).toBe(j.id);
+  },
+);
+
 it("can retry an independent discovery job without requiring a source row", async () => {
   await f.command("source.discover", {
     url: "https://directory.example.test/",
