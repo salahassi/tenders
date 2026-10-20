@@ -1,5 +1,13 @@
 # Frontend handoff
 
+## Planned model configuration and acceptance extension
+
+The October 20 [Model Execution Plan](../../backend/docs/MODEL_EXECUTION_PLAN.md)
+defines the upcoming Connections → Models → Task routing settings, effective
+profiles, validation/repair activity and E2E-01–E2E-10. It maps to the original
+milestones and acceptance tests. These are planned changes; the implementation
+below and the dated checklist remain the current-runtime evidence.
+
 ## Current implementation
 
 The proposal-list empty state describes the connected upload/review/generate flow and makes clear that saved templates and Company Knowledge are optional starting inputs. It does not ask a signed-in workspace to connect its backend. The Owner explicitly authorized the mismatched NHCI RFP/An-Najah opportunity for this trial. A temporary invited Editor downloaded the exact original through the live app, reviewed its extraction and created a proposal generation request. Exact-file model permission and full hosted generation/download remain pending; see the current checklist.

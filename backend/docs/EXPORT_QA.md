@@ -1,5 +1,9 @@
 # Word export verification
 
+For the planned real generated-artifact gates, see
+[E2E-01–E2E-10 in the model execution plan](MODEL_EXECUTION_PLAN.md#10-p0-and-p6--real-cases-with-todays-acceptance-first).
+The fixture evidence below does not close those live acceptance gates.
+
 October 15, 2026. Synthetic fixtures only; no business submission or live model output.
 
 The renderer test builds four files using the server export model and verifies their native tables, live contents fields, four embedded fonts, technical-volume price separation, and exact authorized content. A modified body must fail verification. SQL tests separately reject incorrect artifact hashes and exports/submissions whose approval is stale.

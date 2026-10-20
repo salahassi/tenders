@@ -28,7 +28,15 @@ Start the existing interface with `npm --prefix frontend run dev`. Its productio
 
 See the [frontend guide](frontend/README.md), [backend guide](backend/README.md), [deployment status](backend/docs/DEPLOYMENT.md), [implementation status and continuation plan](backend/docs/IMPLEMENTATION_CHECKLIST.md), and [original implementation specification](backend/docs/IMPLEMENTATION_SPEC.txt).
 
-All builds use the email/password connected application. Demo routes, sample workspace seeding, and local reset/restore controls have been retired. Eight migrations and API v3 are deployed to Supabase. The first Owner must complete restricted setup with a selected confirmed email before workspace access; hosted account acceptance, files, collection, generation, and recovery remain separate unfinished stages. See the checklist for exact verification and deployment evidence.
+The [unified model execution and real proposal acceptance plan](backend/docs/MODEL_EXECUTION_PLAN.md)
+extends the original milestones with structured model contracts, configurable
+task routing, grounded correction and the real RFP-to-Word acceptance matrix.
+Its planned work is separate from the deployed runtime.
+
+All builds use the invitation-only email/password connected application. Demo
+routes, sample workspace seeding, and local reset/restore controls have been
+retired. See the checklist for current source/runtime versions, verified journeys
+and remaining hosted generation, export and recovery acceptance.
 
 ## Required change record
 

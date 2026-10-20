@@ -1,5 +1,35 @@
 # Decisions
 
+## 2026-10-20: Unified model contracts, task routing and durable correction
+
+The Owner requested structured input/output for every model operation, one shared
+application execution path with provider adapters, configurable models per use
+case while preserving failover (including another model of the same provider),
+grounded guardrails/correction and a complete implementation plan linked to the
+original project milestones. See [MODEL_EXECUTION_PLAN.md](MODEL_EXECUTION_PLAN.md)
+for P0–P6, the M1–M6/AT01–AT30 crosswalk, proposed settings and exit evidence.
+
+LangGraph JS is the preferred planned correction/orchestration library. This
+explicit Owner request supersedes the original specification's no-LangGraph
+restriction. It must pass the Deno/runtime and durable-checkpointer spike; it
+does not replace the database queue/lease, require another server, extend Edge
+Function lifetime or authorize a paid managed orchestration service.
+
+Credentials remain server Secrets. Model names, capability/profile records and
+per-task ordered candidates become versioned database configuration. Import
+legacy model-name Secrets once; preserve old jobs, remote requests and usage.
+All accepted results must pass shared schema and evidence validation. Native
+strict output is used when supported; explicit validated-JSON compatibility is
+not represented as native schema enforcement. Semantic correction is bounded
+and distinct from provider waiting. No model-name or fit-score hardcoding.
+
+RFP-first drafting remains possible without a custom template or complete company
+library. Real company assertions and commercial commitments still require evidence
+and review. The existing Word renderer and Decimal calculator remain authoritative;
+Code Interpreter is not introduced. Actual draft generation/download is the first
+acceptance track, separate from final submission readiness. This decision records
+planned work, not a completed implementation or successful live proposal.
+
 ## 2026-10-17: Owner-requested automatic round robin
 
 - The Owner explicitly requested Gemini → Qwen → Mistral → Groq failover even without individual provider activation. A separate audited Owner switch authorizes this mode; disabling it restores the prior manual-policy path. The cursor persists across jobs and rotates again after an exhausted round.

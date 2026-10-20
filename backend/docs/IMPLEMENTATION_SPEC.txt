@@ -4,6 +4,13 @@ Free trial implementation brief for an AI coding agent
 
 Version 1.0 | October 14, 2026 | Language English | Default timezone Asia/Riyadh
 
+Planning extension — October 20, 2026: see [MODEL_EXECUTION_PLAN.md](MODEL_EXECUTION_PLAN.md)
+for unified structured model contracts, configurable task/model routes, grounded
+correction with LangGraph and real RFP-to-Word acceptance. It maps to the original
+milestones and AT01–AT30 below. Later Owner decisions in [DECISIONS.md](DECISIONS.md)
+supersede conflicting original restrictions; [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md)
+records actual implementation and acceptance separately.
+
 ## Purpose and execution mandate
 
 Build a working web application that helps one company discover relevant tenders, decide whether to obtain their request for proposal documents, analyze those documents, and prepare consistent technical and financial proposals. A request for proposal is abbreviated as RFP throughout this specification. The company delivers artificial intelligence, software engineering, integration, and digital transformation services. Sector interests such as energy or construction are preferences about customers and use cases; they are not evidence that the company performs civil construction or other unrelated services.

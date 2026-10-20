@@ -1,6 +1,14 @@
 # Pilot evaluation
 
-No provider has been activated and no business accuracy is claimed. The fixtures in `backend/fixtures/evaluation` are synthetic, isolated from the connected application. Automated checks cover three increasing RFP packages (3, 12 and 36 requirements), complete cited inventory, rejection of invented quotations, missing-credential questions, buyer isolation and the verified 16,698.00 financial fixture. These are deterministic contract checks, not generated model-quality scores. Human editorial effort and acceptance remain unmeasured.
+Providers have been activated and actual inference is recorded in the
+[implementation checklist](IMPLEMENTATION_CHECKLIST.md); this is separate from
+business-quality acceptance. The October 20
+[model execution plan](MODEL_EXECUTION_PLAN.md#10-p0-and-p6--real-cases-with-todays-acceptance-first)
+defines E2E-01–E2E-10 and prioritizes an actual RFP-to-Word trial. At its 11:17 UTC
+baseline, that trial had zero proposal versions; no complete generated artifact
+or business accuracy is claimed.
+
+The fixtures in `backend/fixtures/evaluation` are synthetic, isolated from the connected application. Automated checks cover three increasing RFP packages (3, 12 and 36 requirements), complete cited inventory, rejection of invented quotations, missing-credential questions, buyer isolation and the verified 16,698.00 financial fixture. These are deterministic contract checks, not generated model-quality scores. Human editorial effort and acceptance remain unmeasured.
 
 ## Freeze the human-labeled sample
 

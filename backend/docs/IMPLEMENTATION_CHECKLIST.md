@@ -1,5 +1,40 @@
 # Implementation status and continuation plan
 
+## October 20 — unified model execution implementation plan
+
+The Owner requested a complete plan for structured requests/results across every
+model task, per-task multiple-model routing (including models from the same
+provider), grounded validation/correction, LangGraph, configurable output/reasoning
+profiles and real RFP-to-Word acceptance. The new
+[Model Execution Plan](MODEL_EXECUTION_PLAN.md) maps packages P0–P6 to the original
+M1–M6 milestones, stages 1–7 and AT01–AT30. Its precedence decisions are recorded
+in [DECISIONS.md](DECISIONS.md); the original specification links to the extension.
+
+Implementation status: **planning documentation only**. Current model contracts,
+provider identity/ledger, generation validators, Word renderer and Decimal
+calculator were inspected. Official provider, LangGraph and Supabase references
+were checked. No runtime, model configuration, credential, permission or billing
+change is part of this documentation release. LangGraph is a planned, compatibility-
+gated library inside the existing worker, not an extra hosting dependency.
+
+Read-only hosted baseline at **2026-10-20 11:17 UTC / 14:17 Riyadh**: the authorized
+existing RFP trial remains in analysis with `MODEL_ROUND_EXHAUSTED`, one completed
+step, thirteen queued leaves, eleven split parents and **zero proposal versions**.
+Recent sent requests from Gemini, Groq and z.ai returned 429. P0 prioritizes the
+actual draft/download/regeneration journey on October 20 without waiting for the
+full refactor. E2E-01–E2E-10 distinguish real artifacts, isolated fixtures,
+provider availability and final business approval; no live proposal pass is claimed.
+
+Verification: all **43 relative documentation links** checked successfully;
+**330 backend tests / 29 files and 183 frontend tests / 33 files** passed, with
+both package typechecks/builds and `git diff --check`. These are existing
+regression checks, not implementation evidence for the planned features.
+GitHub publication/readback remains the final step for this documentation change.
+Runtime remains API v53 / worker v55. Documentation-only publication does not
+require or claim a new application deployment. Earlier dated entries below
+remain historical evidence; the new plan does not mark their open acceptance
+items complete.
+
 ## October 20 — processing independent of the request connection
 
 The Owner requested durable background processing and confirmed there is no additional server. Deployment stays on Supabase; a permanent external worker is **not** provisioned or claimed. The authenticated worker acknowledges dispatch with HTTP 202 and registers processing with `EdgeRuntime.waitUntil`. Its database job/lease remains authoritative after the HTTP caller disconnects. Model work has a 130-second invocation budget, leaving headroom within the documented 150-second free Edge runtime. A fresh attempt receives at least 90 seconds, up to 120 seconds when invocation time allows; otherwise the existing durable continuation resumes in a fresh invocation. This is bounded background execution, not unlimited runtime.
