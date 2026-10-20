@@ -477,6 +477,69 @@ it("retains daily application limits and resumes after the next application day"
   expect((await job(queued.id)).status).toBe("succeeded");
 });
 
+it("also resumes an unsupported background request on legacy automatic routing", async () => {
+  await f.command("model.configure", policy);
+  await f.command("model.routing", {
+    enabled: true,
+    strategy: "priority",
+    expected_revision: 0,
+  });
+  const queued = await f.command("model.probe", {});
+  const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+  let calls = 0;
+  const tick = worker(async (url, init) => {
+    calls++;
+    expect(init?.method).toBe("POST");
+    const body = JSON.parse(String(init?.body));
+    if (calls === 1) {
+      expect(body.background).toBe(true);
+      return Response.json(
+        {
+          error: {
+            message: "Background processing is not supported for this model",
+          },
+        },
+        { status: 400 },
+      );
+    }
+    expect(calls).toBe(2);
+    expect(body.background).toBeUndefined();
+    expect(String(url)).toContain(":generateContent");
+    return Response.json({
+      candidates: [
+        {
+          finishReason: "STOP",
+          content: { parts: [{ text: '{"status":"ready"}' }] },
+        },
+      ],
+      usageMetadata: {
+        promptTokenCount: 10,
+        candidatesTokenCount: 8,
+        thoughtsTokenCount: 0,
+      },
+    });
+  });
+  try {
+    await tick();
+    expect(await job(queued.id)).toMatchObject({
+      status: "retry_wait",
+      error_code: "MODEL_IN_PROGRESS",
+    });
+    await f.db.query(
+      "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
+      [queued.id],
+    );
+    await tick();
+    expect(await job(queued.id)).toMatchObject({
+      status: "succeeded",
+      attempts: 2,
+    });
+    expect(calls).toBe(2);
+  } finally {
+    warning.mockRestore();
+  }
+});
+
 it("polls one persisted background generation across leases and transient network failures", async () => {
   await f.command("model.configure", { ...policy, calls_per_day: 1 });
   const queued = await f.command("model.probe", {});

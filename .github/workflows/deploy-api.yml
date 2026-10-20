@@ -72,6 +72,7 @@ jobs:
           query = """select
             to_regprocedure('public.claim_backend_job_v2()') is not null
             and to_regprocedure('public.model_graph_store(uuid,uuid,text,text,jsonb)') is not null
+            and to_regprocedure('public.model_background_allowed(uuid,uuid,text,text,text,uuid,uuid)') is not null
             and to_regclass('public.model_execution_settings') is not null
             as compatible"""
           request = urllib.request.Request(

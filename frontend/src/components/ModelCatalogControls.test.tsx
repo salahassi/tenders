@@ -8,11 +8,11 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
-function setup(role = "Owner") {
+function setup(role = "Owner", background = true) {
   const capabilities = {
     revision: 1,
     output: "native_strict",
-    background: true,
+    background,
     streaming: false,
     reasoning: "none",
     reasoning_values: [],
@@ -123,11 +123,41 @@ it("keeps model names in configuration and only a credential alias in connection
         model: "owner-new-model",
         label: "New selected model",
         expected_revision: 0,
+        capabilities: expect.objectContaining({ background: true }),
       }),
     ),
   );
   expect(JSON.stringify(f.runCommand.mock.calls)).not.toContain("api_key");
 });
+it.each([true, false])(
+  "preserves the request override when editing a model (automatic=%s)",
+  async (background) => {
+    const f = setup("Owner", background);
+    await screen.findByText("owner-model-a");
+    await userEvent.click(screen.getAllByRole("button", { name: "Edit" })[1]);
+    expect(
+      screen.queryByLabelText("Provider supports background requests"),
+    ).not.toBeInTheDocument();
+    await userEvent.click(screen.getByText("Advanced model settings"));
+    const select = screen.getByLabelText(/^Request handling/);
+    expect(select).toHaveValue(background ? "automatic" : "standard");
+    await userEvent.selectOptions(
+      select,
+      background ? "standard" : "automatic",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Save model" }));
+    await waitFor(() =>
+      expect(f.runCommand).toHaveBeenCalledWith(
+        "model.configuration.save",
+        expect.objectContaining({
+          id: "model-one",
+          expected_revision: 1,
+          capabilities: expect.objectContaining({ background: !background }),
+        }),
+      ),
+    );
+  },
+);
 it("saves a per-task chain including two models on one provider, with inherited defaults and a task profile", async () => {
   const f = setup();
   await screen.findByText("owner-model-a");

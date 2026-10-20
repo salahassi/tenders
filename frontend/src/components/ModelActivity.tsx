@@ -75,6 +75,8 @@ const rejectionReasons: Record<string, string> = {
   unspecified_429:
     "Provider rejected the request (429); specific reason unavailable",
   provider_rejected: "Provider rejected the request",
+  background_unsupported:
+    "Provider background processing unavailable; automatic routing will use standard requests",
 };
 export default function ModelActivity() {
   const { backend } = useApp();

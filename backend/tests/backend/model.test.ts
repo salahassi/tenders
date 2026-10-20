@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { it, expect, vi, afterEach } from "vitest";
 afterEach(() => vi.restoreAllMocks());
+import { defaultCapabilities } from "../../supabase/functions/_shared/modelContract";
 import {
   FreeModelProvider,
   executeModel,
@@ -47,6 +48,131 @@ const config = {
   verified_at: new Date().toISOString(),
   quota_ends_at: new Date(Date.now() + 86400000).toISOString(),
 };
+it.each([
+  [
+    400,
+    { error: { message: "This model does not support background requests." } },
+    true,
+  ],
+  [
+    422,
+    { error: { message: "Background mode is not supported for this model." } },
+    true,
+  ],
+  [
+    400,
+    {
+      error: {
+        param: "background",
+        code: "unsupported_parameter",
+        message: "Unsupported parameter",
+      },
+    },
+    true,
+  ],
+  [400, { error: { message: "Unknown parameter: background" } }, true],
+  [
+    400,
+    {
+      error: {
+        message: "Invalid JSON schema: background is a required property.",
+      },
+    },
+    false,
+  ],
+  [
+    400,
+    {
+      error: {
+        message: "When background is enabled, output schema is not supported.",
+      },
+    },
+    false,
+  ],
+  [429, { error: { message: "Background mode is not supported" } }, false],
+  [500, { error: { message: "Background mode is not supported" } }, false],
+  [403, { error: { message: "Background mode is not supported" } }, false],
+  [400, { message: "Background mode is not supported" }, false],
+] as const)(
+  "classifies only definitive background feature rejections (%s, %j)",
+  async (status, body, expected) => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    for (const provider of ["openai", "gemini_free"] as const) {
+      const client = new FreeModelProvider({ ...env, provider }, async () =>
+        Response.json(body, { status }),
+      );
+      await expect(
+        client.startBackground("connection_probe", "JSON", {}),
+      ).rejects.toBeInstanceOf(ModelError);
+      expect(
+        client.telemetry.provider_error_reason === "background_unsupported",
+      ).toBe(expected);
+      await expect(
+        client.generate("connection_probe", "JSON", {}),
+      ).rejects.toBeInstanceOf(ModelError);
+      expect(client.telemetry.provider_error_reason).not.toBe(
+        "background_unsupported",
+      );
+      await expect(client.pollBackground("accepted-id")).rejects.toBeInstanceOf(
+        ModelError,
+      );
+      expect(client.telemetry.provider_error_reason).not.toBe(
+        "background_unsupported",
+      );
+    }
+  },
+);
+it("polls accepted work even when background is disabled or observed unsupported", async () => {
+  const c = {
+    ...config,
+    provider: "openai" as const,
+    capabilities: { ...defaultCapabilities("openai"), background: false },
+  };
+  const ledger: Ledger = {
+    preflight: async () => ({ routing_mode: "round_robin", providers: [c] }),
+    reserve: vi.fn(),
+    settle: vi.fn(),
+    backgroundAllowed: vi.fn(async () => false),
+    resume: vi.fn(async () => ({
+      id: "usage",
+      remote_request_id: "accepted-id",
+      remote_deadline: new Date(Date.now() + 60000).toISOString(),
+    })),
+    checkpoint: vi.fn(),
+    defer: vi.fn(),
+  };
+  const fetcher = vi.fn(async (_url, init) => {
+    expect(init?.method).toBe("GET");
+    return Response.json({
+      id: "accepted-id",
+      status: "completed",
+      output: [
+        {
+          type: "message",
+          content: [{ type: "output_text", text: '{"status":"ready"}' }],
+        },
+      ],
+      usage: { input_tokens: 10, output_tokens: 5 },
+    });
+  });
+  expect(
+    await executeModel(
+      "connection_probe",
+      {},
+      [],
+      [],
+      [],
+      { openai: { ...env, provider: "openai" } },
+      ledger,
+      "en",
+      false,
+      fetcher,
+    ),
+  ).toEqual({ status: "ready" });
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(ledger.reserve).not.toHaveBeenCalled();
+  expect(ledger.backgroundAllowed).not.toHaveBeenCalled();
+});
 const evidence: Evidence[] = [
   {
     id: "block-1",

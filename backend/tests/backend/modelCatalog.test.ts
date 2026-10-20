@@ -54,7 +54,9 @@ async function rpc(name: string, args: Record<string, unknown> = {}) {
     await f.db.exec("reset role;release savepoint catalog_rpc");
   }
 }
-async function configure(provider: "groq_free" | "openai" = "groq_free") {
+async function configure(
+  provider: "groq_free" | "openai" | "gemini_free" = "groq_free",
+) {
   await f.command("model.routing", {
     enabled: true,
     expected_revision: 0,
@@ -64,7 +66,11 @@ async function configure(provider: "groq_free" | "openai" = "groq_free") {
     provider,
     label: "Fixture account",
     credential_alias:
-      provider === "openai" ? "APP_MODEL_OPENAI_KEY" : "APP_MODEL_GROQ_KEY",
+      provider === "openai"
+        ? "APP_MODEL_OPENAI_KEY"
+        : provider === "gemini_free"
+          ? "APP_MODEL_GEMINI_KEY"
+          : "APP_MODEL_GROQ_KEY",
     project_ref: "fixture-account",
     enabled: true,
     expected_revision: 0,
@@ -114,6 +120,184 @@ async function configure(provider: "groq_free" | "openai" = "groq_free") {
     backend,
   };
 }
+it.each(["openai", "gemini_free"] as const)(
+  "automatically retries an explicitly unsupported %s background request on the same model in a fresh graph lease",
+  async (provider) => {
+    const { executeGuardedModel } =
+      await import("../../supabase/functions/_shared/modelGraph");
+    const { job, backend, envs, models, connection } =
+      await configure(provider);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const bodies: any[] = [];
+    const fetcher: typeof fetch = async (url, init) => {
+      expect(init?.method).toBe("POST");
+      const body = JSON.parse(String(init?.body));
+      bodies.push(body);
+      if (body.background)
+        return Response.json(
+          {
+            error: {
+              message: "This model does not support background requests.",
+            },
+          },
+          { status: 400 },
+        );
+      if (provider === "gemini_free") {
+        expect(String(url)).toContain("fixture-model-a:generateContent");
+        return Response.json({
+          candidates: [
+            {
+              finishReason: "STOP",
+              content: { parts: [{ text: '{"status":"ready"}' }] },
+            },
+          ],
+          usageMetadata: {
+            promptTokenCount: 10,
+            candidatesTokenCount: 8,
+            thoughtsTokenCount: 0,
+          },
+        });
+      }
+      expect(body).toMatchObject({
+        model: "fixture-model-a",
+        store: false,
+      });
+      expect(body.background).toBeUndefined();
+      return Response.json({
+        id: "fixture-standard",
+        status: "completed",
+        output: [
+          {
+            type: "message",
+            content: [{ type: "output_text", text: '{"status":"ready"}' }],
+          },
+        ],
+        usage: { input_tokens: 10, output_tokens: 8 },
+      });
+    };
+    const options = {
+      backend,
+      job,
+      prefix: `probe:${job.id}`,
+      task: "connection_probe" as const,
+      context: {},
+      evidence: [],
+      requiredIds: [],
+      manifest: [],
+      environments: envs,
+      language: "en" as const,
+      repair: false,
+      fetcher,
+    };
+    await expect(executeGuardedModel(options)).rejects.toBeInstanceOf(
+      ModelDeferred,
+    );
+    expect(bodies).toHaveLength(1);
+    expect(
+      (
+        await f.db.query<any>(
+          "select status,error_code,lease_token from public.jobs where id=$1",
+          [job.id],
+        )
+      ).rows[0],
+    ).toMatchObject({
+      status: "retry_wait",
+      error_code: "MODEL_IN_PROGRESS",
+      lease_token: null,
+    });
+    await f.db.query(
+      "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
+      [job.id],
+    );
+    const resumed = await rpc("claim_backend_job_v2");
+    expect(resumed.lease_token).not.toBe(job.lease_token);
+    const identity = {
+      job_id: job.id,
+      lease: resumed.lease_token,
+      target_provider: provider,
+      target_model: models[0].model,
+      target_project: connection.project_ref,
+      target_connection: connection.id,
+      target_configuration: models[0].id,
+    };
+    expect(await rpc("model_background_allowed", identity)).toBe(false);
+    expect(
+      await rpc("model_background_allowed", {
+        ...identity,
+        target_model: models[1].model,
+        target_configuration: models[1].id,
+      }),
+    ).toBe(true);
+    await expect(
+      rpc("model_background_allowed", {
+        ...identity,
+        target_model: "forged-model",
+      }),
+    ).rejects.toMatchObject({ code: "MODEL_IDENTITY_CHANGED" });
+    await expect(
+      rpc("model_background_allowed", { ...identity, lease: job.lease_token }),
+    ).rejects.toMatchObject({ code: "STALE_LEASE" });
+    const outcome = await executeGuardedModel({ ...options, job: resumed });
+    expect(outcome.result).toEqual({ status: "ready" });
+    expect(bodies).toHaveLength(2);
+    const attempts = (
+      await f.db.query<any>(
+        "select lease_token,model,model_config_id,status,result_code,provider_error_reason,execution_metadata from public.model_attempts where job_id=$1 order by id",
+        [job.id],
+      )
+    ).rows;
+    expect(attempts).toHaveLength(2);
+    expect(attempts[0]).toMatchObject({
+      model: models[0].model,
+      model_config_id: models[0].id,
+      status: "failed",
+      result_code: "PROVIDER_REQUEST_INVALID",
+      provider_error_reason: "background_unsupported",
+      execution_metadata: { capabilities: { background: true } },
+    });
+    expect(attempts[1]).toMatchObject({
+      model: models[0].model,
+      model_config_id: models[0].id,
+      status: "succeeded",
+      execution_metadata: { capabilities: { background: false } },
+    });
+    expect(new Set(attempts.map((a) => a.lease_token)).size).toBe(2);
+    expect(
+      (
+        await f.db.query<any>(
+          "select state,actual_input,actual_output from public.provider_usage where job_id=$1 order by created_at,id",
+          [job.id],
+        )
+      ).rows,
+    ).toEqual(
+      expect.arrayContaining([
+        { state: "settled", actual_input: null, actual_output: null },
+        { state: "settled", actual_input: 10, actual_output: 8 },
+      ]),
+    );
+    // Cache expiry allows a later capability check; ordinary schema failures do not disable background processing.
+    await f.db.query(
+      "update public.model_attempts set started_at=now()-interval '2 days' where job_id=$1 and status='failed'",
+      [job.id],
+    );
+    expect(await rpc("model_background_allowed", identity)).toBe(true);
+    await f.db.query(
+      "update public.model_attempts set started_at=now(),provider_error_reason='provider_rejected' where job_id=$1 and status='failed'",
+      [job.id],
+    );
+    expect(await rpc("model_background_allowed", identity)).toBe(true);
+    const permissions = (
+      await f.db.query<any>(
+        "select has_function_privilege('anon','public.model_background_allowed(uuid,uuid,text,text,text,uuid,uuid)','execute') anon,has_function_privilege('authenticated','public.model_background_allowed(uuid,uuid,text,text,text,uuid,uuid)','execute') authenticated,has_function_privilege('service_role','public.model_background_allowed(uuid,uuid,text,text,text,uuid,uuid)','execute') service",
+      )
+    ).rows[0];
+    expect(permissions).toEqual({
+      anon: false,
+      authenticated: false,
+      service: true,
+    });
+  },
+);
 it("uses another model on the same connection after a model error, preserving distinct attempts and usage", async () => {
   const { job, models, envs, ledger } = await configure();
   const sent: string[] = [];

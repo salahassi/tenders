@@ -17,6 +17,19 @@ In **Settings → Models & providers**:
    pattern chooses reasoning behavior. Use the provider's capabilities for the
    actual model; ordinary JSON mode is shown as **Validated JSON**, not strict
    constrained decoding. Unsupported settings are logged and fail over.
+   **Request handling** defaults to **Automatic** in **Advanced model settings**.
+   The OpenAI/Gemini adapters prefer provider background processing. An explicit
+   HTTP 400/422 rejection of that feature is recorded; the same model continues
+   with a standard request in a fresh worker lease with its full request budget.
+   This observation is scoped to the connection/model and expires after one day;
+   editing the model resets it for new snapshots. No model-name rule is used.
+   **Standard requests only** is an optional override, not a capability claim.
+   Accepted remote IDs are always resumed, including after an override or a
+   capability observation. Timeouts, quota/auth failures, unrelated schema errors
+   and unstructured responses never trigger this transport retry. Standard
+   requests still run in the app's background worker, with the existing bounded
+   timeout and failover; providers without resumable APIs cannot promise an
+   unlimited request lifetime.
 3. Set the default fallback route and optional task routes. Several models on the
    same connection can appear in one route. A task may append the default route.
    Priority follows the saved order; round robin advances the saved cursor.
@@ -97,7 +110,7 @@ A connected Supabase release can apply the reviewed migrations and deploy both
 functions without an additional application secret. The optional manual
 **Deploy Supabase API and worker** workflow requires the repository
 Actions secret `SUPABASE_ACCESS_TOKEN`. Its optional `apply_model_release` input
-applies only the four reviewed October 20 migrations, after tests pass and before
+applies only the five reviewed October 20 migrations, after tests pass and before
 either function is deployed. The release runner reads migration history, skips
 completed migrations by name (connector timestamps can differ), and resumes the
 recorded graph-storage/RPC/domain-commit boundaries without recreating existing
@@ -108,7 +121,7 @@ stops the run; a subsequent run rechecks history before doing any work. It does 
 reset a database, modify existing originals or enable model admission.
 
 The schema compatibility check blocks deployment if the v2 claim and graph-store
-functions are absent. Keep the frontend release behind successful backend
+functions or automatic-transport observation RPC are absent. Keep the frontend release behind successful backend
 deployment. A missing credential or incomplete migration is a release blocker,
 not a reason to deploy the frontend or enable the new executor early.
 

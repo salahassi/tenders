@@ -453,6 +453,7 @@ export interface Ledger {
   environment?(config: ModelConfiguration): ModelEnvironment | undefined;
   beforeSend?(): Promise<void>;
   candidateReceived?(usageId: string): Promise<void>;
+  backgroundAllowed?(config: ModelConfiguration): Promise<boolean>;
   validateCandidate?(result: unknown): void;
   loadRound?(inputHash: string): Promise<ModelRoundProgress | null>;
   saveRound?(
@@ -580,7 +581,10 @@ export class FreeModelProvider {
     private streamResponses = false,
     private configuration?: ModelConfiguration,
   ) {}
-  private async diagnoseRejectedRequest(response: Response) {
+  private async diagnoseRejectedRequest(
+    response: Response,
+    backgroundStart = false,
+  ) {
     // Emit only fixed diagnostic labels, never provider text, credentials or prompts.
     const reader = response.body?.getReader();
     if (!reader) return;
@@ -607,7 +611,8 @@ export class FreeModelProvider {
           ? candidate
           : undefined;
       };
-      let message = "";
+      let message = "",
+        parameter = "";
       try {
         const error = JSON.parse(text)?.error;
         this.telemetry.provider_error_code = identifier(error?.code);
@@ -615,6 +620,7 @@ export class FreeModelProvider {
           error?.type || error?.status,
         );
         message = typeof error?.message === "string" ? error.message : "";
+        parameter = typeof error?.param === "string" ? error.param : "";
       } catch {
         /* Non-JSON errors retain the HTTP status without fabricated detail. */
       }
@@ -661,6 +667,27 @@ export class FreeModelProvider {
           ),
         )?.[0] ||
         (response.status === 429 ? "unspecified_429" : "provider_rejected");
+      // Only an explicit rejection of the background feature allows a new
+      // standard request. Never infer non-acceptance from a timeout, a poll,
+      // an arbitrary schema error, or an unstructured gateway response.
+      if (
+        backgroundStart &&
+        [400, 422].includes(response.status) &&
+        ((parameter === "background" &&
+          /unsupported|not supported|does not support|unknown|unrecognized|not available/i.test(
+            message + " " + (this.telemetry.provider_error_code || ""),
+          )) ||
+          /\bbackground(?: requests?| mode| generation| processing| execution)?(?:\s+(?:is|are))?\s+(?:not supported|unsupported|not available)\b/i.test(
+            message,
+          ) ||
+          /\b(?:does not support|not support)\s+(?:the\s+)?background\b/i.test(
+            message,
+          ) ||
+          /\b(?:unsupported|unknown|unrecognized)\s+(?:(?:parameter|field|argument|name)\s*)?[:'"\s]*background\b/i.test(
+            message,
+          ))
+      )
+        this.telemetry.provider_error_reason = "background_unsupported";
       const labels: Record<string, RegExp> = {
         interactions: /interactions/i,
         background: /background/i,
@@ -745,7 +772,16 @@ export class FreeModelProvider {
       if (method === "DELETE" && (response.ok || response.status === 404))
         return {};
       if (!response.ok) {
-        await this.diagnoseRejectedRequest(response);
+        await this.diagnoseRejectedRequest(
+          response,
+          method === "POST" &&
+            Boolean(
+              body &&
+              typeof body === "object" &&
+              "background" in body &&
+              body.background === true,
+            ),
+        );
         const raw = response.headers.get("retry-after");
         const after =
           raw &&
@@ -765,7 +801,7 @@ export class FreeModelProvider {
                 ? method === "GET"
                   ? "MODEL_RESULT_EXPIRED"
                   : "PROVIDER_MODEL_NOT_FOUND"
-                : response.status === 400
+                : response.status === 400 || response.status === 422
                   ? "PROVIDER_REQUEST_INVALID"
                   : response.status >= 500
                     ? "MODEL_NETWORK_UNCERTAIN"
@@ -1100,6 +1136,7 @@ export async function executeModel(
       let reservation: string | null = null;
       let settled = false;
       let remoteId: string | null = null;
+      let backgroundStart = false;
       const finishAttempt = async (
         code: string,
         retryAfter?: string | null,
@@ -1129,6 +1166,25 @@ export async function executeModel(
               max_output_tokens: caps[task],
               reasoning: "none" as const,
             };
+        const resumable = Boolean(
+          modelAdapters[config.provider].poll &&
+          ledger.resume &&
+          ledger.checkpoint &&
+          ledger.defer,
+        );
+        // An accepted remote request outlives overrides and capability observations.
+        const pending = resumable
+          ? await ledger.resume!(config.provider, inputHash, manifest, config)
+          : null;
+        const background =
+          Boolean(pending) ||
+          Boolean(
+            resumable &&
+            capabilities.background &&
+            (!automatic ||
+              !ledger.backgroundAllowed ||
+              (await ledger.backgroundAllowed(config))),
+          );
         const request = structuredRequest({
           task,
           targetTask,
@@ -1146,17 +1202,9 @@ export async function executeModel(
           },
           routeRevision: config.route_revision ?? null,
           profile,
-          capabilities,
+          capabilities: { ...capabilities, background },
         });
         await ledger.requestPrepared?.(request);
-        const background =
-          capabilities.background &&
-          ledger.resume &&
-          ledger.checkpoint &&
-          ledger.defer;
-        const pending = background
-          ? await ledger.resume!(config.provider, inputHash, manifest, config)
-          : null;
         const accountKey = `${config.provider}:${config.project_ref}`;
         if (!pending && config.connection_id && accountWaits.has(accountKey))
           throw new ModelError(
@@ -1230,6 +1278,7 @@ export async function executeModel(
             if (interaction.id !== pending.remote_request_id)
               throw new ModelError("MODEL_IDENTITY_CHANGED");
           } else {
+            backgroundStart = true;
             interaction = await provider.startBackground(task, prompt, schema);
             if (
               typeof interaction.id !== "string" ||
@@ -1339,6 +1388,21 @@ export async function executeModel(
           );
         retryWindows.push(lastError.retryAfter);
         await finishAttempt(code, lastError.retryAfter);
+        if (
+          automatic &&
+          ledger.saveRound &&
+          ledger.backgroundAllowed &&
+          backgroundStart &&
+          !remoteId &&
+          code === "PROVIDER_REQUEST_INVALID" &&
+          provider.telemetry.provider_error_reason === "background_unsupported"
+        ) {
+          // The failed attempt is now durable. A fresh lease reads that observation
+          // and retries this same target with a full standard-request time budget.
+          // Distinct leases also keep both attempts in the activity history.
+          await checkpointRound(index, true);
+          throw new ModelDeferred();
+        }
         // A measured invalid response needs the persisted, bounded repair path.
         // Still try the remaining providers, but do not hide this behind a
         // missing-slot error and poll the same completed response forever.

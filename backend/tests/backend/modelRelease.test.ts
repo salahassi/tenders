@@ -7,6 +7,7 @@ const names = [
   "model_target_identity_and_execution",
   "durable_model_graph",
   "model_graph_recovery_and_retention",
+  "automatic_model_transport",
 ];
 function fixture(history: any[], fail = false) {
   const queries: any[] = [];
@@ -19,10 +20,10 @@ function fixture(history: any[], fail = false) {
   });
   return { queries, log, fetcher, token: "isolated-fixture" };
 }
-it("applies only the four reviewed migrations with transactional history", async () => {
+it("applies only the five reviewed migrations with transactional history", async () => {
   const f = fixture([]);
   await applyModelRelease(f);
-  expect(f.queries).toHaveLength(5);
+  expect(f.queries).toHaveLength(6);
   expect(f.queries[0].read_only).toBe(true);
   expect(
     f.queries
@@ -49,7 +50,7 @@ it("resumes after graph storage without recreating its tables", async () => {
     })),
   );
   await applyModelRelease(f);
-  expect(f.queries).toHaveLength(3);
+  expect(f.queries).toHaveLength(4);
   const executable = f.queries[1].query.split(
     "insert into supabase_migrations.schema_migrations",
   )[0];

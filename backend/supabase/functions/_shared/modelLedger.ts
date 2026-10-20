@@ -25,6 +25,15 @@ export function modelLedger(
         : environments?.[config.provider]),
     invocationStartedAt: backend.invocationStartedAt,
     invocationBudgetMs: backend.invocationBudgetMs,
+    backgroundAllowed: (config) =>
+      backend.internal("model_background_allowed", {
+        ...identity,
+        target_provider: config.provider,
+        target_model: config.model,
+        target_project: config.project_ref,
+        target_connection: config.connection_id ?? null,
+        target_configuration: config.model_config_id ?? null,
+      }),
     requestPrepared: async (request) => {
       if (version !== 2 || !currentAttempt) return;
       await backend.internal("record_model_request_metadata", {

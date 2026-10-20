@@ -8,6 +8,7 @@ const release = [
   ["20261020141542", "model_target_identity_and_execution"],
   ["20261020143042", "durable_model_graph"],
   ["20261020150037", "model_graph_recovery_and_retention"],
+  ["20261020195225", "automatic_model_transport"],
 ];
 const project = "nqfwbqeozmuiuwbiowil";
 const literal = (value) => "'" + value.replaceAll("'", "''") + "'";

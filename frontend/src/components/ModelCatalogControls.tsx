@@ -493,8 +493,13 @@ export default function ModelCatalogControls({
               />{" "}
               Enabled
             </label>
+            <p className="muted">
+              Requests run in the background of the app. TenderDesk manages how
+              each provider processes them and resumes accepted requests
+              automatically.
+            </p>
             <details>
-              <summary>Model capabilities</summary>
+              <summary>Advanced model settings</summary>
               <p>
                 Use capabilities supported by this model. Every response also
                 receives local schema and evidence checks.
@@ -519,27 +524,32 @@ export default function ModelCatalogControls({
                   </option>
                 </select>
               </Field>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={model.capabilities.background}
-                  disabled={
-                    !["openai", "gemini_free"].includes(
-                      connectionFor(model.connection_id)?.provider,
-                    )
-                  }
-                  onChange={(e) =>
-                    setModel({
-                      ...model,
-                      capabilities: {
-                        ...model.capabilities,
-                        background: e.target.checked,
-                      },
-                    })
-                  }
-                />{" "}
-                Provider supports background requests
-              </label>
+              {["openai", "gemini_free"].includes(
+                connectionFor(model.connection_id)?.provider,
+              ) && (
+                <Field
+                  label="Request handling"
+                  hint="Automatic uses provider background processing when available and switches to standard requests after an explicit unsupported-feature rejection. Existing accepted requests are always resumed."
+                >
+                  <select
+                    value={
+                      model.capabilities.background ? "automatic" : "standard"
+                    }
+                    onChange={(e) =>
+                      setModel({
+                        ...model,
+                        capabilities: {
+                          ...model.capabilities,
+                          background: e.target.value === "automatic",
+                        },
+                      })
+                    }
+                  >
+                    <option value="automatic">Automatic (recommended)</option>
+                    <option value="standard">Standard requests only</option>
+                  </select>
+                </Field>
+              )}
               <Field label="Reasoning control">
                 <select
                   value={model.capabilities.reasoning}

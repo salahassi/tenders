@@ -1,5 +1,33 @@
 # Implementation status and continuation plan
 
+## October 20 — automatic provider request handling
+
+P1/P2/P5 / stages 4–7: replace the capability-assertion checkbox with automatic
+request handling and an advanced standard-request override. Provider adapters
+determine which APIs can resume requests. Only an explicit structured HTTP
+400/422 background-feature rejection permits retrying that same model with a
+standard request; the failed attempt and nullable usage are settled before a
+fresh lease. Both attempts retain separate activity entries. A service-only,
+lease-checked RPC reads account/model-scoped observations from the existing ledger,
+with a 24-hour lifetime and configuration-snapshot reset. Accepted remote IDs
+remain pollable even if the override or capability observation changes.
+
+Local verification: **409 backend / 189 frontend tests (598 total)** passed,
+along with both typechecks/builds and Deno API/worker checks. Actual graph
+fixtures passed for OpenAI and Gemini; the legacy worker also completed its
+same-model standard retry across two leases. Isolated Chromium exercised the
+actual component's automatic default, advanced override save/reload, restoring
+automatic handling and desktop/390px layouts with no page errors or overflow;
+both screenshots were inspected. No paid inference was used for these fixtures.
+
+Status: implementation and local verification complete; deployment pending. Additive migration
+`20261020195225_automatic_model_transport.sql` precedes compatible runtime and
+frontend deployment. Tests cover exact feature rejections, negative quota/auth/
+schema/gateway cases, same-target continuation in the actual graph, distinct
+attempts/usage, accepted-request resume and browser-editable override defaults.
+Live inference, model routing edits and new-executor admission are not part of
+this UX/transport fix; paid-model acceptance remains a separate gate.
+
 ## October 20 — unified execution implementation and compatible release
 
 P0–P5 / stages 4–7: canonical task schemas, eight API adapters, configurable
