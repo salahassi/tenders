@@ -29,7 +29,10 @@ Verification: all **43 relative documentation links** checked successfully;
 **330 backend tests / 29 files and 183 frontend tests / 33 files** passed, with
 both package typechecks/builds and `git diff --check`. These are existing
 regression checks, not implementation evidence for the planned features.
-GitHub publication/readback remains the final step for this documentation change.
+Published plan source **`50307a68b88409571071d1012332bc8c03dc076d`** is on main;
+the GitHub commit/tree and returned bytes of the plan, checklist, specification
+and decisions match local source. The documentation-only commit has no Actions
+deployment run, as expected from the workflow's path exclusions.
 Runtime remains API v53 / worker v55. Documentation-only publication does not
 require or claim a new application deployment. Earlier dated entries below
 remain historical evidence; the new plan does not mark their open acceptance
