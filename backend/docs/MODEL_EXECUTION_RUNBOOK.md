@@ -93,12 +93,16 @@ verifies anonymous denial. New tables explicitly grant only required permissions
 no anonymous Data API grant is introduced. Graph recovery views have no browser
 or service-role table grants; Owner-only backup RPCs access them.
 
-The manual **Deploy Supabase API and worker** workflow requires the repository
+A connected Supabase release can apply the reviewed migrations and deploy both
+functions without an additional application secret. The optional manual
+**Deploy Supabase API and worker** workflow requires the repository
 Actions secret `SUPABASE_ACCESS_TOKEN`. Its optional `apply_model_release` input
 applies only the four reviewed October 20 migrations, after tests pass and before
 either function is deployed. The release runner reads migration history, skips
 completed migrations by name (connector timestamps can differ), and resumes the
-recorded graph-storage/RPC boundaries without recreating existing tables. Each
+recorded graph-storage/RPC/domain-commit boundaries without recreating existing
+tables or completed functions. All three recorded parts count as a completed
+graph migration; inconsistent partial history stops before DDL. Each
 remaining DDL transaction records its history atomically. An unknown HTTP outcome
 stops the run; a subsequent run rechecks history before doing any work. It does not
 reset a database, modify existing originals or enable model admission.

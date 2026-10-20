@@ -80,6 +80,29 @@ it("fails closed on a history collision", async () => {
   await expect(applyModelRelease(f)).rejects.toThrow("version collision");
   expect(f.queries).toHaveLength(1);
 });
+it("does not replay the fully completed three-part connector migration", async () => {
+  const f = fixture(
+    [
+      ...names.filter((name) => name !== "durable_model_graph"),
+      "durable_model_graph_storage",
+      "durable_model_graph_store_rpc",
+      "durable_model_graph_domain_commits",
+    ].map((name) => ({ name, version: "connector-version" })),
+  );
+  await applyModelRelease(f);
+  expect(f.queries).toHaveLength(1);
+});
+it("rejects out-of-order partial graph history before issuing DDL", async () => {
+  const f = fixture(
+    [...names.slice(0, 2), "durable_model_graph_domain_commits"].map(
+      (name) => ({ name }),
+    ),
+  );
+  await expect(applyModelRelease(f)).rejects.toThrow(
+    "Incomplete graph migration history",
+  );
+  expect(f.queries).toHaveLength(1);
+});
 it("stops on an unknown mutation outcome without replaying or leaking credentials", async () => {
   const f = fixture([], true);
   await expect(applyModelRelease(f)).rejects.toThrow("HTTP 503");

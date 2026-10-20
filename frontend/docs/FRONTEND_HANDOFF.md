@@ -1,12 +1,12 @@
 # Frontend handoff
 
-## Planned model configuration and acceptance extension
+## Model configuration and acceptance extension
 
 The October 20 [Model Execution Plan](../../backend/docs/MODEL_EXECUTION_PLAN.md)
-defines the upcoming Connections → Models → Task routing settings, effective
-profiles, validation/repair activity and E2E-01–E2E-10. It maps to the original
-milestones and acceptance tests. These are planned changes; the implementation
-below and the dated checklist remain the current-runtime evidence.
+defines Connections → Models → Task routing settings, effective profiles,
+validation/repair activity and E2E-01–E2E-10. These features are implemented and
+map to the original milestones and acceptance tests. The dated checklist
+distinguishes deployed runtime, local tests and pending live paid-model acceptance.
 
 ## Current implementation
 

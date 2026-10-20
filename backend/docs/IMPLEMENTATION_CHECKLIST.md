@@ -32,40 +32,46 @@ passed model creation, same-provider ordering, profile/admission saves, reload
 persistence, 390px layout and absence of browser errors; desktop/mobile screenshots
 were inspected. Synthetic fixture output is not live business acceptance.
 
-Deployment: **blocked before compatible runtime release**. Implementation source `7efbd9e` is published on
-`codex/unified-model-execution`; production remains API v53 / worker v55.
-Catalog/target migrations and graph storage are applied; graph RPC/integration
-and recovery migrations are still pending after the connector repeatedly
-returned `Invalid or expired requestState`. The deployment workflow now verifies
-required database functions before replacing either runtime. New admission
-remains off; no current model configuration was replaced. Before release,
-read-only reconciliation confirmed the Owner's original document hash is unchanged
-and the existing real trial still has zero proposal versions. Current jobs/data
-remain preserved. Full fresh MAIN-01–14 and E2E-01–10, real inference quality and
-actual Word download remain pending Owner-provided paid models after release.
+Deployment update at **18:26 UTC / 21:26 Riyadh**: all additive migrations
+are applied. Fresh connector requests accepted the unchanged graph RPC/domain
+and recovery SQL after the earlier MCP `Invalid or expired requestState` errors.
+No new secret, permission relaxation, database reset or queue reset was needed.
+The request-state error came from the connector confirmation path; its exact
+server-side cause is not proven by the client response.
 
-Applied hosted migrations: `20261020155016` (`model_catalog_and_task_routes`),
-`20261020155037` (`model_target_identity_and_execution`) and
-`20261020160954` (`durable_model_graph_storage`, the storage portion of local
-`20261020143042`). The graph-store RPC, domain commits and recovery/retention
-migration remain unapplied. Do not rerun the entire graph migration against the
-existing tables: the bounded release runner resumes its recorded boundary.
+Hosted migrations: `20261020155016` (`model_catalog_and_task_routes`),
+`20261020155037` (`model_target_identity_and_execution`),
+`20261020160954` (`durable_model_graph_storage`),
+`20261020181506` (`durable_model_graph_store_rpc`),
+`20261020181537` (`durable_model_graph_domain_commits`) and
+`20261020182128` (`model_graph_recovery_and_retention`). The three graph parts
+are the exact statement boundaries of local `20261020143042`. The optional
+release runner now recognizes all three parts as complete and rejects incomplete
+out-of-order history, so a later release does not replay their DDL. All **8 release-runner tests**
+passed, including the actual completed split-history shape.
 
-Fallback [workflow run 39457435238](https://github.com/salahassi/tenders/actions/runs/39457435238)
-stopped at **Check deployment credential** because `SUPABASE_ACCESS_TOKEN` is
-absent; no runtime deployment step executed. The workflow now has an explicit
-`apply_model_release` input and a tested migration-history runner (**6 fixture
-tests**), followed by schema compatibility verification. The Owner has been asked
-to add the Actions secret; no secret value should enter chat or source control.
+Runtime source `5e3e088e5977facd245b3119a17053451b7acf1a`: API **v54** and
+worker **v56** are ACTIVE. All **26 API / 31 worker reachable files** returned by
+Supabase match the submitted source exactly. Health returns HTTP 200; anonymous bootstrap and worker requests return 401. Minute
+worker dispatches return 202; the 18:26 database heartbeat confirms background
+execution. New catalog tables have member-read RLS and no anonymous grants;
+private graph tables deny browser reads, and claim/store/commit RPCs remain
+service-role-only. Original RFP hash is unchanged. New-work admission remains off
+for the staged paid-model acceptance; existing jobs retain legacy execution.
+Frontend publication and authenticated hosted settings checks are being completed.
 
-Read-only reconciliation at **16:29 UTC**: API health 200, unauthenticated
-bootstrap/worker 401, scheduler enabled with a current heartbeat; original RFP
-hash still matches baseline; zero proposal versions and zero new-executor
-admissions. Existing scheduler activity continued during the additive changes.
-Security advisory counts retain the prior 22 authenticated-definer warnings and
-one Auth warning; five new private graph tables intentionally add no-policy
-informational entries, with all client/service table access revoked.
-No paid inference, fresh hosted proposal journey or new Word artifact is claimed.
+Historical fallback [workflow 39457435238](https://github.com/salahassi/tenders/actions/runs/39457435238)
+stopped at its Actions credential check and deployed nothing. This release instead
+used the already connected Supabase tools successfully. `SUPABASE_ACCESS_TOKEN`
+is needed only if choosing that separate Actions deployment path; it is not a
+new application requirement or a blocker for this connector release.
+
+Security-advisor counts remain 22 pre-existing authenticated-definer warnings,
+one Auth warning and nine intentionally private no-policy informational entries.
+No new exposed graph RPC or table was found. Full fresh MAIN-01–14 and E2E-01–10,
+actual inference quality and downloaded Word acceptance remain pending the
+Owner-provided paid models. The complete isolated pipeline and browser fixtures
+are implementation evidence, not a live business proposal pass.
 
 ## October 20 — staged release and paid-model acceptance order
 

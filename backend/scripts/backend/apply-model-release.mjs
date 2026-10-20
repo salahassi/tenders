@@ -53,6 +53,18 @@ export async function applyModelRelease({
   );
   const applied = new Set(rows.map((r) => r.name));
   for (const [version, name] of release) {
+    if (name === "durable_model_graph") {
+      const storage = applied.has("durable_model_graph_storage");
+      const rpc = applied.has("durable_model_graph_store_rpc");
+      const commits = applied.has("durable_model_graph_domain_commits");
+      if ((rpc && !storage) || (commits && (!storage || !rpc))) {
+        throw new Error("Incomplete graph migration history");
+      }
+      if (storage && rpc && commits) {
+        log("Already applied: durable_model_graph (three recorded parts)");
+        continue;
+      }
+    }
     if (applied.has(name)) {
       log(`Already applied: ${name}`);
       continue;
