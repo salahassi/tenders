@@ -93,6 +93,21 @@ verifies anonymous denial. New tables explicitly grant only required permissions
 no anonymous Data API grant is introduced. Graph recovery views have no browser
 or service-role table grants; Owner-only backup RPCs access them.
 
+The manual **Deploy Supabase API and worker** workflow requires the repository
+Actions secret `SUPABASE_ACCESS_TOKEN`. Its optional `apply_model_release` input
+applies only the four reviewed October 20 migrations, after tests pass and before
+either function is deployed. The release runner reads migration history, skips
+completed migrations by name (connector timestamps can differ), and resumes the
+recorded graph-storage/RPC boundaries without recreating existing tables. Each
+remaining DDL transaction records its history atomically. An unknown HTTP outcome
+stops the run; a subsequent run rechecks history before doing any work. It does not
+reset a database, modify existing originals or enable model admission.
+
+The schema compatibility check blocks deployment if the v2 claim and graph-store
+functions are absent. Keep the frontend release behind successful backend
+deployment. A missing credential or incomplete migration is a release blocker,
+not a reason to deploy the frontend or enable the new executor early.
+
 The old `claim_backend_job()` excludes executor-2 work. New workers call
 `claim_backend_job_v2()` and can drain either executor. An expired graph lease
 becomes resumable waiting. This allows overlap during deployment without an old

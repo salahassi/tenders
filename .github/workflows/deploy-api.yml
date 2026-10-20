@@ -2,6 +2,11 @@ name: Deploy Supabase API and worker
 
 on:
   workflow_dispatch:
+    inputs:
+      apply_model_release:
+        description: "Apply the reviewed October 20 model execution migrations first"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -23,32 +28,6 @@ jobs:
             echo "::error::SUPABASE_ACCESS_TOKEN is unavailable. Add it in repository Settings > Secrets and variables > Actions, then rerun this workflow."
             exit 1
           fi
-      - name: Verify compatible database migrations
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: |
-          python - <<'PY'
-          import json
-          import os
-          import urllib.request
-
-          query = """select
-            to_regprocedure('public.claim_backend_job_v2()') is not null
-            and to_regprocedure('public.model_graph_store(uuid,uuid,text,text,jsonb)') is not null
-            and to_regclass('public.model_execution_settings') is not null
-            as compatible"""
-          request = urllib.request.Request(
-              "https://api.supabase.com/v1/projects/nqfwbqeozmuiuwbiowil/database/query",
-              data=json.dumps({"query": query, "read_only": True}).encode(),
-              headers={"Authorization": "Bearer " + os.environ["SUPABASE_ACCESS_TOKEN"],
-                       "Content-Type": "application/json"},
-          )
-          with urllib.request.urlopen(request, timeout=30) as response:
-              rows = json.load(response)
-          if not isinstance(rows, list) or not rows or rows[0].get("compatible") is not True:
-              raise SystemExit("Apply the reviewed model-execution migrations before deploying these functions.")
-          print("Compatible database functions verified.")
-          PY
       - name: Check out source
         uses: actions/checkout@v7.0.1
         with:
@@ -76,6 +55,37 @@ jobs:
       - name: Check Edge Function imports
         working-directory: backend
         run: npm exec --yes --package=deno@2.9.6 -- deno check --no-lock --config supabase/functions/deno.json supabase/functions/api/index.ts supabase/functions/worker/index.ts
+      - name: Apply reviewed model release migrations
+        if: ${{ inputs.apply_model_release }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: node backend/scripts/backend/apply-model-release.mjs
+      - name: Verify compatible database migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          query = """select
+            to_regprocedure('public.claim_backend_job_v2()') is not null
+            and to_regprocedure('public.model_graph_store(uuid,uuid,text,text,jsonb)') is not null
+            and to_regclass('public.model_execution_settings') is not null
+            as compatible"""
+          request = urllib.request.Request(
+              "https://api.supabase.com/v1/projects/nqfwbqeozmuiuwbiowil/database/query",
+              data=json.dumps({"query": query, "read_only": True}).encode(),
+              headers={"Authorization": "Bearer " + os.environ["SUPABASE_ACCESS_TOKEN"],
+                       "Content-Type": "application/json"},
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              rows = json.load(response)
+          if not isinstance(rows, list) or not rows or rows[0].get("compatible") is not True:
+              raise SystemExit("Apply the reviewed model-execution migrations before deploying these functions.")
+          print("Compatible database functions verified.")
+          PY
       - name: Deploy canonical API and worker files
         working-directory: backend
         env:

@@ -32,7 +32,7 @@ passed model creation, same-provider ordering, profile/admission saves, reload
 persistence, 390px layout and absence of browser errors; desktop/mobile screenshots
 were inspected. Synthetic fixture output is not live business acceptance.
 
-Deployment: **in progress**. Implementation source `7efbd9e` is published on
+Deployment: **blocked before compatible runtime release**. Implementation source `7efbd9e` is published on
 `codex/unified-model-execution`; production remains API v53 / worker v55.
 Catalog/target migrations and graph storage are applied; graph RPC/integration
 and recovery migrations are still pending after the connector repeatedly
@@ -43,6 +43,29 @@ read-only reconciliation confirmed the Owner's original document hash is unchang
 and the existing real trial still has zero proposal versions. Current jobs/data
 remain preserved. Full fresh MAIN-01–14 and E2E-01–10, real inference quality and
 actual Word download remain pending Owner-provided paid models after release.
+
+Applied hosted migrations: `20261020155016` (`model_catalog_and_task_routes`),
+`20261020155037` (`model_target_identity_and_execution`) and
+`20261020160954` (`durable_model_graph_storage`, the storage portion of local
+`20261020143042`). The graph-store RPC, domain commits and recovery/retention
+migration remain unapplied. Do not rerun the entire graph migration against the
+existing tables: the bounded release runner resumes its recorded boundary.
+
+Fallback [workflow run 39457435238](https://github.com/salahassi/tenders/actions/runs/39457435238)
+stopped at **Check deployment credential** because `SUPABASE_ACCESS_TOKEN` is
+absent; no runtime deployment step executed. The workflow now has an explicit
+`apply_model_release` input and a tested migration-history runner (**6 fixture
+tests**), followed by schema compatibility verification. The Owner has been asked
+to add the Actions secret; no secret value should enter chat or source control.
+
+Read-only reconciliation at **16:29 UTC**: API health 200, unauthenticated
+bootstrap/worker 401, scheduler enabled with a current heartbeat; original RFP
+hash still matches baseline; zero proposal versions and zero new-executor
+admissions. Existing scheduler activity continued during the additive changes.
+Security advisory counts retain the prior 22 authenticated-definer warnings and
+one Auth warning; five new private graph tables intentionally add no-policy
+informational entries, with all client/service table access revoked.
+No paid inference, fresh hosted proposal journey or new Word artifact is claimed.
 
 ## October 20 — staged release and paid-model acceptance order
 
