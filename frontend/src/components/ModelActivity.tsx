@@ -152,8 +152,10 @@ export default function ModelActivity() {
       <h2>Model activity</h2>
       <p>
         Every provider attempt, newest first. Success means the response passed
-        validation. Skipped means no generation request was sent. Token counts
-        are provider-reported; reserved amounts are estimates.
+        validation. Polling retrieves an existing request and does not start a
+        new generation. Token counts belong to the linked usage record and may
+        repeat across its polls; do not sum these rows. Not reported means
+        unknown.
       </p>
       <div className="admin-toolbar">
         <select
@@ -280,6 +282,11 @@ export default function ModelActivity() {
                     {a.status}
                   </Badge>
                   <div>{a.result_code}</div>
+                  {a.request_phase === "poll" && (
+                    <p className="small">
+                      Retrieving an existing result · no new generation
+                    </p>
+                  )}
                   {(a.provider_error_reason || a.http_status === 429) && (
                     <p className="small">
                       {rejectionReasons[
@@ -309,7 +316,7 @@ export default function ModelActivity() {
                   <div>
                     {a.duration_ms == null
                       ? "Duration not recorded"
-                      : `${(a.duration_ms / 1000).toFixed(2)} s`}
+                      : `${(a.duration_ms / 1000).toFixed(2)} s for this request`}
                   </div>
                   <details>
                     <summary>Attempt details</summary>

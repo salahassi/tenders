@@ -825,6 +825,70 @@ it("reconciles canceled background usage by GET only and never publishes the can
   ).toBe(false);
 });
 
+it("keeps usage unknown after a rejected poll and reconciles an active waiting job without another POST", async () => {
+  await f.command("model.configure", policy);
+  const queued = await f.command("model.probe", {});
+  let posts = 0,
+    gets = 0;
+  const tick = worker(async (url, init) => {
+    if (String(url).endsWith(":countTokens"))
+      return Response.json({ totalTokens: 20 });
+    if (init?.method === "POST") {
+      posts++;
+      return Response.json({
+        id: "synthetic-poll-rejection",
+        status: "in_progress",
+      });
+    }
+    gets++;
+    return gets === 1
+      ? Response.json(
+          { error: { code: "invalid_request", message: "Invalid identifier" } },
+          { status: 400 },
+        )
+      : ready("synthetic-poll-rejection");
+  });
+  await tick();
+  await f.db.exec(
+    "update public.jobs set next_attempt_at=now()-interval '1 second' where status='retry_wait'",
+  );
+  await tick();
+  expect(
+    (
+      await f.db.query<any>(
+        "select state,actual_input from public.provider_usage",
+      )
+    ).rows[0],
+  ).toEqual({ state: "unknown", actual_input: null });
+  expect(
+    (
+      await f.db.query<any>(
+        "select status,sent,request_phase from public.model_attempts where request_phase='poll'",
+      )
+    ).rows[0],
+  ).toEqual({ status: "failed", sent: false, request_phase: "poll" });
+  await f.db.query(
+    "update public.jobs set status='retry_wait',next_attempt_at=now()+interval '1 hour' where id=$1",
+    [queued.id],
+  );
+  await tick();
+  expect(posts).toBe(1);
+  expect(gets).toBe(2);
+  expect((await job(queued.id)).status).toBe("retry_wait");
+  expect(
+    (
+      await f.db.query<any>(
+        "select state,actual_input,actual_output,error_code from public.provider_usage",
+      )
+    ).rows[0],
+  ).toEqual({
+    state: "settled",
+    actual_input: 20,
+    actual_output: 7,
+    error_code: "ACCEPTED_RESULT_RECONCILED",
+  });
+});
+
 it("deletes stored provider output only after the verified job result commits", async () => {
   await f.command("model.configure", policy);
   const queued = await f.command("model.probe", {});

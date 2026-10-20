@@ -16,19 +16,28 @@ import {
   blockedContent,
 } from "../../supabase/functions/_shared/model";
 it("allows confidentiality requirements without accepting a Confidential marking or a secret", () => {
-  expect(
-    blockedContent(
-      "The supplier shall maintain confidentiality of project data.",
-    ),
-  ).toBe(false);
+  for (const text of [
+    "The supplier shall maintain confidentiality of project data.",
+    "The vendor shall keep project data confidential.",
+    "يجب الحفاظ على سرية بيانات المشروع.",
+    "Confidential data must be protected by access controls.",
+  ]) {
+    expect(blockedContent(text)).toBe(false);
+    expect(blockedContent(JSON.stringify({ text }))).toBe(false);
+  }
   for (const text of [
     "CONFIDENTIAL: project data",
+    "CONFIDENTIAL",
+    "classification: confidential",
+    "Document\nConfidential\nPrivate contents",
+    "سرية: بيانات داخلية",
     "Strictly private document",
     "سرية",
     "api_key=example",
     "person@example.test",
   ]) {
     expect(blockedContent(text)).toBe(true);
+    expect(blockedContent(JSON.stringify({ text }))).toBe(true);
   }
 });
 const env = {

@@ -98,6 +98,48 @@ it("uses the stored-content check for an authorized confidentiality requirement 
     }),
   ).rejects.toThrow("DATA_POLICY_BLOCKED");
 });
+it("preserves ordinary confidentiality obligations in text and structured business content", async () => {
+  for (const text of [
+    "The vendor shall keep project data confidential.",
+    "Confidential data must be protected by access controls.",
+    "يجب الحفاظ على سرية بيانات المشروع.",
+  ]) {
+    for (const content of [text, JSON.stringify({ text })]) {
+      await expect(
+        f.command("knowledge.save", {
+          title: "Synthetic handling requirement",
+          content,
+          category: "company",
+          enabled: true,
+          evidence: "Synthetic fixture only",
+        }),
+      ).resolves.toHaveProperty("id");
+    }
+  }
+  for (const text of [
+    "CONFIDENTIAL: project data",
+    "CONFIDENTIAL",
+    "classification: confidential",
+    "Document\nConfidential\nPrivate contents",
+    "سرية: بيانات داخلية",
+    "سرية",
+    "Strictly private document",
+    "api_key=example",
+    "person@example.test",
+  ]) {
+    for (const content of [text, JSON.stringify({ text })]) {
+      await expect(
+        f.command("knowledge.save", {
+          title: "Synthetic restricted content",
+          content,
+          category: "company",
+          enabled: true,
+          evidence: "Synthetic fixture only",
+        }),
+      ).rejects.toThrow("DATA_POLICY_BLOCKED");
+    }
+  }
+});
 async function reserve(s: Awaited<ReturnType<typeof setup>>, key = "first") {
   return f.rpc("reserve_model_call", [
     s.job.id,

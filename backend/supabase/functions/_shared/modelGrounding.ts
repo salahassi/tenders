@@ -43,8 +43,20 @@ export function validateGroundingReport(
       report.processed_content_ids.length ||
     ids.length !== report.processed_content_ids.length ||
     !ids.every((id) => report.processed_content_ids.includes(id))
-  )
+  ) {
+    console.warn(
+      "model_coverage_diagnostic",
+      JSON.stringify({
+        phase: "content",
+        expected: ids.length,
+        processed: report.processed_content_ids.length,
+        matched: ids.filter((id) => report.processed_content_ids.includes(id))
+          .length,
+        candidate_hash_matches: report.checked_candidate_hash === candidateHash,
+      }),
+    );
     throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+  }
   const text = normalizedEvidence(units.map((u) => u.text).join("\n"));
   if (units.length && !report.claims.length)
     throw new ModelError("MODEL_COVERAGE_INCOMPLETE");

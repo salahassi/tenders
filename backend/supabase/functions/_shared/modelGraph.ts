@@ -51,12 +51,9 @@ const State = Annotation.Root({
   decision: Annotation<"accept" | "repair" | "needs_review">(),
 });
 
-/** One durable graph phase per queue lease. Large inputs/results are kept outside
- * LangGraph channels; checkpoint replay reads their immutable database references.
- * The database job lease, permissions and existing remote-request ledger remain
- * the sole authority for dispatch, polling and publishing results.
- */
-export function executeGuardedModel(o: Options) {
+export function disableExternalModelTracing(
+  env: Record<string, string | undefined>,
+) {
   // LangGraph is local orchestration only. Explicitly suppress inherited tracing
   // even if a hosting environment defines LANGSMITH_TRACING or a tracing key.
   // Persistently disable these process-wide switches: graph iterator internals
@@ -67,8 +64,68 @@ export function executeGuardedModel(o: Options) {
     "LANGSMITH_TRACING_V2",
     "LANGCHAIN_TRACING",
     "LANGCHAIN_TRACING_V2",
-  ])
-    runtimeEnvironment[flag] = "false";
+  ]) {
+    // Supabase exposes a readable but immutable process environment. Unset or
+    // disabled flags already prevent export; assigning them still throws there.
+    if (env[flag] !== "true") continue;
+    try {
+      env[flag] = "false";
+    } catch {
+      // Never run customer content with inherited tracing enabled when the
+      // runtime cannot disable it. Do not echo the environment or its values.
+      throw new ModelError("MODEL_TRACING_CONFIGURATION_UNSAFE");
+    }
+  }
+}
+export async function verificationContext(
+  store: Pick<ModelGraphStore, "action">,
+  ledger: Ledger,
+  context: any,
+  manifest: Reference[],
+) {
+  // Pin the context format before sending. An in-flight legacy request must
+  // keep its exact input hash; it can opt into the compact format only after
+  // the provider request finishes. Replays retain this immutable marker.
+  const formatKey = `verification-format-${context.candidate_hash}`;
+  let format = await store.action("result_get", { key: formatKey });
+  if (!format) {
+    const preflight = ledger.preflight;
+    const pool = await preflight(manifest, "verify_grounding");
+    let prepared = true;
+    ledger.preflight = async (manifest, operation) => {
+      if (prepared) {
+        prepared = false;
+        return pool;
+      }
+      return preflight(manifest, operation);
+    };
+    if (!pool.pending_model_config_id) {
+      format = await store.action("result_put", {
+        key: formatKey,
+        value: { version: 2 },
+      });
+    }
+  }
+  if (format?.value.version === 2) {
+    // content_units already contains every reviewed string. Sending the same
+    // text twice more wastes context and encourages oversized reports.
+    const {
+      candidate: _candidate,
+      candidate_text: _text,
+      ...compact
+    } = context;
+    context = { ...compact, response_style: "compact-verification-v2" };
+  }
+  return context;
+}
+
+/** One durable graph phase per queue lease. Large inputs/results are kept outside
+ * LangGraph channels; checkpoint replay reads their immutable database references.
+ * The database job lease, permissions and existing remote-request ledger remain
+ * the sole authority for dispatch, polling and publishing results.
+ */
+export function executeGuardedModel(o: Options) {
+  disableExternalModelTracing(runtimeEnvironment);
   // A disabled context avoids constructing a RunTree/Client, which can perform
   // a server-capability lookup even when trace recording itself is disabled.
   return new Promise<Awaited<ReturnType<typeof runGuardedModel>>>(
@@ -195,6 +252,8 @@ async function runGuardedModel(o: Options): Promise<{
         return pool;
       };
     }
+    if (task === "verify_grounding")
+      context = await verificationContext(store, ledger, context, o.manifest);
     let producer: Record<string, unknown> | undefined;
     const prepared = ledger.requestPrepared;
     ledger.requestPrepared = async (request) => {

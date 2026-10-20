@@ -93,6 +93,44 @@ it("surfaces read errors without claiming an empty or successful history", async
   ).not.toBeInTheDocument();
 });
 
+it("explains that a failed poll is an existing request and its duration is not generation time", async () => {
+  vi.mocked(useApp).mockReturnValue({
+    backend: {
+      request: vi.fn(async () => ({
+        data: {
+          records: [
+            {
+              id: "1",
+              provider: "gemini_free",
+              model: "configured-model",
+              operation: "analyze_chunk",
+              status: "failed",
+              result_code: "PROVIDER_REQUEST_INVALID",
+              request_phase: "poll",
+              sent: false,
+              http_status: 400,
+              duration_ms: 1520,
+            },
+          ],
+          next_cursor: null,
+        },
+      })),
+    },
+  } as any);
+  render(
+    <MemoryRouter>
+      <ModelActivity />
+    </MemoryRouter>,
+  );
+  expect(
+    await screen.findByText(
+      "Retrieving an existing result · no new generation",
+    ),
+  ).toBeInTheDocument();
+  expect(screen.getByText("1.52 s for this request")).toBeInTheDocument();
+  expect(screen.getByText(/Not reported means unknown/)).toBeInTheDocument();
+});
+
 it("keeps a provider hash deep-link selected in the live DOM after loading", async () => {
   window.history.replaceState(null, "", "/#/jobs?provider=zai_free");
   const request = vi.fn(async () => ({

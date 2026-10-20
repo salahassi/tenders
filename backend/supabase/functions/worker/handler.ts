@@ -91,7 +91,11 @@ export function createWorkerHandler(
                     actual_input: usage.input,
                     actual_output: usage.output,
                     thinking: usage.thinking,
-                    error_code: "SUPERSEDED_RESULT_RECONCILED",
+                    error_code: ["canceled", "blocked", "failed"].includes(
+                      abandoned.job_status,
+                    )
+                      ? "SUPERSEDED_RESULT_RECONCILED"
+                      : "ACCEPTED_RESULT_RECONCILED",
                   });
               }
             } catch {

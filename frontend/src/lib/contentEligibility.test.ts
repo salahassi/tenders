@@ -3,7 +3,33 @@ import { it, expect } from "vitest";
 import {
   registerOriginalReviewer,
   reviewOriginalEligibility,
+  unsafeBusinessContent,
 } from "./contentEligibility";
+
+it("distinguishes confidentiality requirements from explicit markings and secrets", () => {
+  for (const text of [
+    "The vendor shall keep project data confidential.",
+    "Confidential data must be protected by access controls.",
+    "يجب الحفاظ على سرية بيانات المشروع.",
+  ]) {
+    expect(unsafeBusinessContent(text)).toBe(false);
+    expect(unsafeBusinessContent(JSON.stringify({ text }))).toBe(false);
+  }
+  for (const text of [
+    "CONFIDENTIAL: project data",
+    "CONFIDENTIAL",
+    "classification: confidential",
+    "Document\nConfidential\nPrivate contents",
+    "سرية: بيانات داخلية",
+    "سرية",
+    "Strictly private document",
+    "api_key=example",
+    "person@example.test",
+  ]) {
+    expect(unsafeBusinessContent(text)).toBe(true);
+    expect(unsafeBusinessContent(JSON.stringify({ text }))).toBe(true);
+  }
+});
 import type { DocumentRecord } from "../types";
 async function fixture(text = "Public synthetic procurement scope") {
   const blob = new Blob([text]);

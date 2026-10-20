@@ -1,5 +1,57 @@
 # Implementation status and continuation plan
 
+## October 20 — paid-model acceptance and runtime recovery
+
+P6 / stages 5–7: Owner configured three paid task models and requested a real RFP
+journey with source/usage observation. The original confirmed file is unchanged.
+The earlier legacy plan was canceled through the authenticated UI, preserving
+history; a new trial uses the saved task catalog. The Owner explicitly authorized
+OpenAI processing of this exact extraction during the trial. No secret, route,
+model capability, business approval or QA role was changed.
+
+Hosted acceptance exposed and corrected the following issues:
+
+- LangGraph initialization wrote disabled tracing flags to Supabase's immutable
+  process environment. Unset/disabled flags now need no write; inherited enabled
+  tracing still fails closed if it cannot be disabled. Content-free exception
+  locations diagnose runtime faults without exposing provider/customer content.
+- Ordinary confidentiality obligations in generated analysis triggered a generic
+  keyword block. Storage, authorization, runtime and upload checks now distinguish
+  obligations from explicit classification labels. Credential/contact checks,
+  content authorization and grounded evidence validation remain enforced.
+- A failed GET of an accepted background request was recorded as skipped with
+  settled but unmeasured usage. It is now a failed retrieval; unknown usage stays
+  reconcilable by throttled GET without another generation. Existing affected
+  records retain their request IDs and error history. Activity explains request
+  duration, repeated usage records and the difference between polling/generation.
+
+- An occupied model request slot inherited the outage backoff, delaying other
+  analysis parts for an hour. Catalog reservations now identify that as a local
+  one-minute wait; accepted requests and provider Retry-After remain intact.
+- Real verification reports exceeded output limits. Compact verification sends
+  all content units once, requests concise supported findings and exact coverage
+  IDs, and persists its format. Existing accepted requests retain their original
+  input while new verification requests avoid triple copies of the candidate.
+
+Local evidence: **415 backend and 191 frontend tests** passed across the final
+runs. One full backend run completed 410 tests while the five evidence tests hit
+a fixture-initialization timeout; those five passed in an isolated rerun. All
+compact graph/grounding/generation fixtures passed, including preserving an
+accepted legacy request's input and pinning compact input across polls. Both
+package typechecks/builds and Deno API/worker checks passed. The worker/database
+reconciliation fixture retains unknown usage after HTTP 400, obtains measured
+usage by GET, performs only one POST and never fabricates task completion.
+
+Runtime: API **v60**, worker **v67** ACTIVE; migrations
+`confidentiality_requirement_labels`, `accepted_request_observability` and
+`model_capacity_wait` applied.
+At 21:37 UTC, all three real OpenAI analysis results passed structural/evidence
+validation and entered durable graph storage, including two recovered from their
+original provider requests after the local policy fix. No repeated generation
+was needed to recover them. Compact verification is running on the real trial. Grounded review, remaining analysis, full proposal/DOCX inspection,
+frontend publication and end-to-end acceptance remain in progress. Gemini accepted
+requests but subsequent GET returned HTTP 400; no zero-usage assumption is made.
+
 ## October 20 — automatic provider request handling
 
 P1/P2/P5 / stages 4–7: replace the capability-assertion checkbox with automatic

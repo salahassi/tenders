@@ -1,6 +1,6 @@
 import type { DocumentRecord } from "../types";
 export const unsafeBusinessContent = (text: string) =>
-  /(?:\bconfidential\b|strictly private|سري للغاية|سرية|password\s*[:=]|api[_ -]?key\s*[:=]|[\w.+-]+@[\w.-]+\.[a-z]{2,}|-----BEGIN .*PRIVATE KEY|\b(?:sk|sb_secret)_[a-z0-9]{12,}|\+\d[\d ()-]{7,}\d|\b\d{3}[- .]\d{3}[- .]\d{4}\b)/i.test(
+  /(?:(?:\bconfidential\b|سرية)\s*[:：—–-]|(?:^|[\r\n]|\\[nr]|["=:])\s*(?:confidential|سرية)\s*(?=$|[\r\n"]|\\[nr])|strictly private|سري للغاية|password\s*[:=]|api[_ -]?key\s*[:=]|[\w.+-]+@[\w.-]+\.[a-z]{2,}|-----BEGIN .*PRIVATE KEY|\b(?:sk|sb_secret)_[a-z0-9]{12,}|\+\d[\d ()-]{7,}\d|\b\d{3}[- .]\d{3}[- .]\d{4}\b)/i.test(
     text,
   );
 export type OriginalReview = { document: DocumentRecord; original: Blob };

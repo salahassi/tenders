@@ -782,6 +782,33 @@ export async function processGeneration(
       .catch(() => console.warn("provider_request_cleanup_pending"));
   } catch (error) {
     if (error instanceof ModelDeferred) return;
+    if (!(error && typeof error === "object" && "code" in error)) {
+      // Runtime diagnostics contain source locations only: never log prompts,
+      // provider payloads, credentials or an arbitrary exception message.
+      console.error(
+        "generation_handler_failed",
+        JSON.stringify({
+          job_id: job.id,
+          phase: ctx ? ctx.step.task : "generation_context",
+          error_type:
+            error instanceof TypeError
+              ? "TypeError"
+              : error instanceof ReferenceError
+                ? "ReferenceError"
+                : "Error",
+          locations:
+            error instanceof Error
+              ? [
+                  ...(error.stack?.matchAll(
+                    /([A-Za-z][A-Za-z0-9_-]*\.(?:ts|js)):(\d+):(\d+)/g,
+                  ) ?? []),
+                ]
+                  .slice(0, 8)
+                  .map((m) => `${m[1]}:${m[2]}:${m[3]}`)
+              : [],
+        }),
+      );
+    }
     let error_code =
       error && typeof error === "object" && "code" in error
         ? String(error.code)

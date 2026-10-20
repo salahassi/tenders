@@ -120,6 +120,42 @@ async function configure(
     backend,
   };
 }
+
+it("treats a reserved workspace request as local capacity without dispatching another model", async () => {
+  const s = await configure();
+  await s.ledger.preflight([], "connection_probe");
+  const first = await rpc("reserve_task_model_call", {
+    job_id: s.job.id,
+    lease: s.job.lease_token,
+    call_key: "first",
+    input_hash: "a".repeat(64),
+    input_tokens: 100,
+    output_tokens: 100,
+    manifest: [],
+    target_model: s.models[0].id,
+    target_connection: s.connection.id,
+  });
+  expect(first.state).toBe("reserved");
+  const fetcher = vi.fn();
+  await expect(
+    executeModel(
+      "connection_probe",
+      {},
+      [],
+      [],
+      [],
+      s.envs,
+      s.ledger,
+      "en",
+      false,
+      fetcher,
+    ),
+  ).rejects.toMatchObject({ code: "MODEL_RATE_WAIT" });
+  expect(fetcher).not.toHaveBeenCalled();
+  expect(
+    (await f.db.query("select id from public.provider_usage")).rows,
+  ).toHaveLength(1);
+});
 it.each(["openai", "gemini_free"] as const)(
   "automatically retries an explicitly unsupported %s background request on the same model in a fresh graph lease",
   async (provider) => {
@@ -718,9 +754,14 @@ it.each(["corrected", "unchanged", "evolving"])(
           changes: ["Fixture correction candidate."],
         };
       } else {
-        const c = prompt.untrusted_data,
-          corrected =
-            c.candidate.content_blocks[0].text === fixed.content_blocks[0].text;
+        const c = prompt.untrusted_data;
+        expect(c.candidate).toBeUndefined();
+        expect(c.candidate_text).toBeUndefined();
+        expect(c.response_style).toBe("compact-verification-v2");
+        const paragraph = c.content_units.find((u: any) =>
+          /engineers|team size/.test(u.text),
+        ).text;
+        const corrected = paragraph === fixed.content_blocks[0].text;
         result = {
           checked_candidate_hash: c.candidate_hash,
           reviewed_all_content: true,
@@ -728,8 +769,8 @@ it.each(["corrected", "unchanged", "evolving"])(
           claims: [
             {
               id: "claim-1",
-              claim: c.candidate.content_blocks[0].text,
-              candidate_quote: c.candidate.content_blocks[0].text,
+              claim: paragraph,
+              candidate_quote: paragraph,
               kind: corrected ? "assumption" : "company_fact",
               status: corrected ? "supported" : "insufficient",
               source_refs: [],
