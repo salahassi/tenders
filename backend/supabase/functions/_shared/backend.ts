@@ -114,6 +114,7 @@ export function environment(
   };
 }
 export class Backend {
+  readonly invocationStartedAt = Date.now();
   private admin: SupabaseClient;
   constructor(private env: BackendEnvironment) {
     if (!env.url || !env.publishableKey || !env.serviceKey)

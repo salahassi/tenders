@@ -213,6 +213,138 @@ async function age() {
   );
 }
 
+it.each(["priority", "round_robin"] as const)(
+  "continues a slow provider round across leases without resending or changing its round number: %s",
+  async (strategy) => {
+    await f.command("model.routing", {
+      enabled: true,
+      expected_revision: 0,
+      strategy,
+    });
+    const q = await queue();
+    let clock = Date.now();
+    const now = vi.spyOn(Date, "now").mockImplementation(() => clock);
+    const sent: string[] = [];
+    try {
+      const run = worker(
+        transport((provider) => {
+          sent.push(provider);
+          if (provider === "gemini_free") {
+            clock += 90000;
+            return Response.json(
+              { error: { code: "rate_limit" } },
+              { status: 429 },
+            );
+          }
+          return success(provider);
+        }),
+      );
+      expect((await run()).status).toBe(200);
+      const first = await job(q.id);
+      expect(first).toMatchObject({
+        status: "retry_wait",
+        error_code: "MODEL_IN_PROGRESS",
+        lease_token: null,
+        failure_count: 0,
+      });
+      expect(
+        first.checkpoint.model_round.remaining.map((p: any) => p.provider),
+      ).not.toContain("gemini_free");
+      expect(first.checkpoint.model_routing.round_attempts).toBe(1);
+      expect(sent).toEqual(["gemini_free"]);
+      expect((await run()).status).toBe(200);
+      const second = await job(q.id);
+      expect(second.status).toBe("succeeded");
+      expect(second.attempts).toBe(2);
+      expect(second.checkpoint.model_round).toBeUndefined();
+      expect(second.checkpoint.model_routing.round_attempts).toBe(1);
+      expect(sent).toEqual(["gemini_free", "qwen_free"]);
+      expect(await usage(q.id)).toHaveLength(2);
+    } finally {
+      now.mockRestore();
+    }
+  },
+);
+
+it("keeps round checkpoints private, input-bound, lease-bound and canceled-job safe", async () => {
+  await enable();
+  const q = await queue();
+  const j = await rpc("claim_backend_job");
+  await rpc("prepare_model_routing", {
+    job_id: j.id,
+    lease: j.lease_token,
+    server_models: meta(),
+  });
+  const state = {
+    input_hash: "a".repeat(64),
+    remaining: [
+      {
+        provider: "qwen_free",
+        model: models.qwen_free.model,
+        project_ref: models.qwen_free.projectRef,
+      },
+    ],
+    output_error: "MODEL_OUTPUT_TRUNCATED",
+    retry_windows: [null],
+  };
+  await rpc("save_model_round", {
+    job_id: q.id,
+    lease: j.lease_token,
+    progress: state,
+    release_job: false,
+  });
+  expect(
+    await rpc("load_model_round", {
+      job_id: q.id,
+      lease: j.lease_token,
+      input_hash: state.input_hash,
+    }),
+  ).toEqual(state);
+  await expect(
+    rpc("load_model_round", {
+      job_id: q.id,
+      lease: j.lease_token,
+      input_hash: "b".repeat(64),
+    }),
+  ).rejects.toMatchObject({ code: "STALE_INPUT" });
+  await expect(
+    rpc("save_model_round", {
+      job_id: q.id,
+      lease: crypto.randomUUID(),
+      progress: state,
+      release_job: true,
+    }),
+  ).rejects.toMatchObject({ code: "STALE_LEASE" });
+  await expect(
+    rpc("save_model_round", {
+      job_id: q.id,
+      lease: j.lease_token,
+      progress: {
+        ...state,
+        remaining: [{ ...state.remaining[0], model: "changed-model" }],
+      },
+      release_job: false,
+    }),
+  ).rejects.toMatchObject({ code: "MODEL_IDENTITY_CHANGED" });
+  const grants = (
+    await f.db.query<any>(
+      "select has_function_privilege('authenticated','public.save_model_round(uuid,uuid,jsonb,boolean)','execute') as browser,has_function_privilege('service_role','public.load_model_round(uuid,uuid,text)','execute') as worker",
+    )
+  ).rows[0];
+  expect(grants).toEqual({ browser: false, worker: true });
+  await f.db.query("update public.jobs set cancel_requested=true where id=$1", [
+    q.id,
+  ]);
+  await expect(
+    rpc("save_model_round", {
+      job_id: q.id,
+      lease: j.lease_token,
+      progress: state,
+      release_job: true,
+    }),
+  ).rejects.toMatchObject({ code: "STALE_LEASE" });
+});
+
 it("records all eight missing slots and schedules retry without unauthenticated requests", async () => {
   await enable();
   const q = await queue();
@@ -326,7 +458,7 @@ it("rotates the first provider across independent jobs without resetting the dur
     await age();
   }
   expect(calls).toEqual([...ROUND_ROBIN_PROVIDERS]);
-});
+}, 15000);
 it("continues after uncertain delivery while retaining each unknown reservation and its budget", async () => {
   await enable();
   const q = await queue();

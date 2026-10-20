@@ -575,7 +575,19 @@ export type AttemptMetadata = {
   provider_error_type?: string;
   provider_error_reason?: string;
 };
+export type ModelRoundProgress = {
+  input_hash: string;
+  remaining: Pick<ModelConfiguration, "provider" | "model" | "project_ref">[];
+  output_error: string | null;
+  retry_windows: (string | null)[];
+};
 export interface Ledger {
+  invocationStartedAt?: number;
+  loadRound?(inputHash: string): Promise<ModelRoundProgress | null>;
+  saveRound?(
+    progress: ModelRoundProgress | null,
+    releaseJob: boolean,
+  ): Promise<void>;
   beginAttempt?(
     provider: ModelProviderId,
     model: string,
@@ -948,7 +960,7 @@ export class FreeModelProvider {
         },
       },
       { "x-goog-api-key": this.env.key, "Api-Revision": "2026-05-20" },
-      20000,
+      this.requestTimeout,
     );
   }
   async pollBackground(id: string) {
@@ -1312,6 +1324,7 @@ export async function executeModel(
   repair = false,
   fetcher: typeof fetch = fetch,
 ) {
+  const invocationStarted = ledger.invocationStartedAt ?? Date.now();
   const pool = await ledger.preflight(manifest);
   const automatic = pool.routing_mode === "round_robin";
   const prompt =
@@ -1335,240 +1348,303 @@ export async function executeModel(
   const schema = z.toJSONSchema(modelSchemas[task]);
   const inputHash = await sha256(prompt);
   const roundStarted = Date.now();
-  const eligibleProviders = pool.providers.filter((config) => {
-    const env = environments[config.provider];
-    return (
-      env &&
-      tryAvailable(config, env, roundStarted) &&
-      !(config.retry_after && Date.parse(config.retry_after) > roundStarted)
-    );
-  }).length;
-  // Share a bounded request budget among providers that can actually send.
-  // Missing keys and provider cooldowns must not shorten the remaining
-  // provider's request. Background GETs retain their own short timeout.
-  const requestTimeout = automatic
-    ? Math.floor(90000 / Math.max(1, eligibleProviders))
-    : 90000;
-  let lastError: ModelError = new ModelError("MODEL_NOT_CONFIGURED");
-  let outputError: ModelError | null = null;
-  const retryWindows: (string | null)[] = [];
-  for (const config of pool.providers) {
-    const attemptId = await ledger.beginAttempt?.(
-      config.provider,
-      config.model,
-      config.project_ref,
-      task,
-    );
-    const env = environments[config.provider];
-    if (!env || !tryAvailable(config, env)) {
-      lastError = new ModelError("MODEL_NOT_CONFIGURED");
-      if (attemptId)
-        await ledger.endAttempt?.(attemptId, lastError.code, false, null, {});
-      if (automatic)
-        await ledger.attempt?.(config.provider, lastError.code, false);
-      continue;
-    }
-    const provider = new FreeModelProvider(env, fetcher, requestTimeout);
-    let reservation: string | null = null;
-    let settled = false;
-    let remoteId: string | null = null;
-    const finishAttempt = async (code: string, retryAfter?: string | null) => {
-      if (attemptId)
-        await ledger.endAttempt?.(
-          attemptId,
-          code,
-          provider.generationSent,
-          reservation,
-          { ...provider.telemetry, retry_after: retryAfter },
-        );
-    };
-    try {
-      let result: { text: string; usage: Usage; complete: boolean };
-      const background =
-        config.provider === "gemini_free" &&
-        ledger.resume &&
-        ledger.checkpoint &&
-        ledger.defer;
-      const pending = background
-        ? await ledger.resume!(config.provider, inputHash, manifest)
-        : null;
-      // A generation cooldown must not prevent polling an already accepted request.
-      if (
-        !pending &&
-        automatic &&
-        config.retry_after &&
-        Date.parse(config.retry_after) > roundStarted
-      ) {
-        throw new ModelError("PROVIDER_QUOTA_WAIT", config.retry_after);
-      }
-      if (pending) {
-        reservation = pending.id;
-        remoteId = pending.remote_request_id;
-        settled = pending.state === "settled";
-      } else {
-        // Automatic routing does not call a token-count endpoint or enforce a
-        // daily token budget. This bounded local estimate is ledger metadata;
-        // the provider reports actual usage and accepts/rejects its own context.
-        const tokens = automatic
-          ? Math.min(
-              task === "classify_opportunity" ? 64000 : 20000,
-              Math.max(
-                1,
-                Math.ceil(
-                  new TextEncoder().encode(prompt + JSON.stringify(schema))
-                    .length / 3,
-                ),
-              ),
-            )
-          : await provider.countTokens(prompt, schema);
-        if (tokens > (task === "classify_opportunity" ? 64000 : 20000))
-          throw new ModelError("MODEL_CONTEXT_TOO_LARGE");
-        reservation = await ledger.reserve(
-          tokens,
-          caps[task],
-          inputHash,
-          manifest,
-          config.provider,
-        );
-      }
-      if (background) {
-        if (pending && Date.parse(pending.remote_deadline) <= Date.now())
-          throw new ModelError("MODEL_RESULT_EXPIRED");
-        let interaction: any;
-        if (pending) {
-          try {
-            interaction = await provider.pollBackground(
-              pending.remote_request_id,
-            );
-          } catch (error) {
-            if (
-              !automatic &&
-              error instanceof ModelError &&
-              ["MODEL_NETWORK_UNCERTAIN", "PROVIDER_QUOTA_WAIT"].includes(
-                error.code,
-              )
-            ) {
-              await finishAttempt("MODEL_IN_PROGRESS", error.retryAfter);
-              await ledger.defer!(reservation!, error.retryAfter);
-              throw new ModelDeferred();
-            }
-            throw error;
-          }
-          if (interaction.id !== pending.remote_request_id)
-            throw new ModelError("MODEL_IDENTITY_CHANGED");
-        } else {
-          interaction = await provider.startBackground(task, prompt, schema);
-          if (
-            typeof interaction.id !== "string" ||
-            !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(interaction.id)
-          )
-            throw new ModelError("MODEL_NETWORK_UNCERTAIN");
-          await ledger.checkpoint!(reservation!, interaction.id);
-          remoteId = interaction.id;
-        }
-        if (["in_progress", "queued"].includes(interaction.status)) {
-          await finishAttempt("MODEL_IN_PROGRESS");
-          await ledger.defer!(reservation!);
-          throw new ModelDeferred();
-        }
-        result = provider.backgroundResult(interaction);
-      } else result = await provider.generate(task, prompt, schema);
-      await ledger.settle(reservation, result.usage);
-      settled = true;
-      if (
-        !automatic &&
-        (result.usage.input === null || result.usage.output === null)
+  // Every generation gets the full 90 seconds. A slow failover continues in a
+  // fresh worker invocation rather than dividing the timeout among providers
+  // or exceeding the edge runtime while holding the workspace lease.
+  const savedRound = automatic ? await ledger.loadRound?.(inputHash) : null;
+  const providers = savedRound
+    ? savedRound.remaining.flatMap((saved) =>
+        pool.providers.filter(
+          (current) =>
+            current.provider === saved.provider &&
+            current.model === saved.model &&
+            current.project_ref === saved.project_ref,
+        ),
       )
-        throw new ModelError("USAGE_UNKNOWN");
-      if (!result.complete) throw new ModelError("MODEL_OUTPUT_TRUNCATED");
-      try {
-        const validated = validateModelResult(
-          task,
-          JSON.parse(result.text),
-          evidence,
-          requiredIds,
-        );
-        if (task === "inspect_source_page") {
-          const mode = (context as { mode?: string }).mode;
-          if (
-            (mode === "collect_notices" &&
-              validated.candidate_link_ids.length) ||
-            (mode === "discover_sources" && validated.notices.length)
-          )
-            throw new ModelError("MODEL_OUTPUT_INVALID");
-        }
-        const scopePolicy = (context as { scope_policy?: ServiceScope } | null)
-          ?.scope_policy;
-        if (task === "classify_opportunity" && scopePolicy)
-          validateScopeDecision(validated, scopePolicy);
-        if (remoteId) {
-          const completedId = remoteId;
-          ledger.cleanup = () => provider.deleteBackground(completedId);
-        }
-        await finishAttempt("SUCCEEDED");
-        if (automatic)
-          await ledger.attempt?.(config.provider, "SUCCEEDED", true);
-        return validated;
-      } catch (error) {
-        provider.telemetry.provider_error_reason =
-          error instanceof ModelError
-            ? "response_evidence_invalid"
-            : error instanceof z.ZodError
-              ? "response_schema_invalid"
-              : "response_json_invalid";
-        if (error instanceof ModelError) throw error;
-        throw new ModelError("MODEL_OUTPUT_INVALID");
+    : pool.providers;
+  let lastError: ModelError = new ModelError("MODEL_NOT_CONFIGURED");
+  let outputError: ModelError | null = savedRound?.output_error
+    ? new ModelError(savedRound.output_error)
+    : null;
+  const retryWindows: (string | null)[] = savedRound?.retry_windows ?? [];
+  let roundSaved = Boolean(savedRound),
+    deferred = false;
+  const checkpointRound = async (index: number, releaseJob: boolean) => {
+    if (!automatic || !ledger.saveRound) return;
+    await ledger.saveRound(
+      {
+        input_hash: inputHash,
+        remaining: providers
+          .slice(index)
+          .map(({ provider, model, project_ref }) => ({
+            provider,
+            model,
+            project_ref,
+          })),
+        output_error: outputError?.code ?? null,
+        retry_windows: retryWindows,
+      },
+      releaseJob,
+    );
+    roundSaved = true;
+  };
+  try {
+    for (const [index, config] of providers.entries()) {
+      const env = environments[config.provider];
+      if (
+        automatic &&
+        ledger.saveRound &&
+        env &&
+        tryAvailable(config, env) &&
+        !(config.retry_after && Date.parse(config.retry_after) > Date.now()) &&
+        // 20s setup + 90s generation leaves settlement time inside the
+        // dispatcher's 120s request deadline (and the 180s job lease).
+        Date.now() - invocationStarted >= 20000
+      ) {
+        await checkpointRound(index, true);
+        throw new ModelDeferred();
       }
-    } catch (error) {
-      if (error instanceof ModelDeferred) throw error;
-      // Ledger errors use the API error type; retain their quota/authorization
-      // code instead of misclassifying a rejected reservation as a sent request.
-      const code =
-        error &&
-        typeof error === "object" &&
-        "code" in error &&
-        typeof error.code === "string" &&
-        /^[A-Z][A-Z0-9_]{1,100}$/.test(error.code)
-          ? error.code
-          : "MODEL_NETWORK_UNCERTAIN";
-      if (reservation && !settled)
-        await ledger.settle(
-          reservation,
-          { input: null, output: null, thinking: null },
-          code,
-        );
-      lastError = error instanceof ModelError ? error : new ModelError(code);
-      retryWindows.push(lastError.retryAfter);
-      await finishAttempt(code, lastError.retryAfter);
-      // A measured invalid response needs the persisted, bounded repair path.
-      // Still try the remaining providers, but do not hide this behind a
-      // missing-slot error and poll the same completed response forever.
-      if (settled && repairableOutputErrors.has(code))
-        outputError ??= lastError;
-      if (automatic) {
-        await ledger.attempt?.(config.provider, code, Boolean(reservation));
-        if (automaticFailoverErrors.has(code)) continue;
+      const attemptId = await ledger.beginAttempt?.(
+        config.provider,
+        config.model,
+        config.project_ref,
+        task,
+      );
+      if (!env || !tryAvailable(config, env)) {
+        lastError = new ModelError("MODEL_NOT_CONFIGURED");
+        if (attemptId)
+          await ledger.endAttempt?.(attemptId, lastError.code, false, null, {});
+        if (automatic)
+          await ledger.attempt?.(config.provider, lastError.code, false);
+        continue;
+      }
+      const provider = new FreeModelProvider(env, fetcher, 90000);
+      let reservation: string | null = null;
+      let settled = false;
+      let remoteId: string | null = null;
+      const finishAttempt = async (
+        code: string,
+        retryAfter?: string | null,
+      ) => {
+        if (attemptId)
+          await ledger.endAttempt?.(
+            attemptId,
+            code,
+            provider.generationSent,
+            reservation,
+            { ...provider.telemetry, retry_after: retryAfter },
+          );
+      };
+      try {
+        let result: { text: string; usage: Usage; complete: boolean };
+        const background =
+          config.provider === "gemini_free" &&
+          ledger.resume &&
+          ledger.checkpoint &&
+          ledger.defer;
+        const pending = background
+          ? await ledger.resume!(config.provider, inputHash, manifest)
+          : null;
+        // A generation cooldown must not prevent polling an already accepted request.
+        if (
+          !pending &&
+          automatic &&
+          config.retry_after &&
+          Date.parse(config.retry_after) > roundStarted
+        ) {
+          throw new ModelError("PROVIDER_QUOTA_WAIT", config.retry_after);
+        }
+        if (pending) {
+          reservation = pending.id;
+          remoteId = pending.remote_request_id;
+          settled = pending.state === "settled";
+        } else {
+          // Automatic routing does not call a token-count endpoint or enforce a
+          // daily token budget. This bounded local estimate is ledger metadata;
+          // the provider reports actual usage and accepts/rejects its own context.
+          const tokens = automatic
+            ? Math.min(
+                task === "classify_opportunity" ? 64000 : 20000,
+                Math.max(
+                  1,
+                  Math.ceil(
+                    new TextEncoder().encode(prompt + JSON.stringify(schema))
+                      .length / 3,
+                  ),
+                ),
+              )
+            : await provider.countTokens(prompt, schema);
+          if (tokens > (task === "classify_opportunity" ? 64000 : 20000))
+            throw new ModelError("MODEL_CONTEXT_TOO_LARGE");
+          reservation = await ledger.reserve(
+            tokens,
+            caps[task],
+            inputHash,
+            manifest,
+            config.provider,
+          );
+        }
+        if (background) {
+          if (pending && Date.parse(pending.remote_deadline) <= Date.now())
+            throw new ModelError("MODEL_RESULT_EXPIRED");
+          let interaction: any;
+          if (pending) {
+            try {
+              interaction = await provider.pollBackground(
+                pending.remote_request_id,
+              );
+            } catch (error) {
+              if (
+                !automatic &&
+                error instanceof ModelError &&
+                ["MODEL_NETWORK_UNCERTAIN", "PROVIDER_QUOTA_WAIT"].includes(
+                  error.code,
+                )
+              ) {
+                await finishAttempt("MODEL_IN_PROGRESS", error.retryAfter);
+                await ledger.defer!(reservation!, error.retryAfter);
+                throw new ModelDeferred();
+              }
+              throw error;
+            }
+            if (interaction.id !== pending.remote_request_id)
+              throw new ModelError("MODEL_IDENTITY_CHANGED");
+          } else {
+            interaction = await provider.startBackground(task, prompt, schema);
+            if (
+              typeof interaction.id !== "string" ||
+              !/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(interaction.id)
+            )
+              throw new ModelError("MODEL_NETWORK_UNCERTAIN");
+            await ledger.checkpoint!(reservation!, interaction.id);
+            remoteId = interaction.id;
+          }
+          if (["in_progress", "queued"].includes(interaction.status)) {
+            await finishAttempt("MODEL_IN_PROGRESS");
+            await checkpointRound(index, false);
+            await ledger.defer!(reservation!);
+            throw new ModelDeferred();
+          }
+          result = provider.backgroundResult(interaction);
+        } else result = await provider.generate(task, prompt, schema);
+        await ledger.settle(reservation, result.usage);
+        settled = true;
+        if (
+          !automatic &&
+          (result.usage.input === null || result.usage.output === null)
+        )
+          throw new ModelError("USAGE_UNKNOWN");
+        if (!result.complete) throw new ModelError("MODEL_OUTPUT_TRUNCATED");
+        try {
+          const validated = validateModelResult(
+            task,
+            JSON.parse(result.text),
+            evidence,
+            requiredIds,
+          );
+          if (task === "inspect_source_page") {
+            const mode = (context as { mode?: string }).mode;
+            if (
+              (mode === "collect_notices" &&
+                validated.candidate_link_ids.length) ||
+              (mode === "discover_sources" && validated.notices.length)
+            )
+              throw new ModelError("MODEL_OUTPUT_INVALID");
+          }
+          const scopePolicy = (
+            context as { scope_policy?: ServiceScope } | null
+          )?.scope_policy;
+          if (task === "classify_opportunity" && scopePolicy)
+            validateScopeDecision(validated, scopePolicy);
+          if (remoteId) {
+            const completedId = remoteId;
+            ledger.cleanup = () => provider.deleteBackground(completedId);
+          }
+          await finishAttempt("SUCCEEDED");
+          if (automatic)
+            await ledger.attempt?.(config.provider, "SUCCEEDED", true);
+          return validated;
+        } catch (error) {
+          provider.telemetry.provider_error_reason =
+            error instanceof ModelError
+              ? "response_evidence_invalid"
+              : error instanceof z.ZodError
+                ? "response_schema_invalid"
+                : "response_json_invalid";
+          if (error instanceof ModelError) throw error;
+          throw new ModelError("MODEL_OUTPUT_INVALID");
+        }
+      } catch (error) {
+        if (error instanceof ModelDeferred) throw error;
+        // Ledger errors use the API error type; retain their quota/authorization
+        // code instead of misclassifying a rejected reservation as a sent request.
+        const code =
+          error &&
+          typeof error === "object" &&
+          "code" in error &&
+          typeof error.code === "string" &&
+          /^[A-Z][A-Z0-9_]{1,100}$/.test(error.code)
+            ? error.code
+            : "MODEL_NETWORK_UNCERTAIN";
+        if (reservation && !settled)
+          await ledger.settle(
+            reservation,
+            { input: null, output: null, thinking: null },
+            code,
+          );
+        lastError = error instanceof ModelError ? error : new ModelError(code);
+        retryWindows.push(lastError.retryAfter);
+        await finishAttempt(code, lastError.retryAfter);
+        // A measured invalid response needs the persisted, bounded repair path.
+        // Still try the remaining providers, but do not hide this behind a
+        // missing-slot error and poll the same completed response forever.
+        if (settled && repairableOutputErrors.has(code))
+          outputError ??= lastError;
+        if (automatic) {
+          await ledger.attempt?.(config.provider, code, Boolean(reservation));
+          if (automaticFailoverErrors.has(code)) continue;
+          throw lastError;
+        }
+        // An uncertain generation may have consumed quota. Keep its reservation
+        // for reconciliation instead of sending the same content a second time.
+        if (reservation && code !== "PROVIDER_QUOTA_WAIT") throw lastError;
+        if (isFailoverError(code)) continue;
         throw lastError;
       }
-      // An uncertain generation may have consumed quota. Keep its reservation
-      // for reconciliation instead of sending the same content a second time.
-      if (reservation && code !== "PROVIDER_QUOTA_WAIT") throw lastError;
-      if (isFailoverError(code)) continue;
-      throw lastError;
     }
+    // Saved proposal steps can repair or split a measured invalid/truncated
+    // response after failover is exhausted. Hiding it behind pool exhaustion
+    // repeats the same oversized input forever instead of making progress.
+    if (
+      outputError &&
+      (!automatic ||
+        [
+          "analyze_chunk",
+          "summarize_review",
+          "plan_proposal",
+          "draft_section",
+          "plan_commercial",
+          "review_proposal",
+        ].includes(task))
+    )
+      throw outputError;
+    throw automatic
+      ? new ModelError(
+          "MODEL_ROUND_EXHAUSTED",
+          retryWindows.length &&
+            retryWindows.every((t) => t && Date.parse(t) > Date.now())
+            ? new Date(
+                Math.min(...retryWindows.map((t) => Date.parse(t!))),
+              ).toISOString()
+            : null,
+        )
+      : lastError;
+  } catch (error) {
+    deferred = error instanceof ModelDeferred;
+    throw error;
+  } finally {
+    if (roundSaved && !deferred) await ledger.saveRound?.(null, false);
   }
-  if (outputError && !automatic) throw outputError;
-  throw automatic
-    ? new ModelError(
-        "MODEL_ROUND_EXHAUSTED",
-        retryWindows.length &&
-          retryWindows.every((t) => t && Date.parse(t) > Date.now())
-          ? new Date(
-              Math.min(...retryWindows.map((t) => Date.parse(t!))),
-            ).toISOString()
-          : null,
-      )
-    : lastError;
 }
 
 export function validateScopeDecision(result: any, policy: ServiceScope) {

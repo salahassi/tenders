@@ -10,6 +10,16 @@ export function modelLedger(
 ): Ledger {
   const identity = { job_id: job.id, lease: job.lease_token };
   return {
+    invocationStartedAt: backend.invocationStartedAt,
+    loadRound: (input_hash) =>
+      backend.internal("load_model_round", { ...identity, input_hash }),
+    saveRound: async (progress, release_job) => {
+      await backend.internal("save_model_round", {
+        ...identity,
+        progress,
+        release_job,
+      });
+    },
     beginAttempt: async (
       provider_id,
       model_name,

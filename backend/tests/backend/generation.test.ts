@@ -22,7 +22,7 @@ beforeAll(async () => {
 afterAll(async () => f?.db.close());
 beforeEach(async () => f.db.exec("begin"));
 afterEach(async () => f.db.exec("rollback"));
-async function setup(confirm = true) {
+async function setup(confirm = true, text = "Implement approval workflow.") {
   await f.db.query(
     "insert into public.templates(workspace_id,title,language,volume_mode,required_sections,fixed_blocks,content_hash,approved,approved_by,approved_at,created_by) values($1,'Synthetic short template','en','combined',$2::jsonb,'[]',repeat('a',64),true,$3,now(),$3)",
     [
@@ -58,15 +58,15 @@ async function setup(confirm = true) {
     opportunity_id: opp.id,
     original_name: "synthetic.txt",
     mime_type: "text/plain",
-    size: 50,
+    size: Math.max(50, new TextEncoder().encode(text).length),
     hash: "a".repeat(64),
   });
   const d = await f.rpc("accept_uploaded_document", [
     document.id,
     f.owner,
     "a".repeat(64),
-    50,
-    "Implement approval workflow.",
+    Math.max(50, new TextEncoder().encode(text).length),
+    text,
     "ready",
     crypto.randomUUID(),
   ]);
@@ -703,6 +703,102 @@ it("checkpoints every long review segment and gives later tasks grounded directi
     planned.evidence.filter((e) => e.kind === "review")[0].text.length,
   ).toBeLessThan(text.length);
 });
+
+it("splits a truncated automatic proposal response and completes without dropping RFP boundaries", async () => {
+  const source = await setup(true, "Implement approval workflow. ".repeat(100));
+  const plan = await f.command("proposal.generate", {
+    id: source.opp.id,
+    expected_revision: source.opp.revision,
+  });
+  await f.command("model.routing", {
+    enabled: true,
+    expected_revision: 0,
+    strategy: "round_robin",
+  });
+  const job = await f.rpc("claim_backend_job");
+  const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
+  for (const ref of taskInput(ctx).manifest)
+    await f.command("content.authorize", {
+      ...ref,
+      provider: "zai_free",
+      attestation: "nonconfidential_nonpersonal",
+    });
+  const backend = {
+    internal: async (name: string, args: Record<string, unknown>) => {
+      const entries = Object.entries(args);
+      await f.db.exec("savepoint split_rpc");
+      try {
+        return (
+          await f.db.query<any>(
+            `select public.${name}(${entries.map(([key], i) => `${key}=>$${i + 1}`).join(",")}) data`,
+            entries.map(([, v]) =>
+              v && typeof v === "object" ? JSON.stringify(v) : v,
+            ),
+          )
+        ).rows[0]?.data;
+      } catch (error) {
+        await f.db.exec("rollback to savepoint split_rpc");
+        throw databaseError(error as Error);
+      } finally {
+        await f.db.exec("release savepoint split_rpc");
+      }
+    },
+  } as unknown as Backend;
+  await processGeneration(
+    backend,
+    {
+      models: {
+        zai_free: {
+          provider: "zai_free",
+          model: "synthetic-model",
+          projectRef: "synthetic",
+          key: "synthetic-key",
+        },
+      },
+    } as BackendEnvironment,
+    job,
+    async () =>
+      Response.json({
+        choices: [
+          {
+            finish_reason: "length",
+            message: { content: '{"requirements":[' },
+          },
+        ],
+        usage: { prompt_tokens: 1000, completion_tokens: 4096 },
+      }),
+  );
+  const steps = (
+    await f.db.query<any>(
+      "select status,depth,input from public.generation_steps where plan_id=$1 order by depth,input->>'start'",
+      [plan.id],
+    )
+  ).rows;
+  expect(steps.filter((s) => s.status === "split")).toHaveLength(1);
+  const children = steps
+    .filter((s) => s.depth === 1)
+    .sort((a, b) => a.input.start - b.input.start);
+  expect(children).toHaveLength(2);
+  expect(children[0].input.start).toBe(ctx.step.input.start);
+  expect(children[1].input.end).toBe(ctx.step.input.end);
+  expect(children[0].input.end).toBeGreaterThan(children[1].input.start);
+  expect(
+    (
+      await f.db.query<any>(
+        "select state,actual_input,actual_output from public.provider_usage",
+      )
+    ).rows,
+  ).toEqual([{ state: "settled", actual_input: 1000, actual_output: 4096 }]);
+  await runPlan();
+  expect(
+    (
+      await f.db.query<any>(
+        "select status from public.generation_plans where id=$1",
+        [plan.id],
+      )
+    ).rows[0].status,
+  ).toBe("completed");
+}, 15000);
 
 it.each([false, true])(
   "completes the proposal pipeline with background retrieval and round-robin=%s",

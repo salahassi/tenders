@@ -10,6 +10,7 @@ import {
   available,
   ModelError,
   type Ledger,
+  type ModelRoundProgress,
   type Evidence,
   blockedContent,
 } from "../../supabase/functions/_shared/model";
@@ -523,73 +524,91 @@ it("preserves measured usage when the returned JSON fails validation", async () 
   );
 });
 
-it("reports an exhausted automatic round while retaining the truncated-provider diagnostic", async () => {
-  const gemini = {
-    ...config,
-    provider: "gemini_free" as const,
-    retry_after: new Date(Date.now() + 3600000).toISOString(),
-  };
-  const resume = vi.fn(async () => ({
-    id: "settled-reservation",
-    remote_request_id: "synthetic-truncated",
-    remote_deadline: new Date(Date.now() + 60000).toISOString(),
-    state: "settled",
-  }));
-  const ledger: Ledger = {
-    preflight: async () => ({
-      routing_mode: "round_robin",
-      providers: [gemini, config],
-    }),
-    reserve: vi.fn(),
-    settle: vi.fn(),
-    resume,
-    checkpoint: vi.fn(),
-    defer: vi.fn(),
-    attempt: vi.fn(),
-  };
-  const send = vi.spyOn(FreeModelProvider.prototype, "startBackground");
-  vi.spyOn(FreeModelProvider.prototype, "pollBackground").mockResolvedValue({
-    id: "synthetic-truncated",
-    status: "incomplete",
-    usage: {
-      total_input_tokens: 100,
-      total_output_tokens: 2048,
-      total_thought_tokens: 0,
-    },
-    steps: [],
-  });
-  await expect(
-    executeModel(
-      "classify_opportunity",
-      {},
-      [],
-      [],
-      [],
-      { gemini_free: { ...env, provider: "gemini_free" } },
-      ledger,
-      "en",
-    ),
-  ).rejects.toThrow("MODEL_ROUND_EXHAUSTED");
-  expect(ledger.attempt).toHaveBeenNthCalledWith(
-    1,
-    "gemini_free",
-    "MODEL_OUTPUT_TRUNCATED",
-    true,
-  );
-  expect(ledger.attempt).toHaveBeenNthCalledWith(
-    2,
-    "qwen_free",
-    "MODEL_NOT_CONFIGURED",
-    false,
-  );
-  expect(ledger.settle).toHaveBeenCalledExactlyOnceWith("settled-reservation", {
-    input: 100,
-    output: 2048,
-    thinking: 0,
-  });
-  expect(send).not.toHaveBeenCalled();
-  expect(ledger.reserve).not.toHaveBeenCalled();
-});
+it.each([
+  "classify_opportunity",
+  "analyze_chunk",
+  "summarize_review",
+  "plan_proposal",
+  "draft_section",
+  "plan_commercial",
+  "review_proposal",
+] as const)(
+  "preserves the correct recovery for truncated %s after trying all providers",
+  async (task) => {
+    const gemini = {
+      ...config,
+      provider: "gemini_free" as const,
+      retry_after: new Date(Date.now() + 3600000).toISOString(),
+    };
+    const resume = vi.fn(async () => ({
+      id: "settled-reservation",
+      remote_request_id: "synthetic-truncated",
+      remote_deadline: new Date(Date.now() + 60000).toISOString(),
+      state: "settled",
+    }));
+    const ledger: Ledger = {
+      preflight: async () => ({
+        routing_mode: "round_robin",
+        providers: [gemini, config],
+      }),
+      reserve: vi.fn(),
+      settle: vi.fn(),
+      resume,
+      checkpoint: vi.fn(),
+      defer: vi.fn(),
+      attempt: vi.fn(),
+    };
+    const send = vi.spyOn(FreeModelProvider.prototype, "startBackground");
+    vi.spyOn(FreeModelProvider.prototype, "pollBackground").mockResolvedValue({
+      id: "synthetic-truncated",
+      status: "incomplete",
+      usage: {
+        total_input_tokens: 100,
+        total_output_tokens: 2048,
+        total_thought_tokens: 0,
+      },
+      steps: [],
+    });
+    await expect(
+      executeModel(
+        task,
+        {},
+        [],
+        [],
+        [],
+        { gemini_free: { ...env, provider: "gemini_free" } },
+        ledger,
+        "en",
+      ),
+    ).rejects.toThrow(
+      task === "classify_opportunity"
+        ? "MODEL_ROUND_EXHAUSTED"
+        : "MODEL_OUTPUT_TRUNCATED",
+    );
+    expect(ledger.attempt).toHaveBeenNthCalledWith(
+      1,
+      "gemini_free",
+      "MODEL_OUTPUT_TRUNCATED",
+      true,
+    );
+    expect(ledger.attempt).toHaveBeenNthCalledWith(
+      2,
+      "qwen_free",
+      "MODEL_NOT_CONFIGURED",
+      false,
+    );
+    expect(ledger.settle).toHaveBeenCalledExactlyOnceWith(
+      "settled-reservation",
+      {
+        input: 100,
+        output: 2048,
+        thinking: 0,
+      },
+    );
+    expect(send).not.toHaveBeenCalled();
+    expect(ledger.reserve).not.toHaveBeenCalled();
+  },
+);
 
 it("does not try another provider after uncertain generation delivery", async () => {
   vi.spyOn(FreeModelProvider.prototype, "countTokens").mockResolvedValue(100);
@@ -862,7 +881,7 @@ it("allows a single-provider connection check to return after 20 seconds", async
 });
 
 it.each(["only available", "failover", "all time out"] as const)(
-  "bounds the automatic round while allowing slow proposal responses: %s",
+  "gives every provider 90 seconds and durably continues slow failover: %s",
   async (scenario) => {
     vi.useFakeTimers();
     try {
@@ -878,7 +897,12 @@ it.each(["only available", "failover", "all time out"] as const)(
           : [config, { ...config, provider: "zai_free" as const }];
       const endAttempt = vi.fn();
       const settle = vi.fn();
+      let saved: ModelRoundProgress | null = null;
       const ledger: Ledger = {
+        loadRound: async () => saved,
+        saveRound: async (progress) => {
+          saved = progress;
+        },
         preflight: async () => ({ routing_mode: "round_robin", providers }),
         beginAttempt: async (provider) => provider,
         endAttempt,
@@ -904,7 +928,7 @@ it.each(["only available", "failover", "all time out"] as const)(
                     usage: { prompt_tokens: 100, completion_tokens: 90 },
                   }),
                 ),
-              succeeds ? 25000 : 120000,
+              succeeds ? 75000 : 120000,
             );
             init?.signal?.addEventListener("abort", () => {
               clearTimeout(timer);
@@ -912,26 +936,44 @@ it.each(["only available", "failover", "all time out"] as const)(
             });
           }),
       );
-      const outcome = executeModel(
-        "analyze_chunk",
-        {},
-        evidence,
-        ["block-1"],
-        [],
-        { qwen_free: env, zai_free: zai },
-        ledger,
-        "en",
-        false,
-        fetcher,
-      ).then(
-        (value) => ({ value }),
-        (error: ModelError) => ({ error }),
-      );
+      const run = () =>
+        executeModel(
+          "analyze_chunk",
+          {},
+          evidence,
+          ["block-1"],
+          [],
+          { qwen_free: env, zai_free: zai },
+          ledger,
+          "en",
+          false,
+          fetcher,
+        ).then(
+          (value) => ({ value }),
+          (error: ModelError) => ({ error }),
+        );
+      const outcome = run();
       await vi.waitFor(() => expect(fetcher).toHaveBeenCalledOnce());
       await vi.advanceTimersByTimeAsync(
-        scenario === "only available" ? 25000 : 90000,
+        scenario === "only available" ? 75000 : 90000,
       );
-      const result = await outcome;
+      let result = await outcome;
+      if (scenario !== "only available") {
+        expect(result).toMatchObject({ error: { code: "MODEL_IN_PROGRESS" } });
+        expect(fetcher).toHaveBeenCalledOnce();
+        expect(
+          (saved as ModelRoundProgress | null)?.remaining.map(
+            (p) => p.provider,
+          ),
+        ).toEqual(["zai_free"]);
+        const continued = run();
+        await vi.waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+        await vi.advanceTimersByTimeAsync(
+          scenario === "failover" ? 75000 : 90000,
+        );
+        result = await continued;
+        expect(saved).toBeNull();
+      }
       expect(fetcher).toHaveBeenCalledTimes(
         scenario === "only available" ? 1 : 2,
       );
@@ -961,6 +1003,64 @@ it.each(["only available", "failover", "all time out"] as const)(
     }
   },
 );
+
+it("retains a measured truncation across failover continuation so a proposal step can split", async () => {
+  let clock = Date.now();
+  const now = vi.spyOn(Date, "now").mockImplementation(() => clock);
+  let saved: ModelRoundProgress | null = null;
+  const ledger: Ledger = {
+    preflight: async () => ({
+      routing_mode: "round_robin",
+      providers: [config, { ...config, provider: "zai_free" }],
+    }),
+    loadRound: async () => saved,
+    saveRound: async (progress) => {
+      saved = progress;
+    },
+    reserve: async () => "synthetic-reservation",
+    settle: vi.fn(),
+  };
+  const fetcher = vi.fn<typeof fetch>(async (url) => {
+    if (String(url).includes("api.z.ai"))
+      return Response.json({}, { status: 429 });
+    clock += 45000;
+    return Response.json({
+      choices: [{ finish_reason: "length", message: { content: "{}" } }],
+      usage: { prompt_tokens: 100, completion_tokens: 4096 },
+    });
+  });
+  const run = () =>
+    executeModel(
+      "analyze_chunk",
+      {},
+      evidence,
+      ["block-1"],
+      [],
+      { qwen_free: env, zai_free: { ...env, provider: "zai_free" } },
+      ledger,
+      "en",
+      false,
+      fetcher,
+    );
+  try {
+    await expect(run()).rejects.toMatchObject({ code: "MODEL_IN_PROGRESS" });
+    expect((saved as ModelRoundProgress | null)?.output_error).toBe(
+      "MODEL_OUTPUT_TRUNCATED",
+    );
+    expect(ledger.settle).toHaveBeenCalledWith("synthetic-reservation", {
+      input: 100,
+      output: 4096,
+      thinking: null,
+    });
+    await expect(run()).rejects.toMatchObject({
+      code: "MODEL_OUTPUT_TRUNCATED",
+    });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(saved).toBeNull();
+  } finally {
+    now.mockRestore();
+  }
+});
 
 it("uses OpenAI Responses with the supplied model and preserves reasoning usage without extracting reasoning text", async () => {
   const send = vi.fn<typeof fetch>(async () =>
