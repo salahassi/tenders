@@ -1,6 +1,6 @@
 # Implementation status and continuation plan
 
-## October 20 — unified execution implementation, local verification
+## October 20 — unified execution implementation and compatible release
 
 P0–P5 / stages 4–7: canonical task schemas, eight API adapters, configurable
 connections/models/task routes and profiles, target-aware attempts/usage and
@@ -58,7 +58,24 @@ execution. New catalog tables have member-read RLS and no anonymous grants;
 private graph tables deny browser reads, and claim/store/commit RPCs remain
 service-role-only. Original RFP hash is unchanged. New-work admission remains off
 for the staged paid-model acceptance; existing jobs retain legacy execution.
-Frontend publication and authenticated hosted settings checks are being completed.
+Frontend merge **`bacebc98f95ea2c80f8ee6b17fce42d1d988e48d`** is published.
+[Pages 39475172310](https://github.com/salahassi/tenders/actions/runs/39475172310)
+passed **395 backend / 187 frontend tests (582 total)**, both package typechecks,
+Deno API/worker checks, build and deployment. Backend build/typecheck also passed
+locally after the final runner change. Published index, main/runtime scripts,
+stylesheet and Settings bundle match the tested build byte-for-byte.
+
+Authenticated hosted Chromium verified all four catalog reads (200), the
+Owner-only setup endpoint denial for the existing QA Editor (403), disabled
+Owner editing controls, settings reload, desktop/mobile layout and reopening the
+existing RFP plan with duplicate generation disabled. There were no page errors.
+The persistent browser initially showed cached legacy settings; cache-disabled
+reload loaded the verified new bundle. Owner configuration saves were exercised
+in the isolated actual-component browser tests and database/API tests, not by
+impersonating an Owner in the hosted browser. No synthetic business records,
+new external model requests or replacement originals were created for this smoke
+check. The paid-model canary and new-executor admission remain pending; this
+compatible release does not claim a live graph or complete Word acceptance.
 
 Historical fallback [workflow 39457435238](https://github.com/salahassi/tenders/actions/runs/39457435238)
 stopped at its Actions credential check and deployed nothing. This release instead
@@ -68,7 +85,11 @@ new application requirement or a blocker for this connector release.
 
 Security-advisor counts remain 22 pre-existing authenticated-definer warnings,
 one Auth warning and nine intentionally private no-policy informational entries.
-No new exposed graph RPC or table was found. Full fresh MAIN-01–14 and E2E-01–10,
+No new exposed graph RPC or table was found. At 18:36 UTC scheduling remained
+healthy, with zero graph admissions and zero versions for the existing trial.
+Failure-email history was 46 sent (last 17:36 UTC, before runtime deployment),
+with one pending grouped failure summary; notification preferences were not
+changed or disabled by this release. Full fresh MAIN-01–14 and E2E-01–10,
 actual inference quality and downloaded Word acceptance remain pending the
 Owner-provided paid models. The complete isolated pipeline and browser fixtures
 are implementation evidence, not a live business proposal pass.

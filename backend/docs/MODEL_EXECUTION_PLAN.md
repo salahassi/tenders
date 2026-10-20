@@ -678,7 +678,7 @@ prevent testing their adapters locally or the existing live providers.
 | Current code and hosted baseline | Read-only verification recorded above |
 | Documentation links and existing application regression | 43 relative links valid; 330 backend and 183 frontend tests passed; both package typechecks/builds passed |
 | New contracts/routing/guardrails/LangGraph implementation | Implemented; local integration and browser fixture evidence in the checklist |
-| Safe staged rollout and setup handoff | Additive database and compatible API v54 / worker v56 deployed; settings publication in progress; limited live graph acceptance remains separate |
+| Safe staged rollout and setup handoff | Additive database, API v54 / worker v56 and settings published; 582 CI tests and authenticated Editor desktop/mobile smoke checks pass. New admission remains off; live canary and paid-model acceptance are pending |
 | Fresh paid-model main-process acceptance | Pending Owner setup after implementation; MAIN-01–14 and E2E-01–10 defined |
 | Existing live generated artifact | Zero versions at the dated baseline; do not treat that observation as current readiness |
 | Business-ready final proposal | Pending actual facts/rates, matching metadata and Owner approval |
