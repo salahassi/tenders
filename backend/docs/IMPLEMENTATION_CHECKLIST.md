@@ -32,8 +32,13 @@ passed model creation, same-provider ordering, profile/admission saves, reload
 persistence, 390px layout and absence of browser errors; desktop/mobile screenshots
 were inspected. Synthetic fixture output is not live business acceptance.
 
-Deployment: **pending** at this entry. Production remains API v53 / worker v55;
-no new migrations or model configuration have been applied yet. Before release,
+Deployment: **in progress**. Implementation source `7efbd9e` is published on
+`codex/unified-model-execution`; production remains API v53 / worker v55.
+Catalog/target migrations and graph storage are applied; graph RPC/integration
+and recovery migrations are still pending after the connector repeatedly
+returned `Invalid or expired requestState`. The deployment workflow now verifies
+required database functions before replacing either runtime. New admission
+remains off; no current model configuration was replaced. Before release,
 read-only reconciliation confirmed the Owner's original document hash is unchanged
 and the existing real trial still has zero proposal versions. Current jobs/data
 remain preserved. Full fresh MAIN-01–14 and E2E-01–10, real inference quality and
