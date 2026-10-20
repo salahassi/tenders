@@ -20,7 +20,31 @@ actual component's automatic default, advanced override save/reload, restoring
 automatic handling and desktop/390px layouts with no page errors or overflow;
 both screenshots were inspected. No paid inference was used for these fixtures.
 
-Status: implementation and local verification complete; deployment pending. Additive migration
+Runtime deployment: source **`b764ea2bac744f6413a40c63928b1015f7187500`** is on main.
+The connected Supabase release recorded `automatic_model_transport` as migration
+**`20261020200630`**. API **v56** and worker **v58** are ACTIVE; all **26/31**
+reachable source files respectively match the submitted source. Health is 200;
+anonymous bootstrap and worker invocation are 401. The new RPC denies anon and
+authenticated execution, permits service role and rejects a stale lease in the
+hosted database. Security-advisor counts remain the previous 9 private-table
+INFO / 22 authenticated-definer WARN / 1 Auth WARN. Scheduler heartbeat advanced
+after deployment with scheduling enabled. Authenticated catalog reads succeed;
+the QA Editor receives the expected 403 on Owner-only setup metadata.
+
+Frontend [Pages 39489414347](https://github.com/salahassi/tenders/actions/runs/39489414347)
+passed all 598 tests, typechecks, Deno checks, build and deployment. Published
+index, entry script, Settings bundle and stylesheet match the tested build.
+Authenticated hosted Chromium verified catalog reads, reload, desktop/390px
+layouts with no overflow or page errors, QA Editor editing denial and reopening
+the existing RFP plan with duplicate generation disabled. Owner override saves
+were exercised in the isolated actual-component browser and database tests;
+the hosted browser did not impersonate an Owner or change configuration.
+During verification the user had configured three models and enabled new-work
+admission. This release did not edit routes, provider selections, secrets or
+admission; no live inference was initiated for its smoke checks.
+
+Status: implementation, local verification, runtime/frontend deployment and
+hosted UI smoke verification complete. Additive migration
 `20261020195225_automatic_model_transport.sql` precedes compatible runtime and
 frontend deployment. Tests cover exact feature rejections, negative quota/auth/
 schema/gateway cases, same-target continuation in the actual graph, distinct
