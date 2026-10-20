@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../lib/store";
 import { Badge, Button, Field } from "./ui";
+import ModelCatalogControls from "./ModelCatalogControls";
 import {
   DEFAULT_PROVIDER_ORDER,
   MODEL_PROVIDERS,
@@ -29,6 +30,31 @@ const newForms = () =>
     MODEL_PROVIDERS.map((p) => [p.id, { ...defaults, failover_rank: p.rank }]),
   ) as unknown as Record<ProviderId, Row>;
 export default function ModelControls() {
+  const { backend } = useApp();
+  const [catalog, setCatalog] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!backend) return;
+    let active = true;
+    void backend
+      .request<{ records: Row[] }>("/v1/model-execution-settings")
+      .then((result) => {
+        if (active) setCatalog(Array.isArray(result.data.records));
+      })
+      .catch(() => {
+        if (active) setCatalog(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [backend]);
+  if (catalog === null) return <p role="status">Loading model settings…</p>;
+  return catalog ? (
+    <ModelCatalogControls legacy={<LegacyModelControls legacy />} />
+  ) : (
+    <LegacyModelControls />
+  );
+}
+function LegacyModelControls({ legacy = false }: { legacy?: boolean }) {
   const { backend, runCommand, state, saving, notify } = useApp();
   const owner = state.settings.role === "Owner";
   const [forms, setForms] = useState(newForms);
@@ -448,7 +474,7 @@ export default function ModelControls() {
   return (
     <section className="panel admin-section">
       <div className="admin-spread">
-        <h2>Models &amp; providers</h2>
+        <h2>{legacy ? "Existing provider routing" : "Models & providers"}</h2>
         <Button
           disabled={busy || saving}
           onClick={() => {

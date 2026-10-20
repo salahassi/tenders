@@ -18,11 +18,15 @@
     "seed:sources": "node --experimental-strip-types scripts/backend/seed-sources.ts"
   },
   "dependencies": {
+    "@langchain/core": "1.2.18",
+    "@langchain/langgraph": "1.5.1",
+    "@langchain/langgraph-checkpoint": "1.2.0",
     "@supabase/supabase-js": "2.117.3",
     "cheerio": "1.2.0",
     "decimal.js": "10.6.0",
     "fast-xml-parser": "5.11.2",
     "fflate": "0.8.2",
+    "langsmith": "0.11.0",
     "nodemailer": "10.1.2",
     "pdf-lib": "1.17.1",
     "unpdf": "1.9.0",

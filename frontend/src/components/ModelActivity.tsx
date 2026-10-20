@@ -41,6 +41,18 @@ export type ModelAttempt = {
   retry_after: string | null;
   next_attempt_at: string | null;
   job_status: string;
+  connection_id?: string;
+  model_config_id?: string;
+  execution_metadata?: {
+    contract_version: string;
+    schema_version: string;
+    prompt_version: string;
+    route_revision: number;
+    profile: { max_output_tokens: number; reasoning: string };
+    capabilities: { output: string; revision: number };
+    graph_thread?: string;
+    same_model_verification?: boolean | null;
+  } | null;
 };
 const when = (v: string | null) =>
   v && Number.isFinite(Date.parse(v))
@@ -302,6 +314,13 @@ export default function ModelActivity() {
                     <dl style={{ overflowWrap: "anywhere" }}>
                       {Object.entries({
                         "Generation request sent": a.sent ? "Yes" : "No",
+                        "Processing graph": a.execution_metadata?.graph_thread,
+                        "Verification by writer model":
+                          a.execution_metadata?.same_model_verification == null
+                            ? undefined
+                            : a.execution_metadata.same_model_verification
+                              ? "Yes — agreement still requires evidence"
+                              : "No",
                         "HTTP status": a.http_status,
                         "Provider error code": a.provider_error_code,
                         "Provider error type": a.provider_error_type,
@@ -312,6 +331,19 @@ export default function ModelActivity() {
                         "Reported model": a.reported_model,
                         "Finish reason": a.finish_reason,
                         "Project / account": a.project_ref,
+                        Connection: a.connection_id,
+                        "Model configuration": a.model_config_id,
+                        "Structured output":
+                          a.execution_metadata?.capabilities.output,
+                        "Contract / schema": a.execution_metadata
+                          ? `${a.execution_metadata.contract_version} / ${a.execution_metadata.schema_version}`
+                          : null,
+                        "Prompt version": a.execution_metadata?.prompt_version,
+                        "Route revision": a.execution_metadata?.route_revision,
+                        "Effective output limit":
+                          a.execution_metadata?.profile.max_output_tokens,
+                        "Effective reasoning":
+                          a.execution_metadata?.profile.reasoning,
                         "Reserved input": a.reserved_input,
                         "Reserved output": a.reserved_output,
                         "Usage state": a.usage_state,

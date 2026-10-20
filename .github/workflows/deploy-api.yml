@@ -1,4 +1,4 @@
-name: Deploy Supabase API
+name: Deploy Supabase API and worker
 
 on:
   workflow_dispatch:
@@ -13,7 +13,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Check deployment credential
         env:
@@ -44,17 +44,19 @@ jobs:
           npm --prefix frontend run typecheck
           npm --prefix backend run typecheck
           npm --prefix frontend test -- --maxWorkers=2
-          npm --prefix backend test
+          npm --prefix backend test -- --maxWorkers=1
           npm --prefix frontend run build
           npm --prefix backend run build
       - name: Check Edge Function imports
         working-directory: backend
-        run: npm exec --yes --package=deno@2.9.6 -- deno check --no-lock --config supabase/functions/deno.json supabase/functions/api/index.ts
-      - name: Deploy canonical API files
+        run: npm exec --yes --package=deno@2.9.6 -- deno check --no-lock --config supabase/functions/deno.json supabase/functions/api/index.ts supabase/functions/worker/index.ts
+      - name: Deploy canonical API and worker files
         working-directory: backend
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-        run: npx --no-install supabase functions deploy api --project-ref nqfwbqeozmuiuwbiowil --import-map supabase/functions/deno.json --no-verify-jwt --use-api
+        run: |
+          npx --no-install supabase functions deploy api --project-ref nqfwbqeozmuiuwbiowil --import-map supabase/functions/deno.json --no-verify-jwt --use-api
+          npx --no-install supabase functions deploy worker --project-ref nqfwbqeozmuiuwbiowil --import-map supabase/functions/deno.json --no-verify-jwt --use-api
       - name: Verify API health, preflight, and anonymous denial
         run: |
           python - <<'PY'
@@ -101,6 +103,14 @@ jobs:
                               if path == "/bootstrap" and payload.get("error", {}).get("code") != "UNAUTHENTICATED":
                                   raise RuntimeError("Anonymous API access was not denied by the application")
                       print(f"{method} {path}: {expected} verified")
+                  request = urllib.request.Request(base.rsplit("/api/v1", 1)[0] + "/worker", method="POST", data=b"{}", headers={"Content-Type": "application/json"})
+                  try:
+                      urllib.request.urlopen(request, timeout=20)
+                      raise RuntimeError("Anonymous worker request was accepted")
+                  except urllib.error.HTTPError as error:
+                      if error.code != 401 or json.loads(error.read()).get("error") != "UNAUTHORIZED":
+                          raise RuntimeError("Worker did not enforce its secret")
+                  print("POST worker: 401 verified")
                   break
               except (OSError, RuntimeError, ValueError) as error:
                   if attempt == 4:

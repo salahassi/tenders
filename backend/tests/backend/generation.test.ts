@@ -1143,3 +1143,194 @@ it.each([false, true])(
     ).toBeGreaterThan(0);
   },
 );
+
+it("runs every proposal stage through durable verification without a company library or custom template, and produces a draft export", async () => {
+  const { defaultCapabilities } =
+    await import("../../supabase/functions/_shared/modelContract");
+  const { modelEnvironments } =
+    await import("../../supabase/functions/_shared/backend");
+  await f.command("model.routing", { enabled: true, expected_revision: 0 });
+  const connection = await f.command("model.connection.save", {
+    provider: "groq_free",
+    label: "Pipeline fixture",
+    credential_alias: "APP_MODEL_GROQ_KEY",
+    project_ref: "fixture",
+    enabled: true,
+    expected_revision: 0,
+  });
+  const model = await f.command("model.configuration.save", {
+    connection_id: connection.id,
+    label: "Pipeline model",
+    model: "fixture-model",
+    enabled: true,
+    capabilities: defaultCapabilities("groq_free"),
+    expected_revision: 0,
+  });
+  await f.command("model.task_route.save", {
+    task: "default",
+    model_ids: [model.id],
+    inherit_default: false,
+    strategy: "priority",
+    profile: null,
+    expected_revision: 0,
+  });
+  await f.command("model.execution.configure", {
+    enabled: true,
+    expected_revision: 0,
+  });
+  const source = await setup();
+  await f.db.exec("delete from public.templates");
+  const plan = await f.command("proposal.generate", {
+    id: source.opp.id,
+    expected_revision: source.opp.revision,
+  });
+  const env = {
+    models: modelEnvironments((key) =>
+      key === "APP_MODEL_GROQ_KEY"
+        ? "fixture-key"
+        : key.endsWith("_PROJECT")
+          ? "fixture"
+          : undefined,
+    ),
+  } as BackendEnvironment;
+  const internal = async (name: string, args: Record<string, unknown> = {}) => {
+    const entries = Object.entries(args);
+    await f.db.exec("savepoint graph_pipeline_rpc;set local role service_role");
+    try {
+      return (
+        await f.db.query<any>(
+          `select public.${name}(${entries.map(([k], i) => `${k}=>$${i + 1}`).join(",")}) value`,
+          entries.map(([, v]) =>
+            v && typeof v === "object" ? JSON.stringify(v) : v,
+          ),
+        )
+      ).rows[0].value;
+    } catch (e) {
+      await f.db.exec("rollback to savepoint graph_pipeline_rpc");
+      throw databaseError(e as Error);
+    } finally {
+      await f.db.exec("reset role;release savepoint graph_pipeline_rpc");
+    }
+  };
+  let verifications = 0,
+    creations = 0;
+  for (let i = 0; i < 120; i++) {
+    const job = await internal("claim_backend_job_v2");
+    if (!job) break;
+    const ctx = await internal("generation_context", {
+      job_id: job.id,
+      lease: job.lease_token,
+    });
+    if (ctx.step.task !== "advance_plan")
+      for (const ref of taskInput(ctx).manifest)
+        await f.command("content.authorize", {
+          ...ref,
+          provider: "groq_free",
+          attestation: "nonconfidential_nonpersonal",
+        });
+    await processGeneration(
+      { internal } as unknown as Backend,
+      env,
+      job,
+      async (_url, init) => {
+        const prompt = JSON.parse(
+          JSON.parse(String(init?.body)).messages[1].content.split(
+            "\nJSON schema: ",
+          )[0],
+        );
+        let result;
+        if (prompt.task === "verify_grounding") {
+          verifications++;
+          const c = prompt.untrusted_data;
+          result = {
+            checked_candidate_hash: c.candidate_hash,
+            reviewed_all_content: true,
+            processed_content_ids: c.content_units.map((u: any) => u.id),
+            claims: [
+              {
+                id: "fixture-claim",
+                claim: c.content_units[0].text,
+                candidate_quote: c.content_units[0].text,
+                kind: "proposed_solution",
+                status: "supported",
+                source_refs: [],
+                finding:
+                  "Synthetic proposed response, not a claim of experience.",
+              },
+            ],
+            processed_requirement_ids: prompt.required_ids,
+            requirement_checks: prompt.required_ids.map((id: string) => ({
+              requirement_id: id,
+              status: "supported",
+              candidate_quote: c.content_units[0].text,
+              source_refs: [],
+              finding: "Fixture coverage.",
+            })),
+            findings: [],
+          };
+        } else {
+          creations++;
+          result = resultFor(ctx);
+        }
+        return Response.json({
+          choices: [
+            {
+              finish_reason: "stop",
+              message: { content: JSON.stringify(result) },
+            },
+          ],
+          usage: { prompt_tokens: 100, completion_tokens: 50 },
+        });
+      },
+    );
+  }
+  const savedPlan = (
+    await f.db.query<any>(
+      "select status,error_code from public.generation_plans where id=$1",
+      [plan.id],
+    )
+  ).rows[0];
+  expect(savedPlan).toEqual({ status: "completed", error_code: null });
+  expect(verifications).toBe(creations);
+  expect(creations).toBeGreaterThanOrEqual(20);
+  const version = (
+    await f.db.query<any>("select * from public.proposal_versions")
+  ).rows[0];
+  const exportRequest = await f.command("export.prepare", {
+    proposal_version_id: version.id,
+    expected_revision: version.revision,
+    mode: "draft",
+    volume: "combined",
+  });
+  const exported = buildExportModel(exportRequest);
+  expect(exported.blocks.length).toBeGreaterThan(17);
+  expect(
+    (
+      await f.db.query<any>(
+        "select status,count(*)::int n from app_private.model_graph_threads group by status",
+      )
+    ).rows,
+  ).toEqual([{ status: "committed", n: creations }]);
+  expect(
+    (
+      await f.db.query<any>(
+        "select count(*)::int n from public.knowledge_items",
+      )
+    ).rows[0].n,
+  ).toBe(0);
+  expect(
+    (
+      await f.db.query<any>(
+        "select count(*)::int n from public.model_attempts where operation='verify_grounding' and execution_metadata->>'same_model_verification'='true'",
+      )
+    ).rows[0].n,
+  ).toBe(verifications);
+  await expect(
+    f.command("export.prepare", {
+      proposal_version_id: version.id,
+      expected_revision: version.revision,
+      mode: "final",
+      volume: "combined",
+    }),
+  ).rejects.toThrow("APPROVAL_REQUIRED");
+}, 60000);

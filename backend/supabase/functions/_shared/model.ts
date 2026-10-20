@@ -1,5 +1,18 @@
+import { modelAdapters } from "./modelAdapters/index.ts";
 import {
-  sourcePageSchema,
+  defaultCapabilities,
+  resolveProfile,
+  taskJsonSchema,
+  taskOutputSchema,
+  taskRegistry,
+  structuredRequest,
+  normalizeOptionalNulls,
+  type ModelCapabilities,
+  type ExecutionProfile,
+  type TransportResult,
+  type StructuredRequest,
+} from "./modelContract.ts";
+import {
   sourceReadingPrompt,
   sourceSystemInstructions,
   normalizedEvidence,
@@ -32,256 +45,13 @@ export class ModelDeferred extends ModelError {
     super("MODEL_IN_PROGRESS");
   }
 }
-const short = z.string().max(3000),
-  id = z.string().min(1).max(200),
-  ids = z.array(id).max(128),
-  quote = z.object({ id, quote: z.string().min(1).max(3000) }).strict();
-const factor = z
-  .object({
-    rating: z.number().int().min(0).max(4).nullable(),
-    reason: short,
-    notice_evidence: z.array(quote).max(8),
-    company_evidence: z.array(quote).max(8),
-  })
-  .strict();
-const question = z
-  .object({
-    question: short.min(1),
-    blocking_level: z.enum(["generation", "finalization", "advisory"]),
-    requirement_ids: ids,
-  })
-  .strict();
-export const blockSchema = z.discriminatedUnion("type", [
-  z
-    .object({ type: z.literal("paragraph"), text: z.string().max(20000) })
-    .strict(),
-  z.object({ type: z.literal("bullet"), text: z.string().max(10000) }).strict(),
-  z
-    .object({
-      type: z.literal("table"),
-      headers: z.array(z.string().max(500)).min(1).max(10),
-      rows: z.array(z.array(z.string().max(2000)).max(10)).max(50),
-    })
-    .strict(),
-]);
-export const modelSchemas = {
-  inspect_source_page: sourcePageSchema,
-  connection_probe: z.object({ status: z.literal("ready") }).strict(),
-  summarize_review: z
-    .object({
-      processed_review_ids: ids,
-      directives: z
-        .array(
-          z
-            .object({
-              instruction: short.min(1),
-              source_refs: z.array(quote).min(1).max(8),
-            })
-            .strict(),
-        )
-        .max(30),
-      questions: z.array(question).max(30),
-    })
-    .strict(),
-  classify_opportunity: z
-    .object({
-      factors: z
-        .object({
-          capability: factor,
-          scope: factor,
-          sector: factor,
-          prerequisite: factor,
-        })
-        .strict(),
-      scope_decision: z
-        .object({
-          status: z.enum(["in_scope", "out_of_scope", "uncertain"]),
-          reason: short.min(1),
-          notice_evidence: z.array(quote).min(1).max(8),
-          company_evidence: z.array(quote).max(8).optional(),
-          keyword_evidence: z
-            .array(
-              z
-                .object({
-                  kind: z.enum(["include", "exclude"]),
-                  keyword: z.string().min(1).max(100),
-                })
-                .strict(),
-            )
-            .max(24)
-            .optional(),
-        })
-        .strict()
-        .optional(),
-      critical_unknown: z.boolean(),
-      reason_summary: short,
-      missing_information: z.array(short).max(20),
-      risk_flags: z.array(short).max(20),
-      suggested_tags: z.array(z.string().max(200)).max(20),
-    })
-    .strict(),
-  analyze_chunk: z
-    .object({
-      processed_block_ids: ids,
-      requirements: z
-        .array(
-          z
-            .object({
-              text: short.min(1),
-              category: z.enum([
-                "scope",
-                "functional",
-                "technical",
-                "security",
-                "integration",
-                "data",
-                "operations",
-                "deliverables",
-                "timeline",
-                "team",
-                "eligibility",
-                "commercial",
-                "contractual",
-                "submission",
-              ]),
-              mandatory: z.boolean(),
-              source_refs: z.array(quote).min(1).max(8),
-              interpretation: short,
-              acceptance_evidence: short,
-              owner_question: short.nullable(),
-            })
-            .strict(),
-        )
-        .max(100),
-      questions: z.array(question).max(30),
-      separate_volumes: z.boolean(),
-      summary: short,
-    })
-    .strict(),
-  plan_proposal: z
-    .object({
-      processed_requirement_ids: ids,
-      sections: z
-        .array(
-          z
-            .object({
-              key: z.string().regex(/^[a-z0-9_-]{1,100}$/),
-              title: z.string().min(1).max(1000),
-              purpose: short,
-              volume: z.enum(["technical", "financial", "shared"]),
-              requirement_ids: ids,
-            })
-            .strict(),
-        )
-        .min(1)
-        .max(30),
-      questions: z.array(question).max(30),
-    })
-    .strict(),
-  draft_section: z
-    .object({
-      key: id,
-      title: z.string().min(1).max(1000),
-      content_blocks: z.array(blockSchema).min(1).max(100),
-      requirement_ids: ids,
-      evidence_refs: z.array(quote).max(100),
-      company_claims: z
-        .array(
-          z
-            .object({ claim: short, source_id: id, quote: short.min(1) })
-            .strict(),
-        )
-        .max(50),
-      assumptions: z.array(short).max(50),
-      questions: z.array(question).max(50),
-    })
-    .strict(),
-  plan_commercial: z
-    .object({
-      lines: z
-        .array(
-          z
-            .object({
-              description: short,
-              quantity: z
-                .string()
-                .regex(/^\d{1,9}(\.\d{1,6})?$/)
-                .nullable(),
-              unit: z.string().max(100),
-              rate_id: id.nullable(),
-              period_count: z
-                .string()
-                .regex(/^\d{1,6}(\.\d{1,6})?$/)
-                .nullable(),
-              included_in_base: z.boolean(),
-              charge_group: z.enum(["one_time", "recurring", "optional"]),
-              tax_category: z.string().max(100),
-              requirement_ids: ids,
-              section_ids: ids,
-              deliverable: short,
-              basis: short,
-            })
-            .strict(),
-        )
-        .max(100),
-      tasks: z
-        .array(
-          z
-            .object({
-              key: id,
-              title: short,
-              predecessors: ids,
-              role: short,
-              effort_days: z.string().nullable(),
-              allocation: z.string().nullable(),
-              duration_days: z.string().nullable(),
-              basis: short,
-            })
-            .strict(),
-        )
-        .max(100),
-      questions: z.array(question).max(50),
-    })
-    .strict(),
-  review_proposal: z
-    .object({
-      processed_requirement_ids: ids,
-      responses: z
-        .array(
-          z
-            .object({
-              requirement_id: id,
-              status: z.enum([
-                "answered",
-                "partial",
-                "missing",
-                "clarification_required",
-                "not_applicable_approved",
-              ]),
-              section_ids: ids,
-              evidence_refs: z.array(quote).max(20),
-              rationale: short,
-            })
-            .strict(),
-        )
-        .max(50),
-      findings: z
-        .array(
-          z
-            .object({
-              severity: z.enum(["blocking", "advisory"]),
-              category: short,
-              detail: short,
-              section_ids: ids,
-              requirement_ids: ids,
-            })
-            .strict(),
-        )
-        .max(50),
-    })
-    .strict(),
-} as const;
-export type ModelTask = keyof typeof modelSchemas;
+export { modelSchemas, blockSchema, type ModelTask } from "./modelSchemas.ts";
+import {
+  modelSchemas,
+  primaryModelTasks,
+  type PrimaryModelTask,
+  type ModelTask,
+} from "./modelSchemas.ts";
 export type Evidence = {
   id: string;
   text: string;
@@ -294,6 +64,12 @@ export type Reference = {
   content_hash: string;
 };
 export type ModelConfiguration = {
+  capabilities?: ModelCapabilities;
+  profile?: ExecutionProfile;
+  connection_id?: string;
+  model_config_id?: string;
+  route_revision?: number;
+  credential_alias?: string;
   retry_after?: string;
   automatic?: boolean;
   enabled: boolean;
@@ -311,6 +87,8 @@ export type ModelConfiguration = {
 export type ModelPool = {
   providers: ModelConfiguration[];
   routing_mode?: "round_robin";
+  executor_version?: number;
+  pending_model_config_id?: string | null;
 };
 export type ModelEnvironment = {
   provider: string;
@@ -337,6 +115,8 @@ export const caps: Record<ModelTask, number> = {
   draft_section: 8192,
   plan_commercial: 8192,
   review_proposal: 8192,
+  verify_grounding: 16384,
+  repair_result: 16384,
 };
 export const writingGuide = {
   en: "Write clear professional American English. Explain scope, assumptions, dependencies and validation. Use native headings and concise connected prose. Define abbreviations at first use. Never invent a customer, certification, available employee, registration, rate or commitment.",
@@ -347,6 +127,35 @@ export const blockedContent = (value: string) =>
   /(?:\bconfidential\b|strictly private|سري للغاية|سرية|password\s*[:=]|api[_ -]?key\s*[:=]|[\w.+-]+@[\w.-]+\.[a-z]{2,}|-----BEGIN .*PRIVATE KEY|\b(?:sk|sb_secret)_[a-z0-9]{12,})/i.test(
     value,
   );
+export function taskSystemInstructions(task: ModelTask) {
+  if (task === "inspect_source_page") return sourceSystemInstructions;
+  if (task === "verify_grounding")
+    return (
+      systemInstructions +
+      `
+Independently inspect ALL candidate text, including tables, introductions and undeclared claims.
+Do not trust the writer's claim list or its conclusions. List every factual assertion with its exact candidate_quote.
+Check dates, amounts, currencies, negation, mandatory versus optional terms, superseding addenda and contradictions.
+Company expertise, staffing, projects, certifications and available capacity need verified Company Knowledge evidence.
+A proposed solution or explicitly conditional assumption is not a claim of existing company experience.
+Missing company information is not evidence of failure and is allowed as an explicit question in a useful draft.
+For each supplied requirement, determine whether the candidate preserves and addresses it or explicitly identifies the missing input.
+Return supported, contradicted or insufficient with concise cited findings. Your agreement is not evidence.
+Return processed_content_ids containing every supplied content unit exactly once.
+Use the supplied candidate_hash unchanged. Candidate quotations must occur in candidate_text.
+Never supply private reasoning traces. Return only the verification report.`
+    );
+  if (task === "repair_result")
+    return (
+      systemInstructions +
+      `
+Correct the original task's candidate against the specific verification findings and original evidence.
+Preserve valid substantive content and all required IDs. Never invent missing facts to remove a finding.
+Unsupported company facts become explicit questions or conditional proposed work.
+Return the original target_task and the corrected result using that task's complete schema.`
+    );
+  return systemInstructions;
+}
 export async function sha256(value: string) {
   return Array.from(
     new Uint8Array(
@@ -423,6 +232,55 @@ export function validateModelResult(
   requiredIds: string[] = [],
 ): any {
   const result = modelSchemas[task].parse(value) as any;
+  if (task === "repair_result") {
+    validateModelResult(
+      result.target_task,
+      result.result,
+      evidence,
+      requiredIds,
+    );
+  }
+  if (task === "verify_grounding") {
+    if (
+      !sameIds(result.processed_requirement_ids, requiredIds) ||
+      !sameIds(
+        result.requirement_checks.map((r: any) => r.requirement_id),
+        requiredIds,
+      ) ||
+      new Set(result.claims.map((claim: any) => claim.id)).size !==
+        result.claims.length
+    )
+      throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+    for (const claim of result.claims) {
+      validateQuotes(
+        claim.source_refs,
+        evidence,
+        claim.kind === "company_fact" && claim.status === "supported"
+          ? "company"
+          : undefined,
+      );
+      if (
+        claim.status === "supported" &&
+        ["company_fact", "tender_fact", "commercial_commitment"].includes(
+          claim.kind,
+        ) &&
+        !claim.source_refs.length
+      )
+        throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+    }
+    for (const requirement of result.requirement_checks)
+      validateQuotes(requirement.source_refs, evidence);
+    if (
+      result.findings.some(
+        (f: any) =>
+          f.claim_ids.some(
+            (id: string) => !result.claims.some((c: any) => c.id === id),
+          ) ||
+          f.requirement_ids.some((id: string) => !requiredIds.includes(id)),
+      )
+    )
+      throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+  }
   if (task === "inspect_source_page") {
     try {
       validateSourcePageResult(result, evidence);
@@ -581,13 +439,21 @@ export type AttemptMetadata = {
 };
 export type ModelRoundProgress = {
   input_hash: string;
-  remaining: Pick<ModelConfiguration, "provider" | "model" | "project_ref">[];
+  remaining: Pick<
+    ModelConfiguration,
+    "provider" | "model" | "project_ref" | "connection_id" | "model_config_id"
+  >[];
   output_error: string | null;
   retry_windows: (string | null)[];
 };
 export interface Ledger {
   invocationStartedAt?: number;
   invocationBudgetMs?: number;
+  requestPrepared?(request: StructuredRequest): Promise<void>;
+  environment?(config: ModelConfiguration): ModelEnvironment | undefined;
+  beforeSend?(): Promise<void>;
+  candidateReceived?(usageId: string): Promise<void>;
+  validateCandidate?(result: unknown): void;
   loadRound?(inputHash: string): Promise<ModelRoundProgress | null>;
   saveRound?(
     progress: ModelRoundProgress | null,
@@ -598,6 +464,7 @@ export interface Ledger {
     model: string,
     project: string,
     task: ModelTask,
+    config?: ModelConfiguration,
   ): Promise<string>;
   endAttempt?(
     id: string,
@@ -610,20 +477,23 @@ export interface Ledger {
     provider: ModelProviderId,
     code: string,
     sent: boolean,
+    config?: ModelConfiguration,
   ): Promise<void>;
-  preflight(manifest: Reference[]): Promise<ModelPool>;
+  preflight(manifest: Reference[], task?: ModelTask): Promise<ModelPool>;
   reserve(
     input: number,
     output: number,
     hash: string,
     manifest: Reference[],
     provider: ModelProviderId,
+    config?: ModelConfiguration,
   ): Promise<string>;
   settle(id: string, usage: Usage, error?: string): Promise<void>;
   resume?(
     provider: ModelProviderId,
     hash: string,
     manifest: Reference[],
+    config?: ModelConfiguration,
   ): Promise<{
     id: string;
     remote_request_id: string;
@@ -660,6 +530,8 @@ const automaticFailoverErrors = new Set([
   "PROVIDER_REQUEST_REJECTED",
   "MODEL_RESULT_EXPIRED",
   "USAGE_REVIEW_REQUIRED",
+  "MODEL_REFUSED",
+  "MODEL_CAPABILITY_UNSUPPORTED",
   "MODEL_OUTPUT_INVALID",
   "MODEL_OUTPUT_TRUNCATED",
   "MODEL_OUTPUT_TOO_LARGE",
@@ -706,6 +578,7 @@ export class FreeModelProvider {
     private fetcher: typeof fetch = fetch,
     private requestTimeout = 90000,
     private streamResponses = false,
+    private configuration?: ModelConfiguration,
   ) {}
   private async diagnoseRejectedRequest(response: Response) {
     // Emit only fixed diagnostic labels, never provider text, credentials or prompts.
@@ -959,115 +832,78 @@ export class FreeModelProvider {
       clearTimeout(idleTimer);
     }
   }
+  private adapter() {
+    const adapter = modelAdapters[this.env.provider as ModelProviderId];
+    if (!adapter) throw new ModelError("PROVIDER_NOT_ALLOWED");
+    return adapter;
+  }
+  private requestInput(task: ModelTask, prompt: string, schema: unknown) {
+    const capabilities =
+      this.configuration?.capabilities ??
+      defaultCapabilities(this.env.provider as ModelProviderId);
+    const profile = this.configuration?.profile
+      ? resolveProfile(task, capabilities, this.configuration.profile)
+      : {
+          ...taskRegistry[task].profile,
+          max_output_tokens: caps[task],
+          reasoning: "none" as const,
+        };
+    return {
+      task,
+      prompt,
+      schema: schema as Record<string, any>,
+      system: taskSystemInstructions(task),
+      capabilities,
+      profile,
+      stream: this.streamResponses,
+    };
+  }
   async startBackground(task: ModelTask, prompt: string, schema: unknown) {
-    if (this.env.provider === "openai") {
-      return this.post(
-        "https://api.openai.com/v1/responses",
-        {
-          model: this.env.model,
-          instructions:
-            task === "inspect_source_page"
-              ? sourceSystemInstructions
-              : systemInstructions,
-          input: prompt + "\nJSON schema: " + JSON.stringify(schema),
-          max_output_tokens: caps[task],
-          text: { format: { type: "json_object" } },
-          background: true,
-          store: true,
-          stream: false,
-        },
-        { Authorization: `Bearer ${this.env.key}` },
-      );
-    }
-    return this.post(
-      "https://generativelanguage.googleapis.com/v1beta/interactions",
-      {
-        model: this.env.model,
-        system_instruction:
-          task === "inspect_source_page"
-            ? sourceSystemInstructions
-            : systemInstructions,
-        input: prompt,
-        background: true,
-        store: true,
-        stream: false,
-        generation_config: {
-          max_output_tokens: caps[task],
-          ...(/^gemini-[34]/.test(this.env.model)
-            ? {
-                thinking_level:
-                  task === "draft_section" || task === "review_proposal"
-                    ? "medium"
-                    : "low",
-              }
-            : {}),
-        },
-        response_format: {
-          type: "text",
-          mime_type: "application/json",
-          schema,
-        },
-      },
-      { "x-goog-api-key": this.env.key, "Api-Revision": "2026-05-20" },
-      this.requestTimeout,
+    const request = this.adapter().prepare(
+      this.env,
+      this.requestInput(task, prompt, schema),
+      true,
     );
+    return this.post(request.url, request.body, request.headers);
   }
   async pollBackground(id: string) {
-    if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(id))
-      throw new ModelError("PROVIDER_REQUEST_INVALID");
+    const adapter = this.adapter();
+    if (!adapter.poll) throw new ModelError("MODEL_CAPABILITY_UNSUPPORTED");
+    const request = adapter.poll(this.env, id);
     return this.post(
-      this.env.provider === "openai"
-        ? `https://api.openai.com/v1/responses/${encodeURIComponent(id)}`
-        : `https://generativelanguage.googleapis.com/v1beta/interactions/${encodeURIComponent(id)}`,
-      undefined,
-      this.env.provider === "openai"
-        ? { Authorization: `Bearer ${this.env.key}` }
-        : { "x-goog-api-key": this.env.key, "Api-Revision": "2026-05-20" },
+      request.url,
+      request.body,
+      request.headers,
       20000,
-      "GET",
+      request.method,
     );
   }
   async deleteBackground(id: string) {
-    if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,199}$/.test(id))
-      throw new ModelError("PROVIDER_REQUEST_INVALID");
+    const adapter = this.adapter();
+    if (!adapter.poll) throw new ModelError("MODEL_CAPABILITY_UNSUPPORTED");
+    const request = adapter.poll(this.env, id, true);
     await this.post(
-      this.env.provider === "openai"
-        ? `https://api.openai.com/v1/responses/${encodeURIComponent(id)}`
-        : `https://generativelanguage.googleapis.com/v1beta/interactions/${encodeURIComponent(id)}`,
-      undefined,
-      this.env.provider === "openai"
-        ? { Authorization: `Bearer ${this.env.key}` }
-        : { "x-goog-api-key": this.env.key, "Api-Revision": "2026-05-20" },
+      request.url,
+      request.body,
+      request.headers,
       20000,
-      "DELETE",
+      request.method,
     );
   }
-  backgroundResult(result: any): {
+  private candidate(result: TransportResult): {
     text: string;
     usage: Usage;
     complete: boolean;
+    kind?: TransportResult["kind"];
   } {
-    if (this.env.provider === "openai") return this.openAiResult(result);
-    const usage = result.usage || {},
-      input = validCount(usage.total_input_tokens),
-      output = validCount(usage.total_output_tokens),
-      thinking = validCount(usage.total_thought_tokens);
     return {
-      text: (result.steps || [])
-        .filter((s: any) => s.type === "model_output")
-        .flatMap((s: any) => s.content || [])
-        .filter((c: any) => c.type === "text")
-        .map((c: any) => c.text)
-        .join(""),
-      usage: {
-        input,
-        output: output === null || thinking === null ? null : output + thinking,
-        thinking,
-      },
-      complete:
-        result.status === "completed" &&
-        !(result.steps || []).some((s: any) => s.type === "function_call"),
+      ...result,
+      text: result.kind === "completed_candidate" ? result.text : "",
+      complete: result.kind === "completed_candidate" && result.complete,
     };
+  }
+  backgroundResult(result: any) {
+    return this.candidate(this.adapter().normalize(result, true));
   }
   private conservativeTokenEstimate(prompt: string, schema: unknown) {
     const full =
@@ -1097,283 +933,18 @@ export class FreeModelProvider {
       throw new ModelError("TOKEN_COUNT_UNAVAILABLE");
     return response.totalTokens + 256;
   }
-  private async openAiChatJson(
-    task: ModelTask,
-    prompt: string,
-    schema: unknown,
-    url: string,
-    headers: Record<string, string>,
-    extraBody: Record<string, unknown> = {},
-  ) {
-    const result = await this.post(
-      url,
-      {
-        model: this.env.model,
-        messages: [
-          {
-            role: "system",
-            content:
-              task === "inspect_source_page"
-                ? sourceSystemInstructions
-                : systemInstructions,
-          },
-          {
-            role: "user",
-            content: prompt + "\nJSON schema: " + JSON.stringify(schema),
-          },
-        ],
-        max_tokens: caps[task],
-        stream: this.streamResponses,
-        response_format: { type: "json_object" },
-        ...extraBody,
-      },
-      headers,
+  async generate(task: ModelTask, prompt: string, schema: unknown) {
+    const adapter = this.adapter();
+    const request = adapter.prepare(
+      this.env,
+      this.requestInput(task, prompt, schema),
+      false,
     );
-    const usage = result.usage || {},
-      choice = result.choices?.[0];
-    return {
-      text: choice?.message?.content || "",
-      usage: {
-        input: validCount(usage.prompt_tokens),
-        output: validCount(usage.completion_tokens),
-        thinking: validCount(usage.completion_tokens_details?.reasoning_tokens),
-      },
-      complete:
-        choice?.finish_reason === "stop" && !choice.message?.tool_calls?.length,
-    };
-  }
-  private openAiResult(result: any): {
-    text: string;
-    usage: Usage;
-    complete: boolean;
-  } {
-    const output = Array.isArray(result.output) ? result.output : [];
-    const parts = output
-      .filter((item: any) => item.type === "message")
-      .flatMap((item: any) =>
-        Array.isArray(item.content) ? item.content : [],
-      );
-    return {
-      text: parts
-        .filter(
-          (part: any) =>
-            part.type === "output_text" && typeof part.text === "string",
-        )
-        .map((part: any) => part.text)
-        .join(""),
-      usage: {
-        input: validCount(result.usage?.input_tokens),
-        output: validCount(result.usage?.output_tokens),
-        thinking: validCount(
-          result.usage?.output_tokens_details?.reasoning_tokens,
-        ),
-      },
-      complete:
-        result.status === "completed" &&
-        !result.error &&
-        output.every(
-          (item: any) => item.type === "message" || item.type === "reasoning",
-        ) &&
-        parts.length > 0 &&
-        parts.every((part: any) => part.type === "output_text"),
-    };
-  }
-  async generate(
-    task: ModelTask,
-    prompt: string,
-    schema: unknown,
-  ): Promise<{ text: string; usage: Usage; complete: boolean }> {
-    if (this.env.provider === "openai") {
-      const result = await this.post(
-        "https://api.openai.com/v1/responses",
-        {
-          model: this.env.model,
-          instructions:
-            task === "inspect_source_page"
-              ? sourceSystemInstructions
-              : systemInstructions,
-          input: prompt + "\nJSON schema: " + JSON.stringify(schema),
-          max_output_tokens: caps[task],
-          text: { format: { type: "json_object" } },
-          store: false,
-          stream: false,
-        },
-        { Authorization: `Bearer ${this.env.key}` },
-      );
-      return this.openAiResult(result);
-    }
-    if (this.env.provider === "anthropic") {
-      const result = await this.post(
-        "https://api.anthropic.com/v1/messages",
-        {
-          model: this.env.model,
-          system:
-            task === "inspect_source_page"
-              ? sourceSystemInstructions
-              : systemInstructions,
-          messages: [
-            {
-              role: "user",
-              content: prompt + "\nJSON schema: " + JSON.stringify(schema),
-            },
-          ],
-          max_tokens: caps[task],
-          stream: this.streamResponses,
-        },
-        { "x-api-key": this.env.key, "anthropic-version": "2023-06-01" },
-      );
-      const parts = Array.isArray(result.content) ? result.content : [];
-      const usage = result.usage || {};
-      const inputParts = [
-        validCount(usage.input_tokens),
-        usage.cache_creation_input_tokens == null
-          ? 0
-          : validCount(usage.cache_creation_input_tokens),
-        usage.cache_read_input_tokens == null
-          ? 0
-          : validCount(usage.cache_read_input_tokens),
-      ];
-      return {
-        text: parts
-          .filter(
-            (part: any) =>
-              part.type === "text" && typeof part.text === "string",
-          )
-          .map((part: any) => part.text)
-          .join(""),
-        usage: {
-          input: inputParts.every((v) => v !== null)
-            ? inputParts.reduce<number>((sum, v) => sum + v!, 0)
-            : null,
-          output: validCount(usage.output_tokens),
-          // Anthropic includes thinking in output_tokens without a separate measured count.
-          thinking: null,
-        },
-        complete:
-          result.stop_reason === "end_turn" &&
-          parts.length > 0 &&
-          parts.every((part: any) =>
-            ["text", "thinking", "redacted_thinking"].includes(part.type),
-          ),
-      };
-    }
-    if (this.env.provider === "gemini_free") {
-      const result = await this.post(
-        `https://generativelanguage.googleapis.com/v1beta/models/${this.env.model}:generateContent`,
-        {
-          systemInstruction: {
-            parts: [
-              {
-                text:
-                  task === "inspect_source_page"
-                    ? sourceSystemInstructions
-                    : systemInstructions,
-              },
-            ],
-          },
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: {
-            candidateCount: 1,
-            maxOutputTokens: caps[task],
-            responseMimeType: "application/json",
-            responseJsonSchema: schema,
-            ...(/^gemini-[34]/.test(this.env.model)
-              ? {
-                  thinkingConfig: {
-                    thinkingLevel:
-                      task === "draft_section" || task === "review_proposal"
-                        ? "MEDIUM"
-                        : "LOW",
-                  },
-                }
-              : {}),
-          },
-        },
-        { "x-goog-api-key": this.env.key },
-      );
-      const usage = result.usageMetadata || {},
-        input = validCount(usage.promptTokenCount),
-        output = validCount(usage.candidatesTokenCount),
-        total = validCount(usage.totalTokenCount),
-        reportedThinking = validCount(usage.thoughtsTokenCount),
-        // No tools are configured. Infer omitted thought counts only from measured totals.
-        thinking =
-          reportedThinking ??
-          (input !== null &&
-          output !== null &&
-          total !== null &&
-          total >= input + output
-            ? total - input - output
-            : null),
-        candidate = result.candidates?.[0],
-        parts = candidate?.content?.parts || [];
-      const text = parts
-        .filter((c: any) => typeof c.text === "string" && !c.thought)
-        .map((c: any) => c.text)
-        .join("");
-      return {
-        text,
-        usage: {
-          input,
-          output:
-            output === null || thinking === null ? null : output + thinking,
-          thinking,
-        },
-        complete:
-          result.candidates?.length === 1 &&
-          candidate.finishReason === "STOP" &&
-          !parts.some((p: any) => p.functionCall || p.executableCode),
-      };
-    }
-    if (this.env.provider === "qwen_free") {
-      return this.openAiChatJson(
-        task,
-        prompt,
-        schema,
-        `https://${this.env.projectRef}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/chat/completions`,
-        { Authorization: `Bearer ${this.env.key}` },
-        { enable_thinking: false },
-      );
-    }
-    if (this.env.provider === "groq_free") {
-      return this.openAiChatJson(
-        task,
-        prompt,
-        schema,
-        "https://api.groq.com/openai/v1/chat/completions",
-        { Authorization: `Bearer ${this.env.key}` },
-      );
-    }
-    if (this.env.provider === "zai_free") {
-      return this.openAiChatJson(
-        task,
-        prompt,
-        schema,
-        "https://api.z.ai/api/paas/v4/chat/completions",
-        { Authorization: `Bearer ${this.env.key}` },
-      );
-    }
-    if (this.env.provider === "mistral_free") {
-      return this.openAiChatJson(
-        task,
-        prompt,
-        schema,
-        "https://api.mistral.ai/v1/chat/completions",
-        { Authorization: `Bearer ${this.env.key}` },
-      );
-    }
-    if (this.env.provider === "cloudflare_free") {
-      return this.openAiChatJson(
-        task,
-        prompt,
-        schema,
-        `https://api.cloudflare.com/client/v4/accounts/${this.env.projectRef}/ai/v1/chat/completions`,
-        { Authorization: `Bearer ${this.env.key}` },
-      );
-    }
-    throw new ModelError("PROVIDER_NOT_ALLOWED");
+    const result = await this.post(request.url, request.body, request.headers);
+    return this.candidate(adapter.normalize(result, false));
   }
 }
+
 const validCount = (v: unknown): number | null =>
   typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null;
 /** Try each configured provider once per round; retain per-provider outcomes. */
@@ -1390,17 +961,20 @@ export async function executeModel(
   fetcher: typeof fetch = fetch,
 ) {
   const invocationStarted = ledger.invocationStartedAt ?? Date.now();
-  const pool = await ledger.preflight(manifest);
+  const targetTask =
+    task === "repair_result"
+      ? (context as { target_task?: PrimaryModelTask })?.target_task
+      : undefined;
+  if (task === "repair_result" && !primaryModelTasks.includes(targetTask!))
+    throw new ModelError("MODEL_REQUEST_INVALID");
+  const pool = await ledger.preflight(manifest, task);
   const automatic = pool.routing_mode === "round_robin";
   const prompt =
     task === "inspect_source_page"
       ? sourceReadingPrompt(context, evidence, repair)
       : JSON.stringify({
           task,
-          prompt_version:
-            task === "classify_opportunity"
-              ? "tenderdesk-v6-configurable-service-scope"
-              : "tenderdesk-v3",
+          prompt_version: taskRegistry[task].promptVersion,
           writing_guide: writingGuide[language],
           repair_instruction: repair
             ? "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
@@ -1410,8 +984,16 @@ export async function executeModel(
           evidence,
         });
   if (blockedContent(prompt)) throw new ModelError("DATA_POLICY_BLOCKED");
-  const schema = z.toJSONSchema(modelSchemas[task]);
+  const schema = taskJsonSchema(task, targetTask);
   const inputHash = await sha256(prompt);
+  const evidenceManifest = await Promise.all(
+    evidence.map(async (item) => ({
+      id: item.id,
+      kind: item.kind,
+      verified: item.verified,
+      hash: await sha256(item.text),
+    })),
+  );
   const roundStarted = Date.now();
   // Every generation gets the full 90 seconds. A slow failover continues in a
   // fresh worker invocation rather than dividing the timeout among providers
@@ -1423,7 +1005,9 @@ export async function executeModel(
           (current) =>
             current.provider === saved.provider &&
             current.model === saved.model &&
-            current.project_ref === saved.project_ref,
+            current.project_ref === saved.project_ref &&
+            current.connection_id === saved.connection_id &&
+            current.model_config_id === saved.model_config_id,
         ),
       )
     : pool.providers;
@@ -1432,6 +1016,7 @@ export async function executeModel(
     ? new ModelError(savedRound.output_error)
     : null;
   const retryWindows: (string | null)[] = savedRound?.retry_windows ?? [];
+  const accountWaits = new Map<string, string | null>();
   let roundSaved = Boolean(savedRound),
     deferred = false;
   const checkpointRound = async (index: number, releaseJob: boolean) => {
@@ -1441,11 +1026,20 @@ export async function executeModel(
         input_hash: inputHash,
         remaining: providers
           .slice(index)
-          .map(({ provider, model, project_ref }) => ({
-            provider,
-            model,
-            project_ref,
-          })),
+          .map(
+            ({
+              provider,
+              model,
+              project_ref,
+              connection_id,
+              model_config_id,
+            }) => ({
+              provider,
+              model,
+              project_ref,
+              ...(connection_id ? { connection_id, model_config_id } : {}),
+            }),
+          ),
         output_error: outputError?.code ?? null,
         retry_windows: retryWindows,
       },
@@ -1455,7 +1049,7 @@ export async function executeModel(
   };
   try {
     for (const [index, config] of providers.entries()) {
-      const env = environments[config.provider];
+      const env = ledger.environment?.(config) ?? environments[config.provider];
       if (
         automatic &&
         ledger.saveRound &&
@@ -1474,13 +1068,19 @@ export async function executeModel(
         config.model,
         config.project_ref,
         task,
+        config,
       );
       if (!env || !tryAvailable(config, env)) {
         lastError = new ModelError("MODEL_NOT_CONFIGURED");
         if (attemptId)
           await ledger.endAttempt?.(attemptId, lastError.code, false, null, {});
         if (automatic)
-          await ledger.attempt?.(config.provider, lastError.code, false);
+          await ledger.attempt?.(
+            config.provider,
+            lastError.code,
+            false,
+            config,
+          );
         continue;
       }
       const provider = new FreeModelProvider(
@@ -1495,6 +1095,7 @@ export async function executeModel(
           ),
         ),
         (ledger.invocationBudgetMs ?? 110000) > 110000,
+        config,
       );
       let reservation: string | null = null;
       let settled = false;
@@ -1513,15 +1114,55 @@ export async function executeModel(
           );
       };
       try {
-        let result: { text: string; usage: Usage; complete: boolean };
+        let result: {
+          text: string;
+          usage: Usage;
+          complete: boolean;
+          kind?: TransportResult["kind"];
+        };
+        const capabilities =
+          config.capabilities ?? defaultCapabilities(config.provider);
+        const profile = config.profile
+          ? resolveProfile(task, capabilities, config.profile)
+          : {
+              ...taskRegistry[task].profile,
+              max_output_tokens: caps[task],
+              reasoning: "none" as const,
+            };
+        const request = structuredRequest({
+          task,
+          targetTask,
+          inputHash,
+          language,
+          prompt,
+          evidence: evidenceManifest,
+          requiredIds,
+          target: {
+            provider: config.provider,
+            model: config.model,
+            project: config.project_ref,
+            connectionId: config.connection_id,
+            modelId: config.model_config_id,
+          },
+          routeRevision: config.route_revision ?? null,
+          profile,
+          capabilities,
+        });
+        await ledger.requestPrepared?.(request);
         const background =
-          ["gemini_free", "openai"].includes(config.provider) &&
+          capabilities.background &&
           ledger.resume &&
           ledger.checkpoint &&
           ledger.defer;
         const pending = background
-          ? await ledger.resume!(config.provider, inputHash, manifest)
+          ? await ledger.resume!(config.provider, inputHash, manifest, config)
           : null;
+        const accountKey = `${config.provider}:${config.project_ref}`;
+        if (!pending && config.connection_id && accountWaits.has(accountKey))
+          throw new ModelError(
+            "PROVIDER_QUOTA_WAIT",
+            accountWaits.get(accountKey),
+          );
         // A generation cooldown must not prevent polling an already accepted request.
         if (
           !pending &&
@@ -1536,6 +1177,7 @@ export async function executeModel(
           remoteId = pending.remote_request_id;
           settled = pending.state === "settled";
         } else {
+          await ledger.beforeSend?.();
           // Automatic routing does not call a token-count endpoint or enforce a
           // daily token budget. This bounded local estimate is ledger metadata;
           // the provider reports actual usage and accepts/rejects its own context.
@@ -1555,10 +1197,11 @@ export async function executeModel(
             throw new ModelError("MODEL_CONTEXT_TOO_LARGE");
           reservation = await ledger.reserve(
             tokens,
-            caps[task],
+            profile.max_output_tokens,
             inputHash,
             manifest,
             config.provider,
+            config,
           );
         }
         if (background) {
@@ -1617,16 +1260,23 @@ export async function executeModel(
         } else result = await provider.generate(task, prompt, schema);
         await ledger.settle(reservation, result.usage);
         settled = true;
+        if (result.kind === "completed_candidate" || result.kind === undefined)
+          await ledger.candidateReceived?.(reservation);
         if (
           !automatic &&
           (result.usage.input === null || result.usage.output === null)
         )
           throw new ModelError("USAGE_UNKNOWN");
+        if (result.kind === "refused") throw new ModelError("MODEL_REFUSED");
+        if (result.kind === "cancelled")
+          throw new ModelError("MODEL_CANCELLED");
         if (!result.complete) throw new ModelError("MODEL_OUTPUT_TRUNCATED");
         try {
           const validated = validateModelResult(
             task,
-            JSON.parse(result.text),
+            taskOutputSchema(task, targetTask).parse(
+              normalizeOptionalNulls(JSON.parse(result.text), schema),
+            ),
             evidence,
             requiredIds,
           );
@@ -1644,13 +1294,14 @@ export async function executeModel(
           )?.scope_policy;
           if (task === "classify_opportunity" && scopePolicy)
             validateScopeDecision(validated, scopePolicy);
+          ledger.validateCandidate?.(validated);
           if (remoteId) {
             const completedId = remoteId;
             ledger.cleanup = () => provider.deleteBackground(completedId);
           }
           await finishAttempt("SUCCEEDED");
           if (automatic)
-            await ledger.attempt?.(config.provider, "SUCCEEDED", true);
+            await ledger.attempt?.(config.provider, "SUCCEEDED", true, config);
           return validated;
         } catch (error) {
           provider.telemetry.provider_error_reason =
@@ -1681,6 +1332,11 @@ export async function executeModel(
             code,
           );
         lastError = error instanceof ModelError ? error : new ModelError(code);
+        if (config.connection_id && provider.telemetry.http_status === 429)
+          accountWaits.set(
+            `${config.provider}:${config.project_ref}`,
+            lastError.retryAfter,
+          );
         retryWindows.push(lastError.retryAfter);
         await finishAttempt(code, lastError.retryAfter);
         // A measured invalid response needs the persisted, bounded repair path.
@@ -1689,7 +1345,12 @@ export async function executeModel(
         if (settled && repairableOutputErrors.has(code))
           outputError ??= lastError;
         if (automatic) {
-          await ledger.attempt?.(config.provider, code, Boolean(reservation));
+          await ledger.attempt?.(
+            config.provider,
+            code,
+            Boolean(reservation),
+            config,
+          );
           if (automaticFailoverErrors.has(code)) continue;
           throw lastError;
         }

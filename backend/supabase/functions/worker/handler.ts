@@ -63,7 +63,12 @@ export function createWorkerHandler(
         );
         if (abandoned) {
           const providerId = abandoned.provider || "gemini_free";
-          const model = env.models[providerId as keyof typeof env.models];
+          const model = abandoned.connection_id
+            ? backend.resolveModelEnvironment({
+                ...abandoned,
+                provider: providerId,
+              })
+            : env.models[providerId as keyof typeof env.models];
           if (
             model?.key &&
             model.model === abandoned.model &&

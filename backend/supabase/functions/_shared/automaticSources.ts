@@ -1,13 +1,8 @@
 import { load } from "cheerio";
 import { type Backend, type BackendEnvironment } from "./backend.ts";
 import { canonical, CollectionError, inertText, item } from "./collector.ts";
-import {
-  executeModel,
-  ModelDeferred,
-  ModelError,
-  type Evidence,
-} from "./model.ts";
-import { modelLedger } from "./modelLedger.ts";
+import { ModelDeferred, ModelError, type Evidence } from "./model.ts";
+import { executeGuardedModel } from "./modelGraph.ts";
 import {
   fetchPublicNotice,
   readPublicPdf,
@@ -130,7 +125,6 @@ export async function processAutomaticSource(
   fetcher: typeof fetch = fetch,
 ) {
   const identity = { job_id: job.id, lease: job.lease_token };
-  let ledger;
   try {
     const ctx = await backend.internal("auto_source_context", identity);
     let state = ctx.state;
@@ -149,35 +143,32 @@ export async function processAutomaticSource(
         verified: false,
       })),
     ];
-    ledger = modelLedger(
+    const outcome = await executeGuardedModel({
       backend,
-      job as any,
-      `source:${job.id}:page:${state.visited_urls.length}`,
-      env.models,
-    );
-    const result = await executeModel(
-      "inspect_source_page",
-      {
+      job: job as any,
+      prefix: `source:${job.id}:page:${state.visited_urls.length}`,
+      task: "inspect_source_page",
+      context: {
         mode: ctx.mode,
         url: page.url,
         links: page.links,
         partial: page.partial,
       },
       evidence,
-      [],
-      [
+      requiredIds: [],
+      manifest: [
         {
           entity_kind: "source_page",
           entity_id: job.id,
           content_hash: state.page_hash,
         },
       ],
-      env.models,
-      ledger,
-      "ar",
-      job.failure_count > 0,
+      environments: env.models,
+      language: "ar",
+      repair: job.failure_count > 0,
       fetcher,
-    );
+    });
+    const result = outcome.result;
     const blockers: Record<string, string> = {
       login_required: "SOURCE_LOGIN_REQUIRED",
       browser_required: "SOURCE_BROWSER_REQUIRED",
@@ -221,16 +212,22 @@ export async function processAutomaticSource(
             return { url: l.url, name: l.text || new URL(l.url).hostname };
           })
         : [];
-    await ledger
+    const saved = await backend.internal(
+      outcome.threadId
+        ? "advance_source_reading_graph"
+        : "advance_source_reading",
+      {
+        ...(outcome.threadId ? { thread_id: outcome.threadId, result } : {}),
+        ...identity,
+        items,
+        candidates,
+        next_url: link(result.follow_link_id)?.url || null,
+        warnings: page.partial ? ["SOURCE_PAGE_PARTIAL"] : [],
+      },
+    );
+    await outcome
       .cleanup?.()
       .catch(() => console.warn("provider_request_cleanup_pending"));
-    const saved = await backend.internal("advance_source_reading", {
-      ...identity,
-      items,
-      candidates,
-      next_url: link(result.follow_link_id)?.url || null,
-      warnings: page.partial ? ["SOURCE_PAGE_PARTIAL"] : [],
-    });
     if (!saved.continued) await backend.internal("schedule_assessment_refresh");
     return saved;
   } catch (error) {

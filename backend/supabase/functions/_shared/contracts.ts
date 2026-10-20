@@ -1,4 +1,9 @@
 import { z } from "zod";
+import {
+  capabilitySchema,
+  executionProfileSchema,
+  taskRegistry,
+} from "./modelContract.ts";
 import { serviceScopeShape } from "./discovery.ts";
 import { MODEL_PROVIDER_IDS, ROUND_ROBIN_PROVIDERS } from "./modelProviders.ts";
 import {
@@ -338,6 +343,47 @@ export const commandSchemas = {
     .strict(),
   "generation.cancel": z
     .object({ id: uuid, expected_revision: revision, reason: text.min(1) })
+    .strict(),
+  "model.connection.save": z
+    .object({
+      id: uuid.optional(),
+      expected_revision: z.number().int().min(0),
+      provider: z.enum(MODEL_PROVIDER_IDS),
+      label: z.string().trim().min(1).max(120),
+      credential_alias: z.string().regex(/^APP_MODEL_[A-Z0-9_]{1,80}_KEY$/),
+      project_ref: z.string().min(1).max(120),
+      enabled: z.boolean(),
+    })
+    .strict(),
+  "model.configuration.save": z
+    .object({
+      id: uuid.optional(),
+      expected_revision: z.number().int().min(0),
+      connection_id: uuid,
+      label: z.string().trim().min(1).max(120),
+      model: z.string().regex(/^[a-zA-Z0-9._@/-]{1,120}$/),
+      enabled: z.boolean(),
+      capabilities: capabilitySchema,
+    })
+    .strict(),
+  "model.task_route.save": z
+    .object({
+      expected_revision: z.number().int().min(0),
+      task: z.string().refine((v) => v === "default" || v in taskRegistry),
+      model_ids: z
+        .array(uuid)
+        .max(32)
+        .refine((v) => new Set(v).size === v.length),
+      inherit_default: z.boolean(),
+      strategy: z.enum(["priority", "round_robin"]),
+      profile: executionProfileSchema.nullable(),
+    })
+    .strict(),
+  "model.execution.configure": z
+    .object({
+      expected_revision: z.number().int().min(0),
+      enabled: z.boolean(),
+    })
     .strict(),
   "model.configure": z
     .object({

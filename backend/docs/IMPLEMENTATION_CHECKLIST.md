@@ -1,5 +1,44 @@
 # Implementation status and continuation plan
 
+## October 20 — unified execution implementation, local verification
+
+P0–P5 / stages 4–7: canonical task schemas, eight API adapters, configurable
+connections/models/task routes and profiles, target-aware attempts/usage and
+whole-text grounded verification/correction are implemented. LangGraph 1.5.1,
+checkpoint 1.2.0 and Core 1.2.18 use lease-bound private database persistence,
+pending writes, immutable result caching and atomic domain commits. Inherited
+external tracing is disabled. Old workers skip graph jobs; a compatible worker
+can drain both executors. New-work admission is initially disabled.
+
+The new [runbook](MODEL_EXECUTION_RUNBOOK.md) documents configuration, execution,
+rollback, recovery and the paid-model acceptance handoff. New metadata and graph
+state are included in hashed workspace backup; isolated restore disables model
+connections/admission and cancels active work. Explicit grants/RLS remain in
+each new migration. API and Pages deployment workflows now check both functions;
+the backend deployment workflow also deploys/verifies the worker.
+
+Local evidence: **386 backend tests / 33 files** passed, followed by **15 targeted
+catalog/batch/recovery checks** after the final command-dispatch fix, **41 existing
+database/API integration checks**, and **18 graph/catalog checks** proving no
+external tracing network request even with inherited tracing flags enabled; **187 frontend
+tests / 34 files**, both package typechecks/builds and Deno checks for API/worker
+passed. The actual graph executor passes native pending-request resume, same-
+provider fallback, bounded correction, early repeated-defect termination,
+old-worker exclusion and admission rollback fixtures. A full isolated proposal
+pipeline completes all stages and prepares a draft export without custom
+company/template data. Empty-reference generic sections now carry their original
+notice context instead of failing data authorization. Browser fixture checks
+passed model creation, same-provider ordering, profile/admission saves, reload
+persistence, 390px layout and absence of browser errors; desktop/mobile screenshots
+were inspected. Synthetic fixture output is not live business acceptance.
+
+Deployment: **pending** at this entry. Production remains API v53 / worker v55;
+no new migrations or model configuration have been applied yet. Before release,
+read-only reconciliation confirmed the Owner's original document hash is unchanged
+and the existing real trial still has zero proposal versions. Current jobs/data
+remain preserved. Full fresh MAIN-01–14 and E2E-01–10, real inference quality and
+actual Word download remain pending Owner-provided paid models after release.
+
 ## October 20 — staged release and paid-model acceptance order
 
 The Owner clarified that the application must keep working throughout the model

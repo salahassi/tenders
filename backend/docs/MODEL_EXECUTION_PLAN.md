@@ -1,7 +1,7 @@
 # Unified model execution and real proposal acceptance
 
 Date: October 20, 2026. Owner-requested implementation plan.
-Status: **planned; runtime implementation and hosted acceptance are separate deliverables**.
+Status: **implementation in progress; see [checklist](IMPLEMENTATION_CHECKLIST.md) and [runtime runbook](MODEL_EXECUTION_RUNBOOK.md) for verified release status. Hosted acceptance remains separate.**
 Baseline: application source `bd0cf5ed2b5bd3686c4b813d78f3ee00f14e736e`,
 documentation source `56d2f77e77ddb3bcef819fff2ff318af6a7008bf`.
 

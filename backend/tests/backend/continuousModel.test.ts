@@ -490,7 +490,7 @@ it("polls one persisted background generation across leases and transient networ
       expect(JSON.parse(String(init!.body))).toMatchObject({
         background: true,
         store: true,
-        generation_config: { thinking_level: "low", max_output_tokens: 1024 },
+        generation_config: { max_output_tokens: 1024 },
       });
       expect(new Headers(init!.headers).get("Api-Revision")).toBe("2026-05-20");
       return Response.json({
