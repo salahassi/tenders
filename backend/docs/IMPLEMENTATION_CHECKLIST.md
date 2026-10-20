@@ -18,8 +18,11 @@ handoff and protected evidence for actual downloaded artifacts.
 Status: **planning update only**; no runtime, production schema, model settings,
 credential or billing change. The update passed **30 relative-link checks**,
 `git diff --check`, **330 backend tests / 29 files**, **183 frontend tests / 33
-files**, and both package typechecks/builds. Publication/readback is the remaining
-documentation step. Main-process and paid-model acceptance remain unperformed
+files**, and both package typechecks/builds. Plan source
+**`19ad73e901328a5bf57f6f6c9cd798838c1d84db`** is published on main;
+remote commit/tree and plan/checklist bytes match local source. No deployment
+workflow ran for this documentation-only commit, as expected. Main-process and
+paid-model acceptance remain unperformed
 for the planned implementation; prior checks are retained as historical evidence.
 
 ## October 20 — unified model execution implementation plan
