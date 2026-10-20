@@ -37,7 +37,13 @@ semantic defects remained for correction. This required zero external requests
 and did not alter the stored response or accept the proposal. All **427 backend
 tests** passed in one run, along with typecheck/build and both Deno checks.
 Frontend remains at 192 passing tests with unchanged code since its verified
-Pages release. Final source publication follows.
+Pages release. Source `b45659fcfa9d65e0634015d516b36d778012cbb8` passed
+[Pages 39508113535](https://github.com/salahassi/tenders/actions/runs/39508113535)
+including typechecks, Deno checks, all tests, build and publication. Published
+index, entry JavaScript, runtime and stylesheet match the local build. Final
+runtime is API v62 / worker v71; service-only recovery permissions are intact
+and the security advisory categories are unchanged. Code/release verification
+is complete; the failed real end-to-end acceptance described above remains open.
 
 Source observation exposed a separate local-capacity bug: automatic source
 failure handling marked MODEL_RATE_WAIT as blocked, while the recovery helper
