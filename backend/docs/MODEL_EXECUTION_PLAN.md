@@ -5,6 +5,13 @@ Status: **planned; runtime implementation and hosted acceptance are separate del
 Baseline: application source `bd0cf5ed2b5bd3686c4b813d78f3ee00f14e736e`,
 documentation source `56d2f77e77ddb3bcef819fff2ff318af6a7008bf`.
 
+Execution order updated by the Owner on October 20: implement and release the
+changes incrementally while the existing application continues operating; then
+the Owner adds paid model credentials/configuration, followed by a fresh test of
+every main workflow. This supersedes the earlier same-day live-acceptance target.
+See [acceptance](#10-acceptance-before-and-after-paid-model-setup) and
+[release gates](#11-delivery-sequence-dependencies-and-definition-of-done).
+
 **ملخص:** نوحّد كل طلبات ونتائج الموديلات، ونضيف اختيار عدة موديلات لكل مهمة
 مع الحفاظ على الـfailover. نستخدم LangGraph لإدارة خطوات التحقق والتصحيح
 والاستكمال، وتبقى قاعدة البيانات مسؤولة عن الجدولة والصلاحيات ومنع التكرار.
@@ -448,31 +455,86 @@ The browser does not calculate Word's final page numbers. Final export review
 must include field/TOC updates and page inspection. LibreOffice inspection is
 recorded as such; it is not proof of Microsoft Word pagination.
 
-## 10. P0 and P6 — real cases, with today's acceptance first
+## 10. Acceptance before and after paid-model setup
 
-**Target: October 20, 2026, Asia/Riyadh.** Start this track before the broader
-LangGraph/configuration refactor. Do not postpone all real acceptance until the
-new architecture is complete. The target is not permission to mark a queued job
-successful, bypass provider limits or invent commercial inputs.
+The Owner's latest order is **safe implementation → deployed settings ready for
+model setup → Owner adds paid models → fresh end-to-end acceptance**. There is
+no new promised completion date. Continue existing authorized background work
+during development; availability of its providers must not prevent completing
+the implementation and deterministic tests.
 
-### Immediate execution order
+Before the paid-model handoff, run regression, integration, migration, rollback
+and browser checks. Use fixtures for deliberately induced failures and existing
+authorized live data for non-destructive smoke checks. Never present these as
+proof that an unconfigured paid model has worked.
 
-1. Recheck current scheduler, saved plan and provider availability at execution
-   time. Reuse the existing authorized RFP and trial account; preserve the
-   completed step and unchanged input snapshots.
-2. Resume through the application's current supported path only if needed;
-   normally allow the scheduler to continue. Do not clear cooldowns, unknown usage
-   or remote IDs simply to force a run.
-3. Obtain a real complete draft through the existing pipeline. If it exposes a
-   specific transport/schema/truncation defect, apply the smallest tested P1/P5
-   correction and rerun that saved step, preserving provenance.
-4. Download actual bytes through the authenticated UI, open the artifact, inspect
-   its contents and all rendered pages. Record the hash and exact producing version.
-5. Exercise scoped feedback → regenerate → new draft download, proving the old
-   active version survives failed regeneration.
-6. Record pass/fail/blocker for every case below. If no permitted provider succeeds,
-   the live generation gate remains blocked; publish the exact observed cause and
-   next eligibility time. Fixtures remain separate and cannot satisfy this gate.
+### Handoff for paid-model setup
+
+The handoff is ready when the compatible database/API/worker/frontend releases
+are verified, task/model settings persist, the old route still functions, and
+the remaining live-model acceptance items are explicitly listed. The handoff
+provides the exact credential variable names supported by the selected adapters,
+the settings path for model names/task routes, and connection-check results.
+The user supplies keys through Supabase Secrets, not chat.
+
+Credentials alone establish presence, not successful inference. Once the Owner
+reports the paid models ready, verify each configured connection and capability
+profile, then execute the requested acceptance matrix without requesting the same
+routine authorization again. Do not require free-tier/billing attestations,
+enable provider billing, buy credits or alter account spending controls.
+
+Start with an explicitly configured trial route whose resolved model order is
+visible. Adding a key must not silently rewrite all existing task routes or
+reprocess the entire backlog. After the trial, normal task routing uses the saved
+configuration. Retain actual usage/cost reporting without reinstating daily token
+gates. Unknown usage or unconfigured prices remain unknown.
+
+### Fresh live execution after setup
+
+1. Record current source/API/worker/migration versions, route/profile versions,
+   provider readiness and permission status. Keep the old saved trial and all
+   prior outputs as baseline evidence.
+2. Start a new authorized run with the existing real RFP or another eligible
+   real document. Reuse immutable original bytes without replacing the Owner's
+   upload. A saved old checkpoint alone cannot prove the new pipeline end to end.
+   Use a separate trial opportunity/run where necessary to preserve active work.
+3. Exercise the main processes in the matrix below, including collection through
+   assessment and the full RFP through downloaded proposal journey. A source
+   with no new publications can pass a real collection/deduplication check;
+   a new assessment requires a real eligible item or an explicit re-assessment.
+4. Download actual bytes through the authenticated user interface, inspect content
+   and every rendered page, and record the artifact hash and producing version.
+5. Exercise scoped feedback → regenerate → new download. Prove that an unsuccessful
+   regeneration preserves the last active version.
+6. Correct implementation defects and rerun affected scenarios plus their relevant
+   regressions. Report provider outages, inaccessible sources and missing business
+   decisions separately. No fixtures, approvals or invented rates may substitute
+   for a successful real artifact.
+
+### Main workflow acceptance after paid-model setup
+
+| ID | Start-to-finish process | Required evidence |
+| --- | --- | --- |
+| MAIN-01 | Sign in → workspace access → saved settings → reload | Actual permitted user session; role restrictions and data isolation also covered by direct API/integration tests |
+| MAIN-02 | Add/configure a source → enable → scheduled collection → repeat → pause/resume | Saved database configuration, real source history, correct schedule and replay deduplication; no silent source replacement |
+| MAIN-03 | Discover sources → inspect suggestions → approve a usable source → collect | Discovery remains separate from Add source; only approved sources collect; access restrictions are visible |
+| MAIN-04 | Collected notice/details/attachments → assessment → review inbox → human decision | Full available evidence considered, extraction gaps disclosed, actual model identity logged, no hardcoded fit, reassessment preserves the human decision |
+| MAIN-05 | Company Knowledge file/note → extraction/verification → assessment or proposal use | Exact evidence citations and revisions; changed/revoked evidence invalidates affected work; empty-knowledge behavior is tested without deleting the Owner's records |
+| MAIN-06 | Opportunity → RFP upload → extracted-text confirmation → requirement inventory | Actual file hash, all pages/blocks accounted for, visible handling of corrupt/scanned/partial documents, addendum precedence and stale-input behavior |
+| MAIN-07 | Confirmed RFP → full proposal → missing-information register | Substantive draft without a mandatory custom template/company library; all mandatory requirements accounted for; no invented facts |
+| MAIN-08 | Scoped feedback/questions/attachments → save/reload → regenerate | New version reflects feedback, previous active version survives failure, evidence and review scope stay traceable |
+| MAIN-09 | Actual commercial inputs → calculation → review → exact-version approval | Reviewed tender currency/rates/tax assumptions, deterministic totals, missing inputs prevent false final readiness, edits invalidate stale approval |
+| MAIN-10 | Draft/final export → authenticated download → page inspection | Arabic/English and separate technical/financial volumes where applicable; actual bytes, hashes, native tables and field-update checks |
+| MAIN-11 | Per-task model selection → same-provider fallback → cross-provider fallback → waiting/recovery | Configuration and actual successful paid-model operations are live; deliberate auth/429/network/invalid-output faults are isolated fixtures, not production outages |
+| MAIN-12 | Background progress → close/reopen browser → cancel/retry → activity and alerts | Saved state and attempts remain consistent, pending remote requests are polled, no duplicate version or repeated incident mail, delivery history matches the selected preferences |
+| MAIN-13 | Backup/export → restore into an isolated compatible environment → compare | Original/evidence hashes and relationships preserved; no restore over production and no resumed external delivery/collection during the restore test |
+| MAIN-14 | Approved artifact → record manual submission → reopen history | Application records exact artifact/version and the user's actual manual action; external portal submission/payment is outside automated testing |
+
+Real approval and manual-submission history are tested only when the corresponding
+business action is actually authorized and performed. Otherwise the protective
+boundary is exercised in fixtures and the live case remains pending. Testing the
+system does not mean submitting a tender, inventing a submission, sending messages
+to buyers, or purchasing documents.
 
 ### Acceptance matrix
 
@@ -489,8 +551,8 @@ successful, bypass provider limits or invent commercial inputs.
 | E2E-09 | Refresh, closed browser, lease expiry, cancellation and evidence change | Saved state resumes; cancelled/stale results cannot publish; accepted remote usage remains reconciled |
 | E2E-10 | Complete final submission-ready package | Real approved rates, requirements and company facts resolved; matching buyer/opportunity confirmed; exact version approved; technical/financial or combined files downloaded and inspected |
 
-E2E-01–04 are today's first live target using the existing trial. E2E-05–09 include
-isolated regression evidence and later live gates where stated. E2E-10 cannot be
+E2E-01–04 are required proposal cases after the paid-model setup. E2E-05–09 include
+isolated regression evidence and live gates where stated. E2E-10 cannot be
 claimed from the deliberately mismatched trial or fabricated rates/Owner approval.
 Keep **draft downloadable**, **review complete**, and **ready for submission**
 as separate outcomes.
@@ -511,17 +573,21 @@ Do not compute business accuracy from synthetic contract tests.
 
 | Priority / package | Concrete deliverables | Dependency | Exit evidence |
 | --- | --- | --- | --- |
-| P0 — start today | Real baseline, saved-run continuation, actual draft and regeneration/download report | Existing eligible RFP, functioning permitted provider | E2E-01–04 results with artifact hashes; explicit blocker if unavailable |
+| P0 — preserve the baseline | Record current releases/state, retain saved work and rehearse recovery | Existing application and protected acceptance records | State/hash reconciliation and a tested rollback target; no production reset |
 | P1 | Task registry, typed envelopes, adapter modules, schema translator, capability tests | Current model boundary | All nine existing tasks + verifier/repair covered; all eight adapters pass fixtures |
 | P2 | Additive schema/RPCs, legacy import, models/task routes and Settings UI | P1 target identity | Same-provider fallback and old-job compatibility; RLS/revision/idempotency tests |
 | P3 | Structured findings, claim grounding, independent verifier, bounded correction | P1; P2 for custom verifier route | Adversarial failures detected; no unsupported mandatory claims in audited artifacts |
 | P4 | LangGraph compatibility spike, durable checkpointer, bounded graph executor | P1/P3 and existing ledger; P2 identities | Kill/resume/rollback tests and hosted resource evidence; no extra server |
 | P5 | Editable per-task profiles, capability mappings, activity explanations | P1/P2 | Truncation/latency comparison with requested/effective settings and no daily token gates |
-| P6 | Additive rollout, protected real acceptance artifacts, updated evaluation and QA reports | Relevant package gates | Local checks, hosted readback, real browser downloads and separate business acceptance |
+| P6 | Paid-model setup handoff, MAIN-01–14 and E2E-01–10, protected artifacts and QA reports | Compatible deployed implementation, then Owner-provided model setup | Actual model activity, complete main-process report, real downloads and separate business acceptance |
 
-P0 is not dependent on completing P2–P4. P1/P5 fixes needed by the real trial can
-ship incrementally. Broader quality/latency comparisons require more than one
-RFP and stay open until measured; no calendar completion claim replaces exit evidence.
+P0 starts before implementation. Run the P4 compatibility spike early during P1
+so runtime limitations are discovered before committing to the graph integration.
+Deliver P1, then P2 with the task profiles in P5, then P3 and the remaining P4
+graph work, retaining the current path until each replacement passes its gate.
+Preliminary smoke checks run throughout. Full fresh
+live acceptance in P6 follows the Owner's paid-model setup. Broader quality/latency
+comparisons require more than one RFP; no calendar claim replaces exit evidence.
 
 Proposed implementation modules:
 `modelContracts.ts`, `modelRegistry.ts`, `modelRuntime.ts`,
@@ -531,17 +597,64 @@ Retain compatibility exports from `model.ts` during migration.
 Update existing frontend shared types/services/AppProvider instead of introducing
 a second client state or direct privileged database path.
 
-Migration sequence:
+### Release gates that preserve the working application
 
-1. Inspect current schema/advisors; add tables/nullable identity columns and ACLs.
-2. Backfill default model/route records idempotently from current server-resolved
-   configuration, retaining historical usage and remote-request identity.
-3. Deploy compatible API/worker readers, then expose editable settings.
-4. Enable new contracts/routing/graph separately for selected new work; keep
-   compatibility with old queued/running plans.
-5. Reconcile counts, source hashes, scopes and approvals before broader activation.
-6. Roll back new admission using versioned settings while draining/reconciling
-   accepted requests. Never roll back by deleting usage/evidence/history.
+| Gate | Implementation/release action | Condition to proceed |
+| --- | --- | --- |
+| R0 — baseline | Record the exact good source, database migrations, API, worker and frontend build; retain a protected backup/recovery manifest | Current records, originals, approvals, queue state and accepted remote IDs are accounted for |
+| R1 — compatible database expansion | Add versioned tables/nullable columns and explicit privileges; perform resumable, idempotent backfills | Both old and new code work against the expanded schema; membership/RLS and migration-from-empty tests pass |
+| R2 — compatible server release | Deploy API and worker readers that understand legacy and new records, with new routing/graph admission off | Login/read/write/collection smoke checks and old-request continuation pass; both runtime sources match the manifest |
+| R3 — settings and contracts | Release the frontend settings and common contracts behind versioned switches | Save/reload, error preservation, accessibility and old/new client compatibility pass |
+| R4 — limited new execution | Enable new routing/validation/graph only for designated new trial work | Correct model selection, bounded correction and restart/replay checks pass; unrelated production work continues on its existing route |
+| R5 — ready for model setup | Reconcile state and complete the implementation handoff | All implementation/integration/browser gates pass; unresolved provider-dependent acceptance is listed honestly |
+| R6 — paid-model acceptance | Owner adds models; run the complete fresh MAIN/E2E matrix | Actual artifacts and logs satisfy the applicable criteria; failures are corrected/retested before broad promotion |
+| R7 — normal operation | Apply the verified saved task routes to new normal work and observe a full source/retry cycle | No unauthorized access, lost work, duplicate committed versions or repeated incident notifications; recovery path remains available |
+
+There is no planned application-wide pause, queue purge, schema reset or replacement
+of user records. Use additive expansion before switching behavior; defer destructive
+schema cleanup until legacy work is drained and a separate reviewed migration is
+appropriate. Backfills operate in bounded transactions with inspected lock impact.
+The scheduler continues, while the existing exclusive lease prevents old and new
+workers from concurrently committing the same job.
+
+New work is pinned to an executor/contract/route version. Work already running stays
+on its compatible path. An accepted provider request keeps its original model,
+connection and remote ID across a release. Do not restart proposals, change active
+approvals or clear provider waits just to exercise the new implementation.
+
+The release manifest covers **database + API + worker + frontend**. The current
+`deploy-api.yml` workflow deploys the API only; extend release automation or use
+the established separately verified worker deployment before treating a release
+as complete. The frontend must tolerate the previous compatible API and retain
+unsaved input on a failed request.
+
+### Explicit privileges and rollback
+
+Every migration that creates an API-accessible table/view/sequence or function
+specifies the needed role grants/revocations in that same migration. Include RLS
+and scoped policies for exposed tables. Do not copy blanket `anon` grants or
+assume that `service_role` bypassing RLS also supplies table privileges.
+Test a fresh database with automatic grants disabled and an upgrade of a populated
+database. The [October 30 Data API change](https://supabase.com/changelog/45329-breaking-change-tables-not-exposed-to-data-and-graphql-api-automatically)
+is part of R1 acceptance, including new models/routes/checkpoint objects.
+
+If a new path causes authorization failures, data/approval inconsistencies,
+duplicate committed results or a reproducible regression, disable admission to
+that new path and restore the last compatible release/configuration. Ordinary
+provider 429s retain their existing wait policy and are not a reason to reset work.
+Keep the expanded schema and saved outputs; never use a destructive rollback or
+restore over production as the first response.
+
+Before R4, prove that the rollback release can read every admitted executor
+version, or retain a compatible worker that can drain those jobs. A feature
+switch alone is insufficient if the old worker cannot understand an existing
+checkpoint. Record whether affected jobs are draining, safely waiting or complete.
+
+After each release, compare protected input/output hashes, relationships and state
+transitions, and verify that observed count changes correspond to legitimate
+ongoing work. Check authenticated reads/writes, cron heartbeat, due collection,
+queue progress and notification deduplication. The objective is no planned service
+interruption or data loss; provider/platform outages still need honest diagnosis.
 
 Observability must show task, opportunity/proposal, route, model target,
 attempt/round, correction index, native/compatibility mode, effective profile,
@@ -565,7 +678,9 @@ prevent testing their adapters locally or the existing live providers.
 | Current code and hosted baseline | Read-only verification recorded above |
 | Documentation links and existing application regression | 43 relative links valid; 330 backend and 183 frontend tests passed; both package typechecks/builds passed |
 | New contracts/routing/guardrails/LangGraph implementation | Planned |
-| Same-day live generated artifact | Pending; zero versions at baseline |
+| Safe staged rollout and setup handoff | Planned; R0–R5 must pass before requesting the new model setup |
+| Fresh paid-model main-process acceptance | Pending Owner setup after implementation; MAIN-01–14 and E2E-01–10 defined |
+| Existing live generated artifact | Zero versions at the dated baseline; do not treat that observation as current readiness |
 | Business-ready final proposal | Pending actual facts/rates, matching metadata and Owner approval |
 | Runtime deployment caused by this planning change | None; documentation only |
 

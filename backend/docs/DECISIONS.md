@@ -1,5 +1,29 @@
 # Decisions
 
+## 2026-10-20: Keep the application running; paid-model acceptance follows implementation
+
+The Owner wants the planned changes delivered without stopping or losing the
+working application. Complete the implementation and expose the model settings
+first; the Owner then adds paid models, after which all main processes must be
+tested again from their starting points. This supersedes the earlier same-day
+live-acceptance sequencing without marking any pending acceptance complete.
+
+The [execution plan](MODEL_EXECUTION_PLAN.md) now defines compatible release
+gates R0–R7, a protected baseline, additive migrations, explicit grants, preserved
+queue/remote-request identity, per-version switches and a tested rollback path.
+The API, worker and frontend must be treated as one compatible release. Existing
+work continues on its supported executor; no global pause, data reset or forced
+restart is part of the plan.
+
+MAIN-01–14 cover account access, sources/discovery, assessment and evidence,
+RFP ingestion, generation/regeneration, commercial review, exports, failover,
+background processing, notifications and isolated recovery. E2E-01–10 retain
+the detailed proposal/failure criteria. Once the Owner supplies the requested
+model configuration, run the authorized acceptance without re-requesting routine
+permission. Do not enable billing, buy credits, invent rates/approvals or submit
+a bid as a test. Implementation readiness and successful live acceptance remain
+separate statuses. This update is documentation only.
+
 ## 2026-10-20: Unified model contracts, task routing and durable correction
 
 The Owner requested structured input/output for every model operation, one shared

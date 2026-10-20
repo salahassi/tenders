@@ -1,7 +1,7 @@
 # Word export verification
 
 For the planned real generated-artifact gates, see
-[E2E-01–E2E-10 in the model execution plan](MODEL_EXECUTION_PLAN.md#10-p0-and-p6--real-cases-with-todays-acceptance-first).
+[E2E-01–E2E-10 in the model execution plan](MODEL_EXECUTION_PLAN.md#10-acceptance-before-and-after-paid-model-setup).
 The fixture evidence below does not close those live acceptance gates.
 
 October 15, 2026. Synthetic fixtures only; no business submission or live model output.

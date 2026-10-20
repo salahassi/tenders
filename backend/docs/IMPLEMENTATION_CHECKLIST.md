@@ -1,5 +1,27 @@
 # Implementation status and continuation plan
 
+## October 20 — staged release and paid-model acceptance order
+
+The Owner clarified that the application must keep working throughout the model
+upgrade, and that paid models will be added after the implementation is ready.
+The full main-process test then starts from the beginning. This ordering
+supersedes the earlier same-day acceptance target recorded below.
+
+Updated [MODEL_EXECUTION_PLAN.md](MODEL_EXECUTION_PLAN.md) links P0–P6 to release
+gates R0–R7 and defines MAIN-01–14 alongside E2E-01–10. The plan preserves current
+records, approvals, routes, queue leases, accepted remote requests and legacy
+executors; additive database changes precede compatible API/worker/frontend
+releases. It includes per-migration explicit GRANT/RLS checks for the October 30
+Data API change, canary admission, rollback compatibility, the paid-model setup
+handoff and protected evidence for actual downloaded artifacts.
+
+Status: **planning update only**; no runtime, production schema, model settings,
+credential or billing change. The update passed **30 relative-link checks**,
+`git diff --check`, **330 backend tests / 29 files**, **183 frontend tests / 33
+files**, and both package typechecks/builds. Publication/readback is the remaining
+documentation step. Main-process and paid-model acceptance remain unperformed
+for the planned implementation; prior checks are retained as historical evidence.
+
 ## October 20 — unified model execution implementation plan
 
 The Owner requested a complete plan for structured requests/results across every

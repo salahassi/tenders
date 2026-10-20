@@ -3,8 +3,9 @@
 Providers have been activated and actual inference is recorded in the
 [implementation checklist](IMPLEMENTATION_CHECKLIST.md); this is separate from
 business-quality acceptance. The October 20
-[model execution plan](MODEL_EXECUTION_PLAN.md#10-p0-and-p6--real-cases-with-todays-acceptance-first)
-defines E2E-01–E2E-10 and prioritizes an actual RFP-to-Word trial. At its 11:17 UTC
+[model execution plan](MODEL_EXECUTION_PLAN.md#10-acceptance-before-and-after-paid-model-setup)
+defines MAIN-01–14 and E2E-01–10. The latest Owner sequence is safe incremental
+implementation, paid-model setup, then fresh main-workflow acceptance. At its 11:17 UTC
 baseline, that trial had zero proposal versions; no complete generated artifact
 or business accuracy is claimed.
 
