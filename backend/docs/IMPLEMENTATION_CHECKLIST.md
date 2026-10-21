@@ -18,6 +18,16 @@ build/typecheck and the Deno worker check pass. Evidence is recorded in
 `/workspace/work/proposal-unmapped-context-full-backend.log`. Deployment and actual
 replacement acceptance remain pending. The other drafting parts continue.
 
+Worker v101 is deployed with all 46 returned source files matching the prepared
+release; the deployment consumed the supplied Deno lockfile. Two preceding build
+attempts failed because npm advertised `@langchain/langgraph-sdk@1.12.6` while its
+tarball returned HTTP 404. The checked/tested `1.12.5` tarball returns HTTP 200.
+The committed Deno lockfile and frozen configuration now preserve the tested
+dependency tree; both Deno entrypoints pass with that lock. CI checks also honor
+the lock instead of bypassing it. Migration `unmapped_draft_rfp_context` is
+deployed. Only the old executive-summary job is replaced; all other paid work is
+retained and the complete Word journey remains in progress.
+
 ## October 21 — resumed real proposal acceptance
 
 The owner requested a complete proposal after setup validation. The existing

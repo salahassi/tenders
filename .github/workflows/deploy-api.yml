@@ -54,7 +54,7 @@ jobs:
           npm --prefix backend run build
       - name: Check Edge Function imports
         working-directory: backend
-        run: npm exec --yes --package=deno@2.9.6 -- deno check --no-lock --config supabase/functions/deno.json supabase/functions/api/index.ts supabase/functions/worker/index.ts
+        run: npm exec --yes --package=deno@2.9.6 -- deno check --config supabase/functions/deno.json supabase/functions/api/index.ts supabase/functions/worker/index.ts
       - name: Apply reviewed model release migrations
         if: ${{ inputs.apply_model_release }}
         env:
