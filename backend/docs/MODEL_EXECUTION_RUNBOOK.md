@@ -85,6 +85,28 @@ support and contradiction still require model judgment and later human artifact
 review. Agreement between models is not evidence. There is no claim of perfect
 hallucination detection.
 
+All fact-bearing graph tasks share one semantic-fidelity policy: preserve the
+source's actor, conditions, obligation strength, exceptions, consequences,
+quantities and dates while allowing faithful paraphrase or translation. Exact
+evidence quotations remain separate from those paraphrases. Missing company
+proof is an uncertainty; it does not weaken a known buyer requirement.
+
+New request phases pin semantic revision 1 in the private graph result store.
+Previously started phases pin revision 0 and retain their original prompt/hash,
+including accepted remote IDs, unknown sends, settled responses and saved rounds.
+Do not edit a pin, clear a round or reset usage to apply new instructions. The
+composed prompt version in Activity identifies the policy used by new requests.
+Legacy executor requests keep their original policy. Consult the checklist for
+deployment and live verification status.
+
+When a deterministic guard is corrected, validate the latest retained report
+against the exact current candidate/evidence before considering recovery. Never
+select an older favorable report to hide a newer contradiction. Complete quoted
+atomic spans can cover a compound claim, but missing words, negation or numbers
+still fail. Content-ID accounting is necessary but is not exhaustive semantic
+proof; cross-unit quotation and undeclared-assertion adversarial checks remain
+documented follow-up work.
+
 An unchanged input gets at most three completed writer candidates, across all
 providers, and at most two correction passes. Repeated identical findings stop
 early. Each verification input has its own bounded candidate allowance.
@@ -92,6 +114,12 @@ Persistent defects retain their graph and become `MODEL_CORRECTION_EXHAUSTED` fo
 review. Provider/network unavailability uses automatic waiting/failover instead;
 waiting does not consume completed-candidate allowance. Conservative account-wide
 429 waits prevent switching sibling models merely to evade an account limit.
+
+A received writer response consumes that allowance before local validation;
+rejected completed responses can therefore exhaust it while the graph's semantic
+repair counter is still zero. These counters measure different things. An
+application guard defect does not authorize resetting either counter or creating
+unlimited retries. Preserve paid results and their findings for audited recovery.
 
 Graph acceptance and generation/source/probe domain commits share a database
 transaction. Cancellation, evidence revisions and input eligibility remain

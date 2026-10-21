@@ -164,7 +164,7 @@ function resultFor(ctx: any) {
     };
   throw Error("Unexpected task");
 }
-async function runPlan() {
+async function runPlan(result: (ctx: any) => any = resultFor) {
   let count = 0;
   for (;;) {
     const job = await f.rpc("claim_backend_job");
@@ -185,7 +185,7 @@ async function runPlan() {
       await f.rpc("complete_generation_step", [
         job.id,
         job.lease_token,
-        JSON.stringify(resultFor(ctx)),
+        JSON.stringify(result(ctx)),
       ]);
   }
   return count;
@@ -248,6 +248,8 @@ it("completes and exports a full RFP draft without templates, company knowledge 
     volume: "combined",
   });
   const model = buildExportModel(request);
+  expect(version.section_outline?.version).toBe(1);
+  expect(request.snapshot.section_outline).toEqual(version.section_outline);
   for (const section of sections)
     expect(
       model.blocks.some(
@@ -271,6 +273,103 @@ it("completes and exports a full RFP draft without templates, company knowledge 
       volume: "combined",
     }),
   ).rejects.toThrow("APPROVAL_REQUIRED");
+});
+
+it("persists application-derived part lineage through canonical generation and the authorized export snapshot without merging content rows", async () => {
+  const { plan } = await start();
+  await runPlan((ctx) => {
+    const result = resultFor(ctx);
+    if (ctx.step.task === "analyze_chunk")
+      return {
+        ...result,
+        requirements: Array.from({ length: 9 }, (_, i) => ({
+          ...result.requirements![0],
+          text: `Synthetic workflow acceptance requirement ${i + 1}.`,
+        })),
+      };
+    return result;
+  });
+  const version = (
+    await f.db.query<any>(
+      "select * from public.proposal_versions where plan_id=$1",
+      [plan.id],
+    )
+  ).rows[0];
+  const sections = (
+    await f.db.query<any>(
+      "select * from public.proposal_sections where proposal_version_id=$1 order by ordinal",
+      [version.id],
+    )
+  ).rows;
+  expect(sections.map((s) => s.section_key)).toEqual([
+    "approach-part1",
+    "approach-part2",
+  ]);
+  expect(sections.map((s) => s.requirement_ids.length)).toEqual([8, 1]);
+  expect(sections.every((s) => s.evidence_refs.length > 0)).toBe(true);
+  expect(version.section_outline).toEqual({
+    version: 1,
+    groups: [
+      {
+        parent_section_key: "approach",
+        title: "Proposed approach",
+        volume: "technical",
+        parts: [
+          { section_key: "approach-part1", part_index: 1, part_count: 2 },
+          { section_key: "approach-part2", part_index: 2, part_count: 2 },
+        ],
+      },
+    ],
+  });
+  const request = await f.command("export.prepare", {
+    proposal_version_id: version.id,
+    expected_revision: version.revision,
+    mode: "draft",
+    volume: "combined",
+  });
+  expect(request.snapshot.section_outline).toEqual(version.section_outline);
+  const content = (s: any) => ({
+    id: s.id,
+    section_key: s.section_key,
+    body: s.body,
+    content_blocks: s.content_blocks,
+    evidence_refs: s.evidence_refs,
+    requirement_ids: s.requirement_ids,
+  });
+  expect(request.snapshot.sections.map(content)).toEqual(sections.map(content));
+  const model = buildExportModel(request);
+  expect(
+    model.blocks.filter(
+      (b: any) => b.type === "heading" && b.text === "Proposed approach",
+    ),
+  ).toHaveLength(1);
+  expect(
+    model.blocks.filter(
+      (b: any) =>
+        b.type === "paragraph" && b.text === "Implement approval workflow.",
+    ),
+  ).toHaveLength(2);
+  const privileges = (
+    await f.db.query<any>(
+      "select has_column_privilege('authenticated','public.proposal_versions','section_outline','select') member_read,has_column_privilege('authenticated','public.proposal_versions','section_outline','update') member_write,has_column_privilege('anon','public.proposal_versions','section_outline','select') anonymous_read",
+    )
+  ).rows[0];
+  expect(privileges).toEqual({
+    member_read: true,
+    member_write: false,
+    anonymous_read: false,
+  });
+  await f.db.query(
+    "update public.proposal_versions set section_outline=null where id=$1",
+    [version.id],
+  );
+  const saved = (
+    await f.db.query<any>(
+      "select snapshot from public.export_requests where id=$1",
+      [request.id],
+    )
+  ).rows[0].snapshot;
+  expect(saved.section_outline).toEqual(version.section_outline);
 });
 it("allows initial quota failover but pins a proposal after measured model usage", async () => {
   await start();

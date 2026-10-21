@@ -4,6 +4,7 @@ import { unzipSync } from "fflate";
 import { AppError } from "./http.ts";
 import { validateOriginal } from "./originals.ts";
 import { blockedContent } from "./model.ts";
+import { exportSectionGroups } from "./proposalOutline.ts";
 type Row = Record<string, any>;
 export type ExportBlock =
   | { type: "paragraph" | "bullet" | "heading" | "title"; text: string }
@@ -87,30 +88,35 @@ export function buildExportModel(request: Row): RenderModel {
         : l("Technical and commercial proposal", "العرض الفني والمالي"),
   );
   blocks.push({ type: "toc", text: l("Contents", "المحتويات") });
-  for (const section of s.sections.filter(
-    (x: Row) =>
+  for (const group of exportSectionGroups(s.sections, s.section_outline).filter(
+    (x) =>
       request.volume === "combined" ||
       x.volume === request.volume ||
       x.volume === "shared",
   )) {
-    h(section.title);
-    if (Array.isArray(section.content_blocks) && section.content_blocks.length)
-      for (const b of section.content_blocks) {
-        if (b.type === "table")
-          blocks.push({
-            type: "table",
-            headers: b.headers,
-            rows: b.rows.map((r: string[]) =>
-              b.headers.map((_: string, i: number) => r[i] || ""),
-            ),
-          });
-        else
-          blocks.push({
-            type: b.type === "bullet" ? "bullet" : "paragraph",
-            text: b.text,
-          });
-      }
-    else for (const line of clean(section.body).split("\n")) p(line);
+    h(group.title);
+    for (const section of group.sections) {
+      if (
+        Array.isArray(section.content_blocks) &&
+        section.content_blocks.length
+      )
+        for (const b of section.content_blocks) {
+          if (b.type === "table")
+            blocks.push({
+              type: "table",
+              headers: b.headers,
+              rows: b.rows.map((r: string[]) =>
+                b.headers.map((_: string, i: number) => r[i] || ""),
+              ),
+            });
+          else
+            blocks.push({
+              type: b.type === "bullet" ? "bullet" : "paragraph",
+              text: b.text,
+            });
+        }
+      else for (const line of clean(section.body).split("\n")) p(line);
+    }
   }
   if (request.volume !== "financial") {
     h(l("Delivery schedule", "جدول التسليم"));

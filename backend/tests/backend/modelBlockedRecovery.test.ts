@@ -61,6 +61,7 @@ async function fixture() {
   ]);
   const action = vi.fn(async (name: string, payload: any) => {
     if (name === "recovery_ready") return true;
+    if (name === "writer_alternative_selections") return [];
     if (name === "result_get")
       return rows.get(payload.key ?? payload.id) ?? null;
     if (name === "result_put") {
@@ -124,7 +125,12 @@ it("revalidates the unchanged complete report and resumes only normal decision/a
   expect(JSON.stringify([...f.rows].slice(0, 2))).toBe(before);
   expect(
     f.action.mock.calls.filter(
-      ([name]) => !["result_get", "recovery_ready"].includes(name),
+      ([name]) =>
+        ![
+          "result_get",
+          "recovery_ready",
+          "writer_alternative_selections",
+        ].includes(name),
     ),
   ).toEqual([
     [
@@ -212,7 +218,12 @@ it.each([
     expect(f.update).not.toHaveBeenCalled();
     expect(
       f.action.mock.calls.some(
-        ([name]) => !["result_get", "recovery_ready"].includes(name),
+        ([name]) =>
+          ![
+            "result_get",
+            "recovery_ready",
+            "writer_alternative_selections",
+          ].includes(name),
       ),
     ).toBe(false);
   },
@@ -225,7 +236,12 @@ it("propagates a stale lease or revoked permission before writing a marker", asy
   expect(f.update).not.toHaveBeenCalled();
   expect(
     f.action.mock.calls.some(
-      ([name]) => !["result_get", "recovery_ready"].includes(name),
+      ([name]) =>
+        ![
+          "result_get",
+          "recovery_ready",
+          "writer_alternative_selections",
+        ].includes(name),
     ),
   ).toBe(false);
 });

@@ -303,6 +303,31 @@ available; if the same model is used, record that limitation. Agreement between
 two models is not evidence and cannot override a failed deterministic check.
 Never log private chain-of-thought; retain findings and cited evidence.
 
+The shared semantic-fidelity policy applies to every fact-bearing graph task,
+including source extraction, writers, verifiers and correction. Paraphrase and
+translation may change wording, but must preserve the actor, action, scope,
+obligation/permission strength, prohibitions, conditions, exceptions,
+consequences, quantities, currencies and dates. Known buyer rules remain known
+when company compliance is unknown. Proposed work cannot rewrite those rules.
+The verifier must cite actual source support or contradiction; no keyword rule
+or agreement between models substitutes for this comparison.
+
+Policy revision 0 preserves historical prompt and system-instruction bytes.
+Revision 1 is pinned privately per previously unstarted request phase, after
+the existing verifier prompt selection. The phase's immutable input hash and
+reported prompt version include its policy. Accepted, unknown, settled or
+checkpointed historical phases retain revision 0 through polling, failover and
+replay; recovery only reads a saved pin and never upgrades a paid request.
+Legacy executor work remains on its original policy. This is source behavior;
+deployment and real acceptance are tracked separately in the checklist.
+
+Complete content-ID coverage is not proof that every factual assertion was
+reviewed. Current deterministic candidate-quote validation also searches the
+concatenated content text, while the prompt requires a quote from one unit.
+Follow-up adversarial cases must cover undeclared assertions and cross-unit
+quote splicing before introducing a stricter versioned guard; do not silently
+apply an untested new guard to already-paid reports.
+
 Initial bounded correction policy:
 
 - One initial completed candidate plus **at most two correction candidates per

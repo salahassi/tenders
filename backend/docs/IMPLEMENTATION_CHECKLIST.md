@@ -2,6 +2,74 @@
 
 ## October 21 — real acceptance blockers (in progress)
 
+At 14:52 UTC, live access is restored after the earlier approval-service usage
+limit. The original experience job completed at **13:53:16 UTC**: its graph is
+committed, exactly one alternate paid-writer selection is recorded, the writer
+budget remains **3**, and the new candidate has a separate successful verifier
+phase with one candidate. No writer allowance was reset. Analysis remains 3/3
+and planning 9/9 accepted; drafting is **36/67 complete**, with only the two
+known verifier-validation blockers remaining. A complete Word is still pending.
+
+Frontend verification for this release passed **204/204 tests in 36 files**
+(`final-frontend-serial-21.log`, 183.86 seconds) and typecheck. The user's next
+acceptance request is explicit: repair the remaining failures, test locally,
+then complete the existing real-file journey and download/inspect the proposal.
+The separate content-loop follow-up remains isolated and is not included in
+the already deployed v99 worker.
+
+At 13:47 UTC, API **v76** and worker **v99** are deployed; hosted readback
+matches all **30 / 44 reachable files** exactly. The full backend regression
+passed **962/962 tests in 57 files** (`final-backend-serial-20.log`, 373.08
+seconds), backend typecheck/build and both Deno entrypoints. These checks cover
+code behavior; they are not complete real proposal acceptance.
+
+This release pins a shared semantic instruction revision per model phase.
+Paraphrase and translation are allowed while buyer obligations, consequences,
+quantities and company evidence retain their meaning. Started, pending and paid
+historical phases retain their original prompt identity; the upgrade test proves
+one POST followed by a GET rather than a duplicate generation. The separate
+follow-up to route safe content-validation failures into targeted LangGraph
+correction is still in progress and is not included in worker v99.
+
+The outline migration (`20261021131353_proposal_section_outline.sql`, hosted
+version **20261021133536**) preserves all 67 stored parts and derives 17 logical
+chapters from their frozen plan lineage. The exporter groups only a complete,
+validated outline, retaining every original section and falling back without
+dropping content if the outline is invalid. Focused backend and actual DOCX
+renderer tests passed; no complete real Word has been exported yet.
+
+The alternate paid-writer migration (`20261021131657_recover_alternate_paid_writer.sql`,
+hosted version **20261021134047**) is deployed with service-only recovery access.
+The normal authenticated retry for the original experience job returned HTTP 200
+and queued revision 62 at approximately 13:52 UTC. The browser's click wait timed
+out, but the server response confirms acceptance, so the action was not repeated.
+Actual alternate recovery and independent acceptance remain to be observed.
+
+At 13:49 UTC, **26/67 drafting parts** are accepted and three remain blocked;
+analysis is 3/3 and planning 9/9 accepted. Since 10:34 UTC the plan has 110 settled
+usage records with **1,004,270 input / 315,540 output tokens** and no new unknown
+usage. Reasoning tokens may already be included in output. This is measured
+usage, not a price estimate; model routing and candidate budgets are unchanged.
+
+Already-paid alternate writer recovery is implemented locally for the corrected
+initial company-claim guard. It preserves the original candidate and latest
+complete adverse report, selects only a distinct exact settled/count-recorded
+initial usage, and requires normal independent verification of the selected
+candidate. The private selection chain allows at most two distinct successors;
+no writer request, candidate-budget increment/reset, usage settlement or direct
+acceptance occurs in recovery. Selection/resume checks retain the current lease,
+request identity, provider data permissions and pending/unknown-usage barriers.
+Historical pre-JSONB marker hashes remain immutable; selection records the hash
+of the persisted candidate separately with exact initial retained-result and
+producer provenance. New initial markers use persisted readback hashes.
+Focused recovery verification passed **67/67 tests in four files**, including a
+real SQL/LangGraph replay with one original GET, one alternate GET and a normal
+independent verifier, all three original writer usages/counts unchanged, fourteen
+SQL fail-closed cases, crash replay, and second-successor/third/revisit limits.
+These are synthetic integration fixtures, not real proposal acceptance. The
+`recover_alternate_paid_writer` migration and worker changes were subsequently
+deployed as recorded above; actual hosted acceptance remains.
+
 At 13:12 UTC, worker **v98** has exact 40-file hosted readback. Compound
 company declarations may be covered by multiple exact candidate quotations;
 their union must cover every non-whitespace character, including numbers,
@@ -74,6 +142,12 @@ The production build retains its existing large-chunk warning. This is a fronten
 change only; backend behavior and GenerationPanel are unchanged. Deployment and
 authenticated hosted Jobs-screen acceptance remain pending; no new provider
 request or live job action was made for these tests.
+
+Hosted acceptance after release `b7301a9`: the actual blocked experience row shows
+**Worker attempts 15 · Current model round 2**, Created 13:00 Riyadh and Updated
+16:00 Riyadh, matching database values. This read-only browser check clicked no
+retry. The browser needed a full reload after the Pages asset replacement; the
+old open-tab route first reached the existing reload/error boundary.
 
 Current status at 12:15 UTC: analysis remains 3/3 and planning 9/9 accepted;
 **11/67 draft jobs are accepted**, with 53 queued, one running and two blocked.
@@ -1553,3 +1627,23 @@ Redirect follow-up acceptance: final local backend **284 tests/26 files**, front
 
 
 Final acceptance: source revision **cf0ce3397fa5d912abb39911ab9a663fbff595f6** passed [GitHub build and Pages publication 39271922928](https://github.com/salahassi/tenders/actions/runs/39271922928), including all 463 tests, TypeScript and Deno checks. Live worker readback confirmed SOURCE_NOTICE_REDIRECTED for the first two Amman rechecks, with 18 still queued at that observation, and zero additional failure deliveries since the runtime release. The corresponding real public HTML also produced SOURCE_NOTICE_REDIRECTED in the corrected local parser. Code, migrations, worker/API deployment, Pages deployment and local browser acceptance are complete. Authenticated hosted browser acceptance and successful model assessment of the new Amman notices are not claimed. Remaining external acceptance: inaccessible/redirected detail URLs, provider quota/availability, and the MDLF 503. The collector continues on schedule; no alert preference or provider was disabled to suppress symptoms. This final reconciliation is documentation only.
+
+## October 21 — wake successful unchanged notice continuations
+
+Read-only hosted timing found three successful `notice.details_unchanged` completions at 12:57:37.974, 13:04:11.970 and 13:05:21.880 UTC. Each preserved its assessment job as due `retry_wait` with no error, but the existing wake admission did not recognize that healthy local continuation. None had a wake receipt; the next model operations started 32.6, 54.2 and 42.6 seconds later, respectively. This identifies approximately 129 seconds of observed delay across those three handoffs; it is not a projection of total remaining proposal duration.
+
+Migration `20261021130940_wake_unchanged_notice_continuations.sql` adds the exact released lease and resulting job revision to the existing immutable notice audit record. Only a due, error-free classification continuation with that current receipt can enter the normal queue wake policy. Existing workspace serialization, active lease/reservation/restore guards, cancellation, revision deduplication, ten-second throttle, normal claim ordering and cron fallback are unchanged. There is no extra timer, new generation request, model routing change, checkpoint edit or budget reset. Historical audit records lacking the receipt fields do not qualify.
+
+Local verification: **155 tests / five files passed in 23.14 seconds**, including 15 new canonical completion/wake/claim tests and the existing queue, deferred-wake, notice-details and release-command suites. Tests cover unchanged frozen inputs/checkpoints and zero provider calls, one normal lease, ordinary interactive priority, replay/wrong-lease/new-revision rejection, future eligibility, failures/backoff, cancellation, active leases, reservations, restore, disabled dispatch, throttle and service-only RPC access. Independent SQL review found no blocker. No hosted application or deployment of this migration is claimed by this entry.
+
+Hosted update: the migration was applied successfully at 13:17:36 UTC
+(hosted migration version `20261021131736`).
+Worker/API bundles are unchanged. The next qualifying live continuation receipt
+and wake remain to be observed. Source `b7301a9c86286bfb95fd3b5fa5d98359d20b3b6f`
+passed [CI and Pages 39605737413](https://github.com/salahassi/tenders/actions/runs/39605737413).
+
+Live follow-up: a qualifying unchanged-details receipt at **13:47:20.772 UTC**
+was matched by a wake for the exact released job revision at **13:47:20.948 UTC**
+(0.175 seconds). No new model usage or polling attempt occurred for that job
+after the receipt through the 13:49 snapshot. This proves dispatch, not faster
+completion: the continuation was still waiting while proposal work progressed.

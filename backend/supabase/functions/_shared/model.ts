@@ -1,5 +1,9 @@
 import { modelAdapters } from "./modelAdapters/index.ts";
 import {
+  SEMANTIC_INSTRUCTIONS_V1,
+  SEMANTIC_PROMPT_V1,
+} from "./modelSemanticInstructions.ts";
+import {
   VERIFICATION_INSTRUCTIONS_V2,
   VERIFICATION_PROMPT_V2,
 } from "./modelVerificationInstructions.ts";
@@ -147,7 +151,7 @@ const contentPolicyChecks = {
 };
 export const blockedContent = (value: string) =>
   Object.values(contentPolicyChecks).some((check) => check.test(value));
-export function taskSystemInstructions(
+function legacyTaskSystemInstructions(
   task: ModelTask,
   verificationRevision: 1 | 2 = 1,
 ) {
@@ -185,6 +189,16 @@ Unsupported company facts become explicit questions or conditional proposed work
 Return the original target_task and the corrected result using that task's complete schema.`
     );
   return systemInstructions;
+}
+export function taskSystemInstructions(
+  task: ModelTask,
+  verificationRevision: 1 | 2 = 1,
+  semanticRevision: 0 | 1 = 0,
+) {
+  const original = legacyTaskSystemInstructions(task, verificationRevision);
+  return semanticRevision === 1 && task !== "connection_probe"
+    ? `${original}\n${SEMANTIC_INSTRUCTIONS_V1}`
+    : original;
 }
 export async function sha256(value: string) {
   return Array.from(
@@ -797,6 +811,7 @@ export class FreeModelProvider {
     private streamResponses = false,
     private configuration?: ModelConfiguration,
     private verificationRevision: 1 | 2 = 1,
+    private semanticRevision: 0 | 1 = 0,
   ) {}
   private async diagnoseRejectedRequest(
     response: Response,
@@ -1174,7 +1189,11 @@ export class FreeModelProvider {
       task,
       prompt,
       schema: schema as Record<string, any>,
-      system: taskSystemInstructions(task, this.verificationRevision),
+      system: taskSystemInstructions(
+        task,
+        this.verificationRevision,
+        this.semanticRevision,
+      ),
       capabilities,
       profile,
       stream: this.streamResponses,
@@ -1292,26 +1311,35 @@ export function modelPrompt(
   language: "en" | "ar",
   repair = false,
   verificationRevision: 1 | 2 = 1,
+  semanticRevision: 0 | 1 = 0,
 ) {
-  return task === "inspect_source_page"
-    ? sourceReadingPrompt(context, evidence, repair)
-    : JSON.stringify({
-        task,
-        prompt_version:
-          task === "verify_grounding" && verificationRevision === 2
-            ? VERIFICATION_PROMPT_V2
-            : taskRegistry[task].promptVersion,
-        ...(task === "verify_grounding" && verificationRevision === 2
-          ? { verification_policy: VERIFICATION_INSTRUCTIONS_V2 }
-          : {}),
-        writing_guide: writingGuide[language],
-        repair_instruction: repair
-          ? "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
-          : null,
-        required_ids: requiredIds,
-        untrusted_data: context,
-        evidence,
-      });
+  const original =
+    task === "inspect_source_page"
+      ? sourceReadingPrompt(context, evidence, repair)
+      : JSON.stringify({
+          task,
+          prompt_version:
+            task === "verify_grounding" && verificationRevision === 2
+              ? VERIFICATION_PROMPT_V2
+              : taskRegistry[task].promptVersion,
+          ...(task === "verify_grounding" && verificationRevision === 2
+            ? { verification_policy: VERIFICATION_INSTRUCTIONS_V2 }
+            : {}),
+          writing_guide: writingGuide[language],
+          repair_instruction: repair
+            ? "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
+            : null,
+          required_ids: requiredIds,
+          untrusted_data: context,
+          evidence,
+        });
+  if (semanticRevision === 0 || task === "connection_probe") return original;
+  const envelope = JSON.parse(original);
+  return JSON.stringify({
+    ...envelope,
+    prompt_version: `${envelope.prompt_version}.${SEMANTIC_PROMPT_V1}`,
+    semantic_policy: SEMANTIC_INSTRUCTIONS_V1,
+  });
 }
 /** Try each configured provider once per round; retain per-provider outcomes. */
 export async function executeModel(
@@ -1326,7 +1354,7 @@ export async function executeModel(
   repair = false,
   fetcher: typeof fetch = fetch,
   verificationRevision: 1 | 2 = 1,
-  options: { independentGrounding?: boolean } = {},
+  options: { independentGrounding?: boolean; semanticRevision?: 0 | 1 } = {},
 ) {
   const invocationStarted = ledger.invocationStartedAt ?? Date.now();
   const targetTask =
@@ -1345,6 +1373,7 @@ export async function executeModel(
     language,
     repair,
     verificationRevision,
+    options.semanticRevision ?? 0,
   );
   if (blockedContent(prompt)) throw new ModelError("DATA_POLICY_BLOCKED");
   const schema = taskJsonSchema(task, targetTask);
@@ -1460,6 +1489,7 @@ export async function executeModel(
         (ledger.invocationBudgetMs ?? 110000) > 110000,
         config,
         verificationRevision,
+        options.semanticRevision ?? 0,
       );
       let reservation: string | null = null;
       let settled = false;
@@ -1581,6 +1611,8 @@ export async function executeModel(
         });
         if (task === "verify_grounding" && verificationRevision === 2)
           request.promptVersion = VERIFICATION_PROMPT_V2;
+        if (options.semanticRevision === 1 && task !== "connection_probe")
+          request.promptVersion = JSON.parse(prompt).prompt_version;
         if (pending?.execution_metadata) {
           request.promptVersion =
             pending.execution_metadata.prompt_version ?? request.promptVersion;

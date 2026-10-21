@@ -25,8 +25,10 @@ import {
   validateGroundingReport,
 } from "./modelGrounding.ts";
 import { pinVerificationPrompt } from "./modelVerificationPrompt.ts";
+import { pinSemanticPrompt } from "./modelSemanticPrompt.ts";
 import { recoverUnstartedRepair } from "./modelRepairRecovery.ts";
 import { recoverBlockedVerification } from "./modelBlockedRecovery.ts";
+import { recoverAlternatePaidWriter } from "./modelAlternateWriterRecovery.ts";
 import {
   recoverBlockedWriter,
   retainInvalidWriter,
@@ -320,6 +322,19 @@ async function runGuardedModel(o: Options): Promise<{
             repair: o.repair,
           })
         : 1;
+    const semanticRevision = await pinSemanticPrompt({
+      backend: o.backend,
+      store,
+      job: o.job,
+      requestPrefix: `${o.prefix}:${operationKey}`,
+      task,
+      context,
+      evidence: o.evidence,
+      requiredIds,
+      language: o.language,
+      repair: task === "repair_result" || o.repair,
+      verificationRevision,
+    });
     let producer: Record<string, unknown> | undefined;
     let preparedRequest: StructuredRequest | undefined;
     let receivedUsage: string | undefined;
@@ -364,7 +379,7 @@ async function runGuardedModel(o: Options): Promise<{
       task === "repair_result" || o.repair,
       o.fetcher,
       verificationRevision,
-      { independentGrounding: true },
+      { independentGrounding: true, semanticRevision },
     );
     // Persist the result before returning the node output/checkpoint. A replay
     // after this write never submits the same completed candidate again.
@@ -416,6 +431,19 @@ async function runGuardedModel(o: Options): Promise<{
       language: o.language,
       repair: o.repair,
     });
+    const semanticRevision = await pinSemanticPrompt({
+      backend: o.backend,
+      store,
+      job: o.job,
+      requestPrefix: `${o.prefix}:${operationKey}`,
+      task: "verify_grounding",
+      context,
+      evidence: o.evidence,
+      requiredIds,
+      language: o.language,
+      repair: o.repair,
+      verificationRevision,
+    });
     const inputHash = await sha256(
       modelPrompt(
         "verify_grounding",
@@ -425,6 +453,7 @@ async function runGuardedModel(o: Options): Promise<{
         o.language,
         o.repair,
         verificationRevision,
+        semanticRevision,
       ),
     );
     const round = o.job.checkpoint?.model_round;
@@ -885,6 +914,24 @@ async function runGuardedModel(o: Options): Promise<{
             state: await graph.getState(config),
             validate: o.validate,
             update: (values) => graph.updateState(config, values, "verify"),
+          })) ||
+          (await recoverAlternatePaidWriter({
+            backend: o.backend,
+            store,
+            job: o.job,
+            threadId,
+            prefix: o.prefix,
+            task: o.task,
+            context: o.context,
+            evidence: o.evidence,
+            requiredIds: o.requiredIds,
+            manifest: o.manifest,
+            language: o.language,
+            repair: o.repair,
+            fetcher: o.fetcher,
+            state: await graph.getState(config),
+            validate: o.validate,
+            update: (values) => graph.updateState(config, values, "produce"),
           })));
       if (!recovered) throw new ModelError("MODEL_CORRECTION_EXHAUSTED");
     } else if (checkpoint)

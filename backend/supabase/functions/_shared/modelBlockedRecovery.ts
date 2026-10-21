@@ -31,9 +31,22 @@ export async function recoverBlockedVerification(o: {
     !values.candidateRef
   )
     return false;
-  const saved = await o.store.action("result_get", {
+  let saved = await o.store.action("result_get", {
     key: `candidate-${values.repairCount}`,
   });
+  if (saved && saved.id !== values.candidateRef && values.repairCount === 0) {
+    const choices = await o.store.action("writer_alternative_selections");
+    const selected = Array.isArray(choices) ? choices.at(-1) : null;
+    if (selected?.candidate_id !== values.candidateRef || !selected.resumed_at)
+      return false;
+    saved = await o.store.action("result_get", { id: selected.candidate_id });
+    if (
+      saved?.value.recovery_usage_id !== selected.usage_id ||
+      (await sha256(JSON.stringify(saved?.value.result))) !==
+        selected.candidate_hash
+    )
+      return false;
+  }
   if (!saved || saved.id !== values.candidateRef) return false;
   const candidate = values.repairCount
     ? saved.value.result.result

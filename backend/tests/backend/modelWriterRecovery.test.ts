@@ -558,6 +558,15 @@ describe("paid initial writer recovery through the real graph and SQL store", ()
         repair: true,
         fetcher,
       };
+      await store.action("result_put", {
+        key: `semantic-instructions-${await sha256(`${prefix}:candidate-0`)}`,
+        value: {
+          version: 0,
+          legacy_input_hash: await sha256(
+            modelPrompt("draft_section", {}, [], [], "en", true),
+          ),
+        },
+      });
       // Save the real initial-produce checkpoint. The exhausted allowance must
       // prevent any request while the already-paid original is not yet present.
       await expect(executeGuardedModel(options)).rejects.toMatchObject({
@@ -649,4 +658,20 @@ describe("paid initial writer recovery through the real graph and SQL store", ()
       await db.db.exec("rollback");
     }
   }, 30000);
+});
+
+it("keeps a historical pre-JSONB marker unchanged when replaying a persisted candidate", async () => {
+  const f = await fixture();
+  expect(await recoverBlockedWriter(f.o)).toBe(true);
+  const candidate = f.rows.get("candidate-0");
+  candidate.value.result = Object.fromEntries(
+    Object.entries(candidate.value.result).reverse(),
+  );
+  const marker = structuredClone(f.rows.get(`writer-recovery-${f.usage.id}`));
+  expect(await sha256(JSON.stringify(candidate.value.result))).not.toBe(
+    marker.value.candidate_hash,
+  );
+  expect(await recoverBlockedWriter(f.o)).toBe(true);
+  expect(f.rows.get(`writer-recovery-${f.usage.id}`)).toEqual(marker);
+  expect(f.fetcher).toHaveBeenCalledTimes(1);
 });

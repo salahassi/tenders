@@ -618,6 +618,173 @@ it.each([false, true])(
   30000,
 );
 
+it("preserves a historical draft request through the semantic-policy rollout with GET-only continuation", async () => {
+  const { executeGuardedModel } =
+    await import("../../supabase/functions/_shared/modelGraph");
+  const { ModelGraphStore } =
+    await import("../../supabase/functions/_shared/modelGraphStore");
+  const { modelPrompt, sha256 } =
+    await import("../../supabase/functions/_shared/model");
+  const { SEMANTIC_INSTRUCTIONS_V1 } =
+    await import("../../supabase/functions/_shared/modelSemanticInstructions");
+  const configured = await configure("gemini_free");
+  const { backend, envs } = configured;
+  let job = configured.job;
+  const prefix = `step:${job.id}`;
+  await modelLedger(backend, job, prefix, envs).preflight([], "draft_section");
+  job = (
+    await f.db.query<any>("select * from public.jobs where id=$1", [job.id])
+  ).rows[0];
+  const inputHash = await sha256(
+    JSON.stringify({
+      version: 1,
+      task: "draft_section",
+      context: {},
+      evidence: [],
+      requiredIds: [],
+      manifest: [],
+      language: "en",
+    }),
+  );
+  const threadId = await sha256(`${job.id}:${prefix}:${inputHash}`);
+  const store = new ModelGraphStore(backend, job, threadId);
+  await store.action("init", {
+    input_hash: inputHash,
+    task: "draft_section",
+    graph_version: 1,
+  });
+  const legacyHash = await sha256(
+    modelPrompt("draft_section", {}, [], [], "en"),
+  );
+  const pinKey = `semantic-instructions-${await sha256(`${prefix}:candidate-0`)}`;
+  // Recreate a pre-rollout initial dispatch. Deleting only this synthetic pin
+  // below models a historical accepted request with no semantic policy record.
+  await store.action("result_put", {
+    key: pinKey,
+    value: { version: 0, legacy_input_hash: legacyHash },
+  });
+  const candidate = {
+    key: "approach",
+    title: "Approach",
+    content_blocks: [
+      { type: "paragraph", text: "Proposed work needs buyer confirmation." },
+    ],
+    requirement_ids: [],
+    evidence_refs: [],
+    company_claims: [],
+    assumptions: [],
+    questions: [],
+  };
+  const methods: string[] = [];
+  const fetcher: typeof fetch = async (_url, init) => {
+    if (init?.method === "DELETE") return new Response(null, { status: 204 });
+    methods.push(init?.method ?? "");
+    if (init?.method === "POST") {
+      const body = JSON.parse(String(init.body));
+      expect(body.system_instruction).not.toContain(SEMANTIC_INSTRUCTIONS_V1);
+      return Response.json({ id: "historical-draft", status: "in_progress" });
+    }
+    return Response.json({
+      id: "historical-draft",
+      status: "completed",
+      steps: [
+        {
+          type: "model_output",
+          content: [{ type: "text", text: JSON.stringify(candidate) }],
+        },
+      ],
+      usage: {
+        total_input_tokens: 10,
+        total_output_tokens: 8,
+        total_thought_tokens: 0,
+      },
+    });
+  };
+  const options = {
+    backend,
+    job,
+    prefix,
+    task: "draft_section" as const,
+    context: {},
+    evidence: [],
+    requiredIds: [],
+    manifest: [],
+    environments: envs,
+    language: "en" as const,
+    repair: false,
+    fetcher,
+  };
+  await expect(executeGuardedModel(options)).rejects.toBeInstanceOf(
+    ModelDeferred,
+  );
+  const original = (
+    await f.db.query<any>(
+      "select execution_metadata from public.model_attempts where job_id=$1 and sent order by id limit 1",
+      [job.id],
+    )
+  ).rows[0].execution_metadata;
+  expect(original.input_hash).toBe(legacyHash);
+  await f.db.query(
+    "delete from app_private.model_graph_results where thread_id=$1 and result_key=$2",
+    [threadId, pinKey],
+  );
+  await f.db.query(
+    "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
+    [job.id],
+  );
+  const resumed = await rpc("claim_backend_job_v2");
+  expect(resumed.id).toBe(job.id);
+  // Producing the paid candidate yields before independent verification. No
+  // new writer, reserve, or altered-input generation is permitted on replay.
+  await expect(
+    executeGuardedModel({ ...options, job: resumed }),
+  ).rejects.toBeInstanceOf(ModelDeferred);
+  expect(methods).toEqual(["POST", "GET"]);
+  const calls = (
+    await f.db.query<any>(
+      "select input_hash,state,remote_request_id from public.provider_usage where job_id=$1",
+      [job.id],
+    )
+  ).rows;
+  expect(calls).toEqual([
+    {
+      input_hash: legacyHash,
+      state: "settled",
+      remote_request_id: "historical-draft",
+    },
+  ]);
+  const after = (
+    await f.db.query<any>(
+      "select execution_metadata from public.model_attempts where job_id=$1 order by id desc limit 1",
+      [job.id],
+    )
+  ).rows[0].execution_metadata;
+  for (const key of [
+    "input_hash",
+    "prompt_version",
+    "profile",
+    "capabilities",
+    "route_revision",
+  ])
+    expect(after[key]).toEqual(original[key]);
+  expect(
+    (
+      await f.db.query<any>(
+        "select value from app_private.model_graph_results where thread_id=$1 and result_key=$2",
+        [threadId, pinKey],
+      )
+    ).rows[0].value.version,
+  ).toBe(0);
+  expect(
+    (
+      await f.db.query<any>(
+        "select value from app_private.model_graph_results where thread_id=$1 and result_key='candidate-0'",
+        [threadId],
+      )
+    ).rows[0].value.result,
+  ).toEqual(candidate);
+}, 30000);
+
 it("resumes an accepted Gemini request with its original effective metadata and GET only", async () => {
   const { executeGuardedModel } =
     await import("../../supabase/functions/_shared/modelGraph");

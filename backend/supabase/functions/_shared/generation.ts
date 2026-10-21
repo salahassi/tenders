@@ -1,6 +1,7 @@
 import { scopeInstruction } from "./discovery.ts";
 import { enrichPublicNotice } from "./publicNoticeDetails.ts";
 import { executeGuardedModel } from "./modelGraph.ts";
+import { createSectionOutline, plannedDraftInputs } from "./proposalOutline.ts";
 import { normalizedEvidence } from "./sourceModel.ts";
 import {
   batchGenerationRequirements,
@@ -544,21 +545,12 @@ export async function nextStage(ctx: PlanContext): Promise<{
   if (stage === "planning") {
     const sections = plannedSections(ctx);
     output.next_stage = "drafting";
-    output.steps = sections.flatMap((section) => {
-      const groups = chunk(section.requirement_ids as string[], 8);
-      return (groups.length ? groups : [[]]).map((ids, i) => ({
+    output.steps = sections.flatMap((section) =>
+      plannedDraftInputs(section).map((input) => ({
         task: "draft_section",
-        input: {
-          section: {
-            ...section,
-            key:
-              groups.length > 1 ? section.key + `-part${i + 1}` : section.key,
-            requirement_ids: ids,
-          },
-          requirement_ids: ids,
-        },
-      }));
-    });
+        input,
+      })),
+    );
     return output;
   }
   if (stage === "drafting") {
@@ -695,6 +687,11 @@ export async function nextStage(ctx: PlanContext): Promise<{
   output.next_stage = "completed";
   output.final_result = {
     sections,
+    section_outline: createSectionOutline(
+      plannedSections(ctx),
+      ctx.steps.filter((step) => step.task === "draft_section"),
+      sections,
+    ),
     questions: Array.from(
       new Map(
         questions.map((q) => [q.question + "|" + q.section_key, q]),
