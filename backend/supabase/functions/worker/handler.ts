@@ -137,33 +137,18 @@ export function createWorkerHandler(
         }
         const job = await backend.claim();
         if (!job) return response({ data: { claimed: false } });
-        if (job.type === "model_probe") {
-          await processModelProbe(backend, env, job, fetcher);
-          return response({ data: { job_id: job.id, processed: true } });
-        }
-        if (job.type === "source_collect" || job.type === "source_candidates") {
-          if (
-            job.type === "source_candidates" &&
-            job.checkpoint?.discovery_url
-          ) {
-            const saved = await processAutomaticSource(
-              backend,
-              env,
-              job,
-              resolve,
-              fetcher,
-            );
-            return response({ data: { job_id: job.id, ...saved } });
+        const processClaimed = async () => {
+          if (job.type === "model_probe") {
+            await processModelProbe(backend, env, job, fetcher);
+            return response({ data: { job_id: job.id, processed: true } });
           }
-          try {
-            const source = (await backend.internal("collection_context", {
-              job_id: job.id,
-              lease: job.lease_token,
-            })) as SourceInput;
+          if (
+            job.type === "source_collect" ||
+            job.type === "source_candidates"
+          ) {
             if (
-              source.kind === "link_directory" &&
-              (source.adapter_config as Record<string, unknown>)?.automatic ===
-                true
+              job.type === "source_candidates" &&
+              job.checkpoint?.discovery_url
             ) {
               const saved = await processAutomaticSource(
                 backend,
@@ -174,62 +159,99 @@ export function createWorkerHandler(
               );
               return response({ data: { job_id: job.id, ...saved } });
             }
-            const hosts = env.collectionHosts?.length
-              ? env.collectionHosts
-              : await backend.internal("worker_collection_hosts");
-            const result = await collect(source, hosts || [], resolve, fetcher);
-            const saved = await backend.internal("complete_collection", {
-              job_id: job.id,
-              lease: job.lease_token,
-              result,
-            });
-            await backend
-              .internal("schedule_assessment_refresh")
-              .catch(() => console.warn("assessment_scheduling_pending"));
-            return response({ data: { job_id: job.id, ...saved } });
-          } catch (error) {
-            const code =
-              error instanceof CollectionError || error instanceof AppError
-                ? error.code
-                : "SOURCE_TEMPORARY_FAILURE";
-            await backend.internal("fail_collection", {
-              job_id: job.id,
-              lease: job.lease_token,
-              error_code: code,
-              retry_after:
-                error instanceof CollectionError ? error.retryAfter : null,
-            });
-            return response({ data: { job_id: job.id, error_code: code } });
+            try {
+              const source = (await backend.internal("collection_context", {
+                job_id: job.id,
+                lease: job.lease_token,
+              })) as SourceInput;
+              if (
+                source.kind === "link_directory" &&
+                (source.adapter_config as Record<string, unknown>)
+                  ?.automatic === true
+              ) {
+                const saved = await processAutomaticSource(
+                  backend,
+                  env,
+                  job,
+                  resolve,
+                  fetcher,
+                );
+                return response({ data: { job_id: job.id, ...saved } });
+              }
+              const hosts = env.collectionHosts?.length
+                ? env.collectionHosts
+                : await backend.internal("worker_collection_hosts");
+              const result = await collect(
+                source,
+                hosts || [],
+                resolve,
+                fetcher,
+              );
+              const saved = await backend.internal("complete_collection", {
+                job_id: job.id,
+                lease: job.lease_token,
+                result,
+              });
+              await backend
+                .internal("schedule_assessment_refresh")
+                .catch(() => console.warn("assessment_scheduling_pending"));
+              return response({ data: { job_id: job.id, ...saved } });
+            } catch (error) {
+              const code =
+                error instanceof CollectionError || error instanceof AppError
+                  ? error.code
+                  : "SOURCE_TEMPORARY_FAILURE";
+              await backend.internal("fail_collection", {
+                job_id: job.id,
+                lease: job.lease_token,
+                error_code: code,
+                retry_after:
+                  error instanceof CollectionError ? error.retryAfter : null,
+              });
+              return response({ data: { job_id: job.id, error_code: code } });
+            }
           }
-        }
-        if (
-          [
-            "classify_opportunity",
-            "analyze_chunk",
-            "summarize_review",
-            "plan_proposal",
-            "draft_section",
-            "plan_commercial",
-            "review_proposal",
-            "advance_plan",
-          ].includes(job.type)
-        ) {
-          await processGeneration(backend, env, job, fetcher, resolve);
-          return response({ data: { job_id: job.id, processed: true } });
-        }
-        await backend.finish(
-          job.id,
-          job.lease_token,
-          "blocked",
-          "MODEL_NOT_CONFIGURED",
-        );
-        return response({
-          data: {
+          if (
+            [
+              "classify_opportunity",
+              "analyze_chunk",
+              "summarize_review",
+              "plan_proposal",
+              "draft_section",
+              "plan_commercial",
+              "review_proposal",
+              "advance_plan",
+            ].includes(job.type)
+          ) {
+            await processGeneration(backend, env, job, fetcher, resolve);
+            return response({ data: { job_id: job.id, processed: true } });
+          }
+          await backend.finish(
+            job.id,
+            job.lease_token,
+            "blocked",
+            "MODEL_NOT_CONFIGURED",
+          );
+          return response({
+            data: {
+              job_id: job.id,
+              status: "blocked",
+              error_code: "MODEL_NOT_CONFIGURED",
+            },
+          });
+        };
+        const result = await processClaimed();
+        try {
+          await backend.internal("wake_backend_queue", {
             job_id: job.id,
-            status: "blocked",
-            error_code: "MODEL_NOT_CONFIGURED",
-          },
-        });
+            lease: job.lease_token,
+          });
+        } catch {
+          // Completion is already durable. Cron remains the fallback when a
+          // wake cannot be queued; never turn successful work into a retry.
+          console.warn("queue_wakeup_pending");
+        }
+        return result;
       };
       if (background) {
         background(

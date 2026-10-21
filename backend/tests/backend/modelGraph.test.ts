@@ -4,6 +4,7 @@ import { Annotation, StateGraph, START, END } from "@langchain/langgraph";
 import { emptyCheckpoint } from "@langchain/langgraph-checkpoint";
 import { workflowFixture } from "./workflowFixture";
 import { ModelGraphStore } from "../../supabase/functions/_shared/modelGraphStore";
+import { retainInvalidVerification } from "../../supabase/functions/_shared/modelGraph";
 
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
@@ -202,4 +203,80 @@ it("does not commit an unaccepted graph result or expose checkpoint tables throu
       browser_read: false,
       anon_read: false,
     });
+});
+it("retains distinct verifier rejections by producer and code without replacing the first corrective input on replay", async () => {
+  const { store } = await setup();
+  const key = `verification-${"d".repeat(64)}`;
+  const report = {
+    claims: [
+      { id: "fixture-claim", candidate_quote: "Synthetic rejected text" },
+    ],
+  };
+  const first = { provider: "gemini_free", modelId: "fixture-a" };
+  const second = { provider: "openai", modelId: "fixture-b" };
+  await retainInvalidVerification(
+    store,
+    key,
+    report,
+    "EVIDENCE_REFERENCE_INVALID",
+    first,
+  );
+  const canonical = await store.action("result_get", { key: `invalid-${key}` });
+  await retainInvalidVerification(
+    store,
+    key,
+    report,
+    "EVIDENCE_REFERENCE_INVALID",
+    second,
+  );
+  await retainInvalidVerification(
+    store,
+    key,
+    report,
+    "MODEL_COVERAGE_INCOMPLETE",
+    second,
+  );
+  // Replaying either provider's same rejection must not create another record.
+  await retainInvalidVerification(
+    store,
+    key,
+    report,
+    "EVIDENCE_REFERENCE_INVALID",
+    first,
+  );
+  await retainInvalidVerification(
+    store,
+    key,
+    report,
+    "EVIDENCE_REFERENCE_INVALID",
+    second,
+  );
+  const archived = (
+    await f.db.query<any>(
+      "select result_key,value from app_private.model_graph_results where thread_id=$1 and result_key like 'invalid-report-%' order by created_at,id",
+      [store.thread],
+    )
+  ).rows;
+  expect(archived).toHaveLength(3);
+  for (const row of archived) {
+    expect(row.result_key).toMatch(/^invalid-report-[a-f0-9]{64}$/);
+    expect(row.value).toMatchObject({ verification_key: key, result: report });
+  }
+  expect(
+    archived.map((row) => [row.value.producer.modelId, row.value.code]),
+  ).toEqual(
+    expect.arrayContaining([
+      ["fixture-a", "EVIDENCE_REFERENCE_INVALID"],
+      ["fixture-b", "EVIDENCE_REFERENCE_INVALID"],
+      ["fixture-b", "MODEL_COVERAGE_INCOMPLETE"],
+    ]),
+  );
+  expect(await store.action("result_get", { key: `invalid-${key}` })).toEqual(
+    canonical,
+  );
+  expect(canonical.value).toEqual({
+    result: report,
+    code: "EVIDENCE_REFERENCE_INVALID",
+    producer: first,
+  });
 });

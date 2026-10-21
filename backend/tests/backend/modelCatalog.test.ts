@@ -121,6 +121,204 @@ async function configure(
   };
 }
 
+it.each([false, true])(
+  "recovers a blocked unchanged complete report without another call or budget reset (accept crash: %s)",
+  async (crash) => {
+    const { executeGuardedModel } =
+      await import("../../supabase/functions/_shared/modelGraph");
+    const { ModelGraphStore } =
+      await import("../../supabase/functions/_shared/modelGraphStore");
+    const { candidateContent } =
+      await import("../../supabase/functions/_shared/modelGrounding");
+    const { sha256 } = await import("../../supabase/functions/_shared/model");
+    const { job, backend, envs } = await configure();
+    const candidate = {
+      key: "approach",
+      title: "Approach",
+      content_blocks: [
+        {
+          type: "paragraph",
+          text: "Proposed work requires buyer confirmation.",
+        },
+      ],
+      requirement_ids: [],
+      evidence_refs: [],
+      company_claims: [],
+      assumptions: [],
+      questions: [],
+    };
+    const fetcher = vi.fn<typeof fetch>(async () =>
+      Response.json({
+        choices: [
+          {
+            finish_reason: "stop",
+            message: { content: JSON.stringify(candidate) },
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 8 },
+      }),
+    );
+    const options = {
+      backend,
+      job,
+      prefix: `step:${job.id}`,
+      task: "draft_section" as const,
+      context: {},
+      evidence: [],
+      requiredIds: [],
+      manifest: [],
+      environments: envs,
+      language: "en" as const,
+      repair: false,
+      fetcher,
+    };
+    await expect(executeGuardedModel(options)).rejects.toBeInstanceOf(
+      ModelDeferred,
+    );
+    const current = await rpc("claim_backend_job_v2");
+    const thread = (
+      await f.db.query<any>(
+        "select id from app_private.model_graph_threads where job_id=$1",
+        [job.id],
+      )
+    ).rows[0];
+    const store = new ModelGraphStore(backend, current, thread.id);
+    const original = await store.action("result_get", { key: "candidate-0" });
+    const hash = await sha256(JSON.stringify(original.value.result));
+    const units = candidateContent(original.value.result);
+    const retained = await store.action("result_put", {
+      key: `invalid-verification-repair-${hash}`,
+      value: {
+        code: "EVIDENCE_REFERENCE_INVALID",
+        producer: { model: "fixture-corrective" },
+        result: {
+          checked_candidate_hash: hash,
+          reviewed_all_content: true,
+          processed_content_ids: units.map((u) => u.id),
+          claims: [
+            {
+              id: "claim",
+              claim: units[0].text,
+              candidate_quote: units[0].text,
+              kind: "assumption",
+              status: "supported",
+              source_refs: [],
+              finding: "Proposed work.",
+            },
+          ],
+          processed_requirement_ids: [],
+          requirement_checks: [],
+          findings: [],
+        },
+      },
+    });
+    await store.action("needs_review");
+    await f.db.query(
+      "insert into app_private.model_graph_budgets(thread_id,unit,candidates) values($1,'verifier-exhausted',3),($1,'verifier-corrective',1)",
+      [thread.id],
+    );
+    const usage = async () =>
+      (
+        await f.db.query<any>(
+          "select id,state,actual_input,actual_output,graph_candidate_recorded from public.provider_usage where job_id=$1 order by id",
+          [job.id],
+        )
+      ).rows;
+    const budgets = async () =>
+      (
+        await f.db.query<any>(
+          "select unit,candidates from app_private.model_graph_budgets where thread_id=$1 order by unit",
+          [thread.id],
+        )
+      ).rows;
+    const usageBefore = await usage();
+    const budgetsBefore = await budgets();
+    expect(await store.action("recovery_ready")).toBe(true);
+    for (const state of ["reserved", "unknown"]) {
+      await f.db.query(
+        "update public.provider_usage set state=$2 where id=$1",
+        [usageBefore[0].id, state],
+      );
+      expect(await store.action("recovery_ready")).toBe(false);
+    }
+    await f.db.query("update public.provider_usage set state=$2 where id=$1", [
+      usageBefore[0].id,
+      usageBefore[0].state,
+    ]);
+    await f.db.query(
+      "update public.jobs set checkpoint=jsonb_set(checkpoint,'{model_round}','{}') where id=$1",
+      [job.id],
+    );
+    expect(await store.action("recovery_ready")).toBe(false);
+    await f.db.query(
+      "update public.jobs set checkpoint=checkpoint-'model_round' where id=$1",
+      [job.id],
+    );
+    // Reuse the held normal queue lease. No provider transport is allowed from
+    // this point, including if acceptance crashes after saving its immutable row.
+    fetcher.mockClear();
+    fetcher.mockImplementation(async () => {
+      throw Error("Recovery must make zero model requests");
+    });
+    if (crash) {
+      let failAccept = true;
+      const crashingBackend = {
+        ...backend,
+        internal: async (name: string, args: any) => {
+          if (
+            name === "model_graph_store" &&
+            args.action === "accept" &&
+            failAccept
+          ) {
+            failAccept = false;
+            throw Error("Synthetic crash after accepted result saved");
+          }
+          return backend.internal(name, args);
+        },
+      } as Backend;
+      await expect(
+        executeGuardedModel({
+          ...options,
+          backend: crashingBackend,
+          job: current,
+        }),
+      ).rejects.toThrow("Synthetic crash");
+      expect(
+        (await store.action("result_get", { key: "accepted" })).value,
+      ).toEqual(original.value.result);
+    }
+    expect(
+      (await executeGuardedModel({ ...options, job: current })).result,
+    ).toEqual(original.value.result);
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(await usage()).toEqual(usageBefore);
+    expect(await budgets()).toEqual(budgetsBefore);
+    expect(
+      (await store.action("result_get", { id: original.id })).value,
+    ).toEqual(original.value);
+    expect(
+      (await store.action("result_get", { id: retained.id })).value,
+    ).toEqual(retained.value);
+    expect(
+      (
+        await f.db.query<any>(
+          "select status,candidate_count,result_id from app_private.model_graph_threads where id=$1",
+          [thread.id],
+        )
+      ).rows[0],
+    ).toMatchObject({ status: "accepted", candidate_count: 1 });
+    const marker = await store.action("result_get", {
+      key: `validated-recovery-${original.id}-${retained.id}`,
+    });
+    expect(marker.value).toMatchObject({
+      received_candidate_budgets_unchanged: true,
+      new_provider_requests: 0,
+    });
+    expect(await store.action("recovery_ready")).toBe(false);
+  },
+  30000,
+);
+
 it("treats a reserved workspace request as local capacity without dispatching another model", async () => {
   const s = await configure();
   await s.ledger.preflight([], "connection_probe");
@@ -1990,6 +2188,57 @@ it.each([
       )
     ).rows[0].count;
     expect(markers).toBe(mode === "pending" ? 0 : 1);
+    const rejected = (
+      await f.db.query<any>(
+        `select result_key,value from app_private.model_graph_results
+         where thread_id=(select id from app_private.model_graph_threads where job_id=$1)
+         and result_key like 'invalid-report-%'`,
+        [job.id],
+      )
+    ).rows;
+    expect(rejected).toHaveLength(mode === "pending" ? 1 : 3);
+    expect(
+      new Set(rejected.map((row) => row.value.producer.modelId)).size,
+    ).toBe(rejected.length);
+    for (const row of rejected) {
+      expect(row.result_key).toMatch(/^invalid-report-[a-f0-9]{64}$/);
+      expect(row.value.code).toBe("EVIDENCE_REFERENCE_INVALID");
+      const canonical = (
+        await f.db.query<any>(
+          `select value from app_private.model_graph_results
+           where thread_id=(select id from app_private.model_graph_threads where job_id=$1)
+           and result_key=$2`,
+          [job.id, `invalid-${row.value.verification_key}`],
+        )
+      ).rows[0].value;
+      expect(
+        rejected.map(({ value }) => ({
+          result: value.result,
+          code: value.code,
+          producer: value.producer,
+        })),
+      ).toContainEqual(canonical);
+    }
+    const requestsBeforeReplay = serial;
+    expect(
+      (
+        await executeGuardedModel({
+          backend,
+          job: current,
+          prefix: `step:${job.id}`,
+          task: "draft_section",
+          context: {},
+          evidence: [],
+          requiredIds: [],
+          manifest: [],
+          environments: envs,
+          language: "en",
+          repair: false,
+          fetcher,
+        })
+      ).result,
+    ).toEqual(candidate);
+    expect(serial).toBe(requestsBeforeReplay);
   },
 );
 

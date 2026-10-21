@@ -16,6 +16,8 @@ const names = [
   "model_continuation_queue_fairness",
   "complete_draft_export_context",
   "immutable_model_phase_prompt_pin",
+  "bounded_queue_wakeup",
+  "retained_verification_recovery_guard",
 ];
 const versions = [
   "20261020141244",
@@ -30,6 +32,8 @@ const versions = [
   "20261021071021",
   "20261021071753",
   "20261021073417",
+  "20261021085510",
+  "20261021091037",
 ];
 function fixture(history: any[], failMutation?: number) {
   const queries: any[] = [];

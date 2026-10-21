@@ -19,9 +19,12 @@ exact standalone supplied evidence/requirement UUIDs from numeric comparison;
 unknown or embedded identifiers and actual adjacent quantities remain checked.
 Known identifier digits cannot justify factual numbers on the source side.
 All 57 grounding tests and backend typecheck pass. The unchanged saved report
-passes full validation with zero actionable defects. Guard deployment and
-validated recovery of the saved report are pending; no budgets or paid results
-have been reset, and the blocked job has not been resumed yet. Other independent
+passes full validation with zero actionable defects. Worker v87 deployed the
+guard-only change at 09:12 UTC; all 36 source files matched on readback. Source
+`e55a9a8c6511cc17ae72485e1bd2d445e1f10a3a` is pushed to main; its Pages workflow
+39575113127 passed all checks and publication. Validated recovery of the saved report is
+prepared but not deployed; no budgets or paid results have been reset, and the
+blocked job has not been resumed yet. Other independent
 planning work continued and reached four accepted jobs at 09:10 UTC.
 
 Two related improvements are prepared, not deployed: private retention of each
@@ -34,6 +37,25 @@ idle inter-phase gaps without another inference occupying them. Focused checks
 passed seven graph/history tests, 73 worker/source/notification tests and 39
 canonical graph-release/release-command tests. Complete regression and hosted
 recovery evidence remain pending.
+
+The proposed blocked-graph recovery revalidates the unchanged current candidate
+and complete retained corrective report, requires zero actionable defects and
+no reserved/unknown request or saved provider round, then resumes the normal
+decision/acceptance nodes. It records private provenance and preserves received
+candidate counts, repair counts, budgets and usage. An interrupted acceptance
+replays only the identical cached candidate with matching provenance. Twenty
+helper cases and two database/LangGraph integrations pass, including the
+accepted-result-write crash boundary; independent review passed. The actual
+browser retry and recovered job acceptance remain pending.
+
+Combined release validation (`final-backend-serial-12.log`) passed **679/679
+tests in 46 files** in 206.60 seconds, plus backend typecheck/build and both Deno
+entrypoint checks. The two additive queue-wakeup/recovery-guard migrations are
+applied; anon/authenticated cannot execute their service boundary. The combined
+worker deployment and live acceptance are next. An earlier overlapping run
+(`serial-11`) was inconclusive: new grounding tests were loaded against a
+pre-edit module and one fixture exceeded its setup timeout; the isolated export
+suite passed and the stable full run above passed every test.
 
 Historical checkpoint at 08:24 UTC: **all three original analysis jobs succeeded**.
 The final graph committed at 08:17:30 with the received-candidate count unchanged

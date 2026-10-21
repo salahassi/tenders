@@ -26,6 +26,7 @@ import {
 } from "./modelGrounding.ts";
 import { pinVerificationPrompt } from "./modelVerificationPrompt.ts";
 import { recoverUnstartedRepair } from "./modelRepairRecovery.ts";
+import { recoverBlockedVerification } from "./modelBlockedRecovery.ts";
 
 type Options = {
   backend: Backend;
@@ -126,6 +127,26 @@ export async function verificationContext(
   return context;
 }
 
+export async function retainInvalidVerification(
+  store: Pick<ModelGraphStore, "action">,
+  key: string,
+  result: unknown,
+  code: string,
+  producer?: Record<string, unknown>,
+) {
+  const value = { result, code, producer: producer ?? null };
+  // Keep each distinct rejection privately for diagnostics, including later
+  // providers in the same round. Fixed-length keys and result_put's immutable
+  // content check make replay idempotent; correction still uses the first one.
+  await store.action("result_put", {
+    key: `invalid-report-${await sha256(JSON.stringify([key, value]))}`,
+    value: { verification_key: key, ...value },
+  });
+  const invalidKey = `invalid-${key}`;
+  if (!(await store.action("result_get", { key: invalidKey })))
+    await store.action("result_put", { key: invalidKey, value });
+}
+
 /** One durable graph phase per queue lease. Large inputs/results are kept outside
  * LangGraph channels; checkpoint replay reads their immutable database references.
  * The database job lease, permissions and existing remote-request ledger remain
@@ -198,8 +219,6 @@ async function runGuardedModel(o: Options): Promise<{
     task: o.task,
     graph_version: 1,
   });
-  if (thread.status === "needs_review")
-    throw new ModelError("MODEL_CORRECTION_EXHAUSTED");
   if (thread.status === "accepted") {
     const result = (await store.action("result_get", { id: thread.result_id }))
       .value;
@@ -294,14 +313,8 @@ async function runGuardedModel(o: Options): Promise<{
       await prepared?.(request);
     };
     if (task === "verify_grounding") {
-      ledger.invalidCandidate = async (result, code) => {
-        const invalidKey = `invalid-${key}`;
-        if (!(await store.action("result_get", { key: invalidKey })))
-          await store.action("result_put", {
-            key: invalidKey,
-            value: { result, code, producer: producer ?? null },
-          });
-      };
+      ledger.invalidCandidate = (result, code) =>
+        retainInvalidVerification(store, key, result, code, producer);
     }
     const result = await executeModel(
       task,
@@ -805,7 +818,22 @@ async function runGuardedModel(o: Options): Promise<{
   };
   try {
     const checkpoint = await store.getTuple(config);
-    if (checkpoint)
+    if (thread.status === "needs_review") {
+      const recovered =
+        checkpoint &&
+        (await recoverBlockedVerification({
+          backend: o.backend,
+          store,
+          job: o.job,
+          evidence: o.evidence,
+          requiredIds: o.requiredIds,
+          manifest: o.manifest,
+          state: await graph.getState(config),
+          validate: o.validate,
+          update: (values) => graph.updateState(config, values, "verify"),
+        }));
+      if (!recovered) throw new ModelError("MODEL_CORRECTION_EXHAUSTED");
+    } else if (checkpoint)
       await recoverUnstartedRepair({
         backend: o.backend,
         store,
