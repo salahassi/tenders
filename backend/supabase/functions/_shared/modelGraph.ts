@@ -24,6 +24,8 @@ import {
   groundingDefects,
   validateGroundingReport,
 } from "./modelGrounding.ts";
+import { pinVerificationPrompt } from "./modelVerificationPrompt.ts";
+import { recoverUnstartedRepair } from "./modelRepairRecovery.ts";
 
 type Options = {
   backend: Backend;
@@ -270,6 +272,20 @@ async function runGuardedModel(o: Options): Promise<{
     }
     if (task === "verify_grounding" && !context.verification_scope)
       context = await verificationContext(store, ledger, context, o.manifest);
+    const verificationRevision =
+      task === "verify_grounding"
+        ? await pinVerificationPrompt({
+            backend: o.backend,
+            store,
+            job: o.job,
+            requestPrefix: `${o.prefix}:${operationKey}`,
+            context,
+            evidence: o.evidence,
+            requiredIds,
+            language: o.language,
+            repair: o.repair,
+          })
+        : 1;
     let producer: Record<string, unknown> | undefined;
     const prepared = ledger.requestPrepared;
     ledger.requestPrepared = async (request) => {
@@ -297,6 +313,7 @@ async function runGuardedModel(o: Options): Promise<{
       o.language,
       task === "repair_result" || o.repair,
       o.fetcher,
+      verificationRevision,
     );
     // Persist the result before returning the node output/checkpoint. A replay
     // after this write never submits the same completed candidate again.
@@ -337,6 +354,17 @@ async function runGuardedModel(o: Options): Promise<{
     let context = contextFor(invalid);
     if (!context.verification_scope)
       context = await verificationContext(store, ledger, context, o.manifest);
+    const verificationRevision = await pinVerificationPrompt({
+      backend: o.backend,
+      store,
+      job: o.job,
+      requestPrefix: `${o.prefix}:${operationKey}`,
+      context,
+      evidence: o.evidence,
+      requiredIds,
+      language: o.language,
+      repair: o.repair,
+    });
     const inputHash = await sha256(
       modelPrompt(
         "verify_grounding",
@@ -345,6 +373,7 @@ async function runGuardedModel(o: Options): Promise<{
         requiredIds,
         o.language,
         o.repair,
+        verificationRevision,
       ),
     );
     const round = o.job.checkpoint?.model_round;
@@ -768,6 +797,21 @@ async function runGuardedModel(o: Options): Promise<{
   };
   try {
     const checkpoint = await store.getTuple(config);
+    if (checkpoint)
+      await recoverUnstartedRepair({
+        backend: o.backend,
+        store,
+        job: o.job,
+        prefix: o.prefix,
+        task: o.task,
+        context: o.context,
+        evidence: o.evidence,
+        requiredIds: o.requiredIds,
+        manifest: o.manifest,
+        language: o.language,
+        state: await graph.getState(config),
+        update: (values) => graph.updateState(config, values, "produce"),
+      });
     await graph.invoke(checkpoint ? null : {}, config);
     await store.flush();
     const state = await graph.getState(config);

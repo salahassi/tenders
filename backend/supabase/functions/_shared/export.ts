@@ -41,6 +41,32 @@ export function buildExportModel(request: Row): RenderModel {
       timeZone: "UTC",
     }).format(new Date(time ? value : value + "T12:00:00Z"));
   const number = (value: string) => new Decimal(value).toFixed();
+  const draft = request.mode === "draft";
+  const proposed = draft ? s.commercial_draft : null;
+  const unknown = (field: string) => `[INPUT REQUIRED: ${field}]`;
+  const supplied = (value: unknown, field: string) =>
+    clean(value).trim() || unknown(field);
+  // Column headings already identify each missing input. Short localized cell
+  // values stay readable in narrow RTL tables and never imply a zero amount.
+  const cell = (value: unknown) =>
+    clean(value).trim() || l("Not supplied", "غير محدد");
+  const sectionTitle = (key: string) =>
+    s.sections.find((section: Row) => section.section_key === key)?.title ||
+    l("Unlinked section", "قسم غير مرتبط");
+  // Global review items go in the financial volume when volumes are separate.
+  // They can contain pricing: never leak them into the technical submission.
+  const reviewItemInVolume = (keys: string[]) =>
+    request.volume === "combined" ||
+    (keys.length
+      ? keys.some((key) =>
+          s.sections.some(
+            (section: Row) =>
+              section.section_key === key &&
+              (section.volume === request.volume ||
+                section.volume === "shared"),
+          ),
+        )
+      : request.volume === "financial");
   p(`${l("Version", "النسخة")} ${s.ordinal}`);
   p(
     `${l("Generated", "تاريخ الإنشاء")}: ${date(request.created_at, true)} UTC`,
@@ -110,6 +136,41 @@ export function buildExportModel(request: Row): RenderModel {
           number(t.end_workday),
         ]),
       });
+    } else if (Array.isArray(proposed?.tasks) && proposed.tasks.length) {
+      p(
+        l(
+          "Proposed delivery inputs — awaiting review. Effort, allocation and duration are not an approved schedule.",
+          "مدخلات تنفيذ مقترحة بانتظار المراجعة. الجهد والتخصيص والمدة لا تمثل خطة تسليم معتمدة.",
+        ),
+      );
+      blocks.push({
+        type: "table",
+        headers: [
+          l("Task", "المهمة"),
+          l("Role", "الدور"),
+          l("Effort (person-days)", "الجهد بأيام عمل للفرد"),
+          l("Allocation", "التخصيص"),
+          l("Duration (working days)", "المدة بأيام العمل"),
+        ],
+        rows: proposed.tasks.map((task: Row) => [
+          clean(task.title) || clean(task.key),
+          cell(task.role),
+          cell(task.effort_days),
+          cell(task.allocation),
+          cell(task.duration_days),
+        ]),
+      });
+      for (const task of proposed.tasks) {
+        const dependencies = (task.predecessors || []).map(
+          (key: string) =>
+            proposed.tasks.find((other: Row) => other.key === key)?.title ||
+            key,
+        );
+        p(
+          `${clean(task.title) || clean(task.key)} — ${l("Dependencies", "الاعتماديات")}: ${dependencies.join(rtl ? "، " : ", ") || l("None specified", "لم تُحدّد")}`,
+        );
+        if (task.basis) p(`${l("Basis", "الأساس")}: ${clean(task.basis)}`);
+      }
     } else
       p(
         l(
@@ -132,6 +193,12 @@ export function buildExportModel(request: Row): RenderModel {
         )
         .map((r: Row) => {
           const c = s.compliance.find((x: Row) => x.requirement_id === r.id);
+          const suggested =
+            !c && draft
+              ? s.review_result?.responses?.find(
+                  (x: Row) => x.requirement_id === r.id,
+                )
+              : null;
           const status: Record<string, string> = {
             answered: l("Answered", "تمت الاستجابة"),
             question: l("Clarification required", "يتطلب توضيحًا"),
@@ -154,13 +221,13 @@ export function buildExportModel(request: Row): RenderModel {
           };
           return [
             r.text,
-            status[c?.status] || l("Not confirmed", "غير مؤكد"),
-            (c?.section_keys || [])
-              .map(
-                (key: string) =>
-                  s.sections.find((section: Row) => section.section_key === key)
-                    ?.title || l("Unlinked section", "قسم غير مرتبط"),
-              )
+            c
+              ? status[c.status] || l("Not confirmed", "غير مؤكد")
+              : suggested
+                ? `${l("Model review (not confirmed)", "مراجعة الموديل (غير مؤكدة)")}: ${status[suggested.status] || l("Not confirmed", "غير مؤكد")}${suggested.rationale ? " — " + clean(suggested.rationale) : ""}`
+                : l("Not confirmed", "غير مؤكد"),
+            (c?.section_keys || suggested?.section_ids || [])
+              .map(sectionTitle)
               .join(rtl ? "، " : ", "),
           ];
         }),
@@ -247,6 +314,48 @@ export function buildExportModel(request: Row): RenderModel {
         `${l("Offer valid through", "يسري العرض حتى")}: ${date(e.input.validity_date)}`,
       );
       p(e.input.commercial_terms);
+    } else if (Array.isArray(proposed?.lines) && proposed.lines.length) {
+      p(
+        l(
+          "Proposed commercial inputs — awaiting review. These items have no confirmed prices or calculated totals.",
+          "مدخلات تجارية مقترحة بانتظار المراجعة. لا تتضمن هذه البنود أسعارًا مؤكدة أو إجماليات محسوبة.",
+        ),
+      );
+      p(
+        `${l("Currency", "العملة")}: ${unknown(l("confirm offer currency", "تأكيد عملة العرض"))}`,
+      );
+      const charge: Record<string, string> = {
+        one_time: l("One-time", "لمرة واحدة"),
+        recurring: l("Recurring", "متكرر"),
+        optional: l("Optional", "اختياري"),
+      };
+      blocks.push({
+        type: "table",
+        headers: [
+          l("Item", "البند"),
+          l("Quantity and unit", "الكمية والوحدة"),
+          l("Number of periods", "عدد الفترات"),
+          l("Charge", "نوع التكلفة"),
+          l("Price", "السعر"),
+        ],
+        rows: proposed.lines.map((line: Row) => [
+          clean(line.description),
+          `${cell(line.quantity)} ${clean(line.unit)}`.trim(),
+          cell(line.period_count),
+          `${line.included_in_base ? l("Proposed base", "أساسي مقترح") : l("Outside proposed base", "خارج الأساسي المقترح")} · ${charge[line.charge_group] || clean(line.charge_group)}`,
+          l("Awaiting confirmed pricing", "بانتظار تأكيد التسعير"),
+        ]),
+      });
+      for (const line of proposed.lines) {
+        if (line.deliverable)
+          p(
+            `${clean(line.description)} — ${l("Deliverable", "المخرج")}: ${clean(line.deliverable)}`,
+          );
+        if (line.basis) p(`${l("Basis", "الأساس")}: ${clean(line.basis)}`);
+        p(
+          `${l("Tax category", "الفئة الضريبية")}: ${supplied(line.tax_category, l("tax category", "الفئة الضريبية"))}`,
+        );
+      }
     } else
       p(
         l(
@@ -254,6 +363,52 @@ export function buildExportModel(request: Row): RenderModel {
           "[INPUT REQUIRED: تقدير مالي معتمد]",
         ),
       );
+  }
+  if (draft) {
+    const questions = (s.questions || []).filter((q: Row) =>
+      reviewItemInVolume(q.target_section_key ? [q.target_section_key] : []),
+    );
+    const findings = (s.review_result?.findings || []).filter((finding: Row) =>
+      reviewItemInVolume(finding.section_ids || []),
+    );
+    if (questions.length || findings.length) {
+      h(
+        l(
+          "Open questions and review items",
+          "الأسئلة المفتوحة وملاحظات المراجعة",
+        ),
+      );
+      p(
+        l(
+          "Resolve these items before final approval. Model review findings are suggestions for human review.",
+          "تُراجع هذه البنود قبل الاعتماد النهائي. نتائج مراجعة الموديل ملاحظات تحتاج إلى مراجعة بشرية.",
+        ),
+      );
+      const levels: Record<string, string> = {
+        generation: l("Generation input", "مدخل للإنشاء"),
+        finalization: l(
+          "Required before final approval",
+          "مطلوب قبل الاعتماد النهائي",
+        ),
+        advisory: l("Advisory", "إرشادي"),
+        blocking: l("Requires review", "يحتاج إلى مراجعة"),
+      };
+      for (const q of questions) {
+        blocks.push({
+          type: "bullet",
+          text: `${levels[q.blocking_level] || l("Review", "مراجعة")}: ${clean(q.question)}`,
+        });
+        if (q.target_section_key)
+          p(`${l("Section", "القسم")}: ${sectionTitle(q.target_section_key)}`);
+      }
+      const existing = new Set(questions.map((q: Row) => clean(q.question)));
+      for (const finding of findings)
+        if (!existing.has(clean(finding.detail)))
+          blocks.push({
+            type: "bullet",
+            text: `${l("Model review", "مراجعة الموديل")} — ${levels[finding.severity] || l("Review", "مراجعة")}: ${clean(finding.detail)}`,
+          });
+    }
   }
   const model = {
     id: request.id,

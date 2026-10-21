@@ -1,5 +1,9 @@
 import { modelAdapters } from "./modelAdapters/index.ts";
 import {
+  VERIFICATION_INSTRUCTIONS_V2,
+  VERIFICATION_PROMPT_V2,
+} from "./modelVerificationInstructions.ts";
+import {
   defaultCapabilities,
   resolveProfile,
   taskJsonSchema,
@@ -135,7 +139,10 @@ const contentPolicyChecks = {
 };
 export const blockedContent = (value: string) =>
   Object.values(contentPolicyChecks).some((check) => check.test(value));
-export function taskSystemInstructions(task: ModelTask) {
+export function taskSystemInstructions(
+  task: ModelTask,
+  verificationRevision: 1 | 2 = 1,
+) {
   if (task === "inspect_source_page") return sourceSystemInstructions;
   if (task === "verify_grounding")
     return (
@@ -157,7 +164,8 @@ Return every supplied content_units[].id in processed_content_ids exactly once, 
 Keep the verification report compact: claim and finding are concise conclusions, not copies of the candidate. Use the shortest exact candidate and source quotations that preserve the assertion, its quantities and any negation. Avoid repeating whole paragraphs in claim, candidate_quote and finding. Group repeated assertions only when their evidence and verdict are identical; never omit a distinct assertion or an unsupported company claim.
 When verification_scope is content_batch, review only the supplied content_units against the full evidence. Other candidate units are reviewed separately; do not report omissions merely because another batch is absent. Top-level required_ids is empty for these batches.
 When verification_scope is requirements_only, check completeness and consistency across the whole candidate and every top-level required_id. Return claims:[]; factual claims have already been independently checked in content batches. Keep requirement_checks and blocking findings for actual omissions or contradictions.
-Never supply private reasoning traces. Return only the verification report.`
+Never supply private reasoning traces. Return only the verification report.` +
+      (verificationRevision === 2 ? `\n${VERIFICATION_INSTRUCTIONS_V2}` : "")
     );
   if (task === "repair_result")
     return (
@@ -739,6 +747,7 @@ export class FreeModelProvider {
     private requestTimeout = 90000,
     private streamResponses = false,
     private configuration?: ModelConfiguration,
+    private verificationRevision: 1 | 2 = 1,
   ) {}
   private async diagnoseRejectedRequest(
     response: Response,
@@ -1101,7 +1110,7 @@ export class FreeModelProvider {
       task,
       prompt,
       schema: schema as Record<string, any>,
-      system: taskSystemInstructions(task),
+      system: taskSystemInstructions(task, this.verificationRevision),
       capabilities,
       profile,
       stream: this.streamResponses,
@@ -1218,12 +1227,19 @@ export function modelPrompt(
   requiredIds: string[],
   language: "en" | "ar",
   repair = false,
+  verificationRevision: 1 | 2 = 1,
 ) {
   return task === "inspect_source_page"
     ? sourceReadingPrompt(context, evidence, repair)
     : JSON.stringify({
         task,
-        prompt_version: taskRegistry[task].promptVersion,
+        prompt_version:
+          task === "verify_grounding" && verificationRevision === 2
+            ? VERIFICATION_PROMPT_V2
+            : taskRegistry[task].promptVersion,
+        ...(task === "verify_grounding" && verificationRevision === 2
+          ? { verification_policy: VERIFICATION_INSTRUCTIONS_V2 }
+          : {}),
         writing_guide: writingGuide[language],
         repair_instruction: repair
           ? "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
@@ -1245,6 +1261,7 @@ export async function executeModel(
   language: "en" | "ar",
   repair = false,
   fetcher: typeof fetch = fetch,
+  verificationRevision: 1 | 2 = 1,
 ) {
   const invocationStarted = ledger.invocationStartedAt ?? Date.now();
   const targetTask =
@@ -1262,6 +1279,7 @@ export async function executeModel(
     requiredIds,
     language,
     repair,
+    verificationRevision,
   );
   if (blockedContent(prompt)) throw new ModelError("DATA_POLICY_BLOCKED");
   const schema = taskJsonSchema(task, targetTask);
@@ -1376,6 +1394,7 @@ export async function executeModel(
         ),
         (ledger.invocationBudgetMs ?? 110000) > 110000,
         config,
+        verificationRevision,
       );
       let reservation: string | null = null;
       let settled = false;
@@ -1448,6 +1467,8 @@ export async function executeModel(
           profile,
           capabilities: { ...capabilities, background },
         });
+        if (task === "verify_grounding" && verificationRevision === 2)
+          request.promptVersion = VERIFICATION_PROMPT_V2;
         await ledger.requestPrepared?.(request);
         const accountKey = `${config.provider}:${config.project_ref}`;
         if (!pending && config.connection_id && accountWaits.has(accountKey))

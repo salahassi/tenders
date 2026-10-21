@@ -2,22 +2,113 @@
 
 ## October 21 — real acceptance blockers (in progress)
 
-Current status at 07:17 UTC: **end-to-end acceptance is still incomplete; no
-complete Word proposal has been downloaded or inspected**. Two of the original
-three analysis jobs have succeeded. The remaining job recovered its saved
-verification report and entered bounded writer repair. Its real OpenAI repair
-request was accepted at 07:15 and is being retrieved using the saved remote ID.
-The earlier workspace reservation wait was distinct from a provider HTTP 429.
-Planning, drafting, commercial missing-input handling,
-review and browser Word download/inspection remain pending.
+Current status after the 07:53 UTC resume: **end-to-end acceptance is still
+incomplete; no complete Word proposal has been downloaded or inspected**.
+Two of the original three analysis jobs have succeeded; the third remains in
+progress. API **v72** and normal worker **v85**, deployed at 07:52 UTC, include
+the prompt pin and safe unstarted-repair recovery. Exact source readbacks matched
+all 27 API and 36 worker files. The final complete backend regression passed
+**616/616 tests in 44 files** (217.62 seconds). These code/deployment results do
+not establish live analysis or proposal acceptance.
 
-Code and deployment verification are separate from this acceptance result:
-**575/575 backend tests** passed in one complete run (40 files, 185.82 seconds),
-along with **192/192 frontend tests**, both package typechecks/builds and both
-Deno entrypoint checks. API **v70** and normal worker **v83** are deployed; exact
-source readbacks matched all 26 API and 32 worker files. Four additive migrations
-are applied, and the new service RPCs remain inaccessible to anon/authenticated.
-Source commit, CI and Pages publication for this combined release are pending.
+At 07:53:29 UTC, a revision-guarded audited resume removed the trial's bounded
+hold at job revision 176 without changing budgets, usage or saved results.
+Normal worker dispatch 5580 was requested. Completion of the third analysis,
+planning, drafting, commercial missing-input handling, review and browser Word
+download/inspection remains pending.
+
+Earlier completion work (API v71 / worker v84 deployed at 07:44 UTC;
+exact source readbacks matched 26/33 files):
+draft export now retains generated commercial/delivery inputs, model review
+coverage and unresolved questions, explicitly unconfirmed. Confirmed calculations
+and manual compliance take precedence; final approval requirements and separate
+technical/financial volumes are preserved. Its additive export-context migration
+is applied. Five draft-export tests, 25 generation tests, five commercial tests
+and 13 release tests passed.
+
+New planning and review steps use bounded requirement packing (24/12 records
+respectively, at most 12,000 serialized requirement-context characters). Stored
+steps are never repacked; every ordered ID remains present, and drafting,
+commercial, routing and response limits are unchanged. The real 96 accepted
+requirements require six planning and eight review jobs versus eight and twenty
+previously. This measures scheduled primary jobs, not guaranteed model calls or
+completion time. Review now receives relevant generated commercial inputs as
+unconfirmed content; it cannot treat them as evidence or approved commitments.
+All 41 focused generation/evidence/batching tests passed, as did typecheck,
+build and Deno checks. The combined full backend run passed 591/591 tests in
+42 files (223.75 seconds). A subsequent draft-only localized table-label change
+passed its five export tests and typecheck. Synthetic English/Arabic DOCX visual
+QA produced five/six pages with no clipped tables or page overflow; this is
+renderer validation, not the original RFP acceptance artifact.
+
+At the user's prompt-correction steering, new requests for the trial were
+temporarily deferred at a safe boundary with no reserved request. Its audit
+records the previous retry time and unchanged budgets/usage. The bounded hold
+was extended with an audit to 08:01:58 UTC, then released at 07:53:29 after the
+fix was deployed and verified. Existing accepted results remain saved. The
+latest invalid Gemini quote spliced two source passages; the complete source
+was supplied. The new verifier instructions make contiguous quotations and
+separated references explicit at the initial request, preserving the original
+input identity for already-started phases.
+
+Private inspection of the next saved Sol report confirmed another application
+defect: its three `assumption` / `insufficient` entries correctly describe
+missing company inputs already retained in the candidate's questions and
+owner-question fields. Treating every insufficient verdict as a rewrite caused
+an unnecessary second repair to be scheduled. The narrow correction keeps
+these assumptions unresolved without declaring them supported; contradictions,
+unsupported factual claims, blocking findings and required coverage still block
+acceptance. The exact saved report validates all 40 claims with zero remaining
+repair defects; 54 focused grounding/verification tests passed. Recovery must
+revalidate the saved candidate and all remaining batches without changing
+received-candidate budgets or duplicating accepted requests.
+
+Worker v84 first deployed the narrow grounding correction together with bounded
+new planning/review batches; API v71 deployed the completed-draft export context
+and renderer. They are superseded by API v72 / worker v85, which also contain
+the separately verified prompt pin and safe false-repair recovery.
+
+The additive `immutable_model_phase_prompt_pin` migration is applied. Its
+service-only `model_phase_started` RPC denies anon/authenticated execution and
+allows service_role. Immutable per-phase prompt pins preserve old user/system
+bytes for previously started calls or saved rounds, including unknown or settled
+usage whose result has not yet been saved. New verification phases receive
+trusted system instructions requiring exact contiguous quotations, separate
+references for separated passages, and explicit uncertainty for missing company
+evidence. The policy version and constant instructions are included in the
+input identity; existing accepted requests cannot silently acquire new wording.
+
+Safe recovery now revalidates a retained repair-only report against its exact
+saved candidate, content scope and evidence before undoing an unnecessary
+scheduled repair. It proceeds only when no actionable defects remain, no next
+candidate or saved provider round exists, and the service RPC and preflight
+confirm the scheduled writer phase has not started. It records an idempotent
+provenance marker and reverses only that unstarted scheduling increment.
+Received-candidate budgets, cached reports, usage and completed results remain
+unchanged. Remaining content batches and whole-candidate coverage must still
+pass; this recovery cannot accept a partial report or cancel an accepted request.
+
+The combined prompt/recovery/grounding follow-up passed 72 focused tests across
+six files, backend typecheck/build and both API/worker Deno checks. An independent
+private replay of the actual saved 44-claim repair-only report passed the recovery
+helper's candidate, scope and evidence checks; this validates recovery eligibility,
+not complete candidate coverage or live proposal acceptance. The final complete
+backend run (`final-backend-serial-9.log`) subsequently passed all 616 tests.
+Runtime API v72 / worker v85 readbacks verified the combined code. Source commit,
+CI and Pages publication of this follow-up still require reconciliation.
+
+At the historical 07:17 UTC checkpoint, two analysis jobs had succeeded and the
+third had entered bounded repair. Its OpenAI request was accepted at 07:15 and
+retrieved through the saved remote ID. The earlier workspace reservation wait
+was distinct from a provider HTTP 429.
+
+That earlier release passed **575/575 backend tests** in one run (40 files,
+185.82 seconds), **192/192 frontend tests**, both package typechecks/builds and
+Deno checks. API v70 / worker v83 readbacks matched 26/32 files. Its new service
+RPCs denied anon/authenticated execution. Source `00d3069` was pushed to main;
+GitHub Pages workflow `39561029126` passed its checks and publication. Those
+release facts remain historical evidence, superseded for the backend by the
+current v72/v85 runtime and 616-test regression result above.
 
 At 07:15 UTC, the additive `model_continuation_queue_fairness` migration was
 applied. `MODEL_IN_PROGRESS` alone no longer gives every graph continuation
@@ -27,7 +118,7 @@ alternation; leases, locks, retry eligibility and provider Retry-After stay
 unchanged. The other assessment that occupied the slot completed successfully.
 The queue/collection suite passed 27 tests, including six new fairness cases;
 13 release-command tests and typecheck passed. The combined 575-test run passed.
-The release allowlist now includes all five October 21 patches.
+At that checkpoint, the release allowlist included all five October 21 patches.
 
 The October 20 trial had failed with only one verified analysis part. Its 16,384
 token ceiling came from the application's default execution profile for a
@@ -102,6 +193,11 @@ rejected a source quotation (`EVIDENCE_REFERENCE_INVALID`), and failover
 continued. This proves the deployed payload can execute, not acceptance of
 that assessment or the complete proposal. Google's generic earlier 400 does
 not identify which original schema constraint it rejected.
+
+At 07:21 UTC, Gemini also completed a real content-verification batch for the
+original RFP trial: HTTP 200, 5,351 input / 2,953 output tokens, and local
+validation `SUCCEEDED`. This is stronger evidence than transport success alone;
+the remaining batches and full proposal journey still have to complete.
 
 At the earlier 01:12 UTC acceptance checkpoint, three scoped reports
 were accepted for the corrected third analysis part. Its fourth report exhausted

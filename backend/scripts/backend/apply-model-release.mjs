@@ -14,6 +14,8 @@ const release = [
   ["20261021005033", "scope_unknown_task_reservations_to_phase"],
   ["20261021010317", "healthy_model_poll_eligibility"],
   ["20261021071021", "model_continuation_queue_fairness"],
+  ["20261021071753", "complete_draft_export_context"],
+  ["20261021073417", "immutable_model_phase_prompt_pin"],
 ];
 const project = "nqfwbqeozmuiuwbiowil";
 const literal = (value) => "'" + value.replaceAll("'", "''") + "'";

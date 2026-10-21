@@ -2,6 +2,10 @@ import { scopeInstruction } from "./discovery.ts";
 import { enrichPublicNotice } from "./publicNoticeDetails.ts";
 import { executeGuardedModel } from "./modelGraph.ts";
 import { normalizedEvidence } from "./sourceModel.ts";
+import {
+  batchGenerationRequirements,
+  requirementModelContext,
+} from "./generationBatching.ts";
 import type { PrimaryModelTask } from "./modelSchemas.ts";
 import {
   type Evidence,
@@ -219,25 +223,7 @@ export function taskInput(ctx: PlanContext) {
       : frozen.reviews;
     evidence.push(...relevantReviews);
     context = {
-      requirements: requirements.map(
-        ({
-          id,
-          text,
-          category,
-          mandatory,
-          interpretation,
-          acceptance_evidence,
-          owner_question,
-        }) => ({
-          id,
-          text,
-          category,
-          mandatory,
-          interpretation,
-          acceptance_evidence,
-          owner_question,
-        }),
-      ),
+      requirements: requirements.map(requirementModelContext),
       section: input.section || null,
       template: {
         id: frozen.template.id,
@@ -293,8 +279,63 @@ export function taskInput(ctx: PlanContext) {
         (s.evidence_refs || []).map((r: Row) => r.id),
       );
       evidence.push(...refsFor(all, claimIds));
+      const sectionKeys = sections.map((s) => s.key);
+      const commercialSteps = successful(ctx, "plan_commercial");
+      const relevantLines = (step: Row) =>
+        (step.output.lines || []).filter((line: Row) =>
+          line.requirement_ids?.length
+            ? line.requirement_ids.some((id: string) =>
+                requiredIds.includes(id),
+              )
+            : !line.section_ids?.length ||
+              line.section_ids.some((id: string) => sectionKeys.includes(id)),
+        );
+      const selectedCommercial = commercialSteps.filter(
+        (step) =>
+          !step.input.requirement_ids?.length ||
+          step.input.requirement_ids.some((id: string) =>
+            requiredIds.includes(id),
+          ) ||
+          relevantLines(step).length > 0,
+      );
+      // Generated schedules and prices are proposal content to audit, never
+      // verified evidence or approved commitments. Include predecessor closure
+      // so a scoped review does not mistake an omitted dependency for a missing
+      // task. Ambiguous duplicate keys remain visible for the reviewer to flag.
+      const allTasks = commercialSteps.flatMap(
+        (step) => step.output.tasks || [],
+      );
+      const taskKeys = new Set<string>(
+        selectedCommercial.flatMap((step) =>
+          (step.output.tasks || []).map((task: Row) => task.key),
+        ),
+      );
+      let expanded = true;
+      while (expanded) {
+        expanded = false;
+        for (const task of allTasks.filter((task) => taskKeys.has(task.key)))
+          for (const predecessor of task.predecessors || [])
+            if (!taskKeys.has(predecessor)) {
+              taskKeys.add(predecessor);
+              expanded = true;
+            }
+      }
+      context.commercial_draft = {
+        status: "proposed_unconfirmed",
+        lines: selectedCommercial.flatMap(relevantLines),
+        tasks: allTasks.filter((task) => taskKeys.has(task.key)),
+        questions: selectedCommercial.flatMap((step) =>
+          (step.output.questions || []).filter(
+            (question: Row) =>
+              !question.requirement_ids?.length ||
+              question.requirement_ids.some((id: string) =>
+                requiredIds.includes(id),
+              ),
+          ),
+        ),
+      };
       context.instruction =
-        "Audit each required requirement ID against the actual supplied sections. Check unsupported company claims, contradictions, placeholders, missing acceptance evidence, scope/price mismatch and unrealistic delivery. Never approve not-applicable status. Every mandatory requirement must have a coverage record, even when missing.";
+        "Audit each required requirement ID against the actual supplied sections and proposed commercial draft. The commercial draft is generated, unconfirmed proposal content, not supporting evidence or approved prices, resources or commitments. Check unsupported company claims, contradictions, placeholders, missing acceptance evidence, scope/price mismatch and unrealistic delivery. Never approve not-applicable status. Every mandatory requirement must have a coverage record, even when missing.";
     }
   }
   // Generic proposal sections may have no mapped requirement or company source.
@@ -487,7 +528,10 @@ export async function nextStage(ctx: PlanContext): Promise<{
       }
     output.requirements = [...byIdentity.values()];
     output.next_stage = "planning";
-    output.steps = chunk(output.requirements, 12).map((rs) => ({
+    output.steps = batchGenerationRequirements(
+      output.requirements,
+      "plan_proposal",
+    ).map((rs) => ({
       task: "plan_proposal",
       input: { requirement_ids: rs.map((r) => r.id) },
     }));
@@ -531,7 +575,10 @@ export async function nextStage(ctx: PlanContext): Promise<{
   }
   if (stage === "commercial") {
     output.next_stage = "review";
-    output.steps = chunk(ctx.requirements, 5).map((rs) => ({
+    output.steps = batchGenerationRequirements(
+      ctx.requirements,
+      "review_proposal",
+    ).map((rs) => ({
       task: "review_proposal",
       input: { requirement_ids: rs.map((r) => r.id) },
     }));

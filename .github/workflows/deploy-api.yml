@@ -75,6 +75,7 @@ jobs:
             and to_regprocedure('public.model_background_allowed(uuid,uuid,text,text,text,uuid,uuid)') is not null
             and to_regprocedure('public.resume_task_model_request_phase(uuid,uuid,text,jsonb,uuid,uuid,text)') is not null
             and to_regprocedure('public.defer_pending_model_request(uuid,uuid,uuid)') is not null
+            and to_regprocedure('public.model_phase_started(uuid,uuid,text,text)') is not null
             and to_regclass('public.model_execution_settings') is not null
             as compatible"""
           request = urllib.request.Request(

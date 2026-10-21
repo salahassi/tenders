@@ -233,7 +233,16 @@ export function groundingDefects(report: any) {
     !claim.source_refs.length;
   return [
     ...report.claims
-      .filter((c: any) => c.status !== "supported" || missingSupport(c))
+      .filter(
+        (c: any) =>
+          // An explicitly unresolved assumption records missing input in the
+          // draft; insufficient evidence alone does not require rewriting it.
+          // Contradictions, factual claims and explicit blocking findings still
+          // need correction. Do not promote the assumption to a supported fact.
+          (c.status !== "supported" &&
+            !(c.kind === "assumption" && c.status === "insufficient")) ||
+          missingSupport(c),
+      )
       .map((c: any) => ({
         kind: c.kind,
         status: missingSupport(c) ? "insufficient" : c.status,

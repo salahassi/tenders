@@ -2099,6 +2099,201 @@ it.each([false, true])(
   },
 );
 
+it("recovers an unstarted false repair, reuses verified batches and completes full coverage without another writer POST", async () => {
+  const { executeGuardedModel } =
+    await import("../../supabase/functions/_shared/modelGraph");
+  const { ModelGraphStore } =
+    await import("../../supabase/functions/_shared/modelGraphStore");
+  const { verificationBatches } =
+    await import("../../supabase/functions/_shared/modelVerification");
+  const { sha256 } = await import("../../supabase/functions/_shared/model");
+  const { Annotation, StateGraph, START } =
+    await import("@langchain/langgraph");
+  const { job, backend, envs } = await configure("openai");
+  const candidate = {
+    key: "approach",
+    title: "Approach",
+    content_blocks: Array.from({ length: 8 }, () => ({
+      type: "paragraph",
+      text: "Proposed delivery needs buyer confirmation. ".repeat(40),
+    })),
+    requirement_ids: [],
+    evidence_refs: [],
+    company_claims: [],
+    assumptions: [],
+    questions: [],
+  };
+  let hash = "";
+  let scopes: ReturnType<typeof verificationBatches> = [];
+  const reportFor = (units: any[], global = false) => ({
+    checked_candidate_hash: hash,
+    reviewed_all_content: true,
+    processed_content_ids: units.map((u) => u.id),
+    claims: global
+      ? []
+      : [
+          {
+            id: "uncertainty",
+            claim: "Buyer input needed",
+            candidate_quote: units[0].text,
+            kind: "assumption",
+            status: "insufficient",
+            source_refs: [],
+            finding:
+              "Explicit missing input, not a company capability assertion.",
+          },
+        ],
+    processed_requirement_ids: [],
+    requirement_checks: [],
+    findings: [],
+  });
+  let writers = 0,
+    repairs = 0;
+  const checked: string[] = [];
+  const fetcher: typeof fetch = async (_url, init) => {
+    if (init?.method === "DELETE") return Response.json({ deleted: true });
+    expect(init?.method).toBe("POST");
+    const prompt = JSON.parse(
+      JSON.parse(String(init?.body)).input.split("\nJSON schema: ")[0],
+    );
+    let result: any;
+    if (prompt.task === "draft_section") {
+      writers++;
+      result = candidate;
+    } else if (prompt.task === "repair_result") {
+      repairs++;
+      throw Error("False repair must never be sent");
+    } else {
+      const c = prompt.untrusted_data;
+      const global = c.verification_scope === "requirements_only";
+      checked.push(global ? "global" : c.content_units[0].id);
+      result = reportFor(c.content_units, global);
+    }
+    return Response.json({
+      id: `fixture-${writers + checked.length}`,
+      status: "completed",
+      output: [
+        {
+          type: "message",
+          content: [{ type: "output_text", text: JSON.stringify(result) }],
+        },
+      ],
+      usage: { input_tokens: 10, output_tokens: 8 },
+    });
+  };
+  const options = {
+    backend,
+    job,
+    prefix: `step:${job.id}`,
+    task: "draft_section" as const,
+    context: {},
+    evidence: [],
+    requiredIds: [],
+    manifest: [],
+    environments: envs,
+    language: "en" as const,
+    repair: false,
+    fetcher,
+  };
+  await expect(executeGuardedModel(options)).rejects.toBeInstanceOf(
+    ModelDeferred,
+  );
+  let current = await rpc("claim_backend_job_v2");
+  const thread = (
+    await f.db.query<any>(
+      "select id,candidate_count from app_private.model_graph_threads where job_id=$1",
+      [job.id],
+    )
+  ).rows[0];
+  expect(thread.candidate_count).toBe(1);
+  const store = new ModelGraphStore(backend, current, thread.id);
+  const saved = await store.action("result_get", { key: "candidate-0" });
+  hash = await sha256(JSON.stringify(saved.value.result));
+  scopes = verificationBatches(saved.value.result);
+  const first = reportFor(scopes[0]);
+  await store.action("result_put", {
+    key: `verification-v3-${hash}-content-0`,
+    value: { result: first, producer: null },
+  });
+  const retained = await store.action("result_put", {
+    key: `verification-repair-only-v3-${hash}-content-0`,
+    value: { result: first, coverage: "repair_only", producer: null },
+  });
+  const State = Annotation.Root({
+    candidateRef: Annotation<string>(),
+    reportRef: Annotation<string>(),
+    repairCount: Annotation<number>({
+      reducer: (_, next) => next,
+      default: () => 0,
+    }),
+    defectHash: Annotation<string>(),
+    decision: Annotation<"accept" | "repair" | "needs_review">(),
+  });
+  const checkpointGraph = new StateGraph(State)
+    .addNode("produce", async () => ({}))
+    .addNode("verify", async () => ({}))
+    .addNode("decide", async () => ({}))
+    .addEdge(START, "produce")
+    .addEdge("produce", "verify")
+    .addEdge("verify", "decide")
+    .addConditionalEdges("decide", () => "produce", ["produce"])
+    .compile({ checkpointer: store });
+  const config = {
+    configurable: { thread_id: thread.id },
+    durability: "sync" as const,
+  };
+  // Recreate only the scheduling checkpoint made by the old semantic guard.
+  // The received candidate and completed report remain the original records.
+  await checkpointGraph.updateState(
+    config,
+    {
+      candidateRef: saved.id,
+      reportRef: retained.id,
+      repairCount: 1,
+      decision: "repair",
+    },
+    "decide",
+  );
+  let outcome;
+  for (let attempt = 0; attempt < 20; attempt++) {
+    try {
+      outcome = await executeGuardedModel({ ...options, job: current });
+      break;
+    } catch (error) {
+      if (!(error instanceof ModelDeferred)) throw error;
+      await f.db.query(
+        "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
+        [job.id],
+      );
+      current = await rpc("claim_backend_job_v2");
+    }
+  }
+  expect(outcome?.result).toEqual(candidate);
+  expect(writers).toBe(1);
+  expect(repairs).toBe(0);
+  expect(checked).toHaveLength(scopes.length);
+  expect(checked).not.toContain(scopes[0][0].id);
+  expect(checked.at(-1)).toBe("global");
+  const final = (
+    await f.db.query<any>(
+      `select candidate_count,
+    (select candidates from app_private.model_graph_budgets where thread_id=t.id and unit='writer') writer_count,
+    (select count(*)::int from app_private.model_graph_results where thread_id=t.id and result_key like 'repair-schedule-recovery-%') recoveries
+    from app_private.model_graph_threads t where id=$1`,
+      [thread.id],
+    )
+  ).rows[0];
+  expect(final).toEqual({ candidate_count: 1, writer_count: 1, recoveries: 1 });
+  expect(
+    (
+      await f.db.query<any>(
+        "select value from app_private.model_graph_results where id=$1",
+        [retained.id],
+      )
+    ).rows[0].value.result,
+  ).toEqual(first);
+});
+
 it("cannot accept a partial report accidentally stored as complete verification", async () => {
   const { executeGuardedModel } =
     await import("../../supabase/functions/_shared/modelGraph");

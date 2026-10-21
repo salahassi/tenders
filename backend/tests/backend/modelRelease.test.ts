@@ -14,6 +14,8 @@ const names = [
   "scope_unknown_task_reservations_to_phase",
   "healthy_model_poll_eligibility",
   "model_continuation_queue_fairness",
+  "complete_draft_export_context",
+  "immutable_model_phase_prompt_pin",
 ];
 const versions = [
   "20261020141244",
@@ -26,6 +28,8 @@ const versions = [
   "20261021005033",
   "20261021010317",
   "20261021071021",
+  "20261021071753",
+  "20261021073417",
 ];
 function fixture(history: any[], failMutation?: number) {
   const queries: any[] = [];
@@ -39,10 +43,10 @@ function fixture(history: any[], failMutation?: number) {
   });
   return { queries, log, fetcher, token: "isolated-fixture" };
 }
-it("applies only the ten reviewed migrations in chronological transactions with atomic history", async () => {
+it("applies only the reviewed migrations in chronological transactions with atomic history", async () => {
   const f = fixture([]);
   await applyModelRelease(f);
-  expect(f.queries).toHaveLength(11);
+  expect(f.queries).toHaveLength(names.length + 1);
   expect(f.queries[0].read_only).toBe(true);
   expect(
     f.queries
@@ -84,7 +88,7 @@ it("resumes after graph storage without recreating its tables", async () => {
     })),
   );
   await applyModelRelease(f);
-  expect(f.queries).toHaveLength(9);
+  expect(f.queries).toHaveLength(names.length - 1);
   const executable = f.queries[1].query.split(
     "insert into supabase_migrations.schema_migrations",
   )[0];
@@ -145,12 +149,12 @@ it("stops on an unknown mutation outcome without replaying or leaking credential
   expect(JSON.stringify(f.log.mock.calls)).not.toContain(f.token);
 });
 
-it("adds only the five recovery patches to an existing October 20 release", async () => {
+it("adds only the recovery and draft export patches to an existing October 20 release", async () => {
   const f = fixture(
     names.slice(0, 5).map((name) => ({ name, version: "connector-version" })),
   );
   await applyModelRelease(f);
-  expect(f.queries).toHaveLength(6);
+  expect(f.queries).toHaveLength(names.length - 4);
   expect(f.log.mock.calls.slice(5).map(([message]) => message)).toEqual(
     names.slice(5).map((name) => `Applied: ${name}`),
   );
@@ -161,6 +165,7 @@ it("adds only the five recovery patches to an existing October 20 release", asyn
     "create function public.defer_pending_model_request(",
   );
   expect(f.queries[5].query).toContain("pending.remote_request_id is not null");
+  expect(f.queries[6].query).toContain("'commercial_draft',v.commercial_draft");
 });
 
 it("stops at a failed recovery transaction and resumes from confirmed history without replaying prior patches", async () => {
@@ -184,10 +189,12 @@ it("stops at a failed recovery transaction and resumes from confirmed history wi
   // first two patches; only the failed transaction and remaining patches run.
   const resumed = fixture(names.slice(0, 7).map((name) => ({ name })));
   await applyModelRelease(resumed);
-  expect(resumed.queries).toHaveLength(4);
+  expect(resumed.queries).toHaveLength(names.length - 6);
   expect(resumed.queries[1].query).toContain(`'${names[7]}'`);
   expect(resumed.queries[2].query).toContain(`'${names[8]}'`);
   expect(resumed.queries[3].query).toContain(`'${names[9]}'`);
+  expect(resumed.queries[4].query).toContain(`'${names[10]}'`);
+  expect(resumed.queries[5].query).toContain(`'${names[11]}'`);
   expect(
     resumed.queries
       .slice(1)
@@ -210,9 +217,11 @@ it("does not replay an ambiguous recovery call that the server history confirms 
     names.slice(0, 8).map((name) => ({ name, version: "connector-version" })),
   );
   await applyModelRelease(resumed);
-  expect(resumed.queries).toHaveLength(3);
+  expect(resumed.queries).toHaveLength(names.length - 7);
   expect(resumed.queries[1].query).toContain(`'${names[8]}'`);
   expect(resumed.queries[2].query).toContain(`'${names[9]}'`);
+  expect(resumed.queries[3].query).toContain(`'${names[10]}'`);
+  expect(resumed.queries[4].query).toContain(`'${names[11]}'`);
 });
 
 it("rejects a recovery version collision before reading or submitting that migration", async () => {

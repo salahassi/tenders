@@ -178,9 +178,80 @@ it("allows explicit missing information without claiming eligibility failure", (
     validateGroundingReport(r, c, "a".repeat(64), [], []),
   ).not.toThrow();
   expect(groundingDefects(r)).toEqual([]);
+  r.claims[0].status = "insufficient";
+  const unresolved = structuredClone(r);
+  expect(groundingDefects(r)).toEqual([]);
+  expect(r).toEqual(unresolved);
   r.claims[0].status = "contradicted";
   expect(groundingDefects(r)).toHaveLength(1);
 });
+
+it("keeps explicit blockers and failed requirement checks while retaining unresolved assumptions", () => {
+  const r = {
+    ...report(),
+    claims: [
+      {
+        ...report().claims[0],
+        kind: "assumption",
+        status: "insufficient",
+        source_refs: [],
+      },
+    ],
+    requirement_checks: [
+      {
+        requirement_id: "required-control",
+        status: "insufficient",
+        candidate_quote: "",
+        source_refs: [],
+        finding:
+          "A required control is neither addressed nor identified as missing input.",
+      },
+    ],
+    findings: [
+      {
+        severity: "blocking",
+        code: "UNBOUNDED_ASSUMPTION",
+        detail: "The assumption makes an unconditional delivery promise.",
+        claim_ids: ["claim-1"],
+        requirement_ids: [],
+      },
+    ],
+  };
+  const original = structuredClone(r);
+  expect(groundingDefects(r)).toEqual([
+    expect.objectContaining({
+      requirement_id: "required-control",
+      status: "insufficient",
+    }),
+    r.findings[0],
+  ]);
+  expect(r).toEqual(original);
+});
+
+it.each([
+  "company_fact",
+  "tender_fact",
+  "commercial_commitment",
+  "proposed_solution",
+])(
+  "keeps insufficient %s blocking instead of treating it as a missing-input assumption",
+  (kind) => {
+    const r = {
+      ...report(),
+      claims: [
+        {
+          ...report().claims[0],
+          kind,
+          status: "insufficient",
+          source_refs: [],
+        },
+      ],
+    };
+    expect(groundingDefects(r)).toEqual([
+      expect.objectContaining({ kind, status: "insufficient" }),
+    ]);
+  },
+);
 
 it.each([
   ["company_fact", "We have 50 certified engineers."],
