@@ -20,8 +20,7 @@ worker continuation. It makes no extra model calls and preserves all validation,
 leases and request identity. The change passed 106 focused tests, backend
 typecheck/build and both Deno entrypoint checks. The complete backend regression
 (`final-backend-serial-10.log`) passed 617/617 tests in 44 files (219.49 seconds).
-The preceding complete suite passed 616/616 tests in 44 files (217.62 seconds). Source/CI reconciliation for this
-worker follow-up remains pending.
+The preceding complete suite passed 616/616 tests in 44 files (217.62 seconds). Source `fd629ec8c402fb27ac00803329f9dacbb33b0c7e` passed [Pages 39569125961](https://github.com/salahassi/tenders/actions/runs/39569125961), including the full package checks and publication. API remains v72 and worker v86; real Word acceptance remains pending.
 
 At 07:53:29 UTC, a revision-guarded audited resume removed the trial's bounded
 hold at job revision 176 without changing budgets, usage or saved results.
