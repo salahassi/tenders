@@ -27,6 +27,15 @@ const numericLiterals = (text: string): string[] => {
     .replace(/٫/g, ".");
   return normalized.match(/\d+(?:\.\d+)?/g) ?? [];
 };
+function withoutReferenceIdentifiers(text: string, referenceIds: Set<string>) {
+  // Internal source and requirement UUIDs identify records, not quantities.
+  // Only exact supplied UUIDs at identifier boundaries are exempt. Keep
+  // unknown IDs, embedded substrings and all surrounding factual numbers.
+  return text.replace(
+    /(?<![\p{L}\p{N}_-])[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![\p{L}\p{N}_-])/gu,
+    (id) => (referenceIds.has(id) ? "" : id),
+  );
+}
 function adjacentItemNumbers(
   ref: { id: string; quote: string },
   evidence: Evidence[],
@@ -154,6 +163,10 @@ export function validateGroundingReport(
     throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
   if (scope?.requirementsOnly && report.claims.length)
     throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+  const referenceIds = new Set([
+    ...evidence.map((source) => source.id),
+    ...requiredIds,
+  ]);
   for (const claim of report.claims) {
     if (!text.includes(normalizedEvidence(claim.candidate_quote))) {
       console.warn(
@@ -170,24 +183,24 @@ export function validateGroundingReport(
       )
     ) {
       const quotedNumbers = numericLiterals(
-        claim.source_refs.map((ref: any) => ref.quote).join("\n"),
+        withoutReferenceIdentifiers(
+          claim.source_refs.map((ref: any) => ref.quote).join("\n"),
+          referenceIds,
+        ),
       );
       const adjacentLabels = claim.source_refs.flatMap((ref: any) =>
         adjacentItemNumbers(ref, evidence),
       );
       let unsupportedLabel = false;
-      const factualText = claim.candidate_quote.replace(
-        itemLabel,
-        (_match: string, label: string) => {
-          const number = numericLiterals(label)[0];
-          if (
-            !quotedNumbers.includes(number) &&
-            !adjacentLabels.includes(number)
-          )
-            unsupportedLabel = true;
-          return "";
-        },
-      );
+      const factualText = withoutReferenceIdentifiers(
+        claim.candidate_quote,
+        referenceIds,
+      ).replace(itemLabel, (_match: string, label: string) => {
+        const number = numericLiterals(label)[0];
+        if (!quotedNumbers.includes(number) && !adjacentLabels.includes(number))
+          unsupportedLabel = true;
+        return "";
+      });
       if (
         unsupportedLabel ||
         numericLiterals(factualText).some((n) => !quotedNumbers.includes(n))

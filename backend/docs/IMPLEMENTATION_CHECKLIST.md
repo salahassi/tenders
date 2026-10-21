@@ -2,7 +2,40 @@
 
 ## October 21 — real acceptance blockers (in progress)
 
-Current status at 08:24 UTC: **all three original analysis jobs have succeeded**.
+Current status at 09:00 UTC: **analysis is complete, but the real proposal is
+blocked during planning; no complete Word has been downloaded or inspected.**
+Three of nine planning jobs succeeded, one reached
+`MODEL_CORRECTION_EXHAUSTED`, and five remain queued. Gemini's first rejected
+verification copied source text into a candidate quotation. Luna then failed
+coverage validation and Sol failed numeric-evidence validation. All returned
+HTTP 200; these were local response-validation failures, not a new Gemini HTTP
+400. The final corrective Sol response used 17,491 input / 8,212 output tokens.
+
+Private replay identified an application false positive in that last saved
+report: its candidate quotation contains a known evidence UUID, and the numeric
+guard treats the UUID fragments as factual numbers. The 21-claim report and all
+18 requirement checks otherwise validate. The narrow guard now excludes only
+exact standalone supplied evidence/requirement UUIDs from numeric comparison;
+unknown or embedded identifiers and actual adjacent quantities remain checked.
+Known identifier digits cannot justify factual numbers on the source side.
+All 57 grounding tests and backend typecheck pass. The unchanged saved report
+passes full validation with zero actionable defects. Guard deployment and
+validated recovery of the saved report are pending; no budgets or paid results
+have been reset, and the blocked job has not been resumed yet. Other independent
+planning work continued and reached four accepted jobs at 09:10 UTC.
+
+Two related improvements are prepared, not deployed: private retention of each
+distinct invalid verifier result (the corrective input still uses the first),
+and a service-only, revision-deduplicated queue wake after successful lease
+release. The latter retains normal claim ordering, a ten-second workspace
+throttle, active lease/reservation checks, provider retry timing and cron
+fallback. Actual first-three-plan observations showed about ten minutes of
+idle inter-phase gaps without another inference occupying them. Focused checks
+passed seven graph/history tests, 73 worker/source/notification tests and 39
+canonical graph-release/release-command tests. Complete regression and hosted
+recovery evidence remain pending.
+
+Historical checkpoint at 08:24 UTC: **all three original analysis jobs succeeded**.
 The final graph committed at 08:17:30 with the received-candidate count unchanged
 at two. The real analysis produced 145 requirements and advanced into nine
 planning jobs. The first planning writer, OpenAI gpt-6.1-sol, completed between

@@ -40,6 +40,121 @@ function report() {
     findings: [],
   };
 }
+const sourceUuid = "12345678-abcd-4abc-8abc-abcdef123456";
+const requirementUuid = "abcdef12-abcd-4abc-8abc-abcdef123456";
+it.each([
+  {
+    name: "a supplied source UUID",
+    text: `Confirm the design in source (${sourceUuid}).`,
+    pass: true,
+  },
+  {
+    name: "a supplied requirement UUID",
+    text: `Confirm the design for requirement (${requirementUuid}).`,
+    requiredId: requirementUuid,
+    pass: true,
+  },
+  {
+    name: "a quantity beside a supplied requirement UUID",
+    text: `Requirement (${requirementUuid}) requires 50 engineers.`,
+    requiredId: requirementUuid,
+    pass: false,
+  },
+  {
+    name: "a requirement UUID absent from the supplied scope",
+    text: `Confirm the design for requirement (${requirementUuid}).`,
+    pass: false,
+  },
+  {
+    name: "an unknown source UUID",
+    text: "Confirm the design in source (87654321-abcd-4abc-8abc-abcdef123456).",
+    pass: false,
+  },
+  {
+    name: "a UUID inside a larger identifier",
+    text: `Confirm the design in source prefix-${sourceUuid}.`,
+    pass: false,
+  },
+  {
+    name: "a UUID with an appended identifier suffix",
+    text: `Confirm the design in source ${sourceUuid}_suffix.`,
+    pass: false,
+  },
+  {
+    name: "a quantity following a supplied UUID",
+    text: `Source (${sourceUuid}) requires 50 engineers.`,
+    pass: false,
+  },
+  {
+    name: "a price preceding a supplied UUID",
+    text: `USD 50000 is required by source (${sourceUuid}).`,
+    pass: false,
+  },
+  {
+    name: "an Arabic quantity beside a supplied UUID",
+    text: `المصدر (${sourceUuid}) يتطلب ٥٠ مهندسًا.`,
+    pass: false,
+  },
+  {
+    name: "a supported quantity beside a supplied UUID",
+    text: `Source (${sourceUuid}) requires 3 workshops.`,
+    source: "The design requires 3 workshops.",
+    pass: true,
+  },
+  {
+    name: "an identifier alone cannot support a quantity",
+    text: `Source (${sourceUuid}) requires 12345678 engineers.`,
+    source: `The design is documented in source ${sourceUuid}.`,
+    pass: false,
+  },
+  {
+    name: "an arbitrary numeric source ID is not exempt",
+    id: "50",
+    text: "The design requires 50 engineers.",
+    pass: false,
+  },
+])(
+  "checks numbers without mistaking evidence metadata for quantities: $name",
+  ({
+    text,
+    source = "The design requires documented review.",
+    id = sourceUuid,
+    requiredId,
+    pass,
+  }) => {
+    const c = { content_blocks: [{ type: "paragraph", text }] };
+    const required = requiredId ? [requiredId] : [];
+    const r = {
+      ...report(),
+      processed_requirement_ids: required,
+      requirement_checks: required.map((requirement_id) => ({
+        requirement_id,
+        status: "supported",
+        candidate_quote: text,
+        source_refs: [{ id, quote: source }],
+        finding: "Synthetic requirement mapping.",
+      })),
+    };
+    r.claims[0] = {
+      ...r.claims[0],
+      claim: text,
+      candidate_quote: text,
+      source_refs: [{ id, quote: source }],
+    };
+    const before = structuredClone(r);
+    const check = () =>
+      validateGroundingReport(
+        r,
+        c,
+        "a".repeat(64),
+        [{ ...evidence[0], id, text: source }],
+        required,
+      );
+    if (pass) expect(check).not.toThrow();
+    else expect(check).toThrow("EVIDENCE_REFERENCE_INVALID");
+    expect(r).toEqual(before);
+  },
+);
 it.each([
   {
     text: "2\nArchitecture design\nPackage 1",
