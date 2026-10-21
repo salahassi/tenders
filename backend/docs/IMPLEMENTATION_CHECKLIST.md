@@ -49,6 +49,19 @@ The plan's broader cross-job claim receipts, automatic passage-only editorial
 repair and hierarchical planning for inputs beyond one blueprint's context
 remain follow-up work; the existing per-result bounded repair still applies.
 
+Release `24470bc98bfb74461242e6f5215cacf93b5e4205` passed
+[CI and Pages 39688504933](https://github.com/salahassi/tenders/actions/runs/39688504933).
+Hosted migrations are `20261021224317` / `20261021224326`; API v79 and worker
+v103 are ACTIVE. All 33/48 returned runtime files match the prepared sources.
+Health returns 200, anonymous bootstrap 401, the local claim RPC is service-only,
+and advisor categories/counts are unchanged. The old plan remains version 1 and
+has reached review after completing drafting/commercial. Version 2 admission is
+restricted to the authorized real-RFP test copy. The original record/file is
+unchanged; author metadata is removed only from the test PDF, with all 21 pages'
+extracted text verified equal. Browser acceptance exposed an overlapping inline
+review label that prevented clicking its checkbox; the label now uses block
+layout. This small frontend correction is being verified before publication.
+
 ## October 21 — bounded parallel background model requests
 
 The owner asked about parallel workers during the real proposal run. Its one
