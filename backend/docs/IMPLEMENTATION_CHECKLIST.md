@@ -2,6 +2,27 @@
 
 ## October 21 — real acceptance blockers (in progress)
 
+At 13:12 UTC, worker **v98** has exact 40-file hosted readback. Compound
+company declarations may be covered by multiple exact candidate quotations;
+their union must cover every non-whitespace character, including numbers,
+negations and punctuation. All citation and independent semantic checks remain.
+Focused guard/recovery tests passed 93 cases plus three SQL/LangGraph replay
+variants. Full backend regression `final-backend-serial-19.log` passed **885/885
+tests in 52 files** (300.45 seconds), with backend build and Deno worker check.
+The real retry added no provider usage but remains blocked: its newest retained
+report has substantive mandatory-consequence findings. It must not be replaced
+with an older more favorable report. Nineteen of 67 drafting jobs are accepted;
+there is still no complete Word file.
+
+Release `0ffa5e4fd00ac812a17b4009f51f76ec517709a9` passed
+[CI and Pages 39603349050](https://github.com/salahassi/tenders/actions/runs/39603349050).
+After a full browser reload, the real pending proposal route shows **Proposal
+preparation**, existing generation state and an Open opportunity link instead of
+the previous false 404. The underlying panel still describes the blocked parent
+as paused even while independent sibling jobs continue; that copy limitation is
+not claimed fixed. The first real `notice.details_unchanged` audit occurred at
+12:57:37 UTC. Completed-assessment reuse remains unobserved in production.
+
 At 12:53 UTC, worker **v97** is deployed with an exact 40-file readback. The
 legacy outer repair flag no longer hides the paid initial writer request: only
 an initial-produce graph without candidate/report references may match the
@@ -40,6 +61,19 @@ all **199 tests in 35 files** (seven new pending-route regressions), and product
 build passed. Five timing failures in an overlapping earlier run passed unchanged
 in a serial file rerun and then the complete serial suite. Hosted UI release and
 browser validation are pending.
+
+Operations/observability: the Jobs table now preserves the actual worker-attempt
+count separately from the current model-routing round, labels creation and update
+times explicitly, and explains that worker attempts include result checks and
+resumed work. Requesting retry no longer invents an additional execution. Optional
+round/update fields preserve existing job-type compatibility; missing timestamps
+remain unknown. Local verification passed **28/28 focused tests**, including four
+new mapping/UI regressions, then **203/203 frontend tests in 36 files** with one
+worker (116.07 seconds), frontend typecheck, production build and diff checks.
+The production build retains its existing large-chunk warning. This is a frontend
+change only; backend behavior and GenerationPanel are unchanged. Deployment and
+authenticated hosted Jobs-screen acceptance remain pending; no new provider
+request or live job action was made for these tests.
 
 Current status at 12:15 UTC: analysis remains 3/3 and planning 9/9 accepted;
 **11/67 draft jobs are accepted**, with 53 queued, one running and two blocked.

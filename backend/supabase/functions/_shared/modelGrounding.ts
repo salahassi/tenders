@@ -120,6 +120,39 @@ function tableItemNumbers(
 }
 const itemLabel =
   /(?:\b(?:BOQ\s+)?(?:item|line|row|section|clause)|(?:البند|بند|الصف|صف|الفقرة|فقرة))\s*(?:رقم\s+)?([0-9٠-٩۰-۹]{1,4})(?![0-9٠-٩۰-۹])/giu;
+function declaredClaimCovered(declared: string, claims: any[]) {
+  const text = normalizedEvidence(declared);
+  if (
+    claims.some(
+      (claim) =>
+        normalizedEvidence(claim.candidate_quote).includes(text) ||
+        normalizedEvidence(claim.claim) === text,
+    )
+  )
+    return true;
+  // A compound declaration may be reviewed as several atomic assertions.
+  // Count exact quoted spans, never their summed lengths: overlaps/duplicates
+  // cannot fill a missing clause, number, negation or punctuation. Only
+  // whitespace between covered spans is immaterial after normalization.
+  const spans: [number, number][] = [];
+  for (const claim of claims) {
+    const quote = normalizedEvidence(claim.candidate_quote);
+    if (!quote) continue;
+    for (
+      let start = text.indexOf(quote);
+      start >= 0;
+      start = text.indexOf(quote, start + 1)
+    )
+      spans.push([start, start + quote.length]);
+  }
+  spans.sort((a, b) => a[0] - b[0]);
+  let coveredUntil = 0;
+  for (const [start, end] of spans) {
+    if (text.slice(coveredUntil, start).trim()) return false;
+    coveredUntil = Math.max(coveredUntil, end);
+  }
+  return spans.length > 0 && !text.slice(coveredUntil).trim();
+}
 export function validateGroundingReport(
   report: any,
   candidate: any,
@@ -225,16 +258,7 @@ export function validateGroundingReport(
       throw new ModelError("EVIDENCE_REFERENCE_INVALID");
     }
   for (const declared of scope ? [] : (candidate.company_claims ?? []))
-    if (
-      !report.claims.some(
-        (claim: any) =>
-          normalizedEvidence(claim.candidate_quote).includes(
-            normalizedEvidence(declared.claim),
-          ) ||
-          normalizedEvidence(claim.claim) ===
-            normalizedEvidence(declared.claim),
-      )
-    )
+    if (!declaredClaimCovered(declared.claim, report.claims))
       throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
 }
 export function groundingDefects(report: any) {

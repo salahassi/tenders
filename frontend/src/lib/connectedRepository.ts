@@ -620,10 +620,10 @@ export class ConnectedRepository {
                   | "quota_wait")
               : "queued",
       progress: r.status === "succeeded" ? 100 : 0,
-      attempt: Number(
-        (r.checkpoint as { model_routing?: { round_attempts?: number } } | null)
-          ?.model_routing?.round_attempts ?? r.attempts,
-      ),
+      attempt: Number(r.attempts ?? 0),
+      modelRound: (
+        r.checkpoint as { model_routing?: { round_attempts?: number } } | null
+      )?.model_routing?.round_attempts,
       message:
         (r.error_code === "MODEL_ROUND_EXHAUSTED"
           ? `Waiting for an available provider. Automatically retries after ${str(r, "next_attempt_at")}.`
@@ -648,6 +648,7 @@ export class ConnectedRepository {
         sourceReadingSummary(r.checkpoint) +
         modelRoutingSummary(r.checkpoint),
       createdAt: str(r, "created_at"),
+      updatedAt: str(r, "updated_at") || undefined,
     }));
     state.notifications = this.rows.notifications.map((r) => ({
       id: r.id,

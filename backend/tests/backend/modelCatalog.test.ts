@@ -121,9 +121,13 @@ async function configure(
   };
 }
 
-it.each([false, true])(
-  "recovers a blocked unchanged complete report without another call or budget reset (accept crash: %s)",
-  async (crash) => {
+it.each([
+  { crash: false, atomic: false },
+  { crash: true, atomic: false },
+  { crash: false, atomic: true },
+])(
+  "recovers a blocked unchanged complete report without another call or budget reset (accept crash: $crash, atomic claims: $atomic)",
+  async ({ crash, atomic }) => {
     const { executeGuardedModel } =
       await import("../../supabase/functions/_shared/modelGraph");
     const { ModelGraphStore } =
@@ -132,18 +136,33 @@ it.each([false, true])(
       await import("../../supabase/functions/_shared/modelGrounding");
     const { sha256 } = await import("../../supabase/functions/_shared/model");
     const { job, backend, envs } = await configure();
+    const atomicQuotes = [
+      "We deliver software.",
+      "Buyer approval remains required.",
+    ];
+    const compoundClaim = atomicQuotes.join(" ");
+    const companyEvidence = {
+      id: "company",
+      text: compoundClaim,
+      kind: "company" as const,
+      verified: true,
+    };
     const candidate = {
       key: "approach",
       title: "Approach",
       content_blocks: [
         {
           type: "paragraph",
-          text: "Proposed work requires buyer confirmation.",
+          text: atomic
+            ? compoundClaim
+            : "Proposed work requires buyer confirmation.",
         },
       ],
       requirement_ids: [],
       evidence_refs: [],
-      company_claims: [],
+      company_claims: atomic
+        ? [{ claim: compoundClaim, quote: compoundClaim, source_id: "company" }]
+        : [],
       assumptions: [],
       questions: [],
     };
@@ -164,7 +183,7 @@ it.each([false, true])(
       prefix: `step:${job.id}`,
       task: "draft_section" as const,
       context: {},
-      evidence: [],
+      evidence: atomic ? [companyEvidence] : [],
       requiredIds: [],
       manifest: [],
       environments: envs,
@@ -189,23 +208,35 @@ it.each([false, true])(
     const retained = await store.action("result_put", {
       key: `invalid-verification-repair-${hash}`,
       value: {
-        code: "EVIDENCE_REFERENCE_INVALID",
+        code: atomic
+          ? "MODEL_COVERAGE_INCOMPLETE"
+          : "EVIDENCE_REFERENCE_INVALID",
         producer: { model: "fixture-corrective" },
         result: {
           checked_candidate_hash: hash,
           reviewed_all_content: true,
           processed_content_ids: units.map((u) => u.id),
-          claims: [
-            {
-              id: "claim",
-              claim: units[0].text,
-              candidate_quote: units[0].text,
-              kind: "assumption",
-              status: "supported",
-              source_refs: [],
-              finding: "Proposed work.",
-            },
-          ],
+          claims: atomic
+            ? atomicQuotes.map((quote, index) => ({
+                id: `atomic-${index}`,
+                claim: quote,
+                candidate_quote: quote,
+                kind: index ? "assumption" : "company_fact",
+                status: "supported",
+                source_refs: [{ id: "company", quote: compoundClaim }],
+                finding: "Exact atomic assertion reviewed.",
+              }))
+            : [
+                {
+                  id: "claim",
+                  claim: units[0].text,
+                  candidate_quote: units[0].text,
+                  kind: "assumption",
+                  status: "supported",
+                  source_refs: [],
+                  finding: "Proposed work.",
+                },
+              ],
           processed_requirement_ids: [],
           requirement_checks: [],
           findings: [],

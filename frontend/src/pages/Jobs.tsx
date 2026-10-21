@@ -19,6 +19,20 @@ import {
 } from "../components/ui";
 import type { Job } from "../types";
 import "./admin.css";
+function JobTime({ value }: { value?: string }) {
+  return value && Number.isFinite(Date.parse(value)) ? (
+    <time dateTime={value}>
+      {new Date(value).toLocaleString(undefined, {
+        dateStyle: "short",
+        timeStyle: "short",
+        timeZone: "Asia/Riyadh",
+      })}{" "}
+      · Riyadh
+    </time>
+  ) : (
+    <>Not recorded</>
+  );
+}
 export default function Jobs() {
   const { state, update, notify } = useApp();
   const [filter, setFilter] = useState("all");
@@ -72,7 +86,6 @@ export default function Jobs() {
               ? {
                   ...j,
                   status: "blocked",
-                  attempt: j.attempt + 1,
                   progress: 0,
                   message:
                     "Retry requested. The backend checks the current processing requirements.",
@@ -180,6 +193,10 @@ export default function Jobs() {
           ))}
         </select>
       </div>
+      <p className="small muted">
+        Worker attempts include background result checks and resumed work. Model
+        activity above records individual provider requests.
+      </p>
       <div className="panel">
         {jobs.length ? (
           <div className="table-wrap">
@@ -222,15 +239,17 @@ export default function Jobs() {
                     </td>
                     <td>
                       <div className="admin-job-message">{j.message}</div>
-                      <span className="small muted">
-                        Attempt {j.attempt} ·{" "}
-                        {new Date(j.createdAt).toLocaleString(undefined, {
-                          dateStyle: "short",
-                          timeStyle: "short",
-                          timeZone: "Asia/Riyadh",
-                        })}{" "}
-                        · Riyadh
-                      </span>
+                      <div className="small muted">
+                        Worker attempts {j.attempt}
+                        {j.modelRound != null &&
+                          ` · Current model round ${j.modelRound}`}
+                      </div>
+                      <div className="small muted">
+                        Created <JobTime value={j.createdAt} />
+                      </div>
+                      <div className="small muted">
+                        Updated <JobTime value={j.updatedAt} />
+                      </div>
                     </td>
                     <td>
                       {canEdit && (

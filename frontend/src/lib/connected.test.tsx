@@ -219,6 +219,52 @@ describe("connected repository", () => {
     expect(f.request).toHaveBeenCalledWith("/v1/audit-events?limit=500");
     expect(f.request).toHaveBeenCalledWith("/v1/documents?limit=100");
   });
+  it("preserves worker attempts separately from the current model round and job timestamps", async () => {
+    const f = fixture(),
+      original = f.request.getMockImplementation()!;
+    const rows = [
+      {
+        id: "00000000-0000-4000-8000-000000000031",
+        revision: 1,
+        type: "draft_section",
+        entity_id: opportunity,
+        status: "blocked",
+        attempts: 14,
+        checkpoint: { model_routing: { round_attempts: 2 } },
+        created_at: "2026-10-21T10:00:00Z",
+        updated_at: "2026-10-21T12:15:00Z",
+      },
+      {
+        id: "00000000-0000-4000-8000-000000000032",
+        revision: 1,
+        type: "source_collect",
+        entity_id: source,
+        status: "queued",
+        attempts: 0,
+        created_at: "2026-10-21T10:00:00Z",
+      },
+    ];
+    f.request.mockImplementation(async (path, options) =>
+      path.startsWith("/v1/jobs?")
+        ? {
+            data: { records: rows, next_cursor: null },
+            meta: { request_id: "fixture" },
+          }
+        : original(path, options),
+    );
+    const state = await new ConnectedRepository(f.client).load();
+    expect(state.jobs[0]).toMatchObject({
+      attempt: 14,
+      modelRound: 2,
+      createdAt: rows[0].created_at,
+      updatedAt: rows[0].updated_at,
+    });
+    expect(state.jobs[1]).toMatchObject({
+      attempt: 0,
+      modelRound: undefined,
+      updatedAt: undefined,
+    });
+  });
   it("shows recorded source processing counts, including zero, without inventing an absent count", async () => {
     const f = fixture();
     const original = f.request.getMockImplementation()!;

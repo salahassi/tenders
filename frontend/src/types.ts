@@ -230,8 +230,10 @@ export interface Job {
     | "cancelled";
   progress: number;
   attempt: number;
+  modelRound?: number;
   message: string;
   createdAt: string;
+  updatedAt?: string;
 }
 export interface Notification {
   id: string;

@@ -40,6 +40,161 @@ function report() {
     findings: [],
   };
 }
+it.each([
+  {
+    name: "adjacent atomic company fact and proposed assumption",
+    text: "We deliver software. Buyer approval remains required.",
+    quotes: ["We deliver software.", "Buyer approval remains required."],
+    pass: true,
+  },
+  {
+    name: "normalized whitespace between complete atomic quotes",
+    text: "We deliver software.\n\tBuyer approval remains required.",
+    quotes: ["We deliver software.", "Buyer approval remains required."],
+    pass: true,
+  },
+  {
+    name: "overlapping exact quotes in reverse order",
+    text: "We deliver software and require approval.",
+    quotes: ["software and require approval.", "We deliver software"],
+    pass: true,
+  },
+  {
+    name: "Arabic atomic quotes",
+    text: "نطوّر البرمجيات. يتطلب التنفيذ موافقة العميل.",
+    quotes: ["نطوّر البرمجيات.", "يتطلب التنفيذ موافقة العميل."],
+    pass: true,
+  },
+  {
+    name: "a missing clause",
+    text: "We deliver software. We manage hosting. Buyer approval is required.",
+    quotes: ["We deliver software.", "Buyer approval is required."],
+    pass: false,
+  },
+  {
+    name: "a missing number",
+    text: "We deliver 3 workshops.",
+    quotes: ["We deliver", "workshops."],
+    pass: false,
+  },
+  {
+    name: "a missing negation",
+    text: "We do not supply hardware.",
+    quotes: ["We do", "supply hardware."],
+    pass: false,
+  },
+  {
+    name: "missing punctuation is not whitespace",
+    text: "We deliver software; approval is required.",
+    quotes: ["We deliver software", "approval is required."],
+    pass: false,
+  },
+  {
+    name: "duplicate quotes cannot replace the remaining clause",
+    text: "We deliver software. Buyer approval is required.",
+    quotes: [
+      "We deliver software.",
+      "We deliver software.",
+      "We deliver software.",
+    ],
+    pass: false,
+  },
+  {
+    name: "overlapping spans cannot cover an omitted final word",
+    text: "We deliver software and require approval.",
+    quotes: ["We deliver software and require", "software and require"],
+    pass: false,
+  },
+])(
+  "checks declared-company coverage using exact quote spans: $name",
+  ({ text, quotes, pass }) => {
+    const c = {
+      content_blocks: [{ type: "paragraph", text }],
+      company_claims: [{ claim: text, source_id: "company", quote: text }],
+    };
+    const r = {
+      ...report(),
+      processed_content_ids: candidateContent(c).map((unit) => unit.id),
+      claims: quotes.map((quote, index) => ({
+        ...report().claims[0],
+        id: `atomic-${index}`,
+        claim: quote,
+        candidate_quote: quote,
+        kind: index ? "assumption" : "company_fact",
+        source_refs: [{ id: "company", quote: text }],
+      })),
+    };
+    const before = structuredClone(r);
+    const check = () =>
+      validateGroundingReport(
+        r,
+        c,
+        "a".repeat(64),
+        [{ id: "company", text, kind: "company", verified: true }],
+        [],
+      );
+    if (pass) expect(check).not.toThrow();
+    else expect(check).toThrow("MODEL_COVERAGE_INCOMPLETE");
+    expect(r).toEqual(before);
+  },
+);
+
+it.each([
+  "source",
+  "numeric",
+  "content",
+  "requirements",
+  "unsupported",
+  "blocking",
+])(
+  "preserves %s validation after complete atomic company-claim coverage",
+  (defect) => {
+    const text = "We deliver 3 workshops. Buyer approval is required.";
+    const c = {
+      content_blocks: [{ type: "paragraph", text }],
+      company_claims: [{ claim: text, source_id: "company", quote: text }],
+    };
+    const r = {
+      ...report(),
+      processed_content_ids: candidateContent(c).map((unit) => unit.id),
+      claims: ["We deliver 3 workshops.", "Buyer approval is required."].map(
+        (quote, index) => ({
+          ...report().claims[0],
+          id: `atomic-${index}`,
+          claim: quote,
+          candidate_quote: quote,
+          kind: index ? "assumption" : "company_fact",
+          source_refs: [{ id: "company", quote: text }],
+        }),
+      ),
+      findings: [] as any[],
+    };
+    if (defect === "source") r.claims[0].source_refs[0].id = "missing";
+    if (defect === "numeric") r.claims[0].source_refs[0].quote = "workshops.";
+    if (defect === "content") r.processed_content_ids.pop();
+    if (defect === "unsupported") r.claims[0].status = "insufficient";
+    if (defect === "blocking")
+      r.findings.push({
+        severity: "blocking",
+        code: "NEEDS_CONFIRMATION",
+        detail: "Unresolved company assertion.",
+        claim_ids: ["atomic-0"],
+        requirement_ids: [],
+      });
+    const check = () =>
+      validateGroundingReport(
+        r,
+        c,
+        "a".repeat(64),
+        [{ id: "company", text, kind: "company", verified: true }],
+        defect === "requirements" ? ["missing-requirement"] : [],
+      );
+    if (["unsupported", "blocking"].includes(defect)) {
+      expect(check).not.toThrow();
+      expect(groundingDefects(r)).toHaveLength(1);
+    } else expect(check).toThrow();
+  },
+);
 const sourceUuid = "12345678-abcd-4abc-8abc-abcdef123456";
 const requirementUuid = "abcdef12-abcd-4abc-8abc-abcdef123456";
 it.each([
