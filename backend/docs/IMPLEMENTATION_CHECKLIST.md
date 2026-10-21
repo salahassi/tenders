@@ -2,7 +2,48 @@
 
 ## October 21 — real acceptance blockers (in progress)
 
-Current status at 09:00 UTC: **analysis is complete, but the real proposal is
+Current status at 09:29 UTC: **analysis is complete and seven of nine planning
+steps are accepted; no complete Word has been downloaded or inspected.**
+The authenticated Jobs page's Check retry action resumed the exact blocked step
+at 09:25 (HTTP 200, same plan). Its graph is now committed with one recovery
+provenance record. The original input hash, received-candidate count of one,
+writer/verifier/correction budgets, and five usage records are unchanged:
+65,896 input / 37,730 output tokens before and after. Recovery made **zero new
+provider requests**. Subsequent independent Gemini verifications also succeeded.
+Source `9daf07f559bbf981e91ca25663c3e9690552308f` passed
+[Pages 39576379872](https://github.com/salahassi/tenders/actions/runs/39576379872).
+
+The live retry exposed a separate display-state defect: successful independent
+steps could overwrite the parent plan's blocked status and hide Resume. An
+additive private trigger now preserves a current blocked child's status when
+sibling work updates the parent, while allowing independent steps, ordinary
+retry and cancellation to continue. Its audited one-time repair changes only
+the aggregate status/revision, not child jobs, checkpoints, budgets or usage.
+The focused canonical PostgreSQL/status/release tests passed **52/52**, backend
+typecheck and independent review passed. The hosted migration is applied; the
+trigger is enabled and no API role can execute its private function directly.
+No existing plan needed aggregate repair at deployment. The stable full backend
+regression (`final-backend-serial-14.log`) passed **693/693 tests in 47 files**
+(246.96 seconds); backend typecheck/build passed. Its preceding run passed 691
+cases but found a test-fixture defect:
+the healthy MODEL_IN_PROGRESS case used the failure RPC, creating a second
+blocked job whose ordinal could precede the expected blocker. The corrected
+case uses the actual graph yield RPC and asserts retry_wait; a separate case
+checks deterministic selection between two real blockers. The SQL is unchanged.
+API v72 and worker v88 remain active. Frontend rerun passed all
+**192 tests**, typecheck and production build; no frontend code changed.
+
+At 09:40 UTC, eight of nine planning steps are accepted with the final step
+running and no blocked child. The prior seven accepted outputs map 111 distinct
+requirements into 383 section assignments, expanding to 57 prose-writing steps
+under the existing eight-requirement bound. This is a measured remaining
+workload, not duplicate provider dispatch. Larger prose batches remain an
+unapplied experiment until actual writer/verifier output proves safe sizing;
+stored mappings and task settings are unchanged. Full Word acceptance remains
+pending. Failure mail has not been sent since October 20 at 17:36 UTC; the one
+existing queued summary retains its configured next delivery window.
+
+Historical status at 09:00 UTC: **analysis is complete, but the real proposal is
 blocked during planning; no complete Word has been downloaded or inspected.**
 Three of nine planning jobs succeeded, one reached
 `MODEL_CORRECTION_EXHAUSTED`, and five remain queued. Gemini's first rejected
@@ -51,8 +92,10 @@ browser retry and recovered job acceptance remain pending.
 Combined release validation (`final-backend-serial-12.log`) passed **679/679
 tests in 46 files** in 206.60 seconds, plus backend typecheck/build and both Deno
 entrypoint checks. The two additive queue-wakeup/recovery-guard migrations are
-applied; anon/authenticated cannot execute their service boundary. The combined
-worker deployment and live acceptance are next. An earlier overlapping run
+applied; anon/authenticated cannot execute their service boundary. Worker v88
+deployed the combined code at 09:22 UTC; all 37 source files matched on readback
+and an unauthenticated POST still returned 401. Source
+`9daf07f` is pushed to main. Live acceptance remains pending. An earlier overlapping run
 (`serial-11`) was inconclusive: new grounding tests were loaded against a
 pre-edit module and one fixture exceeded its setup timeout; the isolated export
 suite passed and the stable full run above passed every test.

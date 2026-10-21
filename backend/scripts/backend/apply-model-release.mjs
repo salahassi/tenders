@@ -18,6 +18,7 @@ const release = [
   ["20261021073417", "immutable_model_phase_prompt_pin"],
   ["20261021085510", "bounded_queue_wakeup"],
   ["20261021091037", "retained_verification_recovery_guard"],
+  ["20261021092435", "generation_plan_blocked_status"],
 ];
 const project = "nqfwbqeozmuiuwbiowil";
 const literal = (value) => "'" + value.replaceAll("'", "''") + "'";
