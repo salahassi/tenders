@@ -196,6 +196,8 @@ existing accepted work. Do not erase graph budgets or repack an in-flight plan.
 - [Microsoft background-job guidance](https://learn.microsoft.com/en-us/azure/architecture/best-practices/background-jobs): business-priority scheduling, ordered dependencies and duplicate-message handling.
 - [AWS retry/backoff guidance](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/): idempotency, jitter and avoiding multiplicative retries.
 
-These references support the design principles. The particular scheduling policy,
-work-unit strategy and acceptance targets above are TenderDesk proposals that
-still require implementation and measurement.
+These references support the design principles. The particular scheduling policy
+and versioned work-unit strategy are now deployed for controlled acceptance.
+Measured savings, real Word acceptance and the broader receipt-cache/editorial
+repair follow-ups remain tracked in the implementation checklist; they are not
+established by the references or the passing local fixtures.

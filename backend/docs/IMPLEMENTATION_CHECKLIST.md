@@ -6,16 +6,16 @@ The Owner reviewed the plan and explicitly authorized implementation.
 [PROPOSAL_PERFORMANCE_PLAN.md](PROPOSAL_PERFORMANCE_PLAN.md) extends P3/P4/P5/P6
 of the original model execution plan with fair queue scheduling, semantic work
 units, shared solution decisions and scoped verification/repair. It records
-measurable acceptance gates and versioned rollout. Status: implementation in
-progress; deployment and acceptance remain separate pending gates.
+measurable acceptance gates and versioned rollout. Status: the queue and versioned
+workflow are deployed; controlled real-file acceptance remains in progress.
 The already-running proposal retains its saved path. This does not revert the
 previously deployed two-request concurrency setting or general-section fix.
 
 Implemented for this release: durable weighted class/owner scheduling, eligibility
 and model-capacity admission, and up to three local transitions per invocation
 with a time budget. Local assembly can wake at full inference capacity. The new
-proposal workflow is installed with admission disabled and supports admission
-restricted to one real trial opportunity: a strict blueprint gives
+proposal workflow was installed with admission disabled and is now restricted
+to one real trial opportunity: a strict blueprint gives
 each requirement one primary response, records shared labeled decisions and
 semantic writing units, writes the executive summary after the main sections,
 packs review around full sections, and adds cross-section reconciliation. The
@@ -37,14 +37,14 @@ entrypoints pass frozen Deno checking. Backend typecheck/build and frontend
 typecheck/build pass; **205 frontend tests in 36 files pass**. The last focused
 run also covers compact, reversible requirement references: UUIDs remain in
 business records while the planner receives short stable labels. Deployment is
-recorded below when finished. The first full queue regression found four expectations
+recorded below. The first full queue regression found four expectations
 around capacity and collection/detail ordering; capacity coverage now checks
 both queue admission and the reservation defense, while collection/detail
 ordering remains fair within the background class. No hosted success is inferred
 from these synthetic fixtures.
 
-Remaining gates: hosted deployment/readback and controlled real new-version
-acceptance, actual downloadable files and measured submission/timing savings.
+Remaining gates: controlled real new-version acceptance, actual downloadable
+files and measured submission/timing savings.
 The plan's broader cross-job claim receipts, automatic passage-only editorial
 repair and hierarchical planning for inputs beyond one blueprint's context
 remain follow-up work; the existing per-result bounded repair still applies.
@@ -60,7 +60,26 @@ restricted to the authorized real-RFP test copy. The original record/file is
 unchanged; author metadata is removed only from the test PDF, with all 21 pages'
 extracted text verified equal. Browser acceptance exposed an overlapping inline
 review label that prevented clicking its checkbox; the label now uses block
-layout. This small frontend correction is being verified before publication.
+layout. Release `639e4d9fb074d54625028a4efc3a1aad923def70` passed
+[CI and Pages 39689903896](https://github.com/salahassi/tenders/actions/runs/39689903896);
+the published CSS matches the locally tested build byte-for-byte. The local
+205-test frontend suite, typecheck and build also pass after this correction.
+
+Controlled hosted trial: opportunity `848a1a8f-089b-4157-92ab-0955049a2ca2`,
+plan `abd09c60-ac20-4250-b0fb-6b0c59ff38b1`, workflow 2. Browser upload,
+extraction review and Generate each reached successful server commands. The
+31,636-character extracted text equals the previously reviewed RFP text exactly.
+Owner-authorized OpenAI/Gemini content permissions were recorded through the
+canonical audited commands for the copy. A pre-permission analysis job was
+resumed individually after permission was recorded; whole-plan resume correctly
+refused to reset work while a request was reserved. No paid work/budget was reset.
+At 23:05 UTC one OpenAI analysis response succeeded (4,415 input / 9,668 output
+tokens); another accepted analysis request remained pending. This is provider
+response evidence, not completed analysis/verification or a completed proposal.
+The original version-1 plan still has 67/67 drafts and 3/3 commercial tasks done,
+with 2/13 review tasks committed. Both continue on the normal automatic queue.
+No new real Word download or measured 50% saving is claimed yet; general version-2
+admission remains off pending that acceptance gate.
 
 ## October 21 — bounded parallel background model requests
 
