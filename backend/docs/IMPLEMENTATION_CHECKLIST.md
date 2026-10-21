@@ -2,18 +2,58 @@
 
 ## October 21 — real acceptance blockers (in progress)
 
-Current status at 10:16 UTC: **all three analysis jobs and all nine planning
-steps are accepted, and 67 drafting jobs have been created. No complete Word
-proposal has been downloaded or inspected.** At 10:12, no draft had yet been
-accepted. The first experience-section job received HTTP 200 from all three
-writer models, but each response failed local `UNSUPPORTED_COMPANY_CLAIM`
-validation; the job is blocked at its correction limit. An overly literal
-company-claim guard is suspected, but the actual response has not yet been
-retrieved for inspection, so this cause is not confirmed. Other already-started
-work continues, including accepted OpenAI gpt-6.1-sol work and an in-progress
-Gemini verification.
+Current status at 11:57 UTC: **analysis 3/3 and planning 9/9 are accepted;
+eight of 67 draft jobs have completed. No complete Word has been downloaded or
+inspected.** The bounded diagnostic hold expired at 10:43 and ordinary processing
+resumed. At 11:52, 56 drafts were queued, one retained an in-progress model
+request, and two were blocked (the original company-claim guard and a separate
+output-policy failure under investigation). Since 10:34, the plan recorded 31
+settled usage records with 308,055 input / 81,177 output tokens and one reserved
+request. These are reported tokens, not a price estimate or a completed journey.
 
-Sixty-five queued, unstarted drafting jobs are on an audited bounded hold until
+Company-claim correction and paid-result recovery are implemented but not yet
+deployed. In the graph executor, deterministic validation checks a verified
+company source and a contiguous normalized quotation; claim paraphrases and
+translations must pass mandatory independent semantic verification. Legacy
+execution keeps its existing guards. The generation callback and final
+validation carry the same server-controlled verification mode. Invalid writer
+results are retained privately. Recovery binds an already-counted, settled
+candidate to its exact job, prompt hash, graph thread and producer, rechecks
+current data permissions, and resumes normal verification without another writer
+POST, usage settlement or budget reset. Missing retained responses do not cause
+new generation. The canonical graph replay integration passed with three original
+paid candidates and unchanged writer budget 3, then required an independent
+verifier before acceptance. Focused guard tests passed 16/16; the expanded
+company-claims integration now passes 4/4, and recovery/graph tests passed 31/31.
+Backend typecheck/build and both Deno entrypoints pass. Final full regression
+`final-backend-serial-16.log` passed **800/800 tests in 52 files** (274.85 seconds).
+The recovery migration is applied and API **v74** / worker **v93** deployed at
+12:01 UTC, with all 28/40 source files matching hosted readback. The graph RPC
+remains service-role-only, anonymous worker POST returns 401, and the same three
+security-advisor categories remain unchanged. Actual browser retry and recovery
+of the original experience-section job are pending; no real recovery or full
+Word completion is claimed by the automated tests.
+
+Historical status at 10:25 UTC: **all three analysis jobs and all nine planning
+steps are accepted, and 67 drafting jobs have been created. No complete Word
+proposal has been downloaded or inspected.** The first independent drafting
+job completed at 10:22: one of 67 is accepted. Its Gemini verification used the
+preserved medium profile (requested/effective medium), 9,156 input / 5,115 output
+tokens, including 2,559 thinking tokens. This proves the control was sent for
+that real request; it does not establish LOW performance or causality.
+The first experience-section job received HTTP 200 from all three
+writer models, but each response failed local `UNSUPPORTED_COMPANY_CLAIM`
+validation; the job is blocked at its correction limit. Authenticated GET-only
+retrieval of the two already-paid OpenAI responses confirmed the exact failing
+condition: each used a contiguous quotation from an available verified company
+source, but the claim wording was not a literal substring of that quotation.
+The semantic truth of the claims still requires independent verification.
+The temporary diagnostic returned only booleans/counts/codes, made no generation
+request, and was removed immediately. Normal worker **v92** exactly matches the
+canonical v90 bundle (39 files). Guard correction and paid-result recovery are
+being implemented; no candidate budget or usage record has been reset.
+
+Sixty-five queued, unstarted drafting jobs were on an audited bounded hold until
 10:43 UTC while that failure is investigated. The hold changes no input, budget
 or usage records and does not hold pending provider work. Completed analysis,
 planning outputs and received model results remain saved. Draft acceptance,
@@ -29,7 +69,8 @@ service_role. The final complete backend regression
 (`final-backend-serial-15.log`) passed **757/757 tests in 49 files** (230.53
 seconds), with backend typecheck/build and both Deno entrypoint checks. Unchanged
 frontend code previously passed all **192 tests**, typecheck and build. Source
-commit, CI and Pages reconciliation for this release are pending.
+`557420f7e26e9ff32642cc0a6aa1eaf01eceeb63` passed all CI checks and
+[Pages 39583577517](https://github.com/salahassi/tenders/actions/runs/39583577517).
 
 New verification operations now default to low reasoning. Existing explicit
 profiles and already-started operation identities remain preserved; accepted

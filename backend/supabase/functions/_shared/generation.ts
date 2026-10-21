@@ -766,13 +766,17 @@ export async function processGeneration(
       return;
     }
     const input = taskInput(ctx);
-    const validate = (result: any) => {
+    const validate = (
+      result: any,
+      options?: { independentGrounding?: boolean },
+    ) => {
       // Revalidate quotations against whole immutable source blocks; excerpt separators cannot become fabricated quotes.
       validateModelResult(
         input.task,
         result,
         allEvidence(ctx!) as Evidence[],
         input.requiredIds,
+        options,
       );
       if (
         input.task === "draft_section" &&
@@ -828,7 +832,9 @@ export async function processGeneration(
       fetcher,
       validate,
     });
-    validate(outcome.result);
+    validate(outcome.result, {
+      independentGrounding: Boolean(outcome.threadId),
+    });
     await backend.internal(
       outcome.threadId
         ? "complete_generation_graph"

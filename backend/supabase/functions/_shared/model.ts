@@ -274,7 +274,7 @@ export function validateModelResult(
   value: unknown,
   evidence: Evidence[],
   requiredIds: string[] = [],
-  options?: { aggregateVerification?: boolean },
+  options?: { aggregateVerification?: boolean; independentGrounding?: boolean },
 ): any {
   const schema =
     task === "verify_grounding" && options?.aggregateVerification
@@ -287,6 +287,7 @@ export function validateModelResult(
       result.result,
       evidence,
       requiredIds,
+      options,
     );
   }
   if (task === "verify_grounding") {
@@ -430,10 +431,20 @@ export function validateModelResult(
       );
       if (
         !fact ||
-        !fact.text.includes(claim.quote) ||
-        !claim.quote.includes(claim.claim)
+        (options?.independentGrounding
+          ? !normalizedEvidence(claim.quote) ||
+            !normalizedEvidence(fact.text).includes(
+              normalizedEvidence(claim.quote),
+            )
+          : !fact.text.includes(claim.quote) ||
+            !claim.quote.includes(claim.claim))
       )
         throw new ModelError("UNSUPPORTED_COMPANY_CLAIM");
+      // This guard checks citation provenance, not semantic equivalence. A
+      // paraphrase, translation or claim summary need not be a substring of its
+      // verbatim source quote (or the section body). The mandatory V2 grounding
+      // graph independently checks all candidate text and declared claims
+      // before accepting the section. Legacy execution retains its old guards.
     }
     const text = result.content_blocks
       .map((b: any) =>
@@ -442,6 +453,7 @@ export function validateModelResult(
       .join("\n");
     for (const sentence of text.split(/[.!?\n]/))
       if (
+        !options?.independentGrounding &&
         /we (?:hold|are certified|have delivered|are licensed)|our (?:certifications|customers)|لدينا شهاد|نمتلك شهاد|نحن معتمد|عملاؤنا/i.test(
           sentence,
         ) &&
@@ -1313,6 +1325,7 @@ export async function executeModel(
   repair = false,
   fetcher: typeof fetch = fetch,
   verificationRevision: 1 | 2 = 1,
+  options: { independentGrounding?: boolean } = {},
 ) {
   const invocationStarted = ledger.invocationStartedAt ?? Date.now();
   const targetTask =
@@ -1700,6 +1713,7 @@ export async function executeModel(
             parsedCandidate,
             evidence,
             requiredIds,
+            options,
           );
           if (task === "inspect_source_page") {
             const mode = (context as { mode?: string }).mode;
@@ -1731,6 +1745,7 @@ export async function executeModel(
             [
               "EVIDENCE_REFERENCE_INVALID",
               "MODEL_COVERAGE_INCOMPLETE",
+              "UNSUPPORTED_COMPANY_CLAIM",
             ].includes(error.code) &&
             !blockedContent(JSON.stringify(parsedCandidate))
           )

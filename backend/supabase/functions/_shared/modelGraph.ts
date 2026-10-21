@@ -27,6 +27,11 @@ import {
 import { pinVerificationPrompt } from "./modelVerificationPrompt.ts";
 import { recoverUnstartedRepair } from "./modelRepairRecovery.ts";
 import { recoverBlockedVerification } from "./modelBlockedRecovery.ts";
+import {
+  recoverBlockedWriter,
+  retainInvalidWriter,
+} from "./modelWriterRecovery.ts";
+import type { StructuredRequest } from "./modelContract.ts";
 
 type Options = {
   backend: Backend;
@@ -46,7 +51,10 @@ type Options = {
   language: "ar" | "en";
   repair: boolean;
   fetcher: typeof fetch;
-  validate?: (result: any) => void;
+  validate?: (
+    result: any,
+    options?: { independentGrounding?: boolean },
+  ) => void;
 };
 const State = Annotation.Root({
   candidateRef: Annotation<string>(),
@@ -201,6 +209,12 @@ async function runGuardedModel(o: Options): Promise<{
       return { result, cleanup: legacy.cleanup };
     }
   }
+  const validateWithGrounding = o.validate;
+  o = {
+    ...o,
+    validate: (result) =>
+      validateWithGrounding?.(result, { independentGrounding: true }),
+  };
   const inputHash = await sha256(
     JSON.stringify({
       version: 1,
@@ -307,14 +321,36 @@ async function runGuardedModel(o: Options): Promise<{
           })
         : 1;
     let producer: Record<string, unknown> | undefined;
+    let preparedRequest: StructuredRequest | undefined;
+    let receivedUsage: string | undefined;
+    const received = ledger.candidateReceived;
+    ledger.candidateReceived = async (usageId) => {
+      await received?.(usageId);
+      receivedUsage = usageId;
+    };
     const prepared = ledger.requestPrepared;
     ledger.requestPrepared = async (request) => {
       producer = request.target;
+      preparedRequest = request;
+      receivedUsage = undefined;
       await prepared?.(request);
     };
     if (task === "verify_grounding") {
       ledger.invalidCandidate = (result, code) =>
         retainInvalidVerification(store, key, result, code, producer);
+    } else {
+      ledger.invalidCandidate = async (result, code) => {
+        if (!receivedUsage || !preparedRequest) return;
+        await retainInvalidWriter(store, {
+          usage_id: receivedUsage,
+          request_prefix: `${o.prefix}:${operationKey}`,
+          request_input_hash: preparedRequest.inputHash,
+          task,
+          result,
+          code,
+          producer: producer ?? null,
+        });
+      };
     }
     const result = await executeModel(
       task,
@@ -328,6 +364,7 @@ async function runGuardedModel(o: Options): Promise<{
       task === "repair_result" || o.repair,
       o.fetcher,
       verificationRevision,
+      { independentGrounding: true },
     );
     // Persist the result before returning the node output/checkpoint. A replay
     // after this write never submits the same completed candidate again.
@@ -821,17 +858,34 @@ async function runGuardedModel(o: Options): Promise<{
     if (thread.status === "needs_review") {
       const recovered =
         checkpoint &&
-        (await recoverBlockedVerification({
+        ((await recoverBlockedWriter({
           backend: o.backend,
           store,
           job: o.job,
+          threadId,
+          prefix: o.prefix,
+          task: o.task,
+          context: o.context,
           evidence: o.evidence,
           requiredIds: o.requiredIds,
           manifest: o.manifest,
+          language: o.language,
+          repair: o.repair,
+          fetcher: o.fetcher,
           state: await graph.getState(config),
           validate: o.validate,
-          update: (values) => graph.updateState(config, values, "verify"),
-        }));
+        })) ||
+          (await recoverBlockedVerification({
+            backend: o.backend,
+            store,
+            job: o.job,
+            evidence: o.evidence,
+            requiredIds: o.requiredIds,
+            manifest: o.manifest,
+            state: await graph.getState(config),
+            validate: o.validate,
+            update: (values) => graph.updateState(config, values, "verify"),
+          })));
       if (!recovered) throw new ModelError("MODEL_CORRECTION_EXHAUSTED");
     } else if (checkpoint)
       await recoverUnstartedRepair({

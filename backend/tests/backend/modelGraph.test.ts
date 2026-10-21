@@ -280,3 +280,180 @@ it("retains distinct verifier rejections by producer and code without replacing 
     producer: first,
   });
 });
+
+async function blockedPaidWriter() {
+  const { job, store } = await setup();
+  const usage = crypto.randomUUID();
+  const input = "d".repeat(64);
+  const prefix = "draft:candidate-0";
+  await f.db.query(
+    "update app_private.model_graph_threads set task='draft_section',candidate_count=3 where id=$1",
+    [store.thread],
+  );
+  await f.db.query(
+    "insert into app_private.model_graph_budgets(thread_id,unit,candidates) values($1,'writer',3)",
+    [store.thread],
+  );
+  await f.db.query(
+    `insert into public.provider_usage(id,workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,graph_candidate_recorded,execution_metadata,created_by)
+    values($1,$2,$3,$4,$5,'openai','fixture-model',$6,current_date,1,100,100,'settled',true,$7,$8)`,
+    [
+      usage,
+      f.w,
+      job.id,
+      job.lease_token,
+      `${prefix}:${input.slice(0, 16)}:1:${crypto.randomUUID()}`,
+      input,
+      { input_hash: input, graph_thread: store.thread },
+      f.owner,
+    ],
+  );
+  await f.db.query(
+    `insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,operation,round_number,worker_attempt,status,result_code,usage_id)
+    values($1,$2,$3,'openai','fixture-model','draft_section',1,1,'failed','UNSUPPORTED_COMPANY_CLAIM',$4)`,
+    [f.w, job.id, job.lease_token, usage],
+  );
+  await store.action("needs_review");
+  return { job, store, usage, input, prefix };
+}
+
+it("reopens only an exact counted paid writer candidate without changing allowance or accepting its content", async () => {
+  const { store, usage, input, prefix } = await blockedPaidWriter();
+  const identity = { input_hash: input, request_prefix: prefix };
+  const candidates = await store.action("writer_recovery_candidates", identity);
+  expect(candidates.map((u: any) => u.id)).toEqual([usage]);
+  await f.db.query(
+    "update public.provider_usage set execution_metadata=null where id=$1",
+    [usage],
+  );
+  await f.db.query(
+    "update public.model_attempts set sent=true,execution_metadata=$2 where usage_id=$1",
+    [
+      usage,
+      {
+        input_hash: input,
+        graph_thread: store.thread,
+        prompt_version: "fixture-pinned-prompt",
+      },
+    ],
+  );
+  expect(
+    (await store.action("writer_recovery_candidates", identity))[0]
+      .execution_metadata,
+  ).toEqual({
+    input_hash: input,
+    graph_thread: store.thread,
+    prompt_version: "fixture-pinned-prompt",
+  });
+  expect(
+    await store.action("writer_recovery_candidates", {
+      ...identity,
+      input_hash: "e".repeat(64),
+    }),
+  ).toEqual([]);
+  const result = {
+    content_blocks: [{ type: "paragraph", text: "Synthetic writer fixture" }],
+  };
+  const retained = await store.action("result_put", {
+    key: `invalid-writer-${usage}`,
+    value: {
+      usage_id: usage,
+      task: "draft_section",
+      request_input_hash: input,
+      request_prefix: prefix,
+      result,
+      code: "UNSUPPORTED_COMPANY_CLAIM",
+    },
+  });
+  const candidate = await store.action("result_put", {
+    key: "candidate-0",
+    value: { result, recovery_usage_id: usage },
+  });
+  const markerKey = `writer-recovery-${usage}`;
+  const payload = {
+    ...identity,
+    usage_id: usage,
+    candidate_id: candidate.id,
+    marker_key: markerKey,
+  };
+  expect(await store.action("writer_recovery_resume", payload)).toBe(false);
+  await store.action("result_put", {
+    key: markerKey,
+    value: {
+      candidate_ref: candidate.id,
+      usage_id: usage,
+      request_input_hash: input,
+      request_prefix: prefix,
+      retained_ref: retained.id,
+      independent_verification_required: true,
+      new_generation_requests: 0,
+      received_candidate_budgets_unchanged: true,
+    },
+  });
+  expect(await store.action("writer_recovery_resume", payload)).toBe(true);
+  const thread = (
+    await f.db.query<any>(
+      "select status,candidate_count,result_id from app_private.model_graph_threads where id=$1",
+      [store.thread],
+    )
+  ).rows[0];
+  expect(thread).toEqual({
+    status: "running",
+    candidate_count: 3,
+    result_id: null,
+  });
+  expect(
+    (
+      await f.db.query<any>(
+        "select candidates from app_private.model_graph_budgets where thread_id=$1 and unit='writer'",
+        [store.thread],
+      )
+    ).rows[0].candidates,
+  ).toBe(3);
+  expect(
+    (
+      await f.db.query<any>(
+        "select state,graph_candidate_recorded from public.provider_usage where id=$1",
+        [usage],
+      )
+    ).rows[0],
+  ).toEqual({ state: "settled", graph_candidate_recorded: true });
+  expect(await store.action("result_get", { key: "accepted" })).toBeNull();
+});
+
+it("does not authorize writer recovery for unresolved usage, other phases, uncounted results or wrong rejection", async () => {
+  const { store, usage, input, prefix } = await blockedPaidWriter();
+  const payload = { input_hash: input, request_prefix: prefix };
+  await f.db.query(
+    "update public.provider_usage set execution_metadata=$2 where id=$1",
+    [usage, { input_hash: input, graph_thread: "f".repeat(64) }],
+  );
+  expect(await store.action("writer_recovery_candidates", payload)).toEqual([]);
+  await f.db.query(
+    "update public.provider_usage set execution_metadata=$2 where id=$1",
+    [usage, { input_hash: input, graph_thread: store.thread }],
+  );
+  expect(
+    await store.action("writer_recovery_candidates", {
+      ...payload,
+      request_prefix: "other:candidate-0",
+    }),
+  ).toEqual([]);
+  for (const update of ["state='unknown'", "graph_candidate_recorded=false"]) {
+    await f.db.query(`update public.provider_usage set ${update} where id=$1`, [
+      usage,
+    ]);
+    expect(await store.action("writer_recovery_candidates", payload)).toEqual(
+      [],
+    );
+    await f.db.query(
+      "update public.provider_usage set state='settled',graph_candidate_recorded=true where id=$1",
+      [usage],
+    );
+  }
+  await f.db.query(
+    "update public.model_attempts set result_code='MODEL_OUTPUT_TRUNCATED' where usage_id=$1",
+    [usage],
+  );
+  expect(await store.action("writer_recovery_candidates", payload)).toEqual([]);
+});

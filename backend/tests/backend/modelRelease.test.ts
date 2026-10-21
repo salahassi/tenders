@@ -22,6 +22,7 @@ const names = [
   "terminal_queue_wakeup",
   "deferred_queue_wakeup",
   "automatic_gemini_reasoning",
+  "recover_paid_writer_candidate",
 ];
 const versions = [
   "20261020141244",
@@ -42,6 +43,7 @@ const versions = [
   "20261021094701",
   "20261021095309",
   "20261021095545",
+  "20261021102512",
 ];
 function fixture(history: any[], failMutation?: number) {
   const queries: any[] = [];
