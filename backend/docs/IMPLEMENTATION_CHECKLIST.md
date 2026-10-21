@@ -1,5 +1,23 @@
 # Implementation status and continuation plan
 
+## October 21 — general section context correction (in progress)
+
+Real-content inspection found that the retained executive summary incorrectly
+said no RFP was supplied. Its template section had no mapped requirement IDs;
+company evidence prevented the old empty-evidence notice fallback, leaving the
+writer without the attached RFP. Newly planned general sections now explicitly
+request all frozen RFP blocks as context, without inventing assigned requirement
+IDs or company credentials. Existing paid prompt identities remain unchanged.
+A restricted, revision-checked recovery replaces only an unpublished completed
+general section's job. The previous paid output is archived on its original job;
+usage, graph budgets, the section ID and its outline position are retained.
+The complete backend regression passes **1108/1108 tests in 64 files**, including
+ten PostgreSQL recovery and scheduling checks. The fixture's missing required
+evidence revision was corrected before its successful rerun. Backend
+build/typecheck and the Deno worker check pass. Evidence is recorded in
+`/workspace/work/proposal-unmapped-context-full-backend.log`. Deployment and actual
+replacement acceptance remain pending. The other drafting parts continue.
+
 ## October 21 — resumed real proposal acceptance
 
 The owner requested a complete proposal after setup validation. The existing

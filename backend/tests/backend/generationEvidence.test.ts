@@ -158,6 +158,52 @@ it("does not broaden Company Knowledge selection or its supplied snippets", () =
     input.evidence.some((e) => e.id === "company-6" || e.id === "company-7"),
   ).toBe(false);
 });
+
+it("gives an unmapped general section the actual RFP even when company evidence is present", () => {
+  const ctx: any = context();
+  ctx.step.input.requirement_ids = [];
+  ctx.step.input.section.requirement_ids = [];
+  ctx.step.input.rfp_context_version = 1;
+  ctx.plan.frozen_context.knowledge = [
+    source("company", "company", "Software services."),
+  ];
+  const input = taskInput(ctx);
+  expect(input.requiredIds).toEqual([]);
+  expect(input.context.requirements).toEqual([]);
+  expect(input.context.rfp_context).toEqual({
+    available: true,
+    supplied_blocks: 2,
+    extracted_requirements: 1,
+  });
+  expect(
+    input.evidence.filter((e) => e.kind === "rfp").map((e) => e.text),
+  ).toEqual(ctx.plan.frozen_context.blocks.map((b: any) => b.text));
+  expect(input.evidence.some((e) => e.id === "company")).toBe(true);
+  expect(input.manifest).toContainEqual(
+    ctx.plan.frozen_context.blocks[0].reference,
+  );
+  expect(input.context.instruction).toContain(
+    "does not mean the RFP or its requirements are missing",
+  );
+});
+
+it("preserves historical unmapped request identity and falls back honestly when no RFP exists", () => {
+  const ctx: any = context();
+  ctx.step.input.requirement_ids = [];
+  ctx.step.input.section.requirement_ids = [];
+  ctx.plan.frozen_context.knowledge = [
+    source("company", "company", "Software services."),
+  ];
+  expect(taskInput(ctx).evidence.map((e) => e.id)).toEqual(["company"]);
+  ctx.step.input.rfp_context_version = 1;
+  ctx.plan.frozen_context.blocks = [];
+  const input = taskInput(ctx);
+  expect(input.context.rfp_context.available).toBe(false);
+  expect(input.evidence.map((e) => e.id)).toEqual(["company", "notice"]);
+  expect(input.manifest).toContainEqual(
+    ctx.plan.frozen_context.notice.reference,
+  );
+});
 it("preserves existing analysis segmentation and request identity", () => {
   const ctx = context("analyze_chunk") as any;
   ctx.step.input = { block_id: "rfp-block", start: 45, end: 400 };

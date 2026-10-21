@@ -341,6 +341,26 @@ export function taskInput(ctx: PlanContext) {
     }
   }
   // Generic proposal sections may have no mapped requirement or company source.
+  // New work explicitly opts into full RFP context. Keep historical prompt
+  // identities stable: a pending paid request must resume with its original input.
+  if (
+    task === "draft_section" &&
+    !requiredIds.length &&
+    input.rfp_context_version === 1
+  ) {
+    const blocks = frozen.blocks.filter((b: Row) => b.text?.trim());
+    evidence.push(...blocks);
+    if (!blocks.length && frozen.notice?.reference)
+      evidence.push(frozen.notice);
+    context.unmapped_section = true;
+    context.rfp_context = {
+      available: blocks.length > 0,
+      supplied_blocks: blocks.length,
+      extracted_requirements: ctx.requirements.length,
+    };
+    context.instruction +=
+      " No requirement IDs are assigned to this general section; this does not mean the RFP or its requirements are missing. Use the supplied RFP blocks to explain the actual buyer, objectives, scope, delivery constraints and intended outcomes at the level appropriate to this section. Do not ask for facts already in these blocks. Keep required IDs empty and distinguish missing company evidence from known buyer requirements.";
+  }
   // Keep their real notice context and authorization; never send an empty
   // business manifest or manufacture company facts to make drafting proceed.
   if (
@@ -549,7 +569,9 @@ export async function nextStage(ctx: PlanContext): Promise<{
     output.steps = sections.flatMap((section) =>
       plannedDraftInputs(section).map((input) => ({
         task: "draft_section",
-        input,
+        input: input.requirement_ids.length
+          ? input
+          : { ...input, rfp_context_version: 1 },
       })),
     );
     return output;
