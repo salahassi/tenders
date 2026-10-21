@@ -543,3 +543,99 @@ it("alternates a requested proposal with old assessment work and respects provid
     ).rows[0].attempts,
   ).toBe(0);
 });
+
+async function continuationJob(type: string, attempted = false) {
+  return (
+    await f.db.query<any>(
+      `insert into public.jobs(workspace_id,type,entity_id,input_hash,status,created_by,
+       created_at,updated_at,next_attempt_at,attempts,error_code)
+       values($1,$2,$1,'synthetic-continuation','retry_wait',$3,
+       now()-case when $2='classify_opportunity' then interval '3 hours' else interval '2 hours' end,
+       now()-interval '10 minutes',now(),$4,
+       'MODEL_IN_PROGRESS') returning id`,
+      [f.w, type, f.owner, attempted ? 1 : 0],
+    )
+  ).rows[0].id;
+}
+
+it("alternates saved graph/failover continuations that have no accepted request in flight", async () => {
+  const assessment = await continuationJob("classify_opportunity", true);
+  const proposal = await continuationJob("analyze_chunk");
+  // A previous assessment's saved continuation must not monopolize the worker.
+  const first = await rpc("claim_backend_job");
+  expect(first).toMatchObject({ id: proposal, status: "running", attempts: 1 });
+  expect(first.lease_token).toEqual(expect.any(String));
+  expect(await rpc("claim_backend_job")).toBeNull();
+  await f.db.query(
+    "update public.jobs set status='retry_wait',lease_token=null,lease_until=null,next_attempt_at=now() where id=$1",
+    [proposal],
+  );
+  expect(await rpc("claim_backend_job")).toMatchObject({ id: assessment });
+  await f.db.query(
+    "update public.jobs set status='retry_wait',lease_token=null,lease_until=null,next_attempt_at=now(),updated_at=now()+interval '1 second' where id=$1",
+    [assessment],
+  );
+  expect(await rpc("claim_backend_job")).toMatchObject({ id: proposal });
+});
+
+it.each([
+  ["reserved", true, true],
+  ["settled", true, false],
+  ["unknown", true, false],
+  ["reserved", false, false],
+] as const)(
+  "gives poll priority only to an accepted outstanding request (%s, remote=%s)",
+  async (state, remote, shouldPoll) => {
+    const assessment = await continuationJob("classify_opportunity", true);
+    const proposal = await continuationJob("analyze_chunk");
+    await f.db.query(
+      `insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,
+       provider,model,input_hash,application_day,settings_revision,reserved_input,
+       reserved_output,state,created_by,remote_request_id,remote_deadline)
+       values($1,$2,gen_random_uuid(),'synthetic-poll','gemini_free','synthetic-model',
+       repeat('a',64),current_date,1,100,100,$3,$4,$5,
+       case when $5::text is not null then now()+interval '1 hour' else null end)`,
+      [f.w, assessment, state, f.owner, remote ? "synthetic-accepted" : null],
+    );
+    const claimed = await rpc("claim_backend_job");
+    expect(claimed.id).toBe(shouldPoll ? assessment : proposal);
+    expect(await rpc("claim_backend_job")).toBeNull();
+    if (!shouldPoll) return;
+
+    // Settling the result does not make the next graph stage another poll.
+    await f.db.query(
+      "update public.provider_usage set state='settled',actual_input=100,actual_output=80 where job_id=$1",
+      [assessment],
+    );
+    await f.db.query(
+      "update public.jobs set status='retry_wait',lease_token=null,lease_until=null,next_attempt_at=now() where id=$1",
+      [assessment],
+    );
+    expect(await rpc("claim_backend_job")).toMatchObject({ id: proposal });
+  },
+);
+
+it("never polls an accepted request before its saved retry time", async () => {
+  const assessment = await continuationJob("classify_opportunity", true);
+  const proposal = await continuationJob("analyze_chunk");
+  await f.db.query(
+    `insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,
+     provider,model,input_hash,application_day,settings_revision,reserved_input,
+     reserved_output,created_by,remote_request_id,remote_deadline)
+     values($1,$2,gen_random_uuid(),'synthetic-deferred-poll','gemini_free','synthetic-model',
+     repeat('a',64),current_date,1,100,100,$3,'synthetic-accepted',now()+interval '1 hour')`,
+    [f.w, assessment, f.owner],
+  );
+  await f.db.query(
+    "update public.jobs set next_attempt_at=now()+interval '5 minutes' where id=$1",
+    [assessment],
+  );
+  expect(await rpc("claim_backend_job")).toMatchObject({ id: proposal });
+  expect(
+    (
+      await f.db.query<any>("select attempts from public.jobs where id=$1", [
+        assessment,
+      ])
+    ).rows[0].attempts,
+  ).toBe(1);
+});

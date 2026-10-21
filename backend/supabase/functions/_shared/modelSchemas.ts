@@ -329,4 +329,17 @@ export const modelSchemas = {
     ],
   ),
 } as const;
+// Stored aggregate reports combine independently validated provider responses.
+// Keep per-request response bounds unchanged while validating the full merged
+// report with the same field schemas and a bounded document-sized collection.
+export const aggregateVerificationSchema = modelSchemas.verify_grounding.extend(
+  {
+    claims: z
+      .array(modelSchemas.verify_grounding.shape.claims.element)
+      .max(2048),
+    findings: z
+      .array(modelSchemas.verify_grounding.shape.findings.element)
+      .max(2048),
+  },
+);
 export type ModelTask = keyof typeof modelSchemas;

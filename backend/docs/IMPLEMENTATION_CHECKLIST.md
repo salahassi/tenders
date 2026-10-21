@@ -1,5 +1,164 @@
 # Implementation status and continuation plan
 
+## October 21 — real acceptance blockers (in progress)
+
+Current status at 07:17 UTC: **end-to-end acceptance is still incomplete; no
+complete Word proposal has been downloaded or inspected**. Two of the original
+three analysis jobs have succeeded. The remaining job recovered its saved
+verification report and entered bounded writer repair. Its real OpenAI repair
+request was accepted at 07:15 and is being retrieved using the saved remote ID.
+The earlier workspace reservation wait was distinct from a provider HTTP 429.
+Planning, drafting, commercial missing-input handling,
+review and browser Word download/inspection remain pending.
+
+Code and deployment verification are separate from this acceptance result:
+**575/575 backend tests** passed in one complete run (40 files, 185.82 seconds),
+along with **192/192 frontend tests**, both package typechecks/builds and both
+Deno entrypoint checks. API **v70** and normal worker **v83** are deployed; exact
+source readbacks matched all 26 API and 32 worker files. Four additive migrations
+are applied, and the new service RPCs remain inaccessible to anon/authenticated.
+Source commit, CI and Pages publication for this combined release are pending.
+
+At 07:15 UTC, the additive `model_continuation_queue_fairness` migration was
+applied. `MODEL_IN_PROGRESS` alone no longer gives every graph continuation
+poll-first priority: that priority requires the same job/workspace's reserved
+accepted remote request. New phases follow the existing proposal/assessment
+alternation; leases, locks, retry eligibility and provider Retry-After stay
+unchanged. The other assessment that occupied the slot completed successfully.
+The queue/collection suite passed 27 tests, including six new fairness cases;
+13 release-command tests and typecheck passed. The combined 575-test run passed.
+The release allowlist now includes all five October 21 patches.
+
+The October 20 trial had failed with only one verified analysis part. Its 16,384
+token ceiling came from the application's default execution profile for a
+single verification/repair response, not an account quota or demonstrated model
+maximum. The changes below address those blockers without declaring the live
+proposal journey successful.
+
+P5/P6 implementation: partition large claim verification into durable content
+batches plus a separate whole-candidate coverage/consistency check, including
+candidates without requirement IDs. Completed batches are reused; merged claims
+retain exact citations and semantic repair. Provider responses keep their original
+limits while the internal merged report has a separate bounded schema. Normal
+failover must finish before a corrective verification phase begins; a retained
+report cannot bypass an accepted pending request. Remote resumption is scoped
+to its durable phase, preserving same-phase changed-input checks. No writer
+budget is reset.
+
+A private, authenticated GET-only diagnostic retrieved Google's actual error for
+an existing accepted Gemini request. Both with and without the API revision
+header it returned HTTP 400 / invalid_request: "There was a problem processing
+your request. You will not be charged." This is a retrieval error, NOT proof of
+a terminal interaction state or zero measured usage. Google's documented issue
+reports include later retrieval of affected IDs. The implementation retains
+accepted IDs and unknown usage, uses GET-only reconciliation with an hourly
+backoff for that exact error, and selects standard transport for new phases.
+The diagnostic sent no generation and its temporary entrypoint was removed.
+Gemini's internal cause remains unproven. The actual analysis envelope and schema
+match the documented contract; separate latent adapter defects were fixed:
+provider-default reasoning omits the unsupported `none` thinking level, and
+JSON-only mode consistently omits the native schema in both transports.
+
+An accepted OpenAI request belonged to a stale blocked assessment job and kept
+the workspace's reservation occupied. Orphan reconciliation now releases that
+local reservation while retaining GET-only retrieval and usage accounting. The
+real orphan was subsequently reconciled with 4,569 input / 4,594 output tokens;
+it was not regenerated. The original trial resumed with an audit record and
+unchanged writer budgets. One real corrective analysis completed with 13,926
+input / 12,178 output tokens, then proceeded to verification.
+
+The phase reservation guard also now permits genuinely different phases while
+an earlier accepted request has unknown usage. Same-phase changed input,
+cross-job identical input and unstructured legacy callers remain protected.
+Healthy queued/in-progress responses become eligible for GET polling after
+30 seconds, allowing the next minute's cron tick to process them. Network/429
+errors retain their original 60-second minimum and provider Retry-After.
+
+Wire diagnostics hash the exact serialized POST body and native schema, record
+safe sizes/transport/output/reasoning metadata, and link provider response IDs.
+They never log prompts, schema content, headers or credentials. Hashing runs
+alongside fetch; a held-digest regression protects streaming timeout behavior.
+
+Earlier verification at 01:27 UTC passed 501/501 backend and 192/192 frontend
+tests; the complete 569-test run above supersedes the earlier regression count
+and resolves the later intermediate timing/assertion failures. Security advisory
+categories remain unchanged. Temporary authenticated worker diagnostics were
+removed after capturing a standard Gemini verification POST HTTP 400 /
+INVALID_ARGUMENT: "Request contains an invalid argument." No field detail was
+returned. The earlier API v69 / worker v82 deployment is superseded by v70/v83.
+
+The deployed Gemini adapter now converts the canonical schema to its native
+supported subset, preserving object shape, required fields, numeric limits and
+supported enum/union/reference constructs. String constraints and nested array
+bounds remain enforced by the complete local validator rather than expanding
+the provider decoding grammar. Unsupported structural keywords fail locally.
+The change covers both standard and background payloads; JSON-only mode omits
+the native schema. The real verifier schema decreased from 2,732 to 2,043 bytes.
+The 178 focused payload/schema tests passed. At 07:08 UTC, a real Gemini
+`verify_grounding` standard request on worker v83 returned HTTP 200 / STOP
+with 5,646 input and 3,182 output tokens. Its wire diagnostic confirms the
+2,043-byte converted schema and provider-default reasoning. Local validation
+rejected a source quotation (`EVIDENCE_REFERENCE_INVALID`), and failover
+continued. This proves the deployed payload can execute, not acceptance of
+that assessment or the complete proposal. Google's generic earlier 400 does
+not identify which original schema constraint it rejected.
+
+At the earlier 01:12 UTC acceptance checkpoint, three scoped reports
+were accepted for the corrected third analysis part. Its fourth report exhausted
+the corrective verifier allowance. Private inspection found its 51 claims and
+source quotations valid, with zero semantic findings, but BOQ row labels rejected
+by the immediate-adjacency numeric guard. A conservative table-row repair and
+batched retained-report recovery are now deployed. The unchanged retained report
+passes its 51 exact claims with zero semantic defects. A targeted audited resume
+reopens only its blocked graph/job/plan; all budgets and checkpoints are unchanged.
+New Gemini standard requests also returned HTTP 400 / INVALID_ARGUMENT during
+generation, so transport fallback alone did not solve provider execution.
+Complete analysis, Word download and inspection remain pending. No successful
+end-to-end acceptance is asserted.
+
+Further real-trial inspection found a verifier taxonomy error: two statements
+about absent supplied company evidence were labeled supported company facts
+with no references. The deployed correction treats missing factual support as
+an explicit blocking semantic defect for bounded writer repair, preserving the
+original report and prohibiting unsupported factual acceptance. It does not
+whitelist disclaimer phrases or reset writer budgets.
+
+Downstream evidence preparation now retains complete already-selected immutable
+RFP blocks (at most 12,000 characters each), preserving headings, qualifications
+and table row context. Five targeted tests passed, including unchanged analysis
+request identity and Company Knowledge selection; all eight real BOQ citations
+validate against the restored downstream context. This change is included in
+API v70 / worker v83.
+
+
+At the 06:52 UTC continuation check, the original trial had two successful
+analysis jobs and one blocked job. The plan is running at revision 50 with
+evidence revision 93; its existing scoped refresh confirmed the frozen proposal
+inputs remained identical. Earlier resume SQL revisions must not be replayed.
+The final BOQ row guard now also rejects malformed numeric boundaries before a
+page break. All remaining real row labels 9–18 validate unchanged; 49 focused
+grounding/aggregation tests, typecheck and diff checks passed. An intermediate
+full run encountered two timing failures and three assertions during unfinished
+edits; the subsequent complete 569/569 run passed. No complete Word output is
+asserted.
+
+The reviewed deployment command now includes all four October 21 patches in
+chronological order and requires both new recovery RPCs before deployment.
+Thirteen release fixtures passed, including interrupted transaction/resume and
+connector-applied migration idempotency.
+
+At 06:59 UTC, the early-repair integration suite passed 47/47 tests: blocking
+validated batches stop further requests for the old candidate, later accepted
+requests are retrieved first, and complete coverage is independently revalidated
+before accepting a result. Separate repair-only artifacts cannot be accepted as
+complete reports. Existing writer budgets remain bounded. These changes passed
+the final full suite and are included in the verified API v70 / worker v83
+readback. The targeted audited resume of the remaining analysis job preserved
+its writer/correction budgets, completed checkpoints and usage history. It
+recovered the retained report, derived two blocking missing-evidence defects,
+and stopped requesting further verification batches for that old candidate.
+The new candidate must still pass complete verification before acceptance.
+
 ## October 20 — paid-model acceptance and runtime recovery
 
 Current acceptance result at 22:25 UTC: **incomplete, not a successful RFP-to-Word

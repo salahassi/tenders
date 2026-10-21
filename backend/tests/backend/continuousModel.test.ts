@@ -760,6 +760,81 @@ it("pins background identity and conservatively retains canceled usage", async (
   });
 });
 
+it("releases a stopped job's orphaned reservation and reconciles its accepted request without another generation", async () => {
+  await f.command("model.configure", policy);
+  const queued = await f.command("model.probe", {});
+  let posts = 0,
+    gets = 0;
+  const tick = worker(async (url, init) => {
+    if (String(url).endsWith(":countTokens"))
+      return Response.json({ totalTokens: 20 });
+    if (init?.method === "POST") {
+      posts++;
+      return Response.json({ id: "synthetic-orphan", status: "in_progress" });
+    }
+    gets++;
+    if (gets < 3)
+      return Response.json(
+        {
+          error: {
+            code: "invalid_request",
+            message:
+              "There was a problem processing your request. You will not be charged.",
+          },
+        },
+        { status: 400 },
+      );
+    return ready("synthetic-orphan");
+  });
+  await tick();
+  await f.db.query(
+    "update public.jobs set status='blocked',error_code='STALE_INPUT',lease_token=null,lease_until=null where id=$1",
+    [queued.id],
+  );
+  await tick();
+  expect(
+    (await f.db.query<any>("select state,error_code from provider_usage"))
+      .rows[0],
+  ).toEqual({
+    state: "unknown",
+    error_code: "PROVIDER_BACKGROUND_RETRIEVAL_FAILED",
+  });
+  await f.db.exec(
+    "update provider_usage set reconciliation_after=now()-interval '1 second'",
+  );
+  await tick();
+  expect(
+    (
+      await f.db.query<any>(
+        "select reconciliation_after>=now()+interval '59 minutes' delayed from provider_usage",
+      )
+    ).rows[0].delayed,
+  ).toBe(true);
+  await tick();
+  expect(gets).toBe(2);
+  await f.db.exec(
+    "update provider_usage set reconciliation_after=now()-interval '1 second'",
+  );
+  await tick();
+  expect(posts).toBe(1);
+  expect(gets).toBe(3);
+  expect(
+    (
+      await f.db.query<any>(
+        "select state,actual_input,actual_output from provider_usage",
+      )
+    ).rows[0],
+  ).toEqual({ state: "settled", actual_input: 20, actual_output: 7 });
+  expect((await job(queued.id)).status).toBe("blocked");
+  expect(
+    (
+      await f.db.query<any>(
+        "select count(*)::int n from audit_events where action='model.request.reconciliation'",
+      )
+    ).rows[0].n,
+  ).toBe(1);
+});
+
 it("reconciles canceled background usage by GET only and never publishes the canceled result", async () => {
   await f.command("model.configure", policy);
   const queued = await f.command("model.probe", {});

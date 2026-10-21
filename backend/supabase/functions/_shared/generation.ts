@@ -1,6 +1,7 @@
 import { scopeInstruction } from "./discovery.ts";
 import { enrichPublicNotice } from "./publicNoticeDetails.ts";
 import { executeGuardedModel } from "./modelGraph.ts";
+import { normalizedEvidence } from "./sourceModel.ts";
 import type { PrimaryModelTask } from "./modelSchemas.ts";
 import {
   type Evidence,
@@ -82,6 +83,21 @@ function refsFor(
           .map((q: Row) => q.quote),
       );
       if (!quotes.length) return s;
+      if (s.kind === "rfp") {
+        // Immutable document blocks are bounded to 12,000 characters. Preserve
+        // their headings, table row boundaries, qualifications and footnotes:
+        // a short citation does not make its surrounding contract irrelevant.
+        // Only already-selected blocks are included; the manifest is unchanged.
+        const text = normalizedEvidence(s.text);
+        if (
+          quotes.some((q) => {
+            const quote = normalizedEvidence(q);
+            return !quote || !text.includes(quote);
+          })
+        )
+          throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+        return s;
+      }
       const excerpts = unique(quotes).map((q) => {
         const start = s.text.indexOf(q);
         if (start < 0) throw new ModelError("EVIDENCE_REFERENCE_INVALID");

@@ -4,10 +4,143 @@ import {
   type ModelAdapter,
   type AdapterRequest,
 } from "./types.ts";
+
+/** Gemini's decoding schema is narrower than the canonical local validator.
+ * https://ai.google.dev/api/generate-content#GenerationConfig
+ * https://ai.google.dev/gemini-api/docs/structured-output
+ * Array bounds are checked locally, avoiding expansion of bounded nested arrays
+ * in the provider's decoding grammar. This does not relax local acceptance.
+ */
+export function geminiJsonSchema(
+  schema: Record<string, any>,
+): Record<string, any> {
+  const unsupported = (): never => {
+    throw Object.assign(new Error("MODEL_CAPABILITY_UNSUPPORTED"), {
+      code: "MODEL_CAPABILITY_UNSUPPORTED",
+    });
+  };
+  const object = (value: unknown): value is Record<string, any> =>
+    Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  const ignored = new Set([
+    "$schema",
+    "pattern",
+    "minLength",
+    "maxLength",
+    "minItems",
+    "maxItems",
+    "minProperties",
+    "maxProperties",
+  ]);
+  const types = [
+    "object",
+    "array",
+    "string",
+    "number",
+    "integer",
+    "boolean",
+    "null",
+  ];
+  const visit = (node: unknown): Record<string, any> => {
+    if (!object(node)) return unsupported();
+    const result: Record<string, any> = {};
+    for (const [key, value] of Object.entries(node)) {
+      if (ignored.has(key) || key === "const") continue;
+      if (key === "properties" || key === "$defs") {
+        if (!object(value)) return unsupported();
+        result[key] = Object.fromEntries(
+          Object.entries(value).map(([name, child]) => [name, visit(child)]),
+        );
+      } else if (key === "items") result[key] = visit(value);
+      else if (key === "additionalProperties")
+        result[key] = typeof value === "boolean" ? value : visit(value);
+      else if (["anyOf", "oneOf", "prefixItems"].includes(key)) {
+        if (!Array.isArray(value) || (!value.length && key !== "prefixItems"))
+          return unsupported();
+        result[key] = value.map(visit);
+      } else if (key === "type") {
+        const values = Array.isArray(value) ? value : [value];
+        if (!values.length || values.some((type) => !types.includes(type)))
+          return unsupported();
+        result[key] = Array.isArray(value) ? [...value] : value;
+      } else if (key === "enum") {
+        if (
+          !Array.isArray(value) ||
+          !value.length ||
+          value.some(
+            (item) =>
+              typeof item !== "string" &&
+              !(typeof item === "number" && Number.isFinite(item)),
+          )
+        )
+          return unsupported();
+        result[key] = [...value];
+      } else if (key === "required" || key === "propertyOrdering") {
+        if (
+          !Array.isArray(value) ||
+          value.some((name) => typeof name !== "string") ||
+          new Set(value).size !== value.length
+        )
+          return unsupported();
+        result[key] = [...value];
+      } else if (key === "minimum" || key === "maximum") {
+        if (typeof value !== "number" || !Number.isFinite(value))
+          return unsupported();
+        result[key] = value;
+      } else if (
+        ["$id", "$ref", "$anchor", "format", "title", "description"].includes(
+          key,
+        )
+      ) {
+        if (typeof value !== "string") return unsupported();
+        result[key] = value;
+      } else return unsupported();
+    }
+    if (Object.hasOwn(node, "const")) {
+      const value = node.const;
+      const type = value === null ? "null" : typeof value;
+      if (
+        !["string", "number", "boolean", "null"].includes(type) ||
+        (type === "number" && !Number.isFinite(value))
+      )
+        return unsupported();
+      const declared = Array.isArray(result.type) ? result.type : [result.type];
+      if (
+        result.type !== undefined &&
+        !declared.includes(type) &&
+        !(
+          type === "number" &&
+          Number.isInteger(value) &&
+          declared.includes("integer")
+        )
+      )
+        return unsupported();
+      if (result.enum && !result.enum.includes(value)) return unsupported();
+      if (type === "string" || type === "number") {
+        result.type ??= type;
+        result.enum = [value];
+      } else {
+        // Gemini documents string/number enums only; local Zod retains literals.
+        result.type = type;
+      }
+    }
+    if (result.$ref && Object.keys(result).some((key) => !key.startsWith("$")))
+      return unsupported();
+    return result;
+  };
+  return visit(schema);
+}
+
 export const geminiAdapter: ModelAdapter = {
   provider: "gemini_free",
   prepare(env, input, background): AdapterRequest {
-    const reasoning = input.capabilities.reasoning === "gemini_level";
+    // "none" means leave thinking to the provider; it is not a Gemini level.
+    const reasoning =
+      input.capabilities.reasoning === "gemini_level" &&
+      input.profile.reasoning !== "none";
+    const schema =
+      input.capabilities.output !== "validated_json"
+        ? geminiJsonSchema(input.schema)
+        : undefined;
     return background
       ? {
           url: "https://generativelanguage.googleapis.com/v1beta/interactions",
@@ -26,7 +159,7 @@ export const geminiAdapter: ModelAdapter = {
             response_format: {
               type: "text",
               mime_type: "application/json",
-              schema: input.schema,
+              ...(schema ? { schema } : {}),
             },
           },
         }
@@ -40,9 +173,7 @@ export const geminiAdapter: ModelAdapter = {
               candidateCount: 1,
               maxOutputTokens: input.profile.max_output_tokens,
               responseMimeType: "application/json",
-              ...(input.capabilities.output !== "validated_json"
-                ? { responseJsonSchema: input.schema }
-                : {}),
+              ...(schema ? { responseJsonSchema: schema } : {}),
               ...(reasoning
                 ? {
                     thinkingConfig: {

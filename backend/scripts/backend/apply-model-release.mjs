@@ -9,6 +9,11 @@ const release = [
   ["20261020143042", "durable_model_graph"],
   ["20261020150037", "model_graph_recovery_and_retention"],
   ["20261020195225", "automatic_model_transport"],
+  ["20261021002125", "scope_model_resume_to_phase"],
+  ["20261021003448", "reconcile_orphaned_model_reservations"],
+  ["20261021005033", "scope_unknown_task_reservations_to_phase"],
+  ["20261021010317", "healthy_model_poll_eligibility"],
+  ["20261021071021", "model_continuation_queue_fairness"],
 ];
 const project = "nqfwbqeozmuiuwbiowil";
 const literal = (value) => "'" + value.replaceAll("'", "''") + "'";

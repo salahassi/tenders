@@ -40,7 +40,74 @@ function adjacentItemNumbers(
   const prefix = source
     .slice(0, start)
     .match(/(?:^|\n)[ \t]*([0-9٠-٩۰-۹]{1,4})[.)]?[ \t]*(?:\r?\n[ \t]*)?$/u);
-  return prefix ? numericLiterals(prefix[1]) : [];
+  const table = tableItemNumbers(source, start, ref.quote.length);
+  return table ?? (prefix ? numericLiterals(prefix[1]) : []);
+}
+/** PDF table extraction can put a title and quantity between its row number
+ * and the quoted description. Recognize only an explicit BOQ-style header and
+ * consecutive row boundaries; never treat an arbitrary nearby number as proof.
+ * An unbounded final row is excluded; an explicit page break can bound only its
+ * first contiguous paragraph, never arbitrary trailing text or the next page. */
+function tableItemNumbers(
+  source: string,
+  quoteStart: number,
+  quoteLength: number,
+): string[] | null {
+  const text = source
+    .replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x660))
+    .replace(/[۰-۹]/g, (c) => String(c.charCodeAt(0) - 0x6f0));
+  const headers = [...text.slice(0, quoteStart).matchAll(/^[ \t]*#[^\n]*$/gm)];
+  const anchor = headers.at(-1)?.index;
+  if (anchor === undefined) return null;
+  const body = text.slice(anchor);
+  const rowPattern = /^[ \t]*([0-9]{1,4})(?=[ \t\r\n]|$)/gm;
+  const matches = [...body.matchAll(rowPattern)];
+  const first = matches[0];
+  if (!first || first[1] !== "1" || first.index > 1200) return null;
+  const header = body.slice(0, first.index);
+  if (
+    !/(?:\bdescription\b|الوصف)/iu.test(header) ||
+    !/(?:\bqty\b|\bquantity\b|الكمية)/iu.test(header) ||
+    !/(?:\bprice\b|\btotal\b|السعر|الإجمالي)/iu.test(header)
+  )
+    return null;
+  const rows: { number: number; start: number }[] = [];
+  let unrecognizedBoundary = Infinity;
+  for (const match of matches) {
+    const start = anchor + match.index;
+    const previousLine = text.slice(0, start).trimEnd().split("\n").at(-1);
+    const page = previousLine?.match(/^\[(?:Page|صفحة)\s+([0-9]+)\]$/iu);
+    if (page && page[1] === match[1]) continue;
+    const number = Number(match[1]);
+    if (number !== rows.length + 1) {
+      unrecognizedBoundary = start;
+      break;
+    }
+    rows.push({ number, start });
+  }
+  for (let i = 0; i + 1 < rows.length; i++)
+    if (
+      quoteStart > rows[i].start &&
+      quoteStart + quoteLength <= rows[i + 1].start
+    )
+      return [String(rows[i].number)];
+  const last = rows.at(-1);
+  if (last && quoteStart > last.start) {
+    const tail = text.slice(last.start);
+    const boundary = tail.match(
+      /\r?\n[ \t]*\r?\n[ \t]*\[(?:Page|صفحة)\s+[0-9]+\]/iu,
+    );
+    if (boundary?.index !== undefined) {
+      const paragraph = tail.slice(0, boundary.index);
+      if (
+        !/\r?\n[ \t]*\r?\n/u.test(paragraph) &&
+        last.start + boundary.index <= unrecognizedBoundary &&
+        quoteStart + quoteLength <= last.start + boundary.index
+      )
+        return [String(last.number)];
+    }
+  }
+  return [];
 }
 const itemLabel =
   /(?:\b(?:BOQ\s+)?(?:item|line|row|section|clause)|(?:البند|بند|الصف|صف|الفقرة|فقرة))\s*(?:رقم\s+)?([0-9٠-٩۰-۹]{1,4})(?![0-9٠-٩۰-۹])/giu;
@@ -50,9 +117,17 @@ export function validateGroundingReport(
   candidateHash: string,
   evidence: Evidence[],
   requiredIds: string[],
+  scope?: { units: { id: string; text: string }[]; requirementsOnly?: boolean },
+  options?: { aggregateVerification?: boolean },
 ) {
-  validateModelResult("verify_grounding", report, evidence, requiredIds);
-  const units = candidateContent(candidate),
+  validateModelResult(
+    "verify_grounding",
+    report,
+    evidence,
+    requiredIds,
+    options,
+  );
+  const units = scope?.units ?? candidateContent(candidate),
     ids = units.map((u) => u.id);
   if (
     report.checked_candidate_hash !== candidateHash ||
@@ -75,7 +150,9 @@ export function validateGroundingReport(
     throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
   }
   const text = normalizedEvidence(units.map((u) => u.text).join("\n"));
-  if (units.length && !report.claims.length)
+  if (units.length && !report.claims.length && !scope?.requirementsOnly)
+    throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+  if (scope?.requirementsOnly && report.claims.length)
     throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
   for (const claim of report.claims) {
     if (!text.includes(normalizedEvidence(claim.candidate_quote))) {
@@ -87,6 +164,7 @@ export function validateGroundingReport(
     }
     if (
       claim.status === "supported" &&
+      claim.source_refs.length > 0 &&
       ["company_fact", "tender_fact", "commercial_commitment"].includes(
         claim.kind,
       )
@@ -133,7 +211,7 @@ export function validateGroundingReport(
       );
       throw new ModelError("EVIDENCE_REFERENCE_INVALID");
     }
-  for (const declared of candidate.company_claims ?? [])
+  for (const declared of scope ? [] : (candidate.company_claims ?? []))
     if (
       !report.claims.some(
         (claim: any) =>
@@ -147,15 +225,31 @@ export function validateGroundingReport(
       throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
 }
 export function groundingDefects(report: any) {
+  const missingSupport = (claim: any) =>
+    claim.status === "supported" &&
+    ["company_fact", "tender_fact", "commercial_commitment"].includes(
+      claim.kind,
+    ) &&
+    !claim.source_refs.length;
   return [
     ...report.claims
-      .filter((c: any) => c.status !== "supported")
+      .filter((c: any) => c.status !== "supported" || missingSupport(c))
       .map((c: any) => ({
         kind: c.kind,
-        status: c.status,
-        detail: c.finding,
+        status: missingSupport(c) ? "insufficient" : c.status,
+        detail: missingSupport(c)
+          ? "This factual assertion has no supporting source reference."
+          : c.finding,
         candidate_quote: c.candidate_quote,
         source_refs: c.source_refs,
+        ...(missingSupport(c)
+          ? {
+              claim_id: c.id,
+              reason: "missing_supporting_evidence",
+              instruction:
+                "Support the assertion with supplied evidence, or revise it to an explicit uncertainty, question or conditional proposal. Distinguish missing evidence from lack of real company capability. Never invent a source or a company fact.",
+            }
+          : {}),
       })),
     ...report.requirement_checks
       .filter((c: any) => c.status !== "supported")

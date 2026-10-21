@@ -47,6 +47,7 @@ export class ModelDeferred extends ModelError {
 }
 export { modelSchemas, blockSchema, type ModelTask } from "./modelSchemas.ts";
 import {
+  aggregateVerificationSchema,
   modelSchemas,
   primaryModelTasks,
   type PrimaryModelTask,
@@ -146,6 +147,7 @@ Check dates, amounts, currencies, negation, mandatory versus optional terms, sup
 Company expertise, staffing, projects, certifications and available capacity need verified Company Knowledge evidence.
 A proposed solution or explicitly conditional assumption is not a claim of existing company experience.
 Missing company information is not evidence of failure and is allowed as an explicit question in a useful draft.
+Distinguish a limitation of the supplied evidence from an assertion about the real company. A statement that the inputs do not establish staffing or experience does not assert that the company lacks them. Classify an explicit uncertainty or request for missing information as an assumption, not a supported company fact. Genuine factual assertions without supporting source references are insufficient, even if plausible; never mark them supported without evidence.
 For each supplied requirement, determine whether the candidate preserves and addresses it or explicitly identifies the missing input.
 Return supported, contradicted or insufficient with concise cited findings. Your agreement is not evidence.
 Return processed_content_ids containing every supplied content unit exactly once.
@@ -153,6 +155,8 @@ Use the supplied candidate_hash unchanged. Candidate quotations must occur in co
 Return processed_requirement_ids exactly equal to the top-level required_ids, with one requirement_check for each. For analysis these IDs identify source blocks, not invented requirement IDs.
 Return every supplied content_units[].id in processed_content_ids exactly once, including units that are labels rather than factual assertions.
 Keep the verification report compact: claim and finding are concise conclusions, not copies of the candidate. Use the shortest exact candidate and source quotations that preserve the assertion, its quantities and any negation. Avoid repeating whole paragraphs in claim, candidate_quote and finding. Group repeated assertions only when their evidence and verdict are identical; never omit a distinct assertion or an unsupported company claim.
+When verification_scope is content_batch, review only the supplied content_units against the full evidence. Other candidate units are reviewed separately; do not report omissions merely because another batch is absent. Top-level required_ids is empty for these batches.
+When verification_scope is requirements_only, check completeness and consistency across the whole candidate and every top-level required_id. Return claims:[]; factual claims have already been independently checked in content batches. Keep requirement_checks and blocking findings for actual omissions or contradictions.
 Never supply private reasoning traces. Return only the verification report.`
     );
   if (task === "repair_result")
@@ -255,8 +259,13 @@ export function validateModelResult(
   value: unknown,
   evidence: Evidence[],
   requiredIds: string[] = [],
+  options?: { aggregateVerification?: boolean },
 ): any {
-  const result = modelSchemas[task].parse(value) as any;
+  const schema =
+    task === "verify_grounding" && options?.aggregateVerification
+      ? aggregateVerificationSchema
+      : modelSchemas[task];
+  const result = schema.parse(value) as any;
   if (task === "repair_result") {
     validateModelResult(
       result.target_task,
@@ -300,19 +309,9 @@ export function validateModelResult(
           ? "company"
           : undefined,
       );
-      if (
-        claim.status === "supported" &&
-        ["company_fact", "tender_fact", "commercial_commitment"].includes(
-          claim.kind,
-        ) &&
-        !claim.source_refs.length
-      ) {
-        console.warn(
-          "model_evidence_diagnostic",
-          JSON.stringify({ reason: "supported_fact_without_evidence" }),
-        );
-        throw new ModelError("EVIDENCE_REFERENCE_INVALID");
-      }
+      // Missing support is a semantic defect for candidate repair, rather
+      // than malformed verifier output. groundingDefects independently blocks
+      // these claims even when the verifier incorrectly labels them supported.
     }
     for (const requirement of result.requirement_checks)
       validateQuotes(requirement.source_refs, evidence);
@@ -560,7 +559,11 @@ export interface Ledger {
     state?: string;
   } | null>;
   checkpoint?(reservation: string, remoteId: string): Promise<void>;
-  defer?(reservation: string, retryAfter?: string | null): Promise<void>;
+  defer?(
+    reservation: string,
+    retryAfter?: string | null,
+    healthyPoll?: boolean,
+  ): Promise<void>;
   cleanup?(): Promise<void>;
 }
 export function tryAvailable(
@@ -581,6 +584,7 @@ const failoverErrors = new Set([
   "TOKEN_COUNT_UNAVAILABLE",
 ]);
 const automaticFailoverErrors = new Set([
+  "PROVIDER_BACKGROUND_RETRIEVAL_FAILED",
   ...failoverErrors,
   "MODEL_NOT_CONFIGURED",
   "PROVIDER_AUTH_FAILED",
@@ -631,6 +635,103 @@ export class FreeModelProvider {
     return typeof value === "string" && /^[A-Za-z0-9._:/@-]{1,200}$/.test(value)
       ? value
       : undefined;
+  }
+  private diagnosticIdentifier(value: unknown): string | undefined {
+    const identifier = this.safeMetadata(value);
+    return identifier && (!this.env.key || !identifier.includes(this.env.key))
+      ? identifier
+      : undefined;
+  }
+  private async payloadDiagnostic(
+    url: string,
+    serializedBody: string,
+    headers: Record<string, string>,
+    task: ModelTask,
+  ): Promise<Record<string, unknown> | null> {
+    try {
+      if (
+        !MODEL_PROVIDER_IDS.includes(this.env.provider as ModelProviderId) ||
+        !Object.hasOwn(taskRegistry, task)
+      )
+        return null;
+      const payload = JSON.parse(serializedBody);
+      const path = new URL(url).pathname;
+      const endpoint = path.endsWith("/interactions")
+        ? "interactions"
+        : path.endsWith(":generateContent")
+          ? "generate_content"
+          : path.endsWith("/responses")
+            ? "responses"
+            : path.endsWith("/messages")
+              ? "messages"
+              : path.endsWith("/chat/completions")
+                ? "chat_completions"
+                : "other";
+      const revision = headers["Api-Revision"] || headers["anthropic-version"];
+      const schema =
+        payload.response_format?.schema ??
+        payload.generationConfig?.responseJsonSchema ??
+        payload.text?.format?.schema ??
+        payload.output_config?.format?.schema ??
+        payload.response_format?.json_schema?.schema ??
+        (payload.response_format?.type === "json_schema"
+          ? payload.response_format?.json_schema
+          : undefined);
+      const serializedSchema =
+        schema && typeof schema === "object" && !Array.isArray(schema)
+          ? JSON.stringify(schema)
+          : null;
+      const maximum =
+        payload.generation_config?.max_output_tokens ??
+        payload.generationConfig?.maxOutputTokens ??
+        payload.max_output_tokens ??
+        payload.max_tokens;
+      const reasoning =
+        payload.generation_config?.thinking_level ??
+        payload.generationConfig?.thinkingConfig?.thinkingLevel ??
+        payload.reasoning?.effort ??
+        payload.reasoning_effort;
+      const level =
+        typeof reasoning === "string" ? reasoning.toLowerCase() : "";
+      const diagnostic = {
+        provider: this.env.provider,
+        model: this.diagnosticIdentifier(this.env.model),
+        task,
+        endpoint,
+        api_version:
+          path
+            .split("/")
+            .find((part) => ["v1", "v1beta", "v1alpha", "v4"].includes(part)) ??
+          null,
+        api_revision:
+          typeof revision === "string" && /^\d{4}-\d{2}-\d{2}$/.test(revision)
+            ? this.diagnosticIdentifier(revision)
+            : null,
+        wire_sha256: await sha256(serializedBody),
+        wire_bytes: new TextEncoder().encode(serializedBody).length,
+        schema_sha256: serializedSchema ? await sha256(serializedSchema) : null,
+        schema_bytes: serializedSchema
+          ? new TextEncoder().encode(serializedSchema).length
+          : null,
+        max_output_tokens:
+          Number.isSafeInteger(maximum) && maximum > 0 ? maximum : null,
+        reasoning: ["none", "minimal", "low", "medium", "high"].includes(level)
+          ? level
+          : typeof payload.enable_thinking === "boolean"
+            ? payload.enable_thinking
+              ? "enabled"
+              : "disabled"
+            : reasoning == null
+              ? "provider_default"
+              : "unrecognized",
+        background: payload.background === true,
+      };
+      console.info("provider_payload_diagnostic", JSON.stringify(diagnostic));
+      return diagnostic;
+    } catch {
+      // Content-free diagnostics must not prevent an otherwise valid request.
+      return null;
+    }
   }
   constructor(
     readonly env: ModelEnvironment,
@@ -725,6 +826,17 @@ export class FreeModelProvider {
           ),
         )?.[0] ||
         (response.status === 429 ? "unspecified_429" : "provider_rejected");
+      // This generic GET error is not a terminal interaction status. Preserve
+      // its accepted ID and unknown usage; new phases can use another transport.
+      if (
+        this.env.provider === "gemini_free" &&
+        response.status === 400 &&
+        this.telemetry.request_phase === "poll" &&
+        this.telemetry.provider_error_code === "invalid_request" &&
+        message.trim() ===
+          "There was a problem processing your request. You will not be charged."
+      )
+        this.telemetry.provider_error_reason = "background_retrieval_failed";
       // Only an explicit rejection of the background feature allows a new
       // standard request. Never infer non-acceptance from a timeout, a poll,
       // an arbitrary schema error, or an unstructured gateway response.
@@ -799,8 +911,10 @@ export class FreeModelProvider {
     headers: Record<string, string>,
     timeout = this.requestTimeout,
     method: "POST" | "GET" | "DELETE" = "POST",
+    diagnosticTask?: ModelTask,
   ): Promise<any> {
     const controller = new AbortController();
+    let wireDiagnostic: Promise<Record<string, unknown> | null> | null = null;
     let idleTimer: ReturnType<typeof setTimeout> | undefined;
     let timeoutReason = "request_timeout";
     const progress = () => {
@@ -822,11 +936,21 @@ export class FreeModelProvider {
       };
       if (this.telemetry.request_phase === "generation")
         this.generationSent = true;
+      // Hash exactly the bytes sent below, without serializing the body twice.
+      const serializedBody =
+        method === "POST" ? JSON.stringify(body) : undefined;
+      if (diagnosticTask && serializedBody && method === "POST")
+        wireDiagnostic = this.payloadDiagnostic(
+          url,
+          serializedBody,
+          headers,
+          diagnosticTask,
+        );
       const response = await this.fetcher(url, {
         method,
         redirect: "error",
         headers: { "content-type": "application/json", ...headers },
-        body: method === "POST" ? JSON.stringify(body) : undefined,
+        body: serializedBody,
         signal: controller.signal,
       });
       this.telemetry.http_status = response.status;
@@ -859,19 +983,21 @@ export class FreeModelProvider {
               ? new Date(raw).toISOString()
               : null;
         throw new ModelError(
-          response.status === 429
-            ? "PROVIDER_QUOTA_WAIT"
-            : response.status === 401 || response.status === 403
-              ? "PROVIDER_AUTH_FAILED"
-              : response.status === 404
-                ? method === "GET"
-                  ? "MODEL_RESULT_EXPIRED"
-                  : "PROVIDER_MODEL_NOT_FOUND"
-                : response.status === 400 || response.status === 422
-                  ? "PROVIDER_REQUEST_INVALID"
-                  : response.status >= 500
-                    ? "MODEL_NETWORK_UNCERTAIN"
-                    : "PROVIDER_REQUEST_REJECTED",
+          this.telemetry.provider_error_reason === "background_retrieval_failed"
+            ? "PROVIDER_BACKGROUND_RETRIEVAL_FAILED"
+            : response.status === 429
+              ? "PROVIDER_QUOTA_WAIT"
+              : response.status === 401 || response.status === 403
+                ? "PROVIDER_AUTH_FAILED"
+                : response.status === 404
+                  ? method === "GET"
+                    ? "MODEL_RESULT_EXPIRED"
+                    : "PROVIDER_MODEL_NOT_FOUND"
+                  : response.status === 400 || response.status === 422
+                    ? "PROVIDER_REQUEST_INVALID"
+                    : response.status >= 500
+                      ? "MODEL_NETWORK_UNCERTAIN"
+                      : "PROVIDER_REQUEST_REJECTED",
           after,
         );
       }
@@ -932,6 +1058,27 @@ export class FreeModelProvider {
     } finally {
       clearTimeout(timer);
       clearTimeout(idleTimer);
+      if (wireDiagnostic)
+        try {
+          // Hashing runs alongside fetch; it cannot delay stream timer startup.
+          const diagnostic = await wireDiagnostic;
+          if (diagnostic)
+            console.info(
+              "provider_payload_result",
+              JSON.stringify({
+                wire_sha256: diagnostic.wire_sha256,
+                status: this.telemetry.http_status,
+                request_id: this.diagnosticIdentifier(
+                  this.telemetry.request_id,
+                ),
+                response_id: this.diagnosticIdentifier(
+                  this.telemetry.response_id,
+                ),
+              }),
+            );
+        } catch {
+          // Logging cannot change the outcome or trigger another generation.
+        }
     }
   }
   private adapter() {
@@ -966,7 +1113,14 @@ export class FreeModelProvider {
       this.requestInput(task, prompt, schema),
       true,
     );
-    return this.post(request.url, request.body, request.headers);
+    return this.post(
+      request.url,
+      request.body,
+      request.headers,
+      this.requestTimeout,
+      "POST",
+      task,
+    );
   }
   async pollBackground(id: string) {
     const adapter = this.adapter();
@@ -1042,13 +1196,43 @@ export class FreeModelProvider {
       this.requestInput(task, prompt, schema),
       false,
     );
-    const result = await this.post(request.url, request.body, request.headers);
+    const result = await this.post(
+      request.url,
+      request.body,
+      request.headers,
+      this.requestTimeout,
+      "POST",
+      task,
+    );
     return this.candidate(adapter.normalize(result, false));
   }
 }
 
 const validCount = (v: unknown): number | null =>
   typeof v === "number" && Number.isSafeInteger(v) && v >= 0 ? v : null;
+/** Canonical input identity shared by dispatch and durable graph recovery. */
+export function modelPrompt(
+  task: ModelTask,
+  context: unknown,
+  evidence: Evidence[],
+  requiredIds: string[],
+  language: "en" | "ar",
+  repair = false,
+) {
+  return task === "inspect_source_page"
+    ? sourceReadingPrompt(context, evidence, repair)
+    : JSON.stringify({
+        task,
+        prompt_version: taskRegistry[task].promptVersion,
+        writing_guide: writingGuide[language],
+        repair_instruction: repair
+          ? "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
+          : null,
+        required_ids: requiredIds,
+        untrusted_data: context,
+        evidence,
+      });
+}
 /** Try each configured provider once per round; retain per-provider outcomes. */
 export async function executeModel(
   task: ModelTask,
@@ -1071,20 +1255,14 @@ export async function executeModel(
     throw new ModelError("MODEL_REQUEST_INVALID");
   const pool = await ledger.preflight(manifest, task);
   const automatic = pool.routing_mode === "round_robin";
-  const prompt =
-    task === "inspect_source_page"
-      ? sourceReadingPrompt(context, evidence, repair)
-      : JSON.stringify({
-          task,
-          prompt_version: taskRegistry[task].promptVersion,
-          writing_guide: writingGuide[language],
-          repair_instruction: repair
-            ? "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
-            : null,
-          required_ids: requiredIds,
-          untrusted_data: context,
-          evidence,
-        });
+  const prompt = modelPrompt(
+    task,
+    context,
+    evidence,
+    requiredIds,
+    language,
+    repair,
+  );
   if (blockedContent(prompt)) throw new ModelError("DATA_POLICY_BLOCKED");
   const schema = taskJsonSchema(task, targetTask);
   const inputHash = await sha256(prompt);
@@ -1357,7 +1535,7 @@ export async function executeModel(
           if (["in_progress", "queued"].includes(interaction.status)) {
             await finishAttempt("MODEL_IN_PROGRESS");
             await checkpointRound(index, false);
-            await ledger.defer!(reservation!);
+            await ledger.defer!(reservation!, null, true);
             throw new ModelDeferred();
           }
           result = provider.backgroundResult(interaction);

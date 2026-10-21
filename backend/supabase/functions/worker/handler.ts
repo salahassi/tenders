@@ -7,7 +7,7 @@ import {
 } from "../_shared/notifications.ts";
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
 import { AppError, secretMatches } from "../_shared/http.ts";
-import { FreeModelProvider } from "../_shared/model.ts";
+import { FreeModelProvider, ModelError } from "../_shared/model.ts";
 import {
   collect,
   CollectionError,
@@ -98,7 +98,18 @@ export function createWorkerHandler(
                       : "ACCEPTED_RESULT_RECONCILED",
                   });
               }
-            } catch {
+            } catch (error) {
+              if (
+                error instanceof ModelError &&
+                error.code === "PROVIDER_BACKGROUND_RETRIEVAL_FAILED"
+              )
+                await backend.internal("settle_model_call", {
+                  reservation: abandoned.id,
+                  actual_input: null,
+                  actual_output: null,
+                  thinking: null,
+                  error_code: error.code,
+                });
               // Retain unknown usage and retry GET later; never infer zero use.
             }
           }

@@ -75,6 +75,8 @@ const rejectionReasons: Record<string, string> = {
   unspecified_429:
     "Provider rejected the request (429); specific reason unavailable",
   provider_rejected: "Provider rejected the request",
+  background_retrieval_failed:
+    "Provider could not return the background result. Its request ID and unknown usage are retained; new operations use standard transport.",
   response_evidence_invalid:
     "Response failed local evidence or coverage validation",
   response_schema_invalid: "Response did not match the required structure",

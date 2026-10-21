@@ -234,7 +234,7 @@ export function modelLedger(
     resume: (target_provider, input_hash, manifest, config) =>
       backend.internal(
         config?.model_config_id
-          ? "resume_task_model_request"
+          ? "resume_task_model_request_phase"
           : "resume_model_request",
         {
           ...identity,
@@ -242,6 +242,7 @@ export function modelLedger(
             ? {
                 target_model: config.model_config_id,
                 target_connection: config.connection_id,
+                request_prefix: prefix,
               }
             : { target_provider }),
           input_hash,
@@ -255,12 +256,15 @@ export function modelLedger(
         remote_id,
       });
     },
-    defer: async (reservation, retry_after) => {
-      await backend.internal("defer_model_request", {
-        ...identity,
-        reservation,
-        retry_after: retry_after || null,
-      });
+    defer: async (reservation, retry_after, healthyPoll) => {
+      await backend.internal(
+        healthyPoll ? "defer_pending_model_request" : "defer_model_request",
+        {
+          ...identity,
+          reservation,
+          ...(!healthyPoll ? { retry_after: retry_after || null } : {}),
+        },
+      );
     },
   };
 }

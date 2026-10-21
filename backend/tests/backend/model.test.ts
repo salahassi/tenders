@@ -57,6 +57,34 @@ const config = {
   verified_at: new Date().toISOString(),
   quota_ends_at: new Date(Date.now() + 86400000).toISOString(),
 };
+it("recognizes Gemini's generic background retrieval failure without treating it as a completed request", async () => {
+  for (const [provider, message, code] of [
+    [
+      "gemini_free",
+      "There was a problem processing your request. You will not be charged.",
+      "PROVIDER_BACKGROUND_RETRIEVAL_FAILED",
+    ],
+    ["gemini_free", "Invalid request", "PROVIDER_REQUEST_INVALID"],
+    [
+      "openai",
+      "There was a problem processing your request. You will not be charged.",
+      "PROVIDER_REQUEST_INVALID",
+    ],
+  ]) {
+    const client = new FreeModelProvider({ ...env, provider }, async () =>
+      Response.json(
+        { error: { code: "invalid_request", message } },
+        { status: 400 },
+      ),
+    );
+    await expect(client.pollBackground("fixture-id")).rejects.toMatchObject({
+      code,
+    });
+    await expect(
+      client.startBackground("connection_probe", "fixture", {}),
+    ).rejects.toMatchObject({ code: "PROVIDER_REQUEST_INVALID" });
+  }
+});
 it.each([
   [
     400,
