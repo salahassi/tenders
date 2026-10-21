@@ -60,7 +60,7 @@ const profiles: Record<ModelTask, ExecutionProfile> = {
   draft_section: defaults(16384, "medium"),
   plan_commercial: defaults(8192, "low"),
   review_proposal: defaults(16384, "medium"),
-  verify_grounding: defaults(16384, "medium"),
+  verify_grounding: defaults(16384, "low"),
   repair_result: defaults(16384, "medium"),
 };
 export const taskRegistry = Object.fromEntries(
@@ -109,6 +109,11 @@ export type StructuredRequest = {
   routeRevision: number | null;
   profile: ExecutionProfile;
   capabilities: ModelCapabilities;
+  reasoningControl?: {
+    transport: string;
+    requested: ExecutionProfile["reasoning"];
+    effective: ExecutionProfile["reasoning"];
+  };
   schema: Record<string, any>;
   prompt: string;
   targetTask?: PrimaryModelTask;

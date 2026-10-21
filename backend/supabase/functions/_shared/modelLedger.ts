@@ -34,6 +34,17 @@ export function modelLedger(
         target_connection: config.connection_id ?? null,
         target_configuration: config.model_config_id ?? null,
       }),
+    reasoningAllowed: (config, transport, level) =>
+      backend.internal("model_reasoning_allowed", {
+        ...identity,
+        target_provider: config.provider,
+        target_model: config.model,
+        target_project: config.project_ref,
+        target_connection: config.connection_id ?? null,
+        target_configuration: config.model_config_id ?? null,
+        target_transport: transport,
+        target_level: level,
+      }),
     requestPrepared: async (request) => {
       if (version !== 2 || !currentAttempt) return;
       await backend.internal("record_model_request_metadata", {
@@ -47,6 +58,9 @@ export function modelLedger(
           route_revision: request.routeRevision,
           profile: request.profile,
           capabilities: request.capabilities,
+          ...(request.reasoningControl
+            ? { reasoning_control: request.reasoningControl }
+            : {}),
         },
       });
     },

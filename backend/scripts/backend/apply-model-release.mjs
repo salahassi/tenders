@@ -19,6 +19,9 @@ const release = [
   ["20261021085510", "bounded_queue_wakeup"],
   ["20261021091037", "retained_verification_recovery_guard"],
   ["20261021092435", "generation_plan_blocked_status"],
+  ["20261021094701", "terminal_queue_wakeup"],
+  ["20261021095309", "deferred_queue_wakeup"],
+  ["20261021095545", "automatic_gemini_reasoning"],
 ];
 const project = "nqfwbqeozmuiuwbiowil";
 const literal = (value) => "'" + value.replaceAll("'", "''") + "'";

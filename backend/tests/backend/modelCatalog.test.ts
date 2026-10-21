@@ -354,6 +354,339 @@ it("treats a reserved workspace request as local capacity without dispatching an
     (await f.db.query("select id from public.provider_usage")).rows,
   ).toHaveLength(1);
 });
+it.each([false, true])(
+  "negotiates an unsupported Gemini thinking control once per frozen target and transport (background: %s)",
+  async (background) => {
+    const { executeGuardedModel } =
+      await import("../../supabase/functions/_shared/modelGraph");
+    const { geminiReasoningTransport } =
+      await import("../../supabase/functions/_shared/modelReasoning");
+    const { job, backend, envs, models, connection } =
+      await configure("gemini_free");
+    await f.command("model.task_route.save", {
+      task: "connection_probe",
+      model_ids: [models[0].id],
+      inherit_default: false,
+      strategy: "priority",
+      profile: {
+        ...taskRegistry.verify_grounding.profile,
+        reasoning: "medium",
+      },
+      expected_revision: 0,
+    });
+    await f.command("model.configuration.save", {
+      id: models[0].id,
+      connection_id: connection.id,
+      label: models[0].label,
+      model: models[0].model,
+      enabled: true,
+      capabilities: { ...defaultCapabilities("gemini_free"), background },
+      expected_revision: models[0].revision,
+    });
+    const bodies: any[] = [];
+    const fetcher: typeof fetch = async (url, init) => {
+      if (init?.method === "DELETE") return new Response(null, { status: 204 });
+      expect(init?.method).toBe("POST");
+      const body = JSON.parse(String(init?.body));
+      bodies.push(body);
+      const generation = background
+        ? body.generation_config
+        : body.generationConfig;
+      const level = background
+        ? generation.thinking_level
+        : generation.thinkingConfig?.thinkingLevel;
+      expect(
+        background ? generation.max_output_tokens : generation.maxOutputTokens,
+      ).toBe(16384);
+      if (bodies.length === 1) {
+        expect(level?.toLowerCase()).toBe("medium");
+        return Response.json(
+          {
+            error: {
+              message: "Thinking level is not supported for this model.",
+            },
+          },
+          { status: 400 },
+        );
+      }
+      expect(level).toBeUndefined();
+      if (background) {
+        expect(String(url)).toContain("/interactions");
+        return Response.json({
+          id: `completed-${bodies.length}`,
+          status: "completed",
+          steps: [
+            {
+              type: "model_output",
+              content: [{ type: "text", text: '{"status":"ready"}' }],
+            },
+          ],
+          usage: {
+            total_input_tokens: 10,
+            total_output_tokens: 8,
+            total_thought_tokens: 0,
+          },
+        });
+      }
+      expect(String(url)).toContain("fixture-model-a:generateContent");
+      return Response.json({
+        candidates: [
+          {
+            finishReason: "STOP",
+            content: { parts: [{ text: '{"status":"ready"}' }] },
+          },
+        ],
+        usageMetadata: {
+          promptTokenCount: 10,
+          candidatesTokenCount: 8,
+          thoughtsTokenCount: 0,
+        },
+      });
+    };
+    const options = {
+      backend,
+      job,
+      prefix: `probe:${job.id}`,
+      task: "connection_probe" as const,
+      context: {},
+      evidence: [],
+      requiredIds: [],
+      manifest: [],
+      environments: envs,
+      language: "en" as const,
+      repair: false,
+      fetcher,
+    };
+    await expect(executeGuardedModel(options)).rejects.toBeInstanceOf(
+      ModelDeferred,
+    );
+    expect(bodies).toHaveLength(1);
+    const resumed = await rpc("claim_backend_job_v2");
+    expect(resumed.id).toBe(job.id);
+    expect(resumed.lease_token).not.toBe(job.lease_token);
+    const identity = {
+      job_id: job.id,
+      lease: resumed.lease_token,
+      target_provider: "gemini_free",
+      target_model: models[0].model,
+      target_project: connection.project_ref,
+      target_connection: connection.id,
+      target_configuration: models[0].id,
+      target_transport: geminiReasoningTransport(background),
+      target_level: "medium",
+    };
+    expect(await rpc("model_reasoning_allowed", identity)).toBe(false);
+    expect(
+      await rpc("model_reasoning_allowed", {
+        ...identity,
+        target_level: "low",
+      }),
+    ).toBe(true);
+    expect(
+      await rpc("model_reasoning_allowed", {
+        ...identity,
+        target_transport: geminiReasoningTransport(!background),
+      }),
+    ).toBe(true);
+    await expect(
+      rpc("model_reasoning_allowed", { ...identity, lease: job.lease_token }),
+    ).rejects.toMatchObject({ code: "STALE_LEASE" });
+    await expect(
+      rpc("model_reasoning_allowed", {
+        ...identity,
+        target_model: "wrong-target",
+      }),
+    ).rejects.toMatchObject({ code: "MODEL_IDENTITY_CHANGED" });
+    const outcome = await executeGuardedModel({ ...options, job: resumed });
+    expect(outcome.result).toEqual({ status: "ready" });
+    expect(bodies).toHaveLength(2);
+    const attempts = (
+      await f.db.query<any>(
+        "select status,result_code,provider_error_reason,execution_metadata from public.model_attempts where job_id=$1 order by id",
+        [job.id],
+      )
+    ).rows;
+    expect(attempts).toHaveLength(2);
+    expect(attempts[0]).toMatchObject({
+      status: "failed",
+      result_code: "PROVIDER_REQUEST_INVALID",
+      provider_error_reason: "reasoning_unsupported",
+      execution_metadata: {
+        profile: { reasoning: "medium", max_output_tokens: 16384 },
+        reasoning_control: {
+          requested: "medium",
+          effective: "medium",
+          transport: identity.target_transport,
+        },
+      },
+    });
+    expect(attempts[1]).toMatchObject({
+      status: "succeeded",
+      execution_metadata: {
+        profile: { reasoning: "none", max_output_tokens: 16384 },
+        reasoning_control: {
+          requested: "medium",
+          effective: "none",
+          transport: identity.target_transport,
+        },
+      },
+    });
+    expect(
+      (
+        await f.db.query<any>(
+          "select state from public.provider_usage where job_id=$1",
+          [job.id],
+        )
+      ).rows.every((u) => u.state === "settled"),
+    ).toBe(true);
+    // A later request with this unchanged model configuration uses the observed
+    // fallback immediately, rather than repeating its rejected optional field.
+    await rpc("complete_model_probe_graph", {
+      job_id: job.id,
+      lease: resumed.lease_token,
+      result: outcome.result,
+      thread_id: outcome.threadId,
+    });
+    const queued = await f.command("model.probe", {});
+    const next = await rpc("claim_backend_job_v2");
+    expect(next.id).toBe(queued.id);
+    expect(
+      (
+        await executeGuardedModel({
+          ...options,
+          job: next,
+          prefix: `probe:${next.id}`,
+        })
+      ).result,
+    ).toEqual({ status: "ready" });
+    expect(bodies).toHaveLength(3);
+    const nextIdentity = {
+      ...identity,
+      job_id: next.id,
+      lease: next.lease_token,
+    };
+    expect(await rpc("model_reasoning_allowed", nextIdentity)).toBe(false);
+    // An edited configuration revision invalidates the observation only for
+    // newly frozen routes. The held job snapshot remains authoritative.
+    await f.db.query(
+      "update public.provider_usage set settings_revision=settings_revision+1 where id=(select usage_id from public.model_attempts where job_id=$1 and provider_error_reason='reasoning_unsupported' limit 1)",
+      [job.id],
+    );
+    expect(await rpc("model_reasoning_allowed", nextIdentity)).toBe(true);
+    const permissions = (
+      await f.db.query<any>(
+        "select has_function_privilege('anon','public.model_reasoning_allowed(uuid,uuid,text,text,text,text,text,uuid,uuid)','execute') anon,has_function_privilege('authenticated','public.model_reasoning_allowed(uuid,uuid,text,text,text,text,text,uuid,uuid)','execute') authenticated,has_function_privilege('service_role','public.model_reasoning_allowed(uuid,uuid,text,text,text,text,text,uuid,uuid)','execute') service",
+      )
+    ).rows[0];
+    expect(permissions).toEqual({
+      anon: false,
+      authenticated: false,
+      service: true,
+    });
+  },
+  30000,
+);
+
+it("resumes an accepted Gemini request with its original effective metadata and GET only", async () => {
+  const { executeGuardedModel } =
+    await import("../../supabase/functions/_shared/modelGraph");
+  const { job, backend, envs, models } = await configure("gemini_free");
+  await f.command("model.task_route.save", {
+    task: "connection_probe",
+    model_ids: [models[0].id],
+    inherit_default: false,
+    strategy: "priority",
+    profile: { ...taskRegistry.verify_grounding.profile, reasoning: "medium" },
+    expected_revision: 0,
+  });
+  const internal = vi.fn(backend.internal);
+  const methods: string[] = [];
+  const fetcher: typeof fetch = async (_url, init) => {
+    if (init?.method === "DELETE") return new Response(null, { status: 204 });
+    methods.push(init?.method ?? "");
+    if (init?.method === "POST") {
+      expect(
+        JSON.parse(String(init.body)).generation_config.thinking_level,
+      ).toBe("medium");
+      return Response.json({ id: "accepted-original", status: "in_progress" });
+    }
+    return Response.json({
+      id: "accepted-original",
+      status: "completed",
+      steps: [
+        {
+          type: "model_output",
+          content: [{ type: "text", text: '{"status":"ready"}' }],
+        },
+      ],
+      usage: {
+        total_input_tokens: 10,
+        total_output_tokens: 8,
+        total_thought_tokens: 2,
+      },
+    });
+  };
+  const options = {
+    backend: { ...backend, internal } as unknown as Backend,
+    job,
+    prefix: `probe:${job.id}`,
+    task: "connection_probe" as const,
+    context: {},
+    evidence: [],
+    requiredIds: [],
+    manifest: [],
+    environments: envs,
+    language: "en" as const,
+    repair: false,
+    fetcher,
+  };
+  await expect(executeGuardedModel(options)).rejects.toBeInstanceOf(
+    ModelDeferred,
+  );
+  const original = (
+    await f.db.query<any>(
+      "select execution_metadata from public.model_attempts where job_id=$1 and sent order by id limit 1",
+      [job.id],
+    )
+  ).rows[0].execution_metadata;
+  expect(original.profile.reasoning).toBe("medium");
+  expect(original.capabilities.reasoning).toBe("gemini_level");
+  await f.db.query(
+    "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
+    [job.id],
+  );
+  const resumed = await rpc("claim_backend_job_v2");
+  expect(resumed.id).toBe(job.id);
+  internal.mockClear();
+  expect(
+    (await executeGuardedModel({ ...options, job: resumed })).result,
+  ).toEqual({ status: "ready" });
+  expect(methods).toEqual(["POST", "GET"]);
+  expect(
+    internal.mock.calls.some(
+      ([name]) =>
+        name === "model_reasoning_allowed" ||
+        name === "model_background_allowed" ||
+        name === "reserve_task_model_call",
+    ),
+  ).toBe(false);
+  const after = (
+    await f.db.query<any>(
+      "select execution_metadata from public.model_attempts where job_id=$1 order by id desc limit 1",
+      [job.id],
+    )
+  ).rows[0].execution_metadata;
+  for (const key of [
+    "input_hash",
+    "profile",
+    "capabilities",
+    "prompt_version",
+    "route_revision",
+    "reasoning_control",
+  ])
+    expect(after[key]).toEqual(original[key]);
+}, 30000);
+
 it.each(["openai", "gemini_free"] as const)(
   "automatically retries an explicitly unsupported %s background request on the same model in a fresh graph lease",
   async (provider) => {

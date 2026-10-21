@@ -11,11 +11,18 @@ import {
   taskRegistry,
   structuredRequest,
   normalizeOptionalNulls,
+  capabilitySchema,
+  executionProfileSchema,
   type ModelCapabilities,
   type ExecutionProfile,
   type TransportResult,
   type StructuredRequest,
 } from "./modelContract.ts";
+import {
+  geminiReasoningConfiguration,
+  geminiReasoningTransport,
+  rejectedGeminiReasoning,
+} from "./modelReasoning.ts";
 import {
   sourceReadingPrompt,
   sourceSystemInstructions,
@@ -518,6 +525,11 @@ export interface Ledger {
   beforeSend?(): Promise<void>;
   candidateReceived?(usageId: string): Promise<void>;
   backgroundAllowed?(config: ModelConfiguration): Promise<boolean>;
+  reasoningAllowed?(
+    config: ModelConfiguration,
+    transport: string,
+    level: ExecutionProfile["reasoning"],
+  ): Promise<boolean>;
   validateCandidate?(result: unknown): void;
   invalidCandidate?(result: unknown, code: string): Promise<void>;
   loadRound?(inputHash: string): Promise<ModelRoundProgress | null>;
@@ -565,6 +577,14 @@ export interface Ledger {
     remote_request_id: string;
     remote_deadline: string;
     state?: string;
+    execution_metadata?: {
+      input_hash: string;
+      profile: ExecutionProfile;
+      capabilities: ModelCapabilities;
+      prompt_version?: string;
+      route_revision?: number | null;
+      reasoning_control?: StructuredRequest["reasoningControl"];
+    } | null;
   } | null>;
   checkpoint?(reservation: string, remoteId: string): Promise<void>;
   defer?(
@@ -639,6 +659,17 @@ export function parseModelPool(value: unknown): ModelPool {
 export class FreeModelProvider {
   telemetry: AttemptMetadata = {};
   generationSent = false;
+  private sentReasoningLevel?: string;
+  private preparedRequest?: {
+    profile: ExecutionProfile;
+    capabilities: ModelCapabilities;
+  };
+  usePreparedRequest(
+    profile: ExecutionProfile,
+    capabilities: ModelCapabilities,
+  ) {
+    this.preparedRequest = { profile, capabilities };
+  }
   private safeMetadata(value: unknown): string | undefined {
     return typeof value === "string" && /^[A-Za-z0-9._:/@-]{1,200}$/.test(value)
       ? value
@@ -701,6 +732,11 @@ export class FreeModelProvider {
         payload.reasoning_effort;
       const level =
         typeof reasoning === "string" ? reasoning.toLowerCase() : "";
+      if (
+        this.env.provider === "gemini_free" &&
+        this.telemetry.request_phase === "generation"
+      )
+        this.sentReasoningLevel = level || undefined;
       const diagnostic = {
         provider: this.env.provider,
         model: this.diagnosticIdentifier(this.env.model),
@@ -781,8 +817,10 @@ export class FreeModelProvider {
       };
       let message = "",
         parameter = "";
+      let structuredError: unknown;
       try {
         const error = JSON.parse(text)?.error;
+        structuredError = error;
         this.telemetry.provider_error_code = identifier(error?.code);
         this.telemetry.provider_error_type = identifier(
           error?.type || error?.status,
@@ -867,6 +905,16 @@ export class FreeModelProvider {
           ))
       )
         this.telemetry.provider_error_reason = "background_unsupported";
+      if (
+        rejectedGeminiReasoning({
+          provider: this.env.provider,
+          phase: this.telemetry.request_phase,
+          status: response.status,
+          sentLevel: this.sentReasoningLevel,
+          error: structuredError,
+        })
+      )
+        this.telemetry.provider_error_reason = "reasoning_unsupported";
       const labels: Record<string, RegExp> = {
         interactions: /interactions/i,
         background: /background/i,
@@ -1097,15 +1145,18 @@ export class FreeModelProvider {
   }
   private requestInput(task: ModelTask, prompt: string, schema: unknown) {
     const capabilities =
+      this.preparedRequest?.capabilities ??
       this.configuration?.capabilities ??
       defaultCapabilities(this.env.provider as ModelProviderId);
-    const profile = this.configuration?.profile
-      ? resolveProfile(task, capabilities, this.configuration.profile)
-      : {
-          ...taskRegistry[task].profile,
-          max_output_tokens: caps[task],
-          reasoning: "none" as const,
-        };
+    const profile =
+      this.preparedRequest?.profile ??
+      (this.configuration?.profile
+        ? resolveProfile(task, capabilities, this.configuration.profile)
+        : {
+            ...taskRegistry[task].profile,
+            max_output_tokens: caps[task],
+            reasoning: "none" as const,
+          });
     return {
       task,
       prompt,
@@ -1400,6 +1451,7 @@ export async function executeModel(
       let settled = false;
       let remoteId: string | null = null;
       let backgroundStart = false;
+      let reasoningSent = false;
       const finishAttempt = async (
         code: string,
         retryAfter?: string | null,
@@ -1420,9 +1472,9 @@ export async function executeModel(
           complete: boolean;
           kind?: TransportResult["kind"];
         };
-        const capabilities =
+        let capabilities =
           config.capabilities ?? defaultCapabilities(config.provider);
-        const profile = config.profile
+        let profile = config.profile
           ? resolveProfile(task, capabilities, config.profile)
           : {
               ...taskRegistry[task].profile,
@@ -1448,6 +1500,51 @@ export async function executeModel(
               !ledger.backgroundAllowed ||
               (await ledger.backgroundAllowed(config))),
           );
+        let reasoningControl: StructuredRequest["reasoningControl"];
+        if (pending?.execution_metadata) {
+          const saved = pending.execution_metadata;
+          if (saved.input_hash !== inputHash)
+            throw new ModelError("MODEL_IDENTITY_CHANGED");
+          profile = executionProfileSchema.parse(saved.profile);
+          capabilities = capabilitySchema.parse(saved.capabilities);
+          if (!capabilities.background)
+            throw new ModelError("MODEL_IDENTITY_CHANGED");
+          reasoningControl = saved.reasoning_control;
+        } else if (!pending && automatic && config.provider === "gemini_free") {
+          const requested = executionProfileSchema.parse(
+            config.profile ?? taskRegistry[task].profile,
+          );
+          const transport = geminiReasoningTransport(background);
+          const canSendLevel =
+            ["low", "medium", "high"].includes(requested.reasoning) ||
+            (capabilities.reasoning === "gemini_level" &&
+              requested.reasoning !== "none");
+          const allowed =
+            !canSendLevel ||
+            !ledger.reasoningAllowed ||
+            (await ledger.reasoningAllowed(
+              config,
+              transport,
+              requested.reasoning,
+            ));
+          const negotiated = geminiReasoningConfiguration(
+            capabilities,
+            { ...requested, max_output_tokens: profile.max_output_tokens },
+            allowed,
+          );
+          if (negotiated) ({ capabilities, profile } = negotiated);
+          reasoningSent =
+            capabilities.reasoning === "gemini_level" &&
+            profile.reasoning !== "none";
+          reasoningControl = {
+            transport,
+            requested: requested.reasoning,
+            effective: profile.reasoning,
+          };
+        }
+        // A legacy accepted request without stored metadata still uses its
+        // frozen configuration above, never today's automatic inference.
+        provider.usePreparedRequest(profile, capabilities);
         const request = structuredRequest({
           task,
           targetTask,
@@ -1466,9 +1563,17 @@ export async function executeModel(
           routeRevision: config.route_revision ?? null,
           profile,
           capabilities: { ...capabilities, background },
+          ...(reasoningControl ? { reasoningControl } : {}),
         });
         if (task === "verify_grounding" && verificationRevision === 2)
           request.promptVersion = VERIFICATION_PROMPT_V2;
+        if (pending?.execution_metadata) {
+          request.promptVersion =
+            pending.execution_metadata.prompt_version ?? request.promptVersion;
+          if ("route_revision" in pending.execution_metadata)
+            request.routeRevision =
+              pending.execution_metadata.route_revision ?? null;
+        }
         await ledger.requestPrepared?.(request);
         const accountKey = `${config.provider}:${config.project_ref}`;
         if (!pending && config.connection_id && accountWaits.has(accountKey))
@@ -1665,6 +1770,21 @@ export async function executeModel(
           );
         retryWindows.push(lastError.retryAfter);
         await finishAttempt(code, lastError.retryAfter);
+        if (
+          automatic &&
+          ledger.saveRound &&
+          ledger.reasoningAllowed &&
+          reasoningSent &&
+          !remoteId &&
+          code === "PROVIDER_REQUEST_INVALID" &&
+          provider.telemetry.provider_error_reason === "reasoning_unsupported"
+        ) {
+          // The rejected POST is known not to have generated work. A new lease
+          // reads its exact transport/configuration observation and retries this
+          // same model once without that optional field, with fresh time budget.
+          await checkpointRound(index, true);
+          throw new ModelDeferred();
+        }
         if (
           automatic &&
           ledger.saveRound &&

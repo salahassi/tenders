@@ -10,6 +10,7 @@ import {
 } from "vitest";
 import { workflowFixture } from "./workflowFixture";
 import { createWorkerHandler } from "../../supabase/functions/worker/handler";
+import { wakeReadyQueue } from "../../supabase/functions/worker/queueWake";
 import {
   modelEnvironments,
   type Backend,
@@ -65,14 +66,14 @@ async function job(
     )
   ).rows[0];
 }
-async function wake(id: string, lease = crypto.randomUUID()) {
+async function wake(id: string, lease = crypto.randomUUID(), details = false) {
   await f.db.exec("savepoint wake_rpc;set local role service_role");
   try {
     return (
-      await f.db.query<any>("select public.wake_backend_queue($1,$2) value", [
-        id,
-        lease,
-      ])
+      await f.db.query<any>(
+        `select public.${details ? "wake_backend_queue_status" : "wake_backend_queue"}($1,$2) value`,
+        [id, lease],
+      )
     ).rows[0].value;
   } catch (error) {
     await f.db.exec("rollback to savepoint wake_rpc");
@@ -213,18 +214,291 @@ it("throttles different completions across the workspace and deduplicates older 
 });
 
 it.each([
-  ["blocked", null],
   ["retry_wait", "MODEL_RATE_WAIT"],
   ["retry_wait", "MODEL_ROUND_EXHAUSTED"],
   ["quota_wait", "PROVIDER_QUOTA_WAIT"],
   ["canceled", null],
-  ["failed", "MODEL_OUTPUT_INVALID"],
 ])("does not wake after %s / %s", async (status, code) => {
   const failed = await job(status!, code);
+  await f.db.query(
+    "update public.jobs set next_attempt_at=now()+interval '1 hour' where id=$1",
+    [failed.id],
+  );
+  const before = (
+    await f.db.query<any>("select * from public.jobs where id=$1", [failed.id])
+  ).rows[0];
   await job();
   expect(await wake(failed.id)).toBe(false);
   expect(await dispatches()).toBe(0);
+  expect(
+    (
+      await f.db.query<any>("select * from public.jobs where id=$1", [
+        failed.id,
+      ])
+    ).rows[0],
+  ).toEqual(before);
 });
+
+it("a canonically blocked source hands off to another due graph without retrying the source", async () => {
+  const ready = await job("queued", null, { model_executor: 2 });
+  const graphJob = await f.rpc("claim_backend_job_v2");
+  expect(graphJob.id).toBe(ready.id);
+  const thread = "b".repeat(64);
+  const graph = (lease: string, action: string, payload = {}) =>
+    f.rpc("model_graph_store", [
+      graphJob.id,
+      lease,
+      thread,
+      action,
+      JSON.stringify(payload),
+    ]);
+  await graph(graphJob.lease_token, "init", {
+    input_hash: "c".repeat(64),
+    task: "analyze_chunk",
+    graph_version: 1,
+  });
+  const saved = await graph(graphJob.lease_token, "result_put", {
+    key: "candidate-0",
+    value: { result: { fixture: "Retain this completed model result" } },
+  });
+  await graph(graphJob.lease_token, "yield");
+  const source = await f.command("source.create", {
+    name: "Synthetic terminal source",
+    kind: "manual",
+    url: "https://source.example.test/",
+  });
+  const approved = await f.command("source.action", {
+    id: source.id,
+    expected_revision: source.revision,
+    action: "approve",
+    reason: "Synthetic public source fixture",
+  });
+  await f.command("source.collect", {
+    id: approved.id,
+    expected_revision: approved.revision,
+  });
+  await f.db.query(
+    "update public.jobs set updated_at=now()-interval '3 minutes' where entity_id=$1",
+    [approved.id],
+  );
+  const claimed = await f.rpc("claim_backend_job_v2");
+  expect(claimed).toMatchObject({
+    type: "source_collect",
+    entity_id: source.id,
+  });
+  await f.rpc("fail_collection", [
+    claimed.id,
+    claimed.lease_token,
+    "SOURCE_NOTICE_REDIRECTED",
+    null,
+  ]);
+  const blocked = (
+    await f.db.query<any>("select * from public.jobs where id=$1", [claimed.id])
+  ).rows[0];
+  expect(blocked).toMatchObject({
+    status: "blocked",
+    lease_token: null,
+    lease_until: null,
+  });
+  expect(await wake(claimed.id, claimed.lease_token)).toBe(true);
+  expect(await wake(claimed.id, claimed.lease_token)).toBe(false);
+  const resumed = await f.rpc("claim_backend_job_v2");
+  expect(resumed.id).toBe(ready.id);
+  expect(
+    (await graph(resumed.lease_token, "result_get", { key: "candidate-0" })).id,
+  ).toBe(saved.id);
+  expect(
+    (
+      await f.db.query<any>("select * from public.jobs where id=$1", [
+        claimed.id,
+      ])
+    ).rows[0],
+  ).toEqual(blocked);
+  expect(await dispatches()).toBe(1);
+});
+
+it.each(["blocked", "failed"])(
+  "wakes other due work once after terminal %s, without changing either job",
+  async (status) => {
+    const terminal = await job(status, "SYNTHETIC_TERMINAL_ERROR");
+    const queued = await job();
+    const before = (
+      await f.db.query<any>("select * from public.jobs order by id")
+    ).rows;
+    expect(await wake(terminal.id)).toBe(true);
+    await f.db.exec(
+      "update app_private.worker_queue_wakes set dispatched_at=clock_timestamp()-interval '11 seconds'",
+    );
+    expect(await wake(terminal.id)).toBe(false);
+    expect(
+      (await f.db.query<any>("select * from public.jobs order by id")).rows,
+    ).toEqual(before);
+    expect((await f.rpc("claim_backend_job_v2")).id).toBe(queued.id);
+    expect(await dispatches()).toBe(1);
+  },
+);
+
+it.each(["blocked", "failed"])(
+  "never wakes a terminal %s job when it is the only work, even with a due timestamp",
+  async (status) => {
+    const terminal = await job(status, "SYNTHETIC_TERMINAL_ERROR");
+    expect(await wake(terminal.id)).toBe(false);
+    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+    expect(await dispatches()).toBe(0);
+  },
+);
+
+it.each(["running", "reserved", "restore", "cancel", "throttled", "future"])(
+  "terminal handoff still respects %s",
+  async (mode) => {
+    const terminal = await job("blocked", "SYNTHETIC_TERMINAL_ERROR");
+    const queued = await job();
+    if (mode === "running")
+      await f.db.query(
+        "update public.jobs set status='running',lease_token=$2,lease_until=now()+interval '3 minutes' where id=$1",
+        [queued.id, crypto.randomUUID()],
+      );
+    if (mode === "reserved")
+      await f.db.query(
+        `insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,created_by)
+        values($1,$2,$3,'fixture','openai','fixture-model','fixture',current_date,1,1,1,$4)`,
+        [f.w, terminal.id, crypto.randomUUID(), f.owner],
+      );
+    if (mode === "restore")
+      await f.db.query(
+        "insert into public.restore_sessions(workspace_id,manifest,created_by) values($1,'{}',$2)",
+        [f.w, f.owner],
+      );
+    if (mode === "cancel")
+      await f.db.query(
+        "update public.jobs set cancel_requested=true where id=$1",
+        [terminal.id],
+      );
+    if (mode === "future")
+      await f.db.query(
+        "update public.jobs set next_attempt_at=now()+interval '1 hour' where id=$1",
+        [queued.id],
+      );
+    if (mode === "throttled") {
+      const completed = await job("succeeded");
+      expect(await wake(completed.id)).toBe(true);
+    }
+    expect(await wake(terminal.id)).toBe(false);
+    expect(await dispatches()).toBe(mode === "throttled" ? 1 : 0);
+    if (mode === "throttled") {
+      await f.db.exec(
+        "update app_private.worker_queue_wakes set dispatched_at=clock_timestamp()-interval '11 seconds'",
+      );
+      expect(await wake(terminal.id)).toBe(true);
+      expect(await dispatches()).toBe(2);
+    }
+  },
+);
+
+it("reports cooldown only for an otherwise eligible wake and keeps the old boolean contract", async () => {
+  const first = await job("succeeded");
+  const terminal = await job("blocked", "SYNTHETIC_TERMINAL_ERROR");
+  await job();
+  expect(await wake(first.id)).toBe(true);
+  const lease = crypto.randomUUID();
+  const waiting = await wake(terminal.id, lease, true);
+  expect(waiting.dispatched).toBe(false);
+  expect(waiting.retry_after_ms).toBeGreaterThan(0);
+  expect(waiting.retry_after_ms).toBeLessThanOrEqual(10000);
+  expect(await wake(terminal.id, lease)).toBe(false);
+  expect(await wake(first.id, lease, true)).toEqual({ dispatched: false });
+  expect(await dispatches()).toBe(1);
+});
+
+it.each(["future", "running", "reserved", "restore", "cancel", "disabled"])(
+  "does not suggest a cooldown retry when %s also prevents dispatch",
+  async (mode) => {
+    const first = await job("succeeded");
+    const terminal = await job("blocked", "SYNTHETIC_TERMINAL_ERROR");
+    const queued = await job();
+    expect(await wake(first.id)).toBe(true);
+    if (mode === "future")
+      await f.db.query(
+        "update public.jobs set next_attempt_at=now()+interval '1 hour' where id=$1",
+        [queued.id],
+      );
+    if (mode === "running")
+      await f.db.query(
+        "update public.jobs set status='running',lease_token=$2,lease_until=now()+interval '3 minutes' where id=$1",
+        [queued.id, crypto.randomUUID()],
+      );
+    if (mode === "reserved")
+      await f.db.query(
+        `insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,created_by)
+        values($1,$2,$3,'fixture','openai','fixture-model','fixture',current_date,1,1,1,$4)`,
+        [f.w, terminal.id, crypto.randomUUID(), f.owner],
+      );
+    if (mode === "restore")
+      await f.db.query(
+        "insert into public.restore_sessions(workspace_id,manifest,created_by) values($1,'{}',$2)",
+        [f.w, f.owner],
+      );
+    if (mode === "cancel")
+      await f.db.query(
+        "update public.jobs set cancel_requested=true where id=$1",
+        [terminal.id],
+      );
+    if (mode === "disabled")
+      await f.db.exec(
+        "update app_private.dispatcher_settings set enabled=false",
+      );
+    expect(await wake(terminal.id, crypto.randomUUID(), true)).toEqual({
+      dispatched: false,
+    });
+    expect(await dispatches()).toBe(1);
+  },
+);
+
+it.each([false, true])(
+  "a bounded deferred wake rechecks the actual database guards after waiting (another claim: %s)",
+  async (claimedDuringWait) => {
+    const first = await job("succeeded");
+    const terminal = await job("blocked", "SYNTHETIC_TERMINAL_ERROR");
+    const queued = await job();
+    expect(await wake(first.id)).toBe(true);
+    let clock = 1000;
+    const lease = crypto.randomUUID();
+    const internal = vi.fn(async (_name: string, args: any) =>
+      wake(args.job_id, args.lease, true),
+    );
+    const sleep = vi.fn(async (ms: number) => {
+      expect(ms).toBeGreaterThan(0);
+      expect(ms).toBeLessThanOrEqual(10000);
+      clock += ms;
+      await f.db.exec(
+        "update app_private.worker_queue_wakes set dispatched_at=clock_timestamp()-interval '11 seconds'",
+      );
+      if (claimedDuringWait)
+        expect((await f.rpc("claim_backend_job_v2")).id).toBe(queued.id);
+    });
+    await wakeReadyQueue(
+      { internal, invocationStartedAt: 0, invocationBudgetMs: 130000 },
+      { id: terminal.id, lease_token: lease },
+      { now: () => clock, sleep },
+    );
+    expect(sleep).toHaveBeenCalledTimes(1);
+    expect(internal).toHaveBeenCalledTimes(2);
+    expect(
+      internal.mock.calls.every(
+        ([name]) => name === "wake_backend_queue_status",
+      ),
+    ).toBe(true);
+    expect(await dispatches()).toBe(claimedDuringWait ? 1 : 2);
+    expect(
+      (
+        await f.db.query<any>(
+          "select status,lease_token,attempts from public.jobs where id=$1",
+          [terminal.id],
+        )
+      ).rows[0],
+    ).toEqual({ status: "blocked", lease_token: null, attempts: 1 });
+  },
+);
 
 it.each(["future", "failed-attempt", "saved-round", "wrong-lease"])(
   "does not accelerate a graph continuation with %s",
@@ -318,14 +592,15 @@ it.each(["running", "reserved", "disabled", "restore"])(
 
 it("restricts wake and its receipts to backend authority", async () => {
   for (const role of ["anon", "authenticated"])
-    expect(
-      (
-        await f.db.query<any>(
-          "select has_function_privilege($1,'public.wake_backend_queue(uuid,uuid)','EXECUTE') allowed",
-          [role],
-        )
-      ).rows[0].allowed,
-    ).toBe(false);
+    for (const name of ["wake_backend_queue", "wake_backend_queue_status"])
+      expect(
+        (
+          await f.db.query<any>(
+            "select has_function_privilege($1,$2,'EXECUTE') allowed",
+            [role, `public.${name}(uuid,uuid)`],
+          )
+        ).rows[0].allowed,
+      ).toBe(false);
   expect(
     (
       await f.db.query<any>(
@@ -364,7 +639,8 @@ it.each([false, true])(
       );
     });
     const internal = vi.fn(async (name: string, args: any = {}) => {
-      if (name === "wake_backend_queue") return wake(args.job_id, args.lease);
+      if (name === "wake_backend_queue_status")
+        return wake(args.job_id, args.lease, true);
       return name === "claim_storage_cleanup" ? [] : null;
     });
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -389,7 +665,9 @@ it.each([false, true])(
     );
     expect(response.status).toBe(200);
     expect(
-      internal.mock.calls.filter(([name]) => name === "wake_backend_queue"),
+      internal.mock.calls.filter(
+        ([name]) => name === "wake_backend_queue_status",
+      ),
     ).toHaveLength(1);
     expect(
       (

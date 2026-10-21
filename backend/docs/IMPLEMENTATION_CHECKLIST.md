@@ -2,8 +2,47 @@
 
 ## October 21 — real acceptance blockers (in progress)
 
-Current status at 09:29 UTC: **analysis is complete and seven of nine planning
-steps are accepted; no complete Word has been downloaded or inspected.**
+Current status at 10:16 UTC: **all three analysis jobs and all nine planning
+steps are accepted, and 67 drafting jobs have been created. No complete Word
+proposal has been downloaded or inspected.** At 10:12, no draft had yet been
+accepted. The first experience-section job received HTTP 200 from all three
+writer models, but each response failed local `UNSUPPORTED_COMPANY_CLAIM`
+validation; the job is blocked at its correction limit. An overly literal
+company-claim guard is suspected, but the actual response has not yet been
+retrieved for inspection, so this cause is not confirmed. Other already-started
+work continues, including accepted OpenAI gpt-6.1-sol work and an in-progress
+Gemini verification.
+
+Sixty-five queued, unstarted drafting jobs are on an audited bounded hold until
+10:43 UTC while that failure is investigated. The hold changes no input, budget
+or usage records and does not hold pending provider work. Completed analysis,
+planning outputs and received model results remain saved. Draft acceptance,
+commercial missing-input handling, review and real Word download/inspection
+remain open.
+
+The automatic Gemini reasoning migration was applied at 10:13 UTC. API **v73**
+and normal worker **v90** were deployed at 10:14 UTC; exact readbacks matched all
+28 API and 39 worker files. Worker v90 includes the previously deployed v89
+terminal/deferred queue-wake changes. Anonymous worker POST returns HTTP 401,
+and the new reasoning RPC denies anon/authenticated execution while permitting
+service_role. The final complete backend regression
+(`final-backend-serial-15.log`) passed **757/757 tests in 49 files** (230.53
+seconds), with backend typecheck/build and both Deno entrypoint checks. Unchanged
+frontend code previously passed all **192 tests**, typecheck and build. Source
+commit, CI and Pages reconciliation for this release are pending.
+
+New verification operations now default to low reasoning. Existing explicit
+profiles and already-started operation identities remain preserved; accepted
+requests resume through GET using their original recorded metadata. Optional
+Gemini reasoning controls are negotiated once only after an explicit HTTP
+400/422 rejection of the exact control or level sent. Generic 400 errors, schema
+errors and ambiguous requests cannot trigger that negotiation. Its recorded
+compatibility decision is scoped to connection, model/settings revision,
+transport and requested level. **No live successful LOW request or resulting
+token/time improvement has yet been established.**
+
+Historical checkpoint at 10:00 UTC: **analysis and all nine planning steps were
+accepted; no complete Word had been downloaded or inspected.**
 The authenticated Jobs page's Check retry action resumed the exact blocked step
 at 09:25 (HTTP 200, same plan). Its graph is now committed with one recovery
 provenance record. The original input hash, received-candidate count of one,
@@ -30,7 +69,7 @@ the healthy MODEL_IN_PROGRESS case used the failure RPC, creating a second
 blocked job whose ordinal could precede the expected blocker. The corrected
 case uses the actual graph yield RPC and asserts retry_wait; a separate case
 checks deterministic selection between two real blockers. The SQL is unchanged.
-API v72 and worker v88 remain active. Frontend rerun passed all
+At that checkpoint, API v72 and worker v88 remained active. Frontend rerun passed all
 **192 tests**, typecheck and production build; no frontend code changed.
 
 At 09:40 UTC, eight of nine planning steps are accepted with the final step
@@ -42,6 +81,41 @@ unapplied experiment until actual writer/verifier output proves safe sizing;
 stored mappings and task settings are unchanged. Full Word acceptance remains
 pending. Failure mail has not been sent since October 20 at 17:36 UTC; the one
 existing queued summary retains its configured next delivery window.
+
+Source `8efdb3c421015a1c59ff56bccc7d86cf60805ee7` passed
+[Pages 39579246925](https://github.com/salahassi/tenders/actions/runs/39579246925).
+The final planning step's Gemini content-verification batch later returned
+HTTP 200 / MAX_TOKENS: 8,590 input, 16,369 total output, including 15,414
+thinking tokens and only about 955 visible output tokens. This was a bounded
+32-unit/4,187-character content batch, not the whole report. The frozen operation
+requested medium reasoning, but conservative empty capabilities resolved it to
+none and omitted the control; none means provider default, not disabled
+thinking. Google's documented default is also medium, so merely sending medium
+does not establish a fix. A lower default for new verification work and bounded,
+transport-specific optional-control negotiation were then being implemented;
+the deployed follow-up is recorded above. Existing explicit profiles and accepted
+requests retain their identity. Sol later accepted this same content batch;
+overall planning was still unfinished at that checkpoint.
+
+Queue timing investigation confirms successful wakes are delivered: normal
+fairness assigns the next turn to an old source/assessment job, which can block
+on a redirected source URL. Terminal failure did not wake the following ready
+graph, adding 60–75-second idle gaps. One clean planning job spent 202 of 488
+seconds in such inter-phase gaps. An additive terminal-completion wake and a
+single delayed retry after the existing ten-second throttle were then prepared;
+neither changes job ordering, retry schedules or concurrency. Their deployment
+is recorded below; no measured live performance improvement is asserted.
+
+Queue follow-up deployment at 10:00 UTC: both terminal/deferred wake migrations
+are applied. Worker **v89** contains only the v88 bundle plus the new bounded
+queue-wake helper and handler call; all **38 files** match hosted readback.
+The detailed RPC is service-role-only and anonymous worker POST still returns
+401. Focused queue/delay/release tests passed **76/76** and broader
+worker/source/notification tests passed **110/110**, with typecheck and
+independent review. The pending reasoning changes are not in this deployment.
+The final planning coverage report succeeded on Gemini at 09:57:58; the local
+advance-plan job is queued, competing with 44 older due assessments. Live
+continuation latency and the first real draft output remain to observe.
 
 Historical status at 09:00 UTC: **analysis is complete, but the real proposal is
 blocked during planning; no complete Word has been downloaded or inspected.**

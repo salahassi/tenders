@@ -8,6 +8,7 @@ import {
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
 import { AppError, secretMatches } from "../_shared/http.ts";
 import { FreeModelProvider, ModelError } from "../_shared/model.ts";
+import { wakeReadyQueue } from "./queueWake.ts";
 import {
   collect,
   CollectionError,
@@ -242,10 +243,7 @@ export function createWorkerHandler(
         };
         const result = await processClaimed();
         try {
-          await backend.internal("wake_backend_queue", {
-            job_id: job.id,
-            lease: job.lease_token,
-          });
+          await wakeReadyQueue(backend, job);
         } catch {
           // Completion is already durable. Cron remains the fallback when a
           // wake cannot be queued; never turn successful work into a retry.
