@@ -57,6 +57,7 @@ const profiles: Record<ModelTask, ExecutionProfile> = {
   summarize_review: defaults(8192, "low"),
   analyze_chunk: defaults(16384, "medium"),
   plan_proposal: defaults(8192, "low"),
+  plan_blueprint: defaults(16384, "medium"),
   draft_section: defaults(16384, "medium"),
   plan_commercial: defaults(8192, "low"),
   review_proposal: defaults(16384, "medium"),

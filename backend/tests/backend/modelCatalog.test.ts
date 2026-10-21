@@ -426,8 +426,15 @@ it("admits two distinct background jobs, keeps the same-job guard and drains acc
       [s.job.id],
     )
   ).rows[0];
-  const thirdJob = await rpc("claim_backend_job_v2");
-  expect(thirdJob.id).toBe(thirdQueued.id);
+  expect(await rpc("claim_backend_job_v2")).toBeNull();
+  // Admission now waits before leasing a third inference job. Also exercise
+  // reservation protection for a worker leased before a capacity reduction.
+  const thirdJob = (
+    await f.db.query<any>(
+      "update public.jobs set status='running',lease_token=gen_random_uuid(),lease_until=now()+interval '3 minutes',attempts=1 where id=$1 returning *",
+      [thirdQueued.id],
+    )
+  ).rows[0];
   await modelLedger(
     s.backend,
     thirdJob,

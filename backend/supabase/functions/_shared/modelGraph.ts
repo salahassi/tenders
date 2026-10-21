@@ -19,6 +19,7 @@ import { modelLedger } from "./modelLedger.ts";
 import { ModelGraphStore } from "./modelGraphStore.ts";
 import {
   verificationBatches,
+  verificationPolicy,
   mergeVerificationReports,
 } from "./modelVerification.ts";
 import {
@@ -183,6 +184,7 @@ export async function replayRevalidatedVerification(o: {
   repairCount: number;
   evidence: Evidence[];
   requiredIds: string[];
+  context?: any;
 }) {
   const { artifact } = o;
   if (artifact?.coverage !== "revalidated_scope") return;
@@ -216,7 +218,10 @@ export async function replayRevalidatedVerification(o: {
     const prefix = `verification-repair-v3-${o.candidateHash}-`;
     if (typeof phase !== "string" || !phase.startsWith(prefix))
       throw new ModelError("MODEL_IDENTITY_CHANGED");
-    const batches = verificationBatches(o.candidate);
+    const batches = verificationBatches(
+      o.candidate,
+      verificationPolicy(o.context),
+    );
     const name = phase.slice(prefix.length);
     if (!batches.length) throw new ModelError("MODEL_IDENTITY_CHANGED");
     if (name === "requirements")
@@ -786,6 +791,7 @@ async function runGuardedModel(o: Options): Promise<{
           repairCount: state.repairCount,
           evidence: o.evidence,
           requiredIds: o.requiredIds,
+          context: o.context,
         });
       const units = candidateContent(candidate);
       const reportKey = `verification-${hash}`;
@@ -802,10 +808,18 @@ async function runGuardedModel(o: Options): Promise<{
         o.requiredIds,
       );
       if (recovered) return { reportRef: recovered.id };
-      let batches = verificationBatches(candidate);
+      const policy = verificationPolicy(o.context);
+      let batches = verificationBatches(candidate, policy);
       if (batches.length) {
         const formatKey = `verification-batches-${hash}`;
         const pinned = await store.action("result_get", { key: formatKey });
+        if (
+          policy &&
+          pinned &&
+          JSON.stringify(pinned.value) !==
+            JSON.stringify({ version: 4, policy })
+        )
+          throw new ModelError("MODEL_IDENTITY_CHANGED");
         if (!pinned) {
           const pool = await ledgerFor(reportKey, `verifier-${hash}`).preflight(
             o.manifest,
@@ -815,7 +829,7 @@ async function runGuardedModel(o: Options): Promise<{
           else
             await store.action("result_put", {
               key: formatKey,
-              value: { version: 3 },
+              value: policy ? { version: 4, policy } : { version: 3 },
             });
         }
       }
@@ -828,12 +842,16 @@ async function runGuardedModel(o: Options): Promise<{
             requiredIds: [] as string[],
             requirementsOnly: false,
           })),
-          {
-            units,
-            key: "requirements",
-            requiredIds: o.requiredIds,
-            requirementsOnly: true,
-          },
+          ...(!policy || o.requiredIds.length
+            ? [
+                {
+                  units,
+                  key: "requirements",
+                  requiredIds: o.requiredIds,
+                  requirementsOnly: true,
+                },
+              ]
+            : []),
         ];
         for (const scope of scopes) {
           let completedNow = false;
@@ -957,7 +975,8 @@ async function runGuardedModel(o: Options): Promise<{
             throw new ModelDeferred();
           }
         }
-        const coverage = reports.pop();
+        const coverage =
+          !policy || o.requiredIds.length ? reports.pop() : undefined;
         const merged = mergeVerificationReports(hash, reports, coverage);
         validateGroundingReport(
           merged,
@@ -1133,6 +1152,7 @@ async function runGuardedModel(o: Options): Promise<{
             evidence: o.evidence,
             requiredIds: o.requiredIds,
             manifest: o.manifest,
+            context: o.context,
             state: await graph.getState(config),
             validate: o.validate,
             update: (values, asNode) =>

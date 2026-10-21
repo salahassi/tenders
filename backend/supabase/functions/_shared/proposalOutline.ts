@@ -1,3 +1,4 @@
+import { blueprintDraftInputs } from "./proposalBlueprint.ts";
 type Row = Record<string, any>;
 type Volume = "technical" | "financial" | "shared";
 
@@ -23,6 +24,7 @@ const equalIds = (left: unknown, right: unknown) =>
   JSON.stringify(left) === JSON.stringify(right);
 
 export function plannedDraftInputs(section: Row): Row[] {
+  if (section.workflow_version === 2) return blueprintDraftInputs(section);
   const ids: string[] = section.requirement_ids;
   const groups = Array.from(
     { length: Math.ceil(ids.length / partSize) },
@@ -115,6 +117,23 @@ export function createSectionOutline(
       return null;
     parentKeys.add(parent.key);
     const keys: string[] = [];
+    if (parent.workflow_version === 2 && parent.mode === "compliance_matrix") {
+      const matrix = sectionByKey.get(parent.key);
+      if (
+        !matrix?.generated_matrix ||
+        matrix.title !== parent.title ||
+        matrix.volume !== parent.volume
+      )
+        return null;
+      usedKeys.add(parent.key);
+      outline.groups.push({
+        parent_section_key: parent.key,
+        title: parent.title,
+        volume: parent.volume,
+        parts: [{ section_key: parent.key, part_index: 1, part_count: 1 }],
+      });
+      continue;
+    }
     if (!plannedDraftInputs(parent).every((input) => visit(input, 0, keys)))
       return null;
     outline.groups.push({

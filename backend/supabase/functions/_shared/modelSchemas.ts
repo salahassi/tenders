@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { sourcePageSchema } from "./sourceModel.ts";
+import { proposalBlueprintSchema } from "./proposalBlueprintSchema.ts";
 
 const short = z.string().max(3000),
   id = z.string().min(1).max(200),
@@ -34,6 +35,7 @@ export const blockSchema = z.discriminatedUnion("type", [
     .strict(),
 ]);
 export const primaryModelSchemas = {
+  plan_blueprint: proposalBlueprintSchema,
   inspect_source_page: sourcePageSchema,
   connection_probe: z.object({ status: z.literal("ready") }).strict(),
   summarize_review: z

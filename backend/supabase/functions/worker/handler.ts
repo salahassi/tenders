@@ -136,7 +136,7 @@ export function createWorkerHandler(
             succeeded,
           });
         }
-        const job = await backend.claim();
+        let job = await backend.claim();
         if (!job) return response({ data: { claimed: false } });
         const processClaimed = async () => {
           if (job.type === "model_probe") {
@@ -242,6 +242,25 @@ export function createWorkerHandler(
           });
         };
         const result = await processClaimed();
+        // Stage transitions and assembly need no inference slot. Commit a few
+        // ready local steps now, using the normal exclusive claim transaction.
+        // No model work is drained here, and cron remains crash recovery.
+        const localStartedAt = Date.now();
+        for (let count = 0; count < 3; count++) {
+          if (
+            Date.now() - localStartedAt >= 15000 ||
+            !(
+              backend.invocationBudgetMs -
+                (Date.now() - backend.invocationStartedAt) >
+              15000
+            )
+          )
+            break;
+          const local = await backend.internal("claim_backend_local_job");
+          if (!local) break;
+          job = local;
+          await processClaimed();
+        }
         try {
           await wakeReadyQueue(backend, job);
         } catch {

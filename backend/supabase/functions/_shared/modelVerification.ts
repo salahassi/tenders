@@ -2,13 +2,39 @@ import { candidateContent } from "./modelGrounding.ts";
 import { ModelError } from "./model.ts";
 
 export type ContentUnit = { id: string; text: string };
+export type VerificationPolicy = { version: 2; outputTokens: number };
+export function verificationPolicy(
+  context: any,
+): VerificationPolicy | undefined {
+  if (context?.workflow_version !== 2) return undefined;
+  const tokens = context.verification_output_tokens;
+  return {
+    version: 2,
+    outputTokens:
+      Number.isSafeInteger(tokens) && tokens >= 1024 && tokens <= 131072
+        ? tokens
+        : 16384,
+  };
+}
 /** Bound output independently of the provider's token limit. IDs always refer
  * to the original candidate; partitioning never edits or drops its text. */
-export function verificationBatches(candidate: unknown) {
+export function verificationBatches(
+  candidate: unknown,
+  policy?: VerificationPolicy,
+) {
   const units = candidateContent(candidate);
+  // New plans bind this policy in their immutable context. The budget leaves
+  // room for evidence quotations, claim verdicts and structured metadata; it
+  // does not omit content or weaken the validator. Legacy partitions stay exact.
+  const batchChars = policy
+    ? Math.max(2000, Math.min(18000, Math.floor(policy.outputTokens * 0.8)))
+    : 6000;
+  const batchUnits = policy
+    ? Math.max(12, Math.min(80, Math.floor(policy.outputTokens / 160)))
+    : 80;
   if (
-    units.length <= 96 &&
-    units.reduce((n, u) => n + u.text.length, 0) <= 8000
+    units.length <= (policy ? batchUnits : 96) &&
+    units.reduce((n, u) => n + u.text.length, 0) <= (policy ? batchChars : 8000)
   )
     return [];
   const batches: ContentUnit[][] = [];
@@ -17,7 +43,7 @@ export function verificationBatches(candidate: unknown) {
   for (const unit of units) {
     if (
       current.length &&
-      (current.length >= 80 || size + unit.text.length > 6000)
+      (current.length >= batchUnits || size + unit.text.length > batchChars)
     ) {
       batches.push(current);
       current = [];

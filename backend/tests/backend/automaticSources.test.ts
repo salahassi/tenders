@@ -461,7 +461,7 @@ it("can retry an independent discovery job without requiring a source row", asyn
   expect((await rpc("claim_backend_job")).id).toBe(j.id);
 });
 
-it("gives waiting collection a turn ahead of old model retries and yields again after an attempt", async () => {
+it("gives collection a guaranteed turn beside continuously eligible model retries", async () => {
   const s = await source();
   await f.command("source.collect", {
     id: s.id,
@@ -476,6 +476,12 @@ it("gives waiting collection a turn ahead of old model retries and yields again 
       [f.w, f.owner],
     )
   ).rows[0];
+  const initial = await rpc("claim_backend_job");
+  expect(initial.id).toBe(oldJob.id);
+  await f.db.query(
+    "update public.jobs set status='retry_wait',lease_token=null,lease_until=null,next_attempt_at=now() where id=$1",
+    [initial.id],
+  );
   const first = await rpc("claim_backend_job");
   expect(first).toMatchObject({ type: "source_collect", entity_id: s.id });
   await rpc("fail_collection", {
@@ -586,6 +592,10 @@ it.each([
 ] as const)(
   "gives poll priority only to an accepted outstanding request (%s, remote=%s)",
   async (state, remote, shouldPoll) => {
+    await f.db.query(
+      "insert into public.model_execution_settings(workspace_id,enabled,max_parallel_requests,created_by) values($1,true,2,$2)",
+      [f.w, f.owner],
+    );
     const assessment = await continuationJob("classify_opportunity", true);
     const proposal = await continuationJob("analyze_chunk");
     await f.db.query(
@@ -616,6 +626,10 @@ it.each([
 );
 
 it("never polls an accepted request before its saved retry time", async () => {
+  await f.db.query(
+    "insert into public.model_execution_settings(workspace_id,enabled,max_parallel_requests,created_by) values($1,true,2,$2)",
+    [f.w, f.owner],
+  );
   const assessment = await continuationJob("classify_opportunity", true);
   const proposal = await continuationJob("analyze_chunk");
   await f.db.query(

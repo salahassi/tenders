@@ -10,7 +10,10 @@ import {
 } from "./model.ts";
 import { candidateContent, validateGroundingReport } from "./modelGrounding.ts";
 import { modelSchemas } from "./modelSchemas.ts";
-import { verificationBatches } from "./modelVerification.ts";
+import {
+  verificationBatches,
+  verificationPolicy,
+} from "./modelVerification.ts";
 import {
   repairOnlyValidationArtifact,
   type ModelValidationDiagnostic,
@@ -28,6 +31,7 @@ export async function recoverInvalidVerification(o: {
   evidence: Evidence[];
   requiredIds: string[];
   manifest: Reference[];
+  context?: any;
   state: { next: readonly string[]; values: Record<string, any> };
   validate?: (result: any) => void;
   update: (
@@ -82,7 +86,7 @@ export async function recoverInvalidVerification(o: {
     blockedContent(JSON.stringify(report))
   )
     return false;
-  const batches = verificationBatches(candidate);
+  const batches = verificationBatches(candidate, verificationPolicy(o.context));
   const wholeKey = `verification-repair-${hash}`;
   let scope:
     | { units: { id: string; text: string }[]; requirementsOnly?: boolean }

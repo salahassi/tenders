@@ -15,6 +15,7 @@ import {
   taskInput,
   splitStep,
 } from "../../supabase/functions/_shared/generation";
+import { validateBlueprint } from "../../supabase/functions/_shared/proposalBlueprint";
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
   f = await workflowFixture();
@@ -169,7 +170,7 @@ async function runPlan(result: (ctx: any) => any = resultFor) {
   for (;;) {
     const job = await f.rpc("claim_backend_job");
     if (!job) break;
-    if (++count > 30) throw Error("Unbounded fixture");
+    if (++count > 45) throw Error("Unbounded fixture");
     const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
     if (ctx.step.task === "advance_plan") {
       const next = await nextStage(ctx);
@@ -190,6 +191,123 @@ async function runPlan(result: (ctx: any) => any = resultFor) {
   }
   return count;
 }
+it("admits the semantic workflow without company files or a custom template and exports its reviewed matrix", async () => {
+  const s = await setup();
+  await f.db.exec(
+    "delete from public.templates;update app_private.proposal_workflow_admission set enabled=true",
+  );
+  await f.db.query(
+    "update app_private.proposal_workflow_admission set trial_opportunity_id=$1",
+    [s.opp.id],
+  );
+  await f.db.query(
+    "insert into public.model_execution_settings(workspace_id,enabled,created_by) values($1,true,$2)",
+    [f.w, f.owner],
+  );
+  const plan = await f.command("proposal.generate", {
+    id: s.opp.id,
+    expected_revision: s.opp.revision,
+  });
+  expect(plan.workflow_version).toBe(2);
+  expect(plan.frozen_context.knowledge).toEqual([]);
+  const order: string[] = [];
+  await runPlan((ctx) => {
+    const input = taskInput(ctx);
+    order.push(ctx.plan.stage);
+    if (input.task !== "plan_blueprint") return resultFor(ctx);
+    const required = ctx.plan.frozen_context.template.required_sections.filter(
+      (s: any) => s.applicable,
+    );
+    const narrative = required.find(
+      (s: any) => !s.key.includes("summary") && !s.key.includes("compliance"),
+    );
+    const ids = input.context.blueprint_requirement_ids;
+    const result = {
+      version: 2,
+      processed_requirement_ids: ids,
+      decisions: [],
+      questions: [],
+      sections: required.map((section: any) => {
+        const mode = section.key.includes("summary")
+          ? "executive_summary"
+          : section.key.includes("compliance")
+            ? "compliance_matrix"
+            : "narrative";
+        return {
+          key: section.key,
+          title: section.title,
+          purpose: section.purpose,
+          volume: section.volume,
+          mode,
+          units:
+            mode === "compliance_matrix"
+              ? []
+              : [
+                  {
+                    key: section.key + "-unit",
+                    title: section.title,
+                    purpose: section.purpose,
+                    requirement_ids: section.key === narrative.key ? ids : [],
+                    secondary_links: [],
+                    decision_ids: [],
+                    target_words: 300,
+                  },
+                ],
+        };
+      }),
+    };
+    validateBlueprint(result as any, ids, required);
+    return result;
+  });
+  const finished = (
+    await f.db.query<any>("select * from public.generation_plans where id=$1", [
+      plan.id,
+    ])
+  ).rows[0];
+  expect(finished).toMatchObject({
+    status: "completed",
+    stage: "completed",
+    workflow_version: 2,
+  });
+  expect(order.indexOf("synthesis")).toBeGreaterThan(
+    order.lastIndexOf("commercial"),
+  );
+  expect(order.at(-1)).toBe("reconciliation");
+  const version = (
+    await f.db.query<any>(
+      "select * from public.proposal_versions where plan_id=$1",
+      [plan.id],
+    )
+  ).rows[0];
+  expect(version.section_outline?.groups.length).toBeGreaterThan(0);
+  const matrix = (
+    await f.db.query<any>(
+      "select * from public.proposal_sections where proposal_version_id=$1 and section_key like '%compliance%'",
+      [version.id],
+    )
+  ).rows[0];
+  expect(matrix.content_blocks[0].headers).toContain("Coverage");
+  expect(matrix.body).toContain("Answered");
+  const request = await f.command("export.prepare", {
+    proposal_version_id: version.id,
+    expected_revision: version.revision,
+    mode: "draft",
+    volume: "combined",
+  });
+  expect(
+    buildExportModel(request).blocks.some(
+      (b: any) => b.type === "table" && JSON.stringify(b).includes("Coverage"),
+    ),
+  ).toBe(true);
+  await expect(
+    f.command("export.prepare", {
+      proposal_version_id: version.id,
+      expected_revision: version.revision,
+      mode: "final",
+      volume: "combined",
+    }),
+  ).rejects.toThrow("APPROVAL_REQUIRED");
+});
 it("requires extraction review before recording generation", async () => {
   const s = await setup(false);
   await expect(

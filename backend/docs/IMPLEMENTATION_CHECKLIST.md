@@ -1,15 +1,64 @@
 # Implementation status and continuation plan
 
-## October 21 — bounded parallel background model requests (in progress)
+## October 21 — approved throughput and coherence follow-up
+
+The Owner reviewed the plan and explicitly authorized implementation.
+[PROPOSAL_PERFORMANCE_PLAN.md](PROPOSAL_PERFORMANCE_PLAN.md) extends P3/P4/P5/P6
+of the original model execution plan with fair queue scheduling, semantic work
+units, shared solution decisions and scoped verification/repair. It records
+measurable acceptance gates and versioned rollout. Status: implementation in
+progress; deployment and acceptance remain separate pending gates.
+The already-running proposal retains its saved path. This does not revert the
+previously deployed two-request concurrency setting or general-section fix.
+
+Implemented for this release: durable weighted class/owner scheduling, eligibility
+and model-capacity admission, and up to three local transitions per invocation
+with a time budget. Local assembly can wake at full inference capacity. The new
+proposal workflow is installed with admission disabled and supports admission
+restricted to one real trial opportunity: a strict blueprint gives
+each requirement one primary response, records shared labeled decisions and
+semantic writing units, writes the executive summary after the main sections,
+packs review around full sections, and adds cross-section reconciliation. The
+application builds the compliance matrix from actual review responses and
+deduplicates identical questions. Version 1 inputs, routes, partitions and paid
+work remain unchanged. Configured planning routes also serve the new blueprint.
+
+Verification partition sizes for version 2 derive from the frozen task output
+profile. Every content unit, including undeclared claims, remains in the review;
+an empty requirement-only pass is omitted only when no requirement IDs are
+assigned. Versioned cache identities and the existing bounded LangGraph repair
+allowances are retained. This is not a cross-job semantic claim cache.
+
+Local evidence: **1,134 backend tests in 66 files pass**, including actual
+PostgreSQL queue fairness/capacity/dependency tests and a canonical semantic
+generation-to-export-snapshot journey with no company evidence or custom
+template. The separate generation integration suite passes **27/27**. Both
+entrypoints pass frozen Deno checking. Backend typecheck/build and frontend
+typecheck/build pass; **205 frontend tests in 36 files pass**. The last focused
+run also covers compact, reversible requirement references: UUIDs remain in
+business records while the planner receives short stable labels. Deployment is
+recorded below when finished. The first full queue regression found four expectations
+around capacity and collection/detail ordering; capacity coverage now checks
+both queue admission and the reservation defense, while collection/detail
+ordering remains fair within the background class. No hosted success is inferred
+from these synthetic fixtures.
+
+Remaining gates: hosted deployment/readback and controlled real new-version
+acceptance, actual downloadable files and measured submission/timing savings.
+The plan's broader cross-job claim receipts, automatic passage-only editorial
+repair and hierarchical planning for inputs beyond one blueprint's context
+remain follow-up work; the existing per-result bounded repair still applies.
+
+## October 21 — bounded parallel background model requests
 
 The owner asked about parallel workers during the real proposal run. Its one
-workspace-wide accepted request slot lets background assessment hold up proposal
-verification. A configurable limit of 1–4 task-routed model requests is being
-added, with serial behavior retained until configured. Worker leases remain
+workspace-wide accepted request slot let background assessment hold up proposal
+verification. A configurable limit of 1–4 task-routed model requests is now
+available, with serial behavior retained until configured. Worker leases remain
 serialized. Reservations keep the workspace lock, same-job exclusion, frozen
 request identity, unknown-usage guards and paid-call budgets. Accepted requests
 remain pollable when the limit is reduced. Owner-only audited settings expose
-the limit in Models & providers. No live limit has changed yet.
+the limit in Models & providers. Live activation and acceptance are recorded below.
 
 Local verification: the complete backend run covered 1,117 tests; 1,116 passed
 and one new wake test exposed nondeterministic fixture ordering between two due
@@ -25,7 +74,34 @@ The new settings component suite passes 7/7. CI, deployment, real two-request
 overlap and actual Word export remain pending. Generated OpenAPI was refreshed
 from the canonical command schemas, including previously undocumented commands.
 
-## October 21 — general section context correction (in progress)
+Release `c3415f1f302e16aca861ba31bb39d0a6f1b3d182` passed the complete
+[CI and Pages workflow 39676627548](https://github.com/salahassi/tenders/actions/runs/39676627548),
+including both full test suites, typechecks, Deno and frontend build. Hosted
+migration version is `20261021211205`. API v78 and worker v102 are ACTIVE;
+all 31 and 46 returned runtime files respectively match the prepared sources.
+Security/performance advisory categories and counts are unchanged. The private
+limit helper is not executable by anon, authenticated or service_role.
+
+At **21:16:03 UTC**, the existing audited Owner command changed the limit from
+one to two (settings revision 1 → 2), preserving routing admission time and all
+existing requests. At **21:16:59 UTC**, actual accepted OpenAI requests overlapped:
+the retained background assessment on `gpt-6-luna` and proposal drafting on
+`gpt-6.1-sol`, with distinct jobs/request IDs. Later samples also show OpenAI and
+Gemini overlap, no more than two reservations and at most one worker lease.
+This demonstrates concurrent provider work; it does not claim parallel database
+worker leases or a completed proposal. The real plan was still drafting 62/67
+at the initial activation check.
+
+Authenticated hosted Chromium acceptance at 1440px and 390px confirms the saved
+limit of two is visible, read-only for the existing Editor account, with no
+horizontal overflow. The settings card was visually inspected at both sizes.
+An initial exact accessible-label locator included the select options and timed
+out; scoping the select to its section fixed the QA harness without application
+changes. Owner mutation is evidenced by the audited command and integration
+tests, not by an Owner browser session. At 21:30 UTC, the existing proposal had
+completed 66/67 drafting parts; full Word acceptance remains separate.
+
+## October 21 — general section context correction
 
 Real-content inspection found that the retained executive summary incorrectly
 said no RFP was supplied. Its template section had no mapped requirement IDs;
@@ -52,6 +128,22 @@ dependency tree; both Deno entrypoints pass with that lock. CI checks also honor
 the lock instead of bypassing it. Migration `unmapped_draft_rfp_context` is
 deployed. Only the old executive-summary job is replaced; all other paid work is
 retained and the complete Word journey remains in progress.
+
+Hosted content acceptance at **21:39 UTC** confirms the replacement executive
+summary completed through the normal writer and verifier path. It names the
+actual buyer/project and describes the supplied scope, schedule, hosting and
+governance requirements. The prior assertion that no RFP was supplied is no
+longer present. All 67 drafting parts are now complete;
+commercial planning, final review, assembly and real download remain pending.
+
+The owner's partitioning question also exposed a performance/quality limit:
+planning maps requirements to one or more sections, then drafting uses a fixed
+eight-requirement group size. This plan has 17 logical chapters and 67 parts.
+Writers receive their mapped requirements and evidence but no shared solution
+decision ledger or other drafted prose. Batch review checks overlapping sections
+for its requirements; it is not a complete editorial coherence pass. A semantic
+outline, primary requirement ownership, shared decisions and scoped consistency
+review remain improvements; no current paid parts were regenerated to test them.
 
 ## October 21 — resumed real proposal acceptance
 

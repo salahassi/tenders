@@ -2,7 +2,10 @@ import type { Backend } from "./backend.ts";
 import type { ModelGraphStore } from "./modelGraphStore.ts";
 import { modelPrompt, sha256, type Evidence, type Reference } from "./model.ts";
 import { groundingDefects, validateGroundingReport } from "./modelGrounding.ts";
-import { verificationBatches } from "./modelVerification.ts";
+import {
+  verificationBatches,
+  verificationPolicy,
+} from "./modelVerification.ts";
 import type { PrimaryModelTask } from "./modelSchemas.ts";
 
 /** Undo a queued repair made obsolete by a stricter semantic interpretation.
@@ -51,7 +54,7 @@ export async function recoverUnstartedRepair(o: {
     count > 1 ? previous.value.result.result : previous.value.result;
   const hash = await sha256(JSON.stringify(candidate));
   const report = retained.value.result;
-  const batches = verificationBatches(candidate);
+  const batches = verificationBatches(candidate, verificationPolicy(o.context));
   let units: { id: string; text: string }[] = [];
   let validScope = false;
   for (const batch of batches) {

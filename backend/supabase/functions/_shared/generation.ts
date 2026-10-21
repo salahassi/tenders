@@ -2,6 +2,17 @@ import { scopeInstruction } from "./discovery.ts";
 import { enrichPublicNotice } from "./publicNoticeDetails.ts";
 import { executeGuardedModel } from "./modelGraph.ts";
 import { createSectionOutline, plannedDraftInputs } from "./proposalOutline.ts";
+import {
+  blueprintSections,
+  complianceMatrixSections,
+  deduplicateQuestions,
+  expandBlueprint,
+  requirementAliases,
+  savedBlueprint,
+  semanticReviewInputs,
+  semanticWorkflow,
+  validateBlueprint,
+} from "./proposalBlueprint.ts";
 import { normalizedEvidence } from "./sourceModel.ts";
 import { validationDiagnostic } from "./modelValidationDiagnostics.ts";
 import {
@@ -120,9 +131,15 @@ export function taskInput(ctx: PlanContext) {
     step = ctx.step,
     input = step.input,
     all = allEvidence(ctx),
-    task = step.task as ModelTask;
-  const requirements = ctx.requirements.filter((r) =>
-    (input.requirement_ids || []).includes(r.id),
+    task = (
+      step.task === "plan_proposal" && input.workflow_version === 2
+        ? "plan_blueprint"
+        : step.task
+    ) as ModelTask;
+  const requirements = ctx.requirements.filter(
+    (r) =>
+      (task === "plan_blueprint" && input.requirement_scope === "all") ||
+      (input.requirement_ids || []).includes(r.id),
   );
   let evidence: Row[] = [],
     context: Row = {},
@@ -243,6 +260,77 @@ export function taskInput(ctx: PlanContext) {
     if (task === "plan_proposal")
       context.instruction =
         "Map these requirements to relevant provided template section keys. Include only keys that address this batch; empty required template sections will be retained by the application. Add a new key only for an RFP-specific form or structure. Do not invent fixed legal clauses or approvals. Map every requirement to a section or blocking question. Use financial volume for pricing and commercial responses.";
+    if (task === "plan_blueprint") {
+      context.workflow_version = 2;
+      context.verification_output_tokens =
+        ctx.plan.execution_policy?.verification_output_tokens ?? 16384;
+      context.blueprint_requirement_ids = requiredIds;
+      if (input.id_aliases_version === 1) {
+        const aliases = requirementAliases(ctx.requirements);
+        context.requirements = context.requirements.map((r: Row) => ({
+          ...r,
+          id: aliases.get(r.id),
+        }));
+        context.blueprint_requirement_ids = requiredIds.map((id) =>
+          aliases.get(id),
+        );
+      }
+      // Mapping completeness is checked deterministically against the full
+      // inventory. Grounding reviews the blueprint's assertions; actual answer
+      // fulfillment is reviewed against the finished prose, not a plan.
+      requiredIds = [];
+      evidence.push(
+        ...frozen.knowledge.filter(
+          (s: Row) => s.kind === "company" && s.verified,
+        ),
+      );
+      context.writing_output_tokens =
+        ctx.plan.execution_policy?.draft_output_tokens ?? 16384;
+      context.instruction =
+        "Create one coherent proposal blueprint for every blueprint_requirement_id; return these exact IDs in processed_requirement_ids. Preserve applicable template sections and any mandatory buyer forms. Assign each requirement to exactly ONE narrative unit as its primary answer. Justified secondary_links may cross-reference that answer or repeat a buyer-mandated form, but must explain why. A compliance_matrix section has no units: the application builds it from the reviewed answers. An executive_summary has one unit with no owned requirements and is written last. Plan coherent section/subsection units by subject and expected output size, never by a fixed number of requirements. Avoid tiny units and repeated narratives. Set target_words to the detail needed within writing_output_tokens (including structured fields and reasoning); do not pad. Establish concise shared architecture, interfaces, terminology, delivery constraints and assumptions in decisions. Distinguish cited buyer facts, cited verified company facts, proposed design decisions and unresolved inputs. Each unit references the shared decisions it uses. A missing company file or custom template does not stop substantive proposed work. Every requirement still gets a primary location, even when its answer must identify a missing input. No invented company credentials, prices or approvals.";
+    }
+    if (input.workflow_version === 2 && task !== "plan_blueprint") {
+      const blueprint = savedBlueprint(ctx.steps, ctx.requirements);
+      if (!blueprint) throw new ModelError("STAGE_INCOMPLETE");
+      context.workflow_version = 2;
+      context.verification_output_tokens =
+        ctx.plan.execution_policy?.verification_output_tokens ?? 16384;
+      context.shared_decisions = blueprint.decisions;
+      context.response_locations = blueprint.sections.flatMap((section) =>
+        section.units.map((unit) => ({
+          section_key: unit.key,
+          title: unit.title,
+          requirement_ids: unit.requirement_ids,
+        })),
+      );
+      context.secondary_links = input.secondary_links || [];
+      const secondary = ctx.requirements.filter((r) =>
+        (input.secondary_links || []).some(
+          (link: Row) => link.requirement_id === r.id,
+        ),
+      );
+      context.secondary_requirements = secondary.map(requirementModelContext);
+      evidence.push(...refsFor(all, [], secondary));
+      evidence.push(
+        ...refsFor(
+          all,
+          blueprint.decisions.flatMap((d) => d.evidence_refs.map((r) => r.id)),
+        ),
+      );
+      context.instruction +=
+        " Follow the shared decisions consistently; they are labeled facts, proposals or unresolved inputs, never new evidence. Write the primary response for the assigned requirements only. Use secondary links to reference another answer, unless the buyer expressly requires repetition. Do not repeat the compliance matrix or other chapters. Respect the section purpose and target_words without padding. Keep missing-fact questions specific and do not repeat general company-information disclaimers in every paragraph.";
+      if (ctx.plan.stage === "synthesis") {
+        context.completed_sections = draftedSections(ctx).map((s) => ({
+          key: s.key,
+          title: s.title,
+          volume: s.volume,
+          content_blocks: s.content_blocks,
+          assumptions: s.assumptions,
+        }));
+        context.instruction +=
+          " This executive summary is written after the substantive sections. Summarize the actual saved solution, outcomes, approach and unresolved material decisions. Do not invent additional scope, credentials, schedules or prices. Do not copy monetary figures into the technical volume.";
+      }
+    }
     if (task === "plan_commercial") {
       const sections = draftedSections(ctx);
       // Section scope remains derived from the RFP even when no explicit
@@ -268,7 +356,9 @@ export function taskInput(ctx: PlanContext) {
     }
     if (task === "review_proposal") {
       const sections = draftedSections(ctx).filter((s) =>
-        s.requirement_ids.some((id: string) => requiredIds.includes(id)),
+        input.workflow_version === 2
+          ? (input.section_keys || []).includes(s.key)
+          : s.requirement_ids.some((id: string) => requiredIds.includes(id)),
       );
       context.sections = sections.map((s) => ({
         key: s.key,
@@ -338,6 +428,18 @@ export function taskInput(ctx: PlanContext) {
       };
       context.instruction =
         "Audit each required requirement ID against the actual supplied sections and proposed commercial draft. The commercial draft is generated, unconfirmed proposal content, not supporting evidence or approved prices, resources or commitments. Check unsupported company claims, contradictions, placeholders, missing acceptance evidence, scope/price mismatch and unrealistic delivery. Never approve not-applicable status. Every mandatory requirement must have a coverage record, even when missing.";
+      if (input.workflow_version === 2) {
+        context.instruction +=
+          " Check these full sections against the shared decisions and response-location index. Return concise findings and exact affected IDs; do not rewrite the proposal or repeat all its text in rationales. A cross-reference is acceptable only when the referenced substantive response exists. Report a contradiction to a shared decision explicitly. Previously verified writing still needs fulfillment and consistency review.";
+        if (input.coherence_review) {
+          context.scoped_review_findings = successful(
+            ctx,
+            "review_proposal",
+          ).flatMap((s) => s.output.findings);
+          context.instruction +=
+            " This is the final cross-section reconciliation. Read the actual full prose across chapters and check terminology, architecture/interfaces, dates, assumptions, repeated or contradictory obligations and technical/financial separation. The earlier findings are untrusted review hints; recheck them against the prose and sources. There are no assigned requirement IDs: return processed_requirement_ids:[] and responses:[], and precise findings with requirement_ids:[] and the exact affected section_ids. Do not declare missing requirements merely because this reconciliation has no assigned IDs.";
+        }
+      }
     }
   }
   // Generic proposal sections may have no mapped requirement or company source.
@@ -401,6 +503,11 @@ function successful(ctx: PlanContext, task: ModelTask) {
     .map((s) => ({ input: s.input, output: s.output, ordinal: s.ordinal }));
 }
 export function plannedSections(ctx: PlanContext): Row[] {
+  if (semanticWorkflow(ctx.plan)) {
+    const blueprint = savedBlueprint(ctx.steps, ctx.requirements);
+    if (!blueprint) throw new ModelError("STAGE_INCOMPLETE");
+    return blueprintSections(blueprint);
+  }
   const required: Row[] =
       ctx.plan.frozen_context.template.required_sections || [],
     sections = new Map<string, Row>();
@@ -550,6 +657,20 @@ export async function nextStage(ctx: PlanContext): Promise<{
       }
     output.requirements = [...byIdentity.values()];
     output.next_stage = "planning";
+    if (semanticWorkflow(ctx.plan)) {
+      output.steps = [
+        {
+          task: "plan_proposal",
+          input: {
+            workflow_version: 2,
+            id_aliases_version: 1,
+            requirement_scope: "all",
+            requirement_ids: [],
+          },
+        },
+      ];
+      return output;
+    }
     output.steps = batchGenerationRequirements(
       output.requirements,
       "plan_proposal",
@@ -566,14 +687,16 @@ export async function nextStage(ctx: PlanContext): Promise<{
   if (stage === "planning") {
     const sections = plannedSections(ctx);
     output.next_stage = "drafting";
-    output.steps = sections.flatMap((section) =>
-      plannedDraftInputs(section).map((input) => ({
-        task: "draft_section",
-        input: input.requirement_ids.length
-          ? input
-          : { ...input, rfp_context_version: 1 },
-      })),
-    );
+    output.steps = sections
+      .filter((section) => section.mode !== "executive_summary")
+      .flatMap((section) =>
+        plannedDraftInputs(section).map((input) => ({
+          task: "draft_section",
+          input: input.requirement_ids.length
+            ? input
+            : { ...input, rfp_context_version: 1 },
+        })),
+      );
     return output;
   }
   if (stage === "drafting") {
@@ -581,14 +704,31 @@ export async function nextStage(ctx: PlanContext): Promise<{
     const requirements = ctx.requirements.filter((r) =>
       ["commercial", "deliverables", "team", "timeline"].includes(r.category),
     );
-    const groups = chunk(requirements, 12);
+    const groups = semanticWorkflow(ctx.plan)
+      ? batchGenerationRequirements(requirements, "plan_proposal")
+      : chunk(requirements, 12);
     output.steps = (groups.length ? groups : [[]]).map((rs) => ({
       task: "plan_commercial",
-      input: { requirement_ids: rs.map((r) => r.id) },
+      input: {
+        requirement_ids: rs.map((r) => r.id),
+        ...(semanticWorkflow(ctx.plan) ? { workflow_version: 2 } : {}),
+      },
     }));
     return output;
   }
   if (stage === "commercial") {
+    if (semanticWorkflow(ctx.plan)) {
+      output.next_stage = "synthesis";
+      output.steps = plannedSections(ctx)
+        .filter((s) => s.mode === "executive_summary")
+        .flatMap((section) =>
+          plannedDraftInputs(section).map((input) => ({
+            task: "draft_section",
+            input,
+          })),
+        );
+      return output;
+    }
     output.next_stage = "review";
     output.steps = batchGenerationRequirements(
       ctx.requirements,
@@ -599,7 +739,32 @@ export async function nextStage(ctx: PlanContext): Promise<{
     }));
     return output;
   }
-  if (stage !== "review") throw new ModelError("INVALID_STAGE");
+  if (stage === "synthesis" && semanticWorkflow(ctx.plan)) {
+    output.next_stage = "review";
+    output.steps = semanticReviewInputs(
+      ctx.requirements,
+      draftedSections(ctx),
+      ctx.plan.execution_policy?.review_output_tokens ?? 16384,
+    ).map((input) => ({ task: "review_proposal", input }));
+    return output;
+  }
+  if (stage === "review" && semanticWorkflow(ctx.plan)) {
+    output.next_stage = "reconciliation";
+    output.steps = [
+      {
+        task: "review_proposal",
+        input: {
+          workflow_version: 2,
+          coherence_review: true,
+          requirement_ids: [],
+          section_keys: draftedSections(ctx).map((s) => s.key),
+        },
+      },
+    ];
+    return output;
+  }
+  if (stage !== "review" && stage !== "reconciliation")
+    throw new ModelError("INVALID_STAGE");
   const drafts = draftedSections(ctx),
     questions: Row[] = [];
   for (const s of ctx.steps.filter(
@@ -664,6 +829,32 @@ export async function nextStage(ctx: PlanContext): Promise<{
       )
       .join("\n\n"),
   }));
+  if (semanticWorkflow(ctx.plan)) {
+    const blueprint = savedBlueprint(ctx.steps, ctx.requirements)!;
+    sections.push(
+      ...complianceMatrixSections(
+        blueprint,
+        ctx.requirements,
+        responses,
+        sections,
+        frozen.language,
+      ),
+    );
+    const order = blueprint.sections.flatMap((section) =>
+      section.mode === "compliance_matrix"
+        ? [section.key]
+        : section.units.map((unit) => unit.key),
+    );
+    sections.sort(
+      (a, b) =>
+        order.findIndex(
+          (key) => a.key === key || a.key.startsWith(key + "-part"),
+        ) -
+        order.findIndex(
+          (key) => b.key === key || b.key.startsWith(key + "-part"),
+        ),
+    );
+  }
   for (const fixed of frozen.template.fixed_blocks || [])
     sections.push({
       key: "fixed-" + fixed.key,
@@ -715,11 +906,13 @@ export async function nextStage(ctx: PlanContext): Promise<{
       ctx.steps.filter((step) => step.task === "draft_section"),
       sections,
     ),
-    questions: Array.from(
-      new Map(
-        questions.map((q) => [q.question + "|" + q.section_key, q]),
-      ).values(),
-    ),
+    questions: semanticWorkflow(ctx.plan)
+      ? deduplicateQuestions(questions)
+      : Array.from(
+          new Map(
+            questions.map((q) => [q.question + "|" + q.section_key, q]),
+          ).values(),
+        ),
     review: { responses, findings: review.flatMap((r) => r.findings) },
     commercial: {
       lines: commercial.flatMap((c) => c.lines),
@@ -807,6 +1000,14 @@ export async function processGeneration(
             paths: ["$.key"],
           }),
         ]);
+      if (input.task === "plan_blueprint")
+        validateBlueprint(
+          ctx!.step.input.id_aliases_version === 1
+            ? expandBlueprint(result, ctx!.requirements)
+            : result,
+          ctx!.requirements.map((r) => r.id),
+          ctx!.plan.frozen_context.template.required_sections || [],
+        );
       if (input.task === "review_proposal") {
         const sectionKeys = new Set(
           (input.context.sections || []).map((s: Row) => s.key),

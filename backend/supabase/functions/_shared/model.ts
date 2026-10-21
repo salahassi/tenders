@@ -137,6 +137,7 @@ export const caps: Record<ModelTask, number> = {
   // bounded split/repair path when an individual response still truncates.
   analyze_chunk: 8192,
   plan_proposal: 8192,
+  plan_blueprint: 16384,
   draft_section: 8192,
   plan_commercial: 8192,
   review_proposal: 8192,
@@ -511,6 +512,15 @@ export function validateModelResult(
     !sameIds(result.processed_requirement_ids, requiredIds)
   )
     throw coverageError(["$.processed_requirement_ids"], requiredIds);
+  if (task === "plan_blueprint") {
+    for (const [index, decision] of result.decisions.entries())
+      validateQuotes(
+        decision.evidence_refs,
+        evidence,
+        decision.kind === "company_fact" ? "company" : undefined,
+        `$.decisions[${index}].evidence_refs`,
+      );
+  }
   if (task === "plan_proposal") {
     if (result.sections.some((s: any) => s.key.startsWith("fixed-")))
       throw new ModelError("TEMPLATE_BLOCK_OVERRIDE");

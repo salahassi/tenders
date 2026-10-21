@@ -154,6 +154,18 @@ it("wakes independent ready work only when a configured request slot is availabl
   expect(await f.rpc("claim_backend_job_v2")).toBeNull();
 });
 
+it("wakes and claims local assembly even when every inference slot is reserved", async () => {
+  await acceptedPoll();
+  const done = await job("succeeded");
+  const local = await job();
+  await f.db.query("update public.jobs set type='advance_plan' where id=$1", [
+    local.id,
+  ]);
+  expect(await wake(done.id)).toBe(true);
+  expect(await dispatches()).toBe(1);
+  expect((await f.rpc("claim_backend_local_job")).id).toBe(local.id);
+});
+
 it("keeps an accepted poll wake eligible beside another job's accepted request, even after lowering capacity", async () => {
   const { claimed, usage } = await acceptedPoll();
   const other = await job("retry_wait", "MODEL_IN_PROGRESS");
