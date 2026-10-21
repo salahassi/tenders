@@ -653,115 +653,198 @@ it("isolates phase resumptions while preserving unknown requests and rejecting c
   ).toEqual({ state: "unknown", actual_input: null, actual_output: null });
 });
 
-it("durably verifies large candidates in separate content and coverage batches without rewriting completed work", async () => {
-  const { executeGuardedModel } =
-    await import("../../supabase/functions/_shared/modelGraph");
-  const { job, backend, envs } = await configure();
-  const text = "Proposed approach requires buyer confirmation. ".repeat(42);
-  const candidate = {
-    key: "approach",
-    title: "Approach",
-    content_blocks: Array.from({ length: 9 }, () => ({
-      type: "paragraph",
-      text,
-    })),
-    requirement_ids: ["required-1"],
-    evidence_refs: [],
-    company_claims: [],
-    assumptions: [],
-    questions: [],
-  };
-  let writes = 0;
-  const batches = new Set<string>();
-  const fetcher: typeof fetch = async (_url, init) => {
-    const prompt = JSON.parse(
-      JSON.parse(String(init?.body)).messages[1].content.split(
-        "\nJSON schema: ",
-      )[0],
-    );
-    let result: any;
-    if (prompt.task === "draft_section") {
-      writes++;
-      result = candidate;
-    } else {
-      const c = prompt.untrusted_data;
-      const coverage = c.verification_scope === "requirements_only";
-      expect(["content_batch", "requirements_only"]).toContain(
-        c.verification_scope,
+it.each([20000, 5000])(
+  "durably verifies content batches and finalizes coverage in the same lease only with time remaining (%i ms)",
+  async (finalRemainingMs) => {
+    const { executeGuardedModel } =
+      await import("../../supabase/functions/_shared/modelGraph");
+    const { candidateContent } =
+      await import("../../supabase/functions/_shared/modelGrounding");
+    const { job, backend, envs } = await configure();
+    let now = Date.now();
+    vi.spyOn(Date, "now").mockImplementation(() => now);
+    const invocationBudgetMs = 130000;
+    let activeLease = job.lease_token;
+    let coverageLease: string | undefined;
+    const calls: { lease: string; scope: string }[] = [];
+    const text = "Proposed approach requires buyer confirmation. ".repeat(42);
+    const candidate = {
+      key: "approach",
+      title: "Approach",
+      content_blocks: Array.from({ length: 9 }, () => ({
+        type: "paragraph",
+        text,
+      })),
+      requirement_ids: ["required-1"],
+      evidence_refs: [],
+      company_claims: [],
+      assumptions: [],
+      questions: [],
+    };
+    let writes = 0;
+    const batches = new Set<string>();
+    const fetcher: typeof fetch = async (_url, init) => {
+      const prompt = JSON.parse(
+        JSON.parse(String(init?.body)).messages[1].content.split(
+          "\nJSON schema: ",
+        )[0],
       );
-      const key =
-        c.verification_scope + c.content_units.map((u: any) => u.id).join(",");
-      expect(batches.has(key)).toBe(false);
-      batches.add(key);
-      result = {
-        checked_candidate_hash: c.candidate_hash,
-        reviewed_all_content: true,
-        processed_content_ids: c.content_units.map((u: any) => u.id),
-        claims: coverage
-          ? []
-          : [
-              {
-                id: "claim",
-                claim: "Proposed approach",
-                candidate_quote: c.content_units[0].text,
-                kind: "assumption",
-                status: "supported",
-                source_refs: [],
-                finding: "Conditional proposed work",
-              },
-            ],
-        processed_requirement_ids: coverage ? ["required-1"] : [],
-        requirement_checks: coverage
-          ? [
-              {
-                requirement_id: "required-1",
-                status: "supported",
-                candidate_quote:
-                  "Proposed approach requires buyer confirmation.",
-                source_refs: [],
-                finding: "Proposed work is explicit.",
-              },
-            ]
-          : [],
-        findings: [],
-      };
-    }
-    return Response.json({
-      choices: [
-        { finish_reason: "stop", message: { content: JSON.stringify(result) } },
-      ],
-      usage: { prompt_tokens: 10, completion_tokens: 8 },
-    });
-  };
-  let current = job,
-    outcome;
-  for (let i = 0; i < 12; i++) {
-    try {
-      outcome = await executeGuardedModel({
-        backend,
-        job: current,
-        prefix: `step:${job.id}`,
-        task: "draft_section",
-        context: {},
-        evidence: [],
-        requiredIds: ["required-1"],
-        manifest: [],
-        environments: envs,
-        language: "en",
-        repair: false,
-        fetcher,
+      let result: any;
+      calls.push({
+        lease: activeLease,
+        scope: prompt.untrusted_data.verification_scope ?? "writer",
       });
-      break;
-    } catch (error) {
-      if (!(error instanceof ModelDeferred)) throw error;
-      current = await rpc("claim_backend_job_v2");
-      expect(current.id).toBe(job.id);
+      if (prompt.task === "draft_section") {
+        writes++;
+        result = candidate;
+      } else {
+        const c = prompt.untrusted_data;
+        const coverage = c.verification_scope === "requirements_only";
+        if (coverage) {
+          coverageLease = activeLease;
+          now += invocationBudgetMs - finalRemainingMs;
+        }
+        expect(["content_batch", "requirements_only"]).toContain(
+          c.verification_scope,
+        );
+        const key =
+          c.verification_scope +
+          c.content_units.map((u: any) => u.id).join(",");
+        expect(batches.has(key)).toBe(false);
+        batches.add(key);
+        result = {
+          checked_candidate_hash: c.candidate_hash,
+          reviewed_all_content: true,
+          processed_content_ids: c.content_units.map((u: any) => u.id),
+          claims: coverage
+            ? []
+            : [
+                {
+                  id: "claim",
+                  claim: "Proposed approach",
+                  candidate_quote: c.content_units[0].text,
+                  kind: "assumption",
+                  status: "supported",
+                  source_refs: [],
+                  finding: "Conditional proposed work",
+                },
+              ],
+          processed_requirement_ids: coverage ? ["required-1"] : [],
+          requirement_checks: coverage
+            ? [
+                {
+                  requirement_id: "required-1",
+                  status: "supported",
+                  candidate_quote:
+                    "Proposed approach requires buyer confirmation.",
+                  source_refs: [],
+                  finding: "Proposed work is explicit.",
+                },
+              ]
+            : [],
+          findings: [],
+        };
+      }
+      return Response.json({
+        choices: [
+          {
+            finish_reason: "stop",
+            message: { content: JSON.stringify(result) },
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 8 },
+      });
+    };
+    let current = job,
+      outcome;
+    for (let i = 0; i < 12; i++) {
+      activeLease = current.lease_token;
+      Object.assign(backend, { invocationStartedAt: now, invocationBudgetMs });
+      try {
+        outcome = await executeGuardedModel({
+          backend,
+          job: current,
+          prefix: `step:${job.id}`,
+          task: "draft_section",
+          context: {},
+          evidence: [],
+          requiredIds: ["required-1"],
+          manifest: [],
+          environments: envs,
+          language: "en",
+          repair: false,
+          fetcher,
+        });
+        expect(calls.filter((call) => call.lease === activeLease)).toHaveLength(
+          finalRemainingMs >= 10000 ? 1 : 0,
+        );
+        break;
+      } catch (error) {
+        if (!(error instanceof ModelDeferred)) throw error;
+        const sent = calls.filter((call) => call.lease === activeLease);
+        expect(sent).toHaveLength(1);
+        expect(
+          sent[0].scope === "requirements_only" && finalRemainingMs >= 10000,
+        ).toBe(false);
+        // Every content lease stops after its one call and saves the report;
+        // a final coverage lease yields only when local commit time is short.
+        if (sent[0].scope !== "writer") {
+          const cached = (
+            await f.db.query<any>(
+              "select result_key from app_private.model_graph_results where result_key like 'verification-v3-%'",
+            )
+          ).rows;
+          expect(cached).toHaveLength(batches.size);
+          expect(
+            (
+              await f.db.query<any>(
+                "select count(*)::int count from app_private.model_graph_results where result_key='accepted'",
+              )
+            ).rows[0].count,
+          ).toBe(0);
+        }
+        current = await rpc("claim_backend_job_v2");
+        expect(current.id).toBe(job.id);
+      }
     }
-  }
-  expect(outcome?.result).toEqual(candidate);
-  expect(writes).toBe(1);
-  expect(batches.size).toBeGreaterThan(2);
-});
+    expect(outcome?.result).toEqual(candidate);
+    expect(writes).toBe(1);
+    expect(batches.size).toBeGreaterThan(2);
+    expect(activeLease === coverageLease).toBe(finalRemainingMs >= 10000);
+    const saved = (
+      await f.db.query<any>(
+        "select result_key,value from app_private.model_graph_results where result_key like 'verification-%' or result_key='accepted'",
+      )
+    ).rows;
+    const merged = saved.find((row) =>
+      /^verification-[a-f0-9]{64}$/.test(row.result_key),
+    );
+    expect(merged.value.result.processed_content_ids).toEqual(
+      candidateContent(candidate).map((unit) => unit.id),
+    );
+    expect(merged.value.result.processed_requirement_ids).toEqual([
+      "required-1",
+    ]);
+    expect(merged.value.result.requirement_checks[0].status).toBe("supported");
+    expect(saved.find((row) => row.result_key === "accepted").value).toEqual(
+      candidate,
+    );
+    expect(
+      (
+        await f.db.query<any>(
+          "select status,candidate_count from app_private.model_graph_threads",
+        )
+      ).rows,
+    ).toEqual([{ status: "accepted", candidate_count: 1 }]);
+    expect(
+      (
+        await f.db.query<any>(
+          "select count(*)::int count from public.provider_usage",
+        )
+      ).rows[0].count,
+    ).toBe(1 + batches.size);
+  },
+);
 it("allows a distinct phase past unknown Gemini usage while preserving same-phase and same-input guards", async () => {
   const { job, models, connection, ledger } = await configure("gemini_free");
   await ledger.preflight([], "connection_probe");

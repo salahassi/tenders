@@ -149,6 +149,7 @@ async function runGuardedModel(o: Options): Promise<{
   threadId?: string;
   cleanup?: () => Promise<void>;
 }> {
+  const invocationStartedAt = o.backend.invocationStartedAt ?? Date.now();
   const legacy = modelLedger(o.backend, o.job, o.prefix, o.environments);
   if (o.job.checkpoint?.model_executor !== 2) {
     const pool = await legacy.preflight(o.manifest, o.task);
@@ -656,9 +657,16 @@ async function runGuardedModel(o: Options): Promise<{
               return { reportRef: saved.id };
             }
           }
-          if (completedNow) {
-            // One completed batch per lease. Every completed report is durable,
-            // so a restart cannot pay to regenerate successful earlier batches.
+          if (
+            completedNow &&
+            (!scope.requirementsOnly ||
+              (o.backend.invocationBudgetMs ?? 110000) -
+                (Date.now() - invocationStartedAt) <
+                10000)
+          ) {
+            // Content batches yield before another provider call. The final
+            // coverage batch can merge and commit locally in this lease when
+            // at least ten seconds remain; otherwise replay uses its saved result.
             release = () => store.action("yield").then(() => {});
             throw new ModelDeferred();
           }

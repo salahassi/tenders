@@ -2,14 +2,26 @@
 
 ## October 21 — real acceptance blockers (in progress)
 
-Current status at 07:59 UTC after the audited resume: **end-to-end acceptance is still
-incomplete; no complete Word proposal has been downloaded or inspected**.
-Two of the original three analysis jobs have succeeded; the third remains in
-progress. API **v72** and normal worker **v85**, deployed at 07:52 UTC, include
-the prompt pin and safe unstarted-repair recovery. Exact source readbacks matched
-all 27 API and 36 worker files. The final complete backend regression passed
-**616/616 tests in 44 files** (217.62 seconds). These code/deployment results do
-not establish live analysis or proposal acceptance.
+Current status at 08:24 UTC: **all three original analysis jobs have succeeded**.
+The final graph committed at 08:17:30 with the received-candidate count unchanged
+at two. The real analysis produced 145 requirements and advanced into nine
+planning jobs. The first planning writer, OpenAI gpt-6.1-sol, completed between
+08:18 and 08:20 with 9,530 input / 4,145 output tokens. Its Gemini verification
+then succeeded (12,417 input / 11,188 output tokens), and the first planning job
+is accepted; eight planning jobs remain queued. **The end-to-end journey remains
+incomplete: no complete Word proposal has been downloaded or inspected.**
+
+API **v72** remains unchanged. Normal worker **v86**, deployed at 08:21 UTC,
+matched all 36 submitted source files on readback. Its narrow continuation
+optimization merges and accepts a completed final requirements-verification
+batch within the same lease when at least ten seconds remain. With less time it
+keeps the cached result and yields; content batches retain one model request per
+worker continuation. It makes no extra model calls and preserves all validation,
+leases and request identity. The change passed 106 focused tests, backend
+typecheck/build and both Deno entrypoint checks. The complete backend regression
+(`final-backend-serial-10.log`) passed 617/617 tests in 44 files (219.49 seconds).
+The preceding complete suite passed 616/616 tests in 44 files (217.62 seconds). Source/CI reconciliation for this
+worker follow-up remains pending.
 
 At 07:53:29 UTC, a revision-guarded audited resume removed the trial's bounded
 hold at job revision 176 without changing budgets, usage or saved results.
@@ -21,10 +33,24 @@ that unnecessary replacement candidate.
 At 07:59:49 UTC, the first new verification batch using the pinned v2 instructions
 (`content-2`) completed successfully on Gemini and was cached. It used 6,210
 input / 5,842 output tokens in approximately 38 seconds, with no HTTP 400 or
-provider failover for that call. This is a successful live verified batch, not
-complete analysis acceptance: three content batches and the whole-candidate
-coverage check remain. Planning, drafting, commercial missing-input handling,
-review and browser Word download/inspection are still pending.
+provider failover for that call. All four content batches after the prompt change
+subsequently succeeded on Gemini without failover, using a combined 24,509 input
+/ 22,807 output tokens. The requirements-coverage report was cached at 08:12,
+and complete analysis acceptance followed at 08:17:30. This closes the original
+analysis blocker; planning, drafting, commercial missing-input handling, review
+and browser Word download/inspection still have to complete.
+
+Scheduler follow-up at 08:02 UTC: the trial's third analysis job progressed at
+07:59 and again at 08:02, with two successful Gemini verification calls after
+the prompt correction. Its preceding `MODEL_RATE_WAIT` was a local reservation
+wait, not a provider request or HTTP 429. The current scheduler does not guarantee
+a bounded wait: a local capacity wait counts as an interactive turn, its
+one-minute retry can miss a newly freed model slot, and source jobs waiting over
+two minutes outrank the proposal/assessment alternation. Accepted-request polls
+still take priority and the single lease/reservation protections remain intact.
+Record admission fairness as follow-up work; no further scheduling logic is
+changed during this progressing live test. The real proposal journey and Word
+download/inspection remain in progress under the main acceptance run.
 
 Earlier completion work (API v71 / worker v84 deployed at 07:44 UTC;
 exact source readbacks matched 26/33 files):
@@ -38,11 +64,13 @@ and 13 release tests passed.
 New planning and review steps use bounded requirement packing (24/12 records
 respectively, at most 12,000 serialized requirement-context characters). Stored
 steps are never repacked; every ordered ID remains present, and drafting,
-commercial, routing and response limits are unchanged. The real 96 accepted
-requirements require six planning and eight review jobs versus eight and twenty
-previously. This measures scheduled primary jobs, not guaranteed model calls or
-completion time. Review now receives relevant generated commercial inputs as
-unconfirmed content; it cannot treat them as evidence or approved commitments.
+commercial, routing and response limits are unchanged. At the earlier partial
+analysis checkpoint, 96 accepted requirements packed into six planning and eight
+review jobs versus eight and twenty previously. The final 145-requirement analysis
+now creates nine planning jobs, as recorded above. These counts measure scheduled
+primary jobs, not guaranteed model calls or completion time. Review now receives
+relevant generated commercial inputs as unconfirmed content; it cannot treat them
+as evidence or approved commitments.
 All 41 focused generation/evidence/batching tests passed, as did typecheck,
 build and Deno checks. The combined full backend run passed 591/591 tests in
 42 files (223.75 seconds). A subsequent draft-only localized table-label change
@@ -121,7 +149,7 @@ Deno checks. API v70 / worker v83 readbacks matched 26/32 files. Its new service
 RPCs denied anon/authenticated execution. Source `00d3069` was pushed to main;
 GitHub Pages workflow `39561029126` passed its checks and publication. Those
 release facts remain historical evidence, superseded for the backend by the
-current v72/v85 runtime and 616-test regression result above.
+subsequent runtime releases and regression results above.
 
 At 07:15 UTC, the additive `model_continuation_queue_fairness` migration was
 applied. `MODEL_IN_PROGRESS` alone no longer gives every graph continuation
