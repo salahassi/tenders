@@ -21,6 +21,19 @@ from its previously verified 204-test suite. The two pending migrations and
 runtime release are ready for deployment; real resume/download acceptance is
 still pending and must not be inferred from fixture tests.
 
+At 18:35 UTC, both migrations are deployed (hosted versions 20261021183405 and
+20261021183418). API v77 and worker v100 match all 31 and 46 reachable source
+files respectively from commit `993898b`. Private recovery helpers remain
+unavailable for direct anon/authenticated/service-role execution. The ordinary
+browser resume initially met a transient workspace usage reservation; after it
+cleared, HTTP 200 resumed the same plan at revision 152 at 18:36 UTC. At 18:43 UTC,
+drafting is 42/67 complete with no current blocker. One previously blocked task
+has completed its actual bounded writer repair and independent verification.
+Six new calls report 71,292 input / 16,435 output tokens with no new unknown usage.
+The cloud test environment restarted during this interval; Supabase processing
+continued and the local checkout has been recovered. Complete Word acceptance
+remains pending.
+
 ## October 21 — real acceptance blockers (in progress)
 
 The next correction release is implemented locally and independently reviewed.
