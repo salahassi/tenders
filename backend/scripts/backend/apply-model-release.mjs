@@ -23,6 +23,8 @@ const release = [
   ["20261021095309", "deferred_queue_wakeup"],
   ["20261021095545", "automatic_gemini_reasoning"],
   ["20261021102512", "recover_paid_writer_candidate"],
+  ["20261021120717", "retry_one_generation_job"],
+  ["20261021120832", "accepted_model_poll_wakeup"],
 ];
 const project = "nqfwbqeozmuiuwbiowil";
 const literal = (value) => "'" + value.replaceAll("'", "''") + "'";

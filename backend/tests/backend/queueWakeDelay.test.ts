@@ -110,3 +110,56 @@ it("lets the handler's nonfatal completion boundary handle a failed second RPC",
   expect(f.backend.internal).toHaveBeenCalledTimes(2);
   expect(f.timing.sleep).toHaveBeenCalledExactlyOnceWith(10000);
 });
+
+it.each([1, 30000, 60000])(
+  "waits once for the persisted accepted poll and pins its revision (%s ms)",
+  async (retry_after_ms) => {
+    const f = fixture({
+      dispatched: false,
+      retry_after_ms,
+      wait_kind: "accepted_remote_poll",
+      job_revision: 17,
+    });
+    await wakeReadyQueue(f.backend, job, f.timing);
+    expect(f.timing.sleep).toHaveBeenCalledExactlyOnceWith(retry_after_ms);
+    expect(f.backend.internal.mock.calls).toEqual([
+      ["wake_backend_queue_status", { job_id: job.id, lease: job.lease_token }],
+      [
+        "wake_backend_queue_revision",
+        { job_id: job.id, lease: job.lease_token, expected_revision: 17 },
+      ],
+    ]);
+  },
+);
+
+it.each([
+  { retry_after_ms: 60001, job_revision: 17 },
+  { retry_after_ms: 30000, job_revision: null },
+  { retry_after_ms: 30000, job_revision: 0 },
+  { retry_after_ms: 30000, job_revision: 1.5 },
+])(
+  "does not wait for an invalid accepted poll identity/bound: %j",
+  async (value) => {
+    const f = fixture({
+      dispatched: false,
+      wait_kind: "accepted_remote_poll",
+      ...value,
+    });
+    await wakeReadyQueue(f.backend, job, f.timing);
+    expect(f.timing.sleep).not.toHaveBeenCalled();
+    expect(f.backend.internal).toHaveBeenCalledTimes(1);
+  },
+);
+
+it("leaves an accepted poll to cron when its due time exceeds the remaining invocation budget", async () => {
+  const f = fixture({
+    dispatched: false,
+    retry_after_ms: 30000,
+    wait_kind: "accepted_remote_poll",
+    job_revision: 17,
+  });
+  f.setClock(96000);
+  await wakeReadyQueue(f.backend, job, f.timing);
+  expect(f.timing.sleep).not.toHaveBeenCalled();
+  expect(f.backend.internal).toHaveBeenCalledTimes(1);
+});

@@ -138,8 +138,9 @@ export const systemInstructions = `You produce one JSON result for a bounded ten
 const contentPolicyChecks = {
   // A confidentiality obligation is ordinary tender content. Detect explicit
   // classification labels, not every mention or translation of confidentiality.
+  // An ASCII hyphen joining a word (confidential-information) is not a label.
   confidentiality_marking:
-    /(?:\bconfidential\b|سرية)\s*[:：—–-]|(?:^|[\r\n]|\\[nr]|["=:])\s*(?:confidential|سرية)\s*(?=$|[\r\n"]|\\[nr])|strictly private|سري للغاية/i,
+    /(?:\bconfidential\b|سرية)(?:\s*[:：—–]|\s+-|-(?![\p{L}\p{N}]))|(?:^|[\r\n]|\\[nr]|["=:])\s*(?:confidential|سرية)\s*(?=$|[\r\n"]|\\[nr])|strictly private|سري للغاية/iu,
   credential:
     /password\s*[:=]|api[_ -]?key\s*[:=]|-----BEGIN .*PRIVATE KEY|\b(?:sk|sb_secret)_[a-z0-9]{12,}/i,
   email: /[\w.+-]+@[\w.-]+\.[a-z]{2,}/i,

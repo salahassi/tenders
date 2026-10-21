@@ -21,12 +21,21 @@ it("allows confidentiality requirements without accepting a Confidential marking
     "The vendor shall keep project data confidential.",
     "يجب الحفاظ على سرية بيانات المشروع.",
     "Confidential data must be protected by access controls.",
+    "The delivery plan includes confidential-information handling controls.",
+    "Use confidential-data classification rules for protected inputs.",
+    "Apply confidential-بيانات handling requirements.",
   ]) {
     expect(blockedContent(text)).toBe(false);
     expect(blockedContent(JSON.stringify({ text }))).toBe(false);
   }
   for (const text of [
     "CONFIDENTIAL: project data",
+    "CONFIDENTIAL - project data",
+    "CONFIDENTIAL -project data",
+    "CONFIDENTIAL- project data",
+    "CONFIDENTIAL—project data",
+    "CONFIDENTIAL–project data",
+    "CONFIDENTIAL-",
     "CONFIDENTIAL",
     "classification: confidential",
     "Document\nConfidential\nPrivate contents",

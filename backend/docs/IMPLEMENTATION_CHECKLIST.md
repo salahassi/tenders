@@ -2,6 +2,51 @@
 
 ## October 21 — real acceptance blockers (in progress)
 
+Current status at 12:15 UTC: analysis remains 3/3 and planning 9/9 accepted;
+**11/67 draft jobs are accepted**, with 53 queued, one running and two blocked.
+No complete Word has been downloaded or inspected. Company paraphrase/translation
+validation and paid-result recovery were deployed as API v74 / worker v93;
+normal worker v95 has the same canonical 40 files. Source
+`c1c378afa6348bb58f3c1af03706f015d97abf85` passed
+[CI and Pages 39596580459](https://github.com/salahassi/tenders/actions/runs/39596580459).
+The authenticated UI retry exposed a separate `USAGE_REVIEW_REQUIRED` bug: the
+old per-job action invoked whole-plan retry and refused another job's accepted
+pending request. The new targeted retry migration requeues only the selected
+blocked/failed current-stage job, preserving sibling work, attempts, candidate
+budgets and pending usage. Its focused database tests pass 29/29, including
+permissions, idempotency, evidence/revision guards and reserved/unknown usage.
+
+A bounded GET-only diagnostic of the second blocked response returned a
+`confidential-` policy match in ordinary paragraph text, with no email or
+credential match. It did not establish the character following the hyphen.
+Local validation now distinguishes joined word compounds such as
+`confidential-information` from explicit classification labels; whitespace or
+label punctuation, standalone classifications, secrets and email checks remain.
+Model regression tests pass 64/64. A further temporary diagnostic deployment
+was rejected by automatic review and was not deployed or retried; verification
+will use the ordinary processing path. The live policy cause remains conditional
+until normal retry succeeds.
+
+The next queue migration wakes normal work after a canceled job and supports one
+bounded wake at the already-saved due time of an exact healthy accepted remote
+request. It preserves the 30-second polling interval, current permissions,
+revision/lease guards, request identity, normal dispatcher fairness and model
+reservation serialization. Another reservation, a potentially active matching
+unknown request, or a cron race prevents that optimization. Historical unrelated
+unknown telemetry does not block a known accepted request. Focused queue/release
+tests pass 110/110 after the scope correction. Full backend regression passed
+842/842 in 52 files (262.87 seconds); backend typecheck/build, both Deno entrypoints
+and frontend typecheck, 192 tests and build passed. The targeted-retry migration
+and API v75 / worker v96 deployed at 12:25 UTC with exact hosted readback of all
+28/40 files. The independently reviewed accepted-poll migration deployed at
+12:29 UTC; its revision RPC is service-role-only and the anonymous worker returns
+401. The same three security-advisor categories remain. Actual browser retries
+returned HTTP 200 and queued only their selected jobs. The original company-claim
+job subsequently returned `MODEL_CORRECTION_EXHAUSTED` with no recovery artifact
+or new writer attempt; the recovery preconditions are under investigation.
+The policy-blocked job remains queued. Real accepted recovery and full Word
+completion are not yet established.
+
 Current status at 11:57 UTC: **analysis 3/3 and planning 9/9 are accepted;
 eight of 67 draft jobs have completed. No complete Word has been downloaded or
 inspected.** The bounded diagnostic hold expired at 10:43 and ordinary processing
@@ -11,8 +56,8 @@ output-policy failure under investigation). Since 10:34, the plan recorded 31
 settled usage records with 308,055 input / 81,177 output tokens and one reserved
 request. These are reported tokens, not a price estimate or a completed journey.
 
-Company-claim correction and paid-result recovery are implemented but not yet
-deployed. In the graph executor, deterministic validation checks a verified
+Company-claim correction and paid-result recovery were implemented at this
+checkpoint and deployed at 12:01 UTC. In the graph executor, deterministic validation checks a verified
 company source and a contiguous normalized quotation; claim paraphrases and
 translations must pass mandatory independent semantic verification. Legacy
 execution keeps its existing guards. The generation callback and final

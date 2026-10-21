@@ -97,6 +97,355 @@ async function successfulAttempt(id: string, lease: string) {
   );
 }
 
+async function acceptedPoll() {
+  const input = "e".repeat(64);
+  const queued = await job("queued", null, {
+    model_executor: 2,
+    graph_thread: "f".repeat(64),
+    model_round: { input_hash: input },
+  });
+  const claimed = await f.rpc("claim_backend_job_v2");
+  expect(claimed.id).toBe(queued.id);
+  const usage = crypto.randomUUID();
+  await f.db.query(
+    `insert into public.provider_usage(id,workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,remote_request_id,remote_deadline,created_by)
+    values($1,$2,$3,$4,'fixture-accepted-call','openai','fixture-model',$5,current_date,1,100,100,'reserved','resp_fixture',now()+interval '1 hour',$6)`,
+    [usage, f.w, claimed.id, claimed.lease_token, input, f.owner],
+  );
+  const attempt = await f.rpc("start_model_attempt", [
+    claimed.id,
+    claimed.lease_token,
+    "openai",
+    "fixture-model",
+    "fixture",
+    "draft_section",
+  ]);
+  await f.rpc("finish_model_attempt", [
+    attempt,
+    claimed.lease_token,
+    "MODEL_IN_PROGRESS",
+    true,
+    usage,
+    JSON.stringify({ http_status: 200, request_phase: "generation" }),
+  ]);
+  await f.rpc("defer_pending_model_request", [
+    claimed.id,
+    claimed.lease_token,
+    usage,
+  ]);
+  const row = (
+    await f.db.query<any>("select * from public.jobs where id=$1", [claimed.id])
+  ).rows[0];
+  return { claimed, usage, attempt, row };
+}
+
+it("waits for the existing accepted request's persisted due time, then wakes and claims only one normal poll lease", async () => {
+  const { claimed, usage, row } = await acceptedPoll();
+  const ready = await job();
+  const beforeUsage = (
+    await f.db.query<any>("select * from public.provider_usage where id=$1", [
+      usage,
+    ])
+  ).rows[0];
+  const waiting = await wake(claimed.id, claimed.lease_token, true);
+  expect(waiting).toMatchObject({
+    dispatched: false,
+    wait_kind: "accepted_remote_poll",
+    job_revision: row.revision,
+  });
+  expect(waiting.retry_after_ms).toBeGreaterThan(0);
+  expect(waiting.retry_after_ms).toBeLessThanOrEqual(30000);
+  expect(await dispatches()).toBe(0);
+  expect(
+    (
+      await f.db.query<any>("select * from public.jobs where id=$1", [
+        claimed.id,
+      ])
+    ).rows[0],
+  ).toEqual(row);
+  // Advance the fixture's due clock; the production RPC never changes it.
+  await f.db.query(
+    "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
+    [claimed.id],
+  );
+  expect(
+    await f.rpc("wake_backend_queue_revision", [
+      claimed.id,
+      claimed.lease_token,
+      row.revision,
+    ]),
+  ).toEqual({ dispatched: true });
+  expect(
+    await f.rpc("wake_backend_queue_revision", [
+      claimed.id,
+      claimed.lease_token,
+      row.revision,
+    ]),
+  ).toEqual({ dispatched: false });
+  expect(await dispatches()).toBe(1);
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(claimed.id);
+  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(
+    (
+      await f.db.query<any>(
+        "select status,attempts from public.jobs where id=$1",
+        [ready.id],
+      )
+    ).rows[0],
+  ).toEqual({ status: "queued", attempts: 1 });
+  expect(
+    (
+      await f.db.query<any>("select * from public.provider_usage where id=$1", [
+        usage,
+      ])
+    ).rows[0],
+  ).toEqual(beforeUsage);
+});
+
+it.each([
+  "cron_claim",
+  "revision",
+  "canceled",
+  "restore",
+  "expired",
+  "unknown",
+  "unaccepted",
+  "other_reserved",
+  "other_unknown",
+  "failed_poll",
+  "retry_after",
+  "wrong_phase",
+  "round_changed",
+  "round_missing_input",
+])("does not wake a stale or unsafe accepted poll after %s", async (change) => {
+  const { claimed, usage, attempt, row } = await acceptedPoll();
+  expect((await wake(claimed.id, claimed.lease_token, true)).wait_kind).toBe(
+    "accepted_remote_poll",
+  );
+  await f.db.query(
+    "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
+    [claimed.id],
+  );
+  if (change === "cron_claim")
+    expect((await f.rpc("claim_backend_job_v2")).id).toBe(claimed.id);
+  if (change === "revision")
+    await f.db.query("update public.jobs set revision=revision+1 where id=$1", [
+      claimed.id,
+    ]);
+  if (change === "canceled")
+    await f.db.query(
+      "update public.jobs set status='canceled',cancel_requested=true,revision=revision+1 where id=$1",
+      [claimed.id],
+    );
+  if (change === "restore")
+    await f.db.query(
+      "insert into public.restore_sessions(workspace_id,state,manifest,created_by,expires_at) values($1,'staging','{}',$2,now()+interval '1 hour')",
+      [f.w, f.owner],
+    );
+  if (change === "expired")
+    await f.db.query(
+      "update public.provider_usage set remote_deadline=now()-interval '1 second' where id=$1",
+      [usage],
+    );
+  if (change === "unknown")
+    await f.db.query(
+      "update public.provider_usage set state='unknown' where id=$1",
+      [usage],
+    );
+  if (change === "unaccepted")
+    await f.db.query(
+      "update public.provider_usage set remote_request_id=null,remote_deadline=null where id=$1",
+      [usage],
+    );
+  if (change === "other_reserved" || change === "other_unknown")
+    await f.db.query(
+      `insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,created_by) select workspace_id,job_id,lease_token,'fixture-other','openai',model,input_hash,application_day,settings_revision,1,1,$2,created_by from public.provider_usage where id=$1`,
+      [usage, change === "other_reserved" ? "reserved" : "unknown"],
+    );
+  if (change === "failed_poll")
+    await f.db.query(
+      "update public.model_attempts set http_status=429 where id=$1",
+      [attempt],
+    );
+  if (change === "retry_after")
+    await f.db.query(
+      "update public.model_attempts set retry_after=now()+interval '1 minute' where id=$1",
+      [attempt],
+    );
+  if (change === "wrong_phase")
+    await f.db.query(
+      "update public.model_attempts set request_phase='count' where id=$1",
+      [attempt],
+    );
+  if (change === "round_changed")
+    await f.db.query(
+      "update public.jobs set checkpoint=jsonb_set(checkpoint,'{model_round,input_hash}',to_jsonb('different'::text)) where id=$1",
+      [claimed.id],
+    );
+  if (change === "round_missing_input")
+    await f.db.query(
+      "update public.jobs set checkpoint=checkpoint #- '{model_round,input_hash}' where id=$1",
+      [claimed.id],
+    );
+  expect(
+    await f.rpc("wake_backend_queue_revision", [
+      claimed.id,
+      claimed.lease_token,
+      row.revision,
+    ]),
+  ).toEqual({ dispatched: false });
+  expect(await dispatches()).toBe(0);
+});
+
+it("preserves remote retry backoff and rejects a different released lease", async () => {
+  const { claimed, row } = await acceptedPoll();
+  await f.db.query(
+    "update public.jobs set next_attempt_at=now()+interval '10 minutes' where id=$1",
+    [claimed.id],
+  );
+  const before = (
+    await f.db.query<any>("select * from public.jobs where id=$1", [claimed.id])
+  ).rows[0];
+  expect(await wake(claimed.id, claimed.lease_token, true)).toEqual({
+    dispatched: false,
+  });
+  expect(
+    await f.rpc("wake_backend_queue_revision", [
+      claimed.id,
+      crypto.randomUUID(),
+      row.revision,
+    ]),
+  ).toEqual({ dispatched: false });
+  expect(
+    (
+      await f.db.query<any>("select * from public.jobs where id=$1", [
+        claimed.id,
+      ])
+    ).rows[0],
+  ).toEqual(before);
+});
+
+it.each([
+  ["expired same-phase telemetry", true],
+  ["unrelated job with live deadline", true],
+  ["different structured phase with live deadline", true],
+  ["same phase with live deadline", false],
+  ["same input on another job with live deadline", false],
+  ["legacy same-job key with live deadline", false],
+  ["recent unaccepted same-phase request", false],
+] as const)(
+  "scopes unknown usage for an accepted poll: %s (allowed=%s)",
+  async (mode, allowed) => {
+    const { claimed, usage } = await acceptedPoll();
+    const input = "e".repeat(64);
+    const originalKey = `draft:candidate-0:${input.slice(0, 16)}:1:${crypto.randomUUID()}`;
+    await f.db.query(
+      "update public.provider_usage set call_key=$2 where id=$1",
+      [usage, originalKey],
+    );
+    const unrelated =
+      mode.includes("unrelated job") || mode.includes("another job");
+    const otherJob = unrelated ? await job() : claimed;
+    const otherHash = mode.includes("same input") ? input : "d".repeat(64);
+    const phase = mode.includes("different structured")
+      ? "draft:verification-v3:other"
+      : "draft:candidate-0";
+    const key = mode.includes("legacy")
+      ? "legacy-writer-attempt"
+      : `${phase}:${otherHash.slice(0, 16)}:2:${crypto.randomUUID()}`;
+    const recent = mode.includes("recent unaccepted");
+    const expired = mode.includes("expired");
+    await f.db.query(
+      `insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,remote_request_id,remote_deadline,created_at,created_by)
+     values($1,$2,$3,$4,'openai','fixture-model',$5,current_date,1,100,100,'unknown',
+      case when $6 then null else 'resp_old_fixture' end,
+      case when $6 then null when $7 then now()-interval '1 hour' else now()+interval '1 hour' end,
+      case when $6 then now() else now()-interval '1 day' end,$8)`,
+      [
+        f.w,
+        otherJob.id,
+        crypto.randomUUID(),
+        key,
+        otherHash,
+        recent,
+        expired,
+        f.owner,
+      ],
+    );
+    const before = (
+      await f.db.query<any>("select * from public.provider_usage order by id")
+    ).rows;
+    const result = await wake(claimed.id, claimed.lease_token, true);
+    if (allowed)
+      expect(result).toMatchObject({
+        dispatched: false,
+        wait_kind: "accepted_remote_poll",
+      });
+    else expect(result).toEqual({ dispatched: false });
+    expect(await dispatches()).toBe(0);
+    expect(
+      (await f.db.query<any>("select * from public.provider_usage order by id"))
+        .rows,
+    ).toEqual(before);
+  },
+);
+
+it("performs one delayed RPC for an accepted request and safely loses a race to cron", async () => {
+  const { claimed } = await acceptedPoll();
+  let clock = 0;
+  const internal = vi.fn(async (name: string, args: any) => {
+    if (name === "wake_backend_queue_status")
+      return wake(args.job_id, args.lease, true);
+    expect(name).toBe("wake_backend_queue_revision");
+    return f.rpc(name, [args.job_id, args.lease, args.expected_revision]);
+  });
+  const sleep = vi.fn(async (ms: number) => {
+    clock += ms;
+    await f.db.query(
+      "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
+      [claimed.id],
+    );
+    expect((await f.rpc("claim_backend_job_v2")).id).toBe(claimed.id);
+  });
+  await wakeReadyQueue(
+    { internal, invocationStartedAt: 0, invocationBudgetMs: 130000 },
+    claimed,
+    { now: () => clock, sleep },
+  );
+  expect(sleep).toHaveBeenCalledTimes(1);
+  expect(internal).toHaveBeenCalledTimes(2);
+  expect(await dispatches()).toBe(0);
+  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(
+    (await f.db.query<any>("select count(*)::int n from public.provider_usage"))
+      .rows[0].n,
+  ).toBe(1);
+});
+
+it("a released canceled job wakes unrelated work without reviving cancellation-marked siblings", async () => {
+  const terminal = await job("canceled", "USER_CANCELED");
+  const sibling = await job("queued");
+  await f.db.query(
+    "update public.jobs set cancel_requested=true where id=any($1::uuid[])",
+    [[terminal.id, sibling.id]],
+  );
+  expect(await wake(terminal.id)).toBe(false);
+  const other = await job();
+  expect(await wake(terminal.id)).toBe(true);
+  // Claim may first consume the canceled sibling; neither can receive a lease.
+  const first = await f.rpc("claim_backend_job_v2");
+  const claimed = first ?? (await f.rpc("claim_backend_job_v2"));
+  expect(claimed.id).toBe(other.id);
+  expect(
+    (
+      await f.db.query<any>(
+        "select count(*)::int n from public.jobs where id=any($1::uuid[]) and lease_token is not null",
+        [[terminal.id, sibling.id]],
+      )
+    ).rows[0].n,
+  ).toBe(0);
+});
+
 it("dispatches the existing queue once after completion without changing jobs or their priority", async () => {
   const completed = await job("succeeded");
   const waiting = await job();
@@ -217,7 +566,6 @@ it.each([
   ["retry_wait", "MODEL_RATE_WAIT"],
   ["retry_wait", "MODEL_ROUND_EXHAUSTED"],
   ["quota_wait", "PROVIDER_QUOTA_WAIT"],
-  ["canceled", null],
 ])("does not wake after %s / %s", async (status, code) => {
   const failed = await job(status!, code);
   await f.db.query(
@@ -317,7 +665,7 @@ it("a canonically blocked source hands off to another due graph without retrying
   expect(await dispatches()).toBe(1);
 });
 
-it.each(["blocked", "failed"])(
+it.each(["blocked", "failed", "canceled"])(
   "wakes other due work once after terminal %s, without changing either job",
   async (status) => {
     const terminal = await job(status, "SYNTHETIC_TERMINAL_ERROR");
@@ -338,7 +686,7 @@ it.each(["blocked", "failed"])(
   },
 );
 
-it.each(["blocked", "failed"])(
+it.each(["blocked", "failed", "canceled"])(
   "never wakes a terminal %s job when it is the only work, even with a due timestamp",
   async (status) => {
     const terminal = await job(status, "SYNTHETIC_TERMINAL_ERROR");
@@ -592,15 +940,27 @@ it.each(["running", "reserved", "disabled", "restore"])(
 
 it("restricts wake and its receipts to backend authority", async () => {
   for (const role of ["anon", "authenticated"])
-    for (const name of ["wake_backend_queue", "wake_backend_queue_status"])
+    for (const name of [
+      "public.wake_backend_queue(uuid,uuid)",
+      "public.wake_backend_queue_status(uuid,uuid)",
+      "public.wake_backend_queue_revision(uuid,uuid,bigint)",
+      "app_private.wake_backend_queue_checked(uuid,uuid,bigint)",
+    ])
       expect(
         (
           await f.db.query<any>(
             "select has_function_privilege($1,$2,'EXECUTE') allowed",
-            [role, `public.${name}(uuid,uuid)`],
+            [role, name],
           )
         ).rows[0].allowed,
       ).toBe(false);
+  expect(
+    (
+      await f.db.query<any>(
+        "select has_function_privilege('service_role','app_private.wake_backend_queue_checked(uuid,uuid,bigint)','EXECUTE') allowed",
+      )
+    ).rows[0].allowed,
+  ).toBe(false);
   expect(
     (
       await f.db.query<any>(
