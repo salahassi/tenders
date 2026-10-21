@@ -307,6 +307,12 @@ it.each([false, true])(
       expect(invalidCandidate).toHaveBeenCalledWith(
         candidate,
         "EVIDENCE_REFERENCE_INVALID",
+        [{
+          code: "EVIDENCE_REFERENCE_INVALID",
+          reason: "source_missing",
+          paths: ["$.requirements[0].source_refs[0].quote"],
+          evidence_ids: ["missing"],
+        }],
       );
   },
 );

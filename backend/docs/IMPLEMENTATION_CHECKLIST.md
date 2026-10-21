@@ -1,6 +1,51 @@
 # Implementation status and continuation plan
 
+## October 21 — resumed real proposal acceptance
+
+The owner requested a complete proposal after setup validation. The existing
+uploaded RFP, confirmed extraction and authenticated Editor session are intact.
+Plan `bb7d25ed-ed18-49b2-886b-3be5a54bbd2c` remains canceled at revision 151,
+with analysis 3/3, planning 9/9 and drafting 40/67 complete. Task routing is
+enabled; OpenAI and Gemini routes, background transport and the once-per-minute
+scheduler are configured. No plan was restarted or new model request made during
+the setup checks. The baseline is 257 usage records, 2,336,988 reported input and
+1,079,403 reported output tokens, including four historical unknown Gemini usages.
+
+The full backend run covered 1,096 tests: 1,088 passed and eight failed because
+two test files still expected the old migration list and callback signature.
+Only those assertions were updated; both complete files then passed 77/77 tests.
+Evidence: `/workspace/work/proposal-resume-backend-tests.log` and
+`/workspace/work/proposal-resume-corrected-tests.log`. Both packages pass
+typecheck/build; both Deno entrypoints pass. Frontend runtime code is unchanged
+from its previously verified 204-test suite. The two pending migrations and
+runtime release are ready for deployment; real resume/download acceptance is
+still pending and must not be inferred from fixture tests.
+
 ## October 21 — real acceptance blockers (in progress)
+
+The next correction release is implemented locally and independently reviewed.
+Safe, schema-valid V1 writer content errors now retain the paid candidate and
+precise bounded validation paths, then enter normal LangGraph repair rather than
+trying the unchanged prompt on another provider. The exact handoff preserves
+failure telemetry, candidate budgets, pending-request identities and current data
+permissions, including crash replay. Repaired output still requires complete
+independent verification; repair-only findings cannot grant acceptance.
+
+Historical exhausted verifier recovery now distinguishes a latest retained report
+that passes a corrected deterministic guard from a report that still has an
+unresolved citation defect. The first resumes the exact saved verification scope
+with zero model calls; the second preserves all latest findings as untrusted
+repair hints and uses the remaining writer allowance. Decimal section labels
+such as `4.2` are no longer split into unrelated integer fragments. Later
+corrective reports cannot be replaced by older favorable reports.
+
+Focused verification passed **217 tests**, **38 canonical PostgreSQL/LangGraph
+writer-handoff tests**, and **19 unit / 24 canonical verifier-recovery tests**;
+backend typecheck/build passed. Main-checkout full regression, Deno checks,
+migrations/runtime deployment and real retries remain pending. Immediate content
+handoff applies to writer results; verifier requests retain the existing bounded
+provider round followed by one report correction. No live result is accepted on
+the strength of these synthetic tests.
 
 At 14:52 UTC, live access is restored after the earlier approval-service usage
 limit. The original experience job completed at **13:53:16 UTC**: its graph is

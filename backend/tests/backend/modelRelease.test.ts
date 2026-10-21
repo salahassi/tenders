@@ -29,6 +29,8 @@ const names = [
   "wake_unchanged_notice_continuations",
   "proposal_section_outline",
   "recover_alternate_paid_writer",
+  "recover_invalid_verification_for_repair",
+  "writer_validation_handoff",
 ];
 const versions = [
   "20261020141244",
@@ -56,6 +58,8 @@ const versions = [
   "20261021130940",
   "20261021131353",
   "20261021131657",
+  "20261021134321",
+  "20261021140001",
 ];
 function fixture(history: any[], failMutation?: number) {
   const queries: any[] = [];

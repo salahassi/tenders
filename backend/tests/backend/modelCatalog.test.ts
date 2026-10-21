@@ -2743,11 +2743,10 @@ it.each([
         )
       ).rows[0].value;
       expect(
-        rejected.map(({ value }) => ({
-          result: value.result,
-          code: value.code,
-          producer: value.producer,
-        })),
+        rejected.map(({ value }) => {
+          const { verification_key: _verificationKey, ...snapshot } = value;
+          return snapshot;
+        }),
       ).toContainEqual(canonical);
     }
     const requestsBeforeReplay = serial;

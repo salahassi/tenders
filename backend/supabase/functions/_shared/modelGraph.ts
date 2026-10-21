@@ -6,8 +6,10 @@ import {
   executeModel,
   ModelDeferred,
   ModelError,
+  ModelCandidateRepair,
   modelPrompt,
   sha256,
+  validateModelResult,
   type Evidence,
   type Reference,
   type Ledger,
@@ -28,12 +30,17 @@ import { pinVerificationPrompt } from "./modelVerificationPrompt.ts";
 import { pinSemanticPrompt } from "./modelSemanticPrompt.ts";
 import { recoverUnstartedRepair } from "./modelRepairRecovery.ts";
 import { recoverBlockedVerification } from "./modelBlockedRecovery.ts";
+import { recoverInvalidVerification } from "./modelInvalidVerificationRecovery.ts";
 import { recoverAlternatePaidWriter } from "./modelAlternateWriterRecovery.ts";
 import {
   recoverBlockedWriter,
   retainInvalidWriter,
 } from "./modelWriterRecovery.ts";
 import type { StructuredRequest } from "./modelContract.ts";
+import {
+  repairOnlyValidationArtifact,
+  type ModelValidationDiagnostic,
+} from "./modelValidationDiagnostics.ts";
 
 type Options = {
   backend: Backend;
@@ -143,8 +150,14 @@ export async function retainInvalidVerification(
   result: unknown,
   code: string,
   producer?: Record<string, unknown>,
+  diagnostics: ModelValidationDiagnostic[] = [],
 ) {
-  const value = { result, code, producer: producer ?? null };
+  const value = {
+    result,
+    code,
+    producer: producer ?? null,
+    ...(diagnostics.length ? { validation_diagnostics: diagnostics } : {}),
+  };
   // Keep each distinct rejection privately for diagnostics, including later
   // providers in the same round. Fixed-length keys and result_put's immutable
   // content check make replay idempotent; correction still uses the first one.
@@ -155,6 +168,81 @@ export async function retainInvalidVerification(
   const invalidKey = `invalid-${key}`;
   if (!(await store.action("result_get", { key: invalidKey })))
     await store.action("result_put", { key: invalidKey, value });
+}
+
+/** Only the exact recovered scope may enter the ordinary verification cache.
+ * Revalidate its immutable report under current guards before the graph merges
+ * all required scopes or makes any acceptance decision. */
+export async function replayRevalidatedVerification(o: {
+  store: Pick<ModelGraphStore, "action">;
+  artifact: any;
+  candidate: unknown;
+  candidateRef: string;
+  candidateHash: string;
+  inputHash: string;
+  repairCount: number;
+  evidence: Evidence[];
+  requiredIds: string[];
+}) {
+  const { artifact } = o;
+  if (artifact?.coverage !== "revalidated_scope") return;
+  const provenance = artifact.recovery_provenance;
+  // The previous iteration's report stays in the graph until this candidate's
+  // verification finishes. It is never evidence for the new candidate.
+  if (provenance?.candidate_ref !== o.candidateRef) return;
+  if (
+    provenance.version !== 1 ||
+    provenance.input_hash !== o.inputHash ||
+    provenance.candidate_hash !== o.candidateHash ||
+    provenance.repair_count !== o.repairCount ||
+    provenance.evidence_hash !== (await sha256(JSON.stringify(o.evidence))) ||
+    provenance.required_ids_hash !==
+      (await sha256(JSON.stringify(o.requiredIds))) ||
+    provenance.report_hash !== (await sha256(JSON.stringify(artifact.result)))
+  )
+    throw new ModelError("MODEL_IDENTITY_CHANGED");
+  const retained = await o.store.action("result_get", {
+    id: provenance.report_ref,
+  });
+  if (
+    !retained ||
+    JSON.stringify(retained.value.result) !== JSON.stringify(artifact.result)
+  )
+    throw new ModelError("MODEL_IDENTITY_CHANGED");
+  const phase = provenance.verification_key;
+  let scope: Parameters<typeof validateGroundingReport>[5];
+  let requiredIds = o.requiredIds;
+  if (phase !== `verification-repair-${o.candidateHash}`) {
+    const prefix = `verification-repair-v3-${o.candidateHash}-`;
+    if (typeof phase !== "string" || !phase.startsWith(prefix))
+      throw new ModelError("MODEL_IDENTITY_CHANGED");
+    const batches = verificationBatches(o.candidate);
+    const name = phase.slice(prefix.length);
+    if (!batches.length) throw new ModelError("MODEL_IDENTITY_CHANGED");
+    if (name === "requirements")
+      scope = { units: candidateContent(o.candidate), requirementsOnly: true };
+    else {
+      const index = batches.findIndex((_batch, i) => name === `content-${i}`);
+      if (index < 0) throw new ModelError("MODEL_IDENTITY_CHANGED");
+      scope = { units: batches[index] };
+      requiredIds = [];
+    }
+  }
+  validateGroundingReport(
+    artifact.result,
+    o.candidate,
+    o.candidateHash,
+    o.evidence,
+    requiredIds,
+    scope,
+  );
+  await o.store.action("result_put", {
+    key: phase.replace("verification-repair-", "verification-"),
+    value: {
+      result: retained.value.result,
+      producer: retained.value.producer ?? null,
+    },
+  });
 }
 
 /** One durable graph phase per queue lease. Large inputs/results are kept outside
@@ -242,6 +330,18 @@ async function runGuardedModel(o: Options): Promise<{
     return { result, threadId };
   }
   let release: (() => Promise<void>) | undefined;
+  const defectFingerprint = (artifact: any) =>
+    sha256(
+      JSON.stringify(
+        artifact.validation_diagnostics
+          ? {
+              findings: groundingDefects(artifact.result),
+              validation_diagnostics: artifact.validation_diagnostics,
+              candidate_hash: artifact.result.checked_candidate_hash,
+            }
+          : groundingDefects(artifact.result),
+      ),
+    );
   const ledgerFor = (operation: string, unit: string, repair = false) => {
     const original = modelLedger(
       o.backend,
@@ -280,7 +380,18 @@ async function runGuardedModel(o: Options): Promise<{
     requiredIds = o.requiredIds,
   ) => {
     const cached = await store.action("result_get", { key });
-    if (cached) return cached;
+    const finishWriterHandoff = async (retained: any) => {
+      if (retained?.value.local_validation) {
+        const ready = await store.action("writer_validation_handoff", {
+          candidate_id: retained.id,
+          candidate_key: key,
+          manifest: o.manifest,
+        });
+        if (ready !== true) throw new ModelError("MODEL_IDENTITY_CHANGED");
+      }
+      return retained;
+    };
+    if (cached) return finishWriterHandoff(cached);
     const operationKey = key.includes("-v3-")
       ? `verification-v3:${await sha256(key)}`
       : key;
@@ -338,6 +449,13 @@ async function runGuardedModel(o: Options): Promise<{
     let producer: Record<string, unknown> | undefined;
     let preparedRequest: StructuredRequest | undefined;
     let receivedUsage: string | undefined;
+    let attemptId: string | undefined;
+    const begin = ledger.beginAttempt;
+    if (begin)
+      ledger.beginAttempt = async (...args) => {
+        attemptId = await begin(...args);
+        return attemptId;
+      };
     const received = ledger.candidateReceived;
     ledger.candidateReceived = async (usageId) => {
       await received?.(usageId);
@@ -351,10 +469,17 @@ async function runGuardedModel(o: Options): Promise<{
       await prepared?.(request);
     };
     if (task === "verify_grounding") {
-      ledger.invalidCandidate = (result, code) =>
-        retainInvalidVerification(store, key, result, code, producer);
+      ledger.invalidCandidate = (result, code, diagnostics) =>
+        retainInvalidVerification(
+          store,
+          key,
+          result,
+          code,
+          producer,
+          diagnostics,
+        );
     } else {
-      ledger.invalidCandidate = async (result, code) => {
+      ledger.invalidCandidate = async (result, code, diagnostics = []) => {
         if (!receivedUsage || !preparedRequest) return;
         await retainInvalidWriter(store, {
           usage_id: receivedUsage,
@@ -365,22 +490,60 @@ async function runGuardedModel(o: Options): Promise<{
           code,
           producer: producer ?? null,
         });
+        if (
+          semanticRevision === 1 &&
+          unit === "writer" &&
+          attemptId &&
+          diagnostics.length &&
+          task !== "connection_probe"
+        ) {
+          await store.action("result_put", {
+            key,
+            value: {
+              result,
+              producer: producer ?? null,
+              local_validation: {
+                version: 1,
+                task,
+                code,
+                diagnostics,
+                usage_id: receivedUsage,
+                attempt_id: attemptId,
+                request_prefix: `${o.prefix}:${operationKey}`,
+                request_input_hash: preparedRequest.inputHash,
+              },
+            },
+          });
+          return "repair";
+        }
       };
     }
-    const result = await executeModel(
-      task,
-      context,
-      o.evidence,
-      requiredIds,
-      o.manifest,
-      o.environments,
-      ledger,
-      o.language,
-      task === "repair_result" || o.repair,
-      o.fetcher,
-      verificationRevision,
-      { independentGrounding: true, semanticRevision },
-    );
+    let result;
+    try {
+      result = await executeModel(
+        task,
+        context,
+        o.evidence,
+        requiredIds,
+        o.manifest,
+        o.environments,
+        ledger,
+        o.language,
+        task === "repair_result" || o.repair,
+        o.fetcher,
+        verificationRevision,
+        {
+          independentGrounding: true,
+          semanticRevision,
+          repairContentValidation: unit === "writer",
+        },
+      );
+    } catch (error) {
+      if (!(error instanceof ModelCandidateRepair)) throw error;
+      const retained = await store.action("result_get", { key });
+      if (!retained?.value.local_validation) throw error;
+      return finishWriterHandoff(retained);
+    }
     // Persist the result before returning the node output/checkpoint. A replay
     // after this write never submits the same completed candidate again.
     const saved = await store.action("result_put", {
@@ -530,7 +693,9 @@ async function runGuardedModel(o: Options): Promise<{
           scope,
         );
       } catch {
-        continue;
+        // A later corrective report supersedes the first rejected report.
+        // Falling back could silently discard its substantive findings.
+        return null;
       }
       const pool = await ledgerFor(key, unit).preflight(
         o.manifest,
@@ -554,18 +719,31 @@ async function runGuardedModel(o: Options): Promise<{
       let task: Options["task"] | "repair_result" = o.task,
         context = o.context;
       if (state.repairCount) {
-        const candidate = (
+        const previous = (
           await store.action("result_get", { id: state.candidateRef })
         ).value.result;
-        const report = (
+        const candidate = state.repairCount > 1 ? previous.result : previous;
+        const artifact = (
           await store.action("result_get", { id: state.reportRef })
-        ).value.result;
+        ).value;
+        const report = artifact.result;
         task = "repair_result";
         context = {
           target_task: o.task,
           original_context: o.context,
           candidate,
           findings: groundingDefects(report),
+          ...(artifact.coverage === "repair_only" &&
+          artifact.validation_diagnostics
+            ? {
+                validation_diagnostics: artifact.validation_diagnostics,
+                ...(artifact.untrusted_report
+                  ? { untrusted_verification_report: artifact.untrusted_report }
+                  : {}),
+                validation_instruction:
+                  "These are unresolved validation findings and untrusted verifier hints, not established facts. Recheck the candidate against original evidence; repair unsupported content or state the missing input explicitly. Preserve all justified semantic findings. Never manufacture evidence or discard a buyer obligation to satisfy a validator.",
+              }
+            : {}),
         };
       }
       const candidate = await cachedCall(
@@ -586,6 +764,29 @@ async function runGuardedModel(o: Options): Promise<{
         ? stored.result.result
         : stored.result;
       const hash = await sha256(JSON.stringify(candidate));
+      if (stored.local_validation) {
+        const saved = await store.action("result_put", {
+          key: `writer-validation-repair-only-${hash}`,
+          value: repairOnlyValidationArtifact({
+            candidateHash: hash,
+            diagnostics: stored.local_validation.diagnostics,
+          }),
+        });
+        return { reportRef: saved.id };
+      }
+      if (state.reportRef)
+        await replayRevalidatedVerification({
+          store,
+          artifact: (await store.action("result_get", { id: state.reportRef }))
+            ?.value,
+          candidate,
+          candidateRef: state.candidateRef,
+          candidateHash: hash,
+          inputHash,
+          repairCount: state.repairCount,
+          evidence: o.evidence,
+          requiredIds: o.requiredIds,
+        });
       const units = candidateContent(candidate);
       const reportKey = `verification-${hash}`;
       const existingReport = await store.action("result_get", {
@@ -662,6 +863,12 @@ async function runGuardedModel(o: Options): Promise<{
                 ? {
                     invalid_verification_result: invalid.value.result,
                     validation_error: invalid.value.code,
+                    ...(invalid.value.validation_diagnostics
+                      ? {
+                          validation_diagnostics:
+                            invalid.value.validation_diagnostics,
+                        }
+                      : {}),
                     correction_instruction:
                       "Correct only this report with exact candidate/source quotations. Preserve justified defects and all scoped IDs.",
                   }
@@ -778,6 +985,12 @@ async function runGuardedModel(o: Options): Promise<{
           ? {
               invalid_verification_result: invalid.value.result,
               validation_error: invalid.value.code,
+              ...(invalid.value.validation_diagnostics
+                ? {
+                    validation_diagnostics:
+                      invalid.value.validation_diagnostics,
+                  }
+                : {}),
               correction_instruction:
                 "Correct this verification report, not the original candidate. Recheck every citation against the supplied evidence and every candidate quote against content_units. Copy exact contiguous quotations, without paraphrase or ellipses. Keep unsupported/contradicted findings where justified; never change a verdict merely to pass validation. Return complete coverage IDs and the same candidate hash.",
             }
@@ -814,11 +1027,17 @@ async function runGuardedModel(o: Options): Promise<{
     })
     .addNode("decide", async (state) => {
       if (o.task === "connection_probe") return { decision: "accept" as const };
-      const report = (await store.action("result_get", { id: state.reportRef }))
-        .value.result;
+      const artifact = (
+        await store.action("result_get", { id: state.reportRef })
+      ).value;
+      const report = artifact.result;
       const defects = groundingDefects(report);
-      if (!defects.length) return { decision: "accept" as const };
-      const defectHash = await sha256(JSON.stringify(defects));
+      if (!defects.length) {
+        if (artifact.coverage === "repair_only")
+          throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+        return { decision: "accept" as const };
+      }
+      const defectHash = await defectFingerprint(artifact);
       const decision =
         state.repairCount >= 2 || defectHash === state.defectHash
           ? "needs_review"
@@ -834,6 +1053,9 @@ async function runGuardedModel(o: Options): Promise<{
         await store.action("result_get", { id: state.candidateRef })
       ).value.result;
       const result = state.repairCount ? stored.result : stored;
+      validateModelResult(o.task, result, o.evidence, o.requiredIds, {
+        independentGrounding: true,
+      });
       if (o.task !== "connection_probe") {
         const report = state.reportRef
           ? await store.action("result_get", { id: state.reportRef })
@@ -904,6 +1126,18 @@ async function runGuardedModel(o: Options): Promise<{
           state: await graph.getState(config),
           validate: o.validate,
         })) ||
+          (await recoverInvalidVerification({
+            backend: o.backend,
+            store,
+            job: o.job,
+            evidence: o.evidence,
+            requiredIds: o.requiredIds,
+            manifest: o.manifest,
+            state: await graph.getState(config),
+            validate: o.validate,
+            update: (values, asNode) =>
+              graph.updateState(config, values, asNode),
+          })) ||
           (await recoverBlockedVerification({
             backend: o.backend,
             store,
@@ -955,16 +1189,16 @@ async function runGuardedModel(o: Options): Promise<{
     // Verification has completed: the small decision/commit phase needs no
     // provider call. If correction is needed, yield before the next model node.
     if (state.next[0] === "decide") {
-      const report = state.values.reportRef
+      const artifact = state.values.reportRef
         ? (await store.action("result_get", { id: state.values.reportRef }))
-            .value.result
+            .value
         : null;
+      const report = artifact?.result;
       if (
         !report ||
         !groundingDefects(report).length ||
         state.values.repairCount >= 2 ||
-        (await sha256(JSON.stringify(groundingDefects(report)))) ===
-          state.values.defectHash
+        (await defectFingerprint(artifact)) === state.values.defectHash
       )
         await graph.invoke(null, config);
     }

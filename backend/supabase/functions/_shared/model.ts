@@ -47,14 +47,23 @@ export {
   defaultFailoverRank,
   isModelProviderId,
 } from "./modelProviders.ts";
+import {
+  validationDiagnostic,
+  type ModelValidationDiagnostic,
+} from "./modelValidationDiagnostics.ts";
 export class ModelError extends Error {
   constructor(
     public code: string,
     public retryAfter: string | null = null,
+    public validationDiagnostics: ModelValidationDiagnostic[] = [],
   ) {
     super(code);
   }
 }
+/** A retained safe candidate needs a bounded content correction, not another
+ * provider request with the same unchanged writer prompt. No private body is
+ * carried by this control-flow error. */
+export class ModelCandidateRepair extends ModelError {}
 export class ModelDeferred extends ModelError {
   constructor() {
     super("MODEL_IN_PROGRESS");
@@ -251,9 +260,10 @@ function validateQuotes(
   refs: { id: string; quote: string }[],
   evidence: Evidence[],
   kind?: Evidence["kind"],
+  path = "$",
 ) {
   const canonicalText = (value: string) => normalizedEvidence(value);
-  for (const ref of refs) {
+  for (const [index, ref] of refs.entries()) {
     const source = evidence.find((e) => e.id === ref.id);
     if (
       !source ||
@@ -262,21 +272,27 @@ function validateQuotes(
       (kind && source.kind !== kind) ||
       (source.kind === "company" && !source.verified)
     ) {
+      const reason = !source
+        ? "source_missing"
+        : !canonicalText(ref.quote)
+          ? "quote_empty"
+          : !canonicalText(source.text).includes(canonicalText(ref.quote))
+            ? "source_quote_mismatch"
+            : kind && source.kind !== kind
+              ? "source_kind_mismatch"
+              : "company_not_verified";
       console.warn(
         "model_evidence_diagnostic",
         JSON.stringify({
-          reason: !source
-            ? "source_missing"
-            : !canonicalText(ref.quote)
-              ? "quote_empty"
-              : !canonicalText(source.text).includes(canonicalText(ref.quote))
-                ? "source_quote_mismatch"
-                : kind && source.kind !== kind
-                  ? "source_kind_mismatch"
-                  : "company_not_verified",
+          reason,
         }),
       );
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+        validationDiagnostic("EVIDENCE_REFERENCE_INVALID", reason, {
+          paths: [`${path}[${index}].quote`],
+          evidence_ids: [ref.id],
+        }),
+      ]);
     }
   }
 }
@@ -284,6 +300,20 @@ const sameIds = (actual: string[], expected: string[]) =>
   new Set(actual).size === actual.length &&
   actual.length === expected.length &&
   expected.every((x) => actual.includes(x));
+function coverageError(
+  paths: string[],
+  requiredIds: string[] = [],
+  reason:
+    | "required_ids_mismatch"
+    | "required_content_missing" = "required_ids_mismatch",
+) {
+  return new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+    validationDiagnostic("MODEL_COVERAGE_INCOMPLETE", reason, {
+      paths,
+      requirement_ids: requiredIds,
+    }),
+  ]);
+}
 export function validateModelResult(
   task: ModelTask,
   value: unknown,
@@ -330,22 +360,31 @@ export function validateModelResult(
             result.claims.length,
         }),
       );
-      throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+      throw coverageError(
+        ["$.processed_requirement_ids", "$.requirement_checks", "$.claims"],
+        requiredIds,
+      );
     }
-    for (const claim of result.claims) {
+    for (const [index, claim] of result.claims.entries()) {
       validateQuotes(
         claim.source_refs,
         evidence,
         claim.kind === "company_fact" && claim.status === "supported"
           ? "company"
           : undefined,
+        `$.claims[${index}].source_refs`,
       );
       // Missing support is a semantic defect for candidate repair, rather
       // than malformed verifier output. groundingDefects independently blocks
       // these claims even when the verifier incorrectly labels them supported.
     }
-    for (const requirement of result.requirement_checks)
-      validateQuotes(requirement.source_refs, evidence);
+    for (const [index, requirement] of result.requirement_checks.entries())
+      validateQuotes(
+        requirement.source_refs,
+        evidence,
+        undefined,
+        `$.requirement_checks[${index}].source_refs`,
+      );
     if (
       result.findings.some(
         (f: any) =>
@@ -355,13 +394,23 @@ export function validateModelResult(
           f.requirement_ids.some((id: string) => !requiredIds.includes(id)),
       )
     )
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+        validationDiagnostic(
+          "EVIDENCE_REFERENCE_INVALID",
+          "invalid_finding_reference",
+          { paths: ["$.findings"] },
+        ),
+      ]);
   }
   if (task === "inspect_source_page") {
     try {
       validateSourcePageResult(result, evidence);
     } catch {
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+        validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "invalid_scope", {
+          paths: ["$"],
+        }),
+      ]);
     }
   }
   if (blockedContent(JSON.stringify(result))) {
@@ -379,43 +428,89 @@ export function validateModelResult(
   }
   if (task === "summarize_review") {
     if (!sameIds(result.processed_review_ids, requiredIds))
-      throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
-    for (const directive of result.directives)
-      validateQuotes(directive.source_refs, evidence, "review");
+      throw coverageError(["$.processed_review_ids"], requiredIds);
+    for (const [index, directive] of result.directives.entries())
+      validateQuotes(
+        directive.source_refs,
+        evidence,
+        "review",
+        `$.directives[${index}].source_refs`,
+      );
     if (result.questions.some((q: any) => q.requirement_ids.length))
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+        validationDiagnostic(
+          "EVIDENCE_REFERENCE_INVALID",
+          "invalid_finding_reference",
+          { paths: ["$.questions"] },
+        ),
+      ]);
     if (!result.directives.length && !result.questions.length)
-      throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+      throw coverageError(
+        ["$.directives", "$.questions"],
+        requiredIds,
+        "required_content_missing",
+      );
   }
   if (task === "classify_opportunity" && result.scope_decision) {
-    validateQuotes(result.scope_decision.notice_evidence, evidence, "notice");
+    validateQuotes(
+      result.scope_decision.notice_evidence,
+      evidence,
+      "notice",
+      "$.scope_decision.notice_evidence",
+    );
     validateQuotes(
       result.scope_decision.company_evidence || [],
       evidence,
       "company",
+      "$.scope_decision.company_evidence",
     );
   }
   if (task === "classify_opportunity")
-    for (const factor of Object.values(result.factors) as any[]) {
-      validateQuotes(factor.notice_evidence, evidence, "notice");
-      validateQuotes(factor.company_evidence, evidence, "company");
+    for (const [key, factor] of Object.entries(result.factors) as [
+      string,
+      any,
+    ][]) {
+      validateQuotes(
+        factor.notice_evidence,
+        evidence,
+        "notice",
+        `$.factors.${key}.notice_evidence`,
+      );
+      validateQuotes(
+        factor.company_evidence,
+        evidence,
+        "company",
+        `$.factors.${key}.company_evidence`,
+      );
       if (
         factor.rating !== null &&
         (!factor.notice_evidence.length || !factor.company_evidence.length)
       )
-        throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+        throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+          validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "source_missing", {
+            paths: [
+              `$.factors.${key}.notice_evidence`,
+              `$.factors.${key}.company_evidence`,
+            ],
+          }),
+        ]);
     }
   if (task === "analyze_chunk") {
     if (!sameIds(result.processed_block_ids, requiredIds))
-      throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
-    for (const req of result.requirements)
-      validateQuotes(req.source_refs, evidence, "rfp");
+      throw coverageError(["$.processed_block_ids"], requiredIds);
+    for (const [index, req] of result.requirements.entries())
+      validateQuotes(
+        req.source_refs,
+        evidence,
+        "rfp",
+        `$.requirements[${index}].source_refs`,
+      );
   }
   if (
     ["plan_proposal", "review_proposal"].includes(task) &&
     !sameIds(result.processed_requirement_ids, requiredIds)
   )
-    throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+    throw coverageError(["$.processed_requirement_ids"], requiredIds);
   if (task === "plan_proposal") {
     if (result.sections.some((s: any) => s.key.startsWith("fixed-")))
       throw new ModelError("TEMPLATE_BLOCK_OVERRIDE");
@@ -427,7 +522,11 @@ export function validateModelResult(
       requiredIds.some((x) => !addressed.includes(x)) ||
       addressed.some((x) => !requiredIds.includes(x))
     )
-      throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+      throw coverageError(
+        ["$.sections", "$.questions"],
+        requiredIds,
+        "required_content_missing",
+      );
   }
   if (task === "draft_section") {
     if (
@@ -438,9 +537,18 @@ export function validateModelResult(
           !result.questions.some((q: any) => q.requirement_ids.includes(x)),
       )
     )
-      throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
-    validateQuotes(result.evidence_refs, evidence);
-    for (const claim of result.company_claims) {
+      throw coverageError(
+        ["$.requirement_ids", "$.questions"],
+        requiredIds,
+        "required_content_missing",
+      );
+    validateQuotes(
+      result.evidence_refs,
+      evidence,
+      undefined,
+      "$.evidence_refs",
+    );
+    for (const [index, claim] of result.company_claims.entries()) {
       const fact = evidence.find(
         (e) => e.id === claim.source_id && e.kind === "company" && e.verified,
       );
@@ -454,7 +562,19 @@ export function validateModelResult(
           : !fact.text.includes(claim.quote) ||
             !claim.quote.includes(claim.claim))
       )
-        throw new ModelError("UNSUPPORTED_COMPANY_CLAIM");
+        throw new ModelError("UNSUPPORTED_COMPANY_CLAIM", null, [
+          validationDiagnostic(
+            "UNSUPPORTED_COMPANY_CLAIM",
+            "unsupported_company_claim",
+            {
+              paths: [
+                `$.company_claims[${index}].source_id`,
+                `$.company_claims[${index}].quote`,
+              ],
+              evidence_ids: [claim.source_id],
+            },
+          ),
+        ]);
       // This guard checks citation provenance, not semantic equivalence. A
       // paraphrase, translation or claim summary need not be a substring of its
       // verbatim source quote (or the section body). The mandatory V2 grounding
@@ -486,9 +606,14 @@ export function validateModelResult(
         requiredIds,
       )
     )
-      throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
-    for (const response of result.responses) {
-      validateQuotes(response.evidence_refs, evidence);
+      throw coverageError(["$.responses"], requiredIds);
+    for (const [index, response] of result.responses.entries()) {
+      validateQuotes(
+        response.evidence_refs,
+        evidence,
+        undefined,
+        `$.responses[${index}].evidence_refs`,
+      );
       if (response.status === "not_applicable_approved")
         throw new ModelError("MODEL_CANNOT_APPROVE");
     }
@@ -558,7 +683,11 @@ export interface Ledger {
     level: ExecutionProfile["reasoning"],
   ): Promise<boolean>;
   validateCandidate?(result: unknown): void;
-  invalidCandidate?(result: unknown, code: string): Promise<void>;
+  invalidCandidate?(
+    result: unknown,
+    code: string,
+    diagnostics?: ModelValidationDiagnostic[],
+  ): Promise<void | "repair">;
   loadRound?(inputHash: string): Promise<ModelRoundProgress | null>;
   saveRound?(
     progress: ModelRoundProgress | null,
@@ -1354,7 +1483,11 @@ export async function executeModel(
   repair = false,
   fetcher: typeof fetch = fetch,
   verificationRevision: 1 | 2 = 1,
-  options: { independentGrounding?: boolean; semanticRevision?: 0 | 1 } = {},
+  options: {
+    independentGrounding?: boolean;
+    semanticRevision?: 0 | 1;
+    repairContentValidation?: boolean;
+  } = {},
 ) {
   const invocationStarted = ledger.invocationStartedAt ?? Date.now();
   const targetTask =
@@ -1781,8 +1914,28 @@ export async function executeModel(
               "UNSUPPORTED_COMPANY_CLAIM",
             ].includes(error.code) &&
             !blockedContent(JSON.stringify(parsedCandidate))
-          )
-            await ledger.invalidCandidate?.(parsedCandidate, error.code);
+          ) {
+            const retained = await ledger.invalidCandidate?.(
+              parsedCandidate,
+              error.code,
+              error.validationDiagnostics,
+            );
+            if (
+              retained === "repair" &&
+              options.repairContentValidation === true &&
+              options.semanticRevision === 1 &&
+              task !== "verify_grounding" &&
+              task !== "connection_probe"
+            ) {
+              provider.telemetry.provider_error_reason =
+                "response_evidence_invalid";
+              throw new ModelCandidateRepair(
+                error.code,
+                null,
+                error.validationDiagnostics,
+              );
+            }
+          }
           provider.telemetry.provider_error_reason =
             error instanceof ModelError
               ? "response_evidence_invalid"
@@ -1818,6 +1971,17 @@ export async function executeModel(
           );
         retryWindows.push(lastError.retryAfter);
         await finishAttempt(code, lastError.retryAfter);
+        if (error instanceof ModelCandidateRepair) {
+          await ledger.attempt?.(
+            config.provider,
+            code,
+            Boolean(reservation),
+            config,
+          );
+          // The graph owns the durable handoff and exact completed-round
+          // cleanup. Never continue this unchanged writer prompt on provider B.
+          throw error;
+        }
         if (
           automatic &&
           ledger.saveRound &&
@@ -1901,7 +2065,11 @@ export async function executeModel(
         )
       : lastError;
   } catch (error) {
-    deferred = error instanceof ModelDeferred;
+    // A retained writer candidate has its own transactional handoff. Keep the
+    // completed request round until that action verifies and clears its exact
+    // identity, including a crash before the graph checkpoint is written.
+    deferred =
+      error instanceof ModelDeferred || error instanceof ModelCandidateRepair;
     throw error;
   } finally {
     if (roundSaved && !deferred) await ledger.saveRound?.(null, false);
@@ -1923,7 +2091,21 @@ export function validateScopeDecision(result: any, policy: ServiceScope) {
         ].includes(ref.keyword),
     )
   )
-    throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+    throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+      validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "invalid_scope", {
+        paths: [
+          "$.scope_decision.company_evidence",
+          "$.scope_decision.keyword_evidence",
+        ],
+      }),
+    ]);
   if (decision.status !== "uncertain" && !company.length && !terms.length)
-    throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+    throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+      validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "source_missing", {
+        paths: [
+          "$.scope_decision.company_evidence",
+          "$.scope_decision.keyword_evidence",
+        ],
+      }),
+    ]);
 }

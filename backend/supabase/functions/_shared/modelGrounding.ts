@@ -1,5 +1,6 @@
 import { ModelError, validateModelResult, type Evidence } from "./model.ts";
 import { normalizedEvidence } from "./sourceModel.ts";
+import { validationDiagnostic } from "./modelValidationDiagnostics.ts";
 
 /** Inspect generated text, including undeclared assertions, without treating
  * verbatim evidence copies or internal IDs as assertions made in the proposal. */
@@ -119,7 +120,7 @@ function tableItemNumbers(
   return [];
 }
 const itemLabel =
-  /(?:\b(?:BOQ\s+)?(?:item|line|row|section|clause)|(?:البند|بند|الصف|صف|الفقرة|فقرة))\s*(?:رقم\s+)?([0-9٠-٩۰-۹]{1,4})(?![0-9٠-٩۰-۹])/giu;
+  /(?:\b(?:BOQ\s+)?(?:item|line|row|section|clause)|(?:البند|بند|الصف|صف|الفقرة|فقرة))\s*(?:رقم\s+)?([0-9٠-٩۰-۹]{1,4})(?![0-9٠-٩۰-۹]|[.,٫٬][0-9٠-٩۰-۹])/giu;
 function declaredClaimCovered(declared: string, claims: any[]) {
   const text = normalizedEvidence(declared);
   if (
@@ -189,24 +190,53 @@ export function validateGroundingReport(
         candidate_hash_matches: report.checked_candidate_hash === candidateHash,
       }),
     );
-    throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+    throw new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+      validationDiagnostic(
+        "MODEL_COVERAGE_INCOMPLETE",
+        report.checked_candidate_hash !== candidateHash
+          ? "candidate_hash_mismatch"
+          : "content_ids_mismatch",
+        {
+          paths: ["$.checked_candidate_hash", "$.processed_content_ids"],
+          content_ids: ids,
+        },
+      ),
+    ]);
   }
   const text = normalizedEvidence(units.map((u) => u.text).join("\n"));
   if (units.length && !report.claims.length && !scope?.requirementsOnly)
-    throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+    throw new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+      validationDiagnostic(
+        "MODEL_COVERAGE_INCOMPLETE",
+        "missing_content_claims",
+        { paths: ["$.claims"], content_ids: ids },
+      ),
+    ]);
   if (scope?.requirementsOnly && report.claims.length)
-    throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+    throw new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+      validationDiagnostic(
+        "MODEL_COVERAGE_INCOMPLETE",
+        "unexpected_content_claims",
+        { paths: ["$.claims"] },
+      ),
+    ]);
   const referenceIds = new Set([
     ...evidence.map((source) => source.id),
     ...requiredIds,
   ]);
-  for (const claim of report.claims) {
+  for (const [index, claim] of report.claims.entries()) {
     if (!text.includes(normalizedEvidence(claim.candidate_quote))) {
       console.warn(
         "model_evidence_diagnostic",
         JSON.stringify({ reason: "candidate_quote_mismatch" }),
       );
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+        validationDiagnostic(
+          "EVIDENCE_REFERENCE_INVALID",
+          "candidate_quote_mismatch",
+          { paths: [`$.claims[${index}].candidate_quote`] },
+        ),
+      ]);
     }
     if (
       claim.status === "supported" &&
@@ -225,28 +255,49 @@ export function validateGroundingReport(
         adjacentItemNumbers(ref, evidence),
       );
       let unsupportedLabel = false;
+      const unsupportedNumbers: string[] = [];
       const factualText = withoutReferenceIdentifiers(
         claim.candidate_quote,
         referenceIds,
       ).replace(itemLabel, (_match: string, label: string) => {
         const number = numericLiterals(label)[0];
-        if (!quotedNumbers.includes(number) && !adjacentLabels.includes(number))
+        if (
+          !quotedNumbers.includes(number) &&
+          !adjacentLabels.includes(number)
+        ) {
           unsupportedLabel = true;
+          unsupportedNumbers.push(number);
+        }
         return "";
       });
-      if (
-        unsupportedLabel ||
-        numericLiterals(factualText).some((n) => !quotedNumbers.includes(n))
-      ) {
+      unsupportedNumbers.push(
+        ...numericLiterals(factualText).filter(
+          (n) => !quotedNumbers.includes(n),
+        ),
+      );
+      if (unsupportedLabel || unsupportedNumbers.length) {
         console.warn(
           "model_evidence_diagnostic",
           JSON.stringify({ reason: "numeric_evidence_mismatch" }),
         );
-        throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+        throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+          validationDiagnostic(
+            "EVIDENCE_REFERENCE_INVALID",
+            "numeric_evidence_mismatch",
+            {
+              paths: [
+                `$.claims[${index}].candidate_quote`,
+                `$.claims[${index}].source_refs`,
+              ],
+              evidence_ids: claim.source_refs.map((ref: any) => ref.id),
+              numeric_literals: [...new Set(unsupportedNumbers)],
+            },
+          ),
+        ]);
       }
     }
   }
-  for (const check of report.requirement_checks)
+  for (const [index, check] of report.requirement_checks.entries())
     if (
       check.candidate_quote &&
       !text.includes(normalizedEvidence(check.candidate_quote))
@@ -255,11 +306,29 @@ export function validateGroundingReport(
         "model_evidence_diagnostic",
         JSON.stringify({ reason: "requirement_quote_mismatch" }),
       );
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+        validationDiagnostic(
+          "EVIDENCE_REFERENCE_INVALID",
+          "requirement_quote_mismatch",
+          {
+            paths: [`$.requirement_checks[${index}].candidate_quote`],
+            requirement_ids: [check.requirement_id],
+          },
+        ),
+      ]);
     }
-  for (const declared of scope ? [] : (candidate.company_claims ?? []))
+  for (const [index, declared] of (scope
+    ? []
+    : (candidate.company_claims ?? [])
+  ).entries())
     if (!declaredClaimCovered(declared.claim, report.claims))
-      throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+      throw new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+        validationDiagnostic(
+          "MODEL_COVERAGE_INCOMPLETE",
+          "declared_claim_uncovered",
+          { paths: [`$.company_claims[${index}].claim`, "$.claims"] },
+        ),
+      ]);
 }
 export function groundingDefects(report: any) {
   const missingSupport = (claim: any) =>

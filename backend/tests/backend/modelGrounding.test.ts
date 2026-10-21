@@ -364,6 +364,86 @@ it.each([
     else expect(check).toThrow("EVIDENCE_REFERENCE_INVALID");
   },
 );
+it.each([
+  ["Section 4.2 requires approval.", "Section 4.2 requires approval.", true],
+  ["Section 4.2 requires approval.", "Section 4 requires 2 approvals.", false],
+  [
+    "Section 4.2.1 requires approval.",
+    "Section 4.2.1 requires approval.",
+    true,
+  ],
+  [
+    "Section 4.2 requires 3 workshops.",
+    "Section 4.2 requires workshops.",
+    false,
+  ],
+  ["البند ٤٫٢ يتطلب الموافقة.", "البند ٤٫٢ يتطلب الموافقة.", true],
+  ["البند ۴.۲ يتطلب الموافقة.", "البند ۴.۲ يتطلب الموافقة.", true],
+  [
+    "Section 4,200 requires approval.",
+    "Section 4,200 requires approval.",
+    true,
+  ],
+  ["Section 4.2 requires approval.", "4\nrequires approval.", false],
+])(
+  "keeps a complete numeric label instead of inventing integer fragments: %s",
+  (text, quote, pass) => {
+    const c = { content_blocks: [{ type: "paragraph", text }] };
+    const r = report();
+    r.claims[0] = {
+      ...r.claims[0],
+      claim: text,
+      candidate_quote: text,
+      source_refs: [{ id: "notice", quote }],
+    };
+    const check = () =>
+      validateGroundingReport(
+        r,
+        c,
+        "a".repeat(64),
+        [{ ...evidence[0], text: quote }],
+        [],
+      );
+    if (pass) expect(check).not.toThrow();
+    else expect(check).toThrow("EVIDENCE_REFERENCE_INVALID");
+  },
+);
+it("reports exact failed numeric citation paths without copying source or candidate text", () => {
+  const c = {
+    content_blocks: [{ type: "paragraph", text: "Provide 3 workshops." }],
+  };
+  const r = report();
+  r.claims[0] = {
+    ...r.claims[0],
+    claim: "Provide workshops",
+    candidate_quote: c.content_blocks[0].text,
+    source_refs: [{ id: "notice", quote: "Provide workshops." }],
+  };
+  let caught: any;
+  try {
+    validateGroundingReport(
+      r,
+      c,
+      "a".repeat(64),
+      [{ ...evidence[0], text: "Provide workshops." }],
+      [],
+    );
+  } catch (error) {
+    caught = error;
+  }
+  expect(caught.validationDiagnostics).toEqual([
+    {
+      code: "EVIDENCE_REFERENCE_INVALID",
+      reason: "numeric_evidence_mismatch",
+      paths: ["$.claims[0].candidate_quote", "$.claims[0].source_refs"],
+      evidence_ids: ["notice"],
+      numeric_literals: ["3"],
+    },
+  ]);
+  expect(JSON.stringify(caught.validationDiagnostics)).not.toContain(
+    "workshops",
+  );
+});
 it("validates a supported deadline and checks undeclared text, including tables", () => {
   expect(() =>
     validateGroundingReport(report(), candidate, "a".repeat(64), evidence, []),

@@ -3,6 +3,7 @@ import { enrichPublicNotice } from "./publicNoticeDetails.ts";
 import { executeGuardedModel } from "./modelGraph.ts";
 import { createSectionOutline, plannedDraftInputs } from "./proposalOutline.ts";
 import { normalizedEvidence } from "./sourceModel.ts";
+import { validationDiagnostic } from "./modelValidationDiagnostics.ts";
 import {
   batchGenerationRequirements,
   requirementModelContext,
@@ -779,7 +780,11 @@ export async function processGeneration(
         input.task === "draft_section" &&
         result.key !== ctx!.step.input.section.key
       )
-        throw new ModelError("MODEL_OUTPUT_INVALID");
+        throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+          validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "invalid_scope", {
+            paths: ["$.key"],
+          }),
+        ]);
       if (input.task === "review_proposal") {
         const sectionKeys = new Set(
           (input.context.sections || []).map((s: Row) => s.key),
@@ -792,7 +797,13 @@ export async function processGeneration(
             f.section_ids.some((key: string) => !sectionKeys.has(key)),
           )
         )
-          throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+          throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+            validationDiagnostic(
+              "EVIDENCE_REFERENCE_INVALID",
+              "invalid_finding_reference",
+              { paths: ["$.responses", "$.findings"] },
+            ),
+          ]);
       }
       if (input.task === "plan_commercial") {
         const sectionKeys = new Set(
@@ -811,7 +822,13 @@ export async function processGeneration(
               (l.rate_id && !rateIds.has(l.rate_id)),
           )
         )
-          throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+          throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+            validationDiagnostic(
+              "EVIDENCE_REFERENCE_INVALID",
+              "invalid_finding_reference",
+              { paths: ["$.lines"], requirement_ids: input.requiredIds },
+            ),
+          ]);
       }
     };
     const outcome = await executeGuardedModel({

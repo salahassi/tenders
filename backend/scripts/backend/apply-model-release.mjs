@@ -29,6 +29,8 @@ const release = [
   ["20261021130940", "wake_unchanged_notice_continuations"],
   ["20261021131353", "proposal_section_outline"],
   ["20261021131657", "recover_alternate_paid_writer"],
+  ["20261021134321", "recover_invalid_verification_for_repair"],
+  ["20261021140001", "writer_validation_handoff"],
 ];
 const project = "nqfwbqeozmuiuwbiowil";
 const literal = (value) => "'" + value.replaceAll("'", "''") + "'";

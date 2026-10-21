@@ -4,10 +4,14 @@ import { workflowFixture } from "./workflowFixture";
 import { defaultCapabilities } from "../../supabase/functions/_shared/modelContract";
 import {
   ModelDeferred,
+  modelPrompt,
+  sha256,
   validateModelResult,
   type Evidence,
 } from "../../supabase/functions/_shared/model";
 import { executeGuardedModel } from "../../supabase/functions/_shared/modelGraph";
+import { ModelGraphStore } from "../../supabase/functions/_shared/modelGraphStore";
+import { modelLedger } from "../../supabase/functions/_shared/modelLedger";
 import {
   modelEnvironments,
   type Backend,
@@ -356,6 +360,53 @@ it("recovers a paid rejected writer through the existing produce checkpoint and 
       );
     },
   };
+  // This fixture reproduces a previously paid legacy writer round, not a new
+  // V1 content-correction run. Preserve its original phase identity explicitly.
+  await modelLedger(backend, job, options.prefix, environments).preflight(
+    [],
+    "draft_section",
+  );
+  Object.assign(
+    job,
+    (await f.db.query<any>("select * from public.jobs where id=$1", [job.id]))
+      .rows[0],
+  );
+  const graphInputHash = await sha256(
+    JSON.stringify({
+      version: 1,
+      task: options.task,
+      context: options.context,
+      evidence: options.evidence,
+      requiredIds: options.requiredIds,
+      manifest: options.manifest,
+      language: options.language,
+    }),
+  );
+  const threadId = await sha256(
+    `${job.id}:${options.prefix}:${graphInputHash}`,
+  );
+  const store = new ModelGraphStore(backend, job, threadId);
+  await store.action("init", {
+    input_hash: graphInputHash,
+    task: options.task,
+    graph_version: 1,
+  });
+  await store.action("result_put", {
+    key: `semantic-instructions-${await sha256(`${options.prefix}:candidate-0`)}`,
+    value: {
+      version: 0,
+      legacy_input_hash: await sha256(
+        modelPrompt(
+          options.task,
+          options.context,
+          options.evidence,
+          [],
+          "en",
+          false,
+        ),
+      ),
+    },
+  });
   await expect(executeGuardedModel(options)).rejects.toMatchObject({
     code: "MODEL_CORRECTION_EXHAUSTED",
   });

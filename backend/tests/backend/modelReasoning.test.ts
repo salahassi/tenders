@@ -315,6 +315,8 @@ it.each([true, false])(
     );
     const original = {
       input_hash: inputHash,
+      prompt_version: "fixture-frozen-prompt-v1",
+      route_revision: 17,
       profile: { ...profile, reasoning: "none" as const },
       capabilities: { ...config.capabilities, background: true },
     };
@@ -364,6 +366,12 @@ it.each([true, false])(
         profile: original.profile,
         capabilities: original.capabilities,
         inputHash,
+        ...(hasMetadata
+          ? {
+              promptVersion: original.prompt_version,
+              routeRevision: original.route_revision,
+            }
+          : {}),
       }),
     );
   },
