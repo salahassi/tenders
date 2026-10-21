@@ -139,6 +139,52 @@ async function acceptedPoll() {
   return { claimed, usage, attempt, row };
 }
 
+it("wakes independent ready work only when a configured request slot is available", async () => {
+  await acceptedPoll();
+  const done = await job("succeeded");
+  const ready = await job();
+  expect(await wake(done.id)).toBe(false);
+  await f.db.query(
+    "insert into public.model_execution_settings(workspace_id,enabled,max_parallel_requests,created_by) values($1,true,2,$2)",
+    [f.w, f.owner],
+  );
+  expect(await wake(done.id)).toBe(true);
+  expect(await dispatches()).toBe(1);
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(ready.id);
+  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+});
+
+it("keeps an accepted poll wake eligible beside another job's accepted request, even after lowering capacity", async () => {
+  const { claimed, usage } = await acceptedPoll();
+  const other = await job("retry_wait", "MODEL_IN_PROGRESS");
+  await f.db.query(
+    "update public.jobs set next_attempt_at=now()+interval '2 minutes' where id=$1",
+    [other.id],
+  );
+  await f.db.query(
+    `insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,remote_request_id,remote_deadline,created_by)
+    select workspace_id,$2,$3,'other-job','openai',model,'b'||substring(input_hash from 2),application_day,settings_revision,100,100,'reserved','resp_other',now()+interval '1 hour',created_by from public.provider_usage where id=$1`,
+    [usage, other.id, crypto.randomUUID()],
+  );
+  await f.db.query(
+    "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
+    [claimed.id],
+  );
+  expect(await wake(claimed.id, claimed.lease_token, true)).toEqual({
+    dispatched: true,
+  });
+  expect(await dispatches()).toBe(1);
+  expect(
+    (
+      await f.db.query<any>(
+        "select count(*)::int n from public.provider_usage where state='reserved'",
+      )
+    ).rows[0].n,
+  ).toBe(2);
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(claimed.id);
+  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+});
+
 it("waits for the existing accepted request's persisted due time, then wakes and claims only one normal poll lease", async () => {
   const { claimed, usage, row } = await acceptedPoll();
   const ready = await job();

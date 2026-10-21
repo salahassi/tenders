@@ -8,7 +8,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
-function setup(role = "Owner", background = true) {
+function setup(role = "Owner", background = true, routingEnabled = false) {
   const capabilities = {
     revision: 1,
     output: "native_strict",
@@ -61,7 +61,9 @@ function setup(role = "Owner", background = true) {
         revision: 3,
       },
     ],
-    "model-execution-settings": [{ enabled: false, revision: 1 }],
+    "model-execution-settings": [
+      { enabled: routingEnabled, revision: 1, max_parallel_requests: 1 },
+    ],
   };
   const request = vi.fn(async (path: string) => ({
     data: path.includes("model-catalog-status")
@@ -208,10 +210,29 @@ it("retains the previous execution mode until explicitly enabled for new work", 
     }),
   );
 });
+it("saves concurrency independently while preserving the enabled routing mode", async () => {
+  const f = setup("Owner", true, true);
+  await screen.findByText("Task routing enabled");
+  await userEvent.selectOptions(
+    screen.getByLabelText("Simultaneous model requests"),
+    "2",
+  );
+  await userEvent.click(
+    screen.getByRole("button", { name: "Save processing concurrency" }),
+  );
+  await waitFor(() =>
+    expect(f.runCommand).toHaveBeenCalledWith("model.execution.configure", {
+      expected_revision: 1,
+      enabled: true,
+      max_parallel_requests: 2,
+    }),
+  );
+});
 it("gives non-Owners a read-only view without requesting credential status", async () => {
   const f = setup("Reviewer");
   await screen.findByText("owner-model-a");
   expect(screen.getByRole("button", { name: "Add model" })).toBeDisabled();
+  expect(screen.getByLabelText("Simultaneous model requests")).toBeDisabled();
   expect(
     screen.getByRole("button", { name: "Save task routing" }),
   ).toBeDisabled();

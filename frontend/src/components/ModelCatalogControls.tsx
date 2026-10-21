@@ -48,6 +48,7 @@ export default function ModelCatalogControls({
   }>();
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const [parallelRequests, setParallelRequests] = useState("1");
   const [connection, setConnection] = useState<Row | null>(null),
     [model, setModel] = useState<Row | null>(null);
   const [task, setTask] = useState("default"),
@@ -87,6 +88,7 @@ export default function ModelCatalogControls({
       status: status.data,
     };
     setData(next);
+    setParallelRequests(String(next.settings.max_parallel_requests ?? 1));
     setRoute(
       next.routes.find((r) => r.task === task) ?? {
         model_ids: [],
@@ -844,6 +846,45 @@ export default function ModelCatalogControls({
           {data.settings.enabled
             ? "Use existing provider routing for new work"
             : "Enable task routing for new work"}
+        </Button>
+      </section>
+      <section className="panel">
+        <h3>Processing concurrency</h3>
+        <p>
+          Allow independent tasks to wait for model results at the same time.
+          Existing requests finish when this limit is reduced. A higher limit
+          can spend the same work's budget faster and may reach provider rate
+          limits.
+        </p>
+        <Field label="Simultaneous model requests">
+          <select
+            value={parallelRequests}
+            disabled={disabled || !data.settings.enabled}
+            onChange={(event) => setParallelRequests(event.target.value)}
+          >
+            {[1, 2, 3, 4].map((count) => (
+              <option key={count} value={count}>
+                {count}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Button
+          disabled={
+            disabled ||
+            !data.settings.enabled ||
+            Number(parallelRequests) ===
+              (data.settings.max_parallel_requests ?? 1)
+          }
+          onClick={() =>
+            void save("model.execution.configure", {
+              expected_revision: data.settings.revision,
+              enabled: data.settings.enabled,
+              max_parallel_requests: Number(parallelRequests),
+            })
+          }
+        >
+          Save processing concurrency
         </Button>
       </section>
       <details>

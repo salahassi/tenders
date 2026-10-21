@@ -32,6 +32,7 @@ const release = [
   ["20261021134321", "recover_invalid_verification_for_repair"],
   ["20261021140001", "writer_validation_handoff"],
   ["20261021194000", "unmapped_draft_rfp_context"],
+  ["20261021210000", "bounded_parallel_model_requests"],
 ];
 const project = "nqfwbqeozmuiuwbiowil";
 const literal = (value) => "'" + value.replaceAll("'", "''") + "'";

@@ -1,5 +1,30 @@
 # Implementation status and continuation plan
 
+## October 21 — bounded parallel background model requests (in progress)
+
+The owner asked about parallel workers during the real proposal run. Its one
+workspace-wide accepted request slot lets background assessment hold up proposal
+verification. A configurable limit of 1–4 task-routed model requests is being
+added, with serial behavior retained until configured. Worker leases remain
+serialized. Reservations keep the workspace lock, same-job exclusion, frozen
+request identity, unknown-usage guards and paid-call budgets. Accepted requests
+remain pollable when the limit is reduced. Owner-only audited settings expose
+the limit in Models & providers. No live limit has changed yet.
+
+Local verification: the complete backend run covered 1,117 tests; 1,116 passed
+and one new wake test exposed nondeterministic fixture ordering between two due
+polls. After making the unrelated fixture poll future-due, its complete 72-test
+file passes. The new admission test covers two distinct accepted jobs, rejection
+of a third and a duplicate on the same job, and resumption after reducing the
+limit without rewriting usage. Both package typechecks/builds and frozen Deno
+entrypoints pass. The complete frontend run passed 202/205 tests; three existing
+UI journey tests timed out under concurrent backend load. The connected-screen
+file then passed 25/25; the app journey file still timed out alongside the DB
+tests, then passed 19/19 in isolation without changing its code or assertions.
+The new settings component suite passes 7/7. CI, deployment, real two-request
+overlap and actual Word export remain pending. Generated OpenAPI was refreshed
+from the canonical command schemas, including previously undocumented commands.
+
 ## October 21 — general section context correction (in progress)
 
 Real-content inspection found that the retained executive summary incorrectly

@@ -32,6 +32,7 @@ const names = [
   "recover_invalid_verification_for_repair",
   "writer_validation_handoff",
   "unmapped_draft_rfp_context",
+  "bounded_parallel_model_requests",
 ];
 const versions = [
   "20261020141244",
@@ -62,6 +63,7 @@ const versions = [
   "20261021134321",
   "20261021140001",
   "20261021194000",
+  "20261021210000",
 ];
 function fixture(history: any[], failMutation?: number) {
   const queries: any[] = [];

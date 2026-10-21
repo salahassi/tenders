@@ -383,6 +383,7 @@ export const commandSchemas = {
     .object({
       expected_revision: z.number().int().min(0),
       enabled: z.boolean(),
+      max_parallel_requests: z.number().int().min(1).max(4).optional(),
     })
     .strict(),
   "model.configure": z

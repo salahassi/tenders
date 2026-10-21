@@ -350,6 +350,175 @@ it.each([
   30000,
 );
 
+it("admits two distinct background jobs, keeps the same-job guard and drains accepted work after a limit reduction", async () => {
+  const s = await configure("openai");
+  await s.ledger.preflight([], "connection_probe");
+  const reserve = (job: any, key: string, hash: string) =>
+    rpc("reserve_task_model_call", {
+      job_id: job.id,
+      lease: job.lease_token,
+      call_key: key,
+      input_hash: hash.repeat(64),
+      input_tokens: 100,
+      output_tokens: 100,
+      manifest: [],
+      target_model: s.models[0].id,
+      target_connection: s.connection.id,
+    });
+  const first = await reserve(s.job, "parallel-first", "a");
+  await rpc("checkpoint_model_request", {
+    job_id: s.job.id,
+    lease: s.job.lease_token,
+    reservation: first.id,
+    remote_id: "resp_parallel_first",
+  });
+  await f.command("model.execution.configure", {
+    enabled: true,
+    expected_revision: 1,
+    max_parallel_requests: 2,
+  });
+  await expect(reserve(s.job, "same-job-duplicate", "b")).rejects.toMatchObject(
+    { code: "MODEL_RATE_WAIT" },
+  );
+  await f.db.query(
+    "update public.jobs set status='retry_wait',error_code='MODEL_IN_PROGRESS',lease_token=null,lease_until=null,next_attempt_at=now()+interval '1 minute' where id=$1",
+    [s.job.id],
+  );
+  const queued = (
+    await f.db.query<any>(
+      `insert into public.jobs(workspace_id,type,entity_id,input_hash,status,created_by)
+    select workspace_id,type,entity_id,'parallel-second','queued',created_by from public.jobs where id=$1 returning *`,
+      [s.job.id],
+    )
+  ).rows[0];
+  const secondJob = await rpc("claim_backend_job_v2");
+  expect(secondJob.id).toBe(queued.id);
+  expect(await rpc("claim_backend_job_v2")).toBeNull();
+  const ledger = modelLedger(
+    s.backend,
+    secondJob,
+    `probe:${secondJob.id}`,
+    s.envs,
+  );
+  await ledger.preflight([], "connection_probe");
+  const second = await reserve(secondJob, "parallel-second", "b");
+  await rpc("checkpoint_model_request", {
+    job_id: secondJob.id,
+    lease: secondJob.lease_token,
+    reservation: second.id,
+    remote_id: "resp_parallel_second",
+  });
+  expect(
+    (
+      await f.db.query<any>(
+        "select count(*)::int n from public.provider_usage where state='reserved'",
+      )
+    ).rows[0].n,
+  ).toBe(2);
+  await f.db.query(
+    "update public.jobs set status='retry_wait',error_code='MODEL_IN_PROGRESS',lease_token=null,lease_until=null,next_attempt_at=now()+interval '1 minute' where id=$1",
+    [secondJob.id],
+  );
+  const thirdQueued = (
+    await f.db.query<any>(
+      `insert into public.jobs(workspace_id,type,entity_id,input_hash,status,created_by)
+    select workspace_id,type,entity_id,'parallel-third','queued',created_by from public.jobs where id=$1 returning *`,
+      [s.job.id],
+    )
+  ).rows[0];
+  const thirdJob = await rpc("claim_backend_job_v2");
+  expect(thirdJob.id).toBe(thirdQueued.id);
+  await modelLedger(
+    s.backend,
+    thirdJob,
+    `probe:${thirdJob.id}`,
+    s.envs,
+  ).preflight([], "connection_probe");
+  await expect(
+    reserve(thirdJob, "third-at-capacity", "c"),
+  ).rejects.toMatchObject({ code: "MODEL_RATE_WAIT" });
+  const before = (
+    await f.db.query<any>("select * from public.provider_usage order by id")
+  ).rows;
+  await f.command("model.execution.configure", {
+    enabled: true,
+    expected_revision: 2,
+    max_parallel_requests: 1,
+  });
+  expect(
+    (await f.db.query<any>("select * from public.provider_usage order by id"))
+      .rows,
+  ).toEqual(before);
+  await expect(reserve(thirdJob, "over-capacity", "c")).rejects.toMatchObject({
+    code: "MODEL_RATE_WAIT",
+  });
+  await f.db.query(
+    "update public.jobs set status='retry_wait',lease_token=null,lease_until=null,next_attempt_at=now()+interval '1 minute' where id=$1",
+    [thirdJob.id],
+  );
+  await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
+    s.job.id,
+  ]);
+  const resumed = await rpc("claim_backend_job_v2");
+  expect(resumed.id).toBe(s.job.id);
+  const pending = await rpc("resume_task_model_request", {
+    job_id: resumed.id,
+    lease: resumed.lease_token,
+    input_hash: "a".repeat(64),
+    manifest: [],
+    target_model: s.models[0].id,
+    target_connection: s.connection.id,
+  });
+  expect(pending).toMatchObject({
+    id: first.id,
+    remote_request_id: "resp_parallel_first",
+    state: "reserved",
+  });
+  expect(
+    (
+      await f.db.query<any>(
+        "select state from public.provider_usage where id=$1",
+        [second.id],
+      )
+    ).rows[0].state,
+  ).toBe("reserved");
+});
+
+it("preserves a saved concurrency limit when older clients only toggle task routing", async () => {
+  await configure();
+  await f.command("model.execution.configure", {
+    enabled: true,
+    expected_revision: 1,
+    max_parallel_requests: 2,
+  });
+  const saved = await f.command("model.execution.configure", {
+    enabled: false,
+    expected_revision: 2,
+  });
+  expect(saved).toMatchObject({ enabled: false, max_parallel_requests: 2 });
+});
+
+it.each([0, 5, 1.5, "2", null])(
+  "rejects invalid concurrency %s without changing routing",
+  async (value) => {
+    await configure();
+    await expect(
+      f.command("model.execution.configure", {
+        enabled: true,
+        expected_revision: 1,
+        max_parallel_requests: value,
+      }),
+    ).rejects.toThrow("INVALID_INPUT");
+    expect(
+      (
+        await f.db.query<any>(
+          "select enabled,revision,max_parallel_requests from public.model_execution_settings",
+        )
+      ).rows[0],
+    ).toEqual({ enabled: true, revision: 1, max_parallel_requests: 1 });
+  },
+);
+
 it("treats a reserved workspace request as local capacity without dispatching another model", async () => {
   const s = await configure();
   await s.ledger.preflight([], "connection_probe");
