@@ -2,7 +2,7 @@
 
 ## October 21 — real acceptance blockers (in progress)
 
-Current status after the 07:53 UTC resume: **end-to-end acceptance is still
+Current status at 07:59 UTC after the audited resume: **end-to-end acceptance is still
 incomplete; no complete Word proposal has been downloaded or inspected**.
 Two of the original three analysis jobs have succeeded; the third remains in
 progress. API **v72** and normal worker **v85**, deployed at 07:52 UTC, include
@@ -13,9 +13,18 @@ not establish live analysis or proposal acceptance.
 
 At 07:53:29 UTC, a revision-guarded audited resume removed the trial's bounded
 hold at job revision 176 without changing budgets, usage or saved results.
-Normal worker dispatch 5580 was requested. Completion of the third analysis,
-planning, drafting, commercial missing-input handling, review and browser Word
-download/inspection remains pending.
+Normal worker dispatch 5580 was requested. Live readback now confirms one
+recovery marker, an unchanged received-candidate count of two, and no request
+for a second writer repair. Completed results were reused without generating
+that unnecessary replacement candidate.
+
+At 07:59:49 UTC, the first new verification batch using the pinned v2 instructions
+(`content-2`) completed successfully on Gemini and was cached. It used 6,210
+input / 5,842 output tokens in approximately 38 seconds, with no HTTP 400 or
+provider failover for that call. This is a successful live verified batch, not
+complete analysis acceptance: three content batches and the whole-candidate
+coverage check remain. Planning, drafting, commercial missing-input handling,
+review and browser Word download/inspection are still pending.
 
 Earlier completion work (API v71 / worker v84 deployed at 07:44 UTC;
 exact source readbacks matched 26/33 files):
@@ -94,8 +103,12 @@ private replay of the actual saved 44-claim repair-only report passed the recove
 helper's candidate, scope and evidence checks; this validates recovery eligibility,
 not complete candidate coverage or live proposal acceptance. The final complete
 backend run (`final-backend-serial-9.log`) subsequently passed all 616 tests.
-Runtime API v72 / worker v85 readbacks verified the combined code. Source commit,
-CI and Pages publication of this follow-up still require reconciliation.
+Runtime API v72 / worker v85 readbacks verified the combined code. Source
+`9bff1c8e6f8f07a4d985f3fe7d6bb09e641f2ad7` passed
+[Pages workflow 39565436678](https://github.com/salahassi/tenders/actions/runs/39565436678),
+including its checks and publication. Hosted smoke checks returned HTTP 200
+for API health and HTTP 401 for unauthenticated bootstrap and worker calls.
+These release checks do not replace the pending real Word acceptance.
 
 At the historical 07:17 UTC checkpoint, two analysis jobs had succeeded and the
 third had entered bounded repair. Its OpenAI request was accepted at 07:15 and
