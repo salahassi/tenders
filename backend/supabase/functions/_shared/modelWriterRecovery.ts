@@ -69,14 +69,22 @@ export async function recoverBlockedWriter(o: {
   )
     return false;
   if ((await o.store.action("recovery_ready")) !== true) return false;
-  const inputHash = await sha256(
-    modelPrompt(
-      "draft_section",
-      o.context,
-      o.evidence,
-      o.requiredIds,
-      o.language,
-      o.repair,
+  // The legacy generation step can mark repair=true after the initial writer
+  // round, while this graph still has no candidate and repairCount=0. Match
+  // the paid initial request too, using the same immutable business inputs.
+  // Neither the step's repair flag nor any received-candidate budget is reset.
+  const inputHashes = await Promise.all(
+    (o.repair ? [true, false] : [false]).map((repair) =>
+      sha256(
+        modelPrompt(
+          "draft_section",
+          o.context,
+          o.evidence,
+          o.requiredIds,
+          o.language,
+          repair,
+        ),
+      ),
     ),
   );
   const requestPrefix = `${o.prefix}:candidate-0`;
@@ -87,13 +95,18 @@ export async function recoverBlockedWriter(o: {
   });
   if (!Array.isArray(pool?.providers) || pool.pending_model_config_id)
     return false;
-  const usages = await o.store.action("writer_recovery_candidates", {
-    input_hash: inputHash,
-    request_prefix: requestPrefix,
-  });
-  if (!Array.isArray(usages) || usages.length > 3) return false;
+  const candidates: { usage: any; inputHash: string }[] = [];
+  for (const inputHash of inputHashes) {
+    const usages = await o.store.action("writer_recovery_candidates", {
+      input_hash: inputHash,
+      request_prefix: requestPrefix,
+    });
+    if (!Array.isArray(usages) || candidates.length + usages.length > 3)
+      return false;
+    candidates.push(...usages.map((usage) => ({ usage, inputHash })));
+  }
   const existing = await o.store.action("result_get", { key: "candidate-0" });
-  for (const usage of usages) {
+  for (const { usage, inputHash } of candidates) {
     const config = pool.providers.find(
       (entry: any) =>
         entry.provider === usage.provider &&

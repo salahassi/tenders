@@ -25,6 +25,7 @@ const names = [
   "recover_paid_writer_candidate",
   "retry_one_generation_job",
   "accepted_model_poll_wakeup",
+  "preserve_unchanged_notice_details",
 ];
 const versions = [
   "20261020141244",
@@ -48,6 +49,7 @@ const versions = [
   "20261021102512",
   "20261021120717",
   "20261021120832",
+  "20261021123321",
 ];
 function fixture(history: any[], failMutation?: number) {
   const queries: any[] = [];

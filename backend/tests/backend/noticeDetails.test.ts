@@ -312,6 +312,559 @@ it("detail mutation RPCs are service-only", async () => {
   ).rows[0];
   expect(rows).toEqual({ can_complete: false, can_fail: false });
 });
+
+async function enrichedFixture() {
+  const base = await fixture();
+  const details: any = await enrichPublicNotice(
+    source,
+    base.item,
+    source.approved_hosts,
+    async () => ["8.8.8.8"],
+    async () => new Response(html.replace(/<a href[\s\S]*?<\/a>/, "")),
+  );
+  details.notice_evidence.attachments = [
+    {
+      url: "https://www.ramallah.ps/synthetic.pdf",
+      status: "read",
+      sha256: "a".repeat(64),
+      included_pages: 1,
+      ocr_pages: [],
+    },
+  ];
+  await f.rpc("complete_notice_details", [
+    base.job.id,
+    base.job.lease_token,
+    JSON.stringify(details),
+  ]);
+  await f.rpc("schedule_assessment_refresh");
+  const job = await f.rpc("claim_backend_job");
+  return { ...base, details, job };
+}
+
+async function expireDetailFetch(id: string, sourceId: string) {
+  await f.db.query(
+    "update public.opportunities set notice_evidence=jsonb_set(notice_evidence,'{fetched_at}',to_jsonb((now()-interval '1 hour')::text)) where id=$1",
+    [id],
+  );
+  await f.db.query(
+    "update public.sources set last_success_at=now() where id=$1",
+    [sourceId],
+  );
+}
+
+function freshDetails(details: any) {
+  return {
+    ...structuredClone(details),
+    notice_evidence: {
+      ...structuredClone(details.notice_evidence),
+      fetched_at: new Date().toISOString(),
+      detail_sha256: "b".repeat(64),
+    },
+  };
+}
+
+async function usageFor(job: any, pending = false) {
+  return (
+    await f.db.query<any>(
+      `insert into public.provider_usage(
+    workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,
+    settings_revision,reserved_input,reserved_output,state,remote_request_id,remote_deadline,created_by)
+    values($1,$2,$3,$4,'gemini_free','synthetic-model',$5,current_date,1,100,100,$6,$7,
+    case when $7::text is not null then now()+interval '20 minutes' end,$8) returning *`,
+      [
+        f.w,
+        job.id,
+        job.lease_token,
+        crypto.randomUUID(),
+        job.input_hash,
+        pending ? "reserved" : "settled",
+        pending ? "synthetic-accepted-request" : null,
+        f.owner,
+      ],
+    )
+  ).rows[0];
+}
+
+async function acceptedAssessment() {
+  const base = await enrichedFixture();
+  const ctx = await f.rpc("generation_context", [
+    base.job.id,
+    base.job.lease_token,
+  ]);
+  const authorization = await f.command("content.authorize", {
+    ...ctx.plan.frozen_context.notice.reference,
+    provider: "gemini_free",
+    attestation: "nonconfidential_nonpersonal",
+  });
+  await usageFor(base.job);
+  await f.rpc("complete_generation_step", [
+    base.job.id,
+    base.job.lease_token,
+    JSON.stringify({ synthetic: "accepted test assessment" }),
+  ]);
+  const advance = await f.rpc("claim_backend_job");
+  await f.rpc("advance_generation", [
+    advance.id,
+    advance.lease_token,
+    "completed",
+    "[]",
+    "[]",
+    JSON.stringify({
+      fit_score: 70,
+      evidence_coverage: 80,
+      routing: "needs_review",
+      result: {
+        summary: "Synthetic fixture result",
+        source_refs: [{ id: base.o, quote: "150 شيقل" }],
+      },
+    }),
+  ]);
+  const assessment = (
+    await f.db.query<any>(
+      "select * from public.fit_assessments where opportunity_id=$1",
+      [base.o],
+    )
+  ).rows[0];
+  const plan = (
+    await f.db.query<any>("select * from public.generation_plans where id=$1", [
+      assessment.plan_id,
+    ])
+  ).rows[0];
+  return { ...base, assessment, plan, authorization };
+}
+
+async function refreshJob(base: { o: string; s: any }) {
+  await expireDetailFetch(base.o, base.s.id);
+  await f.rpc("schedule_assessment_refresh");
+  const job = await f.rpc("claim_backend_job");
+  expect(
+    (await f.rpc("generation_context", [job.id, job.lease_token]))
+      .detail_source,
+  ).toBeDefined();
+  return job;
+}
+
+it("an unchanged detail poll preserves the paid background request, graph, pinned input and saved polling time", async () => {
+  const base = await enrichedFixture();
+  const usage = await usageFor(base.job, true);
+  const checkpoint = {
+    model_executor: 2,
+    graph_thread: "c".repeat(64),
+    model_round: { pending: { usage_id: usage.id }, round: 2 },
+  };
+  await f.db.query(
+    "update public.jobs set checkpoint=$2::jsonb,error_code='MODEL_IN_PROGRESS',next_attempt_at=now()+interval '45 seconds' where id=$1",
+    [base.job.id, JSON.stringify(checkpoint)],
+  );
+  await f.db.query(
+    "insert into app_private.model_graph_threads(id,workspace_id,job_id,input_hash,task,candidate_count) values($1,$2,$3,$4,'classify_opportunity',2)",
+    [checkpoint.graph_thread, f.w, base.job.id, base.job.input_hash],
+  );
+  await f.db.query(
+    "insert into app_private.model_graph_budgets(thread_id,unit,candidates) values($1,'writer',2)",
+    [checkpoint.graph_thread],
+  );
+  const before = (
+    await f.db.query<any>(
+      "select to_jsonb(j) job,to_jsonb(p) plan,w.evidence_revision,(select count(*) from public.advertisement_snapshots) snapshots from public.jobs j join public.generation_plans p on p.id=j.entity_id join public.workspaces w on w.id=j.workspace_id where j.id=$1",
+      [base.job.id],
+    )
+  ).rows[0];
+  await expireDetailFetch(base.o, base.s.id);
+  await f.rpc("complete_notice_details", [
+    base.job.id,
+    base.job.lease_token,
+    JSON.stringify(freshDetails(base.details)),
+  ]);
+  const after = (
+    await f.db.query<any>(
+      "select to_jsonb(j) job,to_jsonb(p) plan,w.evidence_revision,(select count(*) from public.advertisement_snapshots) snapshots from public.jobs j join public.generation_plans p on p.id=j.entity_id join public.workspaces w on w.id=j.workspace_id where j.id=$1",
+      [base.job.id],
+    )
+  ).rows[0];
+  expect(after.job).toMatchObject({
+    status: "retry_wait",
+    error_code: "MODEL_IN_PROGRESS",
+    checkpoint,
+    input_hash: before.job.input_hash,
+    next_attempt_at: before.job.next_attempt_at,
+  });
+  expect(after.plan).toEqual(before.plan);
+  expect(after.evidence_revision).toBe(before.evidence_revision);
+  expect(after.snapshots).toBe(before.snapshots);
+  expect(
+    (
+      await f.db.query<any>("select * from public.provider_usage where id=$1", [
+        usage.id,
+      ])
+    ).rows[0],
+  ).toEqual(usage);
+  expect(
+    (
+      await f.db.query<any>(
+        "select candidates from app_private.model_graph_budgets where thread_id=$1",
+        [checkpoint.graph_thread],
+      )
+    ).rows[0].candidates,
+  ).toBe(2);
+});
+
+it("reuses only an exactly unchanged automatic assessment, preserving its result, citations, timestamp and frozen hash across global revision changes", async () => {
+  const base = await acceptedAssessment();
+  await f.command("knowledge.save", {
+    category: "company",
+    title: "Synthetic disabled evidence",
+    content: "This disabled fixture is not an assessment input.",
+    enabled: false,
+  });
+  const beforeSnapshots = (
+    await f.db.query<any>(
+      "select count(*) n from public.advertisement_snapshots",
+    )
+  ).rows[0].n;
+  for (let poll = 0; poll < 2; poll++) {
+    const job = await refreshJob(base);
+    await f.rpc("complete_notice_details", [
+      job.id,
+      job.lease_token,
+      JSON.stringify(freshDetails(base.details)),
+    ]);
+    const outcome = (
+      await f.db.query<any>(
+        "select j.status job_status,p.status plan_status,s.output from public.jobs j join public.generation_steps s on s.job_id=j.id join public.generation_plans p on p.id=s.plan_id where j.id=$1",
+        [job.id],
+      )
+    ).rows[0];
+    expect(outcome).toMatchObject({
+      job_status: "succeeded",
+      plan_status: "completed",
+      output: {
+        reason: "NOTICE_DETAILS_UNCHANGED",
+        reused_assessment_id: base.assessment.id,
+        assessment_input_hash: base.assessment.input_hash,
+      },
+    });
+  }
+  const assessments = (
+    await f.db.query<any>(
+      "select * from public.fit_assessments where opportunity_id=$1",
+      [base.o],
+    )
+  ).rows;
+  expect(assessments).toHaveLength(1);
+  expect(assessments[0]).toMatchObject({
+    id: base.assessment.id,
+    result: base.assessment.result,
+    created_at: base.assessment.created_at,
+    input_hash: base.assessment.input_hash,
+  });
+  const current = (
+    await f.db.query<any>(
+      "select evidence_revision from public.workspaces where id=$1",
+      [f.w],
+    )
+  ).rows[0].evidence_revision;
+  expect(assessments[0].evidence_revision).toBe(current);
+  const plan = (
+    await f.db.query<any>("select * from public.generation_plans where id=$1", [
+      base.plan.id,
+    ])
+  ).rows[0];
+  expect(plan).toMatchObject({
+    input_hash: base.plan.input_hash,
+    frozen_context: base.plan.frozen_context,
+    created_at: base.plan.created_at,
+    evidence_revision: current,
+  });
+  expect(
+    (
+      await f.db.query<any>(
+        "select assessment_current,assessment_state from public.opportunity_discovery where id=$1",
+        [base.o],
+      )
+    ).rows[0],
+  ).toEqual({ assessment_current: true, assessment_state: "assessed" });
+  expect(
+    (
+      await f.db.query<any>(
+        "select count(*) n from public.advertisement_snapshots",
+      )
+    ).rows[0].n,
+  ).toBe(beforeSnapshots);
+  expect(
+    (await f.db.query<any>("select count(*)::int n from public.provider_usage"))
+      .rows[0].n,
+  ).toBe(1);
+});
+
+it("a manual re-evaluation is never replaced with an old assessment after an unchanged detail refresh", async () => {
+  const base = await acceptedAssessment();
+  const opportunity = (
+    await f.db.query<any>(
+      "select revision from public.opportunities where id=$1",
+      [base.o],
+    )
+  ).rows[0];
+  const manual = await f.command("opportunity.assess", {
+    id: base.o,
+    expected_revision: opportunity.revision,
+  });
+  await expireDetailFetch(base.o, base.s.id);
+  const job = await f.rpc("claim_backend_job");
+  expect(job.entity_id).toBe(manual.id);
+  await f.rpc("complete_notice_details", [
+    job.id,
+    job.lease_token,
+    JSON.stringify(freshDetails(base.details)),
+  ]);
+  expect(
+    (
+      await f.db.query<any>("select status from public.jobs where id=$1", [
+        job.id,
+      ])
+    ).rows[0].status,
+  ).toBe("retry_wait");
+  expect(
+    (
+      await f.db.query<any>(
+        "select count(*)::int n from public.audit_events where action='assessment.evidence.reused'",
+      )
+    ).rows[0].n,
+  ).toBe(0);
+});
+
+it.each([
+  "notice text",
+  "deadline",
+  "attachment bytes",
+  "attachment identity",
+  "attachment status",
+  "future evidence field",
+])(
+  "a real change in %s invalidates once and the subsequent identical poll preserves the new assessment",
+  async (kind) => {
+    const base = await enrichedFixture();
+    await expireDetailFetch(base.o, base.s.id);
+    const changed = freshDetails(base.details);
+    if (kind === "notice text")
+      changed.description += " A new mandatory acceptance condition.";
+    if (kind === "deadline")
+      changed.notice_evidence.deadline.date = "2026-03-12";
+    if (kind === "attachment bytes")
+      changed.notice_evidence.attachments[0].sha256 = "d".repeat(64);
+    if (kind === "attachment identity")
+      changed.notice_evidence.attachments[0].url =
+        "https://www.ramallah.ps/revised-synthetic.pdf";
+    if (kind === "attachment status")
+      changed.notice_evidence.attachments[0].status = "unread";
+    if (kind === "future evidence field")
+      changed.notice_evidence.future_requirement = "new mandatory evidence";
+    const before = (
+      await f.db.query<any>(
+        "select evidence_revision,(select count(*) from public.advertisement_snapshots) snapshots from public.workspaces where id=$1",
+        [f.w],
+      )
+    ).rows[0];
+    await f.rpc("complete_notice_details", [
+      base.job.id,
+      base.job.lease_token,
+      JSON.stringify(changed),
+    ]);
+    expect(
+      (
+        await f.db.query<any>(
+          "select status,error_code from public.jobs where id=$1",
+          [base.job.id],
+        )
+      ).rows[0],
+    ).toEqual({ status: "canceled", error_code: "NOTICE_DETAILS_REFRESHED" });
+    const version = (
+      await f.db.query<any>(
+        "select evidence_revision from public.workspaces where id=$1",
+        [f.w],
+      )
+    ).rows[0].evidence_revision;
+    expect(version).toBeGreaterThan(before.evidence_revision);
+    await f.rpc("schedule_assessment_refresh");
+    const next = await f.rpc("claim_backend_job");
+    const ctx = await f.rpc("generation_context", [next.id, next.lease_token]);
+    expect(ctx.plan.evidence_revision).toBe(version);
+    expect(ctx.detail_source).toBeUndefined();
+    await expireDetailFetch(base.o, base.s.id);
+    await f.rpc("complete_notice_details", [
+      next.id,
+      next.lease_token,
+      JSON.stringify(freshDetails(changed)),
+    ]);
+    expect(
+      (
+        await f.db.query<any>("select status from public.jobs where id=$1", [
+          next.id,
+        ])
+      ).rows[0].status,
+    ).toBe("retry_wait");
+    expect(
+      (
+        await f.db.query<any>(
+          "select count(*) snapshots from public.advertisement_snapshots",
+        )
+      ).rows[0].snapshots,
+    ).toBe(Number(before.snapshots) + 1);
+    expect(
+      (
+        await f.db.query<any>(
+          "select evidence_revision from public.workspaces where id=$1",
+          [f.w],
+        )
+      ).rows[0].evidence_revision,
+    ).toBe(version);
+  },
+);
+
+it("changed verified company evidence prevents reuse even when the entire notice is unchanged", async () => {
+  const base = await acceptedAssessment();
+  const note = await f.command("knowledge.save", {
+    category: "company",
+    title: "Synthetic new capability",
+    content:
+      "A new verified software delivery capability for this isolated fixture.",
+    enabled: true,
+  });
+  await f.db.query(
+    "update public.knowledge_items set verified_at=now(),verified_by=$2 where id=$1",
+    [note.id, f.owner],
+  );
+  const job = await refreshJob(base);
+  await f.rpc("complete_notice_details", [
+    job.id,
+    job.lease_token,
+    JSON.stringify(freshDetails(base.details)),
+  ]);
+  expect(
+    (
+      await f.db.query<any>("select status from public.jobs where id=$1", [
+        job.id,
+      ])
+    ).rows[0].status,
+  ).toBe("retry_wait");
+  expect(
+    (
+      await f.db.query<any>(
+        "select * from public.fit_assessments where id=$1",
+        [base.assessment.id],
+      )
+    ).rows[0],
+  ).toEqual(base.assessment);
+});
+
+it("a revoked original recipient permission prevents automatic assessment reuse", async () => {
+  const base = await acceptedAssessment();
+  await f.command("content.revoke", {
+    id: base.authorization.id,
+    expected_revision: base.authorization.revision,
+  });
+  const job = await refreshJob(base);
+  await f.rpc("complete_notice_details", [
+    job.id,
+    job.lease_token,
+    JSON.stringify(freshDetails(base.details)),
+  ]);
+  expect(
+    (
+      await f.db.query<any>("select status from public.jobs where id=$1", [
+        job.id,
+      ])
+    ).rows[0].status,
+  ).toBe("retry_wait");
+  expect(
+    (
+      await f.db.query<any>(
+        "select count(*)::int n from public.audit_events where action='assessment.evidence.reused'",
+      )
+    ).rows[0].n,
+  ).toBe(0);
+});
+
+it("new semantic comparison and the original mutation implementation cannot be invoked as public RPCs", async () => {
+  const row = (
+    await f.db.query<any>(
+      "select has_function_privilege('authenticated','app_private.notice_context_semantics(jsonb)','execute') compare_auth,has_function_privilege('service_role','app_private.notice_context_semantics(jsonb)','execute') compare_service,has_function_privilege('service_role','public.complete_notice_details_before_semantic_refresh(uuid,uuid,jsonb)','execute') old_mutation",
+    )
+  ).rows[0];
+  expect(row).toEqual({
+    compare_auth: false,
+    compare_service: false,
+    old_mutation: false,
+  });
+});
+
+it("volatile HTTP refresh keeps an approval, but changed attachment evidence invalidates it through the canonical path", async () => {
+  const base = await enrichedFixture();
+  const proposal = crypto.randomUUID(),
+    version = crypto.randomUUID();
+  const estimate = crypto.randomUUID(),
+    delivery = crypto.randomUUID();
+  await f.db.query(
+    "insert into public.proposals(id,workspace_id,opportunity_id,title,created_by) values($1,$2,$3,'Synthetic approval fixture',$4)",
+    [proposal, f.w, base.o, f.owner],
+  );
+  await f.db.query(
+    "insert into public.proposal_versions(id,workspace_id,proposal_id,ordinal,content_hash,created_by,status) values($1,$2,$3,1,repeat('a',64),$4,'approved')",
+    [version, f.w, proposal, f.owner],
+  );
+  await f.db.query(
+    "update public.proposals set active_version_id=$1,state='approved' where id=$2",
+    [version, proposal],
+  );
+  const evidenceRevision = (
+    await f.db.query<any>(
+      "select evidence_revision from public.workspaces where id=$1",
+      [f.w],
+    )
+  ).rows[0].evidence_revision;
+  for (const [table, id] of [
+    ["estimate_versions", estimate],
+    ["delivery_versions", delivery],
+  ])
+    await f.db.query(
+      `insert into public.${table}(id,workspace_id,proposal_version_id,ordinal,input,input_hash,evidence_revision,created_by) values($1,$2,$3,1,'{}',repeat('a',64),$4,$5)`,
+      [id, f.w, version, evidenceRevision, f.owner],
+    );
+  await f.db.query(
+    `insert into public.approvals(workspace_id,proposal_version_id,estimate_id,delivery_id,content_hash,package_hash,pricing_hash,delivery_hash,evidence_revision,review_hash,approved_by,created_by)
+    values($1,$2,$3,$4,repeat('a',64),repeat('b',64),repeat('c',64),repeat('d',64),$5,repeat('e',64),$6,$6)`,
+    [f.w, version, estimate, delivery, evidenceRevision, f.owner],
+  );
+  const state = async () =>
+    (
+      await f.db.query<any>(
+        "select p.state,v.status,a.invalidated_at,w.evidence_revision from public.proposals p join public.proposal_versions v on v.id=p.active_version_id join public.approvals a on a.proposal_version_id=v.id join public.workspaces w on w.id=p.workspace_id where p.id=$1",
+        [proposal],
+      )
+    ).rows[0];
+  const before = await state();
+  await expireDetailFetch(base.o, base.s.id);
+  await f.rpc("complete_notice_details", [
+    base.job.id,
+    base.job.lease_token,
+    JSON.stringify(freshDetails(base.details)),
+  ]);
+  expect(await state()).toEqual(before);
+  const job = await f.rpc("claim_backend_job");
+  await expireDetailFetch(base.o, base.s.id);
+  const changed = freshDetails(base.details);
+  changed.notice_evidence.attachments[0].sha256 = "f".repeat(64);
+  await f.rpc("complete_notice_details", [
+    job.id,
+    job.lease_token,
+    JSON.stringify(changed),
+  ]);
+  const after = await state();
+  expect(after.state).toBe("draft");
+  expect(after.status).toBe("draft");
+  expect(after.invalidated_at).not.toBeNull();
+  expect(after.evidence_revision).toBeGreaterThan(before.evidence_revision);
+});
 it("grounds company judgments in both verified Company Knowledge notes and extracted files", async () => {
   const { o } = await fixture();
   const note = await f.command("knowledge.save", {

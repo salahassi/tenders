@@ -25,6 +25,7 @@ const release = [
   ["20261021102512", "recover_paid_writer_candidate"],
   ["20261021120717", "retry_one_generation_job"],
   ["20261021120832", "accepted_model_poll_wakeup"],
+  ["20261021123321", "preserve_unchanged_notice_details"],
 ];
 const project = "nqfwbqeozmuiuwbiowil";
 const literal = (value) => "'" + value.replaceAll("'", "''") + "'";

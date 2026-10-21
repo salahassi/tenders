@@ -2,6 +2,45 @@
 
 ## October 21 — real acceptance blockers (in progress)
 
+At 12:53 UTC, worker **v97** is deployed with an exact 40-file readback. The
+legacy outer repair flag no longer hides the paid initial writer request: only
+an initial-produce graph without candidate/report references may match the
+original recomputed request hash against its exact settled usage, thread and
+current provider permissions. Thirty focused tests, including real SQL-store /
+LangGraph recovery through independent verification and acceptance, passed.
+The real experience job now has its original paid Luna candidate and recovery
+provenance saved, with the three writer usages unchanged at 15,582 input / 6,908
+output and writer budget 3. Independent verification is still in progress.
+Its retained Gemini report exposed another deterministic coverage bug: all 39
+content IDs and three requirements are covered, but a compound company claim
+was split into two exact adjacent quotations (only whitespace between them).
+The current single-quotation coverage check rejects this valid split. A narrow
+quote-union correction is being implemented; no recovery acceptance is yet
+claimed for this job.
+
+The `preserve_unchanged_notice_details` migration deployed at 12:53 UTC after
+43 focused tests and independent review. Of 72 observed detail-refresh
+cancellations today, 69 had unchanged evidence except HTTP fetch time/raw HTML
+hash. Refresh now preserves an active assessment's paid request, checkpoint,
+budgets and saved polling deadline. Automatic reuse requires full normalized
+snapshot equality and current permissions for the original providers; it retains
+the original assessment result, citations, timestamps and hashes with audited
+revision rebinding. Manual reassessment still evaluates. Changed text, dates or
+attachment evidence retains canonical evidence/approval invalidation. Equal-text
+snapshot selection prefers the current evidence and is deterministically ordered.
+Full backend regression `final-backend-serial-18.log` passed **868/868 tests in
+52 files** (366.38 seconds), plus backend typecheck/build and Deno worker check.
+Real unchanged-refresh audit evidence remains pending.
+
+The pending-proposal UI fix is implemented: an authenticated record lookup shows
+existing generation progress while the first version is being created, instead
+of a false 404. It creates no editable placeholder or model request; loading,
+request errors and real unavailable records remain distinct. Frontend typecheck,
+all **199 tests in 35 files** (seven new pending-route regressions), and production
+build passed. Five timing failures in an overlapping earlier run passed unchanged
+in a serial file rerun and then the complete serial suite. Hosted UI release and
+browser validation are pending.
+
 Current status at 12:15 UTC: analysis remains 3/3 and planning 9/9 accepted;
 **11/67 draft jobs are accepted**, with 53 queued, one running and two blocked.
 No complete Word has been downloaded or inspected. Company paraphrase/translation
@@ -44,8 +83,19 @@ and API v75 / worker v96 deployed at 12:25 UTC with exact hosted readback of all
 returned HTTP 200 and queued only their selected jobs. The original company-claim
 job subsequently returned `MODEL_CORRECTION_EXHAUSTED` with no recovery artifact
 or new writer attempt; the recovery preconditions are under investigation.
-The policy-blocked job remains queued. Real accepted recovery and full Word
-completion are not yet established.
+The policy-blocked job completed at 12:33 UTC: its original OpenAI response passed
+the corrected compound-word guard and all four independent verification batches.
+The graph is committed with candidate_count 1 and exactly one original writer
+usage record (9,035 input / 3,872 output), unchanged by retry. The four verifier
+requests are separate normal usage; job total is five calls, 54,043 input /
+14,310 output. This is real accepted recovery of one section, not full Word
+completion. The other recovery failure is now traced to a legacy outer step
+repair flag: the graph is still at initial produce, but the helper searched for
+the later repair prompt hash instead of the saved original writer prompt. A
+narrow original-hash recovery correction is in progress.
+
+Release `a053d722dc191babf6edeed851e9a8e6a3d6f908` passed
+[CI and Pages 39600287606](https://github.com/salahassi/tenders/actions/runs/39600287606).
 
 Current status at 11:57 UTC: **analysis 3/3 and planning 9/9 are accepted;
 eight of 67 draft jobs have completed. No complete Word has been downloaded or

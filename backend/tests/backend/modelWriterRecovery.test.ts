@@ -1,10 +1,24 @@
 // @vitest-environment node
-import { expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   recoverBlockedWriter,
   retainInvalidWriter,
 } from "../../supabase/functions/_shared/modelWriterRecovery";
-import { modelPrompt, sha256 } from "../../supabase/functions/_shared/model";
+import {
+  ModelDeferred,
+  modelPrompt,
+  sha256,
+} from "../../supabase/functions/_shared/model";
+import { workflowFixture } from "./workflowFixture";
+import { executeGuardedModel } from "../../supabase/functions/_shared/modelGraph";
+import { ModelGraphStore } from "../../supabase/functions/_shared/modelGraphStore";
+import { modelLedger } from "../../supabase/functions/_shared/modelLedger";
+import { defaultCapabilities } from "../../supabase/functions/_shared/modelContract";
+import {
+  modelEnvironments,
+  type Backend,
+} from "../../supabase/functions/_shared/backend";
+import { databaseError } from "../../supabase/functions/_shared/http";
 
 async function fixture() {
   const evidence = [
@@ -63,7 +77,11 @@ async function fixture() {
   const rows = new Map<string, any>();
   const action = vi.fn(async (name: string, payload?: any): Promise<any> => {
     if (name === "recovery_ready") return true;
-    if (name === "writer_recovery_candidates") return [usage];
+    if (name === "writer_recovery_candidates")
+      return payload.input_hash === usage.input_hash &&
+        payload.request_prefix === "draft:candidate-0"
+        ? [usage]
+        : [];
     if (name === "writer_recovery_resume") return true;
     if (name === "result_get") return rows.get(payload.key) ?? null;
     if (name === "result_put") {
@@ -177,6 +195,62 @@ it("recovers an already-paid paraphrase via exact GET and only reopens normal in
   expect(f.fetcher).toHaveBeenCalledTimes(1);
 });
 
+it("matches the paid initial request after the legacy step sets repair=true", async () => {
+  const f = await fixture();
+  f.o.repair = true;
+  const currentHash = await sha256(
+    modelPrompt("draft_section", f.o.context, f.o.evidence, ["r1"], "en", true),
+  );
+  expect(currentHash).not.toBe(f.inputHash);
+  expect(await recoverBlockedWriter(f.o)).toBe(true);
+  expect(
+    f.action.mock.calls
+      .filter(([name]) => name === "writer_recovery_candidates")
+      .map(([, payload]) => payload.input_hash),
+  ).toEqual([currentHash, f.inputHash]);
+  expect(f.rows.get(`writer-recovery-${f.usage.id}`).value).toMatchObject({
+    request_input_hash: f.inputHash,
+    received_candidate_budgets_unchanged: true,
+    new_generation_requests: 0,
+    independent_verification_required: true,
+  });
+  expect(f.o.repair).toBe(true);
+  expect(f.o.state.values.repairCount).toBe(0);
+  expect(f.fetcher).toHaveBeenCalledTimes(1);
+  expect(await recoverBlockedWriter(f.o)).toBe(true);
+  expect(f.fetcher).toHaveBeenCalledTimes(1);
+});
+
+it("still matches a paid initial candidate whose original request already included repair guidance", async () => {
+  const f = await fixture();
+  f.o.repair = true;
+  f.usage.input_hash = await sha256(
+    modelPrompt("draft_section", f.o.context, f.o.evidence, ["r1"], "en", true),
+  );
+  f.usage.execution_metadata.input_hash = f.usage.input_hash;
+  expect(await recoverBlockedWriter(f.o)).toBe(true);
+  expect(
+    f.rows.get(`writer-recovery-${f.usage.id}`).value.request_input_hash,
+  ).toBe(f.usage.input_hash);
+});
+
+it.each(["context", "evidence", "required IDs"])(
+  "never uses the original repair=false hash after changing %s",
+  async (change) => {
+    const f = await fixture();
+    f.o.repair = true;
+    if (change === "context") f.o.context.key = "changed-section";
+    if (change === "evidence") f.o.evidence[0].text += " Changed evidence.";
+    if (change === "required IDs") f.o.requiredIds = ["other-requirement"];
+    expect(await recoverBlockedWriter(f.o)).toBe(false);
+    expect(f.fetcher).not.toHaveBeenCalled();
+    expect(f.rows.size).toBe(0);
+    expect(
+      f.action.mock.calls.some(([name]) => name === "writer_recovery_resume"),
+    ).toBe(false);
+  },
+);
+
 it.each([
   "wrong-task",
   "wrong-node",
@@ -283,4 +357,296 @@ it("retains all distinct counted writer candidates without replacing an earlier 
       producer: f.config,
     });
   expect(f.rows.size).toBe(3);
+});
+
+describe("paid initial writer recovery through the real graph and SQL store", () => {
+  let db: Awaited<ReturnType<typeof workflowFixture>>;
+  beforeAll(async () => {
+    db = await workflowFixture();
+  }, 30000);
+  afterAll(async () => db?.db.close());
+
+  it("keeps the legacy repair flag and exhausted writer budget while verifying and accepting the paid original", async () => {
+    await db.db.exec("begin");
+    const rpc = async (name: string, args: Record<string, unknown> = {}) => {
+      const entries = Object.entries(args);
+      await db.db.exec("savepoint recovery_rpc;set local role service_role");
+      try {
+        return (
+          await db.db.query<any>(
+            `select public.${name}(${entries.map(([key], index) => `${key}=>$${index + 1}`).join(",")}) value`,
+            entries.map(([, value]) =>
+              value && typeof value === "object"
+                ? JSON.stringify(value)
+                : value,
+            ),
+          )
+        ).rows[0]?.value;
+      } catch (error) {
+        await db.db.exec("rollback to savepoint recovery_rpc");
+        throw databaseError(error as Error);
+      } finally {
+        await db.db.exec("reset role;release savepoint recovery_rpc");
+      }
+    };
+    try {
+      await db.command("model.routing", {
+        enabled: true,
+        expected_revision: 0,
+      });
+      const connection = await db.command("model.connection.save", {
+        provider: "openai",
+        label: "Synthetic recovery account",
+        credential_alias: "APP_MODEL_OPENAI_KEY",
+        project_ref: "fixture-project",
+        enabled: true,
+        expected_revision: 0,
+      });
+      const model = await db.command("model.configuration.save", {
+        connection_id: connection.id,
+        label: "Synthetic recovery model",
+        model: "fixture-model",
+        enabled: true,
+        capabilities: defaultCapabilities("openai"),
+        expected_revision: 0,
+      });
+      await db.command("model.task_route.save", {
+        task: "default",
+        model_ids: [model.id],
+        inherit_default: false,
+        strategy: "priority",
+        profile: null,
+        expected_revision: 0,
+      });
+      await db.command("model.execution.configure", {
+        enabled: true,
+        expected_revision: 0,
+      });
+      await db.command("model.probe", {});
+      let job = await rpc("claim_backend_job_v2");
+      const environments = modelEnvironments((name) =>
+        name === "APP_MODEL_OPENAI_KEY" ? "synthetic-key" : undefined,
+      );
+      const backend = {
+        internal: rpc,
+        resolveModelEnvironment: (config: any) => ({
+          ...environments.openai,
+          model: config.model,
+          projectRef: config.project_ref,
+        }),
+      } as unknown as Backend;
+      const prefix = `step:${job.id}`;
+      await modelLedger(backend, job, prefix, environments).preflight(
+        [],
+        "draft_section",
+      );
+      job = (
+        await db.db.query<any>("select * from public.jobs where id=$1", [
+          job.id,
+        ])
+      ).rows[0];
+      const candidate = {
+        key: "approach",
+        title: "Approach",
+        content_blocks: [
+          {
+            type: "paragraph",
+            text: "Proposed work requires buyer confirmation.",
+          },
+        ],
+        requirement_ids: [],
+        evidence_refs: [],
+        company_claims: [],
+        assumptions: [],
+        questions: [],
+      };
+      const originalHash = await sha256(
+        modelPrompt("draft_section", {}, [], [], "en", false),
+      );
+      const graphInputHash = await sha256(
+        JSON.stringify({
+          version: 1,
+          task: "draft_section",
+          context: {},
+          evidence: [],
+          requiredIds: [],
+          manifest: [],
+          language: "en",
+        }),
+      );
+      const threadId = await sha256(`${job.id}:${prefix}:${graphInputHash}`);
+      let store = new ModelGraphStore(backend, job, threadId);
+      await store.action("init", {
+        input_hash: graphInputHash,
+        task: "draft_section",
+        graph_version: 1,
+      });
+      await db.db.query(
+        "update app_private.model_graph_threads set candidate_count=3 where id=$1",
+        [threadId],
+      );
+      await db.db.query(
+        "insert into app_private.model_graph_budgets(thread_id,unit,candidates) values($1,'writer',3)",
+        [threadId],
+      );
+      let gets = 0,
+        verifierPosts = 0;
+      const response = (id: string, result: unknown) =>
+        Response.json({
+          id,
+          status: "completed",
+          output: [
+            {
+              type: "message",
+              content: [{ type: "output_text", text: JSON.stringify(result) }],
+            },
+          ],
+          usage: {
+            input_tokens: 100,
+            output_tokens: 50,
+            output_tokens_details: { reasoning_tokens: 0 },
+          },
+        });
+      const fetcher = vi.fn<typeof fetch>(async (url, init) => {
+        if (init?.method === "DELETE") return Response.json({ deleted: true });
+        if (init?.method === "GET") {
+          gets++;
+          return response(String(url).split("/").pop()!, candidate);
+        }
+        const prompt = JSON.parse(
+          JSON.parse(String(init?.body)).input.split("\nJSON schema: ")[0],
+        );
+        expect(prompt.task).toBe("verify_grounding");
+        verifierPosts++;
+        const context = prompt.untrusted_data;
+        return response(`resp_verifier_${verifierPosts}`, {
+          checked_candidate_hash: context.candidate_hash,
+          reviewed_all_content: true,
+          processed_content_ids: context.content_units.map(
+            (unit: any) => unit.id,
+          ),
+          claims:
+            context.verification_scope === "requirements_only"
+              ? []
+              : [
+                  {
+                    id: "claim",
+                    claim: "Conditional proposal",
+                    candidate_quote: context.content_units[0].text,
+                    kind: "assumption",
+                    status: "supported",
+                    source_refs: [],
+                    finding: "Proposed work.",
+                  },
+                ],
+          processed_requirement_ids: [],
+          requirement_checks: [],
+          findings: [],
+        });
+      });
+      const options = {
+        backend,
+        job,
+        prefix,
+        task: "draft_section" as const,
+        context: {},
+        evidence: [],
+        requiredIds: [],
+        manifest: [],
+        environments,
+        language: "en" as const,
+        repair: true,
+        fetcher,
+      };
+      // Save the real initial-produce checkpoint. The exhausted allowance must
+      // prevent any request while the already-paid original is not yet present.
+      await expect(executeGuardedModel(options)).rejects.toMatchObject({
+        code: "MODEL_CORRECTION_EXHAUSTED",
+      });
+      expect(fetcher).not.toHaveBeenCalled();
+      const paidIds: string[] = [];
+      for (let index = 0; index < 3; index++) {
+        const id = crypto.randomUUID();
+        const originalLease = crypto.randomUUID();
+        paidIds.push(id);
+        await db.db.query(
+          `insert into public.provider_usage(id,workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,actual_input,actual_output,thinking_tokens,state,graph_candidate_recorded,connection_id,model_config_id,remote_project_ref,remote_request_id,remote_deadline,created_by)
+           values($1,$2,$3,$4,$5,'openai','fixture-model',$6,current_date,1,100,50,100,50,0,'settled',true,$7,$8,'fixture-project',$9,now()+interval '1 hour',$10)`,
+          [
+            id,
+            db.w,
+            job.id,
+            originalLease,
+            `${prefix}:candidate-0:${originalHash.slice(0, 16)}:${index + 1}:${model.id}`,
+            originalHash,
+            connection.id,
+            model.id,
+            `resp_paid_${index}`,
+            db.owner,
+          ],
+        );
+        await db.db.query(
+          `insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,operation,round_number,worker_attempt,status,result_code,usage_id,sent,execution_metadata)
+           values($1,$2,$3,'openai','fixture-model','draft_section',1,1,'failed','UNSUPPORTED_COMPANY_CLAIM',$4,true,$5)`,
+          [
+            db.w,
+            job.id,
+            originalLease,
+            id,
+            { input_hash: originalHash, graph_thread: threadId },
+          ],
+        );
+      }
+      const paidBefore = (
+        await db.db.query<any>(
+          "select * from public.provider_usage where id=any($1::uuid[]) order by id",
+          [paidIds],
+        )
+      ).rows;
+      let accepted: any;
+      for (let attempt = 0; attempt < 6 && !accepted; attempt++) {
+        try {
+          accepted = await executeGuardedModel({ ...options, job });
+        } catch (error) {
+          expect(error).toBeInstanceOf(ModelDeferred);
+          job = await rpc("claim_backend_job_v2");
+          expect(job.id).toBe(options.job.id);
+          store = new ModelGraphStore(backend, job, threadId);
+        }
+      }
+      expect(accepted?.result).toEqual(candidate);
+      expect(gets).toBe(1);
+      expect(verifierPosts).toBe(1);
+      expect(options.repair).toBe(true);
+      expect(
+        (
+          await db.db.query<any>(
+            "select status,candidate_count from app_private.model_graph_threads where id=$1",
+            [threadId],
+          )
+        ).rows[0],
+      ).toEqual({ status: "accepted", candidate_count: 3 });
+      expect(
+        (
+          await db.db.query<any>(
+            "select candidates from app_private.model_graph_budgets where thread_id=$1 and unit='writer'",
+            [threadId],
+          )
+        ).rows[0].candidates,
+      ).toBe(3);
+      expect(
+        (
+          await db.db.query<any>(
+            "select * from public.provider_usage where id=any($1::uuid[]) order by id",
+            [paidIds],
+          )
+        ).rows,
+      ).toEqual(paidBefore);
+      expect(
+        (await store.action("result_get", { key: "candidate-0" })).value.result,
+      ).toEqual(candidate);
+    } finally {
+      await db.db.exec("rollback");
+    }
+  }, 30000);
 });

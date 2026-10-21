@@ -2,6 +2,7 @@ import ExportPanel from "../components/ExportPanel";
 import { createConnectedExport } from "../lib/connectedExport";
 import ReviewHistory from "../components/ReviewHistory";
 import GenerationPanel from "../components/GenerationPanel";
+import PendingProposal from "../components/PendingProposal";
 import ApprovalPanel from "../components/ApprovalPanel";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -160,11 +161,12 @@ function recoverPreviousEdits(proposal: Proposal): string {
 
 export default function ProposalEditor() {
   const { id } = useParams();
-  const { state } = useApp();
+  const { state, backend } = useApp();
   const proposal = state.proposals.find((item) => item.id === id);
   const opportunity = state.opportunities.find(
     (item) => item.id === proposal?.opportunityId,
   );
+  if (!proposal && backend && id) return <PendingProposal key={id} id={id} />;
   if (!proposal || !opportunity)
     return (
       <EmptyState
