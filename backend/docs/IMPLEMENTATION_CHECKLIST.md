@@ -59,6 +59,11 @@ acceptance remains in progress. The first replacement proposal review succeeded;
 the other two reviews are still executing, with all saved draft steps retained.
 The canonical CLI deployment script and manual deployment workflow both include
 the browser gateway; the backend README records its OIDC and human-answer flow.
+The first OIDC workflow stalled in OS/browser installation, while the earlier
+attempt completed that step in 35 seconds. The workflow now uses Google Chrome
+already supplied by the GitHub-hosted runner, avoiding a repeated OS install;
+the local default remains Playwright's installed Chromium. A fresh hosted run
+will verify the identity and queue path.
 
 The Owner also asked how to delete a note. Added an explicit Delete action and
 confirmation to Additional notes. It uses the existing revision-checked

@@ -22,11 +22,13 @@ jobs:
           node-version: "24"
           cache: npm
           cache-dependency-path: backend/package-lock.json
-      - name: Install locked browser dependencies
+      - name: Install locked dependencies
         working-directory: backend
-        run: |
-          npm ci
-          npx --no-install playwright install --with-deps chromium
+        run: npm ci
+      - name: Verify runner browser
+        run: google-chrome --version
       - name: Read public pages and handle requested human verification
         working-directory: backend
+        env:
+          SOURCE_BROWSER_CHANNEL: chrome
         run: node --experimental-transform-types scripts/backend/browser-source-worker.ts

@@ -261,6 +261,8 @@ export function actionsGateway(): Gateway {
 async function main() {
   const proxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
   const browser = await chromium.launch({
+    channel:
+      process.env.SOURCE_BROWSER_CHANNEL === "chrome" ? "chrome" : undefined,
     proxy: proxy ? { server: proxy } : undefined,
   });
   try {
