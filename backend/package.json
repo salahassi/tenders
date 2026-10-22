@@ -12,7 +12,7 @@
     "db:migrate": "supabase db push --linked",
     "db:reset": "supabase db reset",
     "serve": "supabase functions serve",
-    "deploy": "supabase functions deploy api && supabase functions deploy worker",
+    "deploy": "supabase functions deploy api && supabase functions deploy worker && supabase functions deploy source-browser",
     "contracts:generate": "node --experimental-strip-types scripts/backend/generate-openapi.ts",
     "evaluate": "node --experimental-strip-types scripts/backend/evaluate.ts",
     "seed:sources": "node --experimental-strip-types scripts/backend/seed-sources.ts"
