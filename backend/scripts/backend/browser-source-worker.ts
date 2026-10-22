@@ -244,17 +244,41 @@ export function actionsGateway(): Gateway {
     return cached.value;
   };
   return async (action, payload) => {
+    const token = await identity();
     const response = await fetch(audience, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${await identity()}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ action, payload }),
       signal: AbortSignal.timeout(30000),
     });
-    if (!response.ok)
+    if (!response.ok) {
+      if (response.status === 401) {
+        const claims = JSON.parse(
+          Buffer.from(token.split(".")[1], "base64url").toString(),
+        );
+        const fields = [
+          "iss",
+          "aud",
+          "sub",
+          "repository",
+          "ref",
+          "workflow_ref",
+          "iat",
+          "exp",
+          "nbf",
+        ];
+        console.error(
+          "Browser identity rejected",
+          JSON.stringify(
+            Object.fromEntries(fields.map((key) => [key, claims[key]])),
+          ),
+        );
+      }
       throw Error(`Browser queue request failed: HTTP ${response.status}`);
+    }
     return (await response.json()).data;
   };
 }
