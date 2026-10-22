@@ -1,11 +1,5 @@
 import { chromium, type Browser } from "playwright";
 import { resolve4 } from "node:dns/promises";
-import {
-  createCipheriv,
-  createDecipheriv,
-  createHash,
-  randomBytes,
-} from "node:crypto";
 import { pathToFileURL } from "node:url";
 import { load } from "cheerio";
 import {
@@ -20,8 +14,10 @@ type Request = {
   workspace_id: string;
   lease_token: string;
 };
-type Query = (sql: string) => Promise<any[]>;
-const literal = (s: string) => "'" + s.replaceAll("'", "''") + "'";
+type Gateway = (
+  action: string,
+  payload: Record<string, unknown>,
+) => Promise<any>;
 export async function publicDestination(
   url: string,
   lookup: (hostname: string) => Promise<string[]> = resolve4,
@@ -38,42 +34,6 @@ export async function publicDestination(
   if (!addresses.length || addresses.some((ip) => !publicAddress(ip)))
     throw Error("UNSAFE_DESTINATION");
   return u;
-}
-export function sealSession(state: unknown, secret: string, host: string) {
-  const key = createHash("sha256")
-    .update("tenderdesk-browser-session-v1\0" + secret)
-    .digest();
-  const nonce = randomBytes(12);
-  const cipher = createCipheriv("aes-256-gcm", key, nonce);
-  cipher.setAAD(Buffer.from(host));
-  const bytes = Buffer.concat([
-    cipher.update(JSON.stringify(state)),
-    cipher.final(),
-  ]);
-  return Buffer.concat([nonce, cipher.getAuthTag(), bytes]).toString("base64");
-}
-export function openSession(sealed: string, secret: string, host: string) {
-  try {
-    const bytes = Buffer.from(sealed, "base64");
-    const key = createHash("sha256")
-      .update("tenderdesk-browser-session-v1\0" + secret)
-      .digest();
-    const decipher = createDecipheriv(
-      "aes-256-gcm",
-      key,
-      bytes.subarray(0, 12),
-    );
-    decipher.setAuthTag(bytes.subarray(12, 28));
-    decipher.setAAD(Buffer.from(host));
-    return JSON.parse(
-      Buffer.concat([
-        decipher.update(bytes.subarray(28)),
-        decipher.final(),
-      ]).toString(),
-    );
-  } catch {
-    return undefined;
-  }
 }
 export function renderedPage(html: string, url: string, requested: string) {
   const $ = load(html);
@@ -208,48 +168,33 @@ export async function renderPublicSource(o: {
 }
 
 export async function processBrowserRequest(
-  query: Query,
+  gateway: Gateway,
   browser: Browser,
-  secret: string,
 ) {
-  const request = (
-    await query("select public.claim_source_browser_page() data")
-  )[0]?.data as Request | null;
+  const request = (await gateway("claim", {})) as Request | null;
   if (!request) return false;
-  const args = `${literal(request.id)}::uuid,${literal(request.lease_token)}::uuid`;
+  const args = { request_id: request.id, lease: request.lease_token };
   const host = new URL(request.url).hostname;
-  const sessionScope = request.workspace_id + ":" + host;
   let result: Awaited<ReturnType<typeof renderPublicSource>> | undefined;
   let code: string | null = null;
   try {
-    const sealed = (
-      await query(`select public.source_browser_session(${args}) data`)
-    )[0]?.data;
     result = await renderPublicSource({
       browser,
       url: request.url,
-      storageState: sealed
-        ? openSession(sealed, secret, sessionScope)
-        : undefined,
+      storageState: (await gateway("session_load", args)) ?? undefined,
       onChallenge: async (image) => {
-        await query(
-          `select public.source_browser_challenge(${args},${literal(image)})`,
-        );
+        await gateway("challenge", { ...args, image });
         const deadline = Date.now() + 175000;
         while (Date.now() < deadline) {
           await new Promise((resolve) => setTimeout(resolve, 3000));
-          const data = (
-            await query(`select public.source_browser_challenge(${args}) data`)
-          )[0]?.data;
+          const data = await gateway("challenge", args);
           if (data?.expired) return null;
           if (data?.answer) return data.answer;
         }
         return null;
       },
     });
-    await query(
-      `select public.source_browser_session(${args},${literal(sealSession(result.state, secret, sessionScope))})`,
-    );
+    await gateway("session_save", { ...args, state: result.state });
   } catch (error) {
     const name = error instanceof Error ? error.message : "";
     code = [
@@ -263,50 +208,65 @@ export async function processBrowserRequest(
         ? "SOURCE_TIMEOUT"
         : "SOURCE_BROWSER_FAILED";
   }
-  const page = result
-    ? literal(JSON.stringify(result.page)) + "::jsonb"
-    : "null";
-  await query(
-    `select public.complete_source_browser_page(${args},${page},${code ? literal(code) : "null"})`,
-  );
+  await gateway("complete", {
+    ...args,
+    page: result?.page ?? null,
+    error_code: code,
+  });
   console.log(JSON.stringify({ host, outcome: code || "rendered" }));
   return true;
 }
-
-export function managementQuery(token: string): Query {
-  return async (sql) => {
-    const response = await fetch(
-      "https://api.supabase.com/v1/projects/nqfwbqeozmuiuwbiowil/database/query",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ query: sql }),
-        signal: AbortSignal.timeout(30000),
+export function actionsGateway(): Gateway {
+  const audience =
+    "https://nqfwbqeozmuiuwbiowil.supabase.co/functions/v1/source-browser";
+  let cached: { value: string; expires: number } | undefined;
+  const identity = async () => {
+    if (cached && cached.expires > Date.now() / 1000 + 60) return cached.value;
+    const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+    const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+    if (!requestUrl || !requestToken)
+      throw Error("GitHub Actions id-token: write is required");
+    const url = new URL(requestUrl);
+    url.searchParams.set("audience", audience);
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${requestToken}` },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) throw Error("GitHub Actions identity is unavailable");
+    const body = await response.json();
+    if (typeof body.value !== "string") throw Error("Invalid Actions identity");
+    cached = {
+      value: body.value,
+      expires: JSON.parse(
+        Buffer.from(body.value.split(".")[1], "base64url").toString(),
+      ).exp,
+    };
+    return cached.value;
+  };
+  return async (action, payload) => {
+    const response = await fetch(audience, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${await identity()}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({ action, payload }),
+      signal: AbortSignal.timeout(30000),
+    });
     if (!response.ok)
-      throw Error(
-        `Browser queue database request failed: HTTP ${response.status}`,
-      );
-    const result = await response.json();
-    if (!Array.isArray(result)) throw Error("Invalid browser queue response");
-    return result;
+      throw Error(`Browser queue request failed: HTTP ${response.status}`);
+    return (await response.json()).data;
   };
 }
 async function main() {
-  const token = process.env.SUPABASE_ACCESS_TOKEN;
-  if (!token) throw Error("SUPABASE_ACCESS_TOKEN is required");
   const proxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
   const browser = await chromium.launch({
     proxy: proxy ? { server: proxy } : undefined,
   });
   try {
-    const query = managementQuery(token);
+    const gateway = actionsGateway();
     for (let i = 0; i < 3; i++)
-      if (!(await processBrowserRequest(query, browser, token))) break;
+      if (!(await processBrowserRequest(gateway, browser))) break;
   } finally {
     await browser.close();
   }

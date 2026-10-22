@@ -5,6 +5,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  id-token: write
 concurrency:
   group: source-browser-production
   cancel-in-progress: false
@@ -28,6 +29,4 @@ jobs:
           npx --no-install playwright install --with-deps chromium
       - name: Read public pages and handle requested human verification
         working-directory: backend
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: node --experimental-transform-types scripts/backend/browser-source-worker.ts

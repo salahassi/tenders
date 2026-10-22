@@ -3,10 +3,12 @@ import { beforeAll, afterAll, beforeEach, afterEach, it, expect } from "vitest";
 import { workflowFixture } from "./workflowFixture";
 import {
   publicDestination,
-  sealSession,
-  openSession,
   renderedPage,
 } from "../../scripts/backend/browser-source-worker";
+import {
+  sealSession,
+  openSession,
+} from "../../supabase/functions/_shared/browserIdentity";
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
   f = await workflowFixture();
@@ -155,24 +157,28 @@ it("keeps human-verification failures explicit and browser/session RPCs unavaila
     ).rows[0],
   ).toEqual({ client: false, sessions: false, answers: false });
 });
-it("encrypts browser sessions with tamper detection and workspace/host binding", () => {
+it("encrypts browser sessions with tamper detection and workspace/host binding", async () => {
   const session = {
     cookies: [{ name: "synthetic", value: "secret-session" }],
     origins: [],
   };
-  const sealed = sealSession(session, "synthetic-key", "workspace:source.test");
-  expect(sealed).not.toContain("secret-session");
-  expect(openSession(sealed, "synthetic-key", "workspace:source.test")).toEqual(
+  const sealed = await sealSession(
     session,
+    "synthetic-key",
+    "workspace:source.test",
   );
+  expect(sealed).not.toContain("secret-session");
   expect(
-    openSession(sealed, "wrong-key", "workspace:source.test"),
+    await openSession(sealed, "synthetic-key", "workspace:source.test"),
+  ).toEqual(session);
+  expect(
+    await openSession(sealed, "wrong-key", "workspace:source.test"),
   ).toBeUndefined();
   expect(
-    openSession(sealed, "synthetic-key", "other:source.test"),
+    await openSession(sealed, "synthetic-key", "other:source.test"),
   ).toBeUndefined();
   expect(
-    openSession(
+    await openSession(
       sealed.slice(0, -4) + "AAAA",
       "synthetic-key",
       "workspace:source.test",

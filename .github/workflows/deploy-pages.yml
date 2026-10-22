@@ -47,7 +47,7 @@ jobs:
         run: npm run typecheck
       - name: Check Edge Functions with Deno
         working-directory: backend
-        run: npm exec --yes --package=deno@2.9.6 -- deno check --config supabase/functions/deno.json supabase/functions/api/index.ts supabase/functions/worker/index.ts
+        run: npm exec --yes --package=deno@2.9.6 -- deno check --config supabase/functions/deno.json supabase/functions/api/index.ts supabase/functions/worker/index.ts supabase/functions/source-browser/index.ts
       - name: Run frontend tests
         working-directory: frontend
         run: npm test -- --maxWorkers=2

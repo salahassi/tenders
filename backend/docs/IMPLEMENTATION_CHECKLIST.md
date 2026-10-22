@@ -20,8 +20,11 @@ removal, loss of verification, RFP changes and permission checks still fail clos
 Every saved writing step remains retained; final review and export are pending.
 
 Migration `source_browser_queue` is live. JavaScript/challenge pages enter a
-bounded Chromium queue, serviced by a scheduled GitHub Actions worker using the
-existing deployment secret. Browser destinations require HTTPS/public DNS;
+bounded Chromium queue, serviced by a scheduled GitHub Actions worker using
+short-lived GitHub OIDC identity. Its dedicated gateway verifies the signed
+issuer, audience, repository, main ref and exact workflow before allowing only
+leased browser operations. No stored management token or service key is supplied
+to Actions. Browser destinations require HTTPS/public DNS;
 leases, source revisions and membership are checked before publication.
 Human image-code challenges appear in source details with an expiring,
 challenge-bound Owner answer. Answers are consumed once and redacted from audit.
@@ -39,7 +42,16 @@ to a retryable source timeout. Local verification passed: **1,219 backend tests 
 frozen Deno checks for API/worker. Security advisories retain the existing
 categories; the additional private tables intentionally have no client policies
 or grants, and the new authenticated verification read enforces Owner authority.
-Publication and hosted browser-queue acceptance are in progress.
+Pages publication [39800085620](https://github.com/salahassi/tenders/actions/runs/39800085620)
+passed at source `d7c3268`. The initial API/browser workflows exposed an absent
+repository deployment credential; no secret was requested or created. The
+connected Supabase deployment has now published **API v83, worker v118 and
+source-browser v1**; the lease-scoped identity migration is live. The browser
+workflow now authenticates automatically using GitHub OIDC, with server-side
+session encryption. Both new identity tests and seven browser/queue tests pass;
+all three frozen Deno entrypoints pass. Final full regression and hosted queue
+acceptance remain in progress. The first replacement proposal review succeeded;
+the other two reviews are still executing, with all saved draft steps retained.
 
 The Owner also asked how to delete a note. Added an explicit Delete action and
 confirmation to Additional notes. It uses the existing revision-checked
@@ -78,8 +90,9 @@ Deployment: live source configuration saved and read back; no API/worker code or
 schema change and no redeployment required. Repository publication is not part
 of this diagnostic request.
 
-Hosted acceptance remains separate: the fresh source jobs are queued or resuming
-saved model results; MDLF has not yet completed ingestion. The fresh MOF request
+Hosted acceptance remains separate: MDLF job `55c31041-e19f-4f3e-a3d8-2467db3c2181`
+succeeded and its source is healthy; other fresh jobs are queued or resuming
+saved model results. The fresh MOF request
 blocked with numeric error `20`: the automatic reader currently propagates an
 AbortError's numeric code instead of a useful timeout classification. The initial
 35-URL probe returned 28 HTTP 200, two HTTP 403, four HTTP 503 and one connection

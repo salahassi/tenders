@@ -27,3 +27,8 @@ import_map = "./functions/deno.json"
 # Separate constant-time application secret check before privileged work.
 verify_jwt = false
 import_map = "./functions/deno.json"
+
+[functions.source-browser]
+# Verifies short-lived GitHub Actions OIDC for this repository/main/workflow.
+verify_jwt = false
+import_map = "./functions/deno.json"
