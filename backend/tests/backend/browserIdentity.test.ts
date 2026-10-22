@@ -47,7 +47,14 @@ async function identity(overrides: Record<string, unknown> = {}) {
 it("accepts only signed short-lived identities for the exact repository/main/browser workflow", async () => {
   const valid = await identity();
   expect(await verifyBrowserIdentity(valid.token, valid.fetcher)).toBe(true);
+  const immutable = await identity({
+    sub: "repo:salahassi@1439837/tenders@1418689096:ref:refs/heads/main",
+  });
+  expect(await verifyBrowserIdentity(immutable.token, immutable.fetcher)).toBe(
+    true,
+  );
   for (const change of [
+    { sub: "repo:salahassi@1/tenders@2:ref:refs/heads/main" },
     { repository: "attacker/tenders" },
     { ref: "refs/heads/other" },
     { aud: "other" },

@@ -67,6 +67,21 @@ will verify the identity and queue path.
 That first run subsequently reached the gateway but returned HTTP 401. Safe
 diagnostics now expose only public identity claims and expiry times on rejection,
 never the signed token; hosted OIDC acceptance remains open until corrected.
+Safe readback isolated GitHub's new immutable subject format:
+`repo:salahassi@1439837/tenders@1418689096:ref:refs/heads/main`. The verifier now
+accepts that exact subject and the legacy spelling, while still requiring the
+signed issuer, audience, repository, ref and workflow. A regression accepts the
+actual immutable subject and rejects other owner/repository IDs.
+
+Hosted identity/browser admission now passes:
+[workflow 39805449018](https://github.com/salahassi/tenders/actions/runs/39805449018)
+completed successfully in 22 seconds at **15:30:45 UTC**, using the runner's real
+Chrome and **source-browser v2**. Its deployed reachable files match canonical
+source exactly. The successful claim returned no pending browser request, so
+this proves startup, signed identity and authorized queue access, not rendered
+production ingestion or a human-entered CAPTCHA. The earlier six-notice Etimad
+render remains the separate real public-page test. Approved Ministry jobs retain
+their saved model continuations; no proposed source was silently activated.
 
 The Owner also asked how to delete a note. Added an explicit Delete action and
 confirmation to Additional notes. It uses the existing revision-checked

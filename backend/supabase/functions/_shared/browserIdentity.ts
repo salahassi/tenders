@@ -28,7 +28,10 @@ export async function verifyBrowserIdentity(
       typeof header.kid !== "string" ||
       claims.iss !== issuer ||
       claims.aud !== browserAudience ||
-      claims.sub !== "repo:salahassi/tenders:ref:refs/heads/main" ||
+      ![
+        "repo:salahassi/tenders:ref:refs/heads/main",
+        "repo:salahassi@1439837/tenders@1418689096:ref:refs/heads/main",
+      ].includes(claims.sub) ||
       claims.workflow_ref !== workflow ||
       claims.repository !== "salahassi/tenders" ||
       claims.ref !== "refs/heads/main" ||
