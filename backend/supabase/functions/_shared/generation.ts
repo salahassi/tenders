@@ -438,17 +438,27 @@ export function taskInput(ctx: PlanContext) {
       evidence.push(...refsFor(all, claimIds));
       const sectionKeys = sections.map((s) => s.key);
       const commercialSteps = successful(ctx, "plan_commercial");
+      // Pin this projection on newly enqueued reviews. An accepted request
+      // without the marker must retain its original prompt and input hash.
+      const explicitScope = input.review_scope_version === 1;
+      const completeCommercial =
+        explicitScope && input.coherence_review === true;
+      if (completeCommercial)
+        evidence.push(...refsFor(all, [], ctx.requirements));
       const relevantLines = (step: Row) =>
         (step.output.lines || []).filter((line: Row) =>
-          line.requirement_ids?.length
-            ? line.requirement_ids.some((id: string) =>
-                requiredIds.includes(id),
-              )
-            : !line.section_ids?.length ||
-              line.section_ids.some((id: string) => sectionKeys.includes(id)),
+          completeCommercial
+            ? true
+            : line.requirement_ids?.length
+              ? line.requirement_ids.some((id: string) =>
+                  requiredIds.includes(id),
+                )
+              : !line.section_ids?.length ||
+                line.section_ids.some((id: string) => sectionKeys.includes(id)),
         );
       const selectedCommercial = commercialSteps.filter(
         (step) =>
+          completeCommercial ||
           !step.input.requirement_ids?.length ||
           step.input.requirement_ids.some((id: string) =>
             requiredIds.includes(id),
@@ -484,6 +494,7 @@ export function taskInput(ctx: PlanContext) {
         questions: selectedCommercial.flatMap((step) =>
           (step.output.questions || []).filter(
             (question: Row) =>
+              completeCommercial ||
               !question.requirement_ids?.length ||
               question.requirement_ids.some((id: string) =>
                 requiredIds.includes(id),
@@ -493,6 +504,22 @@ export function taskInput(ctx: PlanContext) {
       };
       context.instruction =
         "Audit each required requirement ID against the actual supplied sections and proposed commercial draft. The commercial draft is generated, unconfirmed proposal content, not supporting evidence or approved prices, resources or commitments. Check unsupported company claims, contradictions, placeholders, missing acceptance evidence, scope/price mismatch and unrealistic delivery. Never approve not-applicable status. Every mandatory requirement must have a coverage record, even when missing.";
+      if (explicitScope) {
+        const allLines = commercialSteps.flatMap(
+          (step) => step.output.lines || [],
+        );
+        context.commercial_review_scope = {
+          complete: completeCommercial,
+          available_line_count: allLines.length,
+          included_line_count: context.commercial_draft.lines.length,
+          all_line_requirement_ids: [
+            ...new Set(allLines.flatMap((line) => line.requirement_ids || [])),
+          ],
+        };
+        context.instruction += completeCommercial
+          ? " The commercial draft includes ALL completed commercial groups, including every line, task and unresolved question. Audit overall BOQ completeness against this complete draft and the RFP."
+          : " The commercial draft is a SCOPED projection for this review group. Lines for other requirements may be omitted here. Do not infer that the full proposal lacks them, or that the whole BOQ is incomplete, from this projection. Overall completeness is checked in final reconciliation using all commercial groups.";
+      }
       if (input.workflow_version >= 2) {
         context.instruction +=
           " Check these full sections against the shared decisions and response-location index. Return concise findings and exact affected IDs; do not rewrite the proposal or repeat all its text in rationales. A cross-reference is acceptable only when the referenced substantive response exists. Report a contradiction to a shared decision explicitly. Previously verified writing still needs fulfillment and consistency review.";
@@ -846,7 +873,13 @@ export async function nextStage(ctx: PlanContext): Promise<{
       ctx.requirements,
       draftedSections(ctx),
       ctx.plan.execution_policy?.review_output_tokens ?? 16384,
-    ).map((input) => ({ task: "review_proposal", input }));
+    ).map((input) => ({
+      task: "review_proposal",
+      input: {
+        ...input,
+        ...(hierarchicalPlanning(ctx.plan) ? { review_scope_version: 1 } : {}),
+      },
+    }));
     return output;
   }
   if (stage === "review" && semanticWorkflow(ctx.plan)) {
@@ -857,6 +890,9 @@ export async function nextStage(ctx: PlanContext): Promise<{
         input: {
           workflow_version: 2,
           coherence_review: true,
+          ...(hierarchicalPlanning(ctx.plan)
+            ? { review_scope_version: 1 }
+            : {}),
           requirement_ids: [],
           section_keys: draftedSections(ctx).map((s) => s.key),
         },

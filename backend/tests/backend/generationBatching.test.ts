@@ -274,6 +274,40 @@ it("reviews scoped commercial proposals and their dependencies without promoting
     "not supporting evidence or approved prices",
   );
   expect(ctx).toEqual(snapshot);
+  ctx.step.input.review_scope_version = 1;
+  const scoped = taskInput(ctx);
+  expect(scoped.context.commercial_draft).toEqual(
+    request.context.commercial_draft,
+  );
+  expect(scoped.context.commercial_review_scope).toEqual({
+    complete: false,
+    available_line_count: 4,
+    included_line_count: 2,
+    all_line_requirement_ids: ["r-0", "r-1"],
+  });
+  expect(scoped.context.instruction).toContain("SCOPED projection");
+
+  // Final reconciliation has no assigned requirement IDs: it still needs all
+  // commercial prose, dependencies and questions, including duplicate lines.
+  ctx.step.input.coherence_review = true;
+  ctx.step.input.requirement_ids = [];
+  const complete = taskInput(ctx);
+  expect(complete.context.commercial_draft).toEqual({
+    status: "proposed_unconfirmed",
+    lines: [selectedLine, otherLine, otherLine, scopedBySection],
+    tasks: [
+      build,
+      design,
+      { key: "other", title: "Other task", predecessors: [] },
+    ],
+    questions: snapshot.steps[1].output.questions,
+  });
+  expect(complete.context.commercial_review_scope).toMatchObject({
+    complete: true,
+    included_line_count: 4,
+  });
+  expect(complete.evidence).toEqual(initial.evidence);
+  expect(complete.manifest).toEqual(initial.manifest);
 });
 
 it("retains unmapped commercial questions and proposed scope when the planning batch had no explicit requirement IDs", () => {

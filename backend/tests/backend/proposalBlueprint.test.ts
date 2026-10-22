@@ -248,6 +248,20 @@ it("packs reviews using full prose size and the response schema, including gener
   expect(() => semanticReviewInputs(ctx.requirements, [], 16384)).toThrow();
 });
 
+it("pins complete commercial reconciliation only on new hierarchical work", async () => {
+  const ctx = context(2);
+  ctx.plan.stage = "review";
+  const legacy = await nextStage(ctx);
+  expect(legacy.steps[0].input.review_scope_version).toBeUndefined();
+  ctx.plan.workflow_version = 3;
+  const current = await nextStage(ctx);
+  expect(current.steps[0].input).toMatchObject({
+    coherence_review: true,
+    review_scope_version: 1,
+    requirement_ids: [],
+  });
+});
+
 it("builds the matrix from actual review verdicts and preserves semantic outline lineage", () => {
   const ctx = context(2),
     b = ctx.steps[0].output;

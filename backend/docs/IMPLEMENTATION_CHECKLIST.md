@@ -169,7 +169,28 @@ timeout-limit change is included. **61 focused tests** pass, including a real
 SQL job failure/reclaim with unchanged stored results/budgets, backoff and stale
 lease rejection. Backend typecheck/build and both frozen Edge checks pass.
 Migration `transient_database_recovery`, worker **v110** and API **v81** deployed
-at **10:26 UTC**. Full CI and the resumed real export remain pending.
+at **10:26 UTC**; all retrievable source files match their canonical bundles.
+Source `5552f6c` passed [CI/Pages 39763127737](https://github.com/salahassi/tenders/actions/runs/39763127737):
+**1,186 backend tests / 68 files**, **205 frontend tests / 36 files**, both
+typechecks/builds and frozen Edge checks. The browser's audited retry completed
+commercial work at **10:29 UTC**, then synthesis completed at **10:30 UTC**.
+All **55 writing units** and both commercial groups are saved. Six coherent
+review groups are running; final reconciliation and real Word export remain
+pending. The result is not yet a finished document or latency acceptance.
+
+Live review inspection found a scope ambiguity: a reviewer could interpret its
+filtered commercial lines as the entire BOQ. New workflow-3 review inputs now
+pin an explicit scope marker. Scoped reviews receive available/included counts
+and the complete line-to-requirement ID index; final reconciliation receives
+every completed commercial line, task and question even with no assigned IDs.
+Generated commercial data remains unconfirmed proposal content, never evidence.
+Unmarked requests retain their exact projection, so in-flight paid work is not
+rewritten. **49 focused tests** pass, including old projection replay, scoped
+metadata, complete final commercial coverage/dependencies/questions and preserved
+source authorization. Backend typecheck/build and frozen worker checking pass.
+Worker **v111** deployed at **10:43 UTC** after a transient Supabase deployment
+error; the prior version remained active until the successful replacement.
+Full CI and final live reconciliation remain pending.
 
 
 ## October 21 — approved throughput and coherence follow-up
