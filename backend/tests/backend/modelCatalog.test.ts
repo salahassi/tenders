@@ -604,7 +604,7 @@ it.each([false, true])(
         : generation.thinkingConfig?.thinkingLevel;
       expect(
         background ? generation.max_output_tokens : generation.maxOutputTokens,
-      ).toBe(16384);
+      ).toBe(40000);
       if (bodies.length === 1) {
         expect(level?.toLowerCase()).toBe("medium");
         return Response.json(
@@ -719,7 +719,7 @@ it.each([false, true])(
       result_code: "PROVIDER_REQUEST_INVALID",
       provider_error_reason: "reasoning_unsupported",
       execution_metadata: {
-        profile: { reasoning: "medium", max_output_tokens: 16384 },
+        profile: { reasoning: "medium", max_output_tokens: 40000 },
         reasoning_control: {
           requested: "medium",
           effective: "medium",
@@ -730,7 +730,7 @@ it.each([false, true])(
     expect(attempts[1]).toMatchObject({
       status: "succeeded",
       execution_metadata: {
-        profile: { reasoning: "none", max_output_tokens: 16384 },
+        profile: { reasoning: "none", max_output_tokens: 40000 },
         reasoning_control: {
           requested: "medium",
           effective: "none",
@@ -2299,7 +2299,15 @@ it.each(["corrected", "unchanged", "evolving", "unsupported_verifier"])(
           [job.id],
         )
       ).rows[0].candidate_count,
-    ).toBe(["evolving", "unsupported_verifier"].includes(mode) ? 3 : 2);
+    ).toBe(1);
+    expect(
+      (
+        await f.db.query<any>(
+          "select b.candidates from app_private.model_graph_budgets b join app_private.model_graph_threads t on t.id=b.thread_id where t.job_id=$1 and b.unit='writer-repair'",
+          [job.id],
+        )
+      ).rows[0].candidates,
+    ).toBe(["evolving", "unsupported_verifier"].includes(mode) ? 2 : 1);
     if (mode === "unsupported_verifier") {
       expect(repairCount).toBe(2);
       expect(calls.filter((task) => task === "verify_grounding")).toHaveLength(
@@ -2312,7 +2320,7 @@ it.each(["corrected", "unchanged", "evolving", "unsupported_verifier"])(
             [job.id],
           )
         ).rows[0].candidates,
-      ).toBe(3);
+      ).toBe(1);
       expect(
         (
           await f.db.query<any>(

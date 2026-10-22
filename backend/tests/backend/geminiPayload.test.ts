@@ -57,7 +57,7 @@ it("builds the documented Interactions envelope for the failing analysis profile
   const input = inputFor("analyze_chunk");
   expect(input.capabilities.reasoning).toBe("none");
   expect(input.capabilities.reasoning_values).toEqual([]);
-  expect(input.profile.max_output_tokens).toBe(16384);
+  expect(input.profile.max_output_tokens).toBe(40000);
   const request = geminiAdapter.prepare(env, input, true);
   expect(request.url).toBe(
     "https://generativelanguage.googleapis.com/v1beta/interactions",
@@ -73,7 +73,7 @@ it("builds the documented Interactions envelope for the failing analysis profile
     background: true,
     store: true,
     stream: false,
-    generation_config: { max_output_tokens: 16384 },
+    generation_config: { max_output_tokens: 40000 },
     response_format: {
       type: "text",
       mime_type: "application/json",

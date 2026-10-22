@@ -161,7 +161,7 @@ it.each(["reserved", "unknown", "settled"])(
         requestPrefix: "analysis:candidate-1",
         task: "repair_result",
       }),
-    ).toBe(1);
+    ).toBe(2);
   },
 );
 
@@ -182,7 +182,7 @@ it("pins a legacy saved round before usage and preserves it after the round clea
 it("pins new phases before dispatch, then keeps their wire input across polls and failover", async () => {
   const x = await setup();
   expect(await readSemanticPromptRevision(x.store, x.requestPrefix)).toBe(0);
-  expect(await pinSemanticPrompt(x.options)).toBe(1);
+  expect(await pinSemanticPrompt(x.options)).toBe(2);
   const prompt = modelPrompt(
     x.task,
     context,
@@ -191,7 +191,7 @@ it("pins new phases before dispatch, then keeps their wire input across polls an
     "en",
     false,
     1,
-    1,
+    2,
   );
   const envelope = JSON.parse(prompt);
   expect(envelope.prompt_version).toContain(SEMANTIC_PROMPT_V1);
@@ -200,10 +200,10 @@ it("pins new phases before dispatch, then keeps their wire input across polls an
   expect(envelope.evidence).toEqual(evidence);
   expect(await sha256(prompt)).not.toBe(x.legacyHash);
   await usage(x, "reserved", await sha256(prompt));
-  expect(await pinSemanticPrompt(x.options)).toBe(1);
-  expect(await readSemanticPromptRevision(x.store, x.requestPrefix)).toBe(1);
+  expect(await pinSemanticPrompt(x.options)).toBe(2);
+  expect(await readSemanticPromptRevision(x.store, x.requestPrefix)).toBe(2);
   expect(
-    modelPrompt(x.task, context, evidence, ["req"], "en", false, 1, 1),
+    modelPrompt(x.task, context, evidence, ["req"], "en", false, 1, 2),
   ).toBe(prompt);
   await expect(
     pinSemanticPrompt({ ...x.options, context: { requirements: [] } }),

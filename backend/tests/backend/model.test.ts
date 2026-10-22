@@ -307,12 +307,14 @@ it.each([false, true])(
       expect(invalidCandidate).toHaveBeenCalledWith(
         candidate,
         "EVIDENCE_REFERENCE_INVALID",
-        [{
-          code: "EVIDENCE_REFERENCE_INVALID",
-          reason: "source_missing",
-          paths: ["$.requirements[0].source_refs[0].quote"],
-          evidence_ids: ["missing"],
-        }],
+        [
+          {
+            code: "EVIDENCE_REFERENCE_INVALID",
+            reason: "source_missing",
+            paths: ["$.requirements[0].source_refs[0].quote"],
+            evidence_ids: ["missing"],
+          },
+        ],
       );
   },
 );
@@ -1287,6 +1289,45 @@ it("retains a measured truncation across failover continuation so a proposal ste
   }
 });
 
+it("returns measured planning truncation for subdivision before sending an unchanged request to another provider", async () => {
+  const ledger: Ledger = {
+    preflight: async () => ({
+      routing_mode: "round_robin",
+      providers: [config, { ...config, provider: "zai_free" }],
+    }),
+    reserve: async () => "synthetic-reservation",
+    settle: vi.fn(),
+  };
+  const fetcher = vi.fn<typeof fetch>(async () =>
+    Response.json({
+      choices: [{ finish_reason: "length", message: { content: "{}" } }],
+      usage: { prompt_tokens: 100, completion_tokens: 40000 },
+    }),
+  );
+  await expect(
+    executeModel(
+      "plan_blueprint",
+      {},
+      evidence,
+      [],
+      [],
+      { qwen_free: env, zai_free: { ...env, provider: "zai_free" } },
+      ledger,
+      "en",
+      false,
+      fetcher,
+      1,
+      { splitOnTruncation: true },
+    ),
+  ).rejects.toMatchObject({ code: "MODEL_OUTPUT_TRUNCATED" });
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(ledger.settle).toHaveBeenCalledWith("synthetic-reservation", {
+    input: 100,
+    output: 40000,
+    thinking: null,
+  });
+});
+
 it("uses OpenAI Responses with the supplied model and preserves reasoning usage without extracting reasoning text", async () => {
   const send = vi.fn<typeof fetch>(async () =>
     Response.json(
@@ -1327,7 +1368,7 @@ it("uses OpenAI Responses with the supplied model and preserves reasoning usage 
     model: "owner-selected.model",
     store: false,
     stream: false,
-    max_output_tokens: 1024,
+    max_output_tokens: 40000,
   });
   expect(body).not.toHaveProperty("temperature");
   expect(body).not.toHaveProperty("reasoning");
@@ -1378,7 +1419,7 @@ it("uses Claude Messages and totals uncached and cached input without inventing 
   expect(body).toMatchObject({
     model: "owner-selected.model",
     stream: false,
-    max_tokens: 1024,
+    max_tokens: 40000,
   });
   expect(body).not.toHaveProperty("thinking");
   expect(body).not.toHaveProperty("response_format");

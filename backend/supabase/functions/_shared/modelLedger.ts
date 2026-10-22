@@ -133,15 +133,16 @@ export function modelLedger(
             ...identity,
             task_name: task,
             default_profile: taskRegistry[task].profile,
-            ...(task === "plan_blueprint"
+            ...(["plan_blueprint", "plan_structure"].includes(task)
               ? { route_task: "plan_proposal" }
               : {}),
             ...(routeTask
               ? {
-                  route_task:
-                    routeTask === "plan_blueprint"
-                      ? "plan_proposal"
-                      : routeTask,
+                  route_task: ["plan_blueprint", "plan_structure"].includes(
+                    routeTask,
+                  )
+                    ? "plan_proposal"
+                    : routeTask,
                   default_profile: taskRegistry[routeTask].profile,
                 }
               : {}),

@@ -605,11 +605,11 @@ it.each([false, true])(
           [accepted!.threadId],
         )
       ).rows[0],
-    ).toEqual({ status: "accepted", candidate_count: 2 });
+    ).toEqual({ status: "accepted", candidate_count: 1 });
     expect(
       (
         await f.db.query<any>(
-          "select candidates from app_private.model_graph_budgets where thread_id=$1 and unit='writer'",
+          "select sum(candidates)::int candidates from app_private.model_graph_budgets where thread_id=$1 and unit in ('writer','writer-repair')",
           [accepted!.threadId],
         )
       ).rows[0].candidates,

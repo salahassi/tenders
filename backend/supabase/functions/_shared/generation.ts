@@ -1,3 +1,17 @@
+import {
+  hierarchicalPlanning,
+  expandStructure,
+  validateStructure,
+  savedStructure,
+  planningDetailInputs,
+  validatePlanningDetails,
+  mergePlanningDetails,
+  splitPlanningDetails,
+} from "./proposalPlanning.ts";
+import {
+  DEFAULT_OUTPUT_CEILING,
+  OUTPUT_ECONOMY_INSTRUCTIONS,
+} from "./modelOutputPolicy.ts";
 import { scopeInstruction } from "./discovery.ts";
 import { enrichPublicNotice } from "./publicNoticeDetails.ts";
 import { executeGuardedModel } from "./modelGraph.ts";
@@ -132,13 +146,16 @@ export function taskInput(ctx: PlanContext) {
     input = step.input,
     all = allEvidence(ctx),
     task = (
-      step.task === "plan_proposal" && input.workflow_version === 2
-        ? "plan_blueprint"
-        : step.task
+      step.task === "plan_proposal" && input.planning_phase === "structure"
+        ? "plan_structure"
+        : step.task === "plan_proposal" && input.workflow_version >= 2
+          ? "plan_blueprint"
+          : step.task
     ) as ModelTask;
   const requirements = ctx.requirements.filter(
     (r) =>
-      (task === "plan_blueprint" && input.requirement_scope === "all") ||
+      (["plan_blueprint", "plan_structure"].includes(task) &&
+        input.requirement_scope === "all") ||
       (input.requirement_ids || []).includes(r.id),
   );
   let evidence: Row[] = [],
@@ -260,7 +277,7 @@ export function taskInput(ctx: PlanContext) {
     if (task === "plan_proposal")
       context.instruction =
         "Map these requirements to relevant provided template section keys. Include only keys that address this batch; empty required template sections will be retained by the application. Add a new key only for an RFP-specific form or structure. Do not invent fixed legal clauses or approvals. Map every requirement to a section or blocking question. Use financial volume for pricing and commercial responses.";
-    if (task === "plan_blueprint") {
+    if (task === "plan_blueprint" || task === "plan_structure") {
       context.workflow_version = 2;
       context.verification_output_tokens =
         ctx.plan.execution_policy?.verification_output_tokens ?? 16384;
@@ -289,8 +306,56 @@ export function taskInput(ctx: PlanContext) {
       context.instruction =
         "Create one coherent proposal blueprint for every blueprint_requirement_id; return these exact IDs in processed_requirement_ids. Preserve applicable template sections and any mandatory buyer forms. Assign each requirement to exactly ONE narrative unit as its primary answer. Justified secondary_links may cross-reference that answer or repeat a buyer-mandated form, but must explain why. A compliance_matrix section has no units: the application builds it from the reviewed answers. An executive_summary has one unit with no owned requirements and is written last. Plan coherent section/subsection units by subject and expected output size, never by a fixed number of requirements. Avoid tiny units and repeated narratives. Set target_words to the detail needed within writing_output_tokens (including structured fields and reasoning); do not pad. Establish concise shared architecture, interfaces, terminology, delivery constraints and assumptions in decisions. Distinguish cited buyer facts, cited verified company facts, proposed design decisions and unresolved inputs. Each unit references the shared decisions it uses. A missing company file or custom template does not stop substantive proposed work. Every requirement still gets a primary location, even when its answer must identify a missing input. No invented company credentials, prices or approvals.";
     }
-    if (input.workflow_version === 2 && task !== "plan_blueprint") {
-      const blueprint = savedBlueprint(ctx.steps, ctx.requirements);
+    if (input.planning_phase === "structure") {
+      context.instruction =
+        "Create the global proposal structure, not detailed writing units or draft prose. Assign EVERY supplied requirement ID to exactly one narrative section. Executive summary and compliance matrix own no requirements. Preserve all applicable template sections, titles and volumes. Record shared architecture, interfaces, dependencies, terminology and delivery decisions ONCE; clearly label buyer facts, verified company facts, proposed decisions and unresolved inputs. Cite the shortest exact source quotations for facts. Use short titles and concise purpose statements; reference IDs instead of repeating requirement text. Do not write section narratives. " +
+        OUTPUT_ECONOMY_INSTRUCTIONS;
+    }
+    if (input.planning_phase === "details") {
+      const structure = savedStructure(ctx.steps, ctx.requirements);
+      if (!structure) throw new ModelError("STAGE_INCOMPLETE");
+      const aliases = requirementAliases(ctx.requirements);
+      const aliasIds = (ids: string[]) => ids.map((id) => aliases.get(id));
+      context.global_section_index = structure.sections.map(
+        ({ key, title, volume, mode, requirement_ids }) => ({
+          key,
+          title,
+          volume,
+          mode,
+          requirement_ids: aliasIds(requirement_ids),
+        }),
+      );
+      context.assigned_sections = structure.sections
+        .filter((section) => input.section_keys.includes(section.key))
+        .map((section) => ({
+          ...section,
+          requirement_ids: aliasIds(
+            section.requirement_ids.filter((id) =>
+              input.requirement_ids.includes(id),
+            ),
+          ),
+        }));
+      context.shared_decisions = structure.decisions.map((d) => ({
+        ...d,
+        requirement_ids: aliasIds(d.requirement_ids),
+      }));
+      context.template.required_sections = [];
+      context.detail_path = input.detail_path;
+      context.instruction =
+        "Detail ONLY assigned_sections from the accepted global structure. Copy each assigned section key, title, purpose, volume and mode exactly. Return version:2 and decisions:[]: shared_decisions are frozen, reference their keys from units without repeating or changing them. Map every blueprint_requirement_id to exactly one narrative unit in its assigned section. Use coherent subject units, avoid tiny fragments, and describe purpose briefly rather than drafting the answer. Secondary links may reference other globally known requirement IDs with a specific reason; they do not own those requirements. Never repeat source quotations in unit descriptions. Executive summary has one unit and no owned requirements. Set target_words to the substantive need, not the available token ceiling. If detail_path is subdivided, cover only this assigned subset and retain all shared decisions. " +
+        OUTPUT_ECONOMY_INSTRUCTIONS;
+      evidence.push(
+        ...refsFor(
+          all,
+          structure.decisions.flatMap((d) => d.evidence_refs.map((r) => r.id)),
+        ),
+      );
+    }
+    if (
+      input.workflow_version >= 2 &&
+      !["plan_blueprint", "plan_structure"].includes(task)
+    ) {
+      const blueprint = blueprintFor(ctx);
       if (!blueprint) throw new ModelError("STAGE_INCOMPLETE");
       context.workflow_version = 2;
       context.verification_output_tokens =
@@ -356,7 +421,7 @@ export function taskInput(ctx: PlanContext) {
     }
     if (task === "review_proposal") {
       const sections = draftedSections(ctx).filter((s) =>
-        input.workflow_version === 2
+        input.workflow_version >= 2
           ? (input.section_keys || []).includes(s.key)
           : s.requirement_ids.some((id: string) => requiredIds.includes(id)),
       );
@@ -428,7 +493,7 @@ export function taskInput(ctx: PlanContext) {
       };
       context.instruction =
         "Audit each required requirement ID against the actual supplied sections and proposed commercial draft. The commercial draft is generated, unconfirmed proposal content, not supporting evidence or approved prices, resources or commitments. Check unsupported company claims, contradictions, placeholders, missing acceptance evidence, scope/price mismatch and unrealistic delivery. Never approve not-applicable status. Every mandatory requirement must have a coverage record, even when missing.";
-      if (input.workflow_version === 2) {
+      if (input.workflow_version >= 2) {
         context.instruction +=
           " Check these full sections against the shared decisions and response-location index. Return concise findings and exact affected IDs; do not rewrite the proposal or repeat all its text in rationales. A cross-reference is acceptable only when the referenced substantive response exists. Report a contradiction to a shared decision explicitly. Previously verified writing still needs fulfillment and consistency review.";
         if (input.coherence_review) {
@@ -485,6 +550,12 @@ export function taskInput(ctx: PlanContext) {
       ]),
     ).values(),
   ) as Reference[];
+  if (hierarchicalPlanning(ctx.plan)) {
+    context.execution_policy_version = 3;
+    context.verification_output_tokens =
+      ctx.plan.execution_policy?.verification_output_tokens ??
+      DEFAULT_OUTPUT_CEILING;
+  }
   return {
     task,
     context,
@@ -502,9 +573,18 @@ function successful(ctx: PlanContext, task: ModelTask) {
     .filter((s) => s.task === task && s.status === "completed")
     .map((s) => ({ input: s.input, output: s.output, ordinal: s.ordinal }));
 }
+function blueprintFor(ctx: PlanContext) {
+  return hierarchicalPlanning(ctx.plan)
+    ? mergePlanningDetails(
+        ctx.steps,
+        ctx.requirements,
+        ctx.plan.frozen_context.template.required_sections || [],
+      )
+    : savedBlueprint(ctx.steps, ctx.requirements);
+}
 export function plannedSections(ctx: PlanContext): Row[] {
   if (semanticWorkflow(ctx.plan)) {
-    const blueprint = savedBlueprint(ctx.steps, ctx.requirements);
+    const blueprint = blueprintFor(ctx);
     if (!blueprint) throw new ModelError("STAGE_INCOMPLETE");
     return blueprintSections(blueprint);
   }
@@ -545,6 +625,10 @@ export function draftedSections(ctx: PlanContext): Row[] {
 export function splitStep(ctx: PlanContext): Row[] | null {
   const input = ctx.step.input;
   if (ctx.step.depth >= 8) return null;
+  if (input.planning_phase === "details") {
+    const structure = savedStructure(ctx.steps, ctx.requirements);
+    return structure ? splitPlanningDetails(input, structure) : null;
+  }
   if (
     ctx.step.task === "analyze_chunk" ||
     ctx.step.task === "summarize_review"
@@ -662,7 +746,10 @@ export async function nextStage(ctx: PlanContext): Promise<{
         {
           task: "plan_proposal",
           input: {
-            workflow_version: 2,
+            workflow_version: ctx.plan.workflow_version,
+            ...(hierarchicalPlanning(ctx.plan)
+              ? { planning_phase: "structure" }
+              : {}),
             id_aliases_version: 1,
             requirement_scope: "all",
             requirement_ids: [],
@@ -684,7 +771,21 @@ export async function nextStage(ctx: PlanContext): Promise<{
       ];
     return output;
   }
-  if (stage === "planning") {
+  if (stage === "planning" && hierarchicalPlanning(ctx.plan)) {
+    const structure = savedStructure(ctx.steps, ctx.requirements);
+    if (!structure) throw new ModelError("STAGE_INCOMPLETE");
+    validateStructure(
+      structure,
+      ctx.requirements.map((r) => r.id),
+      frozen.template.required_sections || [],
+    );
+    output.next_stage = "detailing";
+    output.steps = planningDetailInputs(structure, ctx.requirements).map(
+      (input) => ({ task: "plan_proposal", input }),
+    );
+    return output;
+  }
+  if (stage === "planning" || stage === "detailing") {
     const sections = plannedSections(ctx);
     output.next_stage = "drafting";
     output.steps = sections
@@ -830,7 +931,7 @@ export async function nextStage(ctx: PlanContext): Promise<{
       .join("\n\n"),
   }));
   if (semanticWorkflow(ctx.plan)) {
-    const blueprint = savedBlueprint(ctx.steps, ctx.requirements)!;
+    const blueprint = blueprintFor(ctx)!;
     sections.push(
       ...complianceMatrixSections(
         blueprint,
@@ -1000,7 +1101,20 @@ export async function processGeneration(
             paths: ["$.key"],
           }),
         ]);
-      if (input.task === "plan_blueprint")
+      if (input.task === "plan_structure")
+        validateStructure(
+          expandStructure(result, ctx!.requirements),
+          ctx!.requirements.map((r) => r.id),
+          ctx!.plan.frozen_context.template.required_sections || [],
+        );
+      if (ctx!.step.input.planning_phase === "details")
+        validatePlanningDetails(
+          result,
+          ctx!.step.input,
+          savedStructure(ctx!.steps, ctx!.requirements)!,
+          ctx!.requirements,
+        );
+      else if (input.task === "plan_blueprint")
         validateBlueprint(
           ctx!.step.input.id_aliases_version === 1
             ? expandBlueprint(result, ctx!.requirements)

@@ -99,7 +99,7 @@ it("selects bounds and reasoning from capabilities, never model names", () => {
     reasoning: "medium",
   });
   expect(resolveProfile("connection_probe", capabilities)).toMatchObject({
-    max_output_tokens: 1024,
+    max_output_tokens: 12000,
     reasoning: "low",
   });
   expect(() =>

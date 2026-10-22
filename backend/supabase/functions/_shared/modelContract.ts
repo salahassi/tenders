@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_OUTPUT_CEILING } from "./modelOutputPolicy.ts";
 import {
   modelSchemas,
   repairOutputSchema,
@@ -42,27 +43,27 @@ export const executionProfileSchema = z
 export type ExecutionProfile = z.infer<typeof executionProfileSchema>;
 
 const defaults = (
-  max_output_tokens: number,
   reasoning: ExecutionProfile["reasoning"],
 ): ExecutionProfile => ({
   revision: 1,
-  max_output_tokens,
+  max_output_tokens: DEFAULT_OUTPUT_CEILING,
   reasoning,
   require_native_strict: false,
 });
 const profiles: Record<ModelTask, ExecutionProfile> = {
-  connection_probe: defaults(1024, "minimal"),
-  inspect_source_page: defaults(8192, "low"),
-  classify_opportunity: defaults(8192, "low"),
-  summarize_review: defaults(8192, "low"),
-  analyze_chunk: defaults(16384, "medium"),
-  plan_proposal: defaults(8192, "low"),
-  plan_blueprint: defaults(16384, "medium"),
-  draft_section: defaults(16384, "medium"),
-  plan_commercial: defaults(8192, "low"),
-  review_proposal: defaults(16384, "medium"),
-  verify_grounding: defaults(16384, "low"),
-  repair_result: defaults(16384, "medium"),
+  connection_probe: defaults("minimal"),
+  inspect_source_page: defaults("low"),
+  classify_opportunity: defaults("low"),
+  summarize_review: defaults("low"),
+  analyze_chunk: defaults("medium"),
+  plan_proposal: defaults("low"),
+  plan_blueprint: defaults("medium"),
+  plan_structure: defaults("medium"),
+  draft_section: defaults("medium"),
+  plan_commercial: defaults("low"),
+  review_proposal: defaults("medium"),
+  verify_grounding: defaults("low"),
+  repair_result: defaults("medium"),
 };
 export const taskRegistry = Object.fromEntries(
   Object.entries(modelSchemas).map(([task, output]) => [

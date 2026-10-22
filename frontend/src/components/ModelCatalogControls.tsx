@@ -171,7 +171,7 @@ export default function ModelCatalogControls({
   const defaults = data.status.tasks?.find((t: Row) => t.task === task)
     ?.profile ?? {
     revision: 1,
-    max_output_tokens: 8192,
+    max_output_tokens: 40000,
     reasoning: "low",
     require_native_strict: false,
   };

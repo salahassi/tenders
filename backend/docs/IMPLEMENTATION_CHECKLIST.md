@@ -1,5 +1,47 @@
 # Implementation status and continuation plan
 
+## October 22 — 40,000-token ceilings and bounded hierarchical planning
+
+Owner-authorized implementation in progress. All task defaults and the settings
+editor use a 40,000 output ceiling, subject to actual provider capability limits.
+A pinned economy policy tells new operations to stop once their complete result
+is expressed; the allowance is not a target length. Existing accepted requests
+retain their profile and prompt. New proposal workflow 3 separates a compact
+requirement ownership/shared-decision structure from subject-scoped detail jobs.
+Exact original evidence remains available to writers and verification. Detail
+truncation subdivides only that group, without repeating completed groups. New
+graphs reserve separate generation (3) and content-correction (2) allowances,
+with a combined ceiling of 5 received writer results; old budgets are immutable.
+
+Hosted evidence before this release: the workflow-2 trial completed all three
+analysis parts but blocked during planning. Two responses truncated at the old
+16,384 ceiling, then a third candidate failed an exact evidence-quote check.
+No correction was sent because all three shared writer allowances had been used.
+There is no completed real Word or proven throughput improvement yet.
+
+Implementation and local verification passed: **1,147 backend tests in 67 files**
+and **205 frontend tests in 36 files**; both packages typecheck/build and both
+Edge entrypoints pass frozen Deno checking. Tests cover complete ownership,
+immutable shared decisions, splitting/merging saved detail groups, truncation
+without an unchanged failover POST, separate correction allowances, crash replay,
+legacy prompt identities and safe planning-only recovery with changed-evidence
+rejection. The local no-template/no-company-data journey reaches an export
+snapshot; it is not proof of a successful real provider-generated Word.
+
+Published migration `bounded_hierarchical_planning` (canonical SQL SHA-256
+`d46b69d0ecd24bccfe7e1096e49398b0879edc2c26ced06c9530136c9948beef`), API **v80** and
+worker **v104** on October 22 at 07:42 UTC. Retrieved deployed source files match
+the canonical bundles; Supabase omits `deno.lock` from retrieval. Security
+advisories remain the pre-existing private-table policy / authenticated RPC /
+Auth password-protection categories; the new recovery RPC is service-only.
+
+The existing real trial was safely upgraded at 07:42 UTC after confirming its
+proposal inputs are unchanged. All three completed analysis steps and paid
+receipts remain intact; only failed planning was superseded. Broad workflow-3
+admission remains restricted to that trial until live acceptance. Live planning,
+usage measurements and a complete real export are still pending.
+
+
 ## October 21 — approved throughput and coherence follow-up
 
 The Owner reviewed the plan and explicitly authorized implementation.

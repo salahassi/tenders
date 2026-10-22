@@ -32,7 +32,7 @@ async function rpc(name: string, args: Record<string, unknown> = {}) {
     await f.db.exec("reset role;release savepoint graph_rpc");
   }
 }
-async function setup() {
+async function setup(budget_version = 1) {
   await f.command("model.routing", { enabled: true, expected_revision: 0 });
   await f.command("model.probe", {});
   const job = await rpc("claim_backend_job_v2");
@@ -45,6 +45,7 @@ async function setup() {
     input_hash: "b".repeat(64),
     task: "connection_probe",
     graph_version: 1,
+    budget_version,
   });
   const config = {
     configurable: { thread_id: store.thread },
@@ -316,6 +317,58 @@ async function blockedPaidWriter() {
   await store.action("needs_review");
   return { job, store, usage, input, prefix };
 }
+
+it("reserves correction capacity independently after three generation receipts, with idempotency and an aggregate ceiling", async () => {
+  const { job, store } = await setup(2);
+  const receive = async (unit: string) => {
+    await store.action("candidate_budget", { unit });
+    const id = crypto.randomUUID();
+    await f.db.query(
+      `insert into public.provider_usage(id,workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,created_by)
+      values($1::uuid,$2,$3,$4,$1::text,'openai','synthetic-model',$5,current_date,1,100,40000,'settled',$6)`,
+      [id, f.w, job.id, job.lease_token, "d".repeat(64), f.owner],
+    );
+    const result = await store.action("candidate_received", {
+      unit,
+      usage_id: id,
+    });
+    expect(
+      await store.action("candidate_received", { unit, usage_id: id }),
+    ).toEqual(result);
+    return id;
+  };
+  for (let i = 0; i < 3; i++) await receive("writer");
+  await expect(
+    store.action("candidate_budget", { unit: "writer" }),
+  ).rejects.toThrow("MODEL_GENERATION_ATTEMPTS_EXHAUSTED");
+  expect(
+    (await store.action("candidate_budget", { unit: "writer-repair" })).count,
+  ).toBe(0);
+  await receive("writer-repair");
+  await receive("writer-repair");
+  await expect(
+    store.action("candidate_budget", { unit: "writer-repair" }),
+  ).rejects.toThrow("MODEL_OPERATION_BUDGET_EXHAUSTED");
+  expect(
+    (
+      await f.db.query<any>(
+        "select candidate_count from app_private.model_graph_threads where id=$1",
+        [store.thread],
+      )
+    ).rows[0].candidate_count,
+  ).toBe(3);
+});
+
+it("never upgrades a previously created graph budget when a new worker resumes it", async () => {
+  const { store } = await setup(1);
+  const row = await store.action("init", {
+    input_hash: "b".repeat(64),
+    task: "connection_probe",
+    graph_version: 1,
+    budget_version: 2,
+  });
+  expect(row.budget_version).toBe(1);
+});
 
 it("reopens only an exact counted paid writer candidate without changing allowance or accepting its content", async () => {
   const { store, usage, input, prefix } = await blockedPaidWriter();

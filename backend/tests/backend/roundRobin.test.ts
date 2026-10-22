@@ -708,7 +708,7 @@ it("tries every automatic provider despite old daily ceilings and retains unknow
 it("can fail over within a one-request token budget after a proven initial 429 rejection", async () => {
   await enable();
   await f.db.exec(
-    "update public.workspaces set settings=settings||'{\"output_token_limit\":1024}'::jsonb",
+    "update public.workspaces set settings=settings||'{\"output_token_limit\":40000}'::jsonb",
   );
   const q = await queue(),
     calls: string[] = [];
@@ -726,7 +726,7 @@ it("can fail over within a one-request token budget after a proven initial 429 r
   expect(records.find((x) => x.provider === "gemini_free")).toMatchObject({
     state: "settled",
     actual_output: null,
-    reserved_output: 1024,
+    reserved_output: 40000,
   });
   expect(records.find((x) => x.provider === "qwen_free")).toMatchObject({
     state: "settled",

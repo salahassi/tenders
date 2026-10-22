@@ -327,6 +327,7 @@ async function runGuardedModel(o: Options): Promise<{
     input_hash: inputHash,
     task: o.task,
     graph_version: 1,
+    budget_version: 2,
   });
   if (thread.status === "accepted") {
     const result = (await store.action("result_get", { id: thread.result_id }))
@@ -357,13 +358,20 @@ async function runGuardedModel(o: Options): Promise<{
     );
     // LangGraph must commit its pending writes while the lease is still valid.
     // executeModel normally releases it before throwing ModelDeferred.
+    const budgetUnit =
+      thread.budget_version === 2 && unit === "writer" && repair
+        ? "writer-repair"
+        : unit;
     const ledger: Ledger = {
       ...original,
       beforeSend: async () => {
-        await store.action("candidate_budget", { unit });
+        await store.action("candidate_budget", { unit: budgetUnit });
       },
       candidateReceived: async (usage_id) => {
-        await store.action("candidate_received", { usage_id, unit });
+        await store.action("candidate_received", {
+          usage_id,
+          unit: budgetUnit,
+        });
       },
       saveRound: async (progress, releaseJob) => {
         await original.saveRound!(progress, false);
@@ -496,7 +504,7 @@ async function runGuardedModel(o: Options): Promise<{
           producer: producer ?? null,
         });
         if (
-          semanticRevision === 1 &&
+          semanticRevision >= 1 &&
           unit === "writer" &&
           attemptId &&
           diagnostics.length &&
@@ -540,6 +548,9 @@ async function runGuardedModel(o: Options): Promise<{
         {
           independentGrounding: true,
           semanticRevision,
+          splitOnTruncation:
+            o.context?.execution_policy_version === 3 &&
+            ["plan_structure", "plan_blueprint"].includes(o.task),
           repairContentValidation: unit === "writer",
         },
       );
@@ -1237,7 +1248,13 @@ async function runGuardedModel(o: Options): Promise<{
   } catch (error) {
     await store.flush();
     if (release) await release();
-    if ((error as any)?.code === "MODEL_CORRECTION_EXHAUSTED")
+    if (
+      [
+        "MODEL_CORRECTION_EXHAUSTED",
+        "MODEL_GENERATION_ATTEMPTS_EXHAUSTED",
+        "MODEL_OPERATION_BUDGET_EXHAUSTED",
+      ].includes((error as any)?.code)
+    )
       await store.action("needs_review");
     throw error;
   }

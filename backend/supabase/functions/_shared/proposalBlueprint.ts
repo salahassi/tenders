@@ -2,7 +2,7 @@ import type { ProposalBlueprint } from "./proposalBlueprintSchema.ts";
 import { ModelError } from "./model.ts";
 
 type Row = Record<string, any>;
-export const semanticWorkflow = (plan: Row) => plan.workflow_version === 2;
+export const semanticWorkflow = (plan: Row) => plan.workflow_version >= 2;
 
 // Compact, deterministic references reduce repeated UUID tokens in planning.
 // They label requirements; the model still makes the semantic assignments.
@@ -59,6 +59,10 @@ export function validateBlueprint(
   blueprint: ProposalBlueprint,
   requiredIds: string[],
   template: Row[] = [],
+  shared: {
+    decisions?: ProposalBlueprint["decisions"];
+    referenceIds?: string[];
+  } = {},
 ) {
   const fail = () => {
     throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
@@ -71,8 +75,10 @@ export function validateBlueprint(
     fail();
   const sectionKeys = new Set<string>(),
     unitKeys = new Set<string>();
-  const decisionKeys = new Set(blueprint.decisions.map((d) => d.key));
-  if (decisionKeys.size !== blueprint.decisions.length) fail();
+  const decisions = [...(shared.decisions ?? []), ...blueprint.decisions];
+  const referenceIds = shared.referenceIds ?? requiredIds;
+  const decisionKeys = new Set(decisions.map((d) => d.key));
+  if (decisionKeys.size !== decisions.length) fail();
   const owners = new Map<string, string>();
   for (const section of blueprint.sections) {
     if (sectionKeys.has(section.key) || section.key.startsWith("fixed-"))
@@ -92,7 +98,7 @@ export function validateBlueprint(
       if (unit.decision_ids.some((id) => !decisionKeys.has(id))) fail();
       if (
         unit.secondary_links.some(
-          (link) => !requiredIds.includes(link.requirement_id),
+          (link) => !referenceIds.includes(link.requirement_id),
         )
       )
         fail();
@@ -116,7 +122,7 @@ export function validateBlueprint(
       fail();
   }
   for (const decision of blueprint.decisions) {
-    if (decision.requirement_ids.some((id) => !requiredIds.includes(id)))
+    if (decision.requirement_ids.some((id) => !referenceIds.includes(id)))
       fail();
     if (
       ["buyer_fact", "company_fact"].includes(decision.kind) &&

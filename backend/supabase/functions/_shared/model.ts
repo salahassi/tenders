@@ -1,3 +1,7 @@
+import {
+  DEFAULT_OUTPUT_CEILING,
+  OUTPUT_ECONOMY_INSTRUCTIONS,
+} from "./modelOutputPolicy.ts";
 import { modelAdapters } from "./modelAdapters/index.ts";
 import {
   SEMANTIC_INSTRUCTIONS_V1,
@@ -126,24 +130,9 @@ export type Usage = {
   output: number | null;
   thinking: number | null;
 };
-export const caps: Record<ModelTask, number> = {
-  inspect_source_page: 8192,
-  // Includes a small reasoning budget for providers that count it as output.
-  connection_probe: 1024,
-  summarize_review: 8192,
-  classify_opportunity: 6144,
-  // Reasoning-enabled models can consume most of 4K before writing JSON.
-  // Allow the existing 8K per-call ceiling; retain measured usage and the
-  // bounded split/repair path when an individual response still truncates.
-  analyze_chunk: 8192,
-  plan_proposal: 8192,
-  plan_blueprint: 16384,
-  draft_section: 8192,
-  plan_commercial: 8192,
-  review_proposal: 8192,
-  verify_grounding: 16384,
-  repair_result: 16384,
-};
+export const caps = Object.fromEntries(
+  Object.keys(taskRegistry).map((task) => [task, DEFAULT_OUTPUT_CEILING]),
+) as Record<ModelTask, number>;
 export const writingGuide = {
   en: "Write clear professional American English. Explain scope, assumptions, dependencies and validation. Use native headings and concise connected prose. Define abbreviations at first use. Never invent a customer, certification, available employee, registration, rate or commitment.",
   ar: "اكتب بلغة عربية مهنية واضحة. اشرح النطاق والافتراضات والتبعيات وما يحتاج إلى تحقق. اذكر المقابل الإنجليزي الكامل للمصطلح المتخصص عند أول استخدام. لا تختلق عميلاً أو شهادة أو موظفاً متاحاً أو سعراً أو التزاماً.",
@@ -203,11 +192,11 @@ Return the original target_task and the corrected result using that task's compl
 export function taskSystemInstructions(
   task: ModelTask,
   verificationRevision: 1 | 2 = 1,
-  semanticRevision: 0 | 1 = 0,
+  semanticRevision: 0 | 1 | 2 = 0,
 ) {
   const original = legacyTaskSystemInstructions(task, verificationRevision);
-  return semanticRevision === 1 && task !== "connection_probe"
-    ? `${original}\n${SEMANTIC_INSTRUCTIONS_V1}`
+  return semanticRevision > 0 && task !== "connection_probe"
+    ? `${original}\n${SEMANTIC_INSTRUCTIONS_V1}${semanticRevision === 2 ? "\n" + OUTPUT_ECONOMY_INSTRUCTIONS : ""}`
     : original;
 }
 export async function sha256(value: string) {
@@ -512,7 +501,7 @@ export function validateModelResult(
     !sameIds(result.processed_requirement_ids, requiredIds)
   )
     throw coverageError(["$.processed_requirement_ids"], requiredIds);
-  if (task === "plan_blueprint") {
+  if (task === "plan_blueprint" || task === "plan_structure") {
     for (const [index, decision] of result.decisions.entries())
       validateQuotes(
         decision.evidence_refs,
@@ -950,7 +939,7 @@ export class FreeModelProvider {
     private streamResponses = false,
     private configuration?: ModelConfiguration,
     private verificationRevision: 1 | 2 = 1,
-    private semanticRevision: 0 | 1 = 0,
+    private semanticRevision: 0 | 1 | 2 = 0,
   ) {}
   private async diagnoseRejectedRequest(
     response: Response,
@@ -1450,7 +1439,7 @@ export function modelPrompt(
   language: "en" | "ar",
   repair = false,
   verificationRevision: 1 | 2 = 1,
-  semanticRevision: 0 | 1 = 0,
+  semanticRevision: 0 | 1 | 2 = 0,
 ) {
   const original =
     task === "inspect_source_page"
@@ -1476,7 +1465,10 @@ export function modelPrompt(
   const envelope = JSON.parse(original);
   return JSON.stringify({
     ...envelope,
-    prompt_version: `${envelope.prompt_version}.${SEMANTIC_PROMPT_V1}`,
+    prompt_version: `${envelope.prompt_version}.${SEMANTIC_PROMPT_V1}${semanticRevision === 2 ? ".economy-v1" : ""}`,
+    ...(semanticRevision === 2
+      ? { output_policy: OUTPUT_ECONOMY_INSTRUCTIONS }
+      : {}),
     semantic_policy: SEMANTIC_INSTRUCTIONS_V1,
   });
 }
@@ -1495,8 +1487,9 @@ export async function executeModel(
   verificationRevision: 1 | 2 = 1,
   options: {
     independentGrounding?: boolean;
-    semanticRevision?: 0 | 1;
+    semanticRevision?: 0 | 1 | 2;
     repairContentValidation?: boolean;
+    splitOnTruncation?: boolean;
   } = {},
 ) {
   const invocationStarted = ledger.invocationStartedAt ?? Date.now();
@@ -1754,7 +1747,7 @@ export async function executeModel(
         });
         if (task === "verify_grounding" && verificationRevision === 2)
           request.promptVersion = VERIFICATION_PROMPT_V2;
-        if (options.semanticRevision === 1 && task !== "connection_probe")
+        if ((options.semanticRevision ?? 0) >= 1 && task !== "connection_probe")
           request.promptVersion = JSON.parse(prompt).prompt_version;
         if (pending?.execution_metadata) {
           request.promptVersion =
@@ -1933,7 +1926,7 @@ export async function executeModel(
             if (
               retained === "repair" &&
               options.repairContentValidation === true &&
-              options.semanticRevision === 1 &&
+              (options.semanticRevision ?? 0) >= 1 &&
               task !== "verify_grounding" &&
               task !== "connection_probe"
             ) {
@@ -2022,6 +2015,21 @@ export async function executeModel(
           await checkpointRound(index, true);
           throw new ModelDeferred();
         }
+        // A completed but truncated planning response needs a smaller planning
+        // scope, not an identical paid prompt on the next provider.
+        if (
+          settled &&
+          code === "MODEL_OUTPUT_TRUNCATED" &&
+          options.splitOnTruncation
+        ) {
+          await ledger.attempt?.(
+            config.provider,
+            code,
+            Boolean(reservation),
+            config,
+          );
+          throw lastError;
+        }
         // A measured invalid response needs the persisted, bounded repair path.
         // Still try the remaining providers, but do not hide this behind a
         // missing-slot error and poll the same completed response forever.
@@ -2054,6 +2062,8 @@ export async function executeModel(
           "analyze_chunk",
           "summarize_review",
           "plan_proposal",
+          "plan_structure",
+          "plan_blueprint",
           "draft_section",
           "plan_commercial",
           "review_proposal",

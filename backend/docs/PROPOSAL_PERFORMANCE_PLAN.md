@@ -66,6 +66,22 @@ polls and scheduling continuations. Show actual stage progress and wait reasons.
 
 ## 2. Plan by meaning and establish shared decisions
 
+October 22 implementation: workflow 3 first creates a compact ownership map and
+shared decisions, then details groups of whole subjects. Each requirement has
+one primary owner; other sections use explicit cross-references. Accepted
+structure/decisions are immutable across detail groups. Their results merge
+locally; original requirement wording/evidence stays available to writing and
+review. A truncated group is subdivided without rerunning successful groups.
+
+All new task profiles default to the Owner-requested 40,000 output ceiling with
+explicit stop-on-completion instructions. It is not a word-count target, and
+provider capability limits still apply. Separate generation/correction budgets
+allow a content repair after generation failover has consumed three receipts,
+while retaining a five-result aggregate bound. Existing requests and completed
+work remain on their saved identity. Acceptance requires the live trial below;
+local tests alone do not demonstrate a completed Word or latency reduction.
+
+
 Build a versioned, structured proposal blueprint from the frozen requirement
 inventory, original evidence and eligible Company Knowledge. It contains:
 

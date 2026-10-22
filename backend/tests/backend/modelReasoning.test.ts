@@ -73,7 +73,7 @@ it.each(["low", "medium", "high"] as const)(
       expect(body.generationConfig.thinkingConfig).toEqual({
         thinkingLevel: reasoning.toUpperCase(),
       });
-      expect(body.generationConfig.maxOutputTokens).toBe(16384);
+      expect(body.generationConfig.maxOutputTokens).toBe(40000);
       return success();
     });
     expect(
@@ -123,7 +123,7 @@ it.each(["low", "medium", "high"] as const)(
       true,
     );
     expect(request.body?.generation_config).toEqual({
-      max_output_tokens: 16384,
+      max_output_tokens: 40000,
       thinking_level: reasoning,
     });
   },
@@ -131,7 +131,7 @@ it.each(["low", "medium", "high"] as const)(
 it("uses LOW only as the new verification default and preserves explicit none, pinned medium and other task defaults", async () => {
   expect(taskRegistry.verify_grounding.profile).toMatchObject({
     reasoning: "low",
-    max_output_tokens: 16384,
+    max_output_tokens: 40000,
   });
   expect(taskRegistry.draft_section.profile.reasoning).toBe("medium");
   expect(taskRegistry.analyze_chunk.profile.reasoning).toBe("medium");

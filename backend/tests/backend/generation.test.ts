@@ -88,6 +88,155 @@ async function start() {
     }),
   };
 }
+
+it("upgrades only blocked planning, preserving completed analysis and paid receipts with explicit owner, revision and service-role checks", async () => {
+  const { plan } = await start();
+  await f.db.query(
+    "update public.generation_plans set workflow_version=2 where id=$1",
+    [plan.id],
+  );
+  let planning: any;
+  for (let i = 0; i < 10; i++) {
+    const job = await f.rpc("claim_backend_job");
+    const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
+    if (ctx.step.task === "plan_proposal") {
+      planning = job;
+      break;
+    }
+    if (ctx.step.task === "advance_plan") {
+      const next = await nextStage(ctx);
+      await f.rpc("advance_generation", [
+        job.id,
+        job.lease_token,
+        next.next_stage,
+        JSON.stringify(next.requirements),
+        JSON.stringify(next.steps),
+        null,
+      ]);
+    } else
+      await f.rpc("complete_generation_step", [
+        job.id,
+        job.lease_token,
+        JSON.stringify(resultFor(ctx)),
+      ]);
+  }
+  expect(planning).toBeTruthy();
+  await f.rpc("fail_generation", [
+    planning.id,
+    planning.lease_token,
+    "MODEL_CORRECTION_EXHAUSTED",
+    null,
+    null,
+  ]);
+  const prior = (
+    await f.db.query<any>("select * from public.generation_plans where id=$1", [
+      plan.id,
+    ])
+  ).rows[0];
+  const analysis = async () =>
+    (
+      await f.db.query(
+        "select id,input,output,status from public.generation_steps where plan_id=$1 and stage='analysis' order by ordinal",
+        [plan.id],
+      )
+    ).rows;
+  const before = await analysis();
+  expect(before.some((s: any) => s.status === "completed")).toBe(true);
+  const usage = crypto.randomUUID();
+  await f.db.query(
+    `insert into public.provider_usage(id,workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,created_by)
+    values($1::uuid,$2,$3,$4,$1::text,'openai','synthetic-model',repeat('d',64),current_date,1,100,16384,'reserved',$5)`,
+    [usage, f.w, planning.id, planning.lease_token, f.owner],
+  );
+  const attempt = async (actor: string, revision: number) => {
+    await f.db.exec("savepoint upgrade_attempt");
+    try {
+      return await f.rpc("upgrade_blocked_proposal_planning", [
+        plan.id,
+        actor,
+        revision,
+      ]);
+    } catch (error) {
+      await f.db.exec("rollback to savepoint upgrade_attempt");
+      throw error;
+    } finally {
+      await f.db.exec("release savepoint upgrade_attempt");
+    }
+  };
+  await expect(attempt(crypto.randomUUID(), prior.revision)).rejects.toThrow(
+    "FORBIDDEN",
+  );
+  await expect(attempt(f.owner, prior.revision - 1)).rejects.toThrow(
+    "REVISION_CONFLICT",
+  );
+  await expect(attempt(f.owner, prior.revision)).rejects.toThrow(
+    "PLANNING_UPGRADE_NOT_SAFE",
+  );
+  await f.db.query(
+    "update public.provider_usage set state='settled' where id=$1",
+    [usage],
+  );
+  await f.db.query(
+    "update public.workspaces set evidence_revision=evidence_revision+1 where id=$1",
+    [f.w],
+  );
+  await f.db.exec("savepoint changed_evidence");
+  await f.db.query(
+    "update public.generation_plans set frozen_context=jsonb_set(frozen_context,'{language}','\"ar\"') where id=$1",
+    [plan.id],
+  );
+  await expect(attempt(f.owner, prior.revision)).rejects.toThrow("STALE_INPUT");
+  await f.db.exec(
+    "rollback to savepoint changed_evidence; release savepoint changed_evidence",
+  );
+  const queued = await attempt(f.owner, prior.revision);
+  expect(await analysis()).toEqual(before);
+  expect(
+    (
+      await f.db.query<any>(
+        "select workflow_version,execution_policy,status from public.generation_plans where id=$1",
+        [plan.id],
+      )
+    ).rows[0],
+  ).toMatchObject({
+    workflow_version: 3,
+    status: "running",
+    execution_policy: { verification_output_tokens: 40000 },
+  });
+  expect(
+    (
+      await f.db.query<any>(
+        "select input from public.generation_steps where job_id=$1",
+        [queued],
+      )
+    ).rows[0].input.planning_phase,
+  ).toBe("structure");
+  expect(
+    (
+      await f.db.query<any>(
+        "select status,error_code from public.jobs where id=$1",
+        [planning.id],
+      )
+    ).rows[0],
+  ).toEqual({ status: "canceled", error_code: "PLANNING_SUPERSEDED" });
+  expect(
+    (
+      await f.db.query<any>(
+        "select state,reserved_output from public.provider_usage where id=$1",
+        [usage],
+      )
+    ).rows[0],
+  ).toEqual({ state: "settled", reserved_output: 16384 });
+  const privilege = (
+    await f.db.query<any>(
+      "select has_function_privilege('authenticated','public.upgrade_blocked_proposal_planning(uuid,uuid,integer)','execute') as client, has_function_privilege('service_role','public.upgrade_blocked_proposal_planning(uuid,uuid,integer)','execute') as service",
+    )
+  ).rows[0];
+  expect(privilege).toEqual({ client: false, service: true });
+  await expect(attempt(f.owner, prior.revision)).rejects.toThrow(
+    "REVISION_CONFLICT",
+  );
+});
 function resultFor(ctx: any) {
   const input = taskInput(ctx),
     ids = input.requiredIds,
@@ -208,16 +357,47 @@ it("admits the semantic workflow without company files or a custom template and 
     id: s.opp.id,
     expected_revision: s.opp.revision,
   });
-  expect(plan.workflow_version).toBe(2);
+  expect(plan.workflow_version).toBe(3);
   expect(plan.frozen_context.knowledge).toEqual([]);
   const order: string[] = [];
   await runPlan((ctx) => {
     const input = taskInput(ctx);
     order.push(ctx.plan.stage);
+    if (input.task === "plan_structure") {
+      const required =
+        ctx.plan.frozen_context.template.required_sections.filter(
+          (s: any) => s.applicable,
+        );
+      const narrative = required.find(
+        (s: any) => !s.key.includes("summary") && !s.key.includes("compliance"),
+      );
+      return {
+        version: 3,
+        decisions: [],
+        questions: [],
+        sections: required.map((section: any) => ({
+          key: section.key,
+          title: section.title,
+          purpose: section.purpose,
+          volume: section.volume,
+          mode: section.key.includes("summary")
+            ? "executive_summary"
+            : section.key.includes("compliance")
+              ? "compliance_matrix"
+              : "narrative",
+          requirement_ids:
+            section.key === narrative.key
+              ? input.context.blueprint_requirement_ids
+              : [],
+        })),
+      };
+    }
     if (input.task !== "plan_blueprint") return resultFor(ctx);
-    const required = ctx.plan.frozen_context.template.required_sections.filter(
-      (s: any) => s.applicable,
-    );
+    const required =
+      input.context.assigned_sections ??
+      ctx.plan.frozen_context.template.required_sections.filter(
+        (s: any) => s.applicable,
+      );
     const narrative = required.find(
       (s: any) => !s.key.includes("summary") && !s.key.includes("compliance"),
     );
@@ -247,7 +427,9 @@ it("admits the semantic workflow without company files or a custom template and 
                     key: section.key + "-unit",
                     title: section.title,
                     purpose: section.purpose,
-                    requirement_ids: section.key === narrative.key ? ids : [],
+                    requirement_ids:
+                      section.requirement_ids ??
+                      (section.key === narrative.key ? ids : []),
                     secondary_links: [],
                     decision_ids: [],
                     target_words: 300,
@@ -256,7 +438,11 @@ it("admits the semantic workflow without company files or a custom template and 
         };
       }),
     };
-    validateBlueprint(result as any, ids, required);
+    validateBlueprint(
+      result as any,
+      ids,
+      required.filter((s: any) => s.applicable),
+    );
     return result;
   });
   const finished = (
@@ -267,7 +453,7 @@ it("admits the semantic workflow without company files or a custom template and 
   expect(finished).toMatchObject({
     status: "completed",
     stage: "completed",
-    workflow_version: 2,
+    workflow_version: 3,
   });
   expect(order.indexOf("synthesis")).toBeGreaterThan(
     order.lastIndexOf("commercial"),

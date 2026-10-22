@@ -1,3 +1,4 @@
+import { OUTPUT_ECONOMY_INSTRUCTIONS } from "./modelOutputPolicy.ts";
 import type { Backend } from "./backend.ts";
 import type { ModelGraphStore } from "./modelGraphStore.ts";
 import {
@@ -11,13 +12,16 @@ import { SEMANTIC_INSTRUCTIONS_V1 } from "./modelSemanticInstructions.ts";
 
 const keyFor = async (requestPrefix: string) =>
   `semantic-instructions-${await sha256(requestPrefix)}`;
-function revision(pin: any): 0 | 1 {
+function revision(pin: any): 0 | 1 | 2 {
   const value = pin.value;
   if (
     !value ||
-    ![0, 1].includes(value.version) ||
+    ![0, 1, 2].includes(value.version) ||
     !/^[a-f0-9]{64}$/.test(value.legacy_input_hash ?? "") ||
-    (value.version === 1 && value.instructions !== SEMANTIC_INSTRUCTIONS_V1)
+    (value.version === 1 && value.instructions !== SEMANTIC_INSTRUCTIONS_V1) ||
+    (value.version === 2 &&
+      value.instructions !==
+        SEMANTIC_INSTRUCTIONS_V1 + "\n" + OUTPUT_ECONOMY_INSTRUCTIONS)
   )
     throw new ModelError("MODEL_IDENTITY_CHANGED");
   return value.version;
@@ -28,7 +32,7 @@ function revision(pin: any): 0 | 1 {
 export async function readSemanticPromptRevision(
   store: Pick<ModelGraphStore, "action">,
   requestPrefix: string,
-): Promise<0 | 1> {
+): Promise<0 | 1 | 2> {
   const pin = await store.action("result_get", {
     key: await keyFor(requestPrefix),
   });
@@ -47,7 +51,7 @@ export async function pinSemanticPrompt(o: {
   language: "en" | "ar";
   repair: boolean;
   verificationRevision: 1 | 2;
-}): Promise<0 | 1> {
+}): Promise<0 | 1 | 2> {
   if (o.task === "connection_probe") return 0;
   const key = await keyFor(o.requestPrefix);
   const legacyInputHash = await sha256(
@@ -75,9 +79,14 @@ export async function pinSemanticPrompt(o: {
     pin = await o.store.action("result_put", {
       key,
       value: {
-        version: started ? 0 : 1,
+        version: started ? 0 : 2,
         legacy_input_hash: legacyInputHash,
-        ...(started ? {} : { instructions: SEMANTIC_INSTRUCTIONS_V1 }),
+        ...(started
+          ? {}
+          : {
+              instructions:
+                SEMANTIC_INSTRUCTIONS_V1 + "\n" + OUTPUT_ECONOMY_INSTRUCTIONS,
+            }),
       },
     });
   }

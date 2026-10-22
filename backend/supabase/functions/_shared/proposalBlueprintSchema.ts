@@ -89,3 +89,33 @@ export const proposalBlueprintSchema = z
   .strict();
 
 export type ProposalBlueprint = z.infer<typeof proposalBlueprintSchema>;
+
+/** A compact global map. Requirements have a single owner, and shared decisions
+ * are emitted once. Detail jobs cannot rewrite this accepted contract. */
+export const proposalStructureSchema = z
+  .object({
+    version: z.literal(3),
+    sections: z
+      .array(
+        z
+          .object({
+            key,
+            title: z.string().min(1).max(200),
+            purpose: z.string().min(1).max(600),
+            volume: z.enum(["technical", "financial", "shared"]),
+            mode: z.enum([
+              "narrative",
+              "executive_summary",
+              "compliance_matrix",
+            ]),
+            requirement_ids: ids,
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(64),
+    decisions: proposalBlueprintSchema.shape.decisions,
+    questions: proposalBlueprintSchema.shape.questions,
+  })
+  .strict();
+export type ProposalStructure = z.infer<typeof proposalStructureSchema>;

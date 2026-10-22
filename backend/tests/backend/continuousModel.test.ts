@@ -298,8 +298,11 @@ it("retains uncertain requests while independent continuous Gemini checks can co
   });
   await tick();
   expect((await job(original.id)).status).toBe("blocked");
+  // This unknown request was made yesterday. Keep its full 40k reservation;
+  // today's independent check fits the configured 50k daily ceiling. Replaying
+  // the original job remains forbidden across that day boundary.
   await f.db.exec(
-    "update public.provider_usage set created_at=now()-interval '2 minutes'",
+    "update public.provider_usage set created_at=now()-interval '1 day',application_day=(now() at time zone 'Asia/Riyadh')::date-1",
   );
   // Even a new attempt/lease for the same job must never resend uncertain work.
   await f.db.query(
@@ -325,7 +328,7 @@ it("retains uncertain requests while independent continuous Gemini checks can co
     actual_input: null,
     actual_output: null,
     reserved_input: 276,
-    reserved_output: 1024,
+    reserved_output: 40000,
   });
   expect(usage[1]).toMatchObject({
     state: "settled",
@@ -553,7 +556,7 @@ it("polls one persisted background generation across leases and transient networ
       expect(JSON.parse(String(init!.body))).toMatchObject({
         background: true,
         store: true,
-        generation_config: { max_output_tokens: 1024 },
+        generation_config: { max_output_tokens: 40000 },
       });
       expect(new Headers(init!.headers).get("Api-Revision")).toBe("2026-05-20");
       return Response.json({

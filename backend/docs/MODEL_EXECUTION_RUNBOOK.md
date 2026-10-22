@@ -53,10 +53,14 @@ legacy routing. It does not cancel existing jobs or remote requests.
 
 | Task | Maximum output | Reasoning preference |
 | --- | ---: | --- |
-| Connection check | 1,024 | Minimal |
-| Source reading, assessment, feedback, outline, commercial planning | 8,192 | Low |
-| RFP analysis, section drafting, proposal review, grounding, correction | 16,384 | Medium |
+| Connection check | 40,000 | Minimal |
+| Source reading, assessment, feedback, legacy outline, commercial planning, grounding | 40,000 | Low |
+| RFP analysis, structure/detail planning, section drafting, proposal review, correction | 40,000 | Medium |
 
+The Owner requested one 40,000 default ceiling on October 22. A ceiling is not
+a target or minimum: new phases explicitly stop at complete, concise output.
+Source requirements, conditions and exceptions must still be preserved. Existing
+accepted remote requests retain their saved limits and exact prompt identity.
 These are per-request bounds, configurable per task and capped by the configured
 model capability. They are not daily token quotas. Unsupported reasoning values
 resolve to the model's declared supported preference/provider default. Actual
@@ -65,7 +69,7 @@ in Activity & jobs.
 
 ## Validation and resumable processing
 
-All eleven operations use the canonical schema/task registry and API-family
+All model operations use the canonical schema/task registry and API-family
 adapters. Optional fields in strict provider schemas become required nullable
 wire fields, then normalize before local domain checks. Local validation retains
 constraints even when a provider offers only JSON mode.
@@ -178,3 +182,33 @@ fresh inputs. Isolated HTTP/provider fixtures exercise fault paths without
 causing production outages. Live inference, actual RFP fidelity, Word download,
 page inspection and business approval are separate acceptance evidence. A local
 pipeline fixture or successful connection probe does not satisfy those gates.
+
+## Hierarchical proposal planning (workflow 3)
+
+The configured proposal-planning route serves both internal planning tasks.
+`plan_structure` creates one compact map of requirements to sections and records
+shared decisions once. `plan_blueprint` details saved section groups; it must
+retain section identity, ownership and decisions. Groups follow whole subjects
+and actual requirement-projection size. All original requirement text remains
+available; the grouping estimate does not summarize away source obligations.
+
+The application validates one primary owner per requirement and merges accepted
+detail groups into the writing blueprint. A measured truncated detail response
+subdivides only that group before an unchanged failover request can be sent.
+Sections split first; a single oversized subject then splits at whole requirement
+IDs. Completed groups remain saved. The compact structure itself is one bounded
+request; an unsplittable oversize input still requires intervention.
+
+New graph budget policy 2 has separate allowances for three received generation
+results and two received content corrections, with five writer results total.
+Retries of an already-recorded receipt and polling consume no new allowance.
+Existing graphs retain budget policy 1. Verification has its own existing bounded
+per-group repair policy; this release does not remove that safeguard.
+
+The service-only `upgrade_blocked_proposal_planning` RPC is an audited recovery
+for a blocked workflow-2 plan with no accepted planning result or unresolved
+request. It checks Owner identity, expected revision, unchanged proposal inputs
+and base version. It preserves analysis and paid receipts, supersedes failed
+planning and queues one workflow-3 structure. It cannot upgrade active requests,
+accepted planning or changed evidence. Use only after both entrypoints support
+workflow 3. Rollout admission remains separately controlled.
