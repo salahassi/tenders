@@ -339,6 +339,15 @@ export class ConnectedRepository {
                       : 0,
                     totalPages:
                       typeof a.total_pages === "number" ? a.total_pages : null,
+                    extraction: a.extraction === "ocr" ? "ocr" : undefined,
+                    ocrReadPages: Array.isArray(a.ocr_read_pages)
+                      ? a.ocr_read_pages.filter(
+                          (page: unknown): page is number =>
+                            typeof page === "number" &&
+                            Number.isInteger(page) &&
+                            page > 0,
+                        )
+                      : [],
                   })),
                 },
               }

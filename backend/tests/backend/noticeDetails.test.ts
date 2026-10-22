@@ -12,6 +12,7 @@ import {
 import { seedExtraction } from "./sourceExtractionFixture";
 import { workflowFixture } from "./workflowFixture";
 import { taskInput } from "../../supabase/functions/_shared/generation";
+import { CollectionError } from "../../supabase/functions/_shared/collector";
 const url = "https://www.ramallah.ps/ar/Article/1/synthetic";
 const source: any = {
   id: "synthetic",
@@ -57,6 +58,15 @@ it("never mistakes a purchase date for submission, invents a missing time or acc
   expect(
     submissionDeadline("Asia/Hebron", "يجب تسليم العطاءات 31/2/2026").date,
   ).toBeNull();
+  expect(
+    submissionDeadline(
+      "Asia/Amman",
+      "Purchase date\n01/10/2026\nClosing date\n05/11/2026",
+    ).date,
+  ).toBe("2026-11-05");
+  expect(
+    submissionDeadline("Asia/Amman", "", "تاريخ انتهاء العطاء 05-11-2026").date,
+  ).toBe("2026-11-05");
 });
 it("rejects a missing detail selector instead of evaluating site navigation as evidence", () => {
   expect(() =>
@@ -86,6 +96,313 @@ it("retains public GTD details inside an ASP.NET form while removing form contro
   expect(result.title).toBe("Synthetic public procurement detail");
   expect(result.deadline).toMatchObject({ date: "2026-11-02", local: null });
   expect(result.text).not.toContain("form token");
+});
+it("reads published disabled fields and excludes hidden credential dialogs and buyer contacts", () => {
+  const result = parseNoticeDetails(
+    seedExtraction("jo-rj"),
+    "https://procurement.rj.com/RFP_Check.aspx?fixture=1",
+    `<form><div class="container"><div class="form-group"><label>Request Subject</label><textarea disabled id="fixture_RFPSubject">Synthetic software support</textarea></div><div class="form-group"><label>Closing Datetime</label><input disabled type="text" id="fixture_ClosingDate" value="2026-11-05 12:00 PM"></div><div class="form-group"><label>Buyer_Name</label><input disabled type="text" id="fixture_txtBuyerName" value="Synthetic contact"></div><div class="form-group"><label>Description</label><textarea readonly>Synthetic public scope requires implementation, testing, operational support and documented handover of software services.</textarea></div><input type="hidden" value="synthetic form state"><input type="text" value="editable private field"><div hidden>Password: hidden field</div></div><div class="modal fade"><label>Password:</label><input type="password"></div></form>`,
+  );
+  expect(result.title).toBe("Synthetic software support");
+  expect(result.deadline).toMatchObject({
+    date: "2026-11-05",
+    local: "2026-11-05T12:00:00",
+  });
+  expect(result.text).toContain("implementation, testing");
+  expect(result.text).not.toMatch(
+    /Password|Synthetic contact|form state|editable private/,
+  );
+});
+it("keeps an actual visible password wall blocked before cleaning controls", () => {
+  expect(() =>
+    parseNoticeDetails(
+      seedExtraction("jo-rj"),
+      "https://procurement.rj.com/RFP_Check.aspx?fixture=1",
+      `<div class="container"><div class="form-group"><p>Private synthetic description requiring login.</p><label>Password:</label><input type="password"></div></div>`,
+    ),
+  ).toThrow("MANUAL_SOURCE_REQUIRED");
+});
+it("uses only the configured tender section for attachment-only pages", async () => {
+  const pdf = await PDFDocument.create(),
+    font = await pdf.embedFont(StandardFonts.Helvetica);
+  pdf
+    .addPage()
+    .drawText(
+      "Synthetic software tender: provide implementation, testing and support services with complete operating documentation.",
+      { font, size: 10, x: 20, y: 700 },
+    );
+  const bytes = await pdf.save();
+  const s: any = {
+    ...source,
+    url: "https://mwi.gov.jo/AR/Modules/tenders",
+    approved_hosts: ["mwi.gov.jo"],
+    adapter_config: {
+      official_listing: "jo-mwi",
+      extraction: seedExtraction("jo-mwi"),
+    },
+  };
+  const target = "https://mwi.gov.jo/Ar/TendersDetails/synthetic";
+  const requested: string[] = [];
+  const result = await enrichPublicNotice(
+    s,
+    {
+      canonical_url: target,
+      title: "Synthetic",
+      identity_key: "external:fixture",
+    },
+    s.approved_hosts,
+    async () => ["8.8.8.8"],
+    async (url) => {
+      requested.push(String(url));
+      return String(url) === target
+        ? new Response(
+            `<h2 id="fixture_lblHeaderTitle">Synthetic software services</h2><div id="fixture_TendersSection"><a href="/tender.pdf">Details</a></div><aside><a href="/unrelated-policy.pdf">Unrelated site document</a></aside>`,
+          )
+        : new Response(new Uint8Array(bytes));
+    },
+  );
+  expect(result.title).toBe("Synthetic software services");
+  expect(result.description).toContain("complete operating documentation");
+  expect(result.notice_evidence.status).toBe("read");
+  expect(requested).toEqual([target, "https://mwi.gov.jo/tender.pdf"]);
+});
+it("does not mark an unreadable attachment-only page as read", async () => {
+  const s: any = {
+    ...source,
+    url: "https://mwi.gov.jo/AR/Modules/tenders",
+    approved_hosts: ["mwi.gov.jo"],
+    adapter_config: {
+      official_listing: "jo-mwi",
+      extraction: seedExtraction("jo-mwi"),
+    },
+  };
+  const target = "https://mwi.gov.jo/Ar/TendersDetails/synthetic";
+  await expect(
+    enrichPublicNotice(
+      s,
+      {
+        canonical_url: target,
+        title: "Synthetic",
+        identity_key: "external:fixture",
+      },
+      s.approved_hosts,
+      async () => ["8.8.8.8"],
+      async (url) =>
+        String(url) === target
+          ? new Response(
+              `<div id="fixture_TendersSection"><a href="/tender.pdf">Details</a></div>`,
+            )
+          : new Response("unavailable", { status: 503 }),
+    ),
+  ).rejects.toThrow("NOTICE_DETAILS_CONTENT_UNRESOLVED");
+});
+it("retains verified OCR provenance for a public notice image and keeps pending work resumable", async () => {
+  const extraction = seedExtraction("jo-jpmc");
+  const s: any = {
+    ...source,
+    url: extraction.url,
+    approved_hosts: ["www.jpmc.com.jo"],
+    adapter_config: { extraction },
+  };
+  const target = "https://www.jpmc.com.jo/ar/tender/synthetic";
+  const html = `<main class="News-inner-main-container"><h1>Synthetic software tender</h1><picture><img src="/uploads/notice.webp"></picture></main>`;
+  const fetcher: typeof fetch = async (url) =>
+    String(url) === target
+      ? new Response(html)
+      : new Response(new TextEncoder().encode("RIFF1234WEBPsynthetic image"), {
+          headers: { "content-type": "image/webp" },
+        });
+  const inputs: any[] = [];
+  const result = await enrichPublicNotice(
+    s,
+    {
+      canonical_url: target,
+      title: "Synthetic",
+      identity_key: "external:fixture",
+    },
+    s.approved_hosts,
+    async () => ["8.8.8.8"],
+    fetcher,
+    async (input) => {
+      inputs.push(input);
+      return {
+        pages: [
+          {
+            page: 1,
+            text: "Synthetic OCR text: provide software implementation, testing, operational support and complete handover documentation for the public tender.",
+            confidence: 92,
+          },
+        ],
+      };
+    },
+  );
+  expect(inputs[0]).toMatchObject({
+    url: "https://www.jpmc.com.jo/uploads/notice.webp",
+    pages: [1],
+    total_pages: 1,
+    mime: "image/webp",
+  });
+  expect(inputs[0].sha256).toMatch(/^[a-f0-9]{64}$/);
+  expect(result.notice_evidence.attachments[0]).toMatchObject({
+    status: "read",
+    extraction: "ocr",
+    ocr_read_pages: [1],
+    ocr_confidence: { "1": 92 },
+  });
+  expect(result.description).toContain("Synthetic OCR text");
+  await expect(
+    enrichPublicNotice(
+      s,
+      {
+        canonical_url: target,
+        title: "Synthetic",
+        identity_key: "external:fixture",
+      },
+      s.approved_hosts,
+      async () => ["8.8.8.8"],
+      fetcher,
+      async () => {
+        throw new CollectionError("NOTICE_OCR_PENDING");
+      },
+    ),
+  ).rejects.toThrow("NOTICE_OCR_PENDING");
+});
+it("does not admit low-confidence OCR text as notice evidence", async () => {
+  const extraction = seedExtraction("jo-jpmc"),
+    s: any = {
+      ...source,
+      url: extraction.url,
+      approved_hosts: ["www.jpmc.com.jo"],
+      adapter_config: { extraction },
+    };
+  const target = "https://www.jpmc.com.jo/ar/tender/synthetic";
+  await expect(
+    enrichPublicNotice(
+      s,
+      {
+        canonical_url: target,
+        title: "Synthetic",
+        identity_key: "external:fixture",
+      },
+      s.approved_hosts,
+      async () => ["8.8.8.8"],
+      async (url) =>
+        String(url) === target
+          ? new Response(
+              `<main class="News-inner-main-container"><h1>Synthetic</h1><picture><img src="/uploads/notice.webp"></picture></main>`,
+            )
+          : new Response(
+              new TextEncoder().encode("RIFF1234WEBPsynthetic image"),
+              {
+                headers: { "content-type": "image/webp" },
+              },
+            ),
+      async () => ({
+        pages: [
+          {
+            page: 1,
+            text: "Unreliable synthetic OCR output with enough characters to exceed the extraction boundary.",
+            confidence: 12,
+          },
+        ],
+      }),
+    ),
+  ).rejects.toThrow("NOTICE_DETAILS_NEED_OCR");
+});
+it("reads an exact browser continuation after a public HTTP challenge and propagates pending", async () => {
+  const s: any = { ...source, adapter_config: { automatic: true } };
+  const rendered = `<main><h1>Synthetic browser notice</h1><p>Public software implementation and support services with documented acceptance criteria and complete handover requirements.</p></main>`;
+  const result = await enrichPublicNotice(
+    s,
+    {
+      canonical_url: url,
+      title: "Synthetic",
+      identity_key: "external:fixture",
+    },
+    s.approved_hosts,
+    async () => ["8.8.8.8"],
+    async () => new Response("challenge", { status: 403 }),
+    undefined,
+    async (input) => ({ url: input.url, html: rendered }),
+  );
+  expect(result.title).toBe("Synthetic browser notice");
+  expect(result.notice_evidence.status).toBe("read");
+  const partial = await enrichPublicNotice(
+    s,
+    {
+      canonical_url: url,
+      title: "Synthetic",
+      identity_key: "external:fixture",
+    },
+    s.approved_hosts,
+    async () => ["8.8.8.8"],
+    async () => new Response("challenge", { status: 403 }),
+    undefined,
+    async (input) => ({
+      url: input.url,
+      html: rendered,
+      warnings: ["NOTICE_DETAIL_TAB_UNREAD:#datesTab"],
+    }),
+  );
+  expect(partial.notice_evidence).toMatchObject({
+    status: "partial",
+    warnings: ["NOTICE_DETAIL_TAB_UNREAD:#datesTab"],
+  });
+  expect(partial.description).toContain("dates and scope may be incomplete");
+  await expect(
+    enrichPublicNotice(
+      s,
+      {
+        canonical_url: url,
+        title: "Synthetic",
+        identity_key: "external:fixture",
+      },
+      s.approved_hosts,
+      async () => ["8.8.8.8"],
+      async () => new Response("challenge", { status: 403 }),
+      undefined,
+      async () => {
+        throw new CollectionError("NOTICE_BROWSER_PENDING");
+      },
+    ),
+  ).rejects.toThrow("NOTICE_BROWSER_PENDING");
+});
+it("rejects a postback destination that renders a different notice", async () => {
+  const extraction = seedExtraction("jo-gam"),
+    s: any = {
+      ...source,
+      url: extraction.url,
+      approved_hosts: ["www.gamtenders.gov.jo"],
+      adapter_config: { extraction },
+    };
+  const target = "https://www.gamtenders.gov.jo/showtender.aspx?guid=synthetic";
+  const fetcher: typeof fetch = async (u, init) => {
+    if (init?.method === "POST")
+      return new Response(null, {
+        status: 302,
+        headers: { location: "showtender.aspx" },
+      });
+    if (String(u).endsWith("adlocaltenders.aspx"))
+      return new Response(
+        `<form method="post" action="adlocaltenders.aspx"><input type="hidden" name="__VIEWSTATE" value="synthetic"><input type="hidden" name="__EVENTVALIDATION" value="synthetic"><table id="GVtenders"><tr><td>1</td><td>Synthetic requested notice</td><td><a id="fixture_lnkdetails" href="javascript:__doPostBack('GVtenders$ctl02$lnkdetails','')">Details</a></td></tr></table></form>`,
+      );
+    return new Response(
+      `<article class="post-content"><h1 id="lbltitle">A different synthetic notice</h1><p>Public content with sufficient length that must never be assigned to the wrong original notice, even after valid public navigation.</p></article>`,
+    );
+  };
+  await expect(
+    enrichPublicNotice(
+      s,
+      {
+        canonical_url: target,
+        title: "Synthetic requested notice",
+        identity_key: "external:fixture",
+      },
+      s.approved_hosts,
+      async () => ["8.8.8.8"],
+      fetcher,
+    ),
+  ).rejects.toThrow("PUBLIC_NOTICE_IDENTITY_UNRESOLVED");
 });
 it("keeps hostname, redirect, private DNS and streamed byte boundaries for public details", async () => {
   const hosts = source.approved_hosts,
@@ -143,12 +460,25 @@ it("reads actual PDF text, marks image-only pages and omits restricted pages", a
       { font, size: 12, x: 20, y: 700 },
     );
   pdf.addPage();
-  pdf.addPage().drawText("Confidential synthetic restricted fixture", { font });
-  const pages = await readPublicPdf(await pdf.save());
-  expect(pages).toHaveLength(3);
+  pdf
+    .addPage()
+    .drawText("CONFIDENTIAL: synthetic restricted fixture", { font });
+  pdf
+    .addPage()
+    .drawText(
+      "The supplier must preserve confidentiality of information while providing software implementation services.",
+      { font, size: 10, x: 20, y: 700 },
+    );
+  const originalBytes = await pdf.save();
+  const originalSize = originalBytes.byteLength;
+  const pages = await readPublicPdf(originalBytes);
+  expect(originalBytes.byteLength).toBe(originalSize);
+  expect(pages).toHaveLength(4);
   expect(pages[0].text).toContain("hardware devices");
   expect(pages[1].text).toBe("");
   expect(pages[2]).toMatchObject({ restricted: true, text: "" });
+  expect(pages[3].restricted).toBe(false);
+  expect(pages[3].text).toContain("preserve confidentiality");
 });
 it("retains public HTML facts when an attachment fails and reports incomplete coverage honestly", async () => {
   const fetcher: typeof fetch = async (u) =>
@@ -222,7 +552,7 @@ async function fixture() {
     )
   ).rows[0].id;
   await f.db.query(
-    "update public.opportunities set decision='declined' where id=$1",
+    "update public.opportunities set decision='deferred' where id=$1",
     [o],
   );
   await f.rpc("schedule_assessment_refresh");
@@ -255,7 +585,7 @@ it("persists detail evidence under the lease, supersedes title-only plans, prese
       [o],
     )
   ).rows[0];
-  expect(saved.decision).toBe("declined");
+  expect(saved.decision).toBe("deferred");
   expect(saved.description).toContain("150 شيقل");
   expect(saved.closing).toContain("2026-03-10 09:00:00");
   expect(saved.notice_evidence.status).toBe("read");

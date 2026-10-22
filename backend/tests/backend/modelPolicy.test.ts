@@ -103,6 +103,8 @@ it("preserves ordinary confidentiality obligations in text and structured busine
     "The vendor shall keep project data confidential.",
     "Confidential data must be protected by access controls.",
     "يجب الحفاظ على سرية بيانات المشروع.",
+    "The delivery plan includes confidential-information handling controls.",
+    "Apply confidential-بيانات handling requirements.",
   ]) {
     for (const content of [text, JSON.stringify({ text })]) {
       await expect(
@@ -118,6 +120,11 @@ it("preserves ordinary confidentiality obligations in text and structured busine
   }
   for (const text of [
     "CONFIDENTIAL: project data",
+    "CONFIDENTIAL - project data",
+    "CONFIDENTIAL -project data",
+    "CONFIDENTIAL- project data",
+    "CONFIDENTIAL—project data",
+    "CONFIDENTIAL-",
     "CONFIDENTIAL",
     "classification: confidential",
     "Document\nConfidential\nPrivate contents",

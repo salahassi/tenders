@@ -43,14 +43,19 @@ export function getFitPreview(
       mode: "recorded",
       level: a.stale
         ? "Insufficient information"
-        : a.routing === "excluded"
-          ? "Outside scope"
-          : a.routing === "recommended"
-            ? "High"
-            : a.routing === "low_fit" || a.routing === "excluded"
-              ? "Low"
-              : "Insufficient information",
-      confidence: a.stale || a.coverage < 60 ? "Low" : "Medium",
+        : a.scope === "uncertain"
+          ? "Scope needs review"
+          : a.routing === "excluded"
+            ? "Outside scope"
+            : a.routing === "recommended"
+              ? "High"
+              : a.routing === "low_fit" || a.routing === "excluded"
+                ? "Low"
+                : "Insufficient information",
+      confidence:
+        a.stale || a.scope === "uncertain" || a.coverage < 60
+          ? "Low"
+          : "Medium",
       basis: a.method || "Recorded assessment",
       summary: a.summary,
       reasons: [

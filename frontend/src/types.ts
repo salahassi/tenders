@@ -61,6 +61,8 @@ export interface Opportunity {
       status: string;
       includedPages: number;
       totalPages: number | null;
+      extraction?: "ocr";
+      ocrReadPages?: number[];
     }[];
   };
   assessment?: {

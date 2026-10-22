@@ -1,10 +1,4 @@
-import {
-  inReviewInbox,
-  needsDecision,
-  outOfScope,
-  assessmentActive,
-  isExpired,
-} from "../lib/discovery";
+import { groupDiscoveries, isExpired } from "../lib/discovery";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -27,41 +21,8 @@ export default function Review() {
   const { state, update, notify } = useApp();
   const [tab, setTab] = useState("pending");
   const [search, setSearch] = useState("");
-  const pending = state.opportunities.filter(inReviewInbox);
-  const excluded = state.opportunities.filter(outOfScope);
-  const processing = state.opportunities.filter(
-    (o) =>
-      needsDecision(o) &&
-      !isExpired(o) &&
-      !inReviewInbox(o) &&
-      !outOfScope(o) &&
-      assessmentActive(o),
-  );
-  const attention = state.opportunities.filter(
-    (o) =>
-      needsDecision(o) &&
-      !isExpired(o) &&
-      !inReviewInbox(o) &&
-      !outOfScope(o) &&
-      !assessmentActive(o),
-  );
-  const archived = state.opportunities.filter((o) => o.status === "declined");
-  const expired = state.opportunities.filter(
-    (o) => needsDecision(o) && isExpired(o),
-  );
-  const items = (
-    tab === "pending"
-      ? pending
-      : tab === "processing"
-        ? processing
-        : tab === "attention"
-          ? attention
-          : tab === "excluded"
-            ? excluded
-            : tab === "expired"
-              ? expired
-              : archived
-  ).filter((o) =>
+  const groups = groupDiscoveries(state.opportunities);
+  const items = (groups[tab as keyof typeof groups] || []).filter((o) =>
     `${o.title} ${o.description} ${o.buyer}`
       .toLowerCase()
       .includes(search.toLowerCase()),
@@ -153,19 +114,47 @@ export default function Review() {
             {
               id: "pending",
               label: "Awaiting your decision",
-              count: pending.length,
+              count: groups.pending?.length || 0,
             },
-            { id: "processing", label: "Assessing", count: processing.length },
+            {
+              id: "scope",
+              label: "Scope to review",
+              count: groups.scope?.length || 0,
+            },
+            {
+              id: "processing",
+              label: "Assessing",
+              count: groups.processing?.length || 0,
+            },
             {
               id: "attention",
               label: "Needs attention",
-              count: attention.length,
+              count: groups.attention?.length || 0,
             },
-            { id: "excluded", label: "Outside scope", count: excluded.length },
-            { id: "expired", label: "Closed", count: expired.length },
-            { id: "archived", label: "Archived", count: archived.length },
+            {
+              id: "excluded",
+              label: "Outside scope",
+              count: groups.excluded?.length || 0,
+            },
+            {
+              id: "expired",
+              label: "Closed",
+              count: groups.expired?.length || 0,
+            },
+            {
+              id: "archived",
+              label: "Archived",
+              count: groups.archived?.length || 0,
+            },
           ]}
         />
+        {tab === "scope" && (
+          <p className="muted small">
+            These assessments completed, but the published information did not
+            establish whether the tender matches your service scope. Review the
+            evidence and open questions before deciding.
+          </p>
+        )}
         <div className="filter-bar">
           <div className="search-field">
             <Search size={16} />
@@ -247,20 +236,22 @@ export default function Review() {
             title={
               tab === "pending"
                 ? "No discoveries waiting for a decision"
-                : tab === "processing"
-                  ? "No assessments in progress"
-                  : tab === "attention"
-                    ? "No assessment blockers"
-                    : tab === "excluded"
-                      ? "No excluded discoveries"
-                      : tab === "expired"
-                        ? "No closed discoveries"
-                        : "No archived discoveries"
+                : tab === "scope"
+                  ? "No completed assessments with unclear scope"
+                  : tab === "processing"
+                    ? "No assessments in progress"
+                    : tab === "attention"
+                      ? "No assessment blockers"
+                      : tab === "excluded"
+                        ? "No excluded discoveries"
+                        : tab === "expired"
+                          ? "No closed discoveries"
+                          : "No archived discoveries"
             }
             description={
               search
                 ? "Try a different search."
-                : "Collected notices enter this inbox after assessment. Track queued work under Assessing and blockers under Needs attention."
+                : "Track scheduled work under Assessing, completed assessments with unclear scope under Scope to review, and processing blockers under Needs attention."
             }
           />
         </section>

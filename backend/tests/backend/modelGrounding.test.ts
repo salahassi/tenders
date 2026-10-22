@@ -544,6 +544,79 @@ it("reports exact failed numeric citation paths without copying source or candid
     "workshops",
   );
 });
+it.each([
+  ["The fee is 300.", "The fee is 300.00.", true],
+  ["The fee is ٣٠٠٫٠٠.", "The fee is 300.", true],
+  ["The fee is 1,200.50.", "The fee is ١٬٢٠٠٫٥٠٠.", true],
+  ["The fee is 300.01.", "The fee is 300.00.", false],
+  ["The guarantee is 1,750,000.", "The guarantee is ( 1 750 000 ).", true],
+  ["The guarantee is ١٧٥٠٠٠٠.", "The guarantee is ( ١ ٧٥٠ ٠٠٠ ).", true],
+  ["The guarantee is 1750001.", "The guarantee is ( 1 750 000 ).", false],
+  ["The guarantee is 1750000.", "Table cells: 1 750 000", false],
+  ["The guarantee is 1750000.", "Table cells: (1\n750\n000)", false],
+  ["The guarantee is 1750000.", "The guarantee is (1 75 000).", false],
+  ["The fee is 9007199254740993.", "The fee is 9007199254740992.00.", false],
+  [
+    "Contractors need Grade 1 or 2.",
+    "المقاولين المصنفين درجة أولى أو ثانية",
+    true,
+  ],
+  [
+    "Contractors need Grade ١ or ٢.",
+    "المقاولين المصنفين درجة أُولى أو ثانية",
+    true,
+  ],
+  [
+    "يجب أن يكون التصنيف درجة ١ أو ٢.",
+    "Contractors need grade first or second.",
+    true,
+  ],
+  [
+    "يجب أن يكون التصنيف درجة أولى أو ثانية.",
+    "Contractors need Grade 1 or 2.",
+    true,
+  ],
+  ["Contractors need Grade 3.", "المقاولين المصنفين درجة أولى أو ثانية", false],
+  [
+    "Contractors need Grade 1 or 2 and 2 engineers.",
+    "المقاولين المصنفين درجة أولى أو ثانية",
+    false,
+  ],
+  ["Contractors need 2 engineers.", "المقاولين المصنفين درجة ثانية", false],
+  [
+    "Contractors need Grade 2.",
+    "The second contractor submits the form.",
+    false,
+  ],
+  ["Contractors need Grade 1.5.", "المقاولين المصنفين درجة أولى", false],
+  [
+    "Contractors need Grade 1 or 2.",
+    "المقاولين المصنفين درجة أولى أو ثالثة",
+    false,
+  ],
+])(
+  "compares exact decimal values and explicitly cited classification grades: %s",
+  (text, quote, pass) => {
+    const c = { content_blocks: [{ type: "paragraph", text }] };
+    const r = report();
+    r.claims[0] = {
+      ...r.claims[0],
+      claim: text,
+      candidate_quote: text,
+      source_refs: [{ id: "notice", quote }],
+    };
+    const check = () =>
+      validateGroundingReport(
+        r,
+        c,
+        "a".repeat(64),
+        [{ ...evidence[0], text: quote }],
+        [],
+      );
+    if (pass) expect(check).not.toThrow();
+    else expect(check).toThrow("EVIDENCE_REFERENCE_INVALID");
+  },
+);
 it("validates a supported deadline and checks undeclared text, including tables", () => {
   expect(() =>
     validateGroundingReport(report(), candidate, "a".repeat(64), evidence, []),

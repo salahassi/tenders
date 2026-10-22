@@ -1428,12 +1428,12 @@ it("keeps all standard sections and rejects an inapplicable section assignment",
   expect(() => plannedSections(ctx)).toThrow("TEMPLATE_APPLICABILITY_CONFLICT");
 });
 
-it("queues material/profile reassessment only when enabled and preserves a declined decision", async () => {
+it("queues material/profile reassessment only when enabled and preserves a deferred decision", async () => {
   const s = await setup();
   await f.command("opportunity.decision", {
     id: s.opp.id,
     expected_revision: s.opp.revision,
-    target_state: "declined",
+    target_state: "deferred",
     reason: "Synthetic decision preserved",
   });
   expect((await f.rpc("schedule_assessment_refresh")).scheduled).toBe(0);
@@ -1472,11 +1472,15 @@ it("queues material/profile reassessment only when enabled and preserves a decli
       )
     ).rows[0].status,
   ).toBe("canceled");
-  await f.command("knowledge.save", {
+  const changedProfile = await f.command("knowledge.save", {
     category: "company",
     title: "Updated synthetic company profile",
     content: "Synthetic software capability",
     enabled: true,
+  });
+  await f.command("knowledge.verify", {
+    id: changedProfile.id,
+    expected_revision: changedProfile.revision,
   });
   expect((await f.rpc("schedule_assessment_refresh")).scheduled).toBe(1);
   expect(
@@ -1486,7 +1490,7 @@ it("queues material/profile reassessment only when enabled and preserves a decli
         [s.opp.id],
       )
     ).rows[0].decision,
-  ).toBe("declined");
+  ).toBe("deferred");
   expect(
     (await f.db.query("select * from public.provider_usage")).rows,
   ).toHaveLength(0);

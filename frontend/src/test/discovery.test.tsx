@@ -3,10 +3,11 @@ import { render, screen, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { getFitPreview } from "../lib/fitPreview";
-import { inReviewInbox } from "../lib/discovery";
+import { discoveryGroup, inReviewInbox } from "../lib/discovery";
 import { createSeedState } from "./fixtures/workspace";
 import { AppContext } from "../lib/appContext";
 import Review from "../pages/Review";
+import FitAssessment from "../components/FitAssessment";
 import type { Opportunity } from "../types";
 afterEach(cleanup);
 it("names the Company Knowledge file and note behind company citations", () => {
@@ -217,4 +218,200 @@ it("shows provider wait, actual attempt count and scheduled retry without invent
   expect(preview.summary).toContain("15:30");
   expect(preview.summary).toContain("Riyadh");
   expect(inReviewInbox(notice)).toBe(false);
+});
+
+it("keeps scheduling waits and accepted model requests in progress without calling them failures", () => {
+  const state = createSeedState();
+  const notice: Opportunity = {
+    ...state.opportunities[0],
+    status: "new",
+    assessment: undefined,
+    discovery: { state: "pending_schedule", inboxVisible: false },
+  };
+  expect(discoveryGroup(notice)).toBe("processing");
+  expect(getFitPreview(state, notice)).toMatchObject({
+    mode: "processing",
+    level: "Awaiting scheduling",
+  });
+  notice.discovery = {
+    state: "retry_wait",
+    inboxVisible: false,
+    error: "MODEL_IN_PROGRESS",
+  };
+  const preview = getFitPreview(state, notice);
+  expect(discoveryGroup(notice)).toBe("processing");
+  expect(preview.level).toBe("Assessing");
+  expect(preview.summary).toContain("response is ready");
+  expect(preview.summary).not.toContain("temporary failure");
+  for (const [error, level] of [
+    ["SOURCE_OCR_PENDING", "Reading scanned notice"],
+    ["NOTICE_OCR_PENDING", "Reading scanned notice"],
+    ["SOURCE_BROWSER_PENDING", "Reading original notice"],
+    ["NOTICE_BROWSER_PENDING", "Reading original notice"],
+  ]) {
+    notice.discovery.error = error;
+    expect(discoveryGroup(notice)).toBe("processing");
+    expect(getFitPreview(state, notice)).toMatchObject({
+      mode: "processing",
+      level,
+    });
+    expect(getFitPreview(state, notice).summary).toContain(
+      "Assessment will continue",
+    );
+  }
+});
+
+it("makes completed unclear scope reviewable without admitting it as confirmed in-scope or an error", async () => {
+  const state = createSeedState();
+  const notice: Opportunity = {
+    ...state.opportunities[0],
+    id: "unclear",
+    title: "Synthetic mixed procurement",
+    status: "new",
+    assessment: {
+      score: null,
+      coverage: 30,
+      routing: "needs_review",
+      scope: "uncertain",
+      summary: "The published notice does not identify the deliverables.",
+      stale: false,
+      factors: {},
+      missing: ["Detailed deliverables"],
+      risks: [],
+    },
+    discovery: { state: "assessed", inboxVisible: false },
+  };
+  state.opportunities = [notice];
+  const before = structuredClone(state);
+  expect(inReviewInbox(notice)).toBe(false);
+  expect(discoveryGroup(notice)).toBe("scope");
+  expect(getFitPreview(state, notice)).toMatchObject({
+    mode: "recorded",
+    level: "Scope needs review",
+  });
+  render(
+    <MemoryRouter>
+      <AppContext.Provider
+        value={{ state, update: async () => true, notify: () => {} } as any}
+      >
+        <Review />
+      </AppContext.Provider>
+    </MemoryRouter>,
+  );
+  expect(
+    screen.getByRole("button", { name: /^Needs attention/ }),
+  ).toHaveTextContent("0");
+  expect(
+    screen.getByRole("button", { name: /^Awaiting your decision/ }),
+  ).toHaveTextContent("0");
+  await userEvent
+    .setup()
+    .click(screen.getByRole("button", { name: /^Scope to review/ }));
+  expect(screen.getByRole("link", { name: notice.title })).toBeInTheDocument();
+  expect(screen.getByText("Scope needs review")).toBeInTheDocument();
+  expect(
+    screen.queryByText("Assessment needs attention"),
+  ).not.toBeInTheDocument();
+  expect(state).toEqual(before);
+
+  notice.assessment!.stale = true;
+  notice.discovery!.state = "not_started";
+  expect(discoveryGroup(notice)).toBe("attention");
+  expect(getFitPreview(state, notice).level).toBe("Reassessment required");
+  notice.discovery!.state = "pending_schedule";
+  expect(discoveryGroup(notice)).toBe("processing");
+});
+
+it.each([
+  ["SOURCE_NOTICE_REDIRECTED", "without readable tender details"],
+  ["MANUAL_SOURCE_REQUIRED", "access or verification"],
+  ["DATA_POLICY_BLOCKED", "data policy prevented"],
+  ["DATA_AUTHORIZATION_REQUIRED", "Processing permission is missing"],
+  ["MODEL_CORRECTION_EXHAUSTED", "did not pass validation"],
+  ["NOTICE_OCR_LOW_CONFIDENCE", "could not be read reliably"],
+  ["NOTICE_OCR_FAILED", "Text extraction"],
+])(
+  "explains the actual %s blocker without claiming an assessment completed",
+  (error, explanation) => {
+    const state = createSeedState();
+    const notice: Opportunity = {
+      ...state.opportunities[0],
+      status: "new",
+      assessment: undefined,
+      discovery: { state: "blocked", inboxVisible: false, error },
+    };
+    expect(discoveryGroup(notice)).toBe("attention");
+    expect(getFitPreview(state, notice).summary).toContain(explanation);
+    expect(getFitPreview(state, notice).mode).toBe("unassessed");
+  },
+);
+
+it("keeps closed, archived and selected unclear notices out of the scope review queue", () => {
+  const state = createSeedState();
+  const notice: Opportunity = {
+    ...state.opportunities[0],
+    status: "new",
+    assessment: {
+      score: null,
+      coverage: 0,
+      routing: "needs_review",
+      scope: "uncertain",
+      summary: "Unknown scope",
+      stale: false,
+      factors: {},
+      missing: [],
+      risks: [],
+    },
+    discovery: { state: "assessed", inboxVisible: false, expired: true },
+  };
+  expect(discoveryGroup(notice)).toBe("expired");
+  notice.status = "declined";
+  expect(discoveryGroup(notice)).toBe("archived");
+  notice.status = "shortlisted";
+  expect(discoveryGroup(notice)).toBe("selected");
+});
+
+it("identifies successfully read scan text while retaining partial and unread coverage", () => {
+  const state = createSeedState();
+  const notice: Opportunity = {
+    ...state.opportunities[0],
+    noticeEvidence: {
+      status: "partial",
+      fetchedAt: "2026-10-22T12:00:00Z",
+      attachments: [
+        {
+          url: "https://example.test/native.pdf",
+          status: "read",
+          includedPages: 2,
+          totalPages: 2,
+        },
+        {
+          url: "https://example.test/scan.pdf",
+          status: "partial",
+          includedPages: 1,
+          totalPages: 3,
+          extraction: "ocr",
+          ocrReadPages: [1],
+        },
+        {
+          url: "https://example.test/unread.pdf",
+          status: "needs_ocr",
+          includedPages: 0,
+          totalPages: 1,
+          extraction: "ocr",
+          ocrReadPages: [],
+        },
+      ],
+    },
+  };
+  render(
+    <MemoryRouter>
+      <FitAssessment state={state} opportunity={notice} compact />
+    </MemoryRouter>,
+  );
+  expect(screen.getAllByText(/Text read from scan/)).toHaveLength(1);
+  expect(
+    screen.getByText(/1 of 3 pages available to assessment; partial evidence/),
+  ).toBeInTheDocument();
+  expect(screen.getByText(/Requires OCR/)).toBeInTheDocument();
 });

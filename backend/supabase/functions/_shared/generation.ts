@@ -15,6 +15,8 @@ import {
 import { scopeInstruction } from "./discovery.ts";
 import { proposalReviewEvidence } from "./proposalReviewEvidence.ts";
 import { enrichPublicNotice } from "./publicNoticeDetails.ts";
+import { noticeBrowserReader } from "./publicNoticeBrowser.ts";
+import { CollectionError } from "./collector.ts";
 import { executeGuardedModel } from "./modelGraph.ts";
 import { createSectionOutline, plannedDraftInputs } from "./proposalOutline.ts";
 import {
@@ -1095,6 +1097,27 @@ export async function processGeneration(
           hosts || [],
           resolve,
           fetcher,
+          async (request) => {
+            const state = await backend.internal("request_notice_ocr", {
+              job_id: job.id,
+              lease: job.lease_token,
+              url: request.url,
+              content_hash: request.sha256,
+              pages: request.pages,
+              total_pages: request.total_pages,
+              mime: request.mime,
+            });
+            if (state?.status === "ready") return state.result;
+            if (state?.status === "blocked")
+              throw new CollectionError(
+                state.error_code || "NOTICE_OCR_FAILED",
+              );
+            throw new CollectionError("NOTICE_OCR_PENDING");
+          },
+          noticeBrowserReader(backend, {
+            id: job.id,
+            lease_token: job.lease_token,
+          }),
         );
         await backend.internal("complete_notice_details", {
           job_id: job.id,
@@ -1106,6 +1129,9 @@ export async function processGeneration(
           error && typeof error === "object" && "code" in error
             ? String(error.code)
             : "SOURCE_TEMPORARY_FAILURE";
+        // The durable reader queues already released this exact job lease.
+        if (["NOTICE_OCR_PENDING", "NOTICE_BROWSER_PENDING"].includes(code))
+          return;
         await backend.internal("fail_notice_details", {
           job_id: job.id,
           lease: job.lease_token,

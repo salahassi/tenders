@@ -44,10 +44,15 @@ export default function FitAssessment({
       </p>
       {opportunity.assessment?.scope === "uncertain" && (
         <p className="fit-disclosure">
-          Software scope needs confirmation from the full notice or RFP.
+          Service scope needs confirmation from the full notice or RFP.
         </p>
       )}
       <p className="fit-summary">{fit.summary}</p>
+      {compact && fit.mode !== "recorded" && (
+        <Link className="text-link" to={`/opportunities/${opportunity.id}`}>
+          Open processing details →
+        </Link>
+      )}
       {!!opportunity.assessment?.scopeEvidence?.length && (
         <p className="fit-disclosure" dir="auto">
           Published scope: {opportunity.assessment.scopeEvidence.join("; ")}
@@ -76,6 +81,9 @@ export default function FitAssessment({
                   : a.status === "needs_ocr"
                     ? " · Requires OCR"
                     : " · Not available to assessment"}
+              {a.extraction === "ocr" && !!a.ocrReadPages?.length && (
+                <span> · Text read from scan</span>
+              )}
             </p>
           ))}
         </div>

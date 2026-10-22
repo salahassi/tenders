@@ -1,6 +1,13 @@
 import { load } from "cheerio";
 import { type Backend, type BackendEnvironment } from "./backend.ts";
-import { canonical, CollectionError, inertText, item } from "./collector.ts";
+import {
+  canonical,
+  CollectionError,
+  inertText,
+  item,
+  parseSource,
+} from "./collector.ts";
+import { withSourceMarkup } from "./sourcePageMarkup.ts";
 import { ModelDeferred, ModelError, type Evidence } from "./model.ts";
 import { executeGuardedModel } from "./modelGraph.ts";
 import {
@@ -113,10 +120,10 @@ async function readPage(
         !new TextDecoder().decode(response.bytes.slice(0, 200)).includes("<")
       )
         throw new CollectionError("SOURCE_FORMAT_UNSUPPORTED");
-      page = readableSourcePage(
-        new TextDecoder("utf-8", { fatal: true }).decode(response.bytes),
-        response.url,
+      const html = new TextDecoder("utf-8", { fatal: true }).decode(
+        response.bytes,
       );
+      page = withSourceMarkup(readableSourcePage(html, response.url), html);
     }
     return { ...page, requested_url: ctx.state.pending_url };
   } finally {
@@ -165,6 +172,36 @@ export async function processAutomaticSource(
       state = await backend.internal("save_source_page", { ...identity, page });
     }
     const page = state.page;
+    // A reviewed extraction profile is already a deterministic adapter. Public
+    // JavaScript pages need Chromium to obtain their DOM, not another model to
+    // reinterpret fields the configured selectors can read directly.
+    if (
+      ctx.mode === "collect_notices" &&
+      ctx.source.adapter_config?.official_listing &&
+      ctx.source.adapter_config?.extraction &&
+      typeof page.extraction_html === "string"
+    ) {
+      const parsed = parseSource(
+        { ...ctx.source, url: page.url },
+        page.extraction_html,
+      );
+      if (page.partial && !parsed.items.length)
+        throw new CollectionError("SOURCE_PAGE_PARTIAL");
+      const saved = await backend.internal("advance_source_reading", {
+        ...identity,
+        items: parsed.items,
+        candidates: [],
+        next_url: null,
+        warnings: [
+          ...parsed.warnings,
+          "CONFIGURED_PUBLIC_DOM_EXTRACTION",
+          ...(page.partial ? ["SOURCE_PAGE_PARTIAL"] : []),
+        ],
+      });
+      if (!saved.continued)
+        await backend.internal("schedule_assessment_refresh");
+      return saved;
+    }
     const evidence: Evidence[] = [
       { id: "page", text: page.text, kind: "notice", verified: false },
       ...page.links.map((l: Row) => ({

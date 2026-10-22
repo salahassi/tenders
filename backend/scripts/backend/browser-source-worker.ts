@@ -7,12 +7,16 @@ import {
   canonical,
   inertText,
 } from "../../supabase/functions/_shared/collector.ts";
+import { withSourceMarkup } from "../../supabase/functions/_shared/sourcePageMarkup.ts";
+import { processNoticeOcrRequest } from "./public-notice-ocr-worker.ts";
+import { readPublicTabs } from "./public-browser-tabs.ts";
 
 type Request = {
   id: string;
   url: string;
   workspace_id: string;
   lease_token: string;
+  read_tabs?: string[];
 };
 type Gateway = (
   action: string,
@@ -63,14 +67,17 @@ export function renderedPage(html: string, url: string, requested: string) {
     });
   });
   if (raw.length < 20) throw Error("SOURCE_BROWSER_FAILED");
-  return {
-    requested_url: requested,
-    url,
-    text: raw.slice(0, 60000),
-    links,
-    partial: raw.length > 60000 || $("a[href]").length > 200,
-    rendered: true,
-  };
+  return withSourceMarkup(
+    {
+      requested_url: requested,
+      url,
+      text: raw.slice(0, 60000),
+      links,
+      partial: raw.length > 60000 || $("a[href]").length > 200,
+      rendered: true,
+    },
+    html,
+  );
 }
 const humanChallenge = (text: string) =>
   /human visitor|what code is in the image|verify (?:that )?you are human|تحقق.*بشري/i.test(
@@ -80,6 +87,7 @@ export async function renderPublicSource(o: {
   browser: Browser;
   url: string;
   storageState?: any;
+  readTabs?: string[];
   onChallenge?: (image: string) => Promise<string | null>;
 }) {
   await publicDestination(o.url);
@@ -155,11 +163,15 @@ export async function renderPublicSource(o: {
         .catch(() => false)
     )
       throw Error("SOURCE_LOGIN_REQUIRED");
+    const detailWarnings = await readPublicTabs(page, o.readTabs || []);
     await publicDestination(page.url());
     const html = await page.content();
     if (Buffer.byteLength(html) > 1048576) throw Error("SOURCE_TOO_LARGE");
     return {
-      page: renderedPage(html, page.url(), o.url),
+      page: {
+        ...renderedPage(html, page.url(), o.url),
+        ...(detailWarnings.length ? { detail_warnings: detailWarnings } : {}),
+      },
       state: await context.storageState(),
     };
   } finally {
@@ -181,6 +193,7 @@ export async function processBrowserRequest(
     result = await renderPublicSource({
       browser,
       url: request.url,
+      readTabs: request.read_tabs,
       storageState: (await gateway("session_load", args)) ?? undefined,
       onChallenge: async (image) => {
         await gateway("challenge", { ...args, image });
@@ -291,8 +304,11 @@ async function main() {
   });
   try {
     const gateway = actionsGateway();
-    for (let i = 0; i < 3; i++)
+    const started = Date.now();
+    for (let i = 0; i < 8 && Date.now() - started < 9 * 60 * 1000; i++)
       if (!(await processBrowserRequest(gateway, browser))) break;
+    for (let i = 0; i < 10 && Date.now() - started < 9 * 60 * 1000; i++)
+      if (!(await processNoticeOcrRequest(gateway))) break;
   } finally {
     await browser.close();
   }

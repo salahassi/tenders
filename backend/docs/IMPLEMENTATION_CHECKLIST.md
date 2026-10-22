@@ -1,5 +1,101 @@
 # Implementation status and continuation plan
 
+## October 22 — Repair notice reading and assessment attention states
+
+Owner explicitly requested fixing the reading and classification problems after
+live diagnosis found 54 Review attention items: 20 Amman detail redirects, eight
+Water Ministry manual-access blockers, six Royal Jordanian content-policy
+blockers, nine non-tender Aramco service pages, ten stale completed assessments
+without rescheduling, and one current assessment with uncertain scope. Another
+25 unexpired discoveries were actively being assessed. Source-list collection
+success alone is not full detail-reading or assessment acceptance.
+
+Live cleanup has archived the nine verified evergreen Aramco service pages using
+the normal Owner-authorized opportunity decision command with current revisions,
+audit and idempotency. These were undecided records without proposals, attached
+to the already rejected source. Saved records and assessment history remain
+available in the archive. No actual tender or selected opportunity was removed.
+
+Reader, per-assessment evidence currentness and Review state corrections are in
+progress. Real detail extraction, full regression, deployment and hosted retries
+must be recorded separately before calling the repair complete.
+
+Local classification acceptance: the invoker discovery view compares consumed
+notice/company/scope inputs rather than unrelated workspace revisions, and the
+scheduler also requeues genuinely changed completed assessments. Sixteen new SQL
+regressions and 111 focused tests pass, including membership isolation, retained
+model work and skipped declined/rejected discoveries. Read-only live comparison
+found 37 previously saved assessments with unchanged inputs (including expired
+notices); the equivalent query across 109 plans took 1.08 seconds. The migration was
+reviewed independently and deployed. The actual discovery view took
+0.76 seconds across the workspace. After deployment and the audited cleanup,
+the new UI grouping finds 34 genuine reader blockers, eight excluded notices,
+seven current uncertain-scope reviews, one qualified inbox notice and 21 active
+assessments; none of the prior stale completed records remains mislabelled as
+not started. The normal assessment scheduler was invoked once for actual input
+changes. Counts remain live and may change as existing jobs complete.
+
+Frontend adds a separate Scope to review tab for current uncertain assessments;
+pending scheduling, saved model requests and OCR waits remain under Assessing.
+Actual blockers show their specific cause. Frontend typecheck/build and all 225
+tests in 38 files passed, including OCR provenance and progress messages.
+
+Actual public-page preflight retrieved six Royal Jordanian descriptions through
+readonly fields while excluding hidden login labels, and seven of eight Water
+Ministry notices through tender-only content and attachments. All 13 successful
+descriptions pass the exact live PostgreSQL content-policy function in an isolated
+PostgreSQL test. The remaining Water notice requires OCR. Twenty Amman anonymous
+public detail navigations returned matching titles. Additional canonical reads
+covered 12 Potash, nine NEPCO and two Phosphate notices; scanned PDFs and image
+advertisements exposed by these reads are being handled explicitly. None of
+these preflight counts substitute for hosted ingestion or assessment completion.
+
+Fresh Etimad Chromium preflight at 23:12 UTC returned six real tender records
+through saved selectors and bounded sanitized DOM, without a model request.
+The production job still uses its old cached page until the corrected browser
+worker is published and a new normal collection is queued.
+
+Reader acceptance now includes 20/20 complete Amman navigation/enrichment
+executions with matching titles and deadlines. All 20 descriptions also pass
+the live content-policy definition in isolated PostgreSQL. Actual attachment
+coverage is retained: two notices fully read, 18 partial due to scanned or large
+PDFs. A durable OCR queue and native Arabic/English worker have passed 66 focused
+tests, including 13 SQL queue tests. Four real public files (two Water Ministry
+PDFs and two Phosphate images) produced OCR text with measured confidence 65–95;
+end-to-end hosted OCR remains pending publication.
+
+PDF and OCR restricted-content checks now use the same explicit classification
+label/credential guard as model processing. Ordinary confidentiality clauses
+remain usable evidence. A small SQL alignment migration is live and verified:
+joined words such as confidential-information pass, explicit CONFIDENTIAL:
+labels remain blocked, and browser/anonymous function permissions remain denied.
+The model-policy regression suite passed 77 tests.
+
+Final local regression: 1,340 backend tests across 79 files passed; backend and
+frontend typecheck/build plus all three Deno entrypoint checks passed. Independent
+reviews confirmed repeat listing ingestion preserves already enriched notices,
+queue receipts are scoped to source revisions, stale requests do not starve the
+queue, and archived opportunities cannot receive late OCR/browser results. Native
+OCR pins validated public addresses with official TLS host verification and one
+download-plus-extraction deadline. All four database migrations are now applied;
+API 85, worker 120 and source-browser 3 are deployed. Readback matched all
+36/57/7 reachable files respectively; health returned 200 and unauthenticated
+API/worker/browser requests returned 401. Seven tested source configurations were
+activated through revision-checked audited commands. The 34 reader-blocked
+assessments and five validated classifier failures were resumed through their
+existing jobs. Hosted reading/OCR recovery and frontend publication follow.
+
+Etimad's final real browser check found six matching tender records and a matching
+detail title with 1,580 readable characters. Optional date/location tabs returned
+no content and now produce explicit partial-coverage warnings, retaining the
+available scope. The saved listing deadline selector excludes duplicate parent
+text. Another live classifier diagnosis found equivalent decimal formatting
+(300 versus 300.00) and Arabic classification ordinals rejected as unsupported
+numbers; narrowly scoped validator corrections and negative regressions are being
+completed. All five actual rejected public claims now pass the corrected validator
+against their official notice text; 168 focused grounding/recovery tests passed.
+Existing bounded recovery revalidates saved reports without resetting budgets.
+
 ## October 22 — Replace registration pages with tested tender listings
 
 Owner explicitly requested finding actual tender pages, testing extraction before

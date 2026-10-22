@@ -24,10 +24,87 @@ const numericLiterals = (text: string): string[] => {
   const normalized = text
     .replace(/[٠-٩]/g, (c) => String(c.charCodeAt(0) - 0x660))
     .replace(/[۰-۹]/g, (c) => String(c.charCodeAt(0) - 0x6f0))
+    // Some public PDFs separate thousands with spaces. Require an entire
+    // parenthesized number with at least two exact three-digit groups; never
+    // merge adjacent table cells, dates, line breaks or arbitrary prose.
+    .replace(
+      /\([ \t]*([0-9]{1,3}(?:[ \t\u00a0\u202f]+[0-9]{3}){2,})[ \t]*\)/g,
+      (_match, value: string) => `(${value.replace(/[ \t\u00a0\u202f]/g, "")})`,
+    )
     .replace(/(?<=\d)[,٬](?=\d{3}(?:\D|$))/g, "")
     .replace(/٫/g, ".");
-  return normalized.match(/\d+(?:\.\d+)?/g) ?? [];
+  return (normalized.match(/\d+(?:\.\d+)?/g) ?? []).map((value) => {
+    // Compare decimal values without floating-point rounding. Formatting such
+    // as 300.00 and 300 is not a factual difference; 300.01 still is.
+    const [integer, fraction = ""] = value.split(".");
+    const whole = integer.replace(/^0+(?=\d)/, "");
+    const decimal = fraction.replace(/0+$/, "");
+    return decimal ? `${whole}.${decimal}` : whole;
+  });
 };
+const gradeOrdinals: Record<string, string> = {
+  first: "1",
+  second: "2",
+  third: "3",
+  fourth: "4",
+  fifth: "5",
+  sixth: "6",
+  seventh: "7",
+  eighth: "8",
+  ninth: "9",
+  tenth: "10",
+  اول: "1",
+  اولى: "1",
+  ثاني: "2",
+  ثانية: "2",
+  ثالث: "3",
+  ثالثة: "3",
+  رابع: "4",
+  رابعة: "4",
+  خامس: "5",
+  خامسة: "5",
+  سادس: "6",
+  سادسة: "6",
+  سابع: "7",
+  سابعة: "7",
+  ثامن: "8",
+  ثامنة: "8",
+  تاسع: "9",
+  تاسعة: "9",
+  عاشر: "10",
+  عاشرة: "10",
+};
+const gradeToken = `(?:[0-9٠-٩۰-۹]+|(?:ال)?(?:${Object.keys(gradeOrdinals)
+  .sort((a, b) => b.length - a.length)
+  .join("|")}))(?![\\p{L}\\p{N}_]|[.٫٬,][0-9٠-٩۰-۹])`;
+const gradeExpression = new RegExp(
+  `(?<![\\p{L}\\p{N}_])(?:grades?|درجة|الدرجة)\\s+(${gradeToken}(?:\\s*(?:or|او|/)\\s*${gradeToken})*)`,
+  "giu",
+);
+function normalizeGradeText(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/[\u064b-\u065f\u0670]/g, "")
+    .replace(/[أإآ]/g, "ا");
+}
+function explicitGrades(text: string) {
+  return [...normalizeGradeText(text).matchAll(gradeExpression)].flatMap((m) =>
+    (m[1].match(new RegExp(gradeToken, "giu")) ?? [])
+      .map(
+        (token) =>
+          gradeOrdinals[token.replace(/^ال/u, "")] ?? numericLiterals(token)[0],
+      )
+      .filter((value): value is string => Boolean(value)),
+  );
+}
+function withoutSupportedGrades(text: string, quotes: string[]) {
+  const supported = new Set(quotes.flatMap(explicitGrades));
+  // Ordinal translations justify only an explicitly labelled grade, never an
+  // unrelated quantity in the same assertion (e.g. two engineers).
+  return normalizeGradeText(text).replace(gradeExpression, (match) =>
+    explicitGrades(match).every((grade) => supported.has(grade)) ? "" : match,
+  );
+}
 function withoutReferenceIdentifiers(text: string, referenceIds: Set<string>) {
   // Internal source and requirement UUIDs identify records, not quantities.
   // Only exact supplied UUIDs (including namespaced snapshot IDs) at identifier boundaries are exempt. Keep
@@ -288,9 +365,12 @@ export function validateGroundingReport(
       );
       let unsupportedLabel = false;
       const unsupportedNumbers: string[] = [];
-      const factualText = withoutProposalReferences(
-        withoutReferenceIdentifiers(claim.candidate_quote, referenceIds),
-        proposalReferences,
+      const factualText = withoutSupportedGrades(
+        withoutProposalReferences(
+          withoutReferenceIdentifiers(claim.candidate_quote, referenceIds),
+          proposalReferences,
+        ),
+        claim.source_refs.map((ref: any) => ref.quote),
       ).replace(itemLabel, (_match: string, label: string) => {
         const number = numericLiterals(label)[0];
         if (

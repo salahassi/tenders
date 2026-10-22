@@ -17,6 +17,7 @@ import {
 } from "../../supabase/functions/_shared/backend";
 import { databaseError } from "../../supabase/functions/_shared/http";
 import { readableSourcePage } from "../../supabase/functions/_shared/automaticSources";
+import { renderedPage } from "../../scripts/backend/browser-source-worker";
 import {
   validateModelResult,
   blockedContent,
@@ -205,6 +206,139 @@ const noticeResult = {
   follow_link_id: null,
   candidate_link_ids: [],
 };
+
+async function configuredAutomaticSource() {
+  const url = "https://source.example.test/notices";
+  const created = await f.command("source.create", {
+    name: "Synthetic configured browser source",
+    kind: "manual",
+    url,
+  });
+  const configured = await f.command("source.configure", {
+    id: created.id,
+    expected_revision: created.revision,
+    kind: "link_directory",
+    url,
+    approved_hosts: ["source.example.test"],
+    policy_note: "Synthetic public collection permission",
+    poll_interval_hours: 6,
+    adapter_config: {
+      automatic: true,
+      official_listing: "synthetic-browser",
+      extraction: {
+        version: 1,
+        url,
+        buyer: "Synthetic public buyer",
+        timezone: "UTC",
+        description_template: "{title}: public procurement notice.",
+        listing: {
+          layout: "records",
+          container: "#notices",
+          rows: "article",
+          title: "h3",
+          link: "a",
+          reference: ".reference",
+          empty_messages: ["No open tenders"],
+        },
+        detail: { root: "main" },
+      },
+    },
+  });
+  return f.command("source.action", {
+    id: created.id,
+    expected_revision: configured.revision,
+    action: "approve",
+    reason: "Synthetic public configured extraction",
+  });
+}
+const configuredHtml = `<body><main id="notices">
+  <article><h3>Synthetic software platform delivery</h3><a href="/detail?id=first">Details</a><span class="reference">REF-1</span></article>
+  <article><h3>Synthetic integration services</h3><a href="/detail?id=second">Details</a><span class="reference">REF-2</span></article>
+</main></body>`;
+
+it("ingests a configured rendered listing through the saved browser job without any model request", async () => {
+  await setup();
+  const source = await configuredAutomaticSource();
+  const network = vi.fn<typeof fetch>(
+    async () =>
+      new Response(
+        "<body><script>render()</script>Please enable JavaScript.</body>",
+        { headers: { "content-type": "text/html" } },
+      ),
+  );
+  const run = worker(network);
+  expect(await run()).toMatchObject({ waiting_for_browser: true });
+  const browser = await rpc("claim_source_browser_page");
+  const page = renderedPage(configuredHtml, source.url, source.url);
+  await rpc("complete_source_browser_page", {
+    request_id: browser.id,
+    lease: browser.lease_token,
+    page,
+    error_code: null,
+  });
+  expect(await run()).toMatchObject({ processed: 2 });
+  expect(network).toHaveBeenCalledTimes(1);
+  const rows = (
+    await f.db.query<any>(
+      "select reference,canonical_url from public.opportunities where source_id=$1 order by reference",
+      [source.id],
+    )
+  ).rows;
+  expect(rows).toEqual([
+    {
+      reference: "REF-1",
+      canonical_url: "https://source.example.test/detail?id=first",
+    },
+    {
+      reference: "REF-2",
+      canonical_url: "https://source.example.test/detail?id=second",
+    },
+  ]);
+  expect(
+    (await f.db.query<any>("select count(*)::int n from public.provider_usage"))
+      .rows[0].n,
+  ).toBe(0);
+  expect(
+    (
+      await f.db.query<any>("select health from public.sources where id=$1", [
+        source.id,
+      ])
+    ).rows[0].health,
+  ).toBe("healthy");
+});
+
+it("uses a configured ordinary public listing without asking a model to reinterpret its fields", async () => {
+  await setup();
+  await configuredAutomaticSource();
+  const network = vi.fn<typeof fetch>(
+    async () =>
+      new Response(configuredHtml, {
+        headers: { "content-type": "text/html" },
+      }),
+  );
+  expect(await worker(network)()).toMatchObject({ processed: 2 });
+  expect(network).toHaveBeenCalledTimes(1);
+});
+
+it("keeps a changed configured listing blocked instead of publishing a guessed model result", async () => {
+  await setup();
+  await configuredAutomaticSource();
+  const network = vi.fn<typeof fetch>(
+    async () =>
+      new Response(
+        "<body><main>Public portal homepage with navigation only.</main></body>",
+        { headers: { "content-type": "text/html" } },
+      ),
+  );
+  expect(await worker(network)()).toMatchObject({
+    error_code: "SOURCE_SCHEMA_CHANGED",
+  });
+  expect(network).toHaveBeenCalledTimes(1);
+  expect(
+    (await f.db.query<any>("select count(*)::int n from public.opportunities"))
+      .rows[0].n,
+  ).toBe(0);
+});
 
 it("reads an unknown website, follows an observed listing link, fails over, and schedules detail reading without site selectors", async () => {
   await setup();

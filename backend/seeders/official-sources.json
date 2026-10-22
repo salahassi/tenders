@@ -13,7 +13,32 @@
       "evidence_url": "https://tenders.etimad.sa/Tender/AllTendersForVisitor?PageNumber=1",
       "checked_at": "2026-10-22",
       "access_note": "اختبار متصفح فعلي بتاريخ 2026-10-22 استخرج 6 منافسات منشورة بروابط تفاصيل وأرقام مرجعية متميزة. يتطلب مسار المتصفح عند حجب HTTP المباشر؛ التحقق البشري، إن ظهر، يدوي. لا تسجيل دخول أو شراء أو تقديم عروض آلياً.",
-      "http_status": 200
+      "http_status": 200,
+      "extraction": {
+        "version": 1,
+        "url": "https://tenders.etimad.sa/Tender/AllTendersForVisitor?PageNumber=1",
+        "buyer": "منصة اعتماد",
+        "timezone": "Asia/Riyadh",
+        "description_template": "{title}\nتاريخ النشر: {published}\nراجع الجهة المشترية والتفاصيل الأصلية على اعتماد.",
+        "listing": {
+          "layout": "records",
+          "container": "body",
+          "rows": ".tender-card",
+          "title": "h3 a[href*=DetailsForVisitor]",
+          "link": "h3 a[href*=DetailsForVisitor]",
+          "reference": ".tender-date .col-12.col-md-3:first-child span",
+          "published": ".tender-metadata .col-6:first-child span",
+          "deadline": ".tender-date .col-12.col-md-3:nth-child(3) > span > span",
+          "deadline_order": "ymd",
+          "exclude_past_deadlines": true
+        },
+        "detail": {
+          "root": "#detailsForm",
+          "title": ".list-group-item:has(.etd-item-title:contains(\"اسم المنافسة\")) .etd-item-info span",
+          "remove": [".nav", "#subPurposSapn", ".readMore", ".readLess"],
+          "render_tabs": ["#tenderDatesTab", "#relationStepTab"]
+        }
+      }
     },
     {
       "key": "sa-isdb",
@@ -41,24 +66,11 @@
           "link": ".field-title a",
           "reference_attribute": "data-nid",
           "status": ".field--name-field-tender-status",
-          "open_statuses": [
-            "open",
-            "active",
-            "published"
-          ],
-          "closed_statuses": [
-            "closed",
-            "cancelled",
-            "canceled",
-            "awarded"
-          ],
+          "open_statuses": ["open", "active", "published"],
+          "closed_statuses": ["closed", "cancelled", "canceled", "awarded"],
           "deadline": ".field--name-field-submission-deadline",
           "country": ".field--name-field-world-country",
-          "empty_messages": [
-            "no results",
-            "no tenders",
-            "no opportunities"
-          ]
+          "empty_messages": ["no results", "no tenders", "no opportunities"]
         },
         "detail": {
           "root": "article.type-corporate_procurement_tender .field--name-body"
@@ -106,9 +118,7 @@
           "reference_format": "number_year",
           "title_column": 1,
           "published_column": 2,
-          "deadline_columns": [
-            3
-          ],
+          "deadline_columns": [3],
           "link": "a.tender-link"
         },
         "detail": {
@@ -146,20 +156,13 @@
           "published": "[id$=\"lblTender_PublishDate\"]",
           "deadline": "[id$=\"lblTender_ExpiredhDate\"]",
           "deadline_order": "dmy",
-          "excluded_title_terms": [
-            "احالة",
-            "إحالة",
-            "مبدئية",
-            "إلغاء"
-          ]
+          "excluded_title_terms": ["احالة", "إحالة", "مبدئية", "إلغاء"]
         },
         "detail": {
-          "root": "body",
-          "remove": [
-            "header",
-            "footer",
-            "nav"
-          ],
+          "root": "[id$=\"_TendersSection\"]",
+          "title": "[id$=\"_lblHeaderTitle\"]",
+          "title_scope": "document",
+          "remove": [],
           "title_labels": [],
           "deadline_labels": [],
           "remove_matching": []
@@ -194,23 +197,12 @@
           "published": "[id$=\"lblTender_PublishDate\"]",
           "deadline": "[id$=\"lblTender_ExpiredhDate\"]",
           "deadline_order": "dmy",
-          "empty_messages": [
-            "لا يوجد عطاءات حاليه"
-          ],
-          "excluded_title_terms": [
-            "احالة",
-            "إحالة",
-            "مبدئية",
-            "إلغاء"
-          ]
+          "empty_messages": ["لا يوجد عطاءات حاليه"],
+          "excluded_title_terms": ["احالة", "إحالة", "مبدئية", "إلغاء"]
         },
         "detail": {
           "root": "body",
-          "remove": [
-            "header",
-            "footer",
-            "nav"
-          ],
+          "remove": ["header", "footer", "nav"],
           "title_labels": [],
           "deadline_labels": [],
           "remove_matching": []
@@ -260,15 +252,13 @@
           "deadline_order": "ymd"
         },
         "detail": {
-          "root": "body",
-          "remove": [
-            "header",
-            "footer",
-            "nav"
-          ],
+          "remove": [],
           "title_labels": [],
           "deadline_labels": [],
-          "remove_matching": []
+          "remove_matching": [],
+          "root": "section.inner-page",
+          "title": "[id$=\"tenderTitle\"]",
+          "deadline": "p:has([id$=\"closingDate\"])"
         }
       }
     },
@@ -300,23 +290,17 @@
           "published": "span:contains(\"تاريخ بدء العطاء\")",
           "deadline": "span:contains(\"تاريخ انتهاء العطاء\")",
           "deadline_order": "dmy",
-          "excluded_title_terms": [
-            "بيع",
-            "المزاودة",
-            "المزاود",
-            "مزاد"
-          ]
+          "excluded_title_terms": ["بيع", "المزاودة", "المزاود", "مزاد"]
         },
         "detail": {
-          "root": "body",
-          "remove": [
-            "header",
-            "footer",
-            "nav"
-          ],
+          "remove": ["#share", "#share-overlay"],
           "title_labels": [],
           "deadline_labels": [],
-          "remove_matching": []
+          "remove_matching": [],
+          "root": ".News-inner-main-container",
+          "title": "h1",
+          "deadline": ".date:has(span:contains(\"تاريخ انتهاء العطاء\"))",
+          "images": "picture > img[src^=\"/uploads/\"]"
         }
       }
     },
@@ -350,15 +334,13 @@
           "deadline_order": "dmy"
         },
         "detail": {
-          "root": "body",
-          "remove": [
-            "header",
-            "footer",
-            "nav"
-          ],
+          "remove": [],
           "title_labels": [],
           "deadline_labels": [],
-          "remove_matching": []
+          "remove_matching": [],
+          "root": "[id$=\"ContentDetails_TendersSection\"]",
+          "title": "h1.white",
+          "title_scope": "document"
         }
       }
     },
@@ -373,7 +355,37 @@
       "evidence_url": "https://www.gamtenders.gov.jo/localtenders.aspx",
       "checked_at": "2026-10-17",
       "access_note": "وثائق الموقع للاطلاع؛ تنص الأمانة على الحصول على النسخة الرسمية من دائرة العطاءات عند المشاركة.",
-      "http_status": 200
+      "http_status": 200,
+      "extraction": {
+        "version": 1,
+        "url": "https://www.gamtenders.gov.jo/localtenders.aspx",
+        "buyer": "أمانة عمان الكبرى",
+        "timezone": "Asia/Amman",
+        "description_template": "{title}\nراجع تفاصيل الإعلان وموعد إيداع العروض والوثائق الأصلية.",
+        "listing": {
+          "layout": "records",
+          "container": "#GVtenders",
+          "rows": "tr:has(a[href^=\"showtender.aspx?guid=\"])",
+          "title": "td:nth-child(1)",
+          "link": "a[href^=\"showtender.aspx?guid=\"]",
+          "reference": "td:nth-child(2)"
+        },
+        "detail": {
+          "root": "article.post-content:has(#lbltitle)",
+          "title": "#lbltitle",
+          "deadline": "#ltredaa",
+          "remove": ["li:has(#lblviews)"],
+          "title_labels": [],
+          "deadline_labels": [],
+          "remove_matching": [],
+          "postback": {
+            "url": "https://www.gamtenders.gov.jo/adlocaltenders.aspx",
+            "rows": "#GVtenders tr:has(a[id$=\"lnkdetails\"])",
+            "title": "td:nth-child(2)",
+            "link": "a[id$=\"lnkdetails\"]"
+          }
+        }
+      }
     },
     {
       "key": "jo-rj",
@@ -404,11 +416,12 @@
           "deadline_order": "ymd"
         },
         "detail": {
-          "root": "body",
+          "root": ".container:has(> .form-group)",
+          "title": "[id$=\"_RFPSubject\"]",
+          "deadline": "[id$=\"_ClosingDate\"]",
           "remove": [
-            "header",
-            "footer",
-            "nav"
+            ".form-group:has([id$=\"_txtBuyerName\"])",
+            "[id$=\"_dvinterested\"]"
           ],
           "title_labels": [],
           "deadline_labels": [],
@@ -509,24 +522,14 @@
           "reference_format": "text",
           "title_column": 1,
           "published_column": 2,
-          "deadline_columns": [
-            3,
-            4
-          ],
+          "deadline_columns": [3, 4],
           "link": "td:nth-child(2) a"
         },
         "detail": {
           "root": ".page-content .content",
-          "title_labels": [
-            "الموضوع"
-          ],
-          "deadline_labels": [
-            "الموعد النهائي"
-          ],
-          "remove": [
-            ".article-info",
-            ".hidden-xs"
-          ]
+          "title_labels": ["الموضوع"],
+          "deadline_labels": ["الموعد النهائي"],
+          "remove": [".article-info", ".hidden-xs"]
         }
       }
     },
@@ -554,11 +557,7 @@
           "published": ".news_icon",
           "reference_segment": 3,
           "reference_prefix": "article:",
-          "excluded_title_terms": [
-            "مزاد",
-            "إلغاء",
-            "الغاء"
-          ]
+          "excluded_title_terms": ["مزاد", "إلغاء", "الغاء"]
         },
         "detail": {
           "root": "#all_body",
@@ -567,17 +566,11 @@
           "remove_matching": [
             {
               "selector": "table",
-              "contains": [
-                "هاتف",
-                "فاكس",
-                "tenders@"
-              ]
+              "contains": ["هاتف", "فاكس", "tenders@"]
             },
             {
               "selector": "p",
-              "contains": [
-                "رئيس البلد"
-              ],
+              "contains": ["رئيس البلد"],
               "previous": true
             }
           ]

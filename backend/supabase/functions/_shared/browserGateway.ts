@@ -9,6 +9,14 @@ import { readJson } from "./http.ts";
 const identity = { request_id: z.uuid(), lease: z.uuid() };
 const schemas = {
   claim: z.object({}).strict(),
+  ocr_claim: z.object({}).strict(),
+  ocr_complete: z
+    .object({
+      ...identity,
+      result: z.record(z.string(), z.unknown()).nullable(),
+      error_code: z.string().nullable(),
+    })
+    .strict(),
   complete: z
     .object({
       ...identity,
@@ -55,6 +63,8 @@ export function createBrowserGateway(
             "challenge",
             "session_load",
             "session_save",
+            "ocr_claim",
+            "ocr_complete",
           ]),
           payload: z.unknown(),
         })
@@ -65,6 +75,10 @@ export function createBrowserGateway(
       let data;
       if (input.action === "claim")
         data = await backend.internal("claim_source_browser_page");
+      else if (input.action === "ocr_claim")
+        data = await backend.internal("claim_notice_ocr");
+      else if (input.action === "ocr_complete")
+        data = await backend.internal("complete_notice_ocr", payload);
       else if (input.action === "complete")
         data = await backend.internal("complete_source_browser_page", payload);
       else if (input.action === "challenge")

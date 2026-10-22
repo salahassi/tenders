@@ -9,6 +9,10 @@ import {
   sealSession,
   openSession,
 } from "../../supabase/functions/_shared/browserIdentity";
+import {
+  sourcePageMarkup,
+  withSourceMarkup,
+} from "../../supabase/functions/_shared/sourcePageMarkup";
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
   f = await workflowFixture();
@@ -215,4 +219,29 @@ it("retains real rendered wording and observed HTTPS links without executing emb
   expect(result.links).toEqual([
     { id: "L1", text: "Notice", url: "https://public.example.test/notice/1" },
   ]);
+});
+
+it("retains configured selector structure while removing interactive values and executable markup", () => {
+  const markup = sourcePageMarkup(`<body><script>privateScriptValue()</script>
+    <main id="notices" onclick="doSomething()"><article class="card" data-ref="REF-1">
+    <h3 title="Synthetic notice">Synthetic procurement</h3><a href="/detail?id=1">Details</a>
+    <input type="hidden" value="private-form-value"><textarea>private-field-value</textarea>
+    </article></main><div class="modal"><label>Password:</label><input value="secret"></div>
+    <!-- private-comment-value --></body>`)!;
+  expect(markup).toContain('id="notices"');
+  expect(markup).toContain('class="card" data-ref="REF-1"');
+  expect(markup).toContain('href="/detail?id=1"');
+  expect(markup).not.toMatch(
+    /private|Password|secret|onclick|script|textarea|input/,
+  );
+});
+
+it("omits oversized extraction markup while retaining the existing bounded text path", () => {
+  expect(
+    sourcePageMarkup(`<body>${"x".repeat(180001)}</body>`),
+  ).toBeUndefined();
+  const original = { text: "ع".repeat(60000), url: page.url };
+  expect(
+    withSourceMarkup(original, `<body>${"x".repeat(150000)}</body>`),
+  ).toEqual(original);
 });

@@ -991,6 +991,50 @@ describe("connected screens", () => {
   });
 });
 
+it("retains saved scan extraction provenance without changing partial coverage", async () => {
+  const f = fixture();
+  const request = f.request.getMockImplementation()!;
+  f.request.mockImplementation(async (path, options) => {
+    const result = await request(path, options);
+    if (path.split("?")[0] === "/v1/opportunities") {
+      const data = result.data as { records: Record<string, unknown>[] };
+      data.records[0].notice_evidence = {
+        version: 1,
+        status: "partial",
+        fetched_at: "2026-10-22T12:00:00Z",
+        attachments: [
+          {
+            url: "https://example.test/scan.pdf",
+            status: "partial",
+            included_pages: [1],
+            total_pages: 3,
+            extraction: "ocr",
+            ocr_read_pages: [1, "2", -1, 0, 1.5],
+          },
+          {
+            url: "https://example.test/native.pdf",
+            status: "read",
+            included_pages: [1],
+            total_pages: 1,
+          },
+        ],
+      };
+    }
+    return result;
+  });
+  const row = (await new ConnectedRepository(f.client).refresh())
+    .opportunities[0];
+  expect(row.noticeEvidence?.status).toBe("partial");
+  expect(row.noticeEvidence?.attachments[0]).toMatchObject({
+    status: "partial",
+    includedPages: 1,
+    totalPages: 3,
+    extraction: "ocr",
+    ocrReadPages: [1],
+  });
+  expect(row.noticeEvidence?.attachments[1].extraction).toBeUndefined();
+});
+
 it("does not admit a notice when progress arrives before its matching assessment row", async () => {
   const f = fixture();
   const request = f.request.getMockImplementation()!;

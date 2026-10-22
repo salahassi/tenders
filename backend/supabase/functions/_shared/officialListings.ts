@@ -1,6 +1,7 @@
 import { load } from "cheerio";
 import { z } from "zod";
 import { safeUrl } from "./contracts.ts";
+import { publicPostbackSchema } from "./publicPostbackConfig.ts";
 
 // Only generic extraction operations live here. Source identities, URLs,
 // selectors, labels and timezones are persisted source configuration.
@@ -104,6 +105,9 @@ export const extractionSchema = z
         title: selector.optional(),
         title_scope: z.enum(["root", "document"]).default("root"),
         deadline: selector.optional(),
+        postback: publicPostbackSchema.optional(),
+        images: selector.optional(),
+        render_tabs: z.array(selector).max(3).default([]),
         title_labels: terms.default([]),
         deadline_labels: terms.default([]),
         remove: z.array(selector).max(20).default([]),
