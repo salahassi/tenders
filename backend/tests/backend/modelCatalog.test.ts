@@ -1564,9 +1564,16 @@ it.each([
   { finalRemainingMs: 20000, reorderedPolicy: true },
   { finalRemainingMs: 5000, reorderedPolicy: true },
   { finalRemainingMs: 20000, reorderedPolicy: true, internalReferences: true },
+  { finalRemainingMs: 20000, reorderedPolicy: true, noRequirements: true },
+  { finalRemainingMs: 5000, reorderedPolicy: true, noRequirements: true },
 ])(
   "durably verifies batches across restarts ($finalRemainingMs ms, JSONB policy order: $reorderedPolicy)",
-  async ({ finalRemainingMs, reorderedPolicy, internalReferences }) => {
+  async ({
+    finalRemainingMs,
+    reorderedPolicy,
+    internalReferences,
+    noRequirements,
+  }) => {
     const { executeGuardedModel } =
       await import("../../supabase/functions/_shared/modelGraph");
     const { candidateContent } =
@@ -1611,7 +1618,7 @@ it.each([
         type: "paragraph",
         text,
       })),
-      requirement_ids: ["required-1"],
+      requirement_ids: noRequirements ? [] : ["required-1"],
       evidence_refs: [],
       company_claims: [],
       assumptions: [],
@@ -1636,7 +1643,12 @@ it.each([
       } else {
         const c = prompt.untrusted_data;
         const coverage = c.verification_scope === "requirements_only";
-        if (coverage) {
+        if (
+          coverage ||
+          (noRequirements &&
+            c.content_units.at(-1)?.id ===
+              candidateContent(candidate).at(-1)?.id)
+        ) {
           coverageLease = activeLease;
           now += invocationBudgetMs - finalRemainingMs;
         }
@@ -1727,7 +1739,7 @@ it.each([
                 },
               ]
             : [],
-          requiredIds: ["required-1"],
+          requiredIds: noRequirements ? [] : ["required-1"],
           manifest: [],
           environments: envs,
           language: "en",
@@ -1742,9 +1754,9 @@ it.each([
         if (!(error instanceof ModelDeferred)) throw error;
         const sent = calls.filter((call) => call.lease === activeLease);
         expect(sent).toHaveLength(1);
-        expect(
-          sent[0].scope === "requirements_only" && finalRemainingMs >= 10000,
-        ).toBe(false);
+        expect(activeLease === coverageLease && finalRemainingMs >= 10000).toBe(
+          false,
+        );
         // Every content lease stops after its one call and saves the report;
         // a final coverage lease yields only when local commit time is short.
         if (sent[0].scope !== "writer") {
@@ -1768,7 +1780,7 @@ it.each([
     }
     expect(outcome?.result).toEqual(candidate);
     expect(writes).toBe(1);
-    expect(batches.size).toBeGreaterThan(2);
+    expect(batches.size).toBeGreaterThan(noRequirements ? 1 : 2);
     expect(activeLease === coverageLease).toBe(finalRemainingMs >= 10000);
     const saved = (
       await f.db.query<any>(
@@ -1781,10 +1793,15 @@ it.each([
     expect(merged.value.result.processed_content_ids).toEqual(
       candidateContent(candidate).map((unit) => unit.id),
     );
-    expect(merged.value.result.processed_requirement_ids).toEqual([
-      "required-1",
-    ]);
-    expect(merged.value.result.requirement_checks[0].status).toBe("supported");
+    expect(merged.value.result.processed_requirement_ids).toEqual(
+      noRequirements ? [] : ["required-1"],
+    );
+    if (noRequirements)
+      expect(merged.value.result.requirement_checks).toEqual([]);
+    else
+      expect(merged.value.result.requirement_checks[0].status).toBe(
+        "supported",
+      );
     expect(saved.find((row) => row.result_key === "accepted").value).toEqual(
       candidate,
     );

@@ -107,8 +107,23 @@ pass, including a real graph restart/aggregate-acceptance case and unknown-key,
 boundary, Arabic-number, price and duration rejection cases. Backend typecheck,
 build and frozen Deno worker checking pass. Worker **v106** was deployed at
 **09:05 UTC**; all 50 retrievable files match the canonical bundle. API remains
-v80. Full CI is pending. No paid receipt, prompt, budget or accepted content is
-replaced.
+v80. Source `9700037` passed
+[CI and Pages 39752916060](https://github.com/salahassi/tenders/actions/runs/39752916060),
+including **1,164 backend tests / 67 files** and **205 frontend tests / 36 files**,
+both package typechecks/builds and both Edge checks. No paid receipt, prompt,
+budget or accepted content is replaced.
+
+The final scoped verification result now merges/commits within the same lease
+when at least ten seconds remain, including content-only verification without a
+separate requirement pass. Previously that last content batch always yielded,
+adding a queue cycle even though only local work remained. Intermediate batches
+still yield before another provider request. **58 model execution integration
+tests** pass, including sufficient/insufficient remaining-time cases with complete
+content coverage, one writer call, immutable receipts and crash/restart replay.
+Backend typecheck/build and frozen worker checking pass. Worker **v107** deployed
+at **09:32 UTC** and all retrievable files match the canonical bundle. Full CI
+of this small scheduling follow-up is pending. This removes a specific handoff,
+not all provider/queue latency in the live trial.
 
 
 ## October 21 — approved throughput and coherence follow-up

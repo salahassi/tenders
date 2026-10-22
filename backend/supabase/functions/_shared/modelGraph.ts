@@ -978,14 +978,14 @@ async function runGuardedModel(o: Options): Promise<{
           }
           if (
             completedNow &&
-            (!scope.requirementsOnly ||
+            (scope !== scopes.at(-1) ||
               (o.backend.invocationBudgetMs ?? 110000) -
                 (Date.now() - invocationStartedAt) <
                 10000)
           ) {
-            // Content batches yield before another provider call. The final
-            // coverage batch can merge and commit locally in this lease when
-            // at least ten seconds remain; otherwise replay uses its saved result.
+            // Yield before another provider call. The final scope can merge
+            // and commit locally with ten seconds remaining, including when
+            // no separate requirement-coverage pass is needed.
             release = () => store.action("yield").then(() => {});
             throw new ModelDeferred();
           }
