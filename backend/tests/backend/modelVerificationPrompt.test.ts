@@ -14,6 +14,8 @@ import { pinVerificationPrompt } from "../../supabase/functions/_shared/modelVer
 import {
   VERIFICATION_INSTRUCTIONS_V2,
   VERIFICATION_PROMPT_V2,
+  VERIFICATION_INSTRUCTIONS_V3,
+  VERIFICATION_PROMPT_V3,
 } from "../../supabase/functions/_shared/modelVerificationInstructions";
 import {
   FreeModelProvider,
@@ -100,6 +102,61 @@ async function setup() {
   );
   return { ...options, options, legacyHash };
 }
+
+it("pins task-specific audit verification without treating valid negative review outcomes as candidate errors", async () => {
+  const s = await setup();
+  const options = {
+    ...s.options,
+    context: {
+      ...context,
+      original_task: "review_proposal",
+      original_context: {
+        sections: [],
+        commercial_review_scope: { complete: false },
+      },
+    },
+  };
+  expect(await pinVerificationPrompt(options)).toBe(3);
+  expect(await pinVerificationPrompt(options)).toBe(3);
+  const prompt = JSON.parse(
+    modelPrompt(
+      "verify_grounding",
+      options.context,
+      evidence,
+      [],
+      "en",
+      false,
+      3,
+    ),
+  );
+  expect(prompt.prompt_version).toBe(VERIFICATION_PROMPT_V3);
+  expect(prompt.verification_policy).toBe(VERIFICATION_INSTRUCTIONS_V3);
+  expect(taskSystemInstructions("verify_grounding", 3)).toContain(
+    "candidate is an AUDIT REPORT",
+  );
+  expect(taskSystemInstructions("verify_grounding", 3)).toContain(
+    "error in the AUDIT REPORT itself",
+  );
+  expect(taskSystemInstructions("verify_grounding", 2)).not.toContain(
+    "candidate is an AUDIT REPORT",
+  );
+});
+
+it("preserves a previously pinned review verification request", async () => {
+  const s = await setup();
+  const ctx = { ...context, original_task: "review_proposal" };
+  await s.store.action("result_put", {
+    key: `verification-instructions-${await sha256(s.requestPrefix)}`,
+    value: {
+      version: 2,
+      instructions: VERIFICATION_INSTRUCTIONS_V2,
+      legacy_input_hash: await sha256(
+        modelPrompt("verify_grounding", ctx, evidence, [], "en"),
+      ),
+    },
+  });
+  expect(await pinVerificationPrompt({ ...s.options, context: ctx })).toBe(2);
+});
 async function addUsage(
   job: any,
   prefix: string,

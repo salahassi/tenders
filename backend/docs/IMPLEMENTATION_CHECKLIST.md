@@ -206,6 +206,22 @@ an interrupted recovery checkpoint. Backend typecheck/build and frozen worker
 checking pass. Migration `revalidate_retained_writer` and worker **v112** deployed
 at **11:02 UTC**. Full CI and the real final export remain pending.
 
+The commercial review also exposed an application-policy ambiguity: grounding
+treated valid negative audit outcomes as faults in the audit itself, including
+missing implementation/test evidence for proposed future delivery. Newly pinned
+review verification uses policy v3: assess the audit's accuracy against supplied
+prose, keep real business gaps in the audit, and reserve verification blockers
+for errors in that audit. Existing phase pins remain exact. No report is accepted
+by filtering away model findings; old blocked results require an explicit,
+bounded fresh verification under the corrected policy. **116 focused tests**
+pass: the real graph preserves blocking business findings, resumes exactly one
+audit recheck after a crash, and retains every writer receipt/budget. Backend
+typecheck/build and frozen worker checking pass. Migration
+`review_verification_boundary_recheck` and worker **v113** deployed at **11:14 UTC**.
+Full CI for v112 caught one outdated diagnostic-path assertion (the guard now
+reports the exact offending field); it is updated in this release. Hosted audit
+recovery, final reconciliation and Word download remain in progress.
+
 
 ## October 21 — approved throughput and coherence follow-up
 

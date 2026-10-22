@@ -798,6 +798,46 @@ async function runGuardedModel(o: Options): Promise<{
         });
         return { reportRef: saved.id };
       }
+      // A bounded audit-policy upgrade rechecks this same report, without
+      // changing its business findings or spending another writer allowance.
+      const auditRecheck =
+        o.task === "review_proposal"
+          ? await store.action("result_get", {
+              key: `review-boundary-recheck-${state.candidateRef}`,
+            })
+          : null;
+      if (auditRecheck) {
+        if (
+          auditRecheck.value.candidate_hash !== hash ||
+          auditRecheck.value.candidate_id !== state.candidateRef
+        )
+          throw new ModelError("MODEL_IDENTITY_CHANGED");
+        const checked = await cachedCall(
+          `review-boundary-v3-${hash}`,
+          "verify_grounding",
+          {
+            original_task: o.task,
+            original_context: o.context,
+            candidate_hash: hash,
+            content_units: candidateContent(candidate),
+            verification_scope: "whole_audit_report",
+            audit_validation_policy: 3,
+          },
+          `review-boundary-${hash}`,
+          (value) =>
+            validateGroundingReport(
+              value,
+              candidate,
+              hash,
+              o.evidence,
+              o.requiredIds,
+              undefined,
+              groundingOptions(o.context),
+            ),
+          stored.producer?.model_id,
+        );
+        return { reportRef: checked.id };
+      }
       if (state.reportRef)
         await replayRevalidatedVerification({
           store,
@@ -1144,23 +1184,103 @@ async function runGuardedModel(o: Options): Promise<{
     durability: "sync" as const,
     recursionLimit: 32,
   };
+  const recoverAuditBoundary = async () => {
+    if (o.task !== "review_proposal") return false;
+    const state = await graph.getState(config),
+      values = state.values;
+    if (
+      state.next.length > 1 ||
+      (state.next.length === 1 && state.next[0] !== "verify") ||
+      !Number.isInteger(values.repairCount) ||
+      values.repairCount < 0 ||
+      values.repairCount > 2
+    )
+      return false;
+    const key = `candidate-${values.repairCount}`;
+    const saved = await store.action("result_get", { key });
+    if (!saved || saved.id !== values.candidateRef) return false;
+    const candidate = values.repairCount
+      ? saved.value.result.result
+      : saved.value.result;
+    if (!revalidateWriter(candidate, o)) return false;
+    const hash = await sha256(JSON.stringify(candidate));
+    if (await store.action("result_get", { key: `review-boundary-v3-${hash}` }))
+      return false;
+    const report = await store.action("result_get", { id: values.reportRef });
+    if (!report || report.value.coverage === "repair_only") return false;
+    try {
+      validateGroundingReport(
+        report.value.result,
+        candidate,
+        hash,
+        o.evidence,
+        o.requiredIds,
+        undefined,
+        groundingOptions(o.context, true),
+      );
+    } catch {
+      return false;
+    }
+    const blocking = report.value.result.findings.filter(
+      (f: any) => f.severity === "blocking",
+    );
+    // Recheck an audit's business/findings boundary only. Unproven or
+    // contradicted factual assertions and requirement checks remain excluded.
+    if (
+      !blocking.length ||
+      groundingDefects(report.value.result).length !== blocking.length
+    )
+      return false;
+    if ((await store.action("recovery_ready")) !== true) return false;
+    const pool = await o.backend.internal("task_model_preflight", {
+      job_id: o.job.id,
+      lease: o.job.lease_token,
+      manifest: o.manifest,
+    });
+    if (!Array.isArray(pool?.providers) || pool.pending_model_config_id)
+      return false;
+    const marker = await store.action("result_put", {
+      key: `review-boundary-recheck-${saved.id}`,
+      value: {
+        version: 3,
+        candidate_id: saved.id,
+        candidate_key: key,
+        candidate_hash: hash,
+        report_id: report.id,
+        repair_count: values.repairCount,
+        received_candidate_budgets_unchanged: true,
+        purpose: "verify_audit_accuracy_separately_from_business_readiness",
+      },
+    });
+    await graph.updateState(config, { reportRef: report.id }, "produce");
+    return (
+      (await store.action("review_boundary_resume", {
+        candidate_id: saved.id,
+        candidate_key: key,
+        marker_id: marker.id,
+        report_id: report.id,
+        manifest: o.manifest,
+      })) === true
+    );
+  };
   try {
     const checkpoint = await store.getTuple(config);
     if (thread.status === "needs_review") {
       const recovered =
         checkpoint &&
-        ((await recoverRevalidatedWriter({
-          backend: o.backend,
-          store,
-          job: o.job,
-          task: o.task,
-          evidence: o.evidence,
-          requiredIds: o.requiredIds,
-          manifest: o.manifest,
-          state: await graph.getState(config),
-          validate: o.validate,
-          update: (values) => graph.updateState(config, values, "produce"),
-        })) ||
+        ((await recoverAuditBoundary()) ||
+          (await recoverRevalidatedWriter({
+            backend: o.backend,
+            store,
+            job: o.job,
+            task: o.task,
+            evidence: o.evidence,
+            requiredIds: o.requiredIds,
+            manifest: o.manifest,
+            state: await graph.getState(config),
+            validate: o.validate,
+            update: (values) => graph.updateState(config, values, "produce"),
+          })) ||
           (await recoverBlockedWriter({
             backend: o.backend,
             store,

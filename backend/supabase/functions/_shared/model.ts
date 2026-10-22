@@ -8,8 +8,8 @@ import {
   SEMANTIC_PROMPT_V1,
 } from "./modelSemanticInstructions.ts";
 import {
-  VERIFICATION_INSTRUCTIONS_V2,
-  VERIFICATION_PROMPT_V2,
+  verificationPolicyText,
+  verificationPolicyVersion,
 } from "./modelVerificationInstructions.ts";
 import {
   defaultCapabilities,
@@ -152,7 +152,7 @@ export const blockedContent = (value: string) =>
   Object.values(contentPolicyChecks).some((check) => check.test(value));
 function legacyTaskSystemInstructions(
   task: ModelTask,
-  verificationRevision: 1 | 2 = 1,
+  verificationRevision: 1 | 2 | 3 = 1,
 ) {
   if (task === "inspect_source_page") return sourceSystemInstructions;
   if (task === "verify_grounding")
@@ -176,7 +176,9 @@ Keep the verification report compact: claim and finding are concise conclusions,
 When verification_scope is content_batch, review only the supplied content_units against the full evidence. Other candidate units are reviewed separately; do not report omissions merely because another batch is absent. Top-level required_ids is empty for these batches.
 When verification_scope is requirements_only, check completeness and consistency across the whole candidate and every top-level required_id. Return claims:[]; factual claims have already been independently checked in content batches. Keep requirement_checks and blocking findings for actual omissions or contradictions.
 Never supply private reasoning traces. Return only the verification report.` +
-      (verificationRevision === 2 ? `\n${VERIFICATION_INSTRUCTIONS_V2}` : "")
+      (verificationRevision >= 2
+        ? `\n${verificationPolicyText(verificationRevision)}`
+        : "")
     );
   if (task === "repair_result")
     return (
@@ -191,7 +193,7 @@ Return the original target_task and the corrected result using that task's compl
 }
 export function taskSystemInstructions(
   task: ModelTask,
-  verificationRevision: 1 | 2 = 1,
+  verificationRevision: 1 | 2 | 3 = 1,
   semanticRevision: 0 | 1 | 2 = 0,
 ) {
   const original = legacyTaskSystemInstructions(task, verificationRevision);
@@ -938,7 +940,7 @@ export class FreeModelProvider {
     private requestTimeout = 90000,
     private streamResponses = false,
     private configuration?: ModelConfiguration,
-    private verificationRevision: 1 | 2 = 1,
+    private verificationRevision: 1 | 2 | 3 = 1,
     private semanticRevision: 0 | 1 | 2 = 0,
   ) {}
   private async diagnoseRejectedRequest(
@@ -1438,7 +1440,7 @@ export function modelPrompt(
   requiredIds: string[],
   language: "en" | "ar",
   repair = false,
-  verificationRevision: 1 | 2 = 1,
+  verificationRevision: 1 | 2 | 3 = 1,
   semanticRevision: 0 | 1 | 2 = 0,
 ) {
   const original =
@@ -1447,11 +1449,14 @@ export function modelPrompt(
       : JSON.stringify({
           task,
           prompt_version:
-            task === "verify_grounding" && verificationRevision === 2
-              ? VERIFICATION_PROMPT_V2
+            task === "verify_grounding" && verificationRevision >= 2
+              ? verificationPolicyVersion(verificationRevision)
               : taskRegistry[task].promptVersion,
-          ...(task === "verify_grounding" && verificationRevision === 2
-            ? { verification_policy: VERIFICATION_INSTRUCTIONS_V2 }
+          ...(task === "verify_grounding" && verificationRevision >= 2
+            ? {
+                verification_policy:
+                  verificationPolicyText(verificationRevision),
+              }
             : {}),
           writing_guide: writingGuide[language],
           repair_instruction: repair
@@ -1484,7 +1489,7 @@ export async function executeModel(
   language: "en" | "ar",
   repair = false,
   fetcher: typeof fetch = fetch,
-  verificationRevision: 1 | 2 = 1,
+  verificationRevision: 1 | 2 | 3 = 1,
   options: {
     independentGrounding?: boolean;
     semanticRevision?: 0 | 1 | 2;
@@ -1745,8 +1750,9 @@ export async function executeModel(
           capabilities: { ...capabilities, background },
           ...(reasoningControl ? { reasoningControl } : {}),
         });
-        if (task === "verify_grounding" && verificationRevision === 2)
-          request.promptVersion = VERIFICATION_PROMPT_V2;
+        if (task === "verify_grounding" && verificationRevision >= 2)
+          request.promptVersion =
+            verificationPolicyVersion(verificationRevision);
         if ((options.semanticRevision ?? 0) >= 1 && task !== "connection_probe")
           request.promptVersion = JSON.parse(prompt).prompt_version;
         if (pending?.execution_metadata) {

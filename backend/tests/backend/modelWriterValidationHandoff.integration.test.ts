@@ -223,6 +223,186 @@ it.each([false, true])(
   },
 );
 
+it.each([false, true])(
+  "rechecks audit accuracy once while preserving legitimate blocking business findings, crash=%s",
+  async (crash) => {
+    let job = (await configure("review_proposal")).job;
+    let writerCalls = 0,
+      rechecks = 0,
+      crashed = false;
+    const environments = modelEnvironments((name) =>
+      name === "APP_MODEL_OPENAI_KEY" ? "synthetic-key" : undefined,
+    );
+    const backend = {
+      internal: async (name: string, args: any) => {
+        if (
+          crash &&
+          !crashed &&
+          name === "model_graph_store" &&
+          args.action === "review_boundary_resume"
+        ) {
+          crashed = true;
+          throw new Error("Synthetic exit after audit checkpoint");
+        }
+        return rpc(name, args);
+      },
+      resolveModelEnvironment: (config: any) => ({
+        ...environments.openai,
+        model: config.model,
+        projectRef: config.project_ref,
+      }),
+    } as unknown as Backend;
+    const review = {
+      processed_requirement_ids: [],
+      responses: [],
+      findings: [
+        {
+          severity: "blocking",
+          category: "price",
+          detail: "The proposed price needs owner confirmation.",
+          section_ids: [],
+          requirement_ids: [],
+        },
+      ],
+    };
+    vi.spyOn(FreeModelProvider.prototype, "generate").mockImplementation(
+      async function (this: FreeModelProvider, task, prompt) {
+        this.generationSent = true;
+        const ctx = JSON.parse(prompt).untrusted_data;
+        let result: unknown;
+        if (task === "verify_grounding") {
+          const upgraded = ctx.audit_validation_policy === 3;
+          if (upgraded) {
+            rechecks++;
+            expect(JSON.parse(prompt).verification_policy).toContain(
+              "candidate is an AUDIT REPORT",
+            );
+          }
+          result = {
+            checked_candidate_hash: ctx.candidate_hash,
+            reviewed_all_content: true,
+            processed_content_ids: ctx.content_units.map((u: any) => u.id),
+            claims: [
+              {
+                id: "unresolved-price",
+                claim: "Price is an unresolved input",
+                candidate_quote: review.findings[0].detail,
+                kind: "assumption",
+                status: "insufficient",
+                source_refs: [],
+                finding: "No price is supplied or invented.",
+              },
+            ],
+            processed_requirement_ids: [],
+            requirement_checks: [],
+            findings: upgraded
+              ? []
+              : [
+                  {
+                    severity: "blocking",
+                    code: "BUSINESS_GAP",
+                    detail: "A price still needs confirmation.",
+                    claim_ids: [],
+                    requirement_ids: [],
+                  },
+                ],
+          };
+        } else {
+          writerCalls++;
+          result =
+            task === "repair_result"
+              ? {
+                  target_task: "review_proposal",
+                  result: review,
+                  changes: ["Preserved a real business gap."],
+                }
+              : review;
+        }
+        return {
+          text: JSON.stringify(result),
+          usage: { input: 80, output: 40, thinking: 0 },
+          complete: true,
+        };
+      },
+    );
+    const fetcher = vi.fn<typeof fetch>(async () => {
+      throw new Error("No external request in fixture");
+    });
+    const options = {
+      backend,
+      job,
+      prefix: `step:${job.id}`,
+      task: "review_proposal" as const,
+      context: { sections: [], commercial_draft: { lines: [] } },
+      evidence: [],
+      requiredIds: [],
+      manifest: [],
+      environments,
+      language: "en" as const,
+      repair: false,
+      fetcher,
+    };
+    let stopped = false;
+    for (let i = 0; i < 12 && !stopped; i++) {
+      try {
+        await executeGuardedModel({ ...options, job });
+        throw new Error("Prior verification blocks this graph");
+      } catch (error) {
+        if ((error as any).code === "MODEL_CORRECTION_EXHAUSTED")
+          stopped = true;
+        else {
+          expect(error).toBeInstanceOf(ModelDeferred);
+          job = await rpc("claim_backend_job_v2");
+        }
+      }
+    }
+    expect(stopped).toBe(true);
+    const priorWriters = writerCalls;
+    const priorReceipts = (
+      await f.db.query<any>("select * from public.provider_usage order by id")
+    ).rows;
+    const priorBudgets = (
+      await f.db.query<any>(
+        "select * from app_private.model_graph_budgets where unit like 'writer%' order by unit",
+      )
+    ).rows;
+    let accepted: any;
+    for (let i = 0; i < 8 && !accepted; i++) {
+      try {
+        accepted = await executeGuardedModel({ ...options, job });
+      } catch (error) {
+        if (
+          (error as Error).message === "Synthetic exit after audit checkpoint"
+        )
+          continue;
+        expect(error).toBeInstanceOf(ModelDeferred);
+        job = await rpc("claim_backend_job_v2");
+      }
+    }
+    expect(accepted?.result).toEqual(review);
+    expect(accepted.result.findings[0].severity).toBe("blocking");
+    expect(writerCalls).toBe(priorWriters);
+    expect(rechecks).toBe(1);
+    expect(crashed).toBe(crash);
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from public.provider_usage where id=any($1::uuid[]) order by id",
+          [priorReceipts.map((r) => r.id)],
+        )
+      ).rows,
+    ).toEqual(priorReceipts);
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from app_private.model_graph_budgets where unit like 'writer%' order by unit",
+        )
+      ).rows,
+    ).toEqual(priorBudgets);
+    expect(fetcher).not.toHaveBeenCalled();
+  },
+);
+
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
   f = await workflowFixture();
@@ -255,7 +435,7 @@ async function rpc(name: string, args: Record<string, unknown> = {}) {
 }
 
 async function configure(
-  task: "draft_section" | "repair_result",
+  task: "draft_section" | "repair_result" | "review_proposal",
   alternate = false,
 ) {
   await f.command("model.routing", { enabled: true, expected_revision: 0 });

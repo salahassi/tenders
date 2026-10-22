@@ -50,7 +50,7 @@ export async function pinSemanticPrompt(o: {
   requiredIds: string[];
   language: "en" | "ar";
   repair: boolean;
-  verificationRevision: 1 | 2;
+  verificationRevision: 1 | 2 | 3;
 }): Promise<0 | 1 | 2> {
   if (o.task === "connection_probe") return 0;
   const key = await keyFor(o.requestPrefix);
