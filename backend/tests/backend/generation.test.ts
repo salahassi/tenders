@@ -971,6 +971,74 @@ it.each(["rfp", "notice", "template"])(
     ).rejects.toThrow("STALE_INPUT");
   },
 );
+it.each([
+  ["DATABASE_TEMPORARY_FAILURE", "retry_wait"],
+  ["DATABASE_COMMAND_FAILED", "blocked"],
+])("handles %s without discarding durable model work", async (code, status) => {
+  const { plan } = await start();
+  await f.command("model.routing", { enabled: true, expected_revision: 0 });
+  const job = await f.rpc("claim_backend_job");
+  const thread = "d".repeat(64);
+  await f.db.query(
+    "insert into app_private.model_graph_threads(id,workspace_id,job_id,input_hash,task,candidate_count) values($1,$2,$3,repeat('a',64),'analyze_chunk',1)",
+    [thread, f.w, job.id],
+  );
+  await f.db.query(
+    "insert into app_private.model_graph_results(thread_id,result_key,value,content_hash) values($1,'writer-result','{\"retained\":true}',repeat('b',64))",
+    [thread],
+  );
+  await f.db.query(
+    "insert into app_private.model_graph_budgets(thread_id,unit,candidates) values($1,'writer',1)",
+    [thread],
+  );
+  await f.db.query(
+    "update public.jobs set checkpoint=jsonb_build_object('graph_thread',$2::text,'model_executor',2) where id=$1",
+    [job.id, thread],
+  );
+  const snapshot = async () =>
+    (
+      await f.db.query(
+        "select (select jsonb_agg(to_jsonb(r)) from app_private.model_graph_results r) results,(select jsonb_agg(to_jsonb(b)) from app_private.model_graph_budgets b) budgets,(select jsonb_agg(to_jsonb(s)) from public.generation_steps s) steps",
+      )
+    ).rows;
+  const before = await snapshot();
+  await f.rpc("fail_generation", [job.id, job.lease_token, code, null, null]);
+  const saved = (
+    await f.db.query<any>(
+      "select *,next_attempt_at>=now()+interval '1 minute' backoff from public.jobs where id=$1",
+      [job.id],
+    )
+  ).rows[0];
+  expect(saved).toMatchObject({
+    status,
+    failure_count: 1,
+    lease_token: null,
+    checkpoint: { graph_thread: thread, model_executor: 2 },
+  });
+  expect(await snapshot()).toEqual(before);
+  expect(
+    (
+      await f.db.query<any>(
+        "select status from public.generation_plans where id=$1",
+        [plan.id],
+      )
+    ).rows[0].status,
+  ).toBe(status === "retry_wait" ? "running" : "blocked");
+  if (status === "retry_wait") {
+    expect(saved.backoff).toBe(true);
+    await f.db.query(
+      "update public.jobs set next_attempt_at=now() where id=$1",
+      [job.id],
+    );
+    const resumed = await f.rpc("claim_backend_job_v2");
+    expect(resumed.id).toBe(job.id);
+    expect(resumed.checkpoint).toEqual(saved.checkpoint);
+    await expect(
+      f.rpc("fail_generation", [job.id, job.lease_token, code, null, null]),
+    ).rejects.toThrow("STALE_LEASE");
+  }
+});
+
 it.each(["MODEL_OUTPUT_INVALID", "MODEL_OUTPUT_TRUNCATED"])(
   "persists one repair for %s and then blocks; retry preserves previous steps",
   async (outputError) => {

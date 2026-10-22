@@ -151,9 +151,25 @@ tests** pass, including commercial whole/scoped graph replay with zero provider
 calls and SQL rejection of a non-draft repair-only artifact. Backend typecheck,
 build and frozen worker checking pass. Worker **v109** deployed at **10:04 UTC**;
 all retrieved files match the canonical bundle. Full CI and hosted recovery are
-pending. Earlier releases `b4a0e21` and `15a8aab` passed
+completed with zero new provider calls for the revalidated scope. Source
+`b8f1d65` passed [CI 39760336153](https://github.com/salahassi/tenders/actions/runs/39760336153).
+Earlier releases `b4a0e21` and `15a8aab` passed
 [39756315707](https://github.com/salahassi/tenders/actions/runs/39756315707) and
 [39759204923](https://github.com/salahassi/tenders/actions/runs/39759204923), respectively.
+
+At **10:14 UTC**, commercial verification encountered PostgreSQL SQLSTATE
+`57014` (statement timeout), incorrectly exposed as permanent
+`DATABASE_COMMAND_FAILED`. Transaction-aborted timeouts, lock failures,
+deadlocks and serialization failures now map to a sanitized transient code and
+the existing automatic backoff policy. Permission/schema/constraint/ambiguous
+errors stay non-retryable. Recovery retains graph results, budgets and queue
+checkpoints; it does not reclassify older errors without evidence. Current
+notification-query profiling returned 38 rows in 24 ms, so no unproven query or
+timeout-limit change is included. **61 focused tests** pass, including a real
+SQL job failure/reclaim with unchanged stored results/budgets, backoff and stale
+lease rejection. Backend typecheck/build and both frozen Edge checks pass.
+Migration `transient_database_recovery`, worker **v110** and API **v81** deployed
+at **10:26 UTC**. Full CI and the resumed real export remain pending.
 
 
 ## October 21 — approved throughput and coherence follow-up

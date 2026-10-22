@@ -92,6 +92,16 @@ export function databaseError(error: {
   details?: string;
   code?: string;
 }): AppError {
+  // These SQLSTATEs abort the transaction. A durable job can safely resume its
+  // checkpoint; permission, schema and constraint failures must not retry.
+  if (["57014", "55P03", "40P01", "40001"].includes(error.code ?? ""))
+    return new AppError(
+      503,
+      "DATABASE_TEMPORARY_FAILURE",
+      "The database is temporarily busy. Processing will retry.",
+      { sqlstate: error.code },
+      true,
+    );
   const code =
     error.message.match(/^[A-Z_]+$/)?.[0] || "DATABASE_COMMAND_FAILED";
   const status =
