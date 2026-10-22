@@ -2,7 +2,7 @@
 
 ## October 22 — 40,000-token ceilings and bounded hierarchical planning
 
-Owner-authorized implementation in progress. All task defaults and the settings
+Owner-authorized implementation. All task defaults and the settings
 editor use a 40,000 output ceiling, subject to actual provider capability limits.
 A pinned economy policy tells new operations to stop once their complete result
 is expressed; the allowance is not a target length. Existing accepted requests
@@ -320,6 +320,50 @@ the completed trial draft pins only the display outline: original lineage,
 The version revision advanced from 1 to 2; saved prose, model receipts and older
 immutable export snapshots are unchanged. No additional model generation was
 requested. Corrected real downloads and complete CI are pending.
+
+**Final functional acceptance, October 22:** source
+`c0ed85d954aa62367c388428c7fb8bb82da12e90` passed
+[CI/Pages 39779723403](https://github.com/salahassi/tenders/actions/runs/39779723403),
+including **1,207 backend tests / 70 files and 208 frontend tests / 36 files**,
+both typechecks/builds and frozen Edge checks. API v82's 34 retrieved files and
+worker v117's 52 retrieved files match the submitted bundles exactly. The earlier
+local full backend run passed 1,206 tests and failed only the superseded matrix
+header assertion; the corrected generation suite and full CI passed.
+
+A fresh authenticated Chromium session loaded the published bundle, downloaded
+both corrected actual Word files, and remained free of console/page and visible
+alert errors through 90 seconds of subsequent polling. Initial reused browser
+profiles closed while saving downloads; those attempts are not counted as passed.
+Both final files passed server content verification, local ZIP/XML checks and
+LibreOffice rendering. Actual DOCX matrices contain **115 technical and 7
+commercial rows**, matching the original 122 requirements exactly once. The
+technical document rendered as **131 pages** (previously 187); the financial
+document has **42 pages**, now including its seven commercial matrix rows.
+Sampled cover, contents, narrative, table and closing pages are readable. These
+page counts depend on the renderer and are not required document lengths.
+
+The real draft is complete and editable, **not approved for submission**. It still
+has unknown pricing, team/project proof and execution inputs, and review findings
+about conflicting delivery dependencies. There are 426 saved questions; simplifying
+and consolidating their presentation remains an editorial/UX issue. The draft
+includes review material and is still long. Word fields/contents require refresh
+in the editor. No missing fact was filled by invention and no business approval
+was granted to make export pass.
+
+From the 07:42 planning recovery to completion around 12:05, this diagnostic run
+used **236 settled requests, 6,683,953 input / 865,474 output tokens**, with 71,058
+separately reported thinking tokens that may already be included in output. These
+figures include debugging/recovery; they are not a healthy-run benchmark or
+equivalent comparison with the older 145-requirement plan. No new model request
+occurred after completion during assembly/export corrections. The 50% request
+reduction and end-to-end latency targets are **not established**.
+
+After both current-outline exports passed, an audited configuration update enabled
+workflow 3 for new proposal admissions. It does not enqueue generation or change
+saved in-flight work. This is functional rollout, not closure of the outstanding
+performance/editorial acceptance goals in PROPOSAL_PERFORMANCE_PLAN.md. The
+completed trial and older export snapshots remain available; no customer documents
+or credentials were added to the repository. This reconciliation changes docs only.
 
 
 ## October 21 — approved throughput and coherence follow-up

@@ -219,8 +219,18 @@ existing accepted work. Do not erase graph budgets or repack an in-flight plan.
 - [Microsoft background-job guidance](https://learn.microsoft.com/en-us/azure/architecture/best-practices/background-jobs): business-priority scheduling, ordered dependencies and duplicate-message handling.
 - [AWS retry/backoff guidance](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/): idempotency, jitter and avoiding multiplicative retries.
 
-These references support the design principles. The particular scheduling policy
-and versioned work-unit strategy are now deployed for controlled acceptance.
-Measured savings, real Word acceptance and the broader receipt-cache/editorial
-repair follow-ups remain tracked in the implementation checklist; they are not
-established by the references or the passing local fixtures.
+These references support the design principles. The scheduling policy and
+versioned work-unit strategy are deployed. October 22's real trial completed with
+122 requirements, 18 logical chapters, 55 writing units and separate technical
+and financial Word downloads. Corrected assembly preserves all saved prose,
+places each requirement in one volume's matrix and avoids duplicating that matrix.
+The new workflow is enabled for newly admitted proposals after functional browser
+acceptance; existing work retains its saved workflow.
+
+Performance acceptance remains open. The diagnostic run needed 236 settled
+requests and multiple implementation repairs; neither a 50% submission reduction
+nor normal end-to-end latency is established. The older 145-requirement/67-unit
+plan is not a like-for-like comparison. Further receipt reuse, fewer writing and
+verification requests, and consolidation of the large review/question set remain
+tracked in the implementation checklist. Successful draft export does not prove
+these targets, editorial readiness or final submission approval.
