@@ -42,6 +42,43 @@ function context(records: any[] = []) {
   vi.mocked(useApp).mockReturnValue(value as any);
   return value;
 }
+it("offers resume for the latest blocked plan and hides it on an older canceled plan", async () => {
+  const c = context([
+    {
+      id: "latest",
+      kind: "proposal",
+      stage: "review",
+      status: "blocked",
+      error_code: "MODEL_CORRECTION_EXHAUSTED",
+      revision: 2,
+      created_at: "2026-10-22T10:00:00Z",
+    },
+    {
+      id: "older",
+      kind: "proposal",
+      stage: "analysis",
+      status: "canceled",
+      error_code: "GENERATION_HANDLER_FAILED",
+      revision: 3,
+      created_at: "2026-10-21T10:00:00Z",
+    },
+  ]);
+  render(
+    <MemoryRouter>
+      <GenerationPanel opportunity={opportunity()} embedded />
+    </MemoryRouter>,
+  );
+  const buttons = await screen.findAllByRole("button", {
+    name: "Resume saved work",
+  });
+  expect(buttons).toHaveLength(1);
+  await userEvent.click(buttons[0]);
+  expect(c.runCommand).toHaveBeenCalledWith(
+    "generation.retry",
+    expect.objectContaining({ id: "latest", expected_revision: 2 }),
+  );
+});
+
 it("starts an RFP-only proposal without company knowledge or a custom template", async () => {
   const c = context();
   render(

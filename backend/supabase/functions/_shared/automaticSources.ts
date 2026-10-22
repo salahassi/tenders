@@ -21,6 +21,13 @@ export function readableSourcePage(html: string, url: string) {
   const raw = inertText($("body").text(), 60001)
     .replace(/\n[ \t]*\n+/g, "\n")
     .trim();
+  if (
+    /please enable javascript|javascript (?:is required|must be enabled)|human visitor|what code is in the image/i.test(
+      raw,
+    ) ||
+    (hasScript && /\{\{\s*[a-zA-Z_$][^{}]{0,150}\}\}/.test(raw))
+  )
+    throw new CollectionError("SOURCE_BROWSER_REQUIRED");
   if (raw.length < 20)
     throw new CollectionError(
       hasScript
@@ -128,11 +135,35 @@ export async function processAutomaticSource(
   try {
     const ctx = await backend.internal("auto_source_context", identity);
     let state = ctx.state;
-    if (!state.page)
-      state = await backend.internal("save_source_page", {
-        ...identity,
-        page: await readPage(ctx, resolve, fetcher),
-      });
+    if (!state.page) {
+      const browser = await backend.internal("source_browser_page", identity);
+      if (browser?.status === "blocked")
+        throw new CollectionError(
+          browser.error_code || "SOURCE_BROWSER_FAILED",
+        );
+      if (browser && browser.status !== "ready")
+        return await backend.internal("queue_source_browser_page", identity);
+      let page;
+      if (browser?.status === "ready") page = browser.page;
+      else {
+        try {
+          page = await readPage(ctx, resolve, fetcher);
+        } catch (error) {
+          if (
+            error instanceof CollectionError &&
+            ["SOURCE_BROWSER_REQUIRED", "MANUAL_SOURCE_REQUIRED"].includes(
+              error.code,
+            )
+          )
+            return await backend.internal(
+              "queue_source_browser_page",
+              identity,
+            );
+          throw error;
+        }
+      }
+      state = await backend.internal("save_source_page", { ...identity, page });
+    }
     const page = state.page;
     const evidence: Evidence[] = [
       { id: "page", text: page.text, kind: "notice", verified: false },
@@ -169,6 +200,11 @@ export async function processAutomaticSource(
       fetcher,
     });
     const result = outcome.result;
+    if (result.page_kind === "browser_required") {
+      if (state.page.rendered)
+        throw new CollectionError("SOURCE_BROWSER_FAILED");
+      return await backend.internal("queue_source_browser_page", identity);
+    }
     const blockers: Record<string, string> = {
       login_required: "SOURCE_LOGIN_REQUIRED",
       browser_required: "SOURCE_BROWSER_REQUIRED",
@@ -233,9 +269,15 @@ export async function processAutomaticSource(
   } catch (error) {
     if (error instanceof ModelDeferred) return { waiting_for_model: true };
     const code =
-      error && typeof error === "object" && "code" in error
-        ? String(error.code)
-        : "SOURCE_TEMPORARY_FAILURE";
+      error instanceof Error && error.name === "AbortError"
+        ? "SOURCE_TIMEOUT"
+        : error &&
+            typeof error === "object" &&
+            "code" in error &&
+            typeof error.code === "string" &&
+            /^[A-Z][A-Z_]+$/.test(error.code)
+          ? error.code
+          : "SOURCE_TEMPORARY_FAILURE";
     await backend.internal("fail_source_reading", {
       ...identity,
       error_code: code,

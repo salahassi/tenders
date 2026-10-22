@@ -65,7 +65,8 @@ const messageFor = (error: unknown) =>
   error instanceof Error ? error.message : "The file could not be processed.";
 
 export default function Knowledge() {
-  const { state, update, notify, ready, mode, backend, saving } = useApp();
+  const { state, update, notify, ready, mode, backend, saving, runCommand } =
+    useApp();
   const [active, setActive] = useState("all");
   const [search, setSearch] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -83,6 +84,9 @@ export default function Knowledge() {
   >({});
   const [noteOpen, setNoteOpen] = useState(false);
   const [noteError, setNoteError] = useState("");
+  const [removingNote, setRemovingNote] = useState<KnowledgeFact | null>(null);
+  const [noteRemoveBusy, setNoteRemoveBusy] = useState(false);
+  const [noteRemoveError, setNoteRemoveError] = useState("");
   const [editing, setEditing] = useState<string | null>(null);
   const [noteForm, setNoteForm] = useState({
     category: "capability" as KnowledgeFact["category"],
@@ -94,6 +98,41 @@ export default function Knowledge() {
   const documentsRef = useRef(documents);
   documentsRef.current = documents;
   const canEdit = state.settings.role !== "Reviewer";
+  async function removeNote() {
+    if (!canEdit || !backend || !runCommand || !removingNote || noteRemoveBusy)
+      return;
+    setNoteRemoveBusy(true);
+    setNoteRemoveError("");
+    try {
+      const { data: row } = await backend.request<{
+        revision: number;
+        title: string;
+        category: string;
+        content: string;
+        evidence: string;
+      }>(`/v1/knowledge/${removingNote.id}`);
+      await runCommand("knowledge.save", {
+        id: removingNote.id,
+        expected_revision: row.revision,
+        title: row.title,
+        category: row.category,
+        content: row.content,
+        evidence: row.evidence,
+        enabled: false,
+      });
+      setRemovingNote(null);
+      setNoteOpen(false);
+      notify(
+        "Note removed from company knowledge. Saved proposal history is retained.",
+      );
+    } catch (e) {
+      setNoteRemoveError(
+        e instanceof Error ? e.message : "The note could not be removed.",
+      );
+    } finally {
+      setNoteRemoveBusy(false);
+    }
+  }
   const items = documents.filter(
     (item) =>
       (active === "all" || item.category === active) &&
@@ -559,14 +598,29 @@ export default function Knowledge() {
                     </Button>
                   )}
                 {canEdit && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => launchNote(item)}
-                    aria-label={`Edit ${item.title}`}
-                  >
-                    <Pencil size={14} /> Edit
-                  </Button>
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => launchNote(item)}
+                      aria-label={`Edit ${item.title}`}
+                    >
+                      <Pencil size={14} /> Edit
+                    </Button>
+                    {backend && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label={`Delete note ${item.title}`}
+                        onClick={() => {
+                          setRemovingNote(item);
+                          setNoteRemoveError("");
+                        }}
+                      >
+                        <Trash2 size={14} /> Delete
+                      </Button>
+                    )}
+                  </>
                 )}
               </article>
             ))}
@@ -738,6 +792,36 @@ export default function Knowledge() {
             disabled={removeBusy}
           >
             {removeBusy ? "Removing…" : "Remove file"}
+          </Button>
+        </div>
+      </Modal>
+      <Modal
+        open={!!removingNote}
+        title="Delete note?"
+        onClose={() => {
+          if (!noteRemoveBusy) setRemovingNote(null);
+        }}
+      >
+        <p>
+          Remove <strong dir="auto">{removingNote?.title}</strong> from company
+          knowledge? It will no longer be used as evidence. Saved proposal
+          history remains available.
+        </p>
+        {noteRemoveError && <p role="alert">{noteRemoveError}</p>}
+        <div className="admin-form-actions">
+          <Button
+            variant="secondary"
+            disabled={noteRemoveBusy}
+            onClick={() => setRemovingNote(null)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            disabled={noteRemoveBusy}
+            onClick={removeNote}
+          >
+            {noteRemoveBusy ? "Deleting…" : "Delete note"}
           </Button>
         </div>
       </Modal>

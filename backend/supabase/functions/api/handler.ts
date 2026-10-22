@@ -593,6 +593,13 @@ export function createApiHandler(
           expires_in: 300,
         });
       }
+      const verification = path.match(/^\/v1\/sources\/([^/]+)\/verification$/);
+      if (request.method === "GET" && verification)
+        return respond(
+          await backend.userRpc(token, "source_verification", {
+            source_id: uuid.parse(verification[1]),
+          }),
+        );
       const complete = path.match(
         /^\/v1\/documents\/([^/]+)\/complete-upload$/,
       );

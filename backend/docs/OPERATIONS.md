@@ -1,5 +1,28 @@
 # Operating the connected trial
 
+## JavaScript sources and human verification
+
+The Edge reader queues public pages that need a browser. `Collect JavaScript
+sources` runs Chromium through GitHub Actions every five minutes (scheduling can
+be delayed) and can also be dispatched manually. It processes at most three
+requests per run and uses the same `SUPABASE_ACCESS_TOKEN` repository secret as
+the deployment workflow. Never expose that value in logs or the UI.
+
+An Owner opens source details when a human image-code challenge appears, enters
+the displayed code within three minutes and selects **Verify and continue**.
+The worker submits only that answer in the same live browser context, continues
+reading and saves encrypted session state for up to four hours. The source can
+expire its session earlier. Expired challenges can be requested again from source
+details. Password login and unsupported interactive challenges remain explicit
+blockers; the existing manual notice import remains available.
+
+Session state is authenticated-encrypted with a key derived from the deployment
+secret and bound to workspace and host. Only leased server RPCs retrieve the
+ciphertext. Browser roles cannot read sessions or submitted answers. Rotating the
+deployment secret invalidates older sessions and may require human verification.
+Current permissions, source revisions, public DNS, HTTPS and lease checks remain
+enforced before rendered evidence is accepted.
+
 The application runs from GitHub Pages and stores authorized records and originals in the selected Supabase project. The repository checklist records whether a specific revision has been deployed. Building code locally does not configure the hosted scheduler or create an Owner account.
 
 ## Recorded activation state

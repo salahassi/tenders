@@ -237,162 +237,221 @@ it("upgrades only blocked planning, preserving completed analysis and paid recei
     "REVISION_CONFLICT",
   );
 });
-it("reprepares only exhausted legacy reviews with citable context and preserves paid history", async () => {
+it("retains frozen proposal knowledge when unrelated verified notes are added", async () => {
   const { plan } = await start();
-  let review: any;
-  for (let i = 0; i < 30; i++) {
-    const job = await f.rpc("claim_backend_job");
-    const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
-    if (ctx.step.task === "review_proposal") {
-      review = job;
-      break;
-    }
-    if (ctx.step.task === "advance_plan") {
-      const next = await nextStage(ctx);
-      await f.rpc("advance_generation", [
-        job.id,
-        job.lease_token,
-        next.next_stage,
-        JSON.stringify(next.requirements),
-        JSON.stringify(next.steps),
-        null,
-      ]);
-    } else
-      await f.rpc("complete_generation_step", [
-        job.id,
-        job.lease_token,
-        JSON.stringify(resultFor(ctx)),
-      ]);
-  }
-  expect(review).toBeTruthy();
-  await f.rpc("fail_generation", [
-    review.id,
-    review.lease_token,
-    "MODEL_CORRECTION_EXHAUSTED",
-    null,
-    null,
+  const before = (
+    await f.db.query<any>(
+      "select frozen_context from public.generation_plans where id=$1",
+      [plan.id],
+    )
+  ).rows[0].frozen_context;
+  const added = await f.command("knowledge.save", {
+    category: "company",
+    title: "Synthetic additional reference",
+    content: "Separate verified company description.",
+    evidence: "Synthetic public reference",
+    enabled: true,
+  });
+  await f.command("knowledge.verify", {
+    id: added.id,
+    expected_revision: added.revision,
+  });
+  await f.db.query("select app_private.refresh_proposal_evidence($1::uuid)", [
+    plan.id,
   ]);
-  await f.db.query(
-    "update public.generation_plans set workflow_version=3 where id=$1",
-    [plan.id],
-  );
-  const revision = (
-    await f.db.query<any>("select revision from public.jobs where id=$1", [
-      review.id,
-    ])
-  ).rows[0].revision;
-  const completed = async () =>
+  expect(
     (
-      await f.db.query(
-        "select id,input,output from public.generation_steps where plan_id=$1 and status='completed' order by ordinal",
+      await f.db.query<any>(
+        "select frozen_context from public.generation_plans where id=$1",
         [plan.id],
       )
-    ).rows;
-  const retained = await completed();
-  const usage = crypto.randomUUID();
-  await f.db.query(
-    `insert into public.provider_usage(id,workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,created_by)
-    values($1::uuid,$2,$3,$4,$1::text,'openai','synthetic-model',repeat('d',64),current_date,1,100,40000,'unknown',$5)`,
-    [usage, f.w, review.id, review.lease_token, f.owner],
-  );
-  await f.db.query(
-    "insert into app_private.model_graph_threads(id,workspace_id,job_id,input_hash,task,status) values(repeat('e',64),$1,$2,repeat('f',64),'review_proposal','needs_review')",
-    [f.w, review.id],
-  );
-  await f.db.exec(
-    "insert into app_private.model_graph_budgets(thread_id,unit,candidates) values(repeat('e',64),'writer',3)",
-  );
-  const attempt = async (
-    actor = f.owner,
-    rev = revision,
-    target = review.id,
-  ) => {
-    await f.db.exec("savepoint review_reprepare");
-    try {
-      return await f.rpc("reprepare_blocked_proposal_review", [
-        target,
-        actor,
-        rev,
-      ]);
-    } catch (e) {
-      await f.db.exec("rollback to savepoint review_reprepare");
-      throw e;
-    } finally {
-      await f.db.exec("release savepoint review_reprepare");
-    }
-  };
-  await expect(attempt(crypto.randomUUID())).rejects.toThrow("FORBIDDEN");
-  await expect(attempt(f.owner, revision - 1)).rejects.toThrow(
-    "REVISION_CONFLICT",
-  );
-  await expect(attempt()).rejects.toThrow("REVIEW_REPREPARE_NOT_SAFE");
-  await f.db.query(
-    "update public.provider_usage set state='settled' where id=$1",
-    [usage],
-  );
-  await f.db.exec("savepoint stale_review_evidence");
-  await f.db.query(
-    "update public.workspaces set evidence_revision=evidence_revision+1 where id=$1",
-    [f.w],
-  );
-  await expect(attempt()).rejects.toThrow("STALE_INPUT");
-  await f.db.exec(
-    "rollback to savepoint stale_review_evidence; release savepoint stale_review_evidence",
-  );
-  const queued = await attempt();
-  expect(await completed()).toEqual(retained);
-  expect(
-    (
-      await f.db.query<any>(
-        "select input from public.generation_steps where job_id=$1",
-        [queued],
-      )
-    ).rows[0].input,
-  ).toMatchObject({ review_scope_version: 1, review_source_version: 1 });
-  expect(
-    (
-      await f.db.query<any>(
-        "select status,error_code from public.jobs where id=$1",
-        [review.id],
-      )
-    ).rows[0],
-  ).toEqual({ status: "canceled", error_code: "REVIEW_CONTEXT_SUPERSEDED" });
-  expect(
-    (
-      await f.db.query<any>(
-        "select state,reserved_output from public.provider_usage where id=$1",
-        [usage],
-      )
-    ).rows[0],
-  ).toEqual({ state: "settled", reserved_output: 40000 });
-  expect(
-    (
-      await f.db.query<any>(
-        "select candidates from app_private.model_graph_budgets where thread_id=repeat('e',64)",
-      )
-    ).rows[0].candidates,
-  ).toBe(3);
-  await expect(attempt()).rejects.toThrow("REVISION_CONFLICT");
-  await f.db.query(
-    "update public.jobs set status='blocked',error_code='MODEL_CORRECTION_EXHAUSTED' where id=$1",
-    [queued],
-  );
-  const newRevision = (
-    await f.db.query<any>("select revision from public.jobs where id=$1", [
-      queued,
-    ])
-  ).rows[0].revision;
-  await expect(attempt(f.owner, newRevision, queued)).rejects.toThrow(
-    "REVIEW_REPREPARE_NOT_SAFE",
-  );
-  expect(
-    (
-      await f.db.query<any>(
-        "select has_function_privilege('authenticated','public.reprepare_blocked_proposal_review(uuid,uuid,integer)','execute') as client,has_function_privilege('service_role','public.reprepare_blocked_proposal_review(uuid,uuid,integer)','execute') as service",
-      )
-    ).rows[0],
-  ).toEqual({ client: false, service: true });
+    ).rows[0].frozen_context,
+  ).toEqual(before);
 });
+
+it.each([1, 2, 3])(
+  "reprepares exhausted workflow-%i reviews with citable context and preserves paid history",
+  async (workflowVersion) => {
+    const { plan } = await start();
+    let review: any;
+    for (let i = 0; i < 30; i++) {
+      const job = await f.rpc("claim_backend_job");
+      const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
+      if (ctx.step.task === "review_proposal") {
+        review = job;
+        break;
+      }
+      if (ctx.step.task === "advance_plan") {
+        const next = await nextStage(ctx);
+        await f.rpc("advance_generation", [
+          job.id,
+          job.lease_token,
+          next.next_stage,
+          JSON.stringify(next.requirements),
+          JSON.stringify(next.steps),
+          null,
+        ]);
+      } else
+        await f.rpc("complete_generation_step", [
+          job.id,
+          job.lease_token,
+          JSON.stringify(resultFor(ctx)),
+        ]);
+    }
+    expect(review).toBeTruthy();
+    await f.rpc("fail_generation", [
+      review.id,
+      review.lease_token,
+      "MODEL_CORRECTION_EXHAUSTED",
+      null,
+      null,
+    ]);
+    await f.db.query(
+      "update public.generation_plans set workflow_version=$2 where id=$1",
+      [plan.id, workflowVersion],
+    );
+    const revision = (
+      await f.db.query<any>("select revision from public.jobs where id=$1", [
+        review.id,
+      ])
+    ).rows[0].revision;
+    const completed = async () =>
+      (
+        await f.db.query(
+          "select id,input,output from public.generation_steps where plan_id=$1 and status='completed' order by ordinal",
+          [plan.id],
+        )
+      ).rows;
+    const retained = await completed();
+    const usage = crypto.randomUUID();
+    await f.db.query(
+      `insert into public.provider_usage(id,workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,created_by)
+    values($1::uuid,$2,$3,$4,$1::text,'openai','synthetic-model',repeat('d',64),current_date,1,100,40000,'unknown',$5)`,
+      [usage, f.w, review.id, review.lease_token, f.owner],
+    );
+    await f.db.query(
+      "insert into app_private.model_graph_threads(id,workspace_id,job_id,input_hash,task,status) values(repeat('e',64),$1,$2,repeat('f',64),'review_proposal','needs_review')",
+      [f.w, review.id],
+    );
+    await f.db.exec(
+      "insert into app_private.model_graph_budgets(thread_id,unit,candidates) values(repeat('e',64),'writer',3)",
+    );
+    const attempt = async (
+      actor = f.owner,
+      rev = revision,
+      target = review.id,
+    ) => {
+      await f.db.exec("savepoint review_reprepare");
+      try {
+        return await f.rpc("reprepare_blocked_proposal_review", [
+          target,
+          actor,
+          rev,
+        ]);
+      } catch (e) {
+        await f.db.exec("rollback to savepoint review_reprepare");
+        throw e;
+      } finally {
+        await f.db.exec("release savepoint review_reprepare");
+      }
+    };
+    await expect(attempt(crypto.randomUUID())).rejects.toThrow("FORBIDDEN");
+    await expect(attempt(f.owner, revision - 1)).rejects.toThrow(
+      "REVISION_CONFLICT",
+    );
+    await expect(attempt()).rejects.toThrow("REVIEW_REPREPARE_NOT_SAFE");
+    await f.db.query(
+      "update public.provider_usage set state='settled' where id=$1",
+      [usage],
+    );
+    await f.db.exec("savepoint stale_review_evidence");
+    await f.db.query(
+      "update public.workspaces set evidence_revision=evidence_revision+1 where id=$1",
+      [f.w],
+    );
+    await expect(attempt()).rejects.toThrow("STALE_INPUT");
+    await f.db.exec(
+      "rollback to savepoint stale_review_evidence; release savepoint stale_review_evidence",
+    );
+    let queued: string;
+    if (workflowVersion === 1) {
+      const current = (
+        await f.db.query<any>(
+          "select revision from public.generation_plans where id=$1",
+          [plan.id],
+        )
+      ).rows[0];
+      const payload = {
+        id: plan.id,
+        expected_revision: current.revision,
+        reason: "Resume obsolete saved review",
+      };
+      const key = crypto.randomUUID();
+      const resumed = await f.command("generation.retry", payload, key);
+      expect(await f.command("generation.retry", payload, key)).toEqual(
+        resumed,
+      );
+      queued = (
+        await f.db.query<any>(
+          "select job_id from public.generation_steps where plan_id=$1 and input->>'review_source_version'='1'",
+          [plan.id],
+        )
+      ).rows[0].job_id;
+    } else queued = await attempt();
+    expect(await completed()).toEqual(retained);
+    expect(
+      (
+        await f.db.query<any>(
+          "select input from public.generation_steps where job_id=$1",
+          [queued],
+        )
+      ).rows[0].input,
+    ).toMatchObject({ review_scope_version: 1, review_source_version: 1 });
+    expect(
+      (
+        await f.db.query<any>(
+          "select status,error_code from public.jobs where id=$1",
+          [review.id],
+        )
+      ).rows[0],
+    ).toEqual({ status: "canceled", error_code: "REVIEW_CONTEXT_SUPERSEDED" });
+    expect(
+      (
+        await f.db.query<any>(
+          "select state,reserved_output from public.provider_usage where id=$1",
+          [usage],
+        )
+      ).rows[0],
+    ).toEqual({ state: "settled", reserved_output: 40000 });
+    expect(
+      (
+        await f.db.query<any>(
+          "select candidates from app_private.model_graph_budgets where thread_id=repeat('e',64)",
+        )
+      ).rows[0].candidates,
+    ).toBe(3);
+    await expect(attempt()).rejects.toThrow("REVISION_CONFLICT");
+    await f.db.query(
+      "update public.jobs set status='blocked',error_code='MODEL_CORRECTION_EXHAUSTED' where id=$1",
+      [queued],
+    );
+    const newRevision = (
+      await f.db.query<any>("select revision from public.jobs where id=$1", [
+        queued,
+      ])
+    ).rows[0].revision;
+    await expect(attempt(f.owner, newRevision, queued)).rejects.toThrow(
+      "REVIEW_REPREPARE_NOT_SAFE",
+    );
+    expect(
+      (
+        await f.db.query<any>(
+          "select has_function_privilege('authenticated','public.reprepare_blocked_proposal_review(uuid,uuid,integer)','execute') as client,has_function_privilege('service_role','public.reprepare_blocked_proposal_review(uuid,uuid,integer)','execute') as service",
+        )
+      ).rows[0],
+    ).toEqual({ client: false, service: true });
+  },
+);
 
 function resultFor(ctx: any) {
   const input = taskInput(ctx),
@@ -969,8 +1028,6 @@ it("rejects completion after cancellation without publishing a partial version",
   ).rejects.toThrow("STALE_LEASE");
 });
 it("rejects changed supporting evidence even if a worker still holds its lease", async () => {
-  await start();
-  const job = await f.rpc("claim_backend_job");
   const knowledge = await f.command("knowledge.save", {
     category: "company",
     title: "Changed company facts",
@@ -981,6 +1038,12 @@ it("rejects changed supporting evidence even if a worker still holds its lease",
   await f.db.query(
     "update public.knowledge_items set verified=true,verified_at=now(),verified_by=$1 where id=$2",
     [f.owner, knowledge.id],
+  );
+  await start();
+  const job = await f.rpc("claim_backend_job");
+  await f.db.query(
+    "update public.knowledge_items set content='Changed existing source after the plan was frozen' where id=$1",
+    [knowledge.id],
   );
   await expect(
     f.rpc("generation_context", [job.id, job.lease_token]),

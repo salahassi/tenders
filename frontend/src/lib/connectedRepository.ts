@@ -33,6 +33,14 @@ const sourceReadingMessages: Record<string, string> = {
     "The page contains text, but the notice details could not be identified. Review the original notice; OCR is not confirmed.",
   SOURCE_BROWSER_REQUIRED:
     "This source requires browser JavaScript; the current reader could not obtain its notices.",
+  SOURCE_BROWSER_PENDING:
+    "Waiting for the browser reader to load this page's JavaScript. Collection will continue automatically.",
+  SOURCE_HUMAN_VERIFICATION_REQUIRED:
+    "The source asks for human verification (CAPTCHA). Open its source details to request a verification code and continue collection.",
+  SOURCE_BROWSER_FAILED:
+    "The browser could not obtain a readable public listing. Review the source's access requirements.",
+  SOURCE_TIMEOUT:
+    "The source did not respond before the connection timeout. Collection will retry automatically.",
   SOURCE_OCR_REQUIRED:
     "This page or PDF requires OCR before its notices can be read.",
   SOURCE_DOCUMENT_RESTRICTED:
@@ -457,7 +465,7 @@ export class ConnectedRepository {
         .map((d) => d.knowledge_item_id),
     );
     state.knowledge = this.rows.knowledge
-      .filter((r) => !linkedKnowledge.has(r.id))
+      .filter((r) => !linkedKnowledge.has(r.id) && r.enabled !== false)
       .map((r) => ({
         id: r.id,
         category: [

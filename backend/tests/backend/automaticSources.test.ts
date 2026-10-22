@@ -139,6 +139,47 @@ const empty = {
   follow_link_id: null,
   candidate_link_ids: [],
 };
+it("queues a real browser read for a JavaScript or human-verification response", async () => {
+  await setup();
+  await source();
+  const run = worker(
+    async () =>
+      new Response(
+        "<html><script>window.challenge=true</script><body>Please enable JavaScript. This question is for testing whether you are a human visitor.</body></html>",
+        { headers: { "content-type": "text/html" } },
+      ),
+  );
+  expect(await run()).toMatchObject({ waiting_for_browser: true });
+  expect(
+    (
+      await f.db.query<any>(
+        "select status,error_code from public.jobs where type='source_collect'",
+      )
+    ).rows[0],
+  ).toEqual({ status: "retry_wait", error_code: "SOURCE_BROWSER_PENDING" });
+  expect(
+    (
+      await f.db.query<any>(
+        "select count(*)::int n from public.source_browser_requests",
+      )
+    ).rows[0].n,
+  ).toBe(1);
+});
+it("classifies AbortError code 20 as a retryable source timeout", async () => {
+  await setup();
+  await source();
+  const run = worker(async () => {
+    throw new DOMException("Synthetic timeout", "AbortError");
+  });
+  expect(await run()).toMatchObject({ error_code: "SOURCE_TIMEOUT" });
+  expect(
+    (
+      await f.db.query<any>(
+        "select status,error_code from public.jobs where type='source_collect'",
+      )
+    ).rows[0],
+  ).toEqual({ status: "retry_wait", error_code: "SOURCE_TIMEOUT" });
+});
 const answer = (result: unknown) =>
   Response.json({
     choices: [

@@ -1,5 +1,87 @@
 # Implementation status and continuation plan
 
+## October 22 — Browser collection, human verification and legacy review resume
+
+Owner requested a JavaScript/CAPTCHA solution and recovery of the pictured legacy
+proposal. Its 67 saved writing steps and ten completed review batches remain
+intact. Three old review graphs had exhausted their bounded corrections; Resume
+only requeued those graphs. The corrected command replaces an obsolete review
+input once with an explicitly versioned, citable draft snapshot for workflows
+1–3, retaining prior receipts/budgets. Newer-plan guards prevent resuming a
+superseded canceled workflow, and its obsolete UI Resume button is hidden.
+
+Migration `recover_legacy_review_on_resume` is live. The existing evidence guard
+verified unchanged inputs, then only the three blocked review jobs were replaced.
+Their next execution exposed a separate stale-input blocker: unrelated verified
+library additions changed the global evidence revision. Migration
+`preserve_frozen_knowledge_on_addition` compares the exact original knowledge
+entries while leaving new additions for future plans. Existing source edits,
+removal, loss of verification, RFP changes and permission checks still fail closed.
+Every saved writing step remains retained; final review and export are pending.
+
+Migration `source_browser_queue` is live. JavaScript/challenge pages enter a
+bounded Chromium queue, serviced by a scheduled GitHub Actions worker using the
+existing deployment secret. Browser destinations require HTTPS/public DNS;
+leases, source revisions and membership are checked before publication.
+Human image-code challenges appear in source details with an expiring,
+challenge-bound Owner answer. Answers are consumed once and redacted from audit.
+Browser state uses authenticated AES-256-GCM encryption, workspace/host binding
+and a four-hour server expiry; cookies and credentials never enter client reads.
+A recurring challenge needs a new human answer. Unsupported login/verification
+remains an explicit blocker rather than fabricated collection.
+
+Live browser evidence: Chromium retrieved six actual Etimad notices and their
+detail links, where raw HTTP received the JavaScript human-verification page.
+Human-answer/session isolation are covered locally; a real human-entered
+production CAPTCHA has not yet been exercised. AbortError code 20 is normalized
+to a retryable source timeout. Full verification and publication are in progress.
+
+The Owner also asked how to delete a note. Added an explicit Delete action and
+confirmation to Additional notes. It uses the existing revision-checked
+`knowledge.save` command to disable the selected note, then filters disabled notes
+from the active list. The original row and saved proposal history remain; no real
+note was deleted during implementation. A focused UI test verifies the selected
+ID, current server revision, confirmation and disabled status.
+
+## October 22 — Live source diagnostics and MDLF hostname recovery
+
+Owner requested database inspection and real collection tests. The live directory
+contains 35 external sources: 17 approved and 18 proposed. Before this test, four
+approved sources were healthy, eleven blocked and two unavailable. The list's
+Enabled badge reflects approval and does not display collection health.
+
+Fetched every external source URL with TLS verification. Replayed the saved
+production extraction code on fresh responses: An-Najah returned 18 notices,
+Ramallah 10, Jordan GTD 7 and IsDB zero (closed notices excluded). Live jobs show
+supplier/central-referral pages blocked as non-listings, Etimad browser/access
+restrictions, Amman model evidence-validation failure and Aramco navigation limits.
+These are distinct from the eighteen sources that have never been enabled.
+
+The configured MDLF www hostname failed TLS verification through the execution
+proxy. The official HTTPS apex hostname returned the actual announcements page.
+Corrected the catalog and, through revision-checked audited source commands,
+updated only the selected existing workspace's MDLF URL/host, preserved its
+automatic reader configuration and resumed collection. The superseded retry job
+was canceled with a reason. New MDLF job: `55c31041-e19f-4f3e-a3d8-2467db3c2181`.
+Fifteen other approved sources received fresh collection jobs; SAMA retained its
+existing automatic retry. No proposed source was activated.
+
+Implementation: source reference correction complete. Local verification:
+backend typecheck/test/build passed (1,207 tests in 70 files); frontend frozen
+install and typecheck/test/build passed (208 tests in 36 files); diff checks passed.
+Deployment: live source configuration saved and read back; no API/worker code or
+schema change and no redeployment required. Repository publication is not part
+of this diagnostic request.
+
+Hosted acceptance remains separate: the fresh source jobs are queued or resuming
+saved model results; MDLF has not yet completed ingestion. The fresh MOF request
+blocked with numeric error `20`: the automatic reader currently propagates an
+AbortError's numeric code instead of a useful timeout classification. The initial
+35-URL probe returned 28 HTTP 200, two HTTP 403, four HTTP 503 and one connection
+timeout; a bounded retry retrieved PIF successfully. The MDLF HTTPS apex retry
+also succeeded. SAMA still fails TLS verification. Direct saved-parser results
+above are fresh-response tests, not a claim that every newly queued job succeeded.
+
 ## October 22 — 40,000-token ceilings and bounded hierarchical planning
 
 Owner-authorized implementation. All task defaults and the settings

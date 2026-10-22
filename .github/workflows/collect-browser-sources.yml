@@ -1,0 +1,33 @@
+name: Collect JavaScript sources
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: source-browser-production
+  cancel-in-progress: false
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked browser dependencies
+        working-directory: backend
+        run: |
+          npm ci
+          npx --no-install playwright install --with-deps chromium
+      - name: Read public pages and handle requested human verification
+        working-directory: backend
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: node --experimental-transform-types scripts/backend/browser-source-worker.ts

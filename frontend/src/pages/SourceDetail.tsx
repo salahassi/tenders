@@ -1,4 +1,5 @@
 import SourceConfiguration from "../components/SourceConfiguration";
+import SourceVerification from "../components/SourceVerification";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Globe2, ExternalLink, ShieldCheck } from "lucide-react";
 import { useApp } from "../lib/store";
@@ -120,6 +121,16 @@ export default function SourceDetail() {
       />
       <div className="split-layout">
         <div className="stack">
+          {owner && !isManual && source.status === "approved" && (
+            <SourceVerification
+              sourceId={source.id}
+              revision={source.revision}
+              needsRetry={
+                jobs[0]?.status === "blocked" &&
+                jobs[0]?.message.includes("human verification")
+              }
+            />
+          )}
           {setupGuidance && (
             <section
               className="panel admin-section"

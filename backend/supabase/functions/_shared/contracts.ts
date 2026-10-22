@@ -506,6 +506,18 @@ export const commandSchemas = {
     })
     .strict(),
   "source.discover": z.object({ url: safeUrl }).strict(),
+  "source.verification.answer": z
+    .object({
+      id: uuid,
+      challenge_id: uuid,
+      answer: z
+        .string()
+        .trim()
+        .min(1)
+        .max(40)
+        .regex(/^[A-Za-z0-9 -]+$/),
+    })
+    .strict(),
   "source.collect": z
     .object({ id: uuid, expected_revision: revision })
     .strict(),

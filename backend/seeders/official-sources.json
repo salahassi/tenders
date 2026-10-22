@@ -450,11 +450,11 @@
       "name_en": "Municipal Development and Lending Fund MDLF",
       "sector": "development_fund",
       "entry_type": "public_tenders",
-      "url": "https://www.mdlf.org.ps/ar/cmspage/AllAds",
-      "evidence_url": "https://www.mdlf.org.ps/ar/cmspage/AllAds",
-      "checked_at": "2026-10-17",
-      "access_note": "إعلانات الصندوق شبه الحكومي تشمل شراء واستشارات وعقودًا ممنوحة؛ يلزم تمييز نوع الإعلان وحالته. الرابط رسمي ومفهرس؛ أعاد طلب الفحص HTTP 503 من بيئة الاختبار، لذلك لم يُتحقق من محتوى الصفحة مباشرة في هذا الفحص.",
-      "http_status": 503
+      "url": "https://mdlf.org.ps/ar/cmspage/AllAds",
+      "evidence_url": "https://mdlf.org.ps/ar/cmspage/AllAds",
+      "checked_at": "2026-10-22",
+      "access_note": "إعلانات الصندوق شبه الحكومي تشمل شراء واستشارات وعقودًا ممنوحة؛ يلزم تمييز نوع الإعلان وحالته. فُتحت صفحة الإعلانات الرسمية بنجاح عبر HTTPS دون www، وظهر فيها محتوى إعلانات شراء. يفشل الاتصال بالعنوان الذي يتضمن www بسبب التحقق من شهادة الاتصال؛ يُستخدم الرابط دون www.",
+      "http_status": 200
     },
     {
       "key": "ps-birzeit",

@@ -202,6 +202,14 @@ export default function GenerationPanel({
                         : "")}
                 </p>
                 {["blocked", "failed", "canceled"].includes(p.status) &&
+                  !plans.some(
+                    (newer) =>
+                      newer.kind === p.kind &&
+                      newer.created_at > p.created_at &&
+                      ["queued", "running", "blocked", "completed"].includes(
+                        newer.status,
+                      ),
+                  ) &&
                   ![
                     "STALE_INPUT",
                     "REASSESSMENT_SUPERSEDED",

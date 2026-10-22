@@ -67,7 +67,7 @@ Applied to the existing TenderDesk workspace through Supabase SQL on October 17 
 | PS | [وزارة المالية الفلسطينية — مديرية اللوازم العامة](https://www.gs.pmof.ps/index.php?p=annonc) | public_tenders | 503 |
 | PS | [سلطة النقد الفلسطينية — العطاءات](https://www.pma.ps/tenders) | public_tenders | 200 |
 | PS | [بنك فلسطين — العطاءات](https://bankofpalestine.com/ar/personal/tenders) | public_tenders | 200 |
-| PS | [صندوق تطوير وإقراض الهيئات المحلية — الإعلانات](https://www.mdlf.org.ps/ar/cmspage/AllAds) | public_tenders | 503 |
+| PS | [صندوق تطوير وإقراض الهيئات المحلية — الإعلانات](https://mdlf.org.ps/ar/cmspage/AllAds) | public_tenders | 200 |
 | PS | [جامعة بيرزيت — العطاءات](https://ritaj.birzeit.edu/fin/tenders/public/view-tenders?orderby=reference_number%2Cdesc) | public_tenders | 403 |
 | PS | [جامعة النجاح الوطنية — العطاءات](https://www.najah.edu/ar/tenders/) | public_tenders | 200 |
 | PS | [بلدية رام الله — العطاءات](https://www.ramallah.ps/ar/Category/33/عطاءات) | public_tenders | 200 |
