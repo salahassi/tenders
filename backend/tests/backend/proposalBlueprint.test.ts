@@ -178,6 +178,29 @@ it("allows real cross-section findings while keeping fulfillment within the revi
   ).toThrow("EVIDENCE_REFERENCE_INVALID");
 });
 
+it.each(["partial", "missing", "clarification_required"])(
+  "keeps %s cross-section follow-up without asserting unreviewed fulfillment",
+  (status) => {
+    const ctx = {
+      sections: [{ key: "security" }],
+      response_locations: [{ section_key: "hosting" }],
+    };
+    const result = {
+      responses: [{ status, section_ids: ["security", "hosting"] }],
+      findings: [],
+    };
+    expect(() => validateReviewSectionReferences(result, ctx)).not.toThrow();
+    for (const response of [
+      { status: "answered", section_ids: ["security", "hosting"] },
+      { status, section_ids: ["hosting"] },
+      { status, section_ids: ["security", "invented"] },
+    ])
+      expect(() =>
+        validateReviewSectionReferences({ ...result, responses: [response] }, ctx),
+      ).toThrow("EVIDENCE_REFERENCE_INVALID");
+  },
+);
+
 it("round-trips compact requirement references without conflating IDs or carrying UUID arrays in the queued blueprint", async () => {
   const requirements = Array.from({ length: 145 }, () => ({
     id: crypto.randomUUID(),

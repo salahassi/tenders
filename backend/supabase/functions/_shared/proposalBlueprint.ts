@@ -5,19 +5,26 @@ import { validationDiagnostic } from "./modelValidationDiagnostics.ts";
 type Row = Record<string, any>;
 export const semanticWorkflow = (plan: Row) => plan.workflow_version >= 2;
 
-/** Fulfillment uses the supplied prose. A cross-section finding may also name
- * an existing response location, but must touch the actual reviewed scope. */
+/** Fulfillment uses the supplied prose. An unresolved response or cross-section
+ * finding may identify an existing location that still needs review, while
+ * remaining anchored to the actual reviewed scope. The index is not evidence. */
 export function validateReviewSectionReferences(result: Row, context: Row) {
   const reviewed = new Set((context.sections || []).map((s: Row) => s.key));
   const known = new Set([
     ...reviewed,
     ...(context.response_locations || []).map((s: Row) => s.section_key),
   ]);
-  const badResponses = result.responses.flatMap((r: Row, i: number) =>
-    r.section_ids.some((key: string) => !reviewed.has(key))
+  const badResponses = result.responses.flatMap((r: Row, i: number) => {
+    const unresolved = ["partial", "missing", "clarification_required"].includes(
+      r.status,
+    );
+    const allowed = unresolved ? known : reviewed;
+    return r.section_ids.some((key: string) => !allowed.has(key)) ||
+      (r.section_ids.length &&
+        !r.section_ids.some((key: string) => reviewed.has(key)))
       ? [`$.responses[${i}].section_ids`]
-      : [],
-  );
+      : [];
+  });
   const badFindings = result.findings.flatMap((f: Row, i: number) =>
     f.section_ids.some((key: string) => !known.has(key)) ||
     (f.section_ids.length &&

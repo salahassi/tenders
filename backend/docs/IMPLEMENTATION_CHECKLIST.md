@@ -222,6 +222,20 @@ Full CI for v112 caught one outdated diagnostic-path assertion (the guard now
 reports the exact offending field); it is updated in this release. Hosted audit
 recovery, final reconciliation and Word download remain in progress.
 
+Further read-only replay isolated the remaining retained review rejection to a
+`partial` response, not its findings: it names actual reviewed security sections
+and a real hosting section that explicitly still needs verification. Unresolved
+responses may now retain those known cross-section follow-ups, anchored to a
+reviewed section. `answered` still requires supplied prose; invented keys and
+entirely outside-scope responses remain rejected. The existing lease-bound
+retained-writer recovery performs independent verification without rewriting
+the result or resetting budgets. **58 focused tests**, backend typecheck/build
+and frozen worker checking pass. Exact private replay of the retained real
+candidate now passes schema, original-evidence and section-reference validation.
+Worker **v114** deployed at **11:27 UTC**; hosted recovery remains pending.
+Full CI for source `25151cb` passed, including both package suites,
+typechecks, builds and Deno checks.
+
 
 ## October 21 — approved throughput and coherence follow-up
 
