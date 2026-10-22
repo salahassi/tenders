@@ -138,6 +138,23 @@ with backend typecheck/build and frozen worker checking. Worker **v108** deploye
 at **09:55 UTC**, with exact source readback. Full CI, audited recovery and the
 real export are being completed.
 
+The first audited retry exposed a separate recovery restriction: only
+`draft_section` could reopen an exhausted *scoped* verifier after its retained
+report passed corrected deterministic checks. The same recovery now validates
+the candidate against its actual primary task schema. The DB permits other
+tasks only for an exact `revalidated_scope` artifact; invalid reports still
+cannot trigger a new writer-repair path outside the existing draft behavior.
+Lease/manifest/identity checks, unique latest report, unknown-send protections,
+candidate budgets and original receipts remain intact. Canonical migration
+`generic_revalidated_scope_recovery` deployed at **10:03 UTC**. **60 focused
+tests** pass, including commercial whole/scoped graph replay with zero provider
+calls and SQL rejection of a non-draft repair-only artifact. Backend typecheck,
+build and frozen worker checking pass. Worker **v109** deployed at **10:04 UTC**;
+all retrieved files match the canonical bundle. Full CI and hosted recovery are
+pending. Earlier releases `b4a0e21` and `15a8aab` passed
+[39756315707](https://github.com/salahassi/tenders/actions/runs/39756315707) and
+[39759204923](https://github.com/salahassi/tenders/actions/runs/39759204923), respectively.
+
 
 ## October 21 — approved throughput and coherence follow-up
 

@@ -13,7 +13,7 @@ import {
   groundingOptions,
   validateGroundingReport,
 } from "./modelGrounding.ts";
-import { modelSchemas } from "./modelSchemas.ts";
+import { modelSchemas, type PrimaryModelTask } from "./modelSchemas.ts";
 import {
   verificationBatches,
   verificationPolicy,
@@ -36,6 +36,7 @@ export async function recoverInvalidVerification(o: {
   requiredIds: string[];
   manifest: Reference[];
   context?: any;
+  task?: PrimaryModelTask;
   state: { next: readonly string[]; values: Record<string, any> };
   validate?: (result: any) => void;
   update: (
@@ -61,9 +62,15 @@ export async function recoverInvalidVerification(o: {
   const candidate = count ? saved.value.result.result : saved.value.result;
   try {
     if (blockedContent(JSON.stringify(candidate))) return false;
-    validateModelResult("draft_section", candidate, o.evidence, o.requiredIds, {
-      independentGrounding: true,
-    });
+    validateModelResult(
+      o.task ?? "draft_section",
+      candidate,
+      o.evidence,
+      o.requiredIds,
+      {
+        independentGrounding: true,
+      },
+    );
     o.validate?.(candidate);
   } catch {
     return false;
@@ -153,6 +160,10 @@ export async function recoverInvalidVerification(o: {
     if (!diagnostics?.length) return false;
   }
   const revalidated = diagnostics === undefined;
+  // Other task shapes may replay a fully revalidated scope, but do not gain
+  // an additional writer-repair path or allowance from this recovery.
+  if (!revalidated && (o.task ?? "draft_section") !== "draft_section")
+    return false;
   const artifact = revalidated
     ? { coverage: "revalidated_scope", result: report }
     : repairOnlyValidationArtifact({

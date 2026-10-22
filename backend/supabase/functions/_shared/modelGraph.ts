@@ -1163,6 +1163,7 @@ async function runGuardedModel(o: Options): Promise<{
           validate: o.validate,
         })) ||
           (await recoverInvalidVerification({
+            task: o.task,
             backend: o.backend,
             store,
             job: o.job,

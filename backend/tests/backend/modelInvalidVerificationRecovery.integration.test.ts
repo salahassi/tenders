@@ -50,7 +50,12 @@ async function rpc(name: string, args: Record<string, unknown> = {}) {
     await f.db.exec("reset role;release savepoint invalid_recovery_rpc");
   }
 }
-async function setup(batched = false, revalidated = false, graph = false) {
+async function setup(
+  batched = false,
+  revalidated = false,
+  graph = false,
+  task: "draft_section" | "plan_commercial" = "draft_section",
+) {
   await f.command("model.routing", { enabled: true, expected_revision: 0 });
   const connection = await f.command("model.connection.save", {
     provider: "openai",
@@ -85,10 +90,10 @@ async function setup(batched = false, revalidated = false, graph = false) {
   await rpc("prepare_task_model_route", {
     job_id: job.id,
     lease: job.lease_token,
-    task_name: "draft_section",
-    default_profile: taskRegistry.draft_section.profile,
+    task_name: task,
+    default_profile: taskRegistry[task].profile,
   });
-  let candidate = {
+  let candidate: any = {
     key: "approach",
     title: "Approach",
     content_blocks: [
@@ -110,6 +115,32 @@ async function setup(batched = false, revalidated = false, graph = false) {
     assumptions: [],
     questions: [],
   };
+  if (task === "plan_commercial")
+    candidate = {
+      lines: [],
+      questions: [],
+      tasks: [
+        ...(batched
+          ? [
+              "Preparation activities. ".repeat(120),
+              "Preparation activities. ".repeat(120),
+            ]
+          : []),
+        (revalidated
+          ? "Section 4.2 confirms a 12 month term."
+          : "The contract term is 12 months.") +
+          (batched ? " Delivery activities.".repeat(120) : ""),
+      ].map((basis, i) => ({
+        key: `task-${i}`,
+        title: "Delivery",
+        predecessors: [],
+        role: "Consultant",
+        effort_days: null,
+        allocation: null,
+        duration_days: null,
+        basis,
+      })),
+    };
   const evidence = [
     {
       id: "notice",
@@ -124,7 +155,7 @@ async function setup(batched = false, revalidated = false, graph = false) {
   const inputHash = await sha256(
     JSON.stringify({
       version: 1,
-      task: "draft_section",
+      task,
       context: {},
       evidence,
       requiredIds: [],
@@ -147,7 +178,7 @@ async function setup(batched = false, revalidated = false, graph = false) {
   let store = new ModelGraphStore(backend, job, threadId);
   await store.action("init", {
     input_hash: inputHash,
-    task: "draft_section",
+    task,
     graph_version: 1,
   });
   const saved = await store.action("result_put", {
@@ -235,7 +266,7 @@ async function setup(batched = false, revalidated = false, graph = false) {
     backend,
     job,
     prefix,
-    task: "draft_section" as const,
+    task,
     context: {},
     evidence,
     requiredIds: [] as string[],
@@ -271,6 +302,7 @@ async function setup(batched = false, revalidated = false, graph = false) {
   };
   const update = vi.fn(async (_values: { reportRef: string }) => {});
   const options = {
+    task,
     backend,
     store,
     job,
@@ -362,10 +394,15 @@ it.each([false, true])(
   },
 );
 
-it.each([false, true])(
-  "revalidates the exact historical decimal-label report through real LangGraph with zero provider calls, batched=%s",
-  async (batched) => {
-    const s = await setup(batched, true, true);
+it.each([
+  { batched: false, task: "draft_section" as const },
+  { batched: true, task: "draft_section" as const },
+  { batched: false, task: "plan_commercial" as const },
+  { batched: true, task: "plan_commercial" as const },
+])(
+  "revalidates the exact historical decimal-label report with zero provider calls, task=$task batched=$batched",
+  async ({ batched, task }) => {
+    const s = await setup(batched, true, true, task);
     const budgetsBefore = (
       await f.db.query(
         "select * from app_private.model_graph_budgets where thread_id=$1 order by unit",
@@ -791,3 +828,40 @@ it.each(["cancel", "stale-lease", "missing-evidence"])(
     ).rejects.toThrow();
   },
 );
+
+it("does not grant a commercial writer repair when the retained report is still invalid", async () => {
+  const s = await setup(false, false, false, "plan_commercial");
+  expect(await recoverInvalidVerification(s.options)).toBe(false);
+  expect(s.update).not.toHaveBeenCalled();
+  expect(s.fetcher).not.toHaveBeenCalled();
+  const state = await f.db.query<any>(
+    "select status,candidate_count from app_private.model_graph_threads where id=$1",
+    [s.threadId],
+  );
+  expect(state.rows[0]).toEqual({ status: "needs_review", candidate_count: 1 });
+});
+
+it("rejects repair-only artifacts for non-draft tasks at the SQL resume boundary", async () => {
+  const s = await setup();
+  expect(await recoverInvalidVerification(s.options)).toBe(true);
+  const artifactId = s.update.mock.calls[0][0].reportRef;
+  await f.db.query(
+    "update app_private.model_graph_threads set status='needs_review',task='plan_commercial' where id=$1",
+    [s.threadId],
+  );
+  expect(
+    await s.store.action("invalid_verification_repair_resume", {
+      ...s.payload,
+      report_id: s.retained.id,
+      artifact_id: artifactId,
+    }),
+  ).toBe(false);
+  expect(
+    (
+      await f.db.query<any>(
+        "select status,candidate_count from app_private.model_graph_threads where id=$1",
+        [s.threadId],
+      )
+    ).rows[0],
+  ).toEqual({ status: "needs_review", candidate_count: 1 });
+});
