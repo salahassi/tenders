@@ -196,7 +196,10 @@ it.each(["partial", "missing", "clarification_required"])(
       { status, section_ids: ["security", "invented"] },
     ])
       expect(() =>
-        validateReviewSectionReferences({ ...result, responses: [response] }, ctx),
+        validateReviewSectionReferences(
+          { ...result, responses: [response] },
+          ctx,
+        ),
       ).toThrow("EVIDENCE_REFERENCE_INVALID");
   },
 );
@@ -367,6 +370,63 @@ it("builds the matrix from actual review verdicts and preserves semantic outline
   expect(() =>
     complianceMatrixSections(b, ctx.requirements, [], sections, "en"),
   ).toThrow();
+});
+
+it("pins citable review context without duplicating prose or changing source authorization", () => {
+  const ctx = context(1);
+  const text = "We propose a synthetic approval workflow with audit logs.";
+  ctx.steps.push({
+    task: "draft_section",
+    status: "completed",
+    ordinal: 2,
+    input: {
+      section: {
+        key: "approach-unit",
+        title: "Approach",
+        volume: "technical",
+        requirement_ids: ["r-0"],
+      },
+    },
+    output: {
+      key: "approach-unit",
+      title: "Approach",
+      content_blocks: [{ type: "paragraph", text }],
+      requirement_ids: ["r-0"],
+      evidence_refs: [],
+      company_claims: [],
+      assumptions: [],
+      questions: [],
+    },
+  });
+  ctx.step = {
+    id: "review-step",
+    task: "review_proposal",
+    input: {
+      workflow_version: 2,
+      review_scope_version: 1,
+      section_keys: ["approach-unit"],
+      requirement_ids: ["r-0"],
+    },
+  };
+  const old = taskInput(ctx);
+  ctx.step.input.review_source_version = 1;
+  const current = taskInput(ctx);
+  expect(current.manifest).toEqual(old.manifest);
+  expect(current.evidence.slice(0, -1)).toEqual(old.evidence);
+  expect(current.evidence.at(-1)?.id).toBe("proposal-review:review-step");
+  expect(
+    JSON.stringify({
+      context: current.context,
+      evidence: current.evidence,
+    }).split(text),
+  ).toHaveLength(2);
+  expect(current.context.sections[0]).toMatchObject({
+    key: "approach-unit",
+    audit_source_id: "proposal-review:review-step",
+  });
+  expect(old.context.sections[0].content_blocks[0].text).toBe(text);
+  delete ctx.step.input.review_source_version;
+  expect(taskInput(ctx)).toEqual(old);
 });
 
 it("deduplicates exact missing-input questions without dropping stronger blocking levels", () => {

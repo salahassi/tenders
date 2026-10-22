@@ -236,6 +236,24 @@ Worker **v114** deployed at **11:27 UTC**; hosted recovery remains pending.
 Full CI for source `25151cb` passed, including both package suites,
 typechecks, builds and Deno checks.
 
+The remaining audit exposed missing provenance for the draft itself: a verifier
+could read the proposed prose but had no valid source ID for observations about
+that prose. Newly versioned reviews move the unchanged saved prose/commercial
+projection into one citable, explicitly unconfirmed review snapshot. It proves
+wording only; company-fact checks still require verified company evidence. The
+original authorization manifest is preserved and the full prose is not copied
+twice into the prompt. Existing requests retain their exact inputs. An explicit
+Owner/service-only recovery replaces only an exhausted legacy review with the
+new context, preserving completed steps, paid usage, graph budgets and all old
+results; pending/unknown sends, stale revisions/evidence and repeated recovery
+are rejected. **54 focused tests** pass, including original request replay,
+single-copy prose, rejected company-claim promotion, fabricated quote rejection,
+safe review replacement, preserved paid receipts/budgets and service-only access.
+Backend typecheck/build and frozen worker checking pass. Worker **v115** and
+`citable_review_context_recovery` deployed at **11:35 UTC**; hosted application
+of the recovery and final Word acceptance remain pending. Source `3bffc2b`
+passed full CI and publication; v114 readback matched all 51 retrieved files.
+
 
 ## October 21 — approved throughput and coherence follow-up
 

@@ -13,6 +13,7 @@ import {
   OUTPUT_ECONOMY_INSTRUCTIONS,
 } from "./modelOutputPolicy.ts";
 import { scopeInstruction } from "./discovery.ts";
+import { proposalReviewEvidence } from "./proposalReviewEvidence.ts";
 import { enrichPublicNotice } from "./publicNoticeDetails.ts";
 import { executeGuardedModel } from "./modelGraph.ts";
 import { createSectionOutline, plannedDraftInputs } from "./proposalOutline.ts";
@@ -578,6 +579,10 @@ export function taskInput(ctx: PlanContext) {
       ]),
     ).values(),
   ) as Reference[];
+  // The draft is already authorized generated context, not a new external
+  // source. Keep its original manifest and give its exact wording a citation ID.
+  if (task === "review_proposal" && input.review_source_version === 1)
+    evidence.push(proposalReviewEvidence(step.id, context));
   if (hierarchicalPlanning(ctx.plan)) {
     context.execution_policy_version = 3;
     context.verification_output_tokens =
@@ -878,7 +883,9 @@ export async function nextStage(ctx: PlanContext): Promise<{
       task: "review_proposal",
       input: {
         ...input,
-        ...(hierarchicalPlanning(ctx.plan) ? { review_scope_version: 1 } : {}),
+        ...(hierarchicalPlanning(ctx.plan)
+          ? { review_scope_version: 1, review_source_version: 1 }
+          : {}),
       },
     }));
     return output;
@@ -892,7 +899,7 @@ export async function nextStage(ctx: PlanContext): Promise<{
           workflow_version: 2,
           coherence_review: true,
           ...(hierarchicalPlanning(ctx.plan)
-            ? { review_scope_version: 1 }
+            ? { review_scope_version: 1, review_source_version: 1 }
             : {}),
           requirement_ids: [],
           section_keys: draftedSections(ctx).map((s) => s.key),
@@ -1125,7 +1132,13 @@ export async function processGeneration(
       validateModelResult(
         input.task,
         result,
-        allEvidence(ctx!) as Evidence[],
+        [
+          ...allEvidence(ctx!),
+          ...input.evidence.filter(
+            (e) =>
+              e.id === `proposal-review:${ctx!.step.id}` && e.kind === "review",
+          ),
+        ] as Evidence[],
         input.requiredIds,
         options,
       );
