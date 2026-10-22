@@ -5,9 +5,9 @@
 Owner explicitly requested finding actual tender pages, testing extraction before
 addition, and removing non-listing sources. Current 35-source snapshot and fresh
 HTTPS probes are preserved locally. Registration portals and ministry referral
-pages will be removed through audited source rejection and pending-job
-cancellation, retaining existing opportunities and history. The default directory
-will hide rejected sources and retain an explicit Removed sources filter.
+pages were removed through audited source rejection and pending-job cancellation,
+retaining existing opportunities and history. The published default directory
+hides rejected sources and retains an explicit Removed sources filter.
 
 A generic records extraction layout supports real public tender cards/tables
 with saved selectors, distinct detail-URL identities, raw closing dates and
@@ -44,6 +44,56 @@ live jobs exposed the old five-host deployment permission list. Only the seven
 tested exact hosts were appended with an administrative audit, preserving existing
 hosts and the dispatcher credential; affected jobs were retried through commands.
 Live source completion and Pages publication remain to reconcile.
+
+Hosted follow-up: Royal Jordanian **6**, NEPCO **9** and JPMC **2** real notices
+are now saved in the database, with successful jobs and healthy source status.
+Arab Potash, Water and MODEE retain due collection jobs after the host-policy
+retry. They share the existing serialized workspace queue with notice assessment;
+preflight success is not being substituted for a completed hosted job.
+
+[Browser workflow 39843278634](https://github.com/salahassi/tenders/actions/runs/39843278634)
+succeeded at **19:49:32 UTC**, reading the actual Etimad job through the deployed
+gateway and publishing **8,491 text characters / seven links** as ready rendered
+evidence, without a CAPTCHA. Etimad is approved at revision 3; its ordinary
+grounded extraction/ingestion continuation remains due. A real human-entered
+CAPTCHA is still not claimed. Health 200 and anonymous API/worker denial checks
+pass. No synthetic workspace record, bidder account, purchase or submission was
+created.
+
+Follow-up queue inspection found three corrected static-fetch retries waiting
+behind unseen assessments created by the first successful collections. A narrow
+queue migration alternates static-listing preference within the existing
+background class by queue cycle. The other cycle retains owner service ordering;
+proposal/poll/local slots, eligibility, current source revisions and exclusive
+leases remain unchanged. New automatic/model requests have no general preference;
+only the ready-browser handoff described below qualifies. Regression covers static retry progress, the next unseen assessment,
+proposal priority, future eligibility, exclusive leases and zero provider calls.
+The browser-ready handoff gets the same alternating preference only while model
+admission has capacity and the exact current page is ready. Its pending-browser
+state is consumed once; accepted model requests keep ordinary poll fairness.
+Additional SQL regressions cover available and full model capacity.
+
+Hosted queue correction: all **six new static sources have now succeeded** and
+are healthy, saving **37 real notices** (RJ 6, NEPCO 9, APC 12, JPMC 2, MWI 8,
+MODEE 0). The static migration is live and the private queue helper remains
+inaccessible to authenticated clients. The 90-test focused queue/browser/wake
+suite passes with the ready-browser follow-up, also now live. Full regression
+after the static change passed **1,227 backend tests / 72 files**; the final
+browser-handoff regression is running.
+
+Final local regression passed **1,229 backend tests / 72 files**, with backend
+typecheck/build; frontend remains at **213 passing tests / 38 files** with its
+published build. Both queue migrations are live and retain private function
+permissions. At the final live readback there are **13 approved sources: 12
+healthy and Etimad in model extraction**, with **15 removed** and **seven not
+enabled** (six proposed, JONEPS paused). All **37 new static notices** are saved.
+Etimad progressed from browser wait into its saved model graph at **20:03 UTC**;
+its first real model request settled. Final notice ingestion for Etimad remains
+asynchronous and is not represented as completed collection.
+
+Source `612748a` passed [Pages 39843169983](https://github.com/salahassi/tenders/actions/runs/39843169983).
+Published index and Sources assets match the tested local build exactly. The
+fifteen removed rows remain available only through the explicit removal filter.
 
 ## October 22 — Browser collection, human verification and legacy review resume
 

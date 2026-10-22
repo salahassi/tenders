@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from "vitest";
 import { workflowFixture } from "./workflowFixture";
+import { seedExtraction } from "./sourceExtractionFixture";
 
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
@@ -45,6 +46,137 @@ async function reserve(job: any) {
     [job.id],
   );
 }
+async function staticListing(future = false) {
+  const url = "https://public.example.test/notices/" + crypto.randomUUID();
+  const source = await f.command("source.create", {
+    name: "Synthetic static listing",
+    kind: "manual",
+    url,
+  });
+  const extraction = seedExtraction("ps-najah");
+  extraction.url = url;
+  extraction.buyer = "Synthetic buyer";
+  const configured = await f.command("source.configure", {
+    id: source.id,
+    expected_revision: source.revision,
+    url,
+    kind: "link_directory",
+    approved_hosts: ["public.example.test"],
+    policy_note: "Synthetic public source",
+    poll_interval_hours: 6,
+    adapter_config: { official_listing: "synthetic", extraction },
+  });
+  const approved = await f.command("source.action", {
+    id: source.id,
+    expected_revision: configured.revision,
+    action: "approve",
+    reason: "Synthetic test",
+  });
+  const j = await enqueue("source_collect", source.id, future);
+  await f.db.query("update public.jobs set input_hash=$2 where id=$1", [
+    j.id,
+    String(approved.revision),
+  ]);
+  await f.db.query(
+    "insert into app_private.queue_owner_service values($1,'background',$2,99)",
+    [f.w, source.id],
+  );
+  return j;
+}
+async function readyBrowserListing() {
+  const url = "https://public.example.test/tenders";
+  const source = await f.command("source.create", {
+    name: "Synthetic browser listing",
+    kind: "manual",
+    url,
+  });
+  await f.command("source.action", {
+    id: source.id,
+    expected_revision: source.revision,
+    action: "approve",
+    reason: "Synthetic public page",
+  });
+  const job = await f.rpc("claim_backend_job_v2");
+  await f.rpc("queue_source_browser_page", [job.id, job.lease_token]);
+  const browser = await f.rpc("claim_source_browser_page");
+  await f.rpc("complete_source_browser_page", [
+    browser.id,
+    browser.lease_token,
+    JSON.stringify({
+      requested_url: url,
+      url,
+      text: "Synthetic public tender listing for queue fairness acceptance.",
+      links: [],
+      partial: false,
+      rendered: true,
+    }),
+    null,
+  ]);
+  await f.db.query(
+    "update app_private.queue_dispatch_state set cursor=0 where workspace_id=$1",
+    [f.w],
+  );
+  await f.db.query(
+    "update app_private.queue_owner_service set last_dispatch=99 where workspace_id=$1 and entity_id=$2",
+    [f.w, source.id],
+  );
+  return job;
+}
+it("consumes a ready browser page before unseen assessments when admission is available", async () => {
+  const ready = await readyBrowserListing();
+  const assessment = await enqueue("classify_opportunity");
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(ready.id);
+  await finish(ready.id);
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(assessment.id);
+});
+it("does not give browser/model work preference when admitted requests fill capacity", async () => {
+  await readyBrowserListing();
+  const limit = (
+    await f.db.query<{ n: number }>(
+      "select app_private.model_request_limit($1) n",
+      [f.w],
+    )
+  ).rows[0].n;
+  for (let i = 0; i < limit; i++) await reserve(await enqueue("draft_section"));
+  const directory = await enqueue("source_candidates");
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(directory.id);
+});
+it("gives a retried static listing a background turn and an unseen assessment the next cycle", async () => {
+  const first = await staticListing(),
+    second = await staticListing();
+  const assessment = await enqueue("classify_opportunity");
+  await f.db.query(
+    "update public.jobs set next_attempt_at=now()-interval '1 minute' where id=$1",
+    [first.id],
+  );
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(first.id);
+  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  await finish(first.id);
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(assessment.id);
+  await finish(assessment.id);
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(second.id);
+  expect(
+    (await f.db.query("select * from public.provider_usage")).rows,
+  ).toHaveLength(0);
+});
+it("preserves proposal slots and future eligibility when static collection is waiting", async () => {
+  const delayed = await staticListing(true);
+  const due = await staticListing();
+  const proposal = await enqueue("draft_section");
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(proposal.id);
+  await finish(proposal.id);
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(due.id);
+  await finish(due.id);
+  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(
+    (
+      await f.db.query<{ attempts: number }>(
+        "select attempts from public.jobs where id=$1",
+        [delayed.id],
+      )
+    ).rows[0].attempts,
+  ).toBe(0);
+});
 
 it("finishes saved proposal units before fresh siblings without taking other owners' or collection's turns", async () => {
   const owner = crypto.randomUUID();
