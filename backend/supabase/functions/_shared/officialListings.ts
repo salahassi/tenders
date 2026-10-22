@@ -40,6 +40,22 @@ export const extractionSchema = z
     listing: z.discriminatedUnion("layout", [
       z
         .object({
+          layout: z.literal("records"),
+          container: selector,
+          rows: selector,
+          title: selector,
+          link: selector,
+          reference: selector.optional(),
+          published: selector.optional(),
+          deadline: selector.optional(),
+          deadline_order: z.enum(["ymd", "dmy"]).default("ymd"),
+          exclude_past_deadlines: z.boolean().default(false),
+          excluded_title_terms: terms.default([]),
+          empty_messages: terms.default([]),
+        })
+        .strict(),
+      z
+        .object({
           layout: z.literal("table"),
           container: selector,
           rows: selector,
@@ -163,7 +179,66 @@ export function parseOfficialListing(
         (_, field: string) => String(values[field] || ""),
       ),
     });
-  if (rules.layout === "table") {
+  if (rules.layout === "records") {
+    const container = root.find(rules.container);
+    if (!container.length) throw new Error("SOURCE_SCHEMA_CHANGED");
+    const entries = container.find(rules.rows);
+    if (!entries.length && !contains(text(container), rules.empty_messages))
+      throw new Error("SOURCE_SCHEMA_CHANGED");
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: config.timezone || "UTC",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+    const todayNumber = Number(today.replaceAll("-", ""));
+    for (const raw of entries.toArray()) {
+      const entry = $(raw);
+      const selected = (s: string) => (s === ":scope" ? entry : entry.find(s));
+      const title = text(selected(rules.title));
+      if (!title) throw new Error("SOURCE_SCHEMA_CHANGED");
+      if (contains(title, rules.excluded_title_terms)) {
+        warnings.push("NON_PROCUREMENT_NOTICE_SKIPPED");
+        continue;
+      }
+      const href = link(selected(rules.link));
+      const reference = rules.reference
+        ? text(selected(rules.reference))
+        : href;
+      if (!reference) throw new Error("SOURCE_SCHEMA_CHANGED");
+      const deadline = rules.deadline ? text(selected(rules.deadline)) : "";
+      if (rules.exclude_past_deadlines && deadline) {
+        const pattern =
+          rules.deadline_order === "ymd"
+            ? /\b(\d{4})[-/](\d{1,2})[-/](\d{1,2})\b/g
+            : /\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/g;
+        const dates = [...deadline.matchAll(pattern)].map((m) => {
+          const year = Number(m[rules.deadline_order === "ymd" ? 1 : 3]),
+            month = Number(m[2]),
+            day = Number(m[rules.deadline_order === "ymd" ? 3 : 1]);
+          const parsed = new Date(Date.UTC(year, month - 1, day));
+          if (
+            parsed.getUTCFullYear() !== year ||
+            parsed.getUTCMonth() !== month - 1 ||
+            parsed.getUTCDate() !== day
+          )
+            throw new Error("SOURCE_SCHEMA_CHANGED");
+          return year * 10000 + month * 100 + day;
+        });
+        if (dates.length && Math.max(...dates) < todayNumber) {
+          warnings.push("CLOSED_NOTICE_SKIPPED");
+          continue;
+        }
+      }
+      append({
+        title,
+        reference,
+        url: href,
+        deadline_raw: deadline || null,
+        published: rules.published ? text(selected(rules.published)) : "",
+      });
+    }
+  } else if (rules.layout === "table") {
     const table = root.find(rules.container);
     if (
       !table.length ||

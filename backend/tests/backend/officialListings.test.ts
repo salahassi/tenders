@@ -1,5 +1,6 @@
 // @vitest-environment node
-import { expect, it } from "vitest";
+import { expect, it, vi } from "vitest";
+import { parseOfficialListing } from "../../supabase/functions/_shared/officialListings";
 import { seedExtraction } from "./sourceExtractionFixture";
 import {
   parseSource,
@@ -20,6 +21,73 @@ const row = (deadline: string, href = "/ar/tenders/synthetic-1/") =>
   `<tr><td>123</td><td><a href="${href}">توريد أجهزة اختبار</a></td><td>2026-10-15</td><td>${deadline}</td><td>1:00 م</td></tr>`;
 const table = (body: string) =>
   `<table class="table-bordered"><thead><tr><th>رقم العطاء</th></tr></thead><tbody>${body}</tbody></table>`;
+const recordConfig = () => ({
+  ...seedExtraction("ps-najah"),
+  url: "https://public.example.test/notices",
+  listing: {
+    layout: "records",
+    container: "#notices",
+    rows: "article",
+    title: "h3",
+    link: "a",
+    deadline: ".closing",
+    deadline_order: "dmy",
+    exclude_past_deadlines: true,
+    excluded_title_terms: ["Auction"],
+    empty_messages: ["No open tenders"],
+  },
+});
+it("keeps distinct query-string notice identities and a real extension while excluding past deadlines", () => {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-22T12:00:00Z"));
+  try {
+    const row = (id: string, deadline: string) =>
+      `<article><h3>Public procurement ${id}</h3><a href="/detail?id=${id}">Details</a><span class="closing">${deadline}</span></article>`;
+    const result = parseOfficialListing(
+      recordConfig(),
+      "https://public.example.test/notices",
+      `<main id="notices">${row("1", "21/10/2026 extended until 30/10/2026")}${row("2", "23/10/2026")}${row("3", "20/10/2026")}</main>`,
+    );
+    expect(result.rows).toHaveLength(2);
+    expect(new Set(result.rows.map((r) => r.reference)).size).toBe(2);
+    expect(result.rows[0].deadline_raw).toContain("extended until");
+    expect(result.warnings).toContain("CLOSED_NOTICE_SKIPPED");
+  } finally {
+    vi.useRealTimers();
+  }
+});
+it("accepts an explicitly empty records listing and rejects missing containers, ambiguous emptiness and unsafe detail links", () => {
+  const config = recordConfig(),
+    url = config.url;
+  expect(
+    parseOfficialListing(
+      config,
+      url,
+      '<main id="notices">No open tenders</main>',
+    ).rows,
+  ).toEqual([]);
+  for (const html of [
+    "<h1>Home</h1>",
+    '<main id="notices"></main>',
+    '<main id="notices"><article><h3>Public notice</h3><a href="https://other.example.test/detail">Details</a></article></main>',
+  ])
+    expect(() => parseOfficialListing(config, url, html)).toThrow(
+      "SOURCE_SCHEMA_CHANGED",
+    );
+});
+it("supports a notice anchor as the record and rejects impossible dates", () => {
+  const config = recordConfig();
+  config.listing = { ...config.listing, rows: "a", link: ":scope" };
+  const html =
+    '<main id="notices"><a href="/detail?id=1"><h3>Public notice</h3><span class="closing">31/02/2030</span></a></main>';
+  expect(() => parseOfficialListing(config, config.url, html)).toThrow(
+    "SOURCE_SCHEMA_CHANGED",
+  );
+  expect(
+    parseOfficialListing(config, config.url, html.replace("31/02/2030", ""))
+      .rows[0],
+  ).toMatchObject({ title: "Public notice", deadline_raw: null });
+});
 it("collects an Arabic public notice, retains its raw deadline and keeps the latest repeated announcement", () => {
   const result = parseSource(
     najah,
@@ -118,6 +186,24 @@ it("runs official listings through the same host, login-wall and size safeguards
       async () => new Response("captcha"),
     ),
   ).rejects.toThrow("MANUAL_SOURCE_REQUIRED");
+});
+it("reads a public listing with an optional hidden login dialog while rejecting an active login wall or CAPTCHA", async () => {
+  const html = table(row("2030-10-25"));
+  const modal = '<div class="modal fade"><input type="password"></div>';
+  const read = (body: string) =>
+    collect(
+      najah,
+      najah.approved_hosts,
+      async () => ["93.184.216.34"],
+      async () => new Response(body),
+    );
+  expect((await read(html + modal)).items).toHaveLength(1);
+  await expect(
+    read(html + modal.replace("modal fade", "modal show")),
+  ).rejects.toThrow("MANUAL_SOURCE_REQUIRED");
+  await expect(read(html + modal + "captcha")).rejects.toThrow(
+    "MANUAL_SOURCE_REQUIRED",
+  );
 });
 
 it("accepts the browser-valid omitted closing row in the published Arabic table header", () => {

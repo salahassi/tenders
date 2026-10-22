@@ -51,13 +51,19 @@ afterAll(async () => {
 
 describe("official source catalog administrative seeder", () => {
   it("covers the three requested countries with unique official references", () => {
-    expect(catalog.sources).toHaveLength(35);
+    expect(catalog.sources).toHaveLength(20);
     expect(
       ["SA", "JO", "PS"].map(
         (country) =>
           catalog.sources.filter((s) => s.country === country).length,
       ),
-    ).toEqual([14, 11, 10]);
+    ).toEqual([2, 10, 8]);
+    expect(
+      catalog.sources.every(
+        (s) =>
+          !["supplier_registration", "central_redirect"].includes(s.entry_type),
+      ),
+    ).toBe(true);
     expect(
       catalogSchema.safeParse({
         ...catalog,
@@ -74,7 +80,7 @@ describe("official source catalog administrative seeder", () => {
   it("inserts all references and audit events without creating opportunities or enabling collection", async () => {
     await db.exec(buildSourceSeedSql(catalog, workspace, owner));
     const sources = (await db.query("select * from public.sources")).rows;
-    expect(sources).toHaveLength(35);
+    expect(sources).toHaveLength(catalog.sources.length);
     for (const row of sources)
       expect(row).toMatchObject({
         workspace_id: workspace,
@@ -91,7 +97,7 @@ describe("official source catalog administrative seeder", () => {
         "select * from public.audit_events where action='source.catalog.seed'",
       )
     ).rows;
-    expect(audits).toHaveLength(35);
+    expect(audits).toHaveLength(catalog.sources.length);
     expect(new Set(audits.map((a) => a.request_id)).size).toBe(1);
     expect(audits[0]).toMatchObject({ actor_id: owner, entity_type: "source" });
     for (const table of [
@@ -118,7 +124,7 @@ describe("official source catalog administrative seeder", () => {
     );
     await db.exec(sql);
     expect((await db.query("select * from public.sources")).rows).toHaveLength(
-      35,
+      catalog.sources.length,
     );
     expect(
       (
@@ -126,7 +132,7 @@ describe("official source catalog administrative seeder", () => {
           "select * from public.audit_events where action='source.catalog.seed'",
         )
       ).rows,
-    ).toHaveLength(34);
+    ).toHaveLength(catalog.sources.length - 1);
     expect(
       (
         await db.query(
@@ -213,7 +219,7 @@ it("seeds extraction settings and explicitly backfills only unchanged legacy con
         "select id from public.sources where adapter_config ? 'extraction'",
       )
     ).rows,
-  ).toHaveLength(4);
+  ).toHaveLength(catalog.sources.filter((s) => s.extraction).length);
   const entry = catalog.sources.find((s) => s.extraction)!;
   const id = catalogSourceId(workspace, entry.key);
   const changed = catalog.sources.find(

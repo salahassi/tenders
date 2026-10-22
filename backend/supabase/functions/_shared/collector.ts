@@ -16,6 +16,33 @@ export class CollectionError extends Error {
     super(code);
   }
 }
+export function publicLoginRequired(html: string): boolean {
+  const $ = load(html);
+  return $("input[type=password]")
+    .toArray()
+    .some((raw) => {
+      const field = $(raw);
+      if (field.closest("[hidden],[aria-hidden=true]").length) return false;
+      if (
+        field
+          .parents()
+          .toArray()
+          .some((parent) =>
+            /display\s*:\s*none/i.test($(parent).attr("style") || ""),
+          )
+      )
+        return false;
+      const modal = field.closest(".modal");
+      if (
+        modal.length &&
+        !modal.hasClass("show") &&
+        !modal.hasClass("in") &&
+        modal.attr("aria-hidden") !== "false"
+      )
+        return false;
+      return true;
+    });
+}
 const path = z
   .string()
   .max(200)
@@ -453,9 +480,8 @@ export async function collect(
       }
       const body = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
       if (
-        /captcha|type\s*=\s*["']password|automated access (?:is )?(?:prohibited|forbidden)/i.test(
-          body,
-        )
+        publicLoginRequired(body) ||
+        /captcha|automated access (?:is )?(?:prohibited|forbidden)/i.test(body)
       )
         throw new CollectionError("MANUAL_SOURCE_REQUIRED");
       return { ...result, ...parseSource({ ...source, url }, body) };

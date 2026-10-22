@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalog_version": "2026-10-19",
+  "catalog_version": "2026-10-22",
   "sources": [
     {
       "key": "sa-etimad",
@@ -9,166 +9,10 @@
       "name_en": "Etimad government tenders",
       "sector": "government",
       "entry_type": "central_platform",
-      "url": "https://tenders.etimad.sa/Tender/AllTendersForVisitor",
-      "evidence_url": "https://tenders.etimad.sa/Tender/AllTendersForVisitor",
-      "checked_at": "2026-10-17",
-      "access_note": "بوابة المنافسات الحكومية المركزية. أظهر الفحص تحدي تحقق بشري؛ المتابعة من الموقع الرسمي، ولا يُتجاوز التحقق أو تسجيل الدخول.",
-      "http_status": 200
-    },
-    {
-      "key": "sa-mof",
-      "country": "SA",
-      "name": "وزارة المالية السعودية — المنافسات",
-      "name_en": "Saudi Ministry of Finance",
-      "sector": "ministry",
-      "entry_type": "central_redirect",
-      "url": "https://www.mof.gov.sa/tenders/Pages/default.aspx",
-      "evidence_url": "https://www.mof.gov.sa/tenders/Pages/default.aspx",
-      "checked_at": "2026-10-17",
-      "access_note": "الصفحة الرسمية تربط منافسات الوزارة بمنصة اعتماد؛ تُراجع المنافسة الأصلية في اعتماد لتجنب التكرار.",
-      "http_status": 200
-    },
-    {
-      "key": "sa-moj",
-      "country": "SA",
-      "name": "وزارة العدل السعودية — المنافسات",
-      "name_en": "Saudi Ministry of Justice",
-      "sector": "ministry",
-      "entry_type": "central_redirect",
-      "url": "https://www.moj.gov.sa/ar/ministry/pages/tenders.aspx",
-      "evidence_url": "https://www.moj.gov.sa/ar/ministry/pages/tenders.aspx",
-      "checked_at": "2026-10-17",
-      "access_note": "توجه الوزارة إلى اعتماد للمنافسات والمشتريات؛ ليست تغذية عطاءات مستقلة.",
-      "http_status": 200
-    },
-    {
-      "key": "sa-hrsd",
-      "country": "SA",
-      "name": "وزارة الموارد البشرية والتنمية الاجتماعية — المنافسات",
-      "name_en": "Saudi Ministry of Human Resources and Social Development",
-      "sector": "ministry",
-      "entry_type": "central_redirect",
-      "url": "https://www.hrsd.gov.sa/ministry/about-ministry/competitions-and-purchases",
-      "evidence_url": "https://www.hrsd.gov.sa/ministry/about-ministry/competitions-and-purchases",
-      "checked_at": "2026-10-17",
-      "access_note": "صفحة رسمية للمنافسات تربط بإجراءات الشراء ومنصة اعتماد.",
-      "http_status": 200
-    },
-    {
-      "key": "sa-moh",
-      "country": "SA",
-      "name": "وزارة الصحة السعودية — المنافسات",
-      "name_en": "Saudi Ministry of Health",
-      "sector": "ministry",
-      "entry_type": "central_redirect",
-      "url": "https://www.moh.gov.sa/Ministry/About/Pages/Tenders-and-Procurement.aspx",
-      "evidence_url": "https://www.moh.gov.sa/Ministry/About/Pages/Tenders-and-Procurement.aspx",
-      "checked_at": "2026-10-17",
-      "access_note": "تعرض الوزارة منافساتها الحالية والقادمة والمنتهية عبر اعتماد.",
-      "http_status": 200
-    },
-    {
-      "key": "sa-aramco",
-      "country": "SA",
-      "name": "أرامكو السعودية — فرص التعاقد",
-      "name_en": "Saudi Aramco contracting opportunities",
-      "sector": "large_company",
-      "entry_type": "supplier_registration",
-      "url": "https://www.aramco.com/ar/what-we-do/suppliers/contracting-opportunities",
-      "evidence_url": "https://www.aramco.com/ar/what-we-do/suppliers/contracting-opportunities",
-      "checked_at": "2026-10-17",
-      "access_note": "صفحة فرص التعاقد وتأهيل الموردين. التسجيل والتأهيل لا يضمنان دعوة أو ترسية؛ متابعة الفرص وفق حساب المورد.",
-      "http_status": 200
-    },
-    {
-      "key": "sa-se",
-      "country": "SA",
-      "name": "السعودية للطاقة — الموردون",
-      "name_en": "Saudi energy company suppliers",
-      "sector": "state_owned",
-      "entry_type": "supplier_registration",
-      "url": "https://www.se.com.sa/ar-SA/Ourpartners/ColumnA/Our-Supply-Chains/Our-Suppliers",
-      "evidence_url": "https://www.se.com.sa/ar-SA/Ourpartners/ColumnA/Our-Supply-Chains/Our-Suppliers",
-      "checked_at": "2026-10-17",
-      "access_note": "الصفحة الرسمية تشرح بوابة الشركاء والعطاءات الإلكترونية؛ المشاركة تتطلب حساب مورد مؤهل.",
-      "http_status": 200
-    },
-    {
-      "key": "sa-neom",
-      "country": "SA",
-      "name": "نيوم — بوابة الموردين",
-      "name_en": "NEOM suppliers",
-      "sector": "state_owned",
-      "entry_type": "supplier_registration",
-      "url": "https://www.neom.com/en-us/our-business/suppliers",
-      "evidence_url": "https://www.neom.com/en-us/our-business/suppliers",
-      "checked_at": "2026-10-17",
-      "access_note": "التسجيل الأولي مطلوب لتلقي دعوات المنافسات، ثم التأهيل والاختيار. ليست قائمة مفتوحة بكل طلبات العروض.",
-      "http_status": 200
-    },
-    {
-      "key": "sa-sabic",
-      "country": "SA",
-      "name": "سابك — بوابة الموردين",
-      "name_en": "SABIC Supplier Portal",
-      "sector": "large_company",
-      "entry_type": "supplier_registration",
-      "url": "https://supplier.sabic.com/",
-      "evidence_url": "https://supplier.sabic.com/",
-      "checked_at": "2026-10-17",
-      "access_note": "بوابة الموردين الرسمية للتسجيل والتعاملات. لا تُفترض إتاحة فرص المورد المسجلة دون حساب.",
-      "http_status": 200
-    },
-    {
-      "key": "sa-sama",
-      "country": "SA",
-      "name": "البنك المركزي السعودي — بوابة الموردين",
-      "name_en": "Saudi Central Bank supplier portal",
-      "sector": "bank",
-      "entry_type": "supplier_registration",
-      "url": "https://sama.gov.sa/ar-sa/Services/ProcurementAndVendorRelations/Pages/default.aspx",
-      "evidence_url": "https://sama.gov.sa/ar-sa/Services/ProcurementAndVendorRelations/Pages/default.aspx",
-      "checked_at": "2026-10-17",
-      "access_note": "تسجيل الموردين وعلاقات المشتريات؛ تسجيل الشركة لا يضمن أي تعامل مستقبلي. الرابط رسمي ومفهرس؛ أعاد طلب الفحص HTTP 503 من بيئة الاختبار، لذلك لم يُتحقق من محتوى الصفحة مباشرة في هذا الفحص.",
-      "http_status": 503
-    },
-    {
-      "key": "sa-alrajhi",
-      "country": "SA",
-      "name": "مصرف الراجحي — الموردون",
-      "name_en": "Al Rajhi Bank vendors",
-      "sector": "bank",
-      "entry_type": "supplier_registration",
-      "url": "https://www.alrajhibank.com.sa/en/About-alrajhi-bank/Vendors",
-      "evidence_url": "https://www.alrajhibank.com.sa/en/About-alrajhi-bank/Vendors",
-      "checked_at": "2026-10-17",
-      "access_note": "إدارة المشتريات هي الجهة المخولة بطلب عروض الأسعار والعطاءات. متابعة إجراءات تسجيل وتأهيل الموردين الرسمية.",
-      "http_status": 200
-    },
-    {
-      "key": "sa-alinma",
-      "country": "SA",
-      "name": "مصرف الإنماء — علاقات الموردين",
-      "name_en": "Alinma Bank vendor relations",
-      "sector": "bank",
-      "entry_type": "supplier_registration",
-      "url": "https://www.alinma.com/Quick-Links/Vendor-Relations",
-      "evidence_url": "https://www.alinma.com/Quick-Links/Vendor-Relations",
-      "checked_at": "2026-10-17",
-      "access_note": "بوابة رسمية لإنشاء حساب المورد والدخول إلى العمليات الشرائية؛ يلزم حساب المورد.",
-      "http_status": 200
-    },
-    {
-      "key": "sa-pif",
-      "country": "SA",
-      "name": "صندوق الاستثمارات العامة — بوابة الموردين",
-      "name_en": "Public Investment Fund suppliers",
-      "sector": "development_fund",
-      "entry_type": "supplier_registration",
-      "url": "https://www.pif.gov.sa/ar/private-sector-hub/become-a-supplier/register-interest/",
-      "evidence_url": "https://www.pif.gov.sa/ar/private-sector-hub/become-a-supplier/register-interest/",
-      "checked_at": "2026-10-17",
-      "access_note": "تسجيل اهتمام المورد لدى الصندوق. شركات المحفظة قد تملك بوابات مستقلة؛ التسجيل ليس قائمة عطاءات مفتوحة.",
+      "url": "https://tenders.etimad.sa/Tender/AllTendersForVisitor?PageNumber=1",
+      "evidence_url": "https://tenders.etimad.sa/Tender/AllTendersForVisitor?PageNumber=1",
+      "checked_at": "2026-10-22",
+      "access_note": "اختبار متصفح فعلي بتاريخ 2026-10-22 استخرج 6 منافسات منشورة بروابط تفاصيل وأرقام مرجعية متميزة. يتطلب مسار المتصفح عند حجب HTTP المباشر؛ التحقق البشري، إن ظهر، يدوي. لا تسجيل دخول أو شراء أو تقديم عروض آلياً.",
       "http_status": 200
     },
     {
@@ -228,23 +72,10 @@
       "name_en": "Jordan e-procurement system JONEPS",
       "sector": "government",
       "entry_type": "central_platform",
-      "url": "https://www.joneps.gov.jo/",
-      "evidence_url": "https://www.joneps.gov.jo/",
-      "checked_at": "2026-10-17",
-      "access_note": "نظام الشراء الحكومي المركزي؛ واجهة تفاعلية وتسجيل للمشاركة. لا توجد تغذية RSS أو JSON موثقة لهذا الإدخال.",
-      "http_status": 200
-    },
-    {
-      "key": "jo-gpd",
-      "country": "JO",
-      "name": "دائرة المشتريات الحكومية الأردنية — العطاءات",
-      "name_en": "Jordan Government Procurement Department",
-      "sector": "government",
-      "entry_type": "public_tenders",
-      "url": "https://www.gpd.gov.jo/Ar/Modules/Tenders",
-      "evidence_url": "https://www.gpd.gov.jo/Ar/Modules/Tenders",
-      "checked_at": "2026-10-17",
-      "access_note": "قائمة العطاءات المطروحة؛ تُراجع الإحالة إلى JONEPS والوثائق الأصلية لكل عطاء.",
+      "url": "https://www.joneps.gov.jo/ep/invt/selectListTendInvitAL.do?menuId=EP03000000&upperMenuId=EP03020000&subMenuId=EP03020100",
+      "evidence_url": "https://www.joneps.gov.jo/ep/invt/selectListTendInvitAL.do?menuId=EP03000000&upperMenuId=EP03020000&subMenuId=EP03020100",
+      "checked_at": "2026-10-22",
+      "access_note": "قائمة دعوات العطاءات العامة الفعلية بدل الصفحة الرئيسية. اختُبر ظهور سجلات 2026 وروابطها تعتمد تنقلاً عبر JavaScript؛ يبقى المصدر غير مفعّل حتى اختبار موصل التفاصيل.",
       "http_status": 200
     },
     {
@@ -296,9 +127,44 @@
       "entry_type": "public_tenders",
       "url": "https://mwi.gov.jo/AR/Modules/tenders",
       "evidence_url": "https://mwi.gov.jo/AR/Modules/tenders",
-      "checked_at": "2026-10-17",
-      "access_note": "عطاءات الوزارة والجهات التابعة في المياه والري؛ تُراجع شروط التمويل والتقديم لكل إعلان.",
-      "http_status": 200
+      "checked_at": "2026-10-22",
+      "access_note": "اختُبرت صفحة القائمة وروابط التفاصيل العامة عبر HTTPS وفحص الاستخراج قبل التفعيل. تُستبعد المواعيد المنتهية والمزادات وفق إعدادات المصدر؛ يبقى الموعد غير المبين مجهولاً. الوثائق والمشاركة بحسب شروط الجهة.",
+      "http_status": 200,
+      "extraction": {
+        "version": 1,
+        "url": "https://mwi.gov.jo/AR/Modules/tenders",
+        "buyer": "وزارة المياه والري الأردنية",
+        "timezone": "Asia/Amman",
+        "description_template": "{title}\nPublished: {published}\nReview the official notice and documents before bidding.",
+        "listing": {
+          "layout": "records",
+          "exclude_past_deadlines": true,
+          "container": "body",
+          "rows": "a[href^=\"/Ar/TendersDetails/\"]",
+          "title": "h5",
+          "link": ":scope",
+          "published": "[id$=\"lblTender_PublishDate\"]",
+          "deadline": "[id$=\"lblTender_ExpiredhDate\"]",
+          "deadline_order": "dmy",
+          "excluded_title_terms": [
+            "احالة",
+            "إحالة",
+            "مبدئية",
+            "إلغاء"
+          ]
+        },
+        "detail": {
+          "root": "body",
+          "remove": [
+            "header",
+            "footer",
+            "nav"
+          ],
+          "title_labels": [],
+          "deadline_labels": [],
+          "remove_matching": []
+        }
+      }
     },
     {
       "key": "jo-modee",
@@ -309,9 +175,47 @@
       "entry_type": "public_tenders",
       "url": "https://www.modee.gov.jo/AR/Modules/Tenders",
       "evidence_url": "https://www.modee.gov.jo/AR/Modules/Tenders",
-      "checked_at": "2026-10-17",
-      "access_note": "صفحة العطاءات الرسمية للوزارة؛ تفاصيل المشاركة قد تحيل إلى JONEPS.",
-      "http_status": 200
+      "checked_at": "2026-10-22",
+      "access_note": "اختُبرت صفحة القائمة وروابط التفاصيل العامة عبر HTTPS وفحص الاستخراج قبل التفعيل. تُستبعد المواعيد المنتهية والمزادات وفق إعدادات المصدر؛ يبقى الموعد غير المبين مجهولاً. الوثائق والمشاركة بحسب شروط الجهة.",
+      "http_status": 200,
+      "extraction": {
+        "version": 1,
+        "url": "https://www.modee.gov.jo/AR/Modules/Tenders",
+        "buyer": "وزارة الاقتصاد الرقمي والريادة",
+        "timezone": "Asia/Amman",
+        "description_template": "{title}\nPublished: {published}\nReview the official notice and documents before bidding.",
+        "listing": {
+          "layout": "records",
+          "exclude_past_deadlines": true,
+          "container": "body",
+          "rows": "a[href^=\"/Ar/TendersDetails/\"]",
+          "title": "h5",
+          "link": ":scope",
+          "published": "[id$=\"lblTender_PublishDate\"]",
+          "deadline": "[id$=\"lblTender_ExpiredhDate\"]",
+          "deadline_order": "dmy",
+          "empty_messages": [
+            "لا يوجد عطاءات حاليه"
+          ],
+          "excluded_title_terms": [
+            "احالة",
+            "إحالة",
+            "مبدئية",
+            "إلغاء"
+          ]
+        },
+        "detail": {
+          "root": "body",
+          "remove": [
+            "header",
+            "footer",
+            "nav"
+          ],
+          "title_labels": [],
+          "deadline_labels": [],
+          "remove_matching": []
+        }
+      }
     },
     {
       "key": "jo-cbj",
@@ -335,9 +239,38 @@
       "entry_type": "public_tenders",
       "url": "https://www.nepco.com.jo/en/Tenders.aspx",
       "evidence_url": "https://www.nepco.com.jo/en/Tenders.aspx",
-      "checked_at": "2026-10-17",
-      "access_note": "قائمة إعلانات العطاءات الرسمية؛ بعض الإعلانات تحيل إلى JONEPS وقد تتطلب شراء وثائق يدويًا.",
-      "http_status": 200
+      "checked_at": "2026-10-22",
+      "access_note": "اختُبرت صفحة القائمة وروابط التفاصيل العامة عبر HTTPS وفحص الاستخراج قبل التفعيل. تُستبعد المواعيد المنتهية والمزادات وفق إعدادات المصدر؛ يبقى الموعد غير المبين مجهولاً. الوثائق والمشاركة بحسب شروط الجهة.",
+      "http_status": 200,
+      "extraction": {
+        "version": 1,
+        "url": "https://www.nepco.com.jo/en/Tenders.aspx",
+        "buyer": "شركة الكهرباء الوطنية الأردنية",
+        "timezone": "Asia/Amman",
+        "description_template": "{title}\nPublished: {published}\nReview the official notice and documents before bidding.",
+        "listing": {
+          "layout": "records",
+          "exclude_past_deadlines": true,
+          "container": "body",
+          "rows": ".tender-hover .card",
+          "title": ".card-title",
+          "link": "a[href^=\"TenderPage.aspx\"]",
+          "reference": "[id*=\"_tenderNo_\"]",
+          "deadline": "[id*=\"_closeDate_\"]",
+          "deadline_order": "ymd"
+        },
+        "detail": {
+          "root": "body",
+          "remove": [
+            "header",
+            "footer",
+            "nav"
+          ],
+          "title_labels": [],
+          "deadline_labels": [],
+          "remove_matching": []
+        }
+      }
     },
     {
       "key": "jo-jpmc",
@@ -348,9 +281,44 @@
       "entry_type": "public_tenders",
       "url": "https://www.jpmc.com.jo/ar/tender",
       "evidence_url": "https://www.jpmc.com.jo/ar/tender",
-      "checked_at": "2026-10-17",
-      "access_note": "قائمة العطاءات المطروحة الحالية مع رابط الأرشيف؛ تُراجع تواريخ الإغلاق في الإعلان الأصلي.",
-      "http_status": 200
+      "checked_at": "2026-10-22",
+      "access_note": "اختُبرت صفحة القائمة وروابط التفاصيل العامة عبر HTTPS وفحص الاستخراج قبل التفعيل. تُستبعد المواعيد المنتهية والمزادات وفق إعدادات المصدر؛ يبقى الموعد غير المبين مجهولاً. الوثائق والمشاركة بحسب شروط الجهة.",
+      "http_status": 200,
+      "extraction": {
+        "version": 1,
+        "url": "https://www.jpmc.com.jo/ar/tender",
+        "buyer": "شركة مناجم الفوسفات الأردنية",
+        "timezone": "Asia/Amman",
+        "description_template": "{title}\nPublished: {published}\nReview the official notice and documents before bidding.",
+        "listing": {
+          "layout": "records",
+          "exclude_past_deadlines": true,
+          "container": "#items-container",
+          "rows": ".ads-card",
+          "title": "h3",
+          "link": "a[href^=\"/ar/tender/\"]",
+          "published": "span:contains(\"تاريخ بدء العطاء\")",
+          "deadline": "span:contains(\"تاريخ انتهاء العطاء\")",
+          "deadline_order": "dmy",
+          "excluded_title_terms": [
+            "بيع",
+            "المزاودة",
+            "المزاود",
+            "مزاد"
+          ]
+        },
+        "detail": {
+          "root": "body",
+          "remove": [
+            "header",
+            "footer",
+            "nav"
+          ],
+          "title_labels": [],
+          "deadline_labels": [],
+          "remove_matching": []
+        }
+      }
     },
     {
       "key": "jo-apc",
@@ -361,9 +329,38 @@
       "entry_type": "public_tenders",
       "url": "https://arabpotash.com/EN/Modules/Tenders",
       "evidence_url": "https://arabpotash.com/EN/Modules/Tenders",
-      "checked_at": "2026-10-17",
-      "access_note": "قائمة العطاءات الفعالة ومتطلبات أهلية الموردين؛ قد توجد رسوم وثائق وكفالات لا ينفذها النظام.",
-      "http_status": 200
+      "checked_at": "2026-10-22",
+      "access_note": "اختُبرت صفحة القائمة وروابط التفاصيل العامة عبر HTTPS وفحص الاستخراج قبل التفعيل. تُستبعد المواعيد المنتهية والمزادات وفق إعدادات المصدر؛ يبقى الموعد غير المبين مجهولاً. الوثائق والمشاركة بحسب شروط الجهة.",
+      "http_status": 200,
+      "extraction": {
+        "version": 1,
+        "url": "https://arabpotash.com/EN/Modules/Tenders",
+        "buyer": "شركة البوتاس العربية",
+        "timezone": "Asia/Amman",
+        "description_template": "{title}\nPublished: {published}\nReview the official notice and documents before bidding.",
+        "listing": {
+          "layout": "records",
+          "exclude_past_deadlines": true,
+          "container": "body",
+          "rows": "a[href^=\"/En/TendersDetails?PID=\"]",
+          "title": "h5",
+          "link": ":scope",
+          "published": "[id$=\"lblTender_PublishDate\"]",
+          "deadline": "[id$=\"lblTender_ExpiredhDate\"]",
+          "deadline_order": "dmy"
+        },
+        "detail": {
+          "root": "body",
+          "remove": [
+            "header",
+            "footer",
+            "nav"
+          ],
+          "title_labels": [],
+          "deadline_labels": [],
+          "remove_matching": []
+        }
+      }
     },
     {
       "key": "jo-gam",
@@ -387,9 +384,37 @@
       "entry_type": "public_tenders",
       "url": "https://procurement.rj.com/",
       "evidence_url": "https://procurement.rj.com/",
-      "checked_at": "2026-10-17",
-      "access_note": "قائمة طلبات الشراء والعطاءات الرسمية؛ المشاركة وفق إجراءات البوابة وتوقيت الإغلاق المبين لكل طلب.",
-      "http_status": 200
+      "checked_at": "2026-10-22",
+      "access_note": "اختُبرت صفحة القائمة وروابط التفاصيل العامة عبر HTTPS وفحص الاستخراج قبل التفعيل. تُستبعد المواعيد المنتهية والمزادات وفق إعدادات المصدر؛ يبقى الموعد غير المبين مجهولاً. الوثائق والمشاركة بحسب شروط الجهة.",
+      "http_status": 200,
+      "extraction": {
+        "version": 1,
+        "url": "https://procurement.rj.com/",
+        "buyer": "الملكية الأردنية",
+        "timezone": "Asia/Amman",
+        "description_template": "{title}\nPublished: {published}\nReview the official notice and documents before bidding.",
+        "listing": {
+          "layout": "records",
+          "exclude_past_deadlines": true,
+          "container": "#data",
+          "rows": "tbody tr:has(a[href^=\"RFP_Check.aspx\"])",
+          "title": "a[href^=\"RFP_Check.aspx\"]",
+          "link": "a[href^=\"RFP_Check.aspx\"]",
+          "deadline": "td:nth-child(6),td:nth-child(7)",
+          "deadline_order": "ymd"
+        },
+        "detail": {
+          "root": "body",
+          "remove": [
+            "header",
+            "footer",
+            "nav"
+          ],
+          "title_labels": [],
+          "deadline_labels": [],
+          "remove_matching": []
+        }
+      }
     },
     {
       "key": "ps-shiraa",
@@ -416,19 +441,6 @@
       "checked_at": "2026-10-17",
       "access_note": "إعلانات اللوازم العامة تشمل عطاءات وإلغاء وتمديدات لصالح الوزارات والمؤسسات؛ لا يُفسر الإلغاء كفرصة جديدة. الرابط رسمي ومفهرس؛ أعاد طلب الفحص HTTP 503 من بيئة الاختبار، لذلك لم يُتحقق من محتوى الصفحة مباشرة في هذا الفحص.",
       "http_status": 503
-    },
-    {
-      "key": "ps-pma",
-      "country": "PS",
-      "name": "سلطة النقد الفلسطينية — العطاءات",
-      "name_en": "Palestine Monetary Authority tenders",
-      "sector": "bank",
-      "entry_type": "public_tenders",
-      "url": "https://www.pma.ps/tenders",
-      "evidence_url": "https://www.pma.ps/tenders",
-      "checked_at": "2026-10-17",
-      "access_note": "تنشر سلطة النقد العطاءات والمناقصات المحلية والدولية رسميًا؛ تُطلب الكراسة وفق تعليمات الإعلان دون إرسال آلي.",
-      "http_status": 200
     },
     {
       "key": "ps-bop",
@@ -571,19 +583,6 @@
           ]
         }
       }
-    },
-    {
-      "key": "ps-ooredoo",
-      "country": "PS",
-      "name": "Ooredoo فلسطين — دليل الموردين",
-      "name_en": "Ooredoo Palestine supplier guide",
-      "sector": "large_company",
-      "entry_type": "supplier_registration",
-      "url": "https://www.ooredoo.ps/عن-ooredoo/دليل-الموردين.html",
-      "evidence_url": "https://www.ooredoo.ps/عن-ooredoo/دليل-الموردين.html",
-      "checked_at": "2026-10-17",
-      "access_note": "دليل الانضمام وإجراءات دائرة المشتريات والتوريدات؛ ليست تغذية آلية لفرص عامة ولا يقدّم النظام طلب تسجيل نيابة عن المورد.",
-      "http_status": 200
     },
     {
       "key": "ps-pwa",

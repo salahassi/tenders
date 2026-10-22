@@ -5,6 +5,7 @@ import {
   canonical,
   inertText,
   publicAddress,
+  publicLoginRequired,
   type SourceInput,
 } from "./collector.ts";
 import { safeUrl } from "./contracts.ts";
@@ -178,9 +179,8 @@ export function parseNoticeDetails(input: unknown, url: string, html: string) {
   )
     throw new CollectionError("OFFICIAL_ADAPTER_URL_MISMATCH");
   if (
-    /captcha|type\s*=\s*["']password|automated access (?:is )?(?:prohibited|forbidden)/i.test(
-      html,
-    )
+    publicLoginRequired(html) ||
+    /captcha|automated access (?:is )?(?:prohibited|forbidden)/i.test(html)
   )
     throw new CollectionError("MANUAL_SOURCE_REQUIRED");
   const $ = load(html);
@@ -310,7 +310,7 @@ export function parseAutomaticNoticeDetails(
 ) {
   const $ = load(html);
   removePrivacyNavigation($);
-  const requiresLogin = $("input[type=password]").length > 0;
+  const requiresLogin = publicLoginRequired(html);
   const hasScript = $("script").length > 0;
   $(
     "script,style,header,footer,nav,input,textarea,button,noscript,template",

@@ -1,5 +1,50 @@
 # Implementation status and continuation plan
 
+## October 22 — Replace registration pages with tested tender listings
+
+Owner explicitly requested finding actual tender pages, testing extraction before
+addition, and removing non-listing sources. Current 35-source snapshot and fresh
+HTTPS probes are preserved locally. Registration portals and ministry referral
+pages will be removed through audited source rejection and pending-job
+cancellation, retaining existing opportunities and history. The default directory
+will hide rejected sources and retain an explicit Removed sources filter.
+
+A generic records extraction layout supports real public tender cards/tables
+with saved selectors, distinct detail-URL identities, raw closing dates and
+optional source-timezone calendar-day exclusion of past deadlines. No
+institution-specific runtime registry is added. Preflight source results, complete
+regression, live audited changes and publication will be reconciled below.
+Fresh Royal Jordanian listing/detail GETs exposed an optional hidden Bootstrap
+login dialog incorrectly treated as a login wall. Public HTML parsing now
+distinguishes hidden dialogs from active password forms; HTTP authorization and
+CAPTCHA/access-prohibition guards remain enforced, with regressions for each.
+
+Preflight passed before activation: canonical collector requests retrieved Royal
+Jordanian **6**, NEPCO **9**, Arab Potash **12**, JPMC **2**, Water Ministry **8**;
+MODEE explicitly reported **0** current tenders. One original detail GET from each
+nonempty listing returned HTTP 200 and matching content. Fresh Chromium Etimad
+`PageNumber=1` returned HTTP 200 and **6 distinct references/detail URLs**. These
+43 preflight notices are real public-page results, separate from database ingestion.
+Unsuccessful SFD/Birzeit checks and PPU's inspected closed notice were not added.
+
+Live administrative execution on the verified Owner's explicit request used the
+normal revision/idempotency/audit commands: **15 sources rejected**, associated
+source jobs canceled, existing opportunities/history retained; **seven tested
+existing candidates configured, approved and queued**. JONEPS's homepage was
+replaced by the observed public invitation-list URL, kept paused because its
+JavaScript detail navigation lacks a tested collector. Seven remaining candidates
+are not enabled. The reference catalog now contains 20 destinations (SA 2, JO 10,
+PS 8), including ten static extraction profiles; repeat seed never restores
+retired source decisions or enables collection.
+
+Local acceptance passed **1,225 backend tests / 72 files**, **213 frontend tests /
+38 files**, both package typechecks/builds, and all three Deno entrypoints.
+Deployed **API v84 / worker v119** reachable files match canonical source. Initial
+live jobs exposed the old five-host deployment permission list. Only the seven
+tested exact hosts were appended with an administrative audit, preserving existing
+hosts and the dispatcher credential; affected jobs were retried through commands.
+Live source completion and Pages publication remain to reconcile.
+
 ## October 22 — Browser collection, human verification and legacy review resume
 
 Owner requested a JavaScript/CAPTCHA solution and recovery of the pictured legacy

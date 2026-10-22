@@ -492,6 +492,41 @@ describe("connected screens", () => {
     ).toBeInTheDocument();
   });
 
+  it("hides removed source pages from the directory and preserves access through the removal filter", async () => {
+    const f = fixture([
+      {
+        id: source,
+        revision: 2,
+        name: "Synthetic removed registration page",
+        kind: "link_directory",
+        url: "https://example.test/register",
+        approval: "rejected",
+        tags: [],
+      },
+    ]);
+    render(
+      <MemoryRouter>
+        <ConnectedProvider client={f.client}>
+          <Sources />
+        </ConnectedProvider>
+      </MemoryRouter>,
+    );
+    await screen.findByRole("button", { name: "Add source" });
+    expect(
+      screen.queryByRole("link", {
+        name: "Synthetic removed registration page",
+      }),
+    ).not.toBeInTheDocument();
+    await userEvent
+      .setup()
+      .selectOptions(screen.getByLabelText("Filter source status"), "rejected");
+    expect(
+      await screen.findByRole("link", {
+        name: "Synthetic removed registration page",
+      }),
+    ).toHaveAttribute("href", `/sources/${source}`);
+  });
+
   it("opens a saved portal with automatic reading selected and retains access notes", async () => {
     const f = fixture([
       {

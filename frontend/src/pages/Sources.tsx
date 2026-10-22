@@ -42,7 +42,7 @@ const sourceStatusLabel: Record<Source["status"], string> = {
   approved: "Enabled",
   proposed: "Not enabled",
   paused: "Paused",
-  rejected: "Rejected",
+  rejected: "Removed",
 };
 
 export default function Sources() {
@@ -73,7 +73,7 @@ export default function Sources() {
   const sources = state.sources.filter(
     (s) =>
       !(s.status === "proposed" && s.adapterConfig?.discovery_job) &&
-      (filter === "all" || s.status === filter) &&
+      (filter === "all" ? s.status !== "rejected" : s.status === filter) &&
       (country === "all" || sourceCountry(s) === country) &&
       `${s.name} ${sourceTypeLabel[s.type]} ${s.tags.join(" ")}`
         .toLowerCase()
@@ -165,7 +165,7 @@ export default function Sources() {
       <PageHeader
         eyebrow="DISCOVERY"
         title="Sources"
-        description="Browse official tender sources and supplier portals, or add a feed to monitor."
+        description="Browse public tender sources, or add a feed to monitor."
         actions={
           canEdit ? (
             <div className="source-header-actions">
@@ -238,11 +238,11 @@ export default function Sources() {
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         >
-          <option value="all">All sources</option>
+          <option value="all">All current sources</option>
           <option value="approved">Enabled</option>
           <option value="proposed">Not enabled</option>
           <option value="paused">Paused</option>
-          <option value="rejected">Rejected</option>
+          <option value="rejected">Removed sources</option>
         </select>
       </div>
       <div className="panel">
