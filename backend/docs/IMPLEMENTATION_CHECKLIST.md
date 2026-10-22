@@ -254,6 +254,18 @@ Backend typecheck/build and frozen worker checking pass. Worker **v115** and
 of the recovery and final Word acceptance remain pending. Source `3bffc2b`
 passed full CI and publication; v114 readback matched all 51 retrieved files.
 
+Hosted follow-up: both replacement reviews completed and all six scoped groups
+advanced automatically to final reconciliation. Its first verification exposed a
+numeric-guard false positive: digits inside the exact supplied
+`proposal-review:<uuid>` source ID were treated as business quantities. The guard
+now recognizes exact supplied namespaced UUIDs while retaining checks on unknown
+IDs, embedded IDs and neighboring prices/quantities. No citation text, finding or
+model budget is changed. **143 focused tests**, backend typecheck/build and frozen
+worker checking pass. Private replay of the unchanged actual final report now
+passes all 23 claims with zero verification defects. Worker **v116** deployed;
+hosted commit/export remains pending. Source `3c3587f`
+passed full CI: **1,200 backend + 205 frontend tests**, typechecks/builds and Deno.
+
 
 ## October 21 — approved throughput and coherence follow-up
 

@@ -266,6 +266,29 @@ it.each([
     pass: true,
   },
   {
+    name: "a supplied namespaced draft snapshot ID",
+    id: `proposal-review:${sourceUuid}`,
+    text: `Review the saved draft in proposal-review:${sourceUuid}.`,
+    pass: true,
+  },
+  {
+    name: "a quantity beside a supplied namespaced snapshot ID",
+    id: `proposal-review:${sourceUuid}`,
+    text: `Draft proposal-review:${sourceUuid} requires 50 engineers.`,
+    pass: false,
+  },
+  {
+    name: "an unknown namespace wrapping a supplied bare UUID",
+    text: `Review invented:${sourceUuid}.`,
+    pass: false,
+  },
+  {
+    name: "a larger namespace containing a supplied snapshot ID",
+    id: `proposal-review:${sourceUuid}`,
+    text: `Review invented:proposal-review:${sourceUuid}.`,
+    pass: false,
+  },
+  {
     name: "a supplied requirement UUID",
     text: `Confirm the design for requirement (${requirementUuid}).`,
     requiredId: requirementUuid,

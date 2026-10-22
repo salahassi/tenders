@@ -30,10 +30,10 @@ const numericLiterals = (text: string): string[] => {
 };
 function withoutReferenceIdentifiers(text: string, referenceIds: Set<string>) {
   // Internal source and requirement UUIDs identify records, not quantities.
-  // Only exact supplied UUIDs at identifier boundaries are exempt. Keep
+  // Only exact supplied UUIDs (including namespaced snapshot IDs) at identifier boundaries are exempt. Keep
   // unknown IDs, embedded substrings and all surrounding factual numbers.
   return text.replace(
-    /(?<![\p{L}\p{N}_-])[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![\p{L}\p{N}_-])/gu,
+    /(?<![\p{L}\p{N}_:-])(?:[a-zA-Z][a-zA-Z0-9_.-]*:)?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?![\p{L}\p{N}_:-])/gu,
     (id) => (referenceIds.has(id) ? "" : id),
   );
 }
