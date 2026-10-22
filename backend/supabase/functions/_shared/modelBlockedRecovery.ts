@@ -1,7 +1,11 @@
 import type { Backend } from "./backend.ts";
 import type { ModelGraphStore } from "./modelGraphStore.ts";
 import { sha256, type Evidence, type Reference } from "./model.ts";
-import { groundingDefects, validateGroundingReport } from "./modelGrounding.ts";
+import {
+  groundingDefects,
+  groundingOptions,
+  validateGroundingReport,
+} from "./modelGrounding.ts";
 
 /** Revalidate a retained complete report after a deterministic guard correction.
  * This path cannot call a model, change the candidate, or reset any allowance.
@@ -14,6 +18,7 @@ export async function recoverBlockedVerification(o: {
   job: { id: string; lease_token: string };
   evidence: Evidence[];
   requiredIds: string[];
+  context?: any;
   manifest: Reference[];
   state: { next: readonly string[]; values: Record<string, any> };
   validate?: (result: any) => void;
@@ -70,6 +75,8 @@ export async function recoverBlockedVerification(o: {
       hash,
       o.evidence,
       o.requiredIds,
+      undefined,
+      groundingOptions(o.context),
     );
   } catch {
     return false;

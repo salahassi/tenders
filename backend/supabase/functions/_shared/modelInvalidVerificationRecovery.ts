@@ -8,7 +8,11 @@ import {
   type Evidence,
   type Reference,
 } from "./model.ts";
-import { candidateContent, validateGroundingReport } from "./modelGrounding.ts";
+import {
+  candidateContent,
+  groundingOptions,
+  validateGroundingReport,
+} from "./modelGrounding.ts";
 import { modelSchemas } from "./modelSchemas.ts";
 import {
   verificationBatches,
@@ -131,6 +135,7 @@ export async function recoverInvalidVerification(o: {
       o.evidence,
       requiredIds,
       scope,
+      groundingOptions(o.context),
     );
   } catch (error) {
     if (

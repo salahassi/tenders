@@ -1563,9 +1563,10 @@ it.each([
   { finalRemainingMs: 5000, reorderedPolicy: false },
   { finalRemainingMs: 20000, reorderedPolicy: true },
   { finalRemainingMs: 5000, reorderedPolicy: true },
+  { finalRemainingMs: 20000, reorderedPolicy: true, internalReferences: true },
 ])(
   "durably verifies batches across restarts ($finalRemainingMs ms, JSONB policy order: $reorderedPolicy)",
-  async ({ finalRemainingMs, reorderedPolicy }) => {
+  async ({ finalRemainingMs, reorderedPolicy, internalReferences }) => {
     const { executeGuardedModel } =
       await import("../../supabase/functions/_shared/modelGraph");
     const { candidateContent } =
@@ -1599,7 +1600,10 @@ it.each([
     let activeLease = job.lease_token;
     let coverageLease: string | undefined;
     const calls: { lease: string; scope: string }[] = [];
-    const text = "Proposed approach requires buyer confirmation. ".repeat(42);
+    const text = (
+      "Proposed approach requires buyer confirmation. " +
+      (internalReferences ? "See delivery-7-access_gate. " : "")
+    ).repeat(internalReferences ? 30 : 42);
     const candidate = {
       key: "approach",
       title: "Approach",
@@ -1655,9 +1659,11 @@ it.each([
                   id: "claim",
                   claim: "Proposed approach",
                   candidate_quote: c.content_units[0].text,
-                  kind: "assumption",
+                  kind: internalReferences ? "tender_fact" : "assumption",
                   status: "supported",
-                  source_refs: [],
+                  source_refs: internalReferences
+                    ? [{ id: "notice", quote: "Buyer approval is required." }]
+                    : [],
                   finding: "Conditional proposed work",
                 },
               ],
@@ -1699,9 +1705,28 @@ it.each([
           prefix: `step:${job.id}`,
           task: "draft_section",
           context: reorderedPolicy
-            ? { workflow_version: 2, verification_output_tokens: 40000 }
+            ? {
+                workflow_version: 2,
+                verification_output_tokens: 40000,
+                ...(internalReferences
+                  ? {
+                      response_locations: [
+                        { section_key: "delivery-7-access_gate" },
+                      ],
+                    }
+                  : {}),
+              }
             : {},
-          evidence: [],
+          evidence: internalReferences
+            ? [
+                {
+                  id: "notice",
+                  text: "Buyer approval is required.",
+                  kind: "notice",
+                  verified: false,
+                },
+              ]
+            : [],
           requiredIds: ["required-1"],
           manifest: [],
           environments: envs,

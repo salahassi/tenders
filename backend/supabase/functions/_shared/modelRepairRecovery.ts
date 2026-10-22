@@ -1,7 +1,11 @@
 import type { Backend } from "./backend.ts";
 import type { ModelGraphStore } from "./modelGraphStore.ts";
 import { modelPrompt, sha256, type Evidence, type Reference } from "./model.ts";
-import { groundingDefects, validateGroundingReport } from "./modelGrounding.ts";
+import {
+  groundingDefects,
+  groundingOptions,
+  validateGroundingReport,
+} from "./modelGrounding.ts";
 import {
   verificationBatches,
   verificationPolicy,
@@ -76,7 +80,7 @@ export async function recoverUnstartedRepair(o: {
       o.evidence,
       [],
       { units },
-      { aggregateVerification: true },
+      groundingOptions(o.context, true),
     );
   } catch {
     return false;

@@ -26,6 +26,7 @@ import {
 import {
   candidateContent,
   groundingDefects,
+  groundingOptions,
   validateGroundingReport,
 } from "./modelGrounding.ts";
 import { pinVerificationPrompt } from "./modelVerificationPrompt.ts";
@@ -241,6 +242,7 @@ export async function replayRevalidatedVerification(o: {
     o.evidence,
     requiredIds,
     scope,
+    groundingOptions(o.context),
   );
   await o.store.action("result_put", {
     key: phase.replace("verification-repair-", "verification-"),
@@ -708,6 +710,7 @@ async function runGuardedModel(o: Options): Promise<{
           o.evidence,
           requiredIds,
           scope,
+          groundingOptions(o.context),
         );
       } catch {
         // A later corrective report supersedes the first rejected report.
@@ -924,6 +927,7 @@ async function runGuardedModel(o: Options): Promise<{
                     o.evidence,
                     scope.requiredIds,
                     scope,
+                    groundingOptions(o.context),
                   ),
                 invalid
                   ? invalid.value.producer?.modelId
@@ -957,7 +961,7 @@ async function runGuardedModel(o: Options): Promise<{
                 o.evidence,
                 [],
                 { units: batches.slice(0, reports.length).flat() },
-                { aggregateVerification: true },
+                groundingOptions(o.context, true),
               );
               // This artifact can drive bounded writer repair only. It must
               // never populate the complete verification cache for this hash.
@@ -996,7 +1000,7 @@ async function runGuardedModel(o: Options): Promise<{
           o.evidence,
           o.requiredIds,
           undefined,
-          { aggregateVerification: true },
+          groundingOptions(o.context, true),
         );
         const saved = await store.action("result_put", {
           key: reportKey,
@@ -1047,6 +1051,8 @@ async function runGuardedModel(o: Options): Promise<{
               hash,
               o.evidence,
               o.requiredIds,
+              undefined,
+              groundingOptions(o.context),
             ),
           invalid ? invalid.value.producer?.modelId : stored.producer?.modelId,
         );
@@ -1099,7 +1105,7 @@ async function runGuardedModel(o: Options): Promise<{
           o.evidence,
           o.requiredIds,
           undefined,
-          { aggregateVerification: true },
+          groundingOptions(o.context, true),
         );
         if (groundingDefects(report.value.result).length)
           throw new ModelError("MODEL_CORRECTION_EXHAUSTED");
@@ -1170,6 +1176,7 @@ async function runGuardedModel(o: Options): Promise<{
               graph.updateState(config, values, asNode),
           })) ||
           (await recoverBlockedVerification({
+            context: o.context,
             backend: o.backend,
             store,
             job: o.job,

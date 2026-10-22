@@ -1,5 +1,9 @@
 import { sha256, validateModelResult } from "./model.ts";
-import { groundingDefects, validateGroundingReport } from "./modelGrounding.ts";
+import {
+  groundingDefects,
+  groundingOptions,
+  validateGroundingReport,
+} from "./modelGrounding.ts";
 import {
   loadPaidWriterCandidate,
   paidWriterCandidates,
@@ -102,6 +106,8 @@ export async function recoverAlternatePaidWriter(
       previousHash,
       o.evidence,
       o.requiredIds,
+      undefined,
+      groundingOptions(o.context),
     );
   } catch {
     return false;

@@ -37,6 +37,34 @@ function withoutReferenceIdentifiers(text: string, referenceIds: Set<string>) {
     (id) => (referenceIds.has(id) ? "" : id),
   );
 }
+/** Only keys from the frozen, server-built proposal context may be treated as
+ * cross-references. Never derive this allowlist from a candidate or its report. */
+export function groundingOptions(context: any, aggregateVerification = false) {
+  const keys =
+    context?.workflow_version >= 2
+      ? [
+          ...(Array.isArray(context.response_locations)
+            ? context.response_locations.map((r: any) => r?.section_key)
+            : []),
+          ...(Array.isArray(context.shared_decisions)
+            ? context.shared_decisions.map((r: any) => r?.key)
+            : []),
+        ].filter(
+          (key): key is string =>
+            typeof key === "string" && /^[a-z][a-z0-9_-]{1,99}$/.test(key),
+        )
+      : [];
+  return {
+    aggregateVerification,
+    proposalReferenceKeys: [...new Set<string>(keys)],
+  };
+}
+function withoutProposalReferences(text: string, keys: Set<string>) {
+  return text.replace(
+    /(?<![\p{L}\p{N}_-])[a-z][a-z0-9_-]{1,99}(?![\p{L}\p{N}_-])/gu,
+    (key) => (keys.has(key) ? "" : key),
+  );
+}
 function adjacentItemNumbers(
   ref: { id: string; quote: string },
   evidence: Evidence[],
@@ -161,7 +189,10 @@ export function validateGroundingReport(
   evidence: Evidence[],
   requiredIds: string[],
   scope?: { units: { id: string; text: string }[]; requirementsOnly?: boolean },
-  options?: { aggregateVerification?: boolean },
+  options?: {
+    aggregateVerification?: boolean;
+    proposalReferenceKeys?: string[];
+  },
 ) {
   validateModelResult(
     "verify_grounding",
@@ -224,6 +255,7 @@ export function validateGroundingReport(
     ...evidence.map((source) => source.id),
     ...requiredIds,
   ]);
+  const proposalReferences = new Set(options?.proposalReferenceKeys ?? []);
   for (const [index, claim] of report.claims.entries()) {
     if (!text.includes(normalizedEvidence(claim.candidate_quote))) {
       console.warn(
@@ -256,9 +288,9 @@ export function validateGroundingReport(
       );
       let unsupportedLabel = false;
       const unsupportedNumbers: string[] = [];
-      const factualText = withoutReferenceIdentifiers(
-        claim.candidate_quote,
-        referenceIds,
+      const factualText = withoutProposalReferences(
+        withoutReferenceIdentifiers(claim.candidate_quote, referenceIds),
+        proposalReferences,
       ).replace(itemLabel, (_match: string, label: string) => {
         const number = numericLiterals(label)[0];
         if (

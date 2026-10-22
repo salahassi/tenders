@@ -92,6 +92,24 @@ blocked. Final review and the actual Word download remain pending.
 Worker source `d192151` passed
 [CI and Pages 39744554596](https://github.com/salahassi/tenders/actions/runs/39744554596).
 
+Queue release `b018678` passed
+[CI and Pages 39748699807](https://github.com/salahassi/tenders/actions/runs/39748699807).
+
+The live trial reached 30 completed writing units at **09:01 UTC**. A later
+numeric guard false positive was isolated: a numeral inside a known proposal
+unit key was treated as an unsupported contractual quantity by three verifier
+attempts. The guard now exempts exact section/decision keys only from the frozen
+server-built proposal context, at full identifier boundaries. Unknown keys,
+prefix/suffix lookalikes and surrounding amounts/durations remain checked. All
+normal, scoped, aggregate and retained-report recovery paths receive the same
+context; candidates cannot create their own exemption list. **149 focused tests**
+pass, including a real graph restart/aggregate-acceptance case and unknown-key,
+boundary, Arabic-number, price and duration rejection cases. Backend typecheck,
+build and frozen Deno worker checking pass. Worker **v106** was deployed at
+**09:05 UTC**; all 50 retrievable files match the canonical bundle. API remains
+v80. Full CI is pending. No paid receipt, prompt, budget or accepted content is
+replaced.
+
 
 ## October 21 — approved throughput and coherence follow-up
 

@@ -4,6 +4,7 @@ import {
   candidateContent,
   validateGroundingReport,
   groundingDefects,
+  groundingOptions,
 } from "../../supabase/functions/_shared/modelGrounding";
 const candidate = {
   content_blocks: [
@@ -196,6 +197,67 @@ it.each([
   },
 );
 const sourceUuid = "12345678-abcd-4abc-8abc-abcdef123456";
+it.each([
+  { text: "Review delivery-7-access_gate before implementation.", pass: true },
+  { text: "Review (delivery-7-access_gate).", pass: true },
+  { text: "Review decision-3-approval.", pass: true },
+  { text: "Review delivery-8-access_gate.", pass: false },
+  { text: "Review prefix-delivery-7-access_gate.", pass: false },
+  { text: "Review delivery-7-access_gate_suffix.", pass: false },
+  {
+    text: "Review delivery-7-access_gate then deliver within 50 days.",
+    pass: false,
+  },
+  { text: "Pay USD 50000 under delivery-7-access_gate.", pass: false },
+  { text: "راجع delivery-7-access_gate خلال ٥٠ يومًا.", pass: false },
+  { text: "Review delivery-7-access_gate.", legacy: true, pass: false },
+])(
+  "distinguishes frozen proposal references from factual quantities: $text",
+  ({ text, legacy, pass }) => {
+    const source = "Review approval before implementation.";
+    const c = { content_blocks: [{ type: "paragraph", text }] };
+    const r = report();
+    r.claims[0] = {
+      ...r.claims[0],
+      claim: text,
+      candidate_quote: text,
+      source_refs: [{ id: "notice", quote: source }],
+    };
+    const options = groundingOptions({
+      workflow_version: legacy ? 1 : 2,
+      response_locations: [{ section_key: "delivery-7-access_gate" }],
+      shared_decisions: [{ key: "decision-3-approval" }],
+    });
+    const before = structuredClone(r);
+    const check = () =>
+      validateGroundingReport(
+        r,
+        c,
+        "a".repeat(64),
+        [{ ...evidence[0], text: source }],
+        [],
+        undefined,
+        options,
+      );
+    if (pass) expect(check).not.toThrow();
+    else expect(check).toThrow("EVIDENCE_REFERENCE_INVALID");
+    expect(r).toEqual(before);
+  },
+);
+it("never derives proposal identifier exemptions from candidate fields or numeric labels", () => {
+  expect(
+    groundingOptions({
+      workflow_version: 2,
+      candidate: { response_locations: [{ section_key: "made-up-55" }] },
+      response_locations: [
+        { section_key: "50" },
+        null,
+        {},
+        { section_key: "a" },
+      ],
+    }).proposalReferenceKeys,
+  ).toEqual([]);
+});
 const requirementUuid = "abcdef12-abcd-4abc-8abc-abcdef123456";
 it.each([
   {
