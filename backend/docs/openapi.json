@@ -25,6 +25,39 @@
     }
   },
   "paths": {
+    "/v1/sources/{id}/verification": {
+      "get": {
+        "operationId": "source.verification.read",
+        "description": "Owner-only live human verification image and challenge identity, or null when none is active. Browser session state and submitted answers are never returned.",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current expiring challenge or null"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Owner role required"
+          }
+        }
+      }
+    },
     "/v1/estimates": {
       "post": {
         "operationId": "estimate.prepare",
@@ -10749,6 +10782,47 @@
                               },
                               "required": [
                                 "url"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "source.verification.answer"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "challenge_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "answer": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 40,
+                                  "pattern": "^[A-Za-z0-9 -]+$"
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "challenge_id",
+                                "answer"
                               ],
                               "additionalProperties": false
                             }

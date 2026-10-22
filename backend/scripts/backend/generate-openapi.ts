@@ -28,6 +28,15 @@ const commands: Array<[string, string, CommandName]> = [
   ["/v1/memberships/actions", "post", "membership.set"],
 ];
 const paths: Record<string, Record<string, unknown>> = {};
+paths["/v1/sources/{id}/verification"] = {
+  get: {
+    operationId: "source.verification.read",
+    description: "Owner-only live human verification image and challenge identity, or null when none is active. Browser session state and submitted answers are never returned.",
+    security: [{ userJWT: [] }],
+    parameters: [{ in: "path", name: "id", required: true, schema: { type: "string", format: "uuid" } }],
+    responses: { "200": { description: "Current expiring challenge or null" }, "401": { description: "Authentication required" }, "403": { description: "Owner role required" } },
+  },
+};
 const responses = {
   "200": { description: "Successful command result" },
   "201": { description: "Record or reservation created" },

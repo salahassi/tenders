@@ -34,7 +34,12 @@ Live browser evidence: Chromium retrieved six actual Etimad notices and their
 detail links, where raw HTTP received the JavaScript human-verification page.
 Human-answer/session isolation are covered locally; a real human-entered
 production CAPTCHA has not yet been exercised. AbortError code 20 is normalized
-to a retryable source timeout. Full verification and publication are in progress.
+to a retryable source timeout. Local verification passed: **1,219 backend tests in
+71 files**, **212 frontend tests in 38 files**, both package typechecks/builds and
+frozen Deno checks for API/worker. Security advisories retain the existing
+categories; the additional private tables intentionally have no client policies
+or grants, and the new authenticated verification read enforces Owner authority.
+Publication and hosted browser-queue acceptance are in progress.
 
 The Owner also asked how to delete a note. Added an explicit Delete action and
 confirmation to Additional notes. It uses the existing revision-checked
