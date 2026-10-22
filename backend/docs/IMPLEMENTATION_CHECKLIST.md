@@ -38,8 +38,31 @@ Auth password-protection categories; the new recovery RPC is service-only.
 The existing real trial was safely upgraded at 07:42 UTC after confirming its
 proposal inputs are unchanged. All three completed analysis steps and paid
 receipts remain intact; only failed planning was superseded. Broad workflow-3
-admission remains restricted to that trial until live acceptance. Live planning,
-usage measurements and a complete real export are still pending.
+admission remains restricted to that trial until live acceptance.
+
+Hosted follow-up exposed a JSONB object-order comparison in verification
+partition recovery: identical fields were rejected after a worker restart. Worker
+**v105** compares exact policy fields/values independently of key order, rejecting
+changed values and unknown fields. The 66 focused tests include real graph
+restarts with reordered policy objects, unchanged paid receipts and one writer
+POST. Both Deno and backend build/typecheck pass; **1,150 backend tests in 67 files**
+pass after this correction. Frontend code is unchanged from the verified
+205-test release.
+The original saved writer and first verification batch were reused through the
+browser's audited single-job retry; no prompt or accepted result was replaced.
+
+At **07:58 UTC**, the real structure passed grounding and ownership validation:
+**18 sections, 13 shared decisions, 122 unique requirements assigned once**.
+Planning advanced automatically to **8 detail groups**. Three settled model
+requests used **84,029 input / 14,241 output tokens** (1,034 separately reported
+thinking tokens may be included in output). The structure writer itself used
+8,183 output tokens under the 40,000 ceiling; the two Gemini verification
+responses used 2,426 and 3,632. No truncation occurred. Detail completion,
+writing, final review and real Word export are still pending; this is not a
+completed end-to-end latency benchmark.
+
+Source release `44df45a` passed the hosted Pages build and deployment:
+[workflow 39742515678](https://github.com/salahassi/tenders/actions/runs/39742515678).
 
 
 ## October 21 — approved throughput and coherence follow-up

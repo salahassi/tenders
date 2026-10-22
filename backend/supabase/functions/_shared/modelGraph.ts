@@ -20,6 +20,7 @@ import { ModelGraphStore } from "./modelGraphStore.ts";
 import {
   verificationBatches,
   verificationPolicy,
+  sameVerificationPartition,
   mergeVerificationReports,
 } from "./modelVerification.ts";
 import {
@@ -827,8 +828,7 @@ async function runGuardedModel(o: Options): Promise<{
         if (
           policy &&
           pinned &&
-          JSON.stringify(pinned.value) !==
-            JSON.stringify({ version: 4, policy })
+          !sameVerificationPartition(pinned.value, policy)
         )
           throw new ModelError("MODEL_IDENTITY_CHANGED");
         if (!pinned) {

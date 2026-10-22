@@ -3,6 +3,27 @@ import { ModelError } from "./model.ts";
 
 export type ContentUnit = { id: string; text: string };
 export type VerificationPolicy = { version: 2; outputTokens: number };
+/** JSONB and JSON transports may reorder object keys. Compare the policy's
+ * exact fields and values, never insertion order; changed/extra fields still
+ * invalidate the saved partition identity. */
+export function sameVerificationPartition(
+  pin: any,
+  policy: VerificationPolicy,
+) {
+  return (
+    pin !== null &&
+    typeof pin === "object" &&
+    !Array.isArray(pin) &&
+    Object.keys(pin).length === 2 &&
+    pin.version === 4 &&
+    pin.policy !== null &&
+    typeof pin.policy === "object" &&
+    !Array.isArray(pin.policy) &&
+    Object.keys(pin.policy).length === 2 &&
+    pin.policy.version === policy.version &&
+    pin.policy.outputTokens === policy.outputTokens
+  );
+}
 export function verificationPolicy(
   context: any,
 ): VerificationPolicy | undefined {

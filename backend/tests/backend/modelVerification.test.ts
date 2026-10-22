@@ -6,7 +6,31 @@ import {
   groundingDefects,
   validateGroundingReport,
 } from "../../supabase/functions/_shared/modelGrounding";
-import { mergeVerificationReports } from "../../supabase/functions/_shared/modelVerification";
+import {
+  mergeVerificationReports,
+  sameVerificationPartition,
+} from "../../supabase/functions/_shared/modelVerification";
+
+it("preserves partition identity across JSONB key ordering while rejecting real policy changes", () => {
+  const policy = { version: 2 as const, outputTokens: 40000 };
+  expect(
+    sameVerificationPartition(
+      { policy: { outputTokens: 40000, version: 2 }, version: 4 },
+      policy,
+    ),
+  ).toBe(true);
+  for (const pin of [
+    null,
+    {},
+    [],
+    { version: 4, policy: { version: 2, outputTokens: 16384 } },
+    { version: 3, policy },
+    { version: 4, policy, extra: true },
+    { version: 4, policy: { ...policy, extra: true } },
+    { version: 4, policy: { version: 2, outputTokens: "40000" } },
+  ])
+    expect(sameVerificationPartition(pin, policy)).toBe(false);
+});
 
 const hash = "a".repeat(64);
 function fixture() {

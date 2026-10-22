@@ -1558,14 +1558,41 @@ it("isolates phase resumptions while preserving unknown requests and rejecting c
   ).toEqual({ state: "unknown", actual_input: null, actual_output: null });
 });
 
-it.each([20000, 5000])(
-  "durably verifies content batches and finalizes coverage in the same lease only with time remaining (%i ms)",
-  async (finalRemainingMs) => {
+it.each([
+  { finalRemainingMs: 20000, reorderedPolicy: false },
+  { finalRemainingMs: 5000, reorderedPolicy: false },
+  { finalRemainingMs: 20000, reorderedPolicy: true },
+  { finalRemainingMs: 5000, reorderedPolicy: true },
+])(
+  "durably verifies batches across restarts ($finalRemainingMs ms, JSONB policy order: $reorderedPolicy)",
+  async ({ finalRemainingMs, reorderedPolicy }) => {
     const { executeGuardedModel } =
       await import("../../supabase/functions/_shared/modelGraph");
     const { candidateContent } =
       await import("../../supabase/functions/_shared/modelGrounding");
     const { job, backend, envs } = await configure();
+    if (reorderedPolicy) {
+      const internal = backend.internal;
+      backend.internal = async (name, args) => {
+        const row = await internal.call(backend, name, args);
+        if (
+          name === "model_graph_store" &&
+          row?.result_key?.startsWith("verification-batches-") &&
+          row.value?.policy
+        )
+          return {
+            ...row,
+            value: {
+              policy: {
+                outputTokens: row.value.policy.outputTokens,
+                version: row.value.policy.version,
+              },
+              version: row.value.version,
+            },
+          };
+        return row;
+      };
+    }
     let now = Date.now();
     vi.spyOn(Date, "now").mockImplementation(() => now);
     const invocationBudgetMs = 130000;
@@ -1576,7 +1603,7 @@ it.each([20000, 5000])(
     const candidate = {
       key: "approach",
       title: "Approach",
-      content_blocks: Array.from({ length: 9 }, () => ({
+      content_blocks: Array.from({ length: reorderedPolicy ? 18 : 9 }, () => ({
         type: "paragraph",
         text,
       })),
@@ -1671,7 +1698,9 @@ it.each([20000, 5000])(
           job: current,
           prefix: `step:${job.id}`,
           task: "draft_section",
-          context: {},
+          context: reorderedPolicy
+            ? { workflow_version: 2, verification_output_tokens: 40000 }
+            : {},
           evidence: [],
           requiredIds: ["required-1"],
           manifest: [],
