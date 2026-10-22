@@ -148,7 +148,7 @@ function tableItemNumbers(
   return [];
 }
 const itemLabel =
-  /(?:\b(?:BOQ\s+)?(?:item|line|row|section|clause)|(?:البند|بند|الصف|صف|الفقرة|فقرة))\s*(?:رقم\s+)?([0-9٠-٩۰-۹]{1,4})(?![0-9٠-٩۰-۹]|[.,٫٬][0-9٠-٩۰-۹])/giu;
+  /(?:\b(?:BOQ(?:\s+(?:item|line|row))?|item|line|row|section|clause)|(?:البند|بند|الصف|صف|الفقرة|فقرة))\s*(?:رقم\s+)?([0-9٠-٩۰-۹]{1,4})(?![0-9٠-٩۰-۹]|[.,٫٬][0-9٠-٩۰-۹])/giu;
 function declaredClaimCovered(declared: string, claims: any[]) {
   const text = normalizedEvidence(declared);
   if (

@@ -379,6 +379,21 @@ it.each([
     pass: true,
   },
   {
+    text: "2\nArchitecture design\nPackage 1",
+    claim: "BOQ 2 requires architecture design.",
+    pass: true,
+  },
+  {
+    text: "3\nArchitecture design\nPackage 1",
+    claim: "BOQ 2 requires architecture design.",
+    pass: false,
+  },
+  {
+    text: "2\nArchitecture design\nPackage 1",
+    claim: "BOQ 2 requires 2 engineers.",
+    pass: false,
+  },
+  {
     text: "2 Architecture design\nPackage 1",
     claim: "البند ٢ يتطلب تصميم المعمارية.",
     pass: true,

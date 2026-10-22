@@ -125,6 +125,19 @@ at **09:32 UTC** and all retrievable files match the canonical bundle. Full CI
 of this small scheduling follow-up is pending. This removes a specific handoff,
 not all provider/queue latency in the live trial.
 
+All **54 primary writing units** completed at **09:34 UTC**, advancing to two
+commercial groups. One group completed; the other reached a verifier correction
+limit at **09:49 UTC**. Inspection isolated a deterministic row-label guard bug:
+`BOQ item 2` was recognized but `BOQ 2` was incorrectly treated as a quantity.
+The guard now accepts either spelling only when the referenced quotation maps
+to that actual table/list row. Wrong row labels and unrelated quantities remain
+rejected. Local revalidation of the unchanged retained real scope passes all
+**36 claims**, with no defects and no provider call. The customer evidence and
+offline diagnostic remain outside the repository. **135 focused tests** pass,
+with backend typecheck/build and frozen worker checking. Worker **v108** deployed
+at **09:55 UTC**, with exact source readback. Full CI, audited recovery and the
+real export are being completed.
+
 
 ## October 21 — approved throughput and coherence follow-up
 
