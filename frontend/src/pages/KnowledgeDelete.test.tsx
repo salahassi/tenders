@@ -43,7 +43,7 @@ it("requires a delete confirmation and archives only the selected note through i
   );
   expect(runCommand).not.toHaveBeenCalled();
   await userEvent.click(
-    screen.getByRole("button", { name: "Delete note", exact: true }),
+    screen.getByRole("button", { name: /^Delete note$/ }),
   );
   expect(request).toHaveBeenCalledWith("/v1/knowledge/note");
   expect(runCommand).toHaveBeenCalledWith("knowledge.save", {
