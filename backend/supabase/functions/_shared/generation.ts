@@ -26,6 +26,7 @@ import {
   semanticReviewInputs,
   semanticWorkflow,
   validateBlueprint,
+  validateReviewSectionReferences,
 } from "./proposalBlueprint.ts";
 import { normalizedEvidence } from "./sourceModel.ts";
 import { validationDiagnostic } from "./modelValidationDiagnostics.ts";
@@ -1158,26 +1159,8 @@ export async function processGeneration(
           ctx!.requirements.map((r) => r.id),
           ctx!.plan.frozen_context.template.required_sections || [],
         );
-      if (input.task === "review_proposal") {
-        const sectionKeys = new Set(
-          (input.context.sections || []).map((s: Row) => s.key),
-        );
-        if (
-          result.responses.some((r: Row) =>
-            r.section_ids.some((key: string) => !sectionKeys.has(key)),
-          ) ||
-          result.findings.some((f: Row) =>
-            f.section_ids.some((key: string) => !sectionKeys.has(key)),
-          )
-        )
-          throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-            validationDiagnostic(
-              "EVIDENCE_REFERENCE_INVALID",
-              "invalid_finding_reference",
-              { paths: ["$.responses", "$.findings"] },
-            ),
-          ]);
-      }
+      if (input.task === "review_proposal")
+        validateReviewSectionReferences(result, input.context);
       if (input.task === "plan_commercial") {
         const sectionKeys = new Set(
           (input.context.section_titles || []).map((s: Row) => s.key),

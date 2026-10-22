@@ -192,6 +192,20 @@ Worker **v111** deployed at **10:43 UTC** after a transient Supabase deployment
 error; the prior version remained active until the successful replacement.
 Full CI and final live reconciliation remain pending.
 
+At **10:49 UTC** a review reached its correction limit because a finding named
+a real hosting section outside its prose group. Findings may now name a known
+frozen response location when they also touch a reviewed section; fulfillment
+responses still require the supplied prose and invented references are rejected.
+A locally rejected retained writer can be revalidated after this guard correction
+and resumed at independent verification. The transition checks its immutable paid
+receipt, candidate lineage, manifest, current lease and absence of unknown/pending
+sends. It changes no budget, candidate or prior verification verdict. **49
+focused tests** pass, including three paid writer receipts preserved through
+exhaustion, one independent verifier after guard correction, and replay after
+an interrupted recovery checkpoint. Backend typecheck/build and frozen worker
+checking pass. Migration `revalidate_retained_writer` and worker **v112** deployed
+at **11:02 UTC**. Full CI and the real final export remain pending.
+
 
 ## October 21 — approved throughput and coherence follow-up
 

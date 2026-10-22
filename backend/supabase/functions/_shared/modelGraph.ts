@@ -32,6 +32,10 @@ import {
 import { pinVerificationPrompt } from "./modelVerificationPrompt.ts";
 import { pinSemanticPrompt } from "./modelSemanticPrompt.ts";
 import { recoverUnstartedRepair } from "./modelRepairRecovery.ts";
+import {
+  recoverRevalidatedWriter,
+  revalidateWriter,
+} from "./modelRevalidatedWriter.ts";
 import { recoverBlockedVerification } from "./modelBlockedRecovery.ts";
 import { recoverInvalidVerification } from "./modelInvalidVerificationRecovery.ts";
 import { recoverAlternatePaidWriter } from "./modelAlternateWriterRecovery.ts";
@@ -784,7 +788,7 @@ async function runGuardedModel(o: Options): Promise<{
         ? stored.result.result
         : stored.result;
       const hash = await sha256(JSON.stringify(candidate));
-      if (stored.local_validation) {
+      if (stored.local_validation && !revalidateWriter(candidate, o)) {
         const saved = await store.action("result_put", {
           key: `writer-validation-repair-only-${hash}`,
           value: repairOnlyValidationArtifact({
@@ -1145,23 +1149,35 @@ async function runGuardedModel(o: Options): Promise<{
     if (thread.status === "needs_review") {
       const recovered =
         checkpoint &&
-        ((await recoverBlockedWriter({
+        ((await recoverRevalidatedWriter({
           backend: o.backend,
           store,
           job: o.job,
-          threadId,
-          prefix: o.prefix,
           task: o.task,
-          context: o.context,
           evidence: o.evidence,
           requiredIds: o.requiredIds,
           manifest: o.manifest,
-          language: o.language,
-          repair: o.repair,
-          fetcher: o.fetcher,
           state: await graph.getState(config),
           validate: o.validate,
+          update: (values) => graph.updateState(config, values, "produce"),
         })) ||
+          (await recoverBlockedWriter({
+            backend: o.backend,
+            store,
+            job: o.job,
+            threadId,
+            prefix: o.prefix,
+            task: o.task,
+            context: o.context,
+            evidence: o.evidence,
+            requiredIds: o.requiredIds,
+            manifest: o.manifest,
+            language: o.language,
+            repair: o.repair,
+            fetcher: o.fetcher,
+            state: await graph.getState(config),
+            validate: o.validate,
+          })) ||
           (await recoverInvalidVerification({
             task: o.task,
             backend: o.backend,

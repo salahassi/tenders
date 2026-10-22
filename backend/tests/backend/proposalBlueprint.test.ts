@@ -8,6 +8,7 @@ import {
   requirementAliases,
   semanticReviewInputs,
   validateBlueprint,
+  validateReviewSectionReferences,
 } from "../../supabase/functions/_shared/proposalBlueprint";
 import { proposalBlueprintSchema } from "../../supabase/functions/_shared/proposalBlueprintSchema";
 import {
@@ -146,6 +147,36 @@ function context(count = 35): any {
     ],
   };
 }
+
+it("allows real cross-section findings while keeping fulfillment within the reviewed prose", () => {
+  const ctx = {
+    sections: [{ key: "security" }],
+    response_locations: [{ section_key: "hosting" }],
+  };
+  const result = {
+    responses: [{ section_ids: ["security"] }],
+    findings: [{ section_ids: ["security", "hosting"] }],
+  };
+  expect(() => validateReviewSectionReferences(result, ctx)).not.toThrow();
+  expect(() =>
+    validateReviewSectionReferences(
+      { ...result, responses: [{ section_ids: ["hosting"] }] },
+      ctx,
+    ),
+  ).toThrow("EVIDENCE_REFERENCE_INVALID");
+  expect(() =>
+    validateReviewSectionReferences(
+      { ...result, findings: [{ section_ids: ["security", "invented"] }] },
+      ctx,
+    ),
+  ).toThrow("EVIDENCE_REFERENCE_INVALID");
+  expect(() =>
+    validateReviewSectionReferences(
+      { ...result, findings: [{ section_ids: ["hosting"] }] },
+      ctx,
+    ),
+  ).toThrow("EVIDENCE_REFERENCE_INVALID");
+});
 
 it("round-trips compact requirement references without conflating IDs or carrying UUID arrays in the queued blueprint", async () => {
   const requirements = Array.from({ length: 145 }, () => ({

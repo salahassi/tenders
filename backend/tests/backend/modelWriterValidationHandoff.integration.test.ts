@@ -17,6 +17,7 @@ import { ModelGraphStore } from "../../supabase/functions/_shared/modelGraphStor
 import {
   FreeModelProvider,
   ModelDeferred,
+  ModelError,
   sha256,
 } from "../../supabase/functions/_shared/model";
 import { executeGuardedModel } from "../../supabase/functions/_shared/modelGraph";
@@ -25,6 +26,202 @@ import {
   type Backend,
 } from "../../supabase/functions/_shared/backend";
 import { databaseError } from "../../supabase/functions/_shared/http";
+
+it.each([false, true])(
+  "revalidates the latest locally rejected correction without another writer or budget reset, crash=%s",
+  async (crash) => {
+    const configured = await configure("draft_section");
+    let job = configured.job;
+    let fixed = false,
+      crashed = false,
+      writerCalls = 0,
+      verifierCalls = 0;
+    const environments = modelEnvironments((name) =>
+      name === "APP_MODEL_OPENAI_KEY" ? "synthetic-key" : undefined,
+    );
+    const backend = {
+      internal: async (name: string, args: any) => {
+        if (
+          crash &&
+          !crashed &&
+          name === "model_graph_store" &&
+          args.action === "revalidated_writer_resume"
+        ) {
+          crashed = true;
+          throw new Error("Synthetic exit after recovery checkpoint");
+        }
+        return rpc(name, args);
+      },
+      resolveModelEnvironment: (config: any) => ({
+        ...environments.openai,
+        model: config.model,
+        projectRef: config.project_ref,
+      }),
+    } as unknown as Backend;
+    const candidate = (index: number) => ({
+      key: `approach-${index}`,
+      title: "Approach",
+      content_blocks: [
+        {
+          type: "paragraph",
+          text: "Proposed implementation requires buyer confirmation.",
+        },
+      ],
+      requirement_ids: [],
+      evidence_refs: [],
+      company_claims: [],
+      assumptions: [],
+      questions: [],
+    });
+    vi.spyOn(FreeModelProvider.prototype, "generate").mockImplementation(
+      async function (this: FreeModelProvider, task, prompt) {
+        this.generationSent = true;
+        const context = JSON.parse(prompt).untrusted_data;
+        let result: unknown;
+        if (task === "verify_grounding") {
+          verifierCalls++;
+          result = {
+            checked_candidate_hash: context.candidate_hash,
+            reviewed_all_content: true,
+            processed_content_ids: context.content_units.map((u: any) => u.id),
+            claims: [
+              {
+                id: "conditional",
+                claim: "Conditional proposed work",
+                candidate_quote: candidate(2).content_blocks[0].text,
+                kind: "assumption",
+                status: "supported",
+                source_refs: [],
+                finding: "A proposal, not a verified capability.",
+              },
+            ],
+            processed_requirement_ids: [],
+            requirement_checks: [],
+            findings: [],
+          };
+        } else {
+          const output = candidate(writerCalls++);
+          result =
+            task === "repair_result"
+              ? {
+                  target_task: "draft_section",
+                  result: output,
+                  changes: ["Updated scoped reference."],
+                }
+              : output;
+        }
+        return {
+          text: JSON.stringify(result),
+          usage: { input: 80, output: 40, thinking: 0 },
+          complete: true,
+        };
+      },
+    );
+    const fetcher = vi.fn<typeof fetch>(async () => {
+      throw new Error("No external HTTP in fixture");
+    });
+    const options = {
+      backend,
+      job,
+      prefix: `step:${job.id}`,
+      task: "draft_section" as const,
+      context: {},
+      evidence: [],
+      requiredIds: [],
+      manifest: [],
+      environments,
+      language: "en" as const,
+      repair: false,
+      fetcher,
+      validate: (result: any) => {
+        if (!fixed)
+          throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+            {
+              code: "EVIDENCE_REFERENCE_INVALID",
+              reason: "invalid_finding_reference",
+              paths: [`$.references.${result.key}`],
+            },
+          ]);
+      },
+    };
+    let stopped = false;
+    for (let i = 0; i < 12 && !stopped; i++) {
+      try {
+        await executeGuardedModel({ ...options, job });
+        throw new Error("Must not accept invalid local references");
+      } catch (error) {
+        if ((error as any).code === "MODEL_CORRECTION_EXHAUSTED")
+          stopped = true;
+        else {
+          expect(error).toBeInstanceOf(ModelDeferred);
+          job = await rpc("claim_backend_job_v2");
+        }
+      }
+    }
+    expect(stopped).toBe(true);
+    expect(writerCalls).toBe(3);
+    expect(verifierCalls).toBe(0);
+    const receipts = (
+      await f.db.query<any>(
+        "select * from public.provider_usage where job_id=$1 order by id",
+        [job.id],
+      )
+    ).rows;
+    const budgets = (
+      await f.db.query<any>(
+        "select * from app_private.model_graph_budgets where unit like 'writer%' order by unit",
+      )
+    ).rows;
+    const thread = (
+      await f.db.query<any>(
+        "select id from app_private.model_graph_threads where job_id=$1",
+        [job.id],
+      )
+    ).rows[0].id;
+    const store = new ModelGraphStore(backend, job, thread);
+    const retained = await store.action("result_get", { key: "candidate-2" });
+    fixed = true;
+    let accepted: any;
+    for (let i = 0; i < 8 && !accepted; i++) {
+      try {
+        accepted = await executeGuardedModel({ ...options, job });
+      } catch (error) {
+        if (
+          (error as Error).message ===
+          "Synthetic exit after recovery checkpoint"
+        )
+          continue;
+        expect(error).toBeInstanceOf(ModelDeferred);
+        job = await rpc("claim_backend_job_v2");
+      }
+    }
+    expect(accepted?.result).toEqual(candidate(2));
+    expect(writerCalls).toBe(3);
+    expect(verifierCalls).toBe(1);
+    expect(crashed).toBe(crash);
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from public.provider_usage where id=any($1::uuid[]) order by id",
+          [receipts.map((r) => r.id)],
+        )
+      ).rows,
+    ).toEqual(receipts);
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from app_private.model_graph_budgets where unit like 'writer%' order by unit",
+        )
+      ).rows,
+    ).toEqual(budgets);
+    expect(
+      await new ModelGraphStore(backend, job, thread).action("result_get", {
+        key: "candidate-2",
+      }),
+    ).toEqual(retained);
+    expect(fetcher).not.toHaveBeenCalled();
+  },
+);
 
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {

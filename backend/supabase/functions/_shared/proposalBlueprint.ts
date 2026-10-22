@@ -1,8 +1,41 @@
 import type { ProposalBlueprint } from "./proposalBlueprintSchema.ts";
 import { ModelError } from "./model.ts";
+import { validationDiagnostic } from "./modelValidationDiagnostics.ts";
 
 type Row = Record<string, any>;
 export const semanticWorkflow = (plan: Row) => plan.workflow_version >= 2;
+
+/** Fulfillment uses the supplied prose. A cross-section finding may also name
+ * an existing response location, but must touch the actual reviewed scope. */
+export function validateReviewSectionReferences(result: Row, context: Row) {
+  const reviewed = new Set((context.sections || []).map((s: Row) => s.key));
+  const known = new Set([
+    ...reviewed,
+    ...(context.response_locations || []).map((s: Row) => s.section_key),
+  ]);
+  const badResponses = result.responses.flatMap((r: Row, i: number) =>
+    r.section_ids.some((key: string) => !reviewed.has(key))
+      ? [`$.responses[${i}].section_ids`]
+      : [],
+  );
+  const badFindings = result.findings.flatMap((f: Row, i: number) =>
+    f.section_ids.some((key: string) => !known.has(key)) ||
+    (f.section_ids.length &&
+      !f.section_ids.some((key: string) => reviewed.has(key)))
+      ? [`$.findings[${i}].section_ids`]
+      : [],
+  );
+  if (badResponses.length || badFindings.length)
+    throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+      validationDiagnostic(
+        "EVIDENCE_REFERENCE_INVALID",
+        "invalid_finding_reference",
+        {
+          paths: [...badResponses, ...badFindings],
+        },
+      ),
+    ]);
+}
 
 // Compact, deterministic references reduce repeated UUID tokens in planning.
 // They label requirements; the model still makes the semantic assignments.
