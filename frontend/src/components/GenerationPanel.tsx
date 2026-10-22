@@ -29,37 +29,47 @@ export default function GenerationPanel({
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
     [requesting, setRequesting] = useState(false),
-    completed = useRef("");
+    loadScope = useRef({ active: true, busy: false, completed: "" });
   const editable = state.settings.role !== "Reviewer";
   async function load() {
-    if (!backend) return;
+    const scope = loadScope.current;
+    if (!backend || !scope.active || scope.busy) return;
+    scope.busy = true;
     try {
       const records = await backend.list<Plan>("generation-plans", {
         opportunity: opportunity.id,
       });
+      if (!scope.active) return;
       setPlans(
         records.sort((a, b) => b.created_at.localeCompare(a.created_at)),
       );
       const latest = records.find((p) => p.kind === "proposal");
-      if (latest?.status === "completed" && completed.current !== latest.id) {
+      if (latest?.status === "completed" && scope.completed !== latest.id) {
         await refresh?.();
-        completed.current = latest.id;
+        if (!scope.active) return;
+        scope.completed = latest.id;
       }
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Cannot load progress.");
+      if (scope.active)
+        setError(e instanceof Error ? e.message : "Cannot load progress.");
     } finally {
-      setLoading(false);
+      scope.busy = false;
+      if (scope.active) setLoading(false);
     }
   }
   useEffect(() => {
-    completed.current = "";
+    const scope = { active: true, busy: false, completed: "" };
+    loadScope.current = scope;
     setLoading(true);
     void load();
     const timer = setInterval(() => {
       if (!document.hidden) void load();
     }, 10000);
-    return () => clearInterval(timer);
+    return () => {
+      scope.active = false;
+      clearInterval(timer);
+    };
   }, [backend, opportunity.id]);
   async function action(operation: string, input: Record<string, unknown>) {
     setRequesting(true);

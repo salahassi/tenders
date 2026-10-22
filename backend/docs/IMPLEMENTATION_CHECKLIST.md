@@ -266,6 +266,61 @@ passes all 23 claims with zero verification defects. Worker **v116** deployed;
 hosted commit/export remains pending. Source `3c3587f`
 passed full CI: **1,200 backend + 205 frontend tests**, typechecks/builds and Deno.
 
+At **12:05 UTC**, the real plan completed and saved proposal version 1 with
+**56 sections**, including the generated compliance matrix, and separate
+technical/financial volumes. All 122 requirements remain represented. Final
+assembly recovered automatically from a transient database timeout without a
+new model request. Source `66e66ff` passed
+[CI/Pages 39774428676](https://github.com/salahassi/tenders/actions/runs/39774428676):
+**1,204 backend + 205 frontend tests**, both typechecks/builds and Deno checks.
+All 52 retrieved worker-v116 files match source. This establishes saved draft
+completion; actual export acceptance is recorded separately below.
+
+Hosted browser acceptance then exposed overlapping completion refreshes: the
+ten-second progress poll could start another full workspace refresh before its
+predecessor finished. The old response was rejected as superseded, the completion
+marker was never recorded, and later polls repeated the work. Progress requests
+now serialize through the full completion refresh and ignore results after
+navigation/unmount. A failed refresh stays retryable on the next poll. No polling
+interval, authorization, model request or existing saved content is changed.
+All **6 progress-panel tests** and frontend typecheck pass, including a 40-second
+delayed refresh, failure recovery and navigation while a request is outstanding.
+Full frontend checks, publication and hosted verification of this UI correction
+are pending. Database statement timeouts were also observed during the first
+export attempt; their complete underlying cause is not established by this fix.
+
+The second actual browser export succeeded for both volumes. Server verification,
+download hashes and DOCX ZIP/XML checks passed; no model calls were made for the
+export. LibreOffice rendering exposed **187 technical / 40 financial pages**.
+Inspection found two deterministic assembly defects: distinct blueprint unit
+titles made the legacy outline reader discard the 18 logical chapters, and the
+generated compliance matrix was followed by another export-generated matrix.
+
+New outlines pin each unit's original title and explicitly mark application-built
+matrices. Export retains chapters and subsection titles, projects one matrix from
+the current frozen review/compliance data, and partitions its rows by volume.
+Model suggestions remain unconfirmed; original business findings and unknown
+prices are retained. Older frozen export requests retain their original rendering.
+Unknown/changed titles, volumes or lineage fall back without dropping sections.
+The same real saved 56 sections validate against their original planning/writing
+lineage with **18 groups**; the corrected export accounts for **115 technical + 7
+commercial requirements** once. It does not regenerate or rewrite prose.
+**45 focused export/outline/blueprint tests** pass. Frontend full rerun passed
+**208 tests / 36 files**, typecheck and build; its first run under concurrent
+browser/rendering load hit an unrelated Sources-navigation wait failure, with
+207 passing tests. No assertion or timeout was relaxed. Backend full checks,
+runtime publication and corrected hosted downloads are pending.
+
+Export follow-up deployed as **API v82 / worker v117**. Backend typecheck/build
+and both frozen Deno entry checks pass. The 31-test generation integration suite
+also passes after updating its old duplicate-matrix header assertion to require
+one matrix covering every requirement. An audited, revision-checked update to
+the completed trial draft pins only the display outline: original lineage,
+56 unchanged section rows, original titles/volumes and draft status were verified.
+The version revision advanced from 1 to 2; saved prose, model receipts and older
+immutable export snapshots are unchanged. No additional model generation was
+requested. Corrected real downloads and complete CI are pending.
+
 
 ## October 21 — approved throughput and coherence follow-up
 

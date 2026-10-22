@@ -88,14 +88,84 @@ export function buildExportModel(request: Row): RenderModel {
         : l("Technical and commercial proposal", "العرض الفني والمالي"),
   );
   blocks.push({ type: "toc", text: l("Contents", "المحتويات") });
-  for (const group of exportSectionGroups(s.sections, s.section_outline).filter(
+  const groups = exportSectionGroups(s.sections, s.section_outline);
+  const structuredMatrix = groups.some((group) => group.generated_matrix);
+  const appendMatrix = (
+    title = l("Requirement compliance matrix", "مصفوفة الامتثال للمتطلبات"),
+  ) => {
+    h(title);
+    blocks.push({
+      type: "table",
+      headers: [
+        l("Requirement", "المتطلب"),
+        l("Response", "الاستجابة"),
+        l("Proposal sections", "أقسام العرض"),
+      ],
+      rows: s.requirements
+        .filter((r: Row) =>
+          request.volume === "technical"
+            ? r.category !== "commercial"
+            : request.volume === "financial"
+              ? r.category === "commercial"
+              : true,
+        )
+        .map((r: Row) => {
+          const c = s.compliance.find((x: Row) => x.requirement_id === r.id);
+          const suggested =
+            !c && draft
+              ? s.review_result?.responses?.find(
+                  (x: Row) => x.requirement_id === r.id,
+                )
+              : null;
+          const status: Record<string, string> = {
+            answered: l("Answered", "تمت الاستجابة"),
+            question: l("Clarification required", "يتطلب توضيحًا"),
+            not_applicable: l("Not applicable", "غير منطبق"),
+            not_applicable_with_reason: l(
+              "Not applicable, with reason",
+              "غير منطبق مع توضيح السبب",
+            ),
+            gap: l("Unresolved gap", "فجوة لم تُحل"),
+            partial: l("Partially answered", "استجابة جزئية"),
+            missing: l("Missing response", "استجابة مفقودة"),
+            clarification_required: l(
+              "Clarification required",
+              "يتطلب توضيحًا",
+            ),
+            not_applicable_approved: l(
+              "Not applicable, approved",
+              "غير منطبق بموافقة المالك",
+            ),
+          };
+          return [
+            r.text,
+            c
+              ? status[c.status] || l("Not confirmed", "غير مؤكد")
+              : suggested
+                ? `${l("Model review (not confirmed)", "مراجعة الموديل (غير مؤكدة)")}: ${status[suggested.status] || l("Not confirmed", "غير مؤكد")}${suggested.rationale ? " — " + clean(suggested.rationale) : ""}`
+                : l("Not confirmed", "غير مؤكد"),
+            (c?.section_keys || suggested?.section_ids || [])
+              .map(sectionTitle)
+              .join(rtl ? "، " : ", "),
+          ];
+        }),
+    });
+  };
+  let matrixRendered = false;
+  for (const group of groups.filter(
     (x) =>
       request.volume === "combined" ||
       x.volume === request.volume ||
       x.volume === "shared",
   )) {
+    if (group.generated_matrix) {
+      if (!matrixRendered) appendMatrix(group.title);
+      matrixRendered = true;
+      continue;
+    }
     h(group.title);
     for (const section of group.sections) {
+      if (section.title !== group.title) p(section.title);
       if (
         Array.isArray(section.content_blocks) &&
         section.content_blocks.length
@@ -184,61 +254,9 @@ export function buildExportModel(request: Row): RenderModel {
           "[INPUT REQUIRED: خطة تسليم معتمدة]",
         ),
       );
-    h(l("Requirement compliance matrix", "مصفوفة الامتثال للمتطلبات"));
-    blocks.push({
-      type: "table",
-      headers: [
-        l("Requirement", "المتطلب"),
-        l("Response", "الاستجابة"),
-        l("Proposal sections", "أقسام العرض"),
-      ],
-      rows: s.requirements
-        .filter(
-          (r: Row) =>
-            request.volume !== "technical" || r.category !== "commercial",
-        )
-        .map((r: Row) => {
-          const c = s.compliance.find((x: Row) => x.requirement_id === r.id);
-          const suggested =
-            !c && draft
-              ? s.review_result?.responses?.find(
-                  (x: Row) => x.requirement_id === r.id,
-                )
-              : null;
-          const status: Record<string, string> = {
-            answered: l("Answered", "تمت الاستجابة"),
-            question: l("Clarification required", "يتطلب توضيحًا"),
-            not_applicable: l("Not applicable", "غير منطبق"),
-            not_applicable_with_reason: l(
-              "Not applicable, with reason",
-              "غير منطبق مع توضيح السبب",
-            ),
-            gap: l("Unresolved gap", "فجوة لم تُحل"),
-            partial: l("Partially answered", "استجابة جزئية"),
-            missing: l("Missing response", "استجابة مفقودة"),
-            clarification_required: l(
-              "Clarification required",
-              "يتطلب توضيحًا",
-            ),
-            not_applicable_approved: l(
-              "Not applicable, approved",
-              "غير منطبق بموافقة المالك",
-            ),
-          };
-          return [
-            r.text,
-            c
-              ? status[c.status] || l("Not confirmed", "غير مؤكد")
-              : suggested
-                ? `${l("Model review (not confirmed)", "مراجعة الموديل (غير مؤكدة)")}: ${status[suggested.status] || l("Not confirmed", "غير مؤكد")}${suggested.rationale ? " — " + clean(suggested.rationale) : ""}`
-                : l("Not confirmed", "غير مؤكد"),
-            (c?.section_keys || suggested?.section_ids || [])
-              .map(sectionTitle)
-              .join(rtl ? "، " : ", "),
-          ];
-        }),
-    });
+    if (!structuredMatrix) appendMatrix();
   }
+  if (structuredMatrix && !matrixRendered) appendMatrix();
   if (request.volume !== "technical") {
     h(l("Commercial schedule", "الجدول المالي"));
     const e = s.estimate,

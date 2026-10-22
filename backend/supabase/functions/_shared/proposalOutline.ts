@@ -8,7 +8,13 @@ export type ProposalSectionOutline = {
     parent_section_key: string;
     title: string;
     volume: Volume;
-    parts: { section_key: string; part_index: number; part_count: number }[];
+    generated_matrix?: true;
+    parts: {
+      section_key: string;
+      part_index: number;
+      part_count: number;
+      title?: string;
+    }[];
   }[];
 };
 
@@ -130,7 +136,15 @@ export function createSectionOutline(
         parent_section_key: parent.key,
         title: parent.title,
         volume: parent.volume,
-        parts: [{ section_key: parent.key, part_index: 1, part_count: 1 }],
+        generated_matrix: true,
+        parts: [
+          {
+            section_key: parent.key,
+            part_index: 1,
+            part_count: 1,
+            title: matrix.title,
+          },
+        ],
       });
       continue;
     }
@@ -144,6 +158,9 @@ export function createSectionOutline(
         section_key,
         part_index: index + 1,
         part_count: keys.length,
+        ...(parent.workflow_version === 2
+          ? { title: sectionByKey.get(section_key)!.title }
+          : {}),
       })),
     });
   }
@@ -178,6 +195,7 @@ export function exportSectionGroups(
   title: string;
   volume: string;
   sections: Row[];
+  generated_matrix?: true;
 }[] {
   const fallback = () =>
     sections.map((section) => ({
@@ -205,7 +223,9 @@ export function exportSectionGroups(
       typeof group.title !== "string" ||
       !volumes.has(group.volume) ||
       !Array.isArray(group.parts) ||
-      !group.parts.length
+      !group.parts.length ||
+      (group.generated_matrix !== undefined &&
+        (group.generated_matrix !== true || group.parts.length !== 1))
     )
       return fallback();
     parents.add(group.parent_section_key);
@@ -223,7 +243,8 @@ export function exportSectionGroups(
       if (
         !section ||
         section.volume !== group.volume ||
-        section.title !== group.title ||
+        section.title !== (part.title ?? group.title) ||
+        (group.generated_matrix && section.fixed) ||
         (section.fixed &&
           (group.parts.length !== 1 ||
             group.parent_section_key !== section.section_key))
@@ -232,7 +253,12 @@ export function exportSectionGroups(
       used.add(part.section_key);
       parts.push(section);
     }
-    groups.push({ title: group.title, volume: group.volume, sections: parts });
+    groups.push({
+      title: group.title,
+      volume: group.volume,
+      sections: parts,
+      ...(group.generated_matrix ? { generated_matrix: true as const } : {}),
+    });
   }
   return used.size === sections.length ? groups : fallback();
 }

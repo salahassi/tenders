@@ -637,11 +637,16 @@ it("admits the semantic workflow without company files or a custom template and 
     mode: "draft",
     volume: "combined",
   });
-  expect(
-    buildExportModel(request).blocks.some(
-      (b: any) => b.type === "table" && JSON.stringify(b).includes("Coverage"),
-    ),
-  ).toBe(true);
+  const exportedMatrices = buildExportModel(request).blocks.filter(
+    (b: any) => b.type === "table" && b.headers[0] === "Requirement",
+  );
+  expect(exportedMatrices).toHaveLength(1);
+  expect((exportedMatrices[0] as any).rows).toHaveLength(
+    request.snapshot.requirements.length,
+  );
+  expect(JSON.stringify(exportedMatrices)).toContain(
+    "Model review (not confirmed)",
+  );
   await expect(
     f.command("export.prepare", {
       proposal_version_id: version.id,
@@ -714,9 +719,17 @@ it("completes and exports a full RFP draft without templates, company knowledge 
   for (const section of sections)
     expect(
       model.blocks.some(
-        (b: any) => b.type === "heading" && b.text === section.title,
+        (b: any) =>
+          ["heading", "paragraph"].includes(b.type) && b.text === section.title,
       ),
     ).toBe(true);
+  const matrixTables = model.blocks.filter(
+    (b: any) => b.type === "table" && b.headers[0] === "Requirement",
+  );
+  expect(matrixTables).toHaveLength(1);
+  expect((matrixTables[0] as any).rows).toHaveLength(
+    request.snapshot.requirements.length,
+  );
   expect(model.blocks.some((b: any) => b.text?.includes("DRAFT"))).toBe(true);
   expect(JSON.stringify(model)).not.toContain("Invented certification");
   if (process.env.TENDERDESK_EXPORT_QA_DIR) {
