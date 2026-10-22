@@ -36,6 +36,7 @@ const release = [
   ["20261021220730", "fair_generation_queue"],
   ["20261021221342", "semantic_proposal_workflow"],
   ["20261022070632", "bounded_hierarchical_planning"],
+  ["20261022081448", "prioritize_proposal_continuations"],
 ];
 const project = "nqfwbqeozmuiuwbiowil";
 const literal = (value) => "'" + value.replaceAll("'", "''") + "'";

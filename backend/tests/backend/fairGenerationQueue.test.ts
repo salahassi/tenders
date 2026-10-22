@@ -46,6 +46,59 @@ async function reserve(job: any) {
   );
 }
 
+it("finishes saved proposal units before fresh siblings without taking other owners' or collection's turns", async () => {
+  const owner = crypto.randomUUID();
+  const fresh = await enqueue("draft_section", owner);
+  await f.db.query(
+    "update public.jobs set next_attempt_at=now()-interval '1 hour' where id=$1",
+    [fresh.id],
+  );
+  const continuing = await enqueue("draft_section", owner);
+  await f.db.query(
+    "update public.jobs set checkpoint=jsonb_build_object('graph_thread','fixture'),error_code='MODEL_IN_PROGRESS',status='retry_wait' where id=$1",
+    [continuing.id],
+  );
+  const other = await enqueue("draft_section");
+  const collection = await enqueue("source_collect");
+  const first = await f.rpc("claim_backend_job_v2");
+  expect(first.id).toBe(continuing.id);
+  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  await finish(first.id);
+  const background = await f.rpc("claim_backend_job_v2");
+  expect(background.id).toBe(collection.id);
+  await finish(background.id);
+  const nextOwner = await f.rpc("claim_backend_job_v2");
+  expect(nextOwner.id).toBe(other.id);
+  await finish(nextOwner.id);
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(fresh.id);
+});
+
+it("does not wake a saved continuation before its due time or bypass accepted-request capacity", async () => {
+  const owner = crypto.randomUUID();
+  const delayed = await enqueue("draft_section", owner, true);
+  await f.db.query(
+    "update public.jobs set checkpoint=jsonb_build_object('graph_thread','fixture'),error_code='MODEL_IN_PROGRESS',status='retry_wait' where id=$1",
+    [delayed.id],
+  );
+  const fresh = await enqueue("draft_section", owner);
+  const current = await f.rpc("claim_backend_job_v2");
+  expect(current.id).toBe(fresh.id);
+  await finish(current.id);
+  const accepted = await enqueue("draft_section");
+  await reserve(accepted);
+  await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
+    delayed.id,
+  ]);
+  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(
+    (
+      await f.db.query<any>("select attempts from public.jobs where id=$1", [
+        delayed.id,
+      ])
+    ).rows[0].attempts,
+  ).toBe(0);
+});
+
 it("serves three proposal owners and background work under continuously arriving work", async () => {
   const owners = Array.from({ length: 3 }, () => crypto.randomUUID());
   for (const owner of owners)

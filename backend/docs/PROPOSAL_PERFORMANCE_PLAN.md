@@ -64,6 +64,13 @@ Measure eligible queue wait separately from provider wait, inference, local
 processing, correction and export. Distinguish inference submissions from GET
 polls and scheduling continuations. Show actual stage progress and wait reasons.
 
+The October 22 live trial additionally exposed a same-owner tie-break issue:
+untouched siblings' older due times postponed verification of already-written
+units. Ready saved proposal continuations now precede fresh siblings only after
+class and owner fairness are applied. Future retry times and capacity still gate
+eligibility. This obtains a validated unit and feedback before starting every
+remaining writer, without starving other proposals or source collection.
+
 ## 2. Plan by meaning and establish shared decisions
 
 October 22 implementation: workflow 3 first creates a compact ownership map and

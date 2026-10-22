@@ -64,6 +64,34 @@ completed end-to-end latency benchmark.
 Source release `44df45a` passed the hosted Pages build and deployment:
 [workflow 39742515678](https://github.com/salahassi/tenders/actions/runs/39742515678).
 
+At **08:09 UTC**, all eight detail groups passed and merged without omitted or
+multiply owned requirements. The plan advanced to **54 writing units**. This
+is a completed planning gate, not completed drafting or a fair like-for-like
+latency comparison with the older 145-requirement/67-unit plan.
+
+The live queue initially preferred untouched writing siblings over ready
+verification continuations because their due time was older. Migration
+`prioritize_proposal_continuations` deployed at **08:17 UTC** finishes a saved
+proposal unit before a fresh sibling *within the same owner*. Class/owner
+fairness, accepted-request deadlines, capacity, due times and exclusive leases
+remain unchanged. Six local queue tests pass, including continuation precedence,
+other-owner and collection service, delayed eligibility and capacity guards.
+This lets content feedback arrive before paying for all remaining writers.
+Full backend regression now passes **1,152 tests in 67 files**, with backend
+typecheck/build. The first full run hit the existing 30-second fixture setup
+timeout in one suite (1,151 tests passed); rerunning with the CI worker setting
+passed all suites. No timeout or assertion was weakened. Frontend remains at
+205 passing tests with no further frontend change.
+
+At **08:32 UTC**, 12 of 54 real writing units have completed grounding and
+validation. Every observed planning/writing/verification/repair attempt records
+a 40,000 output ceiling. Invalid verification results and two content repairs
+were handled within the existing bounded graph; no job is currently failed or
+blocked. Final review and the actual Word download remain pending.
+
+Worker source `d192151` passed
+[CI and Pages 39744554596](https://github.com/salahassi/tenders/actions/runs/39744554596).
+
 
 ## October 21 — approved throughput and coherence follow-up
 

@@ -36,6 +36,7 @@ const names = [
   "fair_generation_queue",
   "semantic_proposal_workflow",
   "bounded_hierarchical_planning",
+  "prioritize_proposal_continuations",
 ];
 const versions = [
   "20261020141244",
@@ -70,6 +71,7 @@ const versions = [
   "20261021220730",
   "20261021221342",
   "20261022070632",
+  "20261022081448",
 ];
 function fixture(history: any[], failMutation?: number) {
   const queries: any[] = [];
