@@ -244,3 +244,20 @@ it("bounds DNS lookup time before any outbound HTTP request", async () => {
     vi.useRealTimers();
   }
 });
+
+it("reads a public listing that rejects compressed negotiation without suppressing an actual access denial", async () => {
+  const fetcher: typeof fetch = async (_url, init) =>
+    new Headers(init?.headers).get("Accept-Encoding") === "identity"
+      ? new Response(rss)
+      : new Response("Blocked", { status: 403 });
+  const result = await collect(source, source.approved_hosts, resolve, fetcher);
+  expect(result.items).toHaveLength(1);
+  await expect(
+    collect(
+      source,
+      source.approved_hosts,
+      resolve,
+      async () => new Response("Blocked", { status: 403 }),
+    ),
+  ).rejects.toThrow("MANUAL_SOURCE_REQUIRED");
+});

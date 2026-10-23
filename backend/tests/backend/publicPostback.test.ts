@@ -51,6 +51,8 @@ it("follows one exact observed public detail link with scoped anonymous session 
   const seen: Array<{ url: string; init?: RequestInit }> = [];
   const fetcher = vi.fn(async (url: any, init?: RequestInit) => {
     seen.push({ url: String(url), init });
+    if (new Headers(init?.headers).get("Accept-Encoding") !== "identity")
+      return new Response("Blocked", { status: 403 });
     if (seen.length === 1)
       return new Response(listing(), {
         headers: {

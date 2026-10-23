@@ -1452,3 +1452,96 @@ it("does not mislabel a redirected landing page or a short article as scanned co
     ),
   ).toThrow("SOURCE_EMPTY");
 });
+
+it("reads public detail content with compatible uncompressed negotiation and retains access guards", async () => {
+  const publicHtml =
+    '<div id="all_body"><p>Synthetic public software procurement with installation, integration, testing and complete documented handover requirements.</p></div>';
+  const fetcher: typeof fetch = async (_url, init) =>
+    new Headers(init?.headers).get("Accept-Encoding") === "identity"
+      ? new Response(publicHtml)
+      : new Response("Blocked", { status: 403 });
+  const result = await enrichPublicNotice(
+    source,
+    { canonical_url: url, title: "Synthetic" },
+    source.approved_hosts,
+    async () => ["8.8.8.8"],
+    fetcher,
+  );
+  expect(result.notice_evidence.status).toBe("read");
+  expect(result.description).toContain("documented handover");
+  await expect(
+    enrichPublicNotice(
+      source,
+      { canonical_url: url, title: "Synthetic" },
+      source.approved_hosts,
+      async () => ["8.8.8.8"],
+      async () => new Response("Blocked", { status: 403 }),
+    ),
+  ).rejects.toThrow("MANUAL_SOURCE_REQUIRED");
+});
+
+it.each(["attachment", "direct"])(
+  "retains readable pages from a mixed PDF after soft OCR failure (%s)",
+  async (mode) => {
+    const pdf = await PDFDocument.create();
+    pdf
+      .addPage()
+      .drawText(
+        "Synthetic public procurement: deliver software, integrate existing systems, test acceptance, and provide complete operating documentation.",
+        { x: 15, y: 500, size: 10 },
+      );
+    pdf.addPage();
+    const bytes = await pdf.save();
+    const target = mode === "direct" ? url + ".pdf" : url;
+    const s =
+      mode === "direct"
+        ? { ...source, adapter_config: { automatic: true } }
+        : source;
+    const fetcher: typeof fetch = async (requested) =>
+      mode === "direct" || String(requested).endsWith("mixed.pdf")
+        ? new Response(new Uint8Array(bytes), {
+            headers: { "content-type": "application/pdf" },
+          })
+        : new Response(
+            '<div id="all_body"><a href="/public/mixed.pdf">Public document</a></div>',
+          );
+    const run = (code: string) =>
+      enrichPublicNotice(
+        s,
+        { canonical_url: target, title: "Synthetic mixed PDF" },
+        s.approved_hosts,
+        async () => ["8.8.8.8"],
+        fetcher,
+        async (request) => {
+          expect(request.pages).toEqual([2]);
+          throw new CollectionError(code);
+        },
+      );
+    for (const code of [
+      "NOTICE_OCR_LOW_CONFIDENCE",
+      "NOTICE_OCR_FAILED",
+      "SOURCE_TIMEOUT",
+    ]) {
+      const result = await run(code);
+      expect(result.description).toContain("integrate existing systems");
+      expect(result.notice_evidence.status).toBe("partial");
+      expect(result.notice_evidence.attachments[0]).toMatchObject({
+        status: "partial",
+        total_pages: 2,
+        included_pages: [1],
+        ocr_pages: [2],
+        ocr_error: code,
+      });
+      expect(result.notice_evidence.attachments[0].extraction).toBeUndefined();
+    }
+    for (const code of [
+      "NOTICE_OCR_PENDING",
+      "DATA_POLICY_BLOCKED",
+      "SOURCE_CONTENT_CHANGED",
+      "STALE_INPUT",
+      "UNSAFE_DESTINATION",
+    ]) {
+      await expect(run(code)).rejects.toThrow(code);
+    }
+  },
+);

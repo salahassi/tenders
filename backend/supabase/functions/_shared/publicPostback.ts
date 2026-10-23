@@ -70,6 +70,7 @@ export async function readPublicPostback(
       if (++requests > MAX_REQUESTS)
         throw new CollectionError("PUBLIC_POSTBACK_REQUEST_LIMIT");
       const headers = new Headers({
+        "Accept-Encoding": "identity",
         Accept: "text/html",
         "User-Agent": "TenderDesk public notice reader",
       });

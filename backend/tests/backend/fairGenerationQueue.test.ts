@@ -46,7 +46,7 @@ async function reserve(job: any) {
     [job.id],
   );
 }
-async function staticListing(future = false) {
+async function staticListing(future = false, automatic = false) {
   const url = "https://public.example.test/notices/" + crypto.randomUUID();
   const source = await f.command("source.create", {
     name: "Synthetic static listing",
@@ -64,7 +64,11 @@ async function staticListing(future = false) {
     approved_hosts: ["public.example.test"],
     policy_note: "Synthetic public source",
     poll_interval_hours: 6,
-    adapter_config: { official_listing: "synthetic", extraction },
+    adapter_config: {
+      official_listing: "synthetic",
+      extraction,
+      ...(automatic ? { automatic: true } : {}),
+    },
   });
   const approved = await f.command("source.action", {
     id: source.id,
@@ -159,6 +163,124 @@ it("gives a retried static listing a background turn and an unseen assessment th
     (await f.db.query("select * from public.provider_usage")).rows,
   ).toHaveLength(0);
 });
+it("alternates configured automatic fetches with assessment owners without requiring model capacity", async () => {
+  const first = await staticListing(false, true);
+  const second = await staticListing(false, true);
+  const assessment = await enqueue("classify_opportunity");
+  const accepted = await enqueue("draft_section");
+  await reserve(accepted);
+  const limit = (
+    await f.db.query<{ n: number }>(
+      "select app_private.model_request_limit($1) n",
+      [f.w],
+    )
+  ).rows[0].n;
+  for (let i = 1; i < limit; i++) await reserve(await enqueue("draft_section"));
+  await f.db.query(
+    "update public.jobs set next_attempt_at=now()-interval '1 minute' where id=$1",
+    [first.id],
+  );
+  const claimed = await f.rpc("claim_backend_job_v2");
+  expect(claimed.id).toBe(first.id);
+  expect(claimed.lease_token).toBeTruthy();
+  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  await finish(first.id);
+  // Free admission using only fixture settlement; the ordinary owner turn remains.
+  await f.db.query("update public.provider_usage set state='settled'");
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(assessment.id);
+  await finish(assessment.id);
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(second.id);
+  expect(
+    (await f.db.query("select * from public.provider_usage")).rows,
+  ).toHaveLength(limit);
+});
+it.each([
+  "missing",
+  "invalid",
+  "missing_marker",
+  "empty_marker",
+  "saved_model_page",
+])(
+  "retains normal priority for an automatic source with %s extraction evidence",
+  async (mode) => {
+    const sourceJob = await staticListing(false, true);
+    if (mode === "missing")
+      await f.db.query(
+        "update public.sources set adapter_config=adapter_config-'extraction' where id=$1",
+        [sourceJob.entity_id],
+      );
+    if (mode === "invalid")
+      await f.db.query(
+        "update public.sources set adapter_config=jsonb_set(adapter_config,'{extraction}','{}') where id=$1",
+        [sourceJob.entity_id],
+      );
+    if (mode === "missing_marker")
+      await f.db.query(
+        "update public.sources set adapter_config=adapter_config-'official_listing' where id=$1",
+        [sourceJob.entity_id],
+      );
+    if (mode === "empty_marker")
+      await f.db.query(
+        "update public.sources set adapter_config=jsonb_set(adapter_config,'{official_listing}',to_jsonb(''::text)) where id=$1",
+        [sourceJob.entity_id],
+      );
+    if (mode === "saved_model_page") {
+      // The old saved page lacks selector-preserving markup and still needs inference.
+      const first = await f.rpc("claim_backend_job_v2");
+      expect(first.id).toBe(sourceJob.id);
+      await f.rpc("auto_source_context", [first.id, first.lease_token]);
+      await f.db.query(
+        "update public.source_readings set page=jsonb_build_object('text','Synthetic old saved page') where job_id=$1",
+        [first.id],
+      );
+      await f.db.query(
+        "update public.jobs set status='queued',lease_token=null,lease_until=null where id=$1",
+        [first.id],
+      );
+      await f.db.query(
+        "update app_private.queue_dispatch_state set cursor=0 where workspace_id=$1",
+        [f.w],
+      );
+    }
+    const unseen = await enqueue("classify_opportunity");
+    expect((await f.rpc("claim_backend_job_v2")).id).toBe(unseen.id);
+  },
+);
+it("preserves proposal slots, future due times and source revisions for automatic configured fetches", async () => {
+  const future = await staticListing(true, true);
+  const stale = await staticListing(false, true);
+  await f.db.query("update public.jobs set input_hash='obsolete' where id=$1", [
+    stale.id,
+  ]);
+  const due = await staticListing(false, true);
+  const proposal = await enqueue("draft_section");
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(proposal.id);
+  await finish(proposal.id);
+  const next = await f.rpc("claim_backend_job_v2");
+  expect(next.id).not.toBe(stale.id);
+  if (next.id !== due.id) {
+    // Source revision repair creates a fresh eligible collection job normally.
+    expect(next.entity_id).toBe(stale.entity_id);
+    expect(next.input_hash).not.toBe("obsolete");
+    await finish(next.id);
+    expect((await f.rpc("claim_backend_job_v2")).id).toBe(due.id);
+  }
+  expect(
+    (
+      await f.db.query<any>("select status from public.jobs where id=$1", [
+        stale.id,
+      ])
+    ).rows[0].status,
+  ).toBe("canceled");
+  expect(
+    (
+      await f.db.query<any>("select attempts from public.jobs where id=$1", [
+        future.id,
+      ])
+    ).rows[0].attempts,
+  ).toBe(0);
+});
+
 it("preserves proposal slots and future eligibility when static collection is waiting", async () => {
   const delayed = await staticListing(true);
   const due = await staticListing();

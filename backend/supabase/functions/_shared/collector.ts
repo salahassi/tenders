@@ -411,6 +411,9 @@ export async function collect(
       if (!addresses.length || addresses.some((a) => !publicAddress(a)))
         throw new CollectionError("UNSAFE_DESTINATION");
       const headers: Record<string, string> = {
+        // Some public portals reject newer compression negotiation before serving
+        // a page. Read an uncompressed response within the existing byte bound.
+        "Accept-Encoding": "identity",
         Accept:
           "application/rss+xml, application/atom+xml, application/json, text/html;q=0.5",
       };

@@ -16,9 +16,9 @@ audit and idempotency. These were undecided records without proposals, attached
 to the already rejected source. Saved records and assessment history remain
 available in the archive. No actual tender or selected opportunity was removed.
 
-Reader, per-assessment evidence currentness and Review state corrections are in
-progress. Real detail extraction, full regression, deployment and hosted retries
-must be recorded separately before calling the repair complete.
+Reader, per-assessment evidence currentness and Review state corrections are
+implemented and deployed. Hosted recovery below distinguishes completed reading
+from queued or running assessment work.
 
 Local classification acceptance: the invoker discovery view compares consumed
 notice/company/scope inputs rather than unrelated workspace revisions, and the
@@ -95,6 +95,45 @@ numbers; narrowly scoped validator corrections and negative regressions are bein
 completed. All five actual rejected public claims now pass the corrected validator
 against their official notice text; 168 focused grounding/recovery tests passed.
 Existing bounded recovery revalidates saved reports without resetting budgets.
+
+October 23 hosted follow-up: source revision `4f39895` passed the complete Pages
+workflow `39874062088`; the live Review bundle exposes Scope to review. Native
+workflow `39874075534` completed the first real OCR request, and `39875536172`
+completed public browser/OCR work. Etimad is now healthy with **six actual saved
+tenders** (00:04 UTC). Its public browser listing required no CAPTCHA in that run.
+The separate detail-tab warnings continue to represent missing tab coverage.
+
+Production verification found and corrected three further integration issues.
+The tested Amman host was absent from the deployment allowlist; it was added with
+an audit event while preserving the dispatcher secret, then affected work was
+retried normally. Configured DOM sources and notice-reading prerequisites were
+waiting behind new model requests; migration `20261022235500` adds alternating
+priority, preserving admission, owner fairness, source revisions and leases.
+Pending/stale OCR or browser requests get no priority bonus; current OCR receipts
+must all be ready. The queue regression group passed 125 tests.
+
+MWI returned 403 when negotiating compression, despite its public page being
+available. Bounded public requests now use identity encoding; policy and size
+checks remain intact. Exact live preflight collected eight notices, read all
+eight details (four complete/four partial), received HTTP 200 on all 31 requests,
+and read 21 pages by Arabic/English OCR. Production collection then returned
+healthy with eight saved notices. A real mixed 24-page PDF also demonstrated why
+OCR failure must retain existing text: controlled low-confidence failure now
+keeps its 22 readable pages and explicitly lists the two missing pages. This is
+controlled local evidence, separate from hosted OCR acceptance.
+
+The MDLF retry was independently traced to an awarded contract mislabeled in the
+portal's application-period table. Its PDF was verified as a September 2025 award;
+the undecided record had no proposals and was archived through the normal audited
+command, retaining its identity to prevent reopening on later polls.
+
+Final follow-up runtime is API **87**, worker **122**, source-browser **3**. All
+36/57/7 reachable deployed files match canonical source. Backend typecheck/build,
+all three Deno entrypoints and **1,359 backend tests across 79 files** pass;
+frontend remains at **225 passing tests across 38 files**, typecheck/build pass.
+Live recovery is ongoing: at 00:06 UTC, 12/20 Amman notices had saved detail reads,
+Etimad had six saved records, and no Review attention blocker remained. Pending
+OCR and model assessments are still processing; they are not claimed complete.
 
 ## October 22 — Replace registration pages with tested tender listings
 

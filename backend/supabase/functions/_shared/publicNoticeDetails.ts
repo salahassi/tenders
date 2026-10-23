@@ -95,6 +95,7 @@ export async function fetchPublicNotice(
       redirect: "manual",
       signal,
       headers: {
+        "Accept-Encoding": "identity",
         Accept: "text/html,application/pdf;q=0.9",
         "User-Agent": "TenderDesk public notice reader",
       },
@@ -487,13 +488,33 @@ async function applyPublicOcr(
     .slice(0, 10)
     .map((p) => p.page);
   if (!reader || !requested.length) return;
-  const result = await reader({
-    url,
-    sha256: await digest(bytes),
-    pages: requested,
-    total_pages: pages.length,
-    mime,
-  });
+  let result: Awaited<ReturnType<PublicNoticeOcrReader>>;
+  try {
+    result = await reader({
+      url,
+      sha256: await digest(bytes),
+      pages: requested,
+      total_pages: pages.length,
+      mime,
+    });
+  } catch (error) {
+    const code = error instanceof Error ? error.message : "";
+    if (
+      [
+        "NOTICE_OCR_LOW_CONFIDENCE",
+        "NOTICE_OCR_FAILED",
+        "SOURCE_TIMEOUT",
+      ].includes(code) &&
+      pages.some((page) => !page.restricted && page.text.length >= 30)
+    ) {
+      // OCR supplements text already extracted from the verified PDF bytes. A
+      // blank scan or technical OCR failure must not erase those readable pages.
+      // Pending, changed evidence, policy and destination failures still stop.
+      record.ocr_error = code;
+      return;
+    }
+    throw error;
+  }
   if (
     !Array.isArray(result.pages) ||
     result.pages.length !== requested.length ||
@@ -613,7 +634,10 @@ export async function enrichPublicNotice(
       );
     if (directPages?.some((p) => p.restricted))
       throw new CollectionError("SOURCE_DOCUMENT_RESTRICTED");
-    if (directPages?.some((p) => !p.restricted && p.text.length < 30))
+    if (
+      directPages &&
+      !directPages.some((p) => !p.restricted && p.text.length >= 30)
+    )
       throw new CollectionError("NOTICE_DETAILS_NEED_OCR");
     const parsePage = () =>
       automatic && !extraction
@@ -630,7 +654,10 @@ export async function enrichPublicNotice(
     const detail = directPages
       ? {
           title: "",
-          text: directPages.map((p) => p.text).join("\n"),
+          text: directPages
+            .filter((p) => p.text.length >= 30)
+            .map((p) => p.text)
+            .join("\n"),
           attachments: [] as string[],
           images: [] as string[],
           deadline: submissionDeadline(
@@ -671,8 +698,15 @@ export async function enrichPublicNotice(
     if (directRecord && directPages)
       attachments.push({
         ...directRecord,
-        status: "read",
-        included_pages: directPages.map((p) => p.page),
+        status: directPages.every((p) => p.text.length >= 30)
+          ? "read"
+          : "partial",
+        included_pages: directPages
+          .filter((p) => p.text.length >= 30)
+          .map((p) => p.page),
+        ocr_pages: directPages
+          .filter((p) => p.text.length < 30)
+          .map((p) => p.page),
       });
     const imageUrls = "images" in detail ? detail.images : [];
     const documentUrls = [...detail.attachments, ...imageUrls];
@@ -727,7 +761,17 @@ export async function enrichPublicNotice(
       } catch (error) {
         if (
           error instanceof CollectionError &&
-          error.code === "NOTICE_OCR_PENDING"
+          [
+            "NOTICE_OCR_PENDING",
+            "DATA_POLICY_BLOCKED",
+            "SOURCE_CONTENT_CHANGED",
+            "NOTICE_SOURCE_EVIDENCE_CHANGED",
+            "STALE_INPUT",
+            "UNSAFE_DESTINATION",
+            "DEPLOYMENT_HOST_APPROVAL_REQUIRED",
+            "SOURCE_DOCUMENT_RESTRICTED",
+            "NOTICE_OCR_RESULT_INVALID",
+          ].includes(error.code)
         )
           throw error;
         record.status = "unread";

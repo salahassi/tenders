@@ -101,6 +101,43 @@ async function pending() {
   return { source, opportunity, job, request, browser, before };
 }
 
+it.each(["ready", "waiting", "stale"])(
+  "prefers browser notice continuation only for a current ready receipt (%s)",
+  async (mode) => {
+    const { source, job, browser } = await pending();
+    if (mode !== "waiting")
+      await f.rpc("complete_source_browser_page", [
+        browser.id,
+        browser.lease_token,
+        JSON.stringify(renderedPage(html, url, url)),
+        null,
+      ]);
+    if (mode === "stale")
+      await f.db.query(
+        "update public.sources set revision=revision+1 where id=$1",
+        [source.id],
+      );
+    await f.db.query(
+      "update public.jobs set next_attempt_at=now() where id=$1",
+      [job.id],
+    );
+    await f.db.query(
+      "update app_private.queue_dispatch_state set cursor=0 where workspace_id=$1",
+      [f.w],
+    );
+    const unseen = (
+      await f.db.query<any>(
+        "insert into public.jobs(workspace_id,type,entity_id,input_hash,created_by,status) values($1,'classify_opportunity',gen_random_uuid(),'synthetic-unseen',$2,'queued') returning id",
+        [f.w, f.owner],
+      )
+    ).rows[0];
+    expect((await f.rpc("claim_backend_job_v2")).id).toBe(
+      mode === "ready" ? job.id : unseen.id,
+    );
+    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  },
+);
+
 it("binds rendered details to the original assessment and resumes it without changing model history", async () => {
   const { job, browser, before } = await pending();
   const page = renderedPage(html, url, url);

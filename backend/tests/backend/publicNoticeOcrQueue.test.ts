@@ -199,6 +199,105 @@ it("rejects incomplete or substituted page coverage even for the correct documen
     ]),
   ).rejects.toThrow("INVALID_INPUT");
 });
+it.each(["ready", "waiting", "partial_waiting", "stale"])(
+  "prioritizes only a current ready OCR receipt before unseen inference (%s)",
+  async (mode) => {
+    const { job, source } = await fixture();
+    await request(job);
+    if (mode !== "waiting") {
+      const claim = await f.rpc("claim_notice_ocr");
+      await f.rpc("complete_notice_ocr", [
+        claim.id,
+        claim.lease_token,
+        JSON.stringify(output),
+        null,
+      ]);
+    }
+    if (mode === "partial_waiting") {
+      const resumed = await f.rpc("claim_backend_job_v2");
+      expect(resumed.id).toBe(job.id);
+      await request(resumed, url + "?attachment=second");
+    }
+    if (mode === "stale")
+      await f.db.query(
+        "update public.sources set revision=revision+1 where id=$1",
+        [source.id],
+      );
+    await f.db.query(
+      "update public.jobs set next_attempt_at=now() where id=$1",
+      [job.id],
+    );
+    await f.db.query(
+      "update app_private.queue_dispatch_state set cursor=0 where workspace_id=$1",
+      [f.w],
+    );
+    const unseen = (
+      await f.db.query<any>(
+        "insert into public.jobs(workspace_id,type,entity_id,input_hash,created_by,status) values($1,'classify_opportunity',gen_random_uuid(),'synthetic-unseen',$2,'queued') returning id",
+        [f.w, f.owner],
+      )
+    ).rows[0];
+    const claimed = await f.rpc("claim_backend_job_v2");
+    expect(claimed.id).toBe(mode === "ready" ? job.id : unseen.id);
+    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+    expect(
+      (await f.db.query("select * from public.provider_usage")).rows,
+    ).toHaveLength(0);
+  },
+);
+
+it("alternates initial public notice reading with model owners while preserving due times", async () => {
+  const { job } = await fixture();
+  await f.db.query(
+    "update public.jobs set status='queued',lease_token=null,lease_until=null,next_attempt_at=now()+interval '1 hour' where id=$1",
+    [job.id],
+  );
+  await f.db.query(
+    "update app_private.queue_dispatch_state set cursor=0 where workspace_id=$1",
+    [f.w],
+  );
+  const unseen = (
+    await f.db.query<any>(
+      "insert into public.jobs(workspace_id,type,entity_id,input_hash,created_by,status) values($1,'classify_opportunity',gen_random_uuid(),'synthetic-unseen',$2,'queued') returning id",
+      [f.w, f.owner],
+    )
+  ).rows[0];
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(unseen.id);
+  await f.db.query(
+    "update public.jobs set status='succeeded',lease_token=null,lease_until=null where id=$1",
+    [unseen.id],
+  );
+  await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
+    job.id,
+  ]);
+  // At an ordinary cycle, an unseen model owner still receives its turn.
+  const second = (
+    await f.db.query<any>(
+      "insert into public.jobs(workspace_id,type,entity_id,input_hash,created_by,status) values($1,'classify_opportunity',gen_random_uuid(),'synthetic-second',$2,'queued') returning id",
+      [f.w, f.owner],
+    )
+  ).rows[0];
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(second.id);
+  await f.db.query(
+    "update public.jobs set status='succeeded',lease_token=null,lease_until=null where id=$1",
+    [second.id],
+  );
+  const third = (
+    await f.db.query<any>(
+      "insert into public.jobs(workspace_id,type,entity_id,input_hash,created_by,status) values($1,'classify_opportunity',gen_random_uuid(),'synthetic-third',$2,'queued') returning id",
+      [f.w, f.owner],
+    )
+  ).rows[0];
+  expect((await f.rpc("claim_backend_job_v2")).id).toBe(job.id);
+  expect(
+    (
+      await f.db.query<any>("select attempts from public.jobs where id=$1", [
+        third.id,
+      ])
+    ).rows[0].attempts,
+  ).toBe(0);
+});
+
 it("blocks queued OCR when its source configuration changes", async () => {
   const { job, source } = await fixture();
   const pending = await request(job);
