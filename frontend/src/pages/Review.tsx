@@ -150,9 +150,9 @@ export default function Review() {
         />
         {tab === "scope" && (
           <p className="muted small">
-            These assessments completed, but the published information did not
-            establish whether the tender matches your service scope. Review the
-            evidence and open questions before deciding.
+            These assessments completed, but the available evidence left the
+            service scope unresolved. Review each assessment's explanation and
+            open questions before deciding.
           </p>
         )}
         <div className="filter-bar">

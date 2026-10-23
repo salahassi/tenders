@@ -42,11 +42,13 @@ export default function FitAssessment({
             ? "Assessment processing"
             : "Assessment needs attention"}
       </p>
-      {opportunity.assessment?.scope === "uncertain" && (
-        <p className="fit-disclosure">
-          Service scope needs confirmation from the full notice or RFP.
-        </p>
-      )}
+      {opportunity.assessment?.scope === "uncertain" &&
+        !opportunity.assessment.stale && (
+          <p className="fit-disclosure" dir="auto">
+            {opportunity.assessment.scopeReason?.trim() ||
+              "Review the recorded evidence and open questions to resolve service scope."}
+          </p>
+        )}
       <p className="fit-summary">{fit.summary}</p>
       {compact && fit.mode !== "recorded" && (
         <Link className="text-link" to={`/opportunities/${opportunity.id}`}>
@@ -65,10 +67,7 @@ export default function FitAssessment({
       )}
       {opportunity.noticeEvidence && (
         <div className="fit-disclosure">
-          <p>
-            Original notice details retrieved. Company eligibility still
-            requires verified company evidence.
-          </p>
+          <p>Original notice details retrieved.</p>
           {opportunity.noticeEvidence.attachments.map((a, i) => (
             <p key={a.url}>
               <a href={a.url} target="_blank" rel="noreferrer">

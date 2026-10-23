@@ -70,6 +70,7 @@ export interface Opportunity {
     coverage: number;
     routing: string;
     scope?: string;
+    scopeReason?: string;
     scopeEvidence?: string[];
     method?: string;
     companySources?: {

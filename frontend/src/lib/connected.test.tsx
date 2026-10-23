@@ -1070,7 +1070,14 @@ it("does not admit a notice when progress arrives before its matching assessment
                   routing: "needs_review",
                   fit_score: null,
                   evidence_coverage: 0,
-                  result: {},
+                  result: {
+                    scope_decision: {
+                      status: "in_scope",
+                      reason:
+                        "Synthetic contextual match with company services.",
+                      notice_evidence: [],
+                    },
+                  },
                   created_at: "2026-10-18T00:00:00Z",
                 },
               ]
@@ -1089,6 +1096,9 @@ it("does not admit a notice when progress arrives before its matching assessment
   const row = (await repository.refresh()).opportunities[0];
   expect(row.discovery?.inboxVisible).toBe(true);
   expect(row.assessment?.stale).toBe(false);
+  expect(row.assessment?.scopeReason).toBe(
+    "Synthetic contextual match with company services.",
+  );
 });
 
 it("separates settings sections and retains unsaved workspace input while navigating", async () => {

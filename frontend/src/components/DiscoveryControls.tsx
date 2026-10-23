@@ -124,10 +124,13 @@ export default function DiscoveryControls() {
       </Field>
       <p className="muted small">
         {scope === "company_knowledge"
-          ? "The model derives your service scope from enabled, verified Company Knowledge files and notes. Missing evidence stays uncertain."
+          ? "The model compares the meaning of the purchased work with the services described in enabled, verified Company Knowledge files and notes. The notice does not need to use the same words."
           : scope === "keywords"
-            ? "The model interprets your keywords against the purchased services. Keywords describe your interests, not proof of company expertise."
-            : "The model considers services in Company Knowledge and your interest keywords. Exclusion keywords take precedence; ambiguous or mixed requirements need review."}
+            ? "The model interprets your saved interests by meaning and context, without requiring the same words in the notice. These preferences do not prove company expertise."
+            : "The model compares the purchased work with services in Company Knowledge and your saved interests by meaning and context. Configured exclusions take precedence."}
+      </p>
+      <p className="muted small">
+        You do not need to list every unrelated activity as an exclusion.
       </p>
       {scope !== "company_knowledge" && (
         <>
@@ -152,16 +155,17 @@ export default function DiscoveryControls() {
             />
           </Field>
           <p className="muted small">
-            One term or phrase per line, or separated by commas. Arabic and
-            English are supported. Up to 24 terms per list, 100 characters each.
+            Exclusions are optional. Use one term or phrase per line, or
+            separate them with commas. Arabic and English are supported. Up to
+            24 terms per list, 100 characters each.
           </p>
           {validationError && <p role="alert">{validationError}</p>}
         </>
       )}
       <p className="muted small">
-        Company expertise and qualifications always require evidence from
-        Company Knowledge, regardless of the scope source. Changes to the scope
-        or keywords trigger reassessment.
+        Delivery capability and eligibility are assessed separately using
+        Company Knowledge. Changes to service scope or keywords trigger
+        reassessment.
       </p>
       <label>
         <input

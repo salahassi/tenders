@@ -17,7 +17,9 @@ import {
 import {
   SEMANTIC_INSTRUCTIONS_V1,
   SEMANTIC_PROMPT_V1,
+  semanticPolicyText,
 } from "../../supabase/functions/_shared/modelSemanticInstructions";
+import { SCOPE_COMPARISON_INSTRUCTIONS_V1 } from "../../supabase/functions/_shared/modelScopeInstructions";
 import {
   FreeModelProvider,
   modelPrompt,
@@ -238,6 +240,115 @@ it("leaves historical reads unpinned and rejects corrupted policy and stale leas
   await expect(
     readSemanticPromptRevision(x.store, x.requestPrefix),
   ).rejects.toThrow("MODEL_IDENTITY_CHANGED");
+});
+
+it.each([
+  ["classify_opportunity", { scope_policy: { scope: "company_knowledge" } }],
+  ["verify_grounding", { original_task: "classify_opportunity" }],
+  ["repair_result", { target_task: "classify_opportunity" }],
+] as const)(
+  "pins contextual scope for a new %s phase and retains its exact request on polling",
+  async (task, phaseContext) => {
+    const x = await setup();
+    const options = { ...x.options, task, context: phaseContext };
+    expect(await pinSemanticPrompt(options)).toBe(3);
+    const prompt = modelPrompt(
+      task,
+      phaseContext,
+      evidence,
+      ["req"],
+      "en",
+      false,
+      1,
+      3,
+    );
+    const envelope = JSON.parse(prompt);
+    expect(envelope.scope_comparison_policy).toBe(
+      SCOPE_COMPARISON_INSTRUCTIONS_V1,
+    );
+    expect(envelope.prompt_version).toMatch(
+      /\.scope-v1\.tenderdesk-semantic-fidelity-v1\.economy-v1$/,
+    );
+    expect(envelope.prompt_version.length).toBeLessThanOrEqual(100);
+    await usage(x, "reserved", await sha256(prompt));
+    expect(await pinSemanticPrompt(options)).toBe(3);
+    expect(await readSemanticPromptRevision(x.store, x.requestPrefix)).toBe(3);
+    expect(
+      modelPrompt(task, phaseContext, evidence, ["req"], "en", false, 1, 3),
+    ).toBe(prompt);
+    // Tampered stored policy cannot silently alter an accepted request.
+    await f.db.query(
+      "update app_private.model_graph_results set value=jsonb_set(value,'{instructions}','\"changed policy\"') where thread_id=$1 and result_key like 'semantic-instructions-%'",
+      [x.store.thread],
+    );
+    await expect(pinSemanticPrompt(options)).rejects.toThrow(
+      "MODEL_IDENTITY_CHANGED",
+    );
+  },
+);
+
+it.each([1, 2] as const)(
+  "preserves an existing scope phase pinned to revision %s after the contextual policy release",
+  async (version) => {
+    const x = await setup();
+    const options = { ...x.options, task: "classify_opportunity" as const };
+    const legacyHash = await sha256(
+      modelPrompt(options.task, context, evidence, ["req"], "en"),
+    );
+    await x.store.action("result_put", {
+      key: `semantic-instructions-${await sha256(x.requestPrefix)}`,
+      value: {
+        version,
+        legacy_input_hash: legacyHash,
+        instructions: semanticPolicyText(version),
+      },
+    });
+    const prompt = modelPrompt(
+      options.task,
+      context,
+      evidence,
+      ["req"],
+      "en",
+      false,
+      1,
+      version,
+    );
+    await usage(x, "reserved", await sha256(prompt));
+    expect(await pinSemanticPrompt(options)).toBe(version);
+    expect(await readSemanticPromptRevision(x.store, x.requestPrefix)).toBe(
+      version,
+    );
+    expect(
+      modelPrompt(
+        options.task,
+        context,
+        evidence,
+        ["req"],
+        "en",
+        false,
+        1,
+        version,
+      ),
+    ).toBe(prompt);
+    expect(JSON.parse(prompt)).not.toHaveProperty("scope_comparison_policy");
+    expect(
+      await pinSemanticPrompt({
+        ...options,
+        requestPrefix: "assessment:next-phase",
+      }),
+    ).toBe(3);
+  },
+);
+
+it("retains an unpinned already-started classification request on the legacy policy", async () => {
+  const x = await setup();
+  const options = { ...x.options, task: "classify_opportunity" as const };
+  const legacyHash = await sha256(
+    modelPrompt(options.task, context, evidence, ["req"], "en"),
+  );
+  await usage(x, "unknown", legacyHash);
+  expect(await pinSemanticPrompt(options)).toBe(0);
+  expect(await readSemanticPromptRevision(x.store, x.requestPrefix)).toBe(0);
 });
 
 it.each([

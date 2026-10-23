@@ -1,5 +1,29 @@
 # Decisions
 
+## 2026-10-23: Compare scope contextually against database evidence
+
+The Owner requires the model to infer the company's specialization from the
+current verified Company Knowledge stored in the database and compare it with
+the meaning of the purchased work. Relevant outcomes and required expertise do
+not have to share literal words with the company profile or configured interests.
+No business-domain preset, fixed sector list or keyword classifier may determine
+the decision in application code.
+
+A supported comparison may exclude clearly unrelated work without an explicit
+exclusion term or an exhaustive statement of everything the company does not do.
+Optional interests and exclusions remain saved workspace preferences under the
+selected scope mode. Scope relevance is distinct from proof of delivery capacity
+and buyer eligibility: missing staff, certifications or project records may keep
+those factors unknown without changing an otherwise clear scope judgment.
+
+Classification, independent verification and correction must apply the same
+interpretation. Verification still checks source quotations and unsupported
+claims; it must not require an explicit negative company statement merely to
+accept a grounded scope comparison. Genuine ambiguity, missing specialization
+evidence, material conflicts and unresolved mixed scope remain reviewable.
+Existing paid requests retain their original instructions and input identities.
+Historical results require normal reassessment to use the new interpretation.
+
 ## 2026-10-20: Keep the application running; paid-model acceptance follows implementation
 
 The Owner wants the planned changes delivered without stopping or losing the

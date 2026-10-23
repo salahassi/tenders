@@ -1,5 +1,9 @@
 // Immutable shared application policy. Changing this text requires a new
 // phase-pinned revision; never rewrite an accepted request's instructions.
+import { OUTPUT_ECONOMY_INSTRUCTIONS } from "./modelOutputPolicy.ts";
+import { SCOPE_COMPARISON_INSTRUCTIONS_V1 } from "./modelScopeInstructions.ts";
+
+export type SemanticRevision = 0 | 1 | 2 | 3;
 export const SEMANTIC_PROMPT_V1 = "tenderdesk-semantic-fidelity-v1";
 export const SEMANTIC_INSTRUCTIONS_V1 =
   "Preserve the meaning of every supplied fact and requirement across extraction, analysis, planning, drafting, review and correction. " +
@@ -11,3 +15,13 @@ export const SEMANTIC_INSTRUCTIONS_V1 =
   "Verification must compare each factual assertion and requirement against its actual cited source, including obligation strength and consequences, rather than accept plausible wording or another model's agreement. " +
   "Separate compound assertions when needed, retaining exact quotations for each part and covering every part without omitting negation, quantities, conditions or exceptions. " +
   "Correction must resolve the cited semantic defects while preserving valid content; never hide a contradiction by dropping evidence, relabeling a known rule as an assumption, or declaring an unsupported fact supported.";
+
+/** Revisions 0–2 retain their exact historical wire instructions. */
+export function semanticPolicyText(revision: SemanticRevision): string {
+  if (revision === 0) return "";
+  return (
+    SEMANTIC_INSTRUCTIONS_V1 +
+    (revision >= 2 ? "\n" + OUTPUT_ECONOMY_INSTRUCTIONS : "") +
+    (revision === 3 ? "\n" + SCOPE_COMPARISON_INSTRUCTIONS_V1 : "")
+  );
+}

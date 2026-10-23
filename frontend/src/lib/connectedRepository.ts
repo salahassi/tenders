@@ -387,6 +387,10 @@ export class ConnectedRepository {
                   coverage: Number(assessment.evidence_coverage),
                   routing: str(assessment, "routing"),
                   scope: assessed?.scope_decision?.status,
+                  scopeReason:
+                    typeof assessed?.scope_decision?.reason === "string"
+                      ? assessed.scope_decision.reason
+                      : undefined,
                   scopeEvidence:
                     assessed?.scope_decision?.notice_evidence?.map(
                       (e: { quote: string }) => e.quote,

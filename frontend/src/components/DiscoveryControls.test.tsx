@@ -93,6 +93,35 @@ function setupScope(role = "Owner") {
   } as any);
   return { runCommand, notify };
 }
+it("supports contextual Company Knowledge scope without requiring or inventing keyword lists", async () => {
+  const { runCommand } = setupScope();
+  render(<DiscoveryControls />);
+  const source = screen.getByLabelText("Company service scope");
+  await waitFor(() => expect(source).toBeEnabled());
+  expect(source).toHaveValue("company_knowledge");
+  expect(screen.queryByLabelText("Interest keywords")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("Exclusion keywords")).not.toBeInTheDocument();
+  expect(
+    screen.getByText(/notice does not need to use the same words/),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/do not need to list every unrelated activity/),
+  ).toBeInTheDocument();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Save assessment & sharing settings" }),
+  );
+  await waitFor(() =>
+    expect(runCommand).toHaveBeenCalledWith("discovery.configure", {
+      expected_revision: 1,
+      scope: "company_knowledge",
+      include_keywords: [],
+      exclude_keywords: [],
+      auto_public_notices: true,
+      auto_company_knowledge: true,
+      providers: ["groq_free"],
+    }),
+  );
+});
 it("saves and reloads combined scope with normalized Arabic and English terms", async () => {
   const { runCommand, notify } = setupScope();
   const page = render(<DiscoveryControls />);

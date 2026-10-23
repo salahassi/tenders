@@ -1,4 +1,3 @@
-import { OUTPUT_ECONOMY_INSTRUCTIONS } from "./modelOutputPolicy.ts";
 import type { Backend } from "./backend.ts";
 import type { ModelGraphStore } from "./modelGraphStore.ts";
 import {
@@ -8,20 +7,22 @@ import {
   type Evidence,
   type ModelTask,
 } from "./model.ts";
-import { SEMANTIC_INSTRUCTIONS_V1 } from "./modelSemanticInstructions.ts";
+import {
+  semanticPolicyText,
+  type SemanticRevision,
+} from "./modelSemanticInstructions.ts";
+import { scopeComparisonApplies } from "./modelScopeInstructions.ts";
 
 const keyFor = async (requestPrefix: string) =>
   `semantic-instructions-${await sha256(requestPrefix)}`;
-function revision(pin: any): 0 | 1 | 2 {
+function revision(pin: any): SemanticRevision {
   const value = pin.value;
   if (
     !value ||
-    ![0, 1, 2].includes(value.version) ||
+    ![0, 1, 2, 3].includes(value.version) ||
     !/^[a-f0-9]{64}$/.test(value.legacy_input_hash ?? "") ||
-    (value.version === 1 && value.instructions !== SEMANTIC_INSTRUCTIONS_V1) ||
-    (value.version === 2 &&
-      value.instructions !==
-        SEMANTIC_INSTRUCTIONS_V1 + "\n" + OUTPUT_ECONOMY_INSTRUCTIONS)
+    (value.version > 0 &&
+      value.instructions !== semanticPolicyText(value.version))
   )
     throw new ModelError("MODEL_IDENTITY_CHANGED");
   return value.version;
@@ -32,7 +33,7 @@ function revision(pin: any): 0 | 1 | 2 {
 export async function readSemanticPromptRevision(
   store: Pick<ModelGraphStore, "action">,
   requestPrefix: string,
-): Promise<0 | 1 | 2> {
+): Promise<SemanticRevision> {
   const pin = await store.action("result_get", {
     key: await keyFor(requestPrefix),
   });
@@ -51,7 +52,7 @@ export async function pinSemanticPrompt(o: {
   language: "en" | "ar";
   repair: boolean;
   verificationRevision: 1 | 2 | 3;
-}): Promise<0 | 1 | 2> {
+}): Promise<SemanticRevision> {
   if (o.task === "connection_probe") return 0;
   const key = await keyFor(o.requestPrefix);
   const legacyInputHash = await sha256(
@@ -76,16 +77,20 @@ export async function pinSemanticPrompt(o: {
     });
     if (typeof started !== "boolean")
       throw new ModelError("MODEL_IDENTITY_CHANGED");
+    const version = started
+      ? 0
+      : scopeComparisonApplies(o.task, o.context)
+        ? 3
+        : 2;
     pin = await o.store.action("result_put", {
       key,
       value: {
-        version: started ? 0 : 2,
+        version,
         legacy_input_hash: legacyInputHash,
         ...(started
           ? {}
           : {
-              instructions:
-                SEMANTIC_INSTRUCTIONS_V1 + "\n" + OUTPUT_ECONOMY_INSTRUCTIONS,
+              instructions: semanticPolicyText(version),
             }),
       },
     });

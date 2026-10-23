@@ -1,5 +1,36 @@
 # Implementation status and continuation plan
 
+## October 23 — Contextual scope comparison from database evidence
+
+The Owner clarified that scope must follow the meaning of requested outcomes and
+the company's documented specialization, without literal keyword requirements,
+an exhaustive exclusion list or hardcoded business domains. A traced production
+assessment originally excluded unrelated work, but verification demanded an
+explicit exclusion and correction changed it to uncertain. This was an
+interpretation defect, not a failure to read the notice.
+
+Implemented a versioned, trusted scope-comparison policy shared by classification,
+verification and correction. The policy permits cited semantic mismatch while
+keeping capacity and eligibility evidence independent. Company specializations,
+interests and exclusions remain supplied database records; no business data or
+classification lookup table was added. Existing scope settings are preserved.
+New applicable phases pin semantic revision 3; historical revisions 0–2 and
+accepted request inputs remain unchanged. No database migration is required.
+
+The frontend now displays the saved scope reason for current uncertain results
+and describes optional exclusions and contextual matching. It no longer labels
+every uncertain result as missing a full tender document. Stale explanations are
+hidden during reassessment.
+
+Local acceptance: 1,413 backend tests across 82 files and 227 frontend tests
+across 38 files pass, with both packages' typecheck/build and all three Deno
+entrypoint checks. Independent review found no blocking defect in policy
+selection or request compatibility. Database fixtures exercise current verified knowledge,
+indirect relevance, unrelated work without exclusions, unknown credentials and
+knowledge edits. Model responses in these tests are explicit fixtures; they do
+not establish live model accuracy. Deployment and an actual reassessment using
+the new policy remain pending.
+
 ## October 22 — Repair notice reading and assessment attention states
 
 Owner explicitly requested fixing the reading and classification problems after

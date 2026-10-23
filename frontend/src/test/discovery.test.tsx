@@ -322,6 +322,58 @@ it("makes completed unclear scope reviewable without admitting it as confirmed i
   expect(discoveryGroup(notice)).toBe("processing");
 });
 
+it("shows the saved scope explanation without inventing a missing RFP or reusing a stale cause", () => {
+  const state = createSeedState();
+  const notice: Opportunity = {
+    ...state.opportunities[0],
+    assessment: {
+      score: null,
+      coverage: 0,
+      routing: "needs_review",
+      scope: "uncertain",
+      scopeReason: "Synthetic company profile does not describe its services.",
+      summary: "Synthetic assessment summary",
+      stale: false,
+      factors: {},
+      missing: ["Company service description"],
+      risks: [],
+    },
+    noticeEvidence: {
+      status: "read",
+      fetchedAt: "2026-10-23T12:00:00Z",
+      attachments: [],
+    },
+    discovery: { state: "assessed", inboxVisible: false },
+  };
+  const renderAssessment = () => (
+    <MemoryRouter>
+      <FitAssessment state={state} opportunity={notice} compact />
+    </MemoryRouter>
+  );
+  const page = render(renderAssessment());
+  expect(screen.getByText(notice.assessment!.scopeReason!)).toBeInTheDocument();
+  expect(
+    screen.getByText("Original notice details retrieved."),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByText(
+      "Service scope needs confirmation from the full notice or RFP.",
+    ),
+  ).not.toBeInTheDocument();
+
+  notice.assessment!.scopeReason = undefined;
+  page.rerender(renderAssessment());
+  const fallback =
+    "Review the recorded evidence and open questions to resolve service scope.";
+  expect(screen.getByText(fallback)).toBeInTheDocument();
+
+  notice.assessment!.stale = true;
+  notice.discovery!.state = "pending_schedule";
+  page.rerender(renderAssessment());
+  expect(screen.queryByText(fallback)).not.toBeInTheDocument();
+  expect(screen.getByText("Awaiting scheduling")).toBeInTheDocument();
+});
+
 it.each([
   ["SOURCE_NOTICE_REDIRECTED", "without readable tender details"],
   ["MANUAL_SOURCE_REQUIRED", "access or verification"],

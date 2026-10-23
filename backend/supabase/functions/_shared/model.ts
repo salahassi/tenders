@@ -8,7 +8,13 @@ import { modelAdapters } from "./modelAdapters/index.ts";
 import {
   SEMANTIC_INSTRUCTIONS_V1,
   SEMANTIC_PROMPT_V1,
+  semanticPolicyText,
+  type SemanticRevision,
 } from "./modelSemanticInstructions.ts";
+import {
+  SCOPE_COMPARISON_INSTRUCTIONS_V1,
+  SCOPE_COMPARISON_PROMPT_V1,
+} from "./modelScopeInstructions.ts";
 import {
   verificationPolicyText,
   verificationPolicyVersion,
@@ -184,11 +190,11 @@ Return the original target_task and the corrected result using that task's compl
 export function taskSystemInstructions(
   task: ModelTask,
   verificationRevision: 1 | 2 | 3 = 1,
-  semanticRevision: 0 | 1 | 2 = 0,
+  semanticRevision: SemanticRevision = 0,
 ) {
   const original = legacyTaskSystemInstructions(task, verificationRevision);
   return semanticRevision > 0 && task !== "connection_probe"
-    ? `${original}\n${SEMANTIC_INSTRUCTIONS_V1}${semanticRevision === 2 ? "\n" + OUTPUT_ECONOMY_INSTRUCTIONS : ""}`
+    ? `${original}\n${semanticPolicyText(semanticRevision)}`
     : original;
 }
 export async function sha256(value: string) {
@@ -929,7 +935,7 @@ export class FreeModelProvider {
     private streamResponses = false,
     private configuration?: ModelConfiguration,
     private verificationRevision: 1 | 2 | 3 = 1,
-    private semanticRevision: 0 | 1 | 2 = 0,
+    private semanticRevision: SemanticRevision = 0,
   ) {}
   private async diagnoseRejectedRequest(
     response: Response,
@@ -1429,7 +1435,7 @@ export function modelPrompt(
   language: "en" | "ar",
   repair = false,
   verificationRevision: 1 | 2 | 3 = 1,
-  semanticRevision: 0 | 1 | 2 = 0,
+  semanticRevision: SemanticRevision = 0,
 ) {
   const original =
     task === "inspect_source_page"
@@ -1458,11 +1464,16 @@ export function modelPrompt(
   const envelope = JSON.parse(original);
   return JSON.stringify({
     ...envelope,
-    prompt_version: `${envelope.prompt_version}.${SEMANTIC_PROMPT_V1}${semanticRevision === 2 ? ".economy-v1" : ""}`,
-    ...(semanticRevision === 2
+    // Keep the semantic suffix recognized by the durable writer handoff. The
+    // scope policy is separately versioned without changing older envelopes.
+    prompt_version: `${envelope.prompt_version}${semanticRevision === 3 ? "." + SCOPE_COMPARISON_PROMPT_V1 : ""}.${SEMANTIC_PROMPT_V1}${semanticRevision >= 2 ? ".economy-v1" : ""}`,
+    ...(semanticRevision >= 2
       ? { output_policy: OUTPUT_ECONOMY_INSTRUCTIONS }
       : {}),
     semantic_policy: SEMANTIC_INSTRUCTIONS_V1,
+    ...(semanticRevision === 3
+      ? { scope_comparison_policy: SCOPE_COMPARISON_INSTRUCTIONS_V1 }
+      : {}),
   });
 }
 /** Try each configured provider once per round; retain per-provider outcomes. */
@@ -1480,7 +1491,7 @@ export async function executeModel(
   verificationRevision: 1 | 2 | 3 = 1,
   options: {
     independentGrounding?: boolean;
-    semanticRevision?: 0 | 1 | 2;
+    semanticRevision?: SemanticRevision;
     repairContentValidation?: boolean;
     splitOnTruncation?: boolean;
   } = {},
