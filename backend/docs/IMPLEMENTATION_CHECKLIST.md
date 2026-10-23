@@ -188,6 +188,31 @@ command. The full backend suite passes **1,386 tests / 80 files**, backend
 typecheck/build and the changed worker Deno check pass. Frontend remains unchanged
 with 225 passing tests. End-to-end processing of the backlog is still ongoing.
 
+Commit `3914ba8` passed Pages workflow `39878768049`; native run `39877255970`
+attempt 3 also completed successfully. Hosted OCR is now incorporated into the
+Phosphate notice and four Amman notices. Amman has 17/20 saved detail reads,
+Royal Jordanian 6/6, MWI 3/8, and all six Etimad browser receipts are ready.
+These counts at 00:40 UTC deliberately separate original detail reads from final
+assessment completion. Partial pages and unread attachments retain their flags.
+
+Queue diagnosis found otherwise eligible work repeatedly waiting for cron after
+durable reader handoffs and graph-only progress. Migration `20261023003552` is
+applied: immutable audit receipts prove the released lease/revision, allowing the
+existing wake endpoint to continue other due work, or a genuinely advanced graph
+checkpoint. Replaying an old checkpoint does not create a wake chain. Active
+leases are stored only as hashes; the existing ten-second throttle, capacity,
+reservation, restore, executor and concurrency guards remain intact. A narrow
+partial index covers the new audit proof lookups. All 160 focused SQL tests and
+backend typecheck/build pass. Manual dispatch batches stopped at 00:41 UTC;
+hosted automatic wake/receipt acceptance is being verified separately.
+The complete backend regression now passes **1,399 tests across 81 files**;
+frontend remains at **225 passing tests across 38 files** with unchanged source.
+
+Native processing retains the existing best-effort GitHub schedule. Manual
+workflow runs were used for this recovery; scheduled runs were observed at 19:01
+and 22:14 UTC, so a reliable five-minute hosted cadence is not established by
+these tests. The user-facing pending states remain truthful while work waits.
+
 ## October 22 — Replace registration pages with tested tender listings
 
 Owner explicitly requested finding actual tender pages, testing extraction before
