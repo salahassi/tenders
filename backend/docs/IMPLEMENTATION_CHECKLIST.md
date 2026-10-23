@@ -40,8 +40,36 @@ read-only production counts showed 49 ready OCR receipts, eight stale queued
 receipts and five OCR-waiting parent jobs. Historical queue totals are not
 current work counts. No model verdict or business document was invented.
 
-Deployment: pending this change's database migration and frontend/native worker
-publication. Hosted acceptance and authenticated browser visual QA are pending.
+Deployed source `23264c71b75460fbd44546d09f8c493459fa1207`:
+
+- Canonical migration `20261023160416_isolate_notice_ocr_waits.sql` is applied as
+  hosted `20261023201738`. Live readback confirms both queue selection and wake
+  predicates use the new guard. The helper remains inaccessible to anonymous,
+  authenticated and service roles directly. Security advisor categories/counts
+  are unchanged from the preflight baseline. No Edge Function redeployment was
+  required; health returned 200 and anonymous API/worker/browser access 401.
+- [Pages run 40018120737](https://github.com/salahassi/tenders/actions/runs/40018120737)
+  completed successfully, including the full tests, types and Deno checks.
+  Seven served HTML/entry/Review/Jobs/CSS assets match the local build byte for
+  byte, including the purple Awaiting OCR state.
+- [Public-reader run 40018121841](https://github.com/salahassi/tenders/actions/runs/40018121841)
+  started both independent jobs at 20:17:58 UTC. OCR succeeded at 20:20:15,
+  after 2m17s, while the browser reader continued and succeeded after 5m22s.
+  The OCR job installed Arabic/English tools, authenticated and checked its
+  queue. No eligible current OCR request existed in that run, so it is not
+  represented as a newly completed OCR document. Existing ready text and all
+  original hashes, attempts and leases were preserved. Future real scan
+  extraction on this separate runner remains distinct from this verified launch.
+
+Current continuation snapshot (20:21 UTC): three undecided, unexpired notices
+were still in the OCR reading stage awaiting application of saved receipts;
+36 assessments were awaiting model work and six current assessments were
+blocked by MODEL_CORRECTION_EXHAUSTED. These are not claimed complete. Next
+acceptance work is to inspect those saved validation failures, complete the
+contextual-scope reassessment, regenerate the recovered draft against current
+notice evidence, and verify actual Word downloads/review. Hosted multi-role,
+mobile and original-inclusive recovery journeys retain their separate gates.
+Authenticated browser visual QA was not performed in this session.
 
 ## October 23 — Completed proposal recovered after notice enrichment
 
