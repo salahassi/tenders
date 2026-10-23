@@ -28,8 +28,24 @@ entrypoint checks. Independent review found no blocking defect in policy
 selection or request compatibility. Database fixtures exercise current verified knowledge,
 indirect relevance, unrelated work without exclusions, unknown credentials and
 knowledge edits. Model responses in these tests are explicit fixtures; they do
-not establish live model accuracy. Deployment and an actual reassessment using
-the new policy remain pending.
+not establish live model accuracy.
+
+Source `98420bf11226a60122b0db519597c6edd652571d` is deployed: API **88** and
+worker **124** are ACTIVE, with all 37/58 retained source files matching the
+tested package. No database or saved workspace scope configuration changed.
+Health returns 200 and unauthenticated API/worker access remains denied with
+401. [Pages workflow 39952862318](https://github.com/salahassi/tenders/actions/runs/39952862318)
+passed the complete checks and published the frontend. The served HTML and
+entry, Settings, Review and Opportunity Detail bundles match the local build.
+
+The reported real notice was queued for reassessment through the normal audited,
+revision-checked Owner command at 12:24 UTC, preserving its prior assessments
+and undecided business status. Plan `c3f5cecd-01fd-4561-a868-d1fdc85101db`
+refreshed the published notice successfully. At 12:28 UTC it was waiting behind
+existing eligible queue work, without a new model attempt or completed result.
+Live semantic acceptance for this notice remains pending; neither the fixture
+results nor successful deployment are represented as a completed model verdict.
+Authenticated browser visual acceptance was not performed for this text change.
 
 ## October 22 — Repair notice reading and assessment attention states
 
