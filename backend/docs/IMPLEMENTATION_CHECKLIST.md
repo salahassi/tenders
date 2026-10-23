@@ -169,6 +169,25 @@ The full backend suite now passes **1,376 tests across 80 files**. Native workfl
 `39877255970` completed successfully with four rendered details and no browser
 failures. The original two timeout receipts still await their bounded retry.
 
+Commit `3eae288` published the completion-race fix through the GitHub connector;
+local source was synchronized to that exact commit after CLI credentials expired.
+The two legacy first-time Etimad timeout receipts were requeued through a narrowly
+scoped audited repair, retaining their hashes, original errors and attempt counts.
+Native workflow `39877255970` attempt 2 has now read both successfully: **all six
+Etimad detail receipts are ready**, including the two second attempts. Parent
+assessment processing remains separate from this completed browser reading.
+
+Further hosted MWI recovery exposed a short-notice error-classification defect:
+temporary attachment downloads were reported as permanently unresolved content.
+Transport failures now retain timeout/retry codes; sufficient readable HTML
+remains partial, corrupt PDFs remain distinct, and backend policy/currentness
+errors retain their exact codes. Ninety-eight focused tests passed. Worker **123**
+is deployed and all 57 reachable files match source; API remains **87**, browser
+gateway **3**. The affected blocked MWI job was resumed through its normal audited
+command. The full backend suite passes **1,386 tests / 80 files**, backend
+typecheck/build and the changed worker Deno check pass. Frontend remains unchanged
+with 225 passing tests. End-to-end processing of the backlog is still ongoing.
+
 ## October 22 — Replace registration pages with tested tender listings
 
 Owner explicitly requested finding actual tender pages, testing extraction before

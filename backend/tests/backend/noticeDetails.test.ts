@@ -13,6 +13,7 @@ import { seedExtraction } from "./sourceExtractionFixture";
 import { workflowFixture } from "./workflowFixture";
 import { taskInput } from "../../supabase/functions/_shared/generation";
 import { CollectionError } from "../../supabase/functions/_shared/collector";
+import { AppError } from "../../supabase/functions/_shared/http";
 const url = "https://www.ramallah.ps/ar/Article/1/synthetic";
 const source: any = {
   id: "synthetic",
@@ -166,7 +167,7 @@ it("uses only the configured tender section for attachment-only pages", async ()
   expect(result.notice_evidence.status).toBe("read");
   expect(requested).toEqual([target, "https://mwi.gov.jo/tender.pdf"]);
 });
-it("does not mark an unreadable attachment-only page as read", async () => {
+it("keeps an attachment-only notice retryable after a document HTTP failure", async () => {
   const s: any = {
     ...source,
     url: "https://mwi.gov.jo/AR/Modules/tenders",
@@ -194,7 +195,7 @@ it("does not mark an unreadable attachment-only page as read", async () => {
             )
           : new Response("unavailable", { status: 503 }),
     ),
-  ).rejects.toThrow("NOTICE_DETAILS_CONTENT_UNRESOLVED");
+  ).rejects.toThrow("SOURCE_TEMPORARY_FAILURE");
 });
 it("retains verified OCR provenance for a public notice image and keeps pending work resumable", async () => {
   const extraction = seedExtraction("jo-jpmc");
@@ -1543,5 +1544,108 @@ it.each(["attachment", "direct"])(
     ]) {
       await expect(run(code)).rejects.toThrow(code);
     }
+  },
+);
+
+it.each(["fetch", "stream", "abort", "http"])(
+  "preserves a transient %s failure from an attachment-only notice",
+  async (mode) => {
+    const shortHtml =
+      '<div id="all_body"><a href="/public/tender.pdf">Document</a></div>';
+    await expect(
+      enrichPublicNotice(
+        source,
+        { canonical_url: url, title: "Synthetic notice" },
+        source.approved_hosts,
+        async () => ["8.8.8.8"],
+        async (requested) => {
+          if (String(requested) === url) return new Response(shortHtml);
+          if (mode === "fetch")
+            throw new TypeError("Synthetic network disconnect");
+          if (mode === "abort")
+            throw new DOMException("Synthetic aborted request", "AbortError");
+          if (mode === "http")
+            return new Response("Synthetic unavailable", { status: 503 });
+          return new Response(
+            new ReadableStream({
+              start(c) {
+                c.error(new TypeError("Synthetic response body disconnect"));
+              },
+            }),
+          );
+        },
+      ),
+    ).rejects.toThrow(
+      mode === "abort" ? "SOURCE_TIMEOUT" : "SOURCE_TEMPORARY_FAILURE",
+    );
+  },
+);
+it("retains meaningful HTML evidence as partial when its PDF transport fails", async () => {
+  const result = await enrichPublicNotice(
+    source,
+    { canonical_url: url, title: "Synthetic notice" },
+    source.approved_hosts,
+    async () => ["8.8.8.8"],
+    async (requested) =>
+      String(requested) === url
+        ? new Response(
+            '<div id="all_body"><p>Synthetic software procurement: implement the requested integration, document operating procedures, and perform formal acceptance testing.</p><a href="/public/tender.pdf">Document</a></div>',
+          )
+        : Promise.reject(new TypeError("Synthetic network disconnect")),
+  );
+  expect(result.description).toContain("formal acceptance testing");
+  expect(result.notice_evidence.status).toBe("partial");
+  expect(result.notice_evidence.attachments[0]).toMatchObject({
+    status: "unread",
+    error: "SOURCE_TEMPORARY_FAILURE",
+  });
+});
+it("keeps corrupt PDF parsing distinct from a recoverable network failure", async () => {
+  await expect(
+    enrichPublicNotice(
+      source,
+      { canonical_url: url, title: "Synthetic notice" },
+      source.approved_hosts,
+      async () => ["8.8.8.8"],
+      async (requested) =>
+        String(requested) === url
+          ? new Response(
+              '<div id="all_body"><a href="/public/tender.pdf">Document</a></div>',
+            )
+          : new Response("Synthetic invalid PDF bytes", {
+              headers: { "Content-Type": "application/pdf" },
+            }),
+    ),
+  ).rejects.toThrow("NOTICE_DETAILS_CONTENT_UNRESOLVED");
+});
+it.each([
+  "DATA_POLICY_BLOCKED",
+  "DATA_AUTHORIZATION_REQUIRED",
+  "STALE_INPUT",
+  "STALE_LEASE",
+])(
+  "preserves the exact OCR backend rejection %s instead of accepting partial evidence",
+  async (code) => {
+    const pdf = await PDFDocument.create();
+    pdf.addPage();
+    const bytes = await pdf.save();
+    const error = new AppError(409, code, "Synthetic backend denial");
+    await expect(
+      enrichPublicNotice(
+        source,
+        { canonical_url: url, title: "Synthetic notice" },
+        source.approved_hosts,
+        async () => ["8.8.8.8"],
+        async (requested) =>
+          String(requested) === url
+            ? new Response(
+                '<div id="all_body"><p>Synthetic software procurement with sufficiently detailed requirements for integration, documentation and formal acceptance testing.</p><a href="/public/tender.pdf">Document</a></div>',
+              )
+            : new Response(new Uint8Array(bytes)),
+        async () => {
+          throw error;
+        },
+      ),
+    ).rejects.toBe(error);
   },
 );

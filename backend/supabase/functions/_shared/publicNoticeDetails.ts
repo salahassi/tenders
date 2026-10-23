@@ -12,6 +12,7 @@ import { safeUrl } from "./contracts.ts";
 import { sourceExtraction, type ExtractionConfig } from "./officialListings.ts";
 import { readPublicPostback } from "./publicPostback.ts";
 import { hasRestrictedDocumentContent } from "./contentPolicy.ts";
+import { AppError } from "./http.ts";
 
 type Row = Record<string, any>;
 export type PublicNoticeOcrReader = (input: {
@@ -68,81 +69,93 @@ export async function fetchPublicNotice(
   maxBytes: number,
   observedPublicUrl = false,
 ) {
-  for (let hop = 0; hop <= 3; hop++) {
-    if (!safeUrl.safeParse(url).success)
-      throw new CollectionError("UNSAFE_DESTINATION");
-    const host = new URL(url).hostname;
-    if (
-      !observedPublicUrl &&
-      (!source.approved_hosts.includes(host) || !hosts.includes(host))
-    )
-      throw new CollectionError("DEPLOYMENT_HOST_APPROVAL_REQUIRED");
-    const ips = await Promise.race([
-      resolve(host),
-      new Promise<never>((_, reject) => {
-        if (signal.aborted) reject(new CollectionError("SOURCE_TIMEOUT"));
-        else
-          signal.addEventListener(
-            "abort",
-            () => reject(new CollectionError("SOURCE_TIMEOUT")),
-            { once: true },
-          );
-      }),
-    ]);
-    if (!ips.length || ips.some((ip) => !publicAddress(ip)))
-      throw new CollectionError("UNSAFE_DESTINATION");
-    const response = await fetcher(url, {
-      redirect: "manual",
-      signal,
-      headers: {
-        "Accept-Encoding": "identity",
-        Accept: "text/html,application/pdf;q=0.9",
-        "User-Agent": "TenderDesk public notice reader",
-      },
-    });
-    if ([301, 302, 303, 307, 308].includes(response.status)) {
-      await response.body?.cancel();
-      const next = response.headers.get("location");
-      if (!next || hop === 3) throw new CollectionError("REDIRECT_LIMIT");
-      url = new URL(next, url).href;
-      continue;
-    }
-    if ([401, 403].includes(response.status))
-      throw new CollectionError("MANUAL_SOURCE_REQUIRED");
-    if (response.status === 429 || response.status >= 500)
-      throw new CollectionError("SOURCE_TEMPORARY_FAILURE");
-    if (!response.ok) throw new CollectionError("SOURCE_UNAVAILABLE");
-    if (Number(response.headers.get("content-length")) > maxBytes) {
-      await response.body?.cancel();
-      throw new CollectionError("SOURCE_TOO_LARGE");
-    }
-    const reader = response.body?.getReader();
-    if (!reader) throw new CollectionError("SOURCE_EMPTY");
-    const chunks: Uint8Array[] = [];
-    let size = 0;
-    for (;;) {
-      const { value, done } = await reader.read();
-      if (done) break;
-      size += value.length;
-      if (size > maxBytes) {
-        await reader.cancel();
+  try {
+    for (let hop = 0; hop <= 3; hop++) {
+      if (!safeUrl.safeParse(url).success)
+        throw new CollectionError("UNSAFE_DESTINATION");
+      const host = new URL(url).hostname;
+      if (
+        !observedPublicUrl &&
+        (!source.approved_hosts.includes(host) || !hosts.includes(host))
+      )
+        throw new CollectionError("DEPLOYMENT_HOST_APPROVAL_REQUIRED");
+      const ips = await Promise.race([
+        resolve(host),
+        new Promise<never>((_, reject) => {
+          if (signal.aborted) reject(new CollectionError("SOURCE_TIMEOUT"));
+          else
+            signal.addEventListener(
+              "abort",
+              () => reject(new CollectionError("SOURCE_TIMEOUT")),
+              { once: true },
+            );
+        }),
+      ]);
+      if (!ips.length || ips.some((ip) => !publicAddress(ip)))
+        throw new CollectionError("UNSAFE_DESTINATION");
+      const response = await fetcher(url, {
+        redirect: "manual",
+        signal,
+        headers: {
+          "Accept-Encoding": "identity",
+          Accept: "text/html,application/pdf;q=0.9",
+          "User-Agent": "TenderDesk public notice reader",
+        },
+      });
+      if ([301, 302, 303, 307, 308].includes(response.status)) {
+        await response.body?.cancel();
+        const next = response.headers.get("location");
+        if (!next || hop === 3) throw new CollectionError("REDIRECT_LIMIT");
+        url = new URL(next, url).href;
+        continue;
+      }
+      if ([401, 403].includes(response.status))
+        throw new CollectionError("MANUAL_SOURCE_REQUIRED");
+      if (response.status === 429 || response.status >= 500)
+        throw new CollectionError("SOURCE_TEMPORARY_FAILURE");
+      if (!response.ok) throw new CollectionError("SOURCE_UNAVAILABLE");
+      if (Number(response.headers.get("content-length")) > maxBytes) {
+        await response.body?.cancel();
         throw new CollectionError("SOURCE_TOO_LARGE");
       }
-      chunks.push(value);
+      const reader = response.body?.getReader();
+      if (!reader) throw new CollectionError("SOURCE_EMPTY");
+      const chunks: Uint8Array[] = [];
+      let size = 0;
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        size += value.length;
+        if (size > maxBytes) {
+          await reader.cancel();
+          throw new CollectionError("SOURCE_TOO_LARGE");
+        }
+        chunks.push(value);
+      }
+      const bytes = new Uint8Array(size);
+      let offset = 0;
+      for (const chunk of chunks) {
+        bytes.set(chunk, offset);
+        offset += chunk.length;
+      }
+      return {
+        url,
+        bytes,
+        contentType: response.headers.get("content-type") || "",
+      };
     }
-    const bytes = new Uint8Array(size);
-    let offset = 0;
-    for (const chunk of chunks) {
-      bytes.set(chunk, offset);
-      offset += chunk.length;
-    }
-    return {
-      url,
-      bytes,
-      contentType: response.headers.get("content-type") || "",
-    };
+    throw new CollectionError("REDIRECT_LIMIT");
+  } catch (error) {
+    if (error instanceof CollectionError || error instanceof AppError)
+      throw error;
+    throw new CollectionError(
+      signal.aborted ||
+        (error instanceof Error &&
+          ["AbortError", "TimeoutError"].includes(error.name))
+        ? "SOURCE_TIMEOUT"
+        : "SOURCE_TEMPORARY_FAILURE",
+    );
   }
-  throw new CollectionError("REDIRECT_LIMIT");
 }
 
 export function minimizedNotice(text: string) {
@@ -498,7 +511,12 @@ async function applyPublicOcr(
       mime,
     });
   } catch (error) {
-    const code = error instanceof Error ? error.message : "";
+    const code =
+      error instanceof CollectionError || error instanceof AppError
+        ? error.code
+        : error instanceof Error
+          ? error.message
+          : "";
     if (
       [
         "NOTICE_OCR_LOW_CONFIDENCE",
@@ -759,6 +777,9 @@ export async function enrichPublicNotice(
                 ? "needs_ocr"
                 : "authorization_required";
       } catch (error) {
+        // Backend policy/currentness failures are not unreadable public files.
+        // Preserve their exact code instead of silently accepting partial evidence.
+        if (error instanceof AppError) throw error;
         if (
           error instanceof CollectionError &&
           [
@@ -788,6 +809,12 @@ export async function enrichPublicNotice(
         error: "ATTACHMENT_COUNT_LIMIT",
       });
     if (evidenceChars < 80) {
+      // A short attachment-only notice remains recoverable when its document
+      // transport failed. Parsing failures remain distinct and do not auto-retry.
+      const transient = attachments.find((a) =>
+        ["SOURCE_TIMEOUT", "SOURCE_TEMPORARY_FAILURE"].includes(a.error),
+      );
+      if (transient) throw new CollectionError(transient.error);
       const ocrFailure = attachments.find(
         (a) => typeof a.error === "string" && a.error.startsWith("NOTICE_OCR_"),
       );
@@ -826,7 +853,8 @@ export async function enrichPublicNotice(
       notice_evidence: metadata,
     };
   } catch (error) {
-    if (error instanceof CollectionError) throw error;
+    if (error instanceof CollectionError || error instanceof AppError)
+      throw error;
     throw new CollectionError("SOURCE_TEMPORARY_FAILURE");
   } finally {
     clearTimeout(timeout);
