@@ -1,6 +1,6 @@
 # Implementation status and continuation plan
 
-## October 23 — Recover completed drafts after notice enrichment
+## October 23 — Completed proposal recovered after notice enrichment
 
 The Owner requested recovery of an older proposal whose writing and review
 had finished. Read-only diagnosis identified two distinct events: an earlier
@@ -29,9 +29,44 @@ passed [verification run 39977583634](https://github.com/salahassi/tenders/actio
 **1,422 backend tests in 82 files**, **230 frontend tests in 38 files**,
 both TypeScript checks and both production builds, using locked dependencies.
 The branch-only verification workflow has no deployment step or production
-credentials and is excluded from main. Test fixtures do not establish hosted
-acceptance. Database deployment, Pages publication and real draft recovery are
-pending at this checkpoint; no production record has yet been changed.
+credentials and is excluded from main. These fixture results are separate from
+the hosted acceptance below.
+
+Released source `835c8d61f056ba2a31882614fa70896ff5fdcba6` passed
+[Pages run 39978890067](https://github.com/salahassi/tenders/actions/runs/39978890067),
+including the same full test counts, both TypeScript checks, all three Deno
+entrypoint checks and the frontend build. Pages publication completed at
+15:35 UTC. The public sign-in page is reachable and the served
+`ProposalEditor-DsOerFbS.js` contains the historical-draft notice.
+Canonical migration `20261023150859_recover_completed_proposal_draft.sql`
+was applied as hosted migration `20261023153048`. No Edge Function source
+changed or required redeployment. The helper is private and cannot be invoked
+by authenticated or service roles directly. Post-deployment advisor categories
+and counts are unchanged from the preflight baseline.
+
+Hosted acceptance: the existing, revision-checked Owner `job.action` retry
+resumed only the final assembly at 15:32:48 UTC. This established job-scoped
+retry path checks that job's unsettled usage; unrelated accepted model requests
+remain untouched. Whole-plan retry retains its existing workspace usage guard.
+The normal worker completed assembly at **15:33:08 UTC**. The original plan
+is completed with no error and its proposal now has an active draft version
+containing **67 sections**. The **95 completed model steps**, all **557 usage
+receipts associated with the plan's jobs**, frozen-context hash, input hash and
+original evidence revision **196** are unchanged across recovery. No additional
+model request was made. Exactly one recovery audit and one finalization question
+were created. The approval gate confirms that regeneration is required.
+
+The real technical and financial draft `export.prepare` commands both passed
+an authenticated transaction check; each snapshot contains all saved sections,
+the recovery marker and warning. The check was rolled back to avoid leaving
+test export requests. Authenticated browser visual inspection and actual DOCX
+downloads were not performed in this session. This completes recovery of the
+saved draft; an updated proposal against the enriched notice has not been
+generated or approved.
+
+The local execution transport remained unavailable at handoff. Released main
+is the canonical complete change, including tests and this status record; the
+local working copy needs reconciliation with main when execution returns.
 
 ## October 23 — Contextual scope comparison from database evidence
 
