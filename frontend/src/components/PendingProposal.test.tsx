@@ -205,3 +205,12 @@ it("discards a stale response after the proposal identifier changes", async () =
   expect(screen.getByText("Proposal not found")).toBeInTheDocument();
   expect(f.list).not.toHaveBeenCalled();
 });
+
+it("identifies a recovered historical draft while keeping draft download available", async () => {
+  const f = fixture();
+  f.context.state.proposals = [{ ...f.saved, recoveredFromEarlierNotice: true }];
+  render(view(f.context));
+  expect(await screen.findByText(/Recovered draft: this version retains the earlier notice/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Download complete draft Word" })).toBeEnabled();
+  expect(f.context.runCommand).not.toHaveBeenCalled();
+});

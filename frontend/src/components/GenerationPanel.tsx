@@ -4,6 +4,7 @@ import { useApp } from "../lib/store";
 import { Button } from "./ui";
 import { isSelected } from "../lib/workflow";
 import type { DocumentRecord, Opportunity } from "../types";
+import { BackendRequestError } from "../lib/backendClient";
 type Plan = {
   id: string;
   kind: string;
@@ -80,7 +81,13 @@ export default function GenerationPanel({
         "Preparation requested. You can leave this page; processing continues automatically.",
       );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "The request failed.");
+      setError(
+        e instanceof BackendRequestError && e.code === "STALE_INPUT"
+          ? "The saved inputs changed. Your completed work is retained. Automatic resume is available only when writing and review are complete and the notice is the only changed input. Review the changed evidence before starting an updated version."
+          : e instanceof Error
+            ? e.message
+            : "The request failed.",
+      );
     } finally {
       setRequesting(false);
     }
@@ -210,8 +217,12 @@ export default function GenerationPanel({
                         newer.status,
                       ),
                   ) &&
+                  !(
+                    p.error_code === "STALE_INPUT" &&
+                    !(p.kind === "proposal" &&
+                      ["review", "reconciliation"].includes(p.stage))
+                  ) &&
                   ![
-                    "STALE_INPUT",
                     "REASSESSMENT_SUPERSEDED",
                     "NOTICE_DETAILS_REFRESHED",
                     "NOTICE_DETAILS_REQUIRED",
@@ -237,8 +248,9 @@ export default function GenerationPanel({
                   "NOTICE_DETAILS_REQUIRED",
                 ].includes(p.error_code || "") && (
                   <p>
-                    Evidence changed. Use a current assessment or request a new
-                    proposal version.
+                    {p.kind === "proposal"
+                      ? "Evidence changed. Completed writing and review can be recovered as an earlier draft if only the notice changed. Other changes need an updated version; final approval requires current evidence."
+                      : "Evidence changed. Use a current assessment."}
                   </p>
                 )}
                 {["queued", "running", "blocked"].includes(p.status) && (

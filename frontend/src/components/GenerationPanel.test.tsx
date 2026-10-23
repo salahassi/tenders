@@ -5,6 +5,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import { useApp } from "../lib/store";
 import { getOpportunityStage } from "../lib/workflow";
 import GenerationPanel from "./GenerationPanel";
+import { BackendRequestError } from "../lib/backendClient";
 vi.mock("../lib/store", () => ({ useApp: vi.fn() }));
 afterEach(() => {
   cleanup();
@@ -252,4 +253,23 @@ it("ignores a previous opportunity's delayed completion after navigation", async
   expect(c.backend.list).toHaveBeenCalledTimes(2);
   expect(c.refresh).not.toHaveBeenCalled();
   expect(screen.queryByText("Loading progress…")).not.toBeInTheDocument();
+});
+
+it("allows a final-stage stale proposal to request checked recovery and explains rejection", async () => {
+  const c = context([{ id: "plan", kind: "proposal", stage: "review", status: "blocked",
+    error_code: "STALE_INPUT", revision: 4, created_at: "2026-10-23" }]);
+  c.runCommand.mockRejectedValueOnce(new BackendRequestError("STALE_INPUT", "stale input", 409));
+  render(<MemoryRouter><GenerationPanel opportunity={opportunity()} /></MemoryRouter>);
+  await userEvent.click(await screen.findByRole("button", { name: "Resume saved work" }));
+  expect(c.runCommand).toHaveBeenCalledWith("generation.retry", expect.objectContaining({ id: "plan", expected_revision: 4 }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("Your completed work is retained");
+  expect(screen.getByRole("alert")).toHaveTextContent("notice is the only changed input");
+});
+
+it("does not offer stale recovery while model writing is unfinished", async () => {
+  context([{ id: "plan", kind: "proposal", stage: "drafting", status: "blocked",
+    error_code: "STALE_INPUT", revision: 4, created_at: "2026-10-23" }]);
+  render(<MemoryRouter><GenerationPanel opportunity={opportunity()} /></MemoryRouter>);
+  await screen.findByText("Proposal · drafting");
+  expect(screen.queryByRole("button", { name: "Resume saved work" })).not.toBeInTheDocument();
 });

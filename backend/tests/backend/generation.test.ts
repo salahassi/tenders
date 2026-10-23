@@ -556,6 +556,109 @@ async function runPlan(result: (ctx: any) => any = resultFor) {
   }
   return count;
 }
+
+async function blockedSavedAssembly() {
+  const started = await start();
+  for (let i = 0; i < 30; i++) {
+    const job = await f.rpc("claim_backend_job");
+    const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
+    if (ctx.step.task === "advance_plan") {
+      const next = await nextStage(ctx);
+      if (next.next_stage === "completed") {
+        await f.rpc("fail_generation", [job.id, job.lease_token, "DATA_POLICY_BLOCKED", null, null]);
+        const plan = (await f.db.query<any>("select * from public.generation_plans where id=$1", [started.plan.id])).rows[0];
+        return { ...started, plan, job, ctx };
+      }
+      await f.rpc("advance_generation", [job.id, job.lease_token, next.next_stage,
+        JSON.stringify(next.requirements), JSON.stringify(next.steps), null]);
+    } else {
+      const result: any = resultFor(ctx);
+      if (ctx.step.task === "draft_section")
+        result.content_blocks = [{ type: "paragraph", text: "Implement approval workflow. Review restrictions on confidential-data reuse." }];
+      await f.rpc("complete_generation_step", [job.id, job.lease_token, JSON.stringify(result)]);
+    }
+  }
+  throw new Error("Synthetic plan did not reach final assembly");
+}
+
+async function changeAssemblyNotice(opportunityId: string) {
+  await f.db.query("update public.opportunities set description=description || ' Additional published delivery requirements.' where id=$1", [opportunityId]);
+}
+
+it("recovers completed writing as a historical draft, preserving receipts and blocking final approval until regeneration", async () => {
+  const { plan, opp } = await blockedSavedAssembly();
+  const saved = (await f.db.query("select * from public.generation_steps where plan_id=$1 and task<>'advance_plan' order by ordinal", [plan.id])).rows;
+  const usage = (await f.db.query("select * from public.provider_usage order by id")).rows;
+  await changeAssemblyNotice(opp.id);
+  const key = crypto.randomUUID();
+  const request = { id: plan.id, expected_revision: plan.revision, reason: "Recover the saved draft for review" };
+  const resumed = await f.command("generation.retry", request, key);
+  expect(await f.command("generation.retry", request, key)).toEqual(resumed);
+  expect(resumed).toMatchObject({ status: "queued", input_hash: plan.input_hash, evidence_revision: plan.evidence_revision, frozen_context: plan.frozen_context });
+  expect(await runPlan(() => { throw new Error("Recovery must not generate more model work"); })).toBe(1);
+  expect((await f.db.query("select * from public.generation_steps where plan_id=$1 and task<>'advance_plan' order by ordinal", [plan.id])).rows).toEqual(saved);
+  expect((await f.db.query("select * from public.provider_usage order by id")).rows).toEqual(usage);
+  const version = (await f.db.query<any>("select * from public.proposal_versions where plan_id=$1", [plan.id])).rows[0];
+  expect(version.evidence_revision).toBe(plan.evidence_revision);
+  expect(version.review_result.saved_notice_recovery).toMatchObject({ version: 1, frozen_notice_hash: plan.frozen_context.notice.reference.content_hash });
+  expect(version.review_result.saved_notice_recovery.observed_notice_hash).not.toBe(plan.frozen_context.notice.reference.content_hash);
+  expect((await f.db.query("select * from public.audit_events where action='generation.saved_draft.recovered' and entity_id=$1", [plan.id])).rows).toHaveLength(1);
+  expect((await f.db.query("select * from public.questions where proposal_version_id=$1 and reason='NOTICE_CHANGED_AFTER_DRAFTING' and blocking_level='finalization'", [version.id])).rows).toHaveLength(1);
+  const gate = (await f.db.query<any>("select app_private.approval_gate($1,$2) gate", [f.w, version.id])).rows[0].gate;
+  expect(gate.blockers).toContain("Recovered draft uses an earlier notice; regenerate with current evidence before approval.");
+  const exported = await f.command("export.prepare", { proposal_version_id: version.id, expected_revision: version.revision, mode: "draft", volume: "combined" });
+  expect(JSON.stringify(buildExportModel(exported))).toContain("recovered from saved work");
+  await expect(f.command("export.prepare", { proposal_version_id: version.id, expected_revision: version.revision, mode: "final", volume: "combined" })).rejects.toThrow("APPROVAL_REQUIRED");
+  await f.db.query("update public.questions set status='resolved',answer='Reviewed',answer_source='Synthetic review' where proposal_version_id=$1", [version.id]);
+  expect((await f.db.query<any>("select app_private.approval_gate($1,$2) gate", [f.w, version.id])).rows[0].gate.blockers).toContain("Recovered draft uses an earlier notice; regenerate with current evidence before approval.");
+  const proposal = (await f.db.query<any>("select * from public.proposals where id=$1", [plan.proposal_id])).rows[0];
+  await f.command("proposal.regenerate", { id: proposal.id, expected_revision: proposal.revision, base_version_id: version.id, input_hash: "b".repeat(64) });
+  await runPlan();
+  const versions = (await f.db.query<any>("select * from public.proposal_versions where proposal_id=$1 order by ordinal", [proposal.id])).rows;
+  expect(versions).toHaveLength(2);
+  expect(versions[0].content_hash).toBe(version.content_hash);
+  expect(versions[1].review_result.saved_notice_recovery).toBeUndefined();
+});
+
+it.each(["rfp", "template", "unfinished_review", "canceled_job", "archived", "canceled_plan"])(
+  "does not recover a notice-changed draft when %s also makes assembly unsafe", async (change) => {
+    const { plan, opp } = await blockedSavedAssembly();
+    await changeAssemblyNotice(opp.id);
+    if (change === "rfp") await f.db.query("update public.document_blocks set text=text || ' Changed contractual evidence.' where document_id in (select id from public.documents where opportunity_id=$1)", [opp.id]);
+    if (change === "template") await f.db.query("update public.templates set fixed_blocks='[{\"key\":\"new\",\"title\":\"Changed terms\",\"body\":\"New delivery terms\",\"volume\":\"technical\"}]'::jsonb where workspace_id=$1", [f.w]);
+    if (change === "unfinished_review") await f.db.query("update public.generation_steps set status='queued' where plan_id=$1 and task='review_proposal'", [plan.id]);
+    if (change === "canceled_job") await f.db.query("update public.jobs set cancel_requested=true where entity_id=$1 and type='advance_plan' and status='blocked'", [plan.id]);
+    if (change === "archived") await f.db.query("update public.opportunities set archived=true where id=$1", [opp.id]);
+    if (change === "canceled_plan") await f.db.query("update public.generation_plans set status='canceled' where id=$1", [plan.id]);
+    await expect(f.command("generation.retry", { id: plan.id, expected_revision: plan.revision, reason: "Synthetic recovery rejection" })).rejects.toThrow(/STALE_INPUT|GENERATION_NOT_ACTIVE/);
+    expect((await f.db.query("select id from public.proposal_versions where plan_id=$1", [plan.id])).rows).toHaveLength(0);
+  },
+);
+
+it("rejects changed original company evidence during saved assembly", async () => {
+  const knowledge = await f.command("knowledge.save", { category: "company", title: "Synthetic capability", content: "Approval workflow delivery.", enabled: true, evidence: "Synthetic test evidence" });
+  await f.command("knowledge.verify", { id: knowledge.id, expected_revision: knowledge.revision });
+  const { plan, opp } = await blockedSavedAssembly();
+  await changeAssemblyNotice(opp.id);
+  await f.db.query("update public.knowledge_items set content='Changed original capability' where id=$1", [knowledge.id]);
+  await expect(f.command("generation.retry", { id: plan.id, expected_revision: plan.revision, reason: "Synthetic recovery rejection" })).rejects.toThrow("STALE_INPUT");
+});
+
+it("rechecks evidence after resume and keeps recovery private and revision-checked", async () => {
+  const { plan, opp } = await blockedSavedAssembly();
+  await changeAssemblyNotice(opp.id);
+  const privileges = (await f.db.query<any>("select has_function_privilege('authenticated','app_private.saved_proposal_assembly_ready(public.generation_plans)','execute') browser, has_function_privilege('service_role','app_private.saved_proposal_assembly_ready(public.generation_plans)','execute') service")).rows[0];
+  expect(privileges).toEqual({ browser: false, service: false });
+  await expect(f.command("generation.retry", { id: plan.id, expected_revision: plan.revision - 1, reason: "Synthetic stale click" })).rejects.toThrow("REVISION_CONFLICT");
+  await f.db.query("update public.memberships set role='Reviewer' where user_id=$1", [f.owner]);
+  await expect(f.command("generation.retry", { id: plan.id, expected_revision: plan.revision, reason: "Synthetic unauthorized recovery" })).rejects.toThrow("ROLE_FORBIDDEN");
+  await f.db.query("update public.memberships set role='Owner' where user_id=$1", [f.owner]);
+  await f.command("generation.retry", { id: plan.id, expected_revision: plan.revision, reason: "Synthetic authorized recovery" });
+  const job = await f.rpc("claim_backend_job");
+  await f.db.query("update public.document_blocks set text=text || ' Changed after resume.' where document_id in (select id from public.documents where opportunity_id=$1)", [opp.id]);
+  await expect(f.rpc("generation_context", [job.id, job.lease_token])).rejects.toThrow("STALE_INPUT");
+});
+
 it("admits the semantic workflow without company files or a custom template and exports its reviewed matrix", async () => {
   const s = await setup();
   await f.db.exec(

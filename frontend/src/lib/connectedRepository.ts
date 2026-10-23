@@ -574,6 +574,9 @@ export class ConnectedRepository {
           versionId: version.id,
           revision: version.revision,
           planId: str(version, "plan_id"),
+          recoveredFromEarlierNotice:
+            !!(version.review_result as { saved_notice_recovery?: unknown } | null)
+              ?.saved_notice_recovery,
           id: p.id,
           opportunityId: str(p, "opportunity_id"),
           title: str(p, "title"),

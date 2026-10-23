@@ -174,6 +174,7 @@ export interface Proposal {
   versionId?: string;
   revision?: number;
   planId?: string;
+  recoveredFromEarlierNotice?: boolean;
   id: string;
   opportunityId: string;
   title: string;

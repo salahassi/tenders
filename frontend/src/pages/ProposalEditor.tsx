@@ -482,6 +482,14 @@ function ProposalReviewPage({
         title={proposal.title || opportunity.title}
         description={`${opportunity.buyer} · ${opportunity.reference}`}
       />
+      {proposal.recoveredFromEarlierNotice && (
+        <p role="status" className="admin-muted-surface">
+          Recovered draft: this version retains the earlier notice and your saved
+          writing and reviews. The notice has since changed. You can download and
+          review this draft; compare the current opportunity details and
+          regenerate an updated version before final approval.
+        </p>
+      )}
       <section
         className="panel review-current-file"
         aria-label="Current proposal file"

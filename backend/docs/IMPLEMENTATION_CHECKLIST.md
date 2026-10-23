@@ -1,5 +1,38 @@
 # Implementation status and continuation plan
 
+## October 23 — Recover completed drafts after notice enrichment
+
+The Owner requested recovery of an older proposal whose writing and review
+had finished. Read-only diagnosis identified two distinct events: an earlier
+content-policy false positive on a joined confidentiality term, already fixed
+by the deployed policy alignment, and a subsequent public-notice enrichment.
+The enrichment adds substantive requirements. Recovery must not relabel the
+saved model results as based on those newer requirements.
+
+Stages 5–7: the implementation permits only the final local assembly when every
+model step is finished and the notice is the sole changed proposal input.
+The immutable input snapshot, hash, evidence revision, completed work and model
+receipts remain intact. Changes to the RFP, original company evidence, review
+inputs, template or rates continue to reject resume. Cancellation, supersession,
+membership, expected revision, leases and ordinary retry guards remain enforced.
+The recovered version records its original and observed notice hashes, includes
+a blocking review question, and remains downloadable as a draft. Final approval
+requires regeneration with current evidence even if that question is resolved.
+The interface identifies the recovered draft and explains unsafe resume requests.
+
+Verification: regression tests cover recovery, unchanged saved outputs,
+idempotent retry, draft export, final-approval rejection, updated regeneration,
+changed inputs, unfinished review, cancellation, role/revision guards and changes
+after resume. The managed development environment disconnected before local
+tests could run. Isolated branch source `6809e4c0af65f49bef03a97f5a1c4f1cb2a563a8`
+passed [verification run 39977583634](https://github.com/salahassi/tenders/actions/runs/39977583634):
+**1,422 backend tests in 82 files**, **230 frontend tests in 38 files**,
+both TypeScript checks and both production builds, using locked dependencies.
+The branch-only verification workflow has no deployment step or production
+credentials and is excluded from main. Test fixtures do not establish hosted
+acceptance. Database deployment, Pages publication and real draft recovery are
+pending at this checkpoint; no production record has yet been changed.
+
 ## October 23 — Contextual scope comparison from database evidence
 
 The Owner clarified that scope must follow the meaning of requested outcomes and
