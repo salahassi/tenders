@@ -46,6 +46,7 @@ export interface Opportunity {
       | "blocked"
       | "failed"
       | "pending_schedule"
+      | "awaiting_ocr"
       | "not_started";
     inboxVisible: boolean;
     expired?: boolean;
@@ -235,6 +236,7 @@ export interface Job {
   progress: number;
   attempt: number;
   modelRound?: number;
+  errorCode?: string;
   message: string;
   createdAt: string;
   updatedAt?: string;

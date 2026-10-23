@@ -1,5 +1,23 @@
 # Background processing
 
+## Public notice OCR
+
+The public-source workflow runs browser reading and scanned-notice OCR as two
+independent GitHub Actions jobs. Each has a separate runner and concurrency
+group; a slow or failed browser run does not consume the OCR worker's time.
+The OCR worker processes at most ten requests within a nine-minute admission
+window, using native Arabic/English Tesseract and the existing private,
+hash-bound queue. Both jobs use the already authorized workflow's short-lived
+GitHub identity; no new persistent credential is introduced.
+
+The Review inbox and Activity & jobs display OCR waits in purple as
+**Awaiting OCR**. This is a reading dependency, not a completed assessment or a
+technical failure. Its underlying durable parent checkpoint retains
+`retry_wait` / `NOTICE_OCR_PENDING` for compatibility. The main queue excludes
+parents with current queued/running OCR receipts; ready, terminal or stale
+receipts allow the normal guarded continuation. Actual extraction failures
+remain visible under Needs attention. Original business decisions are unchanged.
+
 The browser starts a saved generation plan and observes its database status. Closing the page does not cancel the plan. Model request state, completed stages, retry times and leases are stored in Supabase.
 
 The cron dispatcher authenticates to the worker. The worker returns `202 accepted` after authentication and registers its task with `EdgeRuntime.waitUntil`. A 202 is acceptance, not success; job/model activity records determine the result. Only one live workspace job lease can execute.

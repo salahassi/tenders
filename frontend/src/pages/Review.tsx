@@ -1,4 +1,4 @@
-import { groupDiscoveries, isExpired } from "../lib/discovery";
+import { groupDiscoveries, isExpired, awaitingOcr } from "../lib/discovery";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -127,6 +127,12 @@ export default function Review() {
               count: groups.processing?.length || 0,
             },
             {
+              id: "ocr",
+              label: "Awaiting OCR",
+              count: groups.ocr?.length || 0,
+              tone: "purple",
+            },
+            {
               id: "attention",
               label: "Needs attention",
               count: groups.attention?.length || 0,
@@ -148,6 +154,12 @@ export default function Review() {
             },
           ]}
         />
+        {tab === "ocr" && (
+          <p className="muted small">
+            These notices need text extracted from images or scanned documents.
+            Assessment continues automatically when the text is available.
+          </p>
+        )}
         {tab === "scope" && (
           <p className="muted small">
             These assessments completed, but the available evidence left the
@@ -169,7 +181,10 @@ export default function Review() {
       </section>
       <div className="review-grid simple-review-grid">
         {items.map((o) => (
-          <article className="panel review-card" key={o.id}>
+          <article
+            className={`panel review-card${awaitingOcr(o) ? " awaiting-ocr" : ""}`}
+            key={o.id}
+          >
             <div className="row between">
               <Badge>{o.category}</Badge>
               {isExpired(o) && (
@@ -240,18 +255,20 @@ export default function Review() {
                   ? "No completed assessments with unclear scope"
                   : tab === "processing"
                     ? "No assessments in progress"
-                    : tab === "attention"
-                      ? "No assessment blockers"
-                      : tab === "excluded"
-                        ? "No excluded discoveries"
-                        : tab === "expired"
-                          ? "No closed discoveries"
-                          : "No archived discoveries"
+                    : tab === "ocr"
+                      ? "No notices awaiting OCR"
+                      : tab === "attention"
+                        ? "No assessment blockers"
+                        : tab === "excluded"
+                          ? "No excluded discoveries"
+                          : tab === "expired"
+                            ? "No closed discoveries"
+                            : "No archived discoveries"
             }
             description={
               search
                 ? "Try a different search."
-                : "Track scheduled work under Assessing, completed assessments with unclear scope under Scope to review, and processing blockers under Needs attention."
+                : "Track scanned notices under Awaiting OCR, assessments under Assessing, unclear results under Scope to review, and blockers under Needs attention."
             }
           />
         </section>

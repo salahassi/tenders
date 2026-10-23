@@ -1,4 +1,4 @@
-import { assessmentProgress, assessmentActive } from "./discovery";
+import { assessmentProgress, assessmentActive, awaitingOcr } from "./discovery";
 import type { AppState, Opportunity } from "../types";
 
 export interface FitPreview {
@@ -23,7 +23,7 @@ export function getFitPreview(
   _opportunity: Opportunity,
 ): FitPreview {
   const a = _opportunity.assessment;
-  if ((!a || a.stale) && _opportunity.discovery) {
+  if ((!a || a.stale || awaitingOcr(_opportunity)) && _opportunity.discovery) {
     const progress = assessmentProgress(_opportunity);
     return {
       mode: assessmentActive(_opportunity) ? "processing" : "unassessed",

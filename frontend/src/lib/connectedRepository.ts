@@ -1,3 +1,4 @@
+import { ocrPending } from "./discovery";
 import { reviewOriginalEligibility } from "./contentEligibility";
 import { z } from "zod";
 import type {
@@ -364,9 +365,17 @@ export class ConnectedRepository {
                 "blocked",
                 "failed",
                 "pending_schedule",
+                "awaiting_ocr",
                 "not_started",
               ])
-              .parse(discovery?.assessment_state || "not_started"),
+              .parse(
+                ocrPending(
+                  str(discovery || {}, "assessment_state"),
+                  str(discovery || {}, "assessment_error"),
+                )
+                  ? "awaiting_ocr"
+                  : discovery?.assessment_state || "not_started",
+              ),
             inboxVisible:
               assessmentCurrent && discovery?.inbox_visible === true,
             error: discovery
@@ -648,26 +657,30 @@ export class ConnectedRepository {
       modelRound: (
         r.checkpoint as { model_routing?: { round_attempts?: number } } | null
       )?.model_routing?.round_attempts,
+      errorCode: str(r, "error_code") || undefined,
       message:
-        (r.error_code === "MODEL_ROUND_EXHAUSTED"
-          ? `Waiting for an available provider. Automatically retries after ${str(r, "next_attempt_at")}.`
-          : r.status === "retry_wait" && r.error_code === "MODEL_IN_PROGRESS"
-            ? "Gemini is processing this request. Its result will be checked automatically."
-            : r.error_code === "PROVIDER_QUOTA_WAIT"
-              ? `Provider rejected the request (429). Automatically retries after ${str(r, "next_attempt_at")}. See Model activity for the provider reason.`
-              : r.status === "quota_wait" &&
-                  [
-                    "MODEL_RATE_WAIT",
-                    "MODEL_DAILY_QUOTA_WAIT",
-                    "PROVIDER_QUOTA_WAIT",
-                  ].includes(str(r, "error_code"))
-                ? `Waiting for quota. Automatically retries after ${str(r, "next_attempt_at")}.`
-                : r.type === "model_probe" && r.status === "succeeded"
-                  ? (r.checkpoint as any)?.model_routing?.mode === "round_robin"
-                    ? "Model connection verified; measured usage recorded."
-                    : "Gemini connection verified; measured usage recorded."
-                  : sourceReadingMessages[str(r, "error_code")] ||
-                    str(r, "error_code")) +
+        (ocrPending(str(r, "status"), str(r, "error_code"))
+          ? "Awaiting text extraction from the scanned notice. Assessment resumes automatically when the text is available."
+          : r.error_code === "MODEL_ROUND_EXHAUSTED"
+            ? `Waiting for an available provider. Automatically retries after ${str(r, "next_attempt_at")}.`
+            : r.status === "retry_wait" && r.error_code === "MODEL_IN_PROGRESS"
+              ? "Gemini is processing this request. Its result will be checked automatically."
+              : r.error_code === "PROVIDER_QUOTA_WAIT"
+                ? `Provider rejected the request (429). Automatically retries after ${str(r, "next_attempt_at")}. See Model activity for the provider reason.`
+                : r.status === "quota_wait" &&
+                    [
+                      "MODEL_RATE_WAIT",
+                      "MODEL_DAILY_QUOTA_WAIT",
+                      "PROVIDER_QUOTA_WAIT",
+                    ].includes(str(r, "error_code"))
+                  ? `Waiting for quota. Automatically retries after ${str(r, "next_attempt_at")}.`
+                  : r.type === "model_probe" && r.status === "succeeded"
+                    ? (r.checkpoint as any)?.model_routing?.mode ===
+                      "round_robin"
+                      ? "Model connection verified; measured usage recorded."
+                      : "Gemini connection verified; measured usage recorded."
+                    : sourceReadingMessages[str(r, "error_code")] ||
+                      str(r, "error_code")) +
         collectionSummary(sourceRuns.get(r.id)) +
         sourceReadingSummary(r.checkpoint) +
         modelRoutingSummary(r.checkpoint),

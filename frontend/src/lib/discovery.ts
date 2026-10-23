@@ -1,11 +1,19 @@
 import type { Opportunity } from "../types";
 
+export const ocrPending = (status?: string, error?: string) =>
+  status === "awaiting_ocr" ||
+  (status === "retry_wait" &&
+    ["NOTICE_OCR_PENDING", "SOURCE_OCR_PENDING"].includes(error || ""));
+export const awaitingOcr = (o: Opportunity) =>
+  ocrPending(o.discovery?.state, o.discovery?.error);
+
 export const needsDecision = (o: Opportunity) =>
   o.status === "new" || o.status === "deferred";
 export const isExpired = (o: Opportunity) => o.discovery?.expired === true;
 export const inReviewInbox = (o: Opportunity) =>
   needsDecision(o) &&
   !isExpired(o) &&
+  !awaitingOcr(o) &&
   (o.discovery?.inboxVisible ??
     (!!o.assessment &&
       !o.assessment.stale &&
@@ -24,6 +32,7 @@ export const assessmentActive = (o: Opportunity) =>
     "retry_wait",
     "quota_wait",
     "pending_schedule",
+    "awaiting_ocr",
   ].includes(o.discovery.state);
 export const scopeNeedsReview = (o: Opportunity) =>
   needsDecision(o) &&
@@ -38,6 +47,7 @@ export type DiscoveryGroup =
   | "pending"
   | "scope"
   | "processing"
+  | "ocr"
   | "attention"
   | "excluded"
   | "expired"
@@ -49,6 +59,7 @@ export function discoveryGroup(o: Opportunity): DiscoveryGroup {
   if (o.status === "declined") return "archived";
   if (!needsDecision(o)) return "selected";
   if (isExpired(o)) return "expired";
+  if (awaitingOcr(o)) return "ocr";
   if (inReviewInbox(o)) return "pending";
   if (outOfScope(o)) return "excluded";
   if (assessmentActive(o)) return "processing";
@@ -94,6 +105,12 @@ const blockerMessages: Record<string, string> = {
     "Evidence used by this assessment changed. Open processing details to request an assessment using the current evidence.",
 };
 function progressState(o: Opportunity) {
+  if (awaitingOcr(o))
+    return {
+      label: "Awaiting OCR",
+      message:
+        "The scanned notice is queued for text extraction. Assessment will continue automatically after its text is available.",
+    };
   switch (o.discovery?.state) {
     case "running":
       return { label: "Assessing", message: "An assessment job is running." };
@@ -118,16 +135,6 @@ function progressState(o: Opportunity) {
           label: "Reading original notice",
           message:
             "The notice is waiting for browser rendering. Assessment will continue after its details are available.",
-        };
-      if (
-        ["SOURCE_OCR_PENDING", "NOTICE_OCR_PENDING"].includes(
-          o.discovery.error || "",
-        )
-      )
-        return {
-          label: "Reading scanned notice",
-          message:
-            "Text is being extracted from the notice image or scanned document. Assessment will continue when the extracted text is ready.",
         };
       if (o.discovery.error === "MODEL_ROUND_EXHAUSTED")
         return {
@@ -182,6 +189,8 @@ function progressState(o: Opportunity) {
 export function assessmentProgress(o: Opportunity) {
   const progress = progressState(o);
   if (!o.discovery || o.discovery.state === "assessed") return progress;
+  // Parent assessment attempts and its retry timer do not describe OCR progress.
+  if (awaitingOcr(o)) return progress;
   const attempts = o.discovery.attempts ?? 0;
   const next = o.discovery.nextAttempt;
   const upcoming =

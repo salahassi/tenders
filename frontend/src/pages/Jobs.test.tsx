@@ -47,6 +47,52 @@ function view(context: AppContextValue) {
   );
 }
 
+it("filters OCR waits separately from retries and keeps cancellation available", async () => {
+  const f = fixture();
+  f.state.jobs = [
+    {
+      ...f.state.jobs[0],
+      status: "retry_wait",
+      errorCode: "NOTICE_OCR_PENDING",
+      target: "Synthetic scanned notice",
+    },
+    {
+      ...f.state.jobs[0],
+      id: "other",
+      status: "retry_wait",
+      errorCode: "SOURCE_TIMEOUT",
+      target: "Synthetic ordinary retry",
+    },
+  ];
+  render(view(f.context));
+  await userEvent
+    .setup()
+    .selectOptions(
+      screen.getByRole("combobox", { name: "Filter jobs" }),
+      "awaiting_ocr",
+    );
+  expect(screen.getByText("Awaiting OCR", { selector: ".badge" })).toHaveClass(
+    "badge-purple",
+  );
+  expect(
+    screen.queryByText("Synthetic ordinary retry"),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "Check retry" }),
+  ).not.toBeInTheDocument();
+  await userEvent
+    .setup()
+    .selectOptions(
+      screen.getByRole("combobox", { name: "Filter jobs" }),
+      "retry_wait",
+    );
+  expect(
+    screen.queryByText("Synthetic scanned notice"),
+  ).not.toBeInTheDocument();
+  expect(screen.getByText("Synthetic ordinary retry")).toBeInTheDocument();
+});
+
 it("labels worker executions, the current model round, and creation/update times separately", () => {
   const f = fixture();
   render(view(f.context));

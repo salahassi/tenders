@@ -26,7 +26,7 @@ export function Badge({
   tone = "neutral",
 }: {
   children: ReactNode;
-  tone?: "green" | "amber" | "red" | "blue" | "neutral";
+  tone?: "green" | "amber" | "red" | "blue" | "purple" | "neutral";
 }) {
   return (
     <span className={`badge badge-${tone}`}>
@@ -129,7 +129,7 @@ export function Tabs({
   active,
   onChange,
 }: {
-  items: { id: string; label: string; count?: number }[];
+  items: { id: string; label: string; count?: number; tone?: "purple" }[];
   active: string;
   onChange: (id: string) => void;
 }) {
@@ -139,7 +139,12 @@ export function Tabs({
         <button
           type="button"
           key={i.id}
-          className={active === i.id ? "active" : ""}
+          className={[
+            active === i.id ? "active" : "",
+            i.tone ? `tab-${i.tone}` : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
           aria-pressed={active === i.id}
           onClick={() => onChange(i.id)}
         >

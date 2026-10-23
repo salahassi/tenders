@@ -1,5 +1,48 @@
 # Implementation status and continuation plan
 
+## October 23 — Isolate OCR processing and make its waiting state explicit
+
+Owner requested a project audit and a separate worker, appropriate status and
+distinct color for notices requiring OCR. The referenced conversation
+`01a168ad-d7d3-7587-a6a1-f7337035a06a` is not accessible with the current tools;
+its additional requirements have not been verified. Repository decisions and the
+current request are the available scope.
+
+Live inspection found API 88, worker 124 and source-browser 3 active. At the
+inspection, 17 assessment jobs reported NOTICE_OCR_PENDING; the native OCR queue
+contained 14 queued and 39 ready receipts. Counts include retained history and
+are not a count of current undecided notices. Browser processing previously
+consumed the same nine-minute budget before OCR could begin.
+
+Stages affected: collection/background (3), assessment (5), operations (7).
+Implementation complete: independent browser and OCR GitHub Actions jobs,
+each with its own runner, concurrency group and execution budget; a purple
+Awaiting OCR review group and job badge; suspend main-queue polling while a
+current native OCR receipt is queued or running. Existing evidence, leases,
+attempt budgets, model requests and human bid decisions remain authoritative.
+
+Verification on the reconciled source: **1,430 backend tests across 82 files**
+and **233 frontend tests across 38 files** passed, with both packages' TypeScript
+checks/builds and all three Deno entrypoint checks. The final inbox-count guard
+also passed the 49 focused frontend regressions and rebuild. SQL regressions
+prove queued/running OCR does not consume parent attempts or stop other jobs;
+ready/failed receipts continue normally, and changed sources, authorization or
+cancellation are not stranded. Worker tests exercise OCR-only gateway actions
+and independent limits. UI tests cover grouping, purple badges, filters,
+cancellation, preserved decisions, and not presenting parent retries as OCR
+progress. These are local/fixture results, not hosted OCR or visual acceptance.
+
+Merged the independently released saved-draft recovery from main `5527354`.
+That real 67-section draft is already recovered; updated-notice regeneration,
+actual Word downloads/review, recovery and multi-role/mobile acceptance remain
+separate. At 20:15 UTC, the contextual-scope reassessment was still queued;
+read-only production counts showed 49 ready OCR receipts, eight stale queued
+receipts and five OCR-waiting parent jobs. Historical queue totals are not
+current work counts. No model verdict or business document was invented.
+
+Deployment: pending this change's database migration and frontend/native worker
+publication. Hosted acceptance and authenticated browser visual QA are pending.
+
 ## October 23 — Completed proposal recovered after notice enrichment
 
 The Owner requested recovery of an older proposal whose writing and review

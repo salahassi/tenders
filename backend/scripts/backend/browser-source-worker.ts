@@ -8,7 +8,7 @@ import {
   inertText,
 } from "../../supabase/functions/_shared/collector.ts";
 import { withSourceMarkup } from "../../supabase/functions/_shared/sourcePageMarkup.ts";
-import { processNoticeOcrRequest } from "./public-notice-ocr-worker.ts";
+import { actionsGateway } from "./native-worker-gateway.ts";
 import { readPublicTabs } from "./public-browser-tabs.ts";
 
 type Request = {
@@ -244,72 +244,6 @@ export async function processBrowserRequest(
   );
   return true;
 }
-export function actionsGateway(): Gateway {
-  const audience =
-    "https://nqfwbqeozmuiuwbiowil.supabase.co/functions/v1/source-browser";
-  let cached: { value: string; expires: number } | undefined;
-  const identity = async () => {
-    if (cached && cached.expires > Date.now() / 1000 + 60) return cached.value;
-    const requestUrl = process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
-    const requestToken = process.env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
-    if (!requestUrl || !requestToken)
-      throw Error("GitHub Actions id-token: write is required");
-    const url = new URL(requestUrl);
-    url.searchParams.set("audience", audience);
-    const response = await fetch(url, {
-      headers: { Authorization: `Bearer ${requestToken}` },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!response.ok) throw Error("GitHub Actions identity is unavailable");
-    const body = await response.json();
-    if (typeof body.value !== "string") throw Error("Invalid Actions identity");
-    cached = {
-      value: body.value,
-      expires: JSON.parse(
-        Buffer.from(body.value.split(".")[1], "base64url").toString(),
-      ).exp,
-    };
-    return cached.value;
-  };
-  return async (action, payload) => {
-    const token = await identity();
-    const response = await fetch(audience, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ action, payload }),
-      signal: AbortSignal.timeout(30000),
-    });
-    if (!response.ok) {
-      if (response.status === 401) {
-        const claims = JSON.parse(
-          Buffer.from(token.split(".")[1], "base64url").toString(),
-        );
-        const fields = [
-          "iss",
-          "aud",
-          "sub",
-          "repository",
-          "ref",
-          "workflow_ref",
-          "iat",
-          "exp",
-          "nbf",
-        ];
-        console.error(
-          "Browser identity rejected",
-          JSON.stringify(
-            Object.fromEntries(fields.map((key) => [key, claims[key]])),
-          ),
-        );
-      }
-      throw Error(`Browser queue request failed: HTTP ${response.status}`);
-    }
-    return (await response.json()).data;
-  };
-}
 async function main() {
   const proxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
   const browser = await chromium.launch({
@@ -322,8 +256,6 @@ async function main() {
     const started = Date.now();
     for (let i = 0; i < 8 && Date.now() - started < 9 * 60 * 1000; i++)
       if (!(await processBrowserRequest(gateway, browser))) break;
-    for (let i = 0; i < 10 && Date.now() - started < 9 * 60 * 1000; i++)
-      if (!(await processNoticeOcrRequest(gateway))) break;
   } finally {
     await browser.close();
   }

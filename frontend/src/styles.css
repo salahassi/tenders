@@ -984,6 +984,21 @@ ol {
   color: #835b4d;
   border-color: #efdfd6;
 }
+.badge-purple {
+  background: #f3edfc;
+  color: #683a91;
+  border-color: #dfcef2;
+}
+.tabs button.tab-purple {
+  color: #683a91;
+}
+.tabs button.tab-purple.active {
+  border-color: #8050ad;
+  background: #f3edfc;
+}
+.review-card.awaiting-ocr {
+  border-inline-start: 4px solid #8050ad;
+}
 .row-actions {
   display: flex;
   align-items: center;

@@ -8,6 +8,7 @@ import {
   publicImageDimensions,
   readPublicDocumentOcr,
   validateOcrRequest,
+  runNoticeOcrWorker,
 } from "../../scripts/backend/public-notice-ocr-worker";
 
 const bytes = Buffer.from("%PDF-synthetic bounded public evidence");
@@ -22,6 +23,46 @@ const request = {
   workspace_id: "synthetic-workspace",
   lease_token: "synthetic-lease",
 };
+it("runs OCR claims and completions independently, without browser actions", async () => {
+  const gateway = vi.fn(async (action: string) =>
+    action === "ocr_claim" &&
+    gateway.mock.calls.filter(([name]) => name === "ocr_claim").length === 1
+      ? request
+      : null,
+  );
+  const read = vi.fn(async () => ({
+    sha256: request.sha256,
+    engine: "tesseract",
+    languages: ["ara", "eng"],
+    pages: [
+      {
+        page: 1,
+        text: "Synthetic readable public notice text.",
+        confidence: 90,
+      },
+    ],
+  }));
+  expect(
+    await runNoticeOcrWorker(gateway, (g) => processNoticeOcrRequest(g, read)),
+  ).toBe(1);
+  expect(gateway.mock.calls.map(([action]) => action)).toEqual([
+    "ocr_claim",
+    "ocr_complete",
+    "ocr_claim",
+  ]);
+  expect(read).toHaveBeenCalledWith(request);
+});
+it("bounds an OCR run by request count and its own elapsed time", async () => {
+  const gateway = vi.fn();
+  const process = vi.fn(async () => true);
+  expect(await runNoticeOcrWorker(gateway, process, () => 0)).toBe(10);
+  let elapsed = 0;
+  const slow = vi.fn(async () => {
+    elapsed += 3 * 60 * 1000;
+    return true;
+  });
+  expect(await runNoticeOcrWorker(gateway, slow, () => elapsed)).toBe(3);
+});
 it("accepts only the exact public bytes and checks every redirect destination before fetching", async () => {
   const fetcher = vi.fn<typeof fetch>(async () => new Response(bytes));
   const lookup = vi.fn(async () => ["8.8.8.8"]);

@@ -1101,6 +1101,69 @@ it("does not admit a notice when progress arrives before its matching assessment
   );
 });
 
+it("projects durable OCR waits without changing job identity or masking later errors", async () => {
+  const f = fixture();
+  const original = f.request.getMockImplementation()!;
+  let status = "retry_wait";
+  let error = "NOTICE_OCR_PENDING";
+  const jobId = "00000000-0000-4000-8000-000000000031";
+  f.request.mockImplementation(async (path, options) => {
+    const table = path.split("?")[0];
+    const records =
+      table === "/v1/opportunity-discovery"
+        ? [
+            {
+              id: opportunity,
+              revision: 1,
+              assessment_state: status,
+              assessment_error: error,
+              assessment_current: false,
+              inbox_visible: false,
+            },
+          ]
+        : table === "/v1/jobs"
+          ? [
+              {
+                id: jobId,
+                revision: 1,
+                type: "classify_opportunity",
+                entity_id: opportunity,
+                status,
+                error_code: error,
+                attempts: 9,
+                created_at: "2026-10-23T10:00:00Z",
+              },
+            ]
+          : null;
+    return records
+      ? {
+          data: { records, next_cursor: null },
+          meta: { request_id: "fixture" },
+        }
+      : original(path, options);
+  });
+  const repository = new ConnectedRepository(f.client);
+  const waiting = await repository.load();
+  expect(waiting.opportunities[0].discovery).toMatchObject({
+    state: "awaiting_ocr",
+    error: "NOTICE_OCR_PENDING",
+    inboxVisible: false,
+  });
+  expect(waiting.jobs[0]).toMatchObject({
+    id: jobId,
+    status: "retry_wait",
+    errorCode: "NOTICE_OCR_PENDING",
+    attempt: 9,
+  });
+  expect(waiting.jobs[0].message).toContain("text extraction");
+  status = "blocked";
+  error = "NOTICE_OCR_LOW_CONFIDENCE";
+  const blocked = await repository.refresh();
+  expect(blocked.opportunities[0].discovery?.state).toBe("blocked");
+  expect(blocked.jobs[0].status).toBe("blocked");
+  expect(blocked.jobs[0].message).not.toContain("Awaiting text extraction");
+});
+
 it("separates settings sections and retains unsaved workspace input while navigating", async () => {
   const f = fixture();
   const user = userEvent.setup();

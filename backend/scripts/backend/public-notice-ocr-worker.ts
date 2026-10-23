@@ -11,6 +11,8 @@ import { connect as tlsConnect } from "node:tls";
 import type { Socket } from "node:net";
 import { Readable } from "node:stream";
 import { publicAddress } from "../../supabase/functions/_shared/collector.ts";
+import { pathToFileURL } from "node:url";
+import { actionsGateway } from "./native-worker-gateway.ts";
 
 const run = promisify(execFile);
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -427,3 +429,24 @@ export async function processNoticeOcrRequest(
   );
   return true;
 }
+
+/** OCR has its own runner and time budget, independent of browser reading. */
+export async function runNoticeOcrWorker(
+  gateway: Gateway,
+  processRequest = processNoticeOcrRequest,
+  now = Date.now,
+) {
+  const started = now();
+  let processed = 0;
+  while (processed < 10 && now() - started < 9 * 60 * 1000) {
+    if (!(await processRequest(gateway))) break;
+    processed++;
+  }
+  return processed;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href)
+  runNoticeOcrWorker(actionsGateway()).catch((error) => {
+    console.error(error instanceof Error ? error.message : "OCR worker failed");
+    process.exitCode = 1;
+  });

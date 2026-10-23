@@ -10,6 +10,71 @@ import Review from "../pages/Review";
 import FitAssessment from "../components/FitAssessment";
 import type { Opportunity } from "../types";
 afterEach(cleanup);
+it("places OCR waits in their own purple group and preserves final errors and human decisions", async () => {
+  const state = createSeedState();
+  const notice: Opportunity = {
+    ...state.opportunities[0],
+    id: "scan",
+    title: "Synthetic scanned notice",
+    status: "new",
+    assessment: undefined,
+    discovery: {
+      state: "awaiting_ocr",
+      inboxVisible: false,
+      error: "NOTICE_OCR_PENDING",
+      attempts: 37,
+      nextAttempt: "2026-10-23T10:00:00Z",
+    },
+  };
+  state.opportunities = [notice];
+  expect(discoveryGroup(notice)).toBe("ocr");
+  expect(
+    inReviewInbox({
+      ...notice,
+      discovery: { ...notice.discovery!, inboxVisible: true },
+    }),
+  ).toBe(false);
+  expect(
+    discoveryGroup({
+      ...notice,
+      discovery: {
+        ...notice.discovery!,
+        state: "blocked",
+        error: "NOTICE_OCR_LOW_CONFIDENCE",
+      },
+    }),
+  ).toBe("attention");
+  expect(discoveryGroup({ ...notice, status: "declined" })).toBe("archived");
+  expect(discoveryGroup({ ...notice, status: "shortlisted" })).toBe("selected");
+  expect(
+    discoveryGroup({
+      ...notice,
+      discovery: { ...notice.discovery!, expired: true },
+    }),
+  ).toBe("expired");
+  expect(getFitPreview(state, notice).summary).not.toMatch(
+    /Attempts:|Next attempt:/,
+  );
+  render(
+    <MemoryRouter>
+      <AppContext.Provider
+        value={{ state, update: async () => true, notify: () => {} } as any}
+      >
+        <Review />
+      </AppContext.Provider>
+    </MemoryRouter>,
+  );
+  const tab = screen.getByRole("button", { name: /Awaiting OCR/ });
+  expect(tab).toHaveTextContent("1");
+  await userEvent.setup().click(tab);
+  expect(screen.getByText("Awaiting OCR", { selector: ".badge" })).toHaveClass(
+    "badge-purple",
+  );
+  expect(
+    screen.getByRole("link", { name: notice.title }).closest("article"),
+  ).toHaveClass("awaiting-ocr");
+  expect(state.opportunities[0].status).toBe("new");
+});
 it("names the Company Knowledge file and note behind company citations", () => {
   const state = createSeedState();
   state.knowledge = [
@@ -244,13 +309,15 @@ it("keeps scheduling waits and accepted model requests in progress without calli
   expect(preview.summary).toContain("response is ready");
   expect(preview.summary).not.toContain("temporary failure");
   for (const [error, level] of [
-    ["SOURCE_OCR_PENDING", "Reading scanned notice"],
-    ["NOTICE_OCR_PENDING", "Reading scanned notice"],
+    ["SOURCE_OCR_PENDING", "Awaiting OCR"],
+    ["NOTICE_OCR_PENDING", "Awaiting OCR"],
     ["SOURCE_BROWSER_PENDING", "Reading original notice"],
     ["NOTICE_BROWSER_PENDING", "Reading original notice"],
   ]) {
     notice.discovery.error = error;
-    expect(discoveryGroup(notice)).toBe("processing");
+    expect(discoveryGroup(notice)).toBe(
+      error.includes("OCR") ? "ocr" : "processing",
+    );
     expect(getFitPreview(state, notice)).toMatchObject({
       mode: "processing",
       level,

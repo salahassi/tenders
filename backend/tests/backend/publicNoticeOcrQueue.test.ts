@@ -596,3 +596,100 @@ it("keeps low-confidence OCR blocked without consuming a second native attempt",
     ).rows[0].attempts,
   ).toBe(1);
 });
+
+it.each(["queued", "running"])(
+  "parks the assessment while its current OCR receipt is %s, without consuming attempts or blocking other work",
+  async (state) => {
+    const { job } = await fixture();
+    await request(job);
+    if (state === "running") await f.rpc("claim_notice_ocr");
+    await f.db.query(
+      "update public.jobs set next_attempt_at=now() where id=$1",
+      [job.id],
+    );
+    const before = (
+      await f.db.query(
+        "select attempts,checkpoint,revision from public.jobs where id=$1",
+        [job.id],
+      )
+    ).rows[0];
+    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+    expect(await f.rpc("claim_backend_job")).toBeNull();
+    const other = (
+      await f.db.query<any>(
+        "insert into public.jobs(workspace_id,type,entity_id,input_hash,created_by,status) values($1,'model_probe',gen_random_uuid(),'synthetic-other',$2,'queued') returning id",
+        [f.w, f.owner],
+      )
+    ).rows[0];
+    expect((await f.rpc("claim_backend_job_v2")).id).toBe(other.id);
+    expect(
+      (
+        await f.db.query(
+          "select attempts,checkpoint,revision from public.jobs where id=$1",
+          [job.id],
+        )
+      ).rows[0],
+    ).toEqual(before);
+    expect(
+      (await f.db.query("select * from public.provider_usage")).rows,
+    ).toHaveLength(0);
+  },
+);
+
+it.each(["source", "membership", "cancel"])(
+  "does not strand OCR parents after a %s change",
+  async (change) => {
+    const { job, source } = await fixture();
+    await request(job);
+    await f.db.query(
+      "update public.jobs set next_attempt_at=now() where id=$1",
+      [job.id],
+    );
+    if (change === "source")
+      await f.db.query(
+        "update public.sources set revision=revision+1 where id=$1",
+        [source.id],
+      );
+    if (change === "membership")
+      await f.db.query(
+        "update public.memberships set active=false where workspace_id=$1 and user_id=$2",
+        [f.w, f.owner],
+      );
+    if (change === "cancel")
+      await f.db.query(
+        "update public.jobs set cancel_requested=true where id=$1",
+        [job.id],
+      );
+    expect(
+      (
+        await f.db.query<any>(
+          "select app_private.job_waits_for_notice_ocr(j) waiting from public.jobs j where id=$1",
+          [job.id],
+        )
+      ).rows[0].waiting,
+    ).toBe(false);
+    const claimed = await f.rpc("claim_backend_job_v2");
+    if (change === "cancel") {
+      expect(claimed).toBeNull();
+      expect(
+        (
+          await f.db.query<any>("select status from public.jobs where id=$1", [
+            job.id,
+          ])
+        ).rows[0].status,
+      ).toBe("canceled");
+    } else expect(claimed.id).toBe(job.id);
+  },
+);
+
+it("keeps the OCR queue predicate private to worker functions", async () => {
+  for (const role of ["anon", "authenticated", "service_role"])
+    expect(
+      (
+        await f.db.query<any>(
+          "select has_function_privilege($1,'app_private.job_waits_for_notice_ocr(public.jobs)','execute') allowed",
+          [role],
+        )
+      ).rows[0].allowed,
+    ).toBe(false);
+});

@@ -18,6 +18,7 @@ import {
   Metric,
 } from "../components/ui";
 import type { Job } from "../types";
+import { ocrPending } from "../lib/discovery";
 import "./admin.css";
 function JobTime({ value }: { value?: string }) {
   return value && Number.isFinite(Date.parse(value)) ? (
@@ -38,10 +39,12 @@ export default function Jobs() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const canEdit = state.settings.role !== "Reviewer";
+  const displayStatus = (job: Job) =>
+    ocrPending(job.status, job.errorCode) ? "awaiting_ocr" : job.status;
   const jobs = state.jobs
     .filter(
       (j) =>
-        (filter === "all" || j.status === filter) &&
+        (filter === "all" || displayStatus(j) === filter) &&
         `${j.target} ${j.type}`.toLowerCase().includes(search.toLowerCase()),
     )
     .sort(
@@ -177,6 +180,7 @@ export default function Jobs() {
           onChange={(e) => setFilter(e.target.value)}
         >
           <option value="all">All statuses</option>
+          <option value="awaiting_ocr">Awaiting OCR</option>
           {[
             "queued",
             "running",
@@ -225,7 +229,17 @@ export default function Jobs() {
                       </span>
                     </td>
                     <td>
-                      <Badge tone={tone(j.status)}>{j.status}</Badge>
+                      <Badge
+                        tone={
+                          ocrPending(j.status, j.errorCode)
+                            ? "purple"
+                            : tone(j.status)
+                        }
+                      >
+                        {ocrPending(j.status, j.errorCode)
+                          ? "Awaiting OCR"
+                          : j.status}
+                      </Badge>
                     </td>
                     <td>
                       <div className="admin-progress">

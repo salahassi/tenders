@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import type { AppState, Opportunity } from "../types";
 import { getFitPreview } from "../lib/fitPreview";
+import { awaitingOcr } from "../lib/discovery";
 import { Badge } from "./ui";
 import "./fit-assessment.css";
 
@@ -23,24 +24,28 @@ export default function FitAssessment({
         </strong>
         <Badge
           tone={
-            fit.level === "High"
-              ? "green"
-              : fit.level === "Medium"
-                ? "amber"
-                : fit.level === "Low" || fit.level === "Outside scope"
-                  ? "red"
-                  : "neutral"
+            awaitingOcr(opportunity)
+              ? "purple"
+              : fit.level === "High"
+                ? "green"
+                : fit.level === "Medium"
+                  ? "amber"
+                  : fit.level === "Low" || fit.level === "Outside scope"
+                    ? "red"
+                    : "neutral"
           }
         >
           {fit.level}
         </Badge>
       </div>
       <p className="fit-disclosure">
-        {fit.mode === "recorded"
-          ? fit.basis
-          : fit.mode === "processing"
-            ? "Assessment processing"
-            : "Assessment needs attention"}
+        {awaitingOcr(opportunity)
+          ? "Scanned notice text extraction"
+          : fit.mode === "recorded"
+            ? fit.basis
+            : fit.mode === "processing"
+              ? "Assessment processing"
+              : "Assessment needs attention"}
       </p>
       {opportunity.assessment?.scope === "uncertain" &&
         !opportunity.assessment.stale && (
