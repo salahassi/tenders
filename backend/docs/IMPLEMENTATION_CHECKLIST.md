@@ -210,8 +210,50 @@ frontend remains at **225 passing tests across 38 files** with unchanged source.
 
 Native processing retains the existing best-effort GitHub schedule. Manual
 workflow runs were used for this recovery; scheduled runs were observed at 19:01
-and 22:14 UTC, so a reliable five-minute hosted cadence is not established by
+and 22:14 UTC, and run `39879578173` succeeded at 00:41 UTC on October 23,
+so a reliable five-minute hosted cadence is not established by
 these tests. The user-facing pending states remain truthful while work waits.
+
+Publication acceptance: source revision `e068344` passed the complete Pages
+workflow `39879805420`, including both typechecks, all three Deno entrypoints,
+both regression suites and frontend publication. The deployed runtime remains
+API **87**, worker **123**, source-browser **3**. At 00:50 UTC, hosted notice
+evidence contains **20/20 Amman**, **6/6 Etimad**, **6/6 Royal Jordanian** and
+**2/2 Phosphate** detail reads. Twelve Amman and four Etimad reads explicitly
+retain partial coverage; seven Amman notices and one Phosphate notice contain
+saved OCR provenance. These are database-confirmed reads, not listing counts.
+MWI has **3/8** saved detail reads: other work still includes OCR and two
+retryable transport failures. Independent Deno checks of the three previously
+failing public detail URLs returned HTTP 200 with both default and HTTP/1.1
+clients; those local results do not establish the cause of the Edge failures.
+
+The same snapshot has **62** unexpired assessments processing, **seven** current
+uncertain-scope reviews and no terminal Review attention item. Processing is
+not completion: 49 assessments await model work, seven await OCR, four are
+queued and two retain timeout/temporary-fetch errors. All original 34 reader
+blockers have left terminal attention (33 processing, one expired), but their
+final assessment outcomes are not yet accepted. Twelve of 13 approved sources
+are healthy; MDLF remains unavailable and its verified award stays archived.
+
+Read-only acceptance at 00:52 confirms automatic continuation after the single
+00:41:37 kickoff: eight notices saved, 23 classifier jobs advanced, 21 graph
+checkpoints persisted and 19 retained automatic wake records. A reader handoff
+at 00:48:22.879714 matched its automatic wake at 00:48:23.033775, proving the new
+reader wake branch on hosted work. Every observed graph turn included a provider
+attempt; the graph-only wake branch has regression coverage but no hosted
+acceptance in this window. No classifier completed in this observation window.
+Six ready OCR receipts remain eligible and rank 2–7 on the next reading-priority
+cycle; one newly queued MWI OCR request prompted native run `39877255970`
+attempt 4, which completed successfully. At 00:53 UTC all eight current OCR
+receipts are ready and none is queued/running. Incorporation into notice
+evidence and final classification remain pending. That manual native run is
+separate from automatic backend dispatch.
+
+Fresh Supabase advisors retain the existing categories: 14 private RLS tables
+without browser policies, 23 authenticated definer-function warnings, disabled
+leaked-password protection, 114 uncovered foreign keys and five unused indexes.
+This repair does not claim an otherwise clean security/performance advisory
+report or change those unrelated access and project settings.
 
 ## October 22 — Replace registration pages with tested tender listings
 
