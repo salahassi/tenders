@@ -96,6 +96,7 @@ export async function renderPublicSource(o: {
     serviceWorkers: "block",
     acceptDownloads: false,
   });
+  let stage = "navigation";
   try {
     await context.routeWebSocket("**/*", (socket) => socket.close());
     const allowed = new Map<string, boolean>();
@@ -119,6 +120,7 @@ export async function renderPublicSource(o: {
     await page
       .waitForLoadState("networkidle", { timeout: 10000 })
       .catch(() => {});
+    stage = "verification";
     for (let attempt = 0; attempt < 2; attempt++) {
       const text = await page.locator("body").innerText();
       if (!humanChallenge(text)) break;
@@ -163,7 +165,9 @@ export async function renderPublicSource(o: {
         .catch(() => false)
     )
       throw Error("SOURCE_LOGIN_REQUIRED");
+    stage = "optional_tabs";
     const detailWarnings = await readPublicTabs(page, o.readTabs || []);
+    stage = "snapshot";
     await publicDestination(page.url());
     const html = await page.content();
     if (Buffer.byteLength(html) > 1048576) throw Error("SOURCE_TOO_LARGE");
@@ -174,6 +178,9 @@ export async function renderPublicSource(o: {
       },
       state: await context.storageState(),
     };
+  } catch (error) {
+    if (error instanceof Error) Object.assign(error, { sourceStage: stage });
+    throw error;
   } finally {
     await context.close();
   }
@@ -189,6 +196,7 @@ export async function processBrowserRequest(
   const host = new URL(request.url).hostname;
   let result: Awaited<ReturnType<typeof renderPublicSource>> | undefined;
   let code: string | null = null;
+  let failedStage: string | undefined;
   try {
     result = await renderPublicSource({
       browser,
@@ -210,6 +218,7 @@ export async function processBrowserRequest(
     await gateway("session_save", { ...args, state: result.state });
   } catch (error) {
     const name = error instanceof Error ? error.message : "";
+    failedStage = (error as { sourceStage?: string } | null)?.sourceStage;
     code = [
       "SOURCE_HUMAN_VERIFICATION_REQUIRED",
       "SOURCE_LOGIN_REQUIRED",
@@ -226,7 +235,13 @@ export async function processBrowserRequest(
     page: result?.page ?? null,
     error_code: code,
   });
-  console.log(JSON.stringify({ host, outcome: code || "rendered" }));
+  console.log(
+    JSON.stringify({
+      host,
+      outcome: code || "rendered",
+      ...(failedStage ? { stage: failedStage } : {}),
+    }),
+  );
   return true;
 }
 export function actionsGateway(): Gateway {

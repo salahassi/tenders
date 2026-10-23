@@ -101,6 +101,152 @@ async function pending() {
   return { source, opportunity, job, request, browser, before };
 }
 
+it.each(["SOURCE_TIMEOUT", "SOURCE_BROWSER_FAILED"])(
+  "retries a transient browser read once and settles exhausted %s without a parent retry loop",
+  async (code) => {
+    const { job, browser } = await pending();
+    await f.rpc("complete_source_browser_page", [
+      browser.id,
+      browser.lease_token,
+      null,
+      code,
+    ]);
+    const first = (
+      await f.db.query<any>(
+        "select status,error_code,attempts,input_hash,notice_hash,source_revision from public.source_browser_requests where id=$1",
+        [browser.id],
+      )
+    ).rows[0];
+    expect(first).toMatchObject({
+      status: "queued",
+      error_code: code,
+      attempts: 1,
+    });
+    const second = await f.rpc("claim_source_browser_page");
+    expect(second.id).toBe(browser.id);
+    expect(second.lease_token).not.toBe(browser.lease_token);
+    await f.rpc("complete_source_browser_page", [
+      second.id,
+      second.lease_token,
+      null,
+      code,
+    ]);
+    expect(await f.rpc("claim_source_browser_page")).toBeNull();
+    const resumed = await f.rpc("claim_backend_job_v2");
+    expect(resumed.id).toBe(job.id);
+    const result = await f.rpc("request_notice_browser", [
+      resumed.id,
+      resumed.lease_token,
+      url,
+    ]);
+    expect(result).toMatchObject({
+      id: browser.id,
+      status: "blocked",
+      error_code: "SOURCE_BROWSER_FAILED",
+    });
+    await f.rpc("fail_notice_details", [
+      resumed.id,
+      resumed.lease_token,
+      result.error_code,
+    ]);
+    const final = (
+      await f.db.query<any>(
+        "select j.status,j.error_code,p.status plan_status from public.jobs j join public.generation_plans p on p.id=j.entity_id where j.id=$1",
+        [job.id],
+      )
+    ).rows[0];
+    expect(final).toEqual({
+      status: "blocked",
+      error_code: "SOURCE_BROWSER_FAILED",
+      plan_status: "blocked",
+    });
+    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+    const receipt = (
+      await f.db.query<any>(
+        "select status,error_code,attempts,input_hash,notice_hash,source_revision from public.source_browser_requests where id=$1",
+        [browser.id],
+      )
+    ).rows[0];
+    expect(receipt).toEqual({ ...first, status: "blocked", attempts: 2 });
+  },
+);
+it("requeues an existing blocked first timeout under its current assessment lease", async () => {
+  const { job, browser } = await pending();
+  await f.db.query(
+    "update public.source_browser_requests set status='blocked',error_code='SOURCE_TIMEOUT',lease_token=null,lease_until=null where id=$1",
+    [browser.id],
+  );
+  await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
+    job.id,
+  ]);
+  const resumed = await f.rpc("claim_backend_job_v2");
+  expect(resumed.id).toBe(job.id);
+  expect(
+    await f.rpc("request_notice_browser", [
+      resumed.id,
+      resumed.lease_token,
+      url,
+    ]),
+  ).toMatchObject({ id: browser.id, status: "queued" });
+  const second = await f.rpc("claim_source_browser_page");
+  expect(second.id).toBe(browser.id);
+  await f.rpc("complete_source_browser_page", [
+    second.id,
+    second.lease_token,
+    JSON.stringify(renderedPage(html, url, url)),
+    null,
+  ]);
+  const current = await f.rpc("claim_backend_job_v2");
+  expect(
+    (
+      await f.rpc("request_notice_browser", [
+        current.id,
+        current.lease_token,
+        url,
+      ])
+    ).status,
+  ).toBe("ready");
+  expect(
+    (
+      await f.db.query<any>(
+        "select attempts from public.source_browser_requests where id=$1",
+        [browser.id],
+      )
+    ).rows[0].attempts,
+  ).toBe(2);
+});
+it.each([
+  "SOURCE_HUMAN_VERIFICATION_REQUIRED",
+  "SOURCE_LOGIN_REQUIRED",
+  "UNSAFE_DESTINATION",
+  "SOURCE_TOO_LARGE",
+])("does not retry permanent browser rejection %s", async (code) => {
+  const { job, browser } = await pending();
+  await f.rpc("complete_source_browser_page", [
+    browser.id,
+    browser.lease_token,
+    null,
+    code,
+  ]);
+  const resumed = await f.rpc("claim_backend_job_v2");
+  expect(resumed.id).toBe(job.id);
+  expect(
+    await f.rpc("request_notice_browser", [
+      resumed.id,
+      resumed.lease_token,
+      url,
+    ]),
+  ).toMatchObject({ status: "blocked", error_code: code });
+  expect(
+    (
+      await f.db.query<any>(
+        "select status,attempts from public.source_browser_requests where id=$1",
+        [browser.id],
+      )
+    ).rows[0],
+  ).toEqual({ status: "blocked", attempts: 1 });
+});
+
 it.each(["ready", "waiting", "stale"])(
   "prefers browser notice continuation only for a current ready receipt (%s)",
   async (mode) => {

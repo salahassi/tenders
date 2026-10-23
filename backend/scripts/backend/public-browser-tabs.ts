@@ -43,17 +43,34 @@ export async function readPublicTabs(page: Page, selectors: string[]) {
         warnings.push(`NOTICE_DETAIL_TAB_UNREAD:${selector}`);
         continue;
       }
-      await tab.click({ timeout: 10000 });
-      await page
-        .waitForLoadState("networkidle", { timeout: 10000 })
-        .catch(() => {});
+      let clickTimedOut = false;
+      try {
+        await tab.click({ timeout: 10000 });
+      } catch (error) {
+        if (!(error instanceof Error) || error.name !== "TimeoutError")
+          throw error;
+        clickTimedOut = true;
+      }
+      if (!clickTimedOut)
+        await page
+          .waitForLoadState("networkidle", { timeout: 10000 })
+          .catch(() => {});
+      let unread = clickTimedOut;
+      if (!unread) {
+        try {
+          unread = (await panel.innerText({ timeout: 2000 })).trim().length < 5;
+        } catch (error) {
+          if (!(error instanceof Error) || error.name !== "TimeoutError")
+            throw error;
+          unread = true;
+        }
+      }
       const current = new URL(page.url());
       current.hash = "";
       if (current.href !== original.href) throw Error("SOURCE_BROWSER_FAILED");
       // A lazy public tab may legitimately remain unavailable. Keep the already
       // readable notice and record the gap; never report a complete detail read.
-      if ((await panel.innerText()).trim().length < 5)
-        warnings.push(`NOTICE_DETAIL_TAB_UNREAD:${selector}`);
+      if (unread) warnings.push(`NOTICE_DETAIL_TAB_UNREAD:${selector}`);
     }
   } finally {
     await page.unroute("**/*", guard);

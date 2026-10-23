@@ -54,6 +54,43 @@ const page = {
   partial: false,
   rendered: true,
 };
+it("recovers a legacy first listing timeout and reports exhaustion as a terminal browser failure", async () => {
+  const { job, browser } = await pending();
+  await f.db.query(
+    "update public.source_browser_requests set status='blocked',error_code='SOURCE_TIMEOUT',lease_token=null,lease_until=null where id=$1",
+    [browser.id],
+  );
+  await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
+    job.id,
+  ]);
+  const resumed = await f.rpc("claim_backend_job_v2");
+  expect(
+    (await f.rpc("source_browser_page", [resumed.id, resumed.lease_token]))
+      .status,
+  ).toBe("queued");
+  await f.rpc("queue_source_browser_page", [resumed.id, resumed.lease_token]);
+  const second = await f.rpc("claim_source_browser_page");
+  expect(second.id).toBe(browser.id);
+  await f.rpc("complete_source_browser_page", [
+    second.id,
+    second.lease_token,
+    null,
+    "SOURCE_TIMEOUT",
+  ]);
+  const current = await f.rpc("claim_backend_job_v2");
+  expect(
+    await f.rpc("source_browser_page", [current.id, current.lease_token]),
+  ).toMatchObject({ status: "blocked", error_code: "SOURCE_BROWSER_FAILED" });
+  expect(
+    (
+      await f.db.query<any>(
+        "select attempts,error_code from public.source_browser_requests where id=$1",
+        [browser.id],
+      )
+    ).rows[0],
+  ).toEqual({ attempts: 2, error_code: "SOURCE_TIMEOUT" });
+});
+
 it("resumes the same saved job with rendered evidence and rejects a stale browser lease", async () => {
   const { job, browser } = await pending();
   await f.rpc("complete_source_browser_page", [

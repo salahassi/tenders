@@ -135,6 +135,25 @@ Live recovery is ongoing: at 00:06 UTC, 12/20 Amman notices had saved detail rea
 Etimad had six saved records, and no Review attention blocker remained. Pending
 OCR and model assessments are still processing; they are not claimed complete.
 
+The same follow-up source revision `144b604` passed Pages workflow `39876252686`.
+Native workflow `39876365560` completed eight current-context OCR receipts in
+total, but two Etimad detail requests timed out. Those requests exposed a durable
+retry defect: the first failed browser receipt was returned repeatedly without
+using the remaining native attempt. Migration `20261023001313` is now applied:
+transient failures use the existing two-attempt limit; exhausted browser/OCR
+requests become explicit terminal read failures, retaining the original receipt
+error and attempt history. Seventy focused queue/browser SQL tests passed.
+
+The native reader now also preserves the existing notice when an optional tab
+click or panel read times out, while retaining URL-change and initial-navigation
+guards. Worker diagnostics identify the failing stage without logging page text.
+Thirty-two distinct focused tests and a real local Chromium overlay regression
+passed. The overlay was a synthetic local regression, not proof of the earlier
+hosted timeout's exact cause. Publication and hosted detail recovery follow.
+The complete final backend suite passes **1,371 tests across 80 files**, with
+typecheck/build passing; the frontend and Edge source are unchanged from the
+previously verified deployment.
+
 ## October 22 — Replace registration pages with tested tender listings
 
 Owner explicitly requested finding actual tender pages, testing extraction before

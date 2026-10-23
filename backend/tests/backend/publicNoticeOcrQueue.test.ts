@@ -541,4 +541,58 @@ it("retries one transient native failure within the original two-attempt budget"
       )
     ).rows[0],
   ).toEqual({ status: "blocked", attempts: 2 });
+  const resumed = await f.rpc("claim_backend_job_v2");
+  expect(resumed.id).toBe(job.id);
+  const terminal = await request(resumed);
+  expect(terminal).toEqual({
+    status: "blocked",
+    error_code: "NOTICE_OCR_FAILED",
+  });
+  await f.rpc("fail_notice_details", [
+    resumed.id,
+    resumed.lease_token,
+    terminal.error_code,
+  ]);
+  expect(
+    (
+      await f.db.query<any>(
+        "select status,error_code from public.jobs where id=$1",
+        [job.id],
+      )
+    ).rows[0],
+  ).toEqual({ status: "blocked", error_code: "NOTICE_OCR_FAILED" });
+  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(
+    (
+      await f.db.query<any>(
+        "select error_code from app_private.public_notice_ocr_requests where id=$1",
+        [pending.request_id],
+      )
+    ).rows[0].error_code,
+  ).toBe("SOURCE_TIMEOUT");
+});
+
+it("keeps low-confidence OCR blocked without consuming a second native attempt", async () => {
+  const { job } = await fixture();
+  await request(job);
+  const native = await f.rpc("claim_notice_ocr");
+  await f.rpc("complete_notice_ocr", [
+    native.id,
+    native.lease_token,
+    null,
+    "NOTICE_OCR_LOW_CONFIDENCE",
+  ]);
+  const resumed = await f.rpc("claim_backend_job_v2");
+  expect(await request(resumed)).toEqual({
+    status: "blocked",
+    error_code: "NOTICE_OCR_LOW_CONFIDENCE",
+  });
+  expect(
+    (
+      await f.db.query<any>(
+        "select attempts from app_private.public_notice_ocr_requests where id=$1",
+        [native.id],
+      )
+    ).rows[0].attempts,
+  ).toBe(1);
 });
