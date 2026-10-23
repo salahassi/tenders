@@ -154,6 +154,21 @@ The complete final backend suite passes **1,371 tests across 80 files**, with
 typecheck/build passing; the frontend and Edge source are unchanged from the
 previously verified deployment.
 
+Source revision `f3cd6b4` is published. Native run `39877255970` has produced four
+current ready Etimad detail receipts (4,757–6,218 characters); three retain explicit
+optional-tab gaps and one read all configured tabs. This is hosted browser
+acceptance; subsequent incorporation into notice evidence is still queued. The
+first hosted MWI detail and five Royal Jordanian details have also been saved.
+
+Independent review found a browser-completion race when the parent briefly
+resumed while its native read was still running. Migration `20261023002056` is
+applied: exact current browser receipts may finish during that parent lease,
+without altering any parent fields. Canceled/stale inputs and expired browser
+leases remain rejected. All 35 focused SQL tests and backend typecheck pass.
+The full backend suite now passes **1,376 tests across 80 files**. Native workflow
+`39877255970` completed successfully with four rendered details and no browser
+failures. The original two timeout receipts still await their bounded retry.
+
 ## October 22 — Replace registration pages with tested tender listings
 
 Owner explicitly requested finding actual tender pages, testing extraction before

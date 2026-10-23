@@ -325,6 +325,108 @@ it("binds rendered details to the original assessment and resumes it without cha
   ).toBe(0);
 });
 
+it.each([null, "SOURCE_TIMEOUT"])(
+  "records a current browser completion during the parent resume without changing its lease (%s)",
+  async (error) => {
+    const { job, browser } = await pending();
+    await f.db.query(
+      "update public.jobs set next_attempt_at=now() where id=$1",
+      [job.id],
+    );
+    const resumed = await f.rpc("claim_backend_job_v2");
+    expect(resumed.id).toBe(job.id);
+    const before = (
+      await f.db.query<any>("select * from public.jobs where id=$1", [job.id])
+    ).rows[0];
+    const page = renderedPage(html, url, url);
+    await f.rpc("complete_source_browser_page", [
+      browser.id,
+      browser.lease_token,
+      error ? null : JSON.stringify(page),
+      error,
+    ]);
+    expect(
+      (await f.db.query<any>("select * from public.jobs where id=$1", [job.id]))
+        .rows[0],
+    ).toEqual(before);
+    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+    const receipt = (
+      await f.db.query<any>(
+        "select status,attempts,lease_token,lease_until from public.source_browser_requests where id=$1",
+        [browser.id],
+      )
+    ).rows[0];
+    expect(receipt).toEqual({
+      status: error ? "queued" : "ready",
+      attempts: 1,
+      lease_token: null,
+      lease_until: null,
+    });
+    if (!error) {
+      expect(
+        await f.rpc("request_notice_browser", [
+          resumed.id,
+          resumed.lease_token,
+          url,
+        ]),
+      ).toMatchObject({ status: "ready", page });
+      expect(
+        (
+          await f.db.query<any>("select * from public.jobs where id=$1", [
+            job.id,
+          ])
+        ).rows[0],
+      ).toEqual(before);
+    }
+  },
+);
+
+it.each(["cancel", "source"])(
+  "still rejects browser completion after a resumed parent has %s changed",
+  async (change) => {
+    const { source, job, browser } = await pending();
+    await f.db.query(
+      "update public.jobs set next_attempt_at=now() where id=$1",
+      [job.id],
+    );
+    const resumed = await f.rpc("claim_backend_job_v2");
+    expect(resumed.id).toBe(job.id);
+    if (change === "cancel")
+      await f.db.query(
+        "update public.jobs set cancel_requested=true where id=$1",
+        [job.id],
+      );
+    else
+      await f.db.query(
+        "update public.sources set revision=revision+1 where id=$1",
+        [source.id],
+      );
+    const before = (
+      await f.db.query<any>("select * from public.jobs where id=$1", [job.id])
+    ).rows[0];
+    await expect(
+      guardedRpc("complete_source_browser_page", [
+        browser.id,
+        browser.lease_token,
+        JSON.stringify(renderedPage(html, url, url)),
+        null,
+      ]),
+    ).rejects.toThrow("STALE_INPUT");
+    expect(
+      (await f.db.query<any>("select * from public.jobs where id=$1", [job.id]))
+        .rows[0],
+    ).toEqual(before);
+    expect(
+      (
+        await f.db.query<any>(
+          "select status,lease_token from public.source_browser_requests where id=$1",
+          [browser.id],
+        )
+      ).rows[0],
+    ).toEqual({ status: "running", lease_token: browser.lease_token });
+  },
+);
+
 it.each(["notice", "source", "job", "authority", "archive"])(
   "rejects late rendered details after %s changes",
   async (changed) => {

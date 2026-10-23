@@ -113,6 +113,31 @@ it("resumes the same saved job with rendered evidence and rejects a stale browse
     ]),
   ).rejects.toThrow("STALE_LEASE");
 });
+it("accepts a current listing receipt while its parent holds a resumed lease", async () => {
+  const { job, browser } = await pending();
+  await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
+    job.id,
+  ]);
+  const resumed = await f.rpc("claim_backend_job_v2");
+  expect(resumed.id).toBe(job.id);
+  const before = (
+    await f.db.query<any>("select * from public.jobs where id=$1", [job.id])
+  ).rows[0];
+  await f.rpc("complete_source_browser_page", [
+    browser.id,
+    browser.lease_token,
+    JSON.stringify(page),
+    null,
+  ]);
+  expect(
+    (await f.db.query<any>("select * from public.jobs where id=$1", [job.id]))
+      .rows[0],
+  ).toEqual(before);
+  expect(
+    await f.rpc("source_browser_page", [resumed.id, resumed.lease_token]),
+  ).toMatchObject({ status: "ready", page });
+  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+});
 it("requires current Owner authority, binds CAPTCHA answers to the live challenge, and redacts its audit", async () => {
   const { source, browser } = await pending();
   await f.rpc("source_browser_challenge", [
