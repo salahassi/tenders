@@ -23,7 +23,7 @@ issue, pull request, or chat. The integration available during preparation could
 read workflows but received HTTP 403 when accessing the Actions secrets API;
 repository administrator status did not grant that integration secret access.
 
-The workflow requests a kubeconfig with a 900-second lifetime, writes it with
+The workflow requests a kubeconfig with a one-hour lifetime, writes it with
 owner-only file permissions in the runner's temporary directory, and removes
 the credential directory in an unconditional cleanup step. It installs the
 matching Kubernetes client with SHA-256 verification, validates the configured
@@ -165,9 +165,52 @@ database deployment; applying the existing schema unchanged is not validated.
 The probe does not test elevated role creation, row-security bypass capability,
 extension installability or actual Auth/Storage bootstrapping.
 
-The independent source query stopped because `SUPABASE_ACCESS_TOKEN` is missing
-from repository secrets. Add an authorized Supabase management token with access
-to the existing project in the same secure GitHub settings, then rerun the
-preflight. This credential enables source inspection; it does not by itself
-prove that every database export, private file or runtime secret can be migrated.
-Source export credentials will be determined from that verified inventory.
+The independent source query stopped because `SUPABASE_ACCESS_TOKEN` was missing
+from repository secrets. That token is an optional route for source inspection
+from the runner. The connected Supabase Model Context Protocol (MCP) integration
+has separately exported 116 application, Auth and Storage tables containing
+81,124 rows, together with schema, ownership, routine and policy definitions and
+the hosted migration history. Those protected files remain outside this public
+repository. The reads were not one transaction, and no executable restore or
+destination restoration has been verified. Object metadata is included; the
+private file bytes and runtime credentials remain separate transfer tasks.
+
+The workflow now reports an absent optional source token as `not_run`. It still
+fails for an invalid supplied token or a failed target check. A successful target
+run does not imply source inspection or complete migration readiness.
+
+## Isolated compatible-service bootstrap
+
+The Owner authorized the next compatibility test. The workflow creates a new,
+nonce-named logical database on the existing managed PostgreSQL cluster and
+seven uniquely named roles. It never adopts an existing name or restores source
+rows. Original cluster and database certificate verification remain enabled.
+
+The isolated Job runs digest-pinned Auth 2.197.0, PostgREST 14.18 and Storage
+1.81.0. Storage uses a disposable filesystem volume for two automated fixture
+objects; this is not the production storage design. No public Service or load
+balancer is created. Namespace network policy permits database traffic to private
+addresses and DNS, while the HTTP acceptance client reaches native sidecars
+through loopback. No model provider or SMTP credentials are supplied.
+
+The test deliberately avoids superuser and `BYPASSRLS`. The service role inherits
+the isolated public-table and Storage owners; ordinary request roles inherit
+neither. Actual HTTP tests must show that invitation-only Auth, password sign-in,
+cross-user row isolation, ownership-change denial, private object access and
+privileged service operations work together without disabling row-level security.
+This is a proposed ownership arrangement for evaluation, not evidence that all
+production functions and grants can already be restored under that arrangement.
+
+Database and role comments identify the exact run. Cleanup checks those markers,
+the database owner, the namespace UID and ownership labels before removing only
+the generated database, roles and Kubernetes resources. The suspended parent Job
+retains its credential Secret until guarded SQL cleanup finishes. Both the main
+helper and unconditional workflow step attempt cleanup; a cleanup failure is an
+explicit failed result and requires inspection before another bootstrap. A hard
+runner termination can leave the isolated logical database or roles behind.
+
+Local checks and live execution results are recorded separately in
+`IMPLEMENTATION_CHECKLIST.md`. Passing this bootstrap would establish a narrow
+service compatibility result. Scheduler adaptation, production schema mapping,
+source/file restoration, HTTPS configuration and application acceptance still
+precede any cutover.

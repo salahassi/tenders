@@ -7,6 +7,9 @@ on:
     paths:
       - .github/workflows/doks-access.yml
       - backend/scripts/ops/digitalocean-preflight.py
+      - backend/scripts/ops/digitalocean-bootstrap.py
+      - backend/scripts/ops/bootstrap/**
+      - backend/scripts/ops/test_digitalocean_bootstrap.py
 
 permissions:
   contents: read
@@ -17,9 +20,9 @@ concurrency:
 
 jobs:
   verify:
-    name: Verify cluster TLS and migration prerequisites
+    name: Verify TLS and isolated Auth/Storage compatibility
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 35
     steps:
       - name: Set temporary credential paths
         shell: bash
@@ -70,7 +73,7 @@ jobs:
 
           request = urllib.request.Request(
               "https://api.digitalocean.com/v2/kubernetes/clusters/"
-              "a6093a76-a2d6-47fd-8697-579d41ed316f/kubeconfig?expiry_seconds=900",
+              "a6093a76-a2d6-47fd-8697-579d41ed316f/kubeconfig?expiry_seconds=3600",
               headers={"Authorization": "Bearer " + token},
           )
           try:
@@ -91,7 +94,7 @@ jobs:
           )
           with os.fdopen(descriptor, "wb") as output:
               output.write(payload)
-          print("Downloaded cluster credentials with a requested 900-second lifetime.")
+          print("Downloaded cluster credentials with a requested 3600-second lifetime.")
           PY
 
       - name: Install checksum-verified kubectl v1.37.0
@@ -243,6 +246,23 @@ jobs:
           POSTGRES_CLIENT_IMAGE: docker.io/library/postgres:18@sha256:edb0c08dc33befd0262ab3b5cf1c4f3f8cfd8b09e88c05b45adee29d6761ddb6
         shell: bash
         run: python3 backend/scripts/ops/digitalocean-preflight.py
+
+      - name: Run isolated Auth, Storage and RLS acceptance
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        shell: bash
+        run: python3 backend/scripts/ops/digitalocean-bootstrap.py
+
+      - name: Remove the isolated compatible-service database and resources
+        if: ${{ always() }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/scripts/ops/digitalocean-bootstrap.py ] && [ -x "${KUBECTL:-}" ]; then
+            python3 backend/scripts/ops/digitalocean-bootstrap.py --cleanup
+          fi
 
       - name: Remove the isolated database probe
         if: ${{ always() }}

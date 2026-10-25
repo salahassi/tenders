@@ -1,5 +1,36 @@
 # Implementation status and continuation plan
 
+## Isolated Auth and Storage bootstrap on the existing DigitalOcean database
+
+The Owner authorized implementation and live execution of the next compatibility
+test. The existing GitHub Actions route already verifies Kubernetes access and
+private managed PostgreSQL 18 access. The new test creates its own nonce-named
+logical database, seven prefixed roles and temporary namespace; source data,
+existing database objects and the published application remain outside its scope.
+
+Implementation introduces digest-pinned Auth 2.197.0, PostgREST 14.18 and Storage
+1.81.0 with private HTTP acceptance. It evaluates owner-role inheritance instead
+of granting `BYPASSRLS`, checks genuine invitation acceptance and password sign-in,
+and verifies user/anonymous denials, privileged service operations and private
+file byte equality. This is automated fixture data in an isolated test database,
+not workspace reference seeding or production acceptance. Storage is temporary;
+no production file or user is copied. TLS, restricted containers, bounded public
+results and ownership-checked SQL/Kubernetes cleanup are required throughout.
+
+The optional runner source token is no longer a mandatory target-access gate.
+Separate connected MCP reads already captured 116 scoped tables and 81,124 rows,
+catalogs, deployed function sources and migration history privately. That capture
+is not a consistent final cutover snapshot or a tested executable restore.
+
+Verification before live execution: backend typecheck/build and all 1,430 tests
+in 82 files passed. Pod specifications and credential/ownership guards passed
+16 orchestrator tests, 10 pod-specification tests and four acceptance guard tests. One frontend journey initially failed to observe its
+expected region while both suites ran concurrently; the complete frontend rerun
+passed all 233 tests in 38 files and its production build. Both package typechecks
+and builds pass. Source revision, live workflow result and cleanup evidence will
+be recorded after execution. No live bootstrap success or production migration
+is claimed by this entry.
+
 ## October 25 — Kubernetes access verified; migration compatibility inspection
 
 After the Owner added the repository credential, attempt 2 of

@@ -408,6 +408,11 @@ def source_inventory() -> dict:
 def main() -> int:
     failed = False
     for name, probe in (("managed_database", target_inventory), ("source_database", source_inventory)):
+        if name == "source_database" and not os.environ.get("SUPABASE_ACCESS_TOKEN"):
+            # Source inventory/export can be performed by the connected MCP.
+            # An absent optional runner credential does not invalidate target TLS.
+            emit(name, "not_run", code="OPTIONAL_SOURCE_TOKEN_NOT_CONFIGURED")
+            continue
         try:
             emit(name, "ok", inventory=probe())
         except ProbeError as error:
