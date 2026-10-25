@@ -19,11 +19,27 @@ jobs:
     name: Verify cluster TLS and read-only access
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      DOKS_WORKDIR: ${{ runner.temp }}/doks-access-${{ github.run_id }}-${{ github.run_attempt }}
-      KUBECONFIG: ${{ runner.temp }}/doks-access-${{ github.run_id }}-${{ github.run_attempt }}/kubeconfig
-      KUBECTL: ${{ runner.temp }}/doks-access-${{ github.run_id }}-${{ github.run_attempt }}/kubectl
     steps:
+      - name: Set temporary credential paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import pathlib
+
+          directory = pathlib.Path(os.environ["RUNNER_TEMP"]) / (
+              "doks-access-" + os.environ["GITHUB_RUN_ID"] + "-" + os.environ["GITHUB_RUN_ATTEMPT"]
+          )
+          with open(os.environ["GITHUB_ENV"], "a") as output:
+              for name, path in {
+                  "DOKS_WORKDIR": directory,
+                  "KUBECONFIG": directory / "kubeconfig",
+                  "KUBECTL": directory / "kubectl",
+              }.items():
+                  output.write(f"{name}={path}\n")
+          PY
+
       - name: Download short-lived cluster credentials
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}

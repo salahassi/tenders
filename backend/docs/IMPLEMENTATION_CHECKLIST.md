@@ -26,7 +26,10 @@ Kubernetes connection test. The frontend passed 233 tests in 38 files, typecheck
 and build. Backend dependencies were refreshed from the unchanged lockfile after
 missing packages prevented the first typecheck; its subsequent checks are running.
 
-Execution on GitHub Actions is pending. The existing integration can read
+The first branch push at `80fc8a5` was accepted, but GitHub rejected the workflow
+before allocating a job. Runtime paths were moved from job-level expressions
+into an initial runner step; the corrected workflow has not yet been run.
+The existing integration can read
 workflows but GitHub returned HTTP 403 for Actions secret administration; secret
 availability on the runner has not yet been established. No successful
 Kubernetes connection, deployment, full application migration, or environment
