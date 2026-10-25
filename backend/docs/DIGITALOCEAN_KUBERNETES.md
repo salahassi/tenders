@@ -65,3 +65,55 @@ Inventory the cluster and existing workloads before applying manifests. Record
 the source revision, target namespace, rollout result and application acceptance
 in `IMPLEMENTATION_CHECKLIST.md`. No existing application, database migration,
 public load balancer, or environment publication is part of this access check.
+
+## Complete migration sequence
+
+The proposed target retains Supabase-compatible service interfaces while moving
+their execution and data to DigitalOcean. This preserves the application's
+authentication and authorization contracts instead of replacing them during
+the infrastructure move. It still requires implementation and hosted validation.
+
+| Component | Target and validation needed |
+| --- | --- |
+| React frontend | Serve the existing build from Kubernetes; configure the final HTTPS application origin and authentication callbacks. |
+| Authentication and data API | Run compatible Auth and PostgREST services; preserve user IDs, password hashes, identities, database roles, grants and row-level security. |
+| Application API and workers | Package the existing Deno functions; preserve user authentication, private dispatcher authentication, leases and idempotency. |
+| Database | Validate the existing PostgreSQL 18 managed database against actual source schema and role requirements before selecting it as the destination. |
+| Original files and exports | Provide object storage on DigitalOcean behind the compatible Storage API; retain private access, object keys, ownership and byte hashes. |
+| Scheduling and secret storage | Verify `pg_cron`, `pg_net` and `supabase_vault` availability, or implement tested Kubernetes replacements for both periodic dispatch and immediate queue wakeups. |
+| Browser and optical character recognition workers | Replace GitHub-issued workload identity if moving these workers into Kubernetes; update the existing hardcoded audience and gateway URL. |
+
+1. Complete the runner connection check and inventory the live cluster. Obtain
+   authorized source database export and private Storage read access, plus the
+   destination object-storage credentials. Do not assume an API that lists secret
+   names can recover their values.
+2. Compare the live source schema, extensions and privileges with the target.
+   The repository contains 132 canonical SQL migrations, with documented hosted
+   timestamp/body differences. Do not blindly replay those files as a migration
+   of the populated source system.
+3. Build the isolated destination with schedulers and external processing paused.
+   Transfer a protected logical snapshot that includes Auth users, identities,
+   password hashes, business rows and grants. Copy private objects and compare
+   their hashes; preserve UUIDs and relationships.
+4. Validate invitation-only sign-in, membership and role boundaries, anonymous
+   denials, database authorization, original upload/download, Word exports,
+   worker leases and retry behavior. Passing local tests does not establish
+   these destination acceptance results.
+5. Before cutover, establish the trusted HTTPS endpoint and callback/origin
+   settings, freeze source writes, reconcile accepted external requests, and
+   apply a consistent final transfer. Switch the application only after matching
+   data and file checks pass. Enable exactly one intended set of workers and
+   schedules to avoid duplicate model requests or notifications.
+6. Retain the source for rollback. Before destination writes begin, traffic can
+   return to the source. After destination writes begin, reconcile new data before
+   reverting; simply switching back could lose work.
+
+The application's own backup is **not** a transparent platform-migration export.
+As described in [OPERATIONS.md](OPERATIONS.md), it excludes Auth accounts, access
+grants, invitations and secrets; restoration intentionally cancels unfinished
+jobs, disables models and invalidates permissions and approvals. Use a verified
+database and object-storage migration for continuity instead.
+
+The first corrected workflow run, [40230328689](https://github.com/salahassi/tenders/actions/runs/40230328689),
+stopped at the missing repository secret before contacting Kubernetes. No
+destination application or data has been deployed by that run.

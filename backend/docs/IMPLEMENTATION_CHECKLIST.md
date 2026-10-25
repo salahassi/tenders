@@ -24,20 +24,29 @@ confirmed that its short-lived kubeconfig contains the expected endpoint,
 embedded CA and token-only identity with verification enabled. This is not a
 Kubernetes connection test. The frontend passed 233 tests in 38 files, typecheck
 and build. Backend dependencies were refreshed from the unchanged lockfile after
-missing packages prevented the first typecheck; its subsequent checks are running.
+missing packages prevented the first typecheck. The corrected environment passed
+all 1,430 backend tests in 82 files, typecheck and build.
 
 The first branch push at `80fc8a5` was accepted, but GitHub rejected the workflow
 before allocating a job. Runtime paths were moved from job-level expressions
-into an initial runner step; the corrected workflow has not yet been run.
-The existing integration can read
-workflows but GitHub returned HTTP 403 for Actions secret administration; secret
-availability on the runner has not yet been established. No successful
+into an initial runner step. Corrected source `c7e2c8043d7f826e7c224dff1feedaea7af8b6cc`
+started [access run 40230328689](https://github.com/salahassi/tenders/actions/runs/40230328689).
+The runner initialized successfully, then stopped because the repository secret
+`DIGITALOCEAN_ACCESS_TOKEN` is missing; its unconditional cleanup succeeded.
+The integration can read and push workflows but GitHub returned HTTP 403 for
+Actions secret administration. The remaining immediate action is to add that
+secret through the repository settings and rerun the same check. No successful
 Kubernetes connection, deployment, full application migration, or environment
 publication is claimed. The Owner selected full migration to DigitalOcean,
 including the backend and data, rather than retaining hosted Supabase. The
 application still depends on Supabase Auth, Storage, Edge Functions and database
 functions; compatibility, source backup and restoration must be validated before
 cutover. Access preparation is the first prerequisite, not the complete migration.
+The existing DigitalOcean managed database is PostgreSQL 18 in `sfo3` and reports
+`online`; extension, role, schema and application compatibility have not been
+tested. The current environment has no source Supabase access token, database
+password or service-role variable. Source export access and target object
+storage remain migration prerequisites, separate from the Kubernetes access gate.
 
 ## October 23 — Isolate OCR processing and make its waiting state explicit
 
