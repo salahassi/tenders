@@ -62,9 +62,20 @@ SELECT format('CREATE POLICY td_bootstrap_bucket_read ON storage.buckets FOR SEL
 SELECT format('CREATE POLICY td_bootstrap_object_self ON storage.objects FOR ALL TO %I USING (bucket_id = %L AND owner_id = (SELECT auth.uid())::text) WITH CHECK (bucket_id = %L AND owner_id = (SELECT auth.uid())::text)', :'role_prefix' || '_authenticated', 'td-bootstrap-private', 'td-bootstrap-private')
 \gexec
 RESET ROLE;
+SELECT format('SET LOCAL ROLE %I', :'role_prefix' || '_authadmin')
+\gexec
+SELECT count(*) AS auth_migrations FROM auth.schema_migrations
+\gset
+RESET ROLE;
+SELECT format('SET LOCAL ROLE %I', :'role_prefix' || '_storageadmin')
+\gexec
+SELECT count(*) AS storage_migrations FROM storage.migrations
+\gset
+RESET ROLE;
 NOTIFY pgrst, 'reload schema';
 COMMIT;
 SELECT jsonb_build_object('status','post_migrations_complete',
-  'auth_migrations',(SELECT count(*) FROM auth.schema_migrations),
-  'storage_migrations',(SELECT count(*) FROM storage.migrations),
-  'fixture_rls',(SELECT relrowsecurity FROM pg_class WHERE oid='public.td_bootstrap_records'::regclass)) AS probe;
+  'auth_migrations',:'auth_migrations'::integer,
+  'storage_migrations',:'storage_migrations'::integer,
+  'fixture_rls',(SELECT c.relrowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                 WHERE n.nspname='public' AND c.relname='td_bootstrap_records')) AS probe;

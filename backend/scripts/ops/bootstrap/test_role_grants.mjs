@@ -9,9 +9,13 @@ const setup = await readFile(new URL('./setup.sql', import.meta.url), 'utf8');
 const selfGrant = setup.match(/SELECT format\('(GRANT %I TO %I WITH [^']+)',\s*:'role_prefix' \|\| '_' \|\| suffix,\s*current_user\)/)?.[1];
 const requestGrant = setup.match(/SELECT format\('(GRANT %I, %I, %I TO %I WITH [^']+)'/)?.[1];
 const serviceGrant = setup.match(/SELECT format\('(GRANT %I, %I TO %I WITH [^']+)'/)?.[1];
+const postMigrations = await readFile(new URL('./post-migrations.sql', import.meta.url), 'utf8');
+const authCountQuery = postMigrations.match(/SELECT count\(\*\) AS auth_migrations FROM auth\.schema_migrations/)?.[0];
+const storageCountQuery = postMigrations.match(/SELECT count\(\*\) AS storage_migrations FROM storage\.migrations/)?.[0];
 assert.equal(selfGrant, 'GRANT %I TO %I WITH INHERIT FALSE, SET TRUE', 'Use the reviewed self-grant without granting ADMIN back to its grantor');
 assert.equal(requestGrant, 'GRANT %I, %I, %I TO %I WITH INHERIT FALSE, SET TRUE');
 assert.equal(serviceGrant, 'GRANT %I, %I TO %I WITH INHERIT TRUE, SET TRUE');
+assert.ok(authCountQuery && storageCountQuery, 'Metadata queries must remain present in the reviewed post-migration script');
 
 async function executeFormat(db, format, ...identifiers) {
   const args = identifiers.map((_, index) => `$${index + 2}::text`).join(', ');
@@ -73,4 +77,38 @@ await instance(async (db) => {
 
 });
 
-console.log('PostgreSQL role regression passed: old ADMIN self-grant rejected, actual setup SET ROLE and seven-role inheritance graph verified.');
+await instance(async (db) => {
+  for (const [role, schema, table, rows] of [
+    ['fixture_auth', 'auth', 'schema_migrations', '(1), (2)'],
+    ['fixture_storage', 'storage', 'migrations', '(1), (2), (3)'],
+  ]) {
+    await db.exec(`CREATE ROLE ${role} NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;`);
+    await executeFormat(db, selfGrant, role, 'fixture_admin');
+    await db.exec(`GRANT CREATE ON DATABASE postgres TO ${role};
+      CREATE SCHEMA ${schema} AUTHORIZATION ${role}; SET ROLE ${role};
+      REVOKE ALL ON SCHEMA ${schema} FROM PUBLIC;
+      CREATE TABLE ${schema}.${table}(version integer PRIMARY KEY);
+      INSERT INTO ${schema}.${table} VALUES ${rows}; RESET ROLE;`);
+  }
+  // Database ownership and ADMIN/SET membership do not grant table reads when
+  // membership has INHERIT FALSE. This reproduces the live reporting failure.
+  for (const query of [authCountQuery, storageCountQuery]) {
+    await assert.rejects(db.query(query), (error) => error.code === '42501');
+  }
+  await db.exec('BEGIN; SET LOCAL ROLE fixture_auth;');
+  const authCount = Number((await db.query(authCountQuery)).rows[0].auth_migrations);
+  await db.exec('RESET ROLE; SET LOCAL ROLE fixture_storage;');
+  const storageCount = Number((await db.query(storageCountQuery)).rows[0].storage_migrations);
+  await db.exec('RESET ROLE; COMMIT;');
+  const summary = (await db.query(`SELECT jsonb_build_object(
+    'auth_migrations', $1::integer, 'storage_migrations', $2::integer,
+    'auth_table_exists', EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+      WHERE n.nspname='auth' AND c.relname='schema_migrations')) AS summary`, [authCount, storageCount])).rows[0].summary;
+  assert.deepEqual(summary, {auth_migrations: 2, storage_migrations: 3, auth_table_exists: true});
+  assert.equal((await db.query('SELECT current_user')).rows[0].current_user, 'fixture_admin');
+  for (const query of [authCountQuery, storageCountQuery]) {
+    await assert.rejects(db.query(query), (error) => error.code === '42501', 'Owner-scoped reporting must not widen the administrator role');
+  }
+});
+
+console.log('PostgreSQL role regression passed: ADMIN self-grant rejection, setup role graph, and owner-scoped migration metadata reads verified.');

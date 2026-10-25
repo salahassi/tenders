@@ -239,6 +239,14 @@ jobs:
           persist-credentials: false
           sparse-checkout: backend/scripts/ops
 
+      - name: Check isolated bootstrap guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
+          python3 -m unittest discover -s backend/scripts/ops/bootstrap -p 'test_*.py'
+          python3 backend/scripts/ops/bootstrap/acceptance.py --self-test
+
       - name: Inspect source and target migration prerequisites
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}

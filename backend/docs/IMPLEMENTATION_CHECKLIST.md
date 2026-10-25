@@ -54,6 +54,18 @@ under a genuine non-superuser session, then verifies the seven-role privilege
 boundaries. Both failed live attempts confirmed database/role and
 namespace cleanup; no production data was restored.
 
+[Run 40235397571](https://github.com/salahassi/tenders/actions/runs/40235397571)
+on `cf72efa1fac235c5ee2e6a09408cb7e526871a4d` created the isolated database and
+started all three service sidecars after their startup checks and upstream
+migrations. Post-migration fixture setup then reached its final metadata query,
+which failed with SQLSTATE `42501`: the admin session deliberately does not
+inherit Auth/Storage table ownership. The diagnostic counts now explicitly use
+their respective owner roles before reporting aggregates. Database/role and
+namespace cleanup passed. This establishes service startup, not completed HTTP
+acceptance or production restore. An additional PostgreSQL 18.6 regression
+reproduces the metadata read denial, verifies both owner-scoped counts and
+confirms that the admin still has no inherited table-read privilege afterward.
+
 ## October 25 — Kubernetes access verified; migration compatibility inspection
 
 After the Owner added the repository credential, attempt 2 of
