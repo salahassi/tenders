@@ -1,5 +1,13 @@
 # Backend deployment
 
+The current runtime is on DigitalOcean Kubernetes and the existing managed
+PostgreSQL server. Use [DIGITALOCEAN_KUBERNETES.md](DIGITALOCEAN_KUBERNETES.md)
+for deployment and [IMPLEMENTATION_CHECKLIST.md](IMPLEMENTATION_CHECKLIST.md)
+for verified release evidence and remaining credentials. The dated hosted
+Supabase instructions below are historical; their deployment workflow and
+Actions-based readers have been retired. The source project remains intact
+until its complete-operation deletion condition is satisfied.
+
 ## Scope and actual state
 
 **Current checkpoint — October 17, 2026:** API **v14** and worker **v11** are ACTIVE from `a6056db95dff6d9463b0bb7b6150d9955ab17cd9`, with all 13 retained files in each matching source. Hosted history has **48 migration entries**; automatic Gemini/Qwen/Mistral/Groq routing is implemented and deployed. All 161 backend/133 frontend tests, both typechecks/builds and Deno checks passed. [Pages run 39070202922](https://github.com/salahassi/tenders/actions/runs/39070202922) passed, and the public index, Jobs and Settings bundles match the local build. Health/authentication boundaries and the active minute scheduler passed verification. Actual Owner activation persisted after reload; a real check completed through Gemini, recording all three alternatives as missing configuration. A forward cursor correction is also deployed; final browser result/reload verification passed. Earlier verified Gemini inference and historical deployments follow. The 35 official sources still require collection adapters; no business opportunity or document has been fabricated.

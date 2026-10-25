@@ -199,6 +199,22 @@ cutover remain pending the secure credentials and their verification. Main merge
 and publishing the previous Pages bookmark redirect are the remaining release
 steps; their exact results will be recorded after publication.
 
+Release publication is complete. PR #8 merged into main as
+`1afda0ed2f8c6b2e8607dd5f8fab7aed70617d47`. The old bookmark redirect passed
+[Pages run 40245418635](https://github.com/salahassi/tenders/actions/runs/40245418635).
+An anonymous read of `https://salahassi.github.io/tenders/` returned HTTP 200 with
+the Kubernetes canonical destination and no old Supabase URL or application asset
+references. The frontend now runs on Kubernetes; the previous bookmark redirects
+there. The retired hosted API/reader workflows are absent from main.
+
+All authorized core publication work is complete. AI/provider and SMTP values
+are still absent on the new runtime, so external-feature verification and source
+project deletion remain explicitly incomplete. The Owner has been asked to add
+those values through repository Secrets without sending them in chat. No new
+permission to merge or delete is being requested; deletion's existing operating
+condition has not yet been met. Historical data remains on the source, outside
+the new application's minimal data scope.
+
 ## Isolated Auth and Storage bootstrap on the existing DigitalOcean database
 
 The Owner authorized implementation and live execution of the next compatibility

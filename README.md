@@ -4,8 +4,17 @@ The application source is separated into two folders in the same repository.
 
 | Folder                | Contents                                                                                                | Runtime                                |
 | --------------------- | ------------------------------------------------------------------------------------------------------- | -------------------------------------- |
-| [frontend](frontend/) | Existing React interface, browser extraction/export, original assets, UI tests and Vite build           | GitHub Pages                           |
-| [backend](backend/)   | Supabase API and worker, SQL migrations, shared API schemas, backend tests and deployment documentation | Supabase Edge Functions and PostgreSQL |
+| [frontend](frontend/) | React interface, browser extraction/export, original assets, UI tests and Vite build                    | DigitalOcean Kubernetes HTTPS frontend                           |
+| [backend](backend/)   | Deno API/workers, Supabase-compatible Auth/Storage, SQL migrations, API schemas and tests                 | DigitalOcean Kubernetes and managed PostgreSQL |
+
+
+The live frontend is [TenderDesk on DigitalOcean](https://tenderdesk.129.212.166.115.sslip.io).
+The first confirmed Owner and operating configuration were migrated with the
+existing password hash; old business records, files and sessions were excluded.
+Core application, private storage and background maintenance passed live
+acceptance. Provider and SMTP credentials still require secure provisioning;
+models remain paused and the source project is retained until complete operation
+is verified. See the implementation checklist for exact release evidence.
 
 Each folder has an independent `package.json` and `package-lock.json`. Root files contain repository documentation and configuration. GitHub Actions workflows remain in `.github/workflows/`.
 
@@ -24,9 +33,9 @@ npm --prefix frontend run build
 npm --prefix backend run build
 ```
 
-Start the existing interface with `npm --prefix frontend run dev`. Its production output is `frontend/dist/`, which the existing GitHub Pages workflow publishes at the same application URL.
+Start the interface with `npm --prefix frontend run dev`. Its production output is `frontend/dist/`, served by the Kubernetes frontend image. The previous GitHub Pages bookmark redirects to the new HTTPS frontend.
 
-See the [frontend guide](frontend/README.md), [backend guide](backend/README.md), [deployment status](backend/docs/DEPLOYMENT.md), [implementation status and continuation plan](backend/docs/IMPLEMENTATION_CHECKLIST.md), and [original implementation specification](backend/docs/IMPLEMENTATION_SPEC.txt).
+See the [frontend guide](frontend/README.md), [backend guide](backend/README.md), [DigitalOcean deployment](backend/docs/DIGITALOCEAN_KUBERNETES.md), [implementation status and continuation plan](backend/docs/IMPLEMENTATION_CHECKLIST.md), and [original implementation specification](backend/docs/IMPLEMENTATION_SPEC.txt).
 
 The [unified model execution and real proposal acceptance plan](backend/docs/MODEL_EXECUTION_PLAN.md)
 extends the original milestones with structured model contracts, configurable
