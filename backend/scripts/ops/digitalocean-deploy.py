@@ -540,6 +540,8 @@ def deploy(args):
         apply_managed([x for x in objects if x["kind"] != "Namespace"])
         wait_deployments(["auth", "rest", "storage"])
         restore_application(pod, files, manifest)
+        sql(pod, (ASSETS / "check-compatible.sql").read_text())
+        emit("application_rpc_compatibility_verified")
         invitations = "BEGIN; SET LOCAL ROLE tdp_app_owner;\n" + (ROOT / "scripts/runtime/auth-invitations.sql").read_text() + "\nCOMMIT;"
         sql(pod, invitations, variables={"auth_role": PREFIX + "_authadmin"})
         adaptation = "BEGIN; SET LOCAL ROLE tdp_app_owner;\n" + (ROOT / "scripts/runtime/dispatcher.sql").read_text() + "\nCOMMIT;"

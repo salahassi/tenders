@@ -127,6 +127,19 @@ publishes only a redirect; application testing/builds belong to the DigitalOcean
 workflow. Main merge and the public bookmark change are still pending that full
 runtime verification. No source project deletion is claimed.
 
+The first full final-revision run,
+[40241502372](https://github.com/salahassi/tenders/actions/runs/40241502372),
+stopped in local checks before acquiring cluster credentials or changing the live
+runtime. Frontend checks passed; backend had 1,456 passes and one obsolete test
+that read the retired Supabase deployment workflow. That test now executes the
+new fail-closed compatibility SQL against PostgreSQL 18, covering missing,
+incorrect, partial and matching RPC signatures under a genuine non-superuser
+role. Its complete 13-test file passes. The deployer invokes this same SQL after
+restoration, before accepting worker availability. All other application code is
+unchanged from the independently verified frozen-source 1,457-test revision.
+Temporary encrypted HTTPS diagnostic objects have been removed after recording
+the cause and repair; the private minimal restore bundle is retained.
+
 ## Isolated Auth and Storage bootstrap on the existing DigitalOcean database
 
 The Owner authorized implementation and live execution of the next compatibility
