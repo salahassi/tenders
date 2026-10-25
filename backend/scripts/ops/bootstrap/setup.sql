@@ -66,7 +66,9 @@ FROM unnest(ARRAY['owner','authadmin','storageadmin','authenticator','anon','aut
 
 -- PostgreSQL 16+ role creation grants ADMIN without necessarily granting SET.
 -- Explicit membership concerns only the new, uniquely named probe roles.
-SELECT format('GRANT %I TO %I WITH ADMIN TRUE, INHERIT FALSE, SET TRUE', :'role_prefix' || '_' || suffix, current_user)
+-- The creator already receives ADMIN from PostgreSQL's bootstrap grantor.
+-- Regranting ADMIN back to that membership fails with SQLSTATE 0LP01.
+SELECT format('GRANT %I TO %I WITH INHERIT FALSE, SET TRUE', :'role_prefix' || '_' || suffix, current_user)
 FROM unnest(ARRAY['owner','authadmin','storageadmin']) AS suffix
 \gexec
 SELECT format('GRANT %I, %I, %I TO %I WITH INHERIT FALSE, SET TRUE',

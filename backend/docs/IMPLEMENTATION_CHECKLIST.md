@@ -24,7 +24,8 @@ is not a consistent final cutover snapshot or a tested executable restore.
 
 Verification before live execution: backend typecheck/build and all 1,430 tests
 in 82 files passed. Pod specifications and credential/ownership guards passed
-16 orchestrator tests, 10 pod-specification tests and four acceptance guard tests. One frontend journey initially failed to observe its
+17 orchestrator tests, 10 pod-specification tests and four acceptance guard tests.
+One frontend journey initially failed to observe its
 expected region while both suites ran concurrently; the complete frontend rerun
 passed all 233 tests in 38 files and its production build. Both package typechecks
 and builds pass. Source revision, live workflow result and cleanup evidence will
@@ -40,6 +41,18 @@ did not identify the failing SQL operation, so the next revision adds SQLSTATE,
 reviewed script line and fixed stage identifiers without publishing raw logs.
 Public-schema ACL revocation also now explicitly assumes the new schema-owner
 role, whose membership intentionally does not inherit into the admin session.
+
+[Diagnostic run 40234986252](https://github.com/salahassi/tenders/actions/runs/40234986252)
+on `6d22bd2d77cfad711ac860c5e10a0000d8f298c8` identified SQLSTATE `0LP01` at the
+self-membership grant before the role transaction committed. PostgreSQL already
+grants the role creator ADMIN; requesting that option again through the creator's
+own membership is rejected. The revised grant requests only SET and disables
+inheritance, preserving the separately granted administrative membership. The
+same failure and corrected grant were reproduced in PostgreSQL 18.6 through the
+embedded test engine. The committed role-graph regression executes both grants
+under a genuine non-superuser session, then verifies the seven-role privilege
+boundaries. Both failed live attempts confirmed database/role and
+namespace cleanup; no production data was restored.
 
 ## October 25 — Kubernetes access verified; migration compatibility inspection
 
