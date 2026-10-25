@@ -1,5 +1,31 @@
 # Implementation status and continuation plan
 
+## October 25 — Kubernetes access verified; migration compatibility inspection
+
+After the Owner added the repository credential, attempt 2 of
+[access run 40230328689](https://github.com/salahassi/tenders/actions/runs/40230328689/attempts/2)
+passed against source `c7e2c8043d7f826e7c224dff1feedaea7af8b6cc`. The Kubernetes API
+reported ready on version `v1.37.0`; both nodes were Ready and all 14 pods were
+Running. The authenticated identity can create Deployments in `tenderdesk-dev`.
+The original cluster CA, certificate and hostname verification remained enabled.
+The runner deleted its temporary credentials after the check. This verifies an
+operational route through GitHub Actions; the development container's direct
+Envoy connection is still a separate limitation.
+
+The next change extends the workflow to inspect the managed database from an
+isolated temporary Kubernetes Job using the database's private endpoint and
+`sslmode=verify-full`. The database queries are read-only. Job resources and
+credentials must be removed after inspection. An independent source management
+API probe checks whether source database metadata can be read with the existing
+repository credential. These probes do not restore data, run migrations, deploy
+the application, change firewalls, or enable external processing. Their execution
+and compatibility results are pending.
+The helper passed syntax validation, 14 offline checks, and a mocked resource
+lifecycle covering create-only ownership, Job-to-Secret garbage collection,
+read-only SQL, strict TLS, restricted pod settings and cleanup. Workflow syntax
+and output-whitelist checks also passed. Application source is unchanged from
+the preceding 233 frontend/1,430 backend test and typecheck/build results.
+
 ## October 25 — Prepare verified DigitalOcean Kubernetes access
 
 The Owner requested access to the existing `tenderdesk-dev` Kubernetes cluster

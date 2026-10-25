@@ -6,6 +6,7 @@ on:
     branches: [codex/doks-access]
     paths:
       - .github/workflows/doks-access.yml
+      - backend/scripts/ops/digitalocean-preflight.py
 
 permissions:
   contents: read
@@ -16,7 +17,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Verify cluster TLS and read-only access
+    name: Verify cluster TLS and migration prerequisites
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -228,6 +229,29 @@ jobs:
           print("Can create Deployments in tenderdesk-dev: yes")
           print("Read-only access verified. No Kubernetes resources were changed or deployed.")
           PY
+
+      - name: Read the reviewed migration probe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: backend/scripts/ops
+
+      - name: Inspect source and target migration prerequisites
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          POSTGRES_CLIENT_IMAGE: docker.io/library/postgres:18@sha256:edb0c08dc33befd0262ab3b5cf1c4f3f8cfd8b09e88c05b45adee29d6761ddb6
+        shell: bash
+        run: python3 backend/scripts/ops/digitalocean-preflight.py
+
+      - name: Remove the isolated database probe
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/scripts/ops/digitalocean-preflight.py ] && [ -x "${KUBECTL:-}" ]; then
+            python3 backend/scripts/ops/digitalocean-preflight.py --cleanup
+          fi
 
       - name: Remove temporary cluster credentials and tools
         if: ${{ always() }}

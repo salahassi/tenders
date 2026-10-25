@@ -117,3 +117,32 @@ database and object-storage migration for continuity instead.
 The first corrected workflow run, [40230328689](https://github.com/salahassi/tenders/actions/runs/40230328689),
 stopped at the missing repository secret before contacting Kubernetes. No
 destination application or data has been deployed by that run.
+
+After the credential was added, [attempt 2](https://github.com/salahassi/tenders/actions/runs/40230328689/attempts/2)
+succeeded: Kubernetes `v1.37.0`, two Ready nodes, 14 Running pods, and permission
+to create Deployments in `tenderdesk-dev`. The cloud proxy itself remains
+unchanged; this verifies the GitHub Actions execution path.
+
+## Database and source compatibility inspection
+
+The extended workflow runs `backend/scripts/ops/digitalocean-preflight.py` after
+the connection check. This requires the DigitalOcean credential to read the
+selected managed database connection details and CA, as well as the cluster
+kubeconfig. It also uses the repository secret `SUPABASE_ACCESS_TOKEN`, when
+available, for a read-only management query against the existing source project.
+Missing source access is reported separately from the target result.
+
+The target probe creates an isolated, uniquely named Kubernetes namespace and
+a short-lived Job using the digest-pinned official PostgreSQL client image.
+The client connects to the database's private endpoint with `sslmode=verify-full`
+and the database CA. It reads only version, schema, extension and privilege
+metadata. The database credential Secret is owned by the expiring Job, and
+explicit cleanup verifies namespace ownership before deletion. An unconditional
+workflow cleanup runs again before removing the runner's kubeconfig. The probe
+does not change database schema/data, open firewall rules, expose a public
+service, or provision another database.
+
+Public workflow logs contain only selected compatibility metadata and bounded
+failure codes. A successful read-only inventory does not prove that compatible
+Auth, Storage and database roles can be bootstrapped; those still require
+isolated installation and authorization acceptance before restoring source data.
