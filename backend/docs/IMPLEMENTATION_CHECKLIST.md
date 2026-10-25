@@ -1,5 +1,188 @@
 # Implementation status and continuation plan
 
+## Isolated Auth and Storage bootstrap on the existing DigitalOcean database
+
+The Owner authorized implementation and live execution of the next compatibility
+test. The existing GitHub Actions route already verifies Kubernetes access and
+private managed PostgreSQL 18 access. The new test creates its own nonce-named
+logical database, seven prefixed roles and temporary namespace; source data,
+existing database objects and the published application remain outside its scope.
+
+Implementation introduces digest-pinned Auth 2.197.0, PostgREST 14.18 and Storage
+1.81.0 with private HTTP acceptance. It evaluates owner-role inheritance instead
+of granting `BYPASSRLS`, checks genuine invitation acceptance and password sign-in,
+and verifies user/anonymous denials, privileged service operations and private
+file byte equality. This is automated fixture data in an isolated test database,
+not workspace reference seeding or production acceptance. Storage is temporary;
+no production file or user is copied. TLS, restricted containers, bounded public
+results and ownership-checked SQL/Kubernetes cleanup are required throughout.
+
+The optional runner source token is no longer a mandatory target-access gate.
+Separate connected MCP reads already captured 116 scoped tables and 81,124 rows,
+catalogs, deployed function sources and migration history privately. That capture
+is not a consistent final cutover snapshot or a tested executable restore.
+
+Verification before live execution: backend typecheck/build and all 1,430 tests
+in 82 files passed. Pod specifications and credential/ownership guards passed
+17 orchestrator tests, 10 pod-specification tests and four acceptance guard tests.
+One frontend journey initially failed to observe its
+expected region while both suites ran concurrently; the complete frontend rerun
+passed all 233 tests in 38 files and its production build. Both package typechecks
+and builds pass. Source revision, live workflow result and cleanup evidence will
+be recorded after execution. No live bootstrap success or production migration
+is claimed by this entry.
+
+First live execution of source `73c6a4f0c405a83dc74731e754381cf0b72ab74f`,
+[run 40234666954](https://github.com/salahassi/tenders/actions/runs/40234666954),
+passed target access and inventory, then stopped in isolated database setup.
+Database/role cleanup and namespace/credential cleanup were confirmed. No
+compatible service or production restoration was established. The bounded error
+did not identify the failing SQL operation, so the next revision adds SQLSTATE,
+reviewed script line and fixed stage identifiers without publishing raw logs.
+Public-schema ACL revocation also now explicitly assumes the new schema-owner
+role, whose membership intentionally does not inherit into the admin session.
+
+[Diagnostic run 40234986252](https://github.com/salahassi/tenders/actions/runs/40234986252)
+on `6d22bd2d77cfad711ac860c5e10a0000d8f298c8` identified SQLSTATE `0LP01` at the
+self-membership grant before the role transaction committed. PostgreSQL already
+grants the role creator ADMIN; requesting that option again through the creator's
+own membership is rejected. The revised grant requests only SET and disables
+inheritance, preserving the separately granted administrative membership. The
+same failure and corrected grant were reproduced in PostgreSQL 18.6 through the
+embedded test engine. The committed role-graph regression executes both grants
+under a genuine non-superuser session, then verifies the seven-role privilege
+boundaries. Both failed live attempts confirmed database/role and
+namespace cleanup; no production data was restored.
+
+[Run 40235397571](https://github.com/salahassi/tenders/actions/runs/40235397571)
+on `cf72efa1fac235c5ee2e6a09408cb7e526871a4d` created the isolated database and
+started all three service sidecars after their startup checks and upstream
+migrations. Post-migration fixture setup then reached its final metadata query,
+which failed with SQLSTATE `42501`: the admin session deliberately does not
+inherit Auth/Storage table ownership. The diagnostic counts now explicitly use
+their respective owner roles before reporting aggregates. Database/role and
+namespace cleanup passed. This establishes service startup, not completed HTTP
+acceptance or production restore. An additional PostgreSQL 18.6 regression
+reproduces the metadata read denial, verifies both owner-scoped counts and
+confirms that the admin still has no inherited table-read privilege afterward.
+
+Live acceptance passed on source
+`72a10d63318f98071e5e12ca240b4f2c31ebc8bf` in
+[run 40235951433](https://github.com/salahassi/tenders/actions/runs/40235951433),
+job `121297449838`. Auth 2.197.0, PostgREST 14.18 and Storage 1.81.0 completed
+their upstream migrations against a separate logical database on the existing
+managed PostgreSQL 18 server. All seven acceptance groups passed: fixture
+readiness, disabled public signup and protected administration, genuine invitation
+acceptance/password sign-in for distinct users, cross-user row/write denials,
+privileged service operations with ordinary-user RLS retained, two private
+uploads with exact byte equality, and cross-user/anonymous/public file denials.
+
+The live helper confirmed removal of the isolated database and seven roles, then
+the namespace. Unconditional cleanup and temporary credential removal also
+succeeded. The run reports `production_data_restored=false` and
+`migration_ready=false`. This completes the isolated compatible-service
+bootstrap checkpoint. Production owner/grant mapping, scheduler adaptation,
+durable object storage, runtime credentials, source restoration, HTTPS/origin
+configuration and application-level acceptance remain before cutover.
+
+The final local guard set contains 17 orchestrator tests, 10 pod-specification
+tests and four HTTP-probe guard tests, plus the PostgreSQL 18.6 regression for
+the creator grant, seven-role inheritance and owner-scoped metadata reads. Both
+application packages retain their passing typecheck/build results and all
+1,430 backend / 233 frontend tests. No application source changed during the
+bootstrap fixes.
+
+## October 25 — Kubernetes access verified; migration compatibility inspection
+
+After the Owner added the repository credential, attempt 2 of
+[access run 40230328689](https://github.com/salahassi/tenders/actions/runs/40230328689/attempts/2)
+passed against source `c7e2c8043d7f826e7c224dff1feedaea7af8b6cc`. The Kubernetes API
+reported ready on version `v1.37.0`; both nodes were Ready and all 14 pods were
+Running. The authenticated identity can create Deployments in `tenderdesk-dev`.
+The original cluster CA, certificate and hostname verification remained enabled.
+The runner deleted its temporary credentials after the check. This verifies an
+operational route through GitHub Actions; the development container's direct
+Envoy connection is still a separate limitation.
+
+The next change extends the workflow to inspect the managed database from an
+isolated temporary Kubernetes Job using the database's private endpoint and
+`sslmode=verify-full`. The database queries are read-only. Job resources and
+credentials must be removed after inspection. An independent source management
+API probe checks whether source database metadata can be read with the existing
+repository credential. These probes do not restore data, run migrations, deploy
+the application, change firewalls, or enable external processing.
+The helper passed syntax validation, 14 offline checks, and a mocked resource
+lifecycle covering create-only ownership, Job-to-Secret garbage collection,
+read-only SQL, strict TLS, restricted pod settings and cleanup. Workflow syntax
+and output-whitelist checks also passed. Application source is unchanged from
+the preceding 233 frontend/1,430 backend test and typecheck/build results.
+
+Source `d6ee54fb2d1904788eb1f68d59d5dde0b20cc6c7` ran as
+[migration preflight 40232030191](https://github.com/salahassi/tenders/actions/runs/40232030191).
+Kubernetes access passed again. The temporary client Job successfully connected
+to the private managed PostgreSQL endpoint with `verify-full` and completed the
+catalog query. PostgreSQL 18 reports CREATE ROLE and CREATE DATABASE privileges
+without superuser; the selected database has zero public tables and no Auth or
+Storage schema. `pgcrypto`, `uuid-ossp`, `pg_trgm` and `pg_cron` are available but
+not installed. `pg_net` and `supabase_vault` are unavailable. The existing
+dispatcher therefore cannot be transferred unchanged. These metadata checks do
+not prove that the complete compatible-service bootstrap will work.
+
+The source probe stopped with `SUPABASE_ACCESS_TOKEN_MISSING`; the overall run
+correctly failed rather than reporting migration readiness. Target namespace,
+Job and credential cleanup succeeded, and the unconditional cleanup steps passed.
+The next required credential is repository secret `SUPABASE_ACCESS_TOKEN` for
+authorized source management access. No source data was exported, no database
+schema was changed, and no application or data cutover has occurred.
+
+## October 25 — Prepare verified DigitalOcean Kubernetes access
+
+The Owner requested access to the existing `tenderdesk-dev` Kubernetes cluster
+and the start of deployment work. DigitalOcean's management API is reachable;
+the development environment's Envoy proxy rejects the Kubernetes upstream with
+`CERTIFICATE_VERIFY_FAILED`. The available environment configuration tools do
+not expose upstream certificate-authority trust settings.
+
+Stage 7 (operations): preparation introduces a separate GitHub Actions access
+check for cluster `a6093a76-a2d6-47fd-8697-579d41ed316f`. The runner uses the
+original cluster certificate authority and a short-lived kubeconfig, preserving
+certificate and hostname verification. Public logs contain only aggregate
+operational results. The workflow is read-only and does not deploy an application
+or modify the managed database. See `DIGITALOCEAN_KUBERNETES.md` for setup and the
+distinction between a connection check and application migration.
+
+The workflow passed YAML, shell and embedded Python syntax checks, plus eight
+offline checks covering the valid configuration and rejection of wrong targets,
+disabled TLS, proxy and hostname overrides, executable authentication, missing
+CA and mismatched context. A live request to DigitalOcean's management API
+confirmed that its short-lived kubeconfig contains the expected endpoint,
+embedded CA and token-only identity with verification enabled. This is not a
+Kubernetes connection test. The frontend passed 233 tests in 38 files, typecheck
+and build. Backend dependencies were refreshed from the unchanged lockfile after
+missing packages prevented the first typecheck. The corrected environment passed
+all 1,430 backend tests in 82 files, typecheck and build.
+
+The first branch push at `80fc8a5` was accepted, but GitHub rejected the workflow
+before allocating a job. Runtime paths were moved from job-level expressions
+into an initial runner step. Corrected source `c7e2c8043d7f826e7c224dff1feedaea7af8b6cc`
+started [access run 40230328689](https://github.com/salahassi/tenders/actions/runs/40230328689).
+The runner initialized successfully, then stopped because the repository secret
+`DIGITALOCEAN_ACCESS_TOKEN` is missing; its unconditional cleanup succeeded.
+The integration can read and push workflows but GitHub returned HTTP 403 for
+Actions secret administration. The remaining immediate action is to add that
+secret through the repository settings and rerun the same check. No successful
+Kubernetes connection, deployment, full application migration, or environment
+publication is claimed. The Owner selected full migration to DigitalOcean,
+including the backend and data, rather than retaining hosted Supabase. The
+application still depends on Supabase Auth, Storage, Edge Functions and database
+functions; compatibility, source backup and restoration must be validated before
+cutover. Access preparation is the first prerequisite, not the complete migration.
+The existing DigitalOcean managed database is PostgreSQL 18 in `sfo3` and reports
+`online`; extension, role, schema and application compatibility have not been
+tested. The current environment has no source Supabase access token, database
+password or service-role variable. Source export access and target object
+storage remain migration prerequisites, separate from the Kubernetes access gate.
+
 ## October 23 — Isolate OCR processing and make its waiting state explicit
 
 Owner requested a project audit and a separate worker, appropriate status and

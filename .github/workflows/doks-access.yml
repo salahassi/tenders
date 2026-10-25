@@ -1,0 +1,307 @@
+name: Check DigitalOcean Kubernetes access
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/doks-access]
+    paths:
+      - .github/workflows/doks-access.yml
+      - backend/scripts/ops/digitalocean-preflight.py
+      - backend/scripts/ops/digitalocean-bootstrap.py
+      - backend/scripts/ops/bootstrap/**
+      - backend/scripts/ops/test_digitalocean_bootstrap.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doks-tenderdesk-dev-access
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify TLS and isolated Auth/Storage compatibility
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Set temporary credential paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import pathlib
+
+          directory = pathlib.Path(os.environ["RUNNER_TEMP"]) / (
+              "doks-access-" + os.environ["GITHUB_RUN_ID"] + "-" + os.environ["GITHUB_RUN_ATTEMPT"]
+          )
+          with open(os.environ["GITHUB_ENV"], "a") as output:
+              for name, path in {
+                  "DOKS_WORKDIR": directory,
+                  "KUBECONFIG": directory / "kubeconfig",
+                  "KUBECTL": directory / "kubectl",
+              }.items():
+                  output.write(f"{name}={path}\n")
+          PY
+
+      - name: Download short-lived cluster credentials
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import sys
+          import urllib.error
+          import urllib.request
+
+          token = os.environ.get("DIGITALOCEAN_ACCESS_TOKEN", "")
+          if not token:
+              sys.exit(
+                  "::error::DIGITALOCEAN_ACCESS_TOKEN is missing. Configure it in "
+                  "GitHub repository Settings > Secrets and variables > Actions "
+                  "> New repository secret, then rerun this workflow."
+              )
+
+          # Never forward the API credential to a redirect destination.
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          request = urllib.request.Request(
+              "https://api.digitalocean.com/v2/kubernetes/clusters/"
+              "a6093a76-a2d6-47fd-8697-579d41ed316f/kubeconfig?expiry_seconds=3600",
+              headers={"Authorization": "Bearer " + token},
+          )
+          try:
+              with urllib.request.build_opener(NoRedirect).open(request, timeout=30) as response:
+                  if response.status != 200:
+                      sys.exit("::error::DigitalOcean did not return cluster credentials.")
+                  payload = response.read(131073)
+          except urllib.error.HTTPError as error:
+              sys.exit(f"::error::DigitalOcean credential request failed (HTTP {error.code}).")
+          except (urllib.error.URLError, TimeoutError):
+              sys.exit("::error::DigitalOcean credential request failed at the network/TLS layer.")
+
+          if not payload or len(payload) > 131072:
+              sys.exit("::error::DigitalOcean returned an invalid kubeconfig size.")
+          pathlib.Path(os.environ["DOKS_WORKDIR"]).mkdir(mode=0o700, parents=True, exist_ok=False)
+          descriptor = os.open(
+              os.environ["KUBECONFIG"], os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
+          )
+          with os.fdopen(descriptor, "wb") as output:
+              output.write(payload)
+          print("Downloaded cluster credentials with a requested 3600-second lifetime.")
+          PY
+
+      - name: Install checksum-verified kubectl v1.37.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          test "$(uname -m)" = x86_64
+          for artifact in kubectl kubectl.sha256; do
+            curl --fail --silent --show-error --location \
+              --proto '=https' --proto-redir '=https' --tlsv1.2 \
+              --retry 2 --connect-timeout 15 --max-time 90 \
+              "https://dl.k8s.io/release/v1.37.0/bin/linux/amd64/${artifact}" \
+              --output "${DOKS_WORKDIR}/${artifact}"
+          done
+          python3 - <<'PY'
+          import hashlib
+          import os
+          import pathlib
+          import re
+          import sys
+
+          directory = pathlib.Path(os.environ["DOKS_WORKDIR"])
+          expected = (directory / "kubectl.sha256").read_text().strip()
+          actual = hashlib.sha256((directory / "kubectl").read_bytes()).hexdigest()
+          if not re.fullmatch(r"[0-9a-f]{64}", expected) or actual != expected:
+              sys.exit("::error::kubectl checksum verification failed.")
+          (directory / "kubectl").chmod(0o700)
+          print("kubectl v1.37.0 SHA-256 verification passed.")
+          PY
+
+      - name: Validate configuration and inspect cluster readiness
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import subprocess
+          import sys
+
+          def fail(message):
+              sys.exit("::error::" + message)
+
+          def kubectl(arguments, description):
+              # Capture both streams so neither credentials nor server error payloads
+              # reach the logs. Only the explicit summaries below are public.
+              try:
+                  result = subprocess.run(
+                      [os.environ["KUBECTL"], "--request-timeout=30s", *arguments],
+                      capture_output=True, text=True, timeout=45, check=False,
+                  )
+              except (OSError, subprocess.TimeoutExpired):
+                  fail(description + " failed or timed out.")
+              if result.returncode != 0:
+                  fail(description + " failed; verify cluster access, TLS trust and RBAC.")
+              return result.stdout
+
+          def read_json(arguments, description):
+              try:
+                  return json.loads(kubectl(arguments, description))
+              except (ValueError, TypeError):
+                  fail(description + " returned invalid JSON.")
+
+          # config view is local and does not execute authentication helpers.
+          # Deliberately omit --raw: credential/CA values remain redacted.
+          config = read_json(["config", "view", "--output=json"], "Local kubeconfig validation")
+          if not isinstance(config, dict):
+              fail("Unexpected kubeconfig structure.")
+          clusters = config.get("clusters", [])
+          users = config.get("users", [])
+          contexts = config.get("contexts", [])
+          if not all(isinstance(items, list) and len(items) == 1 for items in (clusters, users, contexts)):
+              fail("Expected exactly one cluster, user and context.")
+          try:
+              cluster = clusters[0]["cluster"]
+              user = users[0]["user"]
+              context = contexts[0]["context"]
+              expected_host = "a6093a76-a2d6-47fd-8697-579d41ed316f.k8s.ondigitalocean.com"
+              allowed_cluster_keys = {
+                  "server", "certificate-authority-data", "insecure-skip-tls-verify",
+                  "tls-server-name", "disable-compression",
+              }
+              if set(cluster) - allowed_cluster_keys:
+                  fail("Unexpected cluster transport configuration; proxy/file overrides are prohibited.")
+              if cluster.get("server") != "https://" + expected_host:
+                  fail("Kubeconfig targets an unexpected Kubernetes server.")
+              if cluster.get("insecure-skip-tls-verify", False) is not False:
+                  fail("TLS certificate verification must remain enabled.")
+              if cluster.get("tls-server-name", expected_host) != expected_host:
+                  fail("Kubeconfig overrides the expected TLS hostname.")
+              if not cluster.get("certificate-authority-data"):
+                  fail("Kubeconfig must include the original cluster CA.")
+              if set(user) != {"token"} or not user.get("token"):
+                  fail("Expected a token credential; authentication helpers and file references are prohibited.")
+              if (
+                  config.get("current-context") != contexts[0]["name"]
+                  or context.get("cluster") != clusters[0]["name"]
+                  or context.get("user") != users[0]["name"]
+              ):
+                  fail("Kubeconfig context does not select the expected cluster and identity.")
+          except (KeyError, TypeError, AttributeError):
+              fail("Unexpected kubeconfig structure.")
+          print("Original cluster CA, HTTPS endpoint and hostname verification validated.")
+
+          readiness = kubectl(["get", "--raw=/readyz"], "API readiness check").strip()
+          if readiness != "ok":
+              fail("Kubernetes API is not ready.")
+          version = read_json(["get", "--raw=/version"], "Server version check").get("gitVersion", "")
+          if not re.fullmatch(r"v[0-9]+\.[0-9]+\.[0-9]+(?:[-+.][A-Za-z0-9.-]+)?", version):
+              fail("Kubernetes returned an unexpected version format.")
+          nodes = read_json(["get", "nodes", "--output=json"], "Node inventory").get("items", [])
+          pods = read_json(["get", "pods", "--all-namespaces", "--output=json"], "Pod inventory").get("items", [])
+          if not isinstance(nodes, list) or not isinstance(pods, list):
+              fail("Kubernetes returned an invalid inventory.")
+          ready_nodes = sum(
+              any(condition.get("type") == "Ready" and condition.get("status") == "True"
+                  for condition in node.get("status", {}).get("conditions", []))
+              for node in nodes
+          )
+          running_pods = sum(pod.get("status", {}).get("phase") == "Running" for pod in pods)
+          print("Kubernetes API readiness: ok")
+          print("Kubernetes server version: " + version)
+          print(f"Nodes: {len(nodes)} total; {ready_nodes} ready")
+          print(f"Pods: {len(pods)} total; {running_pods} running")
+          if not nodes or ready_nodes != len(nodes):
+              fail("One or more cluster nodes are unavailable or not ready.")
+          permission = kubectl(
+              ["auth", "can-i", "create", "deployments.apps", "--namespace=tenderdesk-dev"],
+              "Deployment creation permission check",
+          ).strip()
+          if permission != "yes":
+              fail("The current identity cannot create Deployments in tenderdesk-dev.")
+          print("Can create Deployments in tenderdesk-dev: yes")
+          print("Read-only access verified. No Kubernetes resources were changed or deployed.")
+          PY
+
+      - name: Read the reviewed migration probe
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: backend/scripts/ops
+
+      - name: Check isolated bootstrap guards
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
+          python3 -m unittest discover -s backend/scripts/ops/bootstrap -p 'test_*.py'
+          python3 backend/scripts/ops/bootstrap/acceptance.py --self-test
+
+      - name: Inspect source and target migration prerequisites
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          POSTGRES_CLIENT_IMAGE: docker.io/library/postgres:18@sha256:edb0c08dc33befd0262ab3b5cf1c4f3f8cfd8b09e88c05b45adee29d6761ddb6
+        shell: bash
+        run: python3 backend/scripts/ops/digitalocean-preflight.py
+
+      - name: Run isolated Auth, Storage and RLS acceptance
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        shell: bash
+        run: python3 backend/scripts/ops/digitalocean-bootstrap.py
+
+      - name: Remove the isolated compatible-service database and resources
+        if: ${{ always() }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/scripts/ops/digitalocean-bootstrap.py ] && [ -x "${KUBECTL:-}" ]; then
+            python3 backend/scripts/ops/digitalocean-bootstrap.py --cleanup
+          fi
+
+      - name: Remove the isolated database probe
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f backend/scripts/ops/digitalocean-preflight.py ] && [ -x "${KUBECTL:-}" ]; then
+            python3 backend/scripts/ops/digitalocean-preflight.py --cleanup
+          fi
+
+      - name: Remove temporary cluster credentials and tools
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import pathlib
+          import shutil
+
+          workdir = os.environ.get("DOKS_WORKDIR")
+          if not workdir:
+              print("No credential directory was initialized.")
+              raise SystemExit(0)
+          directory = pathlib.Path(workdir)
+          expected = pathlib.Path(os.environ["RUNNER_TEMP"]) / (
+              "doks-access-" + os.environ["GITHUB_RUN_ID"] + "-" + os.environ["GITHUB_RUN_ATTEMPT"]
+          )
+          if directory != expected:
+              raise SystemExit("::error::Unexpected temporary directory; cleanup refused.")
+          if directory.exists():
+              shutil.rmtree(directory)
+          print("Temporary cluster credentials and downloaded tools removed.")
+          PY
