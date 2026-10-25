@@ -70,6 +70,7 @@ jobs:
           registry = 'registry.digitalocean.com/tenderdesk-a6093a76/'
           directory = pathlib.Path(os.environ['DOKS_WORKDIR'])
           entries = [
+              ('https', 'backend/deploy/Dockerfile.https', '.'),
               ('runtime', 'backend/deploy/Dockerfile', '.'),
               ('frontend', 'frontend/Dockerfile', 'frontend'),
               ('browser', 'backend/deploy/Dockerfile.browser', '.'),

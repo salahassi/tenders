@@ -15,7 +15,7 @@ def jwt(role):
 class RuntimeManifestTest(unittest.TestCase):
     def setUp(self):
         self.config = {"public_origin": "https://app.example.test", "runtime_image": "registry.example.test/runtime@sha256:" + "a" * 64,
-            "frontend_image": "registry.example.test/frontend@sha256:" + "b" * 64, "browser_image": "registry.example.test/browser@sha256:" + "c" * 64,
+            "frontend_image": "registry.example.test/frontend@sha256:" + "b" * 64, "https_image": "registry.example.test/https@sha256:" + "e" * 64, "browser_image": "registry.example.test/browser@sha256:" + "c" * 64,
             "ocr_image": "registry.example.test/ocr@sha256:" + "d" * 64, "publishable_key": jwt("tdp_app_anon")}
         self.objects = build(self.config)
         self.deployments = {obj["metadata"]["name"]: obj for obj in self.objects if obj["kind"] == "Deployment"}
@@ -58,6 +58,18 @@ class RuntimeManifestTest(unittest.TestCase):
                 self.assertEqual(container["securityContext"]["capabilities"]["drop"], ["ALL"])
                 self.assertIn("@sha256:", container["image"])
 
+    def test_https_uses_the_capability_free_custom_image_on_unprivileged_ports(self):
+        pod = self.deployments["https"]["spec"]["template"]["spec"]
+        container = pod["containers"][0]
+        self.assertEqual(container["image"], self.config["https_image"])
+        self.assertEqual(container["securityContext"]["capabilities"], {"drop": ["ALL"]})
+        self.assertFalse(container["securityContext"]["allowPrivilegeEscalation"])
+        self.assertTrue(container["securityContext"]["readOnlyRootFilesystem"])
+        self.assertEqual({port["containerPort"] for port in container["ports"]}, {8080, 8443, 8082})
+        missing = {key: value for key, value in self.config.items() if key != "https_image"}
+        with self.assertRaisesRegex(ValueError, "DIGEST_REQUIRED"):
+            build(missing)
+
     def test_workers_remain_paused_until_explicit_activation(self):
         scheduler = self.deployments["scheduler"]["spec"]["template"]["spec"]["containers"][0]
         self.assertIn({"name": "APP_SCHEDULER_ENABLED", "value": "false"}, scheduler["env"])
@@ -85,7 +97,7 @@ class RuntimeManifestTest(unittest.TestCase):
             build({**self.config, "publishable_key": jwt("tdp_app_service")})
 
     def test_mutable_images_insecure_urls_and_string_activation_fail(self):
-        for update in [{"runtime_image": "repo/runtime:latest"}, {"public_origin": "http://app.example.test"},
+        for update in [{"runtime_image": "repo/runtime:latest"}, {"https_image": "repo/https:latest"}, {"https_image": ""}, {"public_origin": "http://app.example.test"},
             {"public_origin": "https://user:secret@app.example.test"}, {"public_origin": "https://app.example.test/path"},
             {"public_origin": "https://app.example.test/?token=secret"}, {"namespace": "../../other"},
             {"scheduler_enabled": "true"}, {"native_workers_enabled": "false"}]:

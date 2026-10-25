@@ -98,6 +98,16 @@ private encrypted transfer, without exposing service logs or credentials in the
 public workflow output. The existing public load balancer address is reserved;
 the old published application remains unchanged pending repair and acceptance.
 
+Private HTTPS diagnostics identified the exact startup failure: the official
+Caddy binary carries `cap_net_bind_service`, and Linux refuses execution with the
+restricted Pod's empty capability bounding set. The dedicated HTTPS image removes
+that file capability at build time and runs as UID/GID 1000, without adding any
+capability. A real read-only container with dropped capabilities and no privilege
+escalation passed executable, HTTP redirect, health and full certificate-verified
+local HTTPS/proxy checks. The renderer now requires this immutable HTTPS image;
+all twelve renderer guards pass. The diagnostic workflow can repair only the
+owned HTTPS deployment and run public acceptance before a complete rollout.
+
 ## Isolated Auth and Storage bootstrap on the existing DigitalOcean database
 
 The Owner authorized implementation and live execution of the next compatibility

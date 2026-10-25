@@ -15,6 +15,7 @@ The renderer accepts immutable image digests and public coordinates:
   "public_origin": "https://app.example.com",
   "runtime_image": "registry.example.com/runtime@sha256:<64 hexadecimal characters>",
   "frontend_image": "registry.example.com/frontend@sha256:<64 hexadecimal characters>",
+  "https_image": "registry.example.com/https@sha256:<64 hexadecimal characters>",
   "browser_image": "registry.example.com/browser@sha256:<64 hexadecimal characters>",
   "ocr_image": "registry.example.com/ocr@sha256:<64 hexadecimal characters>",
   "publishable_key": "<public anon JWT>",
@@ -78,8 +79,15 @@ Build contexts are:
 docker build -f backend/deploy/Dockerfile .
 docker build -f backend/deploy/Dockerfile.browser .
 docker build -f backend/deploy/Dockerfile.ocr .
+docker build -f backend/deploy/Dockerfile.https .
 docker build -f frontend/Dockerfile frontend
 ```
+
+The HTTPS image removes the official Caddy binary's file capability during the
+build. Ports 8080 and 8443 need no capability, and the final container retains an
+empty capability bounding set, a read-only filesystem and UID1000. Running the
+unmodified binary with its `cap_net_bind_service` file attribute would fail
+under those restrictions.
 
 Dependencies use the committed lockfiles. The Deno image runs from its verified
 build-time cache and does not fetch dependencies at application startup. Managed

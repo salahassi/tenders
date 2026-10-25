@@ -20,7 +20,6 @@ AUTH_IMAGE = "docker.io/supabase/gotrue:v2.197.0@sha256:839f529492d116b4e8b7777c
 REST_IMAGE = "docker.io/postgrest/postgrest:v14.18@sha256:c847127074bd26e1b8d3f7c0e6e01e5346f4b85dd34f5d699fd230af960827c0"
 STORAGE_IMAGE = "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799"
 NGINX_IMAGE = "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8"
-CADDY_IMAGE = "docker.io/library/caddy:2.11.2-alpine@sha256:6d125e80883be8a2bef5f088c7535945b42cdbb8a0f5471bf36eaf18dc0638f1"
 REQUIRED_CORE_KEYS = ("AUTH_DATABASE_URL", "STORAGE_DATABASE_URL", "POSTGREST_DATABASE_URL", "JWT_SECRET", "ANON_KEY", "SERVICE_KEY", "PGSSLCA")
 
 
@@ -94,6 +93,7 @@ def build(config):
     if not re.fullmatch(r"tdp_[a-z0-9_]{1,24}", prefix):
         raise ValueError("DEPLOYMENT_ROLE_PREFIX_INVALID")
     runtime_image, frontend_image = image(config["runtime_image"]), image(config["frontend_image"])
+    https_image = image(config.get("https_image", ""))
     public_key = config["publishable_key"]
     # Public anon JWT only; refuse a privileged role being embedded in JavaScript.
     import base64
@@ -209,7 +209,7 @@ def build(config):
     gateway["ports"].append({"name": "internal", "containerPort": 8081})
     deployment("gateway", gateway, None, [{"name": "nginx-config", "configMap": {"name": "gateway-config", "defaultMode": 0o444}}])
     result.append({"apiVersion": "v1", "kind": "Service", "metadata": metadata("gateway", namespace), "spec": {"selector": {"app.kubernetes.io/name": "gateway"}, "ports": [{"name": "public", "port": 8080, "targetPort": 8080}, {"name": "internal", "port": 8081, "targetPort": 8081}]}})
-    caddy = container("https", CADDY_IMAGE, [env("PUBLIC_HOST", host), env("XDG_DATA_HOME", "/data"), env("XDG_CONFIG_HOME", "/config")], 8082, "/healthz", "32Mi", "128Mi", "300m",
+    caddy = container("https", https_image, [env("PUBLIC_HOST", host), env("XDG_DATA_HOME", "/data"), env("XDG_CONFIG_HOME", "/config")], 8082, "/healthz", "32Mi", "128Mi", "300m",
         mounts=[{"name": "https-config", "mountPath": "/etc/caddy/Caddyfile", "subPath": "Caddyfile", "readOnly": True}, {"name": "https-state", "mountPath": "/data"}, {"name": "https-config-state", "mountPath": "/config"}])
     caddy["command"] = ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
     caddy["ports"] += [{"name": "http-acme", "containerPort": 8080}, {"name": "https", "containerPort": 8443}]

@@ -530,7 +530,7 @@ def deploy(args):
         configuration = {"namespace": NAMESPACE, "public_origin": origin, "role_prefix": PREFIX,
                          "publishable_key": core["ANON_KEY"], "scheduler_enabled": False,
                          "native_workers_enabled": False, "image_pull_secret": "tenderdesk-registry"}
-        for name in ("runtime", "frontend", "browser", "ocr"):
+        for name in ("runtime", "frontend", "browser", "ocr", "https"):
             value = os.environ.get("TENDERDESK_" + name.upper() + "_IMAGE", "")
             if value:
                 configuration[name + "_image"] = value

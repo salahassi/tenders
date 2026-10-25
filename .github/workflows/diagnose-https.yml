@@ -1,4 +1,4 @@
-name: Inspect the TenderDesk HTTPS startup
+name: Inspect or repair the TenderDesk HTTPS startup
 on:
   push:
     branches: [codex/doks-diagnostic]
@@ -18,6 +18,39 @@ jobs:
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         run: python3 backend/scripts/ops/digitalocean-runner.py
+      - name: Repair only the owned HTTPS deployment with the restricted image
+        if: ${{ contains(github.event.head_commit.message, '[repair https]') }}
+        run: |
+          python3 - <<'PYCODE'
+          import importlib.util,json,os,pathlib,re,subprocess,sys
+          spec=importlib.util.spec_from_file_location('deploy','backend/scripts/ops/digitalocean-deploy.py')
+          d=importlib.util.module_from_spec(spec);spec.loader.exec_module(d)
+          d.probe.validate_cluster()
+          current=d.get('deployment','https')
+          if current.get('metadata',{}).get('labels',{}).get('app.kubernetes.io/managed-by')!='tenderdesk-deployment':
+              raise SystemExit('HTTPS deployment ownership check failed.')
+          reference='registry.digitalocean.com/tenderdesk-a6093a76/https:'+os.environ['GITHUB_SHA']
+          directory=pathlib.Path(os.environ['DOKS_WORKDIR'])
+          with (directory/'https-build.log').open('w') as output:
+              for arguments in [['docker','build','--platform=linux/amd64','-f','backend/deploy/Dockerfile.https','-t',reference,'.'],['docker','push',reference]]:
+                  if subprocess.run(arguments,stdout=output,stderr=subprocess.STDOUT,timeout=300).returncode:
+                      raise SystemExit('Restricted HTTPS image build/push failed.')
+          result=subprocess.run(['docker','image','inspect',reference,'--format','{{json .RepoDigests}}'],capture_output=True,text=True,timeout=30)
+          digest=next((x for x in json.loads(result.stdout) if re.fullmatch('registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:[a-f0-9]{64}',x)),None)
+          if not digest:raise SystemExit('HTTPS image digest is unavailable.')
+          d.command(['set','image','deployment/https','https='+digest,'-n',d.NAMESPACE])
+          d.wait_deployments(['https'],seconds=180)
+          config=d.get('configmap','frontend-config')['data']['runtime-config.js']
+          public=json.loads(config.split(' = ',1)[1].rstrip(';\n'))
+          path=directory/'public-deployment.json';path.write_text(json.dumps(public));path.chmod(0o600)
+          runtime=d.decode_secret(d.get('secret','tenderdesk-runtime'))
+          print(json.dumps({'https_repair':'ready','public_origin':public['apiUrl'],'digest':digest.split('@')[1],
+              'provider_keys_configured':sum(1 for k,v in runtime.items() if k.startswith('APP_MODEL_') and k.endswith('_KEY') and v),
+              'smtp_configured':all(runtime.get(k) for k in ['APP_SMTP_HOST','APP_SMTP_USER','APP_SMTP_PASSWORD','APP_SMTP_FROM'])}),flush=True)
+          PYCODE
+      - name: Verify the repaired public application
+        if: ${{ contains(github.event.head_commit.message, '[repair https]') }}
+        run: python3 backend/scripts/ops/digitalocean-smoke.py
       - name: Capture only HTTPS startup diagnostics into private encrypted storage
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
