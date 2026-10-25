@@ -9,6 +9,8 @@ export type ModelEnvironmentSlot = {
 };
 export interface BackendEnvironment {
   url: string;
+  /** Public HTTPS API origin when server requests use a private gateway. */
+  publicApiUrl?: string;
   publishableKey: string;
   serviceKey: string;
   allowedOrigins: string[];
@@ -84,6 +86,7 @@ export function environment(
 ): BackendEnvironment {
   return {
     url: get("SUPABASE_URL") || "",
+    publicApiUrl: get("APP_PUBLIC_API_URL") || undefined,
     publishableKey:
       get("APP_SUPABASE_PUBLISHABLE_KEY") ||
       platformKey(get("SUPABASE_PUBLISHABLE_KEYS")) ||
@@ -352,7 +355,42 @@ export class Backend {
         "DOWNLOAD_UNAVAILABLE",
         "The original could not be opened.",
       );
-    return data.signedUrl;
+    if (!this.env.publicApiUrl) return data.signedUrl;
+    try {
+      const external = new URL(this.env.publicApiUrl),
+        internal = new URL(this.env.url),
+        signed = new URL(data.signedUrl);
+      if (
+        !/^https:\/\/[^/?#]+\/?$/.test(this.env.publicApiUrl) ||
+        external.protocol !== "https:" ||
+        external.username ||
+        external.password ||
+        external.pathname !== "/" ||
+        external.search ||
+        external.hash ||
+        internal.username ||
+        internal.password ||
+        internal.pathname !== "/" ||
+        internal.search ||
+        internal.hash ||
+        signed.username ||
+        signed.password ||
+        signed.hash ||
+        signed.origin !== internal.origin ||
+        !signed.pathname.startsWith("/storage/v1/object/sign/") ||
+        !signed.searchParams.get("token")
+      )
+        throw new Error("SIGNED_STORAGE_ORIGIN_INVALID");
+      // Keep the exact escaped path and query, including the Storage signature.
+      // Only the API origin changes; no privileged key enters the browser URL.
+      return external.origin + signed.pathname + signed.search;
+    } catch {
+      throw new AppError(
+        503,
+        "DOWNLOAD_UNAVAILABLE",
+        "The original could not be opened.",
+      );
+    }
   }
   async userRpc(token: string, name: string, args: Record<string, unknown>) {
     const { data, error } = await this.user(token).rpc(name, args);

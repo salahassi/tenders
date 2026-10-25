@@ -121,6 +121,50 @@ class GuardTests(unittest.TestCase):
                 acceptance.run()
         self.assertEqual(client.calls, ["/auth/v1/logout?scope=local"])
 
+    def test_persistence_probe_fails_if_restart_changes_private_bytes(self):
+        class Client:
+            def __init__(self): self.created = False; self.private_reads = 0
+            def request(self, path, **kwargs):
+                a = self.acceptance
+                if path == "/storage/v1/bucket" and kwargs.get("method") == "POST":
+                    self.created = True
+                    return smoke.Response(200, b"{}")
+                if "/bucket/" in path:
+                    return smoke.Response(200, json.dumps({"id": a.bucket, "public": False}).encode()) if self.created else smoke.Response(404, b"{}")
+                if kwargs.get("method") == "POST": return smoke.Response(200, b"{}")
+                if "/object/authenticated/" in path and kwargs.get("token") == a.config.service_key:
+                    self.private_reads += 1
+                    return smoke.Response(200, a.payload if self.private_reads == 1 else b"changed-after-restart")
+                return smoke.Response(403, b"{}")
+        client = Client()
+        acceptance = client.acceptance = smoke.Acceptance(self.config(), client)
+        with patch.object(acceptance, "restart_storage") as restart:
+            with self.assertRaisesRegex(smoke.SmokeFailure, "PRIVATE_FILE_CHANGED_AFTER_STORAGE_RESTART"):
+                acceptance.storage()
+            restart.assert_called_once()
+
+    def test_broken_signup_hook_cleans_only_the_nonce_fixture_identity(self):
+        owner = "10000000-0000-4000-8000-000000000001"
+        fixture = "20000000-0000-4000-8000-000000000002"
+        class Client:
+            def __init__(self): self.email = None; self.deleted = []
+            def request(self, path, **kwargs):
+                if path == "/auth/v1/signup":
+                    self.email = kwargs["data"]["email"]
+                    return smoke.Response(200, b"{}")
+                if kwargs.get("method") == "DELETE":
+                    self.deleted.append(path)
+                    return smoke.Response(204, b"")
+                return smoke.Response(200, json.dumps({"users": [{"id": owner}, {"id": fixture, "email": self.email}]}).encode())
+        client = Client()
+        acceptance = smoke.Acceptance(self.config(), client)
+        acceptance.owner_id = owner
+        with self.assertRaisesRegex(smoke.SmokeFailure, "UNINVITED_AUTH_ACCOUNT_CREATED"):
+            acceptance.uninvited_signup_denied(owner)
+        acceptance.cleanup()
+        self.assertEqual(client.deleted, ["/auth/v1/admin/users/" + fixture])
+        self.assertEqual(acceptance.cleanup_failures, [])
+
 
 if __name__ == "__main__":
     unittest.main()

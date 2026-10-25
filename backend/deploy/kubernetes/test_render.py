@@ -36,6 +36,7 @@ class RuntimeManifestTest(unittest.TestCase):
             self.assertNotEqual(obj["kind"], "Secret")
         runtime = self.deployments["api"]["spec"]["template"]["spec"]["containers"][0]
         self.assertEqual(runtime["envFrom"], [{"secretRef": {"name": "tenderdesk-runtime"}}])
+        self.assertIn({"name": "APP_PUBLIC_API_URL", "value": "https://app.example.test"}, runtime["env"])
 
     def test_private_objects_and_tls_certificates_survive_rollout(self):
         claims = {o["metadata"]["name"]: o for o in self.objects if o["kind"] == "PersistentVolumeClaim"}
@@ -74,6 +75,7 @@ class RuntimeManifestTest(unittest.TestCase):
         self.assertIn("auth.tenderdesk.svc.cluster.local", gateway)
         self.assertNotIn("__NAMESPACE__", gateway)
         self.assertNotIn("access_log /", gateway)
+        self.assertEqual(gateway.count("location /functions/v1/api/ { client_max_body_size 32m;"), 2)
 
     def test_public_configuration_contains_only_public_anon_key(self):
         config = next(o["data"]["runtime-config.js"] for o in self.objects if o["kind"] == "ConfigMap" and o["metadata"]["name"] == "frontend-config")

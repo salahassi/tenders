@@ -65,6 +65,39 @@ denials. Fifty-six ops guards and eleven renderer guards pass. Live deployment
 and application acceptance are recorded below as execution proceeds. No production
 cutover or source deletion is yet claimed.
 
+The next runtime revision also exposes signed document URLs through an explicit
+public API origin while keeping private service-to-service traffic internal.
+Twenty-two real Backend.download regressions pass, including escaped signatures,
+foreign-host refusal and malformed-origin handling. Full frozen-source backend
+verification passes 1,457 tests in 84 files, typecheck/build and all three Deno
+entry checks. API gateway bodies allow the existing large recovery envelope while
+Storage retains its bounded original-upload limit.
+
+Post-smoke activation now requires a private, workflow-bound successful acceptance
+receipt. It checks an empty target and paused model admission, then verifies both
+manual and actual scheduler-driven worker heartbeats, private native-worker
+identities and nonce-owned empty browser/OCR executions before enabling their
+five-minute schedules. Failures pause scheduling and independently clean owned
+fixtures. Seventeen activation guards pass; the total ops guard suite now has 85
+passing tests. These are local guard results, not live activation evidence.
+The old Pages bookmark will redirect to the verified Kubernetes frontend after
+merge. Old hosted API deployment and Actions-based readers are retired in that
+same cutover revision; source database scheduling and source deletion remain
+separate conditional actions.
+
+First permanent live run on `51ca9ed90ba04e3fa5696b9e5a9cf6012c700b3a`,
+[40238838626](https://github.com/salahassi/tenders/actions/runs/40238838626),
+published all four immutable images, initialized the marked database, completed
+upstream Auth/Storage migrations and restored the application schema plus the
+37-row first-Owner/configuration seed. Auth, REST, Storage, API, worker,
+source-browser, scheduler, frontend and gateway reached readiness. The HTTPS
+container entered CrashLoopBackOff; the rollout stopped before public acceptance,
+traffic cutover or source deletion. Administrator Pod/Secret cleanup succeeded.
+A separate read-only workflow captures HTTPS-only diagnostics through the same
+private encrypted transfer, without exposing service logs or credentials in the
+public workflow output. The existing public load balancer address is reserved;
+the old published application remains unchanged pending repair and acceptance.
+
 ## Isolated Auth and Storage bootstrap on the existing DigitalOcean database
 
 The Owner authorized implementation and live execution of the next compatibility

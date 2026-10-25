@@ -80,13 +80,15 @@ jobs:
               # Keep build diagnostics private: application dependencies may
               # change their output. Emit only fixed phase names and digests.
               with (directory / ('build-' + name + '.log')).open('w') as log:
-                  for arguments in [
-                      ['docker', 'build', '--platform=linux/amd64', '--file', dockerfile, '--tag', reference, context],
-                      ['docker', 'push', reference],
-                  ]:
-                      result = subprocess.run(arguments, stdout=log, stderr=subprocess.STDOUT, timeout=900)
-                      if result.returncode:
-                          sys.exit('::error::Container build or push failed for ' + name + '. Private logs retained until cleanup.')
+                  cached = subprocess.run(['docker', 'pull', '--platform=linux/amd64', reference], stdout=log, stderr=subprocess.STDOUT, timeout=300)
+                  if cached.returncode != 0:
+                      for arguments in [
+                          ['docker', 'build', '--platform=linux/amd64', '--file', dockerfile, '--tag', reference, context],
+                          ['docker', 'push', reference],
+                      ]:
+                          result = subprocess.run(arguments, stdout=log, stderr=subprocess.STDOUT, timeout=900)
+                          if result.returncode:
+                              sys.exit('::error::Container build or push failed for ' + name + '. Private logs retained until cleanup.')
               result = subprocess.run(['docker', 'image', 'inspect', reference, '--format', '{{json .RepoDigests}}'], capture_output=True, text=True, timeout=30)
               digests = json.loads(result.stdout) if result.returncode == 0 else []
               selected = next((x for x in digests if re.fullmatch(re.escape(registry + name) + r'@sha256:[a-f0-9]{64}', x)), None)
@@ -123,7 +125,27 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 backend/scripts/ops/digitalocean-smoke.py
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess, sys
+          result = subprocess.run(['python3', 'backend/scripts/ops/digitalocean-smoke.py'], capture_output=True, text=True, timeout=900)
+          try:
+              report = json.loads(result.stdout)
+              if report.get('probe') != 'tenderdesk_production_smoke':
+                  raise ValueError()
+          except (ValueError, TypeError):
+              sys.exit('::error::Application acceptance did not return its bounded result.')
+          print(json.dumps(report), flush=True)
+          if result.returncode != 0 or report.get('status') != 'passed':
+              sys.exit(1)
+          receipt = {'run_id': os.environ['GITHUB_RUN_ID'], 'attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'source_revision': os.environ['GITHUB_SHA'], 'origin': os.environ['TENDERDESK_DEPLOYED_ORIGIN'], 'result': report}
+          path = pathlib.Path(os.environ['DOKS_WORKDIR']) / 'production-smoke.json'
+          descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+          with os.fdopen(descriptor, 'w') as stream:
+              json.dump(receipt, stream)
+          PY
+      - name: Activate the verified empty-target scheduler and native workers
+        run: python3 backend/scripts/ops/digitalocean-activate.py
       - name: Remove runner credentials, private data and build logs
         if: ${{ always() }}
         shell: bash

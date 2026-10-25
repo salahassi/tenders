@@ -1,0 +1,64 @@
+name: Inspect the TenderDesk HTTPS startup
+on:
+  push:
+    branches: [codex/doks-diagnostic]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+      - name: Prepare verified short-lived cluster access
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/digitalocean-runner.py
+      - name: Capture only HTTPS startup diagnostics into private encrypted storage
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess, sys
+          sys.path.insert(0, 'backend/scripts/ops')
+          import importlib.util
+          s=importlib.util.spec_from_file_location('deploy','backend/scripts/ops/digitalocean-deploy.py')
+          d=importlib.util.module_from_spec(s);s.loader.exec_module(d)
+          d.probe.validate_cluster()
+          namespace=d.get('namespace', d.NAMESPACE)
+          if namespace.get('metadata',{}).get('labels',{}).get('app.kubernetes.io/managed-by')!='tenderdesk-deployment':
+              raise SystemExit('Namespace ownership check failed.')
+          pods=json.loads(d.command(['get','pods','-n',d.NAMESPACE,'-l','app.kubernetes.io/name=https','-o','json']))
+          payload={'pods':pods,'logs':[]}
+          for pod in pods.get('items',[]):
+              name=pod['metadata']['name']
+              for previous in (False,True):
+                  args=[os.environ['KUBECTL'],'--request-timeout=30s','logs',name,'-n',d.NAMESPACE,'--container=https','--limit-bytes=65536']
+                  if previous:args.append('--previous')
+                  r=subprocess.run(args,capture_output=True,text=True,timeout=40)
+                  payload['logs'].append({'pod':name,'previous':previous,'returncode':r.returncode,'content':r.stdout})
+          path=pathlib.Path(os.environ['DOKS_WORKDIR'])/'https-diagnostics.json'
+          path.write_text(json.dumps(payload));path.chmod(0o600)
+          for pod in pods.get('items',[]):
+              for c in pod.get('status',{}).get('containerStatuses',[]):
+                  last=c.get('lastState',{}).get('terminated',{})
+                  reason=last.get('reason','unknown')
+                  print(json.dumps({'component':'https','restarts':c.get('restartCount',0),'exit_code':last.get('exitCode'),'reason':reason if reason in ('OOMKilled','Error','Completed','unknown') else 'other'}))
+          PY
+          python3 backend/scripts/ops/private-transfer.py \
+            --upload "${DOKS_WORKDIR}/https-diagnostics.json" \
+            --bucket tenderdesk-migration-a6093a76-sfo3 \
+            --object "diagnostics/https-${GITHUB_RUN_ID}.bundle"
+      - name: Remove all runner credentials and diagnostic plaintext
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,shutil
+          directory=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-deploy-'+os.environ['GITHUB_RUN_ID']+'-'+os.environ['GITHUB_RUN_ATTEMPT'])
+          if directory.exists():shutil.rmtree(directory)
+          print('Private diagnostic files and credentials removed.')
+          PY

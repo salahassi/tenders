@@ -416,7 +416,13 @@ class Acceptance:
                 raise SmokeFailure("FIXTURE_PRIVATE_BYTES_LEAKED")
         self.passed("isolated_private_fixture_upload_download_and_anonymous_public_denials")
         self.restart_storage()
-        after = expect(c.request(private_path, token=service), {200}, "PRIVATE_FILE_MISSING_AFTER_STORAGE_RESTART")
+        deadline = time.monotonic() + 30
+        while True:
+            after = c.request(private_path, token=service)
+            if after.status not in {0, 502, 503} or time.monotonic() >= deadline:
+                break
+            time.sleep(2)
+        expect(after, {200}, "PRIVATE_FILE_MISSING_AFTER_STORAGE_RESTART")
         if after.body != self.payload or hashlib.sha256(after.body).digest() != hashlib.sha256(self.payload).digest():
             raise SmokeFailure("PRIVATE_FILE_CHANGED_AFTER_STORAGE_RESTART")
         self.passed("persistent_volume_retains_exact_private_bytes_across_storage_restart")
@@ -453,7 +459,7 @@ class Acceptance:
                        {204}, "TEST_SESSION_LOGOUT_FAILED")
             except Exception:
                 self.cleanup_failures.append("TEST_SESSION_LOGOUT_FAILED")
-        if not self.cleanup_failures:
+        if not self.cleanup_failures and (self.bucket_attempted or self.session_token or self.unexpected_auth_user):
             self.passed("isolated_fixture_cleanup_and_only_test_session_revocation")
 
     def run(self):

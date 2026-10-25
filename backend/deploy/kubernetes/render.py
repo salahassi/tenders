@@ -196,7 +196,7 @@ def build(config):
     deployment("storage", storage, 5000, [ca, {"name": "objects", "persistentVolumeClaim": {"claimName": "private-objects"}}], recreate=True)
     runtime_env = [env("PORT", 8080), env("SUPABASE_URL", "http://gateway:8081"),
         secret("SUPABASE_ANON_KEY", "ANON_KEY"), secret("SUPABASE_SERVICE_ROLE_KEY", "SERVICE_KEY"),
-        env("APP_ALLOWED_ORIGINS", origin), env("APP_PUBLIC_URL", origin + "/"), env("APP_WORKER_URL", "http://worker:8080/functions/v1/worker"),
+        env("APP_ALLOWED_ORIGINS", origin), env("APP_PUBLIC_API_URL", origin), env("APP_PUBLIC_URL", origin + "/"), env("APP_WORKER_URL", "http://worker:8080/functions/v1/worker"),
         env("APP_SCHEDULER_ENABLED", str(config.get("scheduler_enabled", False)).lower())]
     for name, request, limit, cpu in [("api", "128Mi", "384Mi", "700m"), ("worker", "192Mi", "640Mi", "1000m"), ("source-browser", "64Mi", "256Mi", "500m"), ("scheduler", "48Mi", "192Mi", "300m")]:
         service = container(name, runtime_image, [*runtime_env, env("APP_RUNTIME_SERVICE", name)], 8080, "/readyz", request, limit, cpu)
