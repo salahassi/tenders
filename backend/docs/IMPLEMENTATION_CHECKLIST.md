@@ -108,6 +108,25 @@ local HTTPS/proxy checks. The renderer now requires this immutable HTTPS image;
 all twelve renderer guards pass. The diagnostic workflow can repair only the
 owned HTTPS deployment and run public acceptance before a complete rollout.
 
+The restricted HTTPS repair succeeded on `879bde4f627f8350783fdde90d87870e3a9936a7`
+in [run 40241123580](https://github.com/salahassi/tenders/actions/runs/40241123580).
+The container has zero restarts. All nine public acceptance groups passed with
+real Auth, PostgreSQL, Storage and application APIs: HTTPS/runtime configuration,
+anonymous/private-worker/admin denials, a genuine temporary first-Owner session,
+invitation-hook refusal before account creation/email, Owner bootstrap and every
+frontend list, empty business history with readable configuration, private byte
+and public/anonymous denials, exact bytes retained across a Storage rollout, and
+independent fixture/session cleanup. No fixture record was added to the Owner
+workspace. Provider key count is zero and SMTP configuration is absent. These
+are confirmed remaining operating-credential gates; source deletion is blocked
+by the Owner's condition that the full application must work first.
+
+The following full deployment will include the public signed-download fix,
+recovery body envelope and bound-receipt background activation. Pages now
+publishes only a redirect; application testing/builds belong to the DigitalOcean
+workflow. Main merge and the public bookmark change are still pending that full
+runtime verification. No source project deletion is claimed.
+
 ## Isolated Auth and Storage bootstrap on the existing DigitalOcean database
 
 The Owner authorized implementation and live execution of the next compatibility
