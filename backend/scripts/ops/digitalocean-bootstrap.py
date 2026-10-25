@@ -209,6 +209,21 @@ def failure_code(text: str, fallback: str) -> str:
     return fallback
 
 
+def sql_failure_details(text: str) -> dict:
+    """Extract only non-sensitive SQLSTATE, reviewed asset line and stage."""
+    result = {}
+    state = re.search(r"ERROR:\s+([0-9A-Z]{5}):", text)
+    if state:
+        result["sqlstate"] = state.group(1)
+    line = re.search(r"/(setup|post-migrations|cleanup)\.sql:([0-9]{1,5}):", text)
+    if line:
+        result.update({"script": line.group(1) + ".sql", "line": int(line.group(2))})
+    for stage in ("validated", "roles_created", "database_created", "schemas_created", "extensions_installed"):
+        if "tdb_stage_" + stage in text:
+            result["last_stage"] = stage
+    return result
+
+
 def wait_sql(state: dict, name: str) -> None:
     deadline = time.monotonic() + 185
     while time.monotonic() < deadline:
@@ -221,6 +236,7 @@ def wait_sql(state: dict, name: str) -> None:
                 logs = private_logs(state, name, "postgres-client")
             except preflight.ProbeError:
                 logs = ""
+            emit("sql_failed", **sql_failure_details(logs))
             raise BootstrapError(failure_code(logs, "SQL_" + name.upper().replace("-", "_") + "_FAILED"))
         time.sleep(2)
     raise BootstrapError("BOOTSTRAP_SQL_JOB_TIMEOUT")

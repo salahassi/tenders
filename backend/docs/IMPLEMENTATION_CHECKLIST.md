@@ -31,6 +31,16 @@ and builds pass. Source revision, live workflow result and cleanup evidence will
 be recorded after execution. No live bootstrap success or production migration
 is claimed by this entry.
 
+First live execution of source `73c6a4f0c405a83dc74731e754381cf0b72ab74f`,
+[run 40234666954](https://github.com/salahassi/tenders/actions/runs/40234666954),
+passed target access and inventory, then stopped in isolated database setup.
+Database/role cleanup and namespace/credential cleanup were confirmed. No
+compatible service or production restoration was established. The bounded error
+did not identify the failing SQL operation, so the next revision adds SQLSTATE,
+reviewed script line and fixed stage identifiers without publishing raw logs.
+Public-schema ACL revocation also now explicitly assumes the new schema-owner
+role, whose membership intentionally does not inherit into the admin session.
+
 ## October 25 — Kubernetes access verified; migration compatibility inspection
 
 After the Owner added the repository credential, attempt 2 of

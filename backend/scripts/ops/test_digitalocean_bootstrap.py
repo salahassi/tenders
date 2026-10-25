@@ -29,6 +29,11 @@ class BootstrapBoundaryTests(unittest.TestCase):
         self.state = bootstrap.identity()
         self.state.update(uid="namespace-uid", job_uid="parent-job-uid")
 
+    def test_sql_diagnostics_do_not_forward_private_log_values(self):
+        value = bootstrap.sql_failure_details("psql:/opt/bootstrap/setup.sql:43: ERROR: 42501: private password do-not-publish\ntdb_stage_validated\ntdb_stage_roles_created")
+        self.assertEqual(value, {"sqlstate": "42501", "script": "setup.sql", "line": 43, "last_stage": "roles_created"})
+        self.assertNotIn("private", json.dumps(value))
+
     def test_identity_is_bounded_unique_and_does_not_adopt_production_names(self):
         other = bootstrap.identity()
         self.assertNotEqual(self.state["database"], other["database"])

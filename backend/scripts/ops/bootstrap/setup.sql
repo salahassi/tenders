@@ -1,6 +1,6 @@
 \set ON_ERROR_STOP on
 \set ECHO none
-\set VERBOSITY terse
+\set VERBOSITY verbose
 \set QUIET on
 -- Isolated compatibility probe only. No source data, existing roles or existing
 -- databases may be adopted. Run with psql -X, PGDATABASE=defaultdb and TLS.
@@ -41,6 +41,7 @@ BEGIN
   THEN RAISE EXCEPTION 'BOOTSTRAP_PASSWORD_REJECTED'; END IF;
 END
 $probe$;
+SELECT 'tdb_stage_validated' AS status;
 
 -- NO superuser or BYPASSRLS grant is attempted. Passwords enter through the
 -- process environment, never through SQL assets or the command line.
@@ -79,6 +80,7 @@ SELECT format('GRANT %I, %I TO %I WITH INHERIT TRUE, SET TRUE',
               :'role_prefix' || '_owner', :'role_prefix' || '_storageadmin', :'role_prefix' || '_service')
 \gexec
 COMMIT;
+SELECT 'tdb_stage_roles_created' AS status;
 
 -- CREATE DATABASE cannot execute inside the transaction above.
 SELECT format('CREATE DATABASE %I TEMPLATE template0', :'probe_database')
@@ -86,6 +88,7 @@ SELECT format('CREATE DATABASE %I TEMPLATE template0', :'probe_database')
 SELECT format('COMMENT ON DATABASE %I IS %L', :'probe_database',
               'tenderdesk-isolated-bootstrap:' || :'probe_database' || ':' || :'role_prefix')
 \gexec
+SELECT 'tdb_stage_database_created' AS status;
 SELECT format('REVOKE ALL ON DATABASE %I FROM PUBLIC', :'probe_database')
 \gexec
 SELECT format('GRANT CONNECT ON DATABASE %I TO %I, %I, %I', :'probe_database',
@@ -100,15 +103,20 @@ SELECT format('GRANT CREATE ON DATABASE %I TO %I, %I, %I', :'probe_database',
 BEGIN;
 SELECT format('ALTER SCHEMA public OWNER TO %I', :'role_prefix' || '_owner')
 \gexec
+SELECT format('SET LOCAL ROLE %I', :'role_prefix' || '_owner')
+\gexec
 REVOKE ALL ON SCHEMA public FROM PUBLIC;
+RESET ROLE;
 SELECT format('CREATE SCHEMA auth AUTHORIZATION %I', :'role_prefix' || '_authadmin')
 \gexec
 SELECT format('CREATE SCHEMA storage AUTHORIZATION %I', :'role_prefix' || '_storageadmin')
 \gexec
 CREATE SCHEMA extensions;
+SELECT 'tdb_stage_schemas_created' AS status;
 CREATE EXTENSION pgcrypto WITH SCHEMA extensions;
 CREATE EXTENSION "uuid-ossp" WITH SCHEMA extensions;
 CREATE EXTENSION pg_trgm WITH SCHEMA extensions;
+SELECT 'tdb_stage_extensions_installed' AS status;
 SELECT format('GRANT USAGE ON SCHEMA extensions TO %I, %I, %I, %I, %I, %I',
               :'role_prefix' || '_authadmin', :'role_prefix' || '_storageadmin',
               :'role_prefix' || '_owner', :'role_prefix' || '_anon',

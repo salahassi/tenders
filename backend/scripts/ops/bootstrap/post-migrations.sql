@@ -1,6 +1,6 @@
 \set ON_ERROR_STOP on
 \set ECHO none
-\set VERBOSITY terse
+\set VERBOSITY verbose
 \set QUIET on
 \getenv probe_database BOOTSTRAP_DATABASE
 \getenv role_prefix ROLE_PREFIX
