@@ -160,6 +160,15 @@ background activation; native images are executed on the destination before
 schedules can be enabled. No application check is weakened or treated as passed
 because an upload failed.
 
+The first verified-image release,
+[40244457918](https://github.com/salahassi/tenders/actions/runs/40244457918),
+passed image/source provenance, private transfer and database initialization,
+then stopped while reconciling existing Kubernetes resources. The HTTPS repair
+had changed its image imperatively under a different field manager. The release
+now aligns only that ownership-checked Deployment's image with the verified
+digest before applying the complete declared runtime. Application source and
+verified images remain unchanged; no source-project mutation occurred.
+
 ## Isolated Auth and Storage bootstrap on the existing DigitalOcean database
 
 The Owner authorized implementation and live execution of the next compatibility

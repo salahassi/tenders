@@ -41,6 +41,22 @@ jobs:
             --bucket tenderdesk-migration-a6093a76-sfo3 \
             --object bootstrap/first-owner-20261026-v1.bundle \
             --expected-sha256 37de57604b2afc46d6363efa64cc70a8242c07c856f1b0659fa5496697818484
+      - name: Reconcile the owned HTTPS repair with the verified release image
+        run: |
+          python3 - <<'PYCODE'
+          import importlib.util,os
+          spec=importlib.util.spec_from_file_location('deploy','backend/scripts/ops/digitalocean-deploy.py')
+          d=importlib.util.module_from_spec(spec);spec.loader.exec_module(d)
+          d.probe.validate_cluster()
+          current=d.get('deployment','https')
+          if current is not None:
+              if current.get('metadata',{}).get('labels',{}).get('app.kubernetes.io/managed-by')!='tenderdesk-deployment':
+                  raise SystemExit('HTTPS repair ownership check failed.')
+              # Imperative repair previously owned the image field. Align its
+              # value before server-side apply so the two field managers agree.
+              d.command(['set','image','deployment/https','https='+os.environ['TENDERDESK_HTTPS_IMAGE'],'-n',d.NAMESPACE,'--field-manager=tenderdesk-deployment'])
+          print('Owned HTTPS image reconciled with the verified release.')
+          PYCODE
       - name: Deploy private services and restore only the first Owner and configuration
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
