@@ -1,6 +1,5 @@
 const issuer = "https://token.actions.githubusercontent.com";
-export const browserAudience =
-  "https://nqfwbqeozmuiuwbiowil.supabase.co/functions/v1/source-browser";
+export const browserAudience = "tenderdesk-source-browser";
 const workflow =
   "salahassi/tenders/.github/workflows/collect-browser-sources.yml@refs/heads/main";
 let cached: { until: number; keys: JsonWebKey[] } | undefined;
@@ -16,6 +15,7 @@ export async function verifyBrowserIdentity(
   token: string,
   fetcher: typeof fetch = fetch,
   now = Date.now() / 1000,
+  expectedAudience = browserAudience,
 ) {
   try {
     if (token.length > 16384) return false;
@@ -27,7 +27,7 @@ export async function verifyBrowserIdentity(
       header.alg !== "RS256" ||
       typeof header.kid !== "string" ||
       claims.iss !== issuer ||
-      claims.aud !== browserAudience ||
+      claims.aud !== expectedAudience ||
       ![
         "repo:salahassi/tenders:ref:refs/heads/main",
         "repo:salahassi@1439837/tenders@1418689096:ref:refs/heads/main",

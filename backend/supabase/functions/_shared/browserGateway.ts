@@ -5,7 +5,7 @@ import {
   sealSession,
   openSession,
 } from "./browserIdentity.ts";
-import { readJson } from "./http.ts";
+import { readJson, secretMatches } from "./http.ts";
 const identity = { request_id: z.uuid(), lease: z.uuid() };
 const schemas = {
   claim: z.object({}).strict(),
@@ -52,8 +52,21 @@ export function createBrowserGateway(
       return response({ error: "METHOD_NOT_ALLOWED" }, 405);
     const token =
       request.headers.get("authorization")?.replace(/^Bearer /i, "") || "";
-    if (!(await verifyBrowserIdentity(token, fetcher)))
-      return response({ error: "UNAUTHORIZED" }, 401);
+    // Kubernetes native workers receive a dedicated Secret, never the database
+    // service key. Configuring this mode disables external Actions identities.
+    // The service and its route must remain internal to the cluster.
+    const supplied = request.headers.get("x-native-worker-secret") || "";
+    const authorized = env.nativeWorkerSecret
+      ? env.nativeWorkerSecret.length >= 32 &&
+        supplied.length <= 512 &&
+        (await secretMatches(supplied, env.nativeWorkerSecret))
+      : await verifyBrowserIdentity(
+          token,
+          fetcher,
+          Date.now() / 1000,
+          env.browserOidcAudience || undefined,
+        );
+    if (!authorized) return response({ error: "UNAUTHORIZED" }, 401);
     try {
       const input = z
         .object({

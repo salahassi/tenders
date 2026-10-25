@@ -1,5 +1,204 @@
 # Implementation status and continuation plan
 
+## DigitalOcean application deployment with only the first Owner and configuration
+
+The Owner now explicitly requests merging the project, deploying all application
+services onto the existing Kubernetes cluster, pointing the frontend at the new
+server, and deleting the source project only after verifying the complete new
+application. The immediately preceding data constraint remains: keep only the
+first login account and operating configuration, without historical business
+records or original files. PR #7 was merged into main as
+`b3e8c5e377104ef20797d35f4d895d6c1e7567e6`.
+
+Preparation generates executable application DDL from the captured catalog,
+mapping hosted roles to seven database-specific `tdp_app_*` roles. Auth and
+Storage run pinned upstream migrations first. The generated application contains
+81 tables, ten invoker-security views, 229 routines and 66 policies. Two hosted
+network/Vault dispatcher routines are replaced by a transactional durable outbox
+and an authenticated persistent relay that retains immediate wake receipts,
+periodic recovery, leases and bounded retries. The original queue wake guards
+remain. Neither runtime nor request roles receive superuser or BYPASSRLS.
+
+The private minimal seed contains 37 rows: one confirmed email/password Owner,
+one email identity, the workspace and Owner authorization, operating/model
+configuration, a fresh operations row and the private bucket definition. A
+historical actor UUID preserves configuration attribution without a second login
+or membership. Password hashes are retained; old sessions/tokens are cleared.
+Business records, queued work and original objects are excluded. A fresh MCP
+read verified the same first user, email and password hash, with active confirmed
+status. Models and background execution remain paused during restoration.
+
+A private DigitalOcean Space now transports the small seed and schema with
+AES-256-GCM authenticated encryption. Upload and runner download independently
+obtain temporary bucket-scoped keys and derive the encryption key from the
+existing managed database credential, so no seed, password, presigned URL or
+private artifact enters the public repository. A separate live transport test
+passed exact-byte verification, rejected anonymous access with HTTP 403,
+deleted its fixture and confirmed no temporary Spaces keys remain. The actual
+minimal bundle has been uploaded privately. A Basic container registry in sfo3
+was created and integrated with the selected cluster; runtime images use
+immutable digests and durable read-only pull credentials.
+
+Deployment assets cover Auth, PostgREST, persistent private Storage, API, worker,
+source-browser, durable scheduler, browser/OCR jobs, frontend, gateway and HTTPS.
+The new frontend loads an explicit public runtime configuration before its
+bundle, without an old-source URL/key fallback. HTTPS and object bytes use
+persistent disks. Worker interfaces remain internal. Native jobs and the
+scheduler stay paused until the operating configuration is verified. An
+invitation-aware Auth database hook preserves the real application's custom
+Owner invitation flow; email confirmation stays required. SMTP and provider
+credential values cannot be exported through the connected Supabase MCP; any
+existing GitHub runtime secrets are provisioned without logging their values.
+
+Local evidence: the generated DDL and private seed pass a complete PostgreSQL
+18.6 rehearsal under non-superuser roles, including actual application commands,
+membership RLS, outsider/direct-write denials and safe nonempty-target refusal.
+Nine seed guards and twelve transport guards pass. The frontend passes 236 tests
+in 39 files, typecheck/build, a real immutable Docker build, and restricted
+container/Chromium transport checks. Intercepted Auth in that browser check is
+not live sign-in evidence. The runtime Docker image builds; restricted Deno
+health/readiness, anonymous worker denial and signal draining pass. Renderer,
+permanent-role, scheduler and invitation-hook regressions also pass. Full backend verification passes 1,435 tests in 83 files, typecheck and build.
+The generated schema/seed also pass the deployer's actual transactional checkpoint
+wrapper in PostgreSQL 18.6, including seed rollback/resume and private ledger read
+denials. Fifty-six ops guards and eleven renderer guards pass. Live deployment
+and application acceptance are recorded below as execution proceeds. No production
+cutover or source deletion is yet claimed.
+
+The next runtime revision also exposes signed document URLs through an explicit
+public API origin while keeping private service-to-service traffic internal.
+Twenty-two real Backend.download regressions pass, including escaped signatures,
+foreign-host refusal and malformed-origin handling. Full frozen-source backend
+verification passes 1,457 tests in 84 files, typecheck/build and all three Deno
+entry checks. API gateway bodies allow the existing large recovery envelope while
+Storage retains its bounded original-upload limit.
+
+Post-smoke activation now requires a private, workflow-bound successful acceptance
+receipt. It checks an empty target and paused model admission, then verifies both
+manual and actual scheduler-driven worker heartbeats, private native-worker
+identities and nonce-owned empty browser/OCR executions before enabling their
+five-minute schedules. Failures pause scheduling and independently clean owned
+fixtures. Seventeen activation guards pass; the total ops guard suite now has 85
+passing tests. These are local guard results, not live activation evidence.
+The old Pages bookmark will redirect to the verified Kubernetes frontend after
+merge. Old hosted API deployment and Actions-based readers are retired in that
+same cutover revision; source database scheduling and source deletion remain
+separate conditional actions.
+
+First permanent live run on `51ca9ed90ba04e3fa5696b9e5a9cf6012c700b3a`,
+[40238838626](https://github.com/salahassi/tenders/actions/runs/40238838626),
+published all four immutable images, initialized the marked database, completed
+upstream Auth/Storage migrations and restored the application schema plus the
+37-row first-Owner/configuration seed. Auth, REST, Storage, API, worker,
+source-browser, scheduler, frontend and gateway reached readiness. The HTTPS
+container entered CrashLoopBackOff; the rollout stopped before public acceptance,
+traffic cutover or source deletion. Administrator Pod/Secret cleanup succeeded.
+A separate read-only workflow captures HTTPS-only diagnostics through the same
+private encrypted transfer, without exposing service logs or credentials in the
+public workflow output. The existing public load balancer address is reserved;
+the old published application remains unchanged pending repair and acceptance.
+
+Private HTTPS diagnostics identified the exact startup failure: the official
+Caddy binary carries `cap_net_bind_service`, and Linux refuses execution with the
+restricted Pod's empty capability bounding set. The dedicated HTTPS image removes
+that file capability at build time and runs as UID/GID 1000, without adding any
+capability. A real read-only container with dropped capabilities and no privilege
+escalation passed executable, HTTP redirect, health and full certificate-verified
+local HTTPS/proxy checks. The renderer now requires this immutable HTTPS image;
+all twelve renderer guards pass. The diagnostic workflow can repair only the
+owned HTTPS deployment and run public acceptance before a complete rollout.
+
+The restricted HTTPS repair succeeded on `879bde4f627f8350783fdde90d87870e3a9936a7`
+in [run 40241123580](https://github.com/salahassi/tenders/actions/runs/40241123580).
+The container has zero restarts. All nine public acceptance groups passed with
+real Auth, PostgreSQL, Storage and application APIs: HTTPS/runtime configuration,
+anonymous/private-worker/admin denials, a genuine temporary first-Owner session,
+invitation-hook refusal before account creation/email, Owner bootstrap and every
+frontend list, empty business history with readable configuration, private byte
+and public/anonymous denials, exact bytes retained across a Storage rollout, and
+independent fixture/session cleanup. No fixture record was added to the Owner
+workspace. Provider key count is zero and SMTP configuration is absent. These
+are confirmed remaining operating-credential gates; source deletion is blocked
+by the Owner's condition that the full application must work first.
+
+The following full deployment will include the public signed-download fix,
+recovery body envelope and bound-receipt background activation. Pages now
+publishes only a redirect; application testing/builds belong to the DigitalOcean
+workflow. Main merge and the public bookmark change are still pending that full
+runtime verification. No source project deletion is claimed.
+
+The first full final-revision run,
+[40241502372](https://github.com/salahassi/tenders/actions/runs/40241502372),
+stopped in local checks before acquiring cluster credentials or changing the live
+runtime. Frontend checks passed; backend had 1,456 passes and one obsolete test
+that read the retired Supabase deployment workflow. That test now executes the
+new fail-closed compatibility SQL against PostgreSQL 18, covering missing,
+incorrect, partial and matching RPC signatures under a genuine non-superuser
+role. Its complete 13-test file passes. The deployer invokes this same SQL after
+restoration, before accepting worker availability. All other application code is
+unchanged from the independently verified frozen-source 1,457-test revision.
+Temporary encrypted HTTPS diagnostic objects have been removed after recording
+the cause and repair; the private minimal restore bundle is retained.
+
+Run [40242186686](https://github.com/salahassi/tenders/actions/runs/40242186686)
+on `a5fad5c32342bc678fd689795538a47b73f2701a` passed every application,
+compatibility and operations check, then published the new HTTPS, runtime and
+frontend images. Re-pushing the browser image exceeded the registry's 900-second
+upload window; no database/runtime mutation step ran. Existing browser/OCR images
+remain available. Their package locks, Dockerfiles and every reachable local
+module are byte-identical to the new revision (16 browser modules and 14 OCR
+modules); the changed signed-download helper is outside both native module graphs.
+
+A separate verified-image release uses the five already-published immutable
+digests. Its read-only gate verifies the original successful application-check
+step, exact repository/workflow/revision, unchanged application/operations/test
+inputs, and identical static native-worker dependency graphs before obtaining
+cluster credentials. Seven promotion guards pass, bringing ops guards to 92.
+The actual local gate passed against GitHub evidence and both native revisions.
+It then performs the same guarded restore, full live acceptance and bound-receipt
+background activation; native images are executed on the destination before
+schedules can be enabled. No application check is weakened or treated as passed
+because an upload failed.
+
+The first verified-image release,
+[40244457918](https://github.com/salahassi/tenders/actions/runs/40244457918),
+passed image/source provenance, private transfer and database initialization,
+then stopped while reconciling existing Kubernetes resources. The HTTPS repair
+had changed its image imperatively under a different field manager. The release
+now aligns only that ownership-checked Deployment's image with the verified
+digest before applying the complete declared runtime. Application source and
+verified images remain unchanged; no source-project mutation occurred.
+
+Verified release and background activation passed in
+[run 40244862158](https://github.com/salahassi/tenders/actions/runs/40244862158),
+job `121324177409`, workflow revision
+`e25eec8eb7d23bdc4d0df6f29055a7a74f6e48d2`. Application/operations inputs match
+validated source `a5fad5c32342bc678fd689795538a47b73f2701a`; native browser/OCR
+inputs match their independently verified published revision. All ten permanent
+Deployments reached readiness. Existing schema/37-row seed restoration was
+preserved, and the exact recovery/claim RPC compatibility gate passed. Temporary
+administrator Pod/Secret and runner credentials were removed.
+
+All nine production smoke groups passed again against the final runtime,
+including genuine Owner access, every frontend list, negative uninvited signup,
+private bytes surviving Storage replacement and independent fixture/session
+cleanup. All eleven background activation groups passed: workflow-bound receipt,
+empty queues/paused external admission, owned immutable workloads, durable
+dispatch configuration, denied/accepted private identities, manual worker
+heartbeat, a second heartbeat driven by the actual relay, both native images
+executing successfully against empty private queues, five-minute native schedules
+and nonce Job cleanup. No Owner workspace fixture record, external model call,
+portal request or email was created by these checks.
+
+The application frontend is available at
+`https://tenderdesk.129.212.166.115.sslip.io`. Owner password hashes and core
+service credentials were preserved. The runtime still reports zero configured
+provider keys and missing SMTP; source inspection confirms SMTP was configured
+there. Models remain paused. Source project deletion and full external-feature
+cutover remain pending the secure credentials and their verification. Main merge
+and publishing the previous Pages bookmark redirect are the remaining release
+steps; their exact results will be recorded after publication.
+
 ## Isolated Auth and Storage bootstrap on the existing DigitalOcean database
 
 The Owner authorized implementation and live execution of the next compatibility

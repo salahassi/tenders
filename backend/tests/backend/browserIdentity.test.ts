@@ -126,3 +126,29 @@ it("rejects unauthenticated browser workers before any privileged operation and 
   expect(claim.status).toBe(200);
   expect(calls).toBe(1);
 });
+it("requires the configured migrated audience without weakening the signed repository and workflow claims", async () => {
+  const migrated = await identity({ aud: "fixture-kubernetes-source-browser" });
+  expect(await verifyBrowserIdentity(migrated.token, migrated.fetcher)).toBe(
+    false,
+  );
+  expect(
+    await verifyBrowserIdentity(
+      migrated.token,
+      migrated.fetcher,
+      Date.now() / 1000,
+      "fixture-kubernetes-source-browser",
+    ),
+  ).toBe(true);
+  const foreign = await identity({
+    aud: "fixture-kubernetes-source-browser",
+    repository: "attacker/tenders",
+  });
+  expect(
+    await verifyBrowserIdentity(
+      foreign.token,
+      foreign.fetcher,
+      Date.now() / 1000,
+      "fixture-kubernetes-source-browser",
+    ),
+  ).toBe(false);
+});

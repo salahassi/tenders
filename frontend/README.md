@@ -16,7 +16,26 @@ npm test
 npm run build
 ```
 
-The public project configuration is in `src/lib/deployment.ts`; `.env.example` documents optional browser-safe overrides. Never put service-role keys or other secrets in a frontend environment file. Vite builds to `dist/`, published by the repository's GitHub Pages workflow.
+The application loads `runtime-config.js` before its bundle. Kubernetes mounts this
+public configuration from a ConfigMap, so one image can connect to the selected
+API without rebuilding. Set `window.__TENDERDESK_CONFIG__` to an object containing
+`apiUrl`, `publishableKey`, and the canonical `appOrigin` used by Auth email links.
+Only the anonymous/publishable key belongs here; service keys, database credentials,
+and provider secrets must remain on the server. Responses for this file and the
+HTML entry point are not cached across deployments.
+
+`.env.example` documents browser-safe Vite overrides for local development or a
+static host. Runtime settings take priority. With no selected API, the client uses
+its current origin; without a public key, it reports setup required. There is no
+fallback to the previous Supabase project. Vite builds to `dist/`.
+
+Build the Kubernetes image with the `frontend/` directory as its Docker context.
+Its production TypeScript project excludes test-only imports of backend fixtures;
+the ordinary typecheck/build and CI still check the complete frontend test suite.
+It serves the application as an unprivileged user on port 8080, with `/healthz` for
+readiness. Mount the generated public configuration at
+`/usr/share/nginx/html/runtime-config.js`. The gateway serves this frontend and
+the Auth, Data, Storage and application API routes under the same HTTPS origin.
 
 ## Workspace journey
 

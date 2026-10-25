@@ -1,17 +1,44 @@
-// Browser-safe Supabase configuration. This publishable key grants no membership
-// or privileged database access. User JWT, RLS and server commands are required.
-const defaultAppOrigin = "https://salahassi.github.io/tenders";
-const trimOrigin = (value: string) => value.trim().replace(/\/$/, "");
+/** Public connection settings, loaded before the application bundle. */
+export interface PublicDeploymentConfig {
+  apiUrl?: string;
+  publishableKey?: string;
+  appOrigin?: string;
+}
 
+declare global {
+  interface Window {
+    __TENDERDESK_CONFIG__?: PublicDeploymentConfig;
+  }
+}
+
+const configured = (value: unknown): string =>
+  typeof value === "string" ? value.trim() : "";
+const runtime = window.__TENDERDESK_CONFIG__;
+const runtimeConfigured =
+  runtime &&
+  ["apiUrl", "publishableKey", "appOrigin"].some((key) =>
+    Object.prototype.hasOwnProperty.call(runtime, key),
+  );
+const build = runtimeConfigured ? undefined : import.meta.env;
+const pageOrigin =
+  window.location.origin +
+  window.location.pathname.replace(/\/index\.html$/, "").replace(/\/$/, "");
+
+// Only an anonymous/publishable key belongs here. Authentication, membership and
+// RLS still determine access. Missing configuration never contacts the old host.
 export const deployment = {
-  projectUrl:
-    import.meta.env.VITE_SUPABASE_URL ||
-    "https://nqfwbqeozmuiuwbiowil.supabase.co",
+  projectUrl: (
+    configured(runtime?.apiUrl) ||
+    configured(build?.VITE_SUPABASE_URL) ||
+    window.location.origin
+  ).replace(/\/$/, ""),
   publishableKey:
-    import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    "sb_publishable_2rYRriPhklB0BrBODdVBFQ_0ZSAZLJj",
-  /** Canonical hosted app origin for Auth email links (invite + recovery). */
-  appOrigin: trimOrigin(
-    import.meta.env.VITE_APP_ORIGIN || defaultAppOrigin,
-  ),
+    configured(runtime?.publishableKey) ||
+    configured(build?.VITE_SUPABASE_PUBLISHABLE_KEY),
+  /** Canonical hosted app URL for invitation and recovery email links. */
+  appOrigin: (
+    configured(runtime?.appOrigin) ||
+    configured(build?.VITE_APP_ORIGIN) ||
+    pageOrigin
+  ).replace(/\/$/, ""),
 } as const;

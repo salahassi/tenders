@@ -1,0 +1,8 @@
+# The official image grants the binary cap_net_bind_service. Linux refuses that
+# file under Kubernetes' empty capability bounding set. Ports 8080/8443 require
+# no capabilities, so remove the file capability while building the image.
+FROM docker.io/library/caddy:2.11.2-alpine@sha256:6d125e80883be8a2bef5f088c7535945b42cdbb8a0f5471bf36eaf18dc0638f1
+USER root
+RUN setcap -r /usr/bin/caddy && test -z "$(getcap /usr/bin/caddy)"
+USER 1000:1000
+EXPOSE 8080 8443 8082

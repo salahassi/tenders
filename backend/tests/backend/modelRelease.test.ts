@@ -1,5 +1,7 @@
+// @vitest-environment node
 import { expect, it, vi } from "vitest";
 import { readFile } from "node:fs/promises";
+import { PGlite } from "@electric-sql/pglite";
 // @ts-expect-error Release utility is intentionally plain Node.js.
 import { applyModelRelease } from "../../scripts/backend/apply-model-release.mjs";
 
@@ -281,26 +283,49 @@ it("rejects a recovery version collision before reading or submitting that migra
   expect(f.queries).toHaveLength(1);
 });
 
-it("requires both recovery RPC signatures before the workflow can deploy new worker code", async () => {
-  const workflow = await readFile(
-    new URL("../../../.github/workflows/deploy-api.yml", import.meta.url),
+it("blocks workers until the restored database has both exact recovery signatures and the queue RPC", async () => {
+  const gate = await readFile(
+    new URL("../../deploy/kubernetes/check-compatible.sql", import.meta.url),
     "utf8",
   );
-  const gate = workflow.slice(
-    workflow.indexOf("- name: Verify compatible database migrations"),
-    workflow.indexOf("- name: Deploy canonical API and worker files"),
-  );
-  expect(gate).toContain(
-    "to_regprocedure('public.resume_task_model_request_phase(uuid,uuid,text,jsonb,uuid,uuid,text)') is not null",
-  );
-  expect(gate).toContain(
-    "to_regprocedure('public.defer_pending_model_request(uuid,uuid,uuid)') is not null",
-  );
-  expect(gate).toContain('rows[0].get("compatible") is not True');
-  expect(gate).toContain("raise SystemExit");
-  expect(
-    workflow.indexOf("- name: Apply reviewed model release migrations"),
-  ).toBeLessThan(
-    workflow.indexOf("- name: Verify compatible database migrations"),
-  );
-});
+  const db = new PGlite();
+  const rejected = async () => {
+    await expect(db.exec(gate)).rejects.toMatchObject({
+      code: "55000",
+      message: "BACKEND_DATABASE_COMPATIBILITY_REQUIRED",
+    });
+    await db.exec("ROLLBACK;");
+  };
+  const install = (definition: string) =>
+    db.exec(`SET ROLE tdp_app_owner; ${definition} RESET ROLE;`);
+  try {
+    await db.exec(`CREATE ROLE tdp_app_owner NOLOGIN NOSUPERUSER NOBYPASSRLS;
+      CREATE ROLE compatibility_admin NOLOGIN NOSUPERUSER NOBYPASSRLS;
+      GRANT tdp_app_owner TO compatibility_admin WITH INHERIT FALSE, SET TRUE;
+      GRANT USAGE, CREATE ON SCHEMA public TO tdp_app_owner;
+      SET SESSION AUTHORIZATION compatibility_admin;`);
+    await rejected();
+    // The names exist, but legacy overloads do not satisfy the worker contract.
+    await install(`CREATE FUNCTION public.resume_task_model_request_phase(uuid,uuid,text,jsonb,uuid,uuid,uuid)
+        RETURNS jsonb LANGUAGE sql AS $$SELECT '{}'::jsonb$$;
+      CREATE FUNCTION public.defer_pending_model_request(uuid,uuid,text)
+        RETURNS jsonb LANGUAGE sql AS $$SELECT '{}'::jsonb$$;
+      CREATE FUNCTION public.claim_backend_job_v2()
+        RETURNS jsonb LANGUAGE sql AS $$SELECT '{}'::jsonb$$;`);
+    await rejected();
+    await install(`CREATE FUNCTION public.resume_task_model_request_phase(uuid,uuid,text,jsonb,uuid,uuid,text)
+      RETURNS jsonb LANGUAGE sql AS $$SELECT '{}'::jsonb$$;`);
+    await rejected();
+    await install(`CREATE FUNCTION public.defer_pending_model_request(uuid,uuid,uuid)
+      RETURNS jsonb LANGUAGE sql AS $$SELECT '{}'::jsonb$$;`);
+    await db.exec(gate);
+    // A missing queue contract also fails after both recovery contracts exist.
+    await install("DROP FUNCTION public.claim_backend_job_v2();");
+    await rejected();
+    await install(`CREATE FUNCTION public.claim_backend_job_v2()
+      RETURNS jsonb LANGUAGE sql AS $$SELECT '{}'::jsonb$$;`);
+    await db.exec(gate);
+  } finally {
+    await db.close();
+  }
+}, 30000);

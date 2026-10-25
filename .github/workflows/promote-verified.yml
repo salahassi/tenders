@@ -1,0 +1,118 @@
+name: Promote verified TenderDesk images
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/doks-promote]
+    paths-ignore: ['**/*.md']
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Verify the published images against successful source checks
+        env:
+          GITHUB_READ_TOKEN: ${{ github.token }}
+        run: python3 backend/scripts/ops/verify-release.py
+      - name: Install the pinned private-transfer dependency
+        run: python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+      - name: Prepare verified cluster access and expiring image-push credentials
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/digitalocean-runner.py
+      - name: Download the encrypted first-owner bundle into private runner storage
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 backend/scripts/ops/private-transfer.py \
+            --download "${DOKS_WORKDIR}/migration.tar.gz" \
+            --bucket tenderdesk-migration-a6093a76-sfo3 \
+            --object bootstrap/first-owner-20261026-v1.bundle \
+            --expected-sha256 37de57604b2afc46d6363efa64cc70a8242c07c856f1b0659fa5496697818484
+      - name: Reconcile the owned HTTPS repair with the verified release image
+        run: |
+          python3 - <<'PYCODE'
+          import importlib.util,os
+          spec=importlib.util.spec_from_file_location('deploy','backend/scripts/ops/digitalocean-deploy.py')
+          d=importlib.util.module_from_spec(spec);spec.loader.exec_module(d)
+          d.probe.validate_cluster()
+          current=d.get('deployment','https')
+          if current is not None:
+              if current.get('metadata',{}).get('labels',{}).get('app.kubernetes.io/managed-by')!='tenderdesk-deployment':
+                  raise SystemExit('HTTPS repair ownership check failed.')
+              # Imperative repair previously owned the image field. Align its
+              # value before server-side apply so the two field managers agree.
+              d.command(['set','image','deployment/https','https='+os.environ['TENDERDESK_HTTPS_IMAGE'],'-n',d.NAMESPACE,'--field-manager=tenderdesk-deployment'])
+          print('Owned HTTPS image reconciled with the verified release.')
+          PYCODE
+      - name: Deploy private services and restore only the first Owner and configuration
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          APP_MODEL_GEMINI_KEY: ${{ secrets.APP_MODEL_GEMINI_KEY }}
+          APP_MODEL_GEMINI_NAME: ${{ vars.APP_MODEL_GEMINI_NAME }}
+          APP_MODEL_GEMINI_PROJECT: ${{ vars.APP_MODEL_GEMINI_PROJECT }}
+          APP_MODEL_GROQ_KEY: ${{ secrets.APP_MODEL_GROQ_KEY }}
+          APP_MODEL_QWEN_KEY: ${{ secrets.APP_MODEL_QWEN_KEY }}
+          APP_MODEL_MISTRAL_KEY: ${{ secrets.APP_MODEL_MISTRAL_KEY }}
+          APP_MODEL_ZAI_KEY: ${{ secrets.APP_MODEL_ZAI_KEY }}
+          APP_MODEL_OPENAI_KEY: ${{ secrets.APP_MODEL_OPENAI_KEY }}
+          APP_MODEL_CLAUDE_KEY: ${{ secrets.APP_MODEL_CLAUDE_KEY }}
+          APP_MODEL_CLOUDFLARE_KEY: ${{ secrets.APP_MODEL_CLOUDFLARE_KEY }}
+          APP_SMTP_HOST: ${{ secrets.APP_SMTP_HOST }}
+          APP_SMTP_PORT: ${{ secrets.APP_SMTP_PORT }}
+          APP_SMTP_USER: ${{ secrets.APP_SMTP_USER }}
+          APP_SMTP_PASSWORD: ${{ secrets.APP_SMTP_PASSWORD }}
+          APP_SMTP_FROM: ${{ secrets.APP_SMTP_FROM }}
+          TENDERDESK_PUBLIC_ORIGIN: ${{ vars.TENDERDESK_PUBLIC_ORIGIN }}
+        run: |
+          python3 backend/scripts/ops/digitalocean-deploy.py \
+            --bundle "${DOKS_WORKDIR}/migration.tar.gz" \
+            --sha256 37de57604b2afc46d6363efa64cc70a8242c07c856f1b0659fa5496697818484
+      - name: Verify public HTTPS and service boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess, sys
+          result = subprocess.run(['python3', 'backend/scripts/ops/digitalocean-smoke.py'], capture_output=True, text=True, timeout=900)
+          try:
+              report = json.loads(result.stdout)
+              if report.get('probe') != 'tenderdesk_production_smoke':
+                  raise ValueError()
+          except (ValueError, TypeError):
+              sys.exit('::error::Application acceptance did not return its bounded result.')
+          print(json.dumps(report), flush=True)
+          if result.returncode != 0 or report.get('status') != 'passed':
+              sys.exit(1)
+          receipt = {'run_id': os.environ['GITHUB_RUN_ID'], 'attempt': os.environ['GITHUB_RUN_ATTEMPT'],
+              'source_revision': os.environ['GITHUB_SHA'], 'origin': os.environ['TENDERDESK_DEPLOYED_ORIGIN'], 'result': report}
+          path = pathlib.Path(os.environ['DOKS_WORKDIR']) / 'production-smoke.json'
+          descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+          with os.fdopen(descriptor, 'w') as stream:
+              json.dump(receipt, stream)
+          PY
+      - name: Activate the verified empty-target scheduler and native workers
+        run: python3 backend/scripts/ops/digitalocean-activate.py
+      - name: Remove runner credentials, private data and build logs
+        if: ${{ always() }}
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, shutil
+          directory = pathlib.Path(os.environ['RUNNER_TEMP']) / ('td-deploy-' + os.environ['GITHUB_RUN_ID'] + '-' + os.environ['GITHUB_RUN_ATTEMPT'])
+          if directory.exists():
+              shutil.rmtree(directory)
+          print('Private runner data and credentials removed.')
+          PY
