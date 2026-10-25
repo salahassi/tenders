@@ -169,6 +169,36 @@ now aligns only that ownership-checked Deployment's image with the verified
 digest before applying the complete declared runtime. Application source and
 verified images remain unchanged; no source-project mutation occurred.
 
+Verified release and background activation passed in
+[run 40244862158](https://github.com/salahassi/tenders/actions/runs/40244862158),
+job `121324177409`, workflow revision
+`e25eec8eb7d23bdc4d0df6f29055a7a74f6e48d2`. Application/operations inputs match
+validated source `a5fad5c32342bc678fd689795538a47b73f2701a`; native browser/OCR
+inputs match their independently verified published revision. All ten permanent
+Deployments reached readiness. Existing schema/37-row seed restoration was
+preserved, and the exact recovery/claim RPC compatibility gate passed. Temporary
+administrator Pod/Secret and runner credentials were removed.
+
+All nine production smoke groups passed again against the final runtime,
+including genuine Owner access, every frontend list, negative uninvited signup,
+private bytes surviving Storage replacement and independent fixture/session
+cleanup. All eleven background activation groups passed: workflow-bound receipt,
+empty queues/paused external admission, owned immutable workloads, durable
+dispatch configuration, denied/accepted private identities, manual worker
+heartbeat, a second heartbeat driven by the actual relay, both native images
+executing successfully against empty private queues, five-minute native schedules
+and nonce Job cleanup. No Owner workspace fixture record, external model call,
+portal request or email was created by these checks.
+
+The application frontend is available at
+`https://tenderdesk.129.212.166.115.sslip.io`. Owner password hashes and core
+service credentials were preserved. The runtime still reports zero configured
+provider keys and missing SMTP; source inspection confirms SMTP was configured
+there. Models remain paused. Source project deletion and full external-feature
+cutover remain pending the secure credentials and their verification. Main merge
+and publishing the previous Pages bookmark redirect are the remaining release
+steps; their exact results will be recorded after publication.
+
 ## Isolated Auth and Storage bootstrap on the existing DigitalOcean database
 
 The Owner authorized implementation and live execution of the next compatibility

@@ -282,3 +282,23 @@ password recovery need a real SMTP account. Model operations need their actual
 provider credentials. Source deletion remains conditional on verifying these
 features, persistent files, permissions, scheduling and the frontend against the
 new server. A successful container rollout alone does not satisfy that condition.
+
+
+The verified permanent release passed
+[40244862158](https://github.com/salahassi/tenders/actions/runs/40244862158):
+ten ready Deployments, nine public acceptance groups and eleven background
+activation groups, with preserved initial restoration and confirmed administrator,
+fixture and runner cleanup. `promote-verified.yml` can deploy the immutable
+component digests only after `verify-release.py` checks the successful application
+validation, unchanged application/operations inputs and the complete static native
+module graphs. This avoids repeating unchanged native image uploads after the
+registry upload timeout observed in the full-build workflow.
+
+The canonical frontend is `https://tenderdesk.129.212.166.115.sslip.io`.
+The old Pages bookmark publishes only a redirect. Provider credentials and SMTP
+are still unconfigured in Kubernetes; model admission remains paused and the
+source project remains intact until the Owner's complete-operation condition is
+satisfied. Background maintenance and native schedules are active on the new
+cluster. Use the recorded immutable release and current deployment instructions
+when updating the runtime; initial empty-target acceptance is not a business-data
+restore or a general instruction to reseed a used workspace.
