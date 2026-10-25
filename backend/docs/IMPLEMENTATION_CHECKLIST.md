@@ -18,13 +18,30 @@ isolated temporary Kubernetes Job using the database's private endpoint and
 credentials must be removed after inspection. An independent source management
 API probe checks whether source database metadata can be read with the existing
 repository credential. These probes do not restore data, run migrations, deploy
-the application, change firewalls, or enable external processing. Their execution
-and compatibility results are pending.
+the application, change firewalls, or enable external processing.
 The helper passed syntax validation, 14 offline checks, and a mocked resource
 lifecycle covering create-only ownership, Job-to-Secret garbage collection,
 read-only SQL, strict TLS, restricted pod settings and cleanup. Workflow syntax
 and output-whitelist checks also passed. Application source is unchanged from
 the preceding 233 frontend/1,430 backend test and typecheck/build results.
+
+Source `d6ee54fb2d1904788eb1f68d59d5dde0b20cc6c7` ran as
+[migration preflight 40232030191](https://github.com/salahassi/tenders/actions/runs/40232030191).
+Kubernetes access passed again. The temporary client Job successfully connected
+to the private managed PostgreSQL endpoint with `verify-full` and completed the
+catalog query. PostgreSQL 18 reports CREATE ROLE and CREATE DATABASE privileges
+without superuser; the selected database has zero public tables and no Auth or
+Storage schema. `pgcrypto`, `uuid-ossp`, `pg_trgm` and `pg_cron` are available but
+not installed. `pg_net` and `supabase_vault` are unavailable. The existing
+dispatcher therefore cannot be transferred unchanged. These metadata checks do
+not prove that the complete compatible-service bootstrap will work.
+
+The source probe stopped with `SUPABASE_ACCESS_TOKEN_MISSING`; the overall run
+correctly failed rather than reporting migration readiness. Target namespace,
+Job and credential cleanup succeeded, and the unconditional cleanup steps passed.
+The next required credential is repository secret `SUPABASE_ACCESS_TOKEN` for
+authorized source management access. No source data was exported, no database
+schema was changed, and no application or data cutover has occurred.
 
 ## October 25 — Prepare verified DigitalOcean Kubernetes access
 

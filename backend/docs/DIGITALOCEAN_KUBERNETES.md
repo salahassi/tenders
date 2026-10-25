@@ -33,7 +33,9 @@ tokens, node addresses, application logs, or Secret objects. This repository is
 public, so workflow output must remain limited to these operational checks.
 
 The preparation branch is `codex/doks-access`. Pushing changes to its access
-workflow triggers the read-only check. If that run stops because the secret is
+workflow or probe helper triggers the checks. Database queries are read-only;
+the compatibility probe creates and removes temporary Kubernetes resources.
+If that run stops because the secret is
 missing, add the secret and use **Re-run all jobs** on that run. After the workflow
 is present on the default branch, it can also be started through **Run workflow**.
 
@@ -146,3 +148,26 @@ Public workflow logs contain only selected compatibility metadata and bounded
 failure codes. A successful read-only inventory does not prove that compatible
 Auth, Storage and database roles can be bootstrapped; those still require
 isolated installation and authorization acceptance before restoring source data.
+
+### Verified results and next prerequisite
+
+[Run 40232030191](https://github.com/salahassi/tenders/actions/runs/40232030191)
+on source `d6ee54fb2d1904788eb1f68d59d5dde0b20cc6c7` successfully ran the temporary
+PostgreSQL client inside Kubernetes, connected to the private managed database
+with full TLS verification, and removed its namespace and credential resources.
+
+The selected PostgreSQL 18 database reports CREATE ROLE and CREATE DATABASE
+privileges without superuser, zero public tables, and no Auth or Storage schema.
+`pgcrypto`, `uuid-ossp`, `pg_trgm` and `pg_cron` are available but not installed.
+`pg_net` and `supabase_vault` are unavailable. The current dispatcher and queue
+wakeup design therefore require adaptation, or a deliberately selected compatible
+database deployment; applying the existing schema unchanged is not validated.
+The probe does not test elevated role creation, row-security bypass capability,
+extension installability or actual Auth/Storage bootstrapping.
+
+The independent source query stopped because `SUPABASE_ACCESS_TOKEN` is missing
+from repository secrets. Add an authorized Supabase management token with access
+to the existing project in the same secure GitHub settings, then rerun the
+preflight. This credential enables source inspection; it does not by itself
+prove that every database export, private file or runtime secret can be migrated.
+Source export credentials will be determined from that verified inventory.
