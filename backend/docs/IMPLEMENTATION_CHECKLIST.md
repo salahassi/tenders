@@ -1,5 +1,39 @@
 # Implementation status and continuation plan
 
+## October 25 — Prepare verified DigitalOcean Kubernetes access
+
+The Owner requested access to the existing `tenderdesk-dev` Kubernetes cluster
+and the start of deployment work. DigitalOcean's management API is reachable;
+the development environment's Envoy proxy rejects the Kubernetes upstream with
+`CERTIFICATE_VERIFY_FAILED`. The available environment configuration tools do
+not expose upstream certificate-authority trust settings.
+
+Stage 7 (operations): preparation introduces a separate GitHub Actions access
+check for cluster `a6093a76-a2d6-47fd-8697-579d41ed316f`. The runner uses the
+original cluster certificate authority and a short-lived kubeconfig, preserving
+certificate and hostname verification. Public logs contain only aggregate
+operational results. The workflow is read-only and does not deploy an application
+or modify the managed database. See `DIGITALOCEAN_KUBERNETES.md` for setup and the
+distinction between a connection check and application migration.
+
+The workflow passed YAML, shell and embedded Python syntax checks, plus eight
+offline checks covering the valid configuration and rejection of wrong targets,
+disabled TLS, proxy and hostname overrides, executable authentication, missing
+CA and mismatched context. A live request to DigitalOcean's management API
+confirmed that its short-lived kubeconfig contains the expected endpoint,
+embedded CA and token-only identity with verification enabled. This is not a
+Kubernetes connection test. The frontend passed 233 tests in 38 files, typecheck
+and build. Backend dependencies were refreshed from the unchanged lockfile after
+missing packages prevented the first typecheck; its subsequent checks are running.
+
+Execution on GitHub Actions is pending. The existing integration can read
+workflows but GitHub returned HTTP 403 for Actions secret administration; secret
+availability on the runner has not yet been established. No successful
+Kubernetes connection, deployment, full application migration, or environment
+publication is claimed. The application still depends on Supabase Auth,
+Storage, Edge Functions and database functions. The first deployment scope is
+awaiting the Owner's selection while access preparation continues.
+
 ## October 23 — Isolate OCR processing and make its waiting state explicit
 
 Owner requested a project audit and a separate worker, appropriate status and
