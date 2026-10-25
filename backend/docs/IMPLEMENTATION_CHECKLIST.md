@@ -33,9 +33,11 @@ The existing integration can read
 workflows but GitHub returned HTTP 403 for Actions secret administration; secret
 availability on the runner has not yet been established. No successful
 Kubernetes connection, deployment, full application migration, or environment
-publication is claimed. The application still depends on Supabase Auth,
-Storage, Edge Functions and database functions. The first deployment scope is
-awaiting the Owner's selection while access preparation continues.
+publication is claimed. The Owner selected full migration to DigitalOcean,
+including the backend and data, rather than retaining hosted Supabase. The
+application still depends on Supabase Auth, Storage, Edge Functions and database
+functions; compatibility, source backup and restoration must be validated before
+cutover. Access preparation is the first prerequisite, not the complete migration.
 
 ## October 23 — Isolate OCR processing and make its waiting state explicit
 

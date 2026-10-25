@@ -55,10 +55,9 @@ Supabase-hosted authentication, storage, Edge Functions, database functions and
 scheduled work. The repository does not yet contain a Kubernetes application
 deployment or a compatible replacement for those backend services.
 
-The first application deployment can stage the actual frontend in an isolated
-development namespace while retaining its existing backend. Moving the complete
-application to Kubernetes and DigitalOcean managed PostgreSQL additionally
-requires an explicit migration of authentication, storage, function runtimes,
+The Owner selected complete migration to DigitalOcean. Moving the complete
+application to Kubernetes and DigitalOcean managed PostgreSQL requires an
+explicit migration of authentication, storage, function runtimes,
 database roles and extensions, scheduled work, secrets, origin configuration,
 and existing data. A managed PostgreSQL address cannot replace `SUPABASE_URL`.
 

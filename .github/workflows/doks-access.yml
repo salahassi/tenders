@@ -239,7 +239,11 @@ jobs:
           import pathlib
           import shutil
 
-          directory = pathlib.Path(os.environ["DOKS_WORKDIR"])
+          workdir = os.environ.get("DOKS_WORKDIR")
+          if not workdir:
+              print("No credential directory was initialized.")
+              raise SystemExit(0)
+          directory = pathlib.Path(workdir)
           expected = pathlib.Path(os.environ["RUNNER_TEMP"]) / (
               "doks-access-" + os.environ["GITHUB_RUN_ID"] + "-" + os.environ["GITHUB_RUN_ATTEMPT"]
           )
