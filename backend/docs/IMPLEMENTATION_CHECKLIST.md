@@ -66,6 +66,32 @@ acceptance or production restore. An additional PostgreSQL 18.6 regression
 reproduces the metadata read denial, verifies both owner-scoped counts and
 confirms that the admin still has no inherited table-read privilege afterward.
 
+Live acceptance passed on source
+`72a10d63318f98071e5e12ca240b4f2c31ebc8bf` in
+[run 40235951433](https://github.com/salahassi/tenders/actions/runs/40235951433),
+job `121297449838`. Auth 2.197.0, PostgREST 14.18 and Storage 1.81.0 completed
+their upstream migrations against a separate logical database on the existing
+managed PostgreSQL 18 server. All seven acceptance groups passed: fixture
+readiness, disabled public signup and protected administration, genuine invitation
+acceptance/password sign-in for distinct users, cross-user row/write denials,
+privileged service operations with ordinary-user RLS retained, two private
+uploads with exact byte equality, and cross-user/anonymous/public file denials.
+
+The live helper confirmed removal of the isolated database and seven roles, then
+the namespace. Unconditional cleanup and temporary credential removal also
+succeeded. The run reports `production_data_restored=false` and
+`migration_ready=false`. This completes the isolated compatible-service
+bootstrap checkpoint. Production owner/grant mapping, scheduler adaptation,
+durable object storage, runtime credentials, source restoration, HTTPS/origin
+configuration and application-level acceptance remain before cutover.
+
+The final local guard set contains 17 orchestrator tests, 10 pod-specification
+tests and four HTTP-probe guard tests, plus the PostgreSQL 18.6 regression for
+the creator grant, seven-role inheritance and owner-scoped metadata reads. Both
+application packages retain their passing typecheck/build results and all
+1,430 backend / 233 frontend tests. No application source changed during the
+bootstrap fixes.
+
 ## October 25 — Kubernetes access verified; migration compatibility inspection
 
 After the Owner added the repository credential, attempt 2 of

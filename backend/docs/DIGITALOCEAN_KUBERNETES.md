@@ -214,3 +214,20 @@ Local checks and live execution results are recorded separately in
 service compatibility result. Scheduler adaptation, production schema mapping,
 source/file restoration, HTTPS configuration and application acceptance still
 precede any cutover.
+
+### Verified compatible-service result
+
+[Run 40235951433](https://github.com/salahassi/tenders/actions/runs/40235951433)
+on `72a10d63318f98071e5e12ca240b4f2c31ebc8bf` passed all seven HTTP acceptance
+groups on the existing PostgreSQL 18 server. The pinned services completed their
+migrations, real test users accepted an invitation and signed in with passwords,
+PostgREST enforced cross-user and anonymous denials, and private Storage uploads
+and downloads preserved exact fixture bytes. Privileged service access worked
+through scoped owner inheritance while ordinary-user RLS stayed effective.
+
+The database, seven roles, namespace and temporary credentials were removed
+after the test. This verifies the isolated role/service arrangement; it does not
+restore or validate the actual TenderDesk schema, production users or original
+files. The next implementation checkpoint is mapping the production schema and
+grants to the validated arrangement and replacing its dispatcher dependencies,
+with durable storage and HTTPS configuration required before application cutover.
