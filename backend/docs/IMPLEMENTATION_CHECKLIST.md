@@ -140,6 +140,26 @@ unchanged from the independently verified frozen-source 1,457-test revision.
 Temporary encrypted HTTPS diagnostic objects have been removed after recording
 the cause and repair; the private minimal restore bundle is retained.
 
+Run [40242186686](https://github.com/salahassi/tenders/actions/runs/40242186686)
+on `a5fad5c32342bc678fd689795538a47b73f2701a` passed every application,
+compatibility and operations check, then published the new HTTPS, runtime and
+frontend images. Re-pushing the browser image exceeded the registry's 900-second
+upload window; no database/runtime mutation step ran. Existing browser/OCR images
+remain available. Their package locks, Dockerfiles and every reachable local
+module are byte-identical to the new revision (16 browser modules and 14 OCR
+modules); the changed signed-download helper is outside both native module graphs.
+
+A separate verified-image release uses the five already-published immutable
+digests. Its read-only gate verifies the original successful application-check
+step, exact repository/workflow/revision, unchanged application/operations/test
+inputs, and identical static native-worker dependency graphs before obtaining
+cluster credentials. Seven promotion guards pass, bringing ops guards to 92.
+The actual local gate passed against GitHub evidence and both native revisions.
+It then performs the same guarded restore, full live acceptance and bound-receipt
+background activation; native images are executed on the destination before
+schedules can be enabled. No application check is weakened or treated as passed
+because an upload failed.
+
 ## Isolated Auth and Storage bootstrap on the existing DigitalOcean database
 
 The Owner authorized implementation and live execution of the next compatibility

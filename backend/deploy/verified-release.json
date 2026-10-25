@@ -1,0 +1,12 @@
+{
+  "tested_source_revision": "a5fad5c32342bc678fd689795538a47b73f2701a",
+  "validation_run": 40242186686,
+  "native_source_revision": "51ca9ed90ba04e3fa5696b9e5a9cf6012c700b3a",
+  "images": {
+    "https": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce",
+    "runtime": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:21e0c77263995d62cdb3325afcc158f40d36db6415b4f1e7a42d7bd36df493e6",
+    "frontend": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:047aa5f0a276d6c3c84d6c982ce371155fbd04733b9e695f20579eb8e0de468c",
+    "browser": "registry.digitalocean.com/tenderdesk-a6093a76/browser@sha256:fbb755a5bc80ebabc472dbde571ad296849f3db39b90b7d0c6e964a27dc4353b",
+    "ocr": "registry.digitalocean.com/tenderdesk-a6093a76/ocr@sha256:a13d4de2579b00ba0ef963320f199310b1c1fdc86c75d8ca06004e7b2fcf0a88"
+  }
+}
