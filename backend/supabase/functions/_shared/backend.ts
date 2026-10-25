@@ -13,6 +13,8 @@ export interface BackendEnvironment {
   serviceKey: string;
   allowedOrigins: string[];
   workerSecret: string;
+  nativeWorkerSecret?: string;
+  browserOidcAudience?: string;
   collectionHosts?: string[];
   smtp?: {
     host: string;
@@ -98,6 +100,8 @@ export function environment(
       .map((x) => x.trim())
       .filter(Boolean),
     workerSecret: get("APP_WORKER_SECRET") || "",
+    nativeWorkerSecret: get("APP_NATIVE_WORKER_SECRET") || "",
+    browserOidcAudience: get("APP_BROWSER_OIDC_AUDIENCE") || "",
     smtp: {
       host: get("APP_SMTP_HOST") || "",
       port: Number(get("APP_SMTP_PORT") || "465"),

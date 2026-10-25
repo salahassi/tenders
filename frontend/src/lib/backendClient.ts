@@ -27,7 +27,7 @@ export class BackendClient {
       url.password ||
       url.pathname !== "/"
     )
-      throw new Error("Supply the Supabase project's HTTPS base URL.");
+      throw new Error("Supply the application's HTTPS API base URL.");
     if (!publishableKey)
       throw new Error("The Supabase publishable key is required.");
     this.auth = createClient(projectUrl, publishableKey, {
@@ -194,14 +194,12 @@ export class BackendClient {
 
 // This app always uses authenticated server persistence. Query parameters cannot enable local data.
 export function configuredBackend(): BackendClient {
-  const url = import.meta.env.VITE_SUPABASE_URL || deployment.projectUrl,
-    key =
-      import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-      deployment.publishableKey;
+  const url = deployment.projectUrl,
+    key = deployment.publishableKey;
   if (!url || !key)
     throw new BackendRequestError(
       "SETUP_REQUIRED",
-      "Connected mode needs the Supabase URL and publishable key.",
+      "The application API URL and publishable key need to be configured.",
       503,
     );
   return new BackendClient(url, key);

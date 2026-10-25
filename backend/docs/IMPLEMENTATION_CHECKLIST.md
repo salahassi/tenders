@@ -1,5 +1,70 @@
 # Implementation status and continuation plan
 
+## DigitalOcean application deployment with only the first Owner and configuration
+
+The Owner now explicitly requests merging the project, deploying all application
+services onto the existing Kubernetes cluster, pointing the frontend at the new
+server, and deleting the source project only after verifying the complete new
+application. The immediately preceding data constraint remains: keep only the
+first login account and operating configuration, without historical business
+records or original files. PR #7 was merged into main as
+`b3e8c5e377104ef20797d35f4d895d6c1e7567e6`.
+
+Preparation generates executable application DDL from the captured catalog,
+mapping hosted roles to seven database-specific `tdp_app_*` roles. Auth and
+Storage run pinned upstream migrations first. The generated application contains
+81 tables, ten invoker-security views, 229 routines and 66 policies. Two hosted
+network/Vault dispatcher routines are replaced by a transactional durable outbox
+and an authenticated persistent relay that retains immediate wake receipts,
+periodic recovery, leases and bounded retries. The original queue wake guards
+remain. Neither runtime nor request roles receive superuser or BYPASSRLS.
+
+The private minimal seed contains 37 rows: one confirmed email/password Owner,
+one email identity, the workspace and Owner authorization, operating/model
+configuration, a fresh operations row and the private bucket definition. A
+historical actor UUID preserves configuration attribution without a second login
+or membership. Password hashes are retained; old sessions/tokens are cleared.
+Business records, queued work and original objects are excluded. A fresh MCP
+read verified the same first user, email and password hash, with active confirmed
+status. Models and background execution remain paused during restoration.
+
+A private DigitalOcean Space now transports the small seed and schema with
+AES-256-GCM authenticated encryption. Upload and runner download independently
+obtain temporary bucket-scoped keys and derive the encryption key from the
+existing managed database credential, so no seed, password, presigned URL or
+private artifact enters the public repository. A separate live transport test
+passed exact-byte verification, rejected anonymous access with HTTP 403,
+deleted its fixture and confirmed no temporary Spaces keys remain. The actual
+minimal bundle has been uploaded privately. A Basic container registry in sfo3
+was created and integrated with the selected cluster; runtime images use
+immutable digests and durable read-only pull credentials.
+
+Deployment assets cover Auth, PostgREST, persistent private Storage, API, worker,
+source-browser, durable scheduler, browser/OCR jobs, frontend, gateway and HTTPS.
+The new frontend loads an explicit public runtime configuration before its
+bundle, without an old-source URL/key fallback. HTTPS and object bytes use
+persistent disks. Worker interfaces remain internal. Native jobs and the
+scheduler stay paused until the operating configuration is verified. An
+invitation-aware Auth database hook preserves the real application's custom
+Owner invitation flow; email confirmation stays required. SMTP and provider
+credential values cannot be exported through the connected Supabase MCP; any
+existing GitHub runtime secrets are provisioned without logging their values.
+
+Local evidence: the generated DDL and private seed pass a complete PostgreSQL
+18.6 rehearsal under non-superuser roles, including actual application commands,
+membership RLS, outsider/direct-write denials and safe nonempty-target refusal.
+Nine seed guards and twelve transport guards pass. The frontend passes 236 tests
+in 39 files, typecheck/build, a real immutable Docker build, and restricted
+container/Chromium transport checks. Intercepted Auth in that browser check is
+not live sign-in evidence. The runtime Docker image builds; restricted Deno
+health/readiness, anonymous worker denial and signal draining pass. Renderer,
+permanent-role, scheduler and invitation-hook regressions also pass. Full backend verification passes 1,435 tests in 83 files, typecheck and build.
+The generated schema/seed also pass the deployer's actual transactional checkpoint
+wrapper in PostgreSQL 18.6, including seed rollback/resume and private ledger read
+denials. Fifty-six ops guards and eleven renderer guards pass. Live deployment
+and application acceptance are recorded below as execution proceeds. No production
+cutover or source deletion is yet claimed.
+
 ## Isolated Auth and Storage bootstrap on the existing DigitalOcean database
 
 The Owner authorized implementation and live execution of the next compatibility

@@ -1,0 +1,16 @@
+# linux/amd64 Node24 official image verified through Registryv2 on2026-10-26.
+FROM docker.io/library/node:24-bookworm-slim@sha256:2dd9a4f758e173b65fee15388f7706af6fb01ef50cf7a2c0538711d67a6981ae
+ENV NODE_ENV=production
+WORKDIR /app/backend
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates poppler-utils tesseract-ocr tesseract-ocr-ara tesseract-ocr-eng \
+    && rm -rf /var/lib/apt/lists/*
+COPY backend/package.json backend/package-lock.json ./
+RUN --mount=type=secret,id=proxy_ca \
+    if [ -f /run/secrets/proxy_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/proxy_ca; fi; \
+    npm ci --include=dev --ignore-scripts && npm cache clean --force \
+    && chmod -R a+rX node_modules
+COPY backend/scripts/backend ./scripts/backend
+COPY backend/supabase/functions/_shared ./supabase/functions/_shared
+USER 1000:1000
+CMD ["node", "--experimental-transform-types", "scripts/backend/public-notice-ocr-worker.ts"]

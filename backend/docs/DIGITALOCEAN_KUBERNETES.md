@@ -231,3 +231,54 @@ restore or validate the actual TenderDesk schema, production users or original
 files. The next implementation checkpoint is mapping the production schema and
 grants to the validated arrangement and replacing its dispatcher dependencies,
 with durable storage and HTTPS configuration required before application cutover.
+
+
+## Permanent application deployment and minimal data scope
+
+The deployment workflow builds digest-addressed runtime, frontend, browser and
+OCR images in the account's integrated DigitalOcean registry. It obtains
+short-lived Kubernetes/push credentials and a separate durable read-only image
+pull credential. Only the selected `tenderdesk-dev` namespace and marker-owned
+`tenderdesk_app` logical database and `tdp_app_*` roles may be initialized.
+Existing unrelated workloads or unmarked database objects are rejected.
+
+Application DDL is generated from the private catalog by
+`backend/scripts/ops/production-schema/build_schema.py`. Run the pinned upstream
+Auth/Storage migrations before this DDL. The companion `build_minimal_seed.py`
+selects only the earliest active confirmed email/password Owner and operating
+configuration. Neither business history nor original files is imported. Runtime
+signing and worker secrets are new, so the Owner must sign in again with the
+preserved password. No existing hosted access token is reused.
+
+The private schema/seed bundle is encrypted before upload to the private
+`tenderdesk-migration-a6093a76-sfo3` Space. The workflow independently downloads
+and authenticates it. This bucket is a private migration transport, separate
+from the application's persistent object volume. Do not commit or attach its
+plaintext bundle, database credentials or private manifests. Temporary Spaces
+keys and runner data are removed; no private workflow artifacts are published.
+
+The permanent runtime includes a transactional database wake outbox and a
+one-second polling relay plus periodic recovery. Both direct queue wakes and
+lost/in-progress invocation recovery retain their existing business leases and
+idempotency guards. The relay and browser/OCR schedules remain disabled during
+restoration. Apply `dispatcher.sql` and `auth-invitations.sql` as the application
+owner after the application schema, using the prefixed service/auth role
+parameters. The Auth hook permits account creation only for a pending valid
+Owner-issued invitation; email confirmation remains enabled.
+
+The frontend receives public `apiUrl`, anonymous `publishableKey`, and
+`appOrigin` through `/runtime-config.js`; privileged keys never enter that file.
+Its container serves the application on the HTTPS gateway. The gateway denies
+public access to worker and source-browser interfaces. Without a supplied custom
+origin, the deployer assigns a temporary `tenderdesk.<load-balancer-IP>.sslip.io`
+hostname and obtains a trusted certificate through Caddy. Production custom DNS
+can later replace that origin through `TENDERDESK_PUBLIC_ORIGIN`.
+
+Supabase MCP does not return deployed provider keys or SMTP passwords. The
+workflow provisions any matching repository secrets into the runtime Secret;
+SMTP sender fields are derived from its configured From address. First-Owner
+password login can operate without SMTP, while new-account confirmation and
+password recovery need a real SMTP account. Model operations need their actual
+provider credentials. Source deletion remains conditional on verifying these
+features, persistent files, permissions, scheduling and the frontend against the
+new server. A successful container rollout alone does not satisfy that condition.
