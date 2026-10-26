@@ -28,8 +28,8 @@ const capabilities = (provider: string): Row => ({
         : "validated_json",
   background: ["openai", "gemini_free"].includes(provider),
   streaming: !["openai", "gemini_free"].includes(provider),
-  reasoning: "none",
-  reasoning_values: [],
+  reasoning: provider === "qwencloud" ? "qwen_toggle" : "none",
+  reasoning_values: provider === "qwencloud" ? ["none"] : [],
   max_output_tokens: null,
 });
 export default function ModelCatalogControls({
@@ -187,8 +187,8 @@ export default function ModelCatalogControls({
     <div className="model-catalog">
       <h2>Models &amp; providers</h2>
       <p>
-        Keys stay in Supabase Secrets. Connections identify the account and key;
-        models and each task’s fallback order are saved here.
+        Keys stay in the server runtime secret store. Connections identify the
+        account and key; models and each task’s fallback order are saved here.
       </p>
       {error && (
         <p role="alert" className="error-text">
@@ -233,7 +233,7 @@ export default function ModelCatalogControls({
                           (s: Row) => s.id === c.id,
                         )?.key_configured
                           ? "Key present"
-                          : "Key missing from Secrets"}
+                          : "Key missing from server configuration"}
                       </small>
                     )}
                   </td>
@@ -293,6 +293,11 @@ export default function ModelCatalogControls({
                     provider: p.id,
                     label: p.label,
                     credential_alias: `${p.prefix}_KEY`,
+                    project_ref:
+                      p.id === "qwencloud" &&
+                      connection.project_ref === "default"
+                        ? "ap-southeast-1"
+                        : connection.project_ref,
                   });
                 }}
               >
@@ -315,7 +320,7 @@ export default function ModelCatalogControls({
             </Field>
             <Field
               label="Secret name"
-              hint="Enter the name of the key in Supabase Secrets, never the key itself."
+              hint="Enter the name of the key in the server runtime secret store, never the key itself."
             >
               <input
                 required
@@ -575,8 +580,9 @@ export default function ModelCatalogControls({
                   {connectionFor(model.connection_id)?.provider ===
                   "gemini_free" ? (
                     <option value="gemini_level">Gemini thinking level</option>
-                  ) : connectionFor(model.connection_id)?.provider ===
-                    "qwen_free" ? (
+                  ) : ["qwen_free", "qwencloud"].includes(
+                      connectionFor(model.connection_id)?.provider,
+                    ) ? (
                     <option value="qwen_toggle">Qwen thinking switch</option>
                   ) : (
                     !["anthropic", "cloudflare_free"].includes(

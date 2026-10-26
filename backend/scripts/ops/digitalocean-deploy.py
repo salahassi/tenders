@@ -80,13 +80,17 @@ def apply(value):
     command(["apply", "--server-side", "--field-manager=tenderdesk-deployment", "-f", "-"], payload=json.dumps(value))
 
 
-def apply_managed(objects):
+def check_managed_ownership(objects):
     # Check the entire batch before replacing any existing resource. A namespace
     # marker alone does not authorize adopting another controller's objects.
     for value in objects:
         current = get(value["kind"].lower(), value["metadata"]["name"])
         if current is not None and current.get("metadata", {}).get("labels", {}).get("app.kubernetes.io/managed-by") != MARKER["app.kubernetes.io/managed-by"]:
             raise DeployError("EXISTING_APPLICATION_RESOURCE_NOT_OWNED")
+
+
+def apply_managed(objects):
+    check_managed_ownership(objects)
     for value in objects:
         value["metadata"].setdefault("labels", {}).update(MARKER)
     apply({"apiVersion": "v1", "kind": "List", "items": objects})
@@ -536,10 +540,22 @@ def deploy(args):
                 configuration[name + "_image"] = value
         objects = renderer.build(configuration)
         secret_rollout_revision(objects, core, runtime)
-        # Namespace and entrypoint are already ownership-checked above.
-        apply_managed([x for x in objects if x["kind"] != "Namespace"])
+        # Validate the whole release before restoring application schema or workloads.
+        # Only upstream Auth/REST/Storage may start before application SQL succeeds.
+        managed = [x for x in objects if x["kind"] != "Namespace"]
+        check_managed_ownership(managed)
+        workload_kinds = {"Deployment", "StatefulSet", "DaemonSet", "Job", "CronJob", "Pod"}
+        prerequisites, application = [], []
+        for value in managed:
+            upstream = value["kind"] == "Deployment" and value["metadata"]["name"] in {"auth", "rest", "storage"}
+            (application if value["kind"] in workload_kinds and not upstream else prerequisites).append(value)
+        apply_managed(prerequisites)
         wait_deployments(["auth", "rest", "storage"])
         restore_application(pod, files, manifest)
+        # The restored catalog predates OpenRouter/QwenCloud. Apply the guarded, repeatable
+        # provider extension under the application owner before worker acceptance.
+        provider_sql = (ROOT / "supabase/migrations/20261026112011_openrouter_provider.sql").read_text()
+        sql(pod, "BEGIN; SET LOCAL ROLE tdp_app_owner;\n" + provider_sql + "\nCOMMIT;")
         sql(pod, (ASSETS / "check-compatible.sql").read_text())
         emit("application_rpc_compatibility_verified")
         invitations = "BEGIN; SET LOCAL ROLE tdp_app_owner;\n" + (ROOT / "scripts/runtime/auth-invitations.sql").read_text() + "\nCOMMIT;"
@@ -558,6 +574,8 @@ INSERT INTO app_private.dispatcher_settings(singleton,project_url,secret_hash,co
 VALUES(true,'%s','%s','%s',false) ON CONFLICT(singleton) DO UPDATE SET project_url=excluded.project_url,secret_hash=excluded.secret_hash,collection_hosts=excluded.collection_hosts;
 NOTIFY pgrst, 'reload schema'; COMMIT;""" % (origin, worker_hash, host_array)
         sql(pod, configure)
+        # Deferred Pods cannot run the new application against the previous schema.
+        apply_managed(application)
         wait_deployments(["gateway", "api", "worker", "source-browser", "scheduler", "frontend", "https"])
         public = {"apiUrl": origin, "appOrigin": origin, "publishableKey": core["ANON_KEY"]}
         output = Path(os.environ["DOKS_WORKDIR"]) / "public-deployment.json"

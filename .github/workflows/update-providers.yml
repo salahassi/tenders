@@ -1,0 +1,83 @@
+name: Update TenderDesk model providers
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/providers-release]
+    paths-ignore: ["**/*.md"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+      - name: Verify locked application packages and deployment guards
+        run: |
+          npm ci --prefix frontend
+          npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          npm --prefix frontend run typecheck
+          npm --prefix frontend test -- --maxWorkers=1
+          npm --prefix frontend run build
+          npm --prefix backend run typecheck
+          npm --prefix backend test -- --maxWorkers=1
+          npm --prefix backend run build
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
+          python3 -m unittest discover -s backend/deploy/kubernetes -p 'test_*.py'
+      - name: Prepare verified cluster access and expiring image-push credentials
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/digitalocean-runner.py
+      - name: Build and publish immutable application images
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, re, subprocess
+          registry = 'registry.digitalocean.com/tenderdesk-a6093a76/'
+          directory = pathlib.Path(os.environ['DOKS_WORKDIR'])
+          for name, dockerfile, context in [('runtime','backend/deploy/Dockerfile','.'), ('frontend','frontend/Dockerfile','frontend')]:
+              reference = registry + name + ':' + os.environ['GITHUB_SHA']
+              with (directory / ('build-' + name + '.log')).open('w') as log:
+                  for arguments in [['docker','build','--platform=linux/amd64','--file',dockerfile,'--tag',reference,context], ['docker','push',reference]]:
+                      result = subprocess.run(arguments, stdout=log, stderr=subprocess.STDOUT, timeout=900)
+                      if result.returncode:
+                          raise SystemExit('Immutable application image build/push failed for ' + name)
+              result = subprocess.run(['docker','image','inspect',reference,'--format','{{json .RepoDigests}}'], capture_output=True,text=True,timeout=30)
+              values = json.loads(result.stdout) if result.returncode == 0 else []
+              digest = next((v for v in values if re.fullmatch(re.escape(registry+name)+r'@sha256:[a-f0-9]{64}',v)),None)
+              if not digest:
+                  raise SystemExit('Immutable image digest missing for ' + name)
+              with open(os.environ['GITHUB_ENV'],'a') as output:
+                  output.write('TENDERDESK_'+name.upper()+'_IMAGE='+digest+'\n')
+              print(json.dumps({'image':name,'status':'published','digest':digest.split('@')[1]}),flush=True)
+          PY
+      - name: Apply additive provider migration and preserve the running workspace
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/digitalocean-update.py
+      - name: Remove temporary runner credentials and private build logs
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,shutil
+          directory = pathlib.Path(os.environ['RUNNER_TEMP']) / ('td-deploy-' + os.environ['GITHUB_RUN_ID'] + '-' + os.environ['GITHUB_RUN_ATTEMPT'])
+          if directory.exists():
+              shutil.rmtree(directory)
+          print('Temporary runner credentials and logs removed.')
+          PY

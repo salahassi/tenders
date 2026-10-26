@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import ExitStack
 import base64
 import hashlib
 import importlib.util
@@ -399,6 +400,109 @@ class RestorationCheckpointTests(unittest.TestCase):
             ) as caught:
                 deploy.restore_state("offline-pod")
             self.assertNotIn("offline-private-value", str(caught.exception))
+
+
+class ApplicationRolloutOrderTests(unittest.TestCase):
+    def attempt(self, blocked=None, foreign=None):
+        events = []
+        workloads = [("Deployment", name) for name in ("auth", "rest", "storage", "api", "worker", "frontend")]
+        workloads += [("CronJob", "native-browser"), ("StatefulSet", "future-application")]
+        objects = [{"kind": kind, "metadata": {"name": name},
+                    "spec": {"template": {"spec": {}}}} for kind, name in workloads]
+        objects += [{"kind": "ConfigMap", "metadata": {"name": "shared-config"}}]
+
+        def apply(value):
+            events.append(("apply", [(x["kind"], x["metadata"]["name"]) for x in value["items"]]))
+
+        def get(kind, name):
+            if name == foreign:
+                return {"metadata": {"labels": {"app.kubernetes.io/managed-by": "another-controller"}}}
+            return None
+
+        def sql(pod, script, **kwargs):
+            if kwargs.get("database") == "defaultdb":
+                stage = "setup"
+            elif "QwenCloud Singapore" in script:
+                stage = "providers"
+            elif "BACKEND_DATABASE_COMPATIBILITY_REQUIRED" in script:
+                stage = "compatibility"
+            elif "auth_role" in kwargs.get("variables", {}):
+                stage = "invitations"
+            elif "service_role" in kwargs.get("variables", {}):
+                stage = "dispatcher"
+            else:
+                stage = "configuration"
+            events.append(("sql", stage))
+            if blocked == stage:
+                raise deploy.DeployError("OFFLINE_SQL_REJECTED")
+            return ""
+
+        def restore(*args):
+            events.append(("restore", "application"))
+            if blocked == "restore":
+                raise deploy.DeployError("OFFLINE_RESTORE_REJECTED")
+
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            stack.enter_context(patch.dict(os.environ, {"GITHUB_RUN_ID": "offline-run", "GITHUB_RUN_ATTEMPT": "1",
+                                                       "DOKS_WORKDIR": directory, "GITHUB_ENV": ""}))
+            patches = [
+                (deploy, "verify_bundle", {"return_value": ({}, {})}),
+                (deploy.probe, "validate_cluster", {}),
+                (deploy.probe, "target_credentials", {"return_value": ({}, "offline-ca")}),
+                (deploy, "ensure_namespace", {}),
+                (deploy, "registry_pull_secret", {}),
+                (deploy, "core_credentials", {"return_value": {"ANON_KEY": "offline-public"}}),
+                (deploy, "runtime_credentials", {"return_value": {"APP_WORKER_SECRET": "offline-worker", "APP_COLLECTION_HOSTS": "example.test"}}),
+                (deploy, "sql_pod", {}),
+                (deploy, "public_url", {"return_value": "https://offline.example.test"}),
+                (deploy.renderer, "build", {"return_value": objects}),
+                (deploy, "get", {"side_effect": get}),
+                (deploy, "apply", {"side_effect": apply}),
+                (deploy, "wait_deployments", {"side_effect": lambda names: events.append(("ready", names))}),
+                (deploy, "restore_application", {"side_effect": restore}),
+                (deploy, "sql", {"side_effect": sql}),
+                (deploy, "cleanup_administrator", {"side_effect": lambda pod: events.append(("cleanup", pod))}),
+                (deploy, "emit", {}),
+            ]
+            for module, name, kwargs in patches:
+                stack.enter_context(patch.object(module, name, **kwargs))
+            error = None
+            try:
+                deploy.deploy(argparse.Namespace(bundle=Path("offline-bundle"), sha256="0" * 64))
+            except deploy.DeployError as caught:
+                error = caught
+            return events, error
+
+    def test_application_and_native_workloads_wait_for_restore_and_every_sql_gate(self):
+        events, error = self.attempt()
+        self.assertIsNone(error)
+        configured = events.index(("sql", "configuration"))
+        before = [item for event, values in events[:configured] if event == "apply" for item in values]
+        self.assertEqual({name for kind, name in before if kind == "Deployment"}, {"auth", "rest", "storage"})
+        self.assertFalse(any(kind in {"CronJob", "StatefulSet"} for kind, name in before))
+        after = [item for event, values in events[configured + 1:] if event == "apply" for item in values]
+        self.assertEqual(set(after), {("Deployment", "api"), ("Deployment", "worker"), ("Deployment", "frontend"),
+                                     ("CronJob", "native-browser"), ("StatefulSet", "future-application")})
+        self.assertLess(events.index(("ready", ["auth", "rest", "storage"])), events.index(("restore", "application")))
+        self.assertLess(events.index(("sql", "providers")), events.index(("sql", "compatibility")))
+        self.assertEqual(events[-1][0], "cleanup")
+
+    def test_restore_or_sql_failure_never_applies_new_application_workloads(self):
+        for blocked in ("restore", "providers", "compatibility", "invitations", "dispatcher", "configuration"):
+            with self.subTest(blocked=blocked):
+                events, error = self.attempt(blocked)
+                self.assertIsInstance(error, deploy.DeployError)
+                applied = [item for event, values in events if event == "apply" for item in values]
+                self.assertFalse(any(kind in {"CronJob", "StatefulSet"} or name in {"api", "worker", "frontend"}
+                                     for kind, name in applied))
+                self.assertEqual(events[-1][0], "cleanup")
+
+    def test_foreign_deferred_workload_is_refused_before_restore_or_core_rollout(self):
+        events, error = self.attempt(foreign="worker")
+        self.assertEqual(str(error), "EXISTING_APPLICATION_RESOURCE_NOT_OWNED")
+        self.assertNotIn(("restore", "application"), events)
+        self.assertFalse(any(event == "ready" for event, value in events))
+        self.assertEqual(events[-1][0], "cleanup")
 
 
 if __name__ == "__main__":

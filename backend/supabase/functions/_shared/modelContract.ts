@@ -179,8 +179,12 @@ export function defaultCapabilities(
           : "validated_json",
     background: provider === "openai" || provider === "gemini_free",
     streaming: provider !== "openai" && provider !== "gemini_free",
-    reasoning: provider === "qwen_free" ? "qwen_toggle" : "none",
-    reasoning_values: provider === "qwen_free" ? ["none"] : [],
+    reasoning:
+      provider === "qwen_free" || provider === "qwencloud"
+        ? "qwen_toggle"
+        : "none",
+    reasoning_values:
+      provider === "qwen_free" || provider === "qwencloud" ? ["none"] : [],
   });
 }
 export function resolveProfile(

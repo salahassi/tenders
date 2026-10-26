@@ -6,6 +6,8 @@ import { chatAdapter } from "./chat.ts";
 import type { ModelAdapter } from "./types.ts";
 export const modelAdapters: Record<ModelProviderId, ModelAdapter> = {
   openai: openaiAdapter,
+  openrouter: chatAdapter("openrouter"),
+  qwencloud: chatAdapter("qwencloud"),
   gemini_free: geminiAdapter,
   anthropic: anthropicAdapter,
   qwen_free: chatAdapter("qwen_free"),

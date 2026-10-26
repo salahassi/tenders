@@ -221,7 +221,7 @@ export function available(
     throw new ModelError("MODEL_NOT_CONFIGURED");
   if (
     !MODEL_PROVIDER_IDS.includes(config.provider) ||
-    !/^[a-zA-Z0-9._@/-]{1,120}$/.test(config.model)
+    !/^[a-zA-Z0-9._@/:-]{1,120}$/.test(config.model)
   )
     throw new ModelError("PROVIDER_NOT_ALLOWED");
   if (

@@ -38,6 +38,8 @@ const SECRET_PREFIX: Record<ModelProviderId, string> = {
   zai_free: "APP_MODEL_ZAI",
   openai: "APP_MODEL_OPENAI",
   anthropic: "APP_MODEL_CLAUDE",
+  openrouter: "APP_MODEL_OPENROUTER",
+  qwencloud: "APP_MODEL_QWENCLOUD",
 };
 export function modelEnvironments(
   get: (name: string) => string | undefined,
@@ -56,7 +58,13 @@ export function modelEnvironments(
       projectRef:
         get(`${prefix}_PROJECT`) ||
         (legacyProvider === provider ? legacyProject : "") ||
-        (provider === "openai" || provider === "anthropic" ? "default" : ""),
+        (provider === "openai" ||
+        provider === "anthropic" ||
+        provider === "openrouter"
+          ? "default"
+          : provider === "qwencloud"
+            ? "ap-southeast-1"
+            : ""),
       key:
         get(`${prefix}_KEY`) || (legacyProvider === provider ? legacyKey : ""),
     };
