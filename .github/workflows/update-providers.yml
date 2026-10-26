@@ -32,6 +32,7 @@ jobs:
         run: |
           npm ci --prefix frontend
           npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
           npm --prefix frontend run typecheck
           npm --prefix frontend test -- --maxWorkers=1
           npm --prefix frontend run build

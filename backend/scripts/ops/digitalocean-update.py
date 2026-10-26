@@ -80,10 +80,7 @@ def patch_image(name, selected, expected):
 # Values remain only in this SQL session. Hashes avoid returning configuration or
 # business records; REPEATABLE READ excludes unrelated concurrent worker commits.
 SNAPSHOT_SQL = r"""
-CREATE TEMP TABLE provider_update_before(state jsonb);
-CREATE FUNCTION pg_temp.provider_update_snapshot() RETURNS jsonb LANGUAGE plpgsql AS $snapshot$
-DECLARE r record; n bigint; counts jsonb := '{}'; state jsonb;
-BEGIN
+ counts := '{}';
  FOR r IN SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname='public' ORDER BY tablename LOOP
   EXECUTE format('SELECT count(*) FROM public.%I',r.tablename) INTO n;
   counts:=counts||jsonb_build_object(r.tablename,n);
@@ -99,10 +96,24 @@ BEGIN
   'routes',(SELECT md5(coalesce(jsonb_agg(to_jsonb(x) ORDER BY workspace_id,task)::text,'[]')) FROM public.model_task_routes x),
   'sources',(SELECT md5(coalesce(jsonb_agg(to_jsonb(x) ORDER BY id)::text,'[]')) FROM public.sources x)
  ) INTO state;
- RETURN state;
-END $snapshot$;
-INSERT INTO pg_temp.provider_update_before SELECT pg_temp.provider_update_snapshot();
 """
+
+
+def migration_script(migration=None):
+    migration = MIGRATION.read_text() if migration is None else migration
+    delimiter = "$provider_update_migration$"
+    while delimiter in migration:
+        delimiter = delimiter[:-1] + "_$"
+    return ("BEGIN ISOLATION LEVEL REPEATABLE READ; SET LOCAL ROLE tdp_app_owner;\n"
+            "DO $provider_update_preserve$\n"
+            "DECLARE r record; n bigint; counts jsonb; state jsonb; before_state jsonb;\nBEGIN\n"
+            + SNAPSHOT_SQL + "before_state := state;\nEXECUTE " + delimiter + migration + delimiter + ";\n"
+            + SNAPSHOT_SQL + """
+ IF before_state IS DISTINCT FROM state
+ THEN RAISE EXCEPTION 'PROVIDER_UPDATE_EXISTING_DATA_CHANGED'; END IF;
+END $provider_update_preserve$;
+NOTIFY pgrst,'reload schema'; COMMIT;
+""")
 
 
 def migrate(pod):
@@ -111,16 +122,7 @@ def migrate(pod):
     if not state or state.get("stage") != "seed" or any(marker.get(k) != state[k] for k in ("schema_sha256", "seed_sha256")):
         raise UpdateError("UPDATE_EXISTING_RESTORATION_REQUIRED")
     d.sql(pod, (d.ASSETS / "check-compatible.sql").read_text())
-    script = "BEGIN ISOLATION LEVEL REPEATABLE READ; SET LOCAL ROLE tdp_app_owner;\n" + SNAPSHOT_SQL
-    script += MIGRATION.read_text()
-    script += """
-DO $preserve$ BEGIN
- IF (SELECT state FROM pg_temp.provider_update_before) IS DISTINCT FROM pg_temp.provider_update_snapshot()
- THEN RAISE EXCEPTION 'PROVIDER_UPDATE_EXISTING_DATA_CHANGED'; END IF;
-END $preserve$;
-NOTIFY pgrst,'reload schema'; COMMIT;
-"""
-    d.sql(pod, script)
+    d.sql(pod, migration_script())
     emit("provider_schema_verified", business_records_preserved=True, model_activation_changed=False)
 
 

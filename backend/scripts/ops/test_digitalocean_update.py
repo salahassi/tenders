@@ -7,6 +7,7 @@ from contextlib import ExitStack
 import importlib.util
 import json
 import os
+import subprocess
 from pathlib import Path
 import sys
 import unittest
@@ -89,7 +90,7 @@ class ExistingWorkspaceUpdateTests(unittest.TestCase):
             raise u.d.DeployError("APPLICATION_ROLLOUT_FAILED")
 
     def sql(self, pod, script, **kwargs):
-        self.events.append(("migration" if "provider_update_snapshot" in script else "compatibility", script))
+        self.events.append(("migration" if "provider_update_preserve" in script else "compatibility", script))
         return ""
 
     def context(self):
@@ -114,7 +115,9 @@ class ExistingWorkspaceUpdateTests(unittest.TestCase):
         script = self.events[migration][1]
         self.assertIn("BEGIN ISOLATION LEVEL REPEATABLE READ", script)
         self.assertIn("PROVIDER_UPDATE_EXISTING_DATA_CHANGED", script)
-        self.assertIn("pg_temp.provider_update_before", script)
+        self.assertIn("before_state := state", script)
+        self.assertNotIn("CREATE TEMP", script)
+        self.assertNotIn("pg_temp", script)
         for name in u.COMPONENTS:
             self.assertEqual(u.without_image(self.resources["deployment", name]), u.without_image(self.initial["deployment", name]))
         for key in self.resources:
@@ -195,6 +198,65 @@ class ExistingWorkspaceUpdateTests(unittest.TestCase):
             responses["/assets/modelProviders-xyz.js"] = b'"OpenRouter"'
             with self.assertRaisesRegex(u.UpdateError, "PROVIDER_FRONTEND_MISSING"):
                 u.public_check(configuration, core)
+
+    def test_restricted_application_owner_needs_no_temp_privilege_and_rolls_back_mutations(self):
+        # Execute real PostgreSQL DDL/SPI against the deployed eight-provider
+        # baseline, not the permissive default superuser used by ordinary fixtures.
+        valid = u.migration_script()
+        mutation = u.migration_script(u.MIGRATION.read_text() + "\nUPDATE public.sources SET name='Synthetic changed source';")
+        activation = u.migration_script(u.MIGRATION.read_text() + "\nUPDATE public.model_routing SET enabled=true;")
+        script = "const valid=" + json.dumps(valid) + ";const mutation=" + json.dumps(mutation) + ";const activation=" + json.dumps(activation) + ";\n" + r"""
+import { PGlite } from '@electric-sql/pglite';
+import { readFile, readdir } from 'node:fs/promises';
+const db=new PGlite();
+await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create schema storage;
+ create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);
+ create table auth.identities(user_id uuid,provider text,identity_data jsonb);
+ create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+ grant usage on schema auth to authenticated;
+ create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
+ create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text);
+ alter table storage.objects enable row level security;grant usage on schema storage to authenticated;grant insert,select on storage.objects to authenticated;`);
+for(const name of (await readdir('supabase/migrations')).filter(n=>/^\d+_.+\.sql$/.test(n)&&!n.endsWith('_openrouter_provider.sql')).sort())
+ await db.exec(await readFile('supabase/migrations/'+name,'utf8'));
+const actor='00000000-0000-4000-8000-000000000001';
+await db.query('insert into auth.users values($1,$2,now())',[actor,'fixture@example.test']);
+await db.query("insert into auth.identities values($1,'email',$2::jsonb)",[actor,JSON.stringify({sub:actor})]);
+const w=(await db.query("select public.bootstrap_workspace($1,'Synthetic restricted-role update') id",[actor])).rows[0].id;
+await db.query("insert into public.sources(workspace_id,name,kind,url,created_by) values($1,'Synthetic preserved source','manual','https://fixture.example.test',$2)",[w,actor]);
+await db.query("insert into public.model_routing(workspace_id,enabled,created_by) values($1,false,$2)",[w,actor]);
+await db.exec(`create role tdp_app_owner nosuperuser nobypassrls nocreatedb nocreaterole;
+ alter schema public owner to tdp_app_owner;alter schema app_private owner to tdp_app_owner;
+ DO $ownership$ DECLARE r record; BEGIN
+  FOR r IN SELECT n.nspname,c.relname,c.relkind FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+   WHERE n.nspname IN ('public','app_private') AND c.relkind IN ('r','p','v','m') LOOP
+   EXECUTE format('ALTER %s %I.%I OWNER TO tdp_app_owner',CASE WHEN r.relkind='v' THEN 'VIEW' WHEN r.relkind='m' THEN 'MATERIALIZED VIEW' ELSE 'TABLE' END,r.nspname,r.relname);
+  END LOOP;
+  FOR r IN SELECT p.oid::regprocedure signature FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
+   WHERE n.nspname IN ('public','app_private') AND p.prokind='f' LOOP
+   EXECUTE format('ALTER FUNCTION %s OWNER TO tdp_app_owner',r.signature);
+  END LOOP;
+  EXECUTE format('REVOKE TEMPORARY ON DATABASE %I FROM PUBLIC,tdp_app_owner',current_database());
+ END $ownership$;`);
+const privileges=(await db.query("select has_database_privilege('tdp_app_owner',current_database(),'TEMP') as temporary,pg_get_userbyid(datdba)='tdp_app_owner' as database_owner from pg_database where datname=current_database()")).rows[0];
+if(privileges.temporary||privileges.database_owner)throw Error('RESTRICTED_ROLE_SETUP_FAILED');
+let denied=false;try{await db.exec('begin;set local role tdp_app_owner;create temp table forbidden_temp(id int);');}catch(e){denied=e.code==='42501';await db.exec('rollback');}
+if(!denied)throw Error('TEMP_PRIVILEGE_NOT_REVOKED');
+await db.exec(valid);
+const source=(await db.query('select name from public.sources')).rows[0];
+const route=(await db.query('select enabled,provider_order from public.model_routing')).rows[0];
+if(source.name!=='Synthetic preserved source'||route.enabled||route.provider_order.length!==10)throw Error('POPULATED_UPDATE_NOT_PRESERVED');
+for(const script of [mutation,activation]){
+ let rejected=false;try{await db.exec(script);}catch(e){rejected=e.message==='PROVIDER_UPDATE_EXISTING_DATA_CHANGED';await db.exec('rollback');}
+ if(!rejected)throw Error('MUTATION_NOT_REJECTED');
+}
+if((await db.query('select name from public.sources')).rows[0].name!=='Synthetic preserved source'||(await db.query('select enabled from public.model_routing')).rows[0].enabled)throw Error('MUTATION_ESCAPED_ROLLBACK');
+await db.close();console.log('restricted-role provider update passed');
+"""
+        result = subprocess.run(["node", "--experimental-strip-types", "--input-type=module"], input=script,
+                                capture_output=True, text=True, cwd=u.d.ROOT, timeout=60)
+        self.assertEqual(result.returncode, 0, result.stderr[-1500:])
+        self.assertIn("restricted-role provider update passed", result.stdout)
 
 
 if __name__ == "__main__":

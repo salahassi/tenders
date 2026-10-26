@@ -8,7 +8,9 @@ The update helper verifies owned/ready workloads and the current restoration led
 
 Release-path verification passed: **103 operations tests**, **12 Kubernetes renderer tests**, and a populated PostgreSQL replay of the guarded migration preserving an existing source. Existing application evidence remains **1,473 backend tests** and **241 frontend tests** with both builds/typechecks.
 
-Status: code and release preparation verified; remote publication/deployment pending. No new production revision, successful remote workflow, production migration or live provider activation is claimed yet. Source insertion for Etimad remains separate; this release includes no source seed.
+First remote attempt `40395807941` on `b3c0a1b238af865026850f20c76da5772e1c382b` passed all 1,473 backend / 241 frontend tests, 103 ops / 12 renderer guards and both builds, then published runtime digest `a0002bdb1f0050030f78e582c34f11baf2952ba52c7777b76d74033c8b55483a` and frontend digest `1929b3865e887443c38b695b92a4e731c22c93414bb10c45e7f8bee4b9496da2`. The update stopped at SQLSTATE 42501 on snapshot temporary-table creation: production correctly withholds TEMP from the application owner. No provider SQL committed and no image fields changed; temporary administrator resources were confirmed removed. The correction retains snapshot state inside a single anonymous block and requires no new privilege grants. The new restricted-role PostgreSQL regression passes with TEMP revoked and a nonsuperuser, non-database-owner role; it proves the populated 8→10 update and rollback of source/routing mutations. The operations suite now passes **104 tests**.
+
+Status: application checks and image publication verified; deployment retry pending the restricted-role correction. No new production revision, successful remote workflow, production migration or live provider activation is claimed yet. Source insertion for Etimad remains separate; this release includes no source seed.
 
 ## October 26 — requested Etimad source insertion, administrative access pending
 
