@@ -361,7 +361,7 @@ export const commandSchemas = {
       expected_revision: z.number().int().min(0),
       connection_id: uuid,
       label: z.string().trim().min(1).max(120),
-      model: z.string().regex(/^[a-zA-Z0-9._@/-]{1,120}$/),
+      model: z.string().regex(/^[a-zA-Z0-9._@/:-]{1,120}$/),
       enabled: z.boolean(),
       capabilities: capabilitySchema,
     })
@@ -391,7 +391,7 @@ export const commandSchemas = {
       expected_revision: z.number().int().min(0),
       enabled: z.boolean(),
       provider: z.enum(MODEL_PROVIDER_IDS),
-      model: z.string().regex(/^[a-zA-Z0-9._@/-]{1,120}$/),
+      model: z.string().regex(/^[a-zA-Z0-9._@/:-]{1,120}$/),
       project_ref: z.string().min(1).max(120),
       free_only: z.boolean(),
       billing_verified: z.boolean(),
@@ -434,10 +434,19 @@ export const commandSchemas = {
           (ids) =>
             new Set(ids).size === ids.length &&
             (ids.length === ROUND_ROBIN_PROVIDERS.length ||
-              (ids.length === 7 && !ids.includes("cloudflare_free")) ||
+              (ids.length === 9 && !ids.includes("qwencloud")) ||
+              (ids.length === 8 &&
+                !ids.includes("openrouter") &&
+                !ids.includes("qwencloud")) ||
+              (ids.length === 7 &&
+                !ids.includes("qwencloud") &&
+                !ids.includes("cloudflare_free") &&
+                !ids.includes("openrouter")) ||
               (ids.length === 5 &&
                 ids.every(
                   (id) =>
+                    id !== "qwencloud" &&
+                    id !== "openrouter" &&
                     id !== "openai" &&
                     id !== "anthropic" &&
                     id !== "cloudflare_free",

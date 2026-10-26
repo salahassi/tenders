@@ -2037,7 +2037,7 @@ it("imports an existing server setup before new routes have been configured", as
   );
   expect(
     (await ledger.preflight([], "connection_probe")).providers.length,
-  ).toBe(8);
+  ).toBe(10);
 });
 it("shares an account 429 with sibling models while keeping other accounts independently eligible", async () => {
   const { job, models, ledger } = await configure();

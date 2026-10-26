@@ -212,3 +212,27 @@ and base version. It preserves analysis and paid receipts, supersedes failed
 planning and queues one workflow-3 structure. It cannot upgrade active requests,
 accepted planning or changed evidence. Use only after both entrypoints support
 workflow 3. Rollout admission remains separately controlled.
+
+## OpenRouter setup
+
+Store `APP_MODEL_OPENROUTER_KEY` in the Kubernetes runtime secret through the deployment workflow's GitHub secret of the same name. Do not enter the key in the browser. An optional `APP_MODEL_OPENROUTER_NAME` repository variable imports an exact model identifier, such as the model ID copied from OpenRouter; alternatively create the model under Models & providers. `APP_MODEL_OPENROUTER_PROJECT` is an optional account label and defaults to `default`.
+
+Create or enable the OpenRouter connection with credential alias `APP_MODEL_OPENROUTER_KEY`, select the exact model identifier and add it to the desired task routes. Capabilities depend on the selected model. The default uses locally validated JSON, streaming support and no background request or reasoning control. Only select stronger schema/reasoning capabilities after verifying that the selected model supports them. OpenRouter requests use `https://openrouter.ai/api/v1/chat/completions` and require the upstream endpoint to support the supplied parameters; unsupported configurations fail rather than silently dropping those parameters.
+
+OpenRouter routes requests to upstream model providers. Review the account's upstream routing and data policies before granting content permission. Adding credentials or selecting a route does not grant permission to send documents or company evidence. Grant those permissions separately, then use the selected-provider connection check and review actual activity and reported usage. A configured badge proves credential presence, not successful inference or free usage. Free model identifiers can still have availability and rate limits.
+
+The combined OpenRouter/QwenCloud migration must precede the updated application. The DigitalOcean deployer applies the guarded, repeatable migration after restoring the retained schema and holds application/native workloads until all database setup checks pass; existing provider order, cursor and permissions are preserved. No automatic data-sharing permission is added. Production deployment and a successful live connection check remain separate acceptance requirements.
+
+Reference: [OpenRouter API overview](https://openrouter.ai/docs/api/reference/overview), checked October 26, 2026.
+
+## QwenCloud Singapore setup
+
+QwenCloud and the existing Alibaba Model Studio connection use separate endpoints and credentials. Select **QwenCloud** for a pay-as-you-go API key created in Singapore (`ap-southeast-1`). Store its value privately as `APP_MODEL_QWENCLOUD_KEY`, with optional repository variable `APP_MODEL_QWENCLOUD_NAME` for the exact model ID. Alternatively add the model under Models & providers. The credential alias is `APP_MODEL_QWENCLOUD_KEY`; keys never enter the browser.
+
+The fixed OpenAI-compatible base URL is `https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode/v1`; chat requests append `/chat/completions`. QwenCloud identifies the workspace through the key, so do not put a workspace ID in the hostname. The optional `APP_MODEL_QWENCLOUD_PROJECT` is an account label for local identity tracking and defaults to `ap-southeast-1`. Changing this label does not select a different region.
+
+The existing **Qwen** (`qwen_free`) provider remains Alibaba Model Studio and continues using `APP_MODEL_QWEN_KEY`, its model name and its workspace-prefixed Alibaba endpoint. A configured Alibaba key is not reused for QwenCloud. Data-sharing permission is separate for each provider. Add QwenCloud models to the desired routes, grant the applicable evidence permissions and inspect the selected-provider probe before relying on inference. Conservative defaults disable Qwen thinking for structured JSON requests; adjust capabilities only for a model verified to support them.
+
+This connection supports Singapore pay-as-you-go access. QwenCloud Token Plan requires its own `token-plan.maas.qwencloudapi.com` endpoint and key, and is not covered by this connection. Keys created in another region cannot be assumed to work in Singapore. No live QwenCloud inference has been verified by the implementation tests.
+
+References: [QwenCloud regions and endpoints](https://docs.qwencloud.com/developer-guides/getting-started/regions), [API keys and key types](https://docs.qwencloud.com/api-reference/preparation/api-key), checked October 26, 2026.

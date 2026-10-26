@@ -47,7 +47,11 @@ const models = modelEnvironments((name) => {
   if (name.startsWith("APP_MODEL_")) {
     if (name.endsWith("_KEY")) return "synthetic-key";
     if (name.endsWith("_NAME"))
-      return name.includes("GEMINI") ? "gemini-3.8-flash" : "synthetic-model";
+      return name.includes("GEMINI")
+        ? "gemini-3.8-flash"
+        : name.includes("OPENROUTER")
+          ? "vendor/chosen-model:free"
+          : "synthetic-model";
     if (name.endsWith("_PROJECT"))
       return name.includes("CLOUDFLARE")
         ? "syntheticaccount"
@@ -120,21 +124,25 @@ function worker(fetcher: typeof fetch, env = environment) {
     );
 }
 function providerOf(url: string) {
-  return url.includes("api.cloudflare.com")
-    ? "cloudflare_free"
-    : url.includes("googleapis")
-      ? "gemini_free"
-      : url.includes("aliyuncs")
-        ? "qwen_free"
-        : url.includes("mistral.ai")
-          ? "mistral_free"
-          : url.includes("api.openai.com")
-            ? "openai"
-            : url.includes("api.anthropic.com")
-              ? "anthropic"
-              : url.includes("api.z.ai")
-                ? "zai_free"
-                : "groq_free";
+  return url.includes("qwencloudapi.com")
+    ? "qwencloud"
+    : url.includes("openrouter.ai")
+      ? "openrouter"
+      : url.includes("api.cloudflare.com")
+        ? "cloudflare_free"
+        : url.includes("googleapis")
+          ? "gemini_free"
+          : url.includes("aliyuncs")
+            ? "qwen_free"
+            : url.includes("mistral.ai")
+              ? "mistral_free"
+              : url.includes("api.openai.com")
+                ? "openai"
+                : url.includes("api.anthropic.com")
+                  ? "anthropic"
+                  : url.includes("api.z.ai")
+                    ? "zai_free"
+                    : "groq_free";
 }
 function success(provider: string, id = "synthetic-request") {
   if (provider === "openai")
@@ -345,7 +353,7 @@ it("keeps round checkpoints private, input-bound, lease-bound and canceled-job s
   ).rejects.toMatchObject({ code: "STALE_LEASE" });
 });
 
-it("records all eight missing slots and schedules retry without unauthenticated requests", async () => {
+it("records all ten missing slots and schedules retry without unauthenticated requests", async () => {
   await enable();
   const q = await queue();
   const send = vi.fn<typeof fetch>();
@@ -357,7 +365,9 @@ it("records all eight missing slots and schedules retry without unauthenticated 
   expect(j.status).toBe("retry_wait");
   expect(j.error_code).toBe("MODEL_ROUND_EXHAUSTED");
   expect(Number.isFinite(Date.parse(j.next_attempt_at))).toBe(true);
-  expect(j.checkpoint.model_routing.checks).toHaveLength(8);
+  expect(j.checkpoint.model_routing.checks).toHaveLength(
+    ROUND_ROBIN_PROVIDERS.length,
+  );
   expect(
     j.checkpoint.model_routing.checks.every(
       (x: any) => x.code === "MODEL_NOT_CONFIGURED" && !x.sent,
@@ -489,7 +499,7 @@ it("retries with rotation, prevents immediate ambiguous duplicates, then permits
   const tick = worker(send);
   await tick();
   expect((await job(q.id)).status).toBe("retry_wait");
-  expect(await usage(q.id)).toHaveLength(8);
+  expect(await usage(q.id)).toHaveLength(ROUND_ROBIN_PROVIDERS.length);
   await f.db.query(
     "update public.jobs set status='queued',next_attempt_at=now() where id=$1",
     [q.id],
@@ -498,13 +508,13 @@ it("retries with rotation, prevents immediate ambiguous duplicates, then permits
   const before = vi.mocked(send).mock.calls.length;
   await tick();
   expect((await job(q.id)).status).toBe("retry_wait");
-  expect(await usage(q.id)).toHaveLength(8);
+  expect(await usage(q.id)).toHaveLength(ROUND_ROBIN_PROVIDERS.length);
   expect(vi.mocked(send).mock.calls.slice(before)).toHaveLength(0);
   await f.db.exec(
     "update public.provider_usage set created_at=now()-interval '16 minutes'; update public.jobs set next_attempt_at=now() where status='retry_wait'",
   );
   await tick();
-  expect(await usage(q.id)).toHaveLength(16);
+  expect(await usage(q.id)).toHaveLength(2 * ROUND_ROBIN_PROVIDERS.length);
   expect(
     (await usage(q.id)).every(
       (u) => u.actual_input === null && u.actual_output === null,
@@ -694,10 +704,10 @@ it("tries every automatic provider despite old daily ceilings and retains unknow
       throw new TypeError("synthetic loss");
     }),
   )();
-  expect(calls).toHaveLength(8);
+  expect(calls).toHaveLength(ROUND_ROBIN_PROVIDERS.length);
   expect((await job(q.id)).error_code).toBe("MODEL_ROUND_EXHAUSTED");
   expect((await job(q.id)).status).toBe("retry_wait");
-  expect(await usage(q.id)).toHaveLength(8);
+  expect(await usage(q.id)).toHaveLength(ROUND_ROBIN_PROVIDERS.length);
   expect(
     (await usage(q.id)).every(
       (u) => u.actual_input === null && u.actual_output === null,
@@ -1095,7 +1105,14 @@ it("uses the saved priority on every new job and skips failures in that order", 
     )
   ).rows[0];
   expect(readback).toEqual({
-    provider_order: [...order, "openai", "anthropic", "cloudflare_free"],
+    provider_order: [
+      ...order,
+      "openai",
+      "anthropic",
+      "cloudflare_free",
+      "openrouter",
+      "qwencloud",
+    ],
     strategy: "priority",
   });
   for (let round = 0; round < 2; round++) {
@@ -1528,7 +1545,13 @@ it("keeps a targeted overload check waiting, counts its retry, and succeeds when
   expect(rows[2].status).toBe("succeeded");
 });
 
-it.each(["openai", "anthropic", "cloudflare_free"] as const)(
+it.each([
+  "openai",
+  "anthropic",
+  "cloudflare_free",
+  "openrouter",
+  "qwencloud",
+] as const)(
   "runs a targeted %s probe with durable native usage and model identity",
   async (provider) => {
     await enable();
@@ -1550,7 +1573,7 @@ it.each(["openai", "anthropic", "cloudflare_free"] as const)(
     ).rows[0];
     expect(row).toMatchObject({
       provider,
-      model: "synthetic-model",
+      model: models[provider].model,
       actual_input: 100,
       actual_output: 10,
       status: "succeeded",
@@ -1657,7 +1680,12 @@ it("accepts a seven-slot worker with a cursor at Cloudflare without removing the
   await rpc("prepare_model_routing", {
     job_id: q.id,
     lease: claimed.lease_token,
-    server_models: meta().filter((p) => p.provider !== "cloudflare_free"),
+    server_models: meta().filter(
+      (p) =>
+        p.provider !== "cloudflare_free" &&
+        p.provider !== "openrouter" &&
+        p.provider !== "qwencloud",
+    ),
   });
   expect((await job(q.id)).checkpoint.model_routing.provider_count).toBe(7);
   expect(

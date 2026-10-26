@@ -8,6 +8,9 @@ type ChatProvider = Exclude<
 const endpoints: Record<ChatProvider, (env: AdapterEnvironment) => string> = {
   qwen_free: (e) =>
     `https://${e.projectRef}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/chat/completions`,
+  qwencloud: () =>
+    "https://ap-southeast-1.maas.qwencloudapi.com/compatible-mode/v1/chat/completions",
+  openrouter: () => "https://openrouter.ai/api/v1/chat/completions",
   groq_free: () => "https://api.groq.com/openai/v1/chat/completions",
   mistral_free: () => "https://api.mistral.ai/v1/chat/completions",
   zai_free: () => "https://api.z.ai/api/paas/v4/chat/completions",
@@ -24,6 +27,9 @@ export function chatAdapter(provider: ChatProvider): ModelAdapter {
         headers: { Authorization: `Bearer ${env.key}` },
         body: {
           model: env.model,
+          ...(provider === "openrouter"
+            ? { provider: { require_parameters: true } }
+            : {}),
           messages: [
             { role: "system", content: input.system },
             {
@@ -51,7 +57,9 @@ export function chatAdapter(provider: ChatProvider): ModelAdapter {
                     },
                   },
           ...(input.capabilities.reasoning === "effort"
-            ? { reasoning_effort: input.profile.reasoning }
+            ? provider === "openrouter"
+              ? { reasoning: { effort: input.profile.reasoning } }
+              : { reasoning_effort: input.profile.reasoning }
             : {}),
           ...(input.capabilities.reasoning === "qwen_toggle"
             ? { enable_thinking: input.profile.reasoning !== "none" }

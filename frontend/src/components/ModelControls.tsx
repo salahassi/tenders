@@ -326,13 +326,16 @@ function LegacyModelControls({ legacy = false }: { legacy?: boolean }) {
           </summary>
           <p>
             Set <code>{meta.prefix}_KEY</code> and{" "}
-            <code>{meta.prefix}_NAME</code> in Supabase Edge Function Secrets.
+            <code>{meta.prefix}_NAME</code> in the server runtime configuration.
             The model name is used exactly as entered there. Refresh this page
-            after changing Secrets.
+            after changing server configuration.
           </p>
           <p>
             <code>{meta.prefix}_PROJECT</code>: {meta.accountLabel}.{" "}
-            {id === "openai" || id === "anthropic"
+            {id === "openai" ||
+            id === "anthropic" ||
+            id === "openrouter" ||
+            id === "qwencloud"
               ? "Optional; used for account tracking."
               : id === "cloudflare_free"
                 ? "Required for the API endpoint."

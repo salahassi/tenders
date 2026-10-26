@@ -55,6 +55,20 @@ export const MODEL_PROVIDERS = [
     rank: 5,
     accountLabel: "Cloudflare account ID",
   },
+  {
+    id: "openrouter",
+    label: "OpenRouter",
+    prefix: "APP_MODEL_OPENROUTER",
+    rank: 9,
+    accountLabel: "Account label (defaults to default)",
+  },
+  {
+    id: "qwencloud",
+    label: "QwenCloud",
+    prefix: "APP_MODEL_QWENCLOUD",
+    rank: 10,
+    accountLabel: "Singapore account label (defaults to ap-southeast-1)",
+  },
 ] as const;
 export type ProviderId = (typeof MODEL_PROVIDERS)[number]["id"];
 export const DEFAULT_PROVIDER_ORDER: ProviderId[] = [
@@ -66,6 +80,8 @@ export const DEFAULT_PROVIDER_ORDER: ProviderId[] = [
   "openai",
   "anthropic",
   "cloudflare_free",
+  "openrouter",
+  "qwencloud",
 ];
 export const providerLabel = (id: string) =>
   MODEL_PROVIDERS.find((p) => p.id === id)?.label || id;

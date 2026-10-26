@@ -454,6 +454,8 @@ export function createApiHandler(
                 "zai_free",
                 "openai",
                 "anthropic",
+                "openrouter",
+                "qwencloud",
                 "mistral_free",
                 "qwen_free",
                 "cloudflare_free",

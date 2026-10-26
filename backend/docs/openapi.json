@@ -8122,7 +8122,7 @@
                                   "type": "boolean"
                                 },
                                 "providers": {
-                                  "maxItems": 8,
+                                  "maxItems": 10,
                                   "type": "array",
                                   "items": {
                                     "type": "string",
@@ -8134,7 +8134,9 @@
                                       "cloudflare_free",
                                       "zai_free",
                                       "openai",
-                                      "anthropic"
+                                      "anthropic",
+                                      "openrouter",
+                                      "qwencloud"
                                     ]
                                   }
                                 }
@@ -9904,7 +9906,9 @@
                                     "cloudflare_free",
                                     "zai_free",
                                     "openai",
-                                    "anthropic"
+                                    "anthropic",
+                                    "openrouter",
+                                    "qwencloud"
                                   ]
                                 },
                                 "label": {
@@ -9974,7 +9978,7 @@
                                 },
                                 "model": {
                                   "type": "string",
-                                  "pattern": "^[a-zA-Z0-9._@/-]{1,120}$"
+                                  "pattern": "^[a-zA-Z0-9._@/:-]{1,120}$"
                                 },
                                 "enabled": {
                                   "type": "boolean"
@@ -10236,12 +10240,14 @@
                                     "cloudflare_free",
                                     "zai_free",
                                     "openai",
-                                    "anthropic"
+                                    "anthropic",
+                                    "openrouter",
+                                    "qwencloud"
                                   ]
                                 },
                                 "model": {
                                   "type": "string",
-                                  "pattern": "^[a-zA-Z0-9._@/-]{1,120}$"
+                                  "pattern": "^[a-zA-Z0-9._@/:-]{1,120}$"
                                 },
                                 "project_ref": {
                                   "type": "string",
@@ -10355,7 +10361,9 @@
                                     "zai_free",
                                     "openai",
                                     "anthropic",
-                                    "cloudflare_free"
+                                    "cloudflare_free",
+                                    "openrouter",
+                                    "qwencloud"
                                   ]
                                 }
                               },
@@ -10379,7 +10387,7 @@
                               "type": "object",
                               "properties": {
                                 "free_providers": {
-                                  "maxItems": 8,
+                                  "maxItems": 10,
                                   "type": "array",
                                   "items": {
                                     "type": "string",
@@ -10391,7 +10399,9 @@
                                       "zai_free",
                                       "openai",
                                       "anthropic",
-                                      "cloudflare_free"
+                                      "cloudflare_free",
+                                      "openrouter",
+                                      "qwencloud"
                                     ]
                                   }
                                 },
@@ -10404,7 +10414,7 @@
                                 },
                                 "provider_order": {
                                   "minItems": 5,
-                                  "maxItems": 8,
+                                  "maxItems": 10,
                                   "type": "array",
                                   "items": {
                                     "type": "string",
@@ -10416,7 +10426,9 @@
                                       "zai_free",
                                       "openai",
                                       "anthropic",
-                                      "cloudflare_free"
+                                      "cloudflare_free",
+                                      "openrouter",
+                                      "qwencloud"
                                     ]
                                   }
                                 },
@@ -10481,7 +10493,9 @@
                                     "cloudflare_free",
                                     "zai_free",
                                     "openai",
-                                    "anthropic"
+                                    "anthropic",
+                                    "openrouter",
+                                    "qwencloud"
                                   ]
                                 },
                                 "attestation": {

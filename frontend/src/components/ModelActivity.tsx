@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { providerLabel } from "../lib/modelProviders";
 import { useApp } from "../lib/store";
 import { Button, Badge } from "./ui";
 export type ModelAttempt = {
@@ -180,6 +181,8 @@ export default function ModelActivity() {
           )}
           <option value="openai">OpenAI</option>
           <option value="anthropic">Claude</option>
+          <option value="openrouter">OpenRouter</option>
+          <option value="qwencloud">QwenCloud</option>
         </select>
         <select
           className="input"
@@ -268,11 +271,7 @@ export default function ModelActivity() {
                   </div>
                 </td>
                 <td>
-                  {a.provider === "openai"
-                    ? "OpenAI"
-                    : a.provider === "anthropic"
-                      ? "Claude"
-                      : a.provider.replace("_free", "").replace("zai", "z.ai")}
+                  {providerLabel(a.provider)}
                   <div dir="auto">{a.model || "No model configured"}</div>
                 </td>
                 <td>

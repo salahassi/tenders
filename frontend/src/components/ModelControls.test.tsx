@@ -31,6 +31,18 @@ function setup(
   };
   const servers = [
     {
+      provider: "qwencloud",
+      model: "qwen-owner-selected-model",
+      project_ref: "ap-southeast-1",
+      key_configured: true,
+    },
+    {
+      provider: "openrouter",
+      model: "vendor/chosen-model:free",
+      project_ref: "default",
+      key_configured: true,
+    },
+    {
       provider: "gemini_free",
       model: "owner-gemini-model",
       project_ref: "test-project",
@@ -113,26 +125,32 @@ it("shows actual server identity read-only and one card per automatic provider w
     within(screen.getByRole("list", { name: "Provider order" })).getAllByRole(
       "article",
     ),
-  ).toHaveLength(8);
+  ).toHaveLength(DEFAULT_PROVIDER_ORDER.length);
   expect(screen.queryByText(/Legacy manual fallback/)).not.toBeInTheDocument();
   expect(f.runCommand).not.toHaveBeenCalled();
 });
-it("checks the selected provider only and disables checks with missing credentials", async () => {
-  const f = setup();
-  await screen.findByText("owner-openai-model");
-  await userEvent.click(
-    panel("OpenAI").getByRole("button", { name: "Check OpenAI only" }),
-  );
-  expect(f.runCommand).toHaveBeenCalledWith("model.probe", {
-    provider: "openai",
-  });
-  expect(
-    panel("Qwen").getByRole("button", { name: "Check Qwen only" }),
-  ).toBeDisabled();
-  expect(
-    await screen.findByText(/Connection check queued. Follow/),
-  ).toBeInTheDocument();
-});
+it.each([
+  ["OpenAI", "openai", "owner-openai-model"],
+  ["QwenCloud", "qwencloud", "qwen-owner-selected-model"],
+])(
+  "checks %s only and disables checks with missing credentials",
+  async (label, provider, model) => {
+    const f = setup();
+    await screen.findByText(model);
+    await userEvent.click(
+      panel(label).getByRole("button", { name: `Check ${label} only` }),
+    );
+    expect(f.runCommand).toHaveBeenCalledWith("model.probe", {
+      provider,
+    });
+    expect(
+      panel("Qwen").getByRole("button", { name: "Check Qwen only" }),
+    ).toBeDisabled();
+    expect(
+      await screen.findByText(/Connection check queued. Follow/),
+    ).toBeInTheDocument();
+  },
+);
 it("persists provider order and strategy without writing credentials or permissions", async () => {
   const f = setup();
   await screen.findByText("owner-gemini-model");
@@ -157,6 +175,8 @@ it("persists provider order and strategy without writing credentials or permissi
       "openai",
       "anthropic",
       "cloudflare_free",
+      "openrouter",
+      "qwencloud",
     ],
   });
   f.view.unmount();
@@ -175,6 +195,8 @@ it("persists provider order and strategy without writing credentials or permissi
 it.each([
   ["OpenAI", "openai", "owner-openai-model"],
   ["Claude", "anthropic", "owner-claude-model"],
+  ["OpenRouter", "openrouter", "vendor/chosen-model:free"],
+  ["QwenCloud", "qwencloud", "qwen-owner-selected-model"],
   ["Cloudflare Workers AI", "cloudflare_free", "@cf/owner/chosen-model"],
 ])(
   "saves %s legacy manual limits with the server identity and no billing attestation",
@@ -198,7 +220,11 @@ it.each([
         provider,
         model,
         project_ref:
-          provider === "cloudflare_free" ? "syntheticaccount" : "default",
+          provider === "cloudflare_free"
+            ? "syntheticaccount"
+            : provider === "qwencloud"
+              ? "ap-southeast-1"
+              : "default",
         calls_per_day: 12,
         enabled: false,
         quota_mode: "provider_managed",

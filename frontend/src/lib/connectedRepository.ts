@@ -1317,6 +1317,8 @@ function modelRoutingSummary(checkpoint: unknown): string {
     zai_free: "z.ai",
     openai: "OpenAI",
     anthropic: "Claude",
+    openrouter: "OpenRouter",
+    qwencloud: "QwenCloud",
   };
   const reasons: Record<string, string> = {
     MODEL_NOT_CONFIGURED: "server configuration missing",

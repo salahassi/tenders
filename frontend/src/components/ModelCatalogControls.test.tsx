@@ -8,7 +8,12 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
 });
-function setup(role = "Owner", background = true, routingEnabled = false) {
+function setup(
+  role = "Owner",
+  background = true,
+  routingEnabled = false,
+  provider = "openai",
+) {
   const capabilities = {
     revision: 1,
     output: "native_strict",
@@ -22,10 +27,13 @@ function setup(role = "Owner", background = true, routingEnabled = false) {
     "model-connections": [
       {
         id: "connection-one",
-        provider: "openai",
+        provider,
         label: "Fixture account",
-        project_ref: "default",
-        credential_alias: "APP_MODEL_OPENAI_KEY",
+        project_ref: provider === "qwencloud" ? "ap-southeast-1" : "default",
+        credential_alias:
+          provider === "qwencloud"
+            ? "APP_MODEL_QWENCLOUD_KEY"
+            : "APP_MODEL_OPENAI_KEY",
         enabled: true,
         revision: 1,
       },
@@ -238,5 +246,69 @@ it("gives non-Owners a read-only view without requesting credential status", asy
   ).toBeDisabled();
   expect(f.request.mock.calls.some(([p]) => p.includes("catalog-status"))).toBe(
     false,
+  );
+});
+
+it("sets up a distinct QwenCloud Singapore connection using only the server credential alias", async () => {
+  const f = setup();
+  await screen.findByText("owner-model-a");
+  await userEvent.click(screen.getByRole("button", { name: "Add connection" }));
+  await userEvent.selectOptions(screen.getByLabelText("Provider"), "qwencloud");
+  expect(screen.getByLabelText(/^Secret name/)).toHaveValue(
+    "APP_MODEL_QWENCLOUD_KEY",
+  );
+  expect(
+    screen.getByLabelText(
+      "Singapore account label (defaults to ap-southeast-1)",
+    ),
+  ).toHaveValue("ap-southeast-1");
+  await userEvent.click(
+    screen.getByRole("button", { name: "Save connection" }),
+  );
+  await waitFor(() =>
+    expect(f.runCommand).toHaveBeenCalledWith(
+      "model.connection.save",
+      expect.objectContaining({
+        provider: "qwencloud",
+        label: "QwenCloud",
+        credential_alias: "APP_MODEL_QWENCLOUD_KEY",
+        project_ref: "ap-southeast-1",
+      }),
+    ),
+  );
+});
+it("defaults a new QwenCloud model to structured JSON with thinking disabled", async () => {
+  const f = setup("Owner", false, false, "qwencloud");
+  await screen.findByText("owner-model-a");
+  await userEvent.click(screen.getByRole("button", { name: "Add model" }));
+  await userEvent.type(
+    screen.getByLabelText(/^Model name/),
+    "qwen-owner-chosen-model",
+  );
+  await userEvent.type(
+    screen.getByLabelText("Display label"),
+    "QwenCloud model",
+  );
+  await userEvent.click(screen.getByText("Advanced model settings"));
+  expect(screen.getByLabelText("Reasoning control")).toHaveValue("qwen_toggle");
+  expect(
+    screen.queryByRole("option", { name: "Reasoning effort" }),
+  ).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Save model" }));
+  await waitFor(() =>
+    expect(f.runCommand).toHaveBeenCalledWith(
+      "model.configuration.save",
+      expect.objectContaining({
+        connection_id: "connection-one",
+        model: "qwen-owner-chosen-model",
+        capabilities: expect.objectContaining({
+          output: "validated_json",
+          background: false,
+          streaming: true,
+          reasoning: "qwen_toggle",
+          reasoning_values: ["none"],
+        }),
+      }),
+    ),
   );
 });

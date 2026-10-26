@@ -98,6 +98,10 @@ describe("backend HTTP boundaries without a live provider", () => {
       APP_MODEL_OPENAI_NAME: "owner-openai-model",
       APP_MODEL_CLAUDE_KEY: "synthetic-claude-key-never-return",
       APP_MODEL_CLAUDE_NAME: "owner-claude-model",
+      APP_MODEL_OPENROUTER_KEY: "synthetic-router-key-never-return",
+      APP_MODEL_OPENROUTER_NAME: "vendor/chosen-model:free",
+      APP_MODEL_QWENCLOUD_KEY: "fixture-qwencloud-key-never-return",
+      APP_MODEL_QWENCLOUD_NAME: "owner-qwencloud-model",
       APP_MODEL_ZAI_KEY: "synthetic-zai-key-never-return",
       APP_MODEL_ZAI_NAME: "owner-selected-model",
       APP_MODEL_ZAI_PROJECT: "synthetic-account",
@@ -110,7 +114,7 @@ describe("backend HTTP boundaries without a live provider", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("no-store");
     const body = await response.json();
-    expect(body.data.providers).toHaveLength(8);
+    expect(body.data.providers).toHaveLength(10);
     expect(body.data.providers[0]).toEqual({
       provider: "gemini_free",
       model: "gemini-3.8-flash",
@@ -134,9 +138,23 @@ describe("backend HTTP boundaries without a live provider", () => {
       key_configured: true,
     });
     expect(JSON.stringify(body)).not.toContain(secrets.APP_MODEL_ZAI_KEY);
+    expect(
+      body.data.providers.find((p: any) => p.provider === "qwencloud"),
+    ).toEqual({
+      provider: "qwencloud",
+      model: "owner-qwencloud-model",
+      project_ref: "ap-southeast-1",
+      key_configured: true,
+    });
+    expect(JSON.stringify(body)).not.toContain(secrets.APP_MODEL_QWENCLOUD_KEY);
     for (const [provider, model, key] of [
       ["openai", "owner-openai-model", secrets.APP_MODEL_OPENAI_KEY],
       ["anthropic", "owner-claude-model", secrets.APP_MODEL_CLAUDE_KEY],
+      [
+        "openrouter",
+        "vendor/chosen-model:free",
+        secrets.APP_MODEL_OPENROUTER_KEY,
+      ],
     ]) {
       expect(
         body.data.providers.find((p: any) => p.provider === provider),
