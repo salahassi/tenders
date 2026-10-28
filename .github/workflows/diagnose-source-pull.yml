@@ -40,9 +40,6 @@ jobs:
               entries=catalog if isinstance(catalog,list) else catalog.get('sources',[])
               keys=[e['key'] for e in entries]
               safe_keys=','.join("'"+k.replace("'","''")+"'" for k in keys)
-              # Observe the next regular native-browser run without invoking it.
-              import time
-              for _ in range(3):time.sleep(30)
               query="""BEGIN READ ONLY; SET LOCAL ROLE tdp_app_owner;
               SELECT jsonb_build_object(
                'now',now(),
