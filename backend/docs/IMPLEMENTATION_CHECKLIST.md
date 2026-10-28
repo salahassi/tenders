@@ -1,5 +1,9 @@
 # Implementation status and continuation plan
 
+## October 29 — blocked model assessment diagnosis
+
+The Owner reports failing model assessments that enter blocked state. A read-only DigitalOcean inspection checks actual job and plan error codes, structured provider-attempt telemetry, route/model enablement and limits, and runtime credential presence without printing keys, prompts, responses or business documents. It does not activate models, change permissions or submit new inference. Temporary cluster/database access resources are removed after the inspection. Live findings are pending execution.
+
 ## October 28 — source activation pull diagnosis
 
 The Owner reports enabling one transferred source without a successful pull. Read-only [diagnostic workflow 40708792061](https://github.com/salahassi/tenders/actions/runs/40708792061), source `4e609ffc4f83e74106787b6b3df42226f7dd2f8f`, confirmed that Etimad was approved and the scheduler/worker were healthy. Its single actual source job attempted collection and blocked with `MANUAL_SOURCE_REQUIRED`, no collected opportunities and no pending next pull. Temporary administrative resources were removed.
