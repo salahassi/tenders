@@ -16,6 +16,24 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+      - name: Check repository credential bindings without exposing values
+        env:
+          APP_MODEL_GEMINI_KEY: ${{ secrets.APP_MODEL_GEMINI_KEY }}
+          APP_MODEL_GROQ_KEY: ${{ secrets.APP_MODEL_GROQ_KEY }}
+          APP_MODEL_QWEN_KEY: ${{ secrets.APP_MODEL_QWEN_KEY }}
+          APP_MODEL_MISTRAL_KEY: ${{ secrets.APP_MODEL_MISTRAL_KEY }}
+          APP_MODEL_ZAI_KEY: ${{ secrets.APP_MODEL_ZAI_KEY }}
+          APP_MODEL_OPENAI_KEY: ${{ secrets.APP_MODEL_OPENAI_KEY }}
+          APP_MODEL_CLAUDE_KEY: ${{ secrets.APP_MODEL_CLAUDE_KEY }}
+          APP_MODEL_CLOUDFLARE_KEY: ${{ secrets.APP_MODEL_CLOUDFLARE_KEY }}
+          APP_MODEL_OPENROUTER_KEY: ${{ secrets.APP_MODEL_OPENROUTER_KEY }}
+          APP_MODEL_QWENCLOUD_KEY: ${{ secrets.APP_MODEL_QWENCLOUD_KEY }}
+        run: |
+          python3 - <<'PY'
+          import os,json
+          aliases=['APP_MODEL_GEMINI_KEY', 'APP_MODEL_GROQ_KEY', 'APP_MODEL_QWEN_KEY', 'APP_MODEL_MISTRAL_KEY', 'APP_MODEL_ZAI_KEY', 'APP_MODEL_OPENAI_KEY', 'APP_MODEL_CLAUDE_KEY', 'APP_MODEL_CLOUDFLARE_KEY', 'APP_MODEL_OPENROUTER_KEY', 'APP_MODEL_QWENCLOUD_KEY']
+          print(json.dumps({'repository_model_key_presence':{x:bool(os.environ.get(x)) for x in aliases}}))
+          PY
       - name: Read model, assessment and credential-presence metadata without invoking providers
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
@@ -46,7 +64,7 @@ jobs:
                  to_jsonb(j)->'executor_version' executor_version FROM public.jobs j WHERE type IN ('classify_opportunity','model_probe','analyze_chunk','review_proposal') ORDER BY updated_at DESC LIMIT 20)x),
                'attempts',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT provider,model,operation,status,result_code,sent,http_status,provider_error_code,provider_error_type,provider_error_reason,finish_reason,request_phase,started_at,finished_at FROM public.model_attempts ORDER BY id DESC LIMIT 30)x),
                'attempt_summary',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT provider,model,result_code,http_status,count(*) FROM public.model_attempts WHERE started_at>now()-interval '48 hours' GROUP BY provider,model,result_code,http_status)x),
-               'connections',(SELECT jsonb_agg(jsonb_build_object('provider',provider,'enabled',enabled,'revision',revision,'model_count',(SELECT count(*) FROM public.model_configurations m WHERE m.connection_id=c.id))) FROM public.model_connections c),
+               'connections',(SELECT jsonb_agg(jsonb_build_object('provider',provider,'credential_alias',credential_alias,'enabled',enabled,'revision',revision,'model_count',(SELECT count(*) FROM public.model_configurations m WHERE m.connection_id=c.id))) FROM public.model_connections c),
                'models',(SELECT jsonb_agg(jsonb_build_object('provider',c.provider,'model',m.model,'enabled',m.enabled,'capabilities',m.capabilities)) FROM public.model_configurations m JOIN public.model_connections c ON c.id=m.connection_id),
                'execution',(SELECT jsonb_agg(jsonb_build_object('enabled',enabled,'admitted_after',admitted_after,'revision',revision)) FROM public.model_execution_settings),
                'routes',(SELECT jsonb_agg(jsonb_build_object('task',task,'models',cardinality(model_ids),'inherit_default',inherit_default,'strategy',strategy,'profile',profile)) FROM public.model_task_routes),
