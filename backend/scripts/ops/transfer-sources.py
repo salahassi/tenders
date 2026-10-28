@@ -100,7 +100,6 @@ BEGIN
   targets:=array_append(targets,candidate.id);
   candidate.approval:=CASE WHEN candidate.approval='rejected' THEN 'rejected' ELSE 'paused' END;
   candidate.next_due:=NULL;
-  candidate.adapter_config:=candidate.adapter_config||'{"automatic":false}'::jsonb;
   expected:=to_jsonb(candidate);
   IF __VERIFY_ONLY__ THEN
    IF matches<>1 OR original<>expected THEN RAISE EXCEPTION 'SOURCE_DISABLED_VERIFICATION_FAILED'; END IF;
@@ -111,7 +110,7 @@ BEGIN
    INSERT INTO public.sources SELECT candidate.*;
    inserted:=inserted+1;
   ELSIF original<>expected THEN
-   UPDATE public.sources SET approval=candidate.approval,next_due=NULL,adapter_config=candidate.adapter_config,
+   UPDATE public.sources SET approval=candidate.approval,next_due=NULL,
     revision=revision+1,updated_at=now() WHERE id=candidate.id RETURNING * INTO candidate;
    disabled:=disabled+1;
   END IF;
@@ -123,7 +122,7 @@ BEGIN
   END IF;
   SELECT s.* INTO STRICT after_row FROM public.sources s WHERE id=candidate.id;
   IF to_jsonb(after_row)<>to_jsonb(candidate) OR after_row.approval='approved' OR after_row.next_due IS NOT NULL
-   OR after_row.adapter_config->'automatic'<>'false'::jsonb THEN RAISE EXCEPTION 'SOURCE_COPY_MISMATCH'; END IF;
+   THEN RAISE EXCEPTION 'SOURCE_COPY_MISMATCH'; END IF;
  END LOOP;
  -- Preserve every pre-existing definition, allowing only the requested disable fields.
  FOR original IN SELECT value FROM jsonb_array_elements(old_rows) LOOP

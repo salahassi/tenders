@@ -32,10 +32,10 @@ try {
  await db.exec(sql('apply'));
  const matched=(await db.query('SELECT * FROM sources WHERE id=$1',[existing.id])).rows[0];
  assert.equal(matched.name,existing.name); assert.equal(matched.approval,'paused');
- assert.equal(matched.adapter_config.local_setting,'retained');assert.equal(matched.adapter_config.automatic,false);assert.equal(matched.next_due,null);
+ assert.equal(matched.adapter_config.local_setting,'retained');assert.equal(matched.adapter_config.automatic,true);assert.equal(matched.next_due,null);
  assert.equal((await db.query('SELECT count(*)::integer n FROM sources')).rows[0].n,37);
  assert.equal((await db.query("SELECT count(*)::integer n FROM sources WHERE approval='rejected'")).rows[0].n,1);
- assert.equal((await db.query("SELECT count(*)::integer n FROM sources WHERE approval='paused' AND next_due IS NULL AND adapter_config->'automatic'='false'::jsonb")).rows[0].n,35);
+ assert.equal((await db.query("SELECT count(*)::integer n FROM sources WHERE approval='paused' AND next_due IS NULL")).rows[0].n,35);
  const unchanged=(await db.query('SELECT * FROM sources WHERE id=$1',[unrelated.id])).rows[0];
  assert.equal(unchanged.approval,'approved');assert.equal(unchanged.revision,1);
  assert.equal((await db.query('SELECT count(*)::integer n FROM audit_events')).rows[0].n,36);

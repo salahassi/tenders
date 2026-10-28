@@ -2,7 +2,11 @@
 
 ## October 28 — source activation pull diagnosis
 
-The Owner reports enabling one transferred source without a successful pull. A read-only diagnostic workflow inspects approved-source state, source job statuses and error codes, source-run HTTP status, scheduler heartbeat and dispatcher enablement on the current DigitalOcean database. It uses the established verified cluster path and removes its temporary administrative client and credentials. No collection, source activation, model request or configuration change is part of this diagnosis. Live evidence is pending execution.
+The Owner reports enabling one transferred source without a successful pull. Read-only [diagnostic workflow 40708792061](https://github.com/salahassi/tenders/actions/runs/40708792061), source `4e609ffc4f83e74106787b6b3df42226f7dd2f8f`, confirmed that Etimad was approved and the scheduler/worker were healthy. Its single actual source job attempted collection and blocked with `MANUAL_SOURCE_REQUIRED`, no collected opportunities and no pending next pull. Temporary administrative resources were removed.
+
+The migration incorrectly set `adapter_config.automatic=false` while pausing sources. That field selects the browser-capable reading pipeline, rather than source approval. The original Etimad profile combines a reviewed extraction adapter with automatic reading; after Owner activation, the existing command retains that flag for official listings. The altered flag routed collection through the direct HTTP collector, which stops on restricted responses instead of queuing the existing browser worker. The access error can represent HTTP 401/403 or detected login/CAPTCHA; its exact response is not retained by that collector.
+
+The correction preserves reader configuration when transferring paused sources. A guarded recovery restores only the original `automatic` field for the 36 migrated profiles, preserves all current approval states and other profile settings, and retries only the Owner-enabled Etimad job with the observed failure. Other sources remain disabled. Fixtures exercise source-state preservation, profile restoration, selected-job recovery, idempotency and refusal to overwrite edited profiles. Live correction and subsequent collection result remain pending.
 
 ## October 28 — transfer Supabase sources to DigitalOcean with collection disabled
 

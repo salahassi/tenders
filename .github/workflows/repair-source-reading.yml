@@ -1,0 +1,54 @@
+name: Restore source reader modes without enabling sources
+on:
+  push:
+    branches: [codex/repair-source-reading]
+    paths:
+      - .github/workflows/repair-source-reading.yml
+      - backend/scripts/ops/repair-source-reading.py
+permissions:
+  contents: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Verify transfer and recovery with real PostgreSQL fixtures
+        run: |
+          npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
+      - name: Download protected original source configuration
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          umask 077
+          mkdir "$RUNNER_TEMP/reader-repair-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          python3 backend/scripts/ops/private-transfer.py --download "$RUNNER_TEMP/reader-repair-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT/sources.json" --bucket tenderdesk-migration-a6093a76-sfo3 --object sources/reader-repair-20261028-v1.bundle --expected-sha256 45845809536dd8a3a7f710e7fcb92cea99f44cf9b82d07531bb46dcd382cbf51
+      - name: Preserve approval states, restore reader profiles and retry only Owner-enabled Etimad
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/repair-source-reading.py --payload "$RUNNER_TEMP/reader-repair-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT/sources.json" --expected-sha256 45845809536dd8a3a7f710e7fcb92cea99f44cf9b82d07531bb46dcd382cbf51
+      - name: Delete temporary encrypted snapshot
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/private-transfer.py --delete-object --bucket tenderdesk-migration-a6093a76-sfo3 --object sources/reader-repair-20261028-v1.bundle
+      - name: Remove private payload and credentials
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,shutil
+          for prefix in ['reader-repair-','td-sources-']:
+              p=pathlib.Path(os.environ['RUNNER_TEMP'])/(prefix+os.environ['GITHUB_RUN_ID']+'-'+os.environ['GITHUB_RUN_ATTEMPT'])
+              if p.exists():shutil.rmtree(p)
+          PY
