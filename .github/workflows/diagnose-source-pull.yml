@@ -40,6 +40,9 @@ jobs:
               entries=catalog if isinstance(catalog,list) else catalog.get('sources',[])
               keys=[e['key'] for e in entries]
               safe_keys=','.join("'"+k.replace("'","''")+"'" for k in keys)
+              # Observe the next regular native-browser run without invoking it.
+              import time
+              for _ in range(3):time.sleep(30)
               query="""BEGIN READ ONLY; SET LOCAL ROLE tdp_app_owner;
               SELECT jsonb_build_object(
                'now',now(),
@@ -56,7 +59,7 @@ jobs:
                'operations',(SELECT jsonb_agg(jsonb_build_object('heartbeat',last_heartbeat_at,'source_success',last_source_success_at,'scheduler_enabled',scheduler_enabled,'error_code',last_error_code)) FROM public.operations),
                'dispatcher',(SELECT jsonb_agg(jsonb_build_object('enabled',enabled,'hosts_count',cardinality(collection_hosts))) FROM app_private.dispatcher_settings),
                'source_runs',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT http_status,status,error_code,created_at FROM public.source_runs ORDER BY created_at DESC LIMIT 5)x),
-               'browser_requests',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT status,error_code,attempts,created_at,updated_at FROM public.source_browser_requests ORDER BY created_at DESC LIMIT 5)x),
+               'browser_requests',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT status,error_code,attempts,created_at,updated_at,challenge_id IS NOT NULL AND challenge_expires_at>now() challenge_pending FROM public.source_browser_requests ORDER BY created_at DESC LIMIT 5)x),
                'opportunities',(SELECT count(*) FROM public.opportunities)); COMMIT;""".replace('__KEYS__',safe_keys)
               print(d.sql(pod,query))
           except Exception as e:
