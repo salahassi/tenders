@@ -1,5 +1,9 @@
 # Implementation status and continuation plan
 
+## October 28 — source activation pull diagnosis
+
+The Owner reports enabling one transferred source without a successful pull. A read-only diagnostic workflow inspects approved-source state, source job statuses and error codes, source-run HTTP status, scheduler heartbeat and dispatcher enablement on the current DigitalOcean database. It uses the established verified cluster path and removes its temporary administrative client and credentials. No collection, source activation, model request or configuration change is part of this diagnosis. Live evidence is pending execution.
+
 ## October 28 — transfer Supabase sources to DigitalOcean with collection disabled
 
 The Owner explicitly requests moving the source directory from the retained TenderDesk Supabase project to the current DigitalOcean managed database, and requires every transferred source to remain disabled. The Owner authorized the existing private DigitalOcean Spaces bucket as an encrypted temporary transport, with deletion after destination verification. The refreshed snapshot contains 36 source records only; no memberships, Auth accounts, original files or historical opportunities enter the transfer payload or public repository.

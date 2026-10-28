@@ -1,0 +1,72 @@
+name: Diagnose DigitalOcean source pull
+on:
+  push:
+    branches: [codex/diagnose-source-pull]
+    paths: [.github/workflows/diagnose-source-pull.yml]
+permissions:
+  contents: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Read source, queue and scheduler metadata without triggering processing
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import importlib.util,sys,pathlib,os,json,hmac,shutil
+          spec=importlib.util.spec_from_file_location('source_diagnosis','backend/scripts/ops/transfer-sources.py')
+          s=importlib.util.module_from_spec(spec);sys.modules[spec.name]=s;spec.loader.exec_module(s)
+          directory=None;pod=None
+          try:
+              directory=s.prepare_cluster();d=s.d
+              deployments=json.loads(d.command(['get','deployments','-n',d.NAMESPACE,'-o','json']))['items']
+              print(json.dumps({'workloads':[{'name':x['metadata']['name'],'ready':x['status'].get('readyReplicas',0)} for x in deployments]}))
+              if d.get('secret','tenderdesk-migration-admin'):raise ValueError('OTHER_ADMIN_IN_PROGRESS')
+              credentials,ca=d.probe.target_credentials(os.environ['DIGITALOCEAN_ACCESS_TOKEN'])
+              if not hmac.compare_digest(d.decode_secret(d.get('secret','tenderdesk-core')).get('PGSSLCA',''),ca):raise ValueError('DATABASE_CA_MISMATCH')
+              pod='migration-client-'+os.environ['GITHUB_RUN_ID']+'-'+os.environ['GITHUB_RUN_ATTEMPT']
+              d.sql_pod({**credentials,'APP_DATABASE':d.DATABASE,'ROLE_PREFIX':d.PREFIX})
+              catalog=json.loads(pathlib.Path('backend/seeders/official-sources.json').read_text())
+              entries=catalog if isinstance(catalog,list) else catalog.get('sources',[])
+              keys=[e['key'] for e in entries]
+              safe_keys=','.join("'"+k.replace("'","''")+"'" for k in keys)
+              query="""BEGIN READ ONLY; SET LOCAL ROLE tdp_app_owner;
+              SELECT jsonb_build_object(
+               'now',now(),
+               'sources',(SELECT jsonb_agg(jsonb_build_object(
+                'catalog',CASE WHEN adapter_config#>>'{catalog,key}' IN (__KEYS__) THEN adapter_config#>>'{catalog,key}' ELSE 'custom' END,
+                'approval',approval,'kind',kind,'health',health,'next_due',next_due,'revision',revision,'updated_at',updated_at,
+                'automatic',adapter_config->'automatic','official_listing',adapter_config?'official_listing','extraction',adapter_config?'extraction',
+                'approved_hosts_count',cardinality(approved_hosts),'adapter_required',adapter_required) ORDER BY updated_at DESC)
+                FROM public.sources WHERE approval='approved'),
+               'queue',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT type,status,error_code,count(*) FROM public.jobs GROUP BY type,status,error_code)x),
+               'source_jobs',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT j.type,j.status,j.error_code,j.attempts,j.next_attempt_at,j.created_at,j.updated_at,
+                CASE WHEN s.adapter_config#>>'{catalog,key}' IN (__KEYS__) THEN s.adapter_config#>>'{catalog,key}' ELSE 'custom' END catalog
+                FROM public.jobs j LEFT JOIN public.sources s ON s.id=j.entity_id WHERE j.type LIKE 'source_%' ORDER BY j.created_at DESC LIMIT 10)x),
+               'operations',(SELECT jsonb_agg(jsonb_build_object('heartbeat',last_heartbeat_at,'source_success',last_source_success_at,'scheduler_enabled',scheduler_enabled,'error_code',last_error_code)) FROM public.operations),
+               'dispatcher',(SELECT jsonb_agg(jsonb_build_object('enabled',enabled,'hosts_count',cardinality(collection_hosts))) FROM app_private.dispatcher_settings),
+               'source_runs',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT http_status,status,error_code,created_at FROM public.source_runs ORDER BY created_at DESC LIMIT 5)x),
+               'opportunities',(SELECT count(*) FROM public.opportunities)); COMMIT;""".replace('__KEYS__',safe_keys)
+              print(d.sql(pod,query))
+          except Exception as e:
+              print(json.dumps({'diagnosis':'failed','type':type(e).__name__}));raise SystemExit(1)
+          finally:
+              if pod:s.d.cleanup_administrator(pod)
+              if directory:shutil.rmtree(directory)
+          PY
+      - name: Remove any temporary runner credentials
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,shutil
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+os.environ['GITHUB_RUN_ID']+'-'+os.environ['GITHUB_RUN_ATTEMPT'])
+          if p.exists():shutil.rmtree(p)
+          PY
