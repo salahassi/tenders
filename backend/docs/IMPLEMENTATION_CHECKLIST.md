@@ -1,5 +1,13 @@
 # Implementation status and continuation plan
 
+## October 28 — transfer Supabase sources to DigitalOcean with collection disabled
+
+The Owner explicitly requests moving the source directory from the retained TenderDesk Supabase project to the current DigitalOcean managed database, and requires every transferred source to remain disabled. The Owner authorized the existing private DigitalOcean Spaces bucket as an encrypted temporary transport, with deletion after destination verification. The refreshed snapshot contains 36 source records only; no memberships, Auth accounts, original files or historical opportunities enter the transfer payload or public repository.
+
+The source transfer runs through the established GitHub Actions cluster-access path because direct Kubernetes access fails certificate verification in the cloud environment. The operation verifies the selected cluster, database CA, restoration identity, single workspace and active Owner before a serializable transaction. New rows retain source definitions and attribution while receiving paused approval (rejected sources remain rejected), no next collection date and automatic reading disabled. Existing matching records retain their destination definitions and are disabled; ambiguous matches abort the transaction. Unrelated records and application configuration remain unchanged. No runtime image, schedule, model credential or access policy is changed.
+
+The protected snapshot has been uploaded with authenticated encryption and exact ciphertext readback using temporary bucket-scoped credentials that are revoked after use. Local PostgreSQL regression verifies disabled insertion, destination-edit preservation, unrelated-row isolation, idempotent replay, safe quoting and atomic rollback of a late conflict. Live transfer, post-commit verification and temporary-object removal remain pending execution. This operation does not claim a complete database backup or close the Supabase account.
+
 ## October 26 — requested publication of OpenRouter and QwenCloud
 
 The Owner explicitly requests publishing both provider additions. The migration-era deploy/promote workflows require empty business history and pause schedules during restoration, so this release uses a separate ordinary-update path. The new `update-providers.yml` workflow verifies both locked packages and deployment guards, builds only immutable runtime/frontend images, and applies the guarded provider migration before changing existing application image fields. It does not restore the first-Owner seed, alter runtime secrets, activate models, invoke collection or change native schedules.

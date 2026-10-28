@@ -1,0 +1,72 @@
+name: Transfer sources to DigitalOcean disabled
+
+on:
+  push:
+    branches: [codex/transfer-sources-disabled]
+    paths:
+      - .github/workflows/transfer-sources.yml
+      - backend/scripts/ops/transfer-sources.py
+      - backend/scripts/ops/test_transfer_sources.py
+      - backend/scripts/ops/test_transfer_sources.mjs
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+      - name: Verify application and source transfer guards
+        run: |
+          npm ci --prefix frontend
+          npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          npm --prefix frontend run typecheck
+          npm --prefix frontend test -- --maxWorkers=1
+          npm --prefix frontend run build
+          npm --prefix backend run typecheck
+          npm --prefix backend test -- --maxWorkers=1
+          npm --prefix backend run build
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
+      - name: Download authenticated encrypted sources-only snapshot privately
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          umask 077
+          directory="$RUNNER_TEMP/td-source-payload-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          mkdir "$directory"
+          python3 backend/scripts/ops/private-transfer.py --download "$directory/sources.json" --bucket tenderdesk-migration-a6093a76-sfo3 --object sources/sources-20261028-disabled-v1.bundle --expected-sha256 45845809536dd8a3a7f710e7fcb92cea99f44cf9b82d07531bb46dcd382cbf51
+      - name: Transfer sources disabled and verify all 36 records after commit
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 backend/scripts/ops/transfer-sources.py --payload "$RUNNER_TEMP/td-source-payload-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT/sources.json" --expected-sha256 45845809536dd8a3a7f710e7fcb92cea99f44cf9b82d07531bb46dcd382cbf51
+      - name: Delete and verify removal of the temporary encrypted object
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/private-transfer.py --delete-object --bucket tenderdesk-migration-a6093a76-sfo3 --object sources/sources-20261028-disabled-v1.bundle
+      - name: Remove private runner payload and temporary cluster credentials
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,shutil
+          for prefix in ['td-source-payload-', 'td-sources-']:
+              directory=pathlib.Path(os.environ['RUNNER_TEMP'])/(prefix+os.environ['GITHUB_RUN_ID']+'-'+os.environ['GITHUB_RUN_ATTEMPT'])
+              if directory.exists(): shutil.rmtree(directory)
+          print('Private payload and temporary runner credentials removed.')
+          PY
