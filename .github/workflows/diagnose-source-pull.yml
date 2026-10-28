@@ -29,6 +29,8 @@ jobs:
               directory=s.prepare_cluster();d=s.d
               deployments=json.loads(d.command(['get','deployments','-n',d.NAMESPACE,'-o','json']))['items']
               print(json.dumps({'workloads':[{'name':x['metadata']['name'],'ready':x['status'].get('readyReplicas',0)} for x in deployments]}))
+              native=json.loads(d.command(['get','cronjobs','-n',d.NAMESPACE,'-o','json']))['items']
+              print(json.dumps({'native_schedules':[{'name':x['metadata']['name'],'suspended':x['spec'].get('suspend',False),'last_schedule':x.get('status',{}).get('lastScheduleTime'),'last_success':x.get('status',{}).get('lastSuccessfulTime')} for x in native]}))
               if d.get('secret','tenderdesk-migration-admin'):raise ValueError('OTHER_ADMIN_IN_PROGRESS')
               credentials,ca=d.probe.target_credentials(os.environ['DIGITALOCEAN_ACCESS_TOKEN'])
               if not hmac.compare_digest(d.decode_secret(d.get('secret','tenderdesk-core')).get('PGSSLCA',''),ca):raise ValueError('DATABASE_CA_MISMATCH')
@@ -54,6 +56,7 @@ jobs:
                'operations',(SELECT jsonb_agg(jsonb_build_object('heartbeat',last_heartbeat_at,'source_success',last_source_success_at,'scheduler_enabled',scheduler_enabled,'error_code',last_error_code)) FROM public.operations),
                'dispatcher',(SELECT jsonb_agg(jsonb_build_object('enabled',enabled,'hosts_count',cardinality(collection_hosts))) FROM app_private.dispatcher_settings),
                'source_runs',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT http_status,status,error_code,created_at FROM public.source_runs ORDER BY created_at DESC LIMIT 5)x),
+               'browser_requests',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT status,error_code,attempts,created_at,updated_at FROM public.source_browser_requests ORDER BY created_at DESC LIMIT 5)x),
                'opportunities',(SELECT count(*) FROM public.opportunities)); COMMIT;""".replace('__KEYS__',safe_keys)
               print(d.sql(pod,query))
           except Exception as e:
