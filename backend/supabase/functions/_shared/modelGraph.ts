@@ -1274,6 +1274,7 @@ async function runGuardedModel(o: Options): Promise<{
             store,
             job: o.job,
             task: o.task,
+            context: o.context,
             evidence: o.evidence,
             requiredIds: o.requiredIds,
             manifest: o.manifest,

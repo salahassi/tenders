@@ -3,6 +3,7 @@ import type { ModelGraphStore } from "./modelGraphStore.ts";
 import {
   sha256,
   validateModelResult,
+  classificationScopePolicy,
   type Evidence,
   type Reference,
 } from "./model.ts";
@@ -10,6 +11,7 @@ import type { PrimaryModelTask } from "./modelSchemas.ts";
 
 type Validation = {
   task: PrimaryModelTask;
+  context?: unknown;
   evidence: Evidence[];
   requiredIds: string[];
   validate?: (
@@ -25,7 +27,10 @@ export function revalidateWriter(candidate: any, options: Validation) {
       candidate,
       options.evidence,
       options.requiredIds,
-      { independentGrounding: true },
+      {
+        independentGrounding: true,
+        scopePolicy: classificationScopePolicy(options.task, options.context),
+      },
     );
     options.validate?.(candidate, { independentGrounding: true });
     return true;

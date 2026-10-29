@@ -3426,3 +3426,12 @@ was matched by a wake for the exact released job revision at **13:47:20.948 UTC*
 (0.175 seconds). No new model usage or polling attempt occurred for that job
 after the receipt through the 13:49 snapshot. This proves dispatch, not faster
 completion: the continuation was still waiting while proposal work progressed.
+
+
+### 2026-10-29 — scope keyword evidence guard correction
+
+The approved real assessment reached OpenAI successfully (three settled writer responses) but the local evidence guard rejected every numeric scope factor for missing company citations, despite the frozen `combined` policy allowing selected keyword evidence. Read-only metadata confirms no verified company blocks, a numeric scope rating with notice citations and nine selected keyword references; the other three factors remain unknown. Repair candidates are retained immutably and are not evidence of a completed assessment.
+
+Implementation now permits only the scope factor to use a valid frozen `keywords`/`combined` policy with definite, validated selected keyword evidence and valid notice citations. Company capability, prerequisites and sector still require both evidence types for numeric ratings. Trusted context is supplied during initial, repair, generation and exact retained-writer validation. Prompt/schema pins, existing content, writer budgets, usage and attempt counters are unchanged. Recovery must validate the exact latest paid candidate and then pass ordinary independent verification before releasing the remaining assessments or Needs attention jobs.
+
+Local evidence: backend typecheck/build and all **1,492 tests / 87 files** passed, including 19 new regressions; focused related suites passed 95 tests. Deployment and live sample acceptance remain pending at this checkpoint.
