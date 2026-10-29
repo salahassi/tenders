@@ -1,0 +1,46 @@
+name: Activate approved model assessments and verify sample
+on:
+  push:
+    branches: [codex/activate-model-assessments]
+    paths: [.github/workflows/activate-model-assessments.yml, backend/scripts/ops/recover-model-assessments.py]
+permissions:
+  contents: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Enable the saved route and recover exactly one assessment
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/recover-model-assessments.py --action sample --batch-id provider-runtime-20261029 --enable-task-routing
+  verify:
+    needs: sample
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Require completed assessment and persisted fit result before batch recovery
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/recover-model-assessments.py --action status --batch-id provider-runtime-20261029 --wait-seconds 420
+  remaining:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Recover latest never-sent missing-configuration assessments after sample success
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/recover-model-assessments.py --action remaining --batch-id provider-runtime-20261029

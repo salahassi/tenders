@@ -1,5 +1,9 @@
 # Implementation status and continuation plan
 
+## October 29 — approved model execution and Needs attention recovery
+
+The Owner explicitly approves enabling the saved model route, sending a real sample assessment within existing data permissions, and recovering the remaining assessments after success. The Owner additionally requests reviewing and restarting items under Needs attention after that sample succeeds. The first execution uses the already reviewed recovery helper: canonical Owner activation, one new assessment snapshot, a persisted completed-result gate, then current never-sent missing-configuration assessments. Existing attempts and usage history remain intact. Further Needs attention work will be classified against canonical retry guards; live execution and outcomes are pending.
+
 ## October 29 — dynamic provider credential synchronization and assessment recovery
 
 The Owner explicitly requests implementing automatic provider setup for all supported providers and requires dynamic discovery. The dedicated credentials workflow discovers canonical provider prefixes and saved connection credential aliases, reads matching GitHub Secrets in memory, and updates only supplied provider-key fields in the owned DigitalOcean runtime Secret. Missing repository values preserve existing runtime keys. Values travel through standard input, never logs, command arguments, repository files or workflow artifacts. Workload ownership and concurrent-edit guards precede changes; only API/worker processes needing refreshed values roll, retaining their images and other settings.
