@@ -290,3 +290,80 @@ it("propagates revoked permission or stale lease before saving repair artifacts"
     false,
   );
 });
+
+it.each([0, 1])(
+  "uses the frozen scope policy before selecting a retained classifier report, correction=%s",
+  async (repairCount) => {
+    const policy = {
+      scope: "combined",
+      include_keywords: ["Garden design"],
+      exclude_keywords: [],
+    };
+    const unknown = {
+      rating: null,
+      reason: "Company proof is unavailable.",
+      notice_evidence: [],
+      company_evidence: [],
+    };
+    const candidate = {
+      factors: {
+        capability: unknown,
+        scope: {
+          ...unknown,
+          rating: 4,
+          reason: "Purchased work matches the configured interest.",
+          notice_evidence: [{ id: "source", quote: "garden design" }],
+        },
+        sector: unknown,
+        prerequisite: unknown,
+      },
+      scope_decision: {
+        status: "in_scope",
+        reason: "The purchase matches a configured interest.",
+        notice_evidence: [{ id: "source", quote: "garden design" }],
+        company_evidence: [],
+        keyword_evidence: [{ kind: "include", keyword: "Garden design" }],
+      },
+      critical_unknown: true,
+      reason_summary: "Company qualifications need confirmation.",
+      missing_information: [],
+      risk_flags: [],
+      suggested_tags: [],
+    };
+    for (const context of [{}, { scope_policy: policy }]) {
+      const f = await fixture();
+      f.o.evidence[0].text = "Synthetic procurement for garden design.";
+      f.o.state.values.repairCount = repairCount;
+      f.rows.set(`candidate-${repairCount}`, {
+        id: f.saved.id,
+        value: {
+          result: repairCount
+            ? { target_task: "classify_opportunity", result: candidate }
+            : candidate,
+        },
+      });
+      const action = f.action.getMockImplementation()!;
+      f.action.mockImplementation((name, payload) =>
+        name === "invalid_verification_repair_candidate"
+          ? Promise.resolve(null)
+          : action(name, payload),
+      );
+      expect(
+        await recoverInvalidVerification({
+          ...f.o,
+          task: "classify_opportunity",
+          context,
+        }),
+      ).toBe(false);
+      expect(
+        f.action.mock.calls.some(
+          ([name]) => name === "invalid_verification_repair_candidate",
+        ),
+      ).toBe("scope_policy" in context);
+      expect(f.update).not.toHaveBeenCalled();
+      expect(f.action.mock.calls.some(([name]) => name === "result_put")).toBe(
+        false,
+      );
+    }
+  },
+);
