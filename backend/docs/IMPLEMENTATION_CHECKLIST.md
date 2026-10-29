@@ -40,19 +40,34 @@ live website. The release now includes a frontend-only workflow: publish one
 immutable frontend image, compare live ownership/configuration/image identity,
 replace only that deployment's image, wait for readiness and verify the exact
 public build, media types and real Chromium extraction. Failed acceptance
-triggers a guarded return to the original image. No database/Secret reads,
-restoration, provider activation or other service updates enter this path.
+triggers a guarded return to the original image. The updater reads no database
+or Kubernetes Secret and performs no restoration, provider activation or other
+service update.
 
 Refreshed release verification passes the frontend typecheck/build and all 241
 tests, all 156 operations tests (including 13 frontend update guards), workflow
 YAML/shell syntax, and the permanent browser probe against real local Nginx.
 
-Status: implementation, package checks, production HTTP/browser acceptance and
-the cached-response regression pass locally. The release branch is based on
-current main `88bea1d`. Deployment and hosted browser acceptance will be recorded
-with their source revision and workflow result. Authenticated upload/storage
-acceptance of the Owner's actual RFP is separate from the synthetic,
-browser-local extraction probe.
+Deployment and hosted extraction acceptance passed in
+[workflow 40901422543](https://github.com/salahassi/tenders/actions/runs/40901422543),
+source `83432b210dce046ed898b3c2463580be91cc8e2d`, on October 29. The published
+frontend digest is
+`sha256:36a6afd3c43f8d3364cf7a3341fa7772e8dee2bbf546c30baf5a6c4afb2cf03f`.
+Fresh CI passes both package typechecks/builds, all 241 frontend and 1,495
+backend tests, and all 156 operations guards. The rollout verified 50 public
+build assets, the preserved runtime configuration and other workload specs,
+then completed real PDF extraction in Chromium. Runner credential/log cleanup
+also passed.
+
+A separate browser probe from the working environment confirms the live new
+extraction worker and `.mjs?module-mime=javascript-v1` return HTTP 200 with
+`application/javascript`; the expected PDF text, ready status and SHA-256 all
+match. No application record is created by either browser probe.
+
+Status: the correction is deployed and hosted static/extraction acceptance is
+complete. The same-context cached-response regression also passes locally.
+Authenticated upload/storage acceptance of the Owner's actual RFP is separate
+from these synthetic, browser-local extraction probes.
 
 ## October 29 — approved model execution and Needs attention recovery
 
