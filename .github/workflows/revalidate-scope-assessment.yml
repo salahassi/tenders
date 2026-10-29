@@ -1,0 +1,52 @@
+name: Revalidate approved retained assessment and recover attention
+on:
+  push:
+    branches: [codex/revalidate-scope-assessment]
+    paths: [.github/workflows/revalidate-scope-assessment.yml, backend/scripts/ops/recover-model-assessments.py]
+permissions:
+  contents: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Verify paid-result recovery guards
+        run: |
+          npm ci --prefix backend
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
+      - name: Revalidate only the exact retained sample after the verified guard deployment
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 backend/scripts/ops/recover-model-assessments.py --action revalidate-sample --batch-id provider-runtime-20261029 --guard-fix scope-keyword-evidence-v1 --expected-runtime-image registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:74db4c5aa8a534de1a7e85dcd590a9605b89357bbd6aa859d61f63d828139b06
+          python3 backend/scripts/ops/recover-model-assessments.py --action status --batch-id provider-runtime-20261029 --wait-seconds 600
+  remaining:
+    needs: sample
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Recover remaining missing-configuration assessments after persisted sample success
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/recover-model-assessments.py --action remaining --batch-id provider-runtime-20261029
+      - name: Inspect and retry eligible Needs attention failures
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 backend/scripts/ops/recover-needs-attention.py --action inspect --batch-id provider-runtime-20261029
+          python3 backend/scripts/ops/recover-needs-attention.py --action recover --batch-id provider-runtime-20261029
+          python3 backend/scripts/ops/recover-needs-attention.py --action inspect --batch-id provider-runtime-20261029

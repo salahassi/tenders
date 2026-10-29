@@ -23,11 +23,42 @@ t=importlib.util.module_from_spec(SPEC);sys.modules[SPEC.name]=t;SPEC.loader.exe
 class RecoveryError(Exception):
     pass
 
+SCOPE_GUARD_FIX='scope-keyword-evidence-v1'
+PUBLIC_SAMPLE_ERROR_CODES=frozenset({
+    'ASSESSMENT_SAMPLE_SUPERSEDED','MODEL_NOT_CONFIGURED','MODEL_CORRECTION_EXHAUSTED',
+    'GENERATION_HANDLER_FAILED','NOTICE_DETAILS_REFRESHED','NOTICE_BROWSER_PENDING','NOTICE_OCR_PENDING',
+    'MODEL_UNKNOWN_OUTCOME','MODEL_CONFIGURATION_REVIEW_REQUIRED','MODEL_RATE_LIMITED','MODEL_TIMEOUT',
+    'MODEL_OUTPUT_INVALID','EVIDENCE_REFERENCE_INVALID','TOKEN_COUNT_UNAVAILABLE',
+    'MODEL_GENERATION_ATTEMPTS_EXHAUSTED','MODEL_OPERATION_BUDGET_EXHAUSTED',
+})
 
-def recovery_sql(action: str, batch_id: str, ready_aliases=(), enable_task_routing=False):
-    if action not in {'sample','remaining','status','retry-sample'} or not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,79}',batch_id):
+
+def public_receipt(receipt):
+    """Return only anonymous operational progress for public workflow logs."""
+    result={}
+    action=receipt.get('action')
+    if isinstance(action,str) and action in {'sample','remaining','status','retry-sample','revalidate-sample'}:
+        result['action']=action
+    for key in ('started','blocked_missing_configuration'):
+        if type(receipt.get(key)) is int and receipt[key]>=0:result[key]=receipt[key]
+    for key in ('sample_exists','sample_completed','sample_current','sample_followed_successor',
+                'sample_waiting_successor','sample_retried','sample_retry_already_requested',
+                'sample_revalidated','sample_revalidation_already_requested','retained_state_preserved_before_release'):
+        if type(receipt.get(key)) is bool:result[key]=receipt[key]
+    status=receipt.get('sample_status')
+    if status is None or (isinstance(status,str) and status in {'queued','running','blocked','completed','failed','canceled'}):
+        result['sample_status']=status
+    error=receipt.get('sample_error')
+    result['sample_error']=error if error is None or (isinstance(error,str) and error in PUBLIC_SAMPLE_ERROR_CODES) else 'ASSESSMENT_ERROR_REDACTED'
+    return result
+
+
+def recovery_sql(action: str, batch_id: str, ready_aliases=(), enable_task_routing=False, guard_fix=None):
+    if action not in {'sample','remaining','status','retry-sample','revalidate-sample'} or not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,79}',batch_id):
         raise RecoveryError('ASSESSMENT_ACTION_INVALID')
     if enable_task_routing and action!='sample':raise RecoveryError('ASSESSMENT_ENABLE_SAMPLE_ONLY')
+    if (action=='revalidate-sample' and guard_fix!=SCOPE_GUARD_FIX) or (guard_fix and action!='revalidate-sample'):
+        raise RecoveryError('ASSESSMENT_GUARD_FIX_REQUIRED')
     aliases=sorted(set(ready_aliases))
     if any(not re.fullmatch(r'APP_MODEL_[A-Z0-9_]{1,80}_KEY',x) for x in aliases):raise RecoveryError('ASSESSMENT_ALIAS_INVALID')
     alias_sql="'"+json.dumps(aliases).replace("'","''")+"'::jsonb"
@@ -65,6 +96,9 @@ DECLARE actor uuid:=current_setting('tenderdesk.remediation_owner')::uuid;
  count_started integer:=0; has_sample boolean:=false; sample_complete boolean:=false;
  sample_current boolean:=false; followed_successor boolean:=false; waiting_successor boolean:=false;
  sample_retried boolean:=false; sample_retry_already_requested boolean:=false;
+ sample_revalidated boolean:=false; sample_revalidation_already_requested boolean:=false;
+ graph record; retained record; writer record; candidate jsonb; scope_policy jsonb;
+ graph_before jsonb; graph_after jsonb; job_before jsonb; revalidation_reason text;
  aliases jsonb:=__ALIASES__; action_name text:='__ACTION__'; snapshot jsonb;
 BEGIN
  PERFORM 1 FROM public.workspaces WHERE id='__WORKSPACE__' FOR UPDATE;
@@ -109,7 +143,7 @@ BEGIN
   IF EXISTS(SELECT 1 FROM public.restore_sessions WHERE workspace_id='__WORKSPACE__' AND state IN ('staging','committing'))
    THEN RAISE EXCEPTION 'ASSESSMENT_RESTORE_IN_PROGRESS'; END IF;
   IF action_name='remaining' AND NOT sample_complete THEN RAISE EXCEPTION 'ASSESSMENT_SAMPLE_NOT_COMPLETED'; END IF;
-  IF action_name='retry-sample' AND (NOT has_sample OR NOT sample_current OR waiting_successor)
+  IF action_name IN ('retry-sample','revalidate-sample') AND (NOT has_sample OR NOT sample_current OR waiting_successor)
    THEN RAISE EXCEPTION 'ASSESSMENT_SAMPLE_RETRY_NOT_CURRENT'; END IF;
   SELECT * INTO STRICT settings FROM public.model_execution_settings WHERE workspace_id='__WORKSPACE__';
   IF NOT settings.enabled AND __ENABLE__ AND NOT has_sample THEN
@@ -128,6 +162,131 @@ BEGIN
    SELECT * INTO STRICT settings FROM public.model_execution_settings WHERE workspace_id='__WORKSPACE__';
   END IF;
   IF NOT settings.enabled THEN RAISE EXCEPTION 'ASSESSMENT_EXECUTION_DISABLED'; END IF;
+  IF action_name='revalidate-sample' THEN
+   revalidation_reason:=marker_reason||'; guard=scope-keyword-evidence-v1';
+   SELECT EXISTS(SELECT 1 FROM public.audit_events a JOIN public.jobs j ON j.id=a.entity_id
+    WHERE a.workspace_id=sample.workspace_id AND a.actor_id=actor AND a.action='ops.model_assessment.sample.revalidated'
+     AND a.reason=revalidation_reason AND j.workspace_id=sample.workspace_id AND j.entity_id=sample.id)
+    INTO sample_revalidation_already_requested;
+   IF NOT sample_revalidation_already_requested THEN
+    IF sample.status<>'blocked' OR sample.error_code IS DISTINCT FROM 'MODEL_CORRECTION_EXHAUSTED'
+     THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_UNSAFE_STATE'; END IF;
+    SELECT j.* INTO STRICT retry_job FROM public.jobs j JOIN public.generation_steps s
+     ON s.job_id=j.id AND s.workspace_id=j.workspace_id AND s.plan_id=j.entity_id
+     WHERE j.workspace_id=sample.workspace_id AND j.entity_id=sample.id AND s.status='queued' AND s.stage=sample.stage
+      AND j.status IN ('blocked','failed') AND j.error_code='MODEL_CORRECTION_EXHAUSTED'
+      AND NOT j.cancel_requested AND j.input_hash=sample.input_hash;
+    IF EXISTS(SELECT 1 FROM public.provider_usage u JOIN public.jobs j ON j.id=u.job_id
+      WHERE j.workspace_id=sample.workspace_id AND j.entity_id=sample.id AND u.state IS DISTINCT FROM 'settled')
+     THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_USAGE_REVIEW_REQUIRED'; END IF;
+    SELECT t.* INTO STRICT graph FROM app_private.model_graph_threads t
+     WHERE t.workspace_id=sample.workspace_id AND t.job_id=retry_job.id AND t.task='classify_opportunity'
+     ORDER BY t.created_at DESC,t.id DESC LIMIT 1;
+    -- Version 2 counts the initial writer and content repairs separately.
+    -- candidate_count mirrors only the writer unit, not all three receipts.
+    IF graph.status IS DISTINCT FROM 'needs_review' OR graph.budget_version IS DISTINCT FROM 2
+     OR graph.candidate_count IS DISTINCT FROM 1
+     OR (SELECT b.candidates FROM app_private.model_graph_budgets b
+       WHERE b.thread_id=graph.id AND b.unit='writer') IS DISTINCT FROM 1
+     OR (SELECT b.candidates FROM app_private.model_graph_budgets b
+       WHERE b.thread_id=graph.id AND b.unit='writer-repair') IS DISTINCT FROM 2
+     THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_GRAPH_NOT_RETAINED'; END IF;
+    SELECT gr.* INTO STRICT retained FROM app_private.model_graph_results gr
+     WHERE gr.thread_id=graph.id AND gr.result_key='candidate-2';
+    IF EXISTS(SELECT 1 FROM app_private.model_graph_results gr WHERE gr.thread_id=graph.id
+      AND gr.result_key~'^candidate-[0-9]+$' AND substring(gr.result_key from 11)::int>2)
+     OR retained.value#>>'{local_validation,version}' IS DISTINCT FROM '1'
+     OR retained.value#>>'{local_validation,task}' IS DISTINCT FROM 'repair_result'
+     OR retained.value#>>'{local_validation,code}' IS DISTINCT FROM 'EVIDENCE_REFERENCE_INVALID'
+     OR retained.value#>>'{result,target_task}' IS DISTINCT FROM 'classify_opportunity'
+     OR NOT EXISTS(SELECT 1 FROM app_private.model_graph_results pin WHERE pin.thread_id=graph.id
+      AND pin.result_key='semantic-instructions-'||encode(sha256(convert_to(retained.value#>>'{local_validation,request_prefix}','UTF8')),'hex')
+      AND pin.value->'version'='3'::jsonb)
+     THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_IDENTITY_MISMATCH'; END IF;
+    IF jsonb_typeof(retained.value#>'{local_validation,diagnostics}') IS DISTINCT FROM 'array'
+     OR jsonb_array_length(retained.value#>'{local_validation,diagnostics}')<>1
+     OR retained.value#>>'{local_validation,diagnostics,0,code}' IS DISTINCT FROM 'EVIDENCE_REFERENCE_INVALID'
+     OR retained.value#>>'{local_validation,diagnostics,0,reason}' IS DISTINCT FROM 'source_missing'
+     OR (SELECT jsonb_agg(p ORDER BY p) FROM jsonb_array_elements_text(retained.value#>'{local_validation,diagnostics,0,paths}') p)
+      IS DISTINCT FROM '["$.factors.scope.company_evidence","$.factors.scope.notice_evidence"]'::jsonb
+     THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_DIAGNOSTICS_MISMATCH'; END IF;
+    -- Require all three received writer receipts to remain present and settled.
+    FOR writer IN SELECT n,gr.value FROM generate_series(0,2) n LEFT JOIN app_private.model_graph_results gr
+      ON gr.thread_id=graph.id AND gr.result_key='candidate-'||n::text LOOP
+     IF writer.value IS NULL OR NOT EXISTS(SELECT 1 FROM public.provider_usage u
+       WHERE u.id=(writer.value#>>'{local_validation,usage_id}')::uuid AND u.job_id=retry_job.id
+        AND u.state='settled' AND u.graph_candidate_recorded)
+      THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_WRITER_RECEIPT_MISSING'; END IF;
+    END LOOP;
+    IF (SELECT count(DISTINCT gr.value#>>'{local_validation,usage_id}') FROM app_private.model_graph_results gr
+      WHERE gr.thread_id=graph.id AND gr.result_key IN ('candidate-0','candidate-1','candidate-2'))<>3
+     THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_WRITER_RECEIPT_MISSING'; END IF;
+    scope_policy:=sample.frozen_context->'discovery_scope_policy';candidate:=retained.value#>'{result,result}';
+    IF coalesce(scope_policy->>'scope','') NOT IN ('keywords','combined')
+     OR jsonb_typeof(scope_policy->'include_keywords') IS DISTINCT FROM 'array'
+     OR jsonb_typeof(scope_policy->'exclude_keywords') IS DISTINCT FROM 'array'
+     OR sample.frozen_context#>>'{notice,kind}' IS DISTINCT FROM 'notice'
+     OR length(coalesce(sample.frozen_context#>>'{notice,id}',''))=0
+     OR length(coalesce(sample.frozen_context#>>'{notice,text}',''))=0
+     OR jsonb_typeof(candidate#>'{factors,scope,rating}') IS DISTINCT FROM 'number'
+     OR (candidate#>>'{factors,scope,rating}')::numeric NOT BETWEEN 0 AND 4
+     OR jsonb_typeof(candidate#>'{factors,scope,company_evidence}') IS DISTINCT FROM 'array'
+     OR jsonb_array_length(candidate#>'{factors,scope,company_evidence}')<>0
+     OR coalesce(candidate#>>'{scope_decision,status}','') NOT IN ('in_scope','out_of_scope')
+     OR jsonb_typeof(candidate#>'{scope_decision,keyword_evidence}') IS DISTINCT FROM 'array'
+     OR jsonb_array_length(candidate#>'{scope_decision,keyword_evidence}')=0
+     THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_SCOPE_POLICY_MISMATCH'; END IF;
+    IF EXISTS(SELECT 1 FROM jsonb_array_elements((scope_policy->'include_keywords')||(scope_policy->'exclude_keywords')) term
+      WHERE jsonb_typeof(term)<>'string' OR length(trim(term#>>'{}'))=0)
+     THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_SCOPE_POLICY_MISMATCH'; END IF;
+    IF EXISTS(SELECT 1 FROM jsonb_array_elements(candidate#>'{scope_decision,keyword_evidence}') k
+      WHERE coalesce(k->>'kind','') NOT IN ('include','exclude') OR NOT EXISTS(
+       SELECT 1 FROM jsonb_array_elements_text(scope_policy->CASE WHEN k->>'kind'='include' THEN 'include_keywords' ELSE 'exclude_keywords' END) term
+        WHERE term=k->>'keyword'))
+     THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_KEYWORD_NOT_CONFIGURED'; END IF;
+    -- This is a narrow structural eligibility guard. The deployed runtime must
+    -- still revalidate exact normalized quotations and all factors, then perform
+    -- independent verification. SQL never treats this candidate as accepted.
+    FOR writer IN SELECT evidence FROM (VALUES(candidate#>'{factors,scope,notice_evidence}'),
+      (candidate#>'{scope_decision,notice_evidence}')) arrays(evidence) LOOP
+     IF jsonb_typeof(writer.evidence) IS DISTINCT FROM 'array' OR jsonb_array_length(writer.evidence)=0
+      OR EXISTS(SELECT 1 FROM jsonb_array_elements(writer.evidence) ref WHERE ref->>'id' IS DISTINCT FROM sample.frozen_context#>>'{notice,id}'
+       OR length(trim(coalesce(ref->>'quote','')))=0)
+      THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_NOTICE_EVIDENCE_MISSING'; END IF;
+    END LOOP;
+    SELECT jsonb_build_object(
+     'thread',to_jsonb(t),
+     'results',(SELECT jsonb_agg(to_jsonb(gr) ORDER BY gr.id) FROM app_private.model_graph_results gr WHERE gr.thread_id=t.id),
+     'budgets',(SELECT jsonb_agg(to_jsonb(b) ORDER BY b.unit) FROM app_private.model_graph_budgets b WHERE b.thread_id=t.id),
+     'checkpoints',(SELECT jsonb_agg(to_jsonb(c) ORDER BY c.namespace,c.checkpoint_id) FROM app_private.model_graph_checkpoints c WHERE c.thread_id=t.id),
+     'writes',(SELECT jsonb_agg(to_jsonb(w) ORDER BY w.namespace,w.checkpoint_id,w.task_id,w.idx) FROM app_private.model_graph_writes w WHERE w.thread_id=t.id),
+     'usage',(SELECT jsonb_agg(to_jsonb(u) ORDER BY u.id) FROM public.provider_usage u WHERE u.job_id=retry_job.id),
+     'attempts',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.id) FROM public.model_attempts a WHERE a.job_id=retry_job.id))
+     INTO graph_before FROM app_private.model_graph_threads t WHERE t.id=graph.id;
+    job_before:=to_jsonb(retry_job);
+    result:=public.app_command('job.action',jsonb_build_object('id',retry_job.id,'expected_revision',retry_job.revision,
+      'action','retry','reason',revalidation_reason),'__BATCH__-scope-revalidate-'||retry_job.id::text);
+    IF result->>'id' IS DISTINCT FROM retry_job.id::text OR coalesce(result->>'status','') NOT IN ('queued','running','retry_wait')
+     THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_RETRY_NOT_ACCEPTED'; END IF;
+    SELECT jsonb_build_object(
+     'thread',to_jsonb(t),
+     'results',(SELECT jsonb_agg(to_jsonb(gr) ORDER BY gr.id) FROM app_private.model_graph_results gr WHERE gr.thread_id=t.id),
+     'budgets',(SELECT jsonb_agg(to_jsonb(b) ORDER BY b.unit) FROM app_private.model_graph_budgets b WHERE b.thread_id=t.id),
+     'checkpoints',(SELECT jsonb_agg(to_jsonb(c) ORDER BY c.namespace,c.checkpoint_id) FROM app_private.model_graph_checkpoints c WHERE c.thread_id=t.id),
+     'writes',(SELECT jsonb_agg(to_jsonb(w) ORDER BY w.namespace,w.checkpoint_id,w.task_id,w.idx) FROM app_private.model_graph_writes w WHERE w.thread_id=t.id),
+     'usage',(SELECT jsonb_agg(to_jsonb(u) ORDER BY u.id) FROM public.provider_usage u WHERE u.job_id=retry_job.id),
+     'attempts',(SELECT jsonb_agg(to_jsonb(a) ORDER BY a.id) FROM public.model_attempts a WHERE a.job_id=retry_job.id))
+     INTO graph_after FROM app_private.model_graph_threads t WHERE t.id=graph.id;
+    SELECT * INTO STRICT retry_job FROM public.jobs WHERE id=retry_job.id;
+    IF graph_after IS DISTINCT FROM graph_before OR to_jsonb(retry_job)->'attempts' IS DISTINCT FROM job_before->'attempts'
+      OR to_jsonb(retry_job)->'checkpoint' IS DISTINCT FROM job_before->'checkpoint'
+     THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_RETAINED_STATE_CHANGED'; END IF;
+    INSERT INTO public.audit_events(workspace_id,actor_id,action,entity_id,reason,request_id)
+     VALUES(sample.workspace_id,actor,'ops.model_assessment.sample.revalidated',retry_job.id,revalidation_reason,gen_random_uuid());
+    SELECT * INTO STRICT sample FROM public.generation_plans WHERE id=sample.id AND workspace_id=sample.workspace_id;
+    sample_revalidated:=true;
+   END IF;
+  END IF;
   IF action_name='retry-sample' THEN
    SELECT EXISTS(SELECT 1 FROM public.audit_events a JOIN public.jobs j ON j.id=a.entity_id
     WHERE a.workspace_id=sample.workspace_id AND a.actor_id=actor AND a.action='ops.model_assessment.sample.retried'
@@ -191,6 +350,9 @@ BEGIN
   'sample_completed',sample_complete,'sample_current',sample_current,
   'sample_followed_successor',followed_successor,'sample_waiting_successor',waiting_successor,
   'sample_retried',sample_retried,'sample_retry_already_requested',sample_retry_already_requested,
+  'sample_revalidated',sample_revalidated,'sample_revalidation_already_requested',sample_revalidation_already_requested,
+  'sample_revalidation_guard',CASE WHEN action_name='revalidate-sample' THEN 'scope-keyword-evidence-v1' END,
+  'retained_state_preserved_before_release',CASE WHEN sample_revalidated THEN true END,
   'blocked_missing_configuration',(SELECT count(*) FROM public.generation_plans WHERE workspace_id='__WORKSPACE__'
     AND kind='assessment' AND status='blocked' AND error_code='MODEL_NOT_CONFIGURED'),
   'sample_jobs',(SELECT coalesce(jsonb_agg(jsonb_build_object('status',j.status,'error_code',j.error_code,'attempts',j.attempts)),'[]') FROM public.jobs j WHERE j.entity_id=sample.id),
@@ -203,10 +365,25 @@ SELECT current_setting('tenderdesk.assessment_recovery'); COMMIT;
     return (prefix+body).replace('__WORKSPACE__',t.WORKSPACE).replace('__ACTION__',action).replace('__ENABLE__','true' if enable_task_routing else 'false').replace('__REASON__',reason).replace('__BATCH__',batch_id).replace('__ALIASES__',alias_sql)
 
 
-def run(action,batch_id,enable_task_routing=False,wait_seconds=0):
+def verify_guard_runtime(expected_image):
+    if not isinstance(expected_image,str) or not re.fullmatch(r'registry\.digitalocean\.com/tenderdesk-a6093a76/runtime@sha256:[a-f0-9]{64}',expected_image):
+        raise RecoveryError('ASSESSMENT_GUARD_RUNTIME_IMAGE_REQUIRED')
+    for name in ('api','worker'):
+        value=t.d.get('deployment',name) or {};meta=value.get('metadata',{});spec=value.get('spec',{});status=value.get('status',{})
+        containers=spec.get('template',{}).get('spec',{}).get('containers',[])
+        if (meta.get('name')!=name or meta.get('namespace')!=t.d.NAMESPACE
+          or meta.get('labels',{}).get('app.kubernetes.io/managed-by')!='tenderdesk-deployment'
+          or len(containers)!=1 or containers[0].get('name')!=name or containers[0].get('image')!=expected_image
+          or spec.get('replicas')!=1 or status.get('observedGeneration',-1)<meta.get('generation',0)
+          or status.get('readyReplicas')!=1 or status.get('updatedReplicas')!=1 or status.get('unavailableReplicas',0)!=0):
+            raise RecoveryError('ASSESSMENT_GUARD_RUNTIME_NOT_VERIFIED')
+
+
+def run(action,batch_id,enable_task_routing=False,wait_seconds=0,guard_fix=None,expected_runtime_image=None):
     directory=None;pod=None
     try:
         directory=t.prepare_cluster();d=t.d
+        if action=='revalidate-sample':verify_guard_runtime(expected_runtime_image)
         if d.get('secret','tenderdesk-migration-admin'):raise RecoveryError('ASSESSMENT_OTHER_ADMIN_IN_PROGRESS')
         credentials,ca=d.probe.target_credentials(os.environ['DIGITALOCEAN_ACCESS_TOKEN'])
         if not hmac.compare_digest(d.decode_secret(d.get('secret','tenderdesk-core')).get('PGSSLCA',''),ca):raise RecoveryError('ASSESSMENT_CA_MISMATCH')
@@ -217,8 +394,11 @@ def run(action,batch_id,enable_task_routing=False,wait_seconds=0):
         deadline=time.monotonic()+wait_seconds
         previous=None
         while True:
-            receipt=json.loads(d.sql(pod,recovery_sql(action,batch_id,aliases,enable_task_routing)))
-            public=json.dumps(receipt,sort_keys=True)
+            script=recovery_sql(action,batch_id,aliases,enable_task_routing,guard_fix)
+            # These are exclusively the reviewed literal guards in this helper,
+            # not provider/canonical errors or text from database records.
+            receipt=json.loads(d.sql(pod,script))
+            public=json.dumps(public_receipt(receipt),sort_keys=True)
             if public!=previous:print(public,flush=True);previous=public
             if not wait_seconds or action!='status':return 0
             if receipt['sample_completed']:return 0
@@ -233,11 +413,14 @@ def run(action,batch_id,enable_task_routing=False,wait_seconds=0):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--action',required=True,choices=['sample','remaining','status','retry-sample']);p.add_argument('--batch-id',required=True);p.add_argument('--enable-task-routing',action='store_true');p.add_argument('--wait-seconds',type=int,default=0);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--action',required=True,choices=['sample','remaining','status','retry-sample','revalidate-sample']);p.add_argument('--batch-id',required=True);p.add_argument('--enable-task-routing',action='store_true');p.add_argument('--wait-seconds',type=int,default=0);p.add_argument('--guard-fix');p.add_argument('--expected-runtime-image');a=p.parse_args()
     try:
-        recovery_sql(a.action,a.batch_id,(),a.enable_task_routing)
+        recovery_sql(a.action,a.batch_id,(),a.enable_task_routing,a.guard_fix)
+        if a.action=='revalidate-sample' and (not a.expected_runtime_image or not re.fullmatch(r'registry\.digitalocean\.com/tenderdesk-a6093a76/runtime@sha256:[a-f0-9]{64}',a.expected_runtime_image)):
+            raise RecoveryError('ASSESSMENT_GUARD_RUNTIME_IMAGE_REQUIRED')
+        if a.expected_runtime_image and a.action!='revalidate-sample':raise RecoveryError('ASSESSMENT_GUARD_RUNTIME_ACTION_INVALID')
         if a.wait_seconds and (a.action!='status' or not 1<=a.wait_seconds<=900):raise RecoveryError('ASSESSMENT_WAIT_INVALID')
-        return run(a.action,a.batch_id,a.enable_task_routing,a.wait_seconds)
+        return run(a.action,a.batch_id,a.enable_task_routing,a.wait_seconds,a.guard_fix,a.expected_runtime_image)
     except Exception as e:
         safe=str(e) if isinstance(e,(RecoveryError,t.d.DeployError,t.d.probe.ProbeError)) and re.fullmatch(r'[A-Z0-9_]{1,100}',str(e)) else 'ASSESSMENT_RECOVERY_FAILED'
         print(json.dumps({'assessment_recovery':'blocked','code':safe}),flush=True);return 1
