@@ -195,6 +195,10 @@ def build(config):
     storage = container("storage", STORAGE_IMAGE, storage_env, 5000, "/status", "128Mi", "384Mi", mounts=[ca_mount, {"name": "objects", "mountPath": "/var/lib/storage"}])
     deployment("storage", storage, 5000, [ca, {"name": "objects", "persistentVolumeClaim": {"claimName": "private-objects"}}], recreate=True)
     runtime_env = [env("PORT", 8080), env("SUPABASE_URL", "http://gateway:8081"),
+        # LangSmith constructs a local Client even with tracing disabled. Its
+        # profile discovery must stay within the restricted read-only app tree,
+        # rather than scanning the container user's home directory.
+        env("LANGSMITH_CONFIG_FILE", "/app/backend/.langsmith-disabled.json"),
         secret("SUPABASE_ANON_KEY", "ANON_KEY"), secret("SUPABASE_SERVICE_ROLE_KEY", "SERVICE_KEY"),
         env("APP_ALLOWED_ORIGINS", origin), env("APP_PUBLIC_API_URL", origin), env("APP_PUBLIC_URL", origin + "/"), env("APP_WORKER_URL", "http://worker:8080/functions/v1/worker"),
         env("APP_SCHEDULER_ENABLED", str(config.get("scheduler_enabled", False)).lower())]

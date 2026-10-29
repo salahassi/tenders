@@ -35,10 +35,20 @@ DECLARE actor uuid:=current_setting('tenderdesk.remediation_owner')::uuid;
  src public.sources; result jsonb; category text; code text;
  considered integer:=0; retried integer:=0; skipped jsonb:='{}'; details jsonb;
 BEGIN
- SELECT EXISTS(SELECT 1 FROM public.audit_events a JOIN public.generation_plans sample_plan ON sample_plan.id=a.entity_id
-  JOIN public.fit_assessments f ON f.plan_id=sample_plan.id AND f.workspace_id=sample_plan.workspace_id
-  WHERE a.workspace_id='__WORKSPACE__' AND a.action='ops.model_assessment.sample'
-   AND a.reason=sample_reason AND sample_plan.status='completed') INTO sample_ok;
+ -- Match assessment recovery's anchored current-successor rule. A refreshed
+ -- canceled original may follow only the latest same-opportunity assessment;
+ -- an unrelated or older favorable completion cannot satisfy acceptance.
+ SELECT EXISTS(SELECT 1 FROM public.audit_events a
+  JOIN public.generation_plans root_plan ON root_plan.id=a.entity_id AND root_plan.workspace_id=a.workspace_id AND root_plan.kind='assessment'
+  JOIN public.opportunities o ON o.id=root_plan.opportunity_id AND o.workspace_id=root_plan.workspace_id AND NOT o.archived
+  JOIN LATERAL(SELECT candidate.* FROM public.generation_plans candidate
+    WHERE candidate.workspace_id=root_plan.workspace_id AND candidate.opportunity_id=root_plan.opportunity_id AND candidate.kind='assessment'
+    ORDER BY candidate.created_at DESC,candidate.id DESC LIMIT 1) current_plan ON true
+  JOIN public.fit_assessments f ON f.plan_id=current_plan.id AND f.workspace_id=current_plan.workspace_id
+  WHERE a.workspace_id='__WORKSPACE__' AND a.action='ops.model_assessment.sample' AND a.actor_id=actor
+   AND a.reason=sample_reason AND current_plan.status='completed'
+   AND (current_plan.id=root_plan.id OR (root_plan.status='canceled' AND root_plan.error_code='NOTICE_DETAILS_REFRESHED'
+    AND (current_plan.created_at,current_plan.id)>(root_plan.created_at,root_plan.id)))) INTO sample_ok;
  IF action_name='recover' THEN
   IF NOT sample_ok THEN RAISE EXCEPTION 'ATTENTION_SAMPLE_NOT_COMPLETED'; END IF;
   PERFORM 1 FROM public.workspaces WHERE id='__WORKSPACE__' FOR UPDATE;

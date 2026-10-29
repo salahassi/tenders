@@ -1,0 +1,66 @@
+name: Repair restricted assessment runtime and finish approved recovery
+on:
+  push:
+    branches: [codex/repair-assessment-runtime]
+    paths: [.github/workflows/repair-assessment-runtime.yml, backend/scripts/ops/fix-langsmith-profile.py, backend/scripts/ops/recover-model-assessments.py]
+permissions:
+  contents: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Verify recovery and restricted runtime guards
+        run: |
+          npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
+          python3 -m unittest discover -s backend/deploy/kubernetes -p 'test_*.py'
+      - name: Apply the supported profile override and verify restricted Deno execution
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/fix-langsmith-profile.py
+  sample:
+    needs: fix
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Retry only the current never-sent sample after the runtime correction
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 backend/scripts/ops/recover-model-assessments.py --action retry-sample --batch-id provider-runtime-20261029
+          python3 backend/scripts/ops/recover-model-assessments.py --action status --batch-id provider-runtime-20261029 --wait-seconds 600
+  remaining:
+    needs: sample
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Recover missing-configuration assessments after persisted sample success
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/recover-model-assessments.py --action remaining --batch-id provider-runtime-20261029
+      - name: Inspect and retry eligible Needs attention failures
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 backend/scripts/ops/recover-needs-attention.py --action inspect --batch-id provider-runtime-20261029
+          python3 backend/scripts/ops/recover-needs-attention.py --action recover --batch-id provider-runtime-20261029
+          python3 backend/scripts/ops/recover-needs-attention.py --action inspect --batch-id provider-runtime-20261029

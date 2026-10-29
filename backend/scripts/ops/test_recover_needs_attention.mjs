@@ -17,7 +17,9 @@ try{
  CREATE TABLE identity_allowlist(workspace_id uuid,user_id uuid,status text,role text);INSERT INTO identity_allowlist VALUES('${w}','${owner}','active','Owner');
  CREATE FUNCTION app_private.member_role(w uuid) RETURNS text LANGUAGE sql AS $$SELECT m.role FROM memberships m JOIN identity_allowlist a USING(workspace_id,user_id) WHERE m.workspace_id=w AND m.user_id=current_setting('request.jwt.claim.sub',true)::uuid AND m.active AND a.status='active'$$;
  CREATE TABLE restore_sessions(workspace_id uuid,state text);CREATE TABLE model_execution_settings(workspace_id uuid,enabled boolean);INSERT INTO model_execution_settings VALUES('${w}',true);
- CREATE TABLE generation_plans(id uuid PRIMARY KEY,workspace_id uuid,opportunity_id uuid,kind text,status text,stage text,evidence_revision integer,input_hash text,created_at timestamptz DEFAULT now());
+ CREATE TABLE opportunities(id uuid PRIMARY KEY,workspace_id uuid,archived boolean DEFAULT false);
+ INSERT INTO opportunities VALUES('${id(20)}','${w}',false);
+ CREATE TABLE generation_plans(id uuid PRIMARY KEY,workspace_id uuid,opportunity_id uuid,kind text,status text,stage text,evidence_revision integer,input_hash text,created_at timestamptz DEFAULT now(),error_code text);
  CREATE TABLE jobs(id uuid PRIMARY KEY,workspace_id uuid,entity_id uuid,type text,status text,error_code text,cancel_requested boolean DEFAULT false,revision integer DEFAULT 1,updated_at timestamptz DEFAULT now(),input_hash text,checkpoint jsonb DEFAULT '{"retained":true}');
  CREATE TABLE generation_steps(workspace_id uuid,job_id uuid,plan_id uuid,status text,stage text);
  CREATE TABLE sources(id uuid PRIMARY KEY,workspace_id uuid,approval text,kind text,adapter_required boolean);
@@ -30,7 +32,7 @@ try{
  IF payload->>'id'='${id(108)}' THEN RAISE EXCEPTION 'DATA_AUTHORIZATION_REQUIRED';END IF;
  UPDATE jobs SET status='queued',error_code=NULL,revision=revision+1 WHERE id=(payload->>'id')::uuid AND revision=(payload->>'expected_revision')::int RETURNING to_jsonb(jobs.*) INTO result;
  IF result IS NULL THEN RAISE EXCEPTION 'REVISION_CONFLICT';END IF;RETURN result;END$$;
- INSERT INTO generation_plans VALUES('${sample}','${w}','${id(20)}','assessment','completed','assessment',1,'sample',now()-interval '1 day');
+ INSERT INTO generation_plans(id,workspace_id,opportunity_id,kind,status,stage,evidence_revision,input_hash,created_at) VALUES('${sample}','${w}','${id(20)}','assessment','completed','assessment',1,'sample',now()-interval '1 day');
  INSERT INTO audit_events(workspace_id,actor_id,action,entity_id,reason) VALUES('${w}','${owner}','ops.model_assessment.sample','${sample}','Owner-authorized automated provider remediation; batch=fixture-attention');
  RESET ROLE;`);
  const execute=a=>db.exec(scripts[a].replace("current_database()<>'tenderdesk_app'","current_database()<>'postgres'"));
@@ -43,7 +45,7 @@ try{
   if([5,6,7].includes(i)){
    type='source_collect';await db.query('INSERT INTO sources VALUES($1,$2,$3,$4,false)',[source,w,i===6?'paused':'approved','link_directory']);
   }else{
-   await db.query("INSERT INTO generation_plans VALUES($1,$2,$3,'assessment','blocked','assessment',1,$4,now()-interval '1 hour')",[plan,w,id(400+i),'input-'+i]);
+   await db.query("INSERT INTO generation_plans(id,workspace_id,opportunity_id,kind,status,stage,evidence_revision,input_hash,created_at) VALUES($1,$2,$3,'assessment','blocked','assessment',1,$4,now()-interval '1 hour')",[plan,w,id(400+i),'input-'+i]);
    await db.query("INSERT INTO generation_steps VALUES($1,$2,$3,'queued','assessment')",[w,job,plan]);
   }
   await db.query('INSERT INTO jobs(id,workspace_id,entity_id,type,status,error_code,input_hash) VALUES($1,$2,$3,$4,$5,$6,$7)',[job,w,[5,6,7].includes(i)?source:plan,type,'blocked',error,'input-'+i]);
@@ -64,6 +66,22 @@ try{
  await execute('recover');
  assert.equal((await db.query('SELECT status FROM jobs WHERE id=$1',[id(100)])).rows[0].status,'blocked');
  assert.equal((await db.query('SELECT count(*)::int n FROM audit_events')).rows[0].n,count);
+ // Do not accept the older favorable sample once a newer assessment exists.
+ const successor=id(11);
+ await db.query("INSERT INTO generation_plans(id,workspace_id,opportunity_id,kind,status,stage,evidence_revision,input_hash,created_at) VALUES($1,$2,$3,'assessment','blocked','assessment',1,'refreshed',now())",[successor,w,id(20)]);
+ await assert.rejects(execute('recover'),/ATTENTION_SAMPLE_NOT_COMPLETED/);await db.exec('ROLLBACK');
+ await db.query("UPDATE generation_plans SET status='completed' WHERE id=$1",[successor]);
+ await db.query('INSERT INTO fit_assessments VALUES($1,$2)',[successor,w]);
+ // A successful newer plan is not enough without the explicit detail-refresh cancellation anchor.
+ await assert.rejects(execute('recover'),/ATTENTION_SAMPLE_NOT_COMPLETED/);await db.exec('ROLLBACK');
+ await db.query("UPDATE generation_plans SET status='canceled',error_code='USER_CANCELED' WHERE id=$1",[sample]);
+ await assert.rejects(execute('recover'),/ATTENTION_SAMPLE_NOT_COMPLETED/);await db.exec('ROLLBACK');
+ await db.query("UPDATE generation_plans SET error_code='NOTICE_DETAILS_REFRESHED' WHERE id=$1",[sample]);
+ await execute('recover');
+ // A canceled latest successor cannot be replaced by its older completed original.
+ await db.query("UPDATE generation_plans SET status='canceled',error_code='NOTICE_DETAILS_REFRESHED' WHERE id=$1",[successor]);
+ await assert.rejects(execute('recover'),/ATTENTION_SAMPLE_NOT_COMPLETED/);await db.exec('ROLLBACK');
+ await db.query("UPDATE generation_plans SET status='completed',error_code=NULL WHERE id=$1",[successor]);
  await db.exec('UPDATE model_execution_settings SET enabled=false');
  await assert.rejects(execute('recover'),/ATTENTION_EXECUTION_DISABLED/);await db.exec('ROLLBACK');
  console.log('Attention sample gate, canonical retry, dependency/usage preservation and replay guard passed.');
