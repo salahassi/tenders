@@ -64,10 +64,12 @@ jobs:
                 FROM public.generation_plans p WHERE p.status='blocked' AND p.error_code='MODEL_CORRECTION_EXHAUSTED'),
                'factor_shapes',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT gr.result_key,f.key factor,f.value->'rating' rating,
                 jsonb_array_length(coalesce(f.value->'notice_evidence','[]')) notice_refs,jsonb_array_length(coalesce(f.value->'company_evidence','[]')) company_refs,
-                gr.value#>>'{result,scope_decision,status}' scope_status,
-                jsonb_array_length(coalesce(gr.value#>'{result,scope_decision,keyword_evidence}','[]')) scope_keyword_refs
-                FROM app_private.model_graph_results gr CROSS JOIN LATERAL jsonb_each(coalesce(gr.value#>'{result,factors}','{}')) f
+                candidate.value#>>'{scope_decision,status}' scope_status,
+                jsonb_array_length(coalesce(candidate.value#>'{scope_decision,keyword_evidence}','[]')) scope_keyword_refs
+                FROM app_private.model_graph_results gr CROSS JOIN LATERAL (SELECT coalesce(gr.value#>'{result,result}',gr.value->'result') value) candidate CROSS JOIN LATERAL jsonb_each(coalesce(candidate.value->'factors','{}')) f
                 WHERE gr.result_key~'^candidate-[0-2]$' ORDER BY gr.created_at,f.key)x),
+
+               'semantic_versions',(SELECT jsonb_agg(DISTINCT r.value->'version') FROM app_private.model_graph_results r WHERE r.result_key LIKE 'semantic-instructions-%'),
 
                'validation_artifacts',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT r.result_key,r.created_at,r.content_hash,
                  r.value#>'{local_validation,diagnostics}' writer_diagnostics,r.value->'validation_diagnostics' repair_diagnostics,
