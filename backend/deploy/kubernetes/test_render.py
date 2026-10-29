@@ -47,6 +47,13 @@ class RuntimeManifestTest(unittest.TestCase):
             self.assertEqual(deployment["spec"]["strategy"], {"type": "Recreate"})
             self.assertTrue(any("persistentVolumeClaim" in v for v in deployment["spec"]["template"]["spec"]["volumes"]))
 
+    def test_local_graph_profile_discovery_keeps_restricted_filesystem_permissions(self):
+        for name in ["api", "worker", "source-browser", "scheduler"]:
+            container = self.deployments[name]["spec"]["template"]["spec"]["containers"][0]
+            self.assertIn({"name": "LANGSMITH_CONFIG_FILE", "value": "/app/backend/.langsmith-disabled.json"}, container["env"])
+            self.assertTrue(container["securityContext"]["readOnlyRootFilesystem"])
+            self.assertEqual(container["securityContext"]["capabilities"], {"drop": ["ALL"]})
+
     def test_ordinary_pods_have_no_service_account_or_privilege(self):
         for obj in self.deployments.values():
             pod = obj["spec"]["template"]["spec"]

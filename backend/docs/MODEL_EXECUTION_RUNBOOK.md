@@ -14,6 +14,10 @@ After publication on the default branch, synchronization runs every 15 minutes, 
 
 Synchronization preserves connection/model enablement, routing, data-sharing permissions and limits. It cannot configure a missing provider key or add support for an unimplemented provider API. The separate manual `sample` recovery action enables the saved task route, recovers one never-sent assessment and only recovers the rest after a completed sample with a persisted fit assessment. Routine synchronization never re-enables execution after the Owner disables it.
 
+The restricted Deno runtime also sets `LANGSMITH_CONFIG_FILE` to `/app/backend/.langsmith-disabled.json`, a nonexistent file inside its already-readable application tree. The pinned LangSmith client otherwise tries home-profile discovery while constructing a local run even when tracing is disabled. Keep the explicit selector in Docker defaults and rendered runtime environments; do not widen filesystem permissions to resolve profile discovery. The `langsmith-runtime-smoke.mjs` fixture runs with the production read permissions and no network permission to verify the local wrapper and denied home access.
+
+If fetching notice details canonically cancels an assessment with `NOTICE_DETAILS_REFRESHED`, sample acceptance follows only the anchored latest assessment for that same opportunity. Older favorable results cannot satisfy the gate. A separate guarded `retry-sample` action can resume a current never-sent `GENERATION_HANDLER_FAILED` through the canonical job retry after its technical cause is corrected. It never resets model usage, frozen inputs or candidate counters. Needs attention recovery likewise retains consent, human verification, stale-evidence and prior-send/usage cases for their applicable review.
+
 The following legacy Supabase configuration instructions apply to a Supabase-hosted deployment; the current production worker uses the DigitalOcean credential path above.
 
 In **Settings → Models & providers**:
