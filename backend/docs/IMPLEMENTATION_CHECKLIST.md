@@ -2,7 +2,9 @@
 
 ## October 29 — approved model execution and Needs attention recovery
 
-The Owner explicitly approves enabling the saved model route, sending a real sample assessment within existing data permissions, and recovering the remaining assessments after success. The Owner additionally requests reviewing and restarting items under Needs attention after that sample succeeds. The first execution uses the already reviewed recovery helper: canonical Owner activation, one new assessment snapshot, a persisted completed-result gate, then current never-sent missing-configuration assessments. Existing attempts and usage history remain intact. Further Needs attention work will be classified against canonical retry guards; live execution and outcomes are pending.
+The Owner explicitly approves enabling the saved model route, sending a real sample assessment within existing data permissions, and recovering the remaining assessments after success. The Owner additionally requests reviewing and restarting items under Needs attention after that sample succeeds. [Execution 40865017755](https://github.com/salahassi/tenders/actions/runs/40865017755) enabled the saved route and created exactly one fresh assessment at 11:23:40 UTC, with 17 other current missing-configuration plans remaining. Existing attempts and usage history remain intact. Sample completion verification is running before batch recovery.
+
+Needs attention in the Jobs screen means blocked or failed jobs. A separately gated helper inspects their actual errors and only retries current, never-sent technical failures through canonical per-job commands after the completed sample has a persisted fit assessment. It retains usage/accepted requests, human verification, consent, stale evidence and correction-exhausted cases for their applicable resolution. Two PostgreSQL orchestration guard tests pass; completed business assessments requiring human judgment are not treated as technical job failures. Live review and counts are pending execution.
 
 ## October 29 — dynamic provider credential synchronization and assessment recovery
 

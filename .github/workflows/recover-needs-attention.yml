@@ -1,0 +1,45 @@
+name: Review and recover approved Needs attention jobs
+on:
+  push:
+    branches: [codex/recover-needs-attention]
+    paths: [.github/workflows/recover-needs-attention.yml, backend/scripts/ops/recover-needs-attention.py]
+permissions:
+  contents: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Inspect current attention items and verify sample acceptance
+        id: inspect
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import subprocess,json,os
+          p=subprocess.run(['python3','backend/scripts/ops/recover-needs-attention.py','--action','inspect','--batch-id','provider-runtime-20261029'],text=True,capture_output=True,timeout=300)
+          receipt=None
+          for line in p.stdout.splitlines():
+              try: value=json.loads(line)
+              except ValueError: continue
+              print(json.dumps(value),flush=True)
+              if value.get('action')=='inspect':receipt=value
+          if p.returncode or receipt is None:raise SystemExit(p.returncode or 1)
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('sample_completed='+str(bool(receipt['sample_completed'])).lower()+'\n')
+          PY
+      - name: Retry eligible technical blockers once without changing review or usage gates
+        if: steps.inspect.outputs.sample_completed == 'true'
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/recover-needs-attention.py --action recover --batch-id provider-runtime-20261029
+      - name: Verify remaining attention states
+        if: steps.inspect.outputs.sample_completed == 'true'
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/recover-needs-attention.py --action inspect --batch-id provider-runtime-20261029
