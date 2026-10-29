@@ -120,6 +120,10 @@ try{
   ADD COLUMN execution_metadata jsonb;`);
  const durable=migration('20261020143042_durable_model_graph.sql');
  await db.exec(durable.slice(0,durable.indexOf('do $$ declare name text;begin')));
+ const bounded=migration('20261022070632_bounded_hierarchical_planning.sql');
+ const budgetColumnStart=bounded.indexOf('alter table app_private.model_graph_threads add column budget_version ');
+ assert.ok(budgetColumnStart>=0,'missing actual graph budget version migration');
+ await db.exec(bounded.slice(budgetColumnStart,bounded.indexOf(';',budgetColumnStart)+1));
  await db.exec(`GRANT USAGE ON SCHEMA public,app_private TO tdp_app_owner;
  GRANT ALL ON ALL TABLES IN SCHEMA public,app_private TO tdp_app_owner;
  GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public,app_private TO tdp_app_owner;
@@ -162,12 +166,12 @@ try{
   await db.query("INSERT INTO public.generation_steps VALUES($1,$2,$3,$4,'queued','assessment')",
    [uuid(700),workspace,current,job]);
   await db.query(`INSERT INTO app_private.model_graph_threads
-   (id,workspace_id,job_id,input_hash,task,status,candidate_count)
-   VALUES($1,$2,$3,$4,'classify_opportunity','needs_review',3)`,[thread,workspace,job,inputHash]);
-  await db.query("INSERT INTO app_private.model_graph_budgets VALUES($1,'writer',3)",[thread]);
+   (id,workspace_id,job_id,input_hash,task,status,budget_version,candidate_count)
+   VALUES($1,$2,$3,$4,'classify_opportunity','needs_review',2,1)`,[thread,workspace,job,inputHash]);
+  await db.query("INSERT INTO app_private.model_graph_budgets VALUES($1,'writer',1),($1,'writer-repair',2)",[thread]);
   await db.query(`INSERT INTO app_private.model_graph_checkpoints
    (thread_id,checkpoint_id,checkpoint,metadata) VALUES($1,'checkpoint-3',$2,$3)`,
-   [thread,{channel_values:{candidate_count:3},pending_sends:[]},{step:3,source:'loop'}]);
+   [thread,{channel_values:{repairCount:2},pending_sends:[]},{step:3,source:'loop'}]);
   await db.query(`INSERT INTO app_private.model_graph_writes
    (thread_id,checkpoint_id,task_id,task_path,idx,channel,value)
    VALUES($1,'checkpoint-3','writer-2','writer',0,'candidate',$2)`,[thread,{result_key:'candidate-2'}]);
@@ -228,8 +232,20 @@ try{
  await rejected('older semantic policy pin',()=>db.query(`UPDATE app_private.model_graph_results
   SET value=jsonb_set(value,'{version}','2') WHERE thread_id=$1 AND result_key=$2`,[thread,pinKey]),
   /ASSESSMENT_REVALIDATION_IDENTITY_MISMATCH/);
- await rejected('writer graph count differs from three',()=>db.query(`UPDATE app_private.model_graph_threads
-  SET candidate_count=2 WHERE id=$1`,[thread]),/ASSESSMENT_REVALIDATION_GRAPH_NOT_RETAINED/);
+ await rejected('legacy graph budget cannot use split-budget recovery',()=>db.query(`UPDATE app_private.model_graph_threads
+  SET budget_version=1 WHERE id=$1`,[thread]),/ASSESSMENT_REVALIDATION_GRAPH_NOT_RETAINED/);
+ for(const count of [0,2,3]){
+  await rejected(`writer graph count ${count} differs from one`,()=>db.query(`UPDATE app_private.model_graph_threads
+   SET candidate_count=$1 WHERE id=$2`,[count,thread]),/ASSESSMENT_REVALIDATION_GRAPH_NOT_RETAINED/);
+ }
+ for(const unit of ['writer','writer-repair']){
+  await rejected(`missing ${unit} budget`,()=>db.query(`DELETE FROM app_private.model_graph_budgets
+   WHERE thread_id=$1 AND unit=$2`,[thread,unit]),/ASSESSMENT_REVALIDATION_GRAPH_NOT_RETAINED/);
+  for(const count of unit==='writer'?[0,2,3]:[0,1,3]){
+   await rejected(`wrong ${unit} budget count ${count}`,()=>db.query(`UPDATE app_private.model_graph_budgets
+    SET candidates=$1 WHERE thread_id=$2 AND unit=$3`,[count,thread,unit]),/ASSESSMENT_REVALIDATION_GRAPH_NOT_RETAINED/);
+  }
+ }
  await rejected('missing received writer receipt',()=>db.query(`UPDATE public.provider_usage
   SET graph_candidate_recorded=false WHERE id=$1`,[usageIds[1]]),/ASSESSMENT_REVALIDATION_WRITER_RECEIPT_MISSING/);
  await rejected('writer receipts must be distinct',()=>db.query(`UPDATE app_private.model_graph_results

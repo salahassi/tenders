@@ -6,6 +6,27 @@ r=importlib.util.module_from_spec(SPEC);sys.modules[SPEC.name]=r;SPEC.loader.exe
 
 
 class AssessmentRecoveryTests(unittest.TestCase):
+    def test_public_progress_omits_all_private_and_unknown_fields(self):
+        private='offline-private-customer-provider-model-value'
+        receipt={'action':'revalidate-sample','started':0,'blocked_missing_configuration':17,
+          'sample_exists':True,'sample_current':True,'sample_completed':False,'sample_status':'blocked',
+          'sample_error':'MODEL_CORRECTION_EXHAUSTED','sample_revalidated':False,
+          'sample_attempts':[{'provider':private,'connection':private,'model':private}],
+          'sample_jobs':[{'id':private}],'routes':private,'customer':private,'unknown_private':private,
+          'sample_revalidation_guard':private,'workspace_id':private,'frozen_context':private}
+        before=json.dumps(receipt,sort_keys=True)
+        public=r.public_receipt(receipt)
+        self.assertEqual(public,{'action':'revalidate-sample','started':0,'blocked_missing_configuration':17,
+          'sample_exists':True,'sample_current':True,'sample_completed':False,'sample_status':'blocked',
+          'sample_error':'MODEL_CORRECTION_EXHAUSTED','sample_revalidated':False})
+        self.assertNotIn(private,json.dumps(public))
+        self.assertEqual(json.dumps(receipt,sort_keys=True),before,'internal status receipt must remain intact')
+        invalid=r.public_receipt({'action':private,'started':private,'blocked_missing_configuration':True,
+          'sample_exists':private,'sample_status':private,'sample_error':'PRIVATE_CUSTOMER_TOKEN'})
+        self.assertEqual(invalid,{'sample_error':'ASSESSMENT_ERROR_REDACTED'})
+        self.assertEqual(r.public_receipt({'action':{'private':private},'sample_status':[private],
+          'sample_error':{'private':private}}),{'sample_error':'ASSESSMENT_ERROR_REDACTED'})
+
     def test_invalid_flags_aliases_and_batch_are_rejected(self):
         for args in [('bad','batch',[],False),('remaining','batch',[],True),('sample',"batch';bad",[],True),('sample','batch',['BAD_KEY'],True)]:
             with self.assertRaises(r.RecoveryError):r.recovery_sql(*args)

@@ -96,6 +96,17 @@ def terminal(snapshot, minimum_completed):
             and all(row["status"] in TERMINAL for row in snapshot["latest_statuses"]))
 
 
+def public_snapshot(snapshot, minimum_completed):
+    """Project only anonymous processing state into public workflow logs.
+
+    Business fit routing and review outcomes remain private even when their
+    aggregates are available to the read-only observer's validation logic.
+    """
+    validate_snapshot(snapshot)
+    fields = ("latest_total", "latest_statuses", "current_fit_total", "pending_jobs", "pending_opportunities", "attention_jobs", "attention_plans")
+    return {**{key: snapshot[key] for key in fields}, "terminal": terminal(snapshot, minimum_completed)}
+
+
 class Client:
     def __init__(self, timeout):
         run, attempt = os.environ.get("GITHUB_RUN_ID", ""), os.environ.get("GITHUB_RUN_ATTEMPT", "")
@@ -162,18 +173,18 @@ def observe(client, *, timeout, interval, minimum_completed, clock=time.monotoni
     last = None
     while True:
         snapshot = client.snapshot()
-        comparison = {key: value for key, value in snapshot.items() if key != "observed_at"}
-        if comparison != last:
-            print(json.dumps({"assessment_observation": "progress", **snapshot}, sort_keys=True), flush=True)
-            last = comparison
+        visible = public_snapshot(snapshot, minimum_completed)
+        if visible != last:
+            print(json.dumps({"assessment_observation": "progress", **visible}, sort_keys=True), flush=True)
+            last = visible
         if terminal(snapshot, minimum_completed):
             incomplete = any(row["count"] > 0 and row["status"] != "completed" for row in snapshot["latest_statuses"])
             outcome = "terminal_with_attention" if incomplete or snapshot["attention_jobs"] or snapshot["attention_plans"] else "completed"
-            print(json.dumps({"assessment_observation": outcome, **snapshot}, sort_keys=True), flush=True)
+            print(json.dumps({"assessment_observation": outcome, **visible}, sort_keys=True), flush=True)
             return 0
         remaining = deadline - clock()
         if remaining <= 0:
-            print(json.dumps({"assessment_observation": "timeout", **snapshot}, sort_keys=True), flush=True)
+            print(json.dumps({"assessment_observation": "timeout", **visible}, sort_keys=True), flush=True)
             return 2
         pause(min(interval, remaining))
 

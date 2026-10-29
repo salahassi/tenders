@@ -24,6 +24,33 @@ class RecoveryError(Exception):
     pass
 
 SCOPE_GUARD_FIX='scope-keyword-evidence-v1'
+PUBLIC_SAMPLE_ERROR_CODES=frozenset({
+    'ASSESSMENT_SAMPLE_SUPERSEDED','MODEL_NOT_CONFIGURED','MODEL_CORRECTION_EXHAUSTED',
+    'GENERATION_HANDLER_FAILED','NOTICE_DETAILS_REFRESHED','NOTICE_BROWSER_PENDING','NOTICE_OCR_PENDING',
+    'MODEL_UNKNOWN_OUTCOME','MODEL_CONFIGURATION_REVIEW_REQUIRED','MODEL_RATE_LIMITED','MODEL_TIMEOUT',
+    'MODEL_OUTPUT_INVALID','EVIDENCE_REFERENCE_INVALID','TOKEN_COUNT_UNAVAILABLE',
+    'MODEL_GENERATION_ATTEMPTS_EXHAUSTED','MODEL_OPERATION_BUDGET_EXHAUSTED',
+})
+
+
+def public_receipt(receipt):
+    """Return only anonymous operational progress for public workflow logs."""
+    result={}
+    action=receipt.get('action')
+    if isinstance(action,str) and action in {'sample','remaining','status','retry-sample','revalidate-sample'}:
+        result['action']=action
+    for key in ('started','blocked_missing_configuration'):
+        if type(receipt.get(key)) is int and receipt[key]>=0:result[key]=receipt[key]
+    for key in ('sample_exists','sample_completed','sample_current','sample_followed_successor',
+                'sample_waiting_successor','sample_retried','sample_retry_already_requested',
+                'sample_revalidated','sample_revalidation_already_requested','retained_state_preserved_before_release'):
+        if type(receipt.get(key)) is bool:result[key]=receipt[key]
+    status=receipt.get('sample_status')
+    if status is None or (isinstance(status,str) and status in {'queued','running','blocked','completed','failed','canceled'}):
+        result['sample_status']=status
+    error=receipt.get('sample_error')
+    result['sample_error']=error if error is None or (isinstance(error,str) and error in PUBLIC_SAMPLE_ERROR_CODES) else 'ASSESSMENT_ERROR_REDACTED'
+    return result
 
 
 def recovery_sql(action: str, batch_id: str, ready_aliases=(), enable_task_routing=False, guard_fix=None):
@@ -155,7 +182,14 @@ BEGIN
     SELECT t.* INTO STRICT graph FROM app_private.model_graph_threads t
      WHERE t.workspace_id=sample.workspace_id AND t.job_id=retry_job.id AND t.task='classify_opportunity'
      ORDER BY t.created_at DESC,t.id DESC LIMIT 1;
-    IF graph.status<>'needs_review' OR graph.candidate_count<>3
+    -- Version 2 counts the initial writer and content repairs separately.
+    -- candidate_count mirrors only the writer unit, not all three receipts.
+    IF graph.status IS DISTINCT FROM 'needs_review' OR graph.budget_version IS DISTINCT FROM 2
+     OR graph.candidate_count IS DISTINCT FROM 1
+     OR (SELECT b.candidates FROM app_private.model_graph_budgets b
+       WHERE b.thread_id=graph.id AND b.unit='writer') IS DISTINCT FROM 1
+     OR (SELECT b.candidates FROM app_private.model_graph_budgets b
+       WHERE b.thread_id=graph.id AND b.unit='writer-repair') IS DISTINCT FROM 2
      THEN RAISE EXCEPTION 'ASSESSMENT_REVALIDATION_GRAPH_NOT_RETAINED'; END IF;
     SELECT gr.* INTO STRICT retained FROM app_private.model_graph_results gr
      WHERE gr.thread_id=graph.id AND gr.result_key='candidate-2';
@@ -360,8 +394,11 @@ def run(action,batch_id,enable_task_routing=False,wait_seconds=0,guard_fix=None,
         deadline=time.monotonic()+wait_seconds
         previous=None
         while True:
-            receipt=json.loads(d.sql(pod,recovery_sql(action,batch_id,aliases,enable_task_routing,guard_fix)))
-            public=json.dumps(receipt,sort_keys=True)
+            script=recovery_sql(action,batch_id,aliases,enable_task_routing,guard_fix)
+            # These are exclusively the reviewed literal guards in this helper,
+            # not provider/canonical errors or text from database records.
+            receipt=json.loads(d.sql(pod,script))
+            public=json.dumps(public_receipt(receipt),sort_keys=True)
             if public!=previous:print(public,flush=True);previous=public
             if not wait_seconds or action!='status':return 0
             if receipt['sample_completed']:return 0
