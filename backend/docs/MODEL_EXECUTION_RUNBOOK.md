@@ -6,6 +6,16 @@ status; source implementation is not proof of successful live inference.
 
 ## Configuration
 
+### DigitalOcean provider credentials
+
+On the DigitalOcean deployment, provider key values belong in this repository's **Settings → Secrets and variables → Actions**. The **Synchronize provider credentials dynamically** workflow discovers the supported provider prefixes from source and additional credential aliases from saved model connections. A custom connection alias must match `APP_MODEL_[A-Z0-9_]{1,80}_KEY` and have the same name in repository Secrets. Adding an alias or rotating its value does not require editing the workflow's provider list.
+
+After publication on the default branch, synchronization runs every 15 minutes, on relevant source changes and through manual dispatch. GitHub schedules can be delayed; dispatch `action=sync` when immediate synchronization is needed. Each matrix job receives only its discovered key. Values reach the owned Kubernetes `tenderdesk-runtime` Secret through standard input; only stale API/worker processes reload. Existing values survive absent/empty repository bindings, so deleting a repository Secret is not automatic runtime revocation. Remove a runtime key explicitly when revocation is intended.
+
+Synchronization preserves connection/model enablement, routing, data-sharing permissions and limits. It cannot configure a missing provider key or add support for an unimplemented provider API. The separate manual `sample` recovery action enables the saved task route, recovers one never-sent assessment and only recovers the rest after a completed sample with a persisted fit assessment. Routine synchronization never re-enables execution after the Owner disables it.
+
+The following legacy Supabase configuration instructions apply to a Supabase-hosted deployment; the current production worker uses the DigitalOcean credential path above.
+
 In **Settings → Models & providers**:
 
 1. Create a connection with a provider, account/project identifier and the **name**

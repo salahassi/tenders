@@ -178,10 +178,10 @@ class ProviderSyncTests(unittest.TestCase):
             ids.write_text('export const MODEL_PROVIDER_IDS = ["undeclared"] as const;')
             with self.assertRaisesRegex(s.SyncError, "PROVIDER_REGISTRY_PREFIX_MISMATCH"): s.canonical_aliases(ids, backend)
 
-    def test_json_binding_discovery_ignores_non_model_secrets_and_rejects_invalid_shape(self):
-        self.assertEqual(s.decode_bindings(json.dumps({KEY: "synthetic", "GITHUB_TOKEN": "must-ignore", "APP_SMTP_PASSWORD": "must-ignore"})), {KEY: "synthetic"})
-        for raw in ("[]", "invalid", "null"):
-            with self.assertRaises(s.SyncError): s.decode_bindings(raw)
+    def test_approved_aliases_rejects_non_model_names_and_invalid_shape(self):
+        self.assertEqual(s.approved_aliases(json.dumps([KEY, OTHER])), {KEY, OTHER})
+        for raw in ("[]", "invalid", "null", json.dumps(["GITHUB_TOKEN"])):
+            with self.assertRaises(s.SyncError): s.approved_aliases(raw)
 
     def test_reload_discovers_aliases_without_any_repository_binding_and_cleans_directory(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -254,6 +254,20 @@ class ProviderSyncTests(unittest.TestCase):
             self.assertEqual(output.read_text(), 'provider_aliases=' + json.dumps(sorted([KEY, OTHER]), separators=(",", ":")) + '\n')
             self.assertEqual(json.loads(stdout.getvalue())["aliases_discovered"], 2)
             self.assertFalse(private.exists())
+
+    def test_partial_prepare_failure_cleans_new_directory_but_preserves_preexisting_one(self):
+        for preexisting in (False, True):
+            with self.subTest(preexisting=preexisting), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                private = root / "td-sources-123-1"
+                if preexisting: private.mkdir()
+                def prepare():
+                    if not private.exists(): private.mkdir()
+                    raise s.SyncError("PROVIDER_PREPARE_FAILED")
+                with patch.dict(os.environ, {"RUNNER_TEMP": str(root), "GITHUB_RUN_ID": "123", "GITHUB_RUN_ATTEMPT": "1"}), \
+                     patch.object(s.access, "prepare_cluster", side_effect=prepare), redirect_stdout(io.StringIO()):
+                    self.assertEqual(s.main(["--action", "reload"]), 1)
+                self.assertEqual(private.exists(), preexisting)
 
     def test_database_alias_discovery_is_read_only_and_admin_cleanup_is_unconditional(self):
         core = resource("tenderdesk-core")

@@ -56,19 +56,6 @@ def canonical_aliases(registry_path=REGISTRY, backend_path=BACKEND):
     return result
 
 
-def decode_bindings(raw):
-    if not isinstance(raw, str) or len(raw.encode()) > 2_097_152:
-        raise SyncError("PROVIDER_BINDINGS_INVALID")
-    try:
-        value = json.loads(raw)
-    except (ValueError, TypeError):
-        raise SyncError("PROVIDER_BINDINGS_INVALID") from None
-    if not isinstance(value, dict):
-        raise SyncError("PROVIDER_BINDINGS_INVALID")
-    # Ignore unrelated repository Secrets before any child process is started.
-    return {name: item for name, item in value.items() if isinstance(name, str) and ALIAS.fullmatch(name)}
-
-
 def owned(kind, name):
     value = d.get(kind, name)
     metadata = (value or {}).get("metadata", {})
@@ -221,6 +208,7 @@ def main(argv=None):
     parser.add_argument("--action", choices=("discover", "apply", "reload"), default="reload")
     args = parser.parse_args(argv)
     directory = None
+    partial_directory = None
     try:
         # A matrix apply job receives exactly one requested repository binding.
         # Pop it before running kubectl, including for missing/invalid input.
@@ -238,6 +226,11 @@ def main(argv=None):
                 return 0
             if len(value) > 16_384 or "\x00" in value or value != value.strip():
                 raise SyncError("PROVIDER_KEY_BINDING_INVALID")
+        run, attempt = os.environ.get("GITHUB_RUN_ID", ""), os.environ.get("GITHUB_RUN_ATTEMPT", "")
+        if os.environ.get("RUNNER_TEMP") and re.fullmatch(r"[0-9]{1,20}", run) and re.fullmatch(r"[0-9]{1,6}", attempt):
+            candidate = Path(os.environ["RUNNER_TEMP"]) / ("td-sources-" + run + "-" + attempt)
+            if not candidate.exists() and not candidate.is_symlink():
+                partial_directory = candidate
         directory = access.prepare_cluster()
         if args.action == "discover":
             aliases = discover_aliases()
@@ -256,6 +249,8 @@ def main(argv=None):
     finally:
         if directory:
             shutil.rmtree(directory)
+        elif partial_directory is not None and partial_directory.is_dir() and not partial_directory.is_symlink():
+            shutil.rmtree(partial_directory)
     return 0
 
 
