@@ -4,6 +4,7 @@ import { Annotation, StateGraph, START, END } from "@langchain/langgraph";
 import type { Backend, BackendEnvironment } from "./backend.ts";
 import {
   executeModel,
+  classificationScopePolicy,
   ModelDeferred,
   ModelError,
   ModelCandidateRepair,
@@ -1135,6 +1136,7 @@ async function runGuardedModel(o: Options): Promise<{
       const result = state.repairCount ? stored.result : stored;
       validateModelResult(o.task, result, o.evidence, o.requiredIds, {
         independentGrounding: true,
+        scopePolicy: classificationScopePolicy(o.task, o.context),
       });
       if (o.task !== "connection_probe") {
         const report = state.reportRef
@@ -1274,6 +1276,7 @@ async function runGuardedModel(o: Options): Promise<{
             store,
             job: o.job,
             task: o.task,
+            context: o.context,
             evidence: o.evidence,
             requiredIds: o.requiredIds,
             manifest: o.manifest,

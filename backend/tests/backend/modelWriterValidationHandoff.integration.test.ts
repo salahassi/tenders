@@ -19,6 +19,7 @@ import {
   ModelDeferred,
   ModelError,
   sha256,
+  validateModelResult,
 } from "../../supabase/functions/_shared/model";
 import { executeGuardedModel } from "../../supabase/functions/_shared/modelGraph";
 import {
@@ -26,6 +27,189 @@ import {
   type Backend,
 } from "../../supabase/functions/_shared/backend";
 import { databaseError } from "../../supabase/functions/_shared/http";
+
+it("recovers and accepts the latest paid keyword-scope assessment without another writer", async () => {
+  let job = (await configure("classify_opportunity")).job;
+  let fixed = false,
+    writerCalls = 0,
+    verifierCalls = 0;
+  const environments = modelEnvironments((name) =>
+    name === "APP_MODEL_OPENAI_KEY" ? "synthetic-key" : undefined,
+  );
+  const backend = {
+    internal: rpc,
+    resolveModelEnvironment: (config: any) => ({
+      ...environments.openai,
+      model: config.model,
+      projectRef: config.project_ref,
+    }),
+  } as unknown as Backend;
+  const notice = {
+    id: "synthetic-notice",
+    kind: "notice" as const,
+    verified: false,
+    text: "Synthetic procurement for garden design.",
+  };
+  const candidate = (index: number) => {
+    const unknown = {
+      rating: null,
+      reason: "Project-specific company qualifications require confirmation.",
+      notice_evidence: [],
+      company_evidence: [],
+    };
+    return {
+      factors: {
+        capability: unknown,
+        scope: {
+          rating: 4,
+          reason: `${["Initial", "Revised", "Final"][index]} comparison identifies a match with the selected interest.`,
+          notice_evidence: [{ id: notice.id, quote: "garden design" }],
+          company_evidence: [],
+        },
+        sector: unknown,
+        prerequisite: unknown,
+      },
+      scope_decision: {
+        status: "in_scope",
+        reason: "Purchased work matches the configured garden design interest.",
+        notice_evidence: [{ id: notice.id, quote: "garden design" }],
+        company_evidence: [],
+        keyword_evidence: [{ kind: "include", keyword: "Garden design" }],
+      },
+      critical_unknown: true,
+      reason_summary: "Capacity and qualifications require company evidence.",
+      missing_information: ["Confirm project-specific company qualifications."],
+      risk_flags: [],
+      suggested_tags: [],
+    };
+  };
+  vi.spyOn(FreeModelProvider.prototype, "generate").mockImplementation(
+    async function (this: FreeModelProvider, task, prompt) {
+      this.generationSent = true;
+      const context = JSON.parse(prompt).untrusted_data;
+      let result: unknown;
+      if (task === "verify_grounding") {
+        verifierCalls++;
+        result = {
+          checked_candidate_hash: context.candidate_hash,
+          reviewed_all_content: true,
+          processed_content_ids: context.content_units.map(
+            (unit: any) => unit.id,
+          ),
+          claims: [
+            {
+              id: "scope-comparison",
+              claim: "A comparison against the configured interest.",
+              candidate_quote: candidate(2).scope_decision.reason,
+              kind: "assumption",
+              status: "supported",
+              source_refs: [{ id: notice.id, quote: "garden design" }],
+              finding: "Requested work and the selected interest correspond.",
+            },
+          ],
+          processed_requirement_ids: [],
+          requirement_checks: [],
+          findings: [],
+        };
+      } else {
+        const output = candidate(writerCalls++);
+        result =
+          task === "repair_result"
+            ? {
+                target_task: "classify_opportunity",
+                result: output,
+                changes: ["Preserved a cited scope comparison."],
+              }
+            : output;
+      }
+      return {
+        text: JSON.stringify(result),
+        usage: { input: 80, output: 40, thinking: 0 },
+        complete: true,
+      };
+    },
+  );
+  const fetcher = vi.fn<typeof fetch>(async () => {
+    throw new Error("No external HTTP in fixture");
+  });
+  const options = {
+    backend,
+    prefix: `step:${job.id}`,
+    task: "classify_opportunity" as const,
+    context: {
+      scope_policy: {
+        scope: "combined",
+        include_keywords: ["Garden design"],
+        exclude_keywords: [],
+      },
+    },
+    evidence: [notice],
+    requiredIds: [],
+    manifest: [],
+    environments,
+    language: "en" as const,
+    repair: false,
+    fetcher,
+    validate: (value: any) => {
+      // Reproduce the previous application guard, without modifying outputs.
+      if (!fixed) validateModelResult("classify_opportunity", value, [notice]);
+    },
+  };
+  let exhausted = false;
+  for (let i = 0; i < 12 && !exhausted; i++) {
+    try {
+      await executeGuardedModel({ ...options, job });
+      throw new Error("The previous local guard must reject this comparison");
+    } catch (error) {
+      if ((error as any).code === "MODEL_CORRECTION_EXHAUSTED")
+        exhausted = true;
+      else {
+        expect(error).toBeInstanceOf(ModelDeferred);
+        job = await rpc("claim_backend_job_v2");
+      }
+    }
+  }
+  expect(exhausted).toBe(true);
+  expect(writerCalls).toBe(3);
+  expect(verifierCalls).toBe(0);
+  const receipts = (
+    await f.db.query<any>("select * from public.provider_usage order by id")
+  ).rows;
+  const budgets = (
+    await f.db.query<any>(
+      "select * from app_private.model_graph_budgets where unit like 'writer%' order by unit",
+    )
+  ).rows;
+  fixed = true;
+  let accepted: any;
+  for (let i = 0; i < 8 && !accepted; i++) {
+    try {
+      accepted = await executeGuardedModel({ ...options, job });
+    } catch (error) {
+      expect(error).toBeInstanceOf(ModelDeferred);
+      job = await rpc("claim_backend_job_v2");
+    }
+  }
+  expect(accepted?.result).toEqual(candidate(2));
+  expect(writerCalls).toBe(3);
+  expect(verifierCalls).toBe(1);
+  expect(
+    (
+      await f.db.query<any>(
+        "select * from public.provider_usage where id=any($1::uuid[]) order by id",
+        [receipts.map((receipt) => receipt.id)],
+      )
+    ).rows,
+  ).toEqual(receipts);
+  expect(
+    (
+      await f.db.query<any>(
+        "select * from app_private.model_graph_budgets where unit like 'writer%' order by unit",
+      )
+    ).rows,
+  ).toEqual(budgets);
+  expect(fetcher).not.toHaveBeenCalled();
+});
 
 it.each([false, true])(
   "revalidates the latest locally rejected correction without another writer or budget reset, crash=%s",
@@ -435,7 +619,11 @@ async function rpc(name: string, args: Record<string, unknown> = {}) {
 }
 
 async function configure(
-  task: "draft_section" | "repair_result" | "review_proposal",
+  task:
+    | "draft_section"
+    | "repair_result"
+    | "review_proposal"
+    | "classify_opportunity",
   alternate = false,
 ) {
   await f.command("model.routing", { enabled: true, expected_revision: 0 });

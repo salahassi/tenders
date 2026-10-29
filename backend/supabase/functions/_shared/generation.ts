@@ -1166,7 +1166,13 @@ export async function processGeneration(
           ),
         ] as Evidence[],
         input.requiredIds,
-        options,
+        {
+          ...options,
+          scopePolicy:
+            input.task === "classify_opportunity"
+              ? ctx!.plan.frozen_context.discovery_scope_policy
+              : undefined,
+        },
       );
       if (
         input.task === "draft_section" &&

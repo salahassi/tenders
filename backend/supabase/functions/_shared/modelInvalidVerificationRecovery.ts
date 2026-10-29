@@ -2,6 +2,7 @@ import type { Backend } from "./backend.ts";
 import type { ModelGraphStore } from "./modelGraphStore.ts";
 import {
   blockedContent,
+  classificationScopePolicy,
   ModelError,
   sha256,
   validateModelResult,
@@ -69,6 +70,10 @@ export async function recoverInvalidVerification(o: {
       o.requiredIds,
       {
         independentGrounding: true,
+        scopePolicy: classificationScopePolicy(
+          o.task ?? "draft_section",
+          o.context,
+        ),
       },
     );
     o.validate?.(candidate);

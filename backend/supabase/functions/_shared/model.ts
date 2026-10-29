@@ -47,7 +47,7 @@ import {
 } from "./sourceModel.ts";
 import { z } from "zod";
 import { readModelStream, ModelStreamError } from "./modelStream.ts";
-import type { ServiceScope } from "./discovery.ts";
+import { serviceScopeSchema, type ServiceScope } from "./discovery.ts";
 import {
   MODEL_PROVIDER_IDS,
   type ModelProviderId,
@@ -302,12 +302,32 @@ function coverageError(
     }),
   ]);
 }
+/** Application-owned scope criteria, including the original task on repairs. */
+export function classificationScopePolicy(
+  task: ModelTask,
+  context: unknown,
+): ServiceScope | undefined {
+  if (!context || typeof context !== "object") return;
+  const value = context as Record<string, any>;
+  const policy =
+    task === "classify_opportunity"
+      ? value.scope_policy
+      : task === "repair_result" && value.target_task === "classify_opportunity"
+        ? value.original_context?.scope_policy
+        : undefined;
+  const parsed = serviceScopeSchema.safeParse(policy);
+  return parsed.success ? parsed.data : undefined;
+}
 export function validateModelResult(
   task: ModelTask,
   value: unknown,
   evidence: Evidence[],
   requiredIds: string[] = [],
-  options?: { aggregateVerification?: boolean; independentGrounding?: boolean },
+  options?: {
+    aggregateVerification?: boolean;
+    independentGrounding?: boolean;
+    scopePolicy?: ServiceScope;
+  },
 ): any {
   const schema =
     task === "verify_grounding" && options?.aggregateVerification
@@ -468,9 +488,28 @@ export function validateModelResult(
         "company",
         `$.factors.${key}.company_evidence`,
       );
+      let selectedKeywordScope = false;
+      if (
+        key === "scope" &&
+        factor.rating !== null &&
+        factor.notice_evidence.length &&
+        !factor.company_evidence.length &&
+        result.scope_decision?.status !== "uncertain" &&
+        result.scope_decision?.keyword_evidence?.length
+      ) {
+        const policy = serviceScopeSchema.safeParse(options?.scopePolicy);
+        if (policy.success && policy.data.scope !== "company_knowledge") {
+          // Interests can establish service relevance, never company capacity,
+          // experience or eligibility. Both notice quote arrays were checked
+          // above; every selected term must belong to the frozen policy.
+          validateScopeDecision(result, policy.data);
+          selectedKeywordScope = true;
+        }
+      }
       if (
         factor.rating !== null &&
-        (!factor.notice_evidence.length || !factor.company_evidence.length)
+        (!factor.notice_evidence.length ||
+          (!factor.company_evidence.length && !selectedKeywordScope))
       )
         throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
           validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "source_missing", {
@@ -1887,7 +1926,10 @@ export async function executeModel(
             parsedCandidate,
             evidence,
             requiredIds,
-            options,
+            {
+              ...options,
+              scopePolicy: classificationScopePolicy(task, context),
+            },
           );
           if (task === "inspect_source_page") {
             const mode = (context as { mode?: string }).mode;
