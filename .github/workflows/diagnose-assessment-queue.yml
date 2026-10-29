@@ -1,0 +1,28 @@
+name: Diagnose anonymous assessment queue state
+on:
+  push:
+    branches: [codex/diagnose-assessment-queue]
+    paths: [.github/workflows/diagnose-assessment-queue.yml, backend/scripts/ops/diagnose-assessment-queue.py]
+permissions:
+  contents: read
+# Reads only anonymous processing counters and does not acquire the production mutex.
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Read fixed-code queue counters and owned native browser health
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/diagnose-assessment-queue.py
+      - name: Remove temporary runner credentials
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,shutil
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+os.environ['GITHUB_RUN_ID']+'-'+os.environ['GITHUB_RUN_ATTEMPT'])
+          if p.exists():shutil.rmtree(p)
+          PY
