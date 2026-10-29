@@ -1,0 +1,53 @@
+name: Observe active approved sample without mutating its runtime
+on:
+  push:
+    branches: [codex/observe-assessment-sample]
+    paths: [.github/workflows/observe-assessment-sample.yml]
+permissions:
+  contents: read
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Read bounded sample telemetry through the existing owned SQL client
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import importlib.util,sys,json,shutil
+          spec=importlib.util.spec_from_file_location('sample_observer','backend/scripts/ops/recover-model-assessments.py')
+          m=importlib.util.module_from_spec(spec);sys.modules[spec.name]=m;spec.loader.exec_module(m)
+          directory=None
+          try:
+              directory=m.t.prepare_cluster();d=m.t.d
+              pod='migration-client-40867167080-1'
+              owned=d.get('pod',pod)
+              if not owned or owned.get('metadata',{}).get('labels',{}).get('app.kubernetes.io/managed-by')!='tenderdesk-deployment':
+                  print('{"observation":"active_sql_client_unavailable"}');raise SystemExit(0)
+              sql="""BEGIN READ ONLY; SET LOCAL ROLE tdp_app_owner;
+              WITH root AS (SELECT p.* FROM public.audit_events a JOIN public.generation_plans p ON p.id=a.entity_id
+               WHERE a.action='ops.model_assessment.sample' AND a.reason='Owner-authorized automated provider remediation; batch=provider-runtime-20261029'
+               ORDER BY a.created_at DESC LIMIT 1), current_plan AS (SELECT p.* FROM public.generation_plans p JOIN root r
+               ON p.workspace_id=r.workspace_id AND p.opportunity_id=r.opportunity_id AND p.kind='assessment' ORDER BY p.created_at DESC,p.id DESC LIMIT 1)
+              SELECT jsonb_build_object('now',now(),
+               'sample',(SELECT jsonb_build_object('status',status,'stage',stage,'error_code',error_code,'updated_at',updated_at) FROM current_plan),
+               'jobs',(SELECT jsonb_agg(jsonb_build_object('status',j.status,'error_code',j.error_code,'attempts',j.attempts,'next_attempt_at',j.next_attempt_at)) FROM public.jobs j JOIN current_plan p ON j.entity_id=p.id),
+               'attempts',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT a.provider,a.model,a.status,a.result_code,a.sent,a.http_status,a.provider_error_code,a.provider_error_type,a.provider_error_reason,a.started_at,a.finished_at
+                FROM public.model_attempts a JOIN public.jobs j ON j.id=a.job_id JOIN current_plan p ON p.id=j.entity_id ORDER BY a.id DESC LIMIT 12)x),
+               'usage',(SELECT jsonb_agg(jsonb_build_object('provider',u.provider,'state',u.state,'error_code',u.error_code,'actual_input',u.actual_input,'actual_output',u.actual_output)) FROM public.provider_usage u JOIN public.jobs j ON j.id=u.job_id JOIN current_plan p ON p.id=j.entity_id),
+               'fit_persisted',(SELECT EXISTS(SELECT 1 FROM public.fit_assessments f JOIN current_plan p ON p.id=f.plan_id)));
+              COMMIT;"""
+              print(d.sql(pod,sql))
+              raw=d.command(['logs','deployment/worker','-n',d.NAMESPACE,'--tail=100','--since=8m'])
+              for line in raw.splitlines():
+                  if 'generation_handler_failed' not in line:continue
+                  try:
+                      x=json.loads(line[line.index('{'):]);print(json.dumps({'runtime_error':{k:x[k] for k in ['phase','error_type','locations'] if k in x}}))
+                  except (ValueError,KeyError):pass
+          finally:
+              if directory:shutil.rmtree(directory)
+          PY
