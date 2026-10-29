@@ -1,7 +1,8 @@
 # linux/amd64 manifest verified through Registry v2 on 2026-10-26.
 FROM denoland/deno:alpine-2.9.8@sha256:3dc638972caa62978182228a5a575e0498ae45129aa1c3ee8548663652ef7ab6
 WORKDIR /app/backend
-ENV DENO_DIR=/deno-dir PORT=8080
+ENV DENO_DIR=/deno-dir PORT=8080 \
+    LANGSMITH_CONFIG_FILE=/app/backend/.langsmith-disabled.json
 COPY --chown=deno:deno backend/supabase/functions/ ./supabase/functions/
 COPY --chown=deno:deno backend/scripts/runtime/ ./scripts/runtime/
 RUN --mount=type=secret,id=proxy_ca \
