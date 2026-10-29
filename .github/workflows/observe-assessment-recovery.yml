@@ -1,0 +1,44 @@
+name: Observe approved assessment recovery
+on:
+  workflow_dispatch:
+    inputs:
+      minimum_completed:
+        description: Minimum number of latest completed assessments expected
+        type: number
+        default: 1
+        required: true
+      timeout:
+        description: Observation timeout in seconds, maximum 900
+        type: number
+        default: 900
+        required: true
+  push:
+    branches: [codex/observe-approved-recovery]
+    paths:
+      - .github/workflows/observe-assessment-recovery.yml
+      - backend/scripts/ops/observe-assessment-recovery.py
+permissions:
+  contents: read
+# Read-only observer deliberately does not acquire the production mutation mutex.
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Observe latest assessment outcomes without changing processing
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          OBSERVATION_TIMEOUT: ${{ inputs.timeout || 900 }}
+          OBSERVATION_MINIMUM_COMPLETED: ${{ inputs.minimum_completed || 1 }}
+        run: python3 backend/scripts/ops/observe-assessment-recovery.py --timeout "$OBSERVATION_TIMEOUT" --interval 15 --minimum-completed "$OBSERVATION_MINIMUM_COMPLETED"
+      - name: Remove temporary runner cluster credentials
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,shutil
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+os.environ['GITHUB_RUN_ID']+'-'+os.environ['GITHUB_RUN_ATTEMPT'])
+          if p.exists():shutil.rmtree(p)
+          PY
