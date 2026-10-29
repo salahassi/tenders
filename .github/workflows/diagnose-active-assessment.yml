@@ -5,9 +5,6 @@ on:
     paths: [.github/workflows/diagnose-active-assessment.yml]
 permissions:
   contents: read
-concurrency:
-  group: tenderdesk-digitalocean-production
-  cancel-in-progress: false
 jobs:
   inspect:
     runs-on: ubuntu-latest
@@ -24,7 +21,7 @@ jobs:
           import importlib.util,sys,pathlib,os,json,hmac,shutil
           spec=importlib.util.spec_from_file_location('source_diagnosis','backend/scripts/ops/transfer-sources.py')
           s=importlib.util.module_from_spec(spec);sys.modules[spec.name]=s;spec.loader.exec_module(s)
-          directory=None;pod=None
+          directory=None;pod=None;admin_secret=None
           try:
               directory=s.prepare_cluster();d=s.d
               deployments=json.loads(d.command(['get','deployments','-n',d.NAMESPACE,'-o','json']))['items']
@@ -39,11 +36,23 @@ jobs:
                   except (ValueError,KeyError):pass
               native=json.loads(d.command(['get','cronjobs','-n',d.NAMESPACE,'-o','json']))['items']
               print(json.dumps({'native_schedules':[{'name':x['metadata']['name'],'suspended':x['spec'].get('suspend',False),'last_schedule':x.get('status',{}).get('lastScheduleTime'),'last_success':x.get('status',{}).get('lastSuccessfulTime')} for x in native]}))
-              if d.get('secret','tenderdesk-migration-admin'):raise ValueError('OTHER_ADMIN_IN_PROGRESS')
               credentials,ca=d.probe.target_credentials(os.environ['DIGITALOCEAN_ACCESS_TOKEN'])
               if not hmac.compare_digest(d.decode_secret(d.get('secret','tenderdesk-core')).get('PGSSLCA',''),ca):raise ValueError('DATABASE_CA_MISMATCH')
               pod='migration-client-'+os.environ['GITHUB_RUN_ID']+'-'+os.environ['GITHUB_RUN_ATTEMPT']
-              d.sql_pod({**credentials,'APP_DATABASE':d.DATABASE,'ROLE_PREFIX':d.PREFIX})
+              admin_secret='readonly-diagnostic-'+os.environ['GITHUB_RUN_ID']
+              d.put_secret(admin_secret,credentials)
+              manifest={'apiVersion':'v1','kind':'Pod','metadata':d.metadata(pod),'spec':{
+                'restartPolicy':'Never','activeDeadlineSeconds':180,'automountServiceAccountToken':False,
+                'securityContext':{'runAsNonRoot':True,'runAsUser':999,'runAsGroup':999,'seccompProfile':{'type':'RuntimeDefault'}},
+                'containers':[{'name':'postgres-client','image':d.probe.CLIENT_IMAGE,'command':['sleep','180'],
+                  'envFrom':[{'secretRef':{'name':admin_secret}}],
+                  'env':[{'name':'PGSSLMODE','value':'verify-full'},{'name':'PGSSLROOTCERT','value':'/run/db-ca/ca.crt'},{'name':'PGCONNECT_TIMEOUT','value':'15'}],
+                  'securityContext':{'allowPrivilegeEscalation':False,'readOnlyRootFilesystem':True,'capabilities':{'drop':['ALL']}},
+                  'resources':{'requests':{'cpu':'25m','memory':'32Mi'},'limits':{'cpu':'500m','memory':'256Mi'}},
+                  'volumeMounts':[{'name':'database-ca','mountPath':'/run/db-ca','readOnly':True}]}],
+                'volumes':[{'name':'database-ca','secret':{'secretName':'tenderdesk-core','defaultMode':292,'items':[{'key':'PGSSLCA','path':'ca.crt'}]}}]}}
+              d.apply_managed([manifest])
+              d.command(['wait','pod/'+pod,'-n',d.NAMESPACE,'--for=condition=Ready','--timeout=90s'],timeout=100)
               runtime=d.decode_secret(d.get('secret','tenderdesk-runtime'))
               print(json.dumps({'model_key_presence':{k:bool(v) for k,v in runtime.items() if k.startswith('APP_MODEL_') and k.endswith('_KEY')}}))
               query="""BEGIN READ ONLY; SET LOCAL ROLE tdp_app_owner;
@@ -84,7 +93,13 @@ jobs:
           except Exception as e:
               print(json.dumps({'diagnosis':'failed','type':type(e).__name__}));raise SystemExit(1)
           finally:
-              if pod:s.d.cleanup_administrator(pod)
+              for kind,name in [('pod',pod),('secret',admin_secret)]:
+                  if not name:continue
+                  item=s.d.get(kind,name)
+                  if item is None:continue
+                  if item.get('metadata',{}).get('labels',{}).get('app.kubernetes.io/managed-by')!='tenderdesk-deployment':raise ValueError('FOREIGN_DIAGNOSTIC_RESOURCE')
+                  s.d.command(['delete',kind,name,'-n',s.d.NAMESPACE,'--wait=true','--timeout=60s'],timeout=75)
+              print('{"readonly_diagnostic_resources":"removed"}')
               if directory:shutil.rmtree(directory)
           PY
       - name: Remove any temporary runner credentials
