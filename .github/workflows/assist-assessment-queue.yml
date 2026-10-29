@@ -1,0 +1,30 @@
+name: Assist approved assessments through canonical worker
+on:
+  push:
+    branches: [codex/assist-assessment-queue]
+    paths: [.github/workflows/assist-assessment-queue.yml, backend/scripts/ops/assist-assessment-queue.py]
+permissions:
+  contents: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  assist:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Assist approved pending work without changing queue or deployment configuration
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/assist-assessment-queue.py --batch-id provider-runtime-20261029 --expected-count 18 --max-seconds 600 --max-invocations 60
+      - name: Remove temporary runner credentials
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,shutil
+          p=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+os.environ['GITHUB_RUN_ID']+'-'+os.environ['GITHUB_RUN_ATTEMPT'])
+          if p.exists():shutil.rmtree(p)
+          PY
