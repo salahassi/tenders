@@ -49,6 +49,12 @@ jobs:
               query="""BEGIN READ ONLY; SET LOCAL ROLE tdp_app_owner;
               SELECT jsonb_build_object(
                'now',now(),
+               'validation_artifacts',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT r.result_key,r.created_at,r.content_hash,
+                 r.value#>'{local_validation,diagnostics}' writer_diagnostics,r.value->'validation_diagnostics' repair_diagnostics,
+                 r.value->>'code' artifact_code,r.value#>>'{local_validation,task}' local_task
+                 FROM app_private.model_graph_results r WHERE r.value?'local_validation' OR r.value?'validation_diagnostics'
+                 ORDER BY r.created_at DESC LIMIT 12)x),
+
                'queue',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT type,status,error_code,count(*) FROM public.jobs GROUP BY type,status,error_code)x),
                'recent_jobs',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT type,status,error_code,attempts,next_attempt_at,created_at,updated_at,
                  to_jsonb(j)->'executor_version' executor_version FROM public.jobs j WHERE type IN ('classify_opportunity','model_probe','analyze_chunk','review_proposal') ORDER BY updated_at DESC LIMIT 20)x),
