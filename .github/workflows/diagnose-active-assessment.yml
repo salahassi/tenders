@@ -49,6 +49,17 @@ jobs:
               query="""BEGIN READ ONLY; SET LOCAL ROLE tdp_app_owner;
               SELECT jsonb_build_object(
                'now',now(),
+               'scope_inputs',(SELECT jsonb_agg(jsonb_build_object('policy_scope',p.frozen_context#>>'{discovery_scope_policy,scope}',
+                'context_keys',(SELECT jsonb_agg(k) FROM jsonb_object_keys(p.frozen_context) k),
+                'verified_company',(SELECT count(*) FROM jsonb_array_elements(coalesce(p.frozen_context->'knowledge','[]')) e WHERE e->>'kind'='company' AND e->>'verified'='true')))
+                FROM public.generation_plans p WHERE p.status='blocked' AND p.error_code='MODEL_CORRECTION_EXHAUSTED'),
+               'factor_shapes',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT gr.result_key,f.key factor,f.value->'rating' rating,
+                jsonb_array_length(coalesce(f.value->'notice_evidence','[]')) notice_refs,jsonb_array_length(coalesce(f.value->'company_evidence','[]')) company_refs,
+                gr.value#>>'{result,scope_decision,status}' scope_status,
+                jsonb_array_length(coalesce(gr.value#>'{result,scope_decision,keyword_evidence}','[]')) scope_keyword_refs
+                FROM app_private.model_graph_results gr CROSS JOIN LATERAL jsonb_each(coalesce(gr.value#>'{result,factors}','{}')) f
+                WHERE gr.result_key~'^candidate-[0-2]$' ORDER BY gr.created_at,f.key)x),
+
                'validation_artifacts',(SELECT jsonb_agg(to_jsonb(x)) FROM (SELECT r.result_key,r.created_at,r.content_hash,
                  r.value#>'{local_validation,diagnostics}' writer_diagnostics,r.value->'validation_diagnostics' repair_diagnostics,
                  r.value->>'code' artifact_code,r.value#>>'{local_validation,task}' local_task
