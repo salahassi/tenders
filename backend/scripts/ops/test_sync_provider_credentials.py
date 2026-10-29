@@ -183,19 +183,76 @@ class ProviderSyncTests(unittest.TestCase):
         for raw in ("[]", "invalid", "null"):
             with self.assertRaises(s.SyncError): s.decode_bindings(raw)
 
-    def test_main_pops_full_secret_environment_before_spawning_and_cleans_directory(self):
+    def test_reload_discovers_aliases_without_any_repository_binding_and_cleans_directory(self):
         with tempfile.TemporaryDirectory() as directory:
             private = Path(directory) / "private"
             private.mkdir()
             def prepare():
-                self.assertNotIn("PROVIDER_SECRET_BINDINGS", os.environ)
+                self.assertNotIn("PROVIDER_KEY_VALUE", os.environ)
                 return private
-            with patch.dict(os.environ, {"PROVIDER_SECRET_BINDINGS": json.dumps({KEY: "synthetic", "GITHUB_TOKEN": "ignored"})}), \
+            with patch.dict(os.environ, {"PROVIDER_KEY_VALUE": "must-be-discarded"}), \
                  patch.object(s.access, "prepare_cluster", side_effect=prepare), \
                  patch.object(s, "discover_aliases", return_value={KEY}), \
                  patch.object(s, "sync", return_value={"provider_sync": "verified"}) as sync, redirect_stdout(io.StringIO()):
-                self.assertEqual(s.main(), 0)
-                sync.assert_called_once_with({KEY: "synthetic"}, {KEY})
+                self.assertEqual(s.main(["--action", "reload"]), 0)
+                sync.assert_called_once_with({}, {KEY})
+            self.assertFalse(private.exists())
+
+    def test_apply_only_selected_approved_alias_and_defers_process_reload(self):
+        self.context()
+        before = copy.deepcopy({name: self.resources["deployment", name] for name in s.COMPONENTS})
+        report = s.sync({KEY: "synthetic-new-api-key"}, {KEY}, reload_processes=False)
+        self.assertEqual(report["provider_sync"], "patched")
+        self.assertTrue(report["reload_deferred"])
+        self.assertEqual(report["restarted"], [])
+        self.assertFalse(any(args[0] == "exec" or args[:2] == ["patch", "deployment"] for args, _ in self.calls))
+        self.assertEqual({name: self.resources["deployment", name] for name in s.COMPONENTS}, before)
+
+    def test_apply_cli_removes_single_key_before_cluster_calls_and_does_not_discover_db(self):
+        with tempfile.TemporaryDirectory() as directory:
+            private = Path(directory) / "private"
+            private.mkdir()
+            def prepare():
+                self.assertNotIn("PROVIDER_KEY_VALUE", os.environ)
+                return private
+            output = io.StringIO()
+            with patch.dict(os.environ, {"PROVIDER_KEY_VALUE": "synthetic-new-api-key", "PROVIDER_ALIAS": KEY,
+                                         "APPROVED_PROVIDER_ALIASES": json.dumps([KEY, OTHER])}), \
+                 patch.object(s.access, "prepare_cluster", side_effect=prepare), patch.object(s, "discover_aliases") as discover, \
+                 patch.object(s, "sync", return_value={"provider_sync": "patched"}) as sync, redirect_stdout(output):
+                self.assertEqual(s.main(["--action", "apply"]), 0)
+                discover.assert_not_called()
+                sync.assert_called_once_with({KEY: "synthetic-new-api-key"}, {KEY}, reload_processes=False)
+            self.assertNotIn("synthetic-new-api-key", output.getvalue())
+            self.assertFalse(private.exists())
+
+    def test_missing_matrix_binding_preserves_existing_without_preparing_access(self):
+        with patch.dict(os.environ, {"PROVIDER_KEY_VALUE": "", "PROVIDER_ALIAS": KEY,
+                                     "APPROVED_PROVIDER_ALIASES": json.dumps([KEY])}), \
+             patch.object(s.access, "prepare_cluster") as prepare, patch.object(s, "sync") as sync, redirect_stdout(io.StringIO()):
+            self.assertEqual(s.main(["--action", "apply"]), 0)
+            prepare.assert_not_called()
+            sync.assert_not_called()
+
+    def test_unapproved_alias_is_refused_before_preparing_access_even_when_value_is_empty(self):
+        with patch.dict(os.environ, {"PROVIDER_KEY_VALUE": "", "PROVIDER_ALIAS": OTHER,
+                                     "APPROVED_PROVIDER_ALIASES": json.dumps([KEY])}), \
+             patch.object(s.access, "prepare_cluster") as prepare, redirect_stdout(io.StringIO()):
+            self.assertEqual(s.main(["--action", "apply"]), 1)
+            prepare.assert_not_called()
+
+    def test_discovery_emits_only_alias_names_in_github_output(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            private = root / "private"; private.mkdir()
+            output = root / "output"
+            stdout = io.StringIO()
+            with patch.dict(os.environ, {"GITHUB_OUTPUT": str(output)}), \
+                 patch.object(s.access, "prepare_cluster", return_value=private), \
+                 patch.object(s, "discover_aliases", return_value={KEY, OTHER}), redirect_stdout(stdout):
+                self.assertEqual(s.main(["--action", "discover"]), 0)
+            self.assertEqual(output.read_text(), 'provider_aliases=' + json.dumps(sorted([KEY, OTHER]), separators=(",", ":")) + '\n')
+            self.assertEqual(json.loads(stdout.getvalue())["aliases_discovered"], 2)
             self.assertFalse(private.exists())
 
     def test_database_alias_discovery_is_read_only_and_admin_cleanup_is_unconditional(self):

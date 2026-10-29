@@ -7,6 +7,7 @@ Missing repository bindings retain an existing runtime value.
 """
 from __future__ import annotations
 
+import argparse
 import base64
 import copy
 import importlib.util
@@ -120,7 +121,7 @@ def restart(name, expected):
     return annotations[ANNOTATION]
 
 
-def sync(bindings, aliases):
+def sync(bindings, aliases, *, reload_processes=True):
     if not isinstance(bindings, dict) or not aliases or any(not isinstance(alias, str) or not ALIAS.fullmatch(alias) for alias in aliases):
         raise SyncError("PROVIDER_ALIAS_DISCOVERY_INVALID")
     aliases = sorted(set(aliases))
@@ -150,7 +151,7 @@ def sync(bindings, aliases):
             raise SyncError("PROVIDER_SECRET_READBACK_MISMATCH")
     expected = {alias: merged[alias] for alias in aliases if merged.get(alias)}
     restarted = []
-    for name in COMPONENTS:
+    for name in COMPONENTS if reload_processes else ():
         if not environment_matches(name, expected):
             restart(name, original[name])
             restarted.append(name)
@@ -167,9 +168,9 @@ def sync(bindings, aliases):
             raise SyncError("PROVIDER_WORKLOAD_CONFIGURATION_CHANGED")
         if not environment_matches(name, expected):
             raise SyncError("PROVIDER_ENVIRONMENT_NOT_RELOADED")
-    return {"provider_sync": "verified", "aliases_discovered": len(aliases), "bindings_supplied": len(incoming),
+    return {"provider_sync": "verified" if reload_processes else "patched", "aliases_discovered": len(aliases), "bindings_supplied": len(incoming),
             "keys_updated": len(changed), "key_presence": {alias: bool(merged.get(alias)) for alias in aliases},
-            "restarted": restarted, "model_admission_changed": False}
+            "restarted": restarted, "reload_deferred": not reload_processes, "model_admission_changed": False}
 
 
 def discover_aliases():
@@ -194,13 +195,59 @@ SELECT coalesce(jsonb_agg(DISTINCT credential_alias),'[]') FROM public.model_con
         d.cleanup_administrator(pod)
 
 
-def main():
+def approved_aliases(raw):
+    try:
+        value = json.loads(raw)
+    except (ValueError, TypeError):
+        raise SyncError("PROVIDER_APPROVED_ALIASES_INVALID") from None
+    if (not isinstance(value, list) or not 1 <= len(value) <= 256
+            or any(not isinstance(alias, str) or not ALIAS.fullmatch(alias) for alias in value)):
+        raise SyncError("PROVIDER_APPROVED_ALIASES_INVALID")
+    return set(value)
+
+
+def write_discovery_output(aliases):
+    path = os.environ.get("GITHUB_OUTPUT")
+    if not path:
+        raise SyncError("PROVIDER_DISCOVERY_OUTPUT_REQUIRED")
+    if not aliases or len(aliases) > 256 or any(not ALIAS.fullmatch(alias) for alias in aliases):
+        raise SyncError("PROVIDER_ALIAS_DISCOVERY_INVALID")
+    with open(path, "a", encoding="utf-8") as stream:
+        stream.write("provider_aliases=" + json.dumps(sorted(aliases), separators=(",", ":")) + "\n")
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--action", choices=("discover", "apply", "reload"), default="reload")
+    args = parser.parse_args(argv)
     directory = None
     try:
-        bindings = decode_bindings(os.environ.pop("PROVIDER_SECRET_BINDINGS", "{}"))
+        # A matrix apply job receives exactly one requested repository binding.
+        # Pop it before running kubectl, including for missing/invalid input.
+        value = os.environ.pop("PROVIDER_KEY_VALUE", "")
+        # Discard the former broad binding interface rather than passing it on.
+        os.environ.pop("PROVIDER_SECRET_BINDINGS", None)
+        if args.action == "apply":
+            aliases = approved_aliases(os.environ.get("APPROVED_PROVIDER_ALIASES", "[]"))
+            alias = os.environ.get("PROVIDER_ALIAS", "")
+            if alias not in aliases:
+                raise SyncError("PROVIDER_ALIAS_NOT_APPROVED")
+            if not value:
+                print(json.dumps({"provider_sync": "skipped", "alias": alias, "repository_binding_present": False,
+                                  "existing_runtime_binding_preserved": True, "reload_deferred": True}), flush=True)
+                return 0
+            if len(value) > 16_384 or "\x00" in value or value != value.strip():
+                raise SyncError("PROVIDER_KEY_BINDING_INVALID")
         directory = access.prepare_cluster()
-        aliases = discover_aliases()
-        report = sync(bindings, aliases)
+        if args.action == "discover":
+            aliases = discover_aliases()
+            write_discovery_output(aliases)
+            report = {"provider_sync": "discovered", "aliases_discovered": len(aliases)}
+        elif args.action == "apply":
+            report = sync({alias: value}, {alias}, reload_processes=False)
+        else:
+            aliases = discover_aliases()
+            report = sync({}, aliases)
         print(json.dumps(report, sort_keys=True), flush=True)
     except Exception as error:
         code = str(error) if isinstance(error, (SyncError, d.DeployError, d.probe.ProbeError)) and re.fullmatch(r"[A-Z_0-9]{1,100}", str(error)) else "PROVIDER_CREDENTIAL_SYNC_FAILED"
