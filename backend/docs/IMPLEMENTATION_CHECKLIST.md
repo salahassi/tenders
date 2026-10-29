@@ -1,5 +1,74 @@
 # Implementation status and continuation plan
 
+## October 29 — PDF extraction worker MIME correction
+
+The reported RFP upload fails before PDF text extraction because the production
+PDF.js worker asset is served as `application/octet-stream`. A read-only GET of
+`/assets/pdf.worker.min-CjEcRF4W.mjs` returned HTTP 200 with that content type and
+`X-Content-Type-Options: nosniff`; its body is the actual PDF.js module. The
+browser therefore rejects the module and the library's fallback import fails.
+The served worker is byte-for-byte identical to the locked production build
+output, confirming that the module content itself is not missing or mismatched.
+
+The frontend Nginx asset location now includes the standard MIME map and adds
+`application/javascript` for `.mjs`, preserving ordinary JavaScript, CSS and other
+asset types, caching, and missing-asset 404 behavior. The worker URL also carries
+a stable `module-mime=javascript-v1` cache key. A same-origin, same-context
+Chromium regression first caches the old octet-stream response, reproduces the
+failure after a server-only MIME repair, then extracts the expected PDF text
+and matching SHA-256 with the new URL without clearing the browser cache. A
+second extraction reuses the correctly cached module. The separate console JSON
+parse error has no reproduced source in the current Jobs path and is not claimed
+fixed by this correction.
+
+Local production acceptance passes against the image built from the pinned
+frontend Dockerfile. Nginx validates the corrected configuration. Two restricted,
+read-only local containers reproduce the exact module-import failure with the
+previous configuration and successfully extract the expected text from a
+synthetic PDF with the correction. Chromium verifies the real built extraction
+worker, the PDF.js module request, a ready document and its exact-byte SHA-256.
+HTTP checks also preserve JavaScript/CSS media types, immutable caching,
+`nosniff`, and missing-asset 404 responses. Both temporary containers were removed.
+
+Both packages were installed from their lockfiles and pass typecheck and build.
+The frontend passes all 241 tests in 39 files; the backend passes all 1,495 tests
+in 87 files. Verification uses one test worker per package without changing
+test assertions or timeouts. The final source diff passes `git diff --check`.
+
+The Owner's follow-up confirms that the local correction did not resolve the
+live website. The release now includes a frontend-only workflow: publish one
+immutable frontend image, compare live ownership/configuration/image identity,
+replace only that deployment's image, wait for readiness and verify the exact
+public build, media types and real Chromium extraction. Failed acceptance
+triggers a guarded return to the original image. The updater reads no database
+or Kubernetes Secret and performs no restoration, provider activation or other
+service update.
+
+Refreshed release verification passes the frontend typecheck/build and all 241
+tests, all 156 operations tests (including 13 frontend update guards), workflow
+YAML/shell syntax, and the permanent browser probe against real local Nginx.
+
+Deployment and hosted extraction acceptance passed in
+[workflow 40901422543](https://github.com/salahassi/tenders/actions/runs/40901422543),
+source `83432b210dce046ed898b3c2463580be91cc8e2d`, on October 29. The published
+frontend digest is
+`sha256:36a6afd3c43f8d3364cf7a3341fa7772e8dee2bbf546c30baf5a6c4afb2cf03f`.
+Fresh CI passes both package typechecks/builds, all 241 frontend and 1,495
+backend tests, and all 156 operations guards. The rollout verified 50 public
+build assets, the preserved runtime configuration and other workload specs,
+then completed real PDF extraction in Chromium. Runner credential/log cleanup
+also passed.
+
+A separate browser probe from the working environment confirms the live new
+extraction worker and `.mjs?module-mime=javascript-v1` return HTTP 200 with
+`application/javascript`; the expected PDF text, ready status and SHA-256 all
+match. No application record is created by either browser probe.
+
+Status: the correction is deployed and hosted static/extraction acceptance is
+complete. The same-context cached-response regression also passes locally.
+Authenticated upload/storage acceptance of the Owner's actual RFP is separate
+from these synthetic, browser-local extraction probes.
+
 ## October 29 — approved model execution and Needs attention recovery
 
 The Owner explicitly approves enabling the saved model route, sending a real sample assessment within existing data permissions, and recovering the remaining assessments after success. The Owner additionally requests reviewing and restarting items under Needs attention after that sample succeeds. [Execution 40865017755](https://github.com/salahassi/tenders/actions/runs/40865017755) enabled the saved route and created exactly one fresh assessment at 11:23:40 UTC, with 17 other current missing-configuration plans remaining. Existing attempts and usage history remain intact. Sample completion verification is running before batch recovery.
