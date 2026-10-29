@@ -1,0 +1,41 @@
+name: Verify final assessment and global attention counts
+on:
+  push:
+    branches: [codex/final-assessment-check]
+    paths: [.github/workflows/final-assessment-check.yml]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Read anonymous final counts without invoking workers
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 - <<'PYCODE'
+          import importlib.util,sys,json,shutil
+          spec=importlib.util.spec_from_file_location('final_count_observer','backend/scripts/ops/observe-assessment-recovery.py')
+          o=importlib.util.module_from_spec(spec);sys.modules[spec.name]=o;spec.loader.exec_module(o)
+          directory=None;client=None
+          try:
+              directory=o.access.prepare_cluster();client=o.Client(60);client.prepare()
+              snapshot=client.snapshot()
+              query="BEGIN READ ONLY; SET LOCAL ROLE tdp_app_owner; SELECT jsonb_build_object('attention_jobs',count(*) FILTER(WHERE status IN ('blocked','failed')),'pending_jobs',count(*) FILTER(WHERE status IN ('queued','running','retry_wait','quota_wait'))) FROM public.jobs WHERE workspace_id='"+o.access.WORKSPACE+"'; COMMIT;"
+              counts=json.loads(o.d.sql(client.pod,query))
+              if set(counts)!={'attention_jobs','pending_jobs'} or any(type(v) is not int or v<0 for v in counts.values()):raise ValueError()
+              visible=o.public_snapshot(snapshot,18)
+              print(json.dumps({'final_assessment_check':'verified','all_workspace_attention_jobs':counts['attention_jobs'],'all_workspace_pending_jobs':counts['pending_jobs'],**visible},sort_keys=True),flush=True)
+              if not o.terminal(snapshot,18) or counts['attention_jobs'] or counts['pending_jobs']:raise SystemExit(2)
+          except Exception:
+              print(json.dumps({'final_assessment_check':'unconfirmed'}),flush=True);raise SystemExit(1)
+          finally:
+              try:
+                  if client:client.cleanup()
+              finally:
+                  if directory:shutil.rmtree(directory)
+          PYCODE
