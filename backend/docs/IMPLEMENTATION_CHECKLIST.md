@@ -21,10 +21,63 @@ guards verify the actual migration under production-equivalent restricted
 database privileges, atomic checksum history, safe replay and existing-record
 preservation. The independently reviewed recovery helper accepts only a
 privately encrypted exact-plan selection, verifies the deployed migration and
-runtime, and invokes one canonical retry while preserving immutable inputs,
-attempts and model accounting. Deployment, affected-work recovery and hosted
-acceptance remain pending. No completed proposal or model result is claimed by
-local checks.
+runtime, and invokes canonical retries for its exact selected tasks while
+preserving immutable inputs, attempts and model accounting. Deployment and
+affected-work recovery passed the acceptance recorded below. Full proposal
+completion and Word delivery remain separate acceptance; no completed proposal
+or model result is claimed by local checks.
+
+Deployment source `658ad8d6e1c80416c95acd490f5dcc63fd9360ef` passed the remote
+application and operations checks in [workflow 41204308650](https://github.com/salahassi/tenders/actions/runs/41204308650).
+The requested-processing migration committed with existing records and model
+accounting preserved. All five workloads were ready and served-asset acceptance
+verified removal of the individual permission screen and presence of in-context
+processing help. The runtime digest is
+`sha256:c0f61756361e6474e50e04eb8bca38754e62eee5510701fe1528d0b3c1d23be5`;
+the frontend digest is
+`sha256:da1c8b8c07e786250a7640a8c4295a5075f7c84c4464eb4a59817c8a4325e1fe`.
+The separate exact-plan recovery step refused its canonical command and rolled
+back; the overall workflow therefore reports failure even though deployment
+and public acceptance passed. Its private receipt requires further diagnosis.
+No affected-work resumption or completed proposal is claimed at this checkpoint.
+
+Private rollback diagnosis in workflows `41207421875` and `41208925063` found
+one canonical active Owner membership but zero matching Auth rows visible to
+the operational role, despite Auth-table SELECT permission. The helper now
+delegates through the existing active Owner membership/allowlist and canonical
+member_role authority; direct Auth visibility is diagnostic only. No Auth
+grants, RLS, credentials or account state changed. Expanded operational
+regressions verify canonical delegation with inaccessible Auth rows, rejection
+of inactive or non-Owner authority and complete diagnostic rollback.
+The resume-only workflow uses the already verified runtime and migration;
+live affected-work recovery remains pending. Application PR [#15](https://github.com/salahassi/tenders/pull/15)
+merged as `79b0e0efe9d6d95fac721ab31787d0bba08b9670`.
+
+The subsequent canonical whole-plan retry reached its legacy workspace usage
+guard and refused `USAGE_REVIEW_REQUIRED` for unrelated prior model usage. The
+selected proposal still has no sent attempts or usage. Its recovery now uses
+the existing canonical per-job retry for exactly its blocked current-stage
+tasks in one transaction, retaining that command's same-job usage checks and
+normal provider reservation controls. Expanded fixtures cover all twelve
+selected tasks, unrelated unknown usage remaining identical, same-target usage
+rejection, exact idempotency receipts and rollback of accounting mutations.
+
+Live recovery passed in [workflow 41220950555](https://github.com/salahassi/tenders/actions/runs/41220950555),
+source `51947c37790802b208263db33defa40139df83af`, job `124595191356`.
+Its receipt confirms one proposal resumed through the selected canonical task
+retries, with immutable inputs, counters, graph state and whole-workspace usage
+preserved. All recovery resources and runner plaintext were cleaned. The
+application remains on the previously verified immutable runtime/frontend;
+recovery did not redeploy or change accounts, RLS, providers or usage records.
+The separate permission step is removed for all authorized users, served UI
+acceptance passed, and the affected proposal has returned to processing.
+Originals and prior work remain intact. Proposal completion is not claimed.
+
+The maintenance workflows now require explicit private selection inputs and
+default to diagnosis when invoked manually; the one-shot push trigger and
+embedded transport selection are removed. Temporary transport uses generated
+encrypted objects, authenticated private readback and subsequent removal;
+the transfer helper revokes temporary bucket keys after every operation.
 
 ## October 29 — approved model execution and Needs attention recovery
 

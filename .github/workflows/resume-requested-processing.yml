@@ -1,0 +1,87 @@
+name: Privately inspect or resume requested processing
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Diagnose with a full transactional rollback, or resume the reviewed proposal
+        type: choice
+        options: [diagnose, resume]
+        default: diagnose
+        required: true
+      selection_object:
+        description: Encrypted selection in the existing private transport
+        type: string
+        default: ""
+        required: true
+      selection_sha256:
+        description: Exact reviewed plaintext SHA-256
+        type: string
+        default: ""
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REQUESTED_PROCESSING_ACTION: ${{ inputs.action || 'diagnose' }}
+      REQUESTED_PROCESSING_SELECTION_OBJECT: ${{ inputs.selection_object || '' }}
+      REQUESTED_PROCESSING_SELECTION_SHA256: ${{ inputs.selection_sha256 || '' }}
+      REQUESTED_PROCESSING_RUNTIME_IMAGE: registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:c0f61756361e6474e50e04eb8bca38754e62eee5510701fe1528d0b3c1d23be5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Verify only operational diagnostic and canonical resume guards
+        run: |
+          npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_requested_processing_update.py'
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_resume_requested_processing.py'
+      - name: Inspect the selected retry privately against the already deployed runtime
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mode_arguments=()
+          case "$REQUESTED_PROCESSING_ACTION" in
+            diagnose) mode_arguments+=(--diagnose-only) ;;
+            resume) ;;
+            *) exit 1 ;;
+          esac
+          python3 backend/scripts/ops/resume-requested-processing.py \
+            --selection-object "$REQUESTED_PROCESSING_SELECTION_OBJECT" \
+            --selection-sha256 "$REQUESTED_PROCESSING_SELECTION_SHA256" \
+            --expected-runtime-image "$REQUESTED_PROCESSING_RUNTIME_IMAGE" \
+            "${mode_arguments[@]}"
+      - name: Remove temporary cluster credentials and private diagnostic plaintext
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil,sys
+          try:
+              run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+              if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):
+                  raise ValueError()
+              directory=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+run+'-'+attempt)
+              if directory.exists():
+                  shutil.rmtree(directory)
+          except Exception:
+              print('{"requested_processing_resume":"failed","code":"RUNNER_CLEANUP_NOT_CONFIRMED"}')
+              sys.exit(1)
+          print('{"requested_processing_resume":"runner_files_removed"}')
+          PY

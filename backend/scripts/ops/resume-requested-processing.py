@@ -2,8 +2,9 @@
 """Canonically resume one privately selected, never-sent blocked proposal.
 
 The encrypted input selects existing records only. It cannot supply SQL,
-providers, credentials or content. All mutation is one reviewed canonical retry,
-with exact revision and immutable-state checks in the same transaction.
+providers, credentials or content. Current blocked analysis jobs use their
+canonical per-job retry, with exact revision and immutable-state checks in one
+transaction. Existing workspace usage accounting is never changed.
 """
 from __future__ import annotations
 
@@ -68,8 +69,10 @@ def verify_runtime(expected):
             raise ResumeError("RESUME_RUNTIME_CHANGED")
 
 
-def recovery_sql(selection):
+def recovery_sql(selection, *, diagnose_only=False):
     validate_selection(selection)
+    if type(diagnose_only) is not bool:
+        raise ResumeError("RESUME_DIAGNOSTIC_MODE_INVALID")
     encoded = json.dumps(selection, sort_keys=True, separators=(",", ":"))
     key = "requested-processing-resume-" + hashlib.sha256(encoded.encode()).hexdigest()
     migration_hash = hashlib.sha256(release.MIGRATION.read_bytes()).hexdigest()
@@ -82,6 +85,9 @@ DO $requested_resume$
 DECLARE selected jsonb:=__SELECTION__; actor uuid; p public.generation_plans;
  latest uuid; receipt jsonb; result jsonb; immutable_plan jsonb; immutable_jobs jsonb;
  immutable_steps jsonb; retained jsonb; after_retained jsonb; unrelated jsonb;
+ retry_job record; selected_job_ids uuid[]; job_revisions jsonb; last_key text; resumed_jobs integer:=0;
+ diagnostic_stage text:='database_guard'; diagnostic_state text; diagnostic_message text;
+ diagnostic_context text; diagnostic_detail text; diagnostic_hint text; private_state jsonb; auth_state jsonb;
 BEGIN
  BEGIN
   IF current_database()<>'tenderdesk_app' OR (SELECT count(*) FROM public.workspaces)<>1
@@ -93,15 +99,18 @@ BEGIN
   THEN RAISE EXCEPTION 'RESUME_RELEASE_NOT_VERIFIED'; END IF;
   IF EXISTS(SELECT 1 FROM public.restore_sessions WHERE workspace_id=(selected->>'workspace_id')::uuid AND state IN ('staging','committing'))
   THEN RAISE EXCEPTION 'RESUME_RESTORE_IN_PROGRESS'; END IF;
+  diagnostic_stage:='owner_lookup';
+  -- Delegate the Owner-authorized request through the canonical membership and
+  -- allowlist authority. Direct Auth-table visibility is a separate runtime
+  -- concern and must not become a second authorization rule for this command.
   SELECT m.user_id INTO STRICT actor FROM public.memberships m JOIN public.identity_allowlist a
-   ON a.workspace_id=m.workspace_id AND a.user_id=m.user_id JOIN auth.users u ON u.id=m.user_id
+   ON a.workspace_id=m.workspace_id AND a.user_id=m.user_id
    WHERE m.workspace_id=(selected->>'workspace_id')::uuid AND m.active AND m.role='Owner'
-    AND a.status='active' AND a.role='Owner' AND u.email_confirmed_at IS NOT NULL
-    AND nullif(to_jsonb(u)->>'deleted_at','') IS NULL
-    AND coalesce(nullif(to_jsonb(u)->>'banned_until','')::timestamptz,'-infinity')<=now();
+    AND a.status='active' AND a.role='Owner';
   PERFORM set_config('request.jwt.claim.sub',actor::text,true);
   IF app_private.member_role((selected->>'workspace_id')::uuid) IS DISTINCT FROM 'Owner'
   THEN RAISE EXCEPTION 'RESUME_OWNER_REQUIRED'; END IF;
+  diagnostic_stage:='plan_lookup';
   SELECT plan.* INTO STRICT p FROM public.generation_plans plan JOIN public.opportunities o
    ON o.workspace_id=plan.workspace_id AND o.id=plan.opportunity_id
    WHERE plan.id=(selected->>'plan_id')::uuid AND plan.workspace_id=(selected->>'workspace_id')::uuid
@@ -119,13 +128,17 @@ BEGIN
    OR EXISTS(SELECT 1 FROM public.generation_steps s LEFT JOIN public.jobs j ON j.workspace_id=s.workspace_id AND j.id=s.job_id
      WHERE s.workspace_id=p.workspace_id AND s.plan_id=p.id AND s.status='queued'
       AND (j.id IS NULL OR j.status<>'blocked' OR j.error_code IS DISTINCT FROM 'DATA_AUTHORIZATION_REQUIRED' OR j.cancel_requested
-       OR j.lease_token IS NOT NULL OR j.lease_until IS NOT NULL OR j.input_hash IS DISTINCT FROM p.input_hash))
+       OR j.lease_token IS NOT NULL OR j.lease_until IS NOT NULL OR j.input_hash IS DISTINCT FROM p.input_hash OR s.stage IS DISTINCT FROM p.stage))
    THEN RAISE EXCEPTION 'RESUME_JOB_STATE_CHANGED'; END IF;
    IF EXISTS(SELECT 1 FROM public.model_attempts a JOIN public.jobs j ON j.id=a.job_id AND j.workspace_id=a.workspace_id
      WHERE j.entity_id=p.id AND j.workspace_id=p.workspace_id AND a.sent)
    OR EXISTS(SELECT 1 FROM public.provider_usage u JOIN public.jobs j ON j.id=u.job_id AND j.workspace_id=u.workspace_id
      WHERE j.entity_id=p.id AND j.workspace_id=p.workspace_id)
    THEN RAISE EXCEPTION 'RESUME_PROVIDER_ACTIVITY_EXISTS'; END IF;
+   diagnostic_stage:='retained_state_snapshot';
+   SELECT array_agg(j.id ORDER BY j.id),jsonb_object_agg(j.id::text,j.revision)
+    INTO selected_job_ids,job_revisions FROM public.generation_steps s JOIN public.jobs j ON j.workspace_id=s.workspace_id AND j.id=s.job_id
+    WHERE s.workspace_id=p.workspace_id AND s.plan_id=p.id AND s.status='queued' AND s.stage=p.stage;
    immutable_plan:=to_jsonb(p)-ARRAY['status','error_code','revision','updated_at','evidence_revision'];
    SELECT coalesce(jsonb_agg(to_jsonb(j)-ARRAY['status','error_code','next_attempt_at','revision','updated_at','cancel_requested'] ORDER BY j.id),'[]')
     INTO immutable_jobs FROM public.jobs j WHERE j.workspace_id=p.workspace_id AND j.entity_id=p.id;
@@ -138,10 +151,18 @@ BEGIN
     'writes',(SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text),'[]') FROM app_private.model_graph_writes t WHERE t.thread_id IN (SELECT id FROM app_private.model_graph_threads WHERE job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id))),
     'attempts',(SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.id),'[]') FROM public.model_attempts a WHERE a.job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id)),
     'usage',(SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.id),'[]') FROM public.provider_usage a WHERE a.job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id))) INTO retained;
-   SELECT jsonb_build_object('jobs',(SELECT coalesce(jsonb_agg(to_jsonb(j) ORDER BY id),'[]') FROM public.jobs j WHERE j.entity_id IS DISTINCT FROM p.id),
-    'plans',(SELECT coalesce(jsonb_agg(to_jsonb(q) ORDER BY id),'[]') FROM public.generation_plans q WHERE q.id<>p.id)) INTO unrelated;
-   result:=app_private.app_command('generation.retry',jsonb_build_object('id',p.id,'expected_revision',p.revision,
-    'reason','Owner requested removal of the separate file-processing approval step; resume the existing requested proposal.'),'__IDEMPOTENCY_KEY__');
+   SELECT jsonb_build_object('jobs',(SELECT coalesce(jsonb_agg(to_jsonb(j) ORDER BY id),'[]') FROM public.jobs j WHERE NOT(j.id=ANY(selected_job_ids))),
+    'plans',(SELECT coalesce(jsonb_agg(to_jsonb(q) ORDER BY id),'[]') FROM public.generation_plans q WHERE q.id<>p.id),
+    'usage',(SELECT coalesce(jsonb_agg(to_jsonb(u) ORDER BY id),'[]') FROM public.provider_usage u WHERE u.workspace_id=p.workspace_id),
+    'attempts',(SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY id),'[]') FROM public.model_attempts a WHERE a.workspace_id=p.workspace_id)) INTO unrelated;
+   diagnostic_stage:='canonical_retry';
+   FOR retry_job IN SELECT j.id,j.revision FROM public.jobs j WHERE j.id=ANY(selected_job_ids) ORDER BY j.id LOOP
+    last_key:='__IDEMPOTENCY_KEY__'||':'||retry_job.id::text;
+    result:=app_private.app_command('job.action',jsonb_build_object('id',retry_job.id,'expected_revision',retry_job.revision,'action','retry',
+      'reason','Owner requested removal of the separate file-processing approval step; resume this saved proposal task.'),last_key);
+    resumed_jobs:=resumed_jobs+1;
+   END LOOP;
+   diagnostic_stage:='immutable_state_validation';
    IF immutable_plan IS DISTINCT FROM (SELECT to_jsonb(q)-ARRAY['status','error_code','revision','updated_at','evidence_revision'] FROM public.generation_plans q WHERE q.id=p.id)
     OR immutable_jobs IS DISTINCT FROM (SELECT coalesce(jsonb_agg(to_jsonb(j)-ARRAY['status','error_code','next_attempt_at','revision','updated_at','cancel_requested'] ORDER BY j.id),'[]') FROM public.jobs j WHERE j.workspace_id=p.workspace_id AND j.entity_id=p.id)
     OR immutable_steps IS DISTINCT FROM (SELECT coalesce(jsonb_agg(to_jsonb(s) ORDER BY s.id),'[]') FROM public.generation_steps s WHERE s.workspace_id=p.workspace_id AND s.plan_id=p.id)
@@ -155,34 +176,77 @@ BEGIN
     'attempts',(SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.id),'[]') FROM public.model_attempts a WHERE a.job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id)),
     'usage',(SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.id),'[]') FROM public.provider_usage a WHERE a.job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id))) INTO after_retained;
    IF retained IS DISTINCT FROM after_retained OR unrelated IS DISTINCT FROM
-    (SELECT jsonb_build_object('jobs',(SELECT coalesce(jsonb_agg(to_jsonb(j) ORDER BY id),'[]') FROM public.jobs j WHERE j.entity_id IS DISTINCT FROM p.id),
-     'plans',(SELECT coalesce(jsonb_agg(to_jsonb(q) ORDER BY id),'[]') FROM public.generation_plans q WHERE q.id<>p.id)))
+    (SELECT jsonb_build_object('jobs',(SELECT coalesce(jsonb_agg(to_jsonb(j) ORDER BY id),'[]') FROM public.jobs j WHERE NOT(j.id=ANY(selected_job_ids))),
+     'plans',(SELECT coalesce(jsonb_agg(to_jsonb(q) ORDER BY id),'[]') FROM public.generation_plans q WHERE q.id<>p.id),
+     'usage',(SELECT coalesce(jsonb_agg(to_jsonb(u) ORDER BY id),'[]') FROM public.provider_usage u WHERE u.workspace_id=p.workspace_id),
+     'attempts',(SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY id),'[]') FROM public.model_attempts a WHERE a.workspace_id=p.workspace_id)))
    THEN RAISE EXCEPTION 'RESUME_RETAINED_STATE_CHANGED'; END IF;
    IF NOT EXISTS(SELECT 1 FROM public.generation_plans q JOIN public.workspaces w ON w.id=q.workspace_id
      WHERE q.id=p.id AND q.status='queued' AND q.error_code IS NULL AND q.evidence_revision=w.evidence_revision)
     OR EXISTS(SELECT 1 FROM public.generation_steps s JOIN public.jobs j ON j.id=s.job_id AND j.workspace_id=s.workspace_id
-     WHERE s.plan_id=p.id AND s.status='queued' AND (j.status<>'queued' OR j.error_code IS NOT NULL OR j.cancel_requested OR j.next_attempt_at>now()))
-    OR NOT EXISTS(SELECT 1 FROM app_private.generation_processing_requests WHERE plan_id=p.id AND requested_by=actor AND operation='generation.retry' AND idempotency_key='__IDEMPOTENCY_KEY__')
+     WHERE s.plan_id=p.id AND s.status='queued' AND (j.status<>'queued' OR j.error_code IS NOT NULL OR j.cancel_requested OR j.next_attempt_at>now()
+      OR j.revision<>(job_revisions->>j.id::text)::integer+1))
+    OR resumed_jobs IS DISTINCT FROM cardinality(selected_job_ids)
+    OR EXISTS(SELECT 1 FROM unnest(selected_job_ids) AS selected_jobs(id) WHERE NOT EXISTS(SELECT 1 FROM app_private.idempotency_records i
+      WHERE i.workspace_id=p.workspace_id AND i.actor_id=actor AND i.method='COMMAND' AND i.route='job.action'
+       AND i.key='__IDEMPOTENCY_KEY__'||':'||selected_jobs.id::text AND i.result->>'id'=selected_jobs.id::text AND i.expires_at>now()))
+    OR NOT EXISTS(SELECT 1 FROM app_private.generation_processing_requests WHERE plan_id=p.id AND requested_by=actor AND operation='job.action' AND idempotency_key=last_key)
    THEN RAISE EXCEPTION 'RESUME_CANONICAL_RETRY_NOT_CONFIRMED'; END IF;
-   receipt:=jsonb_build_object('status','resumed','count',1,'immutable_state_preserved',true);
+   receipt:=jsonb_build_object('status','resumed','count',1,'resumed_jobs',resumed_jobs,'immutable_state_preserved',true);
+   IF __DIAGNOSE_ONLY__ THEN RAISE EXCEPTION 'RESUME_DIAGNOSTIC_ROLLBACK'; END IF;
   END IF;
   receipt:=receipt||jsonb_build_object('observed_at',now(),'workspace_id',p.workspace_id,'opportunity_id',p.opportunity_id,'plan_id',p.id,
    'plan',(SELECT jsonb_build_object('status',q.status,'error_code',q.error_code,'revision',q.revision) FROM public.generation_plans q WHERE q.id=p.id));
  EXCEPTION WHEN OTHERS THEN
-  receipt:=jsonb_build_object('status','refused','count',0,'code',CASE WHEN SQLERRM IN (
+  GET STACKED DIAGNOSTICS diagnostic_state=RETURNED_SQLSTATE,diagnostic_message=MESSAGE_TEXT,
+   diagnostic_context=PG_EXCEPTION_CONTEXT,diagnostic_detail=PG_EXCEPTION_DETAIL,diagnostic_hint=PG_EXCEPTION_HINT;
+  IF diagnostic_message='RESUME_DIAGNOSTIC_ROLLBACK' THEN
+   receipt:=jsonb_build_object('status','checked','count',0,'would_resume',true,'would_resume_jobs',resumed_jobs,'mutation_rolled_back',true);
+  ELSE
+   receipt:=jsonb_build_object('status','refused','count',0,'code',CASE WHEN diagnostic_message IN (
    'RESUME_DATABASE_IDENTITY_MISMATCH','RESUME_RELEASE_NOT_VERIFIED','RESUME_RESTORE_IN_PROGRESS','RESUME_OWNER_REQUIRED',
    'RESUME_PLAN_NOT_CURRENT','RESUME_DIFFERENT_BLOCKER','RESUME_REVISION_CHANGED','RESUME_JOB_STATE_CHANGED','RESUME_PROVIDER_ACTIVITY_EXISTS',
    'RESUME_IMMUTABLE_STATE_CHANGED','RESUME_RETAINED_STATE_CHANGED','RESUME_CANONICAL_RETRY_NOT_CONFIRMED',
-   'STALE_INPUT','USAGE_REVIEW_REQUIRED','GENERATION_BUSY','REVISION_CONFLICT','ROLE_FORBIDDEN') THEN SQLERRM ELSE 'RESUME_CANONICAL_COMMAND_FAILED' END);
+   'STALE_INPUT','USAGE_REVIEW_REQUIRED','GENERATION_BUSY','REVISION_CONFLICT','ROLE_FORBIDDEN') THEN diagnostic_message ELSE 'RESUME_CANONICAL_COMMAND_FAILED' END,
+    'private_diagnostics',jsonb_build_object('stage',diagnostic_stage,'sqlstate',diagnostic_state,
+      'message',left(diagnostic_message,2000),'context',left(diagnostic_context,12000),
+      'detail',left(diagnostic_detail,2000),'hint',left(diagnostic_hint,2000)));
+  END IF;
+  -- These diagnostics are encrypted by the caller. They never reach stdout.
+  -- An unavailable read-only diagnostic must not mask the original exception.
+  BEGIN
+   private_state:=jsonb_build_object('database',current_database(),'role',current_user,
+    'auth_schema_usage',has_schema_privilege(current_user,'auth','USAGE'),
+    'auth_users_select',has_table_privilege(current_user,'auth.users','SELECT'),
+    'active_owner_memberships',(SELECT count(*) FROM public.memberships m JOIN public.identity_allowlist a
+      ON a.workspace_id=m.workspace_id AND a.user_id=m.user_id WHERE m.workspace_id=(selected->>'workspace_id')::uuid
+       AND m.active AND m.role='Owner' AND a.status='active' AND a.role='Owner'),
+    'selected_plan',(SELECT jsonb_build_object('status',q.status,'error_code',q.error_code,'revision',q.revision,
+      'evidence_revision',q.evidence_revision) FROM public.generation_plans q WHERE q.id=(selected->>'plan_id')::uuid
+      AND q.workspace_id=(selected->>'workspace_id')::uuid));
+   receipt:=receipt||jsonb_build_object('private_state',private_state);
+   IF has_schema_privilege(current_user,'auth','USAGE') AND has_table_privilege(current_user,'auth.users','SELECT') THEN
+    SELECT jsonb_build_object('matching_auth_rows',count(*),
+      'email_confirmed',count(*) FILTER(WHERE u.email_confirmed_at IS NOT NULL),
+      'deleted',count(*) FILTER(WHERE nullif(to_jsonb(u)->>'deleted_at','') IS NOT NULL),
+      'currently_banned',count(*) FILTER(WHERE coalesce(nullif(to_jsonb(u)->>'banned_until','')::timestamptz,'-infinity')>now()),
+      'usable_auth_rows',count(*) FILTER(WHERE nullif(to_jsonb(u)->>'deleted_at','') IS NULL
+       AND coalesce(nullif(to_jsonb(u)->>'banned_until','')::timestamptz,'-infinity')<=now())) INTO auth_state
+      FROM public.memberships m JOIN public.identity_allowlist a ON a.workspace_id=m.workspace_id AND a.user_id=m.user_id
+      JOIN auth.users u ON u.id=m.user_id WHERE m.workspace_id=(selected->>'workspace_id')::uuid
+       AND m.active AND m.role='Owner' AND a.status='active' AND a.role='Owner';
+    receipt:=receipt||jsonb_build_object('private_state',private_state||jsonb_build_object('owner_auth_state',auth_state));
+   END IF;
+  EXCEPTION WHEN OTHERS THEN NULL; END;
  END;
  PERFORM set_config('tenderdesk.requested_processing_receipt',receipt::text,true);
 END $requested_resume$;
 SELECT current_setting('tenderdesk.requested_processing_receipt'); COMMIT;
-""".replace("__SELECTION__", literal).replace("__IDEMPOTENCY_KEY__", key).replace("__MIGRATION_HASH__", migration_hash)
+""".replace("__SELECTION__", literal).replace("__IDEMPOTENCY_KEY__", key).replace("__MIGRATION_HASH__", migration_hash).replace("__DIAGNOSE_ONLY__", "true" if diagnose_only else "false")
 
 
 def public_receipt(receipt):
-    if not isinstance(receipt, dict) or receipt.get("status") not in {"resumed", "already_active", "already_completed", "refused"}:
+    if not isinstance(receipt, dict) or receipt.get("status") not in {"resumed", "already_active", "already_completed", "checked", "refused"}:
         raise ResumeError("RESUME_RECEIPT_INVALID")
     expected = 1 if receipt["status"] == "resumed" else 0
     if type(receipt.get("count")) is not int or receipt["count"] != expected:
@@ -195,6 +259,7 @@ def main(argv=None):
     parser.add_argument("--selection-object", required=True)
     parser.add_argument("--selection-sha256", required=True)
     parser.add_argument("--expected-runtime-image", required=True)
+    parser.add_argument("--diagnose-only", action="store_true")
     args = parser.parse_args(argv)
     directory = client = None
     code = None
@@ -216,7 +281,7 @@ def main(argv=None):
             client = observer.Client(120)
             client.labels["app.kubernetes.io/managed-by"] = "tenderdesk-requested-processing-resume"
             client.prepare()
-            receipt = json.loads(access.d.sql(client.pod, recovery_sql(selection)))
+            receipt = json.loads(access.d.sql(client.pod, recovery_sql(selection, diagnose_only=args.diagnose_only)))
             public_receipt(receipt)
             output = directory / "receipt.json"
             transfer.write_private(output, json.dumps(receipt, ensure_ascii=False).encode())
