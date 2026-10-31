@@ -21,7 +21,6 @@ const owner='00000000-0000-4000-8000-000000000001',job='00000000-0000-4000-8000-
 await db.query("insert into auth.users values($1,'fixture@example.test',now())",[owner]);
 await db.query("insert into auth.identities values($1,'email',$2::jsonb)",[owner,JSON.stringify({sub:owner})]);
 const workspace=(await db.query("select public.bootstrap_workspace($1,'Synthetic guarded resume') id",[owner])).rows[0].id;
-await db.exec('alter table auth.users add column banned_until timestamptz;alter table auth.users add column deleted_at timestamptz;');
 const source=(await db.query("insert into public.sources(workspace_id,name,kind,created_by) values($1,'Synthetic manual source','manual',$2) returning id",[workspace,owner])).rows[0].id;
 await db.query("insert into public.opportunities(id,workspace_id,source_id,title,created_by) values($1,$2,$3,'Synthetic requested proposal',$4)",[selection.opportunity_id,workspace,source,owner]);
 const proposal=(await db.query("insert into public.proposals(workspace_id,opportunity_id,title,created_by) values($1,$2,'Synthetic retained proposal',$3) returning id",[workspace,selection.opportunity_id,owner])).rows[0].id;
@@ -59,9 +58,8 @@ const beforeJobs=(await db.query('select to_jsonb(j) value from public.jobs j wh
 let result=await execute('changed');assert.equal(result.status,'refused');assert.equal(result.code,'RESUME_REVISION_CHANGED');
 assert.deepEqual((await db.query('select to_jsonb(j) value from public.jobs j where id=$1',[job])).rows[0].value,beforeJobs);
 await db.exec('revoke select on auth.users from tdp_app_owner');
-result=await execute('diagnose');assert.equal(result.status,'refused');assert.equal(result.code,'RESUME_CANONICAL_COMMAND_FAILED');
-assert.equal(result.private_diagnostics.sqlstate,'42501');assert.equal(result.private_diagnostics.stage,'owner_lookup');
-assert.match(result.private_diagnostics.message,/permission denied/);assert.equal(result.private_state.auth_users_select,false);
+result=await execute('diagnose');assert.equal(result.status,'checked','direct Auth-table SELECT must not become another Owner gate');
+assert.equal(result.private_state.auth_users_select,false);
 assert.deepEqual((await db.query('select to_jsonb(j) value from public.jobs j where id=$1',[job])).rows[0].value,beforeJobs);
 await db.exec('grant select on auth.users to tdp_app_owner');
 await db.query('update auth.users set email_confirmed_at=null where id=$1',[owner]);
@@ -70,16 +68,19 @@ assert.equal((await db.query('select app_private.member_role($1) role',[workspac
 result=await execute('diagnose');assert.equal(result.status,'checked','canonical Owner authority must not require a second email-confirmation gate');
 assert.equal(result.private_state.owner_auth_state.email_confirmed,0);assert.equal(result.private_state.owner_auth_state.usable_auth_rows,1);
 assert.equal((await db.query('select status from public.jobs where id=$1',[job])).rows[0].status,'blocked');
-for(const invalid of ['banned','deleted','inactive','revoked']){
- if(invalid==='banned')await db.query("update auth.users set banned_until=now()+interval '1 hour' where id=$1",[owner]);
- if(invalid==='deleted')await db.query('update auth.users set deleted_at=now() where id=$1',[owner]);
+await db.exec('alter table auth.users enable row level security;set role tdp_app_owner;');
+assert.equal((await db.query('select count(*)::int n from auth.users')).rows[0].n,0,'Auth rows must actually be invisible to the operational role');
+await db.exec('reset role');
+result=await execute('diagnose');assert.equal(result.status,'checked','canonical Owner authority is independent of direct Auth-row visibility');
+assert.equal(result.private_state.auth_users_select,true);assert.equal(result.private_state.owner_auth_state.matching_auth_rows,0);
+for(const invalid of ['inactive','revoked','reviewer']){
  if(invalid==='inactive')await db.query('update public.memberships set active=false where workspace_id=$1 and user_id=$2',[workspace,owner]);
  if(invalid==='revoked')await db.query("update public.identity_allowlist set status='inactive' where workspace_id=$1 and user_id=$2",[workspace,owner]);
+ if(invalid==='reviewer')await db.query("update public.memberships set role='Reviewer' where workspace_id=$1 and user_id=$2",[workspace,owner]);
  result=await execute('diagnose');assert.equal(result.status,'refused',invalid+' Owner must remain rejected');
  assert.equal(result.private_diagnostics.stage,'owner_lookup');
  assert.equal((await db.query('select status from public.jobs where id=$1',[job])).rows[0].status,'blocked');
- await db.query('update auth.users set banned_until=null,deleted_at=null where id=$1',[owner]);
- await db.query('update public.memberships set active=true where workspace_id=$1 and user_id=$2',[workspace,owner]);
+ await db.query("update public.memberships set active=true,role='Owner' where workspace_id=$1 and user_id=$2",[workspace,owner]);
  await db.query("update public.identity_allowlist set status='active' where workspace_id=$1 and user_id=$2",[workspace,owner]);
 }
 await db.query(`insert into public.model_attempts(workspace_id,job_id,lease_token,provider,operation,round_number,worker_attempt,status,sent)

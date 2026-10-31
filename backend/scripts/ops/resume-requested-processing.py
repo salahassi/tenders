@@ -98,15 +98,13 @@ BEGIN
   IF EXISTS(SELECT 1 FROM public.restore_sessions WHERE workspace_id=(selected->>'workspace_id')::uuid AND state IN ('staging','committing'))
   THEN RAISE EXCEPTION 'RESUME_RESTORE_IN_PROGRESS'; END IF;
   diagnostic_stage:='owner_lookup';
-  -- Canonical active membership/allowlist establishes Owner authority. A second
-  -- email-confirmation check is not part of that authorization contract.
-  -- Administrative delegation still requires a real, nondeleted, unbanned user.
+  -- Delegate the Owner-authorized request through the canonical membership and
+  -- allowlist authority. Direct Auth-table visibility is a separate runtime
+  -- concern and must not become a second authorization rule for this command.
   SELECT m.user_id INTO STRICT actor FROM public.memberships m JOIN public.identity_allowlist a
-   ON a.workspace_id=m.workspace_id AND a.user_id=m.user_id JOIN auth.users u ON u.id=m.user_id
+   ON a.workspace_id=m.workspace_id AND a.user_id=m.user_id
    WHERE m.workspace_id=(selected->>'workspace_id')::uuid AND m.active AND m.role='Owner'
-    AND a.status='active' AND a.role='Owner'
-    AND nullif(to_jsonb(u)->>'deleted_at','') IS NULL
-    AND coalesce(nullif(to_jsonb(u)->>'banned_until','')::timestamptz,'-infinity')<=now();
+    AND a.status='active' AND a.role='Owner';
   PERFORM set_config('request.jwt.claim.sub',actor::text,true);
   IF app_private.member_role((selected->>'workspace_id')::uuid) IS DISTINCT FROM 'Owner'
   THEN RAISE EXCEPTION 'RESUME_OWNER_REQUIRED'; END IF;

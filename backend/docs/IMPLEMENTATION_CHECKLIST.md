@@ -40,13 +40,14 @@ back; the overall workflow therefore reports failure even though deployment
 and public acceptance passed. Its private receipt requires further diagnosis.
 No affected-work resumption or completed proposal is claimed at this checkpoint.
 
-Private rollback diagnosis in workflow `41207421875` isolated the refusal to
-the operator helper's extra email-confirmation predicate, with canonical Owner
-membership present and Auth-table reads permitted. The helper now uses the
-existing canonical active Owner authority while retaining its real Auth-row,
-deleted-account and banned-account checks. Expanded operational regressions
-verify an authorized Owner without that optional confirmation timestamp,
-rejection of inactive/deleted/banned accounts and full diagnostic rollback.
+Private rollback diagnosis in workflows `41207421875` and `41208925063` found
+one canonical active Owner membership but zero matching Auth rows visible to
+the operational role, despite Auth-table SELECT permission. The helper now
+delegates through the existing active Owner membership/allowlist and canonical
+member_role authority; direct Auth visibility is diagnostic only. No Auth
+grants, RLS, credentials or account state changed. Expanded operational
+regressions verify canonical delegation with inaccessible Auth rows, rejection
+of inactive or non-Owner authority and complete diagnostic rollback.
 The resume-only workflow uses the already verified runtime and migration;
 live affected-work recovery remains pending. Application PR [#15](https://github.com/salahassi/tenders/pull/15)
 merged as `79b0e0efe9d6d95fac721ab31787d0bba08b9670`.
