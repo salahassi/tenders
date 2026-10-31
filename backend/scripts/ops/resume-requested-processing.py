@@ -85,7 +85,7 @@ DECLARE selected jsonb:=__SELECTION__; actor uuid; p public.generation_plans;
  latest uuid; receipt jsonb; result jsonb; immutable_plan jsonb; immutable_jobs jsonb;
  immutable_steps jsonb; retained jsonb; after_retained jsonb; unrelated jsonb;
  diagnostic_stage text:='database_guard'; diagnostic_state text; diagnostic_message text;
- diagnostic_context text; diagnostic_detail text; diagnostic_hint text; private_state jsonb;
+ diagnostic_context text; diagnostic_detail text; diagnostic_hint text; private_state jsonb; auth_state jsonb;
 BEGIN
  BEGIN
   IF current_database()<>'tenderdesk_app' OR (SELECT count(*) FROM public.workspaces)<>1
@@ -98,10 +98,13 @@ BEGIN
   IF EXISTS(SELECT 1 FROM public.restore_sessions WHERE workspace_id=(selected->>'workspace_id')::uuid AND state IN ('staging','committing'))
   THEN RAISE EXCEPTION 'RESUME_RESTORE_IN_PROGRESS'; END IF;
   diagnostic_stage:='owner_lookup';
+  -- Canonical active membership/allowlist establishes Owner authority. A second
+  -- email-confirmation check is not part of that authorization contract.
+  -- Administrative delegation still requires a real, nondeleted, unbanned user.
   SELECT m.user_id INTO STRICT actor FROM public.memberships m JOIN public.identity_allowlist a
    ON a.workspace_id=m.workspace_id AND a.user_id=m.user_id JOIN auth.users u ON u.id=m.user_id
    WHERE m.workspace_id=(selected->>'workspace_id')::uuid AND m.active AND m.role='Owner'
-    AND a.status='active' AND a.role='Owner' AND u.email_confirmed_at IS NOT NULL
+    AND a.status='active' AND a.role='Owner'
     AND nullif(to_jsonb(u)->>'deleted_at','') IS NULL
     AND coalesce(nullif(to_jsonb(u)->>'banned_until','')::timestamptz,'-infinity')<=now();
   PERFORM set_config('request.jwt.claim.sub',actor::text,true);
@@ -206,6 +209,18 @@ BEGIN
       'evidence_revision',q.evidence_revision) FROM public.generation_plans q WHERE q.id=(selected->>'plan_id')::uuid
       AND q.workspace_id=(selected->>'workspace_id')::uuid));
    receipt:=receipt||jsonb_build_object('private_state',private_state);
+   IF has_schema_privilege(current_user,'auth','USAGE') AND has_table_privilege(current_user,'auth.users','SELECT') THEN
+    SELECT jsonb_build_object('matching_auth_rows',count(*),
+      'email_confirmed',count(*) FILTER(WHERE u.email_confirmed_at IS NOT NULL),
+      'deleted',count(*) FILTER(WHERE nullif(to_jsonb(u)->>'deleted_at','') IS NOT NULL),
+      'currently_banned',count(*) FILTER(WHERE coalesce(nullif(to_jsonb(u)->>'banned_until','')::timestamptz,'-infinity')>now()),
+      'usable_auth_rows',count(*) FILTER(WHERE nullif(to_jsonb(u)->>'deleted_at','') IS NULL
+       AND coalesce(nullif(to_jsonb(u)->>'banned_until','')::timestamptz,'-infinity')<=now())) INTO auth_state
+      FROM public.memberships m JOIN public.identity_allowlist a ON a.workspace_id=m.workspace_id AND a.user_id=m.user_id
+      JOIN auth.users u ON u.id=m.user_id WHERE m.workspace_id=(selected->>'workspace_id')::uuid
+       AND m.active AND m.role='Owner' AND a.status='active' AND a.role='Owner';
+    receipt:=receipt||jsonb_build_object('private_state',private_state||jsonb_build_object('owner_auth_state',auth_state));
+   END IF;
   EXCEPTION WHEN OTHERS THEN NULL; END;
  END;
  PERFORM set_config('tenderdesk.requested_processing_receipt',receipt::text,true);

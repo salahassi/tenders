@@ -40,6 +40,17 @@ back; the overall workflow therefore reports failure even though deployment
 and public acceptance passed. Its private receipt requires further diagnosis.
 No affected-work resumption or completed proposal is claimed at this checkpoint.
 
+Private rollback diagnosis in workflow `41207421875` isolated the refusal to
+the operator helper's extra email-confirmation predicate, with canonical Owner
+membership present and Auth-table reads permitted. The helper now uses the
+existing canonical active Owner authority while retaining its real Auth-row,
+deleted-account and banned-account checks. Expanded operational regressions
+verify an authorized Owner without that optional confirmation timestamp,
+rejection of inactive/deleted/banned accounts and full diagnostic rollback.
+The resume-only workflow uses the already verified runtime and migration;
+live affected-work recovery remains pending. Application PR [#15](https://github.com/salahassi/tenders/pull/15)
+merged as `79b0e0efe9d6d95fac721ab31787d0bba08b9670`.
+
 ## October 29 — approved model execution and Needs attention recovery
 
 The Owner explicitly approves enabling the saved model route, sending a real sample assessment within existing data permissions, and recovering the remaining assessments after success. The Owner additionally requests reviewing and restarting items under Needs attention after that sample succeeds. [Execution 40865017755](https://github.com/salahassi/tenders/actions/runs/40865017755) enabled the saved route and created exactly one fresh assessment at 11:23:40 UTC, with 17 other current missing-configuration plans remaining. Existing attempts and usage history remain intact. Sample completion verification is running before batch recovery.

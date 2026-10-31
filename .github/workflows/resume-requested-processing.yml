@@ -10,7 +10,7 @@ on:
         description: Diagnose with a full transactional rollback, or resume the reviewed proposal
         type: choice
         options: [diagnose, resume]
-        default: diagnose
+        default: resume
         required: true
       selection_object:
         description: Encrypted selection in the existing private transport
@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      REQUESTED_PROCESSING_ACTION: ${{ inputs.action || 'diagnose' }}
+      REQUESTED_PROCESSING_ACTION: ${{ inputs.action || 'resume' }}
       REQUESTED_PROCESSING_SELECTION_OBJECT: ${{ inputs.selection_object || 'requests/requested-processing-20261031-v1.bundle' }}
       REQUESTED_PROCESSING_SELECTION_SHA256: ${{ inputs.selection_sha256 || '5ad71da0d455ab4f9a8f922fdbf839f5d6160873cb98e18b4a67cad3197f0c0f' }}
       REQUESTED_PROCESSING_RUNTIME_IMAGE: registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:c0f61756361e6474e50e04eb8bca38754e62eee5510701fe1528d0b3c1d23be5
