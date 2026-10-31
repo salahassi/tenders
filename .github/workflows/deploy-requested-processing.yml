@@ -1,0 +1,107 @@
+name: Deploy direct requested model processing
+
+on:
+  workflow_dispatch:
+    inputs:
+      selection_object:
+        description: Optional encrypted selection object in the existing private transport
+        type: string
+        required: false
+        default: ""
+      selection_sha256:
+        description: Exact plaintext SHA-256 of that reviewed selection
+        type: string
+        required: false
+        default: ""
+  push:
+    branches: [codex/requested-processing]
+    paths-ignore: ["**/*.md"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      REQUESTED_PROCESSING_SELECTION_OBJECT: ${{ inputs.selection_object || 'requests/requested-processing-20261031-v1.bundle' }}
+      REQUESTED_PROCESSING_SELECTION_SHA256: ${{ inputs.selection_sha256 || '5ad71da0d455ab4f9a8f922fdbf839f5d6160873cb98e18b4a67cad3197f0c0f' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+      - name: Verify locked application packages and deployment guards
+        run: |
+          npm ci --prefix frontend
+          npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          npm --prefix frontend run typecheck
+          npm --prefix frontend test -- --maxWorkers=1
+          npm --prefix frontend run build
+          npm --prefix backend run typecheck
+          npm --prefix backend test -- --maxWorkers=1
+          npm --prefix backend run build
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
+          python3 -m unittest discover -s backend/deploy/kubernetes -p 'test_*.py'
+      - name: Prepare verified cluster access and expiring image-push credentials
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/digitalocean-runner.py
+      - name: Build and publish immutable application images
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, re, subprocess
+          registry = 'registry.digitalocean.com/tenderdesk-a6093a76/'
+          directory = pathlib.Path(os.environ['DOKS_WORKDIR'])
+          for name, dockerfile, context in [('runtime','backend/deploy/Dockerfile','.'), ('frontend','frontend/Dockerfile','frontend')]:
+              reference = registry + name + ':' + os.environ['GITHUB_SHA']
+              with (directory / ('build-' + name + '.log')).open('w') as log:
+                  for arguments in [['docker','build','--platform=linux/amd64','--file',dockerfile,'--tag',reference,context], ['docker','push',reference]]:
+                      result = subprocess.run(arguments, stdout=log, stderr=subprocess.STDOUT, timeout=900)
+                      if result.returncode:
+                          raise SystemExit('Immutable application image build/push failed for ' + name)
+              result = subprocess.run(['docker','image','inspect',reference,'--format','{{json .RepoDigests}}'], capture_output=True,text=True,timeout=30)
+              values = json.loads(result.stdout) if result.returncode == 0 else []
+              digest = next((v for v in values if re.fullmatch(re.escape(registry+name)+r'@sha256:[a-f0-9]{64}',v)),None)
+              if not digest:
+                  raise SystemExit('Immutable image digest missing for ' + name)
+              with open(os.environ['GITHUB_ENV'],'a') as output:
+                  output.write('TENDERDESK_'+name.upper()+'_IMAGE='+digest+'\n')
+              print(json.dumps({'image':name,'status':'published','digest':digest.split('@')[1]}),flush=True)
+          PY
+      - name: Apply only the requested-processing migration and preserve existing work
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/requested-processing-update.py
+      - name: Resume only the privately selected existing proposal through its canonical command
+        if: ${{ env.REQUESTED_PROCESSING_SELECTION_OBJECT != '' || env.REQUESTED_PROCESSING_SELECTION_SHA256 != '' }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          python3 backend/scripts/ops/resume-requested-processing.py \
+            --selection-object "$REQUESTED_PROCESSING_SELECTION_OBJECT" \
+            --selection-sha256 "$REQUESTED_PROCESSING_SELECTION_SHA256" \
+            --expected-runtime-image "$TENDERDESK_RUNTIME_IMAGE"
+      - name: Remove temporary runner credentials and private build logs
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,shutil
+          for prefix in ('td-deploy-', 'td-sources-'):
+              directory = pathlib.Path(os.environ['RUNNER_TEMP']) / (prefix + os.environ['GITHUB_RUN_ID'] + '-' + os.environ['GITHUB_RUN_ATTEMPT'])
+              if directory.exists():
+                  shutil.rmtree(directory)
+          print('Temporary runner credentials and logs removed.')
+          PY

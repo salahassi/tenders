@@ -445,7 +445,7 @@ it.each([
   ["SOURCE_NOTICE_REDIRECTED", "without readable tender details"],
   ["MANUAL_SOURCE_REQUIRED", "access or verification"],
   ["DATA_POLICY_BLOCKED", "data policy prevented"],
-  ["DATA_AUTHORIZATION_REQUIRED", "Processing permission is missing"],
+  ["DATA_AUTHORIZATION_REQUIRED", "resume its saved assessment"],
   ["MODEL_CORRECTION_EXHAUSTED", "did not pass validation"],
   ["NOTICE_OCR_LOW_CONFIDENCE", "could not be read reliably"],
   ["NOTICE_OCR_FAILED", "Text extraction"],

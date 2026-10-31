@@ -10,7 +10,7 @@ import { get, set } from "idb-keyval";
 import type { AppState, StateMutation } from "../types";
 import { createSeedState } from "./fixtures/workspace";
 import { clearLocalFiles } from "../lib/knowledgeFiles";
-import { AppContext } from "../lib/appContext";
+import { AppContext, type ToastSeverity } from "../lib/appContext";
 import { validateState } from "../lib/legacyBackup";
 import {
   canApplyMutation,
@@ -42,8 +42,15 @@ export function FixtureProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [storageError, setStorageError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [toastSeverity, setToastSeverity] = useState<ToastSeverity>("success");
   const writes = useRef<Promise<void>>(Promise.resolve());
-  const notify = useCallback((message: string) => setToast(message), []);
+  const notify = useCallback(
+    (message: string, severity: ToastSeverity = "success") => {
+      setToastSeverity(severity);
+      setToast(message);
+    },
+    [],
+  );
   const clearToast = useCallback(() => setToast(null), []);
   const persist = useCallback((next: AppState) => {
     const snapshot = structuredClone(next);
@@ -231,6 +238,7 @@ export function FixtureProvider({ children }: { children: ReactNode }) {
         storageError,
         notify,
         toast,
+        toastSeverity,
         clearToast,
         mode: "DEMO",
         saving: false,

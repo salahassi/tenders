@@ -2,6 +2,8 @@ import { createContext } from "react";
 import type { AppState, StateMutation } from "../types";
 import type { BackendClient } from "./backendClient";
 
+export type ToastSeverity = "success" | "error";
+
 export interface AppContextValue {
   state: AppState;
   update: (
@@ -13,8 +15,9 @@ export interface AppContextValue {
   restore: (backup: AppState) => void;
   ready: boolean;
   storageError: string | null;
-  notify: (message: string) => void;
+  notify: (message: string, severity?: ToastSeverity) => void;
   toast: string | null;
+  toastSeverity?: ToastSeverity;
   clearToast: () => void;
   mode: "DEMO" | "CONNECTED_FREE";
   saving: boolean;

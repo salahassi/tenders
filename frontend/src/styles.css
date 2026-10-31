@@ -1510,6 +1510,17 @@ ol {
 .toast > svg {
   color: #c9e0a2;
 }
+.toast.toast-error {
+  background: #7f1d1d;
+  color: #fff7f7;
+  border-color: #c24141;
+}
+.toast.toast-error > svg {
+  color: #fecaca;
+}
+.toast.toast-error button {
+  color: #fee2e2;
+}
 .toast button {
   border: 0;
   color: #b8cca0;

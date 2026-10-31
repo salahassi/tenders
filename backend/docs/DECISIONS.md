@@ -1,5 +1,25 @@
 # Decisions
 
+## 2026-10-31: Requested processing has no separate content-permission step
+
+The Owner removes the separate per-document, per-provider model permission
+review for all users. An authenticated user with the existing permission to
+request assessment, proposal generation, regeneration or saved-work recovery
+authorizes the selected tender and review inputs for the configured model
+route through that action. This applies equally to Owners and Editors; it is
+not an administrative exception.
+
+The server records request intent and verifies the current membership,
+workspace, immutable input references and current content hashes. Existing
+content restrictions, explicit later revocations, model configuration and usage
+accounting remain enforced. Automatic source collection and Company Knowledge
+retain their workspace policies. A normal workflow request does not authorize
+unrelated content or create a new model connection.
+
+Remove the individual content-permission screen. Show processing failures in
+the opportunity with a clear explanation, an error notification and the
+applicable recovery action. Preserve completed work and original attempts.
+
 ## 2026-10-23: Compare scope contextually against database evidence
 
 The Owner requires the model to infer the company's specialization from the

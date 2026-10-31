@@ -5,6 +5,11 @@ import { Button } from "./ui";
 import { isSelected } from "../lib/workflow";
 import type { DocumentRecord, Opportunity } from "../types";
 import { BackendRequestError } from "../lib/backendClient";
+import {
+  generationNeedsAttention,
+  generationStageLabel,
+  generationStatusMessage,
+} from "../lib/generationStatus";
 type Plan = {
   id: string;
   kind: string;
@@ -30,8 +35,14 @@ export default function GenerationPanel({
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
     [requesting, setRequesting] = useState(false),
-    loadScope = useRef({ active: true, busy: false, completed: "" });
+    loadScope = useRef({
+      active: true,
+      busy: false,
+      completed: "",
+      attention: "",
+    });
   const editable = state.settings.role !== "Reviewer";
+  const planKind = isSelected(opportunity) ? "proposal" : "assessment";
   async function load() {
     const scope = loadScope.current;
     if (!backend || !scope.active || scope.busy) return;
@@ -41,16 +52,26 @@ export default function GenerationPanel({
         opportunity: opportunity.id,
       });
       if (!scope.active) return;
-      setPlans(
-        records.sort((a, b) => b.created_at.localeCompare(a.created_at)),
+      const ordered = [...records].sort((a, b) =>
+        b.created_at.localeCompare(a.created_at),
       );
-      const latest = records.find((p) => p.kind === "proposal");
+      setPlans(ordered);
+      const latestVisible = ordered.find((p) => p.kind === planKind);
+      const attention =
+        latestVisible && generationNeedsAttention(latestVisible)
+          ? `${latestVisible.id}:${latestVisible.status}:${latestVisible.error_code}`
+          : "";
+      if (attention && scope.attention !== attention)
+        notify(generationStatusMessage(latestVisible!), "error");
+      scope.attention = attention;
+      const latest = ordered.find((p) => p.kind === "proposal");
       if (latest?.status === "completed" && scope.completed !== latest.id) {
         await refresh?.();
         if (!scope.active) return;
         scope.completed = latest.id;
       }
       setError("");
+      return latestVisible;
     } catch (e) {
       if (scope.active)
         setError(e instanceof Error ? e.message : "Cannot load progress.");
@@ -60,7 +81,12 @@ export default function GenerationPanel({
     }
   }
   useEffect(() => {
-    const scope = { active: true, busy: false, completed: "" };
+    const scope = {
+      active: true,
+      busy: false,
+      completed: "",
+      attention: "",
+    };
     loadScope.current = scope;
     setLoading(true);
     void load();
@@ -71,23 +97,38 @@ export default function GenerationPanel({
       scope.active = false;
       clearInterval(timer);
     };
-  }, [backend, opportunity.id]);
+  }, [backend, opportunity.id, planKind]);
   async function action(operation: string, input: Record<string, unknown>) {
     setRequesting(true);
     try {
       await runCommand!(operation, input);
-      await load();
-      notify(
-        "Preparation requested. You can leave this page; processing continues automatically.",
-      );
+      const latest = await load();
+      if (!latest || !generationNeedsAttention(latest))
+        notify(
+          operation === "generation.cancel"
+            ? "Request canceled. Saved results are retained."
+            : "Processing requested. You can leave this page; work continues automatically.",
+        );
     } catch (e) {
-      setError(
+      const message =
         e instanceof BackendRequestError && e.code === "STALE_INPUT"
           ? "The saved inputs changed. Your completed work is retained. Automatic resume is available only when writing and review are complete and the notice is the only changed input. Review the changed evidence before starting an updated version."
-          : e instanceof Error
-            ? e.message
-            : "The request failed.",
-      );
+          : e instanceof BackendRequestError &&
+              [
+                "DATA_AUTHORIZATION_REQUIRED",
+                "DATA_POLICY_BLOCKED",
+                "MODEL_NOT_CONFIGURED",
+              ].includes(e.code)
+            ? generationStatusMessage({
+                kind: "proposal",
+                status: "blocked",
+                error_code: e.code,
+              })
+            : e instanceof Error
+              ? e.message
+              : "The request failed.";
+      setError(message);
+      notify(message, "error");
     } finally {
       setRequesting(false);
     }
@@ -197,17 +238,35 @@ export default function GenerationPanel({
               <div className="admin-muted-surface" key={p.id}>
                 <strong>
                   {p.kind === "proposal" ? "Proposal" : "Fit assessment"} ·{" "}
-                  {p.stage}
+                  {generationStageLabel(p.stage)}
                 </strong>
-                <p>
-                  {p.error_code === "MODEL_ROUND_EXHAUSTED" &&
-                  ["queued", "running"].includes(p.status)
-                    ? "Waiting for an available provider. The system will retry automatically; your completed work is saved."
-                    : p.status +
-                      (p.error_code
-                        ? ` · ${p.error_code.replaceAll("_", " ").toLowerCase()}`
-                        : "")}
+                <p
+                  role={
+                    generationNeedsAttention(p) &&
+                    !error &&
+                    plans.find((plan) => plan.kind === p.kind)?.id === p.id
+                      ? "alert"
+                      : undefined
+                  }
+                  className={
+                    generationNeedsAttention(p) ? "admin-error" : undefined
+                  }
+                >
+                  {generationStatusMessage(p)}
                 </p>
+                {p.error_code && (
+                  <details>
+                    <summary>Technical details</summary>
+                    <p>
+                      Reference code: <code>{p.error_code}</code>
+                    </p>
+                  </details>
+                )}
+                {p.error_code === "MODEL_NOT_CONFIGURED" && (
+                  <p>
+                    <Link to="/settings?section=models">Set up a model</Link>
+                  </p>
+                )}
                 {["blocked", "failed", "canceled"].includes(p.status) &&
                   !plans.some(
                     (newer) =>
@@ -219,8 +278,10 @@ export default function GenerationPanel({
                   ) &&
                   !(
                     p.error_code === "STALE_INPUT" &&
-                    !(p.kind === "proposal" &&
-                      ["review", "reconciliation"].includes(p.stage))
+                    !(
+                      p.kind === "proposal" &&
+                      ["review", "reconciliation"].includes(p.stage)
+                    )
                   ) &&
                   ![
                     "REASSESSMENT_SUPERSEDED",
@@ -234,7 +295,7 @@ export default function GenerationPanel({
                           id: p.id,
                           expected_revision: p.revision,
                           reason:
-                            "User reviewed the blocker and requested resume.",
+                            "User requested continuation of the saved work.",
                         })
                       }
                     >
@@ -270,8 +331,9 @@ export default function GenerationPanel({
               </div>
             ))}
           <p className="simple-note">
-            Processing continues automatically. Temporary model failures retry;
-            completed steps are saved.{" "}
+            Completed steps are saved. Temporary model failures retry
+            automatically; requests that stop show their reason and recovery
+            action here.{" "}
             <Link to={`/jobs?opportunity=${opportunity.id}`}>
               View attempts and details
             </Link>
