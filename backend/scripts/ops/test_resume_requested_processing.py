@@ -30,7 +30,9 @@ class RequestedProcessingResumeTests(unittest.TestCase):
                     r.validate_selection(candidate)
 
     def test_public_receipt_never_includes_selection_or_other_private_values(self):
-        value = {"status": "resumed", "count": 1, "plan_id": "private", "content": "private", "actor": "private"}
+        value = {"status": "resumed", "count": 1, "plan_id": "private", "content": "private", "actor": "private",
+                 "private_diagnostics": {"sqlstate": "XX001", "message": "private", "context": "private"},
+                 "private_state": {"role": "private"}}
         self.assertEqual(r.public_receipt(value), {"requested_processing_resume": "resumed", "count": 1})
         self.assertNotIn("private", json.dumps(r.public_receipt(value)))
         with self.assertRaises(r.ResumeError):
@@ -42,7 +44,8 @@ class RequestedProcessingResumeTests(unittest.TestCase):
         with patch.object(r.access, "WORKSPACE", SELECTION["workspace_id"]):
             valid = r.recovery_sql(SELECTION)
             changed = r.recovery_sql({**SELECTION, "expected_revision": 2})
-        payload = {"selection": SELECTION, "valid": valid, "changed": changed,
+            diagnose = r.recovery_sql(SELECTION, diagnose_only=True)
+        payload = {"selection": SELECTION, "valid": valid, "changed": changed, "diagnose": diagnose,
                    "migration_sha256": __import__("hashlib").sha256(r.release.MIGRATION.read_bytes()).hexdigest()}
         result = subprocess.run(["node", str(Path(__file__).with_name("test_resume_requested_processing.mjs"))],
                                 input=json.dumps(payload), capture_output=True, text=True, timeout=90)

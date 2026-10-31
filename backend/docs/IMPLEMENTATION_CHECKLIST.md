@@ -26,6 +26,20 @@ attempts and model accounting. Deployment, affected-work recovery and hosted
 acceptance remain pending. No completed proposal or model result is claimed by
 local checks.
 
+Deployment source `658ad8d6e1c80416c95acd490f5dcc63fd9360ef` passed the remote
+application and operations checks in [workflow 41204308650](https://github.com/salahassi/tenders/actions/runs/41204308650).
+The requested-processing migration committed with existing records and model
+accounting preserved. All five workloads were ready and served-asset acceptance
+verified removal of the individual permission screen and presence of in-context
+processing help. The runtime digest is
+`sha256:c0f61756361e6474e50e04eb8bca38754e62eee5510701fe1528d0b3c1d23be5`;
+the frontend digest is
+`sha256:da1c8b8c07e786250a7640a8c4295a5075f7c84c4464eb4a59817c8a4325e1fe`.
+The separate exact-plan recovery step refused its canonical command and rolled
+back; the overall workflow therefore reports failure even though deployment
+and public acceptance passed. Its private receipt requires further diagnosis.
+No affected-work resumption or completed proposal is claimed at this checkpoint.
+
 ## October 29 — approved model execution and Needs attention recovery
 
 The Owner explicitly approves enabling the saved model route, sending a real sample assessment within existing data permissions, and recovering the remaining assessments after success. The Owner additionally requests reviewing and restarting items under Needs attention after that sample succeeds. [Execution 40865017755](https://github.com/salahassi/tenders/actions/runs/40865017755) enabled the saved route and created exactly one fresh assessment at 11:23:40 UTC, with 17 other current missing-configuration plans remaining. Existing attempts and usage history remain intact. Sample completion verification is running before batch recovery.

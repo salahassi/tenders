@@ -57,6 +57,12 @@ const execute=async name=>{
 const beforeJobs=(await db.query('select to_jsonb(j) value from public.jobs j where id=$1',[job])).rows[0].value;
 let result=await execute('changed');assert.equal(result.status,'refused');assert.equal(result.code,'RESUME_REVISION_CHANGED');
 assert.deepEqual((await db.query('select to_jsonb(j) value from public.jobs j where id=$1',[job])).rows[0].value,beforeJobs);
+await db.exec('revoke select on auth.users from tdp_app_owner');
+result=await execute('diagnose');assert.equal(result.status,'refused');assert.equal(result.code,'RESUME_CANONICAL_COMMAND_FAILED');
+assert.equal(result.private_diagnostics.sqlstate,'42501');assert.equal(result.private_diagnostics.stage,'owner_lookup');
+assert.match(result.private_diagnostics.message,/permission denied/);assert.equal(result.private_state.auth_users_select,false);
+assert.deepEqual((await db.query('select to_jsonb(j) value from public.jobs j where id=$1',[job])).rows[0].value,beforeJobs);
+await db.exec('grant select on auth.users to tdp_app_owner');
 await db.query(`insert into public.model_attempts(workspace_id,job_id,lease_token,provider,operation,round_number,worker_attempt,status,sent)
  values($1,$2,gen_random_uuid(),'qwen_free','analyze_chunk',1,1,'failed',true)`,[workspace,job]);
 result=await execute('valid');assert.equal(result.status,'refused');assert.equal(result.code,'RESUME_PROVIDER_ACTIVITY_EXISTS');
@@ -70,6 +76,20 @@ result=await execute('valid');assert.equal(result.status,'refused');assert.equal
 assert.equal((await db.query('select attempts,status from public.jobs where id=$1',[job])).rows[0].attempts,2);
 assert.equal((await db.query('select count(*)::int n from app_private.generation_processing_requests')).rows[0].n,0,'canonical request must roll back with counter mutation');
 await db.exec('drop function app_private.app_command(text,jsonb,text);alter function app_private.fixture_previous_command(text,jsonb,text) rename to app_command;');
+await db.exec(`alter function app_private.app_command(text,jsonb,text) rename to fixture_previous_command;
+ create function app_private.app_command(operation text,input jsonb,idempotency_key text) returns jsonb language plpgsql security definer set search_path='' as $$
+ begin raise exception using errcode='XX001',message='SYNTHETIC_PRIVATE_FAILURE',detail='SYNTHETIC_PRIVATE_DETAIL',hint='SYNTHETIC_PRIVATE_HINT';end $$;
+ alter function app_private.app_command(text,jsonb,text) owner to tdp_app_owner;`);
+result=await execute('diagnose');assert.equal(result.status,'refused');assert.equal(result.code,'RESUME_CANONICAL_COMMAND_FAILED');
+assert.equal(result.private_diagnostics.sqlstate,'XX001');assert.equal(result.private_diagnostics.stage,'canonical_retry');
+assert.equal(result.private_diagnostics.message,'SYNTHETIC_PRIVATE_FAILURE');assert.equal(result.private_diagnostics.detail,'SYNTHETIC_PRIVATE_DETAIL');
+assert.equal(result.private_diagnostics.hint,'SYNTHETIC_PRIVATE_HINT');assert.match(result.private_diagnostics.context,/app_command/);
+assert.equal((await db.query('select attempts,status from public.jobs where id=$1',[job])).rows[0].attempts,2);
+await db.exec('drop function app_private.app_command(text,jsonb,text);alter function app_private.fixture_previous_command(text,jsonb,text) rename to app_command;');
+result=await execute('diagnose');assert.equal(result.status,'checked');assert.equal(result.count,0);assert.equal(result.mutation_rolled_back,true);assert.equal(result.would_resume,true);
+assert.equal((await db.query('select status from public.jobs where id=$1',[job])).rows[0].status,'blocked');
+assert.equal((await db.query('select count(*)::int n from app_private.generation_processing_requests')).rows[0].n,0,'diagnostic must roll back canonical authorization');
+assert.equal((await db.query("select count(*)::int n from public.audit_events where action='generation.retry'")).rows[0].n,0,'diagnostic must roll back canonical audit');
 result=await execute('valid');assert.equal(result.status,'resumed');assert.equal(result.count,1);assert.equal(result.immutable_state_preserved,true);
 const after=(await db.query('select attempts,checkpoint,status from public.jobs where id=$1',[job])).rows[0];
 assert.equal(after.attempts,2);assert.deepEqual(after.checkpoint,{saved_checkpoint:true});assert.equal(after.status,'queued');
