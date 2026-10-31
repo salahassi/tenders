@@ -21,10 +21,11 @@ guards verify the actual migration under production-equivalent restricted
 database privileges, atomic checksum history, safe replay and existing-record
 preservation. The independently reviewed recovery helper accepts only a
 privately encrypted exact-plan selection, verifies the deployed migration and
-runtime, and invokes one canonical retry while preserving immutable inputs,
-attempts and model accounting. Deployment, affected-work recovery and hosted
-acceptance remain pending. No completed proposal or model result is claimed by
-local checks.
+runtime, and invokes canonical retries for its exact selected tasks while
+preserving immutable inputs, attempts and model accounting. Deployment and
+affected-work recovery passed the acceptance recorded below. Full proposal
+completion and Word delivery remain separate acceptance; no completed proposal
+or model result is claimed by local checks.
 
 Deployment source `658ad8d6e1c80416c95acd490f5dcc63fd9360ef` passed the remote
 application and operations checks in [workflow 41204308650](https://github.com/salahassi/tenders/actions/runs/41204308650).
@@ -60,6 +61,23 @@ tasks in one transaction, retaining that command's same-job usage checks and
 normal provider reservation controls. Expanded fixtures cover all twelve
 selected tasks, unrelated unknown usage remaining identical, same-target usage
 rejection, exact idempotency receipts and rollback of accounting mutations.
+
+Live recovery passed in [workflow 41220950555](https://github.com/salahassi/tenders/actions/runs/41220950555),
+source `51947c37790802b208263db33defa40139df83af`, job `124595191356`.
+Its receipt confirms one proposal resumed through the selected canonical task
+retries, with immutable inputs, counters, graph state and whole-workspace usage
+preserved. All recovery resources and runner plaintext were cleaned. The
+application remains on the previously verified immutable runtime/frontend;
+recovery did not redeploy or change accounts, RLS, providers or usage records.
+The separate permission step is removed for all authorized users, served UI
+acceptance passed, and the affected proposal has returned to processing.
+Originals and prior work remain intact. Proposal completion is not claimed.
+
+The maintenance workflows now require explicit private selection inputs and
+default to diagnosis when invoked manually; the one-shot push trigger and
+embedded transport selection are removed. Temporary transport uses generated
+encrypted objects, authenticated private readback and subsequent removal;
+the transfer helper revokes temporary bucket keys after every operation.
 
 ## October 29 — approved model execution and Needs attention recovery
 
