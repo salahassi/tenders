@@ -10,9 +10,19 @@ distinguishes deployed runtime, local tests and pending live paid-model acceptan
 
 ## Current implementation
 
-The proposal-list empty state describes the connected upload/review/generate flow and makes clear that saved templates and Company Knowledge are optional starting inputs. It does not ask a signed-in workspace to connect its backend. The Owner explicitly authorized the mismatched NHCI RFP/An-Najah opportunity for this trial. A temporary invited Editor downloaded the exact original through the live app, reviewed its extraction and created a proposal generation request. Exact-file model permission and full hosted generation/download remain pending; see the current checklist.
+Requested assessment and proposal processing no longer require a separate
+per-document or per-provider content review. Every user permitted to start or
+resume the workflow uses the same direct action. The server binds that request
+to its selected tender/review evidence and configured route while preserving
+workspace authorization, current hashes and content restrictions. Settings no
+longer exposes Individual content permissions. Processing failures appear in
+the opportunity with a clear explanation, an error notification and recovery
+actions; technical codes remain available under details. Automatic collection
+and Company Knowledge retain their separate workspace sharing policies.
 
-Workspace refresh batches complete job/audit history in pages of 500, reducing serial network requests while retaining pagination and every history row. Proposal jobs alternate with waiting assessments; accepted remote requests and waiting source work retain priority. Ordinary confidentiality requirements no longer conflict with the file upload policy, while explicit model-processing permission and restrictions on marked content remain enforced.
+The proposal-list empty state describes the connected upload/review/generate flow and makes clear that saved templates and Company Knowledge are optional starting inputs. It does not ask a signed-in workspace to connect its backend. The Owner explicitly authorized the mismatched NHCI RFP/An-Najah opportunity for this trial. A temporary invited Editor downloaded the exact original through the live app, reviewed its extraction and created a proposal generation request. The October 31 request-based authorization decision supersedes the separate exact-file permission prerequisite. Full hosted generation/download remains separate acceptance; see the current checklist.
+
+Workspace refresh batches complete job/audit history in pages of 500, reducing serial network requests while retaining pagination and every history row. Proposal jobs alternate with waiting assessments; accepted remote requests and waiting source work retain priority. Ordinary confidentiality requirements no longer conflict with the file upload policy. Requested tender processing uses the workflow request itself as authorization; restrictions on marked content remain enforced.
 
 Failure email preferences default to at most daily. New affected tasks do not repeat email for an already reported ongoing cause; recovered causes may notify again if they recur. A pending summary rechecks recovery and the current interval before sending. The activity log retains every attempt, and review reminders keep their separate schedule.
 
@@ -30,7 +40,7 @@ The user journey is **Review fit → select opportunity → upload and confirm t
 
 Every build is connected-only. A legacy demo query cannot create a workspace. Saves await authenticated application programming interface (API) or Storage acceptance; failed writes preserve entered values. Synthetic records are confined to test fixtures. Accounts use invitation-only email/password. Historical actors imported during recovery are not Auth users or memberships. Pending original files in IndexedDB are temporary upload buffers, not a second workspace database.
 
-The later decisions in [DECISIONS.md](../../backend/docs/DECISIONS.md) supersede the original outline, demo and social-login prescriptions. Owner-only controls include model policy, exact content authorization, verified company facts, rates/templates, final approval, member administration, backup/restore and confirmed permanent purge. Browser controls never replace server authorization.
+The later decisions in [DECISIONS.md](../../backend/docs/DECISIONS.md) supersede the original outline, demo and social-login prescriptions. Owner-only controls include model policy, verified company facts, rates/templates, final approval, member administration, backup/restore and confirmed permanent purge. Authorized workflow users share the direct requested-processing path. Browser controls never replace server authorization.
 
 ## Records and background execution
 

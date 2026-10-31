@@ -13,7 +13,6 @@ import {
   ArrowUpRight,
   Bell,
   BookOpen,
-  Check,
   ChevronDown,
   CircleHelp,
   Command,
@@ -33,6 +32,7 @@ import {
 import { useApp } from "./lib/store";
 import { Button, EmptyState, Modal } from "./components/ui";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ToastNotification from "./components/ToastNotification";
 import { WorkspaceSkeleton } from "./components/WorkspaceSkeleton";
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const Opportunities = lazy(() => import("./pages/Opportunities"));
@@ -61,6 +61,7 @@ export default function App() {
     ready,
     storageError,
     toast,
+    toastSeverity,
     clearToast,
     mode,
     saving,
@@ -77,9 +78,7 @@ export default function App() {
   const [help, setHelp] = useState(false);
   const [offline, setOffline] = useState(!navigator.onLine);
   const unread = state.notifications.filter((n) => !n.read).length;
-  const reviewCount = state.opportunities.filter(
-    inReviewInbox,
-  ).length;
+  const reviewCount = state.opportunities.filter(inReviewInbox).length;
   useEffect(() => {
     setMenu(false);
     document.getElementById("main")?.focus();
@@ -107,7 +106,7 @@ export default function App() {
     if (!toast) return;
     const timer = setTimeout(clearToast, 5000);
     return () => clearTimeout(timer);
-  }, [toast, clearToast]);
+  }, [toast, toastSeverity, clearToast]);
   if (!ready) return <WorkspaceSkeleton />;
   const results = query.trim()
     ? state.opportunities
@@ -360,13 +359,11 @@ export default function App() {
         </div>
       </div>
       {toast && (
-        <div className="toast" role="status">
-          <Check size={18} />
-          <span>{toast}</span>
-          <button aria-label="Dismiss notification" onClick={clearToast}>
-            <X size={15} />
-          </button>
-        </div>
+        <ToastNotification
+          message={toast}
+          severity={toastSeverity}
+          onDismiss={clearToast}
+        />
       )}
       <Modal
         open={searchOpen}

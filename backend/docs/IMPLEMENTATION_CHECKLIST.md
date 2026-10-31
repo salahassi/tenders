@@ -1,5 +1,31 @@
 # Implementation status and continuation plan
 
+## October 31 — remove separate permission review for requested processing
+
+The Owner explicitly removes the hidden per-document/per-provider model
+permission step for all users. The implementation binds existing authorized
+workflow requests and resumes to their selected tender/review inputs, preserving
+membership, workspace scope, current content hashes, actual content
+restrictions and durable model/usage accounting. Automatic collection and
+Company Knowledge retain their workspace policies. The obsolete individual
+permission screen is removed. The opportunity explains processing failures in
+context and supplies an error notification and existing recovery action.
+
+Implementation and independent review passed. Both application typechecks and
+builds passed, with 1,515 backend tests and 245 frontend tests. Twenty focused
+request-authorization regressions cover direct requests, every execution mode,
+Owner/Editor parity, exact hashes, isolation, content restrictions, revocation,
+idempotency, saved-work recovery, historical proposal style inputs and approved
+current rates. All 151 operations tests and 13 renderer tests passed. Release
+guards verify the actual migration under production-equivalent restricted
+database privileges, atomic checksum history, safe replay and existing-record
+preservation. The independently reviewed recovery helper accepts only a
+privately encrypted exact-plan selection, verifies the deployed migration and
+runtime, and invokes one canonical retry while preserving immutable inputs,
+attempts and model accounting. Deployment, affected-work recovery and hosted
+acceptance remain pending. No completed proposal or model result is claimed by
+local checks.
+
 ## October 29 — approved model execution and Needs attention recovery
 
 The Owner explicitly approves enabling the saved model route, sending a real sample assessment within existing data permissions, and recovering the remaining assessments after success. The Owner additionally requests reviewing and restarting items under Needs attention after that sample succeeds. [Execution 40865017755](https://github.com/salahassi/tenders/actions/runs/40865017755) enabled the saved route and created exactly one fresh assessment at 11:23:40 UTC, with 17 other current missing-configuration plans remaining. Existing attempts and usage history remain intact. Sample completion verification is running before batch recovery.

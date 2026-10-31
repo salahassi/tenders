@@ -1,5 +1,4 @@
 import { useSearchParams } from "react-router-dom";
-import ContentPermissions from "../components/ContentPermissions";
 import ModelUsageReview from "../components/ModelUsageReview";
 import DiscoveryControls from "../components/DiscoveryControls";
 import { useEffect, useState } from "react";
@@ -248,7 +247,6 @@ export default function Settings() {
         hidden={section !== "data"}
       >
         {visited.has("data") && <DiscoveryControls />}
-        {connected && visited.has("data") && <ContentPermissions />}
       </div>
       <div
         id="settings-team"

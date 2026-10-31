@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import type { StateMutation } from "../types";
-import { AppContext } from "./appContext";
+import { AppContext, type ToastSeverity } from "./appContext";
 import { BackendClient, BackendRequestError } from "./backendClient";
 import {
   ConnectedRepository,
@@ -41,6 +41,7 @@ export function ConnectedProvider({
   );
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [toastSeverity, setToastSeverity] = useState<ToastSeverity>("success");
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const generation = useRef(0);
@@ -413,7 +414,11 @@ export function ConnectedProvider({
         runCommand,
         storageError: error,
         toast,
-        notify: setToast,
+        toastSeverity,
+        notify: (message, severity = "success") => {
+          setToastSeverity(severity);
+          setToast(message);
+        },
         clearToast: () => setToast(null),
         userLabel: session.user.email || "Signed-in user",
         refresh,

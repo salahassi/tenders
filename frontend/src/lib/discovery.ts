@@ -98,7 +98,7 @@ const blockerMessages: Record<string, string> = {
   DATA_POLICY_BLOCKED:
     "The current data policy prevented processing this content. Review the notice and company evidence in processing details before retrying.",
   DATA_AUTHORIZATION_REQUIRED:
-    "Processing permission is missing for evidence used by this assessment. Review the data permissions in processing details.",
+    "This assessment stopped while checking which evidence can be used. Open the opportunity and resume its saved assessment to continue.",
   MODEL_CORRECTION_EXHAUSTED:
     "The model response did not pass validation after its correction attempts. Open processing details to review the saved attempt and recovery options.",
   STALE_INPUT:

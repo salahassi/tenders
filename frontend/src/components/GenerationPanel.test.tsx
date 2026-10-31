@@ -80,26 +80,30 @@ it("offers resume for the latest blocked plan and hides it on an older canceled 
   );
 });
 
-it("starts an RFP-only proposal without company knowledge or a custom template", async () => {
-  const c = context();
-  render(
-    <MemoryRouter>
-      <GenerationPanel opportunity={opportunity()} embedded />
-    </MemoryRouter>,
-  );
-  const button = await screen.findByRole("button", {
-    name: "Generate complete proposal",
-  });
-  expect(button).toBeEnabled();
-  expect(
-    screen.getByText(/No custom template or company knowledge is required/),
-  ).toBeInTheDocument();
-  await userEvent.click(button);
-  expect(c.runCommand).toHaveBeenCalledWith("proposal.generate", {
-    id: "opportunity",
-    expected_revision: 4,
-  });
-});
+it.each(["Owner", "Editor"])(
+  "lets %s start an RFP-only proposal directly without a separate permission review",
+  async (role) => {
+    const c = context();
+    c.state.settings.role = role;
+    render(
+      <MemoryRouter>
+        <GenerationPanel opportunity={opportunity()} embedded />
+      </MemoryRouter>,
+    );
+    const button = await screen.findByRole("button", {
+      name: "Generate complete proposal",
+    });
+    expect(button).toBeEnabled();
+    expect(
+      screen.getByText(/No custom template or company knowledge is required/),
+    ).toBeInTheDocument();
+    await userEvent.click(button);
+    expect(c.runCommand).toHaveBeenCalledWith("proposal.generate", {
+      id: "opportunity",
+      expected_revision: 4,
+    });
+  },
+);
 it("explains extraction review and opens the exact pending file instead of reporting ready", async () => {
   context();
   const o = opportunity();
@@ -256,20 +260,192 @@ it("ignores a previous opportunity's delayed completion after navigation", async
 });
 
 it("allows a final-stage stale proposal to request checked recovery and explains rejection", async () => {
-  const c = context([{ id: "plan", kind: "proposal", stage: "review", status: "blocked",
-    error_code: "STALE_INPUT", revision: 4, created_at: "2026-10-23" }]);
-  c.runCommand.mockRejectedValueOnce(new BackendRequestError("STALE_INPUT", "stale input", 409));
-  render(<MemoryRouter><GenerationPanel opportunity={opportunity()} /></MemoryRouter>);
-  await userEvent.click(await screen.findByRole("button", { name: "Resume saved work" }));
-  expect(c.runCommand).toHaveBeenCalledWith("generation.retry", expect.objectContaining({ id: "plan", expected_revision: 4 }));
-  expect(await screen.findByRole("alert")).toHaveTextContent("Your completed work is retained");
-  expect(screen.getByRole("alert")).toHaveTextContent("notice is the only changed input");
+  const c = context([
+    {
+      id: "plan",
+      kind: "proposal",
+      stage: "review",
+      status: "blocked",
+      error_code: "STALE_INPUT",
+      revision: 4,
+      created_at: "2026-10-23",
+    },
+  ]);
+  c.runCommand.mockRejectedValueOnce(
+    new BackendRequestError("STALE_INPUT", "stale input", 409),
+  );
+  render(
+    <MemoryRouter>
+      <GenerationPanel opportunity={opportunity()} />
+    </MemoryRouter>,
+  );
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Resume saved work" }),
+  );
+  expect(c.runCommand).toHaveBeenCalledWith(
+    "generation.retry",
+    expect.objectContaining({ id: "plan", expected_revision: 4 }),
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Your completed work is retained",
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "notice is the only changed input",
+  );
 });
 
 it("does not offer stale recovery while model writing is unfinished", async () => {
-  context([{ id: "plan", kind: "proposal", stage: "drafting", status: "blocked",
-    error_code: "STALE_INPUT", revision: 4, created_at: "2026-10-23" }]);
-  render(<MemoryRouter><GenerationPanel opportunity={opportunity()} /></MemoryRouter>);
-  await screen.findByText("Proposal · drafting");
-  expect(screen.queryByRole("button", { name: "Resume saved work" })).not.toBeInTheDocument();
+  context([
+    {
+      id: "plan",
+      kind: "proposal",
+      stage: "drafting",
+      status: "blocked",
+      error_code: "STALE_INPUT",
+      revision: 4,
+      created_at: "2026-10-23",
+    },
+  ]);
+  render(
+    <MemoryRouter>
+      <GenerationPanel opportunity={opportunity()} />
+    </MemoryRouter>,
+  );
+  await screen.findByText("Proposal · Writing the proposal");
+  expect(
+    screen.queryByRole("button", { name: "Resume saved work" }),
+  ).not.toBeInTheDocument();
 });
+
+it("explains a saved file-permission stop and offers recovery on the opportunity", async () => {
+  const c = context([
+    {
+      id: "plan",
+      kind: "proposal",
+      stage: "analysis",
+      status: "blocked",
+      error_code: "DATA_AUTHORIZATION_REQUIRED",
+      revision: 4,
+      created_at: "2026-10-31",
+    },
+  ]);
+  render(
+    <MemoryRouter>
+      <GenerationPanel opportunity={opportunity()} />
+    </MemoryRouter>,
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Select Resume saved work here",
+  );
+  expect(
+    screen.getByText("Proposal · Reading tender requirements"),
+  ).toBeVisible();
+  expect(
+    screen.queryByText(/review individual|authorize this text/i),
+  ).not.toBeInTheDocument();
+  expect(screen.getByText("DATA_AUTHORIZATION_REQUIRED")).not.toBeVisible();
+  await userEvent.click(screen.getByText("Technical details"));
+  expect(screen.getByText("DATA_AUTHORIZATION_REQUIRED")).toBeVisible();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Resume saved work" }),
+  );
+  expect(c.runCommand).toHaveBeenCalledWith(
+    "generation.retry",
+    expect.objectContaining({ id: "plan", expected_revision: 4 }),
+  );
+  expect(c.notify).toHaveBeenCalledWith(
+    expect.stringContaining("continue with your configured models"),
+    "error",
+  );
+  expect(c.notify).not.toHaveBeenCalledWith(
+    expect.stringContaining("work continues automatically"),
+  );
+});
+
+it("announces a newly stopped request once while polling and announces a later recurrence", async () => {
+  vi.useFakeTimers();
+  const records = [
+    {
+      id: "plan",
+      kind: "proposal",
+      stage: "analysis",
+      status: "running",
+      error_code: null as string | null,
+      revision: 1,
+      created_at: "2026-10-31",
+    },
+  ];
+  const c = context(records);
+  render(
+    <MemoryRouter>
+      <GenerationPanel opportunity={opportunity()} />
+    </MemoryRouter>,
+  );
+  await act(async () => {});
+  expect(c.notify).not.toHaveBeenCalled();
+  records[0] = {
+    ...records[0],
+    status: "blocked",
+    error_code: "GENERATION_HANDLER_FAILED",
+  };
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(10000);
+  });
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "A processing error stopped this request",
+  );
+  expect(c.notify).toHaveBeenCalledTimes(1);
+  expect(c.notify).toHaveBeenLastCalledWith(
+    expect.stringContaining("A processing error stopped this request"),
+    "error",
+  );
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(20000);
+  });
+  expect(c.notify).toHaveBeenCalledTimes(1);
+  records[0] = { ...records[0], status: "running", error_code: null };
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(10000);
+  });
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  records[0] = {
+    ...records[0],
+    status: "blocked",
+    error_code: "GENERATION_HANDLER_FAILED",
+  };
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(10000);
+  });
+  expect(c.notify).toHaveBeenCalledTimes(2);
+});
+
+it.each([
+  ["canceled", "This request was canceled. Saved results are retained."],
+  ["completed", "Your proposal is ready. Open it to review and download."],
+])(
+  "shows the actual %s state instead of a retained earlier permission error",
+  async (status, message) => {
+    const c = context([
+      {
+        id: "plan",
+        kind: "proposal",
+        stage: status === "completed" ? "completed" : "analysis",
+        status,
+        error_code: "DATA_AUTHORIZATION_REQUIRED",
+        revision: 5,
+        created_at: "2026-10-31",
+      },
+    ]);
+    render(
+      <MemoryRouter>
+        <GenerationPanel opportunity={opportunity()} />
+      </MemoryRouter>,
+    );
+    expect(await screen.findByText(message)).toBeVisible();
+    expect(
+      screen.queryByText(/Select Resume saved work here/),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(c.notify).not.toHaveBeenCalled();
+  },
+);

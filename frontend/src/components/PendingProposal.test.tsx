@@ -86,7 +86,12 @@ it("loads the authorized pending record and shows real progress without a fabric
   expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(
     "Proposal preparation",
   );
-  expect(await screen.findByText("Proposal · drafting")).toBeInTheDocument();
+  expect(
+    await screen.findByText("Proposal · Writing the proposal"),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "did not pass the required checks",
+  );
   expect(
     screen.getByRole("button", { name: "Resume saved work" }),
   ).toBeEnabled();
@@ -208,9 +213,17 @@ it("discards a stale response after the proposal identifier changes", async () =
 
 it("identifies a recovered historical draft while keeping draft download available", async () => {
   const f = fixture();
-  f.context.state.proposals = [{ ...f.saved, recoveredFromEarlierNotice: true }];
+  f.context.state.proposals = [
+    { ...f.saved, recoveredFromEarlierNotice: true },
+  ];
   render(view(f.context));
-  expect(await screen.findByText(/Recovered draft: this version retains the earlier notice/)).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Download complete draft Word" })).toBeEnabled();
+  expect(
+    await screen.findByText(
+      /Recovered draft: this version retains the earlier notice/,
+    ),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Download complete draft Word" }),
+  ).toBeEnabled();
   expect(f.context.runCommand).not.toHaveBeenCalled();
 });

@@ -1,0 +1,248 @@
+#!/usr/bin/env python3
+"""Canonically resume one privately selected, never-sent blocked proposal.
+
+The encrypted input selects existing records only. It cannot supply SQL,
+providers, credentials or content. All mutation is one reviewed canonical retry,
+with exact revision and immutable-state checks in the same transaction.
+"""
+from __future__ import annotations
+
+import argparse
+from contextlib import redirect_stderr, redirect_stdout
+import hashlib
+import importlib.util
+import io
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import sys
+import uuid
+
+HERE = Path(__file__).resolve().parent
+
+
+def load(name, filename):
+    spec = importlib.util.spec_from_file_location(name, HERE / filename)
+    value = importlib.util.module_from_spec(spec)
+    sys.modules[name] = value
+    spec.loader.exec_module(value)
+    return value
+
+
+observer = load("requested_processing_resume_observer", "observe-assessment-recovery.py")
+access = observer.access
+transfer = load("requested_processing_resume_transfer", "private-transfer.py")
+release = load("requested_processing_resume_release", "requested-processing-update.py")
+BUCKET = "tenderdesk-migration-a6093a76-sfo3"
+
+
+class ResumeError(Exception):
+    pass
+
+
+def validate_selection(value):
+    keys = {"version", "workspace_id", "opportunity_id", "plan_id", "expected_revision", "kind", "error_code"}
+    if not isinstance(value, dict) or set(value) != keys or type(value["version"]) is not int or value["version"] != 1:
+        raise ResumeError("RESUME_SELECTION_INVALID")
+    for key in ("workspace_id", "opportunity_id", "plan_id"):
+        try:
+            if not isinstance(value[key], str) or str(uuid.UUID(value[key])) != value[key]:
+                raise ValueError()
+        except (ValueError, AttributeError, TypeError):
+            raise ResumeError("RESUME_SELECTION_INVALID") from None
+    if (value["workspace_id"] != access.WORKSPACE or type(value["expected_revision"]) is not int
+            or not 1 <= value["expected_revision"] <= 2147483647 or value["kind"] != "proposal"
+            or value["error_code"] != "DATA_AUTHORIZATION_REQUIRED"):
+        raise ResumeError("RESUME_SELECTION_INVALID")
+    return value
+
+
+def verify_runtime(expected):
+    if not isinstance(expected, str) or not re.fullmatch(r"registry\.digitalocean\.com/tenderdesk-a6093a76/runtime@sha256:[a-f0-9]{64}", expected):
+        raise ResumeError("RESUME_VERIFIED_RUNTIME_REQUIRED")
+    for name in ("api", "worker"):
+        current = release.u.deployment(name)
+        if current["spec"]["template"]["spec"]["containers"][0]["image"] != expected:
+            raise ResumeError("RESUME_RUNTIME_CHANGED")
+
+
+def recovery_sql(selection):
+    validate_selection(selection)
+    encoded = json.dumps(selection, sort_keys=True, separators=(",", ":"))
+    key = "requested-processing-resume-" + hashlib.sha256(encoded.encode()).hexdigest()
+    migration_hash = hashlib.sha256(release.MIGRATION.read_bytes()).hexdigest()
+    # Input has been restricted to UUIDs, bounded integers and fixed constants.
+    literal = "'" + encoded.replace("'", "''") + "'::jsonb"
+    return r"""BEGIN ISOLATION LEVEL SERIALIZABLE;
+SET LOCAL ROLE tdp_app_owner;
+SET LOCAL statement_timeout='60s'; SET LOCAL lock_timeout='10s';
+DO $requested_resume$
+DECLARE selected jsonb:=__SELECTION__; actor uuid; p public.generation_plans;
+ latest uuid; receipt jsonb; result jsonb; immutable_plan jsonb; immutable_jobs jsonb;
+ immutable_steps jsonb; retained jsonb; after_retained jsonb; unrelated jsonb;
+BEGIN
+ BEGIN
+  IF current_database()<>'tenderdesk_app' OR (SELECT count(*) FROM public.workspaces)<>1
+   OR NOT EXISTS(SELECT 1 FROM public.workspaces WHERE id=(selected->>'workspace_id')::uuid)
+  THEN RAISE EXCEPTION 'RESUME_DATABASE_IDENTITY_MISMATCH'; END IF;
+  PERFORM 1 FROM public.workspaces WHERE id=(selected->>'workspace_id')::uuid FOR UPDATE;
+  IF NOT EXISTS(SELECT 1 FROM app_private.application_release_history
+   WHERE release='requested-model-processing-v1' AND migration_sha256='__MIGRATION_HASH__')
+  THEN RAISE EXCEPTION 'RESUME_RELEASE_NOT_VERIFIED'; END IF;
+  IF EXISTS(SELECT 1 FROM public.restore_sessions WHERE workspace_id=(selected->>'workspace_id')::uuid AND state IN ('staging','committing'))
+  THEN RAISE EXCEPTION 'RESUME_RESTORE_IN_PROGRESS'; END IF;
+  SELECT m.user_id INTO STRICT actor FROM public.memberships m JOIN public.identity_allowlist a
+   ON a.workspace_id=m.workspace_id AND a.user_id=m.user_id JOIN auth.users u ON u.id=m.user_id
+   WHERE m.workspace_id=(selected->>'workspace_id')::uuid AND m.active AND m.role='Owner'
+    AND a.status='active' AND a.role='Owner' AND u.email_confirmed_at IS NOT NULL
+    AND nullif(to_jsonb(u)->>'deleted_at','') IS NULL
+    AND coalesce(nullif(to_jsonb(u)->>'banned_until','')::timestamptz,'-infinity')<=now();
+  PERFORM set_config('request.jwt.claim.sub',actor::text,true);
+  IF app_private.member_role((selected->>'workspace_id')::uuid) IS DISTINCT FROM 'Owner'
+  THEN RAISE EXCEPTION 'RESUME_OWNER_REQUIRED'; END IF;
+  SELECT plan.* INTO STRICT p FROM public.generation_plans plan JOIN public.opportunities o
+   ON o.workspace_id=plan.workspace_id AND o.id=plan.opportunity_id
+   WHERE plan.id=(selected->>'plan_id')::uuid AND plan.workspace_id=(selected->>'workspace_id')::uuid
+    AND plan.opportunity_id=(selected->>'opportunity_id')::uuid AND plan.kind='proposal' AND NOT o.archived FOR UPDATE OF plan;
+  SELECT id INTO latest FROM public.generation_plans WHERE workspace_id=p.workspace_id
+   AND opportunity_id=p.opportunity_id AND kind='proposal' ORDER BY created_at DESC,id DESC LIMIT 1;
+  IF latest IS DISTINCT FROM p.id THEN RAISE EXCEPTION 'RESUME_PLAN_NOT_CURRENT'; END IF;
+  IF p.status='completed' THEN receipt:=jsonb_build_object('status','already_completed','count',0);
+  ELSIF p.status IN ('queued','running') THEN receipt:=jsonb_build_object('status','already_active','count',0);
+  ELSE
+   IF p.status<>'blocked' OR p.error_code IS DISTINCT FROM 'DATA_AUTHORIZATION_REQUIRED'
+   THEN RAISE EXCEPTION 'RESUME_DIFFERENT_BLOCKER'; END IF;
+   IF p.revision<>(selected->>'expected_revision')::integer THEN RAISE EXCEPTION 'RESUME_REVISION_CHANGED'; END IF;
+   IF NOT EXISTS(SELECT 1 FROM public.generation_steps WHERE workspace_id=p.workspace_id AND plan_id=p.id AND status='queued')
+   OR EXISTS(SELECT 1 FROM public.generation_steps s LEFT JOIN public.jobs j ON j.workspace_id=s.workspace_id AND j.id=s.job_id
+     WHERE s.workspace_id=p.workspace_id AND s.plan_id=p.id AND s.status='queued'
+      AND (j.id IS NULL OR j.status<>'blocked' OR j.error_code IS DISTINCT FROM 'DATA_AUTHORIZATION_REQUIRED' OR j.cancel_requested
+       OR j.lease_token IS NOT NULL OR j.lease_until IS NOT NULL OR j.input_hash IS DISTINCT FROM p.input_hash))
+   THEN RAISE EXCEPTION 'RESUME_JOB_STATE_CHANGED'; END IF;
+   IF EXISTS(SELECT 1 FROM public.model_attempts a JOIN public.jobs j ON j.id=a.job_id AND j.workspace_id=a.workspace_id
+     WHERE j.entity_id=p.id AND j.workspace_id=p.workspace_id AND a.sent)
+   OR EXISTS(SELECT 1 FROM public.provider_usage u JOIN public.jobs j ON j.id=u.job_id AND j.workspace_id=u.workspace_id
+     WHERE j.entity_id=p.id AND j.workspace_id=p.workspace_id)
+   THEN RAISE EXCEPTION 'RESUME_PROVIDER_ACTIVITY_EXISTS'; END IF;
+   immutable_plan:=to_jsonb(p)-ARRAY['status','error_code','revision','updated_at','evidence_revision'];
+   SELECT coalesce(jsonb_agg(to_jsonb(j)-ARRAY['status','error_code','next_attempt_at','revision','updated_at','cancel_requested'] ORDER BY j.id),'[]')
+    INTO immutable_jobs FROM public.jobs j WHERE j.workspace_id=p.workspace_id AND j.entity_id=p.id;
+   SELECT coalesce(jsonb_agg(to_jsonb(s) ORDER BY s.id),'[]') INTO immutable_steps FROM public.generation_steps s WHERE s.workspace_id=p.workspace_id AND s.plan_id=p.id;
+   SELECT jsonb_build_object(
+    'threads',(SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY t.id),'[]') FROM app_private.model_graph_threads t WHERE t.job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id)),
+    'results',(SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY t.id),'[]') FROM app_private.model_graph_results t WHERE t.thread_id IN (SELECT id FROM app_private.model_graph_threads WHERE job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id))),
+    'budgets',(SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY t.thread_id,t.unit),'[]') FROM app_private.model_graph_budgets t WHERE t.thread_id IN (SELECT id FROM app_private.model_graph_threads WHERE job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id))),
+    'checkpoints',(SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY t.thread_id,t.namespace,t.checkpoint_id),'[]') FROM app_private.model_graph_checkpoints t WHERE t.thread_id IN (SELECT id FROM app_private.model_graph_threads WHERE job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id))),
+    'writes',(SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text),'[]') FROM app_private.model_graph_writes t WHERE t.thread_id IN (SELECT id FROM app_private.model_graph_threads WHERE job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id))),
+    'attempts',(SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.id),'[]') FROM public.model_attempts a WHERE a.job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id)),
+    'usage',(SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.id),'[]') FROM public.provider_usage a WHERE a.job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id))) INTO retained;
+   SELECT jsonb_build_object('jobs',(SELECT coalesce(jsonb_agg(to_jsonb(j) ORDER BY id),'[]') FROM public.jobs j WHERE j.entity_id IS DISTINCT FROM p.id),
+    'plans',(SELECT coalesce(jsonb_agg(to_jsonb(q) ORDER BY id),'[]') FROM public.generation_plans q WHERE q.id<>p.id)) INTO unrelated;
+   result:=app_private.app_command('generation.retry',jsonb_build_object('id',p.id,'expected_revision',p.revision,
+    'reason','Owner requested removal of the separate file-processing approval step; resume the existing requested proposal.'),'__IDEMPOTENCY_KEY__');
+   IF immutable_plan IS DISTINCT FROM (SELECT to_jsonb(q)-ARRAY['status','error_code','revision','updated_at','evidence_revision'] FROM public.generation_plans q WHERE q.id=p.id)
+    OR immutable_jobs IS DISTINCT FROM (SELECT coalesce(jsonb_agg(to_jsonb(j)-ARRAY['status','error_code','next_attempt_at','revision','updated_at','cancel_requested'] ORDER BY j.id),'[]') FROM public.jobs j WHERE j.workspace_id=p.workspace_id AND j.entity_id=p.id)
+    OR immutable_steps IS DISTINCT FROM (SELECT coalesce(jsonb_agg(to_jsonb(s) ORDER BY s.id),'[]') FROM public.generation_steps s WHERE s.workspace_id=p.workspace_id AND s.plan_id=p.id)
+   THEN RAISE EXCEPTION 'RESUME_IMMUTABLE_STATE_CHANGED'; END IF;
+   SELECT jsonb_build_object(
+    'threads',(SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY t.id),'[]') FROM app_private.model_graph_threads t WHERE t.job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id)),
+    'results',(SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY t.id),'[]') FROM app_private.model_graph_results t WHERE t.thread_id IN (SELECT id FROM app_private.model_graph_threads WHERE job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id))),
+    'budgets',(SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY t.thread_id,t.unit),'[]') FROM app_private.model_graph_budgets t WHERE t.thread_id IN (SELECT id FROM app_private.model_graph_threads WHERE job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id))),
+    'checkpoints',(SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY t.thread_id,t.namespace,t.checkpoint_id),'[]') FROM app_private.model_graph_checkpoints t WHERE t.thread_id IN (SELECT id FROM app_private.model_graph_threads WHERE job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id))),
+    'writes',(SELECT coalesce(jsonb_agg(to_jsonb(t) ORDER BY to_jsonb(t)::text),'[]') FROM app_private.model_graph_writes t WHERE t.thread_id IN (SELECT id FROM app_private.model_graph_threads WHERE job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id))),
+    'attempts',(SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.id),'[]') FROM public.model_attempts a WHERE a.job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id)),
+    'usage',(SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY a.id),'[]') FROM public.provider_usage a WHERE a.job_id IN (SELECT id FROM public.jobs WHERE entity_id=p.id AND workspace_id=p.workspace_id))) INTO after_retained;
+   IF retained IS DISTINCT FROM after_retained OR unrelated IS DISTINCT FROM
+    (SELECT jsonb_build_object('jobs',(SELECT coalesce(jsonb_agg(to_jsonb(j) ORDER BY id),'[]') FROM public.jobs j WHERE j.entity_id IS DISTINCT FROM p.id),
+     'plans',(SELECT coalesce(jsonb_agg(to_jsonb(q) ORDER BY id),'[]') FROM public.generation_plans q WHERE q.id<>p.id)))
+   THEN RAISE EXCEPTION 'RESUME_RETAINED_STATE_CHANGED'; END IF;
+   IF NOT EXISTS(SELECT 1 FROM public.generation_plans q JOIN public.workspaces w ON w.id=q.workspace_id
+     WHERE q.id=p.id AND q.status='queued' AND q.error_code IS NULL AND q.evidence_revision=w.evidence_revision)
+    OR EXISTS(SELECT 1 FROM public.generation_steps s JOIN public.jobs j ON j.id=s.job_id AND j.workspace_id=s.workspace_id
+     WHERE s.plan_id=p.id AND s.status='queued' AND (j.status<>'queued' OR j.error_code IS NOT NULL OR j.cancel_requested OR j.next_attempt_at>now()))
+    OR NOT EXISTS(SELECT 1 FROM app_private.generation_processing_requests WHERE plan_id=p.id AND requested_by=actor AND operation='generation.retry' AND idempotency_key='__IDEMPOTENCY_KEY__')
+   THEN RAISE EXCEPTION 'RESUME_CANONICAL_RETRY_NOT_CONFIRMED'; END IF;
+   receipt:=jsonb_build_object('status','resumed','count',1,'immutable_state_preserved',true);
+  END IF;
+  receipt:=receipt||jsonb_build_object('observed_at',now(),'workspace_id',p.workspace_id,'opportunity_id',p.opportunity_id,'plan_id',p.id,
+   'plan',(SELECT jsonb_build_object('status',q.status,'error_code',q.error_code,'revision',q.revision) FROM public.generation_plans q WHERE q.id=p.id));
+ EXCEPTION WHEN OTHERS THEN
+  receipt:=jsonb_build_object('status','refused','count',0,'code',CASE WHEN SQLERRM IN (
+   'RESUME_DATABASE_IDENTITY_MISMATCH','RESUME_RELEASE_NOT_VERIFIED','RESUME_RESTORE_IN_PROGRESS','RESUME_OWNER_REQUIRED',
+   'RESUME_PLAN_NOT_CURRENT','RESUME_DIFFERENT_BLOCKER','RESUME_REVISION_CHANGED','RESUME_JOB_STATE_CHANGED','RESUME_PROVIDER_ACTIVITY_EXISTS',
+   'RESUME_IMMUTABLE_STATE_CHANGED','RESUME_RETAINED_STATE_CHANGED','RESUME_CANONICAL_RETRY_NOT_CONFIRMED',
+   'STALE_INPUT','USAGE_REVIEW_REQUIRED','GENERATION_BUSY','REVISION_CONFLICT','ROLE_FORBIDDEN') THEN SQLERRM ELSE 'RESUME_CANONICAL_COMMAND_FAILED' END);
+ END;
+ PERFORM set_config('tenderdesk.requested_processing_receipt',receipt::text,true);
+END $requested_resume$;
+SELECT current_setting('tenderdesk.requested_processing_receipt'); COMMIT;
+""".replace("__SELECTION__", literal).replace("__IDEMPOTENCY_KEY__", key).replace("__MIGRATION_HASH__", migration_hash)
+
+
+def public_receipt(receipt):
+    if not isinstance(receipt, dict) or receipt.get("status") not in {"resumed", "already_active", "already_completed", "refused"}:
+        raise ResumeError("RESUME_RECEIPT_INVALID")
+    expected = 1 if receipt["status"] == "resumed" else 0
+    if type(receipt.get("count")) is not int or receipt["count"] != expected:
+        raise ResumeError("RESUME_RECEIPT_INVALID")
+    return {"requested_processing_resume": receipt["status"], "count": receipt["count"]}
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--selection-object", required=True)
+    parser.add_argument("--selection-sha256", required=True)
+    parser.add_argument("--expected-runtime-image", required=True)
+    args = parser.parse_args(argv)
+    directory = client = None
+    code = None
+    receipt = None
+    try:
+        if not re.fullmatch(r"requests/[A-Za-z0-9][A-Za-z0-9._/-]{0,160}\.bundle", args.selection_object) or not re.fullmatch(r"[a-f0-9]{64}", args.selection_sha256):
+            raise ResumeError("RESUME_SELECTION_REFERENCE_INVALID")
+        transfer.identity(BUCKET, args.selection_object)
+        os.umask(0o077)
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            directory = access.prepare_cluster()
+            verify_runtime(args.expected_runtime_image)
+            path = directory / "selection.json"
+            transfer.download(os.environ["DIGITALOCEAN_ACCESS_TOKEN"], BUCKET, args.selection_object, path, args.selection_sha256)
+            raw = transfer.read_private(path)
+            if len(raw) > 8192:
+                raise ResumeError("RESUME_SELECTION_INVALID")
+            selection = validate_selection(json.loads(raw))
+            client = observer.Client(120)
+            client.labels["app.kubernetes.io/managed-by"] = "tenderdesk-requested-processing-resume"
+            client.prepare()
+            receipt = json.loads(access.d.sql(client.pod, recovery_sql(selection)))
+            public_receipt(receipt)
+            output = directory / "receipt.json"
+            transfer.write_private(output, json.dumps(receipt, ensure_ascii=False).encode())
+            transfer.upload(os.environ["DIGITALOCEAN_ACCESS_TOKEN"], BUCKET,
+                            "diagnostics/requested-processing-resume-" + os.environ["GITHUB_RUN_ID"] + ".bundle", output)
+    except Exception as error:
+        code = str(error) if isinstance(error, (ResumeError, observer.ObserverError, access.TransferError,
+            access.d.DeployError, access.d.probe.ProbeError, transfer.TransferError)) and re.fullmatch(r"[A-Z0-9_]{1,100}", str(error)) else "RESUME_REQUESTED_PROCESSING_FAILED"
+    finally:
+        try:
+            with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                if client is not None:
+                    client.cleanup()
+        except Exception:
+            code = "RESUME_CLIENT_CLEANUP_NOT_CONFIRMED"
+        try:
+            if directory is not None:
+                shutil.rmtree(directory)
+        except Exception:
+            code = "RESUME_RUNNER_CLEANUP_NOT_CONFIRMED"
+    if code is not None:
+        print(json.dumps({"requested_processing_resume": "failed", "code": code}), flush=True)
+        return 1
+    print(json.dumps(public_receipt(receipt)), flush=True)
+    return 1 if receipt["status"] == "refused" else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

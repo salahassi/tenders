@@ -484,10 +484,10 @@ function ProposalReviewPage({
       />
       {proposal.recoveredFromEarlierNotice && (
         <p role="status" className="admin-muted-surface">
-          Recovered draft: this version retains the earlier notice and your saved
-          writing and reviews. The notice has since changed. You can download and
-          review this draft; compare the current opportunity details and
-          regenerate an updated version before final approval.
+          Recovered draft: this version retains the earlier notice and your
+          saved writing and reviews. The notice has since changed. You can
+          download and review this draft; compare the current opportunity
+          details and regenerate an updated version before final approval.
         </p>
       )}
       <section
@@ -958,8 +958,8 @@ function ProposalReviewPage({
         </p>
         <p>
           The agent uses the confirmed RFP and saved review inputs to prepare a
-          new version. Missing model configuration, data authorization or quota
-          appears as a blocker in processing progress.
+          new version. Follow progress on the linked opportunity. If processing
+          stops, its reason and recovery action appear there.
         </p>
         <div className="modal-footer">
           <Button variant="primary" onClick={() => setRegenerateOpen(false)}>

@@ -11,6 +11,7 @@ import Settings from "../pages/Settings";
 import Sources from "../pages/Sources";
 import SourceDetail from "../pages/SourceDetail";
 import Dashboard from "../pages/Dashboard";
+import ToastNotification from "../components/ToastNotification";
 import type { Session } from "@supabase/supabase-js";
 vi.mock("idb-keyval", () => ({
   get: vi.fn(() => {
@@ -1194,4 +1195,90 @@ it("separates settings sections and retains unsaved workspace input while naviga
   );
   expect(f.commands).toHaveLength(0);
   expect(screen.queryByText("Free only")).not.toBeInTheDocument();
+});
+
+it("keeps automatic sharing settings without a separate individual file-permission workflow", async () => {
+  const f = fixture();
+  render(
+    <MemoryRouter initialEntries={["/settings?section=data"]}>
+      <ConnectedProvider client={f.client}>
+        <Settings />
+      </ConnectedProvider>
+    </MemoryRouter>,
+  );
+  expect(
+    await screen.findByRole("heading", { name: "Assessment & data sharing" }),
+  ).toBeVisible();
+  expect(
+    screen.getByLabelText("Automatically assess public collector notices"),
+  ).toBeVisible();
+  expect(
+    screen.getByLabelText("Include Company Knowledge in model processing"),
+  ).toBeVisible();
+  expect(
+    screen.queryByText("Individual content permissions"),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByText("Review individual documents and notices"),
+  ).not.toBeInTheDocument();
+  expect(
+    f.request.mock.calls.some(([path]) => path === "/v1/eligibility"),
+  ).toBe(false);
+});
+
+it("shows processing failures as error notifications and preserves default success notifications", async () => {
+  const f = fixture();
+  function NotificationProbe() {
+    const { notify, toast, toastSeverity, clearToast } = useApp();
+    return (
+      <>
+        <button
+          onClick={() =>
+            notify("Processing stopped. Resume the saved work.", "error")
+          }
+        >
+          Report processing failure
+        </button>
+        <button onClick={() => notify("Workspace preferences saved.")}>
+          Report saved preferences
+        </button>
+        {toast && (
+          <ToastNotification
+            message={toast}
+            severity={toastSeverity}
+            onDismiss={clearToast}
+          />
+        )}
+      </>
+    );
+  }
+  render(
+    <ConnectedProvider client={f.client}>
+      <NotificationProbe />
+    </ConnectedProvider>,
+  );
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Report processing failure" }),
+  );
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Processing stopped. Resume the saved work.",
+  );
+  expect(screen.getByRole("alert")).toHaveClass("toast-error");
+  expect(screen.getByRole("img", { name: "Error" })).toBeVisible();
+  expect(
+    screen.queryByRole("img", { name: "Success" }),
+  ).not.toBeInTheDocument();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Report saved preferences" }),
+  );
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "Workspace preferences saved.",
+  );
+  expect(screen.getByRole("status")).not.toHaveClass("toast-error");
+  expect(screen.getByRole("img", { name: "Success" })).toBeVisible();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Dismiss notification" }),
+  );
+  expect(screen.queryByRole("status")).not.toBeInTheDocument();
 });
