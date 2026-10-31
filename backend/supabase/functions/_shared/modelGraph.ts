@@ -5,6 +5,7 @@ import type { Backend, BackendEnvironment } from "./backend.ts";
 import {
   executeModel,
   classificationScopePolicy,
+  draftInputPolicyVersion,
   ModelDeferred,
   ModelError,
   ModelCandidateRepair,
@@ -1137,6 +1138,7 @@ async function runGuardedModel(o: Options): Promise<{
       validateModelResult(o.task, result, o.evidence, o.requiredIds, {
         independentGrounding: true,
         scopePolicy: classificationScopePolicy(o.task, o.context),
+        draftInputVersion: draftInputPolicyVersion(o.task, o.context),
       });
       if (o.task !== "connection_probe") {
         const report = state.reportRef

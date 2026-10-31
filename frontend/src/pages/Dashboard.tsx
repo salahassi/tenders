@@ -25,9 +25,7 @@ import OpportunityTable from "../components/OpportunityTable";
 export default function Dashboard() {
   const { state, mode, operations } = useApp();
   const showHealth = useOverviewHealthVisible();
-  const inbox = state.opportunities.filter(
-    inReviewInbox,
-  );
+  const inbox = state.opportunities.filter(inReviewInbox);
   const selected = state.opportunities.filter((o) =>
     ["shortlisted", "in_progress", "submitted"].includes(o.status),
   );
@@ -50,7 +48,7 @@ export default function Dashboard() {
       <PageHeader
         eyebrow="YOUR WORKSPACE, AT A GLANCE"
         title="From opportunity to proposal."
-        description="Review incoming opportunities, upload an RFP, and prepare your proposal file."
+        description="Review incoming opportunities, attach reference files, and prepare your proposal draft."
         actions={
           <>
             {!showHealth && (
@@ -87,7 +85,7 @@ export default function Dashboard() {
           </h2>
           <p>
             Approve the ones you want to pursue. They will move into
-            Opportunities, ready for an RFP.
+            Opportunities, ready for your reference files.
           </p>
         </div>
         <Link to="/review" className="btn btn-light">
@@ -146,7 +144,7 @@ export default function Dashboard() {
             ) : (
               <EmptyState
                 title="Choose an opportunity to begin"
-                description="Approve an item in the Review inbox, then upload its RFP."
+                description="Choose an item in the Review inbox, then attach the reference files you have."
                 action={
                   <Link className="btn btn-primary" to="/review">
                     Open review inbox
@@ -170,10 +168,10 @@ export default function Dashboard() {
                 </p>
               </li>
               <li>
-                <strong>Upload the RFP</strong>
+                <strong>Attach reference files</strong>
                 <p>
-                  Add the tender document and choose the company reference files
-                  to use.
+                  Add the documents you have. They can support a draft even when
+                  they are not an RFP or do not match the opportunity.
                 </p>
               </li>
               <li>

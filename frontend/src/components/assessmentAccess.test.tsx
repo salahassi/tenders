@@ -65,7 +65,7 @@ it("lets the Owner assess a discovery before shortlisting or uploading an RFP", 
     expected_revision: 4,
   });
   expect(
-    screen.queryByRole("button", { name: "Generate complete proposal" }),
+    screen.queryByRole("button", { name: "Generate proposal draft" }),
   ).not.toBeInTheDocument();
 });
 it("exposes saved assessment recovery without issuing a duplicate assessment", async () => {

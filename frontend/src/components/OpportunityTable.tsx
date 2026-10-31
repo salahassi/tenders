@@ -37,7 +37,7 @@ export default function OpportunityTable({
         <thead>
           <tr>
             <th scope="col">Opportunity</th>
-            <th scope="col">RFP files</th>
+            <th scope="col">Reference files</th>
             <th scope="col">Closing date</th>
             <th scope="col">Stage</th>
             <th scope="col">
@@ -72,7 +72,7 @@ export default function OpportunityTable({
               <td>
                 {o.documents.length
                   ? `${o.documents.length} attached`
-                  : "Upload RFP to start"}
+                  : "Attach a reference file"}
               </td>
               <td>
                 <div className="deadline-cell">

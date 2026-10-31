@@ -905,9 +905,7 @@ function ProposalReviewPage({
           </Button>
           <Button
             variant="primary"
-            disabled={
-              !canEdit || !canRegenerate || uploading || !readableRfp || stale
-            }
+            disabled={!canEdit || !canRegenerate || uploading || stale}
             onClick={async () => {
               if (!(await saveReview(true))) return;
               setRegenerateOpen(true);
@@ -918,11 +916,13 @@ function ProposalReviewPage({
         </div>
         {!readableRfp && (
           <p className="review-missing-rfp">
-            Upload a readable RFP in the{" "}
+            Regeneration can continue using the current proposal, readable
+            references and saved review inputs. Unread files remain limitations.
+            You can manage reference files in the{" "}
             <Link to={`/opportunities/${opportunity.id}`}>
               linked opportunity
             </Link>{" "}
-            before requesting regeneration.
+            at any time.
           </p>
         )}
         <p className="review-action-help">
@@ -957,8 +957,9 @@ function ProposalReviewPage({
             : "Your answers, section comments, and attachments have been saved together in this browser. No AI request has been sent and no new file or version has been created."}
         </p>
         <p>
-          The agent uses the confirmed RFP and saved review inputs to prepare a
-          new version. Follow progress on the linked opportunity. If processing
+          The agent uses available reference text and saved review inputs to
+          prepare a new version. Missing or conflicting information is flagged
+          for review. Follow progress on the linked opportunity. If processing
           stops, its reason and recovery action appear there.
         </p>
         <div className="modal-footer">

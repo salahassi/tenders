@@ -1,5 +1,39 @@
 # Implementation status and continuation plan
 
+## October 31 — draft from arbitrary reference inputs
+
+The Owner requires uploaded material to permit proposal draft creation even
+when it is not an RFP, is unrelated, incomplete or unreadable. The draft path
+will accept saved reference originals without requiring all extractions to be
+ready or confirmed. It uses only actual readable text and notice evidence,
+records omitted/unchecked material and preserves explicit missing-information
+questions. Empty requirement inventories must still reach planning, writing
+and draft download with real source references rather than synthetic facts.
+
+Implementation and independent review passed. New-work semantics are versioned
+so existing paid work remains immutable. Draft intake and final approval are
+separate: source completeness and unresolved omissions remain reviewable before
+final approval, while draft creation/download continue. At least one saved
+attachment remains required; its document type, readability and confirmation
+are not drafting prerequisites.
+
+Both package typechecks/builds passed. Frontend verification passed 251 tests.
+Backend full verification passed 1,538 tests; a subsequent narrow notice-segment
+fix passed the final 12-test runtime matrix and typecheck/build. Exact release
+CI must include the additional regression (expected total 1,539). The runtime
+matrix exercises real durable graph progression and draft Word export for
+non-RFP and all-unread inputs in both current legacy and hierarchical workflows,
+zero inventories, real notice citations and mixed unread addenda. Twelve SQL
+tests cover intake, scope, currentness, final approval and draft export. All
+160 operations tests and 13 renderer tests passed against final migration
+SHA-256 `5bac8ff0a8e070688873b2e6c020a3c7ddb51c7dc8e0ad8005735e4e653ccf6c`.
+
+The release installs the backward-compatible runtime first and waits for old
+processes to drain before enabling new SQL inputs and publishing the frontend.
+After any schema attempt it retains the compatible runtime if frontend rollback
+is needed. Deployment and hosted acceptance remain pending. No live paid
+generation or completed proposal is claimed by this entry.
+
 ## October 31 — remove separate permission review for requested processing
 
 The Owner explicitly removes the hidden per-document/per-provider model

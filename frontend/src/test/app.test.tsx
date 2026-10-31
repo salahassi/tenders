@@ -554,7 +554,7 @@ describe("UI journeys with a test-only workspace", () => {
     ).toBeInTheDocument();
   });
 
-  it("requires an RFP and never substitutes a manual or sample proposal for disconnected generation", async () => {
+  it("accepts a reference file and never substitutes a manual or sample proposal for disconnected generation", async () => {
     const seed = createSeedState();
     const opportunity = seed.opportunities.find((item) => item.id === "opp-2")!;
     opportunity.deadline = "";
@@ -564,7 +564,7 @@ describe("UI journeys with a test-only workspace", () => {
     await set(STORAGE_KEY, seed);
     const user = userEvent.setup();
     mount("/opportunities/opp-2");
-    const input = await screen.findByLabelText(/^Upload RFP files/);
+    const input = await screen.findByLabelText(/^Upload reference files/);
     expect(
       screen.getByRole("button", { name: "Generate proposal" }),
     ).toBeDisabled();
@@ -619,7 +619,7 @@ describe("UI journeys with a test-only workspace", () => {
     ).toBe("shortlisted");
   });
 
-  it("does not create a draft while any supplied RFP needs readable text", async () => {
+  it("allows the draft request when a saved reference file has no readable text without simulating a disconnected result", async () => {
     const seed = createSeedState();
     const opportunity = seed.opportunities.find((item) => item.id === "opp-2")!;
     opportunity.documents = [
@@ -648,7 +648,7 @@ describe("UI journeys with a test-only workspace", () => {
     mount("/opportunities/opp-2");
     expect(
       await screen.findByRole("button", { name: "Generate proposal" }),
-    ).toBeDisabled();
+    ).toBeEnabled();
     expect(
       screen.queryByRole("button", { name: "Start writing from this RFP" }),
     ).not.toBeInTheDocument();
@@ -725,12 +725,23 @@ describe("UI journeys with a test-only workspace", () => {
     ).toHaveValue(arabicAnswer);
   });
 
-  it("saves a regeneration request as pending without applying inputs or creating a new version", async () => {
+  it("saves a regeneration request despite unread source files without applying inputs or creating a new version", async () => {
     const seed = createSeedState();
     const proposal = seed.proposals.find((item) => item.id === "prop-2")!;
+    const opportunity = seed.opportunities.find(
+      (item) => item.id === proposal.opportunityId,
+    )!;
+    opportunity.documents[0].status = "needs_ocr";
+    opportunity.documents[0].text = "";
     await set(STORAGE_KEY, seed);
     const user = userEvent.setup();
     mount(`/proposals/${proposal.id}`);
+    expect(
+      await screen.findByRole("button", { name: "Regenerate proposal" }),
+    ).toBeEnabled();
+    expect(
+      screen.getByText(/Regeneration can continue using the current proposal/),
+    ).toBeInTheDocument();
     const request = await reveal(
       await screen.findByLabelText("Additional comments", {
         exact: true,
