@@ -52,6 +52,15 @@ The resume-only workflow uses the already verified runtime and migration;
 live affected-work recovery remains pending. Application PR [#15](https://github.com/salahassi/tenders/pull/15)
 merged as `79b0e0efe9d6d95fac721ab31787d0bba08b9670`.
 
+The subsequent canonical whole-plan retry reached its legacy workspace usage
+guard and refused `USAGE_REVIEW_REQUIRED` for unrelated prior model usage. The
+selected proposal still has no sent attempts or usage. Its recovery now uses
+the existing canonical per-job retry for exactly its blocked current-stage
+tasks in one transaction, retaining that command's same-job usage checks and
+normal provider reservation controls. Expanded fixtures cover all twelve
+selected tasks, unrelated unknown usage remaining identical, same-target usage
+rejection, exact idempotency receipts and rollback of accounting mutations.
+
 ## October 29 — approved model execution and Needs attention recovery
 
 The Owner explicitly approves enabling the saved model route, sending a real sample assessment within existing data permissions, and recovering the remaining assessments after success. The Owner additionally requests reviewing and restarting items under Needs attention after that sample succeeds. [Execution 40865017755](https://github.com/salahassi/tenders/actions/runs/40865017755) enabled the saved route and created exactly one fresh assessment at 11:23:40 UTC, with 17 other current missing-configuration plans remaining. Existing attempts and usage history remain intact. Sample completion verification is running before batch recovery.

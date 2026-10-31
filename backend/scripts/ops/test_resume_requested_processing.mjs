@@ -21,6 +21,10 @@ const owner='00000000-0000-4000-8000-000000000001',job='00000000-0000-4000-8000-
 await db.query("insert into auth.users values($1,'fixture@example.test',now())",[owner]);
 await db.query("insert into auth.identities values($1,'email',$2::jsonb)",[owner,JSON.stringify({sub:owner})]);
 const workspace=(await db.query("select public.bootstrap_workspace($1,'Synthetic guarded resume') id",[owner])).rows[0].id;
+await db.query(`insert into public.model_execution_settings(workspace_id,enabled,created_by) values($1,true,$2)
+ on conflict(workspace_id) do update set enabled=true`,[workspace,owner]);
+await db.query(`insert into public.model_routing(workspace_id,enabled,created_by) values($1,false,$2)
+ on conflict(workspace_id) do update set enabled=false`,[workspace,owner]);
 const source=(await db.query("insert into public.sources(workspace_id,name,kind,created_by) values($1,'Synthetic manual source','manual',$2) returning id",[workspace,owner])).rows[0].id;
 await db.query("insert into public.opportunities(id,workspace_id,source_id,title,created_by) values($1,$2,$3,'Synthetic requested proposal',$4)",[selection.opportunity_id,workspace,source,owner]);
 const proposal=(await db.query("insert into public.proposals(workspace_id,opportunity_id,title,created_by) values($1,$2,'Synthetic retained proposal',$3) returning id",[workspace,selection.opportunity_id,owner])).rows[0].id;
@@ -30,6 +34,21 @@ await db.query(`insert into public.jobs(id,workspace_id,type,entity_id,status,in
  values($1,$2,'analyze_chunk',$3,'blocked',repeat('a',64),'DATA_AUTHORIZATION_REQUIRED',2,'{"saved_checkpoint":true}',$4)`,[job,workspace,selection.plan_id,owner]);
 await db.query(`insert into public.generation_steps(workspace_id,plan_id,job_id,task,stage,ordinal,input,created_by)
  values($1,$2,$3,'analyze_chunk','analysis',1,'{"block_id":"retained-block","start":0,"end":5}',$4)`,[workspace,selection.plan_id,job,owner]);
+const targetJobs=[job];
+for(let index=1;index<12;index++){
+ const sibling=`00000000-0000-4000-8000-${String(200+index).padStart(12,'0')}`;targetJobs.push(sibling);
+ await db.query(`insert into public.jobs(id,workspace_id,type,entity_id,status,input_hash,error_code,attempts,checkpoint,created_by)
+  values($1,$2,'analyze_chunk',$3,'blocked',repeat('a',64),'DATA_AUTHORIZATION_REQUIRED',$4,$5,$6)`,
+  [sibling,workspace,selection.plan_id,index+2,JSON.stringify({saved_checkpoint:true,block:index}),owner]);
+ await db.query(`insert into public.generation_steps(workspace_id,plan_id,job_id,task,stage,ordinal,input,created_by)
+  values($1,$2,$3,'analyze_chunk','analysis',$4,$5,$6)`,[workspace,selection.plan_id,sibling,index+1,JSON.stringify({block_id:'retained-block-'+index,start:0,end:5}),owner]);
+}
+const unrelatedJob='00000000-0000-4000-8000-000000000500';
+await db.query(`insert into public.jobs(id,workspace_id,type,entity_id,status,input_hash,error_code,attempts,created_by)
+ values($1,$2,'source_collect',$3,'blocked',repeat('e',64),'SOURCE_TIMEOUT',4,$4)`,[unrelatedJob,workspace,source,owner]);
+const unknownUsage=(await db.query(`insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,
+ application_day,settings_revision,reserved_input,reserved_output,state,created_by)
+ values($1,$2,gen_random_uuid(),'synthetic-unrelated-unknown','qwen_free','synthetic-model',repeat('e',64),current_date,1,100,100,'unknown',$3) returning to_jsonb(provider_usage) value`,[workspace,unrelatedJob,owner])).rows[0].value;
 await db.query(`insert into app_private.model_graph_threads(id,workspace_id,job_id,input_hash,task) values(repeat('b',64),$1,$2,repeat('c',64),'analyze_chunk')`,[workspace,job]);
 await db.query(`insert into app_private.model_graph_budgets(workspace_id,thread_id,unit,candidates) values($1,repeat('b',64),'writer',0)`,[workspace]);
 await db.query(`insert into app_private.model_graph_results(workspace_id,thread_id,result_key,value,content_hash) values($1,repeat('b',64),'semantic-instructions-fixture','{"saved":true}',repeat('d',64))`,[workspace]);
@@ -54,6 +73,14 @@ const execute=async name=>{
  const receipt=results.flatMap(x=>x.rows||[]).find(x=>x.current_setting);
  assert.ok(receipt,'private receipt required');return JSON.parse(receipt.current_setting);
 };
+await db.exec('begin;set local role tdp_app_owner;');
+await db.query("select set_config('request.jwt.claim.sub',$1,true)",[owner]);
+let wholePlanRejected=false;
+try{
+ await db.query("select app_private.app_command('generation.retry',$1::jsonb,'synthetic-whole-plan-proof')",[JSON.stringify({id:selection.plan_id,expected_revision:1,reason:'Synthetic existing-plan retry guard proof.'})]);
+}catch(error){wholePlanRejected=error.message==='USAGE_REVIEW_REQUIRED';}
+await db.exec('rollback');
+assert.equal(wholePlanRejected,true,'fixture must reproduce whole-plan legacy accounting guard while task routing is enabled');
 const beforeJobs=(await db.query('select to_jsonb(j) value from public.jobs j where id=$1',[job])).rows[0].value;
 let result=await execute('changed');assert.equal(result.status,'refused');assert.equal(result.code,'RESUME_REVISION_CHANGED');
 assert.deepEqual((await db.query('select to_jsonb(j) value from public.jobs j where id=$1',[job])).rows[0].value,beforeJobs);
@@ -87,14 +114,30 @@ await db.query(`insert into public.model_attempts(workspace_id,job_id,lease_toke
  values($1,$2,gen_random_uuid(),'qwen_free','analyze_chunk',1,1,'failed',true)`,[workspace,job]);
 result=await execute('valid');assert.equal(result.status,'refused');assert.equal(result.code,'RESUME_PROVIDER_ACTIVITY_EXISTS');
 await db.query('delete from public.model_attempts where job_id=$1',[job]);
+for(const state of ['unknown','reserved']){
+ const targetUsage=(await db.query(`insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,
+  application_day,settings_revision,reserved_input,reserved_output,state,created_by)
+  values($1,$2,gen_random_uuid(),$3,'qwen_free','synthetic-model',repeat('a',64),current_date,1,100,100,$4,$5) returning id`,[workspace,job,'synthetic-target-'+state,state,owner])).rows[0].id;
+ result=await execute('valid');assert.equal(result.status,'refused');assert.equal(result.code,'RESUME_PROVIDER_ACTIVITY_EXISTS');
+ await db.query('delete from public.provider_usage where id=$1',[targetUsage]);
+}
 await db.exec(`alter function app_private.app_command(text,jsonb,text) rename to fixture_previous_command;
  create function app_private.app_command(operation text,input jsonb,idempotency_key text) returns jsonb language plpgsql security definer set search_path='' as $$
  declare result jsonb;begin result:=app_private.fixture_previous_command(operation,input,idempotency_key);
- update public.jobs set attempts=0 where entity_id=(input->>'id')::uuid;return result;end $$;
+ update public.jobs set attempts=0 where id=(input->>'id')::uuid;return result;end $$;
  alter function app_private.app_command(text,jsonb,text) owner to tdp_app_owner;`);
 result=await execute('valid');assert.equal(result.status,'refused');assert.equal(result.code,'RESUME_IMMUTABLE_STATE_CHANGED');
 assert.equal((await db.query('select attempts,status from public.jobs where id=$1',[job])).rows[0].attempts,2);
 assert.equal((await db.query('select count(*)::int n from app_private.generation_processing_requests')).rows[0].n,0,'canonical request must roll back with counter mutation');
+await db.exec('drop function app_private.app_command(text,jsonb,text);alter function app_private.fixture_previous_command(text,jsonb,text) rename to app_command;');
+await db.exec(`alter function app_private.app_command(text,jsonb,text) rename to fixture_previous_command;
+ create function app_private.app_command(operation text,input jsonb,idempotency_key text) returns jsonb language plpgsql security definer set search_path='' as $$
+ declare result jsonb;begin result:=app_private.fixture_previous_command(operation,input,idempotency_key);
+ update public.provider_usage set state='settled' where call_key='synthetic-unrelated-unknown';return result;end $$;
+ alter function app_private.app_command(text,jsonb,text) owner to tdp_app_owner;`);
+result=await execute('valid');assert.equal(result.status,'refused');assert.equal(result.code,'RESUME_RETAINED_STATE_CHANGED');
+assert.deepEqual((await db.query('select to_jsonb(u) value from public.provider_usage u where id=$1',[unknownUsage.id])).rows[0].value,unknownUsage,'unexpected accounting edits must roll back with every queued job');
+assert.equal((await db.query('select count(*)::int n from app_private.generation_processing_requests')).rows[0].n,0);
 await db.exec('drop function app_private.app_command(text,jsonb,text);alter function app_private.fixture_previous_command(text,jsonb,text) rename to app_command;');
 await db.exec(`alter function app_private.app_command(text,jsonb,text) rename to fixture_previous_command;
  create function app_private.app_command(operation text,input jsonb,idempotency_key text) returns jsonb language plpgsql security definer set search_path='' as $$
@@ -109,12 +152,21 @@ await db.exec('drop function app_private.app_command(text,jsonb,text);alter func
 result=await execute('diagnose');assert.equal(result.status,'checked');assert.equal(result.count,0);assert.equal(result.mutation_rolled_back,true);assert.equal(result.would_resume,true);
 assert.equal((await db.query('select status from public.jobs where id=$1',[job])).rows[0].status,'blocked');
 assert.equal((await db.query('select count(*)::int n from app_private.generation_processing_requests')).rows[0].n,0,'diagnostic must roll back canonical authorization');
-assert.equal((await db.query("select count(*)::int n from public.audit_events where action='generation.retry'")).rows[0].n,0,'diagnostic must roll back canonical audit');
-result=await execute('valid');assert.equal(result.status,'resumed');assert.equal(result.count,1);assert.equal(result.immutable_state_preserved,true);
+assert.equal((await db.query("select count(*)::int n from public.audit_events where action='job.action'")).rows[0].n,0,'diagnostic must roll back canonical audit');
+assert.equal(result.would_resume_jobs,12);
+result=await execute('valid');assert.equal(result.status,'resumed');assert.equal(result.count,1);assert.equal(result.immutable_state_preserved,true);assert.equal(result.resumed_jobs,12);
 const after=(await db.query('select attempts,checkpoint,status from public.jobs where id=$1',[job])).rows[0];
 assert.equal(after.attempts,2);assert.deepEqual(after.checkpoint,{saved_checkpoint:true});assert.equal(after.status,'queued');
 assert.equal((await db.query('select candidates from app_private.model_graph_budgets')).rows[0].candidates,0);
-assert.equal((await db.query('select count(*)::int n from public.provider_usage')).rows[0].n,0);
+assert.equal((await db.query('select count(*)::int n from public.provider_usage')).rows[0].n,1);
+assert.deepEqual((await db.query('select to_jsonb(u) value from public.provider_usage u where id=$1',[unknownUsage.id])).rows[0].value,unknownUsage,'unrelated unknown accounting must remain byte-for-byte unchanged');
 assert.equal((await db.query('select count(*)::int n from public.model_attempts')).rows[0].n,0);
+const allResumed=(await db.query('select id,status,attempts,revision from public.jobs where id=any($1::uuid[]) order by id',[targetJobs])).rows;
+assert.equal(allResumed.length,12);assert.ok(allResumed.every(x=>x.status==='queued'&&x.revision===2));
+assert.deepEqual(allResumed.map(x=>x.attempts),Array.from({length:12},(_,i)=>i+2));
+assert.equal((await db.query("select count(*)::int n from public.audit_events where action='job.action'")).rows[0].n,12);
+assert.equal((await db.query("select count(*)::int n from app_private.idempotency_records where route='job.action'")).rows[0].n,12);
+assert.equal((await db.query('select operation from app_private.generation_processing_requests where plan_id=$1',[selection.plan_id])).rows[0].operation,'job.action');
 result=await execute('valid');assert.equal(result.status,'already_active');assert.equal(result.count,0);
+assert.equal((await db.query("select count(*)::int n from public.audit_events where action='job.action'")).rows[0].n,12,'replay must not restart the twelve jobs');
 await db.close();console.log('guarded canonical requested-processing resume passed');
