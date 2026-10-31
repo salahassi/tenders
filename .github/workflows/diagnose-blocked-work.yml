@@ -1,0 +1,45 @@
+name: Privately inspect blocked TenderDesk work
+
+on:
+  push:
+    branches: [codex/diagnose-blocked-work]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tenderdesk-blocked-work-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned private-transfer dependency
+        run: python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+      - name: Export read-only metadata into the existing private encrypted Space
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/diagnose-blocked-work.py
+      - name: Remove all runner credentials and plaintext diagnostics
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil,sys
+          try:
+              run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+              if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):
+                  raise ValueError()
+              directory=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+run+'-'+attempt)
+              if directory.exists():
+                  shutil.rmtree(directory)
+          except Exception:
+              print('{"blocked_work_diagnostic":"failed","code":"RUNNER_CLEANUP_NOT_CONFIRMED"}')
+              sys.exit(1)
+          print('{"blocked_work_diagnostic":"runner_files_removed"}')
+          PY

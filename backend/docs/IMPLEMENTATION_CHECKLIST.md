@@ -1,5 +1,11 @@
 # Implementation status and continuation plan
 
+## October 31 — private read-only blocked-work diagnosis
+
+The Owner requests identifying why an existing opportunity displays Blocked. A diagnostic-only branch adds a one-shot read-only metadata export through the existing verified runner and encrypted private Space transport. Explicit projections omit source documents, company knowledge, prompts, candidate bodies, serialized checkpoints and credentials. No provider calls, retries, application deployment or business-state changes are performed.
+
+Local validation: Python and workflow cleanup syntax passed; the full diagnostic SQL ran against local PostgreSQL-compatible fixtures with workspace scoping, source-content exclusion and unchanged source records verified. Independent review found no blocking issue. Live diagnostic workflow outcome and resulting cause remain pending. Application checks are running separately; hosted remediation and acceptance are not claimed.
+
 ## October 29 — approved model execution and Needs attention recovery
 
 The Owner explicitly approves enabling the saved model route, sending a real sample assessment within existing data permissions, and recovering the remaining assessments after success. The Owner additionally requests reviewing and restarting items under Needs attention after that sample succeeds. [Execution 40865017755](https://github.com/salahassi/tenders/actions/runs/40865017755) enabled the saved route and created exactly one fresh assessment at 11:23:40 UTC, with 17 other current missing-configuration plans remaining. Existing attempts and usage history remain intact. Sample completion verification is running before batch recovery.
