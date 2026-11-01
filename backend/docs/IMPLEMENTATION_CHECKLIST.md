@@ -17,15 +17,14 @@ final approval, while draft creation/download continue. At least one saved
 attachment remains required; its document type, readability and confirmation
 are not drafting prerequisites.
 
-Both package typechecks/builds passed. Frontend verification passed 251 tests.
-Backend full verification passed 1,538 tests; a subsequent narrow notice-segment
-fix passed the final 12-test runtime matrix and typecheck/build. Exact release
-CI must include the additional regression (expected total 1,539). The runtime
+Both package typechecks/builds passed locally and in exact-source release CI,
+including 1,539 backend tests and 251 frontend tests. The final 12-test runtime
 matrix exercises real durable graph progression and draft Word export for
 non-RFP and all-unread inputs in both current legacy and hierarchical workflows,
 zero inventories, real notice citations and mixed unread addenda. Twelve SQL
 tests cover intake, scope, currentness, final approval and draft export. All
-160 operations tests and 13 renderer tests passed against final migration
+162 operations tests and 13 renderer tests passed after the deployment guard
+correction, including 11 focused release tests against final migration
 SHA-256 `5bac8ff0a8e070688873b2e6c020a3c7ddb51c7dc8e0ad8005735e4e653ccf6c`.
 
 The release installs the backward-compatible runtime first and waits for old
@@ -33,6 +32,18 @@ processes to drain before enabling new SQL inputs and publishing the frontend.
 After any schema attempt it retains the compatible runtime if frontend rollback
 is needed. Deployment and hosted acceptance remain pending. No live paid
 generation or completed proposal is claimed by this entry.
+
+The first release attempt, [41249722828](https://github.com/salahassi/tenders/actions/runs/41249722828),
+on source `48a7ecd27ef80963c89193da711f38077d596d19`, passed exact-source tests
+and image builds, then refused Pod ownership before attempting SQL. Its guard
+incorrectly assumed the top-level Deployment management label was inherited by
+Pods; the canonical renderer supplies only application labels to Pod templates.
+All four runtime images rolled back successfully, frontend and SQL remained
+unchanged, and temporary resources were removed. The corrected guard verifies
+the exact Pod-to-ReplicaSet-to-managed-Deployment controller names and UIDs,
+with namespace/container/image checks. Canonical renderer fixtures and spoofed
+ownership rejection pass; runtime drain and compatible rollback remain intact.
+Corrected deployment and hosted acceptance remain pending.
 
 ## October 31 — remove separate permission review for requested processing
 

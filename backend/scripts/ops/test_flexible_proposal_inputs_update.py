@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import copy
+import base64
 from contextlib import ExitStack, contextmanager
 import json
 import os
@@ -288,7 +289,7 @@ await db.close();console.log('actual restricted flexible-input release passed');
         old = p.u.REGISTRY + "runtime@sha256:" + "a" * 64
         deployment = {"spec": {"template": {"spec": {"containers": [{"image": runtime}]}}}}
         calls = {name: 0 for name in p.RUNTIME_COMPONENTS}
-        def pods(name):
+        def pods(name, deployment):
             calls[name] += 1
             if name == "worker" and calls[name] == 1:
                 return [{"status": {"phase": "Running"}, "metadata": {"deletionTimestamp": "synthetic"},
@@ -300,12 +301,94 @@ await db.close();console.log('actual restricted flexible-input release passed');
         pause.assert_called_once_with(3)
         self.assertTrue(all(value == 2 for value in calls.values()))
 
-    def test_runtime_drain_refuses_foreign_pods_and_workflow_has_no_restore_or_resume(self):
-        pod = {"metadata": {"namespace": p.u.d.NAMESPACE, "labels": {"app.kubernetes.io/name": "worker", "app.kubernetes.io/managed-by": "foreign"}},
-               "spec": {"containers": [{"name": "worker", "image": p.u.REGISTRY + "runtime@sha256:" + "a" * 64}]}}
-        with patch.object(p.u.d, "command", return_value=json.dumps({"items": [pod]})):
-            with self.assertRaisesRegex(p.u.UpdateError, "POD_OWNERSHIP"):
-                p.runtime_pods("worker")
+    def rendered_runtime_identity(self):
+        payload = base64.urlsafe_b64encode(json.dumps({"role": "tdp_app_anon"}).encode()).decode().rstrip("=")
+        config = {"namespace": p.u.d.NAMESPACE, "public_origin": "https://offline.example.test",
+            "runtime_image": p.u.REGISTRY + "runtime@sha256:" + "a" * 64,
+            "frontend_image": p.u.REGISTRY + "frontend@sha256:" + "b" * 64,
+            "https_image": p.u.REGISTRY + "https@sha256:" + "c" * 64,
+            "browser_image": p.u.REGISTRY + "browser@sha256:" + "d" * 64,
+            "ocr_image": p.u.REGISTRY + "ocr@sha256:" + "e" * 64,
+            "publishable_key": "fixture." + payload + ".fixture"}
+        deployment = next(obj for obj in p.u.d.renderer.build(config)
+            if obj["kind"] == "Deployment" and obj["metadata"]["name"] == "worker")
+        deployment["metadata"]["uid"] = "deployment-uid"
+        # apply_managed labels only the persisted top-level object.
+        deployment["metadata"]["labels"]["app.kubernetes.io/managed-by"] = "tenderdesk-deployment"
+        labels = copy.deepcopy(deployment["spec"]["template"]["metadata"]["labels"])
+        self.assertNotIn("app.kubernetes.io/managed-by", labels)
+        pod = {"metadata": {"namespace": p.u.d.NAMESPACE, "name": "worker-pod", "uid": "pod-uid", "labels": labels,
+                "ownerReferences": [{"apiVersion": "apps/v1", "kind": "ReplicaSet", "name": "worker-rs", "uid": "replica-set-uid", "controller": True}]},
+               "spec": {"containers": copy.deepcopy(deployment["spec"]["template"]["spec"]["containers"])},
+               "status": {"phase": "Running"}}
+        replica_set = {"metadata": {"name": "worker-rs", "namespace": p.u.d.NAMESPACE, "uid": "replica-set-uid", "labels": labels,
+            "ownerReferences": [{"apiVersion": "apps/v1", "kind": "Deployment", "name": "worker", "uid": "deployment-uid", "controller": True}]}}
+        return deployment, pod, replica_set
+
+    def test_canonical_rendered_pod_labels_need_exact_controller_chain_not_managed_by(self):
+        deployment, pod, replica_set = self.rendered_runtime_identity()
+        old_pod = copy.deepcopy(pod)
+        old_pod["metadata"]["uid"] = "old-pod-uid"
+        old_pod["metadata"]["ownerReferences"][0].update(name="worker-old-rs", uid="old-replica-set-uid")
+        old_pod["metadata"]["deletionTimestamp"] = "synthetic"
+        old_pod["spec"]["containers"][0]["image"] = p.u.REGISTRY + "runtime@sha256:" + "f" * 64
+        old_replica_set = copy.deepcopy(replica_set)
+        old_replica_set["metadata"].update(name="worker-old-rs", uid="old-replica-set-uid")
+        def lookup(kind, name):
+            self.assertEqual(kind, "replicaset")
+            return {"worker-rs": replica_set, "worker-old-rs": old_replica_set}[name]
+        with patch.object(p.u.d, "command", return_value=json.dumps({"items": [pod, old_pod]})), patch.object(p.u.d, "get", side_effect=lookup) as read:
+            self.assertEqual(p.runtime_pods("worker", deployment), [pod, old_pod])
+            self.assertEqual(read.call_count, 2)
+
+    def test_same_label_pods_refuse_missing_spoofed_or_foreign_controller_identity(self):
+        original_deployment, original_pod, original_rs = self.rendered_runtime_identity()
+        cases = []
+        def candidate(label):
+            dep, pod, rs = copy.deepcopy((original_deployment, original_pod, original_rs))
+            cases.append((label, dep, pod, rs))
+            return dep, pod, rs
+        _, pod, _ = candidate("unowned")
+        pod["metadata"]["ownerReferences"] = []
+        _, pod, _ = candidate("noncontroller")
+        pod["metadata"]["ownerReferences"][0]["controller"] = False
+        _, pod, _ = candidate("ambiguous_pod_controller")
+        pod["metadata"]["ownerReferences"].append(copy.deepcopy(pod["metadata"]["ownerReferences"][0]))
+        _, pod, _ = candidate("spoofed_replicaset_uid")
+        pod["metadata"]["ownerReferences"][0]["uid"] = "spoofed"
+        _, _, rs = candidate("missing_replicaset")
+        cases[-1] = (*cases[-1][:3], None)
+        _, _, rs = candidate("foreign_replicaset_namespace")
+        rs["metadata"]["namespace"] = "foreign"
+        _, _, rs = candidate("foreign_deployment_uid")
+        rs["metadata"]["ownerReferences"][0]["uid"] = "foreign-deployment"
+        _, _, rs = candidate("foreign_deployment_name")
+        rs["metadata"]["ownerReferences"][0]["name"] = "foreign-deployment"
+        _, _, rs = candidate("noncontroller_deployment_reference")
+        rs["metadata"]["ownerReferences"][0]["controller"] = False
+        _, _, rs = candidate("ambiguous_deployment_controller")
+        rs["metadata"]["ownerReferences"].append(copy.deepcopy(rs["metadata"]["ownerReferences"][0]))
+        _, pod, _ = candidate("foreign_pod_namespace")
+        pod["metadata"]["namespace"] = "foreign"
+        _, pod, _ = candidate("foreign_container")
+        pod["spec"]["containers"][0]["name"] = "foreign"
+        _, pod, _ = candidate("extra_container")
+        pod["spec"]["containers"].append(copy.deepcopy(pod["spec"]["containers"][0]))
+        _, pod, _ = candidate("missing_pod_uid")
+        pod["metadata"].pop("uid")
+        for label, dep, pod, rs in cases:
+            with self.subTest(label=label), patch.object(p.u.d, "command", return_value=json.dumps({"items": [pod]})), patch.object(p.u.d, "get", return_value=rs):
+                with self.assertRaisesRegex(p.u.UpdateError, "POD_OWNERSHIP"):
+                    p.runtime_pods("worker", dep)
+        for malformed in ("--raw", "worker/foreign", "", "x" * 254):
+            dep, pod, rs = copy.deepcopy((original_deployment, original_pod, original_rs))
+            pod["metadata"]["ownerReferences"][0]["name"] = malformed
+            with self.subTest(name=malformed), patch.object(p.u.d, "command", return_value=json.dumps({"items": [pod]})), patch.object(p.u.d, "get") as read:
+                with self.assertRaisesRegex(p.u.UpdateError, "POD_OWNERSHIP"):
+                    p.runtime_pods("worker", dep)
+                read.assert_not_called()
+
+    def test_runtime_drain_workflow_has_no_restore_or_resume(self):
         workflow = (p.u.d.ROOT.parent / ".github/workflows/deploy-flexible-proposal-inputs.yml").read_text()
         for forbidden in ("resume-requested-processing", "digitalocean-deploy.py", "first-owner", "selection_object", "--selection"):
             self.assertNotIn(forbidden, workflow)

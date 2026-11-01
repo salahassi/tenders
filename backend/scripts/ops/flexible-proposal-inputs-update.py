@@ -145,22 +145,57 @@ def public_check(configuration, core):
 RUNTIME_COMPONENTS = tuple(name for name in u.COMPONENTS if name != "frontend")
 
 
-def runtime_pods(name):
+def controller_owner(metadata, kind):
+    owners = metadata.get("ownerReferences", [])
+    if not isinstance(owners, list):
+        raise u.UpdateError("FLEXIBLE_INPUTS_RUNTIME_POD_OWNERSHIP_REQUIRED")
+    controllers = [owner for owner in owners if isinstance(owner, dict) and owner.get("controller") is True]
+    if (len(controllers) != 1 or controllers[0].get("kind") != kind
+            or controllers[0].get("apiVersion") != "apps/v1"
+            or not isinstance(controllers[0].get("uid"), str) or not controllers[0]["uid"]
+            or not isinstance(controllers[0].get("name"), str)
+            or not re.fullmatch(r"[a-z0-9](?:[-a-z0-9.]{0,251}[a-z0-9])?", controllers[0]["name"])):
+        raise u.UpdateError("FLEXIBLE_INPUTS_RUNTIME_POD_OWNERSHIP_REQUIRED")
+    return controllers[0]
+
+
+def runtime_pods(name, deployment):
+    # The renderer copies application labels into Pods, while apply_managed
+    # labels the Deployment itself. Bind each Pod to that verified Deployment
+    # through the controller UIDs instead of assuming label inheritance.
+    expected = deployment.get("metadata", {})
+    if (expected.get("name") != name or expected.get("namespace") != u.d.NAMESPACE
+            or not isinstance(expected.get("uid"), str) or not expected["uid"]
+            or expected.get("labels", {}).get("app.kubernetes.io/managed-by") != "tenderdesk-deployment"):
+        raise u.UpdateError("FLEXIBLE_INPUTS_RUNTIME_POD_OWNERSHIP_REQUIRED")
     value = json.loads(u.d.command(["get", "pods", "-n", u.d.NAMESPACE,
         "-l", "app.kubernetes.io/name=" + name, "-o", "json"]))
     pods = value.get("items")
     if not isinstance(pods, list):
         raise u.UpdateError("FLEXIBLE_INPUTS_RUNTIME_POD_STATE_INVALID")
+    replica_sets = {}
     for pod in pods:
         metadata = pod.get("metadata", {})
         labels = metadata.get("labels", {})
         containers = pod.get("spec", {}).get("containers", [])
         if (metadata.get("namespace") != u.d.NAMESPACE
+                or not isinstance(metadata.get("uid"), str) or not metadata["uid"]
                 or labels.get("app.kubernetes.io/name") != name
-                or labels.get("app.kubernetes.io/managed-by") != "tenderdesk-deployment"
                 or len(containers) != 1 or containers[0].get("name") != name):
             raise u.UpdateError("FLEXIBLE_INPUTS_RUNTIME_POD_OWNERSHIP_REQUIRED")
         u.image(containers[0].get("image", ""), "runtime")
+        owner = controller_owner(metadata, "ReplicaSet")
+        identity = (owner["name"], owner["uid"])
+        if identity not in replica_sets:
+            replica_set = u.d.get("replicaset", owner["name"])
+            rs_metadata = (replica_set or {}).get("metadata", {})
+            if (rs_metadata.get("namespace") != u.d.NAMESPACE or rs_metadata.get("name") != owner["name"]
+                    or rs_metadata.get("uid") != owner["uid"]):
+                raise u.UpdateError("FLEXIBLE_INPUTS_RUNTIME_POD_OWNERSHIP_REQUIRED")
+            controller = controller_owner(rs_metadata, "Deployment")
+            if controller["name"] != name or controller["uid"] != expected["uid"]:
+                raise u.UpdateError("FLEXIBLE_INPUTS_RUNTIME_POD_OWNERSHIP_REQUIRED")
+            replica_sets[identity] = True
     return pods
 
 
@@ -174,7 +209,7 @@ def wait_runtime_drain(expected, timeout=300):
             current = u.deployment(name)
             if current["spec"]["template"]["spec"]["containers"][0]["image"] != expected:
                 raise u.UpdateError("FLEXIBLE_INPUTS_RUNTIME_CHANGED")
-            for pod in runtime_pods(name):
+            for pod in runtime_pods(name, current):
                 if (pod.get("status", {}).get("phase") not in ("Succeeded", "Failed")
                         and pod["spec"]["containers"][0]["image"] != expected):
                     pending = True
