@@ -81,7 +81,7 @@ it("offers resume for the latest blocked plan and hides it on an older canceled 
 });
 
 it.each(["Owner", "Editor"])(
-  "lets %s start an RFP-only proposal directly without a separate permission review",
+  "lets %s start a proposal draft directly without a separate permission review",
   async (role) => {
     const c = context();
     c.state.settings.role = role;
@@ -91,7 +91,7 @@ it.each(["Owner", "Editor"])(
       </MemoryRouter>,
     );
     const button = await screen.findByRole("button", {
-      name: "Generate complete proposal",
+      name: "Generate proposal draft",
     });
     expect(button).toBeEnabled();
     expect(
@@ -104,7 +104,7 @@ it.each(["Owner", "Editor"])(
     });
   },
 );
-it("explains extraction review and opens the exact pending file instead of reporting ready", async () => {
+it("keeps extraction checking optional and opens the exact unchecked file", async () => {
   context();
   const o = opportunity();
   o.documents[0].extractionConfirmed = false;
@@ -116,10 +116,69 @@ it("explains extraction review and opens the exact pending file instead of repor
     </MemoryRouter>,
   );
   expect(
-    await screen.findByRole("button", { name: "Generate complete proposal" }),
-  ).toBeDisabled();
-  await userEvent.click(screen.getByRole("button", { name: "Review RFP.pdf" }));
+    await screen.findByRole("button", { name: "Generate proposal draft" }),
+  ).toBeEnabled();
+  expect(
+    screen.getByText(/Checking the extracted text is optional/),
+  ).toBeInTheDocument();
+  await userEvent.click(
+    screen.getByRole("button", { name: "Check extracted text: RFP.pdf" }),
+  );
   expect(review).toHaveBeenCalledWith(o.documents[0]);
+});
+
+it.each(["ready", "needs_ocr", "needs_processing", "error"])(
+  "lets saved reference text with status %s start a draft without asserting RFP completeness",
+  async (status) => {
+    const c = context();
+    const o = opportunity();
+    o.documents = [
+      {
+        ...o.documents[0],
+        name: "Unrelated meeting notes.txt",
+        status,
+        text:
+          status === "ready"
+            ? "Synthetic meeting notes without tender requirements."
+            : "",
+        extractionConfirmed: false,
+      },
+    ];
+    render(
+      <MemoryRouter>
+        <GenerationPanel opportunity={o} />
+      </MemoryRouter>,
+    );
+    const generate = await screen.findByRole("button", {
+      name: "Generate proposal draft",
+    });
+    expect(generate).toBeEnabled();
+    if (status !== "ready")
+      expect(
+        screen.getByText(
+          /Files without readable text will be listed as unread/,
+        ),
+      ).toBeInTheDocument();
+    await userEvent.click(generate);
+    expect(c.runCommand).toHaveBeenCalledWith("proposal.generate", {
+      id: o.id,
+      expected_revision: 4,
+    });
+  },
+);
+
+it("waits for an active file upload to finish before freezing a draft request", async () => {
+  const c = context();
+  render(
+    <MemoryRouter>
+      <GenerationPanel opportunity={opportunity()} inputBusy />
+    </MemoryRouter>,
+  );
+  expect(
+    await screen.findByRole("button", { name: "Generate proposal draft" }),
+  ).toBeDisabled();
+  expect(screen.getByText(/Files are still being saved/)).toBeInTheDocument();
+  expect(c.runCommand).not.toHaveBeenCalled();
 });
 it("refreshes the workspace when generation finishes so the download becomes available without reloading", async () => {
   vi.useFakeTimers();

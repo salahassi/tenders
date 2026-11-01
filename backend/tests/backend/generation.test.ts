@@ -818,17 +818,20 @@ it("admits the semantic workflow without company files or a custom template and 
     }),
   ).rejects.toThrow("APPROVAL_REQUIRED");
 });
-it("requires extraction review before recording generation", async () => {
+it("starts draft generation without requiring a separate extraction confirmation", async () => {
   const s = await setup(false);
-  await expect(
-    f.command("proposal.generate", {
-      id: s.opp.id,
-      expected_revision: s.opp.revision,
-    }),
-  ).rejects.toThrow("EXTRACTION_REVIEW_REQUIRED");
+  const plan = await f.command("proposal.generate", {
+    id: s.opp.id,
+    expected_revision: s.opp.revision,
+  });
+  expect(plan.frozen_context.draft_input_version).toBe(1);
+  expect(plan.status).toBe("queued");
   expect(
     (await f.db.query("select * from public.generation_plans")).rows,
-  ).toHaveLength(0);
+  ).toHaveLength(1);
+  expect(
+    (await f.db.query<any>("select extraction_confirmed_at from public.documents where id=$1", [s.document.id])).rows[0].extraction_confirmed_at,
+  ).toBeNull();
 });
 it("completes and exports a full RFP draft without templates, company knowledge or rates", async () => {
   const s = await setup();

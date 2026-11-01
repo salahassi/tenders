@@ -220,7 +220,7 @@ export default function SourceDetail() {
             </p>
             <div className="admin-rate-note">
               {isManual
-                ? "You can enter a public opportunity or upload its RFP from the workspace."
+                ? "You can enter a public opportunity and attach the reference documents you have from the workspace."
                 : manualPortal
                   ? "Enable automatic reading to inspect this public website. Collection history reports results and any login, browser or document-reading requirements."
                   : "Only permitted, approved sources are collected. Review Jobs for host-approval or access blockers."}

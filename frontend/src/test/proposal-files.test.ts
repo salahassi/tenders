@@ -112,6 +112,51 @@ describe("proposal document export", () => {
 });
 
 describe("explicit agent text package", () => {
+  it("includes unchecked non-RFP reference text while separately reporting unread originals", () => {
+    const state = createSeedState();
+    const opportunity = state.opportunities[0];
+    opportunity.documents = [
+      {
+        id: "notes",
+        name: "meeting-notes.txt",
+        size: 50,
+        uploadedAt: "2026-10-31T00:00:00Z",
+        text: "Synthetic notes about a different project, with no buyer requirements.",
+        status: "ready",
+        extractionConfirmed: false,
+        classification: "synthetic",
+        hash: "notes-hash",
+      },
+      {
+        id: "unread",
+        name: "scanned.pdf",
+        size: 50,
+        uploadedAt: "2026-10-31T00:00:00Z",
+        text: "",
+        status: "needs_ocr",
+        classification: "synthetic",
+        hash: "scan-hash",
+      },
+    ];
+    const result = buildAgentInput(state, opportunity);
+    expect(result.rfpDocuments).toEqual([
+      expect.objectContaining({
+        id: "notes",
+        text: opportunity.documents[0].text,
+        extractionConfirmed: false,
+      }),
+    ]);
+    expect(result.extractionLimitations.uncheckedDocuments).toEqual([
+      { id: "notes", name: "meeting-notes.txt" },
+    ]);
+    expect(result.extractionLimitations.omittedDocuments).toContainEqual({
+      id: "unread",
+      name: "scanned.pdf",
+      status: "needs_ocr",
+    });
+    expect(result.extractionLimitations.originalFileBytesIncluded).toBe(false);
+  });
+
   it("includes readable enabled company files and reports unreadable documents without claiming to send anything", () => {
     const state = createSeedState();
     const opportunity = state.opportunities[0];

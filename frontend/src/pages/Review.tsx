@@ -49,7 +49,7 @@ export default function Review() {
     }
     notify(
       status === "shortlisted"
-        ? "Added to Opportunities. Open it there to upload the RFP."
+        ? "Added to Opportunities. Open it there to attach your reference files."
         : status === "declined"
           ? "Moved to archive. You can restore it at any time."
           : "Restored to the Review inbox.",
@@ -102,7 +102,7 @@ export default function Review() {
         <ArrowRight size={15} />
         <span>Your selection</span>
         <ArrowRight size={15} />
-        <span>Upload RFP</span>
+        <span>Attach reference files</span>
         <ArrowRight size={15} />
         <span>Proposal file</span>
       </div>

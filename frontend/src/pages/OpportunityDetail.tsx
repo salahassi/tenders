@@ -64,8 +64,7 @@ export default function OpportunityDetail() {
   const selected = isSelected(o);
   const proposals = state.proposals.filter((p) => p.opportunityId === o.id);
   const stage = getOpportunityStage(o, state.proposals);
-  const ready =
-    o.documents.length > 0 && o.documents.every((d) => d.status === "ready");
+  const hasAttachedFiles = o.documents.length > 0;
   const knowledge = state.knowledgeDocuments.filter(
     (d) => d.enabled && d.status === "ready",
   );
@@ -105,7 +104,7 @@ export default function OpportunityDetail() {
         }
         if (o!.documents.length + added.length >= 10) {
           failures.push(
-            `${file.name}: attach up to 10 RFP files per opportunity.`,
+            `${file.name}: attach up to 10 reference files per opportunity.`,
           );
           continue;
         }
@@ -132,7 +131,7 @@ export default function OpportunityDetail() {
                 : x,
             ),
           }),
-          "RFP files attached",
+          "Reference files attached",
           o!.title,
         ))
       ) {
@@ -140,7 +139,7 @@ export default function OpportunityDetail() {
         return;
       }
       notify(
-        `${added.length} RFP file${added.length === 1 ? "" : "s"} saved. Review the extracted text before analysis.`,
+        `${added.length} reference file${added.length === 1 ? "" : "s"} saved. You can create a draft now; checking extracted text is optional.`,
       );
     }
     if (restored)
@@ -162,7 +161,8 @@ export default function OpportunityDetail() {
         eyebrow={`${o.reference} · ${o.buyer}`}
         title={o.title}
         description={
-          o.description || "Upload the RFP to start preparing a proposal."
+          o.description ||
+          "Attach reference documents to start a proposal draft."
         }
       />
       <FitAssessment state={state} opportunity={o} compact={selected} />
@@ -192,7 +192,7 @@ export default function OpportunityDetail() {
       ) : (
         <>
           <div className="simple-flow">
-            <strong>1 · Upload RFP</strong>
+            <strong>1 · Attach reference files</strong>
             <ArrowRight size={15} />
             <span>2 · Generate linked proposal</span>
             <ArrowRight size={15} />
@@ -202,15 +202,17 @@ export default function OpportunityDetail() {
             <div className="stack">
               <section className="panel simple-section">
                 <span className="simple-step">STEP 1</span>
-                <h2>RFP files</h2>
+                <h2>Reference documents</h2>
                 <p className="muted">
-                  Attach the tender document and any addenda. Files and
-                  extracted text are saved securely to your workspace.
+                  Attach an RFP, brief, existing proposal or other reference.
+                  The file does not need to be an RFP or match this opportunity
+                  to create a draft. Available text is used, and missing or
+                  conflicting information is flagged for review.
                 </p>
                 <div className="simple-upload">
                   <Upload size={25} />
                   <Field
-                    label="Upload RFP files"
+                    label="Upload reference files"
                     hint="PDF, DOCX, TXT, MD · 10 MiB per file · up to 10 files"
                   >
                     <input
@@ -252,8 +254,8 @@ export default function OpportunityDetail() {
                         {d.status === "ready"
                           ? "Text extracted"
                           : d.status === "needs_ocr"
-                            ? "Needs readable text / OCR"
-                            : "Could not extract text"}
+                            ? "Image or scan · no text extracted"
+                            : "Text unavailable"}
                       </Badge>
                     </div>
                     <div className="simple-file-actions">
@@ -308,7 +310,7 @@ export default function OpportunityDetail() {
                                       : x,
                                   ),
                                 }),
-                                "Removed RFP file",
+                                "Removed reference file",
                                 o.title,
                               ))
                             ) {
@@ -330,7 +332,9 @@ export default function OpportunityDetail() {
                 ))}
                 <AddendumOrder files={o.documents} />
                 {!o.documents.length && (
-                  <p className="simple-note">No RFP files attached yet.</p>
+                  <p className="simple-note">
+                    No reference files attached yet.
+                  </p>
                 )}
               </section>
               <ProcurementHistory opportunityId={o.id} />
@@ -339,13 +343,14 @@ export default function OpportunityDetail() {
                 <h2>
                   {proposals.length
                     ? "Your linked proposal"
-                    : "Generate a proposal from the RFP"}
+                    : "Create a proposal draft"}
                 </h2>
                 <p>
-                  Generate the complete response to the buyer’s RFP, then review
-                  the document and answer specific questions about missing
-                  information. Your answers and change requests will be used to
-                  regenerate the same linked proposal.
+                  Create a draft from the available documents and opportunity
+                  details. A non-RFP, unrelated or incomplete document does not
+                  stop draft creation. Review the proposed content and any
+                  unresolved questions, then use your answers and change
+                  requests to regenerate the same linked proposal.
                 </p>
                 <Field label="Proposal language">
                   <select
@@ -374,9 +379,9 @@ export default function OpportunityDetail() {
                 <div className="notice">
                   <Sparkles size={18} />
                   <p className="small">
-                    Start with the RFP. A custom template and company files are
-                    optional. The proposal uses the information available and
-                    flags missing company facts or prices for review.
+                    Use the references you have. A custom template and company
+                    files are optional. The draft uses available information and
+                    flags missing scope, company facts or prices for review.
                   </p>
                 </div>
                 {backend && (
@@ -384,35 +389,36 @@ export default function OpportunityDetail() {
                     opportunity={o}
                     embedded
                     onReviewFile={setView}
+                    inputBusy={busy}
                   />
                 )}
                 <div className="simple-inline-actions">
                   {!proposals.length && !backend ? (
                     <Button
                       variant="primary"
-                      disabled={!editable || !ready || busy}
+                      disabled={!editable || !hasAttachedFiles || busy}
                       onClick={() => setAiInfo(true)}
                     >
                       <Sparkles size={16} /> Generate proposal
                     </Button>
                   ) : null}
                 </div>
-                {!ready && (
+                {!hasAttachedFiles && (
                   <p className="simple-note">
-                    {o.documents.length
-                      ? "Attach readable replacements for files that need OCR before generating the proposal."
-                      : "Upload the buyer’s RFP to prepare for proposal generation."}
+                    Attach a reference file to begin. It does not need to be an
+                    RFP.
                   </p>
                 )}
                 <details className="simple-note">
                   <summary>Advanced</summary>
                   <p>
-                    Download the readable RFP and enabled company references as
-                    agent input. This is supporting data, not a proposal, and
-                    downloading it does not contact an AI service.
+                    Download available reference text and enabled company
+                    references as agent input. Unread files are identified in
+                    its limitations. This is supporting data, and downloading it
+                    does not contact an AI service.
                   </p>
                   <Button
-                    disabled={!ready || busy}
+                    disabled={!hasAttachedFiles || busy}
                     onClick={() => downloadAgentInput(state, o)}
                   >
                     <Download size={16} /> Download agent input
@@ -445,7 +451,7 @@ export default function OpportunityDetail() {
               </Badge>
               <p className="simple-note">{opportunityStageHelp[stage]}</p>
               <p className="simple-note">
-                This stage follows the attached RFP and linked proposal
+                This stage follows the reference files and linked proposal
                 automatically.
               </p>
               {proposals.length > 0 && (
@@ -533,9 +539,9 @@ export default function OpportunityDetail() {
                 Edit closing date
               </Button>
               <p className="simple-note">
-                Selecting a discovery does not create a proposal. Uploading an
-                RFP prepares it for generation. Downloading Word does not submit
-                it to the buyer.
+                Selecting a discovery does not create a proposal. Attach your
+                reference files, then request a draft. Downloading Word does not
+                submit it to the buyer.
               </p>
               <div className="simple-inline-actions">
                 <Button
@@ -567,12 +573,12 @@ export default function OpportunityDetail() {
         onClose={() => setView(null)}
       >
         <p className="muted small">
-          Extracted text for the agent. Check complex tables and scanned pages
-          against the original.
+          Checking extraction is optional for draft creation. Compare complex
+          tables and scanned pages with the original when reviewing the draft.
         </p>
         <pre dir="auto" className="simple-extract">
           {view?.text ||
-            "No readable text extracted. Attach an OCR-processed copy."}
+            "No readable text was extracted. Draft creation can continue with the other available text; this file will be identified as unread."}
         </pre>
         {backend &&
           view?.status === "ready" &&
@@ -629,28 +635,28 @@ export default function OpportunityDetail() {
       >
         <div className="stack">
           <p>
-            Your RFP is attached to this opportunity. Once the agent is
-            connected, this action will read the RFP and enabled Company
-            Knowledge and produce a complete proposal document. Its structure
-            will follow the RFP, with specific questions for information that
-            needs your review or input.
+            Your reference documents are attached to this opportunity. Once the
+            agent is connected, this action will use their readable text,
+            opportunity details and enabled Company Knowledge to prepare a
+            proposal draft. Missing or conflicting context becomes specific
+            review questions.
           </p>
           <p>
-            The cost plan will connect each price to the RFP scope and proposed
-            deliverables, with quantity, effort, rate sources, and assumptions.
-            Missing rates or quantities will become questions for you instead of
-            invented prices. After you respond, regeneration will create a new
-            version of the same proposal.
+            The cost plan will connect each price to available scope and
+            proposed deliverables, with quantity, effort, rate sources, and
+            assumptions. Missing rates or quantities will become questions for
+            you instead of invented prices. After you respond, regeneration will
+            create a new version of the same proposal.
           </p>
           <p className="simple-note">
-            No proposal has been created by this action. Your uploaded RFP
-            remains attached and available.
+            No proposal has been created by this action. Your uploaded files
+            remain attached and available.
           </p>
           <details className="simple-note">
             <summary>Advanced</summary>
             <p>Export the supporting data prepared for the agent.</p>
             <Button
-              disabled={!ready}
+              disabled={!hasAttachedFiles}
               onClick={() => downloadAgentInput(state, o)}
             >
               Download agent input

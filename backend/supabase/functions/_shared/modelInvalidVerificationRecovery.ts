@@ -3,6 +3,7 @@ import type { ModelGraphStore } from "./modelGraphStore.ts";
 import {
   blockedContent,
   classificationScopePolicy,
+  draftInputPolicyVersion,
   ModelError,
   sha256,
   validateModelResult,
@@ -71,6 +72,10 @@ export async function recoverInvalidVerification(o: {
       {
         independentGrounding: true,
         scopePolicy: classificationScopePolicy(
+          o.task ?? "draft_section",
+          o.context,
+        ),
+        draftInputVersion: draftInputPolicyVersion(
           o.task ?? "draft_section",
           o.context,
         ),

@@ -318,6 +318,17 @@ export function classificationScopePolicy(
   const parsed = serviceScopeSchema.safeParse(policy);
   return parsed.success ? parsed.data : undefined;
 }
+/** New draft requests may analyze the real opportunity notice when no uploaded
+ * material is readable. Historical tasks retain their original source boundary. */
+export function draftInputPolicyVersion(
+  task: ModelTask,
+  context: unknown,
+): 1 | undefined {
+  if (!context || typeof context !== "object") return;
+  const value = context as Record<string, any>;
+  const original = task === "repair_result" ? value.original_context : value;
+  return original?.draft_input_version === 1 ? 1 : undefined;
+}
 export function validateModelResult(
   task: ModelTask,
   value: unknown,
@@ -327,6 +338,7 @@ export function validateModelResult(
     aggregateVerification?: boolean;
     independentGrounding?: boolean;
     scopePolicy?: ServiceScope;
+    draftInputVersion?: 1;
   },
 ): any {
   const schema =
@@ -526,8 +538,10 @@ export function validateModelResult(
     for (const [index, req] of result.requirements.entries())
       validateQuotes(
         req.source_refs,
-        evidence,
-        "rfp",
+        options?.draftInputVersion === 1
+          ? evidence.filter((source) => ["rfp", "notice"].includes(source.kind))
+          : evidence,
+        options?.draftInputVersion === 1 ? undefined : "rfp",
         `$.requirements[${index}].source_refs`,
       );
   }
@@ -1929,6 +1943,7 @@ export async function executeModel(
             {
               ...options,
               scopePolicy: classificationScopePolicy(task, context),
+              draftInputVersion: draftInputPolicyVersion(task, context),
             },
           );
           if (task === "inspect_source_page") {

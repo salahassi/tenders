@@ -198,7 +198,7 @@ export default function Opportunities() {
     ) {
       return;
     }
-    notify("Opportunity added. Open it to upload the RFP.");
+    notify("Opportunity added. Open it to attach your reference files.");
     setForm({
       title: "",
       buyer: "",
@@ -219,7 +219,7 @@ export default function Opportunities() {
       <PageHeader
         eyebrow="SELECTED FOR PROPOSAL PREPARATION"
         title="Opportunities"
-        description="The opportunities you chose to pursue. Obtain and upload the buyer’s RFP, then generate the proposal linked to that opportunity."
+        description="The opportunities you chose to pursue. Attach the documents you have and generate a linked draft from the available content, with missing information flagged for review."
         actions={
           <>
             <Button
@@ -407,7 +407,7 @@ export default function Opportunities() {
                 onChange={(e) =>
                   setForm({ ...form, reference: e.target.value })
                 }
-                placeholder="RFP-2026-001"
+                placeholder="REF-2026-001"
               />
             </Field>
           </div>
@@ -441,7 +441,7 @@ export default function Opportunities() {
           <div className="form-grid">
             <Field
               label="Submission date"
-              hint="Optional. The closing date stated in the source or RFP."
+              hint="Optional. The closing date stated in the source or reference documents."
             >
               <input
                 type="date"

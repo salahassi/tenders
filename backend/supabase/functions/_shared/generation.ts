@@ -48,6 +48,7 @@ import {
   sha256,
   validateModelResult,
   validateScopeDecision,
+  draftInputPolicyVersion,
 } from "./model.ts";
 import { Backend, type BackendEnvironment } from "./backend.ts";
 type Row = Record<string, any>;
@@ -557,7 +558,9 @@ export function taskInput(ctx: PlanContext) {
       extracted_requirements: ctx.requirements.length,
     };
     context.instruction +=
-      " No requirement IDs are assigned to this general section; this does not mean the RFP or its requirements are missing. Use the supplied RFP blocks to explain the actual buyer, objectives, scope, delivery constraints and intended outcomes at the level appropriate to this section. Do not ask for facts already in these blocks. Keep required IDs empty and distinguish missing company evidence from known buyer requirements.";
+      frozen.draft_input_version === 1
+        ? " This general section has no mapped requirement IDs. Use the actual opportunity notice and readable reference material, without assuming a reference is a formal RFP or belongs to this buyer. Describe known scope and explicitly proposed work; retain uncertainties and keep required IDs empty."
+        : " No requirement IDs are assigned to this general section; this does not mean the RFP or its requirements are missing. Use the supplied RFP blocks to explain the actual buyer, objectives, scope, delivery constraints and intended outcomes at the level appropriate to this section. Do not ask for facts already in these blocks. Keep required IDs empty and distinguish missing company evidence from known buyer requirements.";
   }
   // Keep their real notice context and authorization; never send an empty
   // business manifest or manufacture company facts to make drafting proceed.
@@ -570,6 +573,41 @@ export function taskInput(ctx: PlanContext) {
     context.unmapped_section = true;
     context.instruction +=
       " This section has no mapped tender requirement. Use the supplied notice only for proposal context and retain missing company facts as explicit questions.";
+  }
+  if (ctx.plan.kind === "proposal" && frozen.draft_input_version === 1) {
+    context.draft_input_version = 1;
+    context.input_materials = frozen.input_materials;
+    // Missing requirements must not produce an empty model manifest. These are
+    // real selected inputs, never synthetic requirements or company evidence.
+    if (
+      task === "analyze_chunk" ||
+      !evidence.length ||
+      (!ctx.requirements.length && task !== "summarize_review")
+    ) {
+      if (
+        frozen.notice?.reference &&
+        !evidence.some((source) => source.id === frozen.notice.id)
+      )
+        evidence.push(frozen.notice);
+      if (task !== "analyze_chunk")
+        evidence.push(
+          ...relevant(
+            frozen.blocks.filter(
+              (source: Row) => source.reference?.entity_kind === "document",
+            ),
+            input.section?.title || frozen.title || "",
+            6,
+          ),
+        );
+    }
+    context.instruction +=
+      " The user requested a DRAFT from the available uploaded reference material and opportunity context. A file is not required to be a formal RFP: it may be a brief, an example, an unrelated document, incomplete or unreadable. Such input limitations never prohibit creating the draft. Use only readable supplied evidence and the actual opportunity notice; do not claim unread material was reviewed. Keep facts about a different buyer or project explicitly attributed to that reference, not asserted as facts or mandatory requirements of this opportunity. Distinguish reference material, known buyer requests, proposed work and unresolved assumptions. Continue with a useful proposal based on the available context, even when no formal requirements can be extracted. Do not invent requirements, credentials, prices or compliance. Document type, missing formal RFP, mismatch and extraction limitations are advisory draft caveats; actual missing commitments or approval evidence may remain finalization questions. Verification must still correct fabricated or contradicted claims, but must not reject a truthful draft merely because its source is not a complete matching RFP.";
+    if (task === "analyze_chunk")
+      context.instruction +=
+        " Return every processed block ID. Extract only actual requested work supported by the segment, never turn an illustrative example, completed work or another buyer's instruction into this buyer's mandatory requirement. It is valid to return requirements=[] for a non-RFP segment; explain the limitation in summary or an advisory question and continue.";
+    if (["plan_proposal", "plan_structure", "plan_blueprint"].includes(task))
+      context.instruction +=
+        " When the extracted inventory is empty, keep all requirement ID arrays empty and create a coherent narrative proposal structure from the known opportunity context. Write substantive proposed approach where the scope supports it; otherwise make assumptions explicit. Do not substitute a refusal or a request to upload a formal RFP for the draft.";
   }
   evidence = Array.from(new Map(evidence.map((e) => [e.id, e])).values());
   // All evidence actually in the prompt and provenance of generated paragraphs stay gated.
@@ -948,9 +986,13 @@ export async function nextStage(ctx: PlanContext): Promise<{
   if (!frozen.knowledge.some((x: Row) => x.kind === "company" && x.verified))
     questions.push({
       question:
-        frozen.language === "ar"
-          ? "أُعدّت المسودة من وثائق العطاء دون أدلة شركة موثّقة. يمكن إضافة ملفات الشركة وملاحظاتها لتحسين التخصيص؛ تبقى المتطلبات الإلزامية الخاصة بالعطاء بحاجة إلى إثباتها."
-          : "This draft uses the RFP without verified company evidence. Company files and notes can improve personalization; any mandatory buyer-specific credentials still need evidence.",
+        frozen.draft_input_version === 1
+          ? frozen.language === "ar"
+            ? "أُعدّت المسودة باستخدام معلومات الفرصة والمواد المرجعية المتاحة دون أدلة شركة موثّقة. يمكن إضافة ملفات الشركة وملاحظاتها لتحسين التخصيص؛ تبقى المؤهلات والالتزامات المطلوبة بحاجة إلى إثباتها قبل الاعتماد النهائي."
+            : "This draft uses the available opportunity and reference material without verified company evidence. Company files and notes can improve personalization; required qualifications and commitments still need evidence before final approval."
+          : frozen.language === "ar"
+            ? "أُعدّت المسودة من وثائق العطاء دون أدلة شركة موثّقة. يمكن إضافة ملفات الشركة وملاحظاتها لتحسين التخصيص؛ تبقى المتطلبات الإلزامية الخاصة بالعطاء بحاجة إلى إثباتها."
+            : "This draft uses the RFP without verified company evidence. Company files and notes can improve personalization; any mandatory buyer-specific credentials still need evidence.",
       blocking_level: "advisory",
     });
   if (ctx.requirements.length === 0)
@@ -959,6 +1001,21 @@ export async function nextStage(ctx: PlanContext): Promise<{
         "[INPUT REQUIRED: Confirm the complete requirement inventory; none could be extracted.]",
       blocking_level: "finalization",
     });
+  if (frozen.draft_input_version === 1) {
+    const unread = (frozen.input_materials?.documents || []).filter(
+      (document: Row) => document.used_for_draft === false,
+    );
+    if (unread.length)
+      questions.push({
+        question:
+          frozen.language === "ar"
+            ? `أُنشئت المسودة من النص المتاح دون استخدام هذه الملفات لعدم توفر نص قابل للقراءة عند بدء المعالجة: ${unread.map((document: Row) => document.name).join("، ")}. تحقق من أثرها في النطاق والمتطلبات قبل الاعتماد النهائي.`
+            : `This draft uses the available text without the following files, which had no readable text when processing began: ${unread.map((document: Row) => document.name).join(", ")}. Confirm their effect on scope and requirements before final approval.`,
+        blocking_level: "finalization",
+        reason:
+          "Some attached input material was not read or used in this draft.",
+      });
+  }
   const separate =
     frozen.template.volume_mode === "separate" ||
     successful(ctx, "analyze_chunk").some((s) => s.output.separate_volumes);
@@ -1172,6 +1229,7 @@ export async function processGeneration(
             input.task === "classify_opportunity"
               ? ctx!.plan.frozen_context.discovery_scope_policy
               : undefined,
+          draftInputVersion: draftInputPolicyVersion(input.task, input.context),
         },
       );
       if (

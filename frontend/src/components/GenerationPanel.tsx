@@ -24,11 +24,13 @@ export default function GenerationPanel({
   embedded = false,
   onReviewFile,
   showOpenLink = true,
+  inputBusy = false,
 }: {
   opportunity: Opportunity;
   embedded?: boolean;
   onReviewFile?: (file: DocumentRecord) => void;
   showOpenLink?: boolean;
+  inputBusy?: boolean;
 }) {
   const { backend, runCommand, state, saving, notify, refresh } = useApp(),
     [plans, setPlans] = useState<Plan[]>([]),
@@ -139,7 +141,7 @@ export default function GenerationPanel({
     pendingReview = opportunity.documents.find(
       (d) => d.status === "ready" && !d.extractionConfirmed,
     ),
-    busy = saving || requesting,
+    busy = saving || requesting || inputBusy,
     Panel = embedded ? "div" : "section";
   const active = plans.find(
       (p) =>
@@ -185,10 +187,7 @@ export default function GenerationPanel({
                   busy ||
                   !!active ||
                   opportunity.status !== "shortlisted" ||
-                  !opportunity.documents.length ||
-                  opportunity.documents.some(
-                    (d) => d.status !== "ready" || !d.extractionConfirmed,
-                  )
+                  !opportunity.documents.length
                 }
                 onClick={() =>
                   action("proposal.generate", {
@@ -199,7 +198,7 @@ export default function GenerationPanel({
               >
                 {requesting
                   ? "Starting preparation…"
-                  : "Generate complete proposal"}
+                  : "Generate proposal draft"}
               </Button>
             )}
             {selected && pendingReview && onReviewFile && (
@@ -207,7 +206,7 @@ export default function GenerationPanel({
                 disabled={!editable || busy}
                 onClick={() => onReviewFile(pendingReview)}
               >
-                Review {pendingReview.name}
+                Check extracted text: {pendingReview.name}
               </Button>
             )}
             {showOpenLink && linked?.versionId && (
@@ -218,17 +217,19 @@ export default function GenerationPanel({
           </div>
           {selected && !linked?.versionId && (
             <p className="simple-note">
-              {!opportunity.documents.length
-                ? "Upload the RFP to begin."
-                : opportunity.documents.some((d) => d.status !== "ready")
-                  ? "Replace or remove unreadable files before generation."
-                  : pendingReview
-                    ? "Review and confirm the extracted text of each RFP file to enable generation."
-                    : active
-                      ? active.status === "blocked"
-                        ? "Preparation is paused. Review the reason below, then resume the saved work."
-                        : "Your proposal is being prepared. Completed steps are saved, and temporary provider failures retry automatically."
-                      : "Ready to generate. No custom template or company knowledge is required. Missing facts become review questions."}
+              {inputBusy
+                ? "Files are still being saved. Draft creation will be available when the upload finishes."
+                : active
+                  ? active.status === "blocked"
+                    ? "Preparation is paused. Review the reason below, then resume the saved work."
+                    : "Your proposal is being prepared. Completed steps are saved, and temporary provider failures retry automatically."
+                  : !opportunity.documents.length
+                    ? "Attach a reference document to begin. It can be an RFP, brief, existing proposal or another useful file."
+                    : opportunity.documents.some((d) => d.status !== "ready")
+                      ? "You can create a draft now. Files without readable text will be listed as unread; the draft uses the available text and opportunity details."
+                      : pendingReview
+                        ? "You can create a draft now. Checking the extracted text is optional; incomplete or conflicting inputs will be flagged for review."
+                        : "Ready to draft from your reference documents, even if they are not an RFP. No custom template or company knowledge is required. Missing information will be flagged for review."}
             </p>
           )}
           {plans

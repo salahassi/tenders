@@ -10,6 +10,16 @@ distinguishes deployed runtime, local tests and pending live paid-model acceptan
 
 ## Current implementation
 
+Any accepted uploaded original can serve as a reference for proposal drafting;
+it does not have to be an RFP or match the opportunity. Draft creation and
+regeneration use available readable text without requiring every file's
+extraction to be complete or confirmed. Files still uploading remain a real
+wait state. Unread originals and unchecked text are described in context, and
+optional extraction review remains available. Missing requirements or unrelated
+content become explicit draft limitations rather than a preparation gate.
+Final approval retains evidence and omission-review checks, and draft Word
+download remains available before those final controls.
+
 Requested assessment and proposal processing no longer require a separate
 per-document or per-provider content review. Every user permitted to start or
 resume the workflow uses the same direct action. The server binds that request
@@ -26,7 +36,7 @@ Workspace refresh batches complete job/audit history in pages of 500, reducing s
 
 Failure email preferences default to at most daily. New affected tasks do not repeat email for an already reported ongoing cause; recovered causes may notify again if they recur. A pending summary rechecks recovery and the current interval before sending. The activity log retains every attempt, and review reminders keep their separate schedule.
 
-RFP-first preparation does not require a saved template, rates or Company Knowledge. The neutral document structure is automatic. Missing company facts remain unknown; buyer-specific mandatory evidence and commercial commitments still need review. The opportunity distinguishes extracted-but-unconfirmed files from generation-ready files and links directly to pending extraction review. Generation sits beside its language and input controls, refreshes workspace data when a plan completes, and exposes the full draft download before the separate final-approval controls. Hosted upload-to-download acceptance is recorded separately in the checklist.
+Reference-based preparation does not require a saved template, rates or Company Knowledge. The neutral document structure is automatic. Missing company facts remain unknown; buyer-specific mandatory evidence and commercial commitments still need review. The opportunity describes unread or unchecked files without preventing drafting and offers an optional extraction check. Generation sits beside its language and input controls, refreshes workspace data when a plan completes, and exposes the full draft download before the separate final-approval controls. Hosted upload-to-download acceptance is recorded separately in the checklist.
 
 Company service scope is configurable: Company Knowledge, keywords, or both. Owners can enter interest and optional exclusion phrases in Arabic or English. In combined mode, company services and interest terms define interests; configured exclusions take precedence. The model compares the meaning and context of purchased work against the selected saved sources; notices need not repeat the same words, and Owners need not enumerate every unrelated activity. No keyword classifier or embedded business-sector list sets scores or routes. Keywords are preferences, not company credentials. Definite scope requires cited notice evidence plus verified company quotations or configured terms. Delivery capability and eligibility remain separate evidence questions. Scope and keyword edits queue reassessment and invalidate dependent approvals while preserving human bid decisions; permission-only edits preserve evidence revisions. Current uncertain assessments display their saved scope explanation, with a neutral fallback for older records; the UI does not infer that an RFP is missing.
 
@@ -36,7 +46,7 @@ Settings separates Workspace, Models & providers, Assessment & data, Notificatio
 
 The connected application implements invitations and members, source review and collection/imports, original upload and extraction, company evidence, fit assessment, persistent generation/regeneration, commercial and delivery review, approval, bilingual Word export, manual acquisition/submission, operational status and complete backup/restore. See [the implementation checklist](../../backend/docs/IMPLEMENTATION_CHECKLIST.md) for source revisions, deployed components, local tests and the distinct hosted acceptance requirements. A feature being implemented does not establish that its model or source is activated.
 
-The user journey is **Review fit → select opportunity → upload and confirm the buyer's request for proposal (RFP) → generate the full linked proposal → review content and unresolved questions → supply scoped feedback → regenerate a new version → approve and export → record manual submission**. The previous active version remains available until every regeneration stage succeeds. The user does not manually construct an outline. Actual prices, resource assumptions and commitments require explicit review.
+The user journey is **Review fit → select opportunity → upload reference material → generate a linked proposal draft → review content and unresolved questions → supply scoped feedback → regenerate a new version → approve and export → record manual submission**. Checking extracted text is optional before drafting. The previous active version remains available until every regeneration stage succeeds. The user does not manually construct an outline. Actual prices, resource assumptions and commitments require explicit review.
 
 Every build is connected-only. A legacy demo query cannot create a workspace. Saves await authenticated application programming interface (API) or Storage acceptance; failed writes preserve entered values. Synthetic records are confined to test fixtures. Accounts use invitation-only email/password. Historical actors imported during recovery are not Auth users or memberships. Pending original files in IndexedDB are temporary upload buffers, not a second workspace database.
 
@@ -56,7 +66,7 @@ Generation persists input snapshots, source-grounded requirements, questions, se
 
 Original bytes and metadata require exact-byte eligibility review before reserving private Storage. Known prohibited patterns fail closed; a checkbox does not override them. The server independently checks size, signature, media type and SHA-256. Upload reservations are short-lived, accepted originals are immutable, and download access is rechecked. Content changes invalidate the affected approvals. Additional RFP originals and addenda preserve previous evidence versions.
 
-`frontend/src/lib/documents.ts` and the extraction worker process PDF, DOCX, TXT and Markdown. Limits include 10 MiB per original, ten RFP files, 200 aggregate PDF pages, one million package characters and bounded extracted blocks. PDF page and DOCX structure markers support traceable quotations; extraction is not a layout-preserving image of the original. The user confirms completeness against the actual document. Scanned or unsupported content remains `needs_ocr` or `needs_processing`; no optical character recognition service or successful reading is fabricated. Browser parsing has a two-minute limit.
+`frontend/src/lib/documents.ts` and the extraction worker process PDF, DOCX, TXT and Markdown. Limits include 10 MiB per original, ten attached reference files, 200 aggregate PDF pages, one million package characters and bounded extracted blocks. PDF page and DOCX structure markers support traceable quotations; extraction is not a layout-preserving image of the original. Checking completeness improves evidence and remains relevant to final approval. Scanned or unsupported content remains `needs_ocr` or `needs_processing`; it can be retained as an unread reference while a draft uses the available text. No optical character recognition service or successful reading is fabricated. Browser parsing has a two-minute limit.
 
 Section comments and question answers accept text, attachments or both. Save persists the complete scoped snapshot; Regenerate first saves it, then requests a new version. Inputs keep their original author and base-version references, and pending input does not silently rewrite current content. Reviewer edits are limited to their own inputs. Full saved feedback remains visible. Removing a pending reference does not delete an original still referenced by earlier evidence.
 

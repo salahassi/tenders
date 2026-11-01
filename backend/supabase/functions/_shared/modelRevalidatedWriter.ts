@@ -4,6 +4,7 @@ import {
   sha256,
   validateModelResult,
   classificationScopePolicy,
+  draftInputPolicyVersion,
   type Evidence,
   type Reference,
 } from "./model.ts";
@@ -30,6 +31,10 @@ export function revalidateWriter(candidate: any, options: Validation) {
       {
         independentGrounding: true,
         scopePolicy: classificationScopePolicy(options.task, options.context),
+        draftInputVersion: draftInputPolicyVersion(
+          options.task,
+          options.context,
+        ),
       },
     );
     options.validate?.(candidate, { independentGrounding: true });

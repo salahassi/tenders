@@ -63,8 +63,10 @@ export default function Proposals() {
       <div className="notice">
         <FileText size={18} />
         <p className="small">
-          <strong>Each proposal belongs to one opportunity and its RFP.</strong>{" "}
-          Start inside a selected opportunity after uploading the buyer’s RFP.
+          <strong>
+            Each proposal belongs to one opportunity and its reference files.
+          </strong>{" "}
+          Start inside a selected opportunity using the documents you have.
           Submission through the buyer’s portal or email is recorded separately;
           the proposal stays available here.
         </p>
@@ -194,12 +196,12 @@ export default function Proposals() {
             title={
               search
                 ? "No matching proposal files"
-                : "Your next proposal starts with an RFP"
+                : "Your next proposal starts with your reference files"
             }
             description={
               search
                 ? "Try another title, buyer, or reference."
-                : "Choose an opportunity, upload and review the buyer’s RFP, then generate its complete proposal. You can start without a saved template or Company Knowledge; missing information will appear as review questions."
+                : "Choose an opportunity, attach the documents you have, then generate a draft from the available content. A file does not need to be an RFP or match the opportunity to start. Missing or conflicting information will appear as review questions; a saved template and Company Knowledge are optional."
             }
             action={
               !search ? (

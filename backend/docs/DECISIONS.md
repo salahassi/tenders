@@ -1,5 +1,27 @@
 # Decisions
 
+## 2026-10-31: Reference files do not block proposal draft creation
+
+The Owner requires drafting to continue for every accepted uploaded reference
+file, including material that is not an RFP, does not match the opportunity or
+contains no usable requirements. Extraction review and completeness are
+optional improvements before drafting. An unread attachment is recorded as
+unread and omitted from model evidence; the draft uses the available notice and
+readable reference text with explicit gaps and assumptions.
+
+Do not invent requirements, buyer-issued authority, company facts or text from
+unread files. Keep source identities and exact quotations. Non-RFP content,
+incomplete inventory and file/opportunity differences become draft limitations,
+not failures of the drafting job. Real model-response validation and content
+restrictions continue to apply. New work carries a frozen input-policy version;
+existing paid inputs, checkpoints and usage remain unchanged.
+
+Draft Word download remains available before final approval. Used source text
+must satisfy current source/evidence checks for final approval, and omitted
+files produce a review question using the existing resolution workflow. Upload
+integrity, actual upload-in-progress, membership, role and size/format limits
+remain enforced.
+
 ## 2026-10-31: Requested processing has no separate content-permission step
 
 The Owner removes the separate per-document, per-provider model permission
