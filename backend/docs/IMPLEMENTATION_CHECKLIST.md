@@ -30,8 +30,8 @@ SHA-256 `5bac8ff0a8e070688873b2e6c020a3c7ddb51c7dc8e0ad8005735e4e653ccf6c`.
 The release installs the backward-compatible runtime first and waits for old
 processes to drain before enabling new SQL inputs and publishing the frontend.
 After any schema attempt it retains the compatible runtime if frontend rollback
-is needed. Deployment and hosted acceptance remain pending. No live paid
-generation or completed proposal is claimed by this entry.
+is needed. Deployment and hosted acceptance passed as recorded below. No live
+paid generation or completed customer proposal is claimed by this entry.
 
 The first release attempt, [41249722828](https://github.com/salahassi/tenders/actions/runs/41249722828),
 on source `48a7ecd27ef80963c89193da711f38077d596d19`, passed exact-source tests
@@ -43,7 +43,25 @@ unchanged, and temporary resources were removed. The corrected guard verifies
 the exact Pod-to-ReplicaSet-to-managed-Deployment controller names and UIDs,
 with namespace/container/image checks. Canonical renderer fixtures and spoofed
 ownership rejection pass; runtime drain and compatible rollback remain intact.
-Corrected deployment and hosted acceptance remain pending.
+Corrected deployment and hosted acceptance passed on November 1 in
+[workflow 41287120748](https://github.com/salahassi/tenders/actions/runs/41287120748),
+source `492e42e5159463e5089b6ae2afcf3ca7bc8220a3`, job `124790560824`.
+Exact-source verification passed 1,539 backend tests, 251 frontend tests,
+162 operations tests, 13 renderer tests and both package typechecks/builds.
+All four compatible runtime workloads became ready, old processes drained,
+the migration committed with existing business records and frozen paid work
+preserved, and the frontend became ready. Public configuration, anonymous Auth
+boundaries, provider assets and the served flexible-draft controls passed.
+All five workloads and temporary-resource cleanup passed.
+
+Deployed runtime digest:
+`sha256:c5a1d4d3bc108333a34233d5488c820130ee462c1940e74b17c4dcbbb33f9cde`.
+Deployed frontend digest:
+`sha256:3685fa1527dbee98b1e6fc2890cae93d4880daeaf9d90837464c84a572c73360`.
+The new semantics apply to newly created or regenerated drafts for every
+authorized user. Existing paid snapshots remain immutable; deployment did not
+restart processing or activate models. Authenticated visual browser QA and a
+new live paid draft-to-Word execution remain separate acceptance.
 
 ## October 31 — remove separate permission review for requested processing
 
