@@ -1,5 +1,72 @@
 # Implementation status and continuation plan
 
+## November 1–2 — branch, release and project-plan reconciliation
+
+A fresh remote audit found 39 branches and one open pull request, [#14](https://github.com/salahassi/tenders/pull/14).
+Twenty non-main branch tips are ancestors of main. Of the eighteen divergent
+branches, fourteen hold historical operational/diagnostic work, two were
+squash-merged, one contains saved-work recovery already integrated in main, and
+one holds the PDF extraction correction in #14. Divergence alone is not a
+reason to merge an old operational branch. No branch was deleted by this audit.
+
+Current main `e650078021c904ea2e3160df6a82a3b87309a28c` differs from the
+deployed flexible-input source `492e42e5159463e5089b6ae2afcf3ca7bc8220a3`
+only in this implementation checklist. The November 1 release completed at
+12:11 Asia/Riyadh in [workflow 41287120748](https://github.com/salahassi/tenders/actions/runs/41287120748).
+Fresh public asset checks confirm the deployed "Generate proposal draft" and
+"Upload reference files" controls, and the absence of the removed individual
+content-permission screen. Root HTML is served with `Cache-Control: no-store`.
+Existing paid snapshots retain their frozen semantics; deployment does not
+regenerate an existing plan or activate a new model request.
+
+The audit also confirmed a current production regression. The PDF module
+`/assets/pdf.worker.min-CjEcRF4W.mjs` returns HTTP 200 with
+`application/octet-stream` and `nosniff`, including with the versioned query.
+The current extraction worker lacks the cache-bypassing query. The October 29
+frontend-only PDF correction was deployed from #14 but never merged into main;
+the later frontend build therefore replaced it. A successful release record
+does not establish that every earlier branch-only correction is present.
+
+The correction is restored on the current main application tree, preserving
+the requested-processing and flexible-input changes. Its six source/tool files
+restore #14 with a new `javascript-v2` worker cache key, since this second
+regression could also have cached an invalid response under the former `v1`
+URL. That cache state is plausible rather than observed. The historical
+acceptance entry below is retained. Independent review found no incompatibility
+with the current renderer, ownership checks or
+worker protocol. The frontend-only release uses an immutable image, checks
+ownership and concurrent edits, preserves other workloads and runtime
+configuration, and rolls back its own image if readiness, exact assets or real
+Chromium PDF extraction fails. It neither changes the database nor submits
+inference. Backend verification passed all 1,539 tests and its typecheck/build;
+all 175 operations guards and 13 renderer tests passed. The final frontend
+with the new cache key passed typecheck/build and all 251 tests in 38 files.
+Hosted recovery remains pending until its release evidence is recorded.
+The November 2 resumption verified that main and #14 have not
+advanced since the audit; no restoration had been published during the
+interrupted session.
+
+The plan is not complete. M2 through M5 have substantial implemented and
+deployed functionality: invited authentication and isolation, official-source
+collection, assessments, proposal drafting/revision and Word delivery.
+Historical real Word acceptance on October 22 covered 56 sections and 122
+requirements, authenticated downloads, and rendered technical/financial
+documents. That acceptance predates the DigitalOcean migration and the newest
+input behavior. A fresh authenticated DigitalOcean upload-to-draft-to-Word and
+feedback-to-regeneration acceptance, isolated backup/restore with originals,
+and current final business approval remain open. Source-directory entries do
+not prove every portal adapter is operational. The migration intentionally
+copied the Owner/configuration and selected sources; historical opportunity
+and document migration is separate. M6 still needs the human-labeled notice
+evaluation, proposal editorial review and measured latency/call-reduction
+evidence. Older dated checklist tables, security notes and runbook baselines
+must be read with the later dated decisions and release entries.
+
+Main pushes currently publish the legacy Pages redirect; DigitalOcean releases
+use explicit release branches or manual dispatch. The application has no
+visible source-version indicator. These are release-observability gaps; this
+restoration does not claim to redesign the deployment policy.
+
 ## October 31 — draft from arbitrary reference inputs
 
 The Owner requires uploaded material to permit proposal draft creation even
@@ -141,6 +208,75 @@ default to diagnosis when invoked manually; the one-shot push trigger and
 embedded transport selection are removed. Temporary transport uses generated
 encrypted objects, authenticated private readback and subsequent removal;
 the transfer helper revokes temporary bucket keys after every operation.
+
+## October 29 — PDF extraction worker MIME correction
+
+The reported RFP upload fails before PDF text extraction because the production
+PDF.js worker asset is served as `application/octet-stream`. A read-only GET of
+`/assets/pdf.worker.min-CjEcRF4W.mjs` returned HTTP 200 with that content type and
+`X-Content-Type-Options: nosniff`; its body is the actual PDF.js module. The
+browser therefore rejects the module and the library's fallback import fails.
+The served worker is byte-for-byte identical to the locked production build
+output, confirming that the module content itself is not missing or mismatched.
+
+The frontend Nginx asset location now includes the standard MIME map and adds
+`application/javascript` for `.mjs`, preserving ordinary JavaScript, CSS and other
+asset types, caching, and missing-asset 404 behavior. The worker URL also carries
+a stable `module-mime=javascript-v1` cache key. A same-origin, same-context
+Chromium regression first caches the old octet-stream response, reproduces the
+failure after a server-only MIME repair, then extracts the expected PDF text
+and matching SHA-256 with the new URL without clearing the browser cache. A
+second extraction reuses the correctly cached module. The separate console JSON
+parse error has no reproduced source in the current Jobs path and is not claimed
+fixed by this correction.
+
+Local production acceptance passes against the image built from the pinned
+frontend Dockerfile. Nginx validates the corrected configuration. Two restricted,
+read-only local containers reproduce the exact module-import failure with the
+previous configuration and successfully extract the expected text from a
+synthetic PDF with the correction. Chromium verifies the real built extraction
+worker, the PDF.js module request, a ready document and its exact-byte SHA-256.
+HTTP checks also preserve JavaScript/CSS media types, immutable caching,
+`nosniff`, and missing-asset 404 responses. Both temporary containers were removed.
+
+Both packages were installed from their lockfiles and pass typecheck and build.
+The frontend passes all 241 tests in 39 files; the backend passes all 1,495 tests
+in 87 files. Verification uses one test worker per package without changing
+test assertions or timeouts. The final source diff passes `git diff --check`.
+
+The Owner's follow-up confirms that the local correction did not resolve the
+live website. The release now includes a frontend-only workflow: publish one
+immutable frontend image, compare live ownership/configuration/image identity,
+replace only that deployment's image, wait for readiness and verify the exact
+public build, media types and real Chromium extraction. Failed acceptance
+triggers a guarded return to the original image. The updater reads no database
+or Kubernetes Secret and performs no restoration, provider activation or other
+service update.
+
+Refreshed release verification passes the frontend typecheck/build and all 241
+tests, all 156 operations tests (including 13 frontend update guards), workflow
+YAML/shell syntax, and the permanent browser probe against real local Nginx.
+
+Deployment and hosted extraction acceptance passed in
+[workflow 40901422543](https://github.com/salahassi/tenders/actions/runs/40901422543),
+source `83432b210dce046ed898b3c2463580be91cc8e2d`, on October 29. The published
+frontend digest is
+`sha256:36a6afd3c43f8d3364cf7a3341fa7772e8dee2bbf546c30baf5a6c4afb2cf03f`.
+Fresh CI passes both package typechecks/builds, all 241 frontend and 1,495
+backend tests, and all 156 operations guards. The rollout verified 50 public
+build assets, the preserved runtime configuration and other workload specs,
+then completed real PDF extraction in Chromium. Runner credential/log cleanup
+also passed.
+
+A separate browser probe from the working environment confirms the live new
+extraction worker and `.mjs?module-mime=javascript-v1` return HTTP 200 with
+`application/javascript`; the expected PDF text, ready status and SHA-256 all
+match. No application record is created by either browser probe.
+
+Status: the correction is deployed and hosted static/extraction acceptance is
+complete. The same-context cached-response regression also passes locally.
+Authenticated upload/storage acceptance of the Owner's actual RFP is separate
+from these synthetic, browser-local extraction probes.
 
 ## October 29 — approved model execution and Needs attention recovery
 

@@ -20,7 +20,10 @@ export async function extractDocumentOnWorker(
       throw new Error("The file signature does not match PDF.");
     const pdfjs = await import("pdfjs-dist");
     const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
-    pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+    const workerUrl = new URL(worker.default, self.location.href);
+    // Bypass octet-stream responses cached before this MIME repair.
+    workerUrl.searchParams.set("module-mime", "javascript-v2");
+    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl.href;
     const loadingTask = pdfjs.getDocument({
       data: bytes.slice(0),
       enableXfa: false,
