@@ -65,6 +65,9 @@ it("records real transport rejection as failed cases without leaking credentials
   expect(report.generations).toBe(8);
   expect(report.results).toHaveLength(8);
   expect(report.results.every((r: any) => !r.passed)).toBe(true);
+  expect(report.results[0].attempts[0].provider_error_code).toBe(
+    "invalid_api_key",
+  );
   expect(report.production_records_created).toBe(0);
   expect(JSON.stringify(report)).not.toContain(target.key);
   for (const call of calls) {
@@ -217,6 +220,10 @@ it.each(["failed", "cancelled"])(
         return Response.json({
           id: "fixture-response",
           status,
+          error:
+            status === "failed"
+              ? { code: "insufficient_quota", type: "usage_limit" }
+              : undefined,
           usage: { input_tokens: 2, output_tokens: 0 },
         });
       if (methods.length === 1)
@@ -241,6 +248,14 @@ it.each(["failed", "cancelled"])(
     expect(methods.filter((x) => x === "DELETE")).toHaveLength(1);
     expect(report.results[0].passed).toBe(false);
     expect(report.results[0].cleanup).toBe("deleted");
+    expect(report.results[0].settlement_code).toBe(
+      "PROVIDER_BACKGROUND_TERMINATED",
+    );
+    if (status === "failed")
+      expect(report.results[0].attempts.at(-1)).toMatchObject({
+        provider_error_code: "insufficient_quota",
+        provider_error_type: "usage_limit",
+      });
     expect(report.generations).toBe(8);
   },
 );

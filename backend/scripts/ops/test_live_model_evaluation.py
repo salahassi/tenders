@@ -25,6 +25,24 @@ class EvaluationGuards(unittest.TestCase):
         with self.assertRaisesRegex(m.EvaluationError,'EVAL_CREDENTIAL_ALIAS_INVALID'):m.targets(rows,bindings)
     def test_never_truncates_extra_models_silently(self):
         with self.assertRaisesRegex(m.EvaluationError,'EVAL_CATALOG_LIMIT'):m.targets(self.rows()*3,{})
+    def test_extended_targets_only_qwen_and_at_most_two_models(self):
+        rows=self.rows(); bindings={r['credential_alias']:'private-test-value' for r in rows}
+        self.assertEqual(m.targets(rows[1:],bindings,'extended')[0]['provider'],'qwencloud')
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_CREDENTIAL_ALIAS_INVALID'):m.targets(rows,bindings,'extended')
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_CATALOG_LIMIT'):m.targets(rows[1:]*3,bindings,'extended')
+        self.assertEqual(m.catalog_sql('extended'),m.CATALOG_SQL.replace("c.provider IN ('openai','qwencloud')","c.provider='qwencloud'").replace('LIMIT 5','LIMIT 3'))
+        self.assertIn('BEGIN READ ONLY',m.catalog_sql('extended'))
+    def test_invalid_suite_stops_before_cluster_access(self):
+        with patch.dict(os.environ,{'RUN_LIVE_AI_EVALUATION':'true','AI_EVALUATION_SUITE':'unknown'}), patch.object(m.access,'prepare_cluster') as cluster, redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(m.main(),1);cluster.assert_not_called()
+        self.assertEqual(m.json.loads(output.getvalue())['code'],'EVAL_SUITE_INVALID')
+    def test_extended_reports_enforce_sixteen_calls_and_provider_selection(self):
+        report=m.parse_execution_output('',2,False,'extended')
+        self.assertEqual(report['suite'],'extended')
+        report['generations']=17
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_REPORT_INVALID'):m.validate_report(report,2,'extended')
+        report['generations']=1;report['results']=[{'passed':False,'provider':'openai'}]
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_REPORT_INVALID'):m.validate_report(report,2,'extended')
     def test_partial_receipt_preserves_completed_results_after_timeout(self):
         progress={'progress':{'result':{'passed':False,'usage':None},'generations':1,'requests':1}}
         report=m.parse_execution_output(m.json.dumps(progress)+'\n{',2,False)
@@ -51,5 +69,8 @@ class EvaluationGuards(unittest.TestCase):
         workflow=(m.HERE.parents[2]/'.github/workflows/evaluate-ai-models.yml').read_text()
         self.assertIn("github.event_name == 'workflow_dispatch' && inputs.run_live",workflow)
         self.assertIn('default: false',workflow)
+        self.assertIn('default: core',workflow)
+        self.assertIn('options: [core, extended]',workflow)
+        self.assertIn('liveModelEvaluationExtended.test.ts',workflow)
 
 if __name__=='__main__':unittest.main()

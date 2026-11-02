@@ -5,9 +5,15 @@ on:
   workflow_dispatch:
     inputs:
       run_live:
-        description: Send at most 32 synthetic model requests using configured OpenAI and QwenCloud models
+        description: Activate bounded synthetic requests (core at most 32, extended QwenCloud only at most 16)
         type: boolean
         default: false
+        required: true
+      suite:
+        description: Core provider contracts or remaining task families on QwenCloud only
+        type: choice
+        options: [core, extended]
+        default: core
         required: true
 permissions:
   contents: read
@@ -35,11 +41,12 @@ jobs:
         run: |
           python3 -m unittest discover -s backend/scripts/ops -p 'test_live_model_evaluation.py'
           cd backend
-          npx vitest run tests/backend/liveModelEvaluation.test.ts tests/backend/liveEvaluationSql.integration.test.ts
+          npx vitest run tests/backend/liveModelEvaluation.test.ts tests/backend/liveModelEvaluationExtended.test.ts tests/backend/liveEvaluationSql.integration.test.ts
       - name: Run explicitly selected bounded live evaluation
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_live }}
         env:
           RUN_LIVE_AI_EVALUATION: "true"
+          AI_EVALUATION_SUITE: ${{ inputs.suite || 'core' }}
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         run: python3 backend/scripts/ops/live-model-evaluation.py
       - name: Remove temporary credentials and private report plaintext

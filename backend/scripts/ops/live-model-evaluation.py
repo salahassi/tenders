@@ -48,36 +48,50 @@ SELECT coalesce(jsonb_agg(to_jsonb(t)),'[]') FROM (
 class EvaluationError(Exception):
     pass
 
-def targets(catalog, bindings):
-    if not isinstance(catalog, list) or not 1 <= len(catalog) <= 4:
+def suite_limits(suite):
+    if suite not in {'core','extended'}: raise EvaluationError('EVAL_SUITE_INVALID')
+    return (2,16) if suite == 'extended' else (4,32)
+
+def catalog_sql(suite):
+    suite_limits(suite)
+    return CATALOG_SQL.replace("c.provider IN ('openai','qwencloud')", "c.provider='qwencloud'").replace('LIMIT 5','LIMIT 3') if suite == 'extended' else CATALOG_SQL
+
+def targets(catalog, bindings, suite='core'):
+    max_models,_ = suite_limits(suite)
+    allowed = {'qwencloud'} if suite == 'extended' else {'openai','qwencloud'}
+    if not isinstance(catalog, list) or not 1 <= len(catalog) <= max_models:
         raise EvaluationError('EVAL_CATALOG_LIMIT')
     result = []
     for row in catalog:
         if not isinstance(row, dict) or set(row) != {'provider','credential_alias','project_ref','model','capabilities'}:
             raise EvaluationError('EVAL_CATALOG_INVALID')
         alias = row['credential_alias']
-        if row['provider'] not in {'openai','qwencloud'} or not isinstance(alias, str) or not re.fullmatch(r'APP_MODEL_[A-Z0-9_]{1,80}_KEY', alias):
+        if row['provider'] not in allowed or not isinstance(alias, str) or not re.fullmatch(r'APP_MODEL_[A-Z0-9_]{1,80}_KEY', alias):
             raise EvaluationError('EVAL_CREDENTIAL_ALIAS_INVALID')
         if not bindings.get(alias):
             raise EvaluationError('EVAL_CONFIGURED_KEY_MISSING')
         result.append({k: row[k] for k in ('provider','model','project_ref','capabilities')} | {'key': bindings[alias]})
-    if {r['provider'] for r in result} != {'openai','qwencloud'}:
+    if {r['provider'] for r in result} != allowed:
         raise EvaluationError('EVAL_BOTH_PROVIDERS_REQUIRED')
     return result
 
-def validate_report(report, count):
+def validate_report(report, count, suite='core'):
+    max_models,max_generations = suite_limits(suite)
     if (not isinstance(report, dict) or report.get('version') != 1 or report.get('synthetic') is not True
+        or report.get('suite','core') != suite or not 1 <= count <= max_models
         or report.get('production_records_created') != 0 or report.get('model_count') != count
-        or type(report.get('generations')) is not int or not 0 <= report['generations'] <= 32
+        or type(report.get('generations')) is not int or not 0 <= report['generations'] <= max_generations
         or type(report.get('complete')) is not bool or not isinstance(report.get('results'), list)
         or (len(report['results']) != count * 8 if report.get('complete') else not 0 <= len(report['results']) <= count * 8)
         or type(report.get('passed')) is not bool):
         raise EvaluationError('EVAL_REPORT_INVALID')
     if any(type(r.get('passed')) is not bool for r in report['results']):
         raise EvaluationError('EVAL_REPORT_INVALID')
+    if suite == 'extended' and any(r.get('provider') != 'qwencloud' for r in report['results']):
+        raise EvaluationError('EVAL_REPORT_INVALID')
     return report
 
-def parse_execution_output(raw, count, success):
+def parse_execution_output(raw, count, success, suite='core'):
     lines = []
     nonempty = [line for line in raw.splitlines() if line.strip()]
     for i,line in enumerate(nonempty):
@@ -85,16 +99,16 @@ def parse_execution_output(raw, count, success):
         except ValueError:
             if success or i != len(nonempty)-1: raise EvaluationError('EVAL_REPORT_INVALID')
     final = next((line['report'] for line in reversed(lines) if 'report' in line), None)
-    if success and final is not None: return validate_report(final, count)
+    if success and final is not None: return validate_report(final, count, suite)
     progress = [line['progress'] for line in lines if 'progress' in line]
     results = [p['result'] for p in progress]
     last = progress[-1] if progress else {'generations':0,'requests':0}
-    return validate_report({'version':1,'complete':False,'synthetic':True,'production_records_created':0,
+    return validate_report({'version':1,'suite':suite,'complete':False,'synthetic':True,'production_records_created':0,
       'model_count':count,'generations':last['generations'],'requests':last['requests'],'results':results,'passed':False,
       'failure':'EVAL_PROCESS_INTERRUPTED','generation_count_is_lower_bound':True,'unreported_in_flight':True,
       'measured_input_tokens':sum((r.get('usage') or {}).get('input') or 0 for r in results),
       'measured_output_tokens':sum((r.get('usage') or {}).get('output') or 0 for r in results),
-      'unknown_usage_cases':sum(not r.get('usage') or r['usage'].get('input') is None or r['usage'].get('output') is None for r in results)},count)
+      'unknown_usage_cases':sum(not r.get('usage') or r['usage'].get('input') is None or r['usage'].get('output') is None for r in results)},count,suite)
 
 def main():
     if os.environ.get('RUN_LIVE_AI_EVALUATION') != 'true':
@@ -107,6 +121,9 @@ def main():
     private_output = io.StringIO()
     diagnostic = {}
     try:
+        stage = 'suite_selection'
+        suite = os.environ.get('AI_EVALUATION_SUITE','core')
+        suite_limits(suite)
         os.umask(0o077)
         with redirect_stdout(private_output), redirect_stderr(io.StringIO()):
             stage = 'cluster_prepare'
@@ -115,18 +132,20 @@ def main():
             stage = 'database_prepare'
             client.prepare()
             stage = 'catalog_read'
-            catalog = json.loads(access.d.sql(client.pod, CATALOG_SQL))
+            catalog = json.loads(access.d.sql(client.pod, catalog_sql(suite)))
             stage = 'routing_read'
             routing = json.loads(access.d.sql(client.pod, (HERE / 'ai-routing-diagnostic.sql').read_text().replace('__WORKSPACE__', access.WORKSPACE)))
+            stage = 'content_permission_read'
+            content_permissions = json.loads(access.d.sql(client.pod, (HERE / 'ai-content-permission-diagnostic.sql').read_text().replace('__WORKSPACE__', access.WORKSPACE)))
             stage = 'target_selection'
-            selected = targets(catalog, access.d.decode_secret(access.d.get('secret', 'tenderdesk-runtime')))
+            selected = targets(catalog, access.d.decode_secret(access.d.get('secret', 'tenderdesk-runtime')), suite)
             # Release database credentials before making provider calls.
             stage = 'database_cleanup'
             client.cleanup(); client = None
             stage = 'provider_evaluation'
             try:
                 execution = subprocess.run(['node','--experimental-transform-types',str(HERE / 'live-model-evaluation.mjs')],
-                    input=json.dumps(selected), capture_output=True, text=True, timeout=2400,
+                    input=json.dumps({'suite':suite,'targets':selected}), capture_output=True, text=True, timeout=2400,
                     env={k:v for k,v in os.environ.items() if k not in {'DIGITALOCEAN_ACCESS_TOKEN','GH_TOKEN','GITHUB_TOKEN'}})
                 output, success = execution.stdout, execution.returncode == 0
             except subprocess.TimeoutExpired as error:
@@ -135,8 +154,9 @@ def main():
                 success = False
             if len(output.encode()) > 2_000_000: raise EvaluationError('EVAL_REPORT_TOO_LARGE')
             stage = 'report_parse'
-            report = parse_execution_output(output, len(selected), success)
+            report = parse_execution_output(output, len(selected), success, suite)
             report['routing_diagnosis'] = routing
+            report['content_permission_diagnosis'] = content_permissions
             report['source_sha'] = os.environ.get('GITHUB_SHA', '')
             for row in selected:
                 if row['key'] in json.dumps(report):
@@ -148,6 +168,7 @@ def main():
             digest = transfer.upload(os.environ['DIGITALOCEAN_ACCESS_TOKEN'], BUCKET,
                 'diagnostics/live-ai-evaluation-' + os.environ['GITHUB_RUN_ID'] + '.bundle', path)
             receipt = {'live_ai_evaluation':'passed' if report['passed'] else 'failed_cases',
+                'suite':suite,
                 'models':report['model_count'], 'complete':report['complete'], 'cases':len(report['results']),
                 'passed_cases':sum(x['passed'] for x in report['results']),
                 'generations':report['generations'], 'unknown_usage_cases':report['unknown_usage_cases'],

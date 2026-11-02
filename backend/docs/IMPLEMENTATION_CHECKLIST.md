@@ -6,18 +6,52 @@ The Owner requests comprehensive model and prompt testing after the October 31
 QwenCloud activity stop. The isolated reliability change fixes terminal remote
 polling and misleading usage/identity diagnostics, and adds versioned analysis
 evidence instructions. Historical prompt pins, accepted requests, usage and
-business records are retained. Full local verification passes **1,572 backend
-tests in 92 files**, **265 frontend tests**, both packages' typechecks/builds,
-**189 operations tests** and **13 Kubernetes renderer tests**. Focused independent
+business records are retained. Full GitHub verification of `bc4c239` passes
+**1,576 backend tests in 93 files**, **265 frontend tests**, both packages'
+typechecks/builds, **191 operations tests** and **13 Kubernetes renderer tests**
+in [run 41545602259](https://github.com/salahassi/tenders/actions/runs/41545602259).
+Focused independent
 review checked remote-ID matching, unknown accounting, failover, immutable prompt
 pins and private live-evaluation transport. A stale earlier operations run found
 an ambiguous SQL identifier in the release wrapper; the corrected qualified
 query passed the fresh full 189-test run.
 
-The bounded live evaluation and production release have not yet run at this
-checkpoint. Live synthetic contract checks are not a completed real proposal,
-a human-labeled business-quality evaluation or proof that all prompts work on
-arbitrary documents. No existing blocked work is reset by this change.
+The core live evaluation completed all 32 cases in
+[run 41545612647](https://github.com/salahassi/tenders/actions/runs/41545612647),
+source `bc4c2398a4a49202fa02cf4c56360ebfbf08628d`. Both QwenCloud models passed
+8/8 cases each, including bilingual extraction, exact quotation, prompt
+injection, missing company evidence, wrong-quote repair and unsupported-claim
+grounding. OpenAI's two models could not complete any case: 14 generation
+requests returned HTTP 429 `usage_limit`, and two accepted background probes
+ended in an explicit failed status. These are provider availability results,
+not 16 prompt-quality failures. Both background responses were deleted;
+no evaluation request remains pending. Known usage is 39,326 input and 8,529
+output tokens; the 16 OpenAI cases have unknown usage, not asserted zero cost.
+The encrypted report was downloaded with verified digest and its temporary
+transport object deleted. No application business records were created.
+
+Expanded routing evidence confirms both Qwen models are enabled in saved
+assessment routes; exclusion from those saved routes is disproved. Content
+permission filtering needs separate diagnosis before attributing absent Qwen
+attempts solely to polling. An extended Qwen-only suite covers the remaining
+model task families, with at most 16 additional generation requests; its live
+result is pending at this checkpoint.
+
+The extended fixtures, combined with the core suite, exercise all 13 registered
+model task types. Production structure, blueprint and review validators are
+included alongside explicit tests for requirement ownership, unknown prices,
+source fields, review durations and eight bilingual obligations among longer
+mixed-role inputs. Focused offline verification passes 17 Vitest tests and
+10 Python guards plus backend typecheck; all eight core prompt hashes match the
+completed core live run. The extra requests select QwenCloud only in SQL,
+Python and JavaScript, and remain capped at 16. The permission diagnostic is
+aggregate evidence only: lazy policy grants, receipt selection and active
+content eligibility still govern actual preflight authorization.
+
+Production release has not run. Live synthetic contract checks are not a
+completed real proposal, a human-labeled business-quality evaluation or proof
+that all prompts work on arbitrary documents. No existing blocked work is reset
+by this change. OpenAI account limits remain an external blocker.
 
 ## November 3 — analysis evidence prompt and repair regression coverage
 
@@ -3981,3 +4015,23 @@ receipts retain a fixed orchestration stage and sanitized SQLSTATE/line, so a
 future setup error can be identified without emitting SQL, provider content or
 credentials. The interrupted run submitted zero model requests and supplies no
 live model acceptance evidence.
+
+The content-permission diagnostic now separately projects current discovery
+policy flags, provider inclusion, approval timestamp/current membership, and
+aggregate exact-hash grants for frozen assessment notice/verified company
+references. It includes valid interactive request receipts and later explicit
+revocation counts, matching the October 31 requested-processing distinction:
+selected requested notice/style material can bypass repeated permission checks,
+while verified company evidence retains its existing authorization requirements.
+No content-check/preflight/autoauthorization function is invoked. The SQL uses
+read-only repeatable-read isolation, exact database/workspace guards and bounded
+execution; it returns no document text, content hashes, user or entity IDs,
+credential aliases or secret values. Missing QwenCloud consent remains missing.
+
+Local verification: all five exact catalog/routing/content diagnostic SQL tests
+pass against the complete current migration schema, including wrong-target
+rejection, populated explicit/policy/revoked reference counts, requested versus
+automatic assessment distinctions, unchanged authorization rows, and sensitive
+projection exclusions. A current policy snapshot does not establish its state
+on October 31; historical cause requires separate timestamped evidence. Hosted
+execution of this added diagnostic remains pending.

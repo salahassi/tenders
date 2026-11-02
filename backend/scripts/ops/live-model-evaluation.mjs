@@ -9,6 +9,7 @@ import {
   sha256,
 } from "../../supabase/functions/_shared/model.ts";
 import { capabilitySchema } from "../../supabase/functions/_shared/modelContract.ts";
+import { extendedFixtures } from "./live-model-evaluation-extended.mjs";
 import {
   candidateContent,
   validateGroundingReport,
@@ -20,6 +21,15 @@ export const LIMITS = Object.freeze({
   outputTokens: 4096,
   pollsPerCase: 12,
 });
+export const EXTENDED_LIMITS = Object.freeze({
+  ...LIMITS,
+  models: 2,
+  generations: 16,
+});
+export function limitsForSuite(suite = "core") {
+  check(["core", "extended"].includes(suite), "EVAL_SUITE_INVALID");
+  return suite === "extended" ? EXTENDED_LIMITS : LIMITS;
+}
 const check = (ok, code) => {
   if (!ok) throw new ModelError(code);
 };
@@ -77,7 +87,9 @@ const analysis = (evidence) => ({
   separate_volumes: false,
   summary: "Synthetic portal requirements.",
 });
-export async function fixtures() {
+export async function fixtures(suite = "core") {
+  limitsForSuite(suite);
+  if (suite === "extended") return extendedFixtures();
   const analyzeCase = (id, evidence, language = "en") => ({
     id,
     task: "analyze_chunk",
@@ -240,17 +252,20 @@ export async function fixtures() {
     },
   ];
 }
-export function validateTargets(targets) {
+export function validateTargets(targets, suite = "core") {
+  const limits = limitsForSuite(suite);
   check(
     Array.isArray(targets) &&
       targets.length > 0 &&
-      targets.length <= LIMITS.models,
+      targets.length <= limits.models,
     "EVAL_TARGET_COUNT_INVALID",
   );
   const ids = new Set();
   for (const t of targets) {
     check(
-      ["openai", "qwencloud"].includes(t.provider) &&
+      (suite === "extended" ? ["qwencloud"] : ["openai", "qwencloud"]).includes(
+        t.provider,
+      ) &&
         typeof t.model === "string" &&
         /^[A-Za-z0-9._:/-]{1,200}$/.test(t.model),
       "EVAL_TARGET_INVALID",
@@ -271,19 +286,21 @@ export async function evaluate(
   fetcher = fetch,
   pause = (ms) => new Promise((r) => setTimeout(r, ms)),
   progress = () => {},
+  suite = "core",
 ) {
-  validateTargets(targets);
+  validateTargets(targets, suite);
+  const limits = limitsForSuite(suite);
   let generations = 0,
     requests = 0;
   const results = [],
-    cases = await fixtures();
+    cases = await fixtures(suite);
   const boundedFetch = async (url, init) => {
     check(
-      ++requests <= LIMITS.generations * (LIMITS.pollsPerCase + 3),
+      ++requests <= limits.generations * (limits.pollsPerCase + 3),
       "EVAL_REQUEST_LIMIT",
     );
     if ((init?.method || "GET") === "POST")
-      check(++generations <= LIMITS.generations, "EVAL_GENERATION_LIMIT");
+      check(++generations <= limits.generations, "EVAL_GENERATION_LIMIT");
     const signals = [
       AbortSignal.timeout(60000),
       ...(init?.signal ? [init.signal] : []),
@@ -308,6 +325,7 @@ export async function evaluate(
       let remote = null,
         settled = false,
         usage = null,
+        settlementCode = null,
         polls = 0,
         code = "SUCCEEDED";
       const attempts = [],
@@ -329,7 +347,7 @@ export async function evaluate(
         quota_ends_at: null,
         profile: {
           revision: 1,
-          max_output_tokens: LIMITS.outputTokens,
+          max_output_tokens: limits.outputTokens,
           reasoning: "none",
           require_native_strict: false,
         },
@@ -344,6 +362,7 @@ export async function evaluate(
         settle: async (_id, value, error) => {
           usage = value;
           settled = true;
+          settlementCode = error ?? null;
           if (error) code = error;
         },
         environment: () => environment,
@@ -354,6 +373,8 @@ export async function evaluate(
             sent,
             http_status: metadata.http_status ?? null,
             reason: metadata.provider_error_reason ?? null,
+            provider_error_code: metadata.provider_error_code ?? null,
+            provider_error_type: metadata.provider_error_type ?? null,
             request_phase: metadata.request_phase ?? null,
           }),
         backgroundAllowed: async () => fixture.background === true,
@@ -400,7 +421,7 @@ export async function evaluate(
           } catch (error) {
             if (!(error instanceof ModelDeferred)) throw error;
             check(
-              ++polls <= LIMITS.pollsPerCase && Date.now() - start < 180000,
+              ++polls <= limits.pollsPerCase && Date.now() - start < 180000,
               "EVAL_BACKGROUND_TIMEOUT",
             );
             await pause(2000);
@@ -436,11 +457,13 @@ export async function evaluate(
         task: fixture.task,
         language: fixture.language,
         assertion_scope:
-          fixture.task === "draft_section"
+          fixture.assertion_scope ??
+          (fixture.task === "draft_section"
             ? "canonical_structure_and_declared_claims_only"
-            : "canonical_contract_and_fixture_semantics",
+            : "canonical_contract_and_fixture_semantics"),
         passed,
         code,
+        settlement_code: settlementCode,
         diagnostics,
         usage,
         elapsed_ms: Date.now() - start,
@@ -467,11 +490,12 @@ export async function evaluate(
     }
   return {
     version: 1,
+    suite,
     complete: true,
     synthetic: true,
     production_records_created: 0,
     model_count: targets.length,
-    limits: LIMITS,
+    limits,
     generations,
     requests,
     results,
@@ -501,12 +525,14 @@ if (
       input += chunk;
       check(input.length <= 65536, "EVAL_INPUT_TOO_LARGE");
     }
+    const parsed = JSON.parse(input);
     const report = await evaluate(
-      JSON.parse(input),
+      Array.isArray(parsed) ? parsed : parsed.targets,
       fetch,
       undefined,
       (value) =>
         process.stdout.write(JSON.stringify({ progress: value }) + "\n"),
+      Array.isArray(parsed) ? "core" : parsed.suite,
     );
     process.stdout.write(JSON.stringify({ report }) + "\n");
   } catch {
