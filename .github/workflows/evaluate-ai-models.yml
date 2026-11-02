@@ -1,0 +1,55 @@
+name: Evaluate AI contracts against configured providers
+on:
+  push:
+    branches: [codex/ai-execution-reliability]
+  workflow_dispatch:
+    inputs:
+      run_live:
+        description: Send at most 32 synthetic model requests using configured OpenAI and QwenCloud models
+        type: boolean
+        default: false
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: tenderdesk-live-ai-evaluation
+  cancel-in-progress: false
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked evaluation dependencies
+        run: |
+          npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+      - name: Verify offline live-evaluation boundaries
+        run: |
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_live_model_evaluation.py'
+          cd backend
+          npx vitest run tests/backend/liveModelEvaluation.test.ts
+      - name: Run explicitly selected bounded live evaluation
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_live }}
+        env:
+          RUN_LIVE_AI_EVALUATION: "true"
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/live-model-evaluation.py
+      - name: Remove temporary credentials and private report plaintext
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil
+          run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+          if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):raise SystemExit(1)
+          directory=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+run+'-'+attempt)
+          if directory.exists():shutil.rmtree(directory)
+          print('Evaluation temporary files removed.')
+          PY

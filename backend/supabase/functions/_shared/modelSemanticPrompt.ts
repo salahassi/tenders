@@ -12,6 +12,7 @@ import {
   type SemanticRevision,
 } from "./modelSemanticInstructions.ts";
 import { scopeComparisonApplies } from "./modelScopeInstructions.ts";
+import { analysisEvidenceApplies } from "./modelAnalysisEvidenceInstructions.ts";
 
 const keyFor = async (requestPrefix: string) =>
   `semantic-instructions-${await sha256(requestPrefix)}`;
@@ -19,7 +20,7 @@ function revision(pin: any): SemanticRevision {
   const value = pin.value;
   if (
     !value ||
-    ![0, 1, 2, 3].includes(value.version) ||
+    ![0, 1, 2, 3, 4].includes(value.version) ||
     !/^[a-f0-9]{64}$/.test(value.legacy_input_hash ?? "") ||
     (value.version > 0 &&
       value.instructions !== semanticPolicyText(value.version))
@@ -81,7 +82,9 @@ export async function pinSemanticPrompt(o: {
       ? 0
       : scopeComparisonApplies(o.task, o.context)
         ? 3
-        : 2;
+        : analysisEvidenceApplies(o.task, o.context)
+          ? 4
+          : 2;
     pin = await o.store.action("result_put", {
       key,
       value: {

@@ -903,6 +903,53 @@ it("reconciles canceled background usage by GET only and never publishes the can
   ).toBe(false);
 });
 
+it.each(["failed", "cancelled", "canceled"])(
+  "stops abandoned-request reconciliation after explicit %s without inventing usage",
+  async (status) => {
+    await f.command("model.configure", policy);
+    const queued = await f.command("model.probe", {});
+    const methods: string[] = [];
+    const tick = worker(async (url, init) => {
+      if (String(url).endsWith(":countTokens"))
+        return Response.json({ totalTokens: 20 });
+      methods.push(init!.method!);
+      return Response.json({
+        id: "synthetic-terminal-orphan",
+        status: init?.method === "POST" ? "queued" : status,
+      });
+    });
+    await tick();
+    await f.command("job.action", {
+      id: queued.id,
+      expected_revision: (await job(queued.id)).revision,
+      action: "cancel",
+      reason: "Synthetic canceled task",
+    });
+    await tick();
+    await f.db.exec(
+      "update provider_usage set reconciliation_after=now()-interval '1 second'",
+    );
+    await tick();
+    expect(methods).toEqual(["POST", "GET"]);
+    expect(
+      (
+        await f.db.query<any>(
+          "select state,actual_input,actual_output,remote_request_id,error_code from provider_usage",
+        )
+      ).rows,
+    ).toEqual([
+      {
+        state: "unknown",
+        actual_input: null,
+        actual_output: null,
+        remote_request_id: "synthetic-terminal-orphan",
+        error_code: "PROVIDER_BACKGROUND_TERMINATED",
+      },
+    ]);
+    expect((await job(queued.id)).status).toBe("canceled");
+  },
+);
+
 it("keeps usage unknown after a rejected poll and reconciles an active waiting job without another POST", async () => {
   await f.command("model.configure", policy);
   const queued = await f.command("model.probe", {});

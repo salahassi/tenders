@@ -1239,6 +1239,118 @@ it.each(["openai", "gemini_free"] as const)(
     });
   },
 );
+
+it.each([true, false])(
+  "catalog failover retains unknown OpenAI usage and completes via QwenCloud (remote identity matches: %s)",
+  async (identityMatches) => {
+    const { job, models, route, envs, backend } = await configure("openai");
+    const connection = await f.command("model.connection.save", {
+      provider: "qwencloud",
+      label: "Fixture QwenCloud",
+      credential_alias: "APP_MODEL_QWENCLOUD_KEY",
+      project_ref: "ap-southeast-1",
+      enabled: true,
+      expected_revision: 0,
+    });
+    const model = await f.command("model.configuration.save", {
+      connection_id: connection.id,
+      label: "Fixture Qwen",
+      model: "fixture-qwen",
+      enabled: true,
+      capabilities: defaultCapabilities("qwencloud"),
+      expected_revision: 0,
+    });
+    await f.command("model.task_route.save", {
+      expected_revision: route.revision,
+      task: "default",
+      model_ids: [models[0].id, model.id],
+      inherit_default: false,
+      strategy: "priority",
+      profile: null,
+    });
+    const methods: string[] = [];
+    const send: typeof fetch = async (url, init) => {
+      const provider = String(url).includes("openai.com")
+        ? "openai"
+        : "qwencloud";
+      methods.push(`${provider}:${init?.method}`);
+      return provider === "openai"
+        ? Response.json({
+            id:
+              init?.method === "POST" || identityMatches
+                ? "fixture-terminal-catalog"
+                : "fixture-different-id",
+            status: init?.method === "POST" ? "queued" : "failed",
+            ...(init?.method === "GET"
+              ? {
+                  error: {
+                    code: "server_error",
+                    type: "provider_error",
+                    message: "Private diagnostic text must not be stored",
+                  },
+                }
+              : {}),
+          })
+        : Response.json({
+            choices: [
+              {
+                message: { content: '{"status":"ready"}' },
+                finish_reason: "stop",
+              },
+            ],
+            usage: { prompt_tokens: 10, completion_tokens: 8 },
+          });
+    };
+    const run = (current: any) =>
+      executeModel(
+        "connection_probe",
+        {},
+        [],
+        [],
+        [],
+        envs,
+        modelLedger(backend, current, `probe:${job.id}`, envs),
+        "en",
+        false,
+        send,
+      );
+    await expect(run(job)).rejects.toBeInstanceOf(ModelDeferred);
+    await f.db.query(
+      "update jobs set next_attempt_at=now()-interval '1 second' where id=$1",
+      [job.id],
+    );
+    const current = await rpc("claim_backend_job_v2");
+    expect(await run(current)).toEqual({ status: "ready" });
+    expect(methods).toEqual(["openai:POST", "openai:GET", "qwencloud:POST"]);
+    expect(
+      (
+        await f.db.query<any>(
+          "select state,actual_input,remote_request_id,error_code from provider_usage where job_id=$1 and provider='openai'",
+          [job.id],
+        )
+      ).rows,
+    ).toEqual([
+      {
+        state: "unknown",
+        actual_input: null,
+        remote_request_id: "fixture-terminal-catalog",
+        error_code: identityMatches
+          ? "PROVIDER_BACKGROUND_TERMINATED"
+          : "MODEL_IDENTITY_CHANGED",
+      },
+    ]);
+    const attempt = (
+      await f.db.query<any>(
+        "select provider_error_code,provider_error_type from model_attempts where job_id=$1 and request_phase='poll'",
+        [job.id],
+      )
+    ).rows[0];
+    expect(attempt).toEqual({
+      provider_error_code: "server_error",
+      provider_error_type: "provider_error",
+    });
+  },
+);
 it("uses another model on the same connection after a model error, preserving distinct attempts and usage", async () => {
   const { job, models, envs, ledger } = await configure();
   const sent: string[] = [];
@@ -1557,6 +1669,100 @@ it("isolates phase resumptions while preserving unknown requests and rejecting c
     ).rows[0],
   ).toEqual({ state: "unknown", actual_input: null, actual_output: null });
 });
+
+it.each(["openai", "gemini_free"] as const)(
+  "stops retrieving a confirmed terminal %s request while retaining its unknown usage and identity",
+  async (provider) => {
+    const { job, ledger, models, connection } = await configure(provider);
+    await ledger.preflight([], "connection_probe");
+    const hash = "d".repeat(64),
+      prefix = `probe:${job.id}`;
+    const usage = await rpc("reserve_task_model_call", {
+      job_id: job.id,
+      lease: job.lease_token,
+      call_key: `${prefix}:${hash.slice(0, 16)}:1:${models[0].id}`,
+      input_tokens: 10,
+      output_tokens: 1024,
+      input_hash: hash,
+      manifest: [],
+      target_model: models[0].id,
+      target_connection: connection.id,
+    });
+    await rpc("checkpoint_model_request", {
+      job_id: job.id,
+      lease: job.lease_token,
+      reservation: usage.id,
+      remote_id: "fixture-terminal-unknown",
+    });
+    const args = {
+      job_id: job.id,
+      lease: job.lease_token,
+      input_hash: hash,
+      manifest: [],
+      target_model: models[0].id,
+      target_connection: connection.id,
+    };
+    // A historical generic rejection is not evidence of a terminal response.
+    await rpc("settle_model_call", {
+      reservation: usage.id,
+      actual_input: null,
+      actual_output: null,
+      thinking: null,
+      error_code: "PROVIDER_REQUEST_REJECTED",
+    });
+    expect(
+      (
+        await rpc("resume_task_model_request_phase", {
+          ...args,
+          request_prefix: prefix,
+        })
+      ).id,
+    ).toBe(usage.id);
+    const snapshot = (
+      await f.db.query<any>(
+        "select remote_request_id,remote_deadline,input_hash,reserved_input,reserved_output,actual_input,actual_output,state from provider_usage where id=$1",
+        [usage.id],
+      )
+    ).rows[0];
+    await rpc("settle_model_call", {
+      reservation: usage.id,
+      actual_input: null,
+      actual_output: null,
+      thinking: null,
+      error_code: "PROVIDER_BACKGROUND_TERMINATED",
+    });
+    expect(await rpc("resume_task_model_request", args)).toBeNull();
+    expect(
+      await rpc("resume_task_model_request_phase", {
+        ...args,
+        request_prefix: prefix,
+      }),
+    ).toBeNull();
+    expect(
+      (
+        await f.db.query<any>(
+          "select remote_request_id,remote_deadline,input_hash,reserved_input,reserved_output,actual_input,actual_output,state from provider_usage where id=$1",
+          [usage.id],
+        )
+      ).rows[0],
+    ).toEqual(snapshot);
+    expect(snapshot.state).toBe("unknown");
+    // No duplicate POST becomes admissible while accounting is unresolved.
+    await expect(
+      rpc("reserve_task_model_call", {
+        ...args,
+        call_key: `${prefix}:${hash.slice(0, 16)}:2:${models[0].id}`,
+        input_tokens: 10,
+        output_tokens: 1024,
+      }),
+    ).rejects.toMatchObject({ code: "USAGE_REVIEW_REQUIRED" });
+    await f.db.query(
+      "update jobs set status='blocked',lease_token=null,lease_until=null where id=$1",
+      [job.id],
+    );
+    expect(await rpc("claim_abandoned_model_request")).toBeNull();
+  },
+);
 
 it.each([
   { finalRemainingMs: 20000, reorderedPolicy: false },

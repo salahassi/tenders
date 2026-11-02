@@ -1346,9 +1346,14 @@ it.each([
         s.job.id,
       ])
     ).rows;
-    expect(await s.store.action("writer_validation_handoff", s.payload)).toBe(
-      false,
-    );
+    if (reason === "pending-unknown")
+      await expect(
+        s.store.action("writer_validation_handoff", s.payload),
+      ).rejects.toMatchObject({ code: "USAGE_REVIEW_REQUIRED" });
+    else
+      expect(await s.store.action("writer_validation_handoff", s.payload)).toBe(
+        false,
+      );
     expect(await snapshot(s)).toEqual(before);
     expect(
       (
@@ -1370,6 +1375,60 @@ it.each([
         key: `writer-validation-handoff-${s.usage.id}`,
       }),
     ).toBeNull();
+  },
+);
+
+it.each(["same-hash", "same-prefix", "unrelated-phase"])(
+  "distinguishes ambiguous %s accounting from invalid writer identity",
+  async (scope) => {
+    const s = await setup("failed", "candidate-2");
+    const ambiguous = (
+      await f.db.query<any>(
+        `insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,
+         application_day,settings_revision,reserved_input,reserved_output,state,error_code,created_by)
+         values($1,$2,$3,$4,'qwencloud','synthetic-previous-provider',$5,current_date,1,100,50,
+         'unknown','MODEL_NETWORK_UNCERTAIN',$6) returning *`,
+        [
+          f.w,
+          s.job.id,
+          s.job.lease_token,
+          scope === "same-prefix"
+            ? `${s.prefix}:synthetic-earlier-fallback`
+            : "synthetic-other-operation:earlier-fallback",
+          scope === "same-hash" ? s.input : "e".repeat(64),
+          f.owner,
+        ],
+      )
+    ).rows[0];
+    const before = await snapshot(s);
+    const retained = await s.store.action("result_get", { id: s.saved.id });
+    if (scope === "unrelated-phase") {
+      expect(await s.store.action("writer_validation_handoff", s.payload)).toBe(
+        true,
+      );
+    } else {
+      await expect(
+        s.store.action("writer_validation_handoff", s.payload),
+      ).rejects.toMatchObject({ code: "USAGE_REVIEW_REQUIRED" });
+      expect(
+        await s.store.action("result_get", {
+          key: `writer-validation-handoff-${s.usage.id}`,
+        }),
+      ).toBeNull();
+    }
+    expect(await snapshot(s)).toEqual(before);
+    expect(await s.store.action("result_get", { id: s.saved.id })).toEqual(
+      retained,
+    );
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from public.provider_usage where id=$1",
+          [ambiguous.id],
+        )
+      ).rows[0],
+    ).toEqual(ambiguous);
+    expect(await s.store.action("result_get", { key: "accepted" })).toBeNull();
   },
 );
 
@@ -1446,6 +1505,10 @@ it.each(["reserved", "unknown", "revoked-permission"])(
       await expect(
         s.store.action("writer_validation_handoff", s.payload),
       ).rejects.toThrow("data authorization required");
+    else if (reason === "unknown")
+      await expect(
+        s.store.action("writer_validation_handoff", s.payload),
+      ).rejects.toMatchObject({ code: "USAGE_REVIEW_REQUIRED" });
     else
       expect(await s.store.action("writer_validation_handoff", s.payload)).toBe(
         false,

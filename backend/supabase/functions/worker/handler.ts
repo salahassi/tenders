@@ -86,17 +86,25 @@ export function createWorkerHandler(
                 !["queued", "in_progress"].includes(result.status)
               ) {
                 const { usage } = provider.backgroundResult(result);
-                if (usage.input !== null && usage.output !== null)
+                const terminated = ["failed", "cancelled", "canceled"].includes(
+                  result.status,
+                );
+                if (
+                  terminated ||
+                  (usage.input !== null && usage.output !== null)
+                )
                   await backend.internal("settle_model_call", {
                     reservation: abandoned.id,
                     actual_input: usage.input,
                     actual_output: usage.output,
                     thinking: usage.thinking,
-                    error_code: ["canceled", "blocked", "failed"].includes(
-                      abandoned.job_status,
-                    )
-                      ? "SUPERSEDED_RESULT_RECONCILED"
-                      : "ACCEPTED_RESULT_RECONCILED",
+                    error_code: terminated
+                      ? "PROVIDER_BACKGROUND_TERMINATED"
+                      : ["canceled", "blocked", "failed"].includes(
+                            abandoned.job_status,
+                          )
+                        ? "SUPERSEDED_RESULT_RECONCILED"
+                        : "ACCEPTED_RESULT_RECONCILED",
                   });
               }
             } catch (error) {

@@ -66,6 +66,57 @@ const config = {
   verified_at: new Date().toISOString(),
   quota_ends_at: new Date(Date.now() + 86400000).toISOString(),
 };
+
+it.each(["openai", "qwencloud"] as const)(
+  "classifies an HTTP 200 %s error envelope as provider failure, not truncated content",
+  async (provider) => {
+    const c = {
+      ...config,
+      provider,
+      capabilities: { ...defaultCapabilities(provider), background: false },
+    };
+    const ledger: Ledger = {
+      preflight: async () => ({ routing_mode: "round_robin", providers: [c] }),
+      reserve: vi.fn(async () => "fixture-rejected-usage"),
+      settle: vi.fn(),
+      attempt: vi.fn(),
+    };
+    const transport = vi.fn(async () =>
+      Response.json({
+        status: "failed",
+        error: { code: "server_error", message: "Provider failure" },
+      }),
+    );
+    await expect(
+      executeModel(
+        "connection_probe",
+        {},
+        [],
+        [],
+        [],
+        { [provider]: { ...env, provider } },
+        ledger,
+        "en",
+        false,
+        transport,
+        1,
+        { splitOnTruncation: true },
+      ),
+    ).rejects.toMatchObject({ code: "MODEL_ROUND_EXHAUSTED" });
+    expect(ledger.settle).toHaveBeenCalledWith(
+      "fixture-rejected-usage",
+      { input: null, output: null, thinking: null },
+      "PROVIDER_REQUEST_REJECTED",
+    );
+    expect(ledger.attempt).toHaveBeenCalledWith(
+      provider,
+      "PROVIDER_REQUEST_REJECTED",
+      true,
+      c,
+    );
+    expect(transport).toHaveBeenCalledTimes(1);
+  },
+);
 it("recognizes Gemini's generic background retrieval failure without treating it as a completed request", async () => {
   for (const [provider, message, code] of [
     [
