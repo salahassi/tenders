@@ -41,7 +41,22 @@ Chromium PDF extraction fails. It neither changes the database nor submits
 inference. Backend verification passed all 1,539 tests and its typecheck/build;
 all 175 operations guards and 13 renderer tests passed. The final frontend
 with the new cache key passed typecheck/build and all 251 tests in 38 files.
-Hosted recovery remains pending until its release evidence is recorded.
+Hosted recovery passed on November 2 in
+[workflow 41457072538](https://github.com/salahassi/tenders/actions/runs/41457072538),
+source `f767af503ef243ed9136963c45efd441b5143b0a`, job `125316349304`.
+The workflow completed at 17:00 Asia/Riyadh. Exact-source CI passed both package
+typechecks/builds, 1,539 backend tests, 251 frontend tests and 175 operations
+tests. The frontend became ready; real Chromium PDF extraction and exact
+index/configuration plus 50 public build assets passed. Other workload specs
+and public configuration were preserved, and temporary release credentials and
+logs were removed. No database access or model activation was performed by the
+frontend updater.
+
+Deployed frontend digest:
+`sha256:bbeb165d79724daa35fb67726ae531d4bee224f741ba06a095a22c12740c90a0`.
+The release source contains all of main's flexible-input and requested-processing
+changes. Authenticated upload/storage and a new paid draft-to-Word execution
+remain separate acceptance.
 The November 2 resumption verified that main and #14 have not
 advanced since the audit; no restoration had been published during the
 interrupted session.
