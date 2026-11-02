@@ -1,5 +1,64 @@
 # Implementation status and continuation plan
 
+## November 2 — workspace startup blocked by audit-history size
+
+The Owner's authenticated Jobs screenshot shows "Workspace results exceeded the
+supported boundary" while successful audit-history requests continue. The
+frontend required every audit page before admitting the workspace, then threw
+after 10,000 rows with a continuation cursor. This is an application loading
+failure, not evidence that authentication failed or business data disappeared.
+The earlier hosted PDF probe checked extraction and public assets; it did not
+exercise authenticated workspace startup and did not establish this acceptance.
+
+The repair removes audit history from required startup. Source decision history
+loads separately in bounded pages with visible loading, continuation and retry
+states, including an honest explanation when the loaded history contains no
+matching source events. History is retained on the server. The existing endpoint
+does not filter by source, so older matching events may need further pages.
+Required jobs and business records retain complete pagination without the
+arbitrary 10,000-row ceiling; malformed or non-progressing pagination still fails
+explicitly. Membership, authentication and required business-read failures are
+not converted into simulated success.
+
+A dedicated Chromium regression exercises the built application's actual
+Jobs and Dashboard routes using isolated synthetic authentication and API
+fixtures, including more than 10,000 audit events. Every fixture request is
+intercepted at a reserved test origin; it creates no production records and
+accesses no real user session. The release runs this gate before production
+access and retains the existing hosted PDF and exact-asset acceptance.
+
+Implementation and independent review passed. Final local frontend typecheck,
+build and all 265 tests in 39 files passed, covering complete 10,001-record job
+and opportunity collections, required authorization failures, invalid cursors,
+history retry, refresh and stale-response isolation. The release additionally
+builds pinned prior main `b997f2fc4aa01a3d7e6446233975c69f3b9a29d7` to reproduce
+the original 20-page failure before testing the candidate. This baseline check
+is limited to the workspace-history release branch and preserves its build.
+Actual Chromium execution and deployment passed in
+[workflow 41495675488](https://github.com/salahassi/tenders/actions/runs/41495675488),
+source `daf6ed1020ad4012f5f26d5e3ec1c3d24d30d6ab`, job `125449857222`.
+The old build reproduced the reported boundary error after 20 audit requests
+with 10,501 fixture events. The candidate opened Jobs and Overview with zero
+audit requests at startup. Source history loaded on demand, retained the page
+and existing records through an injected HTTP 503, and successfully retried the
+same cursor. Fixture screenshots are retained in the workflow artifact
+`workspace-browser-fixture` (ID `13166367424`); screenshot capture does not
+constitute separate manual visual review.
+
+Exact-source CI passed both package typechecks/builds, 265 frontend tests,
+1,539 backend tests and 175 operations tests. The frontend-only deployment
+passed readiness, hosted PDF extraction, all 50 public build assets and runtime
+configuration checks. Other workload specs were preserved, and temporary
+credentials and logs were removed. The deployed frontend digest is
+`sha256:bfb0771209f3a3b3d03c075fb1e87bedf731c9f3418215960365635a8b7f0774`.
+
+Local Chromium launch was blocked by the sandbox, and the connected
+local-browser tool is unavailable in this session. The successful Chromium
+regression used isolated fixtures: `production_requests=0` and
+`real_auth_verified=false`. Browser fixture acceptance and public hosted
+acceptance must not be described as testing the Owner's actual authenticated
+workspace or a complete paid proposal-to-Word journey.
+
 ## November 1–2 — branch, release and project-plan reconciliation
 
 A fresh remote audit found 39 branches and one open pull request, [#14](https://github.com/salahassi/tenders/pull/14).
