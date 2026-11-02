@@ -1,5 +1,6 @@
 import SourceConfiguration from "../components/SourceConfiguration";
 import SourceVerification from "../components/SourceVerification";
+import SourceAudit from "../components/SourceAudit";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, Globe2, ExternalLink, ShieldCheck } from "lucide-react";
 import { useApp } from "../lib/store";
@@ -47,7 +48,6 @@ export default function SourceDetail() {
   const opportunityCount = state.opportunities.filter(
     (o) => o.sourceId === source.id,
   ).length;
-  const audit = state.audit.filter((a) => a.target === id).slice(0, 8);
   const jobs = state.jobs
     .filter((j) => j.target === source.id)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -273,25 +273,7 @@ export default function SourceDetail() {
               </p>
             )}
           </div>
-          <div className="panel admin-section">
-            <h2>Decision history</h2>
-            {audit.length ? (
-              <ul className="admin-activity">
-                {audit.map((a) => (
-                  <li key={a.id}>
-                    {a.action}
-                    <span>
-                      {a.actor} · {dateTime(a.at)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="admin-help">
-                Decisions made in this workspace will appear here.
-              </p>
-            )}
-          </div>
+          <SourceAudit key={source.id} sourceId={source.id} />
         </div>
       </div>
     </>

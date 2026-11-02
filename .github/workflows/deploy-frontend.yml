@@ -3,7 +3,7 @@ name: Deploy TenderDesk frontend
 on:
   workflow_dispatch:
   push:
-    branches: [codex/pdf-worker-release]
+    branches: [codex/pdf-worker-release, codex/workspace-history-release]
     paths-ignore: ["**/*.md"]
 
 permissions:
@@ -21,6 +21,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@v7.1.0
         with:
           node-version: "24"
@@ -42,6 +43,28 @@ jobs:
           python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
       - name: Install Chromium for real PDF extraction acceptance
         run: backend/node_modules/.bin/playwright install --with-deps chromium
+      - name: Reproduce the previous workspace boundary failure in an isolated build
+        if: github.ref == 'refs/heads/codex/workspace-history-release'
+        run: |
+          baseline="$RUNNER_TEMP/workspace-history-baseline"
+          mkdir -p "$baseline"
+          git archive b997f2fc4aa01a3d7e6446233975c69f3b9a29d7 | tar -x -C "$baseline"
+          cmp frontend/package-lock.json "$baseline/frontend/package-lock.json"
+          cmp backend/package-lock.json "$baseline/backend/package-lock.json"
+          ln -s "$GITHUB_WORKSPACE/frontend/node_modules" "$baseline/frontend/node_modules"
+          ln -s "$GITHUB_WORKSPACE/backend/node_modules" "$baseline/backend/node_modules"
+          npm --prefix "$baseline/frontend" run build
+          TENDERDESK_BROWSER_DIST="$baseline/frontend/dist" node frontend/deploy/verify-workspace-boot.mjs --expect-boundary-failure
+      - name: Verify workspace boot and paged history in Chromium with isolated fixtures
+        run: node frontend/deploy/verify-workspace-boot.mjs
+      - name: Save isolated workspace browser screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace-browser-fixture
+          path: ${{ runner.temp }}/tenderdesk-workspace-browser/*.png
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Prepare verified cluster access and expiring registry credentials
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}

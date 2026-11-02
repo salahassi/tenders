@@ -133,11 +133,12 @@ export class ConnectedRepository {
 
   private async list(path: string): Promise<Row[]> {
     const rows: Row[] = [];
-    // Operational history grows on every scheduled run. Keep complete history,
-    // but avoid a serial HTTP round trip for every 100 old jobs on each refresh.
-    const pageSize = ["jobs", "audit-events"].includes(path) ? 500 : 100;
+    // Required workspace records stay complete as the workspace grows.
+    // Audit history is read separately by the decision-history panel.
+    const pageSize = path === "jobs" ? 500 : 100;
     let cursor: string | null = null;
     const seen = new Set<string>();
+    const recordIds = new Set<string>();
     do {
       const { data } = await this.client.request<unknown>(
         `/v1/${path}?limit=${pageSize}${cursor ? `&cursor=${cursor}` : ""}`,
@@ -148,14 +149,27 @@ export class ConnectedRepository {
       const page = z
         .object({ records: z.array(schema), next_cursor: z.uuid().nullable() })
         .parse(data);
-      rows.push(...page.records);
-      cursor = page.next_cursor;
-      if (cursor && (seen.has(cursor) || rows.length >= 10000))
+      if (
+        page.records.length > pageSize ||
+        page.records.some((row) => {
+          if (recordIds.has(row.id) || (cursor && row.id <= cursor))
+            return true;
+          recordIds.add(row.id);
+          return false;
+        }) ||
+        (page.next_cursor &&
+          (seen.has(page.next_cursor) ||
+            !page.records.length ||
+            page.records.at(-1)?.id !== page.next_cursor ||
+            (cursor && page.next_cursor <= cursor)))
+      )
         throw new BackendRequestError(
           "PAGINATION_INVALID",
-          "Workspace results exceeded the supported boundary.",
+          "Workspace pagination did not advance. Please retry.",
           503,
         );
+      rows.push(...page.records);
+      cursor = page.next_cursor;
       if (cursor) seen.add(cursor);
     } while (cursor);
     return rows;
@@ -194,7 +208,6 @@ export class ConnectedRepository {
       "knowledge",
       "jobs",
       "notifications",
-      "audit-events",
       "proposals",
       "documents",
       "proposal-versions",
@@ -583,9 +596,9 @@ export class ConnectedRepository {
           versionId: version.id,
           revision: version.revision,
           planId: str(version, "plan_id"),
-          recoveredFromEarlierNotice:
-            !!(version.review_result as { saved_notice_recovery?: unknown } | null)
-              ?.saved_notice_recovery,
+          recoveredFromEarlierNotice: !!(
+            version.review_result as { saved_notice_recovery?: unknown } | null
+          )?.saved_notice_recovery,
           id: p.id,
           opportunityId: str(p, "opportunity_id"),
           title: str(p, "title"),
@@ -694,13 +707,6 @@ export class ConnectedRepository {
       href: "/jobs",
       read: r.read_at != null,
       createdAt: str(r, "created_at"),
-    }));
-    state.audit = this.rows["audit-events"].map((r) => ({
-      id: r.id,
-      action: str(r, "action"),
-      target: str(r, "entity_id"),
-      at: str(r, "created_at"),
-      actor: str(r, "actor_id"),
     }));
     return state;
   }

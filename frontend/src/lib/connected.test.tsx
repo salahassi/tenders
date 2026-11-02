@@ -217,8 +217,140 @@ describe("connected repository", () => {
     expect(f.request).toHaveBeenCalledWith(
       `/v1/jobs?limit=500&cursor=${first}`,
     );
-    expect(f.request).toHaveBeenCalledWith("/v1/audit-events?limit=500");
+    expect(
+      f.request.mock.calls.some(([path]) =>
+        path.startsWith("/v1/audit-events"),
+      ),
+    ).toBe(false);
     expect(f.request).toHaveBeenCalledWith("/v1/documents?limit=100");
+  });
+  it("opens a workspace without downloading an audit history exceeding ten thousand events", async () => {
+    const f = fixture();
+    const original = f.request.getMockImplementation()!;
+    const id = (value: number) =>
+      `00000000-0000-4000-8000-${value.toString(16).padStart(12, "0")}`;
+    f.request.mockImplementation(async (path, options) => {
+      if (!path.startsWith("/v1/audit-events?")) return original(path, options);
+      const cursor = new URLSearchParams(path.split("?")[1]).get("cursor");
+      const start = cursor ? parseInt(cursor.slice(-12), 16) : 0;
+      const records = Array.from(
+        { length: Math.min(500, 10500 - start) },
+        (_, i) => ({
+          id: id(start + i + 1),
+          action: "job.updated",
+          entity_id: source,
+          actor_id: null,
+          created_at: "2026-11-02T00:00:00Z",
+        }),
+      );
+      return {
+        data: {
+          records,
+          next_cursor:
+            start + records.length < 10500 ? records.at(-1)!.id : null,
+        },
+        meta: { request_id: "fixture" },
+      };
+    });
+    render(
+      <ConnectedProvider client={f.client}>
+        <Probe />
+      </ConnectedProvider>,
+    );
+    expect(
+      await screen.findByText("Connected fixture workspace"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 server opportunities")).toBeInTheDocument();
+    expect(
+      f.request.mock.calls.some(([path]) =>
+        path.startsWith("/v1/audit-events"),
+      ),
+    ).toBe(false);
+  });
+  it.each(["jobs", "opportunities"] as const)(
+    "retains every required %s record beyond ten thousand",
+    async (table) => {
+      const f = fixture();
+      const original = f.request.getMockImplementation()!;
+      const id = (value: number) =>
+        `00000000-0000-4000-8000-${value.toString(16).padStart(12, "0")}`;
+      f.request.mockImplementation(async (path, options) => {
+        if (!path.startsWith(`/v1/${table}?`)) return original(path, options);
+        const cursor = new URLSearchParams(path.split("?")[1]).get("cursor");
+        const start = cursor ? parseInt(cursor.slice(-12), 16) : 0;
+        const records = Array.from(
+          { length: Math.min(table === "jobs" ? 500 : 100, 10001 - start) },
+          (_, i) => ({
+            id: id(start + i + 1),
+            revision: 1,
+            type: "source_collect",
+            title: "Complete business record",
+            decision: "undecided",
+            language: "ar",
+            source_id: source,
+            entity_id: source,
+            status: start + i + 1 === 10001 ? "failed" : "succeeded",
+            attempts: 1,
+            created_at: "2026-11-02T00:00:00Z",
+          }),
+        );
+        return {
+          data: {
+            records,
+            next_cursor:
+              start + records.length < 10001 ? records.at(-1)!.id : null,
+          },
+          meta: { request_id: "fixture" },
+        };
+      });
+      const state = await new ConnectedRepository(f.client).load();
+      expect(state[table]).toHaveLength(10001);
+      expect(state[table].at(-1)?.id).toBe(id(10001));
+      if (table === "jobs") expect(state.jobs.at(-1)?.status).toBe("failed");
+      expect(
+        f.request.mock.calls.filter(([path]) =>
+          path.startsWith(`/v1/${table}?`),
+        ).length,
+      ).toBe(table === "jobs" ? 21 : 101);
+    },
+  );
+  it.each(["/v1/bootstrap", "/v1/jobs?"])(
+    "keeps authorization failures from required %s requests fatal",
+    async (failedPath) => {
+      const f = fixture();
+      const original = f.request.getMockImplementation()!;
+      const denied = new BackendRequestError(
+        "UNAUTHENTICATED",
+        "Session expired",
+        401,
+      );
+      f.request.mockImplementation(async (path, options) => {
+        if (path.startsWith(failedPath)) throw denied;
+        return original(path, options);
+      });
+      await expect(new ConnectedRepository(f.client).load()).rejects.toBe(
+        denied,
+      );
+    },
+  );
+  it("rejects a duplicate record or backward cursor on required continuation pages", async () => {
+    const f = fixture();
+    const original = f.request.getMockImplementation()!;
+    const next = "00000000-0000-4000-8000-000000000031";
+    f.request.mockImplementation(async (path, options) => {
+      if (!path.startsWith("/v1/jobs?")) return original(path, options);
+      return {
+        data: { records: [{ id: next, revision: 1 }], next_cursor: next },
+        meta: { request_id: "fixture" },
+      };
+    });
+    await expect(new ConnectedRepository(f.client).load()).rejects.toThrow(
+      "pagination did not advance",
+    );
+    expect(
+      f.request.mock.calls.filter(([path]) => path.startsWith("/v1/jobs?"))
+        .length,
+    ).toBe(2);
   });
   it("preserves worker attempts separately from the current model round and job timestamps", async () => {
     const f = fixture(),
@@ -430,7 +562,7 @@ describe("connected repository", () => {
         : original(path, options),
     );
     await expect(new ConnectedRepository(f.client).load()).rejects.toThrow(
-      "boundary",
+      "pagination did not advance",
     );
   });
 });
