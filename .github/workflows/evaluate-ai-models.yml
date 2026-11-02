@@ -35,7 +35,7 @@ jobs:
         run: |
           python3 -m unittest discover -s backend/scripts/ops -p 'test_live_model_evaluation.py'
           cd backend
-          npx vitest run tests/backend/liveModelEvaluation.test.ts
+          npx vitest run tests/backend/liveModelEvaluation.test.ts tests/backend/liveEvaluationSql.integration.test.ts
       - name: Run explicitly selected bounded live evaluation
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_live }}
         env:

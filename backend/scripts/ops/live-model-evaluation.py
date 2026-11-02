@@ -103,17 +103,27 @@ def main():
     directory = client = None
     failure = None
     receipt = None
+    stage = 'initialize'
+    private_output = io.StringIO()
+    diagnostic = {}
     try:
         os.umask(0o077)
-        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+        with redirect_stdout(private_output), redirect_stderr(io.StringIO()):
+            stage = 'cluster_prepare'
             directory = access.prepare_cluster()
             client = observer.Client(120)
+            stage = 'database_prepare'
             client.prepare()
+            stage = 'catalog_read'
             catalog = json.loads(access.d.sql(client.pod, CATALOG_SQL))
+            stage = 'routing_read'
             routing = json.loads(access.d.sql(client.pod, (HERE / 'ai-routing-diagnostic.sql').read_text().replace('__WORKSPACE__', access.WORKSPACE)))
+            stage = 'target_selection'
             selected = targets(catalog, access.d.decode_secret(access.d.get('secret', 'tenderdesk-runtime')))
             # Release database credentials before making provider calls.
+            stage = 'database_cleanup'
             client.cleanup(); client = None
+            stage = 'provider_evaluation'
             try:
                 execution = subprocess.run(['node','--experimental-transform-types',str(HERE / 'live-model-evaluation.mjs')],
                     input=json.dumps(selected), capture_output=True, text=True, timeout=2400,
@@ -124,14 +134,17 @@ def main():
                 if isinstance(output, bytes): output = output.decode('utf-8')
                 success = False
             if len(output.encode()) > 2_000_000: raise EvaluationError('EVAL_REPORT_TOO_LARGE')
+            stage = 'report_parse'
             report = parse_execution_output(output, len(selected), success)
             report['routing_diagnosis'] = routing
             report['source_sha'] = os.environ.get('GITHUB_SHA', '')
             for row in selected:
                 if row['key'] in json.dumps(report):
                     raise EvaluationError('EVAL_SECRET_IN_REPORT')
+            stage = 'report_write'
             path = directory / 'live-ai-evaluation.json'
             transfer.write_private(path, json.dumps(report, ensure_ascii=False).encode())
+            stage = 'report_upload'
             digest = transfer.upload(os.environ['DIGITALOCEAN_ACCESS_TOKEN'], BUCKET,
                 'diagnostics/live-ai-evaluation-' + os.environ['GITHUB_RUN_ID'] + '.bundle', path)
             receipt = {'live_ai_evaluation':'passed' if report['passed'] else 'failed_cases',
@@ -141,7 +154,15 @@ def main():
                 'input_tokens':report['measured_input_tokens'], 'output_tokens':report['measured_output_tokens'],
                 'report_sha256':digest}
     except Exception as error:
-        failure = str(error) if isinstance(error, EvaluationError) else 'EVAL_OPERATION_FAILED'
+        allowed = (EvaluationError, observer.ObserverError, access.TransferError, access.d.DeployError, access.d.probe.ProbeError, transfer.TransferError)
+        failure = str(error) if isinstance(error, allowed) and re.fullmatch(r'[A-Z0-9_]{1,100}',str(error)) else 'EVAL_OPERATION_FAILED'
+        for line in private_output.getvalue().splitlines():
+            try:
+                item = json.loads(line)
+                if item.get('status') == 'sql_failed':
+                    diagnostic = {'sqlstate':item.get('sqlstate') if re.fullmatch(r'[A-Z0-9]{5}',str(item.get('sqlstate'))) else 'unknown',
+                        'line':item.get('line') if type(item.get('line')) is int else None}
+            except (ValueError,AttributeError): pass
     finally:
         try:
             with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
@@ -150,7 +171,7 @@ def main():
         except Exception:
             failure = 'EVAL_CLEANUP_FAILED'
     if failure:
-        print(json.dumps({'live_ai_evaluation':'failed','code':failure})); return 1
+        print(json.dumps({'live_ai_evaluation':'failed','code':failure,'stage':stage,**diagnostic})); return 1
     print(json.dumps(receipt)); return 0 if receipt['live_ai_evaluation'] == 'passed' else 1
 
 if __name__ == '__main__':

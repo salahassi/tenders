@@ -38,7 +38,7 @@ WITH target AS (
     LEFT JOIN public.model_connections c ON c.workspace_id = r.workspace_id AND c.id = m.connection_id
     ) AS models
   FROM public.model_task_routes r JOIN target t USING (workspace_id)
-), current_catalog AS (
+), catalog_metadata AS (
   SELECT c.provider, c.id AS connection_id, m.id AS model_config_id, m.model,
     c.enabled AS connection_enabled, m.enabled AS model_enabled,
     c.created_at AS connection_created_at, c.updated_at AS connection_updated_at,
@@ -119,7 +119,7 @@ SELECT jsonb_build_object(
   'observed_at', now(),
   'provider_history', (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY provider), '[]'::jsonb) FROM provider_history x),
   'current_routes', (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY task), '[]'::jsonb) FROM current_routes x),
-  'current_catalog', (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY provider, model), '[]'::jsonb) FROM current_catalog x),
+  'current_catalog', (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY provider, model), '[]'::jsonb) FROM catalog_metadata x),
   'frozen_pools', (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY job_count DESC, pool_signature), '[]'::jsonb) FROM frozen_pools x),
   'recent_classify_jobs', (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY updated_at DESC, id DESC), '[]'::jsonb) FROM recent_classify_jobs x),
   'qwen_usage', (SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY provider, model, state), '[]'::jsonb) FROM qwen_usage x)

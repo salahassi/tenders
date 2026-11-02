@@ -3969,3 +3969,15 @@ request bounds, wrong quantities/obligation strength, credential isolation and
 failed/cancelled background termination. No live request or hosted acceptance
 is claimed by this implementation entry. Runtime deployment and saved-work
 recovery are separate actions; the bootstrap deployment is not invoked.
+
+The first activated run `41545119569` stopped during read-only routing diagnosis
+before the provider subprocess started. Its SQL used the reserved PostgreSQL
+keyword `current_catalog` as an unquoted CTE identifier; this was reproduced
+against the complete local migration schema. The CTE is now named
+`catalog_metadata`, preserving the private report field name. Both catalog and
+routing SQL execute successfully as read-only transactions in the full-schema
+PGlite regression, and that regression now gates the live workflow. Failure
+receipts retain a fixed orchestration stage and sanitized SQLSTATE/line, so a
+future setup error can be identified without emitting SQL, provider content or
+credentials. The interrupted run submitted zero model requests and supplies no
+live model acceptance evidence.
