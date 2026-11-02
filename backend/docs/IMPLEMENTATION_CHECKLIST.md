@@ -6,10 +6,10 @@ The Owner requests comprehensive model and prompt testing after the October 31
 QwenCloud activity stop. The isolated reliability change fixes terminal remote
 polling and misleading usage/identity diagnostics, and adds versioned analysis
 evidence instructions. Historical prompt pins, accepted requests, usage and
-business records are retained. Full GitHub verification of `bc4c239` passes
-**1,576 backend tests in 93 files**, **265 frontend tests**, both packages'
-typechecks/builds, **191 operations tests** and **13 Kubernetes renderer tests**
-in [run 41545602259](https://github.com/salahassi/tenders/actions/runs/41545602259).
+business records are retained. Full GitHub verification of `850e74f` passes
+**1,584 backend tests in 94 files**, **265 frontend tests**, both packages'
+typechecks/builds, **194 operations tests** and **13 Kubernetes renderer tests**
+in [run 41547591561](https://github.com/salahassi/tenders/actions/runs/41547591561).
 Focused independent
 review checked remote-ID matching, unknown accounting, failover, immutable prompt
 pins and private live-evaluation transport. A stale earlier operations run found
@@ -31,11 +31,31 @@ The encrypted report was downloaded with verified digest and its temporary
 transport object deleted. No application business records were created.
 
 Expanded routing evidence confirms both Qwen models are enabled in saved
-assessment routes; exclusion from those saved routes is disproved. Content
-permission filtering needs separate diagnosis before attributing absent Qwen
-attempts solely to polling. An extended Qwen-only suite covers the remaining
-model task families, with at most 16 additional generation requests; its live
-result is pending at this checkpoint.
+assessment routes; exclusion from those saved routes is disproved. The private
+permission snapshot at 23:44 UTC establishes a separate current blocker: all
+63 examined active-status assessment plans lack manual request receipts and
+exact active Qwen notice grants, and Qwen is excluded from the current automatic
+processing policy. Preflight therefore skips it before recording an attempt.
+Automatic policy grants are lazy, but cannot authorize an excluded provider.
+The policy's current approval timestamp is October 20; this snapshot does not
+prove every historical policy state. No consent or content permission was changed.
+
+The extended Qwen-only evaluation completed 16 requests in
+[run 41547638324](https://github.com/salahassi/tenders/actions/runs/41547638324),
+source `850e74f480a38c101c4fb713e90f67a939352df4`: 12 passed. DeepSeek passed 5/8;
+structure, commercial and source-inspection requests returned HTTP 400
+`invalid_parameter_error` with unknown usage. Qwen passed 7/8; its valid JSON
+blueprint failed the production ownership/coverage validator with
+`MODEL_COVERAGE_INCOMPLETE`. The exact rejected invariant and provider error
+messages were not retained, so they are not guessed. All requests completed,
+with no remote cleanup pending. Measured usage is 34,451 input and 7,754 output
+tokens; three cases retain unknown usage. Its verified private transport object
+was deleted after download. A targeted diagnostic rerun of only these four
+model/case pairs is pending; it keeps their original prompts and request profiles.
+Its focused gates pass 19 Vitest tests, 11 Python tests and backend typecheck;
+the four original prompt hashes are unchanged, exactly four fetches are allowed,
+and bounded provider errors/failed synthetic candidates remain private and
+credential-redacted.
 
 The extended fixtures, combined with the core suite, exercise all 13 registered
 model task types. Production structure, blueprint and review validators are

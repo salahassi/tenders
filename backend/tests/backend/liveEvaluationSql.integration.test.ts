@@ -21,7 +21,7 @@ const script = (s: string) =>
       "current_database()<>'postgres'",
     )
     .replaceAll("SET LOCAL ROLE tdp_app_owner", "SET LOCAL ROLE postgres");
-it.each(["core", "extended"])(
+it.each(["core", "extended", "extended_recheck"])(
   "executes the %s catalog projection against every current migration in a read-only transaction",
   async (suite) => {
     const py = readFileSync(
@@ -31,11 +31,13 @@ it.each(["core", "extended"])(
     const coreSql = py.split('CATALOG_SQL = """')[1].split('""".replace')[0];
     // Python guard tests verify these exact suite-specific substitutions.
     const sql =
-      suite === "extended"
+      suite !== "core"
         ? coreSql
             .replace(
               "c.provider IN ('openai','qwencloud')",
-              "c.provider='qwencloud'",
+              suite === "extended_recheck"
+                ? "c.provider='qwencloud' AND m.model IN ('deepseek-v4-pro','qwen3.8-max')"
+                : "c.provider='qwencloud'",
             )
             .replace("LIMIT 5", "LIMIT 3")
         : coreSql;

@@ -26,9 +26,28 @@ export const EXTENDED_LIMITS = Object.freeze({
   models: 2,
   generations: 16,
 });
+export const RECHECK_LIMITS = Object.freeze({
+  ...EXTENDED_LIMITS,
+  generations: 4,
+});
+export const RECHECK_PAIRS = Object.freeze(
+  [
+    ["deepseek-v4-pro", "proposal_structure_ownership"],
+    ["deepseek-v4-pro", "commercial_known_and_unknown_rates"],
+    ["deepseek-v4-pro", "source_listing_exact_notice"],
+    ["qwen3.8-max", "proposal_blueprint_ownership"],
+  ].map((pair) => Object.freeze(pair)),
+);
 export function limitsForSuite(suite = "core") {
-  check(["core", "extended"].includes(suite), "EVAL_SUITE_INVALID");
-  return suite === "extended" ? EXTENDED_LIMITS : LIMITS;
+  check(
+    ["core", "extended", "extended_recheck"].includes(suite),
+    "EVAL_SUITE_INVALID",
+  );
+  return suite === "extended_recheck"
+    ? RECHECK_LIMITS
+    : suite === "extended"
+      ? EXTENDED_LIMITS
+      : LIMITS;
 }
 const check = (ok, code) => {
   if (!ok) throw new ModelError(code);
@@ -89,7 +108,7 @@ const analysis = (evidence) => ({
 });
 export async function fixtures(suite = "core") {
   limitsForSuite(suite);
-  if (suite === "extended") return extendedFixtures();
+  if (suite !== "core") return extendedFixtures();
   const analyzeCase = (id, evidence, language = "en") => ({
     id,
     task: "analyze_chunk",
@@ -263,7 +282,7 @@ export function validateTargets(targets, suite = "core") {
   const ids = new Set();
   for (const t of targets) {
     check(
-      (suite === "extended" ? ["qwencloud"] : ["openai", "qwencloud"]).includes(
+      (suite !== "core" ? ["qwencloud"] : ["openai", "qwencloud"]).includes(
         t.provider,
       ) &&
         typeof t.model === "string" &&
@@ -280,6 +299,14 @@ export function validateTargets(targets, suite = "core") {
     ids.add(t.provider + ":" + t.model);
     capabilitySchema.parse(t.capabilities);
   }
+  if (suite === "extended_recheck")
+    check(
+      targets.length === 2 &&
+        targets.every((t) =>
+          RECHECK_PAIRS.some(([model]) => model === t.model),
+        ),
+      "EVAL_RECHECK_TARGETS_INVALID",
+    );
 }
 export async function evaluate(
   targets,
@@ -294,25 +321,57 @@ export async function evaluate(
     requests = 0;
   const results = [],
     cases = await fixtures(suite);
+  let providerErrors = [];
+  const redact = (value) =>
+    targets.reduce(
+      (text, t) => text.split(t.key).join("[REDACTED_CREDENTIAL]"),
+      value,
+    );
   const boundedFetch = async (url, init) => {
     check(
-      ++requests <= limits.generations * (limits.pollsPerCase + 3),
+      requests < limits.generations * (limits.pollsPerCase + 3),
       "EVAL_REQUEST_LIMIT",
     );
-    if ((init?.method || "GET") === "POST")
-      check(++generations <= limits.generations, "EVAL_GENERATION_LIMIT");
+    const isGeneration = (init?.method || "GET") === "POST";
+    if (isGeneration)
+      check(generations < limits.generations, "EVAL_GENERATION_LIMIT");
+    requests++;
+    if (isGeneration) generations++;
     const signals = [
       AbortSignal.timeout(60000),
       ...(init?.signal ? [init.signal] : []),
     ];
-    return fetcher(url, {
+    const response = await fetcher(url, {
       ...init,
       redirect: "error",
       signal: AbortSignal.any(signals),
     });
+    // This branch is restricted to selected synthetic diagnostic requests. No
+    // headers or request bodies are captured; the parent encrypts these fields.
+    if (suite === "extended_recheck" && response.status >= 400) {
+      try {
+        const body = await response.clone().json();
+        const message = body?.error?.message ?? body?.message;
+        if (typeof message === "string")
+          providerErrors.push({
+            http_status: response.status,
+            message: redact(message).slice(0, 2000),
+          });
+      } catch {
+        /* Normal adapter classification remains authoritative. */
+      }
+    }
+    return response;
   };
   for (const target of targets)
-    for (const fixture of cases) {
+    for (const fixture of cases.filter(
+      (f) =>
+        suite !== "extended_recheck" ||
+        RECHECK_PAIRS.some(
+          ([model, id]) => model === target.model && id === f.id,
+        ),
+    )) {
+      providerErrors = [];
       const semanticRevision = ["analyze_chunk", "repair_result"].includes(
         fixture.task,
       )
@@ -392,6 +451,7 @@ export async function evaluate(
         defer: async () => {},
       };
       let passed = false,
+        candidate = null,
         diagnostics = [],
         cleanup = "not_needed";
       try {
@@ -414,6 +474,7 @@ export async function evaluate(
                 independentGrounding: fixture.task === "draft_section",
               },
             );
+            if (suite === "extended_recheck") candidate = result;
             fixture.assert(result);
             passed = true;
             code = "SUCCEEDED";
@@ -470,6 +531,21 @@ export async function evaluate(
         polls,
         attempts,
         cleanup,
+        ...(suite === "extended_recheck"
+          ? {
+              diagnostic_only: true,
+              target_capabilities: target.capabilities,
+              execution_profile: config.profile,
+              provider_error_details: providerErrors,
+              ...(!passed && candidate !== null
+                ? {
+                    synthetic_candidate: JSON.parse(
+                      redact(JSON.stringify(candidate)),
+                    ),
+                  }
+                : {}),
+            }
+          : {}),
         ...(cleanup === "pending_retained"
           ? { remote_request_id: remote }
           : {}),

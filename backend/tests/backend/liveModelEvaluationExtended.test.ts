@@ -4,6 +4,8 @@ import {
   evaluate,
   fixtures,
   EXTENDED_LIMITS,
+  RECHECK_LIMITS,
+  RECHECK_PAIRS,
   validateTargets,
 } from "../../scripts/ops/live-model-evaluation.mjs";
 import { defaultCapabilities } from "../../supabase/functions/_shared/modelContract";
@@ -396,4 +398,89 @@ it("preserves the exact eight core prompts from the completed live evaluation", 
     ),
   );
   expect(hashes).toEqual(expected);
+});
+
+it("diagnoses only the four failed pairs, preserves prompts and redacts bounded private details", async () => {
+  vi.spyOn(console, "info").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  const selected = [
+    { ...target, model: "deepseek-v4-pro" },
+    { ...target, model: "qwen3.8-max", key: "second-private-key" },
+  ];
+  expect(RECHECK_LIMITS.generations).toBe(4);
+  expect(() => validateTargets([selected[0]], "extended_recheck")).toThrow(
+    "EVAL_RECHECK_TARGETS_INVALID",
+  );
+  expect(() =>
+    validateTargets(
+      [selected[0], { ...selected[1], model: "other-qwen" }],
+      "extended_recheck",
+    ),
+  ).toThrow("EVAL_RECHECK_TARGETS_INVALID");
+  const received: string[] = [];
+  const fetcher = vi.fn(async (_url: any, init?: RequestInit) => {
+    const body = JSON.parse(init!.body as string);
+    expect(body.max_tokens).toBe(4096);
+    const p = JSON.parse(body.messages[1].content.split("\nJSON schema: ")[0]);
+    received.push(`${body.model}:${p.task}`);
+    if (body.model === "deepseek-v4-pro")
+      return Response.json(
+        {
+          error: {
+            code: "invalid_parameter_error",
+            message: `${target.key} second-private-key ${"synthetic error ".repeat(300)}`,
+          },
+        },
+        { status: 400 },
+      );
+    const candidate = responseFor(p);
+    candidate.sections[0].units[0].requirement_ids = ["req_a"];
+    return Response.json({
+      choices: [
+        {
+          finish_reason: "stop",
+          message: { content: JSON.stringify(candidate) },
+        },
+      ],
+      usage: { prompt_tokens: 100, completion_tokens: 100 },
+    });
+  }) as typeof fetch;
+  const report = await evaluate(
+    selected,
+    fetcher,
+    async () => {},
+    undefined,
+    "extended_recheck",
+  );
+  expect(report.generations).toBe(4);
+  expect(fetcher).toHaveBeenCalledTimes(4);
+  expect(received).toEqual([
+    "deepseek-v4-pro:plan_structure",
+    "deepseek-v4-pro:plan_commercial",
+    "deepseek-v4-pro:inspect_source_page",
+    "qwen3.8-max:plan_blueprint",
+  ]);
+  expect(report.results.map((r: any) => [r.model, r.case])).toEqual(
+    RECHECK_PAIRS,
+  );
+  expect(report.results.map((r: any) => r.prompt_sha256)).toEqual([
+    "b79ddeedfc8a46635888b95498c3715ff1c546498c2a45f94161e33958643aee",
+    "47f3a1fdfc8ec54f904c56692c8bfe1b7f24e81488358c288c784650e0444905",
+    "18adddf8ebeb5f001b6b4e5c1944b30e0bba34c4d92e9e8777c9b8f4cd40522b",
+    "a1d3f8a62c0a942c6efdbea69d8acad6ae4087c56d6b58e982ebf237ddc22ca5",
+  ]);
+  for (const r of report.results.slice(0, 3)) {
+    expect(r.provider_error_details[0].message).toHaveLength(2000);
+    expect(r.provider_error_details[0].message).toContain(
+      "[REDACTED_CREDENTIAL]",
+    );
+    expect(r).not.toHaveProperty("synthetic_candidate");
+  }
+  const failure = report.results[3];
+  expect(failure.code).toBe("MODEL_COVERAGE_INCOMPLETE");
+  expect(
+    failure.synthetic_candidate.sections[0].units[0].requirement_ids,
+  ).toEqual(["req_a"]);
+  expect(failure.target_capabilities).toEqual(target.capabilities);
+  for (const t of selected) expect(JSON.stringify(report)).not.toContain(t.key);
 });

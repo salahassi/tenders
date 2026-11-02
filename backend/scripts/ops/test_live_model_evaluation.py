@@ -43,6 +43,21 @@ class EvaluationGuards(unittest.TestCase):
         with self.assertRaisesRegex(m.EvaluationError,'EVAL_REPORT_INVALID'):m.validate_report(report,2,'extended')
         report['generations']=1;report['results']=[{'passed':False,'provider':'openai'}]
         with self.assertRaisesRegex(m.EvaluationError,'EVAL_REPORT_INVALID'):m.validate_report(report,2,'extended')
+    def test_recheck_requires_exact_two_models_and_four_failed_pairs(self):
+        row=self.rows()[1]
+        rows=[dict(row,model=model) for model in ['deepseek-v4-pro','qwen3.8-max']]
+        bindings={row['credential_alias']:'private-test-value'}
+        self.assertEqual(len(m.targets(rows,bindings,'extended_recheck')),2)
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_RECHECK_TARGETS_INVALID'):m.targets(rows[:1],bindings,'extended_recheck')
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_RECHECK_TARGETS_INVALID'):m.targets([dict(row,model='other-qwen'),rows[1]],bindings,'extended_recheck')
+        self.assertIn("m.model IN ('deepseek-v4-pro','qwen3.8-max')",m.catalog_sql('extended_recheck'))
+        report=m.parse_execution_output('',2,False,'extended_recheck')
+        report.update(complete=True,generations=4,results=[{'provider':'qwencloud','model':model,'case':case,'passed':False} for model,case in m.RECHECK_PAIRS])
+        self.assertEqual(m.validate_report(report,2,'extended_recheck'),report)
+        report['generations']=5
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_REPORT_INVALID'):m.validate_report(report,2,'extended_recheck')
+        report['generations']=4;report['results'][0]['case']='proposal_plan_coverage'
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_REPORT_INVALID'):m.validate_report(report,2,'extended_recheck')
     def test_partial_receipt_preserves_completed_results_after_timeout(self):
         progress={'progress':{'result':{'passed':False,'usage':None},'generations':1,'requests':1}}
         report=m.parse_execution_output(m.json.dumps(progress)+'\n{',2,False)
@@ -70,7 +85,7 @@ class EvaluationGuards(unittest.TestCase):
         self.assertIn("github.event_name == 'workflow_dispatch' && inputs.run_live",workflow)
         self.assertIn('default: false',workflow)
         self.assertIn('default: core',workflow)
-        self.assertIn('options: [core, extended]',workflow)
+        self.assertIn('options: [core, extended, extended_recheck]',workflow)
         self.assertIn('liveModelEvaluationExtended.test.ts',workflow)
 
 if __name__=='__main__':unittest.main()

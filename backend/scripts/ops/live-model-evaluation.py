@@ -49,16 +49,29 @@ class EvaluationError(Exception):
     pass
 
 def suite_limits(suite):
-    if suite not in {'core','extended'}: raise EvaluationError('EVAL_SUITE_INVALID')
-    return (2,16) if suite == 'extended' else (4,32)
+    if suite not in {'core','extended','extended_recheck'}: raise EvaluationError('EVAL_SUITE_INVALID')
+    return (2,4) if suite == 'extended_recheck' else (2,16) if suite == 'extended' else (4,32)
+
+RECHECK_PAIRS = {
+    ('deepseek-v4-pro','proposal_structure_ownership'),
+    ('deepseek-v4-pro','commercial_known_and_unknown_rates'),
+    ('deepseek-v4-pro','source_listing_exact_notice'),
+    ('qwen3.8-max','proposal_blueprint_ownership'),
+}
+
+def expected_case_count(count, suite):
+    return 4 if suite == 'extended_recheck' else count * 8
 
 def catalog_sql(suite):
     suite_limits(suite)
-    return CATALOG_SQL.replace("c.provider IN ('openai','qwencloud')", "c.provider='qwencloud'").replace('LIMIT 5','LIMIT 3') if suite == 'extended' else CATALOG_SQL
+    if suite == 'core': return CATALOG_SQL
+    condition = "c.provider='qwencloud'"
+    if suite == 'extended_recheck': condition += " AND m.model IN ('deepseek-v4-pro','qwen3.8-max')"
+    return CATALOG_SQL.replace("c.provider IN ('openai','qwencloud')", condition).replace('LIMIT 5','LIMIT 3')
 
 def targets(catalog, bindings, suite='core'):
     max_models,_ = suite_limits(suite)
-    allowed = {'qwencloud'} if suite == 'extended' else {'openai','qwencloud'}
+    allowed = {'openai','qwencloud'} if suite == 'core' else {'qwencloud'}
     if not isinstance(catalog, list) or not 1 <= len(catalog) <= max_models:
         raise EvaluationError('EVAL_CATALOG_LIMIT')
     result = []
@@ -73,22 +86,29 @@ def targets(catalog, bindings, suite='core'):
         result.append({k: row[k] for k in ('provider','model','project_ref','capabilities')} | {'key': bindings[alias]})
     if {r['provider'] for r in result} != allowed:
         raise EvaluationError('EVAL_BOTH_PROVIDERS_REQUIRED')
+    if suite == 'extended_recheck' and (len(result) != 2 or {r['model'] for r in result} != {m for m,_ in RECHECK_PAIRS}):
+        raise EvaluationError('EVAL_RECHECK_TARGETS_INVALID')
     return result
 
 def validate_report(report, count, suite='core'):
     max_models,max_generations = suite_limits(suite)
+    case_count = expected_case_count(count, suite)
     if (not isinstance(report, dict) or report.get('version') != 1 or report.get('synthetic') is not True
         or report.get('suite','core') != suite or not 1 <= count <= max_models
         or report.get('production_records_created') != 0 or report.get('model_count') != count
         or type(report.get('generations')) is not int or not 0 <= report['generations'] <= max_generations
         or type(report.get('complete')) is not bool or not isinstance(report.get('results'), list)
-        or (len(report['results']) != count * 8 if report.get('complete') else not 0 <= len(report['results']) <= count * 8)
+        or (len(report['results']) != case_count if report.get('complete') else not 0 <= len(report['results']) <= case_count)
         or type(report.get('passed')) is not bool):
         raise EvaluationError('EVAL_REPORT_INVALID')
     if any(type(r.get('passed')) is not bool for r in report['results']):
         raise EvaluationError('EVAL_REPORT_INVALID')
-    if suite == 'extended' and any(r.get('provider') != 'qwencloud' for r in report['results']):
+    if suite != 'core' and any(r.get('provider') != 'qwencloud' for r in report['results']):
         raise EvaluationError('EVAL_REPORT_INVALID')
+    if suite == 'extended_recheck':
+        pairs = [(r.get('model'),r.get('case')) for r in report['results']]
+        if count != 2 or len(set(pairs)) != len(pairs) or any(p not in RECHECK_PAIRS for p in pairs):
+            raise EvaluationError('EVAL_REPORT_INVALID')
     return report
 
 def parse_execution_output(raw, count, success, suite='core'):
