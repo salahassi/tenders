@@ -4369,3 +4369,28 @@ Read-only observer `41556129126` is following only this successor, with a
 900-second bound and no additional worker/model invocation. Creation of the
 new plan is confirmed; generation completion, model acceptance and real draft
 Word export remain unverified at this observation time.
+
+## November 3 — connected list Word fix deployed; real generation progressing
+
+Frontend-only deployment `41556412897` passed for commit
+`5e64ab2c6404fcfa9a9d0b62cf8966bfcebf7797`, publishing frontend image
+`sha256:b90ee4cea47e8208dd785aba618caaf89aadf3c8fd15e4c8172633b2883b88af`.
+The same run passed 1,637 backend tests, 269 frontend tests, 224 operations
+tests and both typechecks/builds; isolated workspace browser acceptance and
+hosted PDF extraction passed. All 51 hosted assets matched. The release
+changed only the frontend deployment and preserved all other workload specs
+and public configuration; it accessed neither database contents nor secrets.
+The API/worker reliability image remains protected by the active observer's
+exact-runtime guard. Temporary release credentials and logs were removed.
+
+The exact successor inspection `41556424196` observed real analysis activity
+at 00:57:32 UTC: two QwenCloud measured receipts (Qwen and DeepSeek models)
+with 16,262 input and 2,274 output tokens, two running graph threads and new
+revision-4 analysis pins. The same snapshot showed no completed analysis
+job or proposal version. One OpenAI accepted background request terminated
+without usage and remained unknown; a later different OpenAI model request
+was accepted and awaited polling. The report does not establish that terminal
+request's provider-side cause. These are real transport/progress observations,
+not completed semantic acceptance or Word export evidence. Private report
+transfer was verified and its temporary object deleted. Generation and actual
+editor draft Word acceptance remain pending ongoing observation.
