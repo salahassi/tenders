@@ -1,0 +1,101 @@
+name: Recheck one retained analysis candidate with fresh verification
+on:
+  push:
+    branches: [codex/ai-reliability-resume]
+    paths:
+      - .github/workflows/recheck-proposal-verifier.yml
+      - backend/scripts/ops/proposal-verifier-recheck.py
+      - backend/scripts/ops/proposal-verifier-recheck.sql
+      - backend/scripts/ops/proposal-verifier-recheck-history.sql
+      - backend/scripts/ops/test_proposal_verifier_recheck.py
+      - backend/tests/backend/analysisVerifierRecheck.integration.test.ts
+      - backend/tests/backend/analysisVerifierRecheckGuards.integration.test.ts
+      - backend/tests/backend/analysisVerifierRecheckOps.integration.test.ts
+      - backend/tests/backend/analysisVerifierRecheckFixture.ts
+      - backend/tests/backend/modelVerifierRecheck.integration.test.ts
+      - backend/supabase/migrations/20261103022500_analysis_verifier_recheck.sql
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Check with full rollback, or explicitly request fresh verification for the retained writer
+        type: choice
+        options: [check, recheck]
+        default: check
+        required: true
+      selection_object:
+        description: Encrypted exact inspected selection, including reviewed runtime digest
+        type: string
+        required: true
+      selection_sha256:
+        description: Reviewed selection plaintext SHA-256
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Verify exact selection, rollback, immutable history and canonical command guards
+        run: |
+          npm ci --prefix backend
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_proposal_verifier_recheck.py'
+          cd backend
+          npx vitest run tests/backend/analysisVerifierRecheck.integration.test.ts tests/backend/analysisVerifierRecheckGuards.integration.test.ts tests/backend/analysisVerifierRecheckOps.integration.test.ts tests/backend/modelVerifierRecheck.integration.test.ts
+  recover:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: tenderdesk-digitalocean-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install existing private transport dependencies
+        run: python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+      - name: Execute only the selected canonical recovery mode
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          PROPOSAL_RECHECK_ACTION: ${{ inputs.action }}
+          PROPOSAL_SELECTION_OBJECT: ${{ inputs.selection_object }}
+          PROPOSAL_SELECTION_SHA256: ${{ inputs.selection_sha256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mode_arguments=()
+          case "$PROPOSAL_RECHECK_ACTION" in
+            check) ;;
+            recheck) mode_arguments+=(--activate) ;;
+            *) exit 1 ;;
+          esac
+          python3 backend/scripts/ops/proposal-verifier-recheck.py \
+            --selection-object "$PROPOSAL_SELECTION_OBJECT" \
+            --selection-sha256 "$PROPOSAL_SELECTION_SHA256" \
+            "${mode_arguments[@]}"
+      - name: Remove temporary runner credentials and private plaintext
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil,sys
+          try:
+              run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+              if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):raise ValueError()
+              path=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+run+'-'+attempt)
+              if path.exists():shutil.rmtree(path)
+          except Exception:
+              print('{"proposal_verifier_recheck":"failed","code":"RUNNER_CLEANUP_NOT_CONFIRMED"}')
+              sys.exit(1)
+          print('{"proposal_verifier_recheck":"runner_files_removed"}')
+          PY

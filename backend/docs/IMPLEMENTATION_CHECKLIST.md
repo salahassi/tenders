@@ -4601,3 +4601,585 @@ and unresolved-request guards intentionally refuse that state. Existing paid
 records remain unchanged. A separately reviewed exact failed-step verifier
 recheck is being prepared; no such operation has been deployed or activated.
 The actual proposal version and Word export remain incomplete.
+
+## November 3 — one failed analysis step may request fresh verification
+
+Implementation adds a private, Owner-authorized `generation.verifier_recheck`
+operation for an idle failed analysis step whose sole writer has a successful,
+settled receipt and an exact retained candidate. It creates one distinct child
+step/job in the same plan, marks the selected parent step as replaced using the
+existing split representation, and cancels only that idle parent job. The audit
+identifies verification rechecking explicitly. Normal stage aggregation excludes
+the replaced parent and includes its completed child once. Completed siblings,
+old writer/verifier artifacts, checkpoints, prompt pins, candidate budgets,
+attempts and all usage rows remain unchanged; terminal unknown usage is never
+settled or zeroed. Any reserved or nonterminal unknown usage on the selected
+parent refuses admission. Other siblings keep their own processing state.
+
+The private lineage table binds the original and child job/step/thread, graph
+input, candidate record hash, logical candidate hash and unique successful writer
+receipt/attempt. Both old verifier phases must carry an earlier policy revision;
+a parent already using revision 4 cannot receive another allowance. The child
+gets only verification revision 4, three verifier candidates and one report
+format correction. It cannot resend or repair the writer. Database guards enforce
+those limits independently of runtime branching across graph budgets, catalog
+and legacy routing/attempt/reservation/resume entry points. New reservations
+require the exact child phase, seeded original candidate, immutable revision-4
+pins, prepared request identity and a request hash different from every parent
+request. A missing/corrupt lineage, candidate or cache entry fails closed. Normal
+source/currentness, membership, content policies and grounding validators remain
+authoritative; a genuine finding stops this child for review.
+
+The new authorization timestamp applies only to this requested child. The old
+plan-wide processing receipt and every sibling's receipt remain untouched. The
+lineage uniquely permits one child per parent across idempotency expiry or new
+keys and excludes rechecking a verifier-only child. Restored jobs retain their
+marker and are canceled by the existing restore process; missing private lineage
+cannot silently turn such a job into an ordinary writer.
+
+The `recheck-proposal-verifier` workflow is manual for production, defaults to a
+canonical transaction with full rollback, and requires explicit `recheck`
+activation under the production mutex. Exact private selections and receipts use
+the existing encrypted transfer. The helper validates both runtime images before
+SQL and fingerprints historical siblings/accounting/graphs/source records around
+the canonical operation. It performs no direct business row rewrites. Public
+logs contain only fixed status/count and the encrypted report's plaintext digest.
+
+Final focused verification passes **94 tests** across canonical admission,
+provider/graph guards, the exact compiled operations wrapper and runtime replay,
+plus **six historical provider-migration compatibility tests** and **six private
+transport tests**. The canonical suites include same-config/different-config verifier
+telemetry, full rollback after silent completed-sibling corruption, and rejection
+of reused parent request hashes. Another **161 existing catalog, routing,
+permission and graph tests** pass. Backend typecheck, formatting and diff checks
+pass. Independent SQL and operations review passed. The release helper also
+passed exact migration apply/replay under the restricted `tdp_app_owner` with
+all legacy role names absent, preserving old rows and authority and creating
+zero children; mutation and unexpected-grant cases rolled back. Local
+operations fixtures adapt the database name and role; production check mode is
+still a separate acceptance step.
+
+The immutable OpenRouter provider migration deliberately refuses a newer
+function body containing the verifier-only guard. Its repeatability test now
+runs at that migration's original schema boundary, and a second test proves
+that replay on the latest schema refuses without changing data or guarded
+function definitions. No historical migration hash or allowlist was changed.
+New verifier metadata counts the retained parent's model configuration when
+reporting same-model verification; historical attempts remain untouched. The
+new migration supports either legacy or managed role names using conditional
+ACL revocation and does not alter existing role membership. This entry does not
+claim deployment or activation, actual proposal completion, or Word export.
+
+Pre-activation review removed a false conflict caused by the shared plan
+revision: completing a sibling legitimately advances that revision while the
+selected failed job, step and candidate remain unchanged. The inspected and
+observed plan revisions are retained in the audit. Exact selected job/step
+revisions, latest-plan identity, active status, analysis stage, proposal base
+version, current source checks and all accounting/lineage guards remain required.
+Admission and every child binding also recompute the full frozen-context hash
+against the immutable plan input hash. A full-schema test completes a sibling
+through the canonical callback and then admits exactly one recheck child while
+preserving that completed sibling. Canceled/failed/advanced plans and changed
+input or frozen context refuse; existing changed source, latest plan and active
+proposal-version negatives remain green. Final focused tests and typecheck pass.
+
+The verifier-only runtime is isolated behind the explicit child checkpoint.
+Every lease, including accepted-cache replay, performs a fresh verifier/content
+preflight and requires an enabled authorized target. It then obtains the exact
+database-authorized parent seed, checks the full frozen graph-input hash and
+logical candidate hash, revalidates canonical/domain rules and preserves the
+entire original result/producer value. Separate immutable provenance records
+the parent; no child writer allowance or synthetic writer receipt is created.
+Only the whole-report verifier and its one report correction can reach provider
+preparation or token counting. New verification/semantic pins must both be 4.
+No ordinary writer repair, batch-budget expansion or historical-report recovery
+is available. Real defects and a failed corrective report remain retained and
+stop durably for review; accepted results still pass the standard grounding and
+generation-completion callbacks.
+
+Runtime verification: **22 unit/integration tests pass** against the fully
+migrated synthetic database. They cover interrupted seed/checkpoint replay,
+accepted-cache replay and corrupted reports, later permission revocation,
+disabled targets, malformed/stale lineage, exact producer/source coverage,
+zero writer calls/budgets/token counts, one fresh report correction, preserved
+parent receipts/results/budgets and normal child-step completion. Backend
+typecheck passes. Ordinary graph, writer-handoff and invalid-verifier recovery
+regressions also passed in the targeted run. Full-suite verification and final
+independent review are in progress; no production child was activated by these
+tests.
+
+## November 3 — reviewed verifier-recheck runtime and single-migration release
+
+The prepared deployment is separate from requesting a verifier recheck. It builds
+or reuses one source-bound immutable API/worker image, requires current runtime
+`871c2f80…` (or that exact candidate on partial recovery), and preserves frontend
+`b90ee4…`, all unrelated deployment identities/specifications, public configuration,
+provider secrets and native schedules. The API becomes ready before a guarded
+worker Recreate transition; old workers finish their existing graceful shutdown
+before new workers are admitted. Ordinary unmarked jobs use their original runtime
+path before the migration, and deployment never creates or activates a child.
+
+The exact migration is `20261103022500_analysis_verifier_recheck.sql`, SHA-256
+`cead30c43776e35822e4fa63476223a5ff4abe8de35218286d66dd5bd8c22382`.
+After runtime readiness and old-process drain, a restricted-owner transaction
+checks the prior AI release receipt, snapshots every pre-existing public/private
+row and existing table/function authorities, applies only this source, and records
+`analysis-verifier-recheck-v1` with its checksum. Existing function bodies outside
+the fourteen reviewed targets also remain unchanged. The only new schema is the
+empty private lineage table and five private functions; RLS, direct grants,
+browser denial, function ownership/search paths and expected guard markers are
+verified. No paid receipts, unknown usage, budgets, completed siblings or frozen
+work are reset. A repeated identical release verifies the ledger and schema;
+checksum drift or untracked schema is refused.
+
+Successful acceptance restores the exact worker strategy, removes its owned
+rollout marker, rechecks both runtime identities/images and preserved resources,
+and removes its temporary SQL administrator before emitting final success.
+An ambiguous image or SQL outcome retains compatible code and requests forward
+completion with the same immutable candidate. It never rolls back code across
+possible new child admission or clears migration history. Manual deployment is
+the only workflow path with production credentials; branch pushes run offline
+checks only. Recheck activation remains a separately scoped canonical operation.
+
+Seven focused release tests pass, including the exact complete-schema migration
+under restricted `tdp_app_owner` with only managed role names, idempotent replay,
+empty lineage, existing-row/grant mutation rollback, rollout/schema ordering,
+ambiguous failure retention, foreign administrator refusal and cleanup failure.
+Final local operations verification passes **263 tests**, and all **13 deployment
+renderer tests** pass. The seven exact-migration release cases were repeated
+successfully after the final `cead30c4…` plan-revision refinement. Independent
+review approved the release sequence and
+separately repeated the seven focused cases. Two historical operational fixtures
+now load their actual predecessor migration boundary; historical SQL and hashes
+remain unchanged. Frontend **269 tests** and both package typecheck/build checks
+passed in the runtime workstream. The final complete backend suite remains a
+required workflow gate before production deployment. This entry does not claim
+production deployment or child activation.
+
+## November 3 — refreshed exact-runtime graph inspection
+
+The read-only graph diagnostic now accepts an explicitly selected immutable
+runtime digest in the owned TenderDesk registry, instead of fixing the earlier
+image in its selector. The existing three runtime checks still require both API
+and worker to match that exact digest before client preparation, before the SQL
+read and before private report publication. Tags, other repositories, malformed
+digests and missing workflow source revisions fail closed. The private report
+records the diagnostic source commit; source and candidate content remain inside
+the encrypted report transport. The SQL remains unchanged and read-only.
+
+Nine offline diagnostic tests pass, including the exact SQL against the complete
+schema under the restricted application owner, no record changes, a newer digest
+through all three guards, drift refusal before SQL/publication, and bounded public
+receipts. This prepares a fresh post-deployment inspection; it does not dispatch
+inspection, authorize a stale selection, or change business state.
+
+## November 3 — private inspection of workspace model capacity and dispatch
+
+The existing proposal inspector now reads bounded workspace execution metadata
+alongside the selected proposal. It reports the configured/effective parallel
+request limit, exact reserved/running counts, up to 64 reserved request owners
+and running jobs, safe lease/deadline flags, queue work-class due counts,
+scheduler heartbeat, dispatcher timestamps and fairness cursor. Selected jobs
+also expose a small checkpoint projection, latest attempt diagnostics and both
+semantic and verification policy versions. This can distinguish an outside-plan
+accepted request occupying capacity from a stopped dispatcher or future-due
+proposal continuation without claiming that raw due counts prove eligibility.
+
+The transaction remains repeatable-read and read-only. The optional Kubernetes
+outbox is queried only if its table exists, using the exact installed runtime
+schema. No claim, wake, polling, authorization, model or business mutation is
+invoked. Remote request IDs, lease tokens, dispatcher secrets, routing secrets,
+provider payloads and customer/source text are excluded. All added metadata
+uses the existing encrypted private report; public receipts remain unchanged.
+
+Twenty focused inspector/successor/observer tests pass. The expanded synthetic
+full-schema fixture covers absent and present runtime outbox installations,
+a reserved request owned by another assessment, live worker leases, due work
+with supported/unsupported executor versions, private checkpoint/HTTP/lease
+sentinels, and byte-for-byte preservation of queue/accounting/operations rows.
+Independent source review found no blocker. Diff checks pass. This is an
+operations inspection change only; no runtime, migration, business logic,
+production query or provider call was changed or executed by these tests.
+
+## November 3 — verifier-recheck release deployed; activation remains pending
+
+[Deployment workflow 41566561043](https://github.com/salahassi/tenders/actions/runs/41566561043)
+succeeded for source `4ab0790c04a00e903733df1c29ec3846ef04ac4a`. Both API and
+worker now use immutable runtime
+`sha256:bded9f019592be84ae45e078d55a52e438c3f6942b2bd1bf35d148d4ff0d6c4a`.
+API readiness was confirmed at 02:41:21 UTC and worker readiness at 02:41:32 UTC.
+Old workers drained before schema application; the exact worker strategy was
+restored and its rollout marker removed. Final acceptance and temporary
+administrator cleanup completed at 02:42:14 UTC.
+
+The applied migration `20261103022500_analysis_verifier_recheck.sql` has SHA-256
+`cead30c43776e35822e4fa63476223a5ff4abe8de35218286d66dd5bd8c22382`, recorded
+under release ledger key `analysis-verifier-recheck-v1`. Acceptance confirmed
+preserved pre-existing rows and authorities, configuration and other workloads,
+and unchanged frontend image
+`sha256:b90ee4cea47e8208dd785aba618caaf89aadf3c8fd15e4c8172633b2883b88af`.
+Deployment created zero recheck children and retried no processing. Source and
+schema application are complete; production recheck activation and proposal
+completion remain pending separate evidence.
+
+The deployment gates passed **2,332 tests**: **1,785 backend**, **269 frontend**,
+**265 operations** and **13 renderer** tests, plus both package typecheck/build
+checks. These final workflow results supersede the earlier pending full-suite
+status.
+
+The metadata-only diagnostic source `942c6c6acfd9ec2d89945ce65c0b4877056b4729`
+was inspected successfully by
+[workflow 41567339637](https://github.com/salahassi/tenders/actions/runs/41567339637).
+That read-only snapshot showed effective model capacity of two requests, one
+reserved request and a healthy scheduler. Capacity was not full in that
+snapshot; these observations do not establish the root cause of the remaining
+processing delay or prove that the selected continuation was eligible to run.
+
+## November 3 — preserve model admission fairness across accepted polling
+
+A fully migrated synthetic reproduction identified a queue starvation cycle:
+with two model slots, one long accepted request and repeated background arrivals,
+background admission plus accepted polls repeatedly returned the shared six-slot
+cursor to background. Eight cycles admitted eight background requests and served
+sixteen polls while an eligible proposal continuation received zero attempts.
+The proposal was immediately claimable when the cursor changed. This is a local
+real-claim-RPC reproduction; production metadata alone did not establish the bug.
+
+New additive migration `20261103032000_model_admission_fairness.sql` introduces
+private workspace model-admission state independently of the existing local/poll
+cursor. An eligible preferred business class retains its next admission until
+it actually claims capacity-requiring work. When it has no eligible model work,
+the other class proceeds. Only new model work consumes this turn; accepted polls,
+local transitions, source collection/candidate processing, notice fetches and
+cancellation do not. Proposal/background admission remains the existing tested
+one-to-one policy. The original six slots, owner/deadline ordering, due/executor/
+OCR/dependency checks and workspace lock remain intact. Eligibility uses the same
+installed predicate in both selections. An unrelated row lock can conservatively
+delay a claim without consuming credit; ordinary claimants already share the
+workspace lock. Existing jobs, accounting, graph histories and cursor rows are
+not rewritten by the migration. New state is initialized lazily and has RLS
+enabled with no browser/service grants.
+
+All **163 tests across seven focused queue/worker suites** pass, including eleven
+new regressions. The exact cycle now serves the waiting proposal after capacity
+returns for both known terminal-unknown and settled fixture outcomes, retaining
+remote identities and the long-running reserved receipt unchanged. Tests also
+cover limits one/two, continued polls/local work while full, unchanged local-only
+cursor/admission credit, capacity-free exemptions, absent/ineligible preferred
+classes, and private-state permissions. Existing source/OCR, owner, continuation,
+dependency and future-due regressions remain green. Backend typecheck and diff
+checks pass. SQL SHA-256 is
+`3bb13dd60fb4322ac3ba70c534ec6165a668da547318d1ea49232ae1d401c927`.
+Deployment and hosted progress remain pending; these tests made no live calls.
+
+## November 3 — atomic SQL release for recheck identity and model admission
+
+A SQL-only release is being prepared for the additive prompt-identity correction
+`20261103031500_analysis_recheck_prompt_identity.sql` and queue-fairness change
+`20261103032000_model_admission_fairness.sql`. It requires the deployed `bded9f…`
+API/worker image, unchanged `b90ee4…` frontend and the prior verified AI/recheck
+release receipts. It obtains cluster/database access without building images or
+requesting registry push credentials. No rollout, direct job claim, wake, retry or
+child activation is part of the release. After the transaction commits, the
+existing scheduler may advance already eligible queued work using the corrected
+admission rule.
+
+Both exact sources apply in one restricted-owner, repeatable-read transaction.
+Only `analysis_recheck_binding(uuid)` and `next_fair_job(uuid,boolean)` may change;
+the new private admission cursor must initially be empty. Every pre-existing
+public/private row, existing function authority and unrelated body, table
+authority/structure, policy and role membership is checked for preservation.
+Separate source-checksum receipts commit together; partial batch receipts and
+checksum drift refuse. An identical replay preserves a cursor subsequently used
+by the ordinary scheduler. Existing runtimes, all deployment identities/specs,
+configuration and schedules are checked before SQL and after public acceptance
+and administrator cleanup. Ambiguous SQL acknowledgement requires verification
+or replay of the same batch, with no runtime rollback or accounting reset.
+
+The frozen identity source SHA-256 is
+`30f79868deaa94daab1554584aede2545a1611a29f7b19d26503e75f57720f14`, with
+ledger key `analysis-recheck-prompt-identity-v1`; the frozen fairness source is
+`3bb13dd60fb4322ac3ba70c534ec6165a668da547318d1ea49232ae1d401c927`, with
+ledger key `model-admission-fairness-v1`. The earlier `cead30c4…` migration and
+receipt remain unchanged.
+
+All **eight release tests pass**, including the exact batch under restricted
+`tdp_app_owner` with only managed role names, atomic rollback of both migrations,
+row/authority/structure preservation, partial-receipt refusal, cursor-preserving
+replay, immutable workload checks and administrator cleanup. An independent
+reviewer approved the wrapper/workflow and repeated the eight tests successfully.
+The full local operations suite passes **273 tests**, and all **13 renderer
+tests** pass. Both application packages retain their full typecheck/test/build
+gates in the manual release workflow. Production application and actual proposal
+recovery remain separate, pending evidence.
+
+## November 3 — prepared code-only release for typed verification
+
+The typed-verification release uses a small adapter around the audited
+`model-validation-update.py` rollout. Its baseline is the deployed `bded9f…`
+runtime, with a distinct `typed-verification-code-v1` receipt and owned worker
+transition marker. It retains frontend `b90ee4…`, other workloads, configuration
+and schedules. All five previous migration source checksums are checked locally;
+the updater opens no database connection and makes no processing request.
+
+The existing immutable-image helper builds once or reuses the same verified
+source/digest. API readiness precedes the guarded worker Recreate transition;
+graceful old-worker termination prevents mixed readers of newly admitted format
+pins. Candidate acceptance restores the exact worker strategy and waits for its
+controller acknowledgement before the final identity/specification checks. Any
+ambiguous rollout retains compatible candidate code for exact-image forward
+completion. The ordinary backend Docker copy includes newly imported shared
+modules without changing frontend assets.
+
+Five focused adapter tests pass, reusing the existing JSON-patch simulator and
+spies that reject database/admin calls. They cover the exact baseline and unique
+marker, prior-source integrity, unchanged unrelated workloads, strategy readiness,
+partial candidate replay and foreign-state refusal. The separate workflow permits
+production access only on manual dispatch and retains full package and operations
+gates. Independent release review approved the adapter/workflow and repeated all
+five tests successfully; the eleven shared rollout tests also pass. Typed-format
+runtime verification is recorded separately. Bounded live evaluation and final
+release workflow gates remain pending; this entry does not claim runtime deployment.
+
+## November 3 — immutable writer prompt identity correction
+
+[Production check 41568178446](https://github.com/salahassi/tenders/actions/runs/41568178446)
+refused with `MODEL_RECHECK_IDENTITY_CHANGED` and zero activated children or
+model calls. The deployed admission guard incorrectly expected an
+`analyze_chunk.*` prompt identifier. The actual task registry emits
+`tenderdesk-v3.evidence-v1.tenderdesk-semantic-fidelity-v1.economy-v1` for the
+retained semantic-four writer. Reconstructing the private frozen request through
+the real `taskInput` and `modelPrompt` functions exactly matched the paid request
+hash. No customer identifiers, prompt payload or source content are included in
+the regression fixtures or this checklist.
+
+The previous synthetic fixture invented the same incorrect prefix and therefore
+missed the defect. It now derives both writer identity and request hash from the
+production prompt builder, and saves the actual semantic-four phase policy.
+Against the exact previously deployed migration boundary, this corrected fixture
+reproduced the production refusal. The additive migration
+`20261103031500_analysis_recheck_prompt_identity.sql` replaces exactly that
+predicate, also requiring the immutable semantic-four writer pin at the exact
+candidate phase. It preserves all other source, receipt, producer, graph,
+candidate, prior-verifier and single-writer admission checks. The already deployed
+migration, historical accounting, reports and budgets are not rewritten.
+
+All **98 full-schema recheck tests** across six suites pass with the correction,
+including restricted production-role execution, history preservation and
+writer-path denial. The 15 focused correction tests prove the deployed-boundary
+refusal, additive repair with every application table and existing authority
+unchanged, and atomic refusal of fabricated/legacy prompt identities, missing or
+wrong writer phase/revision, corrupted pin content/hash and a mismatched paid
+request hash. Backend typechecking and formatting checks pass. Independent prompt
+and provider reviews found no blocker. The correction SQL SHA-256 is
+`30f79868deaa94daab1554584aede2545a1611a29f7b19d26503e75f57720f14`;
+the deployed migration retains its original `cead30c4…` checksum. Production
+application and actual recheck acceptance remain pending the separate reviewed
+SQL release.
+
+## November 3 — bounded typed-analysis authority evaluation
+
+The manual evaluation workflow now offers `analysis_authority`: exactly the
+configured QwenCloud `qwen3.8-max` and `deepseek-v4-pro`, each with two synthetic
+cases and at most four generation requests total. Both cases use the same buyer
+brief and candidate prose. The valid case retains an optional workshop and an
+advisory question about an absent formal RFP; the invalid case changes only the
+typed mandatory flag and question blocking level. The negative golden assertion
+requires a source-associated finding of optional scope strengthened into an
+obligation; a generic missing-RFP objection alone cannot pass.
+
+Fixtures construct their context through the real `verificationContext` format
+pin, using ephemeral local state with no database or provider access. New format
+3 retains the exact structured candidate while semantic and verification policies
+stay at revision 4. Actual adapter calls run canonical `validateGroundingReport`
+before success, then the selected golden assertions. Existing request bounds,
+strict target/pair selection, usage reporting, secret redaction and encrypted
+private report transport remain in force. Push events run offline checks only;
+live requests still require explicit manual activation.
+
+All **25 evaluation harness tests**, **18 Python boundary tests** and **8
+full-schema catalogue tests** pass, along with backend typechecking and formatting
+checks. All **58 historical live-request prompt hashes** across the five existing
+suites remain identical. Independent review verified the four-request boundary,
+production format/validation path and private transport. The semantic assertion
+also accepts an unsupported mandatory flag tied to a quotation establishing
+optional scope, while rejecting a mere omitted-optional-work or missing-RFP
+finding. The later live outcome and its provider-specific limits are recorded
+below; preparing this suite itself sent no model requests.
+
+## November 3 — typed analysis verification formats
+
+New whole-analysis verification pins context format **3**, retaining the exact
+structured candidate alongside its existing content units. Mandatory booleans,
+null owner questions, question blocking levels and their JSON field ownership
+are now visible to the verifier. The redundant flattened candidate text is
+removed. Historical format **1/2** prompts retain their exact recorded bytes;
+an accepted unpinned legacy request keeps its original context until retrieval
+completes. Semantic and verification instructions remain unchanged.
+
+New batched analysis uses a separately pinned **version 5** envelope declaring
+context format 3 around the unchanged version 3/4 partition policy. Each scoped
+request receives the typed candidate while the existing selected content units,
+required IDs and candidate hash remain the exclusive report coverage boundary.
+Old batch pins keep their exact payloads. Output partition sizes, graph budgets,
+writer repair and the single-candidate verifier-recheck authorization are
+unchanged. Existing input-token admission still applies to the larger typed
+context; seeing the typed fields does not guarantee a correct model verdict.
+
+**261 tests across 8 backend suites** and backend typechecking pass. Regression
+coverage includes historical whole/batch prompt hashes, opposite mandatory flags
+with identical prose, null/false values, malformed format identities, accepted
+legacy requests, corrective reports, and rejection of out-of-scope quotations,
+extra coverage IDs and a wrong candidate hash. Four full-schema graph cases
+exercise new and historical batch formats with/without output-token policy
+across leases, preserve one writer and exact usage counts, and merge complete
+coverage. Independent review passed another 152 focused tests and all four
+durable cases. These offline checks performed no production model calls or
+deployment. The later bounded authority result is recorded below; runtime
+deployment remains a separate gate.
+
+## November 3 — recheck identity and admission SQL deployed
+
+[Workflow 41569680096](https://github.com/salahassi/tenders/actions/runs/41569680096)
+completed successfully for source `141d1c6625b4f7b086da6a0a0b72cfb1a6414cc4`.
+Its full gates passed **2,366 tests**: **1,811 backend**, **269 frontend**, **273
+operations** and **13 renderer**, plus both package typecheck/build checks.
+
+The atomic batch was verified at 03:11:33 UTC. It applied identity migration
+`20261103031500_analysis_recheck_prompt_identity.sql`, checksum
+`30f79868deaa94daab1554584aede2545a1611a29f7b19d26503e75f57720f14`, and
+fairness migration `20261103032000_model_admission_fairness.sql`, checksum
+`3bb13dd60fb4322ac3ba70c534ec6165a668da547318d1ea49232ae1d401c927`, with
+their separate checked release receipts committed together. Existing rows,
+authorities and structures were preserved. Temporary administrator resources
+were removed at 03:12:09 UTC; final acceptance and runner cleanup completed at
+03:12:11 UTC.
+
+API/worker runtime remained
+`sha256:bded9f019592be84ae45e078d55a52e438c3f6942b2bd1bf35d148d4ff0d6c4a`
+and frontend remained
+`sha256:b90ee4cea47e8208dd785aba618caaf89aadf3c8fd15e4c8172633b2883b88af`.
+No deployment image/specification or retained configuration changed. The release
+invoked no job claim or processing retry and created no recheck child. Fresh
+canonical recovery admission, actual generation completion and typed-format
+runtime deployment remain separate acceptance steps.
+
+## November 3 — typed-analysis authority live result: DeepSeek passed; Qwen quota blocked
+
+[Evaluation 41570661661](https://github.com/salahassi/tenders/actions/runs/41570661661)
+ran source `6e50aaae23182a7307f5a8a4cff57d0239e3579d` and completed exactly
+**four generation POSTs**, one for each permitted model/case pair, with no polls
+or additional requests. All four prompt hashes match both the saved pre-dispatch
+expectations and the current production prompt builder. The verified private
+report SHA-256 is
+`d1908355f955058ab88924c9467ce95a7f97a75f232764a63a4ec88547bcd307`.
+
+**DeepSeek passed both semantic cases** with HTTP 200: it accepted the faithful
+optional scope and detected optional scope incorrectly promoted to mandatory.
+The executed harness requires canonical `validateGroundingReport` before attempt
+success and the source-associated golden assertions before case success. The
+receipt confirms both gates passed; successful response bodies were not retained,
+so this review verifies the executed gates and request identities rather than
+replaying the successful response payloads offline.
+
+**Both Qwen3.8 requests were rejected with HTTP 403 before a candidate was
+returned.** Provider details report `insufficient_quota`, reason `usage_limit`,
+and exhausted free quota under the provider's free-tier-only setting. The adapter
+classified these as `PROVIDER_AUTH_FAILED`; they are provider quota failures,
+not evidence of a wrong semantic verdict. Qwen's two new authority cases remain
+unevaluated. The aggregate result is **two passed cases out of four attempted**,
+not a four-case pass.
+
+Measured DeepSeek usage totals **9,823 input and 1,429 output tokens**. Both
+Qwen input/output values remain null, giving **two cases with unknown usage**;
+no missing measurement was converted to zero. All cases report cleanup
+`not_needed`, and no application records were created. No rerun, payment change
+or provider configuration change followed this review. This bounded adapter and
+prompt result supports the selected DeepSeek behavior; actual proposal workflow
+completion and Qwen authority verification remain separate acceptance limits.
+
+## November 3 — typed verification runtime deployed
+
+[Deployment 41571450550](https://github.com/salahassi/tenders/actions/runs/41571450550)
+succeeded for source `6e50aaae23182a7307f5a8a4cff57d0239e3579d`. Its complete
+gates passed **2,404 tests**: **1,841 backend**, **269 frontend**, **281 operations**
+and **13 renderer**, plus both package typecheck/build checks.
+
+API and worker now use immutable runtime
+`sha256:85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380`.
+API readiness was confirmed at 03:29:47 UTC and worker readiness at 03:29:58 UTC.
+The old workers drained before new-worker admission. The exact worker strategy
+was restored, its owned marker removed, and controller readiness acknowledged
+at 03:30:09 UTC. Final acceptance and temporary runner cleanup completed at
+03:30:11 UTC.
+
+Only the API/worker runtime images changed. Frontend remained
+`sha256:b90ee4cea47e8208dd785aba618caaf89aadf3c8fd15e4c8172633b2883b88af`;
+configuration, schedules and other workloads were preserved. The release checked
+all prior migration source hashes, opened no database connection, changed no
+schema and invoked no processing retry. Actual proposal completion and Qwen's
+quota-blocked authority cases remain separate acceptance limits; the deployed
+runtime supports existing format pins as well as the new typed formats.
+
+## November 3 — canonical verifier recheck activated; completion still pending
+
+[Check 41570878980](https://github.com/salahassi/tenders/actions/runs/41570878980)
+passed the canonical operation inside a rolled-back transaction and retained zero
+children. [Activation 41571204939](https://github.com/salahassi/tenders/actions/runs/41571204939)
+then created exactly one verifier-recheck child. Both receipts bind verification
+revision 4, **zero writer allowance**, at most **three verifier candidates** and
+**one verifier-format correction**. The parent writer, old artifacts, pins,
+budgets and accounting remain retained; the checked history fingerprint was
+preserved. Activation does not mean the new verification has run or passed.
+
+[Observation 41571512040](https://github.com/salahassi/tenders/actions/runs/41571512040)
+timed out after twenty read-only samples, with its final snapshot at 03:25:11 UTC.
+It demonstrated actual post-fairness progress: one formerly stalled continuation
+advanced from four to ten attempts and entered a scheduled round-exhausted wait;
+another queued analysis ran and stopped at `USAGE_REVIEW_REQUIRED`. The explicit
+recheck child remained queued with zero attempts, no model usage and no graph
+thread. No final proposal version or Word export was ready.
+
+The unchanged ordering within this proposal owner puts six older queued siblings
+and one overdue round-exhausted continuation ahead of the newly created child.
+A fully migrated local reproduction using the actual claim RPC confirms that
+order while the plan remains blocked. Polls and retained graph continuations can
+interleave, so this observation does not establish a child start-time guarantee.
+The new usage blocker follows a paid repair result rejected for invalid evidence
+while an earlier accepted request retains unknown usage. Exact phase attribution
+awaits its private graph diagnostic; the accounting guard remains intact. All
+48 existing writer-handoff integration tests pass, including preservation of
+usage, candidate budgets and checkpoint state when same-phase unknown accounting
+blocks progress. No reprioritization, cancellation, budget reset or usage rewrite
+was performed. A further bounded observation under the newly deployed typed
+runtime and the private diagnostic are pending separate acceptance evidence.
+
+The exact private diagnostic from workflow
+[41572919737](https://github.com/salahassi/tenders/actions/runs/41572919737)
+confirmed that the unmeasured OpenAI receipt and the paid DeepSeek repair share
+both the request hash and repair phase. OpenAI explicitly terminated with
+`credit_balance_exhausted`; its usage remains unknown. Replaying current canonical
+validation against the frozen evidence still rejects both retained candidates
+for source quotation mismatch. The DeepSeek HTTP 200 therefore does not establish
+valid repaired content. No accepted result or completed handoff exists. Existing
+canonical actions cannot complete this part without genuine usage reconciliation
+and a valid bounded correction; no accounting or validation guard was overridden.
+
+[Post-deployment observation 41572780456](https://github.com/salahassi/tenders/actions/runs/41572780456)
+verified runtime `85799a61…` through twenty read-only samples. At 03:38:02 UTC,
+the same plan had one succeeded job, two blocked jobs, four scheduled/pending
+retries, five queued jobs and the retained canceled parent. Further older queued
+parts had entered real model processing, and one accepted request was active.
+The explicit verifier-only child was still queued with zero attempts, usage or
+graph artifacts. The plan remained blocked with no proposal version; full
+generation and actual Word export did **not** pass acceptance. The native queue
+remains enabled; no priority changes or extra child requests were made.
+
+Remaining provider limits are distinct from code deployment: Qwen3.8's free-only
+quota is exhausted, and OpenAI reports exhausted credit. DeepSeek passed both
+bounded authority evaluations, but some real retained analyses still fail exact
+evidence validation. The Qwen HTTP 403 is internally labeled as an authentication
+failure while its recorded reason correctly says provider usage limit; this
+display/classification follow-up does not disable the shared connection or block
+DeepSeek failover. No billing, credential, quota-mode or content-permission
+settings were changed to bypass these limits.

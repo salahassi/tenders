@@ -14,7 +14,8 @@ export type EvaluationSuite =
   | "extended"
   | "extended_recheck"
   | "planning_repair"
-  | "analysis_verification";
+  | "analysis_verification"
+  | "analysis_authority";
 export function limitsForSuite(suite?: EvaluationSuite): typeof LIMITS;
 export function fixtures(suite?: EvaluationSuite): Promise<any[]>;
 export function validateTargets(

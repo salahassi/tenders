@@ -124,6 +124,54 @@ class EvaluationGuards(unittest.TestCase):
             self.assertEqual(m.main(),0)
         cluster.assert_not_called();child.assert_not_called()
         self.assertEqual(m.json.loads(output.getvalue()),{'live_ai_evaluation':'not_activated'})
+    def test_analysis_authority_requires_exact_two_qwen_models_and_read_only_catalog(self):
+        row=self.rows()[1]
+        rows=[dict(row,model=model) for model in ('deepseek-v4-pro','qwen3.8-max')]
+        bindings={row['credential_alias']:'private-test-value'}
+        self.assertEqual(m.suite_limits('analysis_authority'),(2,4))
+        self.assertEqual(m.expected_case_count(2,'analysis_authority'),4)
+        self.assertEqual(len(m.targets(rows,bindings,'analysis_authority')),2)
+        for invalid in (rows[:1],[rows[0],rows[0]],[rows[0],dict(row,model='other-qwen')]):
+            with self.subTest(models=[r['model'] for r in invalid]):
+                with self.assertRaisesRegex(m.EvaluationError,'EVAL_ANALYSIS_AUTHORITY_TARGETS_INVALID'):
+                    m.targets(invalid,bindings,'analysis_authority')
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_CATALOG_LIMIT'):
+            m.targets(rows+[row],bindings,'analysis_authority')
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_CREDENTIAL_ALIAS_INVALID'):
+            m.targets([dict(rows[0],provider='openai'),rows[1]],bindings,'analysis_authority')
+        expected=m.CATALOG_SQL.replace("c.provider IN ('openai','qwencloud')","c.provider='qwencloud' AND m.model IN ('deepseek-v4-pro','qwen3.8-max')").replace('LIMIT 5','LIMIT 3')
+        self.assertEqual(m.catalog_sql('analysis_authority'),expected)
+        self.assertIn('BEGIN READ ONLY',expected)
+    def test_analysis_authority_report_enforces_four_unique_pairs_and_partial_bounds(self):
+        expected={(model,case) for model in ('deepseek-v4-pro','qwen3.8-max')
+                  for case in ('analysis_optional_authority_supported_v3','analysis_optional_authority_strengthened_v3')}
+        self.assertEqual(m.ANALYSIS_AUTHORITY_PAIRS,expected)
+        base=m.parse_execution_output('',2,False,'analysis_authority')
+        base.update(complete=True,generations=4,results=[{'provider':'qwencloud','model':model,'case':case,'passed':False}
+                                                      for model,case in sorted(expected)])
+        self.assertEqual(m.validate_report(base,2,'analysis_authority'),base)
+        def invalid(change):
+            report=m.json.loads(m.json.dumps(base));change(report)
+            with self.assertRaisesRegex(m.EvaluationError,'EVAL_REPORT_INVALID'):
+                m.validate_report(report,2,'analysis_authority')
+        invalid(lambda r:r.update(generations=5))
+        invalid(lambda r:r['results'].pop())
+        invalid(lambda r:r['results'].__setitem__(1,dict(r['results'][0])))
+        invalid(lambda r:r['results'][0].update(case='analysis_reference_empty_v4'))
+        invalid(lambda r:r['results'][0].update(model='other-qwen'))
+        invalid(lambda r:r['results'][0].update(provider='openai'))
+        invalid(lambda r:r.update(model_count=1))
+        invalid(lambda r:r.update(suite='analysis_verification'))
+        progress={'progress':{'result':base['results'][0],'generations':1,'requests':1}}
+        partial=m.parse_execution_output(m.json.dumps(progress)+'\n{',2,False,'analysis_authority')
+        self.assertFalse(partial['complete']);self.assertEqual(len(partial['results']),1)
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_REPORT_INVALID'):
+            m.parse_execution_output(m.json.dumps(progress)+'\n'+m.json.dumps(progress),2,False,'analysis_authority')
+    def test_analysis_authority_selection_never_activates_live_calls_by_itself(self):
+        with patch.dict(os.environ,{'RUN_LIVE_AI_EVALUATION':'false','AI_EVALUATION_SUITE':'analysis_authority'}), patch.object(m.access,'prepare_cluster') as cluster, patch.object(m.subprocess,'run') as child, redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(m.main(),0)
+        cluster.assert_not_called();child.assert_not_called()
+        self.assertEqual(m.json.loads(output.getvalue()),{'live_ai_evaluation':'not_activated'})
     def test_sql_failure_reports_fixed_stage_and_sqlstate_without_subprocess_or_private_error(self):
         with tempfile.TemporaryDirectory() as parent:
             directory=Path(parent)/'private';directory.mkdir()
@@ -145,9 +193,10 @@ class EvaluationGuards(unittest.TestCase):
         self.assertIn("github.event_name == 'workflow_dispatch' && inputs.run_live",workflow)
         self.assertIn('default: false',workflow)
         self.assertIn('default: core',workflow)
-        self.assertIn('options: [core, extended, extended_recheck, planning_repair, analysis_verification]',workflow)
+        self.assertIn('options: [core, extended, extended_recheck, planning_repair, analysis_verification, analysis_authority]',workflow)
         self.assertIn('liveModelEvaluationExtended.test.ts',workflow)
         self.assertIn('liveModelEvaluationVerification.test.ts',workflow)
+        self.assertIn('liveModelEvaluationAuthority.test.ts',workflow)
         self.assertIn('codex/ai-reliability-resume',workflow)
 
 if __name__=='__main__':unittest.main()

@@ -2027,6 +2027,223 @@ it.each([
     ).toBe(1 + batches.size);
   },
 );
+it.each([
+  { legacy: false, policy: false },
+  { legacy: true, policy: false },
+  { legacy: false, policy: true },
+  { legacy: true, policy: true },
+])(
+  "preserves typed analysis batch pins across leases and historical partitions (legacy:$legacy policy:$policy)",
+  async ({ legacy, policy }) => {
+    const { executeGuardedModel } =
+      await import("../../supabase/functions/_shared/modelGraph");
+    const { candidateContent } =
+      await import("../../supabase/functions/_shared/modelGrounding");
+    const { sha256 } = await import("../../supabase/functions/_shared/model");
+    const { job, backend, envs } = await configure();
+    const candidate = {
+      summary: "The buyer's workshop scope is optional.",
+      requirements: Array.from({ length: 9 }, () => ({
+        text: "Provide an optional workshop.",
+        category: "deliverables",
+        mandatory: false,
+        source_refs: [
+          { id: "source-1", quote: "The buyer requests an optional workshop." },
+        ],
+        interpretation:
+          "Optional delivery remains subject to buyer confirmation. ".repeat(
+            35,
+          ),
+        owner_question: null,
+        acceptance_evidence: "Workshop attendance record is proposed.",
+      })),
+      questions: [
+        {
+          question: "Is a formal RFP available?",
+          blocking_level: "advisory",
+          requirement_ids: [],
+        },
+      ],
+      processed_block_ids: ["source-1"],
+      separate_volumes: false,
+    };
+    let hash = await sha256(JSON.stringify(candidate));
+    const partition = policy
+      ? { version: 4, policy: { version: 2, outputTokens: 16384 } }
+      : { version: 3 };
+    const seen = new Set<string>();
+    let writers = 0;
+    const fetcher: typeof fetch = async (_url, init) => {
+      const prompt = JSON.parse(
+        JSON.parse(String(init?.body)).messages[1].content.split(
+          "\nJSON schema: ",
+        )[0],
+      );
+      let result: any;
+      if (prompt.task === "analyze_chunk") {
+        writers++;
+        result = candidate;
+      } else {
+        expect(prompt.task).toBe("verify_grounding");
+        const c = prompt.untrusted_data;
+        expect(["content_batch", "requirements_only"]).toContain(
+          c.verification_scope,
+        );
+        if (legacy) {
+          expect(c.candidate).toBeUndefined();
+          expect(c.response_style).toBeUndefined();
+        } else {
+          expect(c.candidate).toEqual(candidate);
+          expect(c.candidate.requirements[0].mandatory).toBe(false);
+          expect(c.candidate.questions[0].blocking_level).toBe("advisory");
+          expect(c.response_style).toBe("compact-verification-v3");
+        }
+        const scopeKey =
+          c.verification_scope +
+          c.content_units.map((u: any) => u.id).join(",");
+        expect(seen.has(scopeKey)).toBe(false);
+        seen.add(scopeKey);
+        const coverage = c.verification_scope === "requirements_only";
+        expect(prompt.required_ids).toEqual(coverage ? ["source-1"] : []);
+        result = {
+          checked_candidate_hash: c.candidate_hash,
+          reviewed_all_content: true,
+          processed_content_ids: c.content_units.map((u: any) => u.id),
+          processed_requirement_ids: coverage ? ["source-1"] : [],
+          requirement_checks: coverage
+            ? [
+                {
+                  requirement_id: "source-1",
+                  status: "supported",
+                  candidate_quote: candidate.summary,
+                  source_refs: [
+                    {
+                      id: "source-1",
+                      quote: "The buyer requests an optional workshop.",
+                    },
+                  ],
+                  finding: "Optional work remains optional.",
+                },
+              ]
+            : [],
+          claims: coverage
+            ? []
+            : [
+                {
+                  id: "claim",
+                  kind: "assumption",
+                  status: "supported",
+                  claim: "Optional proposed work.",
+                  candidate_quote: c.content_units[0].text,
+                  source_refs: [],
+                  finding: "Conditional work remains subject to confirmation.",
+                },
+              ],
+          findings: [],
+        };
+      }
+      return Response.json({
+        choices: [
+          {
+            finish_reason: "stop",
+            message: { content: JSON.stringify(result) },
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 8 },
+      });
+    };
+    let current = job,
+      outcome: any,
+      seeded = false;
+    for (let i = 0; i < 12; i++) {
+      try {
+        outcome = await executeGuardedModel({
+          backend,
+          job: current,
+          prefix: `step:${job.id}`,
+          task: "analyze_chunk",
+          context: {
+            draft_input_version: 1,
+            ...(policy
+              ? { workflow_version: 2, verification_output_tokens: 16384 }
+              : {}),
+          },
+          evidence: [
+            {
+              id: "source-1",
+              kind: "rfp",
+              verified: false,
+              text: "The buyer requests an optional workshop.",
+            },
+          ],
+          requiredIds: ["source-1"],
+          manifest: [],
+          environments: envs,
+          language: "en",
+          repair: false,
+          fetcher,
+        });
+        break;
+      } catch (error) {
+        if (!(error instanceof ModelDeferred)) throw error;
+        current = await rpc("claim_backend_job_v2");
+        expect(current.id).toBe(job.id);
+        const retained = (
+          await f.db.query<any>(
+            "select value from app_private.model_graph_results where thread_id=$1 and result_key='candidate-0'",
+            [current.checkpoint.graph_thread],
+          )
+        ).rows[0];
+        // PostgreSQL JSONB key order is the retained graph identity, not the
+        // insertion order of the synthetic provider response above.
+        hash = await sha256(JSON.stringify(retained.value.result));
+        if (legacy && !seeded) {
+          await rpc("model_graph_store", {
+            job_id: current.id,
+            lease: current.lease_token,
+            thread_id: current.checkpoint.graph_thread,
+            action: "result_put",
+            payload: { key: `verification-batches-${hash}`, value: partition },
+          });
+          seeded = true;
+        }
+      }
+    }
+    expect(outcome?.result).toEqual(candidate);
+    expect(writers).toBe(1);
+    expect(seen.size).toBeGreaterThan(2);
+    const rows = (
+      await f.db.query<any>(
+        "select result_key,value from app_private.model_graph_results where result_key=$1 or result_key='accepted'",
+        [`verification-batches-${hash}`],
+      )
+    ).rows;
+    expect(rows.find((r) => r.result_key !== "accepted").value).toEqual(
+      legacy ? partition : { version: 5, context_format: 3, partition },
+    );
+    expect(rows.find((r) => r.result_key === "accepted").value).toEqual(
+      candidate,
+    );
+    const merged = (
+      await f.db.query<any>(
+        "select value from app_private.model_graph_results where result_key=$1",
+        [`verification-${hash}`],
+      )
+    ).rows[0].value.result;
+    expect(merged.processed_content_ids).toEqual(
+      candidateContent(candidate).map((u) => u.id),
+    );
+    expect(merged.processed_requirement_ids).toEqual(["source-1"]);
+    expect(
+      (
+        await f.db.query<any>(
+          "select count(*)::int count from public.provider_usage",
+        )
+      ).rows[0].count,
+    ).toBe(1 + seen.size);
+  },
+);
+
 it("allows a distinct phase past unknown Gemini usage while preserving same-phase and same-input guards", async () => {
   const { job, models, connection, ledger } = await configure("gemini_free");
   await ledger.preflight([], "connection_probe");

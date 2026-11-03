@@ -39,8 +39,9 @@ await db.query(`insert into app_private.model_graph_budgets(workspace_id,thread_
 await db.query(`insert into app_private.model_graph_results(workspace_id,thread_id,result_key,value,content_hash) values($1,repeat('c',64),'semantic-instructions-fixture','{"version":2,"instructions":"PRIVATE HISTORICAL PROMPT"}',repeat('d',64))`,[workspace]);
 const state=async()=>{
  const value={};
- for(const table of ['public.generation_plans','public.jobs','public.provider_usage','app_private.model_graph_threads','app_private.model_graph_budgets','app_private.model_graph_results','public.content_authorizations','app_private.proposal_workflow_admission'])
-  value[table]=(await db.query(`select to_jsonb(t) value from ${table} t order by to_jsonb(t)::text`)).rows;
+ for(const table of ['public.generation_plans','public.jobs','public.provider_usage','public.model_attempts','public.model_execution_settings','public.operations','app_private.dispatcher_settings','app_private.k8s_dispatch_queue','app_private.queue_dispatch_state','app_private.queue_owner_service','app_private.model_graph_threads','app_private.model_graph_budgets','app_private.model_graph_results','public.content_authorizations','app_private.proposal_workflow_admission'])
+  if((await db.query('select to_regclass($1) relation',[table])).rows[0].relation)
+   value[table]=(await db.query(`select to_jsonb(t) value from ${table} t order by to_jsonb(t)::text`)).rows;
  return value;
 };
 const before=await state();
@@ -51,9 +52,73 @@ assert.equal(report.mode,'read_only_inspection');assert.match(report.prospective
 assert.equal(report.jobs.length,1);assert.equal(report.threads[0].status,'needs_review');assert.equal(report.budgets[0].candidates,3);assert.equal(report.phase_pins[0].version,2);
 assert.equal(report.usage[0].state,'unknown');assert.equal(report.usage[0].actual_input,null);assert.equal(report.workspace_usage_guards.unknown,1);
 assert.equal(report.workflow_admission.enabled,false);assert.equal(report.workflow_admission.selected_target_admitted,false);
+assert.deepEqual(report.scheduler.outbox,{available:false,state:null});
+assert.equal(report.workspace_execution.effective_max_parallel_requests,1);
+assert.equal(report.workspace_execution.reserved_count,0);
+assert.equal(report.workspace_execution.request_capacity_full,false);
 assert.doesNotMatch(JSON.stringify(report),/PRIVATE|private-receipt/);
 assert.deepEqual(await state(),before);
 for(const changed of [sql.replace(selection.plan_id,'00000000-0000-4000-8000-000000000999'),sql.replace("current_database()<>'postgres'","current_database()<>'wrong'")]) {
  await assert.rejects(db.exec(changed),/PROPOSAL_INSPECTION_TARGET_MISMATCH/);await db.exec('rollback');
 }
-assert.deepEqual(await state(),before);await db.close();
+assert.deepEqual(await state(),before);
+
+// Exercise the exact optional Kubernetes outbox DDL rather than inventing a
+// fixture schema. Lease credentials and dispatcher secrets must never escape.
+await db.exec((await readFile(new URL('scripts/runtime/dispatcher.sql',root),'utf8')).replaceAll(':"service_role"','service_role'));
+await db.exec(`insert into app_private.dispatcher_settings(singleton,project_url,secret_hash,enabled,last_dispatch_at)
+ values(true,'https://private-dispatch.example.test',repeat('9',64),true,now()-interval '20 seconds')
+ on conflict(singleton) do update set project_url=excluded.project_url,secret_hash=excluded.secret_hash,enabled=true,last_dispatch_at=excluded.last_dispatch_at;
+ update app_private.k8s_dispatch_queue set generation=9,acknowledged_generation=6,lease_generation=8,
+ lease_token='00000000-0000-4000-8000-000000009999',lease_until=now()+interval '2 minutes',last_periodic_at=now()-interval '30 seconds',failures=1;`);
+await db.query(`insert into public.model_execution_settings(workspace_id,enabled,max_parallel_requests,created_by) values($1,true,1,$2)
+ on conflict(workspace_id) do update set enabled=true,max_parallel_requests=1`,[workspace,owner]);
+await db.query('update public.operations set last_heartbeat_at=now(),scheduler_enabled=true where workspace_id=$1',[workspace]);
+const otherPlan=(await db.query(`insert into public.generation_plans(workspace_id,opportunity_id,kind,stage,status,evidence_revision,input_hash,frozen_context,created_by)
+ values($1,$2,'assessment','assessment','running',1,repeat('e',64),'{}',$3) returning id`,[workspace,selection.opportunity_id,owner])).rows[0].id;
+const reservedOwner=(await db.query(`insert into public.jobs(workspace_id,type,entity_id,status,input_hash,error_code,next_attempt_at,checkpoint,created_by)
+ values($1,'classify_opportunity',$2,'retry_wait',repeat('e',64),'MODEL_IN_PROGRESS',now()+interval '1 hour','{"model_executor":2,"secret":"PRIVATE CHECKPOINT SECRET"}',$3) returning id`,[workspace,otherPlan,owner])).rows[0].id;
+const reserved=(await db.query(`insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,
+ state,remote_request_id,remote_deadline,remote_project_ref,execution_metadata,created_by)
+ values($1,$2,'00000000-0000-4000-8000-000000008888','PRIVATE CALL KEY','openai','synthetic-background',repeat('e',64),current_date,1,100,100,
+ 'reserved','resp_PRIVATE_REMOTE_ID',now()+interval '1 day','synthetic-project','{"headers":{"authorization":"PRIVATE PROVIDER SECRET"}}',$3) returning id`,[workspace,reservedOwner,owner])).rows[0].id;
+const running=(await db.query(`insert into public.jobs(workspace_id,type,entity_id,status,input_hash,lease_token,lease_until,next_attempt_at,checkpoint,created_by)
+ values($1,'model_probe',$1,'running',repeat('e',64),'00000000-0000-4000-8000-000000007777',now()+interval '1 minute',now(),'{"secret":"PRIVATE RUNNING CHECKPOINT"}',$2) returning id`,[workspace,owner])).rows[0].id;
+await db.query(`insert into public.jobs(workspace_id,type,entity_id,status,input_hash,next_attempt_at,checkpoint,created_by)
+ values($1,'model_probe',$1,'queued',repeat('f',64),now()-interval '2 minutes','{"model_executor":2}',$2),
+ ($1,'model_probe',$1,'queued',repeat('f',64),now()-interval '1 minute','{"model_executor":3}',$2)`,[workspace,owner]);
+await db.query(`update public.jobs set checkpoint='{"model_executor":2,"graph_thread":"synthetic-thread","model_round":{"input_hash":"synthetic-round-hash","version":2,"private":"PRIVATE ROUND"},"model_routing":{"round_attempts":7,"key":"PRIVATE KEY"}}' where id=$1`,[job]);
+await db.query(`insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,project_ref,operation,round_number,worker_attempt,status,sent,result_code,http_status,request_phase,execution_metadata)
+ values($1,$2,gen_random_uuid(),'qwen_free','synthetic','synthetic-project','verify_grounding',1,1,'failed',true,'MODEL_NETWORK_UNCERTAIN',503,'response','{"headers":"PRIVATE ATTEMPT HEADER"}')`,[workspace,job]);
+const extendedBefore=await state();
+const metadata=(await db.exec(sql)).flatMap(r=>r.rows||[]).find(r=>r.jsonb_build_object).jsonb_build_object;
+assert.equal(metadata.jobs.length,1);
+assert.equal(metadata.usage.length,1);
+assert.equal(metadata.workspace_execution.reserved_count,1);
+assert.equal(metadata.workspace_execution.effective_max_parallel_requests,1);
+assert.equal(metadata.workspace_execution.request_capacity_full,true);
+assert.equal(metadata.workspace_execution.reserved_rows_truncated,false);
+assert.equal(metadata.workspace_execution.reserved_requests.length,1);
+assert.equal(metadata.workspace_execution.reserved_requests[0].id,reserved);
+assert.equal(metadata.workspace_execution.reserved_requests[0].job_id,reservedOwner);
+assert.equal(metadata.workspace_execution.reserved_requests[0].owner_plan_id,otherPlan);
+assert.equal(metadata.workspace_execution.reserved_requests[0].owner_plan_kind,'assessment');
+assert.equal(metadata.workspace_execution.reserved_requests[0].belongs_to_selected_plan,false);
+assert.equal(metadata.workspace_execution.reserved_requests[0].accepted_remote,true);
+assert.equal(metadata.workspace_execution.reserved_requests[0].job_lease_present,false);
+assert.equal(metadata.workspace_execution.reserved_requests[0].usage_matches_current_job_lease,false);
+assert.equal(metadata.workspace_execution.running_count,1);
+assert.equal(metadata.workspace_execution.running_with_active_lease,1);
+assert.equal(metadata.workspace_execution.running_jobs[0].id,running);
+assert.equal(metadata.workspace_execution.due_by_class.find(r=>r.executor_supported).due_count,1);
+assert.equal(metadata.workspace_execution.due_by_class.find(r=>!r.executor_supported).due_count,1);
+assert.equal(metadata.scheduler.operations.scheduler_enabled,true);
+assert.equal(metadata.scheduler.dispatcher.enabled,true);
+assert.equal(metadata.scheduler.outbox.available,true);
+assert.equal(metadata.scheduler.outbox.state.pending_generations,3);
+assert.equal(metadata.scheduler.outbox.state.lease_active,true);
+assert.equal(metadata.jobs[0].checkpoint.round_attempts,7);
+assert.equal(metadata.latest_attempts[0].result_code,'MODEL_NETWORK_UNCERTAIN');
+assert.doesNotMatch(JSON.stringify(metadata),/PRIVATE|private-dispatch|999999999999999999|00000000-0000-4000-8000-000000009999|00000000-0000-4000-8000-000000008888|00000000-0000-4000-8000-000000007777/);
+assert.deepEqual(await state(),extendedBefore);
+await db.close();

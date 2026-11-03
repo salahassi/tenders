@@ -1,8 +1,9 @@
 import { databaseWithMigrations } from "./databaseFixture";
 export async function workflowFixture(
   owner = "00000000-0000-4000-8000-000000000001",
+  throughMigration?: string,
 ) {
-  const db = await databaseWithMigrations();
+  const db = await databaseWithMigrations(throughMigration);
   await db.query(
     "insert into auth.users values($1,'owner@example.test',now())",
     [owner],

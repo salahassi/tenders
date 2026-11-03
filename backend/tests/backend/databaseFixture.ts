@@ -1,7 +1,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import { readFile, readdir } from "node:fs/promises";
 
-export async function databaseWithMigrations() {
+export async function databaseWithMigrations(throughMigration?: string) {
   const db = new PGlite();
   await db.exec(`create role anon;create role authenticated;create role service_role bypassrls;create schema auth;create schema storage;
     create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);
@@ -21,7 +21,12 @@ export async function databaseWithMigrations() {
     await db.close();
     throw new Error("Migration versions must be unique.");
   }
+  if (throughMigration && !names.includes(throughMigration)) {
+    await db.close();
+    throw new Error("Requested migration boundary does not exist.");
+  }
   for (const name of names)
-    await db.exec(await readFile(new URL(name, directory), "utf8"));
+    if (!throughMigration || name <= throughMigration)
+      await db.exec(await readFile(new URL(name, directory), "utf8"));
   return db;
 }

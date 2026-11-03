@@ -12,6 +12,7 @@ import { capabilitySchema } from "../../supabase/functions/_shared/modelContract
 import { extendedFixtures } from "./live-model-evaluation-extended.mjs";
 import { planningFixtures } from "./live-model-evaluation-planning.mjs";
 import { verificationFixtures } from "./live-model-evaluation-verification.mjs";
+import { authorityFixtures } from "./live-model-evaluation-authority.mjs";
 import {
   candidateContent,
   validateGroundingReport,
@@ -57,10 +58,11 @@ export function limitsForSuite(suite = "core") {
       "extended_recheck",
       "planning_repair",
       "analysis_verification",
+      "analysis_authority",
     ].includes(suite),
     "EVAL_SUITE_INVALID",
   );
-  return suite === "analysis_verification"
+  return ["analysis_verification", "analysis_authority"].includes(suite)
     ? VERIFICATION_LIMITS
     : suite === "planning_repair"
       ? PLANNING_LIMITS
@@ -131,6 +133,7 @@ export async function fixtures(suite = "core") {
   limitsForSuite(suite);
   if (suite === "planning_repair") return planningFixtures();
   if (suite === "analysis_verification") return verificationFixtures();
+  if (suite === "analysis_authority") return authorityFixtures();
   if (suite !== "core") return extendedFixtures();
   const analyzeCase = (id, evidence, language = "en") => ({
     id,
@@ -335,7 +338,7 @@ export function validateTargets(targets, suite = "core") {
       targets.length === 1 && targets[0].model === "qwen3.8-max",
       "EVAL_PLANNING_TARGET_INVALID",
     );
-  if (suite === "analysis_verification")
+  if (["analysis_verification", "analysis_authority"].includes(suite))
     check(
       targets.length === 2 &&
         targets.every((t) =>
@@ -357,6 +360,7 @@ export async function evaluate(
     "extended_recheck",
     "planning_repair",
     "analysis_verification",
+    "analysis_authority",
   ].includes(suite);
   let generations = 0,
     requests = 0;
