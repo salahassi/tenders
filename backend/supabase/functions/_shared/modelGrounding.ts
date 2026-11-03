@@ -1,6 +1,7 @@
 import { ModelError, validateModelResult, type Evidence } from "./model.ts";
 import { normalizedEvidence } from "./sourceModel.ts";
 import { validationDiagnostic } from "./modelValidationDiagnostics.ts";
+import { withoutStructuralReferences } from "./modelStructuralReferences.ts";
 
 /** Inspect generated text, including undeclared assertions, without treating
  * verbatim evidence copies or internal IDs as assertions made in the proposal. */
@@ -356,7 +357,11 @@ export function validateGroundingReport(
     ) {
       const quotedNumbers = numericLiterals(
         withoutReferenceIdentifiers(
-          claim.source_refs.map((ref: any) => ref.quote).join("\n"),
+          claim.source_refs
+            .map((ref: any) =>
+              withoutStructuralReferences(ref.quote, [ref.id], evidence),
+            )
+            .join("\n"),
           referenceIds,
         ),
       );
@@ -367,7 +372,14 @@ export function validateGroundingReport(
       const unsupportedNumbers: string[] = [];
       const factualText = withoutSupportedGrades(
         withoutProposalReferences(
-          withoutReferenceIdentifiers(claim.candidate_quote, referenceIds),
+          withoutReferenceIdentifiers(
+            withoutStructuralReferences(
+              claim.candidate_quote,
+              claim.source_refs.map((ref: any) => ref.id),
+              evidence,
+            ),
+            referenceIds,
+          ),
           proposalReferences,
         ),
         claim.source_refs.map((ref: any) => ref.quote),

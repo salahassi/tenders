@@ -16,6 +16,8 @@ import {
   VERIFICATION_PROMPT_V2,
   VERIFICATION_INSTRUCTIONS_V3,
   VERIFICATION_PROMPT_V3,
+  VERIFICATION_INSTRUCTIONS_V4,
+  VERIFICATION_PROMPT_V4,
 } from "../../supabase/functions/_shared/modelVerificationInstructions";
 import {
   FreeModelProvider,
@@ -157,6 +159,115 @@ it("preserves a previously pinned review verification request", async () => {
   });
   expect(await pinVerificationPrompt({ ...s.options, context: ctx })).toBe(2);
 });
+
+it.each(["normal", "correction"])(
+  "pins source-block coverage for a new analysis verifier %s phase",
+  async (phase) => {
+    const s = await setup();
+    const options = {
+      ...s.options,
+      requestPrefix: `${s.requestPrefix}-${phase}`,
+      context: {
+        ...context,
+        original_task: "analyze_chunk",
+        original_context: { draft_input_version: 1 },
+      },
+      requiredIds: ["source-1"],
+    };
+    expect(await pinVerificationPrompt(options)).toBe(4);
+    expect(await pinVerificationPrompt(options)).toBe(4);
+    const prompt = JSON.parse(
+      modelPrompt(
+        "verify_grounding",
+        options.context,
+        evidence,
+        options.requiredIds,
+        "en",
+        false,
+        4,
+        4,
+      ),
+    );
+    expect(prompt.prompt_version).toContain(VERIFICATION_PROMPT_V4);
+    expect(prompt.verification_policy).toBe(VERIFICATION_INSTRUCTIONS_V4);
+    expect(prompt.verification_coverage_contract).toEqual({
+      kind: "source_block_extraction",
+      required_source_ids: ["source-1"],
+      allow_empty_inventory_for_reference_material: true,
+    });
+    expect(taskSystemInstructions("verify_grounding", 4, 4)).toContain(
+      "omitted buyer obligation",
+    );
+  },
+);
+
+it("preserves an already pinned analysis request and an accepted legacy unknown phase", async () => {
+  const s = await setup();
+  const ctx = {
+    ...context,
+    original_task: "analyze_chunk",
+    original_context: { draft_input_version: 1 },
+  };
+  const legacyHash = await sha256(
+    modelPrompt("verify_grounding", ctx, evidence, [], "en"),
+  );
+  await s.store.action("result_put", {
+    key: `verification-instructions-${await sha256(s.requestPrefix)}`,
+    value: {
+      version: 2,
+      instructions: VERIFICATION_INSTRUCTIONS_V2,
+      legacy_input_hash: legacyHash,
+    },
+  });
+  expect(await pinVerificationPrompt({ ...s.options, context: ctx })).toBe(2);
+  const prefix = `${s.requestPrefix}-legacy`;
+  await addUsage(s.job, prefix, legacyHash, "unknown", true);
+  expect(
+    await pinVerificationPrompt({
+      ...s.options,
+      context: ctx,
+      requestPrefix: prefix,
+    }),
+  ).toBe(1);
+});
+
+it.each([
+  [
+    1,
+    "d26eeba5c33e50aebb03baeb00639e6ac4738c876bc48fd1a8f2dc4aa401473e",
+    "bf83ccd73c3db2f4f0f1dd6e79082e6870fa48b07acc1ef08a3c2214aaa81077",
+  ],
+  [
+    2,
+    "2fcafa0aabf6d0468e3c67068f3ebfbe7f71aba5e8435541d678bd1ea1148aa2",
+    "3e9156784bc27149855be07d64ae732e76b25517a047ba927226fec35785cc12",
+  ],
+  [
+    3,
+    "5cf0659c28fe08f3209f2d406658f82033a9d1f194e31556e2399606b67dcc91",
+    "85210338b7c826750366cbcf1c58a4c4a3e59d6abf83a71cd5ea2cb160e5a208",
+  ],
+] as const)(
+  "keeps old verification revision %s system and user payload byte-identical",
+  async (revision, systemHash, promptHash) => {
+    expect(
+      await sha256(taskSystemInstructions("verify_grounding", revision)),
+    ).toBe(systemHash);
+    expect(
+      await sha256(
+        modelPrompt(
+          "verify_grounding",
+          context,
+          evidence,
+          [],
+          "en",
+          false,
+          revision,
+        ),
+      ),
+    ).toBe(promptHash);
+  },
+);
 async function addUsage(
   job: any,
   prefix: string,
@@ -311,7 +422,7 @@ it.each([false, true])(
             },
       );
     };
-    for (const revision of [1, 2] as const) {
+    for (const revision of [1, 2, 3, 4] as const) {
       const provider = new FreeModelProvider(
         {
           provider: "gemini_free",
@@ -361,5 +472,9 @@ it.each([false, true])(
     expect(system(bodies[1])).toContain(
       "not an abbreviated span with words omitted",
     );
+    expect(system(bodies[3])).toBe(
+      system(bodies[0]) + "\n" + VERIFICATION_INSTRUCTIONS_V4,
+    );
+    expect(system(bodies[3])).toContain("SOURCE-SEGMENT EXTRACTION");
   },
 );

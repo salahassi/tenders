@@ -1,7 +1,10 @@
 import type { Backend } from "./backend.ts";
 import type { ModelGraphStore } from "./modelGraphStore.ts";
 import { ModelError, modelPrompt, sha256, type Evidence } from "./model.ts";
-import { verificationPolicyText } from "./modelVerificationInstructions.ts";
+import {
+  verificationPolicyText,
+  type VerificationRevision,
+} from "./modelVerificationInstructions.ts";
 
 export async function pinVerificationPrompt(o: {
   backend: Pick<Backend, "internal">;
@@ -37,9 +40,11 @@ export async function pinVerificationPrompt(o: {
       throw new ModelError("MODEL_IDENTITY_CHANGED");
     const version = started
       ? 1
-      : o.context?.original_task === "review_proposal"
-        ? 3
-        : 2;
+      : o.context?.original_task === "analyze_chunk"
+        ? 4
+        : o.context?.original_task === "review_proposal"
+          ? 3
+          : 2;
     pin = await o.store.action("result_put", {
       key,
       value: {
@@ -52,10 +57,10 @@ export async function pinVerificationPrompt(o: {
   const value = pin.value;
   if (
     value.legacy_input_hash !== legacyInputHash ||
-    ![1, 2, 3].includes(value.version) ||
+    ![1, 2, 3, 4].includes(value.version) ||
     (value.version >= 2 &&
       value.instructions !== verificationPolicyText(value.version))
   )
     throw new ModelError("MODEL_IDENTITY_CHANGED");
-  return value.version as 1 | 2 | 3;
+  return value.version as VerificationRevision;
 }
