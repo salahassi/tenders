@@ -6,6 +6,7 @@ DECLARE selected jsonb:=__SELECTION__; actor uuid; p public.generation_plans; su
  o public.opportunities; proposal public.proposals; marker public.audit_events;
  before_plan jsonb; before_jobs jsonb; before_history jsonb; history_now jsonb; current_documents jsonb;
  current_jobs jsonb; current_usage jsonb; current_admission jsonb; original_refs jsonb; successor_refs jsonb;
+ prospective_context jsonb; current_evidence_revision bigint;
  relation_name text; predicate text; relation_state jsonb; command_result jsonb; receipt jsonb;
  stage text:='identity'; reason text:='Owner requested a new attempt after deployed AI reliability corrections; predecessor='||(__SELECTION__->>'plan_id');
  selection_hash text:='__SELECTION_HASH__'; prefix text:='proposal-ai-recovery-__SELECTION_HASH__';
@@ -55,8 +56,7 @@ BEGIN
     OR p.base_version_id IS NOT NULL THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_BUSINESS_STATE_CHANGED';END IF;
    IF p.frozen_context->>'language' IS DISTINCT FROM o.language
     THEN RAISE EXCEPTION 'PROPOSAL_REQUEST_OPTIONS_CHANGED';END IF;
-   IF (SELECT evidence_revision FROM public.workspaces WHERE id=p.workspace_id)<>(selected->>'expected_workspace_evidence_revision')::bigint
-    THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_EVIDENCE_CHANGED';END IF;
+   SELECT evidence_revision INTO current_evidence_revision FROM public.workspaces WHERE id=p.workspace_id;
    IF EXISTS(SELECT 1 FROM public.restore_sessions WHERE workspace_id=p.workspace_id AND state IN ('staging','committing'))
     OR NOT EXISTS(SELECT 1 FROM public.model_execution_settings WHERE workspace_id=p.workspace_id AND enabled)
     THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_EXECUTION_UNAVAILABLE';END IF;
@@ -69,6 +69,14 @@ BEGIN
      'original_hash',d.original_hash,'extraction_hash',d.extraction_hash,'extracted_characters',length(d.extracted_text)) ORDER BY d.id),'[]')
     INTO current_documents FROM public.documents d WHERE d.workspace_id=p.workspace_id AND d.opportunity_id=p.opportunity_id AND d.kind='rfp';
    IF current_documents IS DISTINCT FROM selected->'expected_documents' THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_DOCUMENTS_CHANGED';END IF;
+   -- The global counter includes unrelated opportunities. Bind every actual
+   -- prospective draft input instead, including company sources, template,
+   -- rates, reviews, language and intake metadata. Keep the full raw snapshot;
+   -- no field is omitted and no old plan is refreshed or rewritten.
+   IF p.package_id IS NULL THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_PACKAGE_REQUIRED';END IF;
+   prospective_context:=app_private.draft_generation_snapshot(p.workspace_id,p.opportunity_id,p.proposal_id,p.package_id);
+   IF encode(sha256(convert_to(prospective_context::text,'UTF8')),'hex') IS DISTINCT FROM selected->>'expected_prospective_snapshot_sha256'
+    THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_RELEVANT_EVIDENCE_CHANGED';END IF;
    stage:='job_and_usage_guards';
    SELECT coalesce(jsonb_agg(jsonb_build_object('id',j.id,'revision',j.revision) ORDER BY j.id),'[]') INTO current_jobs
     FROM public.jobs j WHERE j.workspace_id=p.workspace_id AND j.entity_id=p.id;
@@ -114,6 +122,9 @@ BEGIN
     OR successor.frozen_context->>'language' IS DISTINCT FROM p.frozen_context->>'language'
     OR successor.frozen_context->'draft_input_version' IS DISTINCT FROM '1'::jsonb
     THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_RESULT_INVALID';END IF;
+   IF encode(sha256(convert_to(successor.frozen_context::text,'UTF8')),'hex') IS DISTINCT FROM selected->>'expected_prospective_snapshot_sha256'
+    OR successor.evidence_revision IS DISTINCT FROM current_evidence_revision
+    THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_SNAPSHOT_CHANGED';END IF;
    SELECT coalesce(jsonb_agg(value ORDER BY value::text),'[]') INTO successor_refs FROM (
     SELECT DISTINCT value FROM jsonb_path_query(successor.frozen_context,'$.blocks[*].reference') r(value) WHERE value->>'entity_kind'='document') refs;
    IF successor_refs IS DISTINCT FROM original_refs THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_SELECTED_SOURCES_CHANGED';END IF;
@@ -131,9 +142,11 @@ BEGIN
    INSERT INTO public.audit_events(workspace_id,actor_id,action,entity_type,entity_id,reason,details)
     VALUES(p.workspace_id,actor,'ops.proposal.recovery.successor','generation_plan',successor.id,reason,
      jsonb_build_object('selection_sha256',selection_hash,'predecessor_plan_id',p.id,'retained_history_sha256',encode(sha256(convert_to(history_now::text,'UTF8')),'hex'),
-      'unknown_usage_preserved',true,'old_budgets_preserved',true,'runtime_image',selected->>'expected_runtime_image'));
+      'unknown_usage_preserved',true,'old_budgets_preserved',true,'prospective_snapshot_sha256',selected->>'expected_prospective_snapshot_sha256',
+      'inspected_workspace_evidence_revision',selected->'expected_workspace_evidence_revision','current_workspace_evidence_revision',current_evidence_revision,'runtime_image',selected->>'expected_runtime_image'));
    receipt:=jsonb_build_object('status','started','count',1,'plan_id',successor.id,'proposal_id',successor.proposal_id,'predecessor_plan_id',p.id,
-    'workflow_version',successor.workflow_version,'language',successor.frozen_context->>'language','frozen_blocks',jsonb_array_length(successor.frozen_context->'blocks'),
+    'workflow_version',successor.workflow_version,'inspected_workspace_evidence_revision',selected->'expected_workspace_evidence_revision',
+    'current_workspace_evidence_revision',current_evidence_revision,'prospective_snapshot_preserved',true,'language',successor.frozen_context->>'language','frozen_blocks',jsonb_array_length(successor.frozen_context->'blocks'),
     'original_selected_document_references_preserved',true,'immutable_history_preserved',true,'unknown_usage_preserved',true,
     'retained_history_sha256',encode(sha256(convert_to(history_now::text,'UTF8')),'hex'));
    IF NOT __RESTART__ THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_CHECK_ROLLBACK';END IF;

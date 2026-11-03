@@ -48,7 +48,7 @@ def digest(value):
 def validate_selection(value):
     keys = {'version','workspace_id','opportunity_id','plan_id','proposal_id','expected_plan_revision',
             'expected_opportunity_revision','expected_proposal_revision','expected_workspace_evidence_revision',
-            'expected_frozen_snapshot_sha256','expected_input_hash','expected_jobs','expected_documents',
+            'expected_frozen_snapshot_sha256','expected_prospective_snapshot_sha256','expected_input_hash','expected_jobs','expected_documents',
             'expected_usage','expected_admission','expected_workflow_version','expected_runtime_image'}
     if not isinstance(value, dict) or set(value) != keys or type(value['version']) is not int or value['version'] != 1:
         raise SuccessorError('PROPOSAL_SUCCESSOR_SELECTION_INVALID')
@@ -56,7 +56,7 @@ def validate_selection(value):
         raise SuccessorError('PROPOSAL_SUCCESSOR_SELECTION_INVALID')
     if any(not positive(value[key]) for key in ('expected_plan_revision','expected_opportunity_revision','expected_proposal_revision','expected_workspace_evidence_revision')):
         raise SuccessorError('PROPOSAL_SUCCESSOR_SELECTION_INVALID')
-    if any(not digest(value[key]) for key in ('expected_frozen_snapshot_sha256','expected_input_hash')):
+    if any(not digest(value[key]) for key in ('expected_frozen_snapshot_sha256','expected_prospective_snapshot_sha256','expected_input_hash')):
         raise SuccessorError('PROPOSAL_SUCCESSOR_SELECTION_INVALID')
     if type(value['expected_workflow_version']) is not int or value['expected_workflow_version'] not in (1,3):
         raise SuccessorError('PROPOSAL_SUCCESSOR_SELECTION_INVALID')
@@ -103,7 +103,7 @@ def selection_from_inspection(report):
     selection={'version':1,**report['selection'],'proposal_id':proposal['id'],
       'expected_plan_revision':plan['revision'],'expected_opportunity_revision':opportunity['revision'],
       'expected_proposal_revision':proposal['revision'],'expected_workspace_evidence_revision':report['workspace_evidence_revision'],
-      'expected_frozen_snapshot_sha256':plan['frozen_snapshot_sha256'],'expected_input_hash':plan['input_hash'],
+      'expected_frozen_snapshot_sha256':plan['frozen_snapshot_sha256'],'expected_prospective_snapshot_sha256':report['prospective_draft_snapshot_sha256'],'expected_input_hash':plan['input_hash'],
       'expected_jobs':sorted([{'id':j['id'],'revision':j['revision']} for j in report['jobs'] if j['plan_id']==plan['id']],key=lambda j:j['id']),
       'expected_documents':sorted(report['documents'],key=lambda d:d['id']),
       'expected_usage':sorted([{'id':u['id'],'record_sha256':u['record_sha256']} for u in report['usage'] if u['job_id'] in {j['id'] for j in report['jobs'] if j['plan_id']==plan['id']}],key=lambda u:u['id']),

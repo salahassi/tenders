@@ -47,7 +47,7 @@ const before=await state();
 const sql=scripts.sql.replaceAll(selection.workspace_id,workspace).replace("current_database()<>'tenderdesk_app'","current_database()<>'postgres'").replace('SET LOCAL ROLE tdp_app_owner','SET LOCAL ROLE postgres');
 const results=await db.exec(sql);
 const report=results.flatMap(r=>r.rows||[]).find(r=>r.jsonb_build_object)?.jsonb_build_object;
-assert.equal(report.mode,'read_only_inspection');assert.equal(report.plan.id,selection.plan_id);assert.equal(report.plan.frozen_blocks,1);assert.equal(report.plan.source_reference_count,2);
+assert.equal(report.mode,'read_only_inspection');assert.match(report.prospective_draft_snapshot_sha256,/^[a-f0-9]{64}$/);assert.equal(report.plan.id,selection.plan_id);assert.equal(report.plan.frozen_blocks,1);assert.equal(report.plan.source_reference_count,2);
 assert.equal(report.jobs.length,1);assert.equal(report.threads[0].status,'needs_review');assert.equal(report.budgets[0].candidates,3);assert.equal(report.phase_pins[0].version,2);
 assert.equal(report.usage[0].state,'unknown');assert.equal(report.usage[0].actual_input,null);assert.equal(report.workspace_usage_guards.unknown,1);
 assert.equal(report.workflow_admission.enabled,false);assert.equal(report.workflow_admission.selected_target_admitted,false);

@@ -21,6 +21,10 @@ WITH target AS (
  WHERE jsonb_typeof(r.value)='object'
 ), source_manifest AS (
  SELECT coalesce(jsonb_agg(value ORDER BY value::text),'[]') value FROM source_refs
+), prospective AS (
+ -- Read the same current draft inputs as a new canonical request. Existing
+ -- package identity is checked; no package is sealed or authorization granted.
+ SELECT app_private.draft_generation_snapshot(t.workspace_id,t.opportunity_id,t.proposal_id,t.package_id) value FROM target t
 ), latest AS (
  SELECT * FROM plans ORDER BY created_at DESC,id DESC LIMIT 1
 )
@@ -39,6 +43,7 @@ SELECT jsonb_build_object(
  'proposal',(SELECT jsonb_build_object('id',p.id,'revision',p.revision,'state',p.state,'active_version_id',p.active_version_id)
    FROM public.proposals p JOIN target t ON p.workspace_id=t.workspace_id AND p.id=t.proposal_id),
  'latest_plan',(SELECT jsonb_build_object('id',id,'status',status,'stage',stage,'revision',revision,'error_code',error_code,'workflow_version',workflow_version) FROM latest),
+ 'prospective_draft_snapshot_sha256',(SELECT encode(sha256(convert_to(value::text,'UTF8')),'hex') FROM prospective),
  'workspace_evidence_revision',(SELECT evidence_revision FROM public.workspaces WHERE id='__WORKSPACE__'),
  'workflow_admission',(SELECT jsonb_build_object('enabled',a.enabled,'trial_opportunity_id',a.trial_opportunity_id,
    'selected_target_admitted',a.enabled AND (a.trial_opportunity_id IS NULL OR a.trial_opportunity_id='__OPPORTUNITY__'))

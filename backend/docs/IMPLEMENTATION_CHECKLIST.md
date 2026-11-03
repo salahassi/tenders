@@ -4295,3 +4295,37 @@ Independent review closed Owner-role, concurrent-target, server-byte proof and
 child-credential-boundary findings. Harness source was committed in `a7ad08a`.
 Actual hosted draft export and document layout review remain pending the resumed
 plan's completed current version; these preparation checks do not claim either.
+
+## November 3 — bind successor recovery to its complete prospective inputs
+
+Two authorized recovery attempts safely refused before any mutation because
+unrelated workspace evidence advanced between inspection and dispatch. The
+workspace counter covers other tenders as well as the selected proposal; the
+second refusal occurred after roughly three minutes. The read-only inspector
+now records only the SHA-256 of the complete current canonical draft snapshot.
+Recovery recomputes that same snapshot under its existing workspace lock before
+canceling the predecessor, then requires the canonical successor's frozen
+snapshot to match it exactly. No snapshot field is excluded or normalized.
+The inspected global revision remains audit information; the newly generated
+plan must record the current live revision. All original source, language,
+latest-target, admission, runtime, authority, usage and immutable-history guards
+remain active. Review inputs also join the retained source-history fingerprint.
+
+Focused local verification passes: **five successor tests, five read-only
+inspector tests and ten observer tests**. Complete-schema regressions prove that
+an unrelated tender's evidence increment permits the exact authorized successor,
+while changed company knowledge, template, rate or tender evidence refuses
+before cancellation. An actual active-version review fixture proves review-body
+snapshot sensitivity and the initial-draft business-state refusal. A simulated
+canonical-side frozen-snapshot change rolls back both cancellation and generation.
+The successful case retains prior usage, attempts, candidates, checkpoints and
+budgets and records the live global revision. Python compilation and diff
+whitespace checks pass; independent source review found no blocker.
+
+The preceding helper baseline `a7ad08a` passed **2,139 tests**: 1,637 backend,
+265 frontend, 224 operational and 13 document-renderer checks, plus both
+application typechecks and builds, with no source-fingerprint changes. This
+refinement changes operational inspection/recovery helpers only. No production
+mutation or live provider request was performed by these local tests; a fresh
+private inspection and separately authorized dispatch remain required for
+actual successor and draft/export acceptance.

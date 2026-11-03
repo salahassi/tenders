@@ -1,7 +1,7 @@
    history_now:='{}'::jsonb;
    FOREACH relation_name IN ARRAY ARRAY[
      'public.provider_usage','public.model_attempts','public.content_authorizations',
-     'public.documents','public.document_blocks','public.knowledge_items','public.templates','public.rate_catalog',
+     'public.documents','public.document_blocks','public.review_inputs','public.knowledge_items','public.templates','public.rate_catalog',
      'public.generation_steps','public.requirements','public.document_packages',
      'app_private.generation_processing_requests','app_private.proposal_workflow_admission',
      'app_private.model_graph_threads','app_private.model_graph_results','app_private.model_graph_budgets',

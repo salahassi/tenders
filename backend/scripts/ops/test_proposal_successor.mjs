@@ -30,9 +30,18 @@ const document=(await db.query(`insert into public.documents(workspace_id,opport
  values($1,$2,'rfp','PRIVATE ORIGINAL.pdf','application/pdf',100,repeat('a',64),'private/original','ready','PRIVATE SOURCE TEXT',repeat('b',64),$3) returning id`,[workspace,selection.opportunity_id,owner])).rows[0].id;
 const block=(await db.query(`insert into public.document_blocks(workspace_id,document_id,ordinal,locator,text,text_hash,created_by)
  values($1,$2,0,'{}','PRIVATE SOURCE TEXT',repeat('b',64),$3) returning id`,[workspace,document,owner])).rows[0].id;
+await db.query("select set_config('request.jwt.claim.sub',$1,false)",[owner]);
+const packageId=(await db.query('select (app_private.seal_draft_package($1,$2,$3)).id id',[workspace,selection.opportunity_id,owner])).rows[0].id;
+const knowledge=(await db.query(`insert into public.knowledge_items(workspace_id,category,title,content,verified,verified_by,verified_at,created_by)
+ values($1,'company','Synthetic company','Synthetic verified capability.',true,$2,now(),$2) returning id`,[workspace,owner])).rows[0].id;
+const template=(await db.query(`insert into public.templates(workspace_id,title,language,volume_mode,required_sections,fixed_blocks,content_hash,approved,approved_by,approved_at,created_by)
+ values($1,'Synthetic template','en','combined','[{"key":"approach","title":"Approach","purpose":"Propose a workflow","volume":"technical","applicable":true}]','[]',repeat('f',64),true,$2,now(),$2) returning id`,[workspace,owner])).rows[0].id;
+const rate=(await db.query(`insert into public.rate_catalog(workspace_id,title,unit,currency,unit_cost,valid_from,valid_until,source_reference,source,content_hash,public_approved,approved,approved_by,approved_at,created_by)
+ values($1,'Synthetic public rate','day','SAR',100,current_date-1,current_date+1,'synthetic-reference','Synthetic authorized rate basis.',repeat('e',64),true,true,$2,now(),$2) returning id`,[workspace,owner])).rows[0].id;
 const frozen={language:'en',notice:{text:'PRIVATE NOTICE',reference:{entity_kind:'notice',entity_id:selection.opportunity_id,content_hash:'a'.repeat(64)}},blocks:[{id:block,text:'PRIVATE SOURCE TEXT',reference:{entity_kind:'document',entity_id:document,content_hash:'b'.repeat(64)}}]};
 await db.query(`insert into public.generation_plans(id,workspace_id,opportunity_id,proposal_id,kind,status,evidence_revision,input_hash,frozen_context,error_code,created_by)
  values($1,$2,$3,$4,'proposal','blocked',1,repeat('a',64),$5,'MODEL_CORRECTION_EXHAUSTED',$6)`,[selection.plan_id,workspace,selection.opportunity_id,proposal,JSON.stringify(frozen),owner]);
+await db.query('update public.generation_plans set package_id=$1 where id=$2',[packageId,selection.plan_id]);
 const job=(await db.query(`insert into public.jobs(workspace_id,type,entity_id,status,input_hash,error_code,attempts,checkpoint,created_by)
  values($1,'analyze_chunk',$2,'blocked',repeat('a',64),'MODEL_CORRECTION_EXHAUSTED',3,'{"private":"retained checkpoint"}',$3) returning id`,[workspace,selection.plan_id,owner])).rows[0].id;
 await db.query(`insert into public.generation_steps(workspace_id,plan_id,job_id,task,stage,ordinal,input,created_by)
@@ -64,7 +73,7 @@ await db.exec(`create role tdp_app_owner nosuperuser nobypassrls nocreatedb nocr
  END $ownership$;`);
 const state=async()=>{
  const value={};
- for(const table of ['public.generation_plans','public.proposals','public.opportunities','public.jobs','public.generation_steps','public.provider_usage','public.model_attempts','app_private.model_graph_threads','app_private.model_graph_budgets','app_private.model_graph_results','app_private.generation_processing_requests','public.content_authorizations','public.documents','public.document_packages','app_private.proposal_workflow_admission','public.audit_events'])
+ for(const table of ['public.generation_plans','public.proposals','public.opportunities','public.jobs','public.generation_steps','public.provider_usage','public.model_attempts','app_private.model_graph_threads','app_private.model_graph_budgets','app_private.model_graph_results','app_private.generation_processing_requests','public.content_authorizations','public.documents','public.document_packages','public.knowledge_items','public.templates','public.rate_catalog','public.review_inputs','app_private.proposal_workflow_admission','public.audit_events'])
   value[table]=(await db.query(`select to_jsonb(t) value from ${table} t order by to_jsonb(t)::text`)).rows;
  return value;
 };
@@ -107,6 +116,36 @@ for(const [name,setup,expected] of [
 result=await run(await compile(true,r=>r.plan.revision++));assert.equal(result.code,'PROPOSAL_SUCCESSOR_PLAN_CHANGED');assert.deepEqual(await state(),baseState);
 const stale=await compile(true);await db.query('update public.documents set revision=revision+1 where id=$1',[document]);
 result=await run(stale);assert.equal(result.code,'PROPOSAL_SUCCESSOR_DOCUMENTS_CHANGED');await db.query('update public.documents set revision=revision-1 where id=$1',[document]);
+// Guard the reviewed complete prospective inputs, including fields not covered
+// by the selected RFP document manifest or the opportunity revision alone.
+for(const [name,mutate] of [
+ ['company',()=>db.query("update public.knowledge_items set content='Changed verified capability.' where id=$1",[knowledge])],
+ ['template',()=>db.query("update public.templates set style_config='{\"tone\":\"changed\"}' where id=$1",[template])],
+ ['rate',()=>db.query("update public.rate_catalog set source='Changed authorized rate basis.' where id=$1",[rate])],
+ ['tender',()=>db.query("update public.opportunities set description='Changed buyer obligation.' where id=$1",[selection.opportunity_id])],
+]) {
+ await db.exec('savepoint relevant_source');const bound=await compile(true);await mutate();const before=await state();
+ result=await run(bound);assert.equal(result.code,'PROPOSAL_SUCCESSOR_RELEVANT_EVIDENCE_CHANGED',name+JSON.stringify(result));
+ assert.deepEqual(await state(),before);await db.exec('rollback to savepoint relevant_source;release savepoint relevant_source');
+}
+// Initial generation has no active review base. A real active-version review
+// changes the same canonical snapshot, and the separate business-state guard
+// prevents this initial-draft helper from silently becoming regeneration.
+await db.exec('savepoint review_source');
+const initialBound=await compile(true);
+const version=(await db.query(`insert into public.proposal_versions(workspace_id,proposal_id,ordinal,content_hash,created_by) values($1,$2,1,repeat('a',64),$3) returning id`,[workspace,proposal,owner])).rows[0].id;
+await db.query('update public.proposals set active_version_id=$1 where id=$2',[version,proposal]);
+const review=(await db.query(`insert into public.review_inputs(workspace_id,proposal_id,base_version_id,target_kind,target_id,body,source_signature,created_by)
+ values($1,$2,$3,'general','general','Original reviewed instruction.',repeat('a',64),$4) returning id`,[workspace,proposal,version,owner])).rows[0].id;
+const snapshotHash=async()=> (await db.query("select encode(sha256(convert_to(app_private.draft_generation_snapshot($1,$2,$3,$4)::text,'UTF8')),'hex') value",[workspace,selection.opportunity_id,proposal,packageId])).rows[0].value;
+const reviewBefore=await snapshotHash();await db.query("update public.review_inputs set body='Changed reviewed instruction.' where id=$1",[review]);
+assert.notEqual(await snapshotHash(),reviewBefore);const reviewedState=await state();
+result=await run(initialBound);assert.equal(result.code,'PROPOSAL_SUCCESSOR_BUSINESS_STATE_CHANGED');assert.deepEqual(await state(),reviewedState);
+await db.exec('rollback to savepoint review_source;release savepoint review_source');
+// Detect even a canonical-side snapshot mutation and roll back cancellation.
+await db.exec(`create function public.synthetic_change_snapshot() returns trigger language plpgsql as $$ begin new.frozen_context:=jsonb_set(new.frozen_context,'{title}','"Changed after reviewed snapshot"');return new;end $$;create trigger synthetic_change_snapshot before insert on public.generation_plans for each row execute function public.synthetic_change_snapshot();`);
+result=await run(await compile(true));assert.equal(result.code,'PROPOSAL_SUCCESSOR_SNAPSHOT_CHANGED',JSON.stringify(result));
+await db.exec('drop trigger synthetic_change_snapshot on public.generation_plans;drop function public.synthetic_change_snapshot()');assert.deepEqual(await state(),baseState);
 // A faulty canonical-side accounting mutation must roll back the entire cancellation/generation.
 await db.exec(`create function public.synthetic_corrupt_history() returns trigger language plpgsql as $$ begin update public.provider_usage set actual_input=1 where id='${usage}';return new;end $$;create trigger synthetic_corrupt_history after insert on public.generation_plans for each row execute function public.synthetic_corrupt_history();`);
 result=await run(await compile(true));assert.equal(result.code,'PROPOSAL_SUCCESSOR_HISTORY_CHANGED',JSON.stringify(result));
@@ -116,7 +155,16 @@ await db.query('insert into app_private.proposal_workflow_admission(singleton,en
 result=await run(await compile(false));assert.equal(result.status,'checked',JSON.stringify(result));assert.equal(result.workflow_version,3);
 assert.equal((await db.query('select enabled from app_private.proposal_workflow_admission')).rows[0].enabled,true);
 await db.exec('rollback to savepoint admitted;release savepoint admitted');
-const restart=await compile(true);result=await run(restart);assert.equal(result.status,'started',JSON.stringify(result));
+const restart=await compile(true);
+const inspectedRevision=(await db.query('select evidence_revision from public.workspaces where id=$1',[workspace])).rows[0].evidence_revision;
+// A substantive change to another tender genuinely increments the workspace
+// counter but changes none of this proposal's actual selected inputs.
+const otherOpportunity=(await db.query("insert into public.opportunities(workspace_id,source_id,title,created_by) values($1,$2,'Unrelated original title',$3) returning id",[workspace,source,owner])).rows[0].id;
+await db.query("update public.opportunities set description='Unrelated changed notice.' where id=$1",[otherOpportunity]);
+const currentRevision=(await db.query('select evidence_revision from public.workspaces where id=$1',[workspace])).rows[0].evidence_revision;
+assert.ok(currentRevision>inspectedRevision);
+result=await run(restart);assert.equal(result.status,'started',JSON.stringify(result));
+assert.equal(result.inspected_workspace_evidence_revision,inspectedRevision);assert.equal(result.current_workspace_evidence_revision,currentRevision);assert.equal(result.prospective_snapshot_preserved,true);
 assert.equal(result.workflow_version,1);assert.equal(result.language,'en');assert.equal(result.original_selected_document_references_preserved,true);
 const successor=result.plan_id;
 assert.equal((await db.query('select status from public.generation_plans where id=$1',[selection.plan_id])).rows[0].status,'canceled');

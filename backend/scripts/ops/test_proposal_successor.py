@@ -14,7 +14,7 @@ SELECTION={
  'version':1,'workspace_id':'00000000-0000-4000-8000-000000000100','opportunity_id':'00000000-0000-4000-8000-000000000101',
  'plan_id':'00000000-0000-4000-8000-000000000102','proposal_id':'00000000-0000-4000-8000-000000000103',
  'expected_plan_revision':1,'expected_opportunity_revision':1,'expected_proposal_revision':1,'expected_workspace_evidence_revision':1,
- 'expected_frozen_snapshot_sha256':'a'*64,'expected_input_hash':'a'*64,
+ 'expected_frozen_snapshot_sha256':'a'*64,'expected_prospective_snapshot_sha256':'b'*64,'expected_input_hash':'a'*64,
  'expected_jobs':[{'id':'00000000-0000-4000-8000-000000000104','revision':1}],
  'expected_usage':[{'id':'00000000-0000-4000-8000-000000000105','record_sha256':'b'*64}],
  'expected_documents':[{'id':'00000000-0000-4000-8000-000000000106','revision':1,'kind':'rfp','status':'ready','archived':False,
