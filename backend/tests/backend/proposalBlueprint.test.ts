@@ -479,3 +479,113 @@ it("reduces verification partitions only for admitted plans while retaining ever
     ).length,
   ).toBeGreaterThan(current.length);
 });
+
+it("reports bounded missing-owner diagnostics in model aliases while keeping canonical ownership strict", () => {
+  const b = blueprint(35);
+  const ids = [...b.processed_requirement_ids];
+  const aliases = requirementAliases(ids.map((id: string) => ({ id })));
+  b.sections = [b.sections[0]];
+  b.sections[0].purpose = "Private source text must never enter diagnostics.";
+  let error: any;
+  try {
+    validateBlueprint(b, ids, [], { diagnosticRequirementIds: aliases });
+  } catch (caught) {
+    error = caught;
+  }
+  expect(error?.code).toBe("MODEL_COVERAGE_INCOMPLETE");
+  expect(error.validationDiagnostics).toEqual([
+    {
+      code: "MODEL_COVERAGE_INCOMPLETE",
+      reason: "required_content_missing",
+      paths: ["$.sections"],
+      requirement_ids: ids.slice(0, 16).map((id: string) => aliases.get(id)),
+    },
+  ]);
+  expect(JSON.stringify(error.validationDiagnostics)).not.toContain(
+    "Private source text",
+  );
+  const complete = blueprint(35);
+  expect([
+    ...validateBlueprint(complete, ids, [], {
+      diagnosticRequirementIds: aliases,
+    }).keys(),
+  ]).toEqual(ids);
+  complete.sections[1].units[0].requirement_ids[0] = aliases.get(ids[0]);
+  expect(() =>
+    validateBlueprint(complete, ids, [], { diagnosticRequirementIds: aliases }),
+  ).toThrow("MODEL_COVERAGE_INCOMPLETE");
+});
+
+it.each([
+  [
+    "processed IDs",
+    (b: any): void => {
+      b.processed_requirement_ids.pop();
+    },
+    "required_ids_mismatch",
+    "$.processed_requirement_ids",
+  ],
+  [
+    "duplicate sections",
+    (b: any): void => {
+      b.sections.push(structuredClone(b.sections[0]));
+    },
+    "content_ids_mismatch",
+    "$.sections[3].key",
+  ],
+  [
+    "duplicate owners",
+    (b: any): void => {
+      b.sections[1].units[0].requirement_ids.push("r-0");
+    },
+    "required_ids_mismatch",
+    "$.sections[1].units[0].requirement_ids",
+  ],
+  [
+    "summary owners",
+    (b: any): void => {
+      b.sections[0].units[0].requirement_ids.push("r-0");
+    },
+    "invalid_scope",
+    "$.sections[0].units[0].requirement_ids",
+  ],
+  [
+    "missing units",
+    (b: any): void => {
+      b.sections[1].units = [];
+    },
+    "required_content_missing",
+    "$.sections[1].units",
+  ],
+  [
+    "unknown decisions",
+    (b: any): void => {
+      b.sections[1].units[0].decision_ids = ["absent"];
+    },
+    "invalid_finding_reference",
+    "$.sections[1].units[0].decision_ids",
+  ],
+  [
+    "missing factual citations",
+    (b: any): void => {
+      b.decisions[0].kind = "company_fact";
+    },
+    "source_missing",
+    "$.decisions[0].evidence_refs",
+  ],
+] as const)(
+  "attaches actionable paths without weakening %s validation",
+  (_name, mutate, reason, path) => {
+    const b = blueprint(2),
+      required = [...b.processed_requirement_ids];
+    mutate(b);
+    expect(() => validateBlueprint(b, required)).toThrow(
+      expect.objectContaining({
+        code: "MODEL_COVERAGE_INCOMPLETE",
+        validationDiagnostics: [
+          expect.objectContaining({ reason, paths: [path] }),
+        ],
+      }),
+    );
+  },
+);

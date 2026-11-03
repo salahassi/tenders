@@ -316,3 +316,86 @@ it("splits at section boundaries before subdividing a single oversized subject",
     grouped.requirement_ids.sort(),
   );
 });
+
+it("maps structure diagnostics to its actual schema and preserves canonical IDs", () => {
+  const { structure, requirements } = fixture();
+  const ids = requirements.map((r: any) => r.id),
+    aliases = requirementAliases(requirements);
+  structure.sections[1].requirement_ids.push(ids[0]);
+  expect(() => validateStructure(structure, ids, [], aliases)).toThrow(
+    expect.objectContaining({
+      code: "MODEL_COVERAGE_INCOMPLETE",
+      validationDiagnostics: [
+        expect.objectContaining({
+          reason: "required_ids_mismatch",
+          paths: ["$.sections[1].requirement_ids"],
+          requirement_ids: ids
+            .slice(0, 16)
+            .map((id: string) => aliases.get(id)),
+        }),
+      ],
+    }),
+  );
+});
+
+it("reports unknown structure aliases without treating them as canonical requirement IDs", () => {
+  const { stored, requirements } = fixture();
+  stored.sections[0].requirement_ids[0] = requirements[0].id;
+  expect(() => expandStructure(stored, requirements)).toThrow(
+    expect.objectContaining({
+      code: "EVIDENCE_REFERENCE_INVALID",
+      validationDiagnostics: [
+        expect.objectContaining({
+          reason: "invalid_finding_reference",
+          paths: ["$.sections[0].requirement_ids[0]"],
+          requirement_ids: [...requirementAliases(requirements).values()].slice(
+            0,
+            16,
+          ),
+        }),
+      ],
+    }),
+  );
+});
+
+it.each(["scope", "ownership", "identity"])(
+  "gives planning-detail %s failures bounded model-visible diagnostics",
+  (failure) => {
+    const { structure, requirements, detail } = fixture();
+    const input = {
+      section_keys: [structure.sections[0].key],
+      requirement_ids: structure.sections[0].requirement_ids,
+    };
+    const value = detail(input);
+    if (failure === "scope")
+      value.sections[0].title =
+        "Unauthorized replacement of the accepted title";
+    else if (failure === "ownership")
+      value.sections[0].units[0].requirement_ids.pop();
+    else value.sections[0].units[0].requirement_ids[0] = "unknown_alias";
+    const expected =
+      failure === "scope"
+        ? { reason: "invalid_scope", paths: ["$.sections[0]"] }
+        : failure === "ownership"
+          ? {
+              reason: "required_content_missing",
+              paths: ["$.sections"],
+              requirement_ids: ["req_h"],
+            }
+          : {
+              reason: "invalid_finding_reference",
+              paths: ["$.sections[0].units[0].requirement_ids[0]"],
+            };
+    expect(() =>
+      validatePlanningDetails(value, input, structure, requirements),
+    ).toThrow(
+      expect.objectContaining({
+        code:
+          failure === "identity"
+            ? "EVIDENCE_REFERENCE_INVALID"
+            : "MODEL_COVERAGE_INCOMPLETE",
+        validationDiagnostics: [expect.objectContaining(expected)],
+      }),
+    );
+  },
+);

@@ -16,6 +16,16 @@ import {
   SCOPE_COMPARISON_PROMPT_V1,
 } from "./modelScopeInstructions.ts";
 import {
+  ANALYSIS_EVIDENCE_INSTRUCTIONS_V1,
+  ANALYSIS_EVIDENCE_PROMPT_V1,
+  analysisEvidenceContract,
+} from "./modelAnalysisEvidenceInstructions.ts";
+import {
+  PLANNING_COVERAGE_INSTRUCTIONS_V1,
+  PLANNING_COVERAGE_PROMPT_V1,
+  planningCoverageContract,
+} from "./modelPlanningInstructions.ts";
+import {
   verificationPolicyText,
   verificationPolicyVersion,
 } from "./modelVerificationInstructions.ts";
@@ -1309,6 +1319,16 @@ export class FreeModelProvider {
           result.stop_reason ||
           result.status,
       );
+      // Responses APIs may report failure inside HTTP 200. Retain bounded
+      // identifiers for diagnosis without logging provider messages/content.
+      if (result.error && typeof result.error === "object") {
+        this.telemetry.provider_error_code = this.diagnosticIdentifier(
+          result.error.code,
+        );
+        this.telemetry.provider_error_type = this.diagnosticIdentifier(
+          result.error.type,
+        );
+      }
       return result;
     } catch (error) {
       if (error instanceof ModelError) throw error;
@@ -1519,13 +1539,29 @@ export function modelPrompt(
     ...envelope,
     // Keep the semantic suffix recognized by the durable writer handoff. The
     // scope policy is separately versioned without changing older envelopes.
-    prompt_version: `${envelope.prompt_version}${semanticRevision === 3 ? "." + SCOPE_COMPARISON_PROMPT_V1 : ""}.${SEMANTIC_PROMPT_V1}${semanticRevision >= 2 ? ".economy-v1" : ""}`,
+    prompt_version: `${envelope.prompt_version}${semanticRevision === 3 ? "." + SCOPE_COMPARISON_PROMPT_V1 : ""}${semanticRevision === 4 ? "." + ANALYSIS_EVIDENCE_PROMPT_V1 : ""}${semanticRevision === 5 ? "." + PLANNING_COVERAGE_PROMPT_V1 : ""}.${SEMANTIC_PROMPT_V1}${semanticRevision >= 2 ? ".economy-v1" : ""}`,
     ...(semanticRevision >= 2
       ? { output_policy: OUTPUT_ECONOMY_INSTRUCTIONS }
       : {}),
     semantic_policy: SEMANTIC_INSTRUCTIONS_V1,
     ...(semanticRevision === 3
       ? { scope_comparison_policy: SCOPE_COMPARISON_INSTRUCTIONS_V1 }
+      : {}),
+    ...(semanticRevision === 4
+      ? {
+          analysis_evidence_policy: ANALYSIS_EVIDENCE_INSTRUCTIONS_V1,
+          analysis_evidence_contract: analysisEvidenceContract(
+            task,
+            context,
+            evidence,
+          ),
+        }
+      : {}),
+    ...(semanticRevision === 5
+      ? {
+          planning_coverage_policy: PLANNING_COVERAGE_INSTRUCTIONS_V1,
+          planning_coverage_contract: planningCoverageContract(task, context),
+        }
       : {}),
   });
 }
@@ -1911,12 +1947,24 @@ export async function executeModel(
             await ledger.settle(
               reservation!,
               result.usage,
-              "PROVIDER_REQUEST_REJECTED",
+              // Lifecycle and accounting are independent: an explicit terminal
+              // response must stop polling even when its token usage is unknown.
+              // Generic GET errors never receive this marker.
+              "PROVIDER_BACKGROUND_TERMINATED",
             );
             settled = true;
             throw new ModelError("PROVIDER_REQUEST_REJECTED");
           }
         } else result = await provider.generate(task, prompt, schema);
+        if (result.kind === "provider_failure") {
+          await ledger.settle(
+            reservation,
+            result.usage,
+            "PROVIDER_REQUEST_REJECTED",
+          );
+          settled = true;
+          throw new ModelError("PROVIDER_REQUEST_REJECTED");
+        }
         await ledger.settle(reservation, result.usage);
         settled = true;
         if (result.kind === "completed_candidate" || result.kind === undefined)

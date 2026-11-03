@@ -28,6 +28,222 @@ import {
 } from "../../supabase/functions/_shared/backend";
 import { databaseError } from "../../supabase/functions/_shared/http";
 
+import {
+  expandBlueprint,
+  requirementAliases,
+  validateBlueprint,
+} from "../../supabase/functions/_shared/proposalBlueprint";
+import {
+  expandStructure,
+  validateStructure,
+} from "../../supabase/functions/_shared/proposalPlanning";
+
+it.each(["plan_blueprint", "plan_structure"] as const)(
+  "repairs %s missing primary owners through durable validation handoff before acceptance",
+  async (task) => {
+    let job = (await configure(task)).job;
+    const requirements = [
+      { id: "10000000-0000-4000-8000-000000000001" },
+      { id: "10000000-0000-4000-8000-000000000002" },
+    ];
+    const ids = requirements.map((r) => r.id);
+    const aliases = requirementAliases(requirements);
+    const modelIds = [...aliases.values()];
+    const section = (summary: boolean) => ({
+      key: summary ? "summary" : "approach",
+      title: summary ? "Executive summary" : "Proposed approach",
+      purpose: "Describe the proposed workflow.",
+      volume: "technical",
+      mode: summary ? "executive_summary" : "narrative",
+      ...(task === "plan_structure"
+        ? { requirement_ids: summary ? [] : modelIds }
+        : {
+            units: [
+              {
+                key: summary ? "summary-unit" : "approach-unit",
+                title: "Proposed workflow",
+                purpose: "Describe the proposed workflow.",
+                requirement_ids: summary ? [] : modelIds,
+                secondary_links: [],
+                decision_ids: [],
+                target_words: 300,
+              },
+            ],
+          }),
+    });
+    const candidate = (repaired: boolean) => ({
+      version: task === "plan_structure" ? 3 : 2,
+      ...(task === "plan_blueprint"
+        ? { processed_requirement_ids: modelIds }
+        : {}),
+      sections: [section(true), ...(repaired ? [section(false)] : [])],
+      decisions: [],
+      questions: [],
+    });
+    const validate = (value: any) =>
+      task === "plan_structure"
+        ? validateStructure(
+            expandStructure(value, requirements),
+            ids,
+            [],
+            aliases,
+          )
+        : validateBlueprint(expandBlueprint(value, requirements), ids, [], {
+            diagnosticRequirementIds: aliases,
+          });
+    const initial = candidate(false),
+      repaired = candidate(true);
+    const phases: string[] = [];
+    vi.spyOn(FreeModelProvider.prototype, "generate").mockImplementation(
+      async function (this: FreeModelProvider, phase, prompt) {
+        this.generationSent = true;
+        phases.push(phase);
+        const context = JSON.parse(prompt).untrusted_data;
+        let result: unknown;
+        if (phase === "repair_result") {
+          expect(context.candidate).toEqual(initial);
+          expect(context.validation_diagnostics).toEqual([
+            {
+              code: "MODEL_COVERAGE_INCOMPLETE",
+              reason: "required_content_missing",
+              paths: ["$.sections"],
+              requirement_ids: modelIds,
+            },
+          ]);
+          expect(JSON.stringify(context.validation_diagnostics)).not.toContain(
+            ids[0],
+          );
+          result = {
+            target_task: task,
+            result: repaired,
+            changes: ["Assigned every requirement to a narrative owner."],
+          };
+        } else if (phase === "verify_grounding") {
+          result = {
+            checked_candidate_hash: context.candidate_hash,
+            reviewed_all_content: true,
+            processed_content_ids: context.content_units.map(
+              (unit: any) => unit.id,
+            ),
+            claims: context.content_units.map((unit: any, i: number) => ({
+              id: `proposed-${i}`,
+              claim: "Proposed planning structure.",
+              candidate_quote: unit.text,
+              kind: "assumption",
+              status: "supported",
+              source_refs: [],
+              finding:
+                "Planning content does not assert company qualifications.",
+            })),
+            processed_requirement_ids: [],
+            requirement_checks: [],
+            findings: [],
+          };
+        } else result = initial;
+        return {
+          text: JSON.stringify(result),
+          usage: { input: 80, output: 40, thinking: 0 },
+          complete: true,
+        };
+      },
+    );
+    const environments = modelEnvironments((name) =>
+      name === "APP_MODEL_OPENAI_KEY" ? "synthetic-key" : undefined,
+    );
+    const backend = {
+      internal: rpc,
+      resolveModelEnvironment: (config: any) => ({
+        ...environments.openai,
+        model: config.model,
+        projectRef: config.project_ref,
+      }),
+    } as unknown as Backend;
+    const fetcher = vi.fn<typeof fetch>(async () => {
+      throw new Error("No external HTTP in fixture");
+    });
+    const options = {
+      backend,
+      prefix: `step:${job.id}`,
+      task,
+      context: { blueprint_requirement_ids: modelIds },
+      evidence: [],
+      requiredIds: [],
+      manifest: [],
+      environments,
+      language: "en" as const,
+      repair: false,
+      fetcher,
+      validate,
+    };
+    await expect(
+      executeGuardedModel({ ...options, job }),
+    ).rejects.toBeInstanceOf(ModelDeferred);
+    const retained = (
+      await f.db.query<any>(
+        "select * from app_private.model_graph_results where result_key='candidate-0'",
+      )
+    ).rows[0];
+    expect(retained?.value.result).toEqual(initial);
+    expect(retained?.value.local_validation.code).toBe(
+      "MODEL_COVERAGE_INCOMPLETE",
+    );
+    const receipt = (
+      await f.db.query<any>(
+        "select * from public.provider_usage where job_id=$1",
+        [job.id],
+      )
+    ).rows;
+    expect(receipt).toHaveLength(1);
+    expect(receipt[0]).toMatchObject({
+      state: "settled",
+      graph_candidate_recorded: true,
+    });
+    let accepted: any;
+    for (let i = 0; i < 8 && !accepted; i++) {
+      job = await rpc("claim_backend_job_v2");
+      try {
+        accepted = await executeGuardedModel({ ...options, job });
+      } catch (error) {
+        expect(error).toBeInstanceOf(ModelDeferred);
+      }
+    }
+    expect(accepted?.result).toEqual(repaired);
+    expect(phases).toEqual([task, "repair_result", "verify_grounding"]);
+    expect(
+      (
+        await f.db.query<any>(
+          "select unit,candidates from app_private.model_graph_budgets where unit like 'writer%' order by unit",
+        )
+      ).rows,
+    ).toEqual([
+      { unit: "writer", candidates: 1 },
+      { unit: "writer-repair", candidates: 1 },
+    ]);
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from public.provider_usage where id=$1",
+          [receipt[0].id],
+        )
+      ).rows,
+    ).toEqual(receipt);
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from app_private.model_graph_results where id=$1",
+          [retained.id],
+        )
+      ).rows[0],
+    ).toEqual(retained);
+    const beforeReplay = phases.length;
+    expect((await executeGuardedModel({ ...options, job })).result).toEqual(
+      repaired,
+    );
+    expect(phases).toHaveLength(beforeReplay);
+    expect(fetcher).not.toHaveBeenCalled();
+  },
+);
+
 it("recovers and accepts the latest paid keyword-scope assessment without another writer", async () => {
   let job = (await configure("classify_opportunity")).job;
   let fixed = false,
@@ -623,7 +839,9 @@ async function configure(
     | "draft_section"
     | "repair_result"
     | "review_proposal"
-    | "classify_opportunity",
+    | "classify_opportunity"
+    | "plan_blueprint"
+    | "plan_structure",
   alternate = false,
 ) {
   await f.command("model.routing", { enabled: true, expected_revision: 0 });
@@ -1346,9 +1564,14 @@ it.each([
         s.job.id,
       ])
     ).rows;
-    expect(await s.store.action("writer_validation_handoff", s.payload)).toBe(
-      false,
-    );
+    if (reason === "pending-unknown")
+      await expect(
+        s.store.action("writer_validation_handoff", s.payload),
+      ).rejects.toMatchObject({ code: "USAGE_REVIEW_REQUIRED" });
+    else
+      expect(await s.store.action("writer_validation_handoff", s.payload)).toBe(
+        false,
+      );
     expect(await snapshot(s)).toEqual(before);
     expect(
       (
@@ -1370,6 +1593,60 @@ it.each([
         key: `writer-validation-handoff-${s.usage.id}`,
       }),
     ).toBeNull();
+  },
+);
+
+it.each(["same-hash", "same-prefix", "unrelated-phase"])(
+  "distinguishes ambiguous %s accounting from invalid writer identity",
+  async (scope) => {
+    const s = await setup("failed", "candidate-2");
+    const ambiguous = (
+      await f.db.query<any>(
+        `insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,
+         application_day,settings_revision,reserved_input,reserved_output,state,error_code,created_by)
+         values($1,$2,$3,$4,'qwencloud','synthetic-previous-provider',$5,current_date,1,100,50,
+         'unknown','MODEL_NETWORK_UNCERTAIN',$6) returning *`,
+        [
+          f.w,
+          s.job.id,
+          s.job.lease_token,
+          scope === "same-prefix"
+            ? `${s.prefix}:synthetic-earlier-fallback`
+            : "synthetic-other-operation:earlier-fallback",
+          scope === "same-hash" ? s.input : "e".repeat(64),
+          f.owner,
+        ],
+      )
+    ).rows[0];
+    const before = await snapshot(s);
+    const retained = await s.store.action("result_get", { id: s.saved.id });
+    if (scope === "unrelated-phase") {
+      expect(await s.store.action("writer_validation_handoff", s.payload)).toBe(
+        true,
+      );
+    } else {
+      await expect(
+        s.store.action("writer_validation_handoff", s.payload),
+      ).rejects.toMatchObject({ code: "USAGE_REVIEW_REQUIRED" });
+      expect(
+        await s.store.action("result_get", {
+          key: `writer-validation-handoff-${s.usage.id}`,
+        }),
+      ).toBeNull();
+    }
+    expect(await snapshot(s)).toEqual(before);
+    expect(await s.store.action("result_get", { id: s.saved.id })).toEqual(
+      retained,
+    );
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from public.provider_usage where id=$1",
+          [ambiguous.id],
+        )
+      ).rows[0],
+    ).toEqual(ambiguous);
+    expect(await s.store.action("result_get", { key: "accepted" })).toBeNull();
   },
 );
 
@@ -1446,6 +1723,10 @@ it.each(["reserved", "unknown", "revoked-permission"])(
       await expect(
         s.store.action("writer_validation_handoff", s.payload),
       ).rejects.toThrow("data authorization required");
+    else if (reason === "unknown")
+      await expect(
+        s.store.action("writer_validation_handoff", s.payload),
+      ).rejects.toMatchObject({ code: "USAGE_REVIEW_REQUIRED" });
     else
       expect(await s.store.action("writer_validation_handoff", s.payload)).toBe(
         false,

@@ -414,6 +414,183 @@ it("keeps original verifier system bytes and excludes content-free connection pr
   );
 });
 
+it.each([
+  ["analyze_chunk", {}],
+  ["repair_result", { target_task: "analyze_chunk", original_context: {} }],
+  [
+    "verify_grounding",
+    { original_task: "analyze_chunk", original_context: {} },
+  ],
+] as const)(
+  "pins precise evidence guidance only before a new %s phase starts",
+  async (task, phaseContext) => {
+    const x = await setup();
+    const options = { ...x.options, task, context: phaseContext };
+    expect(await pinSemanticPrompt(options)).toBe(4);
+    const prompt = modelPrompt(
+      task,
+      phaseContext,
+      evidence,
+      ["req"],
+      "en",
+      false,
+      1,
+      4,
+    );
+    expect(JSON.parse(prompt).analysis_evidence_contract.sources).toEqual([
+      { id: "source", kind: "rfp", verified: false },
+    ]);
+    await usage(x, "reserved", await sha256(prompt));
+    expect(await pinSemanticPrompt(options)).toBe(4);
+    expect(await readSemanticPromptRevision(x.store, x.requestPrefix)).toBe(4);
+    expect(
+      modelPrompt(task, phaseContext, evidence, ["req"], "en", false, 1, 4),
+    ).toBe(prompt);
+  },
+);
+
+it("keeps an already pinned analysis policy and admits the new policy only for the next unstarted phase", async () => {
+  const x = await setup();
+  const options = { ...x.options, task: "analyze_chunk" as const };
+  const legacyHash = await sha256(
+    modelPrompt(options.task, context, evidence, ["req"], "en"),
+  );
+  await x.store.action("result_put", {
+    key: `semantic-instructions-${await sha256(x.requestPrefix)}`,
+    value: {
+      version: 2,
+      legacy_input_hash: legacyHash,
+      instructions: semanticPolicyText(2),
+    },
+  });
+  const prompt = modelPrompt(
+    options.task,
+    context,
+    evidence,
+    ["req"],
+    "en",
+    false,
+    1,
+    2,
+  );
+  await usage(x, "unknown", await sha256(prompt));
+  expect(await pinSemanticPrompt(options)).toBe(2);
+  expect(
+    modelPrompt(options.task, context, evidence, ["req"], "en", false, 1, 2),
+  ).toBe(prompt);
+  expect(
+    await pinSemanticPrompt({
+      ...options,
+      requestPrefix: "analysis:next-unstarted-phase",
+    }),
+  ).toBe(4);
+});
+
+it.each([
+  ["plan_blueprint", { blueprint_requirement_ids: ["req"] }],
+  ["plan_structure", { blueprint_requirement_ids: ["req"] }],
+  [
+    "repair_result",
+    {
+      target_task: "plan_blueprint",
+      original_context: { blueprint_requirement_ids: ["req"] },
+    },
+  ],
+  [
+    "repair_result",
+    {
+      target_task: "plan_structure",
+      original_context: { blueprint_requirement_ids: ["req"] },
+    },
+  ],
+  [
+    "verify_grounding",
+    {
+      original_task: "plan_blueprint",
+      original_context: { blueprint_requirement_ids: ["req"] },
+    },
+  ],
+  [
+    "verify_grounding",
+    {
+      original_task: "plan_structure",
+      original_context: { blueprint_requirement_ids: ["req"] },
+    },
+  ],
+] as const)(
+  "pins new %s planning phases to policy 5 and preserves their paid request",
+  async (task, phaseContext) => {
+    const x = await setup();
+    const options = {
+      ...x.options,
+      task,
+      context: phaseContext,
+      requiredIds: [],
+    };
+    expect(await pinSemanticPrompt(options)).toBe(5);
+    const prompt = modelPrompt(
+      task,
+      phaseContext,
+      evidence,
+      [],
+      "en",
+      false,
+      1,
+      5,
+    );
+    expect(
+      JSON.parse(prompt).planning_coverage_contract.primary_requirement_ids,
+    ).toEqual(["req"]);
+    await usage(x, "reserved", await sha256(prompt));
+    expect(await pinSemanticPrompt(options)).toBe(5);
+    expect(await readSemanticPromptRevision(x.store, x.requestPrefix)).toBe(5);
+    expect(
+      modelPrompt(task, phaseContext, evidence, [], "en", false, 1, 5),
+    ).toBe(prompt);
+  },
+);
+
+it("retains a pinned planning policy 2 with unknown usage and selects 5 only for a new phase", async () => {
+  const x = await setup();
+  const phaseContext = { blueprint_requirement_ids: ["req"] };
+  const options = {
+    ...x.options,
+    task: "plan_blueprint" as const,
+    context: phaseContext,
+    requiredIds: [],
+  };
+  const legacyHash = await sha256(
+    modelPrompt(options.task, phaseContext, evidence, [], "en"),
+  );
+  await x.store.action("result_put", {
+    key: `semantic-instructions-${await sha256(x.requestPrefix)}`,
+    value: {
+      version: 2,
+      legacy_input_hash: legacyHash,
+      instructions: semanticPolicyText(2),
+    },
+  });
+  const prompt = modelPrompt(
+    options.task,
+    phaseContext,
+    evidence,
+    [],
+    "en",
+    false,
+    1,
+    2,
+  );
+  await usage(x, "unknown", await sha256(prompt));
+  expect(await pinSemanticPrompt(options)).toBe(2);
+  expect(await readSemanticPromptRevision(x.store, x.requestPrefix)).toBe(2);
+  expect(
+    await pinSemanticPrompt({
+      ...options,
+      requestPrefix: "planning:new-unstarted-phase",
+    }),
+  ).toBe(5);
+});
+
 it.each([false, true])(
   "sends the frozen shared policy as trusted Gemini instructions (background=%s)",
   async (background) => {

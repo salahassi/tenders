@@ -1246,6 +1246,7 @@ export async function processGeneration(
           expandStructure(result, ctx!.requirements),
           ctx!.requirements.map((r) => r.id),
           ctx!.plan.frozen_context.template.required_sections || [],
+          requirementAliases(ctx!.requirements),
         );
       if (ctx!.step.input.planning_phase === "details")
         validatePlanningDetails(
@@ -1261,6 +1262,12 @@ export async function processGeneration(
             : result,
           ctx!.requirements.map((r) => r.id),
           ctx!.plan.frozen_context.template.required_sections || [],
+          {
+            diagnosticRequirementIds:
+              ctx!.step.input.id_aliases_version === 1
+                ? requirementAliases(ctx!.requirements)
+                : undefined,
+          },
         );
       if (input.task === "review_proposal")
         validateReviewSectionReferences(result, input.context);

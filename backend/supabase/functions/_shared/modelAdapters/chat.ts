@@ -75,6 +75,13 @@ export function chatAdapter(provider: ChatProvider): ModelAdapter {
         output: measuredCount(u.completion_tokens),
         thinking: measuredCount(u.completion_tokens_details?.reasoning_tokens),
       };
+      if (result.error)
+        return {
+          kind: "provider_failure",
+          code: "PROVIDER_REQUEST_REJECTED",
+          retryAfter: null,
+          usage,
+        };
       if (
         choice?.message?.refusal ||
         choice?.finish_reason === "content_filter"

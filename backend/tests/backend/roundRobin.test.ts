@@ -688,7 +688,7 @@ it("falls back after a terminal remote failure and retains measured failed-reque
     state: "settled",
     actual_input: 100,
     actual_output: 3,
-    error_code: "PROVIDER_REQUEST_REJECTED",
+    error_code: "PROVIDER_BACKGROUND_TERMINATED",
   });
 });
 it("tries every automatic provider despite old daily ceilings and retains unknown usage", async () => {
@@ -714,6 +714,73 @@ it("tries every automatic provider despite old daily ceilings and retains unknow
     ),
   ).toBe(true);
 });
+
+it.each(["failed", "cancelled", "canceled"])(
+  "stops polling an OpenAI %s response without usage and completes through QwenCloud",
+  async (status) => {
+    await f.command("model.routing", {
+      enabled: true,
+      expected_revision: 0,
+      strategy: "priority",
+      provider_order: [
+        "openai",
+        "qwencloud",
+        ...ROUND_ROBIN_PROVIDERS.filter(
+          (p) => p !== "openai" && p !== "qwencloud",
+        ),
+      ],
+    });
+    const q = await queue(),
+      methods: string[] = [];
+    let qwenCalls = 0;
+    const limited = {
+      ...environment,
+      models: Object.fromEntries(
+        Object.entries(environment.models).map(([id, env]) => [
+          id,
+          { ...env, key: ["openai", "qwencloud"].includes(id) ? env.key : "" },
+        ]),
+      ) as typeof environment.models,
+    };
+    const tick = worker(
+      transport((provider, _url, init) => {
+        methods.push(`${provider}:${init?.method}`);
+        if (provider === "openai")
+          return Response.json({
+            id: "synthetic-terminal-openai",
+            status: init?.method === "POST" ? "queued" : status,
+          });
+        expect(provider).toBe("qwencloud");
+        return ++qwenCalls === 1
+          ? new Response(null, { status: 429 })
+          : success(provider);
+      }),
+      limited,
+    );
+    await tick();
+    await age();
+    await tick();
+    expect((await job(q.id)).status).toBe("retry_wait");
+    await age();
+    await tick();
+    expect((await job(q.id)).status).toBe("succeeded");
+    expect(methods).toEqual([
+      "openai:POST",
+      "openai:GET",
+      "qwencloud:POST",
+      "qwencloud:POST",
+    ]);
+    expect(
+      (await usage(q.id)).find((u) => u.provider === "openai"),
+    ).toMatchObject({
+      state: "unknown",
+      actual_input: null,
+      actual_output: null,
+      remote_request_id: "synthetic-terminal-openai",
+      error_code: "PROVIDER_BACKGROUND_TERMINATED",
+    });
+  },
+);
 
 it("can fail over within a one-request token budget after a proven initial 429 rejection", async () => {
   await enable();

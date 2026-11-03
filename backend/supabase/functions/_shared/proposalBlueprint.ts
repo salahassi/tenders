@@ -1,6 +1,9 @@
 import type { ProposalBlueprint } from "./proposalBlueprintSchema.ts";
 import { ModelError } from "./model.ts";
-import { validationDiagnostic } from "./modelValidationDiagnostics.ts";
+import {
+  validationDiagnostic,
+  type ModelValidationReason,
+} from "./modelValidationDiagnostics.ts";
 
 type Row = Record<string, any>;
 export const semanticWorkflow = (plan: Row) => plan.workflow_version >= 2;
@@ -15,9 +18,11 @@ export function validateReviewSectionReferences(result: Row, context: Row) {
     ...(context.response_locations || []).map((s: Row) => s.section_key),
   ]);
   const badResponses = result.responses.flatMap((r: Row, i: number) => {
-    const unresolved = ["partial", "missing", "clarification_required"].includes(
-      r.status,
-    );
+    const unresolved = [
+      "partial",
+      "missing",
+      "clarification_required",
+    ].includes(r.status);
     const allowed = unresolved ? known : reviewed;
     return r.section_ids.some((key: string) => !allowed.has(key)) ||
       (r.section_ids.length &&
@@ -65,32 +70,53 @@ export function expandBlueprint(
   const aliases = new Map(
     [...requirementAliases(requirements)].map(([id, alias]) => [alias, id]),
   );
-  const id = (alias: string) => {
+  const id = (alias: string, path: string) => {
     const value = aliases.get(alias);
-    if (!value) throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+    if (!value)
+      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+        validationDiagnostic(
+          "EVIDENCE_REFERENCE_INVALID",
+          "invalid_finding_reference",
+          {
+            paths: [path],
+            requirement_ids: [...aliases.keys()],
+          },
+        ),
+      ]);
     return value;
   };
   return {
     ...blueprint,
-    processed_requirement_ids: blueprint.processed_requirement_ids.map(id),
-    sections: blueprint.sections.map((s) => ({
+    processed_requirement_ids: blueprint.processed_requirement_ids.map(
+      (alias, i) => id(alias, `$.processed_requirement_ids[${i}]`),
+    ),
+    sections: blueprint.sections.map((s, si) => ({
       ...s,
-      units: s.units.map((u) => ({
+      units: s.units.map((u, ui) => ({
         ...u,
-        requirement_ids: u.requirement_ids.map(id),
-        secondary_links: u.secondary_links.map((l) => ({
+        requirement_ids: u.requirement_ids.map((alias, i) =>
+          id(alias, `$.sections[${si}].units[${ui}].requirement_ids[${i}]`),
+        ),
+        secondary_links: u.secondary_links.map((l, li) => ({
           ...l,
-          requirement_id: id(l.requirement_id),
+          requirement_id: id(
+            l.requirement_id,
+            `$.sections[${si}].units[${ui}].secondary_links[${li}].requirement_id`,
+          ),
         })),
       })),
     })),
-    decisions: blueprint.decisions.map((d) => ({
+    decisions: blueprint.decisions.map((d, di) => ({
       ...d,
-      requirement_ids: d.requirement_ids.map(id),
+      requirement_ids: d.requirement_ids.map((alias, i) =>
+        id(alias, `$.decisions[${di}].requirement_ids[${i}]`),
+      ),
     })),
-    questions: blueprint.questions.map((q) => ({
+    questions: blueprint.questions.map((q, qi) => ({
       ...q,
-      requirement_ids: q.requirement_ids.map(id),
+      requirement_ids: q.requirement_ids.map((alias, i) =>
+        id(alias, `$.questions[${qi}].requirement_ids[${i}]`),
+      ),
     })),
   };
 }
@@ -102,73 +128,118 @@ export function validateBlueprint(
   shared: {
     decisions?: ProposalBlueprint["decisions"];
     referenceIds?: string[];
+    diagnosticRequirementIds?: ReadonlyMap<string, string>;
   } = {},
 ) {
-  const fail = () => {
-    throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+  // Canonical validation still uses immutable IDs; only diagnostic metadata is
+  // projected back to the aliases actually supplied to this model phase.
+  const fail = (
+    reason: ModelValidationReason,
+    paths: string[],
+    requirementIds: string[] = [],
+    contentIds: string[] = [],
+  ): never => {
+    throw new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+      validationDiagnostic("MODEL_COVERAGE_INCOMPLETE", reason, {
+        paths,
+        requirement_ids: requirementIds.map(
+          (id) => shared.diagnosticRequirementIds?.get(id) ?? id,
+        ),
+        content_ids: contentIds,
+      }),
+    ]);
   };
   if (
     blueprint.processed_requirement_ids.length !== requiredIds.length ||
     new Set(blueprint.processed_requirement_ids).size !== requiredIds.length ||
     requiredIds.some((id) => !blueprint.processed_requirement_ids.includes(id))
   )
-    fail();
+    fail("required_ids_mismatch", ["$.processed_requirement_ids"], requiredIds);
   const sectionKeys = new Set<string>(),
     unitKeys = new Set<string>();
   const decisions = [...(shared.decisions ?? []), ...blueprint.decisions];
   const referenceIds = shared.referenceIds ?? requiredIds;
   const decisionKeys = new Set(decisions.map((d) => d.key));
-  if (decisionKeys.size !== decisions.length) fail();
+  if (decisionKeys.size !== decisions.length)
+    fail("content_ids_mismatch", ["$.decisions"]);
   const owners = new Map<string, string>();
-  for (const section of blueprint.sections) {
+  for (const [si, section] of blueprint.sections.entries()) {
+    const path = `$.sections[${si}]`;
     if (sectionKeys.has(section.key) || section.key.startsWith("fixed-"))
-      fail();
+      fail("content_ids_mismatch", [`${path}.key`]);
     sectionKeys.add(section.key);
-    if (section.mode === "compliance_matrix" && section.units.length) fail();
-    if (section.mode !== "compliance_matrix" && !section.units.length) fail();
-    for (const unit of section.units) {
+    if (section.mode === "compliance_matrix" && section.units.length)
+      fail("invalid_scope", [`${path}.units`]);
+    if (section.mode !== "compliance_matrix" && !section.units.length)
+      fail("required_content_missing", [`${path}.units`]);
+    for (const [ui, unit] of section.units.entries()) {
+      const unitPath = `${path}.units[${ui}]`;
       if (
         blueprint.sections.some(
           (other) => other.key === unit.key && other.key !== section.key,
         )
       )
-        fail();
-      if (unitKeys.has(unit.key) || unit.key.startsWith("fixed-")) fail();
+        fail("content_ids_mismatch", [`${unitPath}.key`]);
+      if (unitKeys.has(unit.key) || unit.key.startsWith("fixed-"))
+        fail("content_ids_mismatch", [`${unitPath}.key`]);
       unitKeys.add(unit.key);
-      if (unit.decision_ids.some((id) => !decisionKeys.has(id))) fail();
+      if (unit.decision_ids.some((id) => !decisionKeys.has(id)))
+        fail(
+          "invalid_finding_reference",
+          [`${unitPath}.decision_ids`],
+          [],
+          [...decisionKeys],
+        );
       if (
         unit.secondary_links.some(
           (link) => !referenceIds.includes(link.requirement_id),
         )
       )
-        fail();
+        fail(
+          "invalid_finding_reference",
+          [`${unitPath}.secondary_links`],
+          referenceIds,
+        );
       if (section.mode === "executive_summary" && unit.requirement_ids.length)
-        fail();
+        fail("invalid_scope", [`${unitPath}.requirement_ids`]);
       for (const id of unit.requirement_ids) {
-        if (!requiredIds.includes(id) || owners.has(id)) fail();
+        if (!requiredIds.includes(id) || owners.has(id))
+          fail(
+            "required_ids_mismatch",
+            [`${unitPath}.requirement_ids`],
+            requiredIds,
+          );
         owners.set(id, unit.key);
       }
     }
   }
-  if (requiredIds.some((id) => !owners.has(id))) fail();
+  const missingOwners = requiredIds.filter((id) => !owners.has(id));
+  if (missingOwners.length)
+    fail("required_content_missing", ["$.sections"], missingOwners);
   for (const section of template) {
-    if (section.applicable && !sectionKeys.has(section.key)) fail();
-    if (!section.applicable && sectionKeys.has(section.key)) fail();
+    if (section.applicable && !sectionKeys.has(section.key))
+      fail("required_content_missing", ["$.sections"], [], [section.key]);
+    if (!section.applicable && sectionKeys.has(section.key))
+      fail("invalid_scope", ["$.sections"], [], [section.key]);
     if (
       section.applicable &&
       blueprint.sections.find((s) => s.key === section.key)?.volume !==
         section.volume
     )
-      fail();
+      fail("invalid_scope", ["$.sections"], [], [section.key]);
   }
-  for (const decision of blueprint.decisions) {
+  for (const [di, decision] of blueprint.decisions.entries()) {
     if (decision.requirement_ids.some((id) => !referenceIds.includes(id)))
-      fail();
+      fail(
+        "invalid_finding_reference",
+        [`$.decisions[${di}].requirement_ids`],
+        referenceIds,
+      );
     if (
       ["buyer_fact", "company_fact"].includes(decision.kind) &&
       !decision.evidence_refs.length
     )
-      fail();
+      fail("source_missing", [`$.decisions[${di}].evidence_refs`]);
   }
   return owners;
 }

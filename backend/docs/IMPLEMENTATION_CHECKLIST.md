@@ -1,5 +1,129 @@
 # Implementation status and continuation plan
 
+## November 3 — integrated AI reliability verification
+
+The Owner requests comprehensive model and prompt testing after the October 31
+QwenCloud activity stop. The isolated reliability change fixes terminal remote
+polling and misleading usage/identity diagnostics, and adds versioned analysis
+evidence instructions. Historical prompt pins, accepted requests, usage and
+business records are retained. Full GitHub verification of `5d53a96` passes
+**1,617 backend tests in 95 files**, **265 frontend tests**, both packages'
+typechecks/builds, **196 operations tests** and **13 Kubernetes renderer tests**
+in [run 41550067592](https://github.com/salahassi/tenders/actions/runs/41550067592).
+Focused independent
+review checked remote-ID matching, unknown accounting, failover, immutable prompt
+pins and private live-evaluation transport. A stale earlier operations run found
+an ambiguous SQL identifier in the release wrapper; the corrected qualified
+query passed the fresh full 189-test run.
+
+The core live evaluation completed all 32 cases in
+[run 41545612647](https://github.com/salahassi/tenders/actions/runs/41545612647),
+source `bc4c2398a4a49202fa02cf4c56360ebfbf08628d`. Both QwenCloud models passed
+8/8 cases each, including bilingual extraction, exact quotation, prompt
+injection, missing company evidence, wrong-quote repair and unsupported-claim
+grounding. OpenAI's two models could not complete any case: 14 generation
+requests returned HTTP 429 `usage_limit`, and two accepted background probes
+ended in an explicit failed status. These are provider availability results,
+not 16 prompt-quality failures. Both background responses were deleted;
+no evaluation request remains pending. Known usage is 39,326 input and 8,529
+output tokens; the 16 OpenAI cases have unknown usage, not asserted zero cost.
+The encrypted report was downloaded with verified digest and its temporary
+transport object deleted. No application business records were created.
+
+Expanded routing evidence confirms both Qwen models are enabled in saved
+assessment routes; exclusion from those saved routes is disproved. The private
+permission snapshot at 23:44 UTC establishes a separate current blocker: all
+63 examined active-status assessment plans lack manual request receipts and
+exact active Qwen notice grants, and Qwen is excluded from the current automatic
+processing policy. Preflight therefore skips it before recording an attempt.
+Automatic policy grants are lazy, but cannot authorize an excluded provider.
+The policy's current approval timestamp is October 20; this snapshot does not
+prove every historical policy state. No consent or content permission was changed.
+
+The extended Qwen-only evaluation completed 16 requests in
+[run 41547638324](https://github.com/salahassi/tenders/actions/runs/41547638324),
+source `850e74f480a38c101c4fb713e90f67a939352df4`: 12 passed. DeepSeek passed 5/8;
+structure, commercial and source-inspection requests returned HTTP 400
+`invalid_parameter_error` with unknown usage. Qwen passed 7/8; its valid JSON
+blueprint failed the production ownership/coverage validator with
+`MODEL_COVERAGE_INCOMPLETE`. The exact rejected invariant and provider error
+messages were not retained, so they are not guessed. All requests completed,
+with no remote cleanup pending. Measured usage is 34,451 input and 7,754 output
+tokens; three cases retain unknown usage. Its verified private transport object
+was deleted after download. A targeted diagnostic rerun of only these four
+model/case pairs completed in
+[run 41548978379](https://github.com/salahassi/tenders/actions/runs/41548978379),
+source `33c4b23b8717c01ce28a5e2ce525bd36824d7727`, using unchanged prompts and
+request profiles. All three DeepSeek requests passed; their earlier 400 errors
+were intermittent, and their precise cause is still unknown. Qwen's blueprint
+failed again: its processed-ID checklist listed both requirements, but the
+candidate contained only an executive summary and assigned neither requirement
+to a narrative unit. Known usage was 7,876 input and 2,305 output tokens, with
+no unknown usage or cleanup pending. The private report transport object was
+deleted after verified download.
+
+That captured failure exposed an application recovery defect: planning domain
+validators rejected the candidate before acceptance but omitted typed diagnostic
+details, so the graph skipped targeted repair and consumed normal writer
+attempts. The new correction annotates existing validation rules without relaxing
+them and maps diagnostic requirement IDs to the model-visible aliases. Durable
+blueprint and structure regressions prove one writer, one repair and one
+independent verifier, immutable rejected evidence/usage, and zero extra calls on
+accepted replay. Phase-pinned policy revision 5 additionally requires narrative
+ownership independently of processed-ID lists or missing company proof; revisions
+0–4 and existing paid phase pins retain their exact inputs. Focused suites pass
+85 domain/recovery tests, 98 prompt/pinning tests, and 21 evaluation tests, plus
+12 Python guards and backend typecheck (suite counts overlap). The final
+two-request Qwen evaluation passed **2/2** in
+[run 41550112563](https://github.com/salahassi/tenders/actions/runs/41550112563),
+source `5d53a96672ee41c8d52df7a6a08adf75ec51b8ca`: both a fresh revision-5
+blueprint and repair of the captured invalid candidate passed canonical and
+production ownership validation before success. Usage was 7,042 input and
+2,229 output tokens, with no unknown usage or pending cleanup. Its private
+transport object was deleted after verified download. The latest permission
+snapshot still excludes Qwen from automatic processing. Across all four live
+runs, 54 generation requests were made; earlier failures remain recorded and
+are not rewritten as first-attempt successes. Final integrated CI passed on
+the same source revision. All production preparation/build/deployment steps
+were skipped because this was a push-triggered verification run.
+
+The extended fixtures, combined with the core suite, exercise all 13 registered
+model task types. Production structure, blueprint and review validators are
+included alongside explicit tests for requirement ownership, unknown prices,
+source fields, review durations and eight bilingual obligations among longer
+mixed-role inputs. Focused offline verification passes 17 Vitest tests and
+10 Python guards plus backend typecheck; all eight core prompt hashes match the
+completed core live run. The extra requests select QwenCloud only in SQL,
+Python and JavaScript, and remain capped at 16. The permission diagnostic is
+aggregate evidence only: lazy policy grants, receipt selection and active
+content eligibility still govern actual preflight authorization.
+
+Production release has not run. Live synthetic contract checks are not a
+completed real proposal, a human-labeled business-quality evaluation or proof
+that all prompts work on arbitrary documents. No existing blocked work is reset
+by this change. OpenAI account limits remain an external blocker.
+
+## November 3 — analysis evidence prompt and repair regression coverage
+
+The production diagnosis found repeated invalid source quotations and exhausted
+correction attempts during proposal analysis. Existing writer instructions did
+not spell out the validator's distinction between source-block IDs, extracted
+requirement IDs and source roles. Semantic policy revision 4 adds an explicit
+analysis evidence contract for newly started analysis, its repairs and its
+verification. It requires original-language contiguous quotations, complete
+source-block coverage and the correct evidence type, and gives bounded,
+application-owned repair guidance for each retained validation reason. Flexible
+reference inputs retain their distinction from actual buyer requirements.
+
+Historical semantic revisions 0–3 and already pinned phases retain their exact
+wire inputs. Existing quotation, company-evidence and coverage validators remain
+unchanged. Local verification passed 84 tests across the bilingual analysis
+prompt/validation matrix, database-backed semantic pinning and writer handoff
+suites, plus the backend typecheck. These tests use synthetic local fixtures and
+mocked provider transport. The separate live analysis/repair and longer mixed
+evidence cases passed on both QwenCloud models, as recorded above. Deployment
+and recovery of the previously blocked proposal remain pending.
+
 ## November 2 — workspace startup blocked by audit-history size
 
 The Owner's authenticated Jobs screenshot shows "Workspace results exceeded the
@@ -3806,3 +3930,221 @@ Public diagnostic expansion is excluded from the recovery release. This release 
 Read-only observer workflow `40874669501`, attempt 3, job `123483076711`, verified **18 latest completed assessments and 18 matching persisted fit records**, with **zero pending jobs, zero pending opportunity refreshes and zero blocked/failed attention jobs or plans**. Recovery workflow `40873973970` completed the exact retained paid sample before canonically restarting the other 17 requested assessments. No counters, retained receipts or model budgets were reset.
 
 The deployed runtime source is `6af8b4829456e6789501d83351c7a0e748b32565` (immutable runtime `sha256:74db4c5aa8a534de1a7e85dcd590a9605b89357bbd6aa859d61f63d828139b06`), verified by deployment workflow `40871050171`. Both application packages passed typecheck/test/build (**1,495 backend and 241 frontend tests**), plus 143 incident operations tests and 13 deployment-renderer tests. This closes the approved assessment-recovery incident; business fit review remains separate from operational execution.
+
+## November 3 — distinguish ambiguous usage from writer identity failure
+
+Stage M4 model execution: the production proposal retained a schema-valid repair
+candidate with local citation findings after earlier providers returned uncertain
+network/accounting outcomes for the same operation. The writer-validation handoff
+returned `false` for that accounting guard; the graph translated every such
+refusal to `MODEL_IDENTITY_CHANGED`. The candidate's recorded request and provider
+identity were consistent, so the displayed blocker hid the actual requirement.
+
+Migration `20261102231710_writer_handoff_usage_blocker.sql` preserves the existing
+same-operation usage guard and raises `USAGE_REVIEW_REQUIRED` explicitly. Genuine
+identity failures, active reservations, lease checks, content authorization and
+private function permissions remain enforced. The migration changes no business
+rows, receipts, accepted requests or candidate budgets and can be replayed safely.
+It does not settle unknown usage or release blocked paid processing automatically.
+
+Local verification: all **93 tests in five graph/recovery suites passed**, including
+**46 writer-handoff integration tests**. New PostgreSQL cases distinguish unknown
+usage sharing the input hash or request prefix from unrelated earlier-phase usage,
+and verify immutable receipts, retained candidates, budgets and accepted-result
+state. Existing replay, stale-lease, cancellation, revoked-permission and private
+function-access tests pass. Runtime deployment and fresh production acceptance
+remain pending the coordinated AI reliability release.
+
+## November 3 — terminal provider request lifecycle and failover
+
+The live assessment diagnostics showed repeated OpenAI GETs returning HTTP 200
+with terminal `failed` responses and no reported usage. Settlement correctly kept
+usage unknown, but the resume functions excluded failed responses only when usage
+was settled. This conflated request lifecycle with billing certainty and kept
+polling terminal requests across worker leases.
+
+The runtime now records `PROVIDER_BACKGROUND_TERMINATED` only for explicit
+`failed`, `cancelled`, or `canceled` provider status under the accepted remote
+identity. Migration `20261102231721_terminal_background_request_lifecycle.sql`
+excludes that marker from legacy/catalog/phase resume and orphan retrieval.
+Remote IDs, deadlines, reservations and unknown token counts remain intact;
+no historical generic rejection is reclassified. Same-provider duplicate-request
+protection remains in force. Other providers can complete the existing fallback
+round. Abandoned-request reconciliation also records explicit termination even
+when usage is absent. HTTP 200 error envelopes retain bounded error code/type
+metadata and are classified as provider failures rather than truncated content.
+Provider messages and response content are not added to diagnostic logs.
+
+Local verification passed 132 tests across catalog, continuous worker and
+round-robin suites, plus 111 model/contract/stream/QwenCloud tests. Coverage includes
+all three terminal statuses, legacy and catalog OpenAI-to-QwenCloud continuation,
+remote-ID mismatch, unknown accounting preservation, generic ambiguous errors
+remaining resumable, no duplicate POST, and stopped orphan polling. Backend
+full-suite checks, live provider evaluation and hosted release evidence are
+tracked by the current overall AI reliability entry; these local fixtures do
+not establish provider account availability or hosted acceptance.
+
+## November 3 — guarded API/worker release for AI execution reliability
+
+Stage: M4 model execution and M6 operations. The dedicated
+`deploy-ai-reliability.yml` workflow runs the complete package and operations
+checks on its review branch. Production access, image publication and release
+are restricted to manual dispatch. The release updates only the API and worker
+immutable images, waits for their old processes to drain, and applies exactly
+`20261102231710_writer_handoff_usage_blocker.sql` and
+`20261102231721_terminal_background_request_lifecycle.sql` in one transaction.
+A checksum ledger makes the release replayable and rejects changed migration
+content. Existing public rows and saved graph/accounting records are compared
+inside PostgreSQL; function ownership, grants, security-definer flags and
+search-path settings must remain unchanged. Browser execution grants remain
+denied. No processing retry or inference is performed by the updater.
+
+Image patches test workload UID, resource version and prior image. Other
+workload specs, frontend configuration, core/runtime secrets and native
+schedules must remain unchanged. Failure before the schema attempt restores
+only this release's image changes; an ambiguous schema acknowledgement retains
+the runtime compatible with either schema. Temporary administrative and runner
+credentials are cleaned. Existing administrative resources are not adopted.
+
+Local validation: all nine focused release guards passed, including the actual
+migrations against the full schema as a restricted application owner, repeated
+application, rejection/rollback of altered business rows and grants, checksum
+drift, concurrent workload replacement/image changes and failure-path cleanup.
+Python compilation and diff whitespace checks passed. These are local fixture
+and guard results. Publication, production deployment and live model acceptance
+remain pending and must be recorded with their exact source/run evidence by the
+release owner.
+
+## November 3 — bounded live AI contract evaluation
+
+The Owner explicitly requested live AI model and prompt testing. A dedicated
+manual GitHub workflow evaluates up to four enabled OpenAI/QwenCloud catalog
+models against eight isolated synthetic cases each, with a hard ceiling of
+32 generation requests and 4,096 output tokens per request. Push events run
+only offline guards. Live execution requires the explicit manual `run_live`
+input; it reads the current catalog and runtime key aliases without persisting
+synthetic application records or changing routing, permissions, jobs or usage.
+
+The evaluator calls the actual `executeModel`, prompt constructors, adapter
+transports and canonical result validators. Cases cover connection/background
+completion, English evidence to Arabic output, Arabic evidence to English
+output, untrusted instructions, unknown company fit, draft structure and
+declared company claims, incorrect source-quote repair, and an unsupported
+company claim in grounding. New analysis/repair tests use semantic policy 4;
+classification uses 3 and other phases use 2, with verifier policy 2.
+Draft-case acceptance covers canonical structure and declared claims; it is
+not a semantic audit of arbitrary generated prose or a full proposal-to-Word
+acceptance. These deliberately small synthetic cases are a diagnostic suite,
+not a held-out estimate of production accuracy.
+
+Each case records exact prompt hash, contract result, bounded error metadata,
+measured usage (unknown remains explicit), elapsed time and background cleanup.
+Terminal failed/cancelled background responses are not repeatedly polled. A
+process interruption retains completed case receipts with explicit incomplete
+status and lower-bound request counts. Private encrypted output also contains
+a read-only projection of current routes, frozen active assessment pools and
+provider usage history, to resolve routing causes without exporting prompts,
+documents or credentials. Key values pass only through child stdin in memory.
+
+Verification: six Python operational guards and seven Vitest evaluator tests
+pass; the Node 24 native TypeScript-transform import succeeds. The happy-path
+fixture traverses all eight real prompt/validator paths with mocked transport;
+separate tests cover actual 401 normalization, zero accidental activation,
+request bounds, wrong quantities/obligation strength, credential isolation and
+failed/cancelled background termination. No live request or hosted acceptance
+is claimed by this implementation entry. Runtime deployment and saved-work
+recovery are separate actions; the bootstrap deployment is not invoked.
+
+The first activated run `41545119569` stopped during read-only routing diagnosis
+before the provider subprocess started. Its SQL used the reserved PostgreSQL
+keyword `current_catalog` as an unquoted CTE identifier; this was reproduced
+against the complete local migration schema. The CTE is now named
+`catalog_metadata`, preserving the private report field name. Both catalog and
+routing SQL execute successfully as read-only transactions in the full-schema
+PGlite regression, and that regression now gates the live workflow. Failure
+receipts retain a fixed orchestration stage and sanitized SQLSTATE/line, so a
+future setup error can be identified without emitting SQL, provider content or
+credentials. The interrupted run submitted zero model requests and supplies no
+live model acceptance evidence.
+
+The content-permission diagnostic now separately projects current discovery
+policy flags, provider inclusion, approval timestamp/current membership, and
+aggregate exact-hash grants for frozen assessment notice/verified company
+references. It includes valid interactive request receipts and later explicit
+revocation counts, matching the October 31 requested-processing distinction:
+selected requested notice/style material can bypass repeated permission checks,
+while verified company evidence retains its existing authorization requirements.
+No content-check/preflight/autoauthorization function is invoked. The SQL uses
+read-only repeatable-read isolation, exact database/workspace guards and bounded
+execution; it returns no document text, content hashes, user or entity IDs,
+credential aliases or secret values. Missing QwenCloud consent remains missing.
+
+Local verification: all five exact catalog/routing/content diagnostic SQL tests
+pass against the complete current migration schema, including wrong-target
+rejection, populated explicit/policy/revoked reference counts, requested versus
+automatic assessment distinctions, unchanged authorization rows, and sensitive
+projection exclusions. A current policy snapshot does not establish its state
+on October 31; historical cause requires separate timestamped evidence. Hosted
+execution of this added diagnostic completed in the private live evaluation
+reports; the reconciled current-policy finding appears in the integrated
+verification entry above.
+
+## November 3 — versioned planning ownership guidance
+
+Stage: M4 planning and evidence validation. The bounded live blueprint case
+failed twice on Qwen3.8 despite valid JSON and exact source quotations. The
+private synthetic diagnostic candidate listed both buyer requirements in
+processed IDs, cited decisions and missing-company questions, but contained
+only an executive-summary unit with no primary requirement owners. The existing
+production ownership validator correctly rejected it.
+
+New, unstarted structure/blueprint phases and their repair/verification phases
+pin semantic revision 5. Its separate planning policy distinguishes processed
+IDs from primary narrative ownership, retains ownership when company proof is
+missing, preserves assigned detail scope and frozen decisions, and supplies
+sanitized path/ID-specific repair actions. A partial verification content batch
+cannot establish global missing coverage. Existing revisions 0–4 and paid
+phase pins remain immutable; no ownership or evidence guard is relaxed.
+
+Local validation: 98 tests across planning policy, phase pins, analysis evidence
+and durable writer handoff pass. Synthetic Arabic/English regressions reproduce
+the rejected executive-only shape and validate a substantive narrative repair
+that preserves factual decisions and unresolved questions; wire hash snapshots
+cover all prior revisions, and real database tests cover new and existing pins.
+Backend typecheck passed after the concurrent validator-test changes. Bounded
+live revision-5 acceptance passed both fresh blueprint and captured-candidate
+repair in run `41550112563`; deployment and old-work recovery remain pending.
+
+## November 3 — durable repair of proposal planning coverage failures
+
+The activated synthetic QwenCloud evaluation returned schema-valid blueprint
+JSON with both processed requirement IDs but only an executive-summary unit;
+neither requirement had a primary narrative owner. Production already invokes
+blueprint, structure and planning-detail validators inside the writer phase,
+before success/acceptance. Their bare domain errors, however, lacked the typed
+diagnostics required by the durable writer handoff. Consequently the same
+unchanged planning prompt could consume the initial provider-attempt budget
+instead of entering the existing bounded correction phase.
+
+Existing planning rejection rules now attach bounded diagnostic reasons,
+structural paths and relevant reference IDs, including missing/duplicate
+owners, invalid section scope, template/decision references and unknown
+aliases. Validation and acceptance continue to use canonical requirement IDs;
+only diagnostic metadata is mapped back to the model-visible aliases for
+aliased planning. Structure diagnostics refer to its actual schema, excluding
+virtual blueprint units used internally for validation. No model budget,
+immutable result, existing prompt identity, usage receipt or authorization is
+rewritten; no validation condition is removed.
+
+Local verification: 85 tests across proposal blueprint, hierarchical planning,
+generation callback and durable writer-handoff suites pass; backend typecheck
+and diff whitespace checks pass. Two real-database graph regressions reproduce
+summary-only blueprint/structure outputs, retain each rejected paid candidate,
+enter one repair-result phase, perform independent grounding, and accept only
+the corrected full ownership map. They assert one initial writer plus one
+repair allowance, unchanged original settled usage/candidate evidence, and no
+new request on accepted replay. Additional regressions cover bounded metadata,
+actual schema paths, alias/canonical identity separation and unchanged rejection
+of invalid ownership, source references and detail scope. The separate bounded
+live acceptance passed in run `41550112563`, as recorded above. Production
+deployment and recovery of existing blocked work have not occurred.
