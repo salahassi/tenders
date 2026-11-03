@@ -4148,3 +4148,26 @@ actual schema paths, alias/canonical identity separation and unchanged rejection
 of invalid ownership, source references and detail scope. The separate bounded
 live acceptance passed in run `41550112563`, as recorded above. Production
 deployment and recovery of existing blocked work have not occurred.
+
+## November 3 — inspect the exact paid proposal before recovery
+
+A separate manual inspection workflow now accepts an encrypted exact-workspace,
+opportunity and proposal-plan selection. Its repeatable-read, read-only SQL
+returns private operational metadata for that opportunity: current/latest plan,
+proposal and opportunity revisions, original snapshot/source fingerprints,
+current document hashes/counts, workflow-admission gates, graph phases/budgets,
+accepted-request/unknown-usage indicators and available proposal-version IDs.
+It exports no document text, prompt, response, title, filename or credential.
+Public workflow logs contain only fixed inspection/cleanup status and the
+encrypted report's plaintext verification digest. Push on the dedicated recovery
+branch runs offline guards only; production inspection requires manual dispatch. Existing
+private encrypted transfer and uniquely owned SQL-client cleanup are reused.
+
+Five operational tests pass, including execution against the full migration
+schema, wrong-target/database rejection, private-field exclusion, preservation
+of original usage/graph/policy records and confirmation that no authorizing or
+canonical mutation wrapper appears in inspection SQL. No production inspection
+or recovery has run from this implementation. The existing authorization-only,
+never-sent resume helper remains unchanged; a paid correction-exhausted plan
+requires a separately reviewed canonical recovery action after current evidence
+and deployed-runtime verification.
