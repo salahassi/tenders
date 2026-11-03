@@ -1,0 +1,65 @@
+name: Apply reviewed recheck binding and model admission SQL only
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [codex/ai-reliability-resume]
+    paths:
+      - .github/workflows/deploy-model-admission.yml
+      - backend/scripts/ops/model-admission-update.py
+      - backend/scripts/ops/test_model_admission_update.py
+      - backend/supabase/migrations/20261103031500_analysis_recheck_prompt_identity.sql
+      - backend/supabase/migrations/20261103032000_model_admission_fairness.sql
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+      - name: Verify packages and exact SQL release guards
+        run: |
+          npm ci --prefix frontend
+          npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          npm --prefix frontend run typecheck
+          npm --prefix frontend test -- --maxWorkers=1
+          npm --prefix frontend run build
+          npm --prefix backend run typecheck
+          npm --prefix backend test -- --maxWorkers=1
+          npm --prefix backend run build
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
+          python3 -m unittest discover -s backend/deploy/kubernetes -p 'test_*.py'
+      - name: Apply the exact SQL while preserving current runtimes and queued work
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/model-admission-update.py
+      - name: Remove temporary cluster credentials
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil
+          run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+          if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):
+              raise SystemExit('Runner cleanup identity invalid.')
+          directory=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+run+'-'+attempt)
+          if directory.exists():shutil.rmtree(directory)
+          print('Temporary model admission release credentials removed.')
+          PY

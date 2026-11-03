@@ -8,6 +8,7 @@ import { modelPrompt, sha256 } from "../../supabase/functions/_shared/model";
 import { candidateContent } from "../../supabase/functions/_shared/modelGrounding";
 import { taskInput } from "../../supabase/functions/_shared/generation";
 import { VERIFICATION_INSTRUCTIONS_V2 } from "../../supabase/functions/_shared/modelVerificationInstructions";
+import { semanticPolicyText } from "../../supabase/functions/_shared/modelSemanticInstructions";
 
 type Fixture = Awaited<ReturnType<typeof workflowFixture>>;
 export function recheckHelpers(f: Fixture) {
@@ -235,18 +236,18 @@ export async function createRecheckFixture(f: Fixture) {
     value: { result: candidate, producer },
   });
   const candidateHash = await sha256(JSON.stringify(saved.value.result));
-  const writerHash = await sha256(
-    modelPrompt(
-      "analyze_chunk",
-      input.context,
-      input.evidence,
-      input.requiredIds,
-      "en",
-      true,
-      2,
-      4,
-    ),
+  const writerPrompt = modelPrompt(
+    "analyze_chunk",
+    input.context,
+    input.evidence,
+    input.requiredIds,
+    "en",
+    false,
+    1,
+    4,
   );
+  const writerHash = await sha256(writerPrompt);
+  const writerPromptVersion = JSON.parse(writerPrompt).prompt_version;
   const usage = (
     await f.db.query<any>(
       `insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,
@@ -265,8 +266,7 @@ export async function createRecheckFixture(f: Fixture) {
         {
           input_hash: writerHash,
           graph_thread: threadId,
-          prompt_version:
-            "analyze_chunk.v1.analysis-evidence-v1.tenderdesk-semantic-fidelity-v1",
+          prompt_version: writerPromptVersion,
         },
         f.owner,
       ],
@@ -286,8 +286,7 @@ export async function createRecheckFixture(f: Fixture) {
       {
         input_hash: writerHash,
         graph_thread: threadId,
-        prompt_version:
-          "analyze_chunk.v1.analysis-evidence-v1.tenderdesk-semantic-fidelity-v1",
+        prompt_version: writerPromptVersion,
       },
       connection.id,
       model.id,
@@ -405,12 +404,23 @@ export async function createRecheckFixture(f: Fixture) {
       );
     }
   }
-  await store.action("result_put", {
-    key: "semantic-instructions-" + "c".repeat(64),
+  const writerPin = await store.action("result_put", {
+    key: "semantic-instructions-" + (await sha256(`${prefix}:candidate-0`)),
     value: {
       version: 4,
-      legacy_input_hash: writerHash,
-      instructions: "Immutable historical writer policy.",
+      legacy_input_hash: await sha256(
+        modelPrompt(
+          "analyze_chunk",
+          input.context,
+          input.evidence,
+          input.requiredIds,
+          "en",
+          false,
+          1,
+          0,
+        ),
+      ),
+      instructions: semanticPolicyText(4),
     },
   });
   await f.db.query(
@@ -517,6 +527,8 @@ export async function createRecheckFixture(f: Fixture) {
     candidate: saved,
     candidateHash,
     writerHash,
+    writerPromptVersion,
+    writerPin,
     usage,
     retained,
     verificationPins,

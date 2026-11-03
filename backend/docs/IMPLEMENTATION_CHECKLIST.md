@@ -4800,3 +4800,138 @@ sentinels, and byte-for-byte preservation of queue/accounting/operations rows.
 Independent source review found no blocker. Diff checks pass. This is an
 operations inspection change only; no runtime, migration, business logic,
 production query or provider call was changed or executed by these tests.
+
+## November 3 — verifier-recheck release deployed; activation remains pending
+
+[Deployment workflow 41566561043](https://github.com/salahassi/tenders/actions/runs/41566561043)
+succeeded for source `4ab0790c04a00e903733df1c29ec3846ef04ac4a`. Both API and
+worker now use immutable runtime
+`sha256:bded9f019592be84ae45e078d55a52e438c3f6942b2bd1bf35d148d4ff0d6c4a`.
+API readiness was confirmed at 02:41:21 UTC and worker readiness at 02:41:32 UTC.
+Old workers drained before schema application; the exact worker strategy was
+restored and its rollout marker removed. Final acceptance and temporary
+administrator cleanup completed at 02:42:14 UTC.
+
+The applied migration `20261103022500_analysis_verifier_recheck.sql` has SHA-256
+`cead30c43776e35822e4fa63476223a5ff4abe8de35218286d66dd5bd8c22382`, recorded
+under release ledger key `analysis-verifier-recheck-v1`. Acceptance confirmed
+preserved pre-existing rows and authorities, configuration and other workloads,
+and unchanged frontend image
+`sha256:b90ee4cea47e8208dd785aba618caaf89aadf3c8fd15e4c8172633b2883b88af`.
+Deployment created zero recheck children and retried no processing. Source and
+schema application are complete; production recheck activation and proposal
+completion remain pending separate evidence.
+
+The deployment gates passed **2,332 tests**: **1,785 backend**, **269 frontend**,
+**265 operations** and **13 renderer** tests, plus both package typecheck/build
+checks. These final workflow results supersede the earlier pending full-suite
+status.
+
+The metadata-only diagnostic source `942c6c6acfd9ec2d89945ce65c0b4877056b4729`
+was inspected successfully by
+[workflow 41567339637](https://github.com/salahassi/tenders/actions/runs/41567339637).
+That read-only snapshot showed effective model capacity of two requests, one
+reserved request and a healthy scheduler. Capacity was not full in that
+snapshot; these observations do not establish the root cause of the remaining
+processing delay or prove that the selected continuation was eligible to run.
+
+## November 3 — preserve model admission fairness across accepted polling
+
+A fully migrated synthetic reproduction identified a queue starvation cycle:
+with two model slots, one long accepted request and repeated background arrivals,
+background admission plus accepted polls repeatedly returned the shared six-slot
+cursor to background. Eight cycles admitted eight background requests and served
+sixteen polls while an eligible proposal continuation received zero attempts.
+The proposal was immediately claimable when the cursor changed. This is a local
+real-claim-RPC reproduction; production metadata alone did not establish the bug.
+
+New additive migration `20261103032000_model_admission_fairness.sql` introduces
+private workspace model-admission state independently of the existing local/poll
+cursor. An eligible preferred business class retains its next admission until
+it actually claims capacity-requiring work. When it has no eligible model work,
+the other class proceeds. Only new model work consumes this turn; accepted polls,
+local transitions, source collection/candidate processing, notice fetches and
+cancellation do not. Proposal/background admission remains the existing tested
+one-to-one policy. The original six slots, owner/deadline ordering, due/executor/
+OCR/dependency checks and workspace lock remain intact. Eligibility uses the same
+installed predicate in both selections. An unrelated row lock can conservatively
+delay a claim without consuming credit; ordinary claimants already share the
+workspace lock. Existing jobs, accounting, graph histories and cursor rows are
+not rewritten by the migration. New state is initialized lazily and has RLS
+enabled with no browser/service grants.
+
+All **163 tests across seven focused queue/worker suites** pass, including eleven
+new regressions. The exact cycle now serves the waiting proposal after capacity
+returns for both known terminal-unknown and settled fixture outcomes, retaining
+remote identities and the long-running reserved receipt unchanged. Tests also
+cover limits one/two, continued polls/local work while full, unchanged local-only
+cursor/admission credit, capacity-free exemptions, absent/ineligible preferred
+classes, and private-state permissions. Existing source/OCR, owner, continuation,
+dependency and future-due regressions remain green. Backend typecheck and diff
+checks pass. SQL SHA-256 is
+`3bb13dd60fb4322ac3ba70c534ec6165a668da547318d1ea49232ae1d401c927`.
+Deployment and hosted progress remain pending; these tests made no live calls.
+
+## November 3 — atomic SQL release for recheck identity and model admission
+
+A SQL-only release is being prepared for the additive prompt-identity correction
+`20261103031500_analysis_recheck_prompt_identity.sql` and queue-fairness change
+`20261103032000_model_admission_fairness.sql`. It requires the deployed `bded9f…`
+API/worker image, unchanged `b90ee4…` frontend and the prior verified AI/recheck
+release receipts. It obtains cluster/database access without building images or
+requesting registry push credentials. No rollout, direct job claim, wake, retry or
+child activation is part of the release. After the transaction commits, the
+existing scheduler may advance already eligible queued work using the corrected
+admission rule.
+
+Both exact sources apply in one restricted-owner, repeatable-read transaction.
+Only `analysis_recheck_binding(uuid)` and `next_fair_job(uuid,boolean)` may change;
+the new private admission cursor must initially be empty. Every pre-existing
+public/private row, existing function authority and unrelated body, table
+authority/structure, policy and role membership is checked for preservation.
+Separate source-checksum receipts commit together; partial batch receipts and
+checksum drift refuse. An identical replay preserves a cursor subsequently used
+by the ordinary scheduler. Existing runtimes, all deployment identities/specs,
+configuration and schedules are checked before SQL and after public acceptance
+and administrator cleanup. Ambiguous SQL acknowledgement requires verification
+or replay of the same batch, with no runtime rollback or accounting reset.
+
+Exact-source tests under managed role names, failure/rollback tests and independent
+review are in progress. Production application and actual proposal recovery remain
+separate, pending evidence.
+
+## November 3 — immutable writer prompt identity correction
+
+[Production check 41568178446](https://github.com/salahassi/tenders/actions/runs/41568178446)
+refused with `MODEL_RECHECK_IDENTITY_CHANGED` and zero activated children or
+model calls. The deployed admission guard incorrectly expected an
+`analyze_chunk.*` prompt identifier. The actual task registry emits
+`tenderdesk-v3.evidence-v1.tenderdesk-semantic-fidelity-v1.economy-v1` for the
+retained semantic-four writer. Reconstructing the private frozen request through
+the real `taskInput` and `modelPrompt` functions exactly matched the paid request
+hash. No customer identifiers, prompt payload or source content are included in
+the regression fixtures or this checklist.
+
+The previous synthetic fixture invented the same incorrect prefix and therefore
+missed the defect. It now derives both writer identity and request hash from the
+production prompt builder, and saves the actual semantic-four phase policy.
+Against the exact previously deployed migration boundary, this corrected fixture
+reproduced the production refusal. The additive migration
+`20261103031500_analysis_recheck_prompt_identity.sql` replaces exactly that
+predicate, also requiring the immutable semantic-four writer pin at the exact
+candidate phase. It preserves all other source, receipt, producer, graph,
+candidate, prior-verifier and single-writer admission checks. The already deployed
+migration, historical accounting, reports and budgets are not rewritten.
+
+All **98 full-schema recheck tests** across six suites pass with the correction,
+including restricted production-role execution, history preservation and
+writer-path denial. The 15 focused correction tests prove the deployed-boundary
+refusal, additive repair with every application table and existing authority
+unchanged, and atomic refusal of fabricated/legacy prompt identities, missing or
+wrong writer phase/revision, corrupted pin content/hash and a mismatched paid
+request hash. Backend typechecking and formatting checks pass. Independent prompt
+and provider reviews found no blocker. The correction SQL SHA-256 is
+`30f79868deaa94daab1554584aede2545a1611a29f7b19d26503e75f57720f14`;
+the deployed migration retains its original `cead30c4…` checksum. Production
+application and actual recheck acceptance remain pending the separate reviewed
+SQL release.
