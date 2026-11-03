@@ -4772,3 +4772,31 @@ schema under the restricted application owner, no record changes, a newer digest
 through all three guards, drift refusal before SQL/publication, and bounded public
 receipts. This prepares a fresh post-deployment inspection; it does not dispatch
 inspection, authorize a stale selection, or change business state.
+
+## November 3 — private inspection of workspace model capacity and dispatch
+
+The existing proposal inspector now reads bounded workspace execution metadata
+alongside the selected proposal. It reports the configured/effective parallel
+request limit, exact reserved/running counts, up to 64 reserved request owners
+and running jobs, safe lease/deadline flags, queue work-class due counts,
+scheduler heartbeat, dispatcher timestamps and fairness cursor. Selected jobs
+also expose a small checkpoint projection, latest attempt diagnostics and both
+semantic and verification policy versions. This can distinguish an outside-plan
+accepted request occupying capacity from a stopped dispatcher or future-due
+proposal continuation without claiming that raw due counts prove eligibility.
+
+The transaction remains repeatable-read and read-only. The optional Kubernetes
+outbox is queried only if its table exists, using the exact installed runtime
+schema. No claim, wake, polling, authorization, model or business mutation is
+invoked. Remote request IDs, lease tokens, dispatcher secrets, routing secrets,
+provider payloads and customer/source text are excluded. All added metadata
+uses the existing encrypted private report; public receipts remain unchanged.
+
+Twenty focused inspector/successor/observer tests pass. The expanded synthetic
+full-schema fixture covers absent and present runtime outbox installations,
+a reserved request owned by another assessment, live worker leases, due work
+with supported/unsupported executor versions, private checkpoint/HTTP/lease
+sentinels, and byte-for-byte preservation of queue/accounting/operations rows.
+Independent source review found no blocker. Diff checks pass. This is an
+operations inspection change only; no runtime, migration, business logic,
+production query or provider call was changed or executed by these tests.
