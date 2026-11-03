@@ -4220,3 +4220,78 @@ Its paid intermediate attempts, unknown usage and exhausted correction budgets
 remain intact. Canonical successor recovery and actual browser draft Word
 acceptance are pending; the preceding pre-release pending statements describe
 their observation time, not the now-completed runtime deployment.
+
+## November 3 — canonical successor for the inspected paid proposal
+
+The Owner explicitly authorized deployment, resumed processing and real output
+verification. The verified private inspection found the exact original proposal
+still blocked in analysis: twelve queued steps, no completed step or final
+accepted graph result, and 98 retained provider receipts (59 settled, 39 unknown).
+Its accepted remote deadlines expired on November 1; no target reservation or
+lease remains active. Historical unknown accounting remains unknown.
+
+A separate recovery helper now delegates one canonical `generation.cancel` plus
+`proposal.generate` transaction for that exact inspected target. It verifies the
+reviewed ready API/worker digest, active canonical Owner authority, latest plan,
+plan/opportunity/proposal revisions, exact document/job/usage fingerprints,
+current evidence revision and unchanged workflow admission. The new plan must
+preserve the original requested language and selected document IDs/content
+hashes. The current admission remains unchanged (workflow 1); fresh analysis
+phases naturally use the deployed evidence policy. No old prompt pin, received
+candidate allowance, source classification, content grant or usage value changes.
+
+Default check mode rolls back every canonical mutation. Explicit manual restart
+runs only after offline checks and under the production mutex. The transaction
+compares original plan/job inputs and full retained step, requirement, source,
+usage, successful attempt and graph/result/checkpoint/budget fingerprints before
+commit. A retained audit marker makes an ambiguous receipt safely replayable
+without a second successor. Only private encrypted receipts contain target
+identifiers; public output is fixed status/count plus report verification digest.
+
+Local verification: five successor operational tests and five inspector tests
+pass. The complete-schema integration uses the restricted production ownership
+model and covers rollback check, exact-input refusal, recent unknown/active
+remote/reserved guards, unrelated historical usage, final completed-work refusal,
+original source/language preservation, admission preservation, atomic rollback
+of a simulated accounting defect, retained successful attempts and idempotent
+replay. Python compilation and diff whitespace checks pass. Production mutation
+has not been invoked by this implementation; dispatch, resulting successor
+progress and actual Word export remain separately recorded acceptance.
+
+## November 3 — guarded actual draft Word export acceptance prepared
+
+The separate `accept-actual-proposal-export.yml` workflow accepts an encrypted
+selection of one completed plan and its exact current proposal version/revision.
+Push on `codex/ai-reliability-resume` runs offline guards only; actual export
+requires explicit manual activation and the expected immutable runtime image.
+Read-only SQL verifies that target and one active allowlisted Owner. The helper
+uses the existing genuine Auth `generate_link`/`verify` session pattern without
+sending email, changing passwords, creating accounts or forging a browser token.
+User lookup and application bootstrap verify that identity; local logout runs
+after success or failure. Cluster/deployment credentials and their environment
+paths are excluded from the Node/Chromium child.
+
+Primary acceptance opens the deployed ProposalEditor and clicks its complete
+draft Word download. Browser mutations are restricted to draft preparation,
+generated-artifact reservation, matching private Storage uploads and completion:
+at most two buyer-defined volumes and eight export writes. There are no model,
+approval, review, invitation or submission commands. The explicit HTTP fallback
+uses the actual frontend renderer; it never follows a started browser attempt.
+Owner identity and exact current plan/version are rechecked immediately before
+export and before success. Each browser file must match an independent
+authenticated server download, its registered SHA-256, exact authorized DOCX
+content and bundled font/structure checks. Concurrent role/version changes,
+missing server bytes and mismatched files fail acceptance. Real approval
+readiness is observed without filling missing business facts or approving them.
+
+The encrypted private report retains verified Word bytes, exact export/artifact
+identities, readiness blockers and any partial export identities. Public receipts
+contain fixed path/status, counts and the report verification digest only. No
+customer document or screenshot enters public workflow artifacts. Local checks
+pass: **15 Node acceptance tests, five full-schema selection tests, eight Python
+guards, backend typecheck and diff whitespace checks**. Node 24 CLI import and
+headless Chromium launch smoke checks also pass with browser networking blocked.
+Independent review closed Owner-role, concurrent-target, server-byte proof and
+child-credential-boundary findings. Harness source was committed in `a7ad08a`.
+Actual hosted draft export and document layout review remain pending the resumed
+plan's completed current version; these preparation checks do not claim either.
