@@ -64,6 +64,21 @@ class EvaluationGuards(unittest.TestCase):
         self.assertFalse(report['complete']); self.assertFalse(report['passed'])
         self.assertEqual(len(report['results']),1)
         self.assertTrue(report['generation_count_is_lower_bound'])
+    def test_planning_repair_requires_qwen_max_and_two_exact_cases(self):
+        row=dict(self.rows()[1],model='qwen3.8-max')
+        bindings={row['credential_alias']:'private-test-value'}
+        self.assertEqual(len(m.targets([row],bindings,'planning_repair')),1)
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_PLANNING_TARGET_INVALID'):m.targets([dict(row,model='deepseek-v4-pro')],bindings,'planning_repair')
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_CATALOG_LIMIT'):m.targets([row,row],bindings,'planning_repair')
+        self.assertIn("m.model='qwen3.8-max'",m.catalog_sql('planning_repair'))
+        self.assertIn('LIMIT 2',m.catalog_sql('planning_repair'))
+        report=m.parse_execution_output('',1,False,'planning_repair')
+        report.update(complete=True,generations=2,results=[{'provider':'qwencloud','model':model,'case':case,'passed':False} for model,case in m.PLANNING_PAIRS])
+        self.assertEqual(m.validate_report(report,1,'planning_repair'),report)
+        report['generations']=3
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_REPORT_INVALID'):m.validate_report(report,1,'planning_repair')
+        report['generations']=2;report['results'][0]['case']='source_listing_exact_notice'
+        with self.assertRaisesRegex(m.EvaluationError,'EVAL_REPORT_INVALID'):m.validate_report(report,1,'planning_repair')
     def test_sql_failure_reports_fixed_stage_and_sqlstate_without_subprocess_or_private_error(self):
         with tempfile.TemporaryDirectory() as parent:
             directory=Path(parent)/'private';directory.mkdir()
@@ -85,7 +100,7 @@ class EvaluationGuards(unittest.TestCase):
         self.assertIn("github.event_name == 'workflow_dispatch' && inputs.run_live",workflow)
         self.assertIn('default: false',workflow)
         self.assertIn('default: core',workflow)
-        self.assertIn('options: [core, extended, extended_recheck]',workflow)
+        self.assertIn('options: [core, extended, extended_recheck, planning_repair]',workflow)
         self.assertIn('liveModelEvaluationExtended.test.ts',workflow)
 
 if __name__=='__main__':unittest.main()

@@ -10,6 +10,7 @@ import {
 } from "../../supabase/functions/_shared/model.ts";
 import { capabilitySchema } from "../../supabase/functions/_shared/modelContract.ts";
 import { extendedFixtures } from "./live-model-evaluation-extended.mjs";
+import { planningFixtures } from "./live-model-evaluation-planning.mjs";
 import {
   candidateContent,
   validateGroundingReport,
@@ -30,6 +31,11 @@ export const RECHECK_LIMITS = Object.freeze({
   ...EXTENDED_LIMITS,
   generations: 4,
 });
+export const PLANNING_LIMITS = Object.freeze({
+  ...LIMITS,
+  models: 1,
+  generations: 2,
+});
 export const RECHECK_PAIRS = Object.freeze(
   [
     ["deepseek-v4-pro", "proposal_structure_ownership"],
@@ -40,14 +46,16 @@ export const RECHECK_PAIRS = Object.freeze(
 );
 export function limitsForSuite(suite = "core") {
   check(
-    ["core", "extended", "extended_recheck"].includes(suite),
+    ["core", "extended", "extended_recheck", "planning_repair"].includes(suite),
     "EVAL_SUITE_INVALID",
   );
-  return suite === "extended_recheck"
-    ? RECHECK_LIMITS
-    : suite === "extended"
-      ? EXTENDED_LIMITS
-      : LIMITS;
+  return suite === "planning_repair"
+    ? PLANNING_LIMITS
+    : suite === "extended_recheck"
+      ? RECHECK_LIMITS
+      : suite === "extended"
+        ? EXTENDED_LIMITS
+        : LIMITS;
 }
 const check = (ok, code) => {
   if (!ok) throw new ModelError(code);
@@ -108,6 +116,7 @@ const analysis = (evidence) => ({
 });
 export async function fixtures(suite = "core") {
   limitsForSuite(suite);
+  if (suite === "planning_repair") return planningFixtures();
   if (suite !== "core") return extendedFixtures();
   const analyzeCase = (id, evidence, language = "en") => ({
     id,
@@ -307,6 +316,11 @@ export function validateTargets(targets, suite = "core") {
         ),
       "EVAL_RECHECK_TARGETS_INVALID",
     );
+  if (suite === "planning_repair")
+    check(
+      targets.length === 1 && targets[0].model === "qwen3.8-max",
+      "EVAL_PLANNING_TARGET_INVALID",
+    );
 }
 export async function evaluate(
   targets,
@@ -317,6 +331,9 @@ export async function evaluate(
 ) {
   validateTargets(targets, suite);
   const limits = limitsForSuite(suite);
+  const diagnosticSuite = ["extended_recheck", "planning_repair"].includes(
+    suite,
+  );
   let generations = 0,
     requests = 0;
   const results = [],
@@ -348,7 +365,7 @@ export async function evaluate(
     });
     // This branch is restricted to selected synthetic diagnostic requests. No
     // headers or request bodies are captured; the parent encrypts these fields.
-    if (suite === "extended_recheck" && response.status >= 400) {
+    if (diagnosticSuite && response.status >= 400) {
       try {
         const body = await response.clone().json();
         const message = body?.error?.message ?? body?.message;
@@ -372,13 +389,13 @@ export async function evaluate(
         ),
     )) {
       providerErrors = [];
-      const semanticRevision = ["analyze_chunk", "repair_result"].includes(
-        fixture.task,
-      )
-        ? 4
-        : fixture.task === "classify_opportunity"
-          ? 3
-          : 2;
+      const semanticRevision =
+        fixture.semanticRevision ??
+        (["analyze_chunk", "repair_result"].includes(fixture.task)
+          ? 4
+          : fixture.task === "classify_opportunity"
+            ? 3
+            : 2);
       const verificationRevision = 2;
       const start = Date.now();
       let remote = null,
@@ -425,6 +442,16 @@ export async function evaluate(
           if (error) code = error;
         },
         environment: () => environment,
+        validateCandidate: (result) => {
+          if (diagnosticSuite) candidate = result;
+          fixture.domainValidate?.(result);
+        },
+        invalidCandidate: async (result) => {
+          if (diagnosticSuite) {
+            candidate = result;
+            return "repair";
+          }
+        },
         beginAttempt: async () => "evaluation-attempt",
         endAttempt: async (_id, status, sent, _usage, metadata) =>
           attempts.push({
@@ -472,9 +499,10 @@ export async function evaluate(
               {
                 semanticRevision,
                 independentGrounding: fixture.task === "draft_section",
+                repairContentValidation: diagnosticSuite,
               },
             );
-            if (suite === "extended_recheck") candidate = result;
+            if (diagnosticSuite) candidate = result;
             fixture.assert(result);
             passed = true;
             code = "SUCCEEDED";
@@ -531,7 +559,7 @@ export async function evaluate(
         polls,
         attempts,
         cleanup,
-        ...(suite === "extended_recheck"
+        ...(diagnosticSuite
           ? {
               diagnostic_only: true,
               target_capabilities: target.capabilities,

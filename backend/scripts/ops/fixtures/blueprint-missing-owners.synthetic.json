@@ -1,0 +1,118 @@
+{
+  "version": 2,
+  "processed_requirement_ids": [
+    "req_a",
+    "req_b"
+  ],
+  "sections": [
+    {
+      "key": "executive-summary",
+      "title": "الملخص التنفيذي (Executive Summary)",
+      "purpose": "تقديم نظرة عامة على العرض الفني والالتزام بنطاق المشروع دون التطرق لتفاصيل المتطلبات الفردية.",
+      "volume": "shared",
+      "mode": "executive_summary",
+      "units": [
+        {
+          "key": "exec-overview",
+          "title": "نظرة عامة على الحل المقترح",
+          "purpose": "تلخيص فهمنا لمتطلبات العميل والتزامنا بتقديم بوابة إلكترونية (Portal) تلبي احتياجاته ضمن الإطار الزمني المطلوب، مع التأكيد على أن جميع الالتزامات مشروطة بتأكيد المالك (Owner).",
+          "requirement_ids": [],
+          "secondary_links": [],
+          "target_words": 200,
+          "decision_ids": [
+            "dec-delivery-fact",
+            "dec-audit-fact"
+          ]
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "key": "dec-delivery-fact",
+      "statement": "يلتزم المورد بتسليم البوابة الإلكترونية خلال 30 يوماً. هذا شرط إلزامي من المشتري وليس التزاماً مؤكداً من الشركة لعدم وجود أدلة شركة موثقة.",
+      "kind": "buyer_fact",
+      "requirement_ids": [
+        "req_a"
+      ],
+      "evidence_refs": [
+        {
+          "id": "eval-rfp-delivery",
+          "quote": "The supplier shall deliver the portal within 30 days."
+        }
+      ]
+    },
+    {
+      "key": "dec-audit-fact",
+      "statement": "يجب أن تحتفظ البوابة بسجل تدقيق (Audit Log) لمدة 90 يوماً. هذا شرط إلزامي من المشتري.",
+      "kind": "buyer_fact",
+      "requirement_ids": [
+        "req_b"
+      ],
+      "evidence_refs": [
+        {
+          "id": "eval-rfp-audit",
+          "quote": "The portal must retain an audit log for 90 days."
+        }
+      ]
+    },
+    {
+      "key": "dec-proposed-portal-design",
+      "statement": "اقتراح تصميم هندسي للبوابة يدعم آلية تسجيل التدقيق وتخزين البيانات لمدة 90 يوماً، ويتضمن خطة تسليم تتوافق مع جدول زمني مدته 30 يوماً. هذا اقتراح تصميم وليس دليلاً على قدرات الشركة الحالية.",
+      "kind": "proposed_decision",
+      "requirement_ids": [
+        "req_a",
+        "req_b"
+      ],
+      "evidence_refs": []
+    },
+    {
+      "key": "dec-unresolved-team-capacity",
+      "statement": "[INPUT REQUIRED: تأكيد من المالك حول توفر فريق العمل التقني اللازم لتنفيذ وتسليم البوابة خلال 30 يوماً، حيث لا توجد بيانات شركة موثقة تثبت القدرة أو التوفر.]",
+      "kind": "unresolved_input",
+      "requirement_ids": [
+        "req_a"
+      ],
+      "evidence_refs": []
+    },
+    {
+      "key": "dec-unresolved-storage-infra",
+      "statement": "[INPUT REQUIRED: تأكيد من المالك حول البنية التحتية للتخزين المطلوبة للاحتفاظ بسجلات التدقيق لمدة 90 يوماً، نظراً لغياب أدلة الشركة التي تثبت امتلاك هذه البنية.]",
+      "kind": "unresolved_input",
+      "requirement_ids": [
+        "req_b"
+      ],
+      "evidence_refs": []
+    }
+  ],
+  "questions": [
+    {
+      "question": "هل يوجد نطاق تفصيلي محدد لميزات البوابة الإلكترونية (Portal Features) التي يجب تسليمها خلال 30 يوماً، أم أن النطاق مفتوح ويحتاج إلى تحديد من المشتري؟",
+      "blocking_level": "generation",
+      "requirement_ids": [
+        "req_a"
+      ]
+    },
+    {
+      "question": "ما هو الحجم المتوقع لسجلات التدقيق (Audit Logs) يومياً لتحديد متطلبات التخزين اللازمة لفترة الـ 90 يوماً؟",
+      "blocking_level": "advisory",
+      "requirement_ids": [
+        "req_b"
+      ]
+    },
+    {
+      "question": "[INPUT REQUIRED: ما هي الشهادات أو الخبرات السابقة للشركة في تطوير بوابات مشابهة لتأكيد القدرة على الالتزام بالجدول الزمني الإلزامي؟]",
+      "blocking_level": "finalization",
+      "requirement_ids": [
+        "req_a"
+      ]
+    },
+    {
+      "question": "[INPUT REQUIRED: هل تمتلك الشركة حالياً أنظمة تخزين آمنة وموثقة تدعم الاحتفاظ بالسجلات لفترات طويلة وفقاً لمتطلبات الامتثال؟]",
+      "blocking_level": "finalization",
+      "requirement_ids": [
+        "req_b"
+      ]
+    }
+  ]
+}

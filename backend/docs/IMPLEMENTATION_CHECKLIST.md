@@ -6,10 +6,10 @@ The Owner requests comprehensive model and prompt testing after the October 31
 QwenCloud activity stop. The isolated reliability change fixes terminal remote
 polling and misleading usage/identity diagnostics, and adds versioned analysis
 evidence instructions. Historical prompt pins, accepted requests, usage and
-business records are retained. Full GitHub verification of `850e74f` passes
-**1,584 backend tests in 94 files**, **265 frontend tests**, both packages'
-typechecks/builds, **194 operations tests** and **13 Kubernetes renderer tests**
-in [run 41547591561](https://github.com/salahassi/tenders/actions/runs/41547591561).
+business records are retained. Full GitHub verification of `33c4b23` passes
+**1,586 backend tests in 94 files**, **265 frontend tests**, both packages'
+typechecks/builds, **195 operations tests** and **13 Kubernetes renderer tests**
+in [run 41548918170](https://github.com/salahassi/tenders/actions/runs/41548918170).
 Focused independent
 review checked remote-ID matching, unknown accounting, failover, immutable prompt
 pins and private live-evaluation transport. A stale earlier operations run found
@@ -51,11 +51,31 @@ messages were not retained, so they are not guessed. All requests completed,
 with no remote cleanup pending. Measured usage is 34,451 input and 7,754 output
 tokens; three cases retain unknown usage. Its verified private transport object
 was deleted after download. A targeted diagnostic rerun of only these four
-model/case pairs is pending; it keeps their original prompts and request profiles.
-Its focused gates pass 19 Vitest tests, 11 Python tests and backend typecheck;
-the four original prompt hashes are unchanged, exactly four fetches are allowed,
-and bounded provider errors/failed synthetic candidates remain private and
-credential-redacted.
+model/case pairs completed in
+[run 41548978379](https://github.com/salahassi/tenders/actions/runs/41548978379),
+source `33c4b23b8717c01ce28a5e2ce525bd36824d7727`, using unchanged prompts and
+request profiles. All three DeepSeek requests passed; their earlier 400 errors
+were intermittent, and their precise cause is still unknown. Qwen's blueprint
+failed again: its processed-ID checklist listed both requirements, but the
+candidate contained only an executive summary and assigned neither requirement
+to a narrative unit. Known usage was 7,876 input and 2,305 output tokens, with
+no unknown usage or cleanup pending. The private report transport object was
+deleted after verified download.
+
+That captured failure exposed an application recovery defect: planning domain
+validators rejected the candidate before acceptance but omitted typed diagnostic
+details, so the graph skipped targeted repair and consumed normal writer
+attempts. The new correction annotates existing validation rules without relaxing
+them and maps diagnostic requirement IDs to the model-visible aliases. Durable
+blueprint and structure regressions prove one writer, one repair and one
+independent verifier, immutable rejected evidence/usage, and zero extra calls on
+accepted replay. Phase-pinned policy revision 5 additionally requires narrative
+ownership independently of processed-ID lists or missing company proof; revisions
+0–4 and existing paid phase pins retain their exact inputs. Focused suites pass
+85 domain/recovery tests, 98 prompt/pinning tests, and 21 evaluation tests, plus
+12 Python guards and backend typecheck (suite counts overlap). Final integrated
+CI and the two-request Qwen fresh-blueprint/captured-candidate repair evaluation
+are pending at this checkpoint.
 
 The extended fixtures, combined with the core suite, exercise all 13 registered
 model task types. Production structure, blueprint and review validators are
@@ -4055,3 +4075,63 @@ automatic assessment distinctions, unchanged authorization rows, and sensitive
 projection exclusions. A current policy snapshot does not establish its state
 on October 31; historical cause requires separate timestamped evidence. Hosted
 execution of this added diagnostic remains pending.
+
+## November 3 — versioned planning ownership guidance
+
+Stage: M4 planning and evidence validation. The bounded live blueprint case
+failed twice on Qwen3.8 despite valid JSON and exact source quotations. The
+private synthetic diagnostic candidate listed both buyer requirements in
+processed IDs, cited decisions and missing-company questions, but contained
+only an executive-summary unit with no primary requirement owners. The existing
+production ownership validator correctly rejected it.
+
+New, unstarted structure/blueprint phases and their repair/verification phases
+pin semantic revision 5. Its separate planning policy distinguishes processed
+IDs from primary narrative ownership, retains ownership when company proof is
+missing, preserves assigned detail scope and frozen decisions, and supplies
+sanitized path/ID-specific repair actions. A partial verification content batch
+cannot establish global missing coverage. Existing revisions 0–4 and paid
+phase pins remain immutable; no ownership or evidence guard is relaxed.
+
+Local validation: 98 tests across planning policy, phase pins, analysis evidence
+and durable writer handoff pass. Synthetic Arabic/English regressions reproduce
+the rejected executive-only shape and validate a substantive narrative repair
+that preserves factual decisions and unresolved questions; wire hash snapshots
+cover all prior revisions, and real database tests cover new and existing pins.
+The full backend type check is pending concurrent validator-test changes.
+Deployment, bounded live revision-5 acceptance and old-work recovery remain
+separate, pending evidence.
+
+## November 3 — durable repair of proposal planning coverage failures
+
+The activated synthetic QwenCloud evaluation returned schema-valid blueprint
+JSON with both processed requirement IDs but only an executive-summary unit;
+neither requirement had a primary narrative owner. Production already invokes
+blueprint, structure and planning-detail validators inside the writer phase,
+before success/acceptance. Their bare domain errors, however, lacked the typed
+diagnostics required by the durable writer handoff. Consequently the same
+unchanged planning prompt could consume the initial provider-attempt budget
+instead of entering the existing bounded correction phase.
+
+Existing planning rejection rules now attach bounded diagnostic reasons,
+structural paths and relevant reference IDs, including missing/duplicate
+owners, invalid section scope, template/decision references and unknown
+aliases. Validation and acceptance continue to use canonical requirement IDs;
+only diagnostic metadata is mapped back to the model-visible aliases for
+aliased planning. Structure diagnostics refer to its actual schema, excluding
+virtual blueprint units used internally for validation. No model budget,
+immutable result, existing prompt identity, usage receipt or authorization is
+rewritten; no validation condition is removed.
+
+Local verification: 85 tests across proposal blueprint, hierarchical planning,
+generation callback and durable writer-handoff suites pass; backend typecheck
+and diff whitespace checks pass. Two real-database graph regressions reproduce
+summary-only blueprint/structure outputs, retain each rejected paid candidate,
+enter one repair-result phase, perform independent grounding, and accept only
+the corrected full ownership map. They assert one initial writer plus one
+repair allowance, unchanged original settled usage/candidate evidence, and no
+new request on accepted replay. Additional regressions cover bounded metadata,
+actual schema paths, alias/canonical identity separation and unchanged rejection
+of invalid ownership, source references and detail scope. No external calls or
+production deployment were performed for this change; hosted acceptance and
+release evidence remain separate.

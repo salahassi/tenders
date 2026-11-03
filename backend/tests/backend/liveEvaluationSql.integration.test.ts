@@ -21,7 +21,7 @@ const script = (s: string) =>
       "current_database()<>'postgres'",
     )
     .replaceAll("SET LOCAL ROLE tdp_app_owner", "SET LOCAL ROLE postgres");
-it.each(["core", "extended", "extended_recheck"])(
+it.each(["core", "extended", "extended_recheck", "planning_repair"])(
   "executes the %s catalog projection against every current migration in a read-only transaction",
   async (suite) => {
     const py = readFileSync(
@@ -37,9 +37,14 @@ it.each(["core", "extended", "extended_recheck"])(
               "c.provider IN ('openai','qwencloud')",
               suite === "extended_recheck"
                 ? "c.provider='qwencloud' AND m.model IN ('deepseek-v4-pro','qwen3.8-max')"
-                : "c.provider='qwencloud'",
+                : suite === "planning_repair"
+                  ? "c.provider='qwencloud' AND m.model='qwen3.8-max'"
+                  : "c.provider='qwencloud'",
             )
-            .replace("LIMIT 5", "LIMIT 3")
+            .replace(
+              "LIMIT 5",
+              suite === "planning_repair" ? "LIMIT 2" : "LIMIT 3",
+            )
         : coreSql;
     const result = await f.db.exec(script(sql));
     expect(result.some((r) => r.rows.length === 1)).toBe(true);

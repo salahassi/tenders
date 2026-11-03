@@ -21,6 +21,11 @@ import {
   analysisEvidenceContract,
 } from "./modelAnalysisEvidenceInstructions.ts";
 import {
+  PLANNING_COVERAGE_INSTRUCTIONS_V1,
+  PLANNING_COVERAGE_PROMPT_V1,
+  planningCoverageContract,
+} from "./modelPlanningInstructions.ts";
+import {
   verificationPolicyText,
   verificationPolicyVersion,
 } from "./modelVerificationInstructions.ts";
@@ -1534,7 +1539,7 @@ export function modelPrompt(
     ...envelope,
     // Keep the semantic suffix recognized by the durable writer handoff. The
     // scope policy is separately versioned without changing older envelopes.
-    prompt_version: `${envelope.prompt_version}${semanticRevision === 3 ? "." + SCOPE_COMPARISON_PROMPT_V1 : ""}${semanticRevision === 4 ? "." + ANALYSIS_EVIDENCE_PROMPT_V1 : ""}.${SEMANTIC_PROMPT_V1}${semanticRevision >= 2 ? ".economy-v1" : ""}`,
+    prompt_version: `${envelope.prompt_version}${semanticRevision === 3 ? "." + SCOPE_COMPARISON_PROMPT_V1 : ""}${semanticRevision === 4 ? "." + ANALYSIS_EVIDENCE_PROMPT_V1 : ""}${semanticRevision === 5 ? "." + PLANNING_COVERAGE_PROMPT_V1 : ""}.${SEMANTIC_PROMPT_V1}${semanticRevision >= 2 ? ".economy-v1" : ""}`,
     ...(semanticRevision >= 2
       ? { output_policy: OUTPUT_ECONOMY_INSTRUCTIONS }
       : {}),
@@ -1550,6 +1555,12 @@ export function modelPrompt(
             context,
             evidence,
           ),
+        }
+      : {}),
+    ...(semanticRevision === 5
+      ? {
+          planning_coverage_policy: PLANNING_COVERAGE_INSTRUCTIONS_V1,
+          planning_coverage_contract: planningCoverageContract(task, context),
         }
       : {}),
   });

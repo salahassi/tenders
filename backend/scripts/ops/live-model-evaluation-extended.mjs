@@ -77,13 +77,11 @@ export function extendedFixtures() {
       text: "Approved training workshop rate: 100 per workshop. Rate ID: eval-approved-workshop-rate. This rate applies only to workshops, not portal support.",
     },
   ];
-  const commercialRequirements = commercialEvidence
-    .slice(0, 2)
-    .map((e, i) => ({
-      id: i ? "req_support" : "req_workshops",
-      text: e.text,
-      source_refs: [{ id: e.id, quote: e.text }],
-    }));
+  const commercialRequirements = commercialEvidence.slice(0, 2).map((e, i) => ({
+    id: i ? "req_support" : "req_workshops",
+    text: e.text,
+    source_refs: [{ id: e.id, quote: e.text }],
+  }));
   const reviewContext = {
     requirements,
     sections: [
@@ -193,10 +191,8 @@ export function extendedFixtures() {
       },
       assertion_scope:
         "canonical_contract_and_production_structure_ownership_and_decision_roles",
-      assert: (r) => {
-        validateStructure(r, requirementIds, []);
-        checkDecisionRoles(r);
-      },
+      domainValidate: (r) => validateStructure(r, requirementIds, []),
+      assert: checkDecisionRoles,
     },
     {
       id: "proposal_blueprint_ownership",
@@ -216,10 +212,8 @@ export function extendedFixtures() {
       },
       assertion_scope:
         "canonical_contract_and_production_blueprint_ownership_and_decision_roles",
-      assert: (r) => {
-        validateBlueprint(r, requirementIds, []);
-        checkDecisionRoles(r);
-      },
+      domainValidate: (r) => validateBlueprint(r, requirementIds, []),
+      assert: checkDecisionRoles,
     },
     {
       id: "commercial_known_and_unknown_rates",

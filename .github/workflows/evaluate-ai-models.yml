@@ -5,14 +5,14 @@ on:
   workflow_dispatch:
     inputs:
       run_live:
-        description: Activate bounded synthetic requests (core 32, extended QwenCloud 16, diagnostic recheck 4 maximum)
+        description: Activate bounded synthetic requests (core 32, extended 16, diagnostic recheck 4, planning repair 2 maximum)
         type: boolean
         default: false
         required: true
       suite:
-        description: Core contracts, extended QwenCloud tasks, or exact four failed pairs with private diagnostics
+        description: Core, extended QwenCloud tasks, four diagnostic pairs, or Qwen blueprint and repair
         type: choice
-        options: [core, extended, extended_recheck]
+        options: [core, extended, extended_recheck, planning_repair]
         default: core
         required: true
 permissions:

@@ -1,4 +1,5 @@
 import { ModelError } from "./model.ts";
+import { validationDiagnostic } from "./modelValidationDiagnostics.ts";
 import { DEFAULT_OUTPUT_CEILING } from "./modelOutputPolicy.ts";
 import {
   expandBlueprint,
@@ -20,24 +21,40 @@ export function expandStructure(
   const map = new Map(
     [...requirementAliases(requirements)].map(([id, alias]) => [alias, id]),
   );
-  const id = (alias: string) => {
+  const id = (alias: string, path: string) => {
     const found = map.get(alias);
-    if (!found) throw new ModelError("EVIDENCE_REFERENCE_INVALID");
+    if (!found)
+      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+        validationDiagnostic(
+          "EVIDENCE_REFERENCE_INVALID",
+          "invalid_finding_reference",
+          {
+            paths: [path],
+            requirement_ids: [...map.keys()],
+          },
+        ),
+      ]);
     return found;
   };
   return {
     ...value,
-    sections: value.sections.map((s) => ({
+    sections: value.sections.map((s, si) => ({
       ...s,
-      requirement_ids: s.requirement_ids.map(id),
+      requirement_ids: s.requirement_ids.map((alias, i) =>
+        id(alias, `$.sections[${si}].requirement_ids[${i}]`),
+      ),
     })),
-    decisions: value.decisions.map((d) => ({
+    decisions: value.decisions.map((d, di) => ({
       ...d,
-      requirement_ids: d.requirement_ids.map(id),
+      requirement_ids: d.requirement_ids.map((alias, i) =>
+        id(alias, `$.decisions[${di}].requirement_ids[${i}]`),
+      ),
     })),
-    questions: value.questions.map((q) => ({
+    questions: value.questions.map((q, qi) => ({
       ...q,
-      requirement_ids: q.requirement_ids.map(id),
+      requirement_ids: q.requirement_ids.map((alias, i) =>
+        id(alias, `$.questions[${qi}].requirement_ids[${i}]`),
+      ),
     })),
   };
 }
@@ -46,42 +63,69 @@ export function validateStructure(
   value: ProposalStructure,
   requiredIds: string[],
   template: Row[],
+  diagnosticRequirementIds?: ReadonlyMap<string, string>,
 ) {
-  if (
-    value.sections.some(
-      (s) => s.mode !== "narrative" && s.requirement_ids.length,
-    )
-  )
-    throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+  const invalidOwnership = value.sections.flatMap((s, i) =>
+    s.mode !== "narrative" && s.requirement_ids.length
+      ? [`$.sections[${i}].requirement_ids`]
+      : [],
+  );
+  if (invalidOwnership.length)
+    throw new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+      validationDiagnostic("MODEL_COVERAGE_INCOMPLETE", "invalid_scope", {
+        paths: invalidOwnership,
+      }),
+    ]);
   // Reuse the same ownership/template/decision checks as the final blueprint.
   // These virtual units are validation scaffolding, never saved writing work.
-  validateBlueprint(
-    {
-      version: 2,
-      processed_requirement_ids: requiredIds,
-      decisions: value.decisions,
-      questions: value.questions,
-      sections: value.sections.map((s) => ({
-        ...s,
-        units:
-          s.mode === "compliance_matrix"
-            ? []
-            : [
-                {
-                  key: s.key,
-                  title: s.title,
-                  purpose: s.purpose,
-                  requirement_ids: s.requirement_ids,
-                  secondary_links: [],
-                  decision_ids: [],
-                  target_words: 100,
-                },
-              ],
-      })),
-    },
-    requiredIds,
-    template,
-  );
+  try {
+    validateBlueprint(
+      {
+        version: 2,
+        processed_requirement_ids: requiredIds,
+        decisions: value.decisions,
+        questions: value.questions,
+        sections: value.sections.map((s) => ({
+          ...s,
+          units:
+            s.mode === "compliance_matrix"
+              ? []
+              : [
+                  {
+                    key: s.key,
+                    title: s.title,
+                    purpose: s.purpose,
+                    requirement_ids: s.requirement_ids,
+                    secondary_links: [],
+                    decision_ids: [],
+                    target_words: 100,
+                  },
+                ],
+        })),
+      },
+      requiredIds,
+      template,
+      { diagnosticRequirementIds },
+    );
+  } catch (error) {
+    if (!(error instanceof ModelError)) throw error;
+    // Virtual units are validation scaffolding; repair paths must identify the
+    // actual structure schema seen by this phase.
+    throw new ModelError(
+      error.code,
+      error.retryAfter,
+      error.validationDiagnostics.map((diagnostic) =>
+        validationDiagnostic(diagnostic.code, diagnostic.reason, {
+          ...diagnostic,
+          paths: diagnostic.paths.map((path) =>
+            path
+              .replace(/\.units\[0\]/g, "")
+              .replace(/\.units/g, ".requirement_ids"),
+          ),
+        }),
+      ),
+    );
+  }
 }
 
 export function savedStructure(
@@ -154,9 +198,15 @@ export function validatePlanningDetails(
     value.decisions.length ||
     value.sections.length !== input.section_keys.length
   )
-    throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+    throw new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+      validationDiagnostic("MODEL_COVERAGE_INCOMPLETE", "invalid_scope", {
+        paths: ["$.decisions", "$.sections"],
+        content_ids: input.section_keys,
+      }),
+    ]);
   const expanded = expandBlueprint(value, requirements);
-  for (const section of expanded.sections) {
+  const diagnosticRequirementIds = requirementAliases(requirements);
+  for (const [si, section] of expanded.sections.entries()) {
     const original = structure.sections.find((s) => s.key === section.key);
     if (
       !original ||
@@ -168,11 +218,20 @@ export function validatePlanningDetails(
         u.requirement_ids.some((id) => !original.requirement_ids.includes(id)),
       )
     )
-      throw new ModelError("MODEL_COVERAGE_INCOMPLETE");
+      throw new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+        validationDiagnostic("MODEL_COVERAGE_INCOMPLETE", "invalid_scope", {
+          paths: [`$.sections[${si}]`],
+          content_ids: input.section_keys,
+          requirement_ids: original?.requirement_ids.map(
+            (id) => diagnosticRequirementIds.get(id) ?? id,
+          ),
+        }),
+      ]);
   }
   validateBlueprint(expanded, input.requirement_ids, [], {
     decisions: structure.decisions,
     referenceIds: requirements.map((r) => r.id),
+    diagnosticRequirementIds,
   });
 }
 

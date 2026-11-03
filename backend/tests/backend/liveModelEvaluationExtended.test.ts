@@ -6,6 +6,7 @@ import {
   EXTENDED_LIMITS,
   RECHECK_LIMITS,
   RECHECK_PAIRS,
+  PLANNING_LIMITS,
   validateTargets,
 } from "../../scripts/ops/live-model-evaluation.mjs";
 import { defaultCapabilities } from "../../supabase/functions/_shared/modelContract";
@@ -36,6 +37,16 @@ const planningSections = [
 ];
 function responseFor(p: any): any {
   const c = p.untrusted_data;
+  if (p.task === "repair_result" && c.target_task === "plan_blueprint")
+    return {
+      target_task: "plan_blueprint",
+      result: responseFor({
+        ...p,
+        task: "plan_blueprint",
+        untrusted_data: c.original_context,
+      }),
+      changes: ["Assigned both requirements to a narrative unit."],
+    };
   if (p.task === "plan_proposal")
     return {
       processed_requirement_ids: p.required_ids,
@@ -280,7 +291,10 @@ it("rejects semantic mutations that can still satisfy the JSON schema", async ()
     const value = structuredClone(responseFor(prompt(f)));
     change(value);
     // These defects need the domain or golden checks in addition to JSON parsing.
-    expect(() => f.assert(value)).toThrow(error);
+    expect(() => {
+      f.domainValidate?.(value);
+      f.assert(value);
+    }).toThrow(error);
   };
   mutate(
     "plan_structure",
@@ -478,9 +492,79 @@ it("diagnoses only the four failed pairs, preserves prompts and redacts bounded 
   }
   const failure = report.results[3];
   expect(failure.code).toBe("MODEL_COVERAGE_INCOMPLETE");
+  expect(failure.attempts[0].status).toBe("MODEL_COVERAGE_INCOMPLETE");
+  expect(failure.usage).toMatchObject({ input: 100, output: 100 });
   expect(
     failure.synthetic_candidate.sections[0].units[0].requirement_ids,
   ).toEqual(["req_a"]);
   expect(failure.target_capabilities).toEqual(target.capabilities);
   for (const t of selected) expect(JSON.stringify(report)).not.toContain(t.key);
+});
+
+it("validates fresh planning and repair using revision five and real typed ownership diagnostics within two calls", async () => {
+  vi.spyOn(console, "info").mockImplementation(() => {});
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  expect(PLANNING_LIMITS.generations).toBe(2);
+  expect(() =>
+    validateTargets(
+      [{ ...target, model: "deepseek-v4-pro" }],
+      "planning_repair",
+    ),
+  ).toThrow("EVAL_PLANNING_TARGET_INVALID");
+  expect(() =>
+    validateTargets(
+      [
+        { ...target, model: "qwen3.8-max" },
+        { ...target, model: "qwen-second" },
+      ],
+      "planning_repair",
+    ),
+  ).toThrow("EVAL_TARGET_COUNT_INVALID");
+  const cases = await fixtures("planning_repair");
+  expect(cases).toHaveLength(2);
+  expect(cases.map((f) => f.semanticRevision)).toEqual([5, 5]);
+  const repair = cases[1];
+  expect(repair.context.validation_diagnostics).toEqual([
+    expect.objectContaining({
+      code: "MODEL_COVERAGE_INCOMPLETE",
+      reason: "required_content_missing",
+      paths: ["$.sections"],
+      requirement_ids: ["req_a", "req_b"],
+    }),
+  ]);
+  expect(() => cases[0].domainValidate(repair.context.candidate)).toThrow(
+    "MODEL_COVERAGE_INCOMPLETE",
+  );
+  const fetcher = vi.fn(async (_url: any, init?: RequestInit) => {
+    const body = JSON.parse(init!.body as string);
+    expect(body.max_tokens).toBe(4096);
+    const p = JSON.parse(body.messages[1].content.split("\nJSON schema: ")[0]);
+    expect(p.prompt_version).toContain(".plan-v1.");
+    return Response.json({
+      choices: [
+        {
+          finish_reason: "stop",
+          message: { content: JSON.stringify(responseFor(p)) },
+        },
+      ],
+      usage: { prompt_tokens: 100, completion_tokens: 100 },
+    });
+  }) as typeof fetch;
+  const report = await evaluate(
+    [{ ...target, model: "qwen3.8-max" }],
+    fetcher,
+    async () => {},
+    undefined,
+    "planning_repair",
+  );
+  expect(report.passed, JSON.stringify(report.results)).toBe(true);
+  expect(report.generations).toBe(2);
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  expect(report.results.map((r: any) => r.task)).toEqual([
+    "plan_blueprint",
+    "repair_result",
+  ]);
+  expect(
+    report.results.every((r: any) => r.attempts[0].status === "SUCCEEDED"),
+  ).toBe(true);
 });

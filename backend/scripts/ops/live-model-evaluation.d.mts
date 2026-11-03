@@ -6,8 +6,10 @@ export const LIMITS: {
 };
 export const EXTENDED_LIMITS: typeof LIMITS;
 export const RECHECK_LIMITS: typeof LIMITS;
+export const PLANNING_LIMITS: typeof LIMITS;
 export const RECHECK_PAIRS: readonly (readonly string[])[];
-export type EvaluationSuite = "core" | "extended" | "extended_recheck";
+export type EvaluationSuite =
+  "core" | "extended" | "extended_recheck" | "planning_repair";
 export function limitsForSuite(suite?: EvaluationSuite): typeof LIMITS;
 export function fixtures(suite?: EvaluationSuite): Promise<any[]>;
 export function validateTargets(
