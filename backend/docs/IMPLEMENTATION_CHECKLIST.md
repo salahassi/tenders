@@ -6,10 +6,10 @@ The Owner requests comprehensive model and prompt testing after the October 31
 QwenCloud activity stop. The isolated reliability change fixes terminal remote
 polling and misleading usage/identity diagnostics, and adds versioned analysis
 evidence instructions. Historical prompt pins, accepted requests, usage and
-business records are retained. Full GitHub verification of `33c4b23` passes
-**1,586 backend tests in 94 files**, **265 frontend tests**, both packages'
-typechecks/builds, **195 operations tests** and **13 Kubernetes renderer tests**
-in [run 41548918170](https://github.com/salahassi/tenders/actions/runs/41548918170).
+business records are retained. Full GitHub verification of `5d53a96` passes
+**1,617 backend tests in 95 files**, **265 frontend tests**, both packages'
+typechecks/builds, **196 operations tests** and **13 Kubernetes renderer tests**
+in [run 41550067592](https://github.com/salahassi/tenders/actions/runs/41550067592).
 Focused independent
 review checked remote-ID matching, unknown accounting, failover, immutable prompt
 pins and private live-evaluation transport. A stale earlier operations run found
@@ -73,9 +73,19 @@ accepted replay. Phase-pinned policy revision 5 additionally requires narrative
 ownership independently of processed-ID lists or missing company proof; revisions
 0–4 and existing paid phase pins retain their exact inputs. Focused suites pass
 85 domain/recovery tests, 98 prompt/pinning tests, and 21 evaluation tests, plus
-12 Python guards and backend typecheck (suite counts overlap). Final integrated
-CI and the two-request Qwen fresh-blueprint/captured-candidate repair evaluation
-are pending at this checkpoint.
+12 Python guards and backend typecheck (suite counts overlap). The final
+two-request Qwen evaluation passed **2/2** in
+[run 41550112563](https://github.com/salahassi/tenders/actions/runs/41550112563),
+source `5d53a96672ee41c8d52df7a6a08adf75ec51b8ca`: both a fresh revision-5
+blueprint and repair of the captured invalid candidate passed canonical and
+production ownership validation before success. Usage was 7,042 input and
+2,229 output tokens, with no unknown usage or pending cleanup. Its private
+transport object was deleted after verified download. The latest permission
+snapshot still excludes Qwen from automatic processing. Across all four live
+runs, 54 generation requests were made; earlier failures remain recorded and
+are not rewritten as first-attempt successes. Final integrated CI passed on
+the same source revision. All production preparation/build/deployment steps
+were skipped because this was a push-triggered verification run.
 
 The extended fixtures, combined with the core suite, exercise all 13 registered
 model task types. Production structure, blueprint and review validators are
@@ -110,8 +120,9 @@ wire inputs. Existing quotation, company-evidence and coverage validators remain
 unchanged. Local verification passed 84 tests across the bilingual analysis
 prompt/validation matrix, database-backed semantic pinning and writer handoff
 suites, plus the backend typecheck. These tests use synthetic local fixtures and
-mocked provider transport. Deployment, live provider evaluation and recovery of
-the previously blocked proposal are separate acceptance steps and are pending.
+mocked provider transport. The separate live analysis/repair and longer mixed
+evidence cases passed on both QwenCloud models, as recorded above. Deployment
+and recovery of the previously blocked proposal remain pending.
 
 ## November 2 — workspace startup blocked by audit-history size
 
@@ -4074,7 +4085,9 @@ rejection, populated explicit/policy/revoked reference counts, requested versus
 automatic assessment distinctions, unchanged authorization rows, and sensitive
 projection exclusions. A current policy snapshot does not establish its state
 on October 31; historical cause requires separate timestamped evidence. Hosted
-execution of this added diagnostic remains pending.
+execution of this added diagnostic completed in the private live evaluation
+reports; the reconciled current-policy finding appears in the integrated
+verification entry above.
 
 ## November 3 — versioned planning ownership guidance
 
@@ -4098,9 +4111,9 @@ and durable writer handoff pass. Synthetic Arabic/English regressions reproduce
 the rejected executive-only shape and validate a substantive narrative repair
 that preserves factual decisions and unresolved questions; wire hash snapshots
 cover all prior revisions, and real database tests cover new and existing pins.
-The full backend type check is pending concurrent validator-test changes.
-Deployment, bounded live revision-5 acceptance and old-work recovery remain
-separate, pending evidence.
+Backend typecheck passed after the concurrent validator-test changes. Bounded
+live revision-5 acceptance passed both fresh blueprint and captured-candidate
+repair in run `41550112563`; deployment and old-work recovery remain pending.
 
 ## November 3 — durable repair of proposal planning coverage failures
 
@@ -4132,6 +4145,6 @@ the corrected full ownership map. They assert one initial writer plus one
 repair allowance, unchanged original settled usage/candidate evidence, and no
 new request on accepted replay. Additional regressions cover bounded metadata,
 actual schema paths, alias/canonical identity separation and unchanged rejection
-of invalid ownership, source references and detail scope. No external calls or
-production deployment were performed for this change; hosted acceptance and
-release evidence remain separate.
+of invalid ownership, source references and detail scope. The separate bounded
+live acceptance passed in run `41550112563`, as recorded above. Production
+deployment and recovery of existing blocked work have not occurred.
