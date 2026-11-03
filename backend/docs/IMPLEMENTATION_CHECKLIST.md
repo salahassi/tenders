@@ -4148,3 +4148,249 @@ actual schema paths, alias/canonical identity separation and unchanged rejection
 of invalid ownership, source references and detail scope. The separate bounded
 live acceptance passed in run `41550112563`, as recorded above. Production
 deployment and recovery of existing blocked work have not occurred.
+
+## November 3 — inspect the exact paid proposal before recovery
+
+A separate manual inspection workflow now accepts an encrypted exact-workspace,
+opportunity and proposal-plan selection. Its repeatable-read, read-only SQL
+returns private operational metadata for that opportunity: current/latest plan,
+proposal and opportunity revisions, original snapshot/source fingerprints,
+current document hashes/counts, workflow-admission gates, graph phases/budgets,
+accepted-request/unknown-usage indicators and available proposal-version IDs.
+It exports no document text, prompt, response, title, filename or credential.
+Public workflow logs contain only fixed inspection/cleanup status and the
+encrypted report's plaintext verification digest. Push on the dedicated recovery
+branch runs offline guards only; production inspection requires manual dispatch. Existing
+private encrypted transfer and uniquely owned SQL-client cleanup are reused.
+
+Five operational tests pass, including execution against the full migration
+schema, wrong-target/database rejection, private-field exclusion, preservation
+of original usage/graph/policy records and confirmation that no authorizing or
+canonical mutation wrapper appears in inspection SQL. No production inspection
+or recovery has run from this implementation. The existing authorization-only,
+never-sent resume helper remains unchanged; a paid correction-exhausted plan
+requires a separately reviewed canonical recovery action after current evidence
+and deployed-runtime verification.
+
+## November 3 — bounded observation of one resumed proposal
+
+The separate `observe-proposal-generation.yml` workflow observes an exact private
+workspace/opportunity/plan selection. Pushes on `codex/ai-reliability-resume`
+run only offline guards; live reads require manual dispatch and the expected
+immutable API/worker runtime digest. Each sample rechecks that runtime and runs
+an exact-target, read-only aggregate query. The observer does not invoke the
+worker, scheduler, model adapters, content authorization or application commands.
+
+Observation is limited to 900 seconds with intervals of 15–60 seconds. The
+nonce-owned client has a bounded setup/report margin and refuses cleanup of
+foreign resources. Public progress contains fixed stages/statuses/error labels
+and counts only; unknown error text maps to `UNCLASSIFIED`. A queued sample is
+never interpreted as failure. Blocked/failed/canceled states require two stable
+samples with no queued/running/waiting jobs or reserved requests. Completion
+requires the selected plan's generated version to be the proposal's current
+version. Timeout and attention remain distinct from completion. A final full
+inspection and outcome are transferred encrypted; only its report digest enters
+public logs. Cleanup failure produces a failed receipt.
+
+Local verification: ten focused offline tests pass, including exact SQL against
+all migrations, target mismatch guards, unchanged database rows, private-data
+projection, bounded observation transitions, runtime mismatch before SQL,
+owned cleanup, encrypted final reporting and cleanup failure. Python compilation
+and whitespace checks pass. No live observation or completed proposal is claimed
+by these implementation checks; exact workflow and generated-version evidence
+remain to be recorded after the authorized resume.
+
+## November 3 — authorized reliability release deployed and merged
+
+The user explicitly authorized deployment, resume and testing. Runtime-only
+workflow `41551634331` completed successfully on commit
+`2684780552726f33e25f9ff9b29a2d3237a7a701`, publishing API and worker image
+`sha256:2b3391d445071f196bebf4d635e23ec50d3b33a8795defbded511259ea8bde1e`.
+The two reviewed function migrations passed verification with existing rows
+and frozen work preserved; only the two runtime deployments were updated.
+Public configuration/provider assets and other workloads were preserved.
+Release ledger checksum:
+`0353c429634df4f9ed3429074e8ff027ef7151b66edffdc467dae08ecb2f8f4b`.
+PR #19 merged as `3bf07a7c4dd712093344e5f7b0819f0720f1353a`.
+
+Read-only inspection `41552352731` verified both running images and the exact
+selected original proposal: twelve blocked jobs, no active target leases or
+reserved usage, and no completed proposal version or final accepted graph.
+Its paid intermediate attempts, unknown usage and exhausted correction budgets
+remain intact. Canonical successor recovery and actual browser draft Word
+acceptance are pending; the preceding pre-release pending statements describe
+their observation time, not the now-completed runtime deployment.
+
+## November 3 — canonical successor for the inspected paid proposal
+
+The Owner explicitly authorized deployment, resumed processing and real output
+verification. The verified private inspection found the exact original proposal
+still blocked in analysis: twelve queued steps, no completed step or final
+accepted graph result, and 98 retained provider receipts (59 settled, 39 unknown).
+Its accepted remote deadlines expired on November 1; no target reservation or
+lease remains active. Historical unknown accounting remains unknown.
+
+A separate recovery helper now delegates one canonical `generation.cancel` plus
+`proposal.generate` transaction for that exact inspected target. It verifies the
+reviewed ready API/worker digest, active canonical Owner authority, latest plan,
+plan/opportunity/proposal revisions, exact document/job/usage fingerprints,
+current evidence revision and unchanged workflow admission. The new plan must
+preserve the original requested language and selected document IDs/content
+hashes. The current admission remains unchanged (workflow 1); fresh analysis
+phases naturally use the deployed evidence policy. No old prompt pin, received
+candidate allowance, source classification, content grant or usage value changes.
+
+Default check mode rolls back every canonical mutation. Explicit manual restart
+runs only after offline checks and under the production mutex. The transaction
+compares original plan/job inputs and full retained step, requirement, source,
+usage, successful attempt and graph/result/checkpoint/budget fingerprints before
+commit. A retained audit marker makes an ambiguous receipt safely replayable
+without a second successor. Only private encrypted receipts contain target
+identifiers; public output is fixed status/count plus report verification digest.
+
+Local verification: five successor operational tests and five inspector tests
+pass. The complete-schema integration uses the restricted production ownership
+model and covers rollback check, exact-input refusal, recent unknown/active
+remote/reserved guards, unrelated historical usage, final completed-work refusal,
+original source/language preservation, admission preservation, atomic rollback
+of a simulated accounting defect, retained successful attempts and idempotent
+replay. Python compilation and diff whitespace checks pass. Production mutation
+has not been invoked by this implementation; dispatch, resulting successor
+progress and actual Word export remain separately recorded acceptance.
+
+## November 3 — guarded actual draft Word export acceptance prepared
+
+The separate `accept-actual-proposal-export.yml` workflow accepts an encrypted
+selection of one completed plan and its exact current proposal version/revision.
+Push on `codex/ai-reliability-resume` runs offline guards only; actual export
+requires explicit manual activation and the expected immutable runtime image.
+Read-only SQL verifies that target and one active allowlisted Owner. The helper
+uses the existing genuine Auth `generate_link`/`verify` session pattern without
+sending email, changing passwords, creating accounts or forging a browser token.
+User lookup and application bootstrap verify that identity; local logout runs
+after success or failure. Cluster/deployment credentials and their environment
+paths are excluded from the Node/Chromium child.
+
+Primary acceptance opens the deployed ProposalEditor and clicks its complete
+draft Word download. Browser mutations are restricted to draft preparation,
+generated-artifact reservation, matching private Storage uploads and completion:
+at most two buyer-defined volumes and eight export writes. There are no model,
+approval, review, invitation or submission commands. The explicit HTTP fallback
+uses the actual frontend renderer; it never follows a started browser attempt.
+Owner identity and exact current plan/version are rechecked immediately before
+export and before success. Each browser file must match an independent
+authenticated server download, its registered SHA-256, exact authorized DOCX
+content and bundled font/structure checks. Concurrent role/version changes,
+missing server bytes and mismatched files fail acceptance. Real approval
+readiness is observed without filling missing business facts or approving them.
+
+The encrypted private report retains verified Word bytes, exact export/artifact
+identities, readiness blockers and any partial export identities. Public receipts
+contain fixed path/status, counts and the report verification digest only. No
+customer document or screenshot enters public workflow artifacts. Local checks
+pass: **15 Node acceptance tests, five full-schema selection tests, eight Python
+guards, backend typecheck and diff whitespace checks**. Node 24 CLI import and
+headless Chromium launch smoke checks also pass with browser networking blocked.
+Independent review closed Owner-role, concurrent-target, server-byte proof and
+child-credential-boundary findings. Harness source was committed in `a7ad08a`.
+Actual hosted draft export and document layout review remain pending the resumed
+plan's completed current version; these preparation checks do not claim either.
+
+## November 3 — bind successor recovery to its complete prospective inputs
+
+Two authorized recovery attempts safely refused before any mutation because
+unrelated workspace evidence advanced between inspection and dispatch. The
+workspace counter covers other tenders as well as the selected proposal; the
+second refusal occurred after roughly three minutes. The read-only inspector
+now records only the SHA-256 of the complete current canonical draft snapshot.
+Recovery recomputes that same snapshot under its existing workspace lock before
+canceling the predecessor, then requires the canonical successor's frozen
+snapshot to match it exactly. No snapshot field is excluded or normalized.
+The inspected global revision remains audit information; the newly generated
+plan must record the current live revision. All original source, language,
+latest-target, admission, runtime, authority, usage and immutable-history guards
+remain active. Review inputs also join the retained source-history fingerprint.
+
+Focused local verification passes: **five successor tests, five read-only
+inspector tests and ten observer tests**. Complete-schema regressions prove that
+an unrelated tender's evidence increment permits the exact authorized successor,
+while changed company knowledge, template, rate or tender evidence refuses
+before cancellation. An actual active-version review fixture proves review-body
+snapshot sensitivity and the initial-draft business-state refusal. A simulated
+canonical-side frozen-snapshot change rolls back both cancellation and generation.
+The successful case retains prior usage, attempts, candidates, checkpoints and
+budgets and records the live global revision. Python compilation and diff
+whitespace checks pass; independent source review found no blocker.
+
+The preceding helper baseline `a7ad08a` passed **2,139 tests**: 1,637 backend,
+265 frontend, 224 operational and 13 document-renderer checks, plus both
+application typechecks and builds, with no source-fingerprint changes. This
+refinement changes operational inspection/recovery helpers only. No production
+mutation or live provider request was performed by these local tests; a fresh
+private inspection and separately authorized dispatch remain required for
+actual successor and draft/export acceptance.
+
+## November 3 — proposal-list Word download uses the connected export
+
+Stage: M5 export. The proposal-list Word action previously packaged the client
+display projection with the legacy local renderer. That projection omits the
+server's commercial/delivery/review snapshot and volume separation, and flattens
+structured section tables. The action now invokes the same connected draft
+export as ProposalEditor for the clicked saved version. Server authorization,
+frozen snapshot, buyer-defined volumes, artifact registration and authenticated
+download remain in the existing shared export flow. Missing backend/version
+identity and export errors report failure without creating a local substitute;
+busy state lasts until the connected export finishes. Editor behavior and all
+model/provider/accounting paths remain unchanged.
+The list button and its accessible name explicitly identify the download as a
+draft, including for an approved proposal row.
+
+Four isolated component regressions cover exact selected version/draft mode,
+deferred success and duplicate-click prevention, genuine export rejection and
+missing connection/version failures. All **269 frontend tests in 40 files**,
+frontend typecheck/build, focused formatting and diff whitespace checks pass.
+Deployment and real list-button export acceptance remain pending; the separate
+actual-editor acceptance does not establish list-button hosted acceptance.
+
+## November 3 — canonical proposal successor started on DigitalOcean
+
+Authorized restart workflow `41555786933` passed on helper commit `d4cbab1`.
+It created exactly one successor through canonical cancellation/generation,
+retaining all predecessor usage, paid attempts, graph history and correction
+budgets. The complete prospective snapshot and original selected document
+references were unchanged; the new plan preserves English and workflow v1
+admission with twelve frozen blocks. Workspace evidence advanced from the
+inspected revision 1816 to 1818 for unrelated inputs while the exact selected
+snapshot remained identical. Both workloads matched the deployed immutable
+reliability runtime. The encrypted receipt was downloaded and hash verified,
+then its temporary transport object was removed.
+
+Read-only observer `41556129126` is following only this successor, with a
+900-second bound and no additional worker/model invocation. Creation of the
+new plan is confirmed; generation completion, model acceptance and real draft
+Word export remain unverified at this observation time.
+
+## November 3 — connected list Word fix deployed; real generation progressing
+
+Frontend-only deployment `41556412897` passed for commit
+`5e64ab2c6404fcfa9a9d0b62cf8966bfcebf7797`, publishing frontend image
+`sha256:b90ee4cea47e8208dd785aba618caaf89aadf3c8fd15e4c8172633b2883b88af`.
+The same run passed 1,637 backend tests, 269 frontend tests, 224 operations
+tests and both typechecks/builds; isolated workspace browser acceptance and
+hosted PDF extraction passed. All 51 hosted assets matched. The release
+changed only the frontend deployment and preserved all other workload specs
+and public configuration; it accessed neither database contents nor secrets.
+The API/worker reliability image remains protected by the active observer's
+exact-runtime guard. Temporary release credentials and logs were removed.
+
+The exact successor inspection `41556424196` observed real analysis activity
+at 00:57:32 UTC: two QwenCloud measured receipts (Qwen and DeepSeek models)
+with 16,262 input and 2,274 output tokens, two running graph threads and new
+revision-4 analysis pins. The same snapshot showed no completed analysis
+job or proposal version. One OpenAI accepted background request terminated
+without usage and remained unknown; a later different OpenAI model request
+was accepted and awaited polling. The report does not establish that terminal
+request's provider-side cause. These are real transport/progress observations,
+not completed semantic acceptance or Word export evidence. Private report
+transfer was verified and its temporary object deleted. Generation and actual
+editor draft Word acceptance remain pending ongoing observation.

@@ -1,0 +1,65 @@
+name: Privately inspect one proposal recovery target
+on:
+  push:
+    branches: [codex/ai-reliability-resume]
+    paths:
+      - .github/workflows/inspect-proposal-recovery.yml
+      - backend/scripts/ops/proposal-recovery.py
+      - backend/scripts/ops/proposal-recovery-inspect.sql
+      - backend/scripts/ops/test_proposal_recovery.py
+      - backend/scripts/ops/test_proposal_recovery.mjs
+  workflow_dispatch:
+    inputs:
+      selection_object:
+        description: Exact encrypted proposal selection in the existing private transport
+        type: string
+        required: true
+      selection_sha256:
+        description: Reviewed selection plaintext SHA-256
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Check strictly read-only proposal inspection guards
+        run: |
+          npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_proposal_recovery.py'
+      - name: Inspect selected proposal without authorizing, retrying or sending content
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          PROPOSAL_SELECTION_OBJECT: ${{ inputs.selection_object }}
+          PROPOSAL_SELECTION_SHA256: ${{ inputs.selection_sha256 }}
+        run: |
+          python3 backend/scripts/ops/proposal-recovery.py \
+            --selection-object "$PROPOSAL_SELECTION_OBJECT" \
+            --selection-sha256 "$PROPOSAL_SELECTION_SHA256"
+      - name: Remove temporary runner cluster credentials and private plaintext
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil,sys
+          try:
+              run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+              if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):raise ValueError()
+              path=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+run+'-'+attempt)
+              if path.exists():shutil.rmtree(path)
+          except Exception:
+              print('{"proposal_recovery":"failed","code":"RUNNER_CLEANUP_NOT_CONFIRMED"}')
+              sys.exit(1)
+          print('{"proposal_recovery":"runner_files_removed"}')
+          PY
