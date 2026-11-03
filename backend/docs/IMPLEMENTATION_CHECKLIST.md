@@ -4937,9 +4937,9 @@ marker, prior-source integrity, unchanged unrelated workloads, strategy readines
 partial candidate replay and foreign-state refusal. The separate workflow permits
 production access only on manual dispatch and retains full package and operations
 gates. Independent release review approved the adapter/workflow and repeated all
-five tests successfully; the eleven shared rollout tests also pass. Final
-typed-format runtime tests and bounded live evaluation remain separate pending
-gates; this entry does not claim runtime deployment.
+five tests successfully; the eleven shared rollout tests also pass. Typed-format
+runtime verification is recorded separately. Bounded live evaluation and final
+release workflow gates remain pending; this entry does not claim runtime deployment.
 
 ## November 3 — immutable writer prompt identity correction
 
@@ -5004,8 +5004,8 @@ suites remain identical. Independent review verified the four-request boundary,
 production format/validation path and private transport. The semantic assertion
 also accepts an unsupported mandatory flag tied to a quotation establishing
 optional scope, while rejecting a mere omitted-optional-work or missing-RFP
-finding. No requests from this new suite have been sent; its production
-evaluation is a separate pending gate.
+finding. The later live outcome and its provider-specific limits are recorded
+below; preparing this suite itself sent no model requests.
 
 ## November 3 — typed analysis verification formats
 
@@ -5034,5 +5034,152 @@ extra coverage IDs and a wrong candidate hash. Four full-schema graph cases
 exercise new and historical batch formats with/without output-token policy
 across leases, preserve one writer and exact usage counts, and merge complete
 coverage. Independent review passed another 152 focused tests and all four
-durable cases. No production model calls or deployment were performed for this
-change; the bounded authority evaluation remains the next semantic gate.
+durable cases. These offline checks performed no production model calls or
+deployment. The later bounded authority result is recorded below; runtime
+deployment remains a separate gate.
+
+## November 3 — recheck identity and admission SQL deployed
+
+[Workflow 41569680096](https://github.com/salahassi/tenders/actions/runs/41569680096)
+completed successfully for source `141d1c6625b4f7b086da6a0a0b72cfb1a6414cc4`.
+Its full gates passed **2,366 tests**: **1,811 backend**, **269 frontend**, **273
+operations** and **13 renderer**, plus both package typecheck/build checks.
+
+The atomic batch was verified at 03:11:33 UTC. It applied identity migration
+`20261103031500_analysis_recheck_prompt_identity.sql`, checksum
+`30f79868deaa94daab1554584aede2545a1611a29f7b19d26503e75f57720f14`, and
+fairness migration `20261103032000_model_admission_fairness.sql`, checksum
+`3bb13dd60fb4322ac3ba70c534ec6165a668da547318d1ea49232ae1d401c927`, with
+their separate checked release receipts committed together. Existing rows,
+authorities and structures were preserved. Temporary administrator resources
+were removed at 03:12:09 UTC; final acceptance and runner cleanup completed at
+03:12:11 UTC.
+
+API/worker runtime remained
+`sha256:bded9f019592be84ae45e078d55a52e438c3f6942b2bd1bf35d148d4ff0d6c4a`
+and frontend remained
+`sha256:b90ee4cea47e8208dd785aba618caaf89aadf3c8fd15e4c8172633b2883b88af`.
+No deployment image/specification or retained configuration changed. The release
+invoked no job claim or processing retry and created no recheck child. Fresh
+canonical recovery admission, actual generation completion and typed-format
+runtime deployment remain separate acceptance steps.
+
+## November 3 — typed-analysis authority live result: DeepSeek passed; Qwen quota blocked
+
+[Evaluation 41570661661](https://github.com/salahassi/tenders/actions/runs/41570661661)
+ran source `6e50aaae23182a7307f5a8a4cff57d0239e3579d` and completed exactly
+**four generation POSTs**, one for each permitted model/case pair, with no polls
+or additional requests. All four prompt hashes match both the saved pre-dispatch
+expectations and the current production prompt builder. The verified private
+report SHA-256 is
+`d1908355f955058ab88924c9467ce95a7f97a75f232764a63a4ec88547bcd307`.
+
+**DeepSeek passed both semantic cases** with HTTP 200: it accepted the faithful
+optional scope and detected optional scope incorrectly promoted to mandatory.
+The executed harness requires canonical `validateGroundingReport` before attempt
+success and the source-associated golden assertions before case success. The
+receipt confirms both gates passed; successful response bodies were not retained,
+so this review verifies the executed gates and request identities rather than
+replaying the successful response payloads offline.
+
+**Both Qwen3.8 requests were rejected with HTTP 403 before a candidate was
+returned.** Provider details report `insufficient_quota`, reason `usage_limit`,
+and exhausted free quota under the provider's free-tier-only setting. The adapter
+classified these as `PROVIDER_AUTH_FAILED`; they are provider quota failures,
+not evidence of a wrong semantic verdict. Qwen's two new authority cases remain
+unevaluated. The aggregate result is **two passed cases out of four attempted**,
+not a four-case pass.
+
+Measured DeepSeek usage totals **9,823 input and 1,429 output tokens**. Both
+Qwen input/output values remain null, giving **two cases with unknown usage**;
+no missing measurement was converted to zero. All cases report cleanup
+`not_needed`, and no application records were created. No rerun, payment change
+or provider configuration change followed this review. This bounded adapter and
+prompt result supports the selected DeepSeek behavior; actual proposal workflow
+completion and Qwen authority verification remain separate acceptance limits.
+
+## November 3 — typed verification runtime deployed
+
+[Deployment 41571450550](https://github.com/salahassi/tenders/actions/runs/41571450550)
+succeeded for source `6e50aaae23182a7307f5a8a4cff57d0239e3579d`. Its complete
+gates passed **2,404 tests**: **1,841 backend**, **269 frontend**, **281 operations**
+and **13 renderer**, plus both package typecheck/build checks.
+
+API and worker now use immutable runtime
+`sha256:85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380`.
+API readiness was confirmed at 03:29:47 UTC and worker readiness at 03:29:58 UTC.
+The old workers drained before new-worker admission. The exact worker strategy
+was restored, its owned marker removed, and controller readiness acknowledged
+at 03:30:09 UTC. Final acceptance and temporary runner cleanup completed at
+03:30:11 UTC.
+
+Only the API/worker runtime images changed. Frontend remained
+`sha256:b90ee4cea47e8208dd785aba618caaf89aadf3c8fd15e4c8172633b2883b88af`;
+configuration, schedules and other workloads were preserved. The release checked
+all prior migration source hashes, opened no database connection, changed no
+schema and invoked no processing retry. Actual proposal completion and Qwen's
+quota-blocked authority cases remain separate acceptance limits; the deployed
+runtime supports existing format pins as well as the new typed formats.
+
+## November 3 — canonical verifier recheck activated; completion still pending
+
+[Check 41570878980](https://github.com/salahassi/tenders/actions/runs/41570878980)
+passed the canonical operation inside a rolled-back transaction and retained zero
+children. [Activation 41571204939](https://github.com/salahassi/tenders/actions/runs/41571204939)
+then created exactly one verifier-recheck child. Both receipts bind verification
+revision 4, **zero writer allowance**, at most **three verifier candidates** and
+**one verifier-format correction**. The parent writer, old artifacts, pins,
+budgets and accounting remain retained; the checked history fingerprint was
+preserved. Activation does not mean the new verification has run or passed.
+
+[Observation 41571512040](https://github.com/salahassi/tenders/actions/runs/41571512040)
+timed out after twenty read-only samples, with its final snapshot at 03:25:11 UTC.
+It demonstrated actual post-fairness progress: one formerly stalled continuation
+advanced from four to ten attempts and entered a scheduled round-exhausted wait;
+another queued analysis ran and stopped at `USAGE_REVIEW_REQUIRED`. The explicit
+recheck child remained queued with zero attempts, no model usage and no graph
+thread. No final proposal version or Word export was ready.
+
+The unchanged ordering within this proposal owner puts six older queued siblings
+and one overdue round-exhausted continuation ahead of the newly created child.
+A fully migrated local reproduction using the actual claim RPC confirms that
+order while the plan remains blocked. Polls and retained graph continuations can
+interleave, so this observation does not establish a child start-time guarantee.
+The new usage blocker follows a paid repair result rejected for invalid evidence
+while an earlier accepted request retains unknown usage. Exact phase attribution
+awaits its private graph diagnostic; the accounting guard remains intact. All
+48 existing writer-handoff integration tests pass, including preservation of
+usage, candidate budgets and checkpoint state when same-phase unknown accounting
+blocks progress. No reprioritization, cancellation, budget reset or usage rewrite
+was performed. A further bounded observation under the newly deployed typed
+runtime and the private diagnostic are pending separate acceptance evidence.
+
+The exact private diagnostic from workflow
+[41572919737](https://github.com/salahassi/tenders/actions/runs/41572919737)
+confirmed that the unmeasured OpenAI receipt and the paid DeepSeek repair share
+both the request hash and repair phase. OpenAI explicitly terminated with
+`credit_balance_exhausted`; its usage remains unknown. Replaying current canonical
+validation against the frozen evidence still rejects both retained candidates
+for source quotation mismatch. The DeepSeek HTTP 200 therefore does not establish
+valid repaired content. No accepted result or completed handoff exists. Existing
+canonical actions cannot complete this part without genuine usage reconciliation
+and a valid bounded correction; no accounting or validation guard was overridden.
+
+[Post-deployment observation 41572780456](https://github.com/salahassi/tenders/actions/runs/41572780456)
+verified runtime `85799a61…` through twenty read-only samples. At 03:38:02 UTC,
+the same plan had one succeeded job, two blocked jobs, four scheduled/pending
+retries, five queued jobs and the retained canceled parent. Further older queued
+parts had entered real model processing, and one accepted request was active.
+The explicit verifier-only child was still queued with zero attempts, usage or
+graph artifacts. The plan remained blocked with no proposal version; full
+generation and actual Word export did **not** pass acceptance. The native queue
+remains enabled; no priority changes or extra child requests were made.
+
+Remaining provider limits are distinct from code deployment: Qwen3.8's free-only
+quota is exhausted, and OpenAI reports exhausted credit. DeepSeek passed both
+bounded authority evaluations, but some real retained analyses still fail exact
+evidence validation. The Qwen HTTP 403 is internally labeled as an authentication
+failure while its recorded reason correctly says provider usage limit; this
+display/classification follow-up does not disable the shared connection or block
+DeepSeek failover. No billing, credential, quota-mode or content-permission
+settings were changed to bypass these limits.
