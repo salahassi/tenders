@@ -4394,3 +4394,210 @@ request's provider-side cause. These are real transport/progress observations,
 not completed semantic acceptance or Word export evidence. Private report
 transfer was verified and its temporary object deleted. Generation and actual
 editor draft Word acceptance remain pending ongoing observation.
+
+## November 3 — private exact-job verifier failure diagnostic prepared
+
+The actual successor reached a blocked analysis job after one writer response,
+two verifier responses and one verifier-report correction. Its writer candidate,
+provider receipts and exhausted verifier allowance remain retained. A separate
+read-only diagnostic now binds one exact workspace, opportunity, plan and job
+plus the deployed API/worker runtime digest. It reads the frozen inputs, selected
+step, every immutable graph result (including each distinct invalid fallback
+report), verification/prompt pins, serialized checkpoints/writes, bounded attempt
+diagnostics and usage metadata. It invokes no model, authorization, refresh,
+retry or accounting operation and does not alter the running observer.
+
+Only encrypted private transport receives source text or candidate/report
+content. Explicit metadata projections exclude credentials, routing snapshots,
+HTTP headers, lease tokens and remote response IDs. Read-only database isolation,
+statement/lock timeouts, row-count limits and 32 MiB report bounds fail closed
+without truncating diagnostic artifacts. API/worker identity is checked before
+client creation, before SQL and after SQL. Temporary resources retain nonce-bound
+ownership checks and cleanup; public output contains only fixed status/error
+labels and the report verification digest. Push runs offline checks; actual reads
+require manual dispatch and no production mutation mutex.
+
+Local verification: **seven diagnostic tests pass**, including a complete-schema
+fixture under the restricted production database owner. It proves exact-job
+scope, full writer/invalid-verifier payload retention, exclusion of sibling work
+and injected fake credential metadata, unchanged usage/graph/source/audit rows,
+wrong-target refusal, hard-size refusal and PostgreSQL read-only write rejection.
+Python tests exercise all three runtime-change windows, private-error suppression,
+invalid upload digests, private report publication and cleanup failure. Python
+compilation and whitespace checks pass; independent source/test review is green.
+No live diagnostic call or recovery mutation was performed by these tests. The
+actual invalid verifier artifacts and cause remain pending the separately
+dispatched private report; completed generation and Word export remain unverified.
+
+## November 3 — cited extraction locators are distinct from factual quantities
+
+The private exact-job diagnostic identified the same numeric citation rejection
+in all three retained verifier reports: a paragraph range and table reference
+matched the cited frozen source's structural markers but were treated as
+unsupported business quantities. The numeric validator now recognizes only
+explicit paragraph/table references whose canonical extraction markers occur
+in both that cited source's frozen locator and its supplied text. Every member
+of a range must exist in one cited source. Preceding anchors, character offsets,
+uncited sources and generated metadata grant no exemption. Full quoted
+extraction markers, including row/cell coordinates, cannot prove a factual
+quantity. All surrounding prices, quantities and dates retain numeric checks;
+exact quotations, coverage, candidate hashes and old prompt pins are unchanged.
+
+Local verification: **153 tests across the grounding and structural-reference
+suites pass**, including Arabic/Persian digits, malformed identifiers/ranges,
+missing range members, uncited metadata and coordinate-number laundering.
+Backend typecheck passes. Independent review found and verified the full-marker
+coordinate fix. Private offline replay validates the actual writer and all
+three retained verifier report structures against the exact frozen evidence
+and candidate hash. It does **not** establish acceptance: the corrective report
+still marks the source-block check insufficient despite explaining a valid
+empty inventory for reference material. The zero-defect acceptance guard stays
+intact. No report, usage receipt, budget, pin or production state was rewritten;
+deployment, completed generation and actual Word export remain pending.
+
+## November 3 — analysis verification checks source extraction, not proposal fulfillment
+
+New analysis-verifier phases pin verification policy revision 4. Its typed
+coverage contract identifies the scoped IDs as source blocks and distinguishes
+faithful extraction from a proposal's fulfillment of buyer obligations. An
+explicit flexible-input draft may correctly extract no buyer requirements from
+historical or unrelated reference material. Missing requirements in that
+material alone do not make the extraction defective. Actual omitted buyer
+obligations, lost qualifiers, invented requirements and false attribution still
+require an insufficient/contradicted verdict. Citation/source-role guards and
+the zero-defect acceptance decision remain unchanged. The stored insufficient
+reports are not rewritten or reclassified.
+
+Only new `analyze_chunk` verification and report-correction phases choose this
+revision. Existing revision 1–3 pins, including accepted unknown-usage phases,
+retain their original wire identities. The typed coverage contract appears
+only in revision 4 analysis-verifier envelopes and derives its IDs/draft policy
+from the supplied task scope. Existing audit verification retains revision 3;
+writer/semantic pins are unchanged. Rollback to a runtime that only understands
+verification revisions 1–3 is unsafe after new revision-4 phases have started.
+
+Local verification: **244 tests across eight targeted suites pass**, with
+backend typecheck, formatting and whitespace checks. Tests cover Arabic/English
+faithful empty extraction, missed real obligations, fabricated quantities,
+company/style authority rejection, unchanged retained insufficient verdicts,
+phase pinning and byte-identical revision 1–3 system/user payload hashes. The
+new policy reaches both synchronous and background provider system messages.
+Bounded live Qwen/DeepSeek evaluation of valid reference material and a missed
+buyer obligation is being prepared separately. Deployment, fresh real generation
+and actual Word export remain unverified by these local tests.
+
+## November 3 — guarded fresh successor after verifier contract diagnosis
+
+The retained corrective report still records insufficient per-source coverage;
+its status is preserved. No cache-only acceptance path or ordinary retry/accounting
+exception was introduced. The separate canonical successor helper now accepts
+an exact failed analysis plan with safe idle queued or retry-wait siblings. Every
+job must match its queued analysis step and input hash, have no lease fields or
+cancel request, and the plan must still have a matching blocked/failed job.
+Completed steps, accepted/committed graph results and even a retained accepted
+artifact before thread commit all refuse a new successor.
+
+For this narrower recovery scope, every target reservation or nonterminal unknown
+receipt refuses recovery regardless of age. Only an explicit
+`PROVIDER_BACKGROUND_TERMINATED` unknown receipt with retained nonempty remote,
+project and model identity can pass despite a future deadline. The receipt stays
+unknown and its full row fingerprint must remain unchanged. This deliberately
+replaces the helper's earlier expired-unknown allowance; existing already-started
+idempotent replay is checked before eligibility and remains available. Core
+provider, retry, reconciliation and usage guards are unchanged.
+
+The serializable canonical cancel/generate transaction retains exact current
+job/usage/document revisions, complete prospective snapshot, requested language,
+workflow admission and reviewed runtime checks. It now fingerprints all existing
+audit events as well as old attempts, sources, graph results/checkpoints/writes,
+prompt pins and budgets; only newly required canonical audit events are added.
+Fresh jobs receive distinct identities and their own future phase pins/allowances.
+No predecessor allowance, candidate, report, usage or audit entry is rewritten.
+
+Verification: **five successor tests pass**, including the complete-schema matrix
+under production ownership. A mixed blocked/queued/retry-wait fixture succeeds
+with recent terminal unknown usage and a future deadline while retaining settled
+intermediate work, writer/verifier/corrector counts of 1/2/1, pins and all prior
+history. Active/residual leases, reservations, nonterminal unknowns (including
+expired ones), incomplete remote identity, stale job/usage selections and final
+accepted work refuse without partial mutation. Simulated historical audit
+corruption rolls back cancellation and generation. Independent review and diff
+whitespace checks pass. No production mutation was performed by this change;
+activation requires the new runtime/live prompt checks and a fresh exact private
+inspection, followed by separately recorded generation/export acceptance.
+
+## November 3 — code-only model validation runtime release boundary
+
+The prepared `deploy-model-validation.yml` workflow verifies both locked packages
+and all operational/deployment guards before manual deployment. Branch pushes
+run offline verification only. The runtime build copies the full functions tree,
+including the structural-reference module and verification revision 4, and binds
+the image to the workflow source revision and immutable registry digest. The two
+earlier AI migration source checksums remain fixed; this release performs no SQL,
+database connection, schema/ledger write, provider activation or processing retry.
+Private production history evidence belongs to the separate read-only inspector.
+Retries reuse the existing commit image only after validating its source label;
+an explicitly selected immutable candidate also requires matching source and
+digest. Registry lookup errors never trigger a replacement build. This preserves
+the exact candidate needed to finish an interrupted rollout without rollback.
+
+`model-validation-update.py` requires the reviewed `2b3391…` API/worker baseline
+or the exact candidate on forward completion, and the `b90ee4…` frontend image.
+It retains all other deployment identities/specifications, secret values, public
+configuration and native schedules. API readiness precedes a guarded temporary
+worker `Recreate` strategy, preventing old workers from reading newly durable
+verification-4 pins. A candidate-bound metadata marker permits exact partial
+release recovery. The old runtime already handles SIGTERM by rejecting new
+requests and awaiting its active handler; the release requires at least 240
+seconds of termination grace, exceeding its 120-second provider-request bound.
+No force deletion is used. After worker readiness, old-process drain and public
+acceptance, the original strategy is restored and only the owned marker removed.
+Failures retain compatible code; reverting to the old verification-1–3 runtime
+after revision-4 admission is deliberately prohibited.
+
+Sixteen focused offline release tests pass, covering API-before-worker ordering,
+temporary strategy ownership, failed/ambiguous patch forward completion, baseline
+and grace rejection, concurrent configuration/UID drift, unchanged migration
+sources, absent privileged HTTP identity, forbidden SQL/admin paths and immutable
+image reuse. Independent reviews found and resolved fresh-worker baseline adoption
+and late runtime drift: the worker image patch now remains bound to the original
+UID/specification, and both runtime identities/images/specifications are checked
+after public acceptance and strategy restoration. Both reviewers approved the
+final implementation and independently repeated the focused release tests.
+
+Final local operations verification passes **250 tests**, including the sixteen
+release cases. Frontend verification passes **269 tests**, typecheck and build;
+backend build and **13 deployment renderer tests** pass. The prompt-change owner
+separately recorded the full **1,686-test backend pass**, followed by the final
+40 affected tests and typecheck after the last parser-boundary tightening. All
+diff whitespace checks pass. Bounded live model acceptance and production
+deployment remain separate pending evidence; this entry claims neither.
+
+## November 3 — model validation fixes deployed and live policies verified
+
+Live suite `41560518462` on `0437332` passed all four configured QwenCloud
+requests (Qwen3.8 and DeepSeek, two cases each): faithful reference-only empty
+inventory accepted and actual omitted buyer obligations detected. Production
+schema/evidence validation and task-specific assertions ran before success.
+Exact prompt hashes and report checksum were independently verified; usage
+was measured for all four HTTP 200 calls (18,783 input / 2,097 output tokens),
+with zero extra attempts, polling, unknown usage or business records. The
+private report transport object was deleted after verified download.
+
+Code-only release `41561808302` passed on
+`af3b086b0353d2c85115762a2ae20813e05001b9`, publishing runtime
+`sha256:871c2f80e9b2241bf53268b0b9d867ea5c46f4f355da822c7c9ec516b1fe59fb`.
+Remote verification passed 1,689 backend tests, 269 frontend tests, 250 ops
+tests, 13 renderer tests and both packages' typechecks/builds. API and worker
+readiness, graceful old-worker drain, restored strategy, removed release marker
+and final exact runtime identity checks passed. Frontend `b90ee4...`, public
+configuration, provider assets and all other workloads were preserved. There
+was no database access, schema change or processing retry by this release.
+
+Pre-release inspection `41560942476` observed one committed analysis sibling,
+two blocked jobs and additional unfinished/uncertain requests in the same plan.
+The whole-plan successor helper is therefore not activated: its completed-work
+and unresolved-request guards intentionally refuse that state. Existing paid
+records remain unchanged. A separately reviewed exact failed-step verifier
+recheck is being prepared; no such operation has been deployed or activated.
+The actual proposal version and Word export remain incomplete.

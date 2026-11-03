@@ -11,6 +11,7 @@ import {
 import { capabilitySchema } from "../../supabase/functions/_shared/modelContract.ts";
 import { extendedFixtures } from "./live-model-evaluation-extended.mjs";
 import { planningFixtures } from "./live-model-evaluation-planning.mjs";
+import { verificationFixtures } from "./live-model-evaluation-verification.mjs";
 import {
   candidateContent,
   validateGroundingReport,
@@ -36,6 +37,10 @@ export const PLANNING_LIMITS = Object.freeze({
   models: 1,
   generations: 2,
 });
+export const VERIFICATION_LIMITS = Object.freeze({
+  ...EXTENDED_LIMITS,
+  generations: 4,
+});
 export const RECHECK_PAIRS = Object.freeze(
   [
     ["deepseek-v4-pro", "proposal_structure_ownership"],
@@ -46,16 +51,24 @@ export const RECHECK_PAIRS = Object.freeze(
 );
 export function limitsForSuite(suite = "core") {
   check(
-    ["core", "extended", "extended_recheck", "planning_repair"].includes(suite),
+    [
+      "core",
+      "extended",
+      "extended_recheck",
+      "planning_repair",
+      "analysis_verification",
+    ].includes(suite),
     "EVAL_SUITE_INVALID",
   );
-  return suite === "planning_repair"
-    ? PLANNING_LIMITS
-    : suite === "extended_recheck"
-      ? RECHECK_LIMITS
-      : suite === "extended"
-        ? EXTENDED_LIMITS
-        : LIMITS;
+  return suite === "analysis_verification"
+    ? VERIFICATION_LIMITS
+    : suite === "planning_repair"
+      ? PLANNING_LIMITS
+      : suite === "extended_recheck"
+        ? RECHECK_LIMITS
+        : suite === "extended"
+          ? EXTENDED_LIMITS
+          : LIMITS;
 }
 const check = (ok, code) => {
   if (!ok) throw new ModelError(code);
@@ -117,6 +130,7 @@ const analysis = (evidence) => ({
 export async function fixtures(suite = "core") {
   limitsForSuite(suite);
   if (suite === "planning_repair") return planningFixtures();
+  if (suite === "analysis_verification") return verificationFixtures();
   if (suite !== "core") return extendedFixtures();
   const analyzeCase = (id, evidence, language = "en") => ({
     id,
@@ -321,6 +335,14 @@ export function validateTargets(targets, suite = "core") {
       targets.length === 1 && targets[0].model === "qwen3.8-max",
       "EVAL_PLANNING_TARGET_INVALID",
     );
+  if (suite === "analysis_verification")
+    check(
+      targets.length === 2 &&
+        targets.every((t) =>
+          ["deepseek-v4-pro", "qwen3.8-max"].includes(t.model),
+        ),
+      "EVAL_VERIFICATION_TARGETS_INVALID",
+    );
 }
 export async function evaluate(
   targets,
@@ -331,9 +353,11 @@ export async function evaluate(
 ) {
   validateTargets(targets, suite);
   const limits = limitsForSuite(suite);
-  const diagnosticSuite = ["extended_recheck", "planning_repair"].includes(
-    suite,
-  );
+  const diagnosticSuite = [
+    "extended_recheck",
+    "planning_repair",
+    "analysis_verification",
+  ].includes(suite);
   let generations = 0,
     requests = 0;
   const results = [],
@@ -396,7 +420,7 @@ export async function evaluate(
           : fixture.task === "classify_opportunity"
             ? 3
             : 2);
-      const verificationRevision = 2;
+      const verificationRevision = fixture.verificationRevision ?? 2;
       const start = Date.now();
       let remote = null,
         settled = false,

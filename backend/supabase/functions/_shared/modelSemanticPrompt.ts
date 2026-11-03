@@ -14,6 +14,7 @@ import {
 import { scopeComparisonApplies } from "./modelScopeInstructions.ts";
 import { analysisEvidenceApplies } from "./modelAnalysisEvidenceInstructions.ts";
 import { planningCoverageApplies } from "./modelPlanningInstructions.ts";
+import type { VerificationRevision } from "./modelVerificationInstructions.ts";
 
 const keyFor = async (requestPrefix: string) =>
   `semantic-instructions-${await sha256(requestPrefix)}`;
@@ -53,7 +54,7 @@ export async function pinSemanticPrompt(o: {
   requiredIds: string[];
   language: "en" | "ar";
   repair: boolean;
-  verificationRevision: 1 | 2 | 3;
+  verificationRevision: VerificationRevision;
 }): Promise<SemanticRevision> {
   if (o.task === "connection_probe") return 0;
   const key = await keyFor(o.requestPrefix);

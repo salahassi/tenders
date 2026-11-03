@@ -1,5 +1,6 @@
 // Immutable application policy. Never interpolate provider, user or document
 // instructions here. New wording requires a new phase-pinned policy version.
+export type VerificationRevision = 1 | 2 | 3 | 4;
 export const VERIFICATION_PROMPT_V2 =
   "tenderdesk-grounding-v2-contiguous-quotes";
 export const VERIFICATION_INSTRUCTIONS_V2 =
@@ -31,7 +32,54 @@ export const VERIFICATION_INSTRUCTIONS_V3 =
   "For each required ID, check that the audit includes a grounded assessment; do not require the underlying proposal to satisfy every requirement before its audit can be valid. " +
   "Evaluate proposed future delivery as proposed work. Do not demand completed-project test records or existing implementation as proof of a proposed method unless the buyer explicitly requires them with the bid. " +
   "Respect the supplied commercial review scope: missing lines from a scoped projection do not establish global BOQ omissions. Distinguish an explicit request for reconciliation from an assertion that the entire draft is incomplete.";
-export const verificationPolicyText = (revision: 1 | 2 | 3) =>
-  revision === 3 ? VERIFICATION_INSTRUCTIONS_V3 : VERIFICATION_INSTRUCTIONS_V2;
-export const verificationPolicyVersion = (revision: 1 | 2 | 3) =>
-  revision === 3 ? VERIFICATION_PROMPT_V3 : VERIFICATION_PROMPT_V2;
+export const VERIFICATION_PROMPT_V4 =
+  "tenderdesk-grounding-v4-analysis-boundary";
+export const VERIFICATION_INSTRUCTIONS_V4 =
+  VERIFICATION_INSTRUCTIONS_V2 +
+  " " +
+  "When original_task is analyze_chunk, the candidate is a SOURCE-SEGMENT EXTRACTION, not a proposal response. " +
+  "The top-level required_ids identify SOURCE BLOCKS. Each requirement_check evaluates whether its source block was processed faithfully and completely, not whether a proposal fulfills a buyer obligation. " +
+  "Return supported for a complete grounded extraction, including accurately retained obligations, exceptions and unresolved conflicts. " +
+  "When original_context.draft_input_version is 1, historical examples or unrelated reference material may contain no actual requests by this buyer: requirements=[] is valid when that is what the supplied segment establishes. " +
+  "A source-block check is supported when such an empty inventory accurately reflects the source; do not mark it insufficient merely because there is no buyer requirement or proposal response to verify. " +
+  "Missing formal RFP material or company proof is an input limitation, not by itself an error in a faithful extraction. Keep those limitations as advisory findings or explicit uncertainties. " +
+  "Mark a source-block check insufficient or contradicted for an actual extraction defect, including an omitted buyer obligation, lost qualifier, invented requirement or falsely attributed reference fact. Never invent an obligation to make a source ID look like a requirement. " +
+  "All factual assertions still need exact supporting source quotations. Source-location references to paragraphs or tables must match the cited source's supplied extraction markers; their locator numbers do not prove prices, dates or quantities. " +
+  "For a corrective verification report, recheck verdicts against this source-block scope and retain every justified defect. Return every scoped source ID and content ID exactly; do not discard a check to avoid reporting a defect.";
+
+export function analysisVerificationCoverage(
+  context: unknown,
+  requiredIds: string[],
+) {
+  if (
+    !context ||
+    typeof context !== "object" ||
+    !("original_task" in context) ||
+    context.original_task !== "analyze_chunk"
+  )
+    return undefined;
+  const original =
+    "original_context" in context ? context.original_context : undefined;
+  return {
+    kind: "source_block_extraction",
+    required_source_ids: requiredIds,
+    allow_empty_inventory_for_reference_material: Boolean(
+      original &&
+      typeof original === "object" &&
+      "draft_input_version" in original &&
+      original.draft_input_version === 1,
+    ),
+  };
+}
+export const verificationPolicyText = (revision: VerificationRevision) =>
+  revision === 4
+    ? VERIFICATION_INSTRUCTIONS_V4
+    : revision === 3
+      ? VERIFICATION_INSTRUCTIONS_V3
+      : VERIFICATION_INSTRUCTIONS_V2;
+export const verificationPolicyVersion = (revision: VerificationRevision) =>
+  revision === 4
+    ? VERIFICATION_PROMPT_V4
+    : revision === 3
+      ? VERIFICATION_PROMPT_V3
+      : VERIFICATION_PROMPT_V2;

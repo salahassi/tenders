@@ -46,8 +46,8 @@ const job=(await db.query(`insert into public.jobs(workspace_id,type,entity_id,s
  values($1,'analyze_chunk',$2,'blocked',repeat('a',64),'MODEL_CORRECTION_EXHAUSTED',3,'{"private":"retained checkpoint"}',$3) returning id`,[workspace,selection.plan_id,owner])).rows[0].id;
 await db.query(`insert into public.generation_steps(workspace_id,plan_id,job_id,task,stage,ordinal,input,created_by)
  values($1,$2,$3,'analyze_chunk','analysis',1,'{"block_id":"retained"}',$4)`,[workspace,selection.plan_id,job,owner]);
-const usage=(await db.query(`insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,created_at,remote_request_id,remote_deadline,created_by)
- values($1,$2,gen_random_uuid(),'private-receipt','openai','synthetic',repeat('a',64),current_date,1,100,100,'unknown',now()-interval '3 days','resp_private',now()-interval '2 days',$3) returning id`,[workspace,job,owner])).rows[0].id;
+const usage=(await db.query(`insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,created_at,remote_request_id,remote_deadline,remote_project_ref,error_code,created_by)
+ values($1,$2,gen_random_uuid(),'private-receipt','openai','synthetic',repeat('a',64),current_date,1,100,100,'unknown',now()-interval '3 days','resp_private',now()-interval '2 days','synthetic-project','PROVIDER_BACKGROUND_TERMINATED',$3) returning id`,[workspace,job,owner])).rows[0].id;
 const unrelated=(await db.query(`insert into public.jobs(workspace_id,type,entity_id,status,input_hash,created_by) values($1,'source_collect',$2,'blocked',repeat('e',64),$3) returning id`,[workspace,source,owner])).rows[0].id;
 await db.query(`insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,created_by)
  values($1,$2,gen_random_uuid(),'unrelated-unknown','qwen_free','synthetic',repeat('e',64),current_date,1,100,100,'unknown',$3)`,[workspace,unrelated,owner]);
@@ -56,6 +56,9 @@ await db.query(`insert into app_private.model_graph_budgets(workspace_id,thread_
 const candidate=(await db.query(`insert into app_private.model_graph_results(workspace_id,thread_id,result_key,value,content_hash) values($1,repeat('c',64),'candidate-2','{"result":"PRIVATE RETAINED CANDIDATE"}',repeat('d',64)) returning id`,[workspace])).rows[0].id;
 await db.query(`insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,project_ref,operation,round_number,worker_attempt,status,sent,usage_id)
  values($1,$2,gen_random_uuid(),'openai','synthetic','synthetic-project','analyze_chunk',1,3,'succeeded',true,$3)`,[workspace,job,usage]);
+await db.query(`insert into app_private.model_graph_checkpoints(thread_id,namespace,checkpoint_id,checkpoint,metadata) values(repeat('c',64),'','retained_checkpoint','{"type":"json","data":"e30="}','{"type":"json","data":"e30="}')`);
+await db.query(`insert into app_private.model_graph_writes(thread_id,namespace,checkpoint_id,task_id,idx,channel,value) values(repeat('c',64),'','retained_checkpoint','retained_task',0,'candidateRef','{"type":"json","data":"e30="}')`);
+await db.query(`insert into public.audit_events(workspace_id,actor_id,action,entity_type,entity_id,reason) values($1,$2,'ops.synthetic.retained','generation_plan',$3,'Retained original event')`,[workspace,owner,selection.plan_id]);
 await db.query(`insert into public.model_execution_settings(workspace_id,enabled,created_by) values($1,true,$2) on conflict(workspace_id) do update set enabled=true`,[workspace,owner]);
 await db.exec("delete from app_private.proposal_workflow_admission;create table app_private.application_release_history(release text primary key,migration_sha256 text);insert into app_private.application_release_history values('ai-execution-reliability-v1',repeat('f',64));");
 await db.exec(`create role tdp_app_owner nosuperuser nobypassrls nocreatedb nocreaterole;
@@ -73,7 +76,7 @@ await db.exec(`create role tdp_app_owner nosuperuser nobypassrls nocreatedb nocr
  END $ownership$;`);
 const state=async()=>{
  const value={};
- for(const table of ['public.generation_plans','public.proposals','public.opportunities','public.jobs','public.generation_steps','public.provider_usage','public.model_attempts','app_private.model_graph_threads','app_private.model_graph_budgets','app_private.model_graph_results','app_private.generation_processing_requests','public.content_authorizations','public.documents','public.document_packages','public.knowledge_items','public.templates','public.rate_catalog','public.review_inputs','app_private.proposal_workflow_admission','public.audit_events'])
+ for(const table of ['public.generation_plans','public.proposals','public.opportunities','public.jobs','public.generation_steps','public.provider_usage','public.model_attempts','app_private.model_graph_threads','app_private.model_graph_budgets','app_private.model_graph_results','app_private.model_graph_checkpoints','app_private.model_graph_writes','app_private.generation_processing_requests','public.content_authorizations','public.documents','public.document_packages','public.knowledge_items','public.templates','public.rate_catalog','public.review_inputs','app_private.proposal_workflow_admission','public.audit_events'])
   value[table]=(await db.query(`select to_jsonb(t) value from ${table} t order by to_jsonb(t)::text`)).rows;
  return value;
 };
@@ -101,12 +104,19 @@ let result=await run(await compile(false));
 assert.equal(result.status,'checked',JSON.stringify(result));assert.equal(result.canonical_mutations_rolled_back,true);assert.deepEqual(await state(),baseState);
 for(const [name,setup,expected] of [
  ['missing blocker',async()=>{await db.query("update public.jobs set error_code=null where id=$1",[job]);await db.query("update public.generation_plans set error_code=null where id=$1",[selection.plan_id]);},'PROPOSAL_SUCCESSOR_PLAN_CHANGED'],
- ['recent unknown',()=>db.query("update public.provider_usage set created_at=now() where id=$1",[usage]),'PROPOSAL_SUCCESSOR_PENDING_USAGE'],
- ['active remote',()=>db.query("update public.provider_usage set remote_deadline=now()+interval '1 hour' where id=$1",[usage]),'PROPOSAL_SUCCESSOR_PENDING_USAGE'],
+ ['recent nonterminal unknown',()=>db.query("update public.provider_usage set error_code=null,created_at=now() where id=$1",[usage]),'PROPOSAL_SUCCESSOR_PENDING_USAGE'],
+ ['active nonterminal remote',()=>db.query("update public.provider_usage set error_code='PROVIDER_BACKGROUND_RETRIEVAL_FAILED',remote_deadline=now()+interval '1 hour' where id=$1",[usage]),'PROPOSAL_SUCCESSOR_PENDING_USAGE'],
+ ['old nonterminal unknown',()=>db.query("update public.provider_usage set error_code=null where id=$1",[usage]),'PROPOSAL_SUCCESSOR_PENDING_USAGE'],
+ ['terminal marker without remote identity',()=>db.query("update public.provider_usage set remote_request_id=null,remote_deadline=null where id=$1",[usage]),'PROPOSAL_SUCCESSOR_PENDING_USAGE'],
+ ['terminal marker without remote project identity',()=>db.query("update public.provider_usage set remote_project_ref=null where id=$1",[usage]),'PROPOSAL_SUCCESSOR_PENDING_USAGE'],
  ['reserved',()=>db.query("update public.provider_usage set state='reserved' where id=$1",[usage]),'PROPOSAL_SUCCESSOR_PENDING_USAGE'],
  ['running job',()=>db.query("update public.jobs set status='running',lease_token=gen_random_uuid(),lease_until=now()+interval '1 hour' where id=$1",[job]),'PROPOSAL_SUCCESSOR_JOB_STATE_CHANGED'],
+ ['idle retry with lease',()=>db.query("update public.jobs set status='retry_wait',lease_token=gen_random_uuid(),lease_until=now()+interval '1 hour' where id=$1",[job]),'PROPOSAL_SUCCESSOR_JOB_STATE_CHANGED'],
+ ['queued nonanalysis job',()=>db.query("update public.jobs set type='advance_plan',status='queued' where id=$1",[job]),'PROPOSAL_SUCCESSOR_JOB_STATE_CHANGED'],
+ ['no remaining failed analysis job',()=>db.query("update public.jobs set status='queued' where id=$1",[job]),'PROPOSAL_SUCCESSOR_JOB_STATE_CHANGED'],
  ['completed step',()=>db.query("update public.generation_steps set status='completed' where job_id=$1",[job]),'PROPOSAL_SUCCESSOR_JOB_STATE_CHANGED'],
  ['final graph accepted',()=>db.query("update app_private.model_graph_threads set status='accepted',result_id=$1 where job_id=$2",[candidate,job]),'PROPOSAL_SUCCESSOR_COMPLETED_WORK_AVAILABLE'],
+ ['accepted artifact before thread commit',()=>db.query("insert into app_private.model_graph_results(thread_id,result_key,value,content_hash) values(repeat('c',64),'accepted','{\"retained_final\":true}',repeat('f',64))"),'PROPOSAL_SUCCESSOR_COMPLETED_WORK_AVAILABLE'],
  ['changed original extraction',()=>db.query("update public.documents set extraction_hash=repeat('f',64) where id=$1",[document]),'PROPOSAL_SUCCESSOR_SELECTED_SOURCES_CHANGED'],
  ['language override',()=>db.query("update public.generation_plans set frozen_context=jsonb_set(frozen_context,'{language}','\"ar\"') where id=$1",[selection.plan_id]),'PROPOSAL_REQUEST_OPTIONS_CHANGED'],
 ]) {
@@ -116,6 +126,14 @@ for(const [name,setup,expected] of [
 result=await run(await compile(true,r=>r.plan.revision++));assert.equal(result.code,'PROPOSAL_SUCCESSOR_PLAN_CHANGED');assert.deepEqual(await state(),baseState);
 const stale=await compile(true);await db.query('update public.documents set revision=revision+1 where id=$1',[document]);
 result=await run(stale);assert.equal(result.code,'PROPOSAL_SUCCESSOR_DOCUMENTS_CHANGED');await db.query('update public.documents set revision=revision-1 where id=$1',[document]);
+for(const [kind,mutate,expected] of [
+ ['job revision',()=>db.query('update public.jobs set revision=revision+1 where id=$1',[job]),'PROPOSAL_SUCCESSOR_JOB_STATE_CHANGED'],
+ ['usage receipt',()=>db.query("update public.provider_usage set error_code='PROVIDER_BACKGROUND_RETRIEVAL_FAILED' where id=$1",[usage]),'PROPOSAL_SUCCESSOR_USAGE_CHANGED'],
+]) {
+ await db.exec('savepoint stale_selection');const bound=await compile(true);await mutate();const changed=await state();
+ result=await run(bound);assert.equal(result.code,expected,kind+JSON.stringify(result));assert.deepEqual(await state(),changed);
+ await db.exec('rollback to savepoint stale_selection;release savepoint stale_selection');
+}
 // Guard the reviewed complete prospective inputs, including fields not covered
 // by the selected RFP document manifest or the opportunity revision alone.
 for(const [name,mutate] of [
@@ -150,11 +168,50 @@ await db.exec('drop trigger synthetic_change_snapshot on public.generation_plans
 await db.exec(`create function public.synthetic_corrupt_history() returns trigger language plpgsql as $$ begin update public.provider_usage set actual_input=1 where id='${usage}';return new;end $$;create trigger synthetic_corrupt_history after insert on public.generation_plans for each row execute function public.synthetic_corrupt_history();`);
 result=await run(await compile(true));assert.equal(result.code,'PROPOSAL_SUCCESSOR_HISTORY_CHANGED',JSON.stringify(result));
 await db.exec('drop trigger synthetic_corrupt_history on public.generation_plans;drop function public.synthetic_corrupt_history()');assert.deepEqual(await state(),baseState);
+await db.exec(`create function public.synthetic_corrupt_audit() returns trigger language plpgsql as $$ begin update public.audit_events set reason='Changed historical event' where action='ops.synthetic.retained';return new;end $$;create trigger synthetic_corrupt_audit after insert on public.generation_plans for each row execute function public.synthetic_corrupt_audit();`);
+result=await run(await compile(true));assert.equal(result.code,'PROPOSAL_SUCCESSOR_HISTORY_CHANGED',JSON.stringify(result));
+await db.exec('drop trigger synthetic_corrupt_audit on public.generation_plans;drop function public.synthetic_corrupt_audit()');assert.deepEqual(await state(),baseState);
 await db.exec('savepoint admitted');
 await db.query('insert into app_private.proposal_workflow_admission(singleton,enabled,trial_opportunity_id) values(true,true,$1)',[selection.opportunity_id]);
 result=await run(await compile(false));assert.equal(result.status,'checked',JSON.stringify(result));assert.equal(result.workflow_version,3);
 assert.equal((await db.query('select enabled from app_private.proposal_workflow_admission')).rows[0].enabled,true);
 await db.exec('rollback to savepoint admitted;release savepoint admitted');
+// Safe idle siblings and proven terminal unknown receipts permit a distinct
+// canonical request without spending or resetting any predecessor allowance.
+await db.exec('savepoint mixed_idle_analysis');
+const idleJobs=[];
+for(const [index,status] of ['queued','retry_wait'].entries()) {
+ const sibling=(await db.query(`insert into public.jobs(workspace_id,type,entity_id,status,input_hash,next_attempt_at,checkpoint,created_by)
+  values($1,'analyze_chunk',$2,$3,repeat('a',64),now()+interval '10 minutes','{"retained_idle_phase":true}',$4) returning id`,[workspace,selection.plan_id,status,owner])).rows[0].id;
+ idleJobs.push(sibling);
+ await db.query(`insert into public.generation_steps(workspace_id,plan_id,job_id,task,stage,ordinal,input,created_by)
+  values($1,$2,$3,'analyze_chunk','analysis',$4,'{"retained_input":true}',$5)`,[workspace,selection.plan_id,sibling,index+2,owner]);
+}
+await db.query("update public.provider_usage set created_at=now(),remote_deadline=now()+interval '23 hours' where id=$1",[usage]);
+await db.query("update app_private.model_graph_budgets set candidates=1 where thread_id=repeat('c',64) and unit='writer'");
+await db.query("update app_private.model_graph_threads set candidate_count=1 where id=repeat('c',64)");
+await db.query("insert into app_private.model_graph_budgets(thread_id,unit,candidates) values(repeat('c',64),'verifier-retained',2),(repeat('c',64),'verifier-repair-retained',1)");
+
+await db.query(`insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,actual_input,actual_output,graph_candidate_recorded,created_by)
+ values($1,$2,gen_random_uuid(),'settled-intermediate','qwen_free','synthetic-paid',repeat('a',64),current_date,1,100,100,'settled',50,20,true,$3)`,[workspace,job,owner]);
+await db.query(`insert into app_private.model_graph_results(thread_id,result_key,value,content_hash) values(repeat('c',64),'semantic-instructions-existing','{"version":4}',repeat('f',64))`);
+const mixedBefore=await state(),mixedSql=await compile(true);
+result=await run(await compile(false));assert.equal(result.status,'checked',JSON.stringify(result));assert.deepEqual(await state(),mixedBefore);
+result=await run(mixedSql);assert.equal(result.status,'started',JSON.stringify(result));
+const mixedAfter=await state();
+for(const table of ['public.provider_usage','public.model_attempts','app_private.model_graph_threads','app_private.model_graph_budgets','app_private.model_graph_results','app_private.model_graph_checkpoints','app_private.model_graph_writes']) assert.deepEqual(mixedAfter[table],mixedBefore[table],table);
+const oldAuditIds=new Set(mixedBefore['public.audit_events'].map(r=>r.value.id));
+assert.deepEqual(mixedAfter['public.audit_events'].filter(r=>oldAuditIds.has(r.value.id)),mixedBefore['public.audit_events']);
+for(const id of [job,...idleJobs]) {
+ const before=mixedBefore['public.jobs'].find(r=>r.value.id===id).value,after=mixedAfter['public.jobs'].find(r=>r.value.id===id).value;
+ assert.equal(after.status,'canceled');assert.equal(after.cancel_requested,true);assert.deepEqual(after.checkpoint,before.checkpoint);assert.equal(after.attempts,before.attempts);assert.equal(after.next_attempt_at,before.next_attempt_at);
+ const immutable=row=>Object.fromEntries(Object.entries(row).filter(([key])=>!['status','cancel_requested','revision','updated_at'].includes(key)));
+ assert.deepEqual(immutable(after),immutable(before));
+}
+const newJobs=mixedAfter['public.jobs'].filter(r=>r.value.entity_id===result.plan_id);
+assert.ok(newJobs.length>0);assert.ok(newJobs.every(r=>![job,...idleJobs].includes(r.value.id)));
+assert.equal(mixedAfter['app_private.model_graph_threads'].filter(r=>newJobs.some(j=>j.value.id===r.value.job_id)).length,0);
+await db.exec('rollback to savepoint mixed_idle_analysis;release savepoint mixed_idle_analysis');assert.deepEqual(await state(),baseState);
 const restart=await compile(true);
 const inspectedRevision=(await db.query('select evidence_revision from public.workspaces where id=$1',[workspace])).rows[0].evidence_revision;
 // A substantive change to another tender genuinely increments the workspace

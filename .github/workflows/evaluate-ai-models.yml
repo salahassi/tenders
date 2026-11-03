@@ -1,18 +1,18 @@
 name: Evaluate AI contracts against configured providers
 on:
   push:
-    branches: [codex/ai-execution-reliability]
+    branches: [codex/ai-execution-reliability, codex/ai-reliability-resume]
   workflow_dispatch:
     inputs:
       run_live:
-        description: Activate bounded synthetic requests (core 32, extended 16, diagnostic recheck 4, planning repair 2 maximum)
+        description: Activate bounded synthetic requests (core 32, extended 16, recheck 4, planning repair 2, analysis verification 4 maximum)
         type: boolean
         default: false
         required: true
       suite:
-        description: Core, extended QwenCloud tasks, four diagnostic pairs, or Qwen blueprint and repair
+        description: Core, extended QwenCloud tasks, diagnostic pairs, planning repair, or analysis verification
         type: choice
-        options: [core, extended, extended_recheck, planning_repair]
+        options: [core, extended, extended_recheck, planning_repair, analysis_verification]
         default: core
         required: true
 permissions:
@@ -41,7 +41,7 @@ jobs:
         run: |
           python3 -m unittest discover -s backend/scripts/ops -p 'test_live_model_evaluation.py'
           cd backend
-          npx vitest run tests/backend/liveModelEvaluation.test.ts tests/backend/liveModelEvaluationExtended.test.ts tests/backend/liveEvaluationSql.integration.test.ts
+          npx vitest run tests/backend/liveModelEvaluation.test.ts tests/backend/liveModelEvaluationExtended.test.ts tests/backend/liveModelEvaluationVerification.test.ts tests/backend/liveEvaluationSql.integration.test.ts
       - name: Run explicitly selected bounded live evaluation
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_live }}
         env:

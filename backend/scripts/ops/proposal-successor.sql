@@ -7,6 +7,7 @@ DECLARE selected jsonb:=__SELECTION__; actor uuid; p public.generation_plans; su
  before_plan jsonb; before_jobs jsonb; before_history jsonb; history_now jsonb; current_documents jsonb;
  current_jobs jsonb; current_usage jsonb; current_admission jsonb; original_refs jsonb; successor_refs jsonb;
  prospective_context jsonb; current_evidence_revision bigint;
+ original_audit_ids uuid[];
  relation_name text; predicate text; relation_state jsonb; command_result jsonb; receipt jsonb;
  stage text:='identity'; reason text:='Owner requested a new attempt after deployed AI reliability corrections; predecessor='||(__SELECTION__->>'plan_id');
  selection_hash text:='__SELECTION_HASH__'; prefix text:='proposal-ai-recovery-__SELECTION_HASH__';
@@ -81,7 +82,12 @@ BEGIN
    SELECT coalesce(jsonb_agg(jsonb_build_object('id',j.id,'revision',j.revision) ORDER BY j.id),'[]') INTO current_jobs
     FROM public.jobs j WHERE j.workspace_id=p.workspace_id AND j.entity_id=p.id;
    IF current_jobs IS DISTINCT FROM selected->'expected_jobs' OR EXISTS(SELECT 1 FROM public.jobs j WHERE j.workspace_id=p.workspace_id AND j.entity_id=p.id
-     AND (j.status NOT IN ('blocked','failed') OR j.cancel_requested OR j.lease_token IS NOT NULL OR j.lease_until IS NOT NULL OR j.input_hash IS DISTINCT FROM p.input_hash))
+     AND (j.status NOT IN ('queued','retry_wait','blocked','failed') OR j.cancel_requested OR j.lease_token IS NOT NULL OR j.lease_until IS NOT NULL
+      OR j.type<>'analyze_chunk' OR j.input_hash IS DISTINCT FROM p.input_hash
+      OR NOT EXISTS(SELECT 1 FROM public.generation_steps s WHERE s.workspace_id=j.workspace_id AND s.plan_id=p.id AND s.job_id=j.id
+       AND s.status='queued' AND s.stage='analysis' AND s.task=j.type)))
+    OR NOT EXISTS(SELECT 1 FROM public.jobs j WHERE j.workspace_id=p.workspace_id AND j.entity_id=p.id
+     AND j.status IN ('blocked','failed') AND j.error_code=p.error_code)
     OR NOT EXISTS(SELECT 1 FROM public.generation_steps WHERE workspace_id=p.workspace_id AND plan_id=p.id)
     OR EXISTS(SELECT 1 FROM public.generation_steps s WHERE s.workspace_id=p.workspace_id AND s.plan_id=p.id AND (s.status<>'queued' OR s.stage<>'analysis' OR s.task<>'analyze_chunk'))
     THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_JOB_STATE_CHANGED';END IF;
@@ -89,21 +95,26 @@ BEGIN
    -- Successful paid writers/verifiers and retained intermediate candidates
    -- remain eligible and are preserved by the immutable-history fingerprint.
    IF EXISTS(SELECT 1 FROM app_private.model_graph_threads t JOIN public.jobs j ON j.id=t.job_id AND j.workspace_id=t.workspace_id
-    WHERE j.entity_id=p.id AND j.workspace_id=p.workspace_id AND (t.status IN ('accepted','committed') OR t.result_id IS NOT NULL))
+    WHERE j.entity_id=p.id AND j.workspace_id=p.workspace_id AND (t.status IN ('accepted','committed') OR t.result_id IS NOT NULL
+     OR EXISTS(SELECT 1 FROM app_private.model_graph_results r WHERE r.workspace_id=t.workspace_id AND r.thread_id=t.id AND r.result_key='accepted')))
     THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_COMPLETED_WORK_AVAILABLE';END IF;
    SELECT coalesce(jsonb_agg(jsonb_build_object('id',u.id,'record_sha256',encode(sha256(convert_to(to_jsonb(u)::text,'UTF8')),'hex')) ORDER BY u.id),'[]')
     INTO current_usage FROM public.provider_usage u JOIN public.jobs j ON j.id=u.job_id AND j.workspace_id=u.workspace_id
     WHERE j.workspace_id=p.workspace_id AND j.entity_id=p.id;
    IF current_usage IS DISTINCT FROM selected->'expected_usage' THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_USAGE_CHANGED';END IF;
-   -- Expired historical unknown usage stays unknown. Mirror the canonical
-   -- reservation freshness boundary without blocking unrelated old accounting.
+   -- An explicit provider terminal response is no longer an active request,
+   -- even while its retained deadline is in the future. Its accounting stays
+   -- unknown byte-for-byte. Every other own unknown or reserved request blocks
+   -- this fresh successor; age alone cannot establish provider termination.
    IF EXISTS(SELECT 1 FROM public.provider_usage u JOIN public.jobs j ON j.id=u.job_id AND j.workspace_id=u.workspace_id
-    WHERE j.workspace_id=p.workspace_id AND j.entity_id=p.id AND (u.state='reserved' OR (u.state='unknown' AND
-      (u.created_at>now()-interval '15 minutes' OR u.remote_deadline>now() OR (u.remote_request_id IS NOT NULL AND u.remote_deadline IS NULL)))))
+    WHERE j.workspace_id=p.workspace_id AND j.entity_id=p.id AND (u.state='reserved' OR (u.state='unknown' AND NOT coalesce(
+      u.error_code='PROVIDER_BACKGROUND_TERMINATED' AND nullif(trim(u.remote_request_id),'') IS NOT NULL
+      AND nullif(trim(u.remote_project_ref),'') IS NOT NULL AND nullif(trim(u.model),'') IS NOT NULL,false))))
     THEN RAISE EXCEPTION 'PROPOSAL_SUCCESSOR_PENDING_USAGE';END IF;
    before_plan:=to_jsonb(p)-ARRAY['status','revision','updated_at'];
    SELECT coalesce(jsonb_agg(to_jsonb(j)-ARRAY['status','cancel_requested','revision','updated_at'] ORDER BY j.id),'[]') INTO before_jobs
     FROM public.jobs j WHERE j.workspace_id=p.workspace_id AND j.entity_id=p.id;
+   SELECT coalesce(array_agg(id),'{}'::uuid[]) INTO original_audit_ids FROM public.audit_events WHERE workspace_id=p.workspace_id;
    __HISTORY_SNAPSHOT__
    before_history:=history_now;
    SELECT coalesce(jsonb_agg(value ORDER BY value::text),'[]') INTO original_refs FROM (

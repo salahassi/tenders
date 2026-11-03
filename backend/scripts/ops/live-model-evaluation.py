@@ -49,8 +49,10 @@ class EvaluationError(Exception):
     pass
 
 def suite_limits(suite):
-    if suite not in {'core','extended','extended_recheck','planning_repair'}: raise EvaluationError('EVAL_SUITE_INVALID')
-    return (1,2) if suite == 'planning_repair' else (2,4) if suite == 'extended_recheck' else (2,16) if suite == 'extended' else (4,32)
+    limits = {'core':(4,32),'extended':(2,16),'extended_recheck':(2,4),
+              'planning_repair':(1,2),'analysis_verification':(2,4)}
+    if suite not in limits: raise EvaluationError('EVAL_SUITE_INVALID')
+    return limits[suite]
 
 RECHECK_PAIRS = {
     ('deepseek-v4-pro','proposal_structure_ownership'),
@@ -62,15 +64,19 @@ PLANNING_PAIRS = {
     ('qwen3.8-max','proposal_blueprint_ownership_v5'),
     ('qwen3.8-max','repair_blueprint_missing_owners_v5'),
 }
+ANALYSIS_VERIFICATION_PAIRS = {
+    (model,case) for model in ('deepseek-v4-pro','qwen3.8-max')
+    for case in ('analysis_reference_empty_v4','analysis_obligation_omission_v4')
+}
 
 def expected_case_count(count, suite):
-    return 2 if suite == 'planning_repair' else 4 if suite == 'extended_recheck' else count * 8
+    return 2 if suite == 'planning_repair' else 4 if suite in {'extended_recheck','analysis_verification'} else count * 8
 
 def catalog_sql(suite):
     max_models,_ = suite_limits(suite)
     if suite == 'core': return CATALOG_SQL
     condition = "c.provider='qwencloud'"
-    if suite == 'extended_recheck': condition += " AND m.model IN ('deepseek-v4-pro','qwen3.8-max')"
+    if suite in {'extended_recheck','analysis_verification'}: condition += " AND m.model IN ('deepseek-v4-pro','qwen3.8-max')"
     if suite == 'planning_repair': condition += " AND m.model='qwen3.8-max'"
     return CATALOG_SQL.replace("c.provider IN ('openai','qwencloud')", condition).replace('LIMIT 5',f'LIMIT {max_models+1}')
 
@@ -95,6 +101,8 @@ def targets(catalog, bindings, suite='core'):
         raise EvaluationError('EVAL_RECHECK_TARGETS_INVALID')
     if suite == 'planning_repair' and (len(result) != 1 or result[0]['model'] != 'qwen3.8-max'):
         raise EvaluationError('EVAL_PLANNING_TARGET_INVALID')
+    if suite == 'analysis_verification' and (len(result) != 2 or {r['model'] for r in result} != {model for model,_ in ANALYSIS_VERIFICATION_PAIRS}):
+        raise EvaluationError('EVAL_ANALYSIS_VERIFICATION_TARGETS_INVALID')
     return result
 
 def validate_report(report, count, suite='core'):
@@ -112,9 +120,10 @@ def validate_report(report, count, suite='core'):
         raise EvaluationError('EVAL_REPORT_INVALID')
     if suite != 'core' and any(r.get('provider') != 'qwencloud' for r in report['results']):
         raise EvaluationError('EVAL_REPORT_INVALID')
-    if suite in {'extended_recheck','planning_repair'}:
+    if suite in {'extended_recheck','planning_repair','analysis_verification'}:
         pairs = [(r.get('model'),r.get('case')) for r in report['results']]
-        allowed_pairs = PLANNING_PAIRS if suite == 'planning_repair' else RECHECK_PAIRS
+        allowed_pairs = {'planning_repair':PLANNING_PAIRS,'extended_recheck':RECHECK_PAIRS,
+                         'analysis_verification':ANALYSIS_VERIFICATION_PAIRS}[suite]
         if count != max_models or len(set(pairs)) != len(pairs) or any(p not in allowed_pairs for p in pairs):
             raise EvaluationError('EVAL_REPORT_INVALID')
     return report
