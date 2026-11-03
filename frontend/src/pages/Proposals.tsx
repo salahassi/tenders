@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Download, FileText, Search } from "lucide-react";
 import { useApp } from "../lib/store";
-import { exportProposal, proposalFileName } from "../lib/export";
+import { proposalFileName } from "../lib/export";
+import { createConnectedExport } from "../lib/connectedExport";
 import { getOpportunityStage, opportunityStageLabel } from "../lib/workflow";
 import { Badge, Button, EmptyState, PageHeader } from "../components/ui";
 import type { Proposal } from "../types";
@@ -10,7 +11,7 @@ import "./workspace.css";
 import "./proposal-files.css";
 
 export default function Proposals() {
-  const { state, notify } = useApp();
+  const { state, notify, backend } = useApp();
   const [search, setSearch] = useState("");
   const [exporting, setExporting] = useState<string | null>(null);
   const visible = state.proposals.filter((proposal) => {
@@ -28,21 +29,26 @@ export default function Proposals() {
       .includes(search.toLowerCase());
   });
   async function download(proposal: Proposal) {
-    const opportunity = state.opportunities.find(
-      (item) => item.id === proposal.opportunityId,
-    );
-    if (!opportunity) return;
     setExporting(proposal.id);
     try {
-      await exportProposal(proposal, opportunity, state.settings.companyName);
+      if (!backend)
+        throw new Error(
+          "The workspace connection is unavailable. Refresh and try again.",
+        );
+      if (!proposal.versionId)
+        throw new Error(
+          "The saved proposal version is unavailable. Refresh the workspace and try again.",
+        );
+      await createConnectedExport(backend, proposal.versionId, "draft");
       notify(
-        "Word file downloaded from the saved content. Update all fields and the entire table of contents in Word, then review the file.",
+        "Draft Word downloaded. Update all fields and the entire table of contents in Word, then review the files.",
       );
     } catch (error) {
       notify(
         error instanceof Error
           ? error.message
           : "The Word file could not be generated.",
+        "error",
       );
     } finally {
       setExporting(null);
@@ -172,7 +178,7 @@ export default function Proposals() {
                           </Link>
                           <Button
                             size="sm"
-                            aria-label={`Download ${proposal.title} as Word`}
+                            aria-label={`Download ${proposal.title} as draft Word`}
                             disabled={
                               !!exporting ||
                               (!proposal.sections.length &&
@@ -181,7 +187,9 @@ export default function Proposals() {
                             onClick={() => void download(proposal)}
                           >
                             <Download size={14} />
-                            {exporting === proposal.id ? "Generating…" : "Word"}
+                            {exporting === proposal.id
+                              ? "Preparing…"
+                              : "Draft Word"}
                           </Button>
                         </div>
                       </td>

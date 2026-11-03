@@ -4329,3 +4329,43 @@ refinement changes operational inspection/recovery helpers only. No production
 mutation or live provider request was performed by these local tests; a fresh
 private inspection and separately authorized dispatch remain required for
 actual successor and draft/export acceptance.
+
+## November 3 — proposal-list Word download uses the connected export
+
+Stage: M5 export. The proposal-list Word action previously packaged the client
+display projection with the legacy local renderer. That projection omits the
+server's commercial/delivery/review snapshot and volume separation, and flattens
+structured section tables. The action now invokes the same connected draft
+export as ProposalEditor for the clicked saved version. Server authorization,
+frozen snapshot, buyer-defined volumes, artifact registration and authenticated
+download remain in the existing shared export flow. Missing backend/version
+identity and export errors report failure without creating a local substitute;
+busy state lasts until the connected export finishes. Editor behavior and all
+model/provider/accounting paths remain unchanged.
+The list button and its accessible name explicitly identify the download as a
+draft, including for an approved proposal row.
+
+Four isolated component regressions cover exact selected version/draft mode,
+deferred success and duplicate-click prevention, genuine export rejection and
+missing connection/version failures. All **269 frontend tests in 40 files**,
+frontend typecheck/build, focused formatting and diff whitespace checks pass.
+Deployment and real list-button export acceptance remain pending; the separate
+actual-editor acceptance does not establish list-button hosted acceptance.
+
+## November 3 — canonical proposal successor started on DigitalOcean
+
+Authorized restart workflow `41555786933` passed on helper commit `d4cbab1`.
+It created exactly one successor through canonical cancellation/generation,
+retaining all predecessor usage, paid attempts, graph history and correction
+budgets. The complete prospective snapshot and original selected document
+references were unchanged; the new plan preserves English and workflow v1
+admission with twelve frozen blocks. Workspace evidence advanced from the
+inspected revision 1816 to 1818 for unrelated inputs while the exact selected
+snapshot remained identical. Both workloads matched the deployed immutable
+reliability runtime. The encrypted receipt was downloaded and hash verified,
+then its temporary transport object was removed.
+
+Read-only observer `41556129126` is following only this successor, with a
+900-second bound and no additional worker/model invocation. Creation of the
+new plan is confirmed; generation completion, model acceptance and real draft
+Word export remain unverified at this observation time.
