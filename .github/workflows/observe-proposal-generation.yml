@@ -1,0 +1,78 @@
+name: Observe one actual proposal generation
+on:
+  push:
+    branches: [codex/ai-reliability-resume]
+    paths:
+      - .github/workflows/observe-proposal-generation.yml
+      - backend/scripts/ops/observe-proposal-generation.py
+      - backend/scripts/ops/test_observe_proposal_generation.py
+      - backend/scripts/ops/test_observe_proposal_generation.mjs
+  workflow_dispatch:
+    inputs:
+      selection_object:
+        description: Exact encrypted proposal selection using the existing private transport
+        type: string
+        required: true
+      selection_sha256:
+        description: Reviewed private selection plaintext SHA-256
+        type: string
+        required: true
+      expected_runtime_image:
+        description: Deployed immutable API and worker runtime image digest
+        type: string
+        required: true
+      timeout:
+        description: Observation duration in seconds, maximum 900
+        type: number
+        default: 900
+        required: true
+permissions:
+  contents: read
+# Reads do not acquire the production mutation mutex or wake the worker.
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Verify offline observation boundaries
+        run: |
+          npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_observe_proposal_generation.py'
+      - name: Observe selected proposal without modifying or invoking processing
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          PROPOSAL_SELECTION_OBJECT: ${{ inputs.selection_object }}
+          PROPOSAL_SELECTION_SHA256: ${{ inputs.selection_sha256 }}
+          EXPECTED_RUNTIME_IMAGE: ${{ inputs.expected_runtime_image }}
+          OBSERVATION_TIMEOUT: ${{ inputs.timeout }}
+        run: |
+          python3 backend/scripts/ops/observe-proposal-generation.py \
+            --selection-object "$PROPOSAL_SELECTION_OBJECT" \
+            --selection-sha256 "$PROPOSAL_SELECTION_SHA256" \
+            --expected-runtime-image "$EXPECTED_RUNTIME_IMAGE" \
+            --timeout "$OBSERVATION_TIMEOUT" --interval 15
+      - name: Remove temporary runner credentials and private report plaintext
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil,sys
+          try:
+              run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+              if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):raise ValueError()
+              path=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+run+'-'+attempt)
+              if path.exists():shutil.rmtree(path)
+          except Exception:
+              print('{"proposal_observation":"failed","code":"RUNNER_CLEANUP_NOT_CONFIRMED"}')
+              sys.exit(1)
+          print('{"proposal_observation":"runner_files_removed"}')
+          PY

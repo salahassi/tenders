@@ -4171,3 +4171,52 @@ or recovery has run from this implementation. The existing authorization-only,
 never-sent resume helper remains unchanged; a paid correction-exhausted plan
 requires a separately reviewed canonical recovery action after current evidence
 and deployed-runtime verification.
+
+## November 3 — bounded observation of one resumed proposal
+
+The separate `observe-proposal-generation.yml` workflow observes an exact private
+workspace/opportunity/plan selection. Pushes on `codex/ai-reliability-resume`
+run only offline guards; live reads require manual dispatch and the expected
+immutable API/worker runtime digest. Each sample rechecks that runtime and runs
+an exact-target, read-only aggregate query. The observer does not invoke the
+worker, scheduler, model adapters, content authorization or application commands.
+
+Observation is limited to 900 seconds with intervals of 15–60 seconds. The
+nonce-owned client has a bounded setup/report margin and refuses cleanup of
+foreign resources. Public progress contains fixed stages/statuses/error labels
+and counts only; unknown error text maps to `UNCLASSIFIED`. A queued sample is
+never interpreted as failure. Blocked/failed/canceled states require two stable
+samples with no queued/running/waiting jobs or reserved requests. Completion
+requires the selected plan's generated version to be the proposal's current
+version. Timeout and attention remain distinct from completion. A final full
+inspection and outcome are transferred encrypted; only its report digest enters
+public logs. Cleanup failure produces a failed receipt.
+
+Local verification: ten focused offline tests pass, including exact SQL against
+all migrations, target mismatch guards, unchanged database rows, private-data
+projection, bounded observation transitions, runtime mismatch before SQL,
+owned cleanup, encrypted final reporting and cleanup failure. Python compilation
+and whitespace checks pass. No live observation or completed proposal is claimed
+by these implementation checks; exact workflow and generated-version evidence
+remain to be recorded after the authorized resume.
+
+## November 3 — authorized reliability release deployed and merged
+
+The user explicitly authorized deployment, resume and testing. Runtime-only
+workflow `41551634331` completed successfully on commit
+`2684780552726f33e25f9ff9b29a2d3237a7a701`, publishing API and worker image
+`sha256:2b3391d445071f196bebf4d635e23ec50d3b33a8795defbded511259ea8bde1e`.
+The two reviewed function migrations passed verification with existing rows
+and frozen work preserved; only the two runtime deployments were updated.
+Public configuration/provider assets and other workloads were preserved.
+Release ledger checksum:
+`0353c429634df4f9ed3429074e8ff027ef7151b66edffdc467dae08ecb2f8f4b`.
+PR #19 merged as `3bf07a7c4dd712093344e5f7b0819f0720f1353a`.
+
+Read-only inspection `41552352731` verified both running images and the exact
+selected original proposal: twelve blocked jobs, no active target leases or
+reserved usage, and no completed proposal version or final accepted graph.
+Its paid intermediate attempts, unknown usage and exhausted correction budgets
+remain intact. Canonical successor recovery and actual browser draft Word
+acceptance are pending; the preceding pre-release pending statements describe
+their observation time, not the now-completed runtime deployment.

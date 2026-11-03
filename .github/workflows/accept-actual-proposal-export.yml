@@ -1,0 +1,86 @@
+name: Verify actual proposal draft Word export
+on:
+  push:
+    branches: [codex/ai-reliability-resume]
+  workflow_dispatch:
+    inputs:
+      run_acceptance:
+        description: Export only the reviewed completed real proposal draft
+        type: boolean
+        default: false
+        required: true
+      selection_object:
+        description: Encrypted exact plan and version selection
+        type: string
+        required: true
+      selection_sha256:
+        description: Reviewed selection plaintext SHA-256
+        type: string
+        required: true
+      expected_runtime_image:
+        description: Exact deployed immutable runtime image
+        type: string
+        required: true
+      mode:
+        description: Actual editor Chromium, or explicit HTTP plus application renderer fallback
+        type: choice
+        options: [browser, http]
+        default: browser
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  accept:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: Install locked dependencies and verify offline acceptance boundaries
+        run: |
+          npm ci --prefix backend
+          npm ci --prefix frontend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_proposal_export_acceptance.py'
+          cd backend
+          npx vitest run tests/backend/proposalExportAcceptance.test.ts tests/backend/proposalExportSelection.integration.test.ts
+      - name: Install Chromium for the actual deployed editor
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_acceptance && inputs.mode == 'browser' }}
+        run: backend/node_modules/.bin/playwright install --with-deps chromium
+      - name: Export the explicitly selected actual completed draft
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_acceptance }}
+        env:
+          RUN_ACTUAL_PROPOSAL_EXPORT_ACCEPTANCE: "true"
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          EXPORT_SELECTION_OBJECT: ${{ inputs.selection_object }}
+          EXPORT_SELECTION_SHA256: ${{ inputs.selection_sha256 }}
+          EXPORT_RUNTIME_IMAGE: ${{ inputs.expected_runtime_image }}
+          EXPORT_ACCEPTANCE_MODE: ${{ inputs.mode }}
+        run: |
+          python3 backend/scripts/ops/proposal-export-acceptance.py \
+            --selection-object "$EXPORT_SELECTION_OBJECT" \
+            --selection-sha256 "$EXPORT_SELECTION_SHA256" \
+            --expected-runtime-image "$EXPORT_RUNTIME_IMAGE" \
+            --mode "$EXPORT_ACCEPTANCE_MODE"
+      - name: Remove temporary credentials and private export plaintext
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil
+          run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+          if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):raise SystemExit(1)
+          directory=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+run+'-'+attempt)
+          if directory.exists():shutil.rmtree(directory)
+          print('Private draft export acceptance temporary files removed.')
+          PY

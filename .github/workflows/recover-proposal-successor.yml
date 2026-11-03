@@ -1,0 +1,95 @@
+name: Recover one reviewed proposal through canonical successor
+on:
+  push:
+    branches: [codex/ai-reliability-resume]
+    paths:
+      - .github/workflows/recover-proposal-successor.yml
+      - backend/scripts/ops/proposal-successor.py
+      - backend/scripts/ops/proposal-successor.sql
+      - backend/scripts/ops/proposal-successor-history.sql
+      - backend/scripts/ops/test_proposal_successor.py
+      - backend/scripts/ops/test_proposal_successor.mjs
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Check with full rollback, or explicitly start the reviewed successor
+        type: choice
+        options: [check, restart]
+        default: check
+        required: true
+      selection_object:
+        description: Encrypted exact inspected selection, including reviewed runtime digest
+        type: string
+        required: true
+      selection_sha256:
+        description: Reviewed selection plaintext SHA-256
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Verify exact selection, rollback, immutable history and canonical command guards
+        run: |
+          npm ci --prefix backend
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_proposal_successor.py'
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_proposal_recovery.py'
+  recover:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: tenderdesk-digitalocean-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Install existing private transport dependencies
+        run: python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+      - name: Execute only the selected canonical recovery mode
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          PROPOSAL_SUCCESSOR_ACTION: ${{ inputs.action }}
+          PROPOSAL_SELECTION_OBJECT: ${{ inputs.selection_object }}
+          PROPOSAL_SELECTION_SHA256: ${{ inputs.selection_sha256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mode_arguments=()
+          case "$PROPOSAL_SUCCESSOR_ACTION" in
+            check) ;;
+            restart) mode_arguments+=(--restart) ;;
+            *) exit 1 ;;
+          esac
+          python3 backend/scripts/ops/proposal-successor.py \
+            --selection-object "$PROPOSAL_SELECTION_OBJECT" \
+            --selection-sha256 "$PROPOSAL_SELECTION_SHA256" \
+            "${mode_arguments[@]}"
+      - name: Remove temporary runner credentials and private plaintext
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil,sys
+          try:
+              run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+              if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):raise ValueError()
+              path=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+run+'-'+attempt)
+              if path.exists():shutil.rmtree(path)
+          except Exception:
+              print('{"proposal_successor":"failed","code":"RUNNER_CLEANUP_NOT_CONFIRMED"}')
+              sys.exit(1)
+          print('{"proposal_successor":"runner_files_removed"}')
+          PY
