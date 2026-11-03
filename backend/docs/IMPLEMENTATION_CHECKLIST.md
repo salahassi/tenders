@@ -4394,3 +4394,37 @@ request's provider-side cause. These are real transport/progress observations,
 not completed semantic acceptance or Word export evidence. Private report
 transfer was verified and its temporary object deleted. Generation and actual
 editor draft Word acceptance remain pending ongoing observation.
+
+## November 3 — private exact-job verifier failure diagnostic prepared
+
+The actual successor reached a blocked analysis job after one writer response,
+two verifier responses and one verifier-report correction. Its writer candidate,
+provider receipts and exhausted verifier allowance remain retained. A separate
+read-only diagnostic now binds one exact workspace, opportunity, plan and job
+plus the deployed API/worker runtime digest. It reads the frozen inputs, selected
+step, every immutable graph result (including each distinct invalid fallback
+report), verification/prompt pins, serialized checkpoints/writes, bounded attempt
+diagnostics and usage metadata. It invokes no model, authorization, refresh,
+retry or accounting operation and does not alter the running observer.
+
+Only encrypted private transport receives source text or candidate/report
+content. Explicit metadata projections exclude credentials, routing snapshots,
+HTTP headers, lease tokens and remote response IDs. Read-only database isolation,
+statement/lock timeouts, row-count limits and 32 MiB report bounds fail closed
+without truncating diagnostic artifacts. API/worker identity is checked before
+client creation, before SQL and after SQL. Temporary resources retain nonce-bound
+ownership checks and cleanup; public output contains only fixed status/error
+labels and the report verification digest. Push runs offline checks; actual reads
+require manual dispatch and no production mutation mutex.
+
+Local verification: **seven diagnostic tests pass**, including a complete-schema
+fixture under the restricted production database owner. It proves exact-job
+scope, full writer/invalid-verifier payload retention, exclusion of sibling work
+and injected fake credential metadata, unchanged usage/graph/source/audit rows,
+wrong-target refusal, hard-size refusal and PostgreSQL read-only write rejection.
+Python tests exercise all three runtime-change windows, private-error suppression,
+invalid upload digests, private report publication and cleanup failure. Python
+compilation and whitespace checks pass; independent source/test review is green.
+No live diagnostic call or recovery mutation was performed by these tests. The
+actual invalid verifier artifacts and cause remain pending the separately
+dispatched private report; completed generation and Word export remain unverified.
