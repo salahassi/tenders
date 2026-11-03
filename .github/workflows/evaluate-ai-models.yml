@@ -5,14 +5,14 @@ on:
   workflow_dispatch:
     inputs:
       run_live:
-        description: Activate bounded synthetic requests (core 32, extended 16, recheck 4, planning repair 2, analysis verification 4 maximum)
+        description: Activate bounded synthetic requests (core 32, extended 16, recheck 4, planning repair 2, analysis verification or authority 4 maximum)
         type: boolean
         default: false
         required: true
       suite:
-        description: Core, extended QwenCloud tasks, diagnostic pairs, planning repair, or analysis verification
+        description: Core, extended QwenCloud tasks, diagnostic pairs, planning repair, analysis verification, or authority
         type: choice
-        options: [core, extended, extended_recheck, planning_repair, analysis_verification]
+        options: [core, extended, extended_recheck, planning_repair, analysis_verification, analysis_authority]
         default: core
         required: true
 permissions:
@@ -41,7 +41,7 @@ jobs:
         run: |
           python3 -m unittest discover -s backend/scripts/ops -p 'test_live_model_evaluation.py'
           cd backend
-          npx vitest run tests/backend/liveModelEvaluation.test.ts tests/backend/liveModelEvaluationExtended.test.ts tests/backend/liveModelEvaluationVerification.test.ts tests/backend/liveEvaluationSql.integration.test.ts
+          npx vitest run tests/backend/liveModelEvaluation.test.ts tests/backend/liveModelEvaluationExtended.test.ts tests/backend/liveModelEvaluationVerification.test.ts tests/backend/liveModelEvaluationAuthority.test.ts tests/backend/liveEvaluationSql.integration.test.ts
       - name: Run explicitly selected bounded live evaluation
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_live }}
         env:

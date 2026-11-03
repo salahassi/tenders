@@ -26,6 +26,11 @@ import {
   mergeVerificationReports,
 } from "./modelVerification.ts";
 import {
+  newVerificationBatchPin,
+  verificationBatchContext,
+  verificationBatchPartition,
+} from "./modelVerificationBatchContext.ts";
+import {
   candidateContent,
   groundingDefects,
   groundingOptions,
@@ -144,7 +149,9 @@ export async function verificationContext(
     if (!pool.pending_model_config_id) {
       format = await store.action("result_put", {
         key: formatKey,
-        value: { version: 2 },
+        value: {
+          version: context.original_task === "analyze_chunk" ? 3 : 2,
+        },
       });
     }
   }
@@ -157,6 +164,20 @@ export async function verificationContext(
       ...compact
     } = context;
     context = { ...compact, response_style: "compact-verification-v2" };
+  } else if (format?.value.version === 3) {
+    // Analysis strings alone cannot express mandatory flags, null owner
+    // questions or which field a statement belongs to. Retain the exact typed
+    // candidate for new requests; content_units still bound report quotations
+    // and coverage. Formats 1/2 keep their historical payloads unchanged.
+    if (
+      context.original_task !== "analyze_chunk" ||
+      !context.candidate ||
+      typeof context.candidate !== "object" ||
+      Array.isArray(context.candidate)
+    )
+      throw new ModelError("MODEL_IDENTITY_CHANGED");
+    const { candidate_text: _text, ...typed } = context;
+    context = { ...typed, response_style: "compact-verification-v3" };
   }
   return context;
 }
@@ -946,13 +967,16 @@ async function runGuardedModel(o: Options): Promise<{
       if (recovered) return { reportRef: recovered.id };
       const policy = verificationPolicy(o.context);
       let batches = recheck ? [] : verificationBatches(candidate, policy);
+      let batchPin: any;
       if (batches.length) {
         const formatKey = `verification-batches-${hash}`;
         const pinned = await store.action("result_get", { key: formatKey });
+        batchPin = pinned?.value;
+        const partition = verificationBatchPartition(batchPin, o.task);
         if (
-          policy &&
           pinned &&
-          !sameVerificationPartition(pinned.value, policy)
+          ((policy && !sameVerificationPartition(partition, policy)) ||
+            (!policy && batchPin.version === 5 && partition.version !== 3))
         )
           throw new ModelError("MODEL_IDENTITY_CHANGED");
         if (!pinned) {
@@ -961,11 +985,13 @@ async function runGuardedModel(o: Options): Promise<{
             "verify_grounding",
           );
           if (pool.pending_model_config_id) batches = [];
-          else
+          else {
+            batchPin = newVerificationBatchPin(o.task, policy);
             await store.action("result_put", {
               key: formatKey,
-              value: policy ? { version: 4, policy } : { version: 3 },
+              value: batchPin,
             });
+          }
         }
       }
       if (batches.length) {
@@ -1004,29 +1030,34 @@ async function runGuardedModel(o: Options): Promise<{
               scope,
             );
           if (!report) {
-            const contextFor = (invalid: any) => ({
-              original_task: o.task,
-              original_context: o.context,
-              candidate_hash: hash,
-              content_units: scope.units,
-              verification_scope: scope.requirementsOnly
-                ? "requirements_only"
-                : "content_batch",
-              ...(invalid
-                ? {
-                    invalid_verification_result: invalid.value.result,
-                    validation_error: invalid.value.code,
-                    ...(invalid.value.validation_diagnostics
-                      ? {
-                          validation_diagnostics:
-                            invalid.value.validation_diagnostics,
-                        }
-                      : {}),
-                    correction_instruction:
-                      "Correct only this report with exact candidate/source quotations. Preserve justified defects and all scoped IDs.",
-                  }
-                : {}),
-            });
+            const contextFor = (invalid: any) =>
+              verificationBatchContext(
+                {
+                  original_task: o.task,
+                  original_context: o.context,
+                  candidate_hash: hash,
+                  content_units: scope.units,
+                  verification_scope: scope.requirementsOnly
+                    ? "requirements_only"
+                    : "content_batch",
+                  ...(invalid
+                    ? {
+                        invalid_verification_result: invalid.value.result,
+                        validation_error: invalid.value.code,
+                        ...(invalid.value.validation_diagnostics
+                          ? {
+                              validation_diagnostics:
+                                invalid.value.validation_diagnostics,
+                            }
+                          : {}),
+                        correction_instruction:
+                          "Correct only this report with exact candidate/source quotations. Preserve justified defects and all scoped IDs.",
+                      }
+                    : {}),
+                },
+                candidate,
+                batchPin,
+              );
             const invalid = await correctionFor(
               key,
               repairKey,

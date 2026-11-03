@@ -4896,9 +4896,50 @@ configuration and schedules are checked before SQL and after public acceptance
 and administrator cleanup. Ambiguous SQL acknowledgement requires verification
 or replay of the same batch, with no runtime rollback or accounting reset.
 
-Exact-source tests under managed role names, failure/rollback tests and independent
-review are in progress. Production application and actual proposal recovery remain
-separate, pending evidence.
+The frozen identity source SHA-256 is
+`30f79868deaa94daab1554584aede2545a1611a29f7b19d26503e75f57720f14`, with
+ledger key `analysis-recheck-prompt-identity-v1`; the frozen fairness source is
+`3bb13dd60fb4322ac3ba70c534ec6165a668da547318d1ea49232ae1d401c927`, with
+ledger key `model-admission-fairness-v1`. The earlier `cead30c4…` migration and
+receipt remain unchanged.
+
+All **eight release tests pass**, including the exact batch under restricted
+`tdp_app_owner` with only managed role names, atomic rollback of both migrations,
+row/authority/structure preservation, partial-receipt refusal, cursor-preserving
+replay, immutable workload checks and administrator cleanup. An independent
+reviewer approved the wrapper/workflow and repeated the eight tests successfully.
+The full local operations suite passes **273 tests**, and all **13 renderer
+tests** pass. Both application packages retain their full typecheck/test/build
+gates in the manual release workflow. Production application and actual proposal
+recovery remain separate, pending evidence.
+
+## November 3 — prepared code-only release for typed verification
+
+The typed-verification release uses a small adapter around the audited
+`model-validation-update.py` rollout. Its baseline is the deployed `bded9f…`
+runtime, with a distinct `typed-verification-code-v1` receipt and owned worker
+transition marker. It retains frontend `b90ee4…`, other workloads, configuration
+and schedules. All five previous migration source checksums are checked locally;
+the updater opens no database connection and makes no processing request.
+
+The existing immutable-image helper builds once or reuses the same verified
+source/digest. API readiness precedes the guarded worker Recreate transition;
+graceful old-worker termination prevents mixed readers of newly admitted format
+pins. Candidate acceptance restores the exact worker strategy and waits for its
+controller acknowledgement before the final identity/specification checks. Any
+ambiguous rollout retains compatible candidate code for exact-image forward
+completion. The ordinary backend Docker copy includes newly imported shared
+modules without changing frontend assets.
+
+Five focused adapter tests pass, reusing the existing JSON-patch simulator and
+spies that reject database/admin calls. They cover the exact baseline and unique
+marker, prior-source integrity, unchanged unrelated workloads, strategy readiness,
+partial candidate replay and foreign-state refusal. The separate workflow permits
+production access only on manual dispatch and retains full package and operations
+gates. Independent release review approved the adapter/workflow and repeated all
+five tests successfully; the eleven shared rollout tests also pass. Final
+typed-format runtime tests and bounded live evaluation remain separate pending
+gates; this entry does not claim runtime deployment.
 
 ## November 3 — immutable writer prompt identity correction
 
@@ -4935,3 +4976,63 @@ and provider reviews found no blocker. The correction SQL SHA-256 is
 the deployed migration retains its original `cead30c4…` checksum. Production
 application and actual recheck acceptance remain pending the separate reviewed
 SQL release.
+
+## November 3 — bounded typed-analysis authority evaluation
+
+The manual evaluation workflow now offers `analysis_authority`: exactly the
+configured QwenCloud `qwen3.8-max` and `deepseek-v4-pro`, each with two synthetic
+cases and at most four generation requests total. Both cases use the same buyer
+brief and candidate prose. The valid case retains an optional workshop and an
+advisory question about an absent formal RFP; the invalid case changes only the
+typed mandatory flag and question blocking level. The negative golden assertion
+requires a source-associated finding of optional scope strengthened into an
+obligation; a generic missing-RFP objection alone cannot pass.
+
+Fixtures construct their context through the real `verificationContext` format
+pin, using ephemeral local state with no database or provider access. New format
+3 retains the exact structured candidate while semantic and verification policies
+stay at revision 4. Actual adapter calls run canonical `validateGroundingReport`
+before success, then the selected golden assertions. Existing request bounds,
+strict target/pair selection, usage reporting, secret redaction and encrypted
+private report transport remain in force. Push events run offline checks only;
+live requests still require explicit manual activation.
+
+All **25 evaluation harness tests**, **18 Python boundary tests** and **8
+full-schema catalogue tests** pass, along with backend typechecking and formatting
+checks. All **58 historical live-request prompt hashes** across the five existing
+suites remain identical. Independent review verified the four-request boundary,
+production format/validation path and private transport. The semantic assertion
+also accepts an unsupported mandatory flag tied to a quotation establishing
+optional scope, while rejecting a mere omitted-optional-work or missing-RFP
+finding. No requests from this new suite have been sent; its production
+evaluation is a separate pending gate.
+
+## November 3 — typed analysis verification formats
+
+New whole-analysis verification pins context format **3**, retaining the exact
+structured candidate alongside its existing content units. Mandatory booleans,
+null owner questions, question blocking levels and their JSON field ownership
+are now visible to the verifier. The redundant flattened candidate text is
+removed. Historical format **1/2** prompts retain their exact recorded bytes;
+an accepted unpinned legacy request keeps its original context until retrieval
+completes. Semantic and verification instructions remain unchanged.
+
+New batched analysis uses a separately pinned **version 5** envelope declaring
+context format 3 around the unchanged version 3/4 partition policy. Each scoped
+request receives the typed candidate while the existing selected content units,
+required IDs and candidate hash remain the exclusive report coverage boundary.
+Old batch pins keep their exact payloads. Output partition sizes, graph budgets,
+writer repair and the single-candidate verifier-recheck authorization are
+unchanged. Existing input-token admission still applies to the larger typed
+context; seeing the typed fields does not guarantee a correct model verdict.
+
+**261 tests across 8 backend suites** and backend typechecking pass. Regression
+coverage includes historical whole/batch prompt hashes, opposite mandatory flags
+with identical prose, null/false values, malformed format identities, accepted
+legacy requests, corrective reports, and rejection of out-of-scope quotations,
+extra coverage IDs and a wrong candidate hash. Four full-schema graph cases
+exercise new and historical batch formats with/without output-token policy
+across leases, preserve one writer and exact usage counts, and merge complete
+coverage. Independent review passed another 152 focused tests and all four
+durable cases. No production model calls or deployment were performed for this
+change; the bounded authority evaluation remains the next semantic gate.

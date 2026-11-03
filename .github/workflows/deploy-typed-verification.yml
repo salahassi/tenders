@@ -1,0 +1,77 @@
+name: Release reviewed typed verification runtime
+
+on:
+  workflow_dispatch:
+    inputs:
+      candidate_image:
+        description: Optional exact immutable candidate from a partial release of this source revision
+        type: string
+        required: false
+        default: ""
+  push:
+    branches: [codex/ai-reliability-resume]
+    paths:
+      - .github/workflows/deploy-typed-verification.yml
+      - backend/scripts/ops/typed-verification-update.py
+      - backend/scripts/ops/test_typed_verification_update.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+      - name: Verify packages and code-only release boundaries
+        run: |
+          npm ci --prefix frontend
+          npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          npm --prefix frontend run typecheck
+          npm --prefix frontend test -- --maxWorkers=1
+          npm --prefix frontend run build
+          npm --prefix backend run typecheck
+          npm --prefix backend test -- --maxWorkers=1
+          npm --prefix backend run build
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
+          python3 -m unittest discover -s backend/deploy/kubernetes -p 'test_*.py'
+      - name: Prepare verified cluster access and expiring image credentials
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/digitalocean-runner.py
+      - name: Build or reuse the exact immutable API and worker runtime
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        env:
+          TENDERDESK_REUSE_RUNTIME_IMAGE: ${{ inputs.candidate_image }}
+        run: python3 backend/scripts/ops/model-validation-runtime-image.py
+      - name: Update only API and worker without database or processing commands
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: python3 backend/scripts/ops/typed-verification-update.py
+      - name: Remove temporary runner credentials and private build logs
+        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil
+          run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+          if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):
+              raise SystemExit('Runner cleanup identity invalid.')
+          directory=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-deploy-'+run+'-'+attempt)
+          if directory.exists():shutil.rmtree(directory)
+          print('Temporary typed verification release credentials and logs removed.')
+          PY
