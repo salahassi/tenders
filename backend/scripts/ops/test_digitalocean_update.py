@@ -217,7 +217,9 @@ await db.exec(`create role anon;create role authenticated;create role service_ro
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
  create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text);
  alter table storage.objects enable row level security;grant usage on schema storage to authenticated;grant insert,select on storage.objects to authenticated;`);
-for(const name of (await readdir('supabase/migrations')).filter(n=>/^\d+_.+\.sql$/.test(n)&&!n.endsWith('_openrouter_provider.sql')).sort())
+// Reconstruct this historical release's actual predecessor, rather than
+// replaying it after future security guards have changed the same functions.
+for(const name of (await readdir('supabase/migrations')).filter(n=>/^\d+_.+\.sql$/.test(n)&&n<'20261026112011_openrouter_provider.sql').sort())
  await db.exec(await readFile('supabase/migrations/'+name,'utf8'));
 const actor='00000000-0000-4000-8000-000000000001';
 await db.query('insert into auth.users values($1,$2,now())',[actor,'fixture@example.test']);

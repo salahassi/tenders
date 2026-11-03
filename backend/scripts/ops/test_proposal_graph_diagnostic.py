@@ -15,24 +15,30 @@ SPEC = importlib.util.spec_from_file_location("tested_proposal_graph_diagnostic"
 d = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = d
 SPEC.loader.exec_module(d)
+RUNTIME_IMAGE = "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:" + "b" * 64
 SELECTION = {"version": 1, "workspace_id": "00000000-0000-4000-8000-000000000100",
              "opportunity_id": "00000000-0000-4000-8000-000000000101", "plan_id": "00000000-0000-4000-8000-000000000102",
-             "job_id": "00000000-0000-4000-8000-000000000103", "expected_runtime_image": d.RUNTIME_IMAGE}
+             "job_id": "00000000-0000-4000-8000-000000000103", "expected_runtime_image": RUNTIME_IMAGE}
 RECEIPT = {"version": 1, "mode": "read_only_graph_diagnostic", "private_source": "PRIVATE SOURCE", "graph": {"quote": "PRIVATE QUOTE"}}
 
 
 class GraphDiagnosticTests(unittest.TestCase):
-    def test_selector_rejects_wrong_scope_extra_fields_and_unreviewed_runtime(self):
+    def test_selector_accepts_explicit_owned_digest_but_rejects_other_scope_and_mutable_images(self):
         with patch.object(d.access, "WORKSPACE", SELECTION["workspace_id"]):
             self.assertEqual(d.validate_selection(SELECTION), SELECTION)
             for key, value in [("version", True), ("version", 2), ("workspace_id", "00000000-0000-4000-8000-000000000999"),
-                               ("plan_id", "';drop table x"), ("job_id", None), ("expected_runtime_image", d.RUNTIME_IMAGE[:-1] + "0"),
+                               ("plan_id", "';drop table x"), ("job_id", None), ("expected_runtime_image", RUNTIME_IMAGE[:-1]),
+                               ("expected_runtime_image", RUNTIME_IMAGE.replace('tenderdesk-a6093a76','other-registry')),
+                               ("expected_runtime_image", RUNTIME_IMAGE.replace('/runtime@','/frontend@')),
+                               ("expected_runtime_image", RUNTIME_IMAGE.upper()), ("expected_runtime_image", None),
                                ("expected_runtime_image", "runtime:latest"), ("content", "PRIVATE"), ("action", "retry")]:
                 with self.subTest(key=key, value=value), self.assertRaises(d.DiagnosticError):
                     d.validate_selection({**SELECTION, key: value})
             for key in SELECTION:
                 with self.subTest(missing=key), self.assertRaises(d.DiagnosticError):
                     d.validate_selection({k: v for k, v in SELECTION.items() if k != key})
+            newer = {**SELECTION, "expected_runtime_image": RUNTIME_IMAGE[:-64] + "c" * 64}
+            self.assertEqual(d.validate_selection(newer), newer)
 
     def test_public_receipt_never_exports_retained_source_or_graph_payload(self):
         expected = {"proposal_graph_diagnostic": "inspected", "business_mutations": 0}
@@ -45,14 +51,14 @@ class GraphDiagnosticTests(unittest.TestCase):
             with self.assertRaises(d.DiagnosticError):
                 d.public_receipt(value)
 
-    def run_main(self, *, fail_runtime=None, fail_sql=False, fail_cleanup=False, digest="b" * 64, limit=None):
+    def run_main(self, *, fail_runtime=None, fail_sql=False, fail_cleanup=False, digest="b" * 64, limit=None, selection=SELECTION, source_sha="a" * 40):
         with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
-            stack.enter_context(patch.dict(os.environ, {"DIGITALOCEAN_ACCESS_TOKEN": "fixture-secret", "GITHUB_RUN_ID": "123"}))
+            stack.enter_context(patch.dict(os.environ, {"DIGITALOCEAN_ACCESS_TOKEN": "fixture-secret", "GITHUB_RUN_ID": "123", "GITHUB_SHA": source_sha}))
             stack.enter_context(patch.object(d.access, "WORKSPACE", SELECTION["workspace_id"]))
             stack.enter_context(patch.object(d.access, "prepare_cluster", return_value=Path(directory)))
             for name in ["identity", "download"]:
                 stack.enter_context(patch.object(d.transfer, name))
-            stack.enter_context(patch.object(d.transfer, "read_private", return_value=json.dumps(SELECTION).encode()))
+            stack.enter_context(patch.object(d.transfer, "read_private", return_value=json.dumps(selection).encode()))
             write = stack.enter_context(patch.object(d.transfer, "write_private"))
             upload = stack.enter_context(patch.object(d.transfer, "upload", return_value=digest))
             events = []
@@ -77,11 +83,12 @@ class GraphDiagnosticTests(unittest.TestCase):
             with redirect_stdout(output):
                 code = d.main(["--selection-object", "requests/synthetic.bundle", "--selection-sha256", "c" * 64])
             visible = output.getvalue()
-            for hidden in ["PRIVATE", "fixture-secret", SELECTION["job_id"], SELECTION["workspace_id"], d.RUNTIME_IMAGE]:
+            for hidden in ["PRIVATE", "fixture-secret", SELECTION["job_id"], SELECTION["workspace_id"], selection["expected_runtime_image"]]:
                 self.assertNotIn(hidden, visible)
             return {"exit": code, "receipt": json.loads(visible), "verify": verify.call_count,
                     "sql": sql_call.call_count, "constructed": construct.call_count, "cleanup": client.cleanup.call_count,
-                    "upload": upload.call_count, "write": write.call_args, "events": events, "labels": client.labels}
+                    "upload": upload.call_count, "write": write.call_args, "events": events, "labels": client.labels,
+                    "verified_images": [call.args[0] for call in verify.call_args_list]}
 
     def test_runtime_mismatch_prevents_sql_or_private_publication_at_each_guard(self):
         for phase in [1, 2, 3]:
@@ -103,7 +110,27 @@ class GraphDiagnosticTests(unittest.TestCase):
         self.assertEqual(result["receipt"], {"proposal_graph_diagnostic": "inspected", "business_mutations": 0, "report_sha256": "b" * 64})
         private = json.loads(result["write"].args[1])
         self.assertEqual(private["private_source"], "PRIVATE SOURCE")
-        self.assertEqual(private["verified_runtime_image"], d.RUNTIME_IMAGE)
+        self.assertEqual(private["verified_runtime_image"], RUNTIME_IMAGE)
+        self.assertEqual(private["diagnostic_source_sha"], "a" * 40)
+
+    def test_new_reviewed_digest_remains_exact_at_every_runtime_guard(self):
+        selected = {**SELECTION, "expected_runtime_image": RUNTIME_IMAGE[:-64] + "d" * 64}
+        result = self.run_main(selection=selected)
+        self.assertEqual(result["exit"], 0)
+        self.assertEqual(result["verified_images"], [selected["expected_runtime_image"]] * 3)
+        self.assertEqual(json.loads(result["write"].args[1])["verified_runtime_image"], selected["expected_runtime_image"])
+        failure = self.run_main(selection=selected, fail_runtime=2)
+        self.assertEqual(failure["sql"], 0)
+        self.assertEqual(failure["upload"], 0)
+        self.assertEqual(failure["receipt"]["code"], "PROPOSAL_GRAPH_RUNTIME_CHANGED")
+
+    def test_missing_or_unbounded_source_revision_stops_before_cluster_client(self):
+        for source_sha in ["", "branch", "a" * 41, "A" * 40]:
+            result = self.run_main(source_sha=source_sha)
+            self.assertEqual(result["receipt"]["code"], "PROPOSAL_GRAPH_SOURCE_REVISION_INVALID")
+            self.assertEqual(result["constructed"], 0)
+            self.assertEqual(result["sql"], 0)
+            self.assertEqual(result["upload"], 0)
 
     def test_private_errors_limits_and_cleanup_failures_have_fixed_public_codes(self):
         for args, expected in [({"fail_sql": True}, "PROPOSAL_GRAPH_DIAGNOSTIC_FAILED"),

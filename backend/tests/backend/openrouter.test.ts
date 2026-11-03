@@ -142,13 +142,62 @@ it("configures OpenRouter in the real database without granting content permissi
   ).toBe(0);
 });
 
-it("replays the production extension without changing the saved cursor, permissions or revisions", async () => {
-  const routing = await f.command("model.routing", {
+it("replays the production extension at its migration boundary without changing the saved cursor, permissions or revisions", async () => {
+  const historical = await workflowFixture(
+    undefined,
+    "20261026112011_openrouter_provider.sql",
+  );
+  try {
+    await historical.db.exec("begin");
+    const routing = await historical.command("model.routing", {
+      enabled: false,
+      expected_revision: 0,
+      strategy: "round_robin",
+    });
+    await historical.db.exec("update public.model_routing set next_position=7");
+    const migration = await readFile(
+      new URL(
+        "../../supabase/migrations/20261026112011_openrouter_provider.sql",
+        import.meta.url,
+      ),
+      "utf8",
+    );
+    await historical.db.exec(migration);
+    const saved = (
+      await historical.db.query<any>("select * from public.model_routing")
+    ).rows[0];
+    expect(saved.revision).toBe(routing.revision);
+    expect(saved.next_position).toBe(7);
+    expect(saved.enabled).toBe(false);
+    expect(saved.provider_order).toEqual(ROUND_ROBIN_PROVIDERS);
+  } finally {
+    await historical.db.close();
+  }
+});
+
+it("refuses the historical extension on a newer verifier-guarded schema without changing state or weakening guards", async () => {
+  await f.command("model.routing", {
     enabled: false,
     expected_revision: 0,
     strategy: "round_robin",
   });
   await f.db.exec("update public.model_routing set next_position=7");
+  const snapshot = async () => ({
+    routing: (
+      await f.db.query("select * from public.model_routing order by id")
+    ).rows,
+    permissions: (
+      await f.db.query(
+        "select * from public.content_authorizations order by id",
+      )
+    ).rows,
+    functions: (
+      await f.db.query(
+        "select oid::regprocedure::text signature,pg_get_functiondef(oid) definition from pg_proc where pronamespace='public'::regnamespace and proname in ('reserve_model_call','start_model_attempt','prepare_model_routing','resume_model_request') order by oid::regprocedure::text",
+      )
+    ).rows,
+  });
+  const before = await snapshot();
   const migration = await readFile(
     new URL(
       "../../supabase/migrations/20261026112011_openrouter_provider.sql",
@@ -156,13 +205,15 @@ it("replays the production extension without changing the saved cursor, permissi
     ),
     "utf8",
   );
-  await f.db.exec(migration);
-  const saved = (await f.db.query<any>("select * from public.model_routing"))
-    .rows[0];
-  expect(saved.revision).toBe(routing.revision);
-  expect(saved.next_position).toBe(7);
-  expect(saved.enabled).toBe(false);
-  expect(saved.provider_order).toEqual(ROUND_ROBIN_PROVIDERS);
+  await f.db.exec("savepoint reject_historical_extension");
+  await expect(f.db.exec(migration)).rejects.toThrow(
+    "Unexpected provider function version",
+  );
+  await f.db.exec("rollback to savepoint reject_historical_extension");
+  expect(await snapshot()).toEqual(before);
+  expect(JSON.stringify(before.functions)).toContain(
+    "guard_analysis_recheck_request",
+  );
 });
 
 it("sends OpenRouter reasoning in its normalized reasoning object", () => {

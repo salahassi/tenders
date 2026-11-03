@@ -42,6 +42,14 @@ import { recoverBlockedVerification } from "./modelBlockedRecovery.ts";
 import { recoverInvalidVerification } from "./modelInvalidVerificationRecovery.ts";
 import { recoverAlternatePaidWriter } from "./modelAlternateWriterRecovery.ts";
 import {
+  verifierRecheckMarker,
+  prepareVerifierRecheck,
+  seedVerifierRecheck,
+  assertVerifierRecheckCall,
+  assertVerifierRecheckState,
+  validateAcceptedRecheck,
+} from "./modelVerifierRecheck.ts";
+import {
   recoverBlockedWriter,
   retainInvalidWriter,
 } from "./modelWriterRecovery.ts";
@@ -283,8 +291,19 @@ async function runGuardedModel(o: Options): Promise<{
   cleanup?: () => Promise<void>;
 }> {
   const invocationStartedAt = o.backend.invocationStartedAt ?? Date.now();
-  const legacy = modelLedger(o.backend, o.job, o.prefix, o.environments);
-  if (o.job.checkpoint?.model_executor !== 2) {
+  const recheck = verifierRecheckMarker(o.job, o.task, o.repair);
+  if (recheck)
+    await prepareVerifierRecheck(
+      modelLedger(
+        o.backend,
+        o.job,
+        `${o.prefix}:verification-${recheck.candidate_hash}`,
+        o.environments,
+      ),
+      o.manifest,
+    );
+  if (!recheck && o.job.checkpoint?.model_executor !== 2) {
+    const legacy = modelLedger(o.backend, o.job, o.prefix, o.environments);
     const pool = await legacy.preflight(o.manifest, o.task);
     if (pool.executor_version !== 2) {
       // Reuse the already checked pool for the first legacy invocation.
@@ -331,6 +350,8 @@ async function runGuardedModel(o: Options): Promise<{
     }),
   );
   const threadId = await sha256(`${o.job.id}:${o.prefix}:${inputHash}`);
+  if (recheck && recheck.input_hash !== inputHash)
+    throw new ModelError("MODEL_IDENTITY_CHANGED");
   const store = new ModelGraphStore(o.backend, o.job, threadId);
   const thread = await store.action("init", {
     input_hash: inputHash,
@@ -338,9 +359,25 @@ async function runGuardedModel(o: Options): Promise<{
     graph_version: 1,
     budget_version: 2,
   });
+  const recheckCandidate = recheck
+    ? await seedVerifierRecheck({
+        ...o,
+        store,
+        marker: recheck,
+        inputHash,
+        threadId,
+      })
+    : null;
   if (thread.status === "accepted") {
     const result = (await store.action("result_get", { id: thread.result_id }))
       .value;
+    if (recheck)
+      await validateAcceptedRecheck({
+        ...o,
+        store,
+        marker: recheck,
+        candidate: result,
+      });
     o.validate?.(result);
     return { result, threadId };
   }
@@ -358,6 +395,13 @@ async function runGuardedModel(o: Options): Promise<{
       ),
     );
   const ledgerFor = (operation: string, unit: string, repair = false) => {
+    if (recheck)
+      assertVerifierRecheckCall(
+        recheck,
+        repair ? "repair_result" : "verify_grounding",
+        operation,
+        unit,
+      );
     const original = modelLedger(
       o.backend,
       o.job,
@@ -401,6 +445,7 @@ async function runGuardedModel(o: Options): Promise<{
     writerModel?: string,
     requiredIds = o.requiredIds,
   ) => {
+    if (recheck) assertVerifierRecheckCall(recheck, task, key, unit);
     const cached = await store.action("result_get", { key });
     const finishWriterHandoff = async (retained: any) => {
       if (retained?.value.local_validation) {
@@ -468,6 +513,8 @@ async function runGuardedModel(o: Options): Promise<{
       repair: task === "repair_result" || o.repair,
       verificationRevision,
     });
+    if (recheck && (verificationRevision !== 4 || semanticRevision !== 4))
+      throw new ModelError("MODEL_IDENTITY_CHANGED");
     let producer: Record<string, unknown> | undefined;
     let preparedRequest: StructuredRequest | undefined;
     let receivedUsage: string | undefined;
@@ -632,6 +679,8 @@ async function runGuardedModel(o: Options): Promise<{
       repair: o.repair,
       verificationRevision,
     });
+    if (recheck && (verificationRevision !== 4 || semanticRevision !== 4))
+      throw new ModelError("MODEL_IDENTITY_CHANGED");
     const inputHash = await sha256(
       modelPrompt(
         "verify_grounding",
@@ -675,6 +724,24 @@ async function runGuardedModel(o: Options): Promise<{
     key: string,
     correcting: boolean,
   ) => {
+    if (
+      recheck &&
+      correcting &&
+      error instanceof ModelError &&
+      [
+        "MODEL_ROUND_EXHAUSTED",
+        "EVIDENCE_REFERENCE_INVALID",
+        "MODEL_COVERAGE_INCOMPLETE",
+        "MODEL_CORRECTION_EXHAUSTED",
+      ].includes(error.code) &&
+      (await store.action("result_get", {
+        key: `invalid-verification-repair-${recheck.candidate_hash}`,
+      }))
+    ) {
+      // The one new report correction also failed. Keep it retained and stop;
+      // a later lease must not reinterpret it or enter ordinary writer repair.
+      throw new ModelError("MODEL_CORRECTION_EXHAUSTED");
+    }
     if (
       !correcting &&
       error instanceof ModelError &&
@@ -742,6 +809,10 @@ async function runGuardedModel(o: Options): Promise<{
   };
   const graph = new StateGraph(State)
     .addNode("produce", async (state) => {
+      if (recheckCandidate) {
+        assertVerifierRecheckState(state, recheckCandidate.id);
+        return { candidateRef: recheckCandidate.id };
+      }
       let task: Options["task"] | "repair_result" = o.task,
         context = o.context;
       if (state.repairCount) {
@@ -783,6 +854,8 @@ async function runGuardedModel(o: Options): Promise<{
       return { candidateRef: candidate.id };
     })
     .addNode("verify", async (state) => {
+      if (recheckCandidate)
+        assertVerifierRecheckState(state, recheckCandidate.id);
       const stored = (
         await store.action("result_get", { id: state.candidateRef })
       ).value;
@@ -840,7 +913,7 @@ async function runGuardedModel(o: Options): Promise<{
         );
         return { reportRef: checked.id };
       }
-      if (state.reportRef)
+      if (state.reportRef && !recheck)
         await replayRevalidatedVerification({
           store,
           artifact: (await store.action("result_get", { id: state.reportRef }))
@@ -860,17 +933,19 @@ async function runGuardedModel(o: Options): Promise<{
         key: reportKey,
       });
       if (existingReport) return { reportRef: existingReport.id };
-      const recovered = await recoverVerification(
-        reportKey,
-        `verification-repair-${hash}`,
-        `verifier-${hash}`,
-        candidate,
-        hash,
-        o.requiredIds,
-      );
+      const recovered = recheck
+        ? null
+        : await recoverVerification(
+            reportKey,
+            `verification-repair-${hash}`,
+            `verifier-${hash}`,
+            candidate,
+            hash,
+            o.requiredIds,
+          );
       if (recovered) return { reportRef: recovered.id };
       const policy = verificationPolicy(o.context);
-      let batches = verificationBatches(candidate, policy);
+      let batches = recheck ? [] : verificationBatches(candidate, policy);
       if (batches.length) {
         const formatKey = `verification-batches-${hash}`;
         const pinned = await store.action("result_get", { key: formatKey });
@@ -1108,6 +1183,8 @@ async function runGuardedModel(o: Options): Promise<{
       return { reportRef: report.id };
     })
     .addNode("decide", async (state) => {
+      if (recheckCandidate)
+        assertVerifierRecheckState(state, recheckCandidate.id);
       if (o.task === "connection_probe") return { decision: "accept" as const };
       const artifact = (
         await store.action("result_get", { id: state.reportRef })
@@ -1121,7 +1198,7 @@ async function runGuardedModel(o: Options): Promise<{
       }
       const defectHash = await defectFingerprint(artifact);
       const decision =
-        state.repairCount >= 2 || defectHash === state.defectHash
+        recheck || state.repairCount >= 2 || defectHash === state.defectHash
           ? "needs_review"
           : "repair";
       return {
@@ -1131,6 +1208,8 @@ async function runGuardedModel(o: Options): Promise<{
       };
     })
     .addNode("accept", async (state) => {
+      if (recheckCandidate)
+        assertVerifierRecheckState(state, recheckCandidate.id);
       const stored = (
         await store.action("result_get", { id: state.candidateRef })
       ).value.result;
@@ -1269,7 +1348,13 @@ async function runGuardedModel(o: Options): Promise<{
   };
   try {
     const checkpoint = await store.getTuple(config);
+    if (recheckCandidate && checkpoint)
+      assertVerifierRecheckState(
+        (await graph.getState(config)).values,
+        recheckCandidate.id,
+      );
     if (thread.status === "needs_review") {
+      if (recheck) throw new ModelError("MODEL_CORRECTION_EXHAUSTED");
       const recovered =
         checkpoint &&
         ((await recoverAuditBoundary()) ||
@@ -1348,7 +1433,7 @@ async function runGuardedModel(o: Options): Promise<{
             update: (values) => graph.updateState(config, values, "produce"),
           })));
       if (!recovered) throw new ModelError("MODEL_CORRECTION_EXHAUSTED");
-    } else if (checkpoint)
+    } else if (checkpoint && !recheck)
       await recoverUnstartedRepair({
         backend: o.backend,
         store,
@@ -1375,6 +1460,7 @@ async function runGuardedModel(o: Options): Promise<{
         : null;
       const report = artifact?.result;
       if (
+        recheck ||
         !report ||
         !groundingDefects(report).length ||
         state.values.repairCount >= 2 ||
@@ -1384,11 +1470,21 @@ async function runGuardedModel(o: Options): Promise<{
     }
     await store.flush();
     const accepted = await store.action("result_get", { key: "accepted" });
-    if (accepted) return { result: accepted.value, threadId };
+    if (accepted) {
+      if (recheck)
+        await validateAcceptedRecheck({
+          ...o,
+          store,
+          marker: recheck,
+          candidate: accepted.value,
+        });
+      return { result: accepted.value, threadId };
+    }
     const current = await store.action("init", {
       input_hash: inputHash,
       task: o.task,
       graph_version: 1,
+      ...(recheck ? { budget_version: 2 } : {}),
     });
     if (current.status === "needs_review")
       throw new ModelError("MODEL_CORRECTION_EXHAUSTED");

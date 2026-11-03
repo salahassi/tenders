@@ -22,7 +22,7 @@ access, observer, transfer = inspector.access, inspector.observer, inspector.tra
 verify_runtime = inspector.base.verify_runtime
 BUCKET = inspector.BUCKET
 OWNER = "tenderdesk-proposal-graph-diagnostic"
-RUNTIME_IMAGE = "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:2b3391d445071f196bebf4d635e23ec50d3b33a8795defbded511259ea8bde1e"
+RUNTIME_IMAGE_PATTERN = r"registry\.digitalocean\.com/tenderdesk-a6093a76/runtime@sha256:[a-f0-9]{64}"
 MAX_REPORT_BYTES = 32 * 1024 * 1024
 
 
@@ -40,7 +40,7 @@ def validate_selection(value):
                 raise ValueError()
         except (ValueError, TypeError, AttributeError):
             raise DiagnosticError("PROPOSAL_GRAPH_SELECTION_INVALID") from None
-    if value["workspace_id"] != access.WORKSPACE or value["expected_runtime_image"] != RUNTIME_IMAGE:
+    if value["workspace_id"] != access.WORKSPACE or not isinstance(value["expected_runtime_image"], str) or not re.fullmatch(RUNTIME_IMAGE_PATTERN, value["expected_runtime_image"]):
         raise DiagnosticError("PROPOSAL_GRAPH_SELECTION_INVALID")
     return value
 
@@ -72,6 +72,9 @@ def main(argv=None):
     directory = client = receipt = report_sha256 = None
     code = None
     try:
+        source_sha = os.environ.get("GITHUB_SHA", "")
+        if not re.fullmatch(r"[a-f0-9]{40}", source_sha):
+            raise DiagnosticError("PROPOSAL_GRAPH_SOURCE_REVISION_INVALID")
         if not re.fullmatch(r"requests/[A-Za-z0-9][A-Za-z0-9._/-]{0,160}\.bundle", args.selection_object) or not re.fullmatch(r"[a-f0-9]{64}", args.selection_sha256):
             raise DiagnosticError("PROPOSAL_GRAPH_SELECTION_REFERENCE_INVALID")
         transfer.identity(BUCKET, args.selection_object)
@@ -96,6 +99,7 @@ def main(argv=None):
             public_receipt(receipt)
             verify_runtime(selection["expected_runtime_image"])
             receipt["verified_runtime_image"] = selection["expected_runtime_image"]
+            receipt["diagnostic_source_sha"] = source_sha
             data = json.dumps(receipt, ensure_ascii=False).encode("utf8")
             if len(data) > MAX_REPORT_BYTES:
                 raise DiagnosticError("PROPOSAL_GRAPH_REPORT_TOO_LARGE")
@@ -110,6 +114,7 @@ def main(argv=None):
         if isinstance(error, DiagnosticError) and str(error) in {
             "PROPOSAL_GRAPH_SELECTION_INVALID", "PROPOSAL_GRAPH_SELECTION_REFERENCE_INVALID",
             "PROPOSAL_GRAPH_REPORT_TOO_LARGE", "PROPOSAL_GRAPH_RECEIPT_INVALID", "PROPOSAL_GRAPH_REPORT_DIGEST_INVALID",
+            "PROPOSAL_GRAPH_SOURCE_REVISION_INVALID",
         }:
             code = str(error)
         elif isinstance(error, inspector.base.ResumeError) and str(error) == "RESUME_RUNTIME_CHANGED":

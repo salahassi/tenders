@@ -4601,3 +4601,174 @@ and unresolved-request guards intentionally refuse that state. Existing paid
 records remain unchanged. A separately reviewed exact failed-step verifier
 recheck is being prepared; no such operation has been deployed or activated.
 The actual proposal version and Word export remain incomplete.
+
+## November 3 — one failed analysis step may request fresh verification
+
+Implementation adds a private, Owner-authorized `generation.verifier_recheck`
+operation for an idle failed analysis step whose sole writer has a successful,
+settled receipt and an exact retained candidate. It creates one distinct child
+step/job in the same plan, marks the selected parent step as replaced using the
+existing split representation, and cancels only that idle parent job. The audit
+identifies verification rechecking explicitly. Normal stage aggregation excludes
+the replaced parent and includes its completed child once. Completed siblings,
+old writer/verifier artifacts, checkpoints, prompt pins, candidate budgets,
+attempts and all usage rows remain unchanged; terminal unknown usage is never
+settled or zeroed. Any reserved or nonterminal unknown usage on the selected
+parent refuses admission. Other siblings keep their own processing state.
+
+The private lineage table binds the original and child job/step/thread, graph
+input, candidate record hash, logical candidate hash and unique successful writer
+receipt/attempt. Both old verifier phases must carry an earlier policy revision;
+a parent already using revision 4 cannot receive another allowance. The child
+gets only verification revision 4, three verifier candidates and one report
+format correction. It cannot resend or repair the writer. Database guards enforce
+those limits independently of runtime branching across graph budgets, catalog
+and legacy routing/attempt/reservation/resume entry points. New reservations
+require the exact child phase, seeded original candidate, immutable revision-4
+pins, prepared request identity and a request hash different from every parent
+request. A missing/corrupt lineage, candidate or cache entry fails closed. Normal
+source/currentness, membership, content policies and grounding validators remain
+authoritative; a genuine finding stops this child for review.
+
+The new authorization timestamp applies only to this requested child. The old
+plan-wide processing receipt and every sibling's receipt remain untouched. The
+lineage uniquely permits one child per parent across idempotency expiry or new
+keys and excludes rechecking a verifier-only child. Restored jobs retain their
+marker and are canceled by the existing restore process; missing private lineage
+cannot silently turn such a job into an ordinary writer.
+
+The `recheck-proposal-verifier` workflow is manual for production, defaults to a
+canonical transaction with full rollback, and requires explicit `recheck`
+activation under the production mutex. Exact private selections and receipts use
+the existing encrypted transfer. The helper validates both runtime images before
+SQL and fingerprints historical siblings/accounting/graphs/source records around
+the canonical operation. It performs no direct business row rewrites. Public
+logs contain only fixed status/count and the encrypted report's plaintext digest.
+
+Final focused verification passes **94 tests** across canonical admission,
+provider/graph guards, the exact compiled operations wrapper and runtime replay,
+plus **six historical provider-migration compatibility tests** and **six private
+transport tests**. The canonical suites include same-config/different-config verifier
+telemetry, full rollback after silent completed-sibling corruption, and rejection
+of reused parent request hashes. Another **161 existing catalog, routing,
+permission and graph tests** pass. Backend typecheck, formatting and diff checks
+pass. Independent SQL and operations review passed. The release helper also
+passed exact migration apply/replay under the restricted `tdp_app_owner` with
+all legacy role names absent, preserving old rows and authority and creating
+zero children; mutation and unexpected-grant cases rolled back. Local
+operations fixtures adapt the database name and role; production check mode is
+still a separate acceptance step.
+
+The immutable OpenRouter provider migration deliberately refuses a newer
+function body containing the verifier-only guard. Its repeatability test now
+runs at that migration's original schema boundary, and a second test proves
+that replay on the latest schema refuses without changing data or guarded
+function definitions. No historical migration hash or allowlist was changed.
+New verifier metadata counts the retained parent's model configuration when
+reporting same-model verification; historical attempts remain untouched. The
+new migration supports either legacy or managed role names using conditional
+ACL revocation and does not alter existing role membership. This entry does not
+claim deployment or activation, actual proposal completion, or Word export.
+
+Pre-activation review removed a false conflict caused by the shared plan
+revision: completing a sibling legitimately advances that revision while the
+selected failed job, step and candidate remain unchanged. The inspected and
+observed plan revisions are retained in the audit. Exact selected job/step
+revisions, latest-plan identity, active status, analysis stage, proposal base
+version, current source checks and all accounting/lineage guards remain required.
+Admission and every child binding also recompute the full frozen-context hash
+against the immutable plan input hash. A full-schema test completes a sibling
+through the canonical callback and then admits exactly one recheck child while
+preserving that completed sibling. Canceled/failed/advanced plans and changed
+input or frozen context refuse; existing changed source, latest plan and active
+proposal-version negatives remain green. Final focused tests and typecheck pass.
+
+The verifier-only runtime is isolated behind the explicit child checkpoint.
+Every lease, including accepted-cache replay, performs a fresh verifier/content
+preflight and requires an enabled authorized target. It then obtains the exact
+database-authorized parent seed, checks the full frozen graph-input hash and
+logical candidate hash, revalidates canonical/domain rules and preserves the
+entire original result/producer value. Separate immutable provenance records
+the parent; no child writer allowance or synthetic writer receipt is created.
+Only the whole-report verifier and its one report correction can reach provider
+preparation or token counting. New verification/semantic pins must both be 4.
+No ordinary writer repair, batch-budget expansion or historical-report recovery
+is available. Real defects and a failed corrective report remain retained and
+stop durably for review; accepted results still pass the standard grounding and
+generation-completion callbacks.
+
+Runtime verification: **22 unit/integration tests pass** against the fully
+migrated synthetic database. They cover interrupted seed/checkpoint replay,
+accepted-cache replay and corrupted reports, later permission revocation,
+disabled targets, malformed/stale lineage, exact producer/source coverage,
+zero writer calls/budgets/token counts, one fresh report correction, preserved
+parent receipts/results/budgets and normal child-step completion. Backend
+typecheck passes. Ordinary graph, writer-handoff and invalid-verifier recovery
+regressions also passed in the targeted run. Full-suite verification and final
+independent review are in progress; no production child was activated by these
+tests.
+
+## November 3 — reviewed verifier-recheck runtime and single-migration release
+
+The prepared deployment is separate from requesting a verifier recheck. It builds
+or reuses one source-bound immutable API/worker image, requires current runtime
+`871c2f80…` (or that exact candidate on partial recovery), and preserves frontend
+`b90ee4…`, all unrelated deployment identities/specifications, public configuration,
+provider secrets and native schedules. The API becomes ready before a guarded
+worker Recreate transition; old workers finish their existing graceful shutdown
+before new workers are admitted. Ordinary unmarked jobs use their original runtime
+path before the migration, and deployment never creates or activates a child.
+
+The exact migration is `20261103022500_analysis_verifier_recheck.sql`, SHA-256
+`cead30c43776e35822e4fa63476223a5ff4abe8de35218286d66dd5bd8c22382`.
+After runtime readiness and old-process drain, a restricted-owner transaction
+checks the prior AI release receipt, snapshots every pre-existing public/private
+row and existing table/function authorities, applies only this source, and records
+`analysis-verifier-recheck-v1` with its checksum. Existing function bodies outside
+the fourteen reviewed targets also remain unchanged. The only new schema is the
+empty private lineage table and five private functions; RLS, direct grants,
+browser denial, function ownership/search paths and expected guard markers are
+verified. No paid receipts, unknown usage, budgets, completed siblings or frozen
+work are reset. A repeated identical release verifies the ledger and schema;
+checksum drift or untracked schema is refused.
+
+Successful acceptance restores the exact worker strategy, removes its owned
+rollout marker, rechecks both runtime identities/images and preserved resources,
+and removes its temporary SQL administrator before emitting final success.
+An ambiguous image or SQL outcome retains compatible code and requests forward
+completion with the same immutable candidate. It never rolls back code across
+possible new child admission or clears migration history. Manual deployment is
+the only workflow path with production credentials; branch pushes run offline
+checks only. Recheck activation remains a separately scoped canonical operation.
+
+Seven focused release tests pass, including the exact complete-schema migration
+under restricted `tdp_app_owner` with only managed role names, idempotent replay,
+empty lineage, existing-row/grant mutation rollback, rollout/schema ordering,
+ambiguous failure retention, foreign administrator refusal and cleanup failure.
+Final local operations verification passes **263 tests**, and all **13 deployment
+renderer tests** pass. The seven exact-migration release cases were repeated
+successfully after the final `cead30c4…` plan-revision refinement. Independent
+review approved the release sequence and
+separately repeated the seven focused cases. Two historical operational fixtures
+now load their actual predecessor migration boundary; historical SQL and hashes
+remain unchanged. Frontend **269 tests** and both package typecheck/build checks
+passed in the runtime workstream. The final complete backend suite remains a
+required workflow gate before production deployment. This entry does not claim
+production deployment or child activation.
+
+## November 3 — refreshed exact-runtime graph inspection
+
+The read-only graph diagnostic now accepts an explicitly selected immutable
+runtime digest in the owned TenderDesk registry, instead of fixing the earlier
+image in its selector. The existing three runtime checks still require both API
+and worker to match that exact digest before client preparation, before the SQL
+read and before private report publication. Tags, other repositories, malformed
+digests and missing workflow source revisions fail closed. The private report
+records the diagnostic source commit; source and candidate content remain inside
+the encrypted report transport. The SQL remains unchanged and read-only.
+
+Nine offline diagnostic tests pass, including the exact SQL against the complete
+schema under the restricted application owner, no record changes, a newer digest
+through all three guards, drift refusal before SQL/publication, and bounded public
+receipts. This prepares a fresh post-deployment inspection; it does not dispatch
+inspection, authorize a stale selection, or change business state.
