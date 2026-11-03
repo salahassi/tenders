@@ -4536,6 +4536,10 @@ the image to the workflow source revision and immutable registry digest. The two
 earlier AI migration source checksums remain fixed; this release performs no SQL,
 database connection, schema/ledger write, provider activation or processing retry.
 Private production history evidence belongs to the separate read-only inspector.
+Retries reuse the existing commit image only after validating its source label;
+an explicitly selected immutable candidate also requires matching source and
+digest. Registry lookup errors never trigger a replacement build. This preserves
+the exact candidate needed to finish an interrupted rollout without rollback.
 
 `model-validation-update.py` requires the reviewed `2b3391…` API/worker baseline
 or the exact candidate on forward completion, and the `b90ee4…` frontend image.
@@ -4551,9 +4555,20 @@ acceptance, the original strategy is restored and only the owned marker removed.
 Failures retain compatible code; reverting to the old verification-1–3 runtime
 after revision-4 admission is deliberately prohibited.
 
-Eight focused offline release tests pass, covering API-before-worker ordering,
+Sixteen focused offline release tests pass, covering API-before-worker ordering,
 temporary strategy ownership, failed/ambiguous patch forward completion, baseline
 and grace rejection, concurrent configuration/UID drift, unchanged migration
-sources, absent privileged HTTP identity and forbidden SQL/admin paths. Full
-operations/application verification, independent review, bounded live model
-acceptance and production deployment remain separate pending evidence.
+sources, absent privileged HTTP identity, forbidden SQL/admin paths and immutable
+image reuse. Independent reviews found and resolved fresh-worker baseline adoption
+and late runtime drift: the worker image patch now remains bound to the original
+UID/specification, and both runtime identities/images/specifications are checked
+after public acceptance and strategy restoration. Both reviewers approved the
+final implementation and independently repeated the focused release tests.
+
+Final local operations verification passes **250 tests**, including the sixteen
+release cases. Frontend verification passes **269 tests**, typecheck and build;
+backend build and **13 deployment renderer tests** pass. The prompt-change owner
+separately recorded the full **1,686-test backend pass**, followed by the final
+40 affected tests and typecheck after the last parser-boundary tightening. All
+diff whitespace checks pass. Bounded live model acceptance and production
+deployment remain separate pending evidence; this entry claims neither.
