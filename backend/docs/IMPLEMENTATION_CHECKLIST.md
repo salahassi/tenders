@@ -4572,3 +4572,32 @@ separately recorded the full **1,686-test backend pass**, followed by the final
 40 affected tests and typecheck after the last parser-boundary tightening. All
 diff whitespace checks pass. Bounded live model acceptance and production
 deployment remain separate pending evidence; this entry claims neither.
+
+## November 3 — model validation fixes deployed and live policies verified
+
+Live suite `41560518462` on `0437332` passed all four configured QwenCloud
+requests (Qwen3.8 and DeepSeek, two cases each): faithful reference-only empty
+inventory accepted and actual omitted buyer obligations detected. Production
+schema/evidence validation and task-specific assertions ran before success.
+Exact prompt hashes and report checksum were independently verified; usage
+was measured for all four HTTP 200 calls (18,783 input / 2,097 output tokens),
+with zero extra attempts, polling, unknown usage or business records. The
+private report transport object was deleted after verified download.
+
+Code-only release `41561808302` passed on
+`af3b086b0353d2c85115762a2ae20813e05001b9`, publishing runtime
+`sha256:871c2f80e9b2241bf53268b0b9d867ea5c46f4f355da822c7c9ec516b1fe59fb`.
+Remote verification passed 1,689 backend tests, 269 frontend tests, 250 ops
+tests, 13 renderer tests and both packages' typechecks/builds. API and worker
+readiness, graceful old-worker drain, restored strategy, removed release marker
+and final exact runtime identity checks passed. Frontend `b90ee4...`, public
+configuration, provider assets and all other workloads were preserved. There
+was no database access, schema change or processing retry by this release.
+
+Pre-release inspection `41560942476` observed one committed analysis sibling,
+two blocked jobs and additional unfinished/uncertain requests in the same plan.
+The whole-plan successor helper is therefore not activated: its completed-work
+and unresolved-request guards intentionally refuse that state. Existing paid
+records remain unchanged. A separately reviewed exact failed-step verifier
+recheck is being prepared; no such operation has been deployed or activated.
+The actual proposal version and Word export remain incomplete.
