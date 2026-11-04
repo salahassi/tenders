@@ -144,6 +144,7 @@ export async function recoverInvalidVerification(o: {
   )
     return false;
   let diagnostics: ModelValidationDiagnostic[] | undefined;
+  let omittedDiagnosticCount = 0;
   try {
     validateGroundingReport(
       report,
@@ -165,6 +166,7 @@ export async function recoverInvalidVerification(o: {
         validationDiagnostics?: ModelValidationDiagnostic[];
       }
     ).validationDiagnostics;
+    omittedDiagnosticCount = error.omittedValidationDiagnosticCount;
     // An unclassified local failure is never evidence that the report became
     // valid, and cannot supply a safe writer-repair instruction.
     if (!diagnostics?.length) return false;
@@ -179,6 +181,7 @@ export async function recoverInvalidVerification(o: {
     : repairOnlyValidationArtifact({
         candidateHash: hash,
         diagnostics: diagnostics ?? [],
+        omittedDiagnosticCount,
         untrustedReport: report,
         isReportPolicySafe: (value) => !blockedContent(value),
       });

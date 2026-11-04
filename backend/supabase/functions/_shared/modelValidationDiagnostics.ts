@@ -50,8 +50,10 @@ type DiagnosticDetails = {
 
 const codeSet = new Set<string>(modelValidationCodes);
 const reasonSet = new Set<string>(modelValidationReasons);
-const maxEntries = 16;
-const maxDiagnostics = 32;
+export const MAX_MODEL_VALIDATION_PATHS = 16;
+export const MAX_MODEL_VALIDATION_DIAGNOSTICS = 32;
+const maxEntries = MAX_MODEL_VALIDATION_PATHS;
+const maxDiagnostics = MAX_MODEL_VALIDATION_DIAGNOSTICS;
 const idPattern = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,119}$/;
 const pathPattern = /^\$(?:\.[a-z][a-z0-9_]*|\[(?:0|[1-9][0-9]{0,5})\])*$/;
 const numericPattern = /^-?[0-9]+(?:\.[0-9]+)?$/;
@@ -135,6 +137,7 @@ export type RepairOnlyValidationArtifact = {
 export function repairOnlyValidationArtifact(options: {
   candidateHash: string;
   diagnostics: readonly ModelValidationDiagnostic[];
+  omittedDiagnosticCount?: number;
   untrustedReport?: unknown;
   isReportPolicySafe?: (serializedReport: string) => boolean;
 }): RepairOnlyValidationArtifact {
@@ -142,6 +145,9 @@ export function repairOnlyValidationArtifact(options: {
     throw new TypeError("INVALID_REPAIR_ONLY_CANDIDATE_HASH");
   if (!Array.isArray(options.diagnostics) || !options.diagnostics.length)
     throw new TypeError("REPAIR_ONLY_DIAGNOSTIC_REQUIRED");
+  const omitted = options.omittedDiagnosticCount ?? 0;
+  if (!Number.isSafeInteger(omitted) || omitted < 0)
+    throw new TypeError("INVALID_OMITTED_DIAGNOSTIC_COUNT");
   // Rebuild even already typed input so unknown free-text properties cannot be
   // copied into the diagnostic envelope by a wider runtime object.
   const diagnostics = options.diagnostics
@@ -152,7 +158,7 @@ export function repairOnlyValidationArtifact(options: {
     validation_diagnostics: diagnostics,
     omitted_diagnostic_count: Math.max(
       0,
-      options.diagnostics.length - diagnostics.length,
+      options.diagnostics.length - diagnostics.length + omitted,
     ),
     result: {
       checked_candidate_hash: options.candidateHash,

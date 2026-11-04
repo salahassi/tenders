@@ -184,3 +184,44 @@ it.each(["malformed", "schema", "policy"])(
     expect(invalidCandidate).not.toHaveBeenCalled();
   },
 );
+
+it("enforces repair scope before retaining a locally invalid candidate for another repair", async () => {
+  const invalidCandidate = vi.fn(async () => "repair" as const);
+  const guard = vi.fn(() => {
+    throw new Error("scope rejected before reference validation");
+  });
+  vi.spyOn(FreeModelProvider.prototype, "generate").mockResolvedValue({
+    text: JSON.stringify({ ...valid, processed_block_ids: [] }),
+    usage: { input: 12, output: 8, thinking: 0 },
+    complete: true,
+  });
+  const ledger = {
+    preflight: async () => ({ providers: [config] }),
+    reserve: async () => "fixture-usage",
+    settle: async () => {},
+    invalidCandidate,
+    validateCandidateScope: guard,
+  } as Ledger;
+  await expect(
+    executeModel(
+      "analyze_chunk",
+      {},
+      evidence,
+      ["block-1"],
+      [],
+      { qwen_free: env },
+      ledger,
+      "en",
+      false,
+      fetch,
+      1,
+      {
+        independentGrounding: true,
+        semanticRevision: 1,
+        repairContentValidation: true,
+      },
+    ),
+  ).rejects.toThrow();
+  expect(guard).toHaveBeenCalledOnce();
+  expect(invalidCandidate).not.toHaveBeenCalled();
+});

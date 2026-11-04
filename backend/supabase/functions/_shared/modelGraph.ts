@@ -38,6 +38,10 @@ import {
 } from "./modelGrounding.ts";
 import { pinVerificationPrompt } from "./modelVerificationPrompt.ts";
 import { pinSemanticPrompt } from "./modelSemanticPrompt.ts";
+import {
+  pinQuoteRepairScope,
+  applyQuoteRepairScope,
+} from "./modelQuoteRepairScope.ts";
 import { recoverUnstartedRepair } from "./modelRepairRecovery.ts";
 import {
   recoverRevalidatedWriter,
@@ -189,12 +193,16 @@ export async function retainInvalidVerification(
   code: string,
   producer?: Record<string, unknown>,
   diagnostics: ModelValidationDiagnostic[] = [],
+  omittedDiagnosticCount = 0,
 ) {
   const value = {
     result,
     code,
     producer: producer ?? null,
     ...(diagnostics.length ? { validation_diagnostics: diagnostics } : {}),
+    ...(omittedDiagnosticCount
+      ? { omitted_diagnostic_count: omittedDiagnosticCount }
+      : {}),
   };
   // Keep each distinct rejection privately for diagnostics, including later
   // providers in the same round. Fixed-length keys and result_put's immutable
@@ -411,6 +419,11 @@ async function runGuardedModel(o: Options): Promise<{
               findings: groundingDefects(artifact.result),
               validation_diagnostics: artifact.validation_diagnostics,
               candidate_hash: artifact.result.checked_candidate_hash,
+              ...(artifact.omitted_diagnostic_count
+                ? {
+                    omitted_diagnostic_count: artifact.omitted_diagnostic_count,
+                  }
+                : {}),
             }
           : groundingDefects(artifact.result),
       ),
@@ -467,7 +480,36 @@ async function runGuardedModel(o: Options): Promise<{
     requiredIds = o.requiredIds,
   ) => {
     if (recheck) assertVerifierRecheckCall(recheck, task, key, unit);
+    const repairScope =
+      task === "repair_result"
+        ? await pinQuoteRepairScope({
+            backend: o.backend,
+            store,
+            job: o.job,
+            requestPrefix: `${o.prefix}:${key}`,
+            context,
+            evidence: o.evidence,
+            requiredIds,
+            language: o.language,
+          })
+        : null;
+    const applyScope = (value: any) => {
+      if (!repairScope) return;
+      value.result = applyQuoteRepairScope(
+        context.candidate,
+        value.result,
+        repairScope,
+      );
+    };
+    if (repairScope)
+      context = {
+        ...context,
+        quote_repair_scope: repairScope,
+        quote_repair_instruction:
+          "Correct only the listed quote values against their unchanged source IDs. Return the complete original target schema with every other value and array position unchanged. The application rejects any out-of-scope edit. Unlisted defects remain unresolved for later bounded correction; never change an obligation, quantity, source ID or remove a requirement to pass validation.",
+      };
     const cached = await store.action("result_get", { key });
+    if (cached) applyScope(cached.value.result);
     const finishWriterHandoff = async (retained: any) => {
       if (retained?.value.local_validation) {
         const ready = await store.action("writer_validation_handoff", {
@@ -492,6 +534,7 @@ async function runGuardedModel(o: Options): Promise<{
       };
     }
     ledger.validateCandidate = validate;
+    ledger.validateCandidateScope = applyScope;
     if (writerModel) {
       const preflight = ledger.preflight;
       ledger.preflight = async (manifest, task) => {
@@ -559,7 +602,7 @@ async function runGuardedModel(o: Options): Promise<{
       await prepared?.(request);
     };
     if (task === "verify_grounding") {
-      ledger.invalidCandidate = (result, code, diagnostics) =>
+      ledger.invalidCandidate = (result, code, diagnostics, omittedCount) =>
         retainInvalidVerification(
           store,
           key,
@@ -567,9 +610,15 @@ async function runGuardedModel(o: Options): Promise<{
           code,
           producer,
           diagnostics,
+          omittedCount,
         );
     } else {
-      ledger.invalidCandidate = async (result, code, diagnostics = []) => {
+      ledger.invalidCandidate = async (
+        result,
+        code,
+        diagnostics = [],
+        omittedCount = 0,
+      ) => {
         if (!receivedUsage || !preparedRequest) return;
         await retainInvalidWriter(store, {
           usage_id: receivedUsage,
@@ -597,6 +646,9 @@ async function runGuardedModel(o: Options): Promise<{
                 task,
                 code,
                 diagnostics,
+                ...(omittedCount
+                  ? { omitted_diagnostic_count: omittedCount }
+                  : {}),
                 usage_id: receivedUsage,
                 attempt_id: attemptId,
                 request_prefix: `${o.prefix}:${operationKey}`,
@@ -855,6 +907,12 @@ async function runGuardedModel(o: Options): Promise<{
           artifact.validation_diagnostics
             ? {
                 validation_diagnostics: artifact.validation_diagnostics,
+                ...(artifact.omitted_diagnostic_count
+                  ? {
+                      omitted_validation_diagnostic_count:
+                        artifact.omitted_diagnostic_count,
+                    }
+                  : {}),
                 ...(artifact.untrusted_report
                   ? { untrusted_verification_report: artifact.untrusted_report }
                   : {}),
@@ -890,6 +948,8 @@ async function runGuardedModel(o: Options): Promise<{
           value: repairOnlyValidationArtifact({
             candidateHash: hash,
             diagnostics: stored.local_validation.diagnostics,
+            omittedDiagnosticCount:
+              stored.local_validation.omitted_diagnostic_count,
           }),
         });
         return { reportRef: saved.id };
@@ -1048,6 +1108,12 @@ async function runGuardedModel(o: Options): Promise<{
                           ? {
                               validation_diagnostics:
                                 invalid.value.validation_diagnostics,
+                              ...(invalid.value.omitted_diagnostic_count
+                                ? {
+                                    omitted_validation_diagnostic_count:
+                                      invalid.value.omitted_diagnostic_count,
+                                  }
+                                : {}),
                             }
                           : {}),
                         correction_instruction:
@@ -1175,6 +1241,12 @@ async function runGuardedModel(o: Options): Promise<{
                 ? {
                     validation_diagnostics:
                       invalid.value.validation_diagnostics,
+                    ...(invalid.value.omitted_diagnostic_count
+                      ? {
+                          omitted_validation_diagnostic_count:
+                            invalid.value.omitted_diagnostic_count,
+                        }
+                      : {}),
                   }
                 : {}),
               correction_instruction:

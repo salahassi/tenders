@@ -5373,3 +5373,42 @@ filtered candidate pool. Permission failure can still stop AI enrichment and mus
 remain distinct from invalid RFP input in the delivery workflow. RT-01's broad
 semantic recall/precision calibration, automated targeted follow-up for oversized
 sources, and RT-02's whole-proposal obligation/annex reconciliation remain open.
+## November 4 — W06 bounded reference diagnostics and quote-only correction scope
+
+Implementation: local source change; not deployed or hosted-accepted. The actual
+schema-valid task validator now collects independent quote/source-provenance
+failures across requirements, verifier claims/checks, reviews, classifications,
+planning decisions and draft citations. Analysis/review coverage errors no longer
+hide independent quote failures. The retained diagnostic set is bounded to 32,
+ordered by field path, with an explicit omitted count carried through candidate
+retention, repair-only artifacts and corrective requests. Full validation still
+rejects any unresolved reference; overflow is never represented as complete review.
+
+Newly started quote-only correction phases pin a versioned candidate hash and
+allowed quote paths. The application composes replacements from the original
+candidate and rejects every other change before an invalid response can enter the
+paid-writer repair cache. Source IDs, obligations, quantities, array structure and
+unrelated text cannot change through this path. Historical paid, prepared and
+same-phase saved-round requests keep their exact old context; no prompt, usage,
+allowance, permission or provider setting is reset. The existing full-result wire
+schema is retained as a proposed patch for compatibility, with strict server-side
+scope enforcement. Semantic/source-identity corrections do not silently acquire
+quote-only scope or an expanded edit permission.
+
+Validation: both lockfiles installed with `npm ci`; four real-validator regression
+cases failed before the change (four defects collapsed into one, coverage hid
+quotes, overflow missing) and pass afterward. A pre-validation scope guard test
+also failed before implementation. Eleven focused files / 326 tests pass, including
+fully migrated graph/SQL handoff, crash replay, pinned semantic requests, canonical
+verifier recheck, overflow boundaries, three-of-four correction, wrong source role,
+unknown provenance, and out-of-scope obligation/text/source/deletion mutations.
+The real graph rejects a scope-violating repair without retaining candidate-1,
+accepting it or invoking its verifier. Backend typecheck passes. Broader package
+checks remain part of integration; this local evidence is not production success.
+
+Remaining W05/W06 gates: stable source spans and authority semantics; a dedicated
+patch wire schema and justified semantic dependency expansion; exhaustive local
+validation beyond references/selected coverage; all-task typed verification
+(ME-08) with phase-compatible historical hashes; independent semantic/live model
+qualification and deterministic artifact delivery. No production or external model
+calls were made for this change. Do not mark W05/W06 or T08/T09/T19 complete.

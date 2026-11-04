@@ -75,11 +75,16 @@ import {
   validationDiagnostic,
   type ModelValidationDiagnostic,
 } from "./modelValidationDiagnostics.ts";
+import {
+  collectReferenceDiagnostics,
+  quoteReferenceDiagnostic,
+} from "./modelReferenceDiagnostics.ts";
 export class ModelError extends Error {
   constructor(
     public code: string,
     public retryAfter: string | null = null,
     public validationDiagnostics: ModelValidationDiagnostic[] = [],
+    public omittedValidationDiagnosticCount = 0,
   ) {
     super(code);
   }
@@ -262,38 +267,15 @@ function validateQuotes(
   kind?: Evidence["kind"],
   path = "$",
 ) {
-  const canonicalText = (value: string) => normalizedEvidence(value);
   for (const [index, ref] of refs.entries()) {
-    const source = evidence.find((e) => e.id === ref.id);
-    if (
-      !source ||
-      !canonicalText(ref.quote) ||
-      !canonicalText(source.text).includes(canonicalText(ref.quote)) ||
-      (kind && source.kind !== kind) ||
-      (source.kind === "company" && !source.verified)
-    ) {
-      const reason = !source
-        ? "source_missing"
-        : !canonicalText(ref.quote)
-          ? "quote_empty"
-          : !canonicalText(source.text).includes(canonicalText(ref.quote))
-            ? "source_quote_mismatch"
-            : kind && source.kind !== kind
-              ? "source_kind_mismatch"
-              : "company_not_verified";
-      console.warn(
-        "model_evidence_diagnostic",
-        JSON.stringify({
-          reason,
-        }),
-      );
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-        validationDiagnostic("EVIDENCE_REFERENCE_INVALID", reason, {
-          paths: [`${path}[${index}].quote`],
-          evidence_ids: [ref.id],
-        }),
-      ]);
-    }
+    const diagnostic = quoteReferenceDiagnostic(
+      ref,
+      evidence.find((e) => e.id === ref.id),
+      kind,
+      `${path}[${index}].quote`,
+    );
+    if (diagnostic)
+      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [diagnostic]);
   }
 }
 const sameIds = (actual: string[], expected: string[]) =>
@@ -367,6 +349,20 @@ export function validateModelResult(
       options,
     );
   }
+  const referenceErrors = collectReferenceDiagnostics(
+    task,
+    result,
+    evidence,
+    requiredIds,
+    options,
+  );
+  if (referenceErrors.code)
+    throw new ModelError(
+      referenceErrors.code,
+      null,
+      referenceErrors.diagnostics,
+      referenceErrors.omittedCount,
+    );
   if (task === "verify_grounding") {
     if (
       !sameIds(result.processed_requirement_ids, requiredIds) ||
@@ -742,11 +738,13 @@ export interface Ledger {
     transport: string,
     level: ExecutionProfile["reasoning"],
   ): Promise<boolean>;
+  validateCandidateScope?(result: unknown): void;
   validateCandidate?(result: unknown): void;
   invalidCandidate?(
     result: unknown,
     code: string,
     diagnostics?: ModelValidationDiagnostic[],
+    omittedDiagnosticCount?: number,
   ): Promise<void | "repair">;
   loadRound?(inputHash: string): Promise<ModelRoundProgress | null>;
   saveRound?(
@@ -1992,6 +1990,9 @@ export async function executeModel(
           parsedCandidate = taskOutputSchema(task, targetTask).parse(
             normalizeOptionalNulls(JSON.parse(result.text), schema),
           );
+          // Scope integrity must run before a rejected candidate can enter
+          // the paid-writer repair cache through its local quote diagnostics.
+          ledger.validateCandidateScope?.(parsedCandidate);
           const validated = validateModelResult(
             task,
             parsedCandidate,
@@ -2041,6 +2042,9 @@ export async function executeModel(
               parsedCandidate,
               error.code,
               error.validationDiagnostics,
+              ...(error.omittedValidationDiagnosticCount
+                ? [error.omittedValidationDiagnosticCount]
+                : []),
             );
             if (
               retained === "repair" &&
@@ -2055,6 +2059,7 @@ export async function executeModel(
                 error.code,
                 null,
                 error.validationDiagnostics,
+                error.omittedValidationDiagnosticCount,
               );
             }
           }

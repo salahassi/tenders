@@ -1171,9 +1171,13 @@ it.each(["running", "waiting"] as const)(
   },
 );
 
-it.each([false, true])(
-  "runs the real graph from invalid writer through a changed repair prompt and independent verification, crash=%s",
-  async (crash) => {
+it.each([
+  [false, false],
+  [true, false],
+  [false, true],
+])(
+  "runs the real graph with quote repair, crash=%s, rejects out-of-scope content=%s",
+  async (crash, scopeViolation) => {
     const configured = await configure("draft_section", true);
     let job = configured.job;
     const environments = modelEnvironments((name) =>
@@ -1209,7 +1213,7 @@ it.each([false, true])(
         },
       ],
       requirement_ids: [],
-      evidence_refs: [],
+      evidence_refs: [{ id: "notice", quote: "Synthetic source text." }],
       company_claims: [],
       assumptions: [],
       questions: [],
@@ -1253,10 +1257,24 @@ it.each([false, true])(
           expect(context.validation_instruction).toContain(
             "untrusted verifier hints",
           );
+          expect(context.quote_repair_scope).toMatchObject({
+            version: 1,
+            allowed_paths: ["$.evidence_refs[0].quote"],
+          });
           result = {
             target_task: "draft_section",
-            result: corrected,
-            changes: ["Removed an unsupported quotation."],
+            result: scopeViolation
+              ? {
+                  ...corrected,
+                  content_blocks: [
+                    {
+                      type: "paragraph",
+                      text: "Delivery is unconditionally guaranteed.",
+                    },
+                  ],
+                }
+              : corrected,
+            changes: ["Recopied the exact source quotation."],
           };
         } else {
           expect(task).toBe("verify_grounding");
@@ -1323,10 +1341,35 @@ it.each([false, true])(
           "Synthetic process exit before durable handoff"
         )
           continue;
+        if (scopeViolation && (error as any).code === "MODEL_ROUND_EXHAUSTED")
+          break;
         expect(error).toBeInstanceOf(ModelDeferred);
         job = await rpc("claim_backend_job_v2");
         expect(job.id).toBe(options.job.id);
       }
+    }
+    if (scopeViolation) {
+      expect(accepted).toBeUndefined();
+      const thread = (
+        await f.db.query<any>(
+          "select * from app_private.model_graph_threads where job_id=$1",
+          [job.id],
+        )
+      ).rows[0];
+      const retained = (
+        await f.db.query<any>(
+          "select result_key from app_private.model_graph_results where thread_id=$1",
+          [thread.id],
+        )
+      ).rows.map((row) => row.result_key);
+      expect(retained).toContain("candidate-0");
+      expect(retained).not.toContain("candidate-1");
+      expect(retained).not.toContain("accepted");
+      expect(
+        requests.some((request) => request.task === "verify_grounding"),
+      ).toBe(false);
+      expect(fetcher).not.toHaveBeenCalled();
+      return;
     }
     expect(accepted?.result).toEqual(corrected);
     expect(crashed).toBe(crash);
