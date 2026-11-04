@@ -10067,3 +10067,15 @@ inventory checks passed before dispatch. No application deployment, model call,
 bootstrap, restore or business write occurred. The original frozen release
 baseline is unchanged; final gateway qualification, manifest refreeze, renewed
 restore and actual fenced cutover remain separate gates.
+
+### November 4 — distinguish declared HTTPS capacity from observed limits
+
+The additive capacity inventory now also projects HTTPS deployment and ready-Pod
+resource requests/limits through the existing allowlist. Missing values remain
+unknown, Pod/deployment differences remain visible, and no TLS/environment
+secrets or configuration text are emitted. The existing resource reads are
+reused; no new calls or mutations are added. All 23 focused tests passed,
+including the HTTPS unknown/drift/redaction regression.
+[Projection evidence](evidence/https-inventory-capacity-projection-20261104.json)
+records local checks only. The repository's 128 MiB/300m declaration is not yet
+reported as observed; the next reviewed inventory must establish actual values.

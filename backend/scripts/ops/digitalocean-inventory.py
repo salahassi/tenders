@@ -265,7 +265,7 @@ def capacity_workloads(deployments,pods,rest_role=None):
     result=[]
     for deployment in deployments:
         name=deployment.get('metadata',{}).get('name')
-        if name not in ('api','worker','rest','gateway'): continue
+        if name not in ('api','worker','rest','gateway','https'): continue
         spec=deployment['spec'];container=spec['template']['spec']['containers'][0]
         labels=spec['selector']['matchLabels'];ready=[];matched=0
         for pod in pods:

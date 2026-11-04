@@ -5,6 +5,20 @@ import unittest
 from test_inventory_capacity import f,p
 
 class GatewayInventoryCapacityTests(unittest.TestCase):
+ def test_https_actual_resources_are_projected_without_inferring_declared_envelope(self):
+  deployments,pods=f.workloads();dep=next(x for x in deployments if x['metadata']['name']=='https')
+  row=next(x for x in p.capacity_workloads(deployments,pods) if x['name']=='https')
+  self.assertEqual(row['deployment_resources'],{'requests':None,'limits':None})
+  container=dep['spec']['template']['spec']['containers'][0]
+  container.update(resources={'requests':{'memory':'32Mi'},'limits':{'memory':'128Mi','cpu':'300m'}},
+   env=[{'name':'TLS_PRIVATE_KEY','value':'NEVER_EMIT_TLS_SECRET'}])
+  pod=pods[p.NAMES.index('https')];pod['status']['containerStatuses'][0]['ready']=True
+  pod['spec']={'containers':[copy.deepcopy(container)]};pod['spec']['containers'][0]['resources']['limits']={'memory':'256Mi','cpu':'500m'}
+  row=next(x for x in p.capacity_workloads(deployments,pods) if x['name']=='https')
+  self.assertEqual(row['deployment_resources']['limits']['memory'],'128Mi')
+  self.assertEqual(row['ready_pod_observations'][0]['resources']['limits']['memory'],'256Mi')
+  self.assertNotIn('NEVER_EMIT_TLS_SECRET',json.dumps(row));self.assertNotIn('deployment_gateway_runtime',row)
+
  def test_gateway_deployment_and_actual_ready_pod_limits_and_tmp_stay_distinct(self):
   deployments,pods=f.workloads();dep=next(x for x in deployments if x['metadata']['name']=='gateway')
   spec=dep['spec']['template']['spec'];container=spec['containers'][0]
