@@ -129,6 +129,18 @@ class RuntimeManifestTest(unittest.TestCase):
         expected = hashlib.sha256(json.dumps({'nginx.conf': gateway}, sort_keys=True).encode()).hexdigest()
         self.assertEqual(self.deployments['gateway']['spec']['template']['metadata']['annotations']['checksum/public-config'], expected)
 
+    def test_both_gateway_ports_fence_only_legacy_command_transport(self):
+        gateway = next(o['data']['nginx.conf'] for o in self.objects if o['kind'] == 'ConfigMap' and o['metadata']['name'] == 'gateway-config')
+        self.assertEqual(gateway.count('location ~* ^/rest/v1/rpc/(app_batch|apply_batch)($|[^a-z0-9_])'), 2)
+        self.assertEqual(gateway.count('"code":"TRANSPORT_UPGRADE_REQUIRED"'), 4)
+        self.assertEqual(gateway.count('location /rest/v1/ {'), 2)
+        self.assertNotIn('app_batch_prepare', gateway)
+        self.assertNotIn('app_batch_result_chunk', gateway)
+        # Nginx unquotes once before PCRE sees the escape. Four source slashes
+        # accidentally admit x/5/c as class members and block new RPC names.
+        self.assertEqual(gateway.count('^/rest/v1/([^/]*[%'+chr(92)*2+'x5c]|rpc/[^/]*[%'+chr(92)*2+'x5c])'), 2)
+        self.assertNotIn('^/rest/v1/([^/]*[%'+chr(92)*4+'x5c]', gateway)
+
     def test_mutable_images_insecure_urls_and_string_activation_fail(self):
         for update in [{"runtime_image": "repo/runtime:latest"}, {"https_image": "repo/https:latest"}, {"https_image": ""}, {"public_origin": "http://app.example.test"},
             {"public_origin": "https://user:secret@app.example.test"}, {"public_origin": "https://app.example.test/path"},

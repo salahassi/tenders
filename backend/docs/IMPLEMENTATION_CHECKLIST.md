@@ -9722,3 +9722,38 @@ and explicit coverage gaps. Opportunity language is not a verified page-language
 classifier. No genuine Microsoft Word engine was available; the separate Word
 update/save gate remains open. See `docs/ARABIC_OCR_DIAGNOSTIC.md` and
 `docs/evidence/uploaded-ocr-adjudication-20261104.json`.
+
+### November 4 — qualify the permanent legacy command RPC gateway fence
+
+Both gateway ports now reject the retired `app_batch` and `apply_batch` RPCs
+with a typed HTTP409 `TRANSPORT_UPGRADE_REQUIRED` response, `retryable:false`
+and `Cache-Control:no-store`. New command preparation/chunk RPCs, ordinary REST
+reads, Auth and standard Storage routing remain available. Ambiguous encoded
+protocol/function segments are rejected before a downstream second decode;
+query values do not affect the path guard. The existing TUS denial is unchanged.
+
+The [actual pinned Nginx receipt](evidence/legacy-batch-gateway-20261104.json)
+records560 method/path cases,76 TUS cases and24 positive routing controls across
+8080/8081. A synthetic recording upstream received none of the denied requests;
+both new batch RPCs reached the expected upstream. Restart preserved the fence.
+The first native run caught an over-escaped character class that also denied
+the new preparation RPC; its [failure receipt](evidence/legacy-batch-gateway-regex-regression-20261104.json)
+is retained and the identical matrix passed after the narrow correction. These
+are isolated routing tests, not successful business operations or load tests.
+Both owned containers were removed; no host ports, credentials, customer data,
+models, production calls or database changes were involved.
+
+The gateway source contract is version2: it binds the unchanged physical/TUS
+receipt and its exact prior config, then the new actual combined-config routing
+receipt. Historical evidence is not relabeled to match changed source. The CAS
+helper also supports a coordinator callback after rollout and before accepting
+current Pods, so durable old-process exit evidence can precede final acceptance.
+The focused helper/render suite passes32 tests; Python compilation and diff
+checks pass. Full package gates belong to the combined root integration.
+
+Deployment remains pending. The gateway fences supported callers, while the
+current NetworkPolicy still permits direct REST from the namespace. Release
+must verify actual runtime gateway bindings, drain observable old transactions,
+acquire the legacy-table lock before the repeatable-read snapshot, then recheck
+zero and install the permanent SQL INSERT backstop. The routing receipt does not
+claim those database or hosted cutover guarantees; the coordinator owns them.

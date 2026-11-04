@@ -9,6 +9,8 @@ HERE=Path(__file__).resolve().parent
 BASELINE=HERE/'storage-retirement/gateway-before.conf'
 TARGET=HERE.parents[1]/'deploy/kubernetes/gateway.conf'
 QUALIFICATION=HERE.parents[1]/'docs/evidence/storage-retirement-binary-20261104.json'
+STORAGE_QUALIFIED=HERE/'storage-retirement/gateway-storage-qualified.conf'
+BATCH_QUALIFICATION=HERE.parents[1]/'docs/evidence/legacy-batch-gateway-20261104.json'
 BASELINE_SHA256='4907ecf81e2fa1e97754202906873ccd7c34e3dcbe26dd1e60cf4e276c639d23'
 CHECKSUM='checksum/public-config'
 class GatewayError(Exception):pass
@@ -23,13 +25,17 @@ def owned(d,kind,name):
  need(v and m.get('namespace')==d.NAMESPACE and m.get('name')==name and m.get('uid') and m.get('resourceVersion') and m.get('labels',{}).get('app.kubernetes.io/managed-by')=='tenderdesk-deployment','STORAGE_GATEWAY_OWNERSHIP_REQUIRED');return v
 
 def source_contract(d):
- before,after=BASELINE.read_bytes(),TARGET.read_bytes();receipt=QUALIFICATION.read_bytes();r=json.loads(receipt)
+ before,after=BASELINE.read_bytes(),TARGET.read_bytes();storage=STORAGE_QUALIFIED.read_bytes()
+ receipt=QUALIFICATION.read_bytes();r=json.loads(receipt);batch_receipt=BATCH_QUALIFICATION.read_bytes();b=json.loads(batch_receipt)
  need(sha(before)==BASELINE_SHA256 and before!=after,'STORAGE_GATEWAY_SOURCE_INVALID')
  need(r.get('passed') is True and r.get('actual_binary_exercised') is True and r.get('signed_tus_bypass_confirmed') is True and r.get('gateway_resumable_denial_qualified') is True,'STORAGE_GATEWAY_QUALIFICATION_REQUIRED')
- need(r.get('gateway_image')==d.renderer.NGINX_IMAGE and r.get('gateway_config_source_sha256')==sha(after),'STORAGE_GATEWAY_QUALIFICATION_CHANGED')
+ need(r.get('gateway_image')==d.renderer.NGINX_IMAGE and r.get('gateway_config_source_sha256')==sha(storage),'STORAGE_GATEWAY_QUALIFICATION_CHANGED')
+ need(b.get('passed') is True and b.get('actual_binary_exercised') is True and b.get('legacy_rpc_denial_qualified') is True and b.get('gateway_resumable_denial_qualified') is True and b.get('ordinary_routing_preserved') is True and b.get('restart_denial_qualified') is True and b.get('cleanup_confirmed') is True,'BATCH_GATEWAY_QUALIFICATION_REQUIRED')
+ need(b.get('gateway_image')==d.renderer.NGINX_IMAGE and b.get('gateway_before_source_sha256')==sha(storage) and b.get('gateway_config_source_sha256')==sha(after) and b.get('storage_qualification_sha256')==sha(receipt) and all(type(b.get(key)) is int and b[key]==0 for key in ('production_calls','customer_calls')),'BATCH_GATEWAY_QUALIFICATION_CHANGED')
  data_before={'nginx.conf':BASELINE.read_text().replace('__NAMESPACE__',d.NAMESPACE)};data_after={'nginx.conf':TARGET.read_text().replace('__NAMESPACE__',d.NAMESPACE)}
- contract={'version':1,'before_source_sha256':sha(before),'after_source_sha256':sha(after),'before_data_sha256':checksum(data_before),
-  'after_data_sha256':checksum(data_after),'qualification_sha256':sha(receipt),'gateway_image':d.renderer.NGINX_IMAGE}
+ contract={'version':2,'before_source_sha256':sha(before),'after_source_sha256':sha(after),'before_data_sha256':checksum(data_before),
+  'after_data_sha256':checksum(data_after),'qualification_sha256':sha(batch_receipt),'storage_qualification_sha256':sha(receipt),
+  'storage_qualified_source_sha256':sha(storage),'gateway_image':d.renderer.NGINX_IMAGE}
  return contract,data_before,data_after
 
 def preflight(d,contract):
@@ -53,7 +59,7 @@ def patch(d,kind,name,value,operations):
   {'op':'test','path':'/metadata/uid','value':value['metadata']['uid']},
   {'op':'test','path':'/metadata/resourceVersion','value':value['metadata']['resourceVersion']},*operations])])
 
-def apply(d,state):
+def apply(d,state,*,after_rollout=None):
  current=owned(d,'configmap','gateway-config');expected=state['config']
  need(current['metadata']['uid']==expected['metadata']['uid'] and current.get('data') in (state['before_data'],state['after_data']) and not current.get('binaryData') and not current.get('immutable'),'STORAGE_GATEWAY_CONFIG_CHANGED')
  if current['data']!=state['after_data']:
@@ -64,6 +70,7 @@ def apply(d,state):
   path='/spec/template/metadata/annotations/'+escape(CHECKSUM)
   patch(d,'deployment','gateway',dep,[{'op':'test','path':'/spec','value':old['spec']},{'op':'replace','path':path,'value':state['contract']['after_data_sha256']}])
  d.command(['rollout','status','deployment/gateway','-n',d.NAMESPACE,'--timeout=180s'],timeout=190)
+ if after_rollout is not None:after_rollout()
  verify(d,state,check_pods=True)
 
 def verify(d,state,*,check_pods=False):

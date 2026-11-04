@@ -1,0 +1,25 @@
+{
+  "actual_binary_exercised": true,
+  "cause": "The new ambiguous-segment character class had four source backslashes instead of two, unintentionally matching x/5/c and denying valid new RPC names.",
+  "cleanup_confirmed": true,
+  "customer_calls": 0,
+  "failed_config_source_sha256": "a9e9552a4e13ad49da9b7b66d2aeb49f95b52a835ec61098ac9f82274e740d94",
+  "failed_control": {
+    "expected_status": 200,
+    "method": "POST",
+    "observed_status": 409,
+    "path": "/rest/v1/rpc/app_batch_prepare",
+    "port": 8080
+  },
+  "failed_executed_config_sha256": "6f33bf0c54cbe74793e1ef440a9b8323686f4533157881a10deb2b47445f5d54",
+  "fix": "Use exactly the existing TUS rule quoting convention: two source backslashes; rerun the identical frozen routing matrix.",
+  "followup_receipt": "legacy-batch-gateway-20261104.json",
+  "full_private_receipt_sha256": "193ac3a681970a31fb9422d877c3e1eee901a64860996e3497f8a53cee1b8a3d",
+  "gateway_image": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+  "gateway_image_id": "sha256:87ae58c7c6b521c9a89276ddc8b3365586e0d3fa1df02bbf5d8340a29c2e1bd2",
+  "harness_sha256": "810ee98c02d8ca145fc5136e3077b6999bc30354fb331aa28b4b99ffe4dabb44",
+  "passed": false,
+  "production_calls": 0,
+  "synthetic_only": true,
+  "version": 1
+}
