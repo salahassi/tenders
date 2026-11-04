@@ -240,4 +240,6 @@ do $$declare role_name text;signature text;begin
  end loop;
 end$$;
 
-do $$declare r text;begin foreach r in array array['authenticated','tdp_app_authenticated'] loop if exists(select 1 from pg_roles where rolname=r) then execute 'grant execute on function public.workspace_status() to '||quote_ident(r);end if;end loop;end$$;
+-- Preserve the established authenticated canonical command entrypoint. The
+-- renamed predecessor above remains private so callers cannot bypass intents.
+do $$declare r text;begin foreach r in array array['authenticated','tdp_app_authenticated'] loop if exists(select 1 from pg_roles where rolname=r) then execute 'grant execute on function app_private.app_command(text,jsonb,text),public.workspace_status() to '||quote_ident(r);end if;end loop;end$$;

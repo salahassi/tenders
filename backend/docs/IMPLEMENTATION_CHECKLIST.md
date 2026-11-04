@@ -8333,3 +8333,15 @@ and no running or expired-leased jobs in those classes. These counts do not
 establish a cause or successful recovery. No business/schema/model changes ran.
 Native schedules remained unchanged. This fresh baseline is separate from the
 open worker memory, storage-retirement, cloud-restore and hosted acceptance gates.
+
+The managed release authority comparison independently exposed a migration
+regression: the new canonical `app_private.app_command` wrapper lost its existing
+authenticated EXECUTE grant. Migration170442 now preserves that grant for each
+installed role family while its renamed predecessor remains private. Two new
+migration-boundary regressions first reproduced the exact ACL loss and then pass
+for Supabase and managed `tdp_app_*` roles, comparing the entire canonical ACL,
+owner, definer flag and search path before/after, plus no nonowner predecessor
+grants. Backend TypeScript build/typecheck passes. This is a scoped local
+correction; the integration owner still runs the strict combined managed release
+and hosted gates. Runtime/storage settlement behavior and its prior receipts
+are unchanged; final release receipts must bind the corrected migration hash.
