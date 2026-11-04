@@ -1,0 +1,463 @@
+{
+  "version": 1,
+  "recorded_at": "2026-11-04T22:55:20.124009+00:00",
+  "base_revision": "e9cc1821a716cf4b54e2ac892d41cd2a8c586d06",
+  "scope": "Offline new/unstarted-phase request construction plus controlled in-process canonical validation; not live model outputs or SQL admission",
+  "files_sha256": {
+    "backend/scripts/qualification/reserve-adapters.ts": "769469fffc5aeb0c10e50358c682c5d19f05b2b36247ac98fcfca770541ea111",
+    "backend/tests/backend/qualificationReserveAdapters.test.ts": "6c1c1d86eda57ae7f19602700362fee602139dee02ce06d642b1cdfbdb77c2b4",
+    "backend/docs/QUALIFICATION_RESERVE_ADAPTERS.md": "9dd738020a4e142fb8d530d72575cad425d79e56e669112593d02f9ae63073fa",
+    "backend/tests/backend/fixtures/qualification-reserve/corpus-v4.json": "9a1fd88f07fc9fc9d9b06ae3b67699976dacf221e0af7ee03fafdd59bfe25d7c",
+    "backend/scripts/qualification/reserve.mjs": "7da0f07ae3379e3ce219d7a4d413b306d5b9b4268cbad1aca74cf5555caa2a23"
+  },
+  "production_source_sha256": {
+    "generation.ts": "48023c5443a7235c0510090f0b015ce45424c3f3f791158fea59a1e07575b0ea",
+    "model.ts": "cd7210ff103d9ca524b513f9a44c800a1ec2c0aafee3e38585ab32e0aefb1405",
+    "modelContract.ts": "ddc25fe6ef0ca5541e865ada137ff2c6fe6ca624ad633c81a6c3d137b0005a7d",
+    "sourceEvidence.ts": "226bce8cf4d491e7749769f7d439f4e27509ecbd87f06a91fd99db1d03f173e1",
+    "sourceModel.ts": "8e7bc2605423bc97fbecbcac26581fb39c0d41512ccdea076193fbe762c2392d",
+    "modelSchemas.ts": "e851670c70452ce43070e0c4f1fae4f9bc4eda4570f9f458185f88be5fa5c779",
+    "modelSemanticPrompt.ts": "6f4adc65b785b97249fe45f51229669689098b834fe39ca7e5c3660669636883",
+    "modelSemanticInstructions.ts": "c9bd061be9215bb2a9e20cc6d32e59479d93bf87aceb4e8e52a69c223e8201b2",
+    "modelDomainDiagnostics.ts": "8dbd619b2e22215eccc134819dc46f39de783d381d0b61d7a9cf18c06251414b",
+    "modelReferenceDiagnostics.ts": "7fc9d5a464fbc80465af76e8a7415c050d059da618b9a2be343841db49586a01",
+    "modelValidationDiagnostics.ts": "36709d354505a6b3ced923ef665e732bb8ee26bee41f38ca28521859a4e64dba",
+    "modelContextDiagnostics.ts": "b919bfe75370809503b9d9da00af7a4ed1ee378dce88a604bf4e675016787cea",
+    "contentPolicy.ts": "34e2de158ba81a8896ebc8420f8c46e5d1ccd895c013afa83b5ab2834e280cab",
+    "automaticSources.ts": "82b80a77501984b9b39b428d7be5d971a5dfce5b717b5fce2ca12206ca93745c"
+  },
+  "case_census": {
+    "total": 50,
+    "single_request_constructible": 10,
+    "unsupported": 40,
+    "supported_task_families": 4,
+    "unchanged_scheduled_per_real_model": 100,
+    "actual_real_targets": []
+  },
+  "cases": [
+    {
+      "id": "qr1.analyze_chunk.retention_exception.en",
+      "task": "analyze_chunk",
+      "source_language": "en",
+      "status": "offline_single_request_constructible",
+      "request_language": "en",
+      "request_count": 1
+    },
+    {
+      "id": "qr1.analyze_chunk.retention_exception.ar",
+      "task": "analyze_chunk",
+      "source_language": "ar",
+      "status": "offline_single_request_constructible",
+      "request_language": "ar",
+      "request_count": 1
+    },
+    {
+      "id": "qr1.analyze_chunk.addendum_precedence.en",
+      "task": "analyze_chunk",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "COMPOSITE_PRODUCTION_REQUEST_REQUIRED"
+    },
+    {
+      "id": "qr1.analyze_chunk.addendum_precedence.ar",
+      "task": "analyze_chunk",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "COMPOSITE_PRODUCTION_REQUEST_REQUIRED"
+    },
+    {
+      "id": "qr1.classify_opportunity.unproven_licence.en",
+      "task": "classify_opportunity",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "NOTICE_PROJECTION_AND_SCOPE_POLICY_UNFROZEN"
+    },
+    {
+      "id": "qr1.classify_opportunity.unproven_licence.ar",
+      "task": "classify_opportunity",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "NOTICE_PROJECTION_AND_SCOPE_POLICY_UNFROZEN"
+    },
+    {
+      "id": "qr1.classify_opportunity.mixed_scope_boundary.en",
+      "task": "classify_opportunity",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "NOTICE_PROJECTION_AND_SCOPE_POLICY_UNFROZEN"
+    },
+    {
+      "id": "qr1.classify_opportunity.mixed_scope_boundary.ar",
+      "task": "classify_opportunity",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "NOTICE_PROJECTION_AND_SCOPE_POLICY_UNFROZEN"
+    },
+    {
+      "id": "qr1.summarize_review.advisory_note.en",
+      "task": "summarize_review",
+      "source_language": "en",
+      "status": "offline_single_request_constructible",
+      "request_language": "en",
+      "request_count": 1
+    },
+    {
+      "id": "qr1.summarize_review.advisory_note.ar",
+      "task": "summarize_review",
+      "source_language": "ar",
+      "status": "offline_single_request_constructible",
+      "request_language": "ar",
+      "request_count": 1
+    },
+    {
+      "id": "qr1.summarize_review.review_identity.en",
+      "task": "summarize_review",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "COMPOSITE_PRODUCTION_REQUEST_REQUIRED"
+    },
+    {
+      "id": "qr1.summarize_review.review_identity.ar",
+      "task": "summarize_review",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "COMPOSITE_PRODUCTION_REQUEST_REQUIRED"
+    },
+    {
+      "id": "qr1.plan_structure.separate_envelopes.en",
+      "task": "plan_structure",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_structure.separate_envelopes.ar",
+      "task": "plan_structure",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_structure.proposed_method.en",
+      "task": "plan_structure",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_structure.proposed_method.ar",
+      "task": "plan_structure",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_blueprint.cross_reference.en",
+      "task": "plan_blueprint",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_blueprint.cross_reference.ar",
+      "task": "plan_blueprint",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_blueprint.condition_in_footnote.en",
+      "task": "plan_blueprint",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_blueprint.condition_in_footnote.ar",
+      "task": "plan_blueprint",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_proposal.owned_acceptance.en",
+      "task": "plan_proposal",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_proposal.owned_acceptance.ar",
+      "task": "plan_proposal",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_proposal.missing_buyer_date.en",
+      "task": "plan_proposal",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_proposal.missing_buyer_date.ar",
+      "task": "plan_proposal",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.draft_section.qualified_company_record.en",
+      "task": "draft_section",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.draft_section.qualified_company_record.ar",
+      "task": "draft_section",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.draft_section.style_is_not_credential.en",
+      "task": "draft_section",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.draft_section.style_is_not_credential.ar",
+      "task": "draft_section",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_commercial.optional_quantity_association.en",
+      "task": "plan_commercial",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_commercial.optional_quantity_association.ar",
+      "task": "plan_commercial",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_commercial.dependency_and_period.en",
+      "task": "plan_commercial",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.plan_commercial.dependency_and_period.ar",
+      "task": "plan_commercial",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.review_proposal.partial_response.en",
+      "task": "review_proposal",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.review_proposal.partial_response.ar",
+      "task": "review_proposal",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.review_proposal.no_na_approval.en",
+      "task": "review_proposal",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.review_proposal.no_na_approval.ar",
+      "task": "review_proposal",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN"
+    },
+    {
+      "id": "qr1.inspect_source_page.publication_not_deadline.en",
+      "task": "inspect_source_page",
+      "source_language": "en",
+      "status": "offline_single_request_constructible",
+      "request_language": "ar",
+      "request_count": 1
+    },
+    {
+      "id": "qr1.inspect_source_page.publication_not_deadline.ar",
+      "task": "inspect_source_page",
+      "source_language": "ar",
+      "status": "offline_single_request_constructible",
+      "request_language": "ar",
+      "request_count": 1
+    },
+    {
+      "id": "qr1.inspect_source_page.cancelled_listing.en",
+      "task": "inspect_source_page",
+      "source_language": "en",
+      "status": "offline_single_request_constructible",
+      "request_language": "ar",
+      "request_count": 1
+    },
+    {
+      "id": "qr1.inspect_source_page.cancelled_listing.ar",
+      "task": "inspect_source_page",
+      "source_language": "ar",
+      "status": "offline_single_request_constructible",
+      "request_language": "ar",
+      "request_count": 1
+    },
+    {
+      "id": "qr1.verify_grounding.faithful_acknowledgement.en",
+      "task": "verify_grounding",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "TYPED_CANDIDATE_INPUT_UNFROZEN"
+    },
+    {
+      "id": "qr1.verify_grounding.faithful_acknowledgement.ar",
+      "task": "verify_grounding",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "TYPED_CANDIDATE_INPUT_UNFROZEN"
+    },
+    {
+      "id": "qr1.verify_grounding.mutated_resolution.en",
+      "task": "verify_grounding",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "TYPED_CANDIDATE_INPUT_UNFROZEN"
+    },
+    {
+      "id": "qr1.verify_grounding.mutated_resolution.ar",
+      "task": "verify_grounding",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "TYPED_CANDIDATE_INPUT_UNFROZEN"
+    },
+    {
+      "id": "qr1.repair_result.citation_only_repair.en",
+      "task": "repair_result",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "REPAIR_CANDIDATE_AND_SCOPE_UNFROZEN"
+    },
+    {
+      "id": "qr1.repair_result.citation_only_repair.ar",
+      "task": "repair_result",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "REPAIR_CANDIDATE_AND_SCOPE_UNFROZEN"
+    },
+    {
+      "id": "qr1.repair_result.unrelated_payment_change.en",
+      "task": "repair_result",
+      "source_language": "en",
+      "status": "unsupported",
+      "reason": "REPAIR_CANDIDATE_AND_SCOPE_UNFROZEN"
+    },
+    {
+      "id": "qr1.repair_result.unrelated_payment_change.ar",
+      "task": "repair_result",
+      "source_language": "ar",
+      "status": "unsupported",
+      "reason": "REPAIR_CANDIDATE_AND_SCOPE_UNFROZEN"
+    },
+    {
+      "id": "qr1.connection_probe.transport_identity.en",
+      "task": "connection_probe",
+      "source_language": "en",
+      "status": "offline_single_request_constructible",
+      "request_language": "en",
+      "request_count": 1
+    },
+    {
+      "id": "qr1.connection_probe.transport_identity.ar",
+      "task": "connection_probe",
+      "source_language": "ar",
+      "status": "offline_single_request_constructible",
+      "request_language": "ar",
+      "request_count": 1
+    }
+  ],
+  "source_contract_limits": [
+    "Source roles/authority metadata are frozen synthetic inputs, not database authorization",
+    "No supplied human semantic approval; source review records empty",
+    "Canonical UUID/span/page reverse maps retain original source hashes and code-point ranges",
+    "General/general review target matches actual command schema/frontend convention",
+    "Empty administrative context adds no buyer facts and is not a generation_context RPC claim",
+    "Full prompt pin includes exported actual system instructions plus canonical user prompt; schema has separate digest",
+    "Only new/unstarted phases; not historical paid-request replay"
+  ],
+  "verification": {
+    "command": "npx vitest run tests/backend/qualificationReserveAdapters.test.ts tests/backend/qualificationReserve.test.ts --maxWorkers=1",
+    "passed": 140,
+    "failed": 0,
+    "adapter_tests": 69,
+    "existing_reserve_tests": 71,
+    "duration_ms": 2410,
+    "log_sha256": "ce786f6f63cd0dcc00b2f31f4f30ad8b50d1e1efd90f2bbd2aa5536e7df46fc8",
+    "typecheck_exit": 0,
+    "typecheck_log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220",
+    "full_suites": "Not run; separate root integration gate",
+    "final_source_delta": "Formatting only after passing run"
+  },
+  "retained_failures": [
+    {
+      "kind": "fixture fidelity defect",
+      "test": "canonical review target shape",
+      "failed": 1,
+      "reason": "proposal/null target cannot come from review.save input",
+      "correction": "general/general existing convention; actual command-schema positive control",
+      "log_sha256": "8b192b02bc0afbcdb1f83dfdc371687992585144ee99ca4d92170ed40bf2c032"
+    },
+    {
+      "kind": "test harness wire expectation",
+      "failed": 7,
+      "reason": "New assertion expected bare user context; actual Qwen adapter appends JSON schema",
+      "correction": "Assert actual system instruction and canonical user prompt plus existing schema suffix; no product or oracle change",
+      "log_sha256": "71969a12dba8576e51043c4a36393c56ee18b716c52ed211062c1a19a3102305"
+    }
+  ],
+  "review": {
+    "method": "Independent source-only review of construction/canonical contracts/test source; no tests or outputs by reviewer",
+    "result": "No material blocker after review-target correction",
+    "late_delta": "Root independently source-reviewed the final compiler/docs including full system/user binding; no blocking change requested. Eventual execution must rebuild the actual domainValidate closure rather than trust caller-replaced functions.",
+    "reviewers": [
+      "adapter_boundary_review",
+      "root"
+    ]
+  },
+  "actual_activity": {
+    "external_provider_calls": 0,
+    "actual_model_outputs": 0,
+    "live_retrieval_calls": 0,
+    "production_database_mutations": 0,
+    "deployments": 0,
+    "controlled_in_process_responses": "test-only authored bytes; not provider outputs or semantic judgments"
+  },
+  "remaining": [
+    "40unsupported cases need separately frozen reviewed prerequisites/composite schedules",
+    "No new live evaluate-ai-models suite or target activation",
+    "Full actual target/source/prompt/schema/adapter/validator locks",
+    "Independent private holdout and noncritical acceptance decisions",
+    "Authorized provider/retrieval execution and independent outcome adjudication",
+    "Prior critical provider findings and G09 seven misses unchanged"
+  ]
+}

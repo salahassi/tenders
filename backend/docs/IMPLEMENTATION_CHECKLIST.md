@@ -10094,3 +10094,35 @@ counts were observed again; no fence/drain, grant, provider call or application
 mutation ran. The original release baseline is unchanged. Five focused HTTPS/
 gateway projection tests passed before this dispatch. The separate actual-image
 proxy-chain proof and final release checks remain pending.
+
+### 2026-11-04 — Initial reserve adapters use production helpers; ten cases constructible
+
+Added offline `reserve-adapters.ts` for ten of the 50 frozen reserve cases: bilingual
+retention analysis, advisory review, four source-page cases and two protocol probes.
+The other 40 remain explicitly unsupported; the 100/model denominator is unchanged.
+No source identities are concatenated, no prior model results are fabricated, and
+no live campaign suite is exposed. The exact prerequisites and existing campaign
+integration limits are in `QUALIFICATION_RESERVE_ADAPTERS.md`.
+
+Construction uses actual `generation.taskInput`, current exact span/source contract,
+`pinSemanticPrompt`, source-page prompt projection and `executeModel` preparation,
+stopping before send/reservation/fetch. Original source aliases map explicitly to
+canonical UUID/span/page IDs. Empty administrative fixture context adds no buyer
+facts and is not authenticated SQL admission. Separate actual system and user prompt
+hashes feed the full prompt pin, while durable input identity remains unchanged.
+
+140 focused tests passed in 2.41s (69 adapter/control plus 71 reserve-integrity); backend
+typecheck passed. Controlled in-process responses exercise actual source materialization,
+model-forged review neutralization, source/coverage rejection and dispatch-only source
+mode restrictions. These are not provider outputs or semantic qualification. Independent
+source review found an invalid synthetic review target; a real command-schema regression
+failed before the existing `general/general` convention fixed it. Final core reread
+found no material blocker. The receipt preserves that red and a later test-harness
+wire assertion correction for the existing appended JSON schema.
+
+Evidence: `evidence/qualification-reserve-adapters-20261104.json`. No provider calls,
+production retrieval execution, database writes, deployment, billing or model-policy
+changes occurred. Remaining: reviewed composite schedules; frozen typed requirement/
+blueprint/draft/candidate/repair prerequisites; complete actual target/request locks;
+authorized live evaluation and independent adjudication; private holdout and noncritical
+business decisions. Full combined checks remain the separate root integration gate.
