@@ -1,5 +1,5 @@
 import copy
-from datetime import datetime,timezone
+from datetime import datetime,timezone,timedelta
 import importlib.util
 from pathlib import Path
 import unittest
@@ -10,6 +10,10 @@ def selection():
  return {'version':1,'operation_nonce':str(uuid.uuid4()),'actor_id':str(uuid.uuid4()),'namespace_uid':str(uuid.uuid4()),'binary_receipt_sha256':'a'*64,
   'selection':[{'id':str(uuid.uuid4()),'retirement_nonce':str(uuid.uuid4()),'storage_key':'workspace/key','revision':1}],
   'expected_workloads':{name:{'uid':str(uuid.uuid4()),'image':m.STORAGE_IMAGE if name=='storage' else 'example.invalid/app@sha256:'+'a'*64,'replicas':1} for name in m.NAMES}}
+
+def terminal(status,code=0,reason='Completed'):
+ now=datetime.now(timezone.utc)
+ return {'containerID':status['containerID'],'exitCode':code,'reason':reason,'startedAt':(now-timedelta(seconds=1)).isoformat(),'finishedAt':now.isoformat()}
 
 class Adapter:
  def __init__(self,s,fail=None):
@@ -37,7 +41,7 @@ class Adapter:
   self.step('stop')
   for p in self.saved.values():
    p['metadata']['deletionTimestamp']=datetime.now(timezone.utc).isoformat()
-   for s in p['status']['containerStatuses']:s['state']={'terminated':{'exitCode':137,'finishedAt':datetime.now(timezone.utc).isoformat()}}
+   for s in p['status']['containerStatuses']:s['state']={'terminated':terminal(s,137,'OOMKilled')}
  def assert_stopped(self,*_):self.step('assert_stopped')
  def pod(self,name):self.step('pod');return copy.deepcopy(self.saved[name])
  def assert_no_other_pvc_writers(self,*_):self.step('pvc')
@@ -116,3 +120,63 @@ class PreFenceTests(unittest.TestCase):
   s=selection();a=Adapter(s);a.census=lambda:['workspace/key.info']
   with self.assertRaisesRegex(m.RetirementError,'NAMESPACE_COLLISION'):m.retire(a,s)
   self.assertNotIn('prepare',a.events);self.assertNotIn('protect_pods',a.events);self.assertEqual(a.events[-1],'restore')
+
+class ProcessProofTests(unittest.TestCase):
+ def pair(self):
+  s=selection();a=Adapter(s);original=a.capture_value['pods']['storage'][0]
+  a.protect_pods(a.capture_value,s['operation_nonce']);a.stop()
+  return s,original,a.saved['storage-pod']
+ def check_rejected(self,mutate):
+  s,original,current=self.pair();mutate(current)
+  with self.assertRaisesRegex(m.RetirementError,'PROCESS_PROOF_INVALID'):m.terminated_pod(original,current,s['operation_nonce'])
+ def test_both_current_and_inner_ids_must_equal_captured_container(self):
+  changed='containerd://'+'b'*64
+  def both(p):
+   status=p['status']['containerStatuses'][0];status['containerID']=changed;status['state']['terminated']['containerID']=changed
+  for mutate in (both,lambda p:p['status']['containerStatuses'][0]['state']['terminated'].update(containerID=changed),
+                 lambda p:p['status']['containerStatuses'][0]['state']['terminated'].pop('containerID')):
+   with self.subTest(mutate=mutate.__name__):self.check_rejected(mutate)
+ def test_unknown_termination_or_pod_reason_never_proves_exit(self):
+  for reason in ('NodeLost','ContainerStatusUnknown','Unknown',''):
+   with self.subTest(reason=reason):self.check_rejected(lambda p:p['status']['containerStatuses'][0]['state']['terminated'].update(reason=reason))
+  for reason in ('NodeLost','ContainerStatusUnknown'):
+   with self.subTest(pod_reason=reason):self.check_rejected(lambda p:p['status'].update(reason=reason))
+ def test_exit_code_requires_bounded_integer_not_boolean(self):
+  for code in (True,False,-1,256,None,'0'):
+   with self.subTest(code=code):self.check_rejected(lambda p:p['status']['containerStatuses'][0]['state']['terminated'].update(exitCode=code))
+ def test_both_times_must_be_real_ordered_non_epoch_and_not_future(self):
+  for key in ('startedAt','finishedAt'):
+   for value in (None,'','1970-01-01T00:00:00Z','0001-01-01T00:00:00Z','2026-13-01T00:00:00Z',
+                 '2026-01-01T00:00:00',(datetime.now(timezone.utc)+timedelta(days=1)).isoformat()):
+    with self.subTest(key=key,value=value):self.check_rejected(lambda p:p['status']['containerStatuses'][0]['state']['terminated'].update({key:value}))
+  def reverse(p):
+   term=p['status']['containerStatuses'][0]['state']['terminated'];term['startedAt'],term['finishedAt']=term['finishedAt'],term['startedAt']
+  self.check_rejected(reverse)
+ def test_all_reviewed_termination_reasons_retain_exact_identity(self):
+  for reason,code in (('Completed',0),('Error',143),('OOMKilled',137)):
+   s,old,p=self.pair();status=p['status']['containerStatuses'][0];status['state']['terminated']=terminal(status,code,reason)
+   proof=m.terminated_pod(old,p,s['operation_nonce'])
+   self.assertEqual(proof['containers'][0]['reason'],reason)
+   self.assertEqual(proof['containers'][0]['container_id'],old['status']['containerStatuses'][0]['containerID'])
+ def test_live_restartable_pod_with_terminated_status_is_not_settled(self):
+  s,old,p=self.pair();del p['metadata']['deletionTimestamp'];p['status']['phase']='Running'
+  self.assertIsNone(m.terminated_pod(old,p,s['operation_nonce']))
+ def test_missing_extra_or_duplicate_saved_container_proofs_reject(self):
+  s,old,p=self.pair();proof=m.terminated_pod(old,p,s['operation_nonce']);expected=m.container_identities(old)
+  for entries in ([],proof['containers']*2,[{**proof['containers'][0],'name':'foreign'}]):
+   with self.subTest(entries=entries),self.assertRaisesRegex(m.RetirementError,'JOURNAL_INVALID'):
+    m.validate_saved_termination({**proof,'containers':entries},old['metadata']['uid'],expected)
+ def test_unknown_exit_blocks_physical_removal_and_quota_completion(self):
+  s=selection();a=Adapter(s);stop=a.stop
+  def unknown(*args):
+   stop(*args);a.saved['storage-pod']['status']['containerStatuses'][0]['state']['terminated']['reason']='ContainerStatusUnknown'
+  a.stop=unknown
+  with self.assertRaisesRegex(m.RetirementError,'PROCESS_PROOF_INVALID'):m.retire(a,s)
+  self.assertNotIn('remove',a.events);self.assertNotIn('finish',a.events);self.assertEqual(a.events[-1],'restore')
+ def test_existing_sql_shape_receives_only_validated_projection(self):
+  s=selection();a=Adapter(s);received=[];finish=a.finish
+  def capture(*args):received.append(args[-1]);return finish(*args)
+  a.finish=capture;m.retire(a,s)
+  for workload in received[0]['quiescence']:
+   for pod in workload['pods']:
+    for item in pod['containers']:self.assertEqual(set(item),{'name','container_id','finished_at','exit_code'})

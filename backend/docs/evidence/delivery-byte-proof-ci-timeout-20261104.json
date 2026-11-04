@@ -1,0 +1,231 @@
+{
+  "version": 1,
+  "scope": "Test-harness timeout correction; no product/runtime/native-image change",
+  "source_base": "e67dbb4a6a382f2890ff8a3aad10a94376ec1056",
+  "test_file": "backend/tests/backend/deliveryByteProof.test.ts",
+  "old_test_sha256": "a77fb466274a5b057460145edd8eec048140657174e79218dfb15ac800f4c724",
+  "new_test_sha256": "83b3216567f1e76b488dae32d313c4e5c1faf5e2bbcd37d253204017c24fbdd7",
+  "retained_ci_failure": {
+    "run_id": 41934787660,
+    "job_id": 126940409515,
+    "url": "https://github.com/salahassi/tenders/actions/runs/41934787660/job/126940409515",
+    "source_revision": "2ac061349cb09ca796dc27a30de7450dbf4d5021",
+    "private_full_log_sha256": "7d6b5a14f791700bd365afe087319b23325979d6002aa887de61a0453d2c8e34",
+    "failing_test": "reuses only privately verified identical bytes and exact current model binding",
+    "declared_timeout_ms": 5000,
+    "reported_case_duration_ms": 5239,
+    "backend_passed": 3283,
+    "backend_failed": 1,
+    "backend_files": 193,
+    "suite_duration_seconds": 642.44,
+    "error": "Test timed out in 5000ms.",
+    "location": "tests/backend/deliveryByteProof.test.ts:48:1"
+  },
+  "change": {
+    "test_timeout_ms": 30000,
+    "render_setup_timeout_ms": 30000,
+    "scope": "Only five real-DOCX tests and their real-font/native-DOCX setup",
+    "analogous_source": "backend/tests/backend/deliveryExport.test.ts",
+    "all_assertions_and_callback_bodies_byte_identical_after_removing_timeout_declarations": true,
+    "first_case_deliveryBytes_calls": 4,
+    "first_case_full_canonical_verifier_calls": 2,
+    "spies_retain_real_implementations": true,
+    "new_mocks": false,
+    "production_timeouts_changed": false,
+    "runtime_source_changed": false,
+    "native_image_changed": false
+  },
+  "verification": {
+    "cpu_affinity": "one logical CPU (taskset -c 0)",
+    "vitest_max_workers": 1,
+    "repeats": [
+      {
+        "attempt": 1,
+        "passed": 5,
+        "failed": 0,
+        "result_sha256": "b4b8904d3004c084249cf63bbcb7f2964cde516290a527c0c4c12192268ba4ff",
+        "case_duration_ms": [
+          {
+            "title": "reuses only privately verified identical bytes and exact current model binding",
+            "status": "passed",
+            "duration_ms": 4452.531221
+          },
+          {
+            "title": "mutated model or changed bytes cannot borrow a previous verification",
+            "status": "passed",
+            "duration_ms": 628.8419810000005
+          },
+          {
+            "title": "cancellation returns no proof even when bytes previously passed",
+            "status": "passed",
+            "duration_ms": 239.27125100000012
+          },
+          {
+            "title": "captures the model before a delayed Blob read and cannot lend that proof to a later model",
+            "status": "passed",
+            "duration_ms": 1970.4356900000002
+          },
+          {
+            "title": "owns its byte snapshot before yielding and never lends verification to changed input",
+            "status": "passed",
+            "duration_ms": 1763.240815
+          }
+        ],
+        "command": [
+          "taskset",
+          "-c",
+          "0",
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "tests/backend/deliveryByteProof.test.ts",
+          "--maxWorkers=1",
+          "--reporter=verbose",
+          "--reporter=json",
+          "--outputFile=/workspace/output/delivery-byte-proof-ci/fixed-one-cpu-1.json"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 9.937241380001069,
+        "log_sha256": "17e11d9fde33511dabeff8545fe68f239185cb939aea2a0278e78211cf46730a"
+      },
+      {
+        "attempt": 2,
+        "passed": 5,
+        "failed": 0,
+        "result_sha256": "0e4c0a004518bc40c79a7bff168b398e3ba156d6ff1dbfd824028cb7e342cba7",
+        "case_duration_ms": [
+          {
+            "title": "reuses only privately verified identical bytes and exact current model binding",
+            "status": "passed",
+            "duration_ms": 4421.435786
+          },
+          {
+            "title": "mutated model or changed bytes cannot borrow a previous verification",
+            "status": "passed",
+            "duration_ms": 638.8811700000006
+          },
+          {
+            "title": "cancellation returns no proof even when bytes previously passed",
+            "status": "passed",
+            "duration_ms": 246.17323899999974
+          },
+          {
+            "title": "captures the model before a delayed Blob read and cannot lend that proof to a later model",
+            "status": "passed",
+            "duration_ms": 2015.066057
+          },
+          {
+            "title": "owns its byte snapshot before yielding and never lends verification to changed input",
+            "status": "passed",
+            "duration_ms": 1668.7764120000002
+          }
+        ],
+        "command": [
+          "taskset",
+          "-c",
+          "0",
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "tests/backend/deliveryByteProof.test.ts",
+          "--maxWorkers=1",
+          "--reporter=verbose",
+          "--reporter=json",
+          "--outputFile=/workspace/output/delivery-byte-proof-ci/fixed-one-cpu-2.json"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 9.84583647600084,
+        "log_sha256": "539216417c0c20e81ea11dd53adccefc81bcef9db0c5b037dc230515e38a8226"
+      },
+      {
+        "attempt": 3,
+        "passed": 5,
+        "failed": 0,
+        "result_sha256": "b9b877adc9902d5d132a04763d91cc52b76de1c4039206e37a846b5f827176ed",
+        "case_duration_ms": [
+          {
+            "title": "reuses only privately verified identical bytes and exact current model binding",
+            "status": "passed",
+            "duration_ms": 4443.575331
+          },
+          {
+            "title": "mutated model or changed bytes cannot borrow a previous verification",
+            "status": "passed",
+            "duration_ms": 620.8950789999999
+          },
+          {
+            "title": "cancellation returns no proof even when bytes previously passed",
+            "status": "passed",
+            "duration_ms": 227.37257200000022
+          },
+          {
+            "title": "captures the model before a delayed Blob read and cannot lend that proof to a later model",
+            "status": "passed",
+            "duration_ms": 1959.6266219999998
+          },
+          {
+            "title": "owns its byte snapshot before yielding and never lends verification to changed input",
+            "status": "passed",
+            "duration_ms": 1717.9255119999998
+          }
+        ],
+        "command": [
+          "taskset",
+          "-c",
+          "0",
+          "node",
+          "node_modules/vitest/vitest.mjs",
+          "run",
+          "tests/backend/deliveryByteProof.test.ts",
+          "--maxWorkers=1",
+          "--reporter=verbose",
+          "--reporter=json",
+          "--outputFile=/workspace/output/delivery-byte-proof-ci/fixed-one-cpu-3.json"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 9.818565708003007,
+        "log_sha256": "d4172f8518ce50a0278c98b1c4705f0bd875d763268624f4244313633c775b65"
+      }
+    ],
+    "unique_cases": 5,
+    "total_case_executions": 15,
+    "typecheck_build": [
+      {
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 1.421896886000468,
+        "log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220"
+      },
+      {
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "exit_code": 0,
+        "elapsed_seconds": 1.464415802001895,
+        "log_sha256": "8652d82be3115ea6597ae3b7dcf42d83bc898c68ec15888bbf53917a98ebac84"
+      }
+    ],
+    "source_hashes_unchanged_before_after": true,
+    "hashed_test_runtime_font_lock_files": 177,
+    "runtime_font_lock_manifest_sha256": "6b231dc379638d8cb4c4ec057f7109a6062049b129fb723b0ef32056b761c61c",
+    "test_source_sha256": "83b3216567f1e76b488dae32d313c4e5c1faf5e2bbcd37d253204017c24fbdd7"
+  },
+  "deployment": {
+    "attempt_run_id": 41934809173,
+    "status": "Canceled during verification by root; cluster access/image/schema steps skipped",
+    "deployed": false,
+    "note": "Cancellation/cleanup status reported by coordinating root, not independently fetched here"
+  },
+  "limits": [
+    "Focused local runs do not replace the corrected complete GitHub CI gate.",
+    "One-CPU affinity is functional-test evidence, not a hosted runtime capacity or latency guarantee.",
+    "No provider calls, customer data, native image rebuild, schema change or deployment in this task.",
+    "The preliminary local run is diagnostic only; it is not used as the retained failing baseline."
+  ]
+}

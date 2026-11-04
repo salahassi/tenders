@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import uuid
-from test_storage_retirement import selection
+from test_storage_retirement import selection,terminal
 s=importlib.util.spec_from_file_location('retirement_kube_test',Path(__file__).parent/'storage-retirement/kubernetes.py');k=importlib.util.module_from_spec(s);s.loader.exec_module(k);c=k.c
 
 class FakeCluster:
@@ -25,7 +25,7 @@ class FakeCluster:
    if name=='storage':spec.update(volumes=[{'name':'objects','persistentVolumeClaim':{'claimName':'private-objects'}}]);container['volumeMounts']=[{'name':'objects','mountPath':'/var/lib/storage'}]
    dep={'metadata':meta(name,expected['uid']),'spec':{'replicas':1,'selector':{'matchLabels':{'app':name}},'template':{'spec':copy.deepcopy(spec)}},'status':{'observedGeneration':1,'readyReplicas':1,'updatedReplicas':1}}
    rs={'metadata':meta(name+'-rs')};rs['metadata']['ownerReferences']=[{'uid':dep['metadata']['uid'],'controller':True}]
-   pod={'metadata':meta(name+'-pod'),'spec':{**copy.deepcopy(spec),'nodeName':'isolated-fixture'},'status':{'containerStatuses':[{'name':name,'ready':True,'state':{'running':{}}}]}}
+   pod={'metadata':meta(name+'-pod'),'spec':{**copy.deepcopy(spec),'nodeName':'isolated-fixture'},'status':{'containerStatuses':[{'name':name,'ready':True,'containerID':'containerd://'+'a'*64,'state':{'running':{}}}]}}
    pod['metadata']['labels']['app']=name;pod['metadata']['labels']['app.kubernetes.io/name']=name;pod['metadata']['ownerReferences']=[{'uid':rs['metadata']['uid'],'controller':True}]
    self.resources['deployment',name]=dep;self.resources['replicaset',name+'-rs']=rs;self.resources['pod',name+'-pod']=pod
   self.probe=type('Probe',(),{'validate_cluster':lambda _:None})()
@@ -49,7 +49,7 @@ class FakeCluster:
    if kind=='deployment' and value['spec']['replicas']==0:
     from datetime import datetime,timezone
     self.resources['pod',name+'-pod']['metadata']['deletionTimestamp']=datetime.now(timezone.utc).isoformat()
-    self.resources['pod',name+'-pod']['status']['containerStatuses'][0].update(containerID='containerd://'+'a'*64,state={'terminated':{'exitCode':0,'finishedAt':datetime.now(timezone.utc).isoformat()}})
+    status=self.resources['pod',name+'-pod']['status']['containerStatuses'][0];status['state']={'terminated':terminal(status)}
    self.patched+=1;value['metadata']['resourceVersion']=str(int(value['metadata']['resourceVersion'])+1)
    removed_finalizer=kind=='pod' and any(op['op']=='remove' and op['path']=='/metadata/finalizers' for op in json.loads(args[-1]))
    if removed_finalizer and self.immediate_gc and value['metadata'].get('deletionTimestamp'):self.resources.pop((kind,name),None)
@@ -63,7 +63,7 @@ class FakeCluster:
    assert options['preconditions']=={'uid':pod['metadata']['uid'],'resourceVersion':pod['metadata']['resourceVersion']}
    assert options['gracePeriodSeconds']>=1
    pod['metadata']['deletionTimestamp']=datetime.now(timezone.utc).isoformat()
-   pod['status']['containerStatuses'][0].update(containerID='containerd://'+'a'*64,state={'terminated':{'exitCode':143,'finishedAt':datetime.now(timezone.utc).isoformat()}})
+   status=pod['status']['containerStatuses'][0];status['state']={'terminated':terminal(status,143,'Error')}
    return ''
   if args[0]=='delete':self.resources.pop((args[1],args[2]),None);return ''
   raise AssertionError(args)
@@ -133,7 +133,7 @@ class AdapterTests(unittest.TestCase):
   old=self.cluster.resources.pop(('pod','storage-pod'))
   with self.assertRaisesRegex(c.RetirementError,'PROCESS_RECONCILIATION_REQUIRED'):self.a.restore(v,self.a.nonce)
   marker=json.loads(self.cluster.resources['deployment','storage']['metadata']['annotations'][k.UNCERTAIN])
-  self.assertEqual(marker['pods'],[{'name':'storage-pod','uid':old['metadata']['uid']}])
+  self.assertEqual(marker['pods'],[c.pod_identity(old)])
   # Fresh recovery retains the missing identity, never silently forgets it.
   fresh=k.KubernetesAdapter(self.temp.name,self.a.client,self.s)
   with self.assertRaisesRegex(c.RetirementError,'PROCESS_RECONCILIATION_REQUIRED'):fresh.restore(fresh.recovery_capture(),fresh.nonce)
@@ -142,7 +142,7 @@ class AdapterTests(unittest.TestCase):
   v=self.a.capture(self.s);self.a.protect_pods(v,self.a.nonce);self.a.stop(v,self.a.nonce)
   pod=self.cluster.resources['pod','storage-pod'];pod['metadata']['deletionTimestamp']='2026-11-04T00:00:00Z';pod['status']['containerStatuses'][0]['state']={'running':{}}
   with self.assertRaisesRegex(c.RetirementError,'PROCESS_RECONCILIATION_REQUIRED'):self.a.restore(v,self.a.nonce)
-  pod['status']['containerStatuses'][0].update(containerID='containerd://'+'a'*64,state={'terminated':{'exitCode':137,'finishedAt':datetime.now(timezone.utc).isoformat()}})
+  status=pod['status']['containerStatuses'][0];status['state']={'terminated':terminal(status,137,'OOMKilled')}
   self.a.restore(v,self.a.nonce)
   self.assertNotIn(c.FINALIZER,pod['metadata'].get('finalizers',[]))
   self.assertNotIn(k.UNCERTAIN,self.cluster.resources['deployment','storage']['metadata']['annotations'])
@@ -182,7 +182,7 @@ class AdapterTests(unittest.TestCase):
  def terminate(self,pod):
   from datetime import datetime,timezone
   pod['metadata']['deletionTimestamp']=datetime.now(timezone.utc).isoformat()
-  pod['status']['containerStatuses'][0].update(containerID='containerd://'+'b'*64,state={'terminated':{'exitCode':143,'finishedAt':datetime.now(timezone.utc).isoformat()}})
+  status=pod['status']['containerStatuses'][0];status['state']={'terminated':terminal(status,143,'Error')}
  def test_mixed_old_pods_keep_all_records_until_group_has_real_exit_proof(self):
   second=self.add_second_storage_pod();self.cluster.immediate_gc=True
   v=self.a.capture(self.s);self.a.protect_pods(v,self.a.nonce);self.a.stop(v,self.a.nonce)
@@ -214,6 +214,93 @@ class AdapterTests(unittest.TestCase):
   self.cluster.resources['networkpolicy','internal-services']['spec']['ingress']=[{}]
   with self.assertRaisesRegex(c.RetirementError,'NETWORK_BOUNDARY_CHANGED'):self.a.capture(self.s)
   self.assertEqual(self.cluster.patched,0)
+ def protected(self):
+  value=self.a.capture(self.s);self.a.protect_pods(value,self.a.nonce);return value
+ def pending(self,name='storage'):
+  return json.loads(self.cluster.resources['deployment',name]['metadata']['annotations'][k.UNCERTAIN])
+ def set_pending(self,value,name='storage'):
+  self.cluster.resources['deployment',name]['metadata']['annotations'][k.UNCERTAIN]=c.canonical(value)
+ def test_pre_stop_journal_pins_original_container_id_and_has_no_exit_claim(self):
+  value=self.protected()
+  for name in c.NAMES:
+   pending=self.pending(name)
+   self.assertEqual(pending['pods'],[c.pod_identity(value['pods'][name][0])]);self.assertEqual(pending['termination'],{})
+   self.assertEqual(self.cluster.resources['deployment',name]['spec']['replicas'],1)
+ def test_capture_refuses_missing_container_identity_before_any_patch(self):
+  del self.cluster.resources['pod','storage-pod']['status']['containerStatuses'][0]['containerID']
+  with self.assertRaisesRegex(c.RetirementError,'PROCESS_PROOF_INVALID'):self.a.capture(self.s)
+  self.assertEqual(self.cluster.patched,0)
+ def test_unobserved_initial_identity_journal_stops_before_pod_protection(self):
+  value=self.a.capture(self.s)
+  with patch.object(k,'patch',return_value=None):
+   with self.assertRaisesRegex(c.RetirementError,'POD_JOURNAL_INVALID'):self.a.protect_pods(value,self.a.nonce)
+  self.assertTrue(all(self.cluster.resources['deployment',n]['spec']['replicas']==1 for n in c.NAMES))
+  self.assertTrue(all(c.FINALIZER not in self.cluster.resources['pod',n+'-pod']['metadata'].get('finalizers',[]) for n in c.NAMES))
+ def test_recovery_retains_original_ids_instead_of_adopting_restarted_container(self):
+  value=self.protected();self.a.stop(value,self.a.nonce)
+  current=self.cluster.resources['pod','storage-pod'];status=current['status']['containerStatuses'][0]
+  status['containerID']='containerd://'+'b'*64;status['state']['terminated']=terminal(status)
+  recovered=self.a.recovery_capture()
+  self.assertEqual(recovered['workloads']['storage']['spec'],value['workloads']['storage']['spec'])
+  self.assertEqual(c.container_identities(recovered['pods']['storage'][0]),c.container_identities(value['pods']['storage'][0]))
+  with self.assertRaisesRegex(c.RetirementError,'PROCESS_PROOF_INVALID'):self.a.release_proven_pods(recovered,'storage',self.a.nonce)
+  self.assertIn(c.FINALIZER,current['metadata']['finalizers']);self.assertEqual(self.pending()['termination'],{})
+ def test_resumed_extra_init_ephemeral_or_changed_regular_process_rejected(self):
+  self.protected();pod=self.cluster.resources['pod','storage-pod'];original=copy.deepcopy(pod['spec'])
+  for field in ('initContainers','ephemeralContainers','containers'):
+   pod['spec']=copy.deepcopy(original);pod['spec'].setdefault(field,[]).append({'name':'extra','image':'unqualified'})
+   with self.subTest(field=field),self.assertRaisesRegex(c.RetirementError,'EXTRA_PROCESS_UNQUALIFIED'):self.a.recovery_capture()
+   self.assertIn(c.FINALIZER,pod['metadata']['finalizers'])
+ def test_old_uid_only_duplicate_name_or_duplicate_uid_journals_rejected(self):
+  self.protected();original=self.pending()
+  variants=[]
+  old=copy.deepcopy(original);del old['pods'][0]['containers'];variants.append(old)
+  for field in ('name','uid'):
+   value=copy.deepcopy(original);extra=copy.deepcopy(value['pods'][0]);extra['name']='other-pod';extra['uid']=str(uuid.uuid4());extra[field]=value['pods'][0][field];value['pods'].append(extra);variants.append(value)
+  for value in variants:
+   self.set_pending(value)
+   with self.subTest(value=value),self.assertRaisesRegex(c.RetirementError,'POD_JOURNAL_INVALID'):self.a.recovery_capture()
+  self.assertIn(c.FINALIZER,self.cluster.resources['pod','storage-pod']['metadata']['finalizers'])
+ def test_forged_saved_exit_after_disappearance_rejects_every_read_path(self):
+  value=self.protected();self.a.stop(value,self.a.nonce);old=value['pods']['storage'][0];uid=old['metadata']['uid']
+  proof=c.terminated_pod(old,self.cluster.resources['pod','storage-pod'],self.a.nonce)
+  proof['containers'][0]['container_id']='containerd://'+'b'*64
+  pending=self.pending();pending['termination'][uid]=proof;self.set_pending(pending);del self.cluster.resources['pod','storage-pod']
+  for call in (self.a.recovery_capture,lambda:self.a.saved_process_exit('storage',uid),lambda:self.a.release_proven_pods(value,'storage',self.a.nonce)):
+   with self.subTest(call=call),self.assertRaisesRegex(c.RetirementError,'POD_JOURNAL_INVALID'):call()
+  self.assertEqual(self.pending(),pending)
+ def test_saved_exit_does_not_clear_now_restarted_same_uid_pod(self):
+  value=self.protected();self.a.stop(value,self.a.nonce);old=value['pods']['storage'][0];current=self.cluster.resources['pod','storage-pod']
+  pending=self.pending();pending['termination'][old['metadata']['uid']]=c.terminated_pod(old,current,self.a.nonce);self.set_pending(pending)
+  status=current['status']['containerStatuses'][0];status['containerID']='containerd://'+'b'*64;status['state']['terminated']=terminal(status)
+  with self.assertRaisesRegex(c.RetirementError,'PROCESS_PROOF_INVALID'):self.a.release_proven_pods(value,'storage',self.a.nonce)
+  self.assertIn(c.FINALIZER,current['metadata']['finalizers'])
+ def test_unobserved_proof_patch_never_removes_finalizer(self):
+  value=self.protected();self.a.stop(value,self.a.nonce);real_patch=k.patch
+  def omit_proof(kind,name,current,operations):
+   if kind=='deployment' and any(op['op']=='replace' and op['path'].endswith(k.pointer(k.UNCERTAIN)) for op in operations):return
+   real_patch(kind,name,current,operations)
+  with patch.object(k,'patch',side_effect=omit_proof):
+   with self.assertRaisesRegex(c.RetirementError,'POD_JOURNAL_INVALID'):self.a.release_proven_pods(value,'storage',self.a.nonce)
+  self.assertIn(c.FINALIZER,self.cluster.resources['pod','storage-pod']['metadata']['finalizers']);self.assertEqual(self.pending()['termination'],{})
+ def test_conflicting_proof_cas_retains_finalizer_and_foreign_journal(self):
+  value=self.protected();self.a.stop(value,self.a.nonce);real_patch=k.patch
+  def change_before_patch(kind,name,current,operations):
+   if kind=='deployment':
+    target=self.cluster.resources[kind,name];target['metadata']['resourceVersion']=str(int(target['metadata']['resourceVersion'])+1)
+   real_patch(kind,name,current,operations)
+  with patch.object(k,'patch',side_effect=change_before_patch):
+   with self.assertRaisesRegex(RuntimeError,'CAS_FAILED'):self.a.release_proven_pods(value,'storage',self.a.nonce)
+  self.assertIn(c.FINALIZER,self.cluster.resources['pod','storage-pod']['metadata']['finalizers']);self.assertEqual(self.pending()['termination'],{})
+ def test_strong_proof_is_read_back_before_first_finalizer_removal(self):
+  value=self.protected();self.a.stop(value,self.a.nonce);old=value['pods']['storage'][0];real_patch=k.patch
+  def verify_before_patch(kind,name,current,operations):
+   if kind=='pod':
+    proof=self.pending()['termination'][old['metadata']['uid']]
+    self.assertEqual(proof['containers'][0]['reason'],'Completed');self.assertIn('started_at',proof['containers'][0])
+    c.validate_saved_termination(proof,old['metadata']['uid'],c.container_identities(old))
+   real_patch(kind,name,current,operations)
+  with patch.object(k,'patch',side_effect=verify_before_patch):self.assertTrue(self.a.release_proven_pods(value,'storage',self.a.nonce))
 class GatewayProofChainTests(unittest.TestCase):
  def test_historical_physical_receipt_remains_bound_to_its_executed_config(self):
   binary={'gateway_config_source_sha256':'a'*64,'gateway_image':'pinned-image'}

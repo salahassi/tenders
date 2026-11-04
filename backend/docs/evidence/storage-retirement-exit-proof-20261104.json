@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "scope": "Local synthetic process-exit/recovery control flow, not hosted Kubernetes or physical retirement",
+  "baseline_revision": "2ac061349cb09ca796dc27a30de7450dbf4d5021",
+  "source_hashes": {
+    "backend/scripts/ops/storage-retirement/coordinator.py": "2b1b4122520a093f9298e101c87279558eb2c6ff80bf126f2a56315fb5589e8a",
+    "backend/scripts/ops/storage-retirement/kubernetes.py": "fb32331be9af6087dbc469562ad573748ffdc1e716273a9fff9e639d5dc1cc67",
+    "backend/scripts/ops/test_storage_retirement.py": "dcaa425890624472258b503fde74958177d274ce24a34143cdae8a38bd109f0d",
+    "backend/scripts/ops/test_storage_retirement_kubernetes.py": "29de418414019c44ed097b3200722c546b95ae64930aa15ecdcdd5e850ca8752"
+  },
+  "red_green": {
+    "scope": "synthetic Python process-status proof; no Kubernetes or physical process execution",
+    "baseline_revision": "2ac061349cb09ca796dc27a30de7450dbf4d5021",
+    "baseline_coordinator_sha256": "38e02acb2455e98f361ffc5331caba4312a72f1c03752cf58e13701b9723ca90",
+    "fixed_coordinator_sha256": "2b1b4122520a093f9298e101c87279558eb2c6ff80bf126f2a56315fb5589e8a",
+    "cases": [
+      {
+        "case": "changed_both_ids",
+        "baseline_incorrectly_accepted": true,
+        "fixed_rejected": true,
+        "fixed_code": "STORAGE_RETIREMENT_PROCESS_PROOF_INVALID"
+      },
+      {
+        "case": "changed_inner_id",
+        "baseline_incorrectly_accepted": true,
+        "fixed_rejected": true,
+        "fixed_code": "STORAGE_RETIREMENT_PROCESS_PROOF_INVALID"
+      },
+      {
+        "case": "missing_inner_id",
+        "baseline_incorrectly_accepted": true,
+        "fixed_rejected": true,
+        "fixed_code": "STORAGE_RETIREMENT_PROCESS_PROOF_INVALID"
+      },
+      {
+        "case": "unknown_reason",
+        "baseline_incorrectly_accepted": true,
+        "fixed_rejected": true,
+        "fixed_code": "STORAGE_RETIREMENT_PROCESS_PROOF_INVALID"
+      }
+    ],
+    "passed": true,
+    "production_calls": 0,
+    "customer_calls": 0
+  },
+  "tests": [
+    {
+      "command": "python3 -m unittest discover -s backend/scripts/ops -p test_storage_retirement.py",
+      "count": 21,
+      "passed": true,
+      "log_sha256": "5c4fa7ff70d8c635fafb800ad9e4cd51b5f366237c2741dbc00cb4477a53fe73"
+    },
+    {
+      "command": "python3 -m unittest discover -s backend/scripts/ops -p test_storage_retirement_kubernetes.py",
+      "count": 33,
+      "passed": true,
+      "log_sha256": "ec7aff524c07919357100938c62c17415bfd4b6e48db97c6654c66c8bd10be3f"
+    }
+  ],
+  "initial_development_failures_retained": {
+    "coordinator_initial_log_sha256": "7c4ce78e536c0c2cdb85730c9c8381839f365b3a2b9d77c5cc9eaede9427b0df",
+    "adapter_initial_log_sha256": "55a1cf4aaa010511c13d4aae4c7746f8be69381d50cd9cac7fe1a164d3848a91",
+    "cause": "In-progress recovery variable shadowed the Deployment with a Pod; fixed before the final tests."
+  },
+  "production_calls": 0,
+  "customer_calls": 0,
+  "hosted_process_exit_proved": false,
+  "physical_retirement_exercised": false,
+  "rto_rpo_acceptance_defined": false,
+  "canonical_sql_changed": false,
+  "runtime_copy_inputs_changed": false,
+  "manual_helpers_in_release_manifest": false,
+  "release_invokes_manual_retirement": false,
+  "release_source_verification": {
+    "release": "proposal-delivery-reliability-v1",
+    "status": "source_verified",
+    "manifest_sha256": "4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76",
+    "migration_count": 24
+  },
+  "additional_existing_authority_suite": {
+    "cases": 8,
+    "passed": true,
+    "basis": "An initial test glob also selected the existing local PostgreSQL 17.6 authority suite; all 61 then-selected tests passed in 5.164 seconds and its owned container cleanup completed. This was not a new native capacity or hosted test."
+  }
+}

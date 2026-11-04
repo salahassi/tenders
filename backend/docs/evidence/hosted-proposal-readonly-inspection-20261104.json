@@ -1,0 +1,100 @@
+{
+  "inspection_run": 41934185072,
+  "inspection_head": "865d8406fcaf148299184bcbe67522fb0b256258",
+  "report_sha256": "6ff62704f3765c8477dd5f11f7cada4f9a08185e425cd20afd25890c001bc47c",
+  "observed_at": "2026-11-04T23:30:36.18565+00:00",
+  "latest_matches_selected": true,
+  "plan": {
+    "status": "blocked",
+    "stage": "analysis",
+    "error_code": "MODEL_CORRECTION_EXHAUSTED",
+    "revision": 280,
+    "workflow_version": 1
+  },
+  "proposal": {
+    "state": "queued",
+    "active_version_present": false
+  },
+  "version_count": 0,
+  "selected_plan_only": {
+    "jobs": 13,
+    "job_statuses": {
+      "canceled": 1,
+      "blocked": 11,
+      "succeeded": 1
+    },
+    "job_error_codes": {
+      "MODEL_CORRECTION_EXHAUSTED": 11,
+      "None": 1,
+      "USAGE_REVIEW_REQUIRED": 1
+    },
+    "steps": 13,
+    "step_statuses": {
+      "queued": 11,
+      "split": 1,
+      "completed": 1
+    },
+    "threads": {
+      "needs_review": 11,
+      "committed": 1,
+      "running": 1
+    },
+    "accepted_or_committed_threads": 1,
+    "usage_states": {
+      "settled": 67,
+      "unknown": 50
+    },
+    "unknown_error_codes": {
+      "PROVIDER_BACKGROUND_TERMINATED": 46,
+      "MODEL_NETWORK_UNCERTAIN": 3,
+      "MODEL_RESULT_EXPIRED": 1
+    },
+    "documents": {
+      "ready": 1
+    },
+    "opportunity_archived": false,
+    "opportunity_decision": "shortlisted"
+  },
+  "restore_in_progress": false,
+  "runtime_images": {
+    "api": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380",
+    "worker": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380"
+  },
+  "cleanup_passed": true,
+  "business_mutations": 0,
+  "provider_calls": 0,
+  "version": 1,
+  "scope": "Read-only inspection of one previously authorized real proposal; no identifiers, customer text or provider credentials in this projection.",
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41934185072",
+  "original_cluster_ca_path": "existing reviewed original-CA runner path; no CA override",
+  "previous_attempt": {
+    "run_id": 41933863776,
+    "head_sha": "865d8406fcaf148299184bcbe67522fb0b256258",
+    "error_code": "SPACES_HTTP_404",
+    "failure_boundary": "historical encrypted selection missing before database client creation",
+    "offline_guards_passed": true,
+    "runner_cleanup_passed": true
+  },
+  "selection_recovery": {
+    "unchanged_plaintext_bytes": 172,
+    "transport": "existing AES-256-GCM private bundle; unchanged local selection re-uploaded and readback verified",
+    "temporary_transfer_keys_revoked": true,
+    "business_selection_changed": false
+  },
+  "completion_eligible": false,
+  "export_acceptance_run": false,
+  "recovery": {
+    "current_target_requires": "explicit current-contract request after verified release and fresh server-owned revisions",
+    "legacy_successor_workflow_applicable": false,
+    "reason": "one committed analysis sibling and one split step must remain in historical state",
+    "preserve_unknown_usage_rows": 50,
+    "preserve_committed_threads": 1,
+    "no_paid_pin_budget_or_accounting_rewrite": true
+  },
+  "limits": [
+    "This is current state at the observation marker, not a completed proposal or deployment proof.",
+    "No browser/Auth export, model request, retry, authorization, canonical cancellation or business mutation was invoked.",
+    "The selected legacy plan has no active version; no export selection can be honestly prepared until a legitimate current completed version exists.",
+    "Unknown usage remains unknown; provider-terminal categories do not establish a resolved billing amount."
+  ]
+}

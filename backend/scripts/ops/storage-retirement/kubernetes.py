@@ -118,6 +118,7 @@ class KubernetesAdapter:
     pm=p['metadata'];ps=p['spec'];statuses=p.get('status',{}).get('containerStatuses',[])
     c.require(not pm.get('deletionTimestamp') and not pm.get('finalizers') and pm.get('annotations',{}).get(c.ANNOTATION) is None and any(o.get('uid') in parent_sets and o.get('controller') is True for o in pm.get('ownerReferences',[])),'STORAGE_RETIREMENT_POD_LINEAGE_CHANGED')
     c.require(ps.get('containers')==containers and not ps.get('initContainers') and not ps.get('ephemeralContainers') and len(statuses)==1 and statuses[0].get('ready') is True and 'running' in statuses[0].get('state',{}),'STORAGE_RETIREMENT_POD_NOT_RUNNING')
+    c.pod_identity(p) # Capture an exact running container before any mutation.
    workloads[name]=dep;selected_pods[name]=matching
   labels=selected_pods['storage'][0]['metadata'].get('labels',{})
   c.require(labels.get('app.kubernetes.io/name')=='storage','STORAGE_RETIREMENT_NETWORK_BOUNDARY_CHANGED')
@@ -197,8 +198,11 @@ select coalesce(jsonb_agg(storage_key),'[]') from (select jsonb_array_elements_t
    c.require(current['metadata']['uid']==old['metadata']['uid'] and current['spec']==old['spec'] and current['metadata'].get('annotations',{}).get(UNCERTAIN) is None,'STORAGE_RETIREMENT_DEPLOYMENT_CHANGED')
    ops=[]
    if current['metadata'].get('annotations') is None:ops.append({'op':'add','path':'/metadata/annotations','value':{}})
-   ops.append({'op':'add','path':'/metadata/annotations/'+pointer(UNCERTAIN),'value':c.canonical({'nonce':nonce,'pods':[{'name':p['metadata']['name'],'uid':p['metadata']['uid']} for p in capture['pods'][name]],'termination':{}})})
+   journal=c.canonical({'nonce':nonce,'pods':[c.pod_identity(p) for p in capture['pods'][name]],'termination':{}})
+   ops.append({'op':'add','path':'/metadata/annotations/'+pointer(UNCERTAIN),'value':journal})
    patch('deployment',name,current,ops)
+   confirmed=owned(d.get('deployment',name))
+   c.require(confirmed['metadata']['uid']==current['metadata']['uid'] and confirmed['metadata'].get('annotations',{}).get(UNCERTAIN)==journal,'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
   for pods in capture['pods'].values():
    for old in pods:
     current=self.pod(old['metadata']['name']);c.require(current and current['metadata']['uid']==old['metadata']['uid'] and not current['metadata'].get('finalizers'),'STORAGE_RETIREMENT_POD_CHANGED')
@@ -355,14 +359,18 @@ select coalesce(jsonb_agg(storage_key),'[]') from (select jsonb_array_elements_t
    saved=dep['metadata'].get('annotations',{}).get(UNCERTAIN)
    retained=[]
    if saved is not None:
-    saved=json.loads(saved);c.require(set(saved)=={'nonce','pods','termination'} and saved['nonce']==self.nonce and isinstance(saved['pods'],list) and 1<=len(saved['pods'])<=100,'STORAGE_RETIREMENT_FOREIGN_POD_JOURNAL')
-    c.require(isinstance(saved['termination'],dict) and set(saved['termination'])<=set(p['uid'] for p in saved['pods']),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+    saved=c.validate_process_journal(json.loads(saved),self.nonce)
     for identity in saved['pods']:
-     c.require(set(identity)=={'name','uid'} and c.valid_uuid(identity['uid']) and isinstance(identity['name'],str) and re.fullmatch('[a-z0-9-]{1,253}',identity['name']),'STORAGE_RETIREMENT_FOREIGN_POD_JOURNAL')
+     c.require([x['name'] for x in identity['containers']]==sorted(x['name'] for x in containers),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
      found=next((p for p in pods if p['metadata']['name']==identity['name'] and p['metadata']['uid']==identity['uid']),None)
-     if found:c.require(any(o.get('uid') in parents and o.get('controller') is True for o in found['metadata'].get('ownerReferences',[])),'STORAGE_RETIREMENT_POD_LINEAGE_CHANGED')
-     if identity['uid'] in saved['termination']:c.validate_saved_termination(saved['termination'][identity['uid']],identity['uid'])
-     retained.append(found or {'metadata':identity,'spec':{}})
+     if found:
+      c.require(any(o.get('uid') in parents and o.get('controller') is True for o in found['metadata'].get('ownerReferences',[])),'STORAGE_RETIREMENT_POD_LINEAGE_CHANGED')
+      ps=found.get('spec',{})
+      c.require(ps.get('containers')==containers and not ps.get('initContainers') and not ps.get('ephemeralContainers'),'STORAGE_RETIREMENT_EXTRA_PROCESS_UNQUALIFIED')
+     # Resume retains the pre-stop identity; current status must not replace it.
+     original_pod=copy.deepcopy(found) if found else {'metadata':{'name':identity['name'],'uid':identity['uid']},'spec':{'containers':copy.deepcopy(containers)}}
+     original_pod['status']={'containerStatuses':[{'name':x['name'],'containerID':x['container_id']} for x in identity['containers']]}
+     retained.append(original_pod)
    capture['workloads'][name]=original;capture['pods'][name]=retained
   self.capture_value=capture;physical=d.get('pod',self.physical_pod)
   if physical:
@@ -416,10 +424,11 @@ select coalesce(jsonb_agg(storage_key),'[]') from (select jsonb_array_elements_t
  def saved_process_exit(self,name,uid):
   dep=owned(d.get('deployment',name));raw=dep['metadata'].get('annotations',{}).get(UNCERTAIN)
   if raw is None:return False
-  journal=json.loads(raw)
-  c.require(journal.get('nonce')==self.nonce and isinstance(journal.get('termination'),dict),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+  journal=c.validate_process_journal(json.loads(raw),self.nonce)
   if uid not in journal['termination']:return False
-  c.validate_saved_termination(journal['termination'][uid],uid);return True
+  identities=[c.validate_identity(p) for p in journal.get('pods',[]) if p.get('uid')==uid]
+  c.require(len(identities)==1,'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+  c.validate_saved_termination(journal['termination'][uid],uid,identities[0]['containers']);return True
 
  def release_proven_pods(self,capture,name,nonce):
   """Persist all original UID exit proofs before removing any finalizer.
@@ -432,12 +441,12 @@ select coalesce(jsonb_agg(storage_key),'[]') from (select jsonb_array_elements_t
    # No protected-process journal was ever committed for this workload.
    c.require(not any((self.pod(p['metadata']['name']) or {}).get('metadata',{}).get('annotations',{}).get(c.ANNOTATION)==nonce for p in capture['pods'][name]),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
    return True
-  journal=json.loads(raw);identities=[{'name':p['metadata']['name'],'uid':p['metadata']['uid']} for p in capture['pods'][name]]
+  journal=c.validate_process_journal(json.loads(raw),nonce);identities=[c.pod_identity(p) for p in capture['pods'][name]]
   c.require(set(journal)=={'nonce','pods','termination'} and journal['nonce']==nonce and journal['pods']==identities and isinstance(journal['termination'],dict) and set(journal['termination'])<=set(p['uid'] for p in identities),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
   proofs=copy.deepcopy(journal['termination']);complete=True
   for old in capture['pods'][name]:
    uid=old['metadata']['uid']
-   if uid in proofs:c.validate_saved_termination(proofs[uid],uid);continue
+   if uid in proofs:c.validate_saved_termination(proofs[uid],uid,c.container_identities(old));continue
    current=self.pod(old['metadata']['name'])
    if current is None:complete=False;continue
    c.require(current['metadata']['uid']==uid,'STORAGE_RETIREMENT_FOREIGN_POD')
@@ -452,14 +461,20 @@ select coalesce(jsonb_agg(storage_key),'[]') from (select jsonb_array_elements_t
    patch('deployment',name,dep,[{'op':'test','path':'/metadata/annotations/'+pointer(UNCERTAIN),'value':raw},{'op':'replace','path':'/metadata/annotations/'+pointer(UNCERTAIN),'value':c.canonical(updated)}])
    journal=updated;raw=c.canonical(updated)
   if not complete:return False
+  # A successful PATCH response alone is not the durable readback. Do not
+  # release any Pod finalizer until the exact strong proof is observed again.
+  confirmed=owned(d.get('deployment',name))
+  c.require(confirmed['metadata']['uid']==dep['metadata']['uid'] and confirmed['metadata'].get('annotations',{}).get(UNCERTAIN)==raw,'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+  c.validate_process_journal(json.loads(raw),nonce)
   for old in capture['pods'][name]:
-   uid=old['metadata']['uid'];c.validate_saved_termination(proofs[uid],uid)
+   uid=old['metadata']['uid'];c.validate_saved_termination(proofs[uid],uid,c.container_identities(old))
    current=self.pod(old['metadata']['name'])
    if current is None:continue # exact real exit proof was durably saved first
    c.require(current['metadata']['uid']==uid,'STORAGE_RETIREMENT_FOREIGN_POD')
    annotation=current['metadata'].get('annotations',{}).get(c.ANNOTATION);finalizers=current['metadata'].get('finalizers',[])
    if annotation is None and c.FINALIZER not in finalizers:continue
    c.require(annotation==nonce and finalizers==[c.FINALIZER],'STORAGE_RETIREMENT_FOREIGN_POD')
+   c.require(c.terminated_pod(old,current,nonce) is not None,'STORAGE_RETIREMENT_PROCESS_RECONCILIATION_REQUIRED')
    patch('pod',old['metadata']['name'],current,[{'op':'test','path':'/metadata/annotations/'+pointer(c.ANNOTATION),'value':nonce},
     {'op':'test','path':'/metadata/finalizers','value':[c.FINALIZER]},{'op':'remove','path':'/metadata/finalizers'},
     {'op':'remove','path':'/metadata/annotations/'+pointer(c.ANNOTATION)}])

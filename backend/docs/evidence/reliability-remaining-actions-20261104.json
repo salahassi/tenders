@@ -1,43 +1,40 @@
 {
-  "version": 4,
+  "version": 5,
   "status": "draft_remaining_actions_not_complete",
-  "generated_at_utc": "2026-11-04T23:14:31.629845+00:00",
+  "generated_at_utc": "2026-11-04T23:35:08.412544+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
-  "observed_root_commit": "a7922ed717bdc6f8d4973fb9aa72979a5549d675",
+  "observed_root_commit": "8d970aa23f943d5909d194cdd8d466ab4dffee42",
   "evidence_index": "backend/docs/evidence/reliability-r0-index-20261104.json",
   "application_deployed": false,
   "final_hosted_acceptance_passed": false,
   "release_manifest": {
     "path": "backend/scripts/ops/proposal-delivery-release.json",
-    "canonical_sha256": "9e3430d1d01af222e3aad0d4aa8cae5e1f0c14942ae0ff258f0a96f6f953e020",
-    "migrations": 22,
-    "state": "stale_22_migration_file_final24_source_proxy_runtime_refreeze_pending",
+    "canonical_sha256": "4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76",
+    "migrations": 24,
     "source_migrations": 24,
-    "missing_migrations": [
-      "20261104212300_structured_section_body_bound.sql",
-      "20261104212818_bounded_command_batch_results.sql"
-    ],
-    "gateway_contract": "v1_in_frozen_manifest_final_v2_pinned_worker_source_integrated_binding_refreeze_pending"
+    "missing_migrations": [],
+    "state": "final_source_frozen_restore_passed_deployment_pending",
+    "gateway_contract": "v2_final_pinned_one_worker_with_exact_gateway_https_runtime_qualification_binding"
   },
   "actions": [
     {
       "id": "A01",
-      "title": "Close final proxy/runtime binding and hosted capacity acceptance",
+      "title": "Complete hosted capacity and whole-path acceptance",
       "plan": [
         "W04",
         "W09",
         "D02",
         "D04"
       ],
-      "status": "actual_api100_and_final_nginx_measured_final_https_binding_and_hosted_scope_pending",
+      "status": "final_local_proxy_runtime_binding_passed_hosted_scope_pending",
       "evidence": [
         "E01",
         "E02",
         "E13"
       ],
-      "remaining": "Bind the final HTTPS identity/gzip/zstd chain and promoted runtime image to reviewed source and actual observed resources. Preserve full hashes/order, slow-consumer/cancel behavior and explicit capacity margins. Complete hosted whole-path acceptance without adding a product quota.",
-      "done_when": "Exact final image/source/fixture receipts prove the selected full API batch and document paths under observed limits, with actual process cleanup, bounded response lifecycle and existing 600-second/lease cancellation. State tested shapes and measured margin; no universal capacity claim.",
-      "not_proven": "No combined hosted Auth/API/LoadBalancer service-level or universal admitted-capacity claim. DOCX minimum measured margin remains10.88 MiB; final HTTPS receipt not yet ingested at this anchor.",
+      "remaining": "Exercise the deployed full Auth/API/worker/Storage/proxy path under observed resource limits after the checked release. Retain exact bytes/order, slow-consumer/cancel behavior and measured margins without inventing a product quota.",
+      "done_when": "Actual hosted path receipts bind deployed source/images/authority to full result hashes/order, complete required volumes, slow-consumer/cancel behavior, cleanup and the existing 600-second issuance clock; retain measured fixture scope and margin.",
+      "not_proven": "No combined hosted Auth/LoadBalancer issuance SLO or universal admitted capacity. Minimum measured DOCX margin remains 10.88 MiB.",
       "acceptance_cases": [
         "EX-01",
         "EX-02",
@@ -45,7 +42,7 @@
         "OP-02",
         "BC-01"
       ],
-      "implementation": "Actual API100/REST/PostgreSQL and final one-worker Nginx transport passed at their separate declared scopes; document warm-two/fresh-one receipts remain current fixture evidence.",
+      "implementation": "Actual API100, DOCX warm-two/fresh-one, final Nginx and exact-image HTTPS six-case proofs are ingested and source-bound. Runtime image is qualified and published.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -56,18 +53,18 @@
         "W00",
         "W11"
       ],
-      "status": "3135_pass_two_stale_fixture_failures_corrected_final_full_rerun_pending",
+      "status": "local865d840_pass_retained_corrected_full_github_gate_pending",
       "evidence": [
         "E01"
       ],
-      "remaining": "Run backend/frontend types, builds and full tests on final integrated source, then required ops/schema/Kubernetes checks. Retain the 3,135-pass/two-failure diagnostic and 33-test response-consumption correction; no production admission relaxation.",
+      "remaining": "Run corrected complete GitHub release verification after main CI41934787660 exposed one 5000ms real-DOCX harness timeout. Explicit bounded integration timeout and15 focused one-CPU executions pass; no product deadline/verification assertions changed.",
       "done_when": "One exact final commit has required complete green checks and source-bound logs; any remaining failure is explicit.",
-      "not_proven": "No final full-green backend/application run. Focused correction and historical frontend pass do not replace the required final full rerun.",
+      "not_proven": "Functional gates do not prove deployment, provider semantics, native universal capacity or hosted issuance.",
       "acceptance_cases": [
         "R0",
         "W11 exit evidence"
       ],
-      "implementation": "Both source 256c50e types/builds and frontend 380/59 pass;33 affected backend tests pass after correcting unread-response fixtures.",
+      "implementation": "Backend3284/193 and frontend 380/59 tests plus both package types/builds pass;537 operations + 11 schema + 16 Kubernetes pass with no source drift.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -79,20 +76,20 @@
         "W11",
         "D05"
       ],
-      "status": "reopened_for_changed_schema_and_cutover_contract",
+      "status": "closed_final24_isolated_cloud_restore_scope",
       "evidence": [
         "E06",
         "E13"
       ],
-      "remaining": "After final coordinator/guard integration and manifest refreeze, rerun the original-CA isolated cloud restore using the exact 24 migrations, gateway/source contracts and shared Auth helper. Preserve old 13-check, 22-migration success as historical evidence.",
+      "remaining": "No pending isolated restore for this exact 24-migration manifest; repeat if relevant release/schema/Auth/Storage contracts change.",
       "done_when": "The renewed exact-source isolated schema/Auth/Storage drill passes required checks and both cleanup stages; its receipt names the final manifest and source hashes.",
-      "not_proven": "The prior 22-migration shared-helper success does not exercise the new structured-body or chunk/cutover changes; restore is not full proposal issuance.",
+      "not_proven": "Isolated synthetic restore does not prove application rendering, real proposal issuance, production deployment or declared recovery-point/time objectives.",
       "acceptance_cases": [
         "OP-03",
         "OP-04",
         "D05"
       ],
-      "implementation": "Restore harness exists; renewed final 24-migration drill not run.",
+      "implementation": "Original-CA run41933205779 at865d840 passes all 13 Auth/Storage HTTP checks, exact 24 migrations and both cleanup stages under manifest4cb2e712.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -135,8 +132,8 @@
         "E09",
         "E10"
       ],
-      "remaining": "Complete and review the 40 unsupported reserve cases with faithful workflow prerequisites/composite schedules. Freeze actual targets, source/prompt/schema/adapter/validator locks and noncritical acceptance decisions before authorized execution. Retain 100 scheduled cells/model and separately qualify 48 prospective retrieval cells plus independent outcome adjudication.",
-      "done_when": "All 13 task boundaries accounted for; independent gold, per-class attempted/completed/scored denominators and critical false-acceptance/rejection/omission outcomes, source bindings and measured retrieval scope retained.",
+      "remaining": "Complete and review the 40 unsupported reserve cases with faithful workflow prerequisites/composite schedules. Freeze actual targets, source/prompt/schema/adapter/validator locks and noncritical acceptance decisions before authorized execution. Retain 100 scheduled cells/model and separately qualify 48 prospective retrieval cells plus independent outcome adjudication. Separately obtain and evaluate the authorized independently reviewed private holdout required by ME-14; synthetic reserve results cannot replace it.",
+      "done_when": "All 13 task boundaries accounted for; independent gold, per-class attempted/completed/scored denominators and critical false-acceptance/rejection/omission outcomes, source bindings and measured retrieval scope retained. The separately authorized independently reviewed private holdout passes its frozen per-class oracles with full denominators and retained counterexamples.",
       "not_proven": "Synthetic reserve is not independently blind/private holdout. Request construction and authored control responses do not qualify model semantics; prior critical findings and7/16 bounded retrieval misses remain.",
       "acceptance_cases": [
         "ME-01",
@@ -164,15 +161,15 @@
       "evidence": [
         "E11"
       ],
-      "remaining": "Keep the rejected Arabic-only single-page tuning unadopted. Qualify a different maintainable recognizer/configuration against independently frozen whole-page Arabic, mixed identifiers, English controls, blank pages and numeric/negation gold before changing defaults. Preserve readable pages and mandatory source-bound visual correction; never relabel a valid scan invalid.",
+      "remaining": "Keep both the rejected parameter tuning and official tessdata_best candidate unadopted. Qualify a maintainable alternative against frozen whole-page Arabic, mixed identifiers, English and blank controls before changing defaults. Preserve readable pages and mandatory source-bound visual correction.",
       "done_when": "Independent gold tests preserve the supported Arabic obligations, numbers and blank/read coverage. Until then, automatic valid-scan correctness remains an explicit unclosed product limitation; mandatory review is a safety control, not automatic success.",
-      "not_proven": "Confidence 82/numeric_uncertainty=false did not preserve meaning. The one original-page tuning candidate damages independent mixed identifiers and the previously passing English control; automatic Arabic acceptance remains failed.",
+      "not_proven": "Automatic Arabic semantic correctness is not qualified; confidence and no OOM do not preserve meaning. Mandatory review is a safety control, not automatic success.",
       "acceptance_cases": [
         "IN-03",
         "IN-04",
         "D03"
       ],
-      "implementation": "Native extraction/manual page review implemented; automatic Arabic semantic qualification failed.",
+      "implementation": "Durable extraction/manual review implemented; official tessdata_best native comparison finishes3/7 overall and 0/4 Arabic, with independent rejection and no runtime change.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -200,27 +197,27 @@
     },
     {
       "id": "A08",
-      "title": "Freeze final images and execute the checked release",
+      "title": "Execute the checked release",
       "plan": [
         "W00",
         "W11"
       ],
-      "status": "guards_integrated_final_proxy_runtime_binding_refreeze_and_deployment_pending",
+      "status": "final_manifest_images_binding_gates_restore_ready_deployment_pending",
       "evidence": [
         "E04",
         "E05",
         "E08",
         "E13"
       ],
-      "remaining": "Finish final proxy/runtime proof binding and image provenance/promotion; refreeze the actual 22-entry manifest to all 24 source migrations and final pinned-worker gateway contract. Renew A03, then execute the checked release: validate actual old gateway bindings, retain permanent legacy-RPC fence, prove old process exit, visible transaction drain and pre-snapshot locked fresh zero census. Preserve forward recovery after timeout/unknown commit.",
+      "remaining": "Execute the checked release using final 24 manifest and qualified image promotion. Validate actual old gateway identities; keep permanent legacy-RPC fence, prove old-process termination, visible database drain and pre-snapshot locked zero census. Complete exact deployed schema/image/config readback and preserve forward recovery.",
       "done_when": "Release workflow and deployed schema/image/gateway readback match the reviewed contract, with protected historical rows/ACLs and a concrete recovery record.",
-      "not_proven": "No final refrozen manifest, reliability application deployment or authenticated hosted acceptance. Point-in-time zero census is not a cutover fence/drain.",
+      "not_proven": "Application is not yet deployed. Publication, zero point-in-time census and isolated restore do not establish actual fence/drain/rollout.",
       "acceptance_cases": [
         "W11 exit evidence",
         "OP-02",
         "OP-04"
       ],
-      "implementation": "Release/coordinator/catalog guards and actual PostgreSQL cached-old-body races are integrated. Final source pins1 worker and streaming; managed own-login activity visibility and gateway/HTTPS resource specs were observed read-only.",
+      "implementation": "Final 24 manifest4cb2e712 frozen; exact runtime published, label-only promotion probe passes, final proxy/image guards and full gates/renewed cloud restore pass.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -240,7 +237,7 @@
         "D05",
         "D06"
       ],
-      "status": "harness_implemented_hosted_acceptance_pending",
+      "status": "current_real_target_incomplete_supported_successor_and_hosted_acceptance_pending",
       "evidence": [
         "E02",
         "E04",
@@ -249,9 +246,9 @@
         "E07",
         "E12"
       ],
-      "remaining": "Use isolated fixtures or explicitly authorized existing records through the real browser/API/worker/storage paths. Cover early template/partial vs substantive issued status, generated and ordinary draft/final exports, one/two-volume atomic readiness, close-tab/reentry/retry, late source/member/approval changes, full/unknown storage and readback. Measure accepted-to-whole-package issuance including queue against 600 seconds; terminal unavailability returns earlier. For retirement acceptance, run the exact fenced process/physical recovery protocol in an authorized isolated setting; local fake process proofs are insufficient. The historical 22-migration shared-helper 13-check restore is proven; A03 separately requires the renewed final 24-migration drill; separately define service recovery-point/time objectives and compare observed recovery against them before claiming D05.",
+      "remaining": "Use isolated fixtures or explicitly authorized existing records through the real browser/API/worker/storage paths. Cover early template/partial vs substantive issued status, generated and ordinary draft/final exports, one/two-volume atomic readiness, close-tab/reentry/retry, late source/member/approval changes, full/unknown storage and readback. Measure accepted-to-whole-package issuance including queue against 600 seconds; terminal unavailability returns earlier. For retirement acceptance, run the exact fenced process/physical recovery protocol in an authorized isolated setting; local fake process proofs are insufficient. The renewed exact 24-migration shared-helper 13-check restore is proven. Separately define service recovery-point/time objectives and compare observed recovery against them before claiming D05. Use the corrected manual retirement helper with strict original-container identities and validated saved exit proofs (54 focused tests passed); actual isolated Kubernetes/PVC interruption acceptance remains open. The release gateway drain is separately guarded.",
       "done_when": "Independent authenticated download hashes/sizes/complete-set and browser state; full request timestamps including failures; quota/usage/lease/currentness invariants; cleanup and recovery receipts.",
-      "not_proven": "No hosted600s/concurrency promise, real-user complete workflow, or production physical retirement can be inferred from local tests.",
+      "not_proven": "No real completed export, hosted 600s/concurrency claim or production physical retirement. Do not use incompatible legacy successor helper or fabricate version/completion.",
       "acceptance_cases": [
         "AR-04",
         "AR-05",
@@ -268,7 +265,7 @@
         "UX-03",
         "BC-01"
       ],
-      "implementation": "Durable generated/ordinary packages and acceptance harness implemented; full real hosted acceptance pending.",
+      "implementation": "Durable package and browser acceptance harnesses implemented. Fresh authorized inspection finds no current completed version; after verified deployment use fresh server-owned details for explicit canonical current-contract successor, retaining old committed analysis/pins/50 unknown usage receipts. No activation performed.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     }
@@ -279,10 +276,10 @@
       "closed_scope": "Shared-helper isolated cloud Auth/Storage restore: all 13 checks passed in 41910306855 with source-bound helper and cleanup. Earlier two failures and old-harness success retained.",
       "evidence": "E06",
       "still_open_under": [
-        "A03:reopened only for final 24-migration/source contract; historical 22-migration closed scope retained",
-        "A08:production policy applied/observed only during checked release",
+        "A08:production policy applied/observed during checked release",
         "A09:declared service recovery objectives and hosted end-to-end timing"
-      ]
+      ],
+      "later_closure": "Final24-migration scope also closed by41933205779; original historical scope retained."
     },
     {
       "scope": "Retirement adapter explicit SET-role authority",
@@ -290,8 +287,8 @@
       "result": "Local PostgreSQL red/green proof integrated; actual production admission and physical retirement remain distinct."
     }
   ],
-  "previous_observed_root_commit": "256c50e0deaba7f38e6985a58259e5a108742c60",
-  "refresh_requested_anchor": "a7922ed717bdc6f8d4973fb9aa72979a5549d675",
+  "previous_observed_root_commit": "a7922ed717bdc6f8d4973fb9aa72979a5549d675",
+  "refresh_requested_anchor": "8d970aa23f943d5909d194cdd8d466ab4dffee42",
   "completed_scopes_since_revision2": [
     {
       "scope": "API admission/client identity and complete paging implemented",
@@ -332,13 +329,14 @@
     }
   ],
   "pending_at_anchor": {
-    "full_checks": "final_integrated_rerun_pending_after_retained_diagnostic_and33_focused_corrections",
-    "final_https_receipt": "not_yet_ingested_at_anchor",
-    "final_gateway_release_binding": "pinned_worker_source_integrated_ops_final_parity_pending",
-    "runtime_image_promotion": "implementation_in_progress",
-    "renewed24_migration_restore": "pending",
+    "full_checks": "passed865d840_backend3284_frontend380_and564_ops_schema_kubernetes",
+    "final_https_receipt": "ingested_a10f52cf_six_cases_passed",
+    "final_gateway_release_binding": "exact_final_proofs_bound",
+    "runtime_image_promotion": "qualified_image_published_label_only_local_probe_passed_actual_release_head_rollout_pending",
+    "renewed24_migration_restore": "passed41933205779_manifest4cb2e712",
     "model_reserve": "10_constructible40_unsupported_no_provider_outputs_not_blind",
-    "application_deployed": false
+    "application_deployed": false,
+    "actual_proposal_export": "blocked_no_current_completed_version"
   },
   "completed_scopes_since_revision3": [
     {
@@ -376,5 +374,49 @@
       ],
       "limit": "40 unsupported, actual outputs0; no semantic/retrieval qualification."
     }
-  ]
+  ],
+  "completed_scopes_since_revision4": [
+    {
+      "scope": "Final exact-image HTTPS chain and proxy/runtime proof bindings",
+      "evidence": [
+        "E05",
+        "E13"
+      ],
+      "limit": "Local HTTP1.1 six-case transport and image inventory/publication only; hosted rollout/LoadBalancer separate."
+    },
+    {
+      "scope": "Complete frozen-source application and operations gates",
+      "evidence": [
+        "E01"
+      ],
+      "limit": "865d840 functional source; no capacity timing inferred."
+    },
+    {
+      "scope": "Renewed final24 original-CA cloud restore",
+      "evidence": [
+        "E06"
+      ],
+      "limit": "13 isolated synthetic Auth/Storage HTTP checks; no application renderer/hosted proposal completion."
+    },
+    {
+      "scope": "Actual qualified runtime publication and local label-only promotion",
+      "evidence": [
+        "E13"
+      ],
+      "limit": "Published exact image is not deployed; local promotion probe was not pushed."
+    },
+    {
+      "scope": "Fresh authorized read-only proposal inspection",
+      "evidence": [
+        "E08"
+      ],
+      "limit": "No completed version;50 unknown usage retained, no activation."
+    }
+  ],
+  "post_anchor_followup": {
+    "source_revision": "cf3ee05",
+    "release_attempt": 41934809173,
+    "release_attempt_conclusion": "cancelled_before_cluster_access",
+    "manual_retirement_proof_fix": "54 focused tests pass; actual isolated Kubernetes/PVC interruption acceptance remains open."
+  }
 }
