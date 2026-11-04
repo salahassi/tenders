@@ -6368,3 +6368,18 @@ proves executors 1/2/3 cannot select the v1 job while executor 4 can, and a late
 This rollout guard intentionally changes current-worker fixtures; combined
 issuance-deadline integration must use executor 4 for new workflows. The earlier
 full-suite totals above preceded this rolling-worker refinement.
+
+### 2026-11-04 — Request-wide issuance status in the interface
+
+The authenticated issuance-status route delegates to the membership-checked RPC;
+its response drives the proposal preparation panel separately from generation-stage
+completion. Finished writing cannot show complete-package success for a new request.
+Unavailable agents and the 600-second terminal state have explicit messages, failed
+issuance alerts use the exact current request identity, and stale request responses
+cannot claim success. Progress polls remain serialized, including slow workspace
+refreshes, with a five-second display refresh; the server deadline is authoritative.
+
+Validation: 18 API boundary tests and 24 generation-panel tests pass. The integrated
+frontend currently passes 49 files / 317 tests, typecheck and production build; backend
+typecheck passes. The new RPC depends on the coordinated deadline migration, which
+is not deployed yet. Real hosted timing/package issuance remains a separate gate.

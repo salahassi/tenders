@@ -396,6 +396,13 @@ export function createApiHandler(
             opportunity_id: uuid.parse(sourceReview[1]),
           }),
         );
+      const issuance = path.match(/^\/v1\/proposal-issuance\/([^/]+)$/);
+      if (issuance && request.method === "GET")
+        return respond(
+          await backend.userRpc(token, "proposal_issuance_status_for_plan", {
+            plan_id: uuid.parse(issuance[1]),
+          }),
+        );
       const readiness = path.match(
         /^\/v1\/proposal-versions\/([^/]+)\/readiness$/,
       );

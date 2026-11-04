@@ -9,6 +9,7 @@ import {
   generationNeedsAttention,
   generationStageLabel,
   generationStatusMessage,
+  type ProposalIssuanceStatus,
 } from "../lib/generationStatus";
 type Plan = {
   id: string;
@@ -18,6 +19,8 @@ type Plan = {
   revision: number;
   error_code: string | null;
   created_at: string;
+  issuance_request_id?: string | null;
+  issuance?: ProposalIssuanceStatus | null;
 };
 export default function GenerationPanel({
   opportunity,
@@ -57,20 +60,49 @@ export default function GenerationPanel({
       const ordered = [...records].sort((a, b) =>
         b.created_at.localeCompare(a.created_at),
       );
+      await Promise.all(
+        ordered
+          .filter((p) => p.kind === planKind)
+          .slice(0, 3)
+          .map(async (p) => {
+            if (!p.issuance_request_id) return;
+            const { data } =
+              await backend.request<ProposalIssuanceStatus | null>(
+                `/v1/proposal-issuance/${p.id}`,
+              );
+            if (
+              !data ||
+              data.id !== p.issuance_request_id ||
+              data.plan_id !== p.id
+            )
+              throw new Error(
+                "The current request changed. Refresh progress to load its file-package status.",
+              );
+            p.issuance = data;
+          }),
+      );
+      if (!scope.active) return;
       setPlans(ordered);
       const latestVisible = ordered.find((p) => p.kind === planKind);
       const attention =
         latestVisible && generationNeedsAttention(latestVisible)
-          ? `${latestVisible.id}:${latestVisible.status}:${latestVisible.error_code}`
+          ? `${latestVisible.id}:${latestVisible.status}:${latestVisible.issuance?.effective_error_code ?? latestVisible.error_code}`
           : "";
       if (attention && scope.attention !== attention)
         notify(generationStatusMessage(latestVisible!), "error");
       scope.attention = attention;
       const latest = ordered.find((p) => p.kind === "proposal");
-      if (latest?.status === "completed" && scope.completed !== latest.id) {
+      const completedKey = latest
+        ? `${latest.id}:${latest.issuance?.effective_outcome ?? latest.status}`
+        : "";
+      if (
+        (latest?.status === "completed" ||
+          latest?.issuance?.effective_outcome === "issued") &&
+        scope.completed !== completedKey
+      ) {
         await refresh?.();
         if (!scope.active) return;
-        scope.completed = latest.id;
+        scope.completed = completedKey;
       }
       setError("");
       return latestVisible;
@@ -94,7 +126,7 @@ export default function GenerationPanel({
     void load();
     const timer = setInterval(() => {
       if (!document.hidden) void load();
-    }, 10000);
+    }, 5000);
     return () => {
       scope.active = false;
       clearInterval(timer);
@@ -120,6 +152,8 @@ export default function GenerationPanel({
                 "DATA_AUTHORIZATION_REQUIRED",
                 "DATA_POLICY_BLOCKED",
                 "MODEL_NOT_CONFIGURED",
+                "AI_AGENTS_UNAVAILABLE",
+                "PROPOSAL_ISSUANCE_TIMEOUT",
               ].includes(e.code)
             ? generationStatusMessage({
                 kind: "proposal",
@@ -255,15 +289,20 @@ export default function GenerationPanel({
                 >
                   {generationStatusMessage(p)}
                 </p>
-                {p.error_code && (
+                {(p.issuance?.effective_error_code || p.error_code) && (
                   <details>
                     <summary>Technical details</summary>
                     <p>
-                      Reference code: <code>{p.error_code}</code>
+                      Reference code:{" "}
+                      <code>
+                        {p.issuance?.effective_error_code || p.error_code}
+                      </code>
                     </p>
                   </details>
                 )}
-                {p.error_code === "MODEL_NOT_CONFIGURED" && (
+                {["MODEL_NOT_CONFIGURED", "AI_AGENTS_UNAVAILABLE"].includes(
+                  p.issuance?.effective_error_code || p.error_code || "",
+                ) && (
                   <p>
                     <Link to="/settings?section=models">Set up a model</Link>
                   </p>

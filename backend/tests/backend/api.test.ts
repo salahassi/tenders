@@ -32,6 +32,10 @@ function fixture() {
     authenticate: vi.fn(async () => ({ id: actor })),
     membership: vi.fn(async () => ({ workspace_id: source, role: "Owner" })),
     operations: vi.fn(async () => ({ last_heartbeat_at: null })),
+    userRpc: vi.fn(async (_token: string, _name: string, _args: unknown) => ({
+      effective_outcome: "failed",
+      effective_error_code: "PROPOSAL_ISSUANCE_TIMEOUT",
+    })),
     command: vi.fn(async () => ({ id: source, revision: 1 })),
     list: vi.fn(async () => ({ records: [], next_cursor: null })),
     one: vi.fn(),
@@ -66,6 +70,23 @@ function request(
   });
 }
 describe("backend HTTP boundaries without a live provider", () => {
+  it("reads issuance through the caller-authorized RPC and validates plan identity", async () => {
+    const f = fixture();
+    const response = await f.handle(request(`proposal-issuance/${source}`));
+    expect(response.status).toBe(200);
+    expect(f.backend.userRpc).toHaveBeenCalledWith(
+      "synthetic-user-token",
+      "proposal_issuance_status_for_plan",
+      { plan_id: source },
+    );
+    expect(await response.json()).toMatchObject({
+      data: { effective_error_code: "PROPOSAL_ISSUANCE_TIMEOUT" },
+    });
+    expect(
+      (await f.handle(request("proposal-issuance/not-a-uuid"))).status,
+    ).toBe(400);
+    expect(f.backend.userRpc).toHaveBeenCalledTimes(1);
+  });
   it("batches operational history while keeping bounded authenticated pagination", async () => {
     const f = fixture();
     for (const resource of ["jobs", "audit-events"]) {

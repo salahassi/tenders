@@ -28,7 +28,10 @@ const opportunity = () =>
   }) as any;
 function context(records: any[] = []) {
   const value = {
-    backend: { list: vi.fn(async () => records) },
+    backend: {
+      list: vi.fn(async () => records),
+      request: vi.fn(async (_path: string) => ({ data: null as any })),
+    },
     state: {
       settings: { role: "Owner" },
       proposals: [],
@@ -243,7 +246,7 @@ it("does not start more progress requests while a slow completion refresh is out
     finish();
   });
   await act(async () => {
-    await vi.advanceTimersByTimeAsync(10000);
+    await vi.advanceTimersByTimeAsync(5000);
   });
   expect(c.backend.list).toHaveBeenCalledTimes(2);
   expect(c.refresh).toHaveBeenCalledTimes(1);
@@ -508,3 +511,101 @@ it.each([
     expect(c.notify).not.toHaveBeenCalled();
   },
 );
+
+it.each(["active", "failed", "issued"])(
+  "uses complete-package issuance %s instead of treating finished writing as delivery",
+  async (outcome) => {
+    const c = context([
+      {
+        id: "plan",
+        kind: "proposal",
+        stage: "completed",
+        status: "completed",
+        revision: 4,
+        error_code: null,
+        created_at: "2026-11-04T10:00:00Z",
+        issuance_request_id: "request",
+      },
+    ]);
+    c.backend.request.mockResolvedValue({
+      data: {
+        id: "request",
+        plan_id: "plan",
+        effective_outcome: outcome,
+        effective_error_code:
+          outcome === "failed" ? "PROPOSAL_ISSUANCE_TIMEOUT" : null,
+      },
+    });
+    render(
+      <MemoryRouter>
+        <GenerationPanel opportunity={opportunity()} />
+      </MemoryRouter>,
+    );
+    const text =
+      outcome === "active"
+        ? /Writing is complete. The full draft file package is still/
+        : outcome === "failed"
+          ? /reached its 10-minute limit/
+          : /complete draft file package is ready to download/;
+    expect(await screen.findByText(text)).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Your proposal is ready. Open it to review and download.",
+      ),
+    ).not.toBeInTheDocument();
+    if (outcome === "failed")
+      expect(c.notify).toHaveBeenCalledWith(
+        expect.stringMatching(/10-minute limit/),
+        "error",
+      );
+  },
+);
+it("rejects stale request status and never claims completed writing is an issued package", async () => {
+  const c = context([
+    {
+      id: "plan",
+      kind: "proposal",
+      stage: "completed",
+      status: "completed",
+      revision: 4,
+      error_code: null,
+      created_at: "2026-11-04T10:00:00Z",
+      issuance_request_id: "current",
+    },
+  ]);
+  c.backend.request.mockResolvedValue({
+    data: { id: "older", plan_id: "plan", effective_outcome: "issued" },
+  });
+  render(
+    <MemoryRouter>
+      <GenerationPanel opportunity={opportunity()} />
+    </MemoryRouter>,
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "current request changed",
+  );
+  expect(
+    screen.queryByText(/file package is ready to download/),
+  ).not.toBeInTheDocument();
+});
+it("shows all agents unavailable immediately when admission rejects", async () => {
+  const c = context();
+  c.runCommand.mockRejectedValue(
+    new BackendRequestError("AI_AGENTS_UNAVAILABLE", "Internal reason", 503),
+  );
+  render(
+    <MemoryRouter>
+      <GenerationPanel opportunity={opportunity()} />
+    </MemoryRouter>,
+  );
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Generate proposal draft" }),
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "No AI agents are available",
+  );
+  expect(c.notify).toHaveBeenCalledWith(
+    expect.stringMatching(/No AI agents are available/),
+    "error",
+  );
+});
