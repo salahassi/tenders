@@ -67,6 +67,15 @@ paths["/v1/proposal-issuance/{id}"] = {
     responses: { "200": { description: "Current request, effective outcome, accepted/deadline/completion timestamps, issued snapshot and database server_now" }, "401": { description: "Authentication required" }, "404": { description: "Plan unavailable to this member" } },
   },
 };
+paths["/v1/export-packages/{id}"] = {
+  get: {
+    operationId: "export.package.read",
+    description: "Current member-authorized durable draft or final export package for an exact proposal version. A package is ready only after every required volume is verified; final exports also require current approval. Browser departure does not cancel the server job.",
+    security: [{ userJWT: [] }],
+    parameters: [{ in: "path", name: "id", required: true, schema: { type: "string", format: "uuid" } }],
+    responses: { "200": { description: "Package identity, revision, mode, status, bounded request timestamps, complete volume set and job state" }, "401": { description: "Authentication required" }, "404": { description: "Package unavailable to this member" } },
+  },
+};
 const responses = {
   "200": { description: "Successful command result" },
   "201": { description: "Record or reservation created" },

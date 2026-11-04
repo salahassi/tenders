@@ -403,6 +403,13 @@ export function createApiHandler(
             plan_id: uuid.parse(issuance[1]),
           }),
         );
+      const exportPackage = path.match(/^\/v1\/export-packages\/([^/]+)$/);
+      if (exportPackage && request.method === "GET")
+        return respond(
+          await backend.userRpc(token, "export_package_context", {
+            package_id: uuid.parse(exportPackage[1]),
+          }),
+        );
       const readiness = path.match(
         /^\/v1\/proposal-versions\/([^/]+)\/readiness$/,
       );

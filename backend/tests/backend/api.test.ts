@@ -70,6 +70,15 @@ function request(
   });
 }
 describe("backend HTTP boundaries without a live provider", () => {
+  it("reads a saved export package through caller authority and rejects malformed identity", async () => {
+    const f = fixture();
+    expect((await f.handle(request(`export-packages/${source}`))).status).toBe(200);
+    expect(f.backend.userRpc).toHaveBeenCalledWith(
+      "synthetic-user-token", "export_package_context", { package_id: source },
+    );
+    expect((await f.handle(request("export-packages/not-a-uuid"))).status).toBe(400);
+    expect(f.backend.userRpc).toHaveBeenCalledTimes(1);
+  });
   it("reads issuance through the caller-authorized RPC and validates plan identity", async () => {
     const f = fixture();
     const response = await f.handle(request(`proposal-issuance/${source}`));

@@ -7001,3 +7001,23 @@ after extracting their shared SQL/Map-storage fixture. Both package typechecks
 pass. All 15 backend cases use local token and object adapters, not hosted
 Auth/Storage; production deployment and real-browser visual acceptance remain
 separate gates.
+
+
+## November 4 — permanent access reference and durable export read boundary
+
+Updated the permanent DO runbook with the latest successful original-CA inventory
+(run41849412810, head59c6b309), the private receipt-wrapper distinction, and the
+explicit isolated restore mode. Reviewed the whole selected access workflow and
+its catalog-only capture and guarded fixture restore path. No cloud operation was
+dispatched by this documentation change; freeze and hosted restore remain pending.
+
+Added the caller-authorized GET `/v1/export-packages/:id` wrapper and OpenAPI
+entry for the durable ordinary-export implementation being integrated separately.
+It delegates membership/version/package authority to `export_package_context`;
+invalid UUIDs never reach the RPC. The API, canonical generated pipeline, metadata
+policy and explicit metadata campaign tests pass **44/44** together. Complete
+ordinary-export backend/UI, final combined gates and hosted acceptance remain open.
+
+The existing OCR browser harness now also closes Vite and removes its temporary
+fixture on browser-launch failure. Its successful screenshot receipt is retained;
+this lifecycle cleanup is not a new hosted or visual acceptance claim.

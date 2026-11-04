@@ -55,16 +55,17 @@ conditional steps and the called helper. A name containing "check", "inspect" or
 | Need | Existing workflow and boundary |
 | --- | --- |
 | Inspect current workloads and schema | [`doks-access.yml`](../../.github/workflows/doks-access.yml), explicit `mode=inventory` on a revision containing `7b8808174fbf62d53364e56084102a901bc1338d`. It reads metadata through a temporary owned SQL client and verifies cleanup. `mode=bootstrap` still creates isolated compatibility resources and must be selected separately. |
+| Exercise backup and restore before release | The same workflow with explicit `mode=restore` on a revision containing the reviewed cloud restore helper and a frozen release manifest. It reads production schema metadata, reconstructs that exact schema in a nonce-bound isolated database, applies the frozen migrations, and exercises genuine Auth/Storage with synthetic fixtures only. It does not copy customer rows or invoke models. Review [`proposal-cloud-restore.py`](../scripts/ops/proposal-cloud-restore.py), its fixture guards and cleanup before dispatch; a successful drill does not prove proposal rendering or production acceptance. |
 | Read one proposal's recovery state | [`inspect-proposal-recovery.yml`](../../.github/workflows/inspect-proposal-recovery.yml). Requires the reviewed encrypted selection object and plaintext hash; does not authorize or retry model processing. |
 | Read retained proposal graph evidence | [`diagnose-proposal-graph.yml`](../../.github/workflows/diagnose-proposal-graph.yml). Follow its exact scoped input and private evidence handling. |
 | Diagnose HTTPS startup | [`diagnose-https.yml`](../../.github/workflows/diagnose-https.yml). Contains conditional repair steps and private diagnostic upload; inspect trigger/conditions before using it. |
 | Release application changes | Select the specific reviewed `deploy-*.yml` and its helper. Check the exact migration set, immutable image, target namespace, rollout and acceptance. Historical release workflows do not automatically include newly added migrations. |
 | Evaluate models | [`evaluate-ai-models.yml`](../../.github/workflows/evaluate-ai-models.yml). Live activation is separate from inventory and may make paid provider requests; use only the authorized campaign and its limits. |
 
-The inventory mode was verified on the published branch
+The latest successful inventory was verified on the published branch
 `codex/proposal-reliability-implementation`, commit
-`7b8808174fbf62d53364e56084102a901bc1338d`, in
-[run 41841720671](https://github.com/salahassi/tenders/actions/runs/41841720671).
+`59c6b309470cacf4dd605325e9a76cb132b88449`, in
+[run 41849412810](https://github.com/salahassi/tenders/actions/runs/41849412810).
 Use a reviewed ref that contains that commit; older `main` revisions do not have
 this input. For that published branch, the exact dispatch is:
 
@@ -75,7 +76,12 @@ gh workflow run doks-access.yml --repo salahassi/tenders \
 
 Check the run head SHA and executed steps after dispatch. The observed schema,
 image digests and cleanup receipt are saved in
-[`evidence/digitalocean-inventory-20261104.json`](evidence/digitalocean-inventory-20261104.json).
+[`evidence/digitalocean-inventory-20261104-41849412810.json`](evidence/digitalocean-inventory-20261104-41849412810.json).
+This evidence file wraps the inventory under `receipt`; release-manifest freezing
+requires that exact inner receipt, not the outer evidence wrapper. The intervening
+run 41845129587 failed an observer scheduling assumption; the corrected run above
+again verified the original certificate authority. That failure was not a TLS
+regression.
 Ten ready workloads prove inventory readiness at that observation, not proposal
 workflow acceptance. The new delivery tables were absent at that time.
 

@@ -42,14 +42,15 @@ const server = await createServer({
     fs: { allow: [root, dir] },
   },
 });
-await server.listen();
-const browser = await chromium.launch({
-  executablePath: process.env.TENDERDESK_CHROMIUM_PATH || undefined,
-  headless: true,
-  args: ["--no-sandbox"],
-});
+let browser;
 const receipts = [];
 try {
+  await server.listen();
+  browser = await chromium.launch({
+    executablePath: process.env.TENDERDESK_CHROMIUM_PATH || undefined,
+    headless: true,
+    args: ["--no-sandbox"],
+  });
   for (const lang of ["ar", "en"])
     for (const width of [390, 1440]) {
       const page = await browser.newPage({ viewport: { width, height: 1000 } });
@@ -102,7 +103,7 @@ try {
   await writeFile(output + "/receipt.json", JSON.stringify(receipts, null, 2));
   console.log(JSON.stringify(receipts));
 } finally {
-  await browser.close();
+  await browser?.close();
   await server.close();
   await rm(dir, { recursive: true, force: true });
 }
