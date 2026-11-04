@@ -6642,3 +6642,8 @@ document overflow or browser errors, explicit confirmation and save. Arabic mobi
 and English desktop screenshots were visually inspected. Receipt hashes are in
 `evidence/document-extraction-review-browser-20261104.json`. This is browser fixture
 acceptance, not a live user's upload or hosted authenticated acceptance.
+
+The issuance status read route is also documented in the generated OpenAPI contract,
+including current membership, database time, effective timeout, and complete draft
+package semantics. Regenerated the contract from the canonical command schemas;
+no runtime or deployment behavior changed by this documentation follow-up.

@@ -58,6 +58,15 @@ paths["/v1/opportunities/{id}/source-review"] = {
     responses: {"200":{description:"Source evidence contract v1 and current authorized source blocks"},"401":{description:"Authentication required"},"404":{description:"Opportunity unavailable to this member"}},
   },
 };
+paths["/v1/proposal-issuance/{id}"] = {
+  get: {
+    operationId: "proposal.issuance.status",
+    description: "Current member-authorized issuance request for the selected plan, or null for historical unpinned plans. Effective deadline state is computed by the database independently of worker maintenance. Issued means the complete verified draft package, not final approval.",
+    security: [{ userJWT: [] }],
+    parameters: [{ in: "path", name: "id", required: true, schema: { type: "string", format: "uuid" } }],
+    responses: { "200": { description: "Current request, effective outcome, accepted/deadline/completion timestamps, issued snapshot and database server_now" }, "401": { description: "Authentication required" }, "404": { description: "Plan unavailable to this member" } },
+  },
+};
 const responses = {
   "200": { description: "Successful command result" },
   "201": { description: "Record or reservation created" },
