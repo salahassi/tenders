@@ -117,6 +117,7 @@ export class ConnectedRepository {
   private rows: Record<string, Row[]> = {};
   private workspace!: Row;
   private loadGeneration = 0;
+  private loadTail: Promise<void> = Promise.resolve();
   private actorId = "";
   private steps = new Map<string, unknown>();
   private pending: {
@@ -131,7 +132,12 @@ export class ConnectedRepository {
   };
   constructor(readonly client: BackendClient) {}
 
-  private async list(path: string): Promise<Row[]> {
+  private assertCurrentLoad(generation: number) {
+    if (generation !== this.loadGeneration)
+      throw new Error("A newer workspace request replaced this response.");
+  }
+
+  private async list(path: string, generation: number): Promise<Row[]> {
     const rows: Row[] = [];
     // Required workspace records stay complete as the workspace grows.
     // Audit history is read separately by the decision-history panel.
@@ -140,9 +146,11 @@ export class ConnectedRepository {
     const seen = new Set<string>();
     const recordIds = new Set<string>();
     do {
+      this.assertCurrentLoad(generation);
       const { data } = await this.client.request<unknown>(
         `/v1/${path}?limit=${pageSize}${cursor ? `&cursor=${cursor}` : ""}`,
       );
+      this.assertCurrentLoad(generation);
       const schema = ["audit-events", "regeneration-requests"].includes(path)
         ? rowSchema.extend({ revision: z.number().int().positive().default(1) })
         : rowSchema;
@@ -177,7 +185,23 @@ export class ConnectedRepository {
 
   async load(): Promise<AppState> {
     const generation = ++this.loadGeneration;
+    const previous = this.loadTail;
+    let release!: () => void;
+    this.loadTail = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    try {
+      this.assertCurrentLoad(generation);
+      return await this.loadCurrent(generation);
+    } finally {
+      release();
+    }
+  }
+
+  private async loadCurrent(generation: number): Promise<AppState> {
     const { data } = await this.client.request<unknown>("/v1/bootstrap");
+    this.assertCurrentLoad(generation);
     const boot = z
       .object({
         membership: z.object({
@@ -219,11 +243,12 @@ export class ConnectedRepository {
       "fit-assessments",
       "opportunity-discovery",
     ];
-    const tables = await Promise.all(
-      paths.map(async (path) => [path, await this.list(path)] as const),
-    );
-    if (generation !== this.loadGeneration)
-      throw new Error("A newer workspace request replaced this response.");
+    // Consume every continuation page before opening the next full-content
+    // table. Parallel lists would compete for the server's heavy-file lane.
+    const tables: (readonly [string, Row[]])[] = [];
+    for (const path of paths)
+      tables.push([path, await this.list(path, generation)]);
+    this.assertCurrentLoad(generation);
     this.rows = Object.fromEntries(tables);
     this.workspace = boot.workspace;
     this.actorId = boot.membership.user_id || "";

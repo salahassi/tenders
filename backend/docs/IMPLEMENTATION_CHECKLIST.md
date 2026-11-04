@@ -9211,3 +9211,37 @@ No native OOM/throughput or hosted release claim follows from these local tests.
 Actual-image simultaneous file/large-record/batch response, network backpressure,
 client disconnect and NGINX behavior remain the final resource qualification.
 No provider calls, production mutations, SQL migrations or billing changes ran.
+
+### 2026-11-04 — Browser sequencing for heavy API content admission
+
+The connected browser now uses the same pure heavy-request classifier as the API
+and holds one FIFO lane per `BackendClient` through complete JSON or Blob
+consumption. Existing concurrent panel reads and technical/financial downloads
+therefore serialize their own heavy sends; lightweight bootstrap/status remain
+available. Commands keep their body and idempotency key, are never automatically
+retried, and bind the identity observed before queueing. A queued request refuses
+a different signed-in identity before sending; a refreshed token for the same
+user remains supported. Abort, HTTP error and malformed JSON release the lane.
+An external `FILE_PROCESSING_BUSY` remains the server's visible error and requires
+an explicit user retry; this browser queue is not server authorization or a
+cross-browser lock.
+
+Repository loads now serialize all sixteen required table/page chains, suppress
+superseded queued loads, and stop superseded pagination before another page.
+Every full-content record and continuation is retained, including the server's
+new final empty page. The separate generic client list's undocumented aggregate
+10,000-row guard was removed: with no lookahead it rejected even exactly 10,000
+records before the final empty page. This changes no server/product capacity
+limit, and matches the already-tested unlimited required-record startup policy.
+Duplicate records, repeated/backward cursors and nonempty continuations without
+records still fail closed. Model activity retains its separate descending decimal
+sequence contract, compared losslessly with BigInt rather than UUID ordering.
+
+Against base `28689b9`, the focused regression reproduced sixteen overlapping
+load requests and failure at the old aggregate guard. Eighteen focused pure tests
+now pass, including 10,001 full one-record pages, stale-load suppression, queued
+identity switch, token refresh, abort/error release, preserved command key/body,
+and artifact-byte sequencing. Frontend typecheck passes. The shared classifier
+is supplied by the companion API commit; it is not duplicated in this browser
+commit. Full integrated frontend/backend/native and hosted checks remain
+separate; no provider calls, production writes or dependency changes occurred.
