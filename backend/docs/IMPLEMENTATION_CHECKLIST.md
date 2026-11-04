@@ -8222,3 +8222,14 @@ model-semantic, hosted-storage or 600-second issuance outcome. Dense capacity
 and worker lifecycle have separate receipts. No full suites, provider calls,
 production mutations or deployment were performed in this QA-only change;
 root's final combined and deployment gates remain separate.
+Follow-up native-byte evidence: the actual API-admitted 69-paragraph alternating
+Arabic/Latin model (1.38 million source characters, model SHA-256 `69a027e8…dcd9d`)
+now passes this exact strict verifier against the native lazy-run renderer's
+actual DOCX. Offline Node with a 128 MiB heap verified 298,013,151 expanded bytes
+in 31.763 seconds; the largest inflater callback was 72,809 bytes and measured
+maximum RSS was 251,756 KiB. The event loop serviced 1,940 heartbeat ticks, with
+maximum observed gap 61 ms. This is verifier-only evidence, not a 128 MiB RSS
+claim, full worker Deno/container proof or hosted service capacity guarantee.
+Exact input/artifact/helper hashes and measurement details are in
+[evidence/docx-direction-run-budget-native-20261104.json](evidence/docx-direction-run-budget-native-20261104.json).
+Final renderer/worker resource and visual qualification remain separate.
