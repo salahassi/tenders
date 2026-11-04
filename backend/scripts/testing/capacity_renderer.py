@@ -20,7 +20,7 @@ import threading
 ROOT = Path(__file__).resolve().parents[3]
 IMAGE = "sha256:08eeb4ffa1c2"  # Resolved to the exact full local identity.
 MODES = (
-    "standard", "final-capacity", "worker-capacity", "verifier-capacity", "verifier-matrix", "verifier-boundaries", "boundary-render-only", "dense-heap-matrix",
+    "standard", "final-capacity", "worker-capacity", "ordinary-render-capacity", "verifier-capacity", "verifier-matrix", "verifier-handler", "verifier-handler-cancel", "handler-render-only", "verifier-boundaries", "boundary-render-only", "dense-heap-matrix",
     "streamed-capacity", "streamed-render-only", "concurrent-capacity",
     "density-edges", "density-render-only", "sparse-capacity",
     "sparse-render-only", "direction-capacity", "direction-render-only",
@@ -39,7 +39,9 @@ def docker(*args, timeout=60):
 
 
 def model_names(mode):
-    if mode == "verifier-boundaries":
+    if mode == "ordinary-render-capacity":
+        names = ("generated-100-tables", "authored-100-json-tables", "authored-69-mixed-paragraphs")
+    elif mode == "verifier-boundaries":
         names = ("small-native-base", "small-native-core4m", "near10m-ascii", "near10m-ascii-core4m", "near10m-mixed100", "empty-rows-storage-shape")
     elif mode == "boundary-render-only":
         names = ("near10m-ascii", "near10m-mixed100", "empty-rows-storage-shape")
@@ -48,7 +50,7 @@ def model_names(mode):
                  "dense-direction-runs-authored", "dense-ragged-authored",
                  "dense-empty-body-limit-authored", "dense-paragraph-authored",
                  "dense-short-authored", "dense-body-limit-authored")
-    elif mode in ("worker-capacity", "verifier-capacity"):
+    elif mode in ("worker-capacity", "verifier-capacity", "verifier-handler", "verifier-handler-cancel", "handler-render-only"):
         names = ("dense-minimal-sparse-body-limit-authored",)
     elif mode == "dense-heap-matrix":
         names = ("dense-authored",)
@@ -92,6 +94,7 @@ def run(models, image, mode="standard", artifacts=None,
             "frontend/src/lib/docxTableStream.ts", "frontend/public/fonts",
             "backend/scripts/testing/capacity_renderer.ts",
             "backend/scripts/testing/capacity_delivery_worker.ts",
+            "backend/scripts/testing/capacity_api_handler.ts",
             "backend/scripts/testing/capacity_renderer.py",
             "frontend/package.json", "frontend/package-lock.json",
             "backend/package.json", "backend/package-lock.json",
@@ -112,6 +115,12 @@ def run(models, image, mode="standard", artifacts=None,
                                 app / "backend/supabase/functions/_shared" / name)
         for name in names:
             shutil.copyfile(inputs / name, staged_inputs / name)
+            if mode == "ordinary-render-capacity":
+                request = name.removesuffix(".json") + ".request.json"
+                shutil.copyfile(inputs / request, staged_inputs / request)
+        if mode.startswith("verifier-handler"):
+            snapshot = "dense-minimal-sparse-body-limit-authored.snapshot.json"
+            shutil.copyfile(inputs / snapshot, staged_inputs / snapshot)
         if verification_artifact:
             if mode in ("verifier-matrix", "verifier-boundaries"):
                 for name in names:
@@ -206,7 +215,7 @@ def run(models, image, mode="standard", artifacts=None,
                 }
             else:
                 receipt = lines[0]
-            for key in ("cgroup_memory_peak_bytes", "cgroup_memory_limit_bytes"):
+            for key in ("cgroup_memory_peak_bytes", "cgroup_memory_limit_bytes", "cgroup_memory_swap_current", "cgroup_memory_swap_peak"):
                 file = staged_outputs / key
                 receipt[key] = int(file.read_text().strip()) if file.exists() else None
             for key in ("cgroup_memory_stat", "cgroup_memory_events"):

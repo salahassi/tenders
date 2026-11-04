@@ -9257,6 +9257,43 @@ passes. Existing connected-file fixtures explicitly supply their synthetic Auth
 identity. The guard is client-side stale-result prevention, not a replacement for
 server authorization; full integrated and hosted verification remain separate.
 
+### 2026-11-04 — Actual API download working-set qualification
+
+The capacity fixture now optionally exports its actual persisted v2 snapshot
+beside the exact render projection. The selected migrated authoring API case
+passed with 4,143 tables / 2,112,930 normalized cells; the next full table still
+fails the existing JSONB bound before mutation. The selected run passed one test
+and intentionally skipped nineteen; its full-suite receipt flag is therefore
+false, not evidence that twenty tests ran.
+
+The immutable application image `a3b88b89b6a4afe5861f04d36fcae748c7e104355c3d37fab7a26e45e49c2a2e`
+rendered that exact snapshot projection and served two actual `createApiHandler`
+delivery downloads in the same parent at 384 MiB / 700m CPU. Auth/RPC authority
+and Storage transport were synthetic adapters; the handler, model projection,
+Blob lifetime, canonical verifier subprocess, final actor/hash check, response
+copy and admission wrapper were actual application code. Both 8,166,765-byte
+responses matched the immutable DOCX SHA256. Headers arrived in 109.518s and
+107.791s, and full local consumption took 110.525s and 108.798s. No forced GC or
+parent restart occurred. Concurrent heavy requests failed with retryable busy
+before context/Storage allocation, and 437 health requests completed.
+
+Peak cgroup usage was 400,809,984 / 402,653,184 bytes (1.76 MiB remaining), with no
+max/oom/oom_kill events and separately observed zero swap current/peak. This is a
+narrow measured margin, not proof of arbitrary workload headroom. Native request
+timing is not an actual NGINX or upstream PostgREST qualification.
+
+Independent harness review caught a mislabeled post-consumption control: the
+historical run used lightweight `/v1/proposals`, so its
+`subsequent_heavy_read_status` does not prove final cancellation releases the
+heavy permit. That claim is explicitly excluded in
+`evidence/native-api-handler-scope-adjudication-20261104.json`. Second-request
+admission does prove release after the first EOF. The harness now uses the
+classified heavy `/v1/documents` route; its separate cancellation proof, three
+current-policy ordinary export projections from the body-bound fixtures, and
+final integrated image/release acceptance remain pending. Original raw receipts
+are retained unchanged. Backend typecheck passed; no provider or production
+calls, resource changes, or payload-cap changes occurred.
+
 ### 2026-11-04 — Additive read-only capacity inventory preparation
 
 The inventory now adds `capacity_observation` without changing its existing

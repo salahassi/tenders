@@ -1,6 +1,7 @@
 import { verifyDeliveryIsolated } from "../../supabase/functions/_shared/deliveryVerifyIsolation.ts";
 import { environment } from "../../supabase/functions/_shared/backend.ts";
 import { measureDeliveryWorker } from "./capacity_delivery_worker.ts";
+import { measureApiHandler } from "./capacity_api_handler.ts";
 import {
   renderDeliveryIsolated,
   type RendererProcess,
@@ -42,6 +43,8 @@ async function captureCgroup() {
     ["memory.max", "cgroup_memory_limit_bytes"],
     ["memory.stat", "cgroup_memory_stat"],
     ["memory.events", "cgroup_memory_events"],
+    ["memory.swap.current", "cgroup_memory_swap_current"],
+    ["memory.swap.peak", "cgroup_memory_swap_peak"],
   ]) {
     const child = new runtime.Command("/bin/cat", {
       args: [`/sys/fs/cgroup/${file}`],
@@ -127,6 +130,92 @@ async function run(name: string, model: RenderModel, required = true) {
 }
 const folder = runtime.args[0];
 if (!folder) throw Error("Synthetic model directory is required");
+if (runtime.args[1] === "ordinary-render-capacity") {
+  for (const name of [
+    "generated-100-tables",
+    "authored-100-json-tables",
+    "authored-69-mixed-paragraphs",
+  ]) {
+    const retained = await runtime.readTextFile(`${folder}/${name}.json`);
+    const request = JSON.parse(
+      await runtime.readTextFile(`${folder}/${name}.request.json`),
+    );
+    if (JSON.stringify(exportContract.buildExportModel(request)) !== retained)
+      throw Error(
+        "Frozen ordinary projection does not match its actual saved request",
+      );
+    const model = exportContract.buildExportModel(request, 2);
+    const started = performance.now(),
+      bytes = await renderDeliveryIsolated(model);
+    const renderedMs = Math.round(performance.now() - started);
+    await verifyArtifact(bytes, model);
+    await runtime.writeFile(`/outputs/${name}-128.docx`, bytes);
+    cases.push({
+      name,
+      outcome: "verified",
+      elapsed_ms: Math.round(performance.now() - started),
+      rendered_ms: renderedMs,
+      artifact_hash: await hash(bytes),
+      artifact_bytes: bytes.length,
+      placeholder_version: model.placeholder_version,
+    });
+  }
+  await captureCgroup();
+  console.log(
+    JSON.stringify({
+      scope:
+        "offline native render and canonical verifier for actual persisted ordinary export projections from body-bound migrated tests",
+      hosted_acceptance: false,
+      production_slo_qualified: false,
+      runtime: runtime.version,
+      cases,
+    }),
+  );
+  runtime.exit(0);
+}
+if (["verifier-handler", "verifier-handler-cancel"].includes(runtime.args[1])) {
+  const measured = await measureApiHandler(
+    folder,
+    runtime.args[1] === "verifier-handler-cancel" ? 1 : 2,
+  );
+  await captureCgroup();
+  console.log(
+    JSON.stringify({
+      ...measured,
+      runtime: runtime.version,
+      application_graph_loaded: applicationGraphLoaded,
+    }),
+  );
+  runtime.exit(0);
+}
+if (runtime.args[1] === "handler-render-only") {
+  const name = "dense-minimal-sparse-body-limit-authored";
+  const model = JSON.parse(
+    await runtime.readTextFile(`${folder}/${name}.json`),
+  );
+  const started = performance.now(),
+    bytes = await renderDeliveryIsolated(model);
+  await runtime.writeFile(`/outputs/${name}-128.docx`, bytes);
+  await captureCgroup();
+  console.log(
+    JSON.stringify({
+      scope:
+        "offline actual native rendering of migrated API-admitted v2 snapshot projection; canonical verification pending actual API handler",
+      hosted_acceptance: false,
+      runtime: runtime.version,
+      cases: [
+        {
+          name,
+          outcome: "rendered",
+          elapsed_ms: Math.round(performance.now() - started),
+          artifact_hash: await hash(bytes),
+          artifact_bytes: bytes.length,
+        },
+      ],
+    }),
+  );
+  runtime.exit(0);
+}
 if (
   ["verifier-capacity", "verifier-matrix", "verifier-boundaries"].includes(
     runtime.args[1],
@@ -356,7 +445,8 @@ if (
       production_slo_qualified: false,
       runtime: runtime.version,
       application_graph_loaded: applicationGraphLoaded,
-      input_identity: "immutable staged file SHA256s recorded by the external harness",
+      input_identity:
+        "immutable staged file SHA256s recorded by the external harness",
       health_requests: healthCount,
       post_cancellation_health_status: 200,
       parent_memory_peaks: memoryPeaks,

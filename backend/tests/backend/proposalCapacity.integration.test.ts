@@ -935,6 +935,10 @@ it.each([
         throw Error("Synthetic model path must be under /workspace/output");
       await mkdir(directory, { recursive: true });
       await writeFile(`${directory}/${name}.json`, encoded);
+      await writeFile(
+        `${directory}/${name}.snapshot.json`,
+        JSON.stringify(snapshot),
+      );
     }
     if (ragged) {
       const bytes = new Uint8Array(
@@ -1142,6 +1146,10 @@ it.each([
         throw Error("Synthetic model path must be under /workspace/output");
       await mkdir(directory, { recursive: true });
       await writeFile(`${directory}/${name}.json`, encoded);
+      await writeFile(
+        `${directory}/${name}.snapshot.json`,
+        JSON.stringify(snapshot),
+      );
     }
   },
   30000,
