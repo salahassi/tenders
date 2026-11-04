@@ -10,7 +10,7 @@ import {
   TableCell,
   WidthType,
   Footer,
-  PageNumber,
+  ImportedXmlComponent,
   AlignmentType,
   TableLayoutType,
   BorderStyle,
@@ -287,11 +287,27 @@ export async function renderDocx(
                     font,
                     size: 20,
                   }),
-                  new TextRun({
-                    children: [PageNumber.CURRENT],
-                    font,
-                    size: 20,
-                  }),
+                  // Keep each complex-field token in its own run. A single
+                  // run containing begin/instruction/separate/end lets some
+                  // office importers inherit the last body placeholder's
+                  // formatting for the calculated PAGE result.
+                  ...[
+                    '<w:fldChar w:fldCharType="begin"/>',
+                    '<w:instrText xml:space="preserve">PAGE</w:instrText>',
+                    '<w:fldChar w:fldCharType="separate"/>',
+                    '<w:fldChar w:fldCharType="end"/>',
+                  ].map(
+                    (fieldXml) =>
+                      new TextRun({
+                        children: [
+                          ImportedXmlComponent.fromXmlString(fieldXml),
+                        ],
+                        font,
+                        size: 20,
+                        rightToLeft: false,
+                        highlight: "none",
+                      }),
+                  ),
                 ],
               }),
             ],

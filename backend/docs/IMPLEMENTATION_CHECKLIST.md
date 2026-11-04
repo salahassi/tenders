@@ -7228,3 +7228,29 @@ actual migrated suites:42 tests. The portable current-contract script now also
 checks the model-job retry successor error. The isolated frontend app journey
 rerun passes19/19, including external submission; its earlier full-run failure
 was not reproduced, and no product behavior was changed for that timing failure.
+
+## November 4 — native Word PAGE field interoperability
+
+The footer PAGE field now writes begin, instruction, separator and end in separate
+runs with explicit neutral formatting. The earlier single-run construction caused
+LibreOffice to apply the last yellow body placeholder's highlight to the calculated
+page number. This change preserves the native dynamic PAGE field and supplies no
+cached or estimated number. Native TOC/PAGEREF fields, update-on-open settings,
+source text, placeholder policy and immutable previously stored files are unchanged.
+
+Six actual DOCX field/verification cases (English/Arabic, payload versions 1/2/3)
+and six existing delivery pipeline cases pass **12/12**; both package typechecks
+and builds pass. A separate actual render/conversion matrix passes **18 DOCX / 91
+PDF pages** with zero yellow footer fields and zero outside-page text spans; page
+counts match the original matrix. The base checkout's generated-delivery fixture
+fails before rendering; root has separately corrected that fixture in `f22be8d`.
+No unrelated fixture changes are included here, and root owns the final full-suite
+run after integration.
+
+The native TOC remains a distinct compatibility limitation: plain LibreOffice
+conversion preserves the docx library's empty page-reference cache instead of
+updating its index. Eleven OOXML construction variants did not solve that behavior.
+Explicit index/field refresh and exported DOCX cache verification are being
+qualified separately; no page estimator, static number or production layout-engine
+stage is introduced by this footer fix. Microsoft Word desktop acceptance remains
+separate from local LibreOffice evidence.
