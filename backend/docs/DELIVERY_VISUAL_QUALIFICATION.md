@@ -52,6 +52,57 @@ Dense-capacity rendering, worker lifecycle, hosted storage, model semantics,
 source assurance, final approval and hosted 600-second issuance remain
 separate evidence categories.
 
+## Output contract and remaining Word acceptance
+
+The disposition is **qualified representative editable draft delivery, with
+native Microsoft Word field-refresh acceptance pending**. Missing TOC page
+results in LibreOffice are a measured interoperability limitation. The
+preexisting contract does not designate LibreOffice as the authoritative final
+pagination engine or promise precomputed Word page numbers:
+
+- [EXPORT_QA.md](EXPORT_QA.md), originally committed October 15 in `1eae85e`,
+  states: "The live table of contents still requires Word to calculate its
+  page numbers." It requires updating the entire table, inspecting the pages
+  and saving before external use. That instruction predates this qualification.
+- [MODEL_EXECUTION_PLAN.md](MODEL_EXECUTION_PLAN.md), section 9, states that
+  the browser does not calculate Word's final page numbers and that LibreOffice
+  inspection is not proof of Microsoft Word pagination. Its **E2E-03** pass
+  criterion explicitly includes "TOC update limitation recorded" alongside
+  page inspection, RTL/LTR, native tables and volume separation.
+- [RELIABLE_PROPOSAL_DELIVERY_PLAN.md](RELIABLE_PROPOSAL_DELIVERY_PLAN.md),
+  **W04 closure**, requires proving TOC/page-field updates in the target engine
+  or leaving their remaining review explicit. **EX-06** in
+  [RELIABLE_PROPOSAL_ACCEPTANCE.md](RELIABLE_PROPOSAL_ACCEPTANCE.md) still
+  requires valid fields and real visual evidence; source XML alone cannot
+  establish Word's actual refresh behavior.
+- The existing [export interface](../../frontend/src/components/ExportPanel.tsx)
+  instructs users to update all fields and the entire TOC in Word, inspect every
+  page and save. Its final-file attestation includes those checks. Draft
+  issuance and reviewed final submission remain distinct.
+
+Accordingly, the LibreOffice observation does not by itself require adding a
+runtime delivery block or replacing live fields with invented cached numbers.
+It also does not prove that native Word refresh works. G12 is not universally
+closed, and these files are not certified as already reviewed final Word
+pagination. The explicit field-refresh limitation accompanies the narrower
+representative draft-layout qualification.
+
+On November 4, a read-only capability check of connected Codex document
+sessions with `surface: "word"` returned no connected sessions. The local
+environment was Linux with LibreOffice; `winword`, `WINWORD.EXE`, `wine`,
+`pwsh` and `powershell` were not found on PATH. No actual Microsoft Word
+execution was available through those tools. Repeating LibreOffice conversion
+or using Google Docs would not close native Word acceptance. No installation,
+external document upload or provider call was performed for this check.
+
+To close that specific acceptance when actual Word is available, use the
+existing source-bound English and Arabic fixtures, record the Word version,
+update all fields and the entire TOC, verify each listed heading against its
+actual page, inspect the pages, then save and reopen. Retain the resulting
+DOCX/PDF/page hashes and rerun content verification on the saved document.
+Any changed output must be reviewed; a successful test covers its recorded
+engine and fixtures rather than every Word version or document size.
+
 ## Historical footer correction evidence
 
 The source fingerprint is

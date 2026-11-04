@@ -8288,3 +8288,29 @@ review also found missing directory synchronization after unlink; its author
 added awaited directory sync before the absence receipt, with failures refusing
 proof. That observation is not a power-failure qualification claim. No production,
 provider, payment or external Storage operation ran in this independent review.
+
+### 2026-11-04 — scope G12 against the preexisting Word output contract
+
+The qualification disposition is representative editable draft delivery with
+native Word field-refresh acceptance pending. This follows the October 15
+`EXPORT_QA.md` instruction to update Word's TOC before external use, the model
+execution plan's section 9 and E2E-03 allowance for a recorded TOC limitation,
+and W04's explicit target-engine proof or documented remaining review. Exact
+references and the unchanged EX-06 integrity/visual obligations are now in
+`DELIVERY_VISUAL_QUALIFICATION.md`. Missing LibreOffice TOC page results remain
+a measured interoperability limitation; they neither prove Word refresh nor
+independently require a new runtime draft-delivery block under that contract.
+
+A fresh read-only tools check found no connected Word session. The Linux
+environment had LibreOffice but no Word, Wine or PowerShell executable on PATH.
+Actual Word refresh/save acceptance therefore remains unexecuted. Its concrete
+next test uses the existing English/Arabic source-bound fixtures, records the
+Word version, updates all fields/TOC, checks heading-page correspondence,
+inspects pages, saves/reopens and retains content-validation and artifact
+evidence. No native Word pass or universal G12 closure is claimed.
+
+This is documentation only. Prior 18-DOCX/91-page evidence is unchanged; no
+product code, tests, runtime gates, field caches, deployment or production state
+changed. Documentation references and whitespace checks passed. Root's final
+combined validation, hosted acceptance and other recorded limits remain
+separate.
