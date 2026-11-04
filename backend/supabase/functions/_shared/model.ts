@@ -63,6 +63,13 @@ import {
   validateSourcePageResult,
 } from "./sourceModel.ts";
 import { z } from "zod";
+import {
+  sourceTaskOutputSchema,
+  materializeSourceCandidate,
+  validateSourceCandidate,
+  collectSourceCandidateDiagnostics,
+} from "./sourceEvidence.ts";
+import { SEMANTIC_PATCH_INSTRUCTIONS } from "./modelSemanticPatch.ts";
 import { readModelStream, ModelStreamError } from "./modelStream.ts";
 import { serviceScopeSchema, type ServiceScope } from "./discovery.ts";
 import {
@@ -79,6 +86,7 @@ export {
 import {
   validationDiagnostic,
   type ModelValidationDiagnostic,
+  MAX_MODEL_VALIDATION_DIAGNOSTICS,
 } from "./modelValidationDiagnostics.ts";
 import {
   collectReferenceDiagnostics,
@@ -93,6 +101,39 @@ export class ModelError extends Error {
   ) {
     super(code);
   }
+}
+function sourceValidationError(error: unknown): unknown {
+  const source = error as {
+    code?: unknown;
+    source_path?: unknown;
+    source_diagnostics?: { code: string; source_path: string }[];
+  } | null;
+  return typeof source?.code === "string" &&
+    /^SOURCE_[A-Z_]+$/.test(source.code) &&
+    typeof source.source_path === "string"
+    ? new ModelError(
+        "EVIDENCE_REFERENCE_INVALID",
+        null,
+        (
+          source.source_diagnostics ?? [
+            { code: source.code, source_path: source.source_path },
+          ]
+        )
+          .slice(0, MAX_MODEL_VALIDATION_DIAGNOSTICS)
+          .map((item) =>
+            validationDiagnostic(
+              "EVIDENCE_REFERENCE_INVALID",
+              "invalid_scope",
+              { paths: [item.source_path] },
+            ),
+          ),
+        Math.max(
+          0,
+          (source.source_diagnostics?.length ?? 1) -
+            MAX_MODEL_VALIDATION_DIAGNOSTICS,
+        ),
+      )
+    : error;
 }
 /** A retained safe candidate needs a bounded content correction, not another
  * provider request with the same unchanged writer prompt. No private body is
@@ -213,8 +254,12 @@ export function taskSystemInstructions(
   task: ModelTask,
   verificationRevision: VerificationRevision = 1,
   semanticRevision: SemanticRevision = 0,
+  patchWire = false,
 ) {
-  const original = legacyTaskSystemInstructions(task, verificationRevision);
+  const original =
+    task === "repair_result" && patchWire
+      ? `${systemInstructions}\n${SEMANTIC_PATCH_INSTRUCTIONS}`
+      : legacyTaskSystemInstructions(task, verificationRevision);
   return semanticRevision > 0 && task !== "connection_probe"
     ? `${original}\n${semanticPolicyText(semanticRevision)}`
     : original;
@@ -338,12 +383,24 @@ export function validateModelResult(
     independentGrounding?: boolean;
     scopePolicy?: ServiceScope;
     draftInputVersion?: 1;
+    sourceContext?: unknown;
   },
 ): any {
-  const schema =
+  const legacySchema =
     task === "verify_grounding" && options?.aggregateVerification
       ? aggregateVerificationSchema
-      : modelSchemas[task];
+      : task === "repair_result" &&
+          value &&
+          typeof value === "object" &&
+          "target_task" in value &&
+          primaryModelTasks.includes(value.target_task as PrimaryModelTask)
+        ? taskOutputSchema(task, value.target_task as PrimaryModelTask)
+        : modelSchemas[task];
+  const schema = sourceTaskOutputSchema(
+    task,
+    options?.sourceContext,
+    legacySchema,
+  );
   const result = schema.parse(value) as any;
   if (task === "repair_result") {
     validateModelResult(
@@ -361,13 +418,45 @@ export function validateModelResult(
     requiredIds,
     options,
   );
-  if (referenceErrors.code)
+  const sourceErrors = collectSourceCandidateDiagnostics(
+    task,
+    result,
+    options?.sourceContext,
+    evidence,
+  ).map((error) =>
+    validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "invalid_scope", {
+      paths: [error.source_path],
+    }),
+  );
+  const completeDiagnostics = sourceErrors.length
+    ? [
+        ...new Map(
+          [...sourceErrors, ...referenceErrors.diagnostics].map(
+            (diagnostic) => [JSON.stringify(diagnostic), diagnostic],
+          ),
+        ).values(),
+      ].sort(
+        (a, b) =>
+          (a.paths[0] ?? "").localeCompare(b.paths[0] ?? "") ||
+          a.reason.localeCompare(b.reason),
+      )
+    : referenceErrors.diagnostics;
+  if (completeDiagnostics.length || referenceErrors.code)
     throw new ModelError(
-      referenceErrors.code,
+      completeDiagnostics[0]?.code ?? referenceErrors.code!,
       null,
-      referenceErrors.diagnostics,
-      referenceErrors.omittedCount,
+      completeDiagnostics.slice(0, MAX_MODEL_VALIDATION_DIAGNOSTICS),
+      referenceErrors.omittedCount +
+        Math.max(
+          0,
+          completeDiagnostics.length - MAX_MODEL_VALIDATION_DIAGNOSTICS,
+        ),
     );
+  try {
+    validateSourceCandidate(task, result, options?.sourceContext, evidence);
+  } catch (error) {
+    throw sourceValidationError(error);
+  }
   if (task === "verify_grounding") {
     if (
       !sameIds(result.processed_requirement_ids, requiredIds) ||
@@ -744,7 +833,9 @@ export interface Ledger {
     transport: string,
     level: ExecutionProfile["reasoning"],
   ): Promise<boolean>;
-  validateCandidateScope?(result: unknown): void;
+  validateCandidateScope?(result: unknown): void | Promise<void>;
+  wireOutputSchema?: z.ZodType;
+  transformCandidate?(result: unknown): Promise<unknown>;
   validateCandidate?(result: unknown): void;
   invalidCandidate?(
     result: unknown,
@@ -1005,6 +1096,7 @@ export class FreeModelProvider {
     private configuration?: ModelConfiguration,
     private verificationRevision: VerificationRevision = 1,
     private semanticRevision: SemanticRevision = 0,
+    private patchWire = false,
   ) {}
   private async diagnoseRejectedRequest(
     response: Response,
@@ -1419,6 +1511,7 @@ export class FreeModelProvider {
         task,
         this.verificationRevision,
         this.semanticRevision,
+        this.patchWire,
       ),
       capabilities,
       profile,
@@ -1551,7 +1644,10 @@ export function modelPrompt(
           prompt_version:
             task === "verify_grounding" && verificationRevision >= 2
               ? verificationPolicyVersion(verificationRevision)
-              : taskRegistry[task].promptVersion,
+              : task === "repair_result" &&
+                  (context as any)?.repair_patch_scope?.version === 1
+                ? "tenderdesk-repair-patch-v1"
+                : taskRegistry[task].promptVersion,
           ...(task === "verify_grounding" && verificationRevision >= 2
             ? {
                 verification_policy:
@@ -1563,7 +1659,10 @@ export function modelPrompt(
             : {}),
           writing_guide: writingGuide[language],
           repair_instruction: repair
-            ? "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
+            ? task === "repair_result" &&
+              (context as any)?.repair_patch_scope?.version === 1
+              ? SEMANTIC_PATCH_INSTRUCTIONS
+              : "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
             : null,
           required_ids: requiredIds,
           untrusted_data: context,
@@ -1641,7 +1740,17 @@ export async function executeModel(
     options.semanticRevision ?? 0,
   );
   if (blockedContent(prompt)) throw new ModelError("DATA_POLICY_BLOCKED");
-  const schema = taskJsonSchema(task, targetTask);
+  const outputSchema =
+    ledger.wireOutputSchema ??
+    sourceTaskOutputSchema(task, context, taskOutputSchema(task, targetTask));
+  const schema = z.toJSONSchema(outputSchema);
+  const patchWire =
+    task === "repair_result" &&
+    (context as any)?.repair_patch_scope?.version === 1;
+  if (
+    patchWire !== Boolean(ledger.wireOutputSchema && ledger.transformCandidate)
+  )
+    throw new ModelError("MODEL_IDENTITY_CHANGED");
   const inputHash = await sha256(prompt);
   const evidenceManifest = await Promise.all(
     evidence.map(async (item) => ({
@@ -1760,6 +1869,7 @@ export async function executeModel(
         config,
         verificationRevision,
         options.semanticRevision ?? 0,
+        patchWire,
       );
       let reservation: string | null = null;
       let settled = false;
@@ -1879,10 +1989,22 @@ export async function executeModel(
           capabilities: { ...capabilities, background },
           ...(reasoningControl ? { reasoningControl } : {}),
         });
+        request.schema = schema;
+        // The durable execution contract uses numeric schema versions.
+        // 1 = legacy, 2 = source contract, 3 = scoped repair patch.
+        if (patchWire) request.schemaVersion = "3";
+        else if (
+          (context as any)?.source_contract_version === 1 ||
+          (context as any)?.original_context?.source_contract_version === 1
+        )
+          request.schemaVersion = "2";
         if (task === "verify_grounding" && verificationRevision >= 2)
           request.promptVersion =
             verificationPolicyVersion(verificationRevision);
-        if ((options.semanticRevision ?? 0) >= 1 && task !== "connection_probe")
+        if (
+          patchWire ||
+          ((options.semanticRevision ?? 0) >= 1 && task !== "connection_probe")
+        )
           request.promptVersion = JSON.parse(prompt).prompt_version;
         if (pending?.execution_metadata) {
           request.promptVersion =
@@ -2020,12 +2142,25 @@ export async function executeModel(
         if (!result.complete) throw new ModelError("MODEL_OUTPUT_TRUNCATED");
         let parsedCandidate: unknown;
         try {
-          parsedCandidate = taskOutputSchema(task, targetTask).parse(
+          parsedCandidate = outputSchema.parse(
             normalizeOptionalNulls(JSON.parse(result.text), schema),
           );
+          if (ledger.transformCandidate)
+            parsedCandidate = await ledger.transformCandidate(parsedCandidate);
+          try {
+            parsedCandidate = materializeSourceCandidate(
+              task,
+              parsedCandidate,
+              context,
+              evidence,
+              false,
+            );
+          } catch (error) {
+            throw sourceValidationError(error);
+          }
           // Scope integrity must run before a rejected candidate can enter
           // the paid-writer repair cache through its local quote diagnostics.
-          ledger.validateCandidateScope?.(parsedCandidate);
+          await ledger.validateCandidateScope?.(parsedCandidate);
           const validated = validateModelResult(
             task,
             parsedCandidate,
@@ -2035,6 +2170,7 @@ export async function executeModel(
               ...options,
               scopePolicy: classificationScopePolicy(task, context),
               draftInputVersion: draftInputPolicyVersion(task, context),
+              sourceContext: context,
             },
           );
           if (task === "inspect_source_page") {

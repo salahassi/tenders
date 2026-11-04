@@ -6069,3 +6069,51 @@ allowance. This changes no application deadline. Real PostgreSQL races passed
 **3/3** against the final source guard migration; subsequent applicability-only
 projection changes have focused coverage. Hosted/deployed/live-model acceptance
 remains separate.
+## November 4 — W06 phase 2 scoped patch executor and source-contract hooks
+
+Implementation: local source only, not deployed or hosted-accepted. New workflows
+with `repair_contract_version=1` use a phase-pinned patch response instead of a
+complete replacement candidate. The server binds the base candidate, scope,
+unit and previous-value hashes; supplies exact typed path schemas; and composes
+authorized replacements, additions or appends. Existing array units cannot be
+deleted or reordered. The one removal operation is confined to an unsupported
+company-claim declaration and requires its associated narrative correction and
+an appended question for the missing proof. Optional missing fields and missing
+planning units are added without replacing their existing siblings.
+
+Application-owned task-field dependency groups expose linked requirement text,
+modality, source semantics and commercial assumptions with recorded reasons.
+Ambiguous/unlocated findings do not authorize a document-wide rewrite. Model
+requests cannot widen the supplied scope or edit review approval identities.
+Known effort/allocation changes recalculate the minimum dependent duration using
+decimal arithmetic, retaining longer explicit durations and unrelated tasks.
+The complete composed target still passes canonical domain validation and an
+independent grounding pass. Applied-path receipts retain the original candidate,
+canonical new hash, dependency reasons, derived arithmetic and unresolved/overflow
+counts; receipt hashes remain stable across PostgreSQL JSONB key ordering.
+
+Prepared semantic/quote-scope pins, accepted or settled/unknown phases and saved
+legacy rounds retain their existing request/schema identities. Numeric durable
+schema versions remain compatible with SQL: legacy 1, source contract 2, scoped
+patch 3. No candidate allowance, retry budget, unknown usage, provider permission,
+billing/free-only setting or automatic daily quota policy changes. Both source
+contract hooks and patch application run before invalid-candidate retention;
+source authority/review fields are materialized from the immutable application
+contract, and source diagnostics join reference diagnostics with explicit overflow.
+
+Validation: both lockfiles installed. Full local backend suite passed 132 files /
+2,173 tests; frontend passed 46 files / 299 tests; both typechecks and builds pass.
+This includes the actual migrated graph's legacy/new patch positive, crash and
+out-of-scope rejection cases, immutable accounting/allowances, source tuple
+correction, 33 independent source defects producing 32 diagnostics plus one
+omitted, forged approval materialization, required append/no deletion, dependency
+arithmetic, stale base/unit/path rejection, and the 43 historical wire hashes.
+The sourceEvidence module is the coordinated W05 agent dependency and is not
+duplicated in this component commit. The full suite used that local dependency;
+integration must include its final reviewed revision and repeat combined checks.
+
+Remaining phase-2 work is tracked separately: wider same-requirement semantic
+diagnostic enumeration, additional typed-field/provider-context qualification,
+fresh connected frozen-corpus evaluation and independent semantic holdout/domain
+review. These local controls do not establish universal semantic correctness or
+provider capacity for every possible document. No external model calls occurred.

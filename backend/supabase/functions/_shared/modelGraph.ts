@@ -17,6 +17,15 @@ import {
   type Ledger,
 } from "./model.ts";
 import { primaryModelTasks, type PrimaryModelTask } from "./modelSchemas.ts";
+import { modelSchemas } from "./modelSchemas.ts";
+import { sourceTaskOutputSchema } from "./sourceEvidence.ts";
+import { pinRepairFormat } from "./modelRepairFormat.ts";
+import {
+  applySemanticPatch,
+  semanticPatchOutputSchema,
+  SEMANTIC_PATCH_INSTRUCTIONS,
+  canonicalPatchValue,
+} from "./modelSemanticPatch.ts";
 import {
   verificationPhaseUnstarted,
   type VerificationPhase,
@@ -508,8 +517,30 @@ async function runGuardedModel(o: Options): Promise<{
     typedCandidate?: unknown,
   ) => {
     if (recheck) assertVerifierRecheckCall(recheck, task, key, unit);
-    const repairScope =
+    const patchScope =
       task === "repair_result"
+        ? await pinRepairFormat({
+            backend: o.backend,
+            store,
+            job: o.job,
+            requestPrefix: `${o.prefix}:${key}`,
+            context,
+            evidence: o.evidence,
+            requiredIds,
+            language: o.language,
+          })
+        : null;
+    const patchTargetSchema = patchScope
+      ? sourceTaskOutputSchema(
+          patchScope.target_task,
+          context,
+          modelSchemas[patchScope.target_task],
+        )
+      : null;
+    let patchReceipt:
+      Awaited<ReturnType<typeof applySemanticPatch>>["receipt"] | undefined;
+    const repairScope =
+      task === "repair_result" && !patchScope
         ? await pinQuoteRepairScope({
             backend: o.backend,
             store,
@@ -536,8 +567,24 @@ async function runGuardedModel(o: Options): Promise<{
         quote_repair_instruction:
           "Correct only the listed quote values against their unchanged source IDs. Return the complete original target schema with every other value and array position unchanged. The application rejects any out-of-scope edit. Unlisted defects remain unresolved for later bounded correction; never change an obligation, quantity, source ID or remove a requirement to pass validation.",
       };
+    if (patchScope)
+      context = {
+        ...context,
+        repair_patch_scope: patchScope,
+        repair_patch_instruction: SEMANTIC_PATCH_INSTRUCTIONS,
+      };
     const cached = await store.action("result_get", { key });
     if (cached) applyScope(cached.value.result);
+    if (
+      cached &&
+      patchScope &&
+      (cached.value.patch_receipt?.scope_hash !== patchScope.scope_hash ||
+        cached.value.patch_receipt?.base_candidate_hash !==
+          patchScope.candidate_hash ||
+        cached.value.patch_receipt?.candidate_hash !==
+          (await sha256(canonicalPatchValue(cached.value.result.result))))
+    )
+      throw new ModelError("MODEL_IDENTITY_CHANGED");
     const finishWriterHandoff = async (retained: any) => {
       if (retained?.value.local_validation) {
         const ready = await store.action("writer_validation_handoff", {
@@ -563,6 +610,35 @@ async function runGuardedModel(o: Options): Promise<{
     }
     ledger.validateCandidate = validate;
     ledger.validateCandidateScope = applyScope;
+    if (patchScope && patchTargetSchema) {
+      ledger.wireOutputSchema = semanticPatchOutputSchema(
+        patchScope,
+        context.candidate,
+        patchTargetSchema,
+      );
+      ledger.transformCandidate = async (wire) => {
+        const applied = await applySemanticPatch(
+          context.candidate,
+          wire,
+          patchScope,
+          patchTargetSchema,
+        );
+        patchReceipt = applied.receipt;
+        return {
+          target_task: patchScope.target_task,
+          result: applied.result,
+          changes: applied.receipt.applied
+            .map((operation) => `${operation.operation}:${operation.path}`)
+            .slice(0, 30),
+        };
+      };
+      ledger.validateCandidateScope = async (candidate: any) => {
+        if (!patchReceipt) throw new ModelError("MODEL_IDENTITY_CHANGED");
+        patchReceipt.candidate_hash = await sha256(
+          canonicalPatchValue(candidate.result),
+        );
+      };
+    }
     if (writerModel) {
       const preflight = ledger.preflight;
       ledger.preflight = async (manifest, task) => {
@@ -684,6 +760,7 @@ async function runGuardedModel(o: Options): Promise<{
             value: {
               result,
               producer: producer ?? null,
+              ...(patchReceipt ? { patch_receipt: patchReceipt } : {}),
               local_validation: {
                 version: 1,
                 task,
@@ -736,7 +813,11 @@ async function runGuardedModel(o: Options): Promise<{
     // after this write never submits the same completed candidate again.
     const saved = await store.action("result_put", {
       key,
-      value: { result, producer: producer ?? null },
+      value: {
+        result,
+        producer: producer ?? null,
+        ...(patchReceipt ? { patch_receipt: patchReceipt } : {}),
+      },
     });
     await ledger
       .cleanup?.()
@@ -1425,6 +1506,7 @@ async function runGuardedModel(o: Options): Promise<{
         independentGrounding: true,
         scopePolicy: classificationScopePolicy(o.task, o.context),
         draftInputVersion: draftInputPolicyVersion(o.task, o.context),
+        sourceContext: o.context,
       });
       if (o.task !== "connection_probe") {
         const report = state.reportRef

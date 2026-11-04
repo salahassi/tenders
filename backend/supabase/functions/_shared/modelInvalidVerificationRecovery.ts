@@ -71,6 +71,7 @@ export async function recoverInvalidVerification(o: {
       o.requiredIds,
       {
         independentGrounding: true,
+        sourceContext: o.context,
         scopePolicy: classificationScopePolicy(
           o.task ?? "draft_section",
           o.context,

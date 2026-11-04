@@ -27,6 +27,7 @@ import {
   type Backend,
 } from "../../supabase/functions/_shared/backend";
 import { databaseError } from "../../supabase/functions/_shared/http";
+import { canonicalPatchValue } from "../../supabase/functions/_shared/modelSemanticPatch";
 
 import {
   expandBlueprint,
@@ -1175,12 +1176,15 @@ it.each(["running", "waiting"] as const)(
 );
 
 it.each([
-  [false, false],
-  [true, false],
-  [false, true],
+  [false, false, false],
+  [true, false, false],
+  [false, true, false],
+  [false, false, true],
+  [true, false, true],
+  [false, true, true],
 ])(
-  "runs the real graph with quote repair, crash=%s, rejects out-of-scope content=%s",
-  async (crash, scopeViolation) => {
+  "runs the real graph with quote repair, crash=%s, rejects out-of-scope content=%s, patch-wire=%s",
+  async (crash, scopeViolation, patchWire) => {
     const configured = await configure("draft_section", true);
     let job = configured.job;
     const environments = modelEnvironments((name) =>
@@ -1260,25 +1264,52 @@ it.each([
           expect(context.validation_instruction).toContain(
             "untrusted verifier hints",
           );
-          expect(context.quote_repair_scope).toMatchObject({
-            version: 1,
-            allowed_paths: ["$.evidence_refs[0].quote"],
-          });
-          result = {
-            target_task: "draft_section",
-            result: scopeViolation
-              ? {
-                  ...corrected,
-                  content_blocks: [
-                    {
-                      type: "paragraph",
-                      text: "Delivery is unconditionally guaranteed.",
-                    },
-                  ],
-                }
-              : corrected,
-            changes: ["Recopied the exact source quotation."],
-          };
+          if (patchWire) {
+            expect(context.quote_repair_scope).toBeUndefined();
+            const scope = context.repair_patch_scope;
+            expect(scope.paths.map((item: any) => item.path)).toEqual([
+              "$.evidence_refs[0].quote",
+            ]);
+            const path = scope.paths[0];
+            result = {
+              version: 1,
+              target_task: "draft_section",
+              base_candidate_hash: scope.candidate_hash,
+              scope_hash: scope.scope_hash,
+              operations: [
+                {
+                  operation: "replace",
+                  path: scopeViolation ? "$.content_blocks[0].text" : path.path,
+                  unit_id: path.unit_id,
+                  previous_hash: path.previous_hash,
+                  reason_ids: path.reason_ids,
+                  value: scopeViolation
+                    ? "Delivery is unconditionally guaranteed."
+                    : corrected.evidence_refs[0].quote,
+                },
+              ],
+            };
+          } else {
+            expect(context.quote_repair_scope).toMatchObject({
+              version: 1,
+              allowed_paths: ["$.evidence_refs[0].quote"],
+            });
+            result = {
+              target_task: "draft_section",
+              result: scopeViolation
+                ? {
+                    ...corrected,
+                    content_blocks: [
+                      {
+                        type: "paragraph",
+                        text: "Delivery is unconditionally guaranteed.",
+                      },
+                    ],
+                  }
+                : corrected,
+              changes: ["Recopied the exact source quotation."],
+            };
+          }
         } else {
           expect(task).toBe("verify_grounding");
           result = {
@@ -1318,7 +1349,7 @@ it.each([
       job,
       prefix: `step:${job.id}`,
       task: "draft_section" as const,
-      context: {},
+      context: patchWire ? { repair_contract_version: 1 } : {},
       evidence: [
         {
           id: "notice",
@@ -1386,6 +1417,18 @@ it.each([
     const store = new ModelGraphStore(backend, job, accepted!.threadId!);
     const original = await store.action("result_get", { key: "candidate-0" });
     expect(original.value.result).toEqual(invalid);
+    if (patchWire) {
+      const patched = await store.action("result_get", { key: "candidate-1" });
+      expect(patched.value.patch_receipt).toMatchObject({
+        base_candidate_hash: await sha256(
+          JSON.stringify(original.value.result),
+        ),
+        candidate_hash: await sha256(canonicalPatchValue(corrected)),
+        candidate_hash_kind: "canonical_json_v1",
+        applied: [{ path: "$.evidence_refs[0].quote", operation: "replace" }],
+      });
+      expect(requests[1].prompt.prompt_version).toContain("repair-patch-v1");
+    }
     expect(
       (await store.action("result_get", { key: "candidate-1" })).value.result
         .result,
