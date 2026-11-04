@@ -15,7 +15,9 @@ create table public.proposal_delivery_snapshots (
  unique nulls not distinct(workspace_id,proposal_id,plan_id,content_hash),
  foreign key(workspace_id,opportunity_id) references public.opportunities(workspace_id,id) deferrable initially immediate,
  foreign key(workspace_id,proposal_id) references public.proposals(workspace_id,id) deferrable initially immediate,
- foreign key(workspace_id,plan_id) references public.generation_plans(workspace_id,id) deferrable initially immediate,
+ -- plan_id is a publication-validated historical identifier. Generation
+ -- metadata has independent deletion/retention paths; preserving this pin must
+ -- neither block those paths nor null/cascade-delete immutable draft history.
  foreign key(workspace_id,base_version_id) references public.proposal_versions(workspace_id,id) deferrable initially immediate,
  foreign key(workspace_id,created_by) references public.workspace_actors(workspace_id,id) deferrable initially immediate,
  check(content_hash=encode(sha256(convert_to(payload::text,'UTF8')),'hex')),
@@ -280,10 +282,24 @@ begin
  return snapshot;
 end $$;
 
+-- Pin automatic projection only on new canonical requests. Refreshing an
+-- older frozen context preserves its original absence/version, so diagnostics,
+-- historical imports and old paid work do not silently acquire new semantics.
+alter function app_private.draft_generation_snapshot(uuid,uuid,uuid,uuid,jsonb) rename to draft_generation_snapshot_before_delivery;
+create function app_private.draft_generation_snapshot(w uuid,opp uuid,proposal uuid,package uuid,prior jsonb default null)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare result jsonb;
+begin
+ result:=app_private.draft_generation_snapshot_before_delivery(w,opp,proposal,package,prior);
+ if prior is null then return result||jsonb_build_object('delivery_projection_version',1);end if;
+ if prior ? 'delivery_projection_version' then return result||jsonb_build_object('delivery_projection_version',prior->'delivery_projection_version');end if;
+ return result-'delivery_projection_version';
+end $$;
+
 create function app_private.publish_initial_delivery() returns trigger
 language plpgsql security definer set search_path='' as $$
 begin
- if new.kind='proposal' and new.proposal_id is not null and not exists(select 1 from public.restore_sessions where workspace_id=new.workspace_id and state='committing') then
+ if new.kind='proposal' and new.frozen_context->>'delivery_projection_version'='1' and new.status in ('queued','running','blocked') and new.proposal_id is not null and not exists(select 1 from public.restore_sessions where workspace_id=new.workspace_id and state='committing') then
   perform app_private.publish_delivery_snapshot(new.proposal_id,new.id,new.created_by);
  end if;return new;
 end $$;
@@ -296,7 +312,7 @@ begin
  if new.task<>'draft_section' or new.status<>'completed' or old.status='completed'
   or exists(select 1 from public.restore_sessions where workspace_id=new.workspace_id and state='committing') then return new;end if;
  select * into p from public.generation_plans where workspace_id=new.workspace_id and id=new.plan_id;
- if p.kind='proposal' then perform app_private.publish_delivery_snapshot(p.proposal_id,p.id,p.created_by);end if;
+ if p.kind='proposal' and p.frozen_context->>'delivery_projection_version'='1' then perform app_private.publish_delivery_snapshot(p.proposal_id,p.id,p.created_by);end if;
  return new;
 end $$;
 create trigger publish_completed_delivery_unit after update of status on public.generation_steps
@@ -373,6 +389,7 @@ do $$ declare signature text;role_name text;begin
   'app_private.check_delivery_sources(uuid,jsonb)','app_private.check_delivery_materials(uuid,jsonb)','app_private.check_delivery_snapshot(public.proposal_delivery_snapshots,uuid)',
   'app_private.delivery_input(uuid,uuid)','app_private.publish_delivery_snapshot(uuid,uuid,uuid,text)',
   'app_private.publish_initial_delivery()','app_private.publish_completed_delivery_unit()',
+  'app_private.draft_generation_snapshot_before_delivery(uuid,uuid,uuid,uuid,jsonb)','app_private.draft_generation_snapshot(uuid,uuid,uuid,uuid,jsonb)',
   'app_private.app_command_before_delivery(text,jsonb,text)','app_private.backup_tables_before_delivery()',
   'app_private.backup_tables()','app_private.purge_scope_before_delivery(uuid,uuid)','app_private.purge_scope(uuid,uuid)',
   'public.delivery_context(uuid)','public.delivery_context_for_actor(uuid,uuid)'] loop

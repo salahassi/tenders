@@ -20,10 +20,24 @@ including unread attachment metadata, service-only actor context, RLS with
 metadata-only direct reads, immutable
 payload hashes, transactionally deduplicated publication and audit, idempotent
 command replay with current authorization, and backup/restore/purge registration.
+Historical plan identifiers remain immutable provenance, not live foreign keys
+to deletable generation metadata; canonical plan cleanup preserves the snapshot
+and its accepted-unit pins. The existing requested-processing deletion test and
+an accepted-unit retention regression cover this lifecycle boundary. Automatic
+publication is pinned by `delivery_projection_version:1` on new canonical
+freezes, preserving absence/version during old-context refresh. It is limited
+to active pinned plan inserts; historical/unversioned or canceled/failed/completed
+inserts cannot move the pointer, while explicit completed-plan rescue remains
+available. Terminal insertion and the canonical verifier-recheck regression are
+also covered. The focused integrated regressions pass: **100 backend tests in
+5 files**, including requested-processing cleanup and analysis-verifier recheck,
+and **19 Python operations tests** across graph diagnostic, recovery and successor
+suites. Their historical fixtures remain unmodified; current pinned bad-source
+publication still fails closed.
 No model-processing consent is treated as blanket local-download authorization.
 The existing implementation-plan `delivery.prepare` command is preserved.
 
-Local evidence: **20 new delivery database/contract tests** pass using the full
+Local evidence: **26 new delivery database/contract tests** pass using the full
 migration chain in PGlite, including early snapshot versus running plan base,
 replay/revision conflict, source and membership revocation, exact accepted-unit
 provenance, metadata permissions, and confirmed purge. **43 generation tests**,

@@ -213,6 +213,7 @@ it("publishes before model work without making its own active generation base st
   ]);
   const s = await context(prop.active_delivery_snapshot_id);
   expect(s.plan_id).toBe(p.id);
+  expect(p.frozen_context.delivery_projection_version).toBe(1);
   expect(s.base_version_id).toBeNull();
   expect(prop.active_version_id).toBeNull();
   expect(p.base_version_id).toBeNull();
@@ -597,4 +598,114 @@ it("checks archived unread attachment metadata even without an extraction hash",
     unread.id,
   ]);
   await expect(context(s.id)).rejects.toThrow("DELIVERY_SOURCE_UNAVAILABLE");
+});
+
+it("retains immutable accepted-unit provenance after generation metadata deletion", async () => {
+  const o = await opportunity(),
+    p = await plan(o),
+    accepted = await section(p, true, 1);
+  const s = await row(
+    "select * from public.proposal_delivery_snapshots where plan_id=$1 order by ordinal desc limit 1",
+    [p.id],
+  );
+  await f.db.query("delete from public.generation_steps where plan_id=$1", [
+    p.id,
+  ]);
+  await f.db.query("delete from public.generation_plans where id=$1", [p.id]);
+  const restored = await context(s.id);
+  expect(
+    await row("select * from public.proposal_delivery_snapshots where id=$1", [
+      s.id,
+    ]),
+  ).toEqual(s);
+  expect(restored.plan_id).toBe(p.id);
+  expect(
+    restored.payload.sections.find((x: any) => x.kind === "accepted_unit")
+      .provenance,
+  ).toMatchObject({
+    original_unit: accepted.output,
+    graph_thread: accepted.thread,
+    step_id: accepted.step.id,
+  });
+  expect(
+    await row(
+      "select active_delivery_snapshot_id from public.proposals where id=$1",
+      [p.proposal_id],
+    ),
+  ).toEqual({ active_delivery_snapshot_id: s.id });
+});
+
+it.each(["canceled", "failed", "completed"])(
+  "does not publish or move the delivery pointer for an inserted %s historical plan",
+  async (status) => {
+    const o = await opportunity(),
+      p = await plan(o);
+    const before = await row(
+      "select active_delivery_snapshot_id,delivery_revision from public.proposals where id=$1",
+      [p.proposal_id],
+    );
+    await f.db.query(
+      "insert into public.generation_plans(workspace_id,opportunity_id,proposal_id,kind,stage,status,evidence_revision,input_hash,frozen_context,created_by,created_at) select workspace_id,opportunity_id,proposal_id,kind,stage,$2,evidence_revision,input_hash,frozen_context,created_by,now()+interval '1 second' from public.generation_plans where id=$1",
+      [p.id, status],
+    );
+    expect(
+      await row(
+        "select active_delivery_snapshot_id,delivery_revision from public.proposals where id=$1",
+        [p.proposal_id],
+      ),
+    ).toEqual(before);
+    expect(
+      await row(
+        "select count(*)::int n from public.proposal_delivery_snapshots where proposal_id=$1",
+        [p.proposal_id],
+      ),
+    ).toEqual({ n: 1 });
+  },
+);
+
+it("preserves an old frozen projection pin absence and leaves unversioned historical active inserts untouched", async () => {
+  const o = await opportunity(),
+    p = await plan(o);
+  const current = await row(
+    "select app_private.draft_generation_snapshot(workspace_id,opportunity_id,proposal_id,package_id,frozen_context-'delivery_projection_version') value from public.generation_plans where id=$1",
+    [p.id],
+  );
+  expect(current.value).not.toHaveProperty("delivery_projection_version");
+  await f.db.query(
+    "update public.generation_plans set status='canceled' where id=$1",
+    [p.id],
+  );
+  const historical = await row(
+    "insert into public.generation_plans(workspace_id,opportunity_id,proposal_id,kind,stage,status,evidence_revision,input_hash,frozen_context,created_by) select workspace_id,opportunity_id,proposal_id,kind,stage,'queued',evidence_revision,input_hash,'{}',created_by from public.generation_plans where id=$1 returning id",
+    [p.id],
+  );
+  expect(
+    await row(
+      "select count(*)::int n from public.proposal_delivery_snapshots where plan_id=$1",
+      [historical.id],
+    ),
+  ).toEqual({ n: 0 });
+  expect(
+    await row(
+      "select count(*)::int n from public.proposal_delivery_snapshots where plan_id=$1",
+      [p.id],
+    ),
+  ).toEqual({ n: 1 });
+});
+
+it("still rejects a newly pinned projection with stale source hashes", async () => {
+  const o = await opportunity(),
+    p = await plan(o);
+  await f.db.query(
+    "update public.generation_plans set status='canceled' where id=$1",
+    [p.id],
+  );
+  await expect(
+    attempt(() =>
+      f.db.query(
+        "insert into public.generation_plans(workspace_id,opportunity_id,proposal_id,kind,stage,status,evidence_revision,input_hash,frozen_context,created_by) select workspace_id,opportunity_id,proposal_id,kind,stage,'queued',evidence_revision,input_hash,jsonb_set(frozen_context,'{blocks,0,reference,content_hash}',to_jsonb(repeat('f',64))),created_by from public.generation_plans where id=$1",
+        [p.id],
+      ),
+    ),
+  ).rejects.toThrow("STALE_INPUT");
 });

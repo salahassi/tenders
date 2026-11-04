@@ -55,6 +55,16 @@ it("restores original-inclusive business history into a clean project with no us
     ]);
     const h = commercialHelpers(source),
       s = await h.setup();
+    const deliveryOpportunity = (
+      await source.db.query<any>(
+        "select o.* from public.opportunities o join public.proposals p on p.opportunity_id=o.id where p.id=$1",
+        [s.proposal],
+      )
+    ).rows[0];
+    await source.command("delivery.snapshot.prepare", {
+      opportunity_id: deliveryOpportunity.id,
+      expected_revision: deliveryOpportunity.revision,
+    });
     const originalDelivery = (
       await source.db.query<any>(
         "select * from public.proposal_delivery_snapshots where proposal_id=$1",
