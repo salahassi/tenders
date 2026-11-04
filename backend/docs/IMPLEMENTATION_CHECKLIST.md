@@ -8530,3 +8530,10 @@ from this guard commit. No PG/PGlite suite was run after this gateway-only chang
 during the reserved native qualification window. Final composed operations/SQL
 checks, actual checked rollout, physical retirement and hosted acceptance remain
 separate gates; unit fixtures do not establish the binary result.
+
+The reviewed gateway baseline is retained in
+`backend/scripts/ops/storage-retirement/gateway-before.conf`, SHA-256
+`4907ecf81e2fa1e97754202906873ccd7c34e3dcbe26dd1e60cf4e276c639d23`.
+This is the expected pre-change configuration, not a claim that the recent
+inventory captured live ConfigMap contents. The release must compare actual
+ConfigMap bytes and workload identity before its exact guarded update.
