@@ -2,6 +2,15 @@
 
 Date: October 20, 2026. Owner-requested implementation plan.
 Status: **implementation in progress; see [checklist](IMPLEMENTATION_CHECKLIST.md) and [runtime runbook](MODEL_EXECUTION_RUNBOOK.md) for verified release status. Hosted acceptance remains separate.**
+
+November 4 continuation: the [proposal-delivery remediation plan](RELIABLE_PROPOSAL_DELIVERY_PLAN.md)
+and [detailed acceptance specification](RELIABLE_PROPOSAL_ACCEPTANCE.md) address
+all engineering due-diligence findings, including delivery before model
+completion, typed evidence and scoped repair, durable Word export and historical
+recovery. They extend this plan and retain its MAIN/E2E gates and later Owner
+policies. The new work remains unimplemented until its separate evidence gates
+are met; documentation publication does not establish runtime acceptance.
+
 Baseline: application source `bd0cf5ed2b5bd3686c4b813d78f3ee00f14e736e`,
 documentation source `56d2f77e77ddb3bcef819fff2ff318af6a7008bf`.
 

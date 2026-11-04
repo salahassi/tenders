@@ -1,5 +1,49 @@
 # Implementation status and continuation plan
 
+## November 4 — complete proposal-delivery remediation and acceptance plan
+
+The Owner requested a complete, evidence-based repair and testing plan for the
+engineering due-diligence findings, saved in GitHub. The
+[remediation plan](RELIABLE_PROPOSAL_DELIVERY_PLAN.md) maps **F01–F11** and their
+subfindings to **W00–W11**, dependencies, responsible roles, measurement gates
+and closure evidence. The [acceptance specification](RELIABLE_PROPOSAL_ACCEPTANCE.md)
+defines **T01–T20** and **42 detailed cases** for faults, semantics, concurrency
+and artifacts, including typed verification for all 13 registered model tasks.
+Stages 2–7 are affected, including shared routing and worker regression for
+collection; adjacent-workflow regression remains required.
+
+Implementation status: **documentation only**. No new application contracts,
+migrations, renderer, OCR pipeline, recovery transition or acceptance tests are
+implemented by this change. All remediation packages and new acceptance cases
+remain open. A downloadable file, an accepted model response and a substantively
+complete proposal are separate outcomes. Valid RFPs cannot satisfy completion
+by receiving a blank template; operational failure cannot be labeled invalid
+input. The plan includes a proven completion route during total model outage
+and explicitly reconciles narrow unknown-usage recovery blockers with the
+Owner's October 19 automatic-routing policy without restoring daily caps.
+
+Local validation on source `bd409896aa356cb6a5d9f73aee7ef202152f1b69`
+(tree `51a6cac929648a93369a3314a8d0efce39ee1a1b`): both lockfile installs,
+typechecks and builds passed; **1,841 backend tests / 110 files** and
+**269 frontend tests / 40 files** passed, totaling **2,110 existing tests**.
+These establish a local baseline only, not proof of the proposed corrections.
+Independent coverage and model/design reviews found no remaining material plan
+omissions after correcting early-snapshot self-staleness, legacy acceptance
+provenance and pre-run semantic qualification criteria. Relative document links,
+case identifiers and all 35 explicitly runnable test paths were checked.
+Warnings remain: deprecated `whatwg-encoding`, jsdom performance advisory and
+a frontend bundle above 500 kB. The operations Python suites were not rerun for
+this documentation-only change; the plan requires appropriate operations and
+deployment checks when those implementations change.
+
+Deployment and hosted acceptance: **no application deployment, production
+mutation or live provider evaluation in this planning change**. GitHub
+publication records the plan, not completion of any runtime remediation.
+Fresh production inventory, each failing regression, implementation evidence,
+isolated fault tests, compatible rollout and actual upload-to-Word acceptance
+are required by the linked plan before closure. Private historical evidence
+and customer material remain outside this repository.
+
 ## November 3 — integrated AI reliability verification
 
 The Owner requests comprehensive model and prompt testing after the October 31

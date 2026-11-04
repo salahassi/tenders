@@ -1,5 +1,32 @@
 # Decisions
 
+## 2026-11-04: Complete proposal-delivery remediation and test plan
+
+The Owner requires engineering due diligence across core workflows, model
+execution, correction and proposal delivery, followed by a complete repair and
+test plan stored in GitHub. Every identified issue and subfinding must have a
+specific implementation, test oracle and closure receipt; neither a merged
+change nor a successful model response alone closes a finding.
+
+For valid RFPs, the result must be a useful source-specific proposal. Missing
+company facts or prices remain explicit yellow placeholders. A blank template
+with an accurate insufficient-information notice is the fallback for genuinely
+empty or unusable input without other usable scope context. Model, OCR,
+renderer or infrastructure failure must not be misrepresented as an invalid
+RFP. Preserve readable content and accepted progress while recovering; delivery,
+substantive completion, approval and usage accounting remain separate states.
+Completion through total model outage needs an actually proven completion
+capability, not a promise inferred from retries or template availability.
+
+The [remediation plan](RELIABLE_PROPOSAL_DELIVERY_PLAN.md) and
+[acceptance specification](RELIABLE_PROPOSAL_ACCEPTANCE.md) define the requested
+work. Their proposed architecture and measurement gates are not statements
+that implementation, deployment or business acceptance already succeeded.
+The October 19 automatic-routing policy and October 31 flexible-input and
+requested-processing decisions remain authoritative. Preserve permissions,
+immutable request history, truthful unknown usage, bounded correction and
+duplicate-request safeguards while correcting conflicting recovery paths.
+
 ## 2026-10-31: Reference files do not block proposal draft creation
 
 The Owner requires drafting to continue for every accepted uploaded reference
