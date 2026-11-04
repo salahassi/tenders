@@ -137,6 +137,20 @@ language plpgsql security definer set search_path='' as $$begin raise exception 
 create or replace function public.app_batch(commands jsonb,idempotency_key text) returns jsonb
 language sql security invoker set search_path='' as $$select app_private.apply_batch(commands,idempotency_key)$$;
 
+-- A function replacement does not cancel an already-entered old PL/pgSQL body.
+-- Under the release's early ACCESS EXCLUSIVE table lock, install an INSERT-only
+-- backstop: a cached old invocation's final receipt write aborts its entire
+-- transaction. Existing authoritative receipts, purge UPDATEs and retention
+-- DELETEs are untouched. Admission fencing/drain is still a release prerequisite.
+create function app_private.reject_legacy_batch_insert() returns trigger
+language plpgsql security definer set search_path='' as $$
+begin
+ if new.method='BATCH' and new.route='commands' then raise exception 'TRANSPORT_UPGRADE_REQUIRED';end if;
+ return new;
+end $$;
+create trigger reject_legacy_batch_insert before insert on app_private.idempotency_records
+for each row when(new.method='BATCH' and new.route='commands') execute function app_private.reject_legacy_batch_insert();
+
 -- Preserve the existing purge predicate: canonical UUID text occurring in a
 -- result. Inspect at most one chunk plus35 bytes of its immediate successor,
 -- never reconstruct a result/aggregate or invalidate unrelated receipts.
@@ -177,7 +191,7 @@ do $$declare t text;r text;signature text;begin
    if exists(select 1 from pg_roles where rolname=r) then execute format('revoke all on app_private.%I from %I',t,r);end if;
   end loop;
  end loop;
- foreach signature in array array['app_private.command_batch_access(uuid)','app_private.invalidate_command_batches_for_purge(uuid,uuid[])',
+ foreach signature in array array['app_private.command_batch_access(uuid)','app_private.invalidate_command_batches_for_purge(uuid,uuid[])','app_private.reject_legacy_batch_insert()',
   'public.app_batch_prepare(jsonb,text)','public.app_batch_result_chunk(uuid,integer,integer)'] loop
   execute 'revoke all on function '||signature||' from public';
   foreach r in array array['anon','authenticated','service_role','tdp_app_anon','tdp_app_authenticated','tdp_app_service'] loop

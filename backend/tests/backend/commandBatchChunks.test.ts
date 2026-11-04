@@ -149,6 +149,16 @@ it("rejects historical replay before remutation and keeps the original aggregate
   ).toBe(0);
 });
 
+it("rejects late legacy inserts but preserves historical purge UPDATE and retention DELETE", async () => {
+  await f.db.exec("savepoint late_legacy_insert");
+  await expect(f.db.query("insert into app_private.idempotency_records(workspace_id,actor_id,method,route,key,body_hash,result) values($1,$2,'BATCH','commands','late-legacy',repeat('a',64),'[]')", [f.w, f.owner])).rejects.toThrow("TRANSPORT_UPGRADE_REQUIRED");
+  await f.db.exec("rollback to savepoint late_legacy_insert;release savepoint late_legacy_insert");
+  await f.db.query("update app_private.idempotency_records set result='{\"purged\":true}' where method='BATCH' and key=$1", [legacyKey]);
+  expect((await sql("select result from app_private.idempotency_records where method='BATCH' and key=$1", [legacyKey]))[0].result).toEqual({ purged: true });
+  await f.db.query("delete from app_private.idempotency_records where method='BATCH' and key=$1", [legacyKey]);
+  expect(await sql("select key from app_private.idempotency_records where method='BATCH' and key=$1", [legacyKey])).toEqual([]);
+});
+
 it("returns every ordered result, preserves bytes and replays without repeating writes or audit", async () => {
   const commands = [
     {

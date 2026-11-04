@@ -9673,3 +9673,16 @@ approved legacy INSERT-backstop amendment, which needs separate concurrency
 proof and final source binding. Admission fencing/drain, a locked zero legacy
 census, final API memory qualification, release capabilities and hosted
 acceptance remain open. No model, customer-data or production operation occurred.
+
+### November 4 — fence late legacy BATCH inserts atomically
+
+The unreleased bounded-batch migration now installs an INSERT-only trigger that
+raises `TRANSPORT_UPGRADE_REQUIRED` for the old BATCH/commands receipt. A cached
+old function cannot commit its earlier business writes after that final insert
+is rejected. Existing historical rows, purge UPDATEs and retention DELETEs are
+unchanged. All 17 scoped functional tests pass (2.84 seconds); the
+[receipt](evidence/command-batch-insert-fence-20261104.json) binds exact sources.
+The already-written transaction and pre-table cached-function races still need
+actual PostgreSQL proof. The release's early exclusive lock, locked zero census,
+gateway admission fence, old-transaction drain and final capacity gates remain
+separate prerequisites. No hosted action or deployment occurred.
