@@ -77,6 +77,23 @@ The release coordinator may use the reviewed integration ref containing this
 change. Hosted current-state evidence remains pending that actual run; W09/W11
 capacity, measured latency, isolated cloud restore and rollout gates remain open.
 
+## November 4 — W08 phase 2 consistency and targeted evidence core
+
+Core implementation in progress: a versioned proposal consistency report binds
+actual response excerpts, method, deliverable and acceptance evidence to each
+requirement; source semantics and current authorized human review remain separate
+from deterministic text identity. Explicit shared quantity/currency/date/decision
+bindings are compared using Decimal strings; unknown is distinct from zero.
+Source restatement and repeated headings/forms cannot establish completion.
+Targeted company follow-up scans omitted frozen verified sources, retains exact
+paragraph coordinates and distant detected qualifiers, and exposes unresolved
+coverage. Partial sources are discovery context and cannot establish company claims.
+
+Local core evidence: 29 focused tests pass; backend typecheck passes. Actual
+generation/approval integration, authorization/currentness integration tests,
+full suites and deployment are not yet complete in this core commit. Bilingual
+retrieval aliases are bounded hints, not semantic authority or an exhaustive
+recall guarantee; unbounded source paragraphs retain an explicit capacity gap.
 
 ## November 4 — integrated durable draft rendering and independent review
 
