@@ -72,6 +72,7 @@ it.each(
     const files = unzipSync(bytes),
       footer = strFromU8(files["word/footer1.xml"]),
       document = strFromU8(files["word/document.xml"]);
+    expect(footer).not.toMatch(/<\/?undefined\b/);
     const fieldRuns = [...footer.matchAll(/<w:r>([\s\S]*?)<\/w:r>/g)]
       .map((match) => match[1])
       .filter((run) => /<w:(?:fldChar|instrText)\b/.test(run));

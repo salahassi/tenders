@@ -16,6 +16,11 @@ import {
   BorderStyle,
   VerticalAlign,
 } from "docx";
+import {
+  nativeTableXml,
+  packStreamedTables,
+  type StreamedTable,
+} from "./docxTableStream.ts";
 export type ExportBlock =
   | { type: "paragraph" | "bullet" | "heading" | "title"; text: string }
   | { type: "placeholder"; text: string; gap_id: string }
@@ -102,9 +107,38 @@ export async function renderDocx(
       widowControl: true,
     });
   const children: (Paragraph | Table | TableOfContents)[] = [];
+  const tables: StreamedTable[] = [];
+  const preparedParagraphs: Array<{ build(): Paragraph; xml?: string }> = [];
+  let currentGroup: Array<() => Iterable<string>> | undefined;
+  const tableNonce = crypto.randomUUID();
+  function appendStream(xml: () => Iterable<string>) {
+    if (!currentGroup) {
+      const group: Array<() => Iterable<string>> = [];
+      const marker = `TENDERDESK_TABLE_${tableNonce}_${tables.length}`;
+      tables.push({
+        marker,
+        *xml() {
+          for (const block of group) yield* block();
+        },
+      });
+      children.push(new Paragraph({ children: [new TextRun(marker)] }));
+      currentGroup = group;
+    }
+    currentGroup.push(xml);
+  }
+  function appendParagraph(build: () => Paragraph) {
+    const item = { build, xml: undefined as string | undefined };
+    preparedParagraphs.push(item);
+    appendStream(function* () {
+      if (item.xml === undefined)
+        throw Error("Native paragraph was not prepared");
+      yield item.xml;
+    });
+  }
   let afterToc = false;
   for (const [blockIndex, b] of model.blocks.entries()) {
     if (b.type === "toc") {
+      currentGroup = undefined;
       children.push(new Paragraph({ children: [], pageBreakBefore: true }));
       children.push(
         new Paragraph({
@@ -124,11 +158,20 @@ export async function renderDocx(
       continue;
     }
     if (afterToc) {
+      currentGroup = undefined;
       children.push(new Paragraph({ children: [], pageBreakBefore: true }));
       afterToc = false;
     }
     if (b.type === "table") {
-      const weights = b.headers.map((header, i) =>
+      const columnCount = Math.max(
+        b.headers.length,
+        ...b.rows.map((row) => row.length),
+      );
+      const headers = Array.from(
+        { length: columnCount },
+        (_, index) => b.headers[index] || "",
+      );
+      const weights = headers.map((header, i) =>
         Math.min(
           45,
           Math.max(
@@ -144,63 +187,91 @@ export async function renderDocx(
         widths = weights.map((x) => Math.floor((9360 * x) / sum));
       widths[widths.length - 1] += 9360 - widths.reduce((a, b) => a + b, 0);
       const border = { style: BorderStyle.SINGLE, size: 4, color: "D9D9D9" };
-      children.push(
-        new Table({
-          width: { size: 9360, type: WidthType.DXA },
-          layout: TableLayoutType.FIXED,
-          visuallyRightToLeft: rtl,
-          columnWidths: widths,
-          borders: {
-            top: border,
-            bottom: border,
-            left: border,
-            right: border,
-            insideHorizontal: border,
-            insideVertical: border,
-          },
-          rows: [b.headers, ...b.rows].map(
-            (row, index) =>
-              new TableRow({
-                tableHeader: index === 0,
-                cantSplit: true,
-                children: b.headers.map(
-                  (_, i) =>
-                    new TableCell({
-                      width: { size: widths[i], type: WidthType.DXA },
-                      verticalAlign: VerticalAlign.CENTER,
-                      margins: { top: 100, bottom: 100, left: 100, right: 100 },
-                      shading: index === 0 ? { fill: "DCE8F2" } : undefined,
-                      children: [
-                        new Paragraph({
-                          bidirectional: rtl,
-                          spacing: { after: 60, line: rtl ? 340 : 280 },
-                          children: runs(row[i] || "", index === 0),
-                          widowControl: true,
-                          keepNext:
-                            b.headers.length === 2 &&
-                            b.rows.length <= 7 &&
-                            index < b.rows.length,
-                        }),
-                      ],
-                    }),
-                ),
+      const tableOptions = {
+        width: { size: 9360, type: WidthType.DXA },
+        layout: TableLayoutType.FIXED,
+        visuallyRightToLeft: rtl,
+        columnWidths: widths,
+        borders: {
+          top: border,
+          bottom: border,
+          left: border,
+          right: border,
+          insideHorizontal: border,
+          insideVertical: border,
+        },
+      };
+      const buildRow = (row: string[], index: number) =>
+        new TableRow({
+          tableHeader: index === 0,
+          cantSplit: true,
+          children: headers.map(
+            (_, i) =>
+              new TableCell({
+                width: { size: widths[i], type: WidthType.DXA },
+                verticalAlign: VerticalAlign.CENTER,
+                margins: { top: 100, bottom: 100, left: 100, right: 100 },
+                shading: index === 0 ? { fill: "DCE8F2" } : undefined,
+                children: [
+                  new Paragraph({
+                    bidirectional: rtl,
+                    spacing: { after: 60, line: rtl ? 340 : 280 },
+                    children: runs(row[i] || "", index === 0),
+                    widowControl: true,
+                    keepNext:
+                      headers.length === 2 &&
+                      b.rows.length <= 7 &&
+                      index < b.rows.length,
+                  }),
+                ],
               }),
           ),
-        }),
-      );
-      children.push(para(""));
+        });
+      appendStream(function* () {
+        const context = { file: doc, viewWrapper: doc.Document, stack: [] };
+        const empty = nativeTableXml(
+          new Table({ ...tableOptions, rows: [] }).prepForXml(context)!,
+        );
+        if (!empty.endsWith("</w:tbl>"))
+          throw Error("Native table template is invalid");
+        yield empty.slice(0, -8);
+        yield nativeTableXml(buildRow(headers, 0).prepForXml(context)!);
+        let previousKey: string | undefined,
+          previousXml = "";
+        for (let index = 0; index < b.rows.length; index++) {
+          // Dense sparse tables repeat the same native row. Reuse exactly its
+          // XML, still emitting every row/cell; keep-next is the only data-row
+          // property that depends on its position in this renderer.
+          const key = JSON.stringify([
+            b.rows[index],
+            headers.length === 2 &&
+              b.rows.length <= 7 &&
+              index + 1 < b.rows.length,
+          ]);
+          if (key !== previousKey) {
+            previousXml = nativeTableXml(
+              buildRow(b.rows[index], index + 1).prepForXml(context)!,
+            );
+            previousKey = key;
+          }
+          yield previousXml;
+        }
+        yield "</w:tbl>";
+      });
+      appendParagraph(() => para(""));
     } else if (b.type === "bullet")
-      children.push(
-        new Paragraph({
-          children: runs(b.text),
-          bullet: { level: 0 },
-          bidirectional: rtl,
-          spacing: { after: 120 },
-          widowControl: true,
-        }),
+      appendParagraph(
+        () =>
+          new Paragraph({
+            children: runs(b.text),
+            bullet: { level: 0 },
+            bidirectional: rtl,
+            spacing: { after: 120 },
+            widowControl: true,
+          }),
       );
-    else
-      children.push(
+    else {
+      const build = () =>
         para(
           b.text,
           b.type === "heading"
@@ -210,10 +281,18 @@ export async function renderDocx(
               : undefined,
           model.blocks[blockIndex + 1]?.type === "table",
           b.type === "placeholder",
-        ),
-      );
+        );
+      if (b.type === "heading" || b.type === "title") {
+        currentGroup = undefined;
+        children.push(build());
+      } else appendParagraph(build);
+    }
   }
   const title = model.blocks.find((b) => b.type === "title");
+  const pageInstruction = new ImportedXmlComponent("w:instrText", {
+    "xml:space": "preserve",
+  });
+  pageInstruction.push("PAGE");
   const doc = new Document({
     creator: "Tenderdesk",
     lastModifiedBy: "Tenderdesk",
@@ -292,16 +371,20 @@ export async function renderDocx(
                   // office importers inherit the last body placeholder's
                   // formatting for the calculated PAGE result.
                   ...[
-                    '<w:fldChar w:fldCharType="begin"/>',
-                    '<w:instrText xml:space="preserve">PAGE</w:instrText>',
-                    '<w:fldChar w:fldCharType="separate"/>',
-                    '<w:fldChar w:fldCharType="end"/>',
+                    new ImportedXmlComponent("w:fldChar", {
+                      "w:fldCharType": "begin",
+                    }),
+                    pageInstruction,
+                    new ImportedXmlComponent("w:fldChar", {
+                      "w:fldCharType": "separate",
+                    }),
+                    new ImportedXmlComponent("w:fldChar", {
+                      "w:fldCharType": "end",
+                    }),
                   ].map(
-                    (fieldXml) =>
+                    (field) =>
                       new TextRun({
-                        children: [
-                          ImportedXmlComponent.fromXmlString(fieldXml),
-                        ],
+                        children: [field],
                         font,
                         size: 20,
                         rightToLeft: false,
@@ -317,5 +400,13 @@ export async function renderDocx(
       },
     ],
   });
-  return Packer.toBlob(doc);
+  // Native bullet numbering must be registered before the skeleton's numbering
+  // part is packed. Retain compact paragraph XML, never all paragraph objects.
+  for (const paragraph of preparedParagraphs)
+    paragraph.xml = nativeTableXml(
+      paragraph
+        .build()
+        .prepForXml({ file: doc, viewWrapper: doc.Document, stack: [] })!,
+    );
+  return packStreamedTables(await Packer.toBlob(doc), tables);
 }

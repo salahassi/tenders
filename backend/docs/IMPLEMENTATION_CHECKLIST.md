@@ -7585,6 +7585,52 @@ The ordinary suite passes26 cases; related artifact/round-robin/wake/fairness su
 pass188 cases, and backend typecheck passes. These are local synthetic receipts,
 with no production, provider or email calls.
 
+## November 4 — bounded native document construction and renderer admission
+
+Actual authenticated authoring inputs exposed V8 heap exhaustion at 128/256 MiB
+for 10,000 cells, and at 128 MiB for 10,000 short paragraphs. The renderer now
+keeps native headings, TOC, styles, fonts and footer in a small skeleton, prepares
+ordinary paragraph/bullet XML with native numbering, and streams native table
+rows into ZIP compression. Repeated rows reuse their exact XML while still
+emitting every row and cell. Ragged rows now retain values beyond the supplied
+header count, with empty padding only; the prior renderer lost those values and
+the canonical content verifier correctly refused the file.
+
+Six frozen rectangular `word/document.xml` goldens remain byte-identical to
+renderer `90e8090`. Six paragraph/bullet goldens normalize only docx's global
+bookmark allocation IDs and independently check TOC, bookmark and numbering
+references. Ragged content, repeated-row keep-next, escaping, missing/duplicate
+slots, PAGE fields and admission/cancellation tests pass **34/34** after the final
+footer correction; the preceding combined pipeline/worker selection passed
+46 cases. The final footer uses explicit native XML components: independent
+review found that the earlier `fromXmlString` API inserted an invalid `undefined`
+wrapper despite LibreOffice's visually successful conversion. New tests reject
+that wrapper. Earlier visual receipts remain historical, and final visual QA
+must bind this corrected source.
+
+The process admits one renderer at a time, includes FIFO waiting in its existing
+30-second attempt deadline, removes expired/canceled waiters before spawn, and
+kills/reaps active children on cancellation while preserving the server's typed
+request/lease reason. This is process protection; the separate database renderer
+lane keeps ordinary queued jobs unclaimed without consuming attempts. The child
+heap remains 128 MiB and no source/input/output cap has been reduced.
+
+Measured offline native evidence includes 329,000 cells and 1,787,000 normalized
+sparse cell positions. Exact row reuse reduced the latter from a 30-second
+render timeout to 10.74 seconds; combined rendering and the staged asynchronous
+verifier then completed in 49.35 seconds under a 640 MiB/one-CPU, network-disabled
+container with the full application import graph loaded. These measurements
+precede the final footer and later verifier/deadline changes; final exact-source
+native qualification, the stronger minimal sparse fixture, storage readback and
+request-wide/hosted acceptance remain separate pending evidence.
+
+The original specification still requires a live TOC plus update-on-open and
+instructs users to update all fields/the entire TOC in Word and save before
+submission. Stable LibreOffice 7.4.7.2 exposes zero document indexes when importing
+the original native fixture; plain conversion preserves empty page-reference
+caches. No refreshed-cache or Microsoft Word desktop qualification is claimed,
+and no estimated page number or production office conversion stage was added.
+
 
 ### 2026-11-04 — G10 density and uneven-column regression follow-up
 
