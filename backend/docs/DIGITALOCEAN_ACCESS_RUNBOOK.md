@@ -213,3 +213,12 @@ and are not relabeled as purged. The census describes the namespace at observati
 time; it does not alter, normalize, expire or replay any record. Older inventory
 receipts and the frozen release baseline remain unchanged. A reviewed fresh
 Actions inventory supplies actual exposure; synthetic tests do not establish it.
+
+The first actual legacy census passed in
+[run 41919585078](https://github.com/salahassi/tenders/actions/runs/41919585078),
+at `e0ce84d2cb770fd09d5192a398833b88f0c2628b`, with original-CA verification and
+both cleanup stages. Its
+[receipt](evidence/digitalocean-legacy-batch-20261104-41919585078.json) reports
+zero total/active/expired BATCH/commands receipts at observation. A release must
+still fence/drain legacy callers and recheck under locks; this read-only result
+does not establish future absence or replace the frozen release baseline.

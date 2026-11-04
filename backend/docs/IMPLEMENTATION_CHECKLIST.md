@@ -9598,3 +9598,22 @@ Acceptance of the same large artifact through the corrected handler/native
 image is still pending its separate scheduled resource test. Neither the
 observed old rejection nor small positive controls qualify native peak memory.
 No provider/production calls, deployment or resource-policy increase occurred.
+
+### November 4 — actual legacy batch exposure is zero at observation
+
+Read-only [run 41919585078](https://github.com/salahassi/tenders/actions/runs/41919585078)
+at `e0ce84d2cb770fd09d5192a398833b88f0c2628b` passed original-CA/hostname
+verification, the inventory guards and both temporary-client/credential cleanup
+stages. At 21:49:50 UTC, the authoritative BATCH/commands namespace contained
+zero total, active and expired receipts. No result payload was expanded, copied
+or exposed. The [receipt](evidence/digitalocean-legacy-batch-20261104-41919585078.json)
+retains the exact metadata census and observed workload configuration. Bootstrap,
+restore and model modes were skipped; production business mutations were zero.
+
+This closes uncertainty about historical batch exposure only at that observation.
+Release still must fence old API/direct-RPC admission, settle in-flight legacy
+transactions and recheck zero under the migration's locking protocol. Any new
+legacy receipt must stop that cutover before effects; this observation must not
+be treated as a durable zero-state guarantee or permission to discard history.
+The existing typed legacy gate remains, and the original release baseline is
+unchanged. No application rollout or hosted proposal acceptance occurred.
