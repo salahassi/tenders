@@ -1,5 +1,29 @@
 # Implementation status and continuation plan
 
+## November 4 — independent delivery API and UI regression evidence (W03/W10)
+
+Test-only coverage exercises the actual download HTTP handler with a rendered
+DOCX and real placeholder, byte-size and hash validation. Six API tests cover
+JWT-derived actors despite supplied actor fields, membership/source revocation
+after the storage read with no document bytes returned, unready and changed-file
+rejection, and package gap totals including policy/volume omissions without
+returning source content or storage keys.
+
+Fourteen new frontend tests cover preparing/ready/blocked states, the observed
+retry revision, stale package/save/download/retry responses after navigation,
+insufficient-input wording, automatic delivery-pointer successors, poll cleanup,
+whole-package cancellation, authenticated recovery paths and AbortSignal
+transport. Together with eight existing pending-proposal tests, the focused
+frontend run passes 22 tests. These tests use synthetic fixtures and controlled
+service boundaries; they do not prove live storage/RLS, visual Word acceptance,
+provider completion or substantive proposal completeness. The API tests exercise
+real application routing and DOCX validation with mocked backend authorization
+responses; migrated-database authorization evidence is recorded separately.
+
+Local typecheck/build pass in both packages against the integrated delivery
+source copies. Full integrated suite/deployment evidence remains the owning
+integration change's gate; no production or provider calls were made here.
+
 ## November 4 — early durable delivery foundation (W01/W03)
 
 Stages 3–7: implemented an immutable `proposal_delivery_snapshots` projection
