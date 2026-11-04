@@ -28,6 +28,44 @@ no broad package or frontend rerun was requested for this test-only change.
 Deployment, hosted/provider-specific recovery, the coordinator's final combined
 suite and other workstreams' semantic/artifact acceptance remain separate gates.
 No external model, storage, payment or production operation ran.
+## November 4 — reviewed Word fields and supported content shapes hardened
+
+The bounded verifier now checks complete complex-field instruction sequences
+(begin/instruction/separate/end) and equivalent simple fields. It permits native
+TOC switches, footer PAGE, and local TOC page/hyperlink references bound to actual
+canonical heading bookmarks. Split instructions are combined before checking.
+Dynamic/external fields and imported content containers are rejected, including
+empty cached results that could introduce content after Word refresh. A PAGE
+field cannot replace authorized footer text; a TOC field must close inside its
+own content control and cannot absorb a canonical table.
+
+Explicit active `vanish`, `webHidden` and `specVanish` properties are rejected,
+including styles. Disabled values remain accepted. Supported body/footer parent
+relationships prevent foreign/undefined wrappers from contributing text, yellow
+highlight, fields, tabs, breaks or native hyphen characters that Word could
+ignore. These are explicit supported-shape checks, **not full OOXML schema
+validation or a guarantee against every possible visual styling effect**.
+Tables and TOC controls are anchored to their canonical preceding nonempty body
+paragraph count, preserving the position of blank tables as well as existing
+row/cell/grid/ragged-table checks. The added large-model anchor pass yields to
+existing asynchronous cancellation; no deadline or caller interface changed.
+
+Local red/green evidence: **22 newly specified cases fail against verifier
+`faf1f33`** (20 unsafe acceptance cases and two valid Word compatibility cases).
+The final source passes **105 focused cases across six files**, including all
+47 bounded-verifier cases, plus backend typecheck/build. Native and Word-style
+TOC/PAGEREF/HYPERLINK, split instructions, simple PAGE, zero/Arabic/yellow gaps,
+namespace aliases and disabled hidden properties retain positive controls.
+Tests use the exact corrected renderer from **178eb04**; its two frontend files
+were copied only as local test dependencies and are excluded from this commit.
+
+Evidence and source/log hashes are in
+[`evidence/docx-field-qualification-20261104.json`](evidence/docx-field-qualification-20261104.json).
+The pre-correction sparse capacity artifact still contains an `undefined` footer
+wrapper and is not relabeled as final-source capacity acceptance. Final dense
+capacity, alternating-direction expansion, native Word/LibreOffice visual review,
+combined package checks and hosted acceptance remain separate coordinator gates.
+No provider, production, payment or external storage call ran.
 
 ## November 4 — complete bounded generation-context diagnostics
 

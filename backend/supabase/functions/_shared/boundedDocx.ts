@@ -31,7 +31,7 @@ function tableWidth(table: ModelTable) {
 }
 function* sourceParagraphs(
   model: RenderModel,
-): Generator<{ text: string; gap: boolean }> {
+): Generator<{ text: string; gap: boolean; heading?: boolean }> {
   const inline = (text: string) =>
     model.placeholder_version === 2 &&
     /\[INPUT REQUIRED|\[مطلوب|\[مدخل(?:ات)? مطلوب/iu.test(text);
@@ -51,13 +51,14 @@ function* sourceParagraphs(
       yield {
         text: block.text,
         gap: block.type === "placeholder" || inline(block.text),
+        heading: block.type === "heading",
       };
   }
 }
 function* expectedParagraphs(model: RenderModel) {
   for (const paragraph of sourceParagraphs(model)) {
     const text = normalize(paragraph.text);
-    if (text) yield { text, gap: paragraph.gap };
+    if (text) yield { text, gap: paragraph.gap, heading: paragraph.heading };
   }
 }
 interface Paragraph {
@@ -65,6 +66,7 @@ interface Paragraph {
   all: boolean;
   any: boolean;
   runs: number;
+  bookmarks: string[];
 }
 interface Sdt {
   toc: boolean;
@@ -106,9 +108,29 @@ function* verifyChunks(
     updateFields = false,
     consumed = 0;
   const relationships: string[] = [];
-  const expectedTables = model.blocks
-    .filter((block) => block.type === "table")
-    [Symbol.iterator]();
+  // Text alone loses the position of a blank table. Anchor each table and
+  // native contents field to the same canonical nonempty paragraph sequence.
+  const tableAnchors: { model: ModelTable; preceding: number }[] = [];
+  const tocAnchors: number[] = [];
+  let preceding = 0,
+    anchoredCells = 0;
+  for (const block of model.blocks) {
+    if (block.type === "table") {
+      tableAnchors.push({ model: block, preceding });
+      for (const row of [block.headers, ...block.rows])
+        for (const text of row) {
+          if (normalize(text)) preceding++;
+          if (++anchoredCells % 4096 === 0) yield;
+        }
+    } else {
+      if (normalize(block.text)) preceding++;
+      if (block.type === "toc") tocAnchors.push(preceding);
+    }
+  }
+  const expectedTables = tableAnchors[Symbol.iterator]();
+  const expectedTocs = tocAnchors[Symbol.iterator]();
+  const tocBookmarks = new Set<string>();
+  const tocReferences = new Set<string>();
   const accept = (paragraph: Paragraph) => {
     const actual = normalize(paragraph.text);
     if (!actual) return;
@@ -124,6 +146,8 @@ function* verifyChunks(
           "Every missing input must retain its yellow highlight, without marking confirmed content as missing.",
         );
     }
+    if (next.value.heading)
+      for (const bookmark of paragraph.bookmarks) tocBookmarks.add(bookmark);
     consumed++;
   };
   const acceptToc = (paragraph: Paragraph) => {
@@ -158,7 +182,6 @@ function* verifyChunks(
       run: { text: string; yellow: boolean } | null = null,
       pPr = 0,
       rPr = 0,
-      instr = "",
       instructionDepth = 0,
       partText = "",
       coreRaw = "",
@@ -176,8 +199,142 @@ function* verifyChunks(
       cells: number;
       cell: { expected: string; text: string; paragraphs: number } | null;
     } | null = null;
+    const supportedParents: Record<string, string[]> = {
+      "w:body": ["w:document"],
+      "w:p": document
+        ? ["w:body", "w:tc", "w:sdtContent"]
+        : ["w:ftr", "w:sdtContent"],
+      "w:r": ["w:p", "w:hyperlink", "w:fldSimple", "w:sdtContent"],
+      "w:t": ["w:r"],
+      "w:tab": ["w:r", "w:tabs"],
+      "w:tabs": ["w:pPr"],
+      "w:br": ["w:r"],
+      "w:cr": ["w:r"],
+      "w:noBreakHyphen": ["w:r"],
+      "w:softHyphen": ["w:r"],
+      "w:instrText": ["w:r"],
+      "w:fldChar": ["w:r"],
+      "w:pPr": ["w:p"],
+      "w:rPr": ["w:r", "w:pPr"],
+      "w:highlight": ["w:rPr"],
+      "w:tbl": document ? ["w:body", "w:sdtContent"] : [],
+      "w:tblGrid": ["w:tbl"],
+      "w:gridCol": ["w:tblGrid"],
+      "w:tr": ["w:tbl"],
+      "w:tc": ["w:tr"],
+      "w:sdt": ["w:body", "w:p", "w:tc", "w:sdtContent"],
+      "w:sdtContent": ["w:sdt"],
+      "w:hyperlink": ["w:p"],
+      "w:fldSimple": ["w:p", "w:hyperlink", "w:sdtContent"],
+    };
+    type Field = {
+      simple: boolean;
+      separated: boolean;
+      instruction: string;
+      kind?: "toc" | "page" | "toc_page" | "toc_link";
+      container?: Sdt;
+      result: string;
+    };
+    const fields: Field[] = [];
+    const fieldFailure = (): never => {
+      throw new AppError(
+        422,
+        "EXPORT_UNSAFE_CONTENT",
+        "Only native contents and page-number fields are allowed in the reviewed Word file.",
+      );
+    };
+    const markToc = () => {
+      const sdt = sdts.at(-1);
+      if (!document || !sdt || table || sdt.ordinary || sdt.toc) fieldFailure();
+      const next = expectedTocs.next();
+      if (next.done || next.value !== consumed)
+        mismatch("The contents field moved from its authorized position.");
+      hasToc = true;
+      sdt!.toc = true;
+      for (const saved of sdt!.pending) acceptToc(saved);
+      sdt!.pending = [];
+    };
+    const checkField = (field: Field) => {
+      const instruction = field.instruction.trim();
+      const tokens = instruction.match(/"[^"]*"|[^\s]+/g) || [];
+      const command = tokens.shift()?.toUpperCase();
+      if (command === "PAGE") {
+        if (
+          !footer ||
+          !/^(?:PAGE)(?:\s+\\\*\s+MERGEFORMAT)?$/i.test(instruction)
+        )
+          fieldFailure();
+        field.kind = "page";
+        return;
+      }
+      if (command === "TOC") {
+        const seen = new Set<string>();
+        for (let i = 0; i < tokens.length; i++) {
+          const option = tokens[i].toLowerCase();
+          if (seen.has(option)) fieldFailure();
+          seen.add(option);
+          if (["\\h", "\\z", "\\u"].includes(option)) continue;
+          if (option === "\\o") {
+            const range = /^"([1-9])-([1-9])"$/.exec(tokens[++i] || "");
+            if (!range || range[1] > range[2]) fieldFailure();
+          } else if (
+            option === "\\*" &&
+            tokens[++i]?.toUpperCase() === "MERGEFORMAT"
+          )
+            continue;
+          else fieldFailure();
+        }
+        if (field.container !== sdts.at(-1)) fieldFailure();
+        markToc();
+        field.kind = "toc";
+        return;
+      }
+      if (!document || !sdts.some((sdt) => sdt.toc)) fieldFailure();
+      // Updated Word contents use only local heading bookmarks. No URL,
+      // external document, arbitrary bookmark or nested dynamic code is read.
+      const reference =
+        command === "PAGEREF"
+          ? /^PAGEREF\s+(?:"(_Toc[A-Za-z0-9_]{1,120})"|(_Toc[A-Za-z0-9_]{1,120}))(?:\s+\\h)?(?:\s+\\\*\s+MERGEFORMAT)?$/i.exec(
+              instruction,
+            )
+          : command === "HYPERLINK"
+            ? /^HYPERLINK\s+\\l\s+(?:"(_Toc[A-Za-z0-9_]{1,120})"|(_Toc[A-Za-z0-9_]{1,120}))(?:\s+\\\*\s+MERGEFORMAT)?$/i.exec(
+                instruction,
+              )
+            : null;
+      if (!reference) fieldFailure();
+      field.kind = command === "PAGEREF" ? "toc_page" : "toc_link";
+      tocReferences.add(reference![1] || reference![2]);
+      if (tocReferences.size > 4096) invalid();
+    };
+    const finishField = (field: Field) => {
+      if (!field.separated) checkField(field);
+      if (
+        (field.kind === "page" && !/^[0-9]*$/.test(normalize(field.result))) ||
+        (field.kind === "toc_page" &&
+          !/^[0-9ivxlcdm]*$/i.test(normalize(field.result)))
+      )
+        fieldFailure();
+    };
+    const canNestField = () => {
+      const parent = fields.at(-1);
+      if (
+        fields.length >= 128 ||
+        (parent &&
+          (!parent.separated ||
+            !["toc", "toc_link"].includes(parent.kind || "")))
+      )
+        fieldFailure();
+    };
     const append = (value: string) => {
-      if (document && paragraph && !pPr) {
+      if (pPr || rPr) return;
+      const field = fields.at(-1);
+      if (field && !field.separated) fieldFailure();
+      if (field && (field.kind === "page" || field.kind === "toc_page")) {
+        field.result += value;
+        if (field.result.length > 128) fieldFailure();
+      }
+      if (document && paragraph) {
         paragraph.text += value;
         if (paragraph.text.length > paragraphLimit) mismatch();
         if (run) {
@@ -209,6 +366,80 @@ function* verifyChunks(
           attributes.TargetMode?.toLowerCase() === "external"
         )
           unsafe();
+        if (
+          [
+            "w:altChunk",
+            "w:object",
+            "w:drawing",
+            "w:pict",
+            "w:txbxContent",
+            "w:subDoc",
+            "w:sym",
+          ].includes(tag)
+        )
+          unsafe();
+        if (document || footer) {
+          // Supported native/reviewed shapes, not full OOXML schema validation.
+          // Word may ignore foreign/undefined wrappers: their text, properties
+          // and field tokens must never satisfy this verifier's visible oracle.
+          if (
+            supportedParents[tag] &&
+            !supportedParents[tag].includes(stack.at(-1) || "")
+          )
+            invalid();
+          if (tag === "w:r" && !stack.includes("w:p")) invalid();
+        }
+        if (
+          ["w:vanish", "w:webHidden", "w:specVanish"].includes(tag) &&
+          !["false", "0", "off"].includes(attributes["w:val"]?.toLowerCase())
+        )
+          throw new AppError(
+            422,
+            "EXPORT_UNSAFE_CONTENT",
+            "Authorized Word content must remain visible.",
+          );
+        if (tag === "w:fldChar") {
+          const kind = attributes["w:fldCharType"];
+          if ((!document && !footer) || stack.at(-1) !== "w:r") fieldFailure();
+          if (kind === "begin") {
+            canNestField();
+            fields.push({
+              simple: false,
+              separated: false,
+              instruction: "",
+              container: sdts.at(-1),
+              result: "",
+            });
+          } else if (kind === "separate") {
+            const field = fields.at(-1);
+            if (!field || field.simple || field.separated) fieldFailure();
+            checkField(field!);
+            field!.separated = true;
+          } else if (kind === "end") {
+            const field = fields.pop();
+            if (!field || field.simple) fieldFailure();
+            finishField(field!);
+          } else fieldFailure();
+        }
+        if (tag === "w:fldSimple") {
+          canNestField();
+          const field: Field = {
+            simple: true,
+            separated: true,
+            instruction: attributes["w:instr"] || "",
+            container: sdts.at(-1),
+            result: "",
+          };
+          checkField(field);
+          fields.push(field);
+        }
+        if (
+          tag === "w:bookmarkStart" &&
+          document &&
+          paragraph &&
+          attributes["w:name"]
+        )
+          paragraph.bookmarks.push(attributes["w:name"]);
         if (
           entry.name.endsWith(".rels") &&
           tag === "Relationship" &&
@@ -249,13 +480,18 @@ function* verifyChunks(
         }
         if (document && tag === "w:tbl") {
           const next = expectedTables.next();
-          if (table || next.done)
+          if (
+            table ||
+            next.done ||
+            next.value.preceding !== consumed ||
+            sdts.some((sdt) => sdt.toc)
+          )
             mismatch(
               "The Word table structure does not match the authorized proposal.",
             );
           table = {
-            model: next.value!,
-            width: tableWidth(next.value!),
+            model: next.value!.model,
+            width: tableWidth(next.value!.model),
             grid: 0,
             gridOpen: false,
             gridSeen: false,
@@ -310,7 +546,13 @@ function* verifyChunks(
           if (table && !table.cell)
             mismatch("A Word table paragraph is outside its authorized cell.");
           if (table?.cell) table.cell.paragraphs++;
-          paragraph = { text: "", all: true, any: false, runs: 0 };
+          paragraph = {
+            text: "",
+            all: true,
+            any: false,
+            runs: 0,
+            bookmarks: [],
+          };
         }
         if (tag === "w:pPr") pPr++;
         if (tag === "w:rPr") rPr++;
@@ -326,19 +568,23 @@ function* verifyChunks(
         )
           run.yellow = true;
         if (tag === "w:instrText") {
-          if (instructionDepth) invalid();
+          const field = fields.at(-1);
+          if (instructionDepth || !field || field.simple || field.separated)
+            fieldFailure();
           instructionDepth = stack.length + 1;
-          instr = "";
         }
         if (tag === "w:tab") append("\t");
-        if (tag === "w:br") append("\n");
+        if (tag === "w:br" || tag === "w:cr") append("\n");
+        if (tag === "w:noBreakHyphen") append("\u2011");
+        if (tag === "w:softHyphen") append("\u00ad");
         stack.push(tag);
       },
       text(value) {
         if (authorDepth) authorText += value;
         if (instructionDepth) {
-          instr += value;
-          if (instr.length > 65536) invalid();
+          const field = fields.at(-1)!;
+          field.instruction += value;
+          if (field.instruction.length > 65536) invalid();
           return;
         }
         if (stack.at(-1) === "w:t") append(value);
@@ -354,20 +600,13 @@ function* verifyChunks(
           authorDepth = 0;
         }
         if (stack.pop() !== tag) invalid();
-        if (tag === "w:instrText") {
-          instructionDepth = 0;
-          if (document && /(?:TOC\s|TOC\\)/.test(instr)) {
-            hasToc = true;
-            const sdt = sdts.at(-1);
-            if (sdt) {
-              if (sdt.ordinary)
-                mismatch("The contents table contains unapproved text.");
-              sdt.toc = true;
-              for (const saved of sdt.pending) acceptToc(saved);
-              sdt.pending = [];
-            }
-          }
+        if (tag === "w:instrText") instructionDepth = 0;
+        if (tag === "w:fldSimple") {
+          const field = fields.pop();
+          if (!field?.simple) fieldFailure();
+          finishField(field!);
         }
+        if (tag === "w:p" && footer && fields.length) fieldFailure();
         if (tag === "w:r" && document && run) {
           if (normalize(run.text) && paragraph) {
             paragraph.runs++;
@@ -442,6 +681,8 @@ function* verifyChunks(
           table = null;
         }
         if (tag === "w:sdt" && document) {
+          if (fields.some((field) => field.container === sdts.at(-1)))
+            fieldFailure();
           const sdt = sdts.pop();
           if (!sdt) invalid();
           for (const saved of sdt.pending)
@@ -465,6 +706,7 @@ function* verifyChunks(
       }
       parser.push(text!, final);
       if (!final) return;
+      if (fields.length || instructionDepth) invalid();
       if (document && (paragraph || run || sdts.length || table)) invalid();
       if (auxiliary) {
         const actual = normalize(partText),
@@ -498,7 +740,8 @@ function* verifyChunks(
   if (
     consumed !== expectedCount ||
     !expected.next().done ||
-    !expectedTables.next().done
+    !expectedTables.next().done ||
+    !expectedTocs.next().done
   )
     mismatch();
   if (!updateFields || !hasToc)
@@ -507,6 +750,11 @@ function* verifyChunks(
       "EXPORT_FIELDS_MISSING",
       "The Word file must retain live contents and update-fields settings.",
     );
+  for (const reference of tocReferences)
+    if (!tocBookmarks.has(reference))
+      mismatch(
+        "The contents field references an unauthorized heading bookmark.",
+      );
   for (const target of relationships) if (!names.has(target)) invalid();
   return true;
 }
