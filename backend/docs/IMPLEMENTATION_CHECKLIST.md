@@ -9322,3 +9322,43 @@ of the three saved ordinary projections, release manifest/schema refreeze and
 hosted acceptance remain separate pending gates. Frontend source/dependencies
 were not changed; the parent owns final complete package checks. No deployment,
 external provider call, hosted Auth/Storage action or production write occurred.
+
+### November 4 — reproduce the upstream batch capacity failure
+
+The new isolated `upstream_batch_capacity.py` harness uses the real migration
+set at `f80858fedeb831ccc754123ab621f24d92978f89`, the existing ordinary-export
+fixture, valid proposal sections and authenticated `export.prepare` followed by
+real HTTP `app_batch` calls. It does not disable application constraints or
+triggers, overwrite an export snapshot, call models or access hosted services.
+Its Auth stub and synthetic JWT are explicit fixture boundaries. The accepted
+snapshot contains 42 sections and 4,126,748 JSON text bytes; its compressible
+content occupies 68,697 stored bytes.
+
+With the exact pinned PostgREST 14.18 image at the repository's declared
+128 MiB/500m envelope, one renewal passed: 4,127,587 response bytes in 154 ms,
+with the complete response SHA matching the saved batch result and exact
+snapshot, revision, order and command receipt checks. A batch of ten renewals
+then killed PostgREST: `OOMKilled:true`, exit 137, zero response bytes and no
+HTTP headers after 895 ms. PostgreSQL remained alive under the separate local
+1 GiB/one-core safety limit, with a 534,106,112-byte kernel peak. That number
+includes process memory, cache and the 512 MiB data tmpfs, not only query heap.
+The 50 ms REST sampler missed the transient allocation before cgroup removal;
+its last sampled peak must not be used as the failed process's peak memory.
+
+The PostgreSQL log records EOF with an open transaction. The subsequent check
+found the previous export revision and zero batch/command receipts for the
+failed key. The probe stopped at this first application capacity failure;
+25/100-command cases, replay and broader concurrency were not attempted.
+Both owned containers were removed and cleanup/source hashes verified. Three
+earlier fixture-readiness attempts are retained separately and are not capacity
+evidence. The public [receipt](evidence/upstream-batch-capacity-20261104.json)
+binds all migration/harness hashes, response hashes, cgroup observations and
+external log hashes.
+
+This is a reproduced release blocker upstream of the API transport. Streaming
+the API response cannot fix the scalar JSONB aggregation or PostgREST memory
+failure. PostgreSQL 17.6/local safety limits are not production PostgreSQL 18
+or managed database capacity qualification; the live REST resources and managed
+database sizing remain separate read-only inventory evidence. No product SQL,
+result cardinality, quota or accounting behavior was changed. A reviewed repair
+and the same real upstream regression remain open before release acceptance.
