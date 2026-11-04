@@ -1,9 +1,9 @@
 {
-  "version": 3,
+  "version": 4,
   "status": "draft_remaining_actions_not_complete",
-  "generated_at_utc": "2026-11-04T22:16:15.009654+00:00",
+  "generated_at_utc": "2026-11-04T23:14:31.629845+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
-  "observed_root_commit": "256c50e0deaba7f38e6985a58259e5a108742c60",
+  "observed_root_commit": "a7922ed717bdc6f8d4973fb9aa72979a5549d675",
   "evidence_index": "backend/docs/evidence/reliability-r0-index-20261104.json",
   "application_deployed": false,
   "final_hosted_acceptance_passed": false,
@@ -11,33 +11,33 @@
     "path": "backend/scripts/ops/proposal-delivery-release.json",
     "canonical_sha256": "9e3430d1d01af222e3aad0d4aa8cae5e1f0c14942ae0ff258f0a96f6f953e020",
     "migrations": 22,
-    "state": "stale_22_migration_manifest_against_24_sources_refreeze_pending",
+    "state": "stale_22_migration_file_final24_source_proxy_runtime_refreeze_pending",
     "source_migrations": 24,
     "missing_migrations": [
       "20261104212300_structured_section_body_bound.sql",
       "20261104212818_bounded_command_batch_results.sql"
     ],
-    "gateway_contract": "v1_in_frozen_manifest_v2_source_integrated_refreeze_pending"
+    "gateway_contract": "v1_in_frozen_manifest_final_v2_pinned_worker_source_integrated_binding_refreeze_pending"
   },
   "actions": [
     {
       "id": "A01",
-      "title": "Qualify actual API batch capacity and final runtime envelope",
+      "title": "Close final proxy/runtime binding and hosted capacity acceptance",
       "plan": [
         "W04",
         "W09",
         "D02",
         "D04"
       ],
-      "status": "admission_and_document_repeats_integrated_actual_api_batch_capacity_pending",
+      "status": "actual_api100_and_final_nginx_measured_final_https_binding_and_hosted_scope_pending",
       "evidence": [
         "E01",
         "E02",
         "E13"
       ],
-      "remaining": "Run the complete current API image against the admitted 100-command chunked response, preserving complete values/order while measuring upstream/API/consumer allocations, slow consumption, cancellation, busy admission and exact hashes. Finish source binding and any remaining admitted-shape checks without adding an unapproved product quota.",
+      "remaining": "Bind the final HTTPS identity/gzip/zstd chain and promoted runtime image to reviewed source and actual observed resources. Preserve full hashes/order, slow-consumer/cancel behavior and explicit capacity margins. Complete hosted whole-path acceptance without adding a product quota.",
       "done_when": "Exact final image/source/fixture receipts prove the selected full API batch and document paths under observed limits, with actual process cleanup, bounded response lifecycle and existing 600-second/lease cancellation. State tested shapes and measured margin; no universal capacity claim.",
-      "not_proven": "Actual API batch memory and end-to-end hosted throughput. Warm-two plus fresh-one DOCX downloads passed, with a narrow 10.88 MiB minimum margin; this does not qualify arbitrary concurrency or all admitted payloads.",
+      "not_proven": "No combined hosted Auth/API/LoadBalancer service-level or universal admitted-capacity claim. DOCX minimum measured margin remains10.88 MiB; final HTTPS receipt not yet ingested at this anchor.",
       "acceptance_cases": [
         "EX-01",
         "EX-02",
@@ -45,7 +45,7 @@
         "OP-02",
         "BC-01"
       ],
-      "implementation": "Early authenticated heavy admission, complete one-row pages, client FIFO/logical identity pins, immutable batch chunks/API streaming, structured-body persistence and native lifetime fix are integrated.",
+      "implementation": "Actual API100/REST/PostgreSQL and final one-worker Nginx transport passed at their separate declared scopes; document warm-two/fresh-one receipts remain current fixture evidence.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -56,18 +56,18 @@
         "W00",
         "W11"
       ],
-      "status": "current_256c50e_full_run_in_progress_with_one_reported_test_failure",
+      "status": "3135_pass_two_stale_fixture_failures_corrected_final_full_rerun_pending",
       "evidence": [
         "E01"
       ],
-      "remaining": "Complete required backend/frontend types, builds and full tests on the final integrated source, then affected ops/schema/Kubernetes checks. Correct the direct-handler fixture to consume or cancel the successful download response before the subsequent approval-invalidated request; preserve the reported 503-versus-409 failure and rerun the meaningful lifecycle checks. Final output must retain any other failures.",
+      "remaining": "Run backend/frontend types, builds and full tests on final integrated source, then required ops/schema/Kubernetes checks. Retain the 3,135-pass/two-failure diagnostic and 33-test response-consumption correction; no production admission relaxation.",
       "done_when": "One exact final commit has required complete green checks and source-bound logs; any remaining failure is explicit.",
-      "not_proven": "No final full-green current backend/application claim. Frontend 380/59 types/build pass is exact c5b991e evidence; current 256c50e full checks were still running at this refresh.",
+      "not_proven": "No final full-green backend/application run. Focused correction and historical frontend pass do not replace the required final full rerun.",
       "acceptance_cases": [
         "R0",
         "W11 exit evidence"
       ],
-      "implementation": "Earlier c9f diagnostic and corrections retained. Current complete application verification is in progress; source-specific frontend 380 result is indexed.",
+      "implementation": "Both source 256c50e types/builds and frontend 380/59 pass;33 affected backend tests pass after correcting unread-response fixtures.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -130,14 +130,14 @@
         "W08",
         "D07"
       ],
-      "status": "scoped_offline_pass_live_quality_and_holdout_open",
+      "status": "reserve_frozen_ten_single_requests_constructible_forty_unsupported_no_outputs",
       "evidence": [
         "E09",
         "E10"
       ],
-      "remaining": "Review and freeze the pre-output reserve and actual 13-task adapters, source authority/link modes, target/prompt/schema pins, repeats and noncritical limits before activation. The current 50-cell/16-retrieval reserve is synthetic and not independently blind. Preserve prior semantic failures and seven bounded-retrieval misses; qualify corrections without changing gold after outputs or treating missing evidence as absent capability.",
+      "remaining": "Complete and review the 40 unsupported reserve cases with faithful workflow prerequisites/composite schedules. Freeze actual targets, source/prompt/schema/adapter/validator locks and noncritical acceptance decisions before authorized execution. Retain 100 scheduled cells/model and separately qualify 48 prospective retrieval cells plus independent outcome adjudication.",
       "done_when": "All 13 task boundaries accounted for; independent gold, per-class attempted/completed/scored denominators and critical false-acceptance/rejection/omission outcomes, source bindings and measured retrieval scope retained.",
-      "not_proven": "Whole/batch typed transport is not semantic correctness;9/16 bounded recall is not full recall.",
+      "not_proven": "Synthetic reserve is not independently blind/private holdout. Request construction and authored control responses do not qualify model semantics; prior critical findings and7/16 bounded retrieval misses remain.",
       "acceptance_cases": [
         "ME-01",
         "ME-02",
@@ -148,7 +148,7 @@
         "RT-01",
         "RT-02"
       ],
-      "implementation": "Typed source/diagnostic/repair/retrieval logic is integrated. New pre-output reserve is in review, with production adapters and actual executions pending; no blind qualification has been established.",
+      "implementation": "50-case reserve and scoring/activation boundaries frozen;140 offline tests pass. Ten single-request cases across4families construct canonical requests;40 remain explicitly unsupported. No provider/retrieval outputs.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -187,14 +187,14 @@
       "evidence": [
         "E03"
       ],
-      "remaining": "Perform real Microsoft Word update/save and verify page numbers, headings, Arabic/English layout and yellow gaps against canonical contents. Investigate the absent page-number cache in the 18 LibreOffice conversions or explicitly retain the engine limitation.",
+      "remaining": "Perform actual Microsoft Word update/save and verify page numbers, headings, Arabic/English layout and yellow gaps. Preserve the two failed explicit LibreOffice invocation attempts; they produced no refreshed artifact and do not identify the absent-cache cause.",
       "done_when": "Named actual reviewer/engine versions, updated files and per-page hashes/visual evidence; no invented cache numbers.",
-      "not_proven": "The existing91 reviewed pages do not establish Word update/save or every density/template.",
+      "not_proven": "No successful actual target-engine field update/save, no invented page numbers, and no proof every density/template renders correctly.",
       "acceptance_cases": [
         "EX-02",
         "EX-06"
       ],
-      "implementation": "Native renderer/canonical content verification implemented; actual target-engine TOC update unqualified.",
+      "implementation": "Native renderer/content validation and91-page representative visual review exist. Two bounded explicit refresh invocations failed to prove execution; no new Word/TOC qualification.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -205,22 +205,22 @@
         "W00",
         "W11"
       ],
-      "status": "manifest_stale_guard_coordinator_refreeze_and_deployment_pending",
+      "status": "guards_integrated_final_proxy_runtime_binding_refreeze_and_deployment_pending",
       "evidence": [
         "E04",
         "E05",
         "E08",
         "E13"
       ],
-      "remaining": "Integrate and review final release guards/coordinator, including currently queued db52ae9/d15cbe7. Refreeze the actual 22-entry manifest against all 24 source migrations, INSERT backstop and gateway-v2 proof chain, then bind final images. Verify actual old runtime gateway bindings, permanent legacy-RPC denial, recorded process exit, visible old-transaction drain and pre-snapshot locked zero census; retain the fence on timeout/unknown commit and complete compatible rollout forward. Renew A03 before the authorized checked release.",
+      "remaining": "Finish final proxy/runtime proof binding and image provenance/promotion; refreeze the actual 22-entry manifest to all 24 source migrations and final pinned-worker gateway contract. Renew A03, then execute the checked release: validate actual old gateway bindings, retain permanent legacy-RPC fence, prove old process exit, visible transaction drain and pre-snapshot locked fresh zero census. Preserve forward recovery after timeout/unknown commit.",
       "done_when": "Release workflow and deployed schema/image/gateway readback match the reviewed contract, with protected historical rows/ACLs and a concrete recovery record.",
-      "not_proven": "Neither the stale manifest nor queued commits establish a final executable release. No reliability application deployment, production Auth-policy change or storage retirement is established.",
+      "not_proven": "No final refrozen manifest, reliability application deployment or authenticated hosted acceptance. Point-in-time zero census is not a cutover fence/drain.",
       "acceptance_cases": [
         "W11 exit evidence",
         "OP-02",
         "OP-04"
       ],
-      "implementation": "Gateway denial is locally qualified and integrated; legacy INSERT guard has local functional tests. Final release/capability guards, actual concurrency evidence and coordinator integration/refreeze remain pending.",
+      "implementation": "Release/coordinator/catalog guards and actual PostgreSQL cached-old-body races are integrated. Final source pins1 worker and streaming; managed own-login activity visibility and gateway/HTTPS resource specs were observed read-only.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -290,15 +290,15 @@
       "result": "Local PostgreSQL red/green proof integrated; actual production admission and physical retirement remain distinct."
     }
   ],
-  "previous_observed_root_commit": "a6676866ea3247b85c1bfde7e140655ce126e444",
-  "refresh_requested_anchor": "256c50e0deaba7f38e6985a58259e5a108742c60",
+  "previous_observed_root_commit": "256c50e0deaba7f38e6985a58259e5a108742c60",
+  "refresh_requested_anchor": "a7922ed717bdc6f8d4973fb9aa72979a5549d675",
   "completed_scopes_since_revision2": [
     {
       "scope": "API admission/client identity and complete paging implemented",
       "evidence": [
         "E01"
       ],
-      "limit": "Full current application and actual API batch capacity pending"
+      "limit": "At revision2/3 full application and actual API batch capacity were pending; later scoped closures are recorded separately."
     },
     {
       "scope": "Structured-body persistence corrected with seven migrated regressions",
@@ -332,18 +332,49 @@
     }
   ],
   "pending_at_anchor": {
-    "full_checks": {
-      "subject": "Full current application checks",
-      "source_revision": "256c50e0deaba7f38e6985a58259e5a108742c60",
-      "status": "running_at_document_refresh",
-      "reported_failure": "An old direct-handler test did not consume its successful download response before requesting invalidated approval:503 FILE_PROCESSING_BUSY versus expected409. Test correction and complete rerun remain pending.",
-      "limits": "Parent progress report, not an ingested final result or proof all other cases passed."
-    },
-    "queued_ops_commits": [
-      "db52ae9",
-      "d15cbe7"
-    ],
-    "model_reserve": "in_review_not_blind_qualification",
+    "full_checks": "final_integrated_rerun_pending_after_retained_diagnostic_and33_focused_corrections",
+    "final_https_receipt": "not_yet_ingested_at_anchor",
+    "final_gateway_release_binding": "pinned_worker_source_integrated_ops_final_parity_pending",
+    "runtime_image_promotion": "implementation_in_progress",
+    "renewed24_migration_restore": "pending",
+    "model_reserve": "10_constructible40_unsupported_no_provider_outputs_not_blind",
     "application_deployed": false
-  }
+  },
+  "completed_scopes_since_revision3": [
+    {
+      "scope": "Actual API100 with real isolated PostgreSQL/REST, exact streamed results and lifecycle",
+      "evidence": [
+        "E13"
+      ],
+      "limit": "Synthetic Auth lookup; no gateway/hosted SLO in that receipt."
+    },
+    {
+      "scope": "Final worker 1 Nginx disk-backed transport, exact route/SDK matrix and guarded resources",
+      "evidence": [
+        "E05"
+      ],
+      "limit": "Earlier tmpfs disk claim withdrawn; actual HTTPS/hosted path separate."
+    },
+    {
+      "scope": "Managed own-login visibility and actual gateway/HTTPS resource specs observed",
+      "evidence": [
+        "E08"
+      ],
+      "limit": "Read-only point-in-time observations; no fence/drain/deployment."
+    },
+    {
+      "scope": "24-migration release/cached-old-body/definition guards integrated",
+      "evidence": [
+        "E13"
+      ],
+      "limit": "Actual manifest still22; refreeze/renewedrestore/deployment pending."
+    },
+    {
+      "scope": "Reserve/scorer frozen and10 canonical single requests constructible",
+      "evidence": [
+        "E09"
+      ],
+      "limit": "40 unsupported, actual outputs0; no semantic/retrieval qualification."
+    }
+  ]
 }

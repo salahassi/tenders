@@ -10364,3 +10364,22 @@ Promotion then permits only the revision label to change; ordered layers and
 all other runtime configuration/labels must remain exact before any push.
 Frontend/OCR build policy is unchanged. Final image publication/promotion,
 release refreeze, cloud acceptance and model-quality gates remain separate.
+
+### November 4 — refresh remaining actions and R0 at a7922ed
+
+The remaining-action matrix and R0 index now retain all 51 earlier receipt
+hashes and link 74 receipts. This documentation-only refresh records the actual
+API 100-command capacity pass, retained 3,135-pass/two-failure full diagnostic
+and 33-test correction, final pinned-worker gateway transport/routing proof,
+explicit withdrawal of the earlier tmpfs fixture's disk claim, managed
+read-only visibility/resource observations, integrated cutover race/guard
+proofs, frozen reserve with ten constructible and 40 unsupported cases, and
+unsuccessful LibreOffice refresh invocation.
+
+No final full-green application, runtime promotion, refrozen release,
+24-migration cloud restore, deployment or hosted acceptance is inferred.
+The final HTTPS receipt and new OCR/promotion work were not ingested at this
+anchor. Static verification checks every linked receipt hash and all nine
+action/evidence mappings; no tests, provider calls or production operations
+were performed by this refresh. Native document minimum margin remains
+10.88 MiB; the index preserves each measurement's exact fixture/source limits.
