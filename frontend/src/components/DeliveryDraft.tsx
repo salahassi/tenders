@@ -5,14 +5,26 @@ import {
   type DeliveryPackage,
 } from "../lib/deliveryDownload";
 import { Button } from "./ui";
+import ProposalAuthoring from "./ProposalAuthoring";
 
 export default function DeliveryDraft({
   client,
-  snapshotId,
+  snapshotId: initialSnapshotId,
 }: {
   client: BackendClient;
   snapshotId: string;
 }) {
+  const [snapshotId, setSnapshotId] = useState(initialSnapshotId);
+  const [authoring, setAuthoring] = useState(false);
+  const [authoringStart, setAuthoringStart] = useState<{
+    snapshotId: string;
+    deliveryRevision: number;
+    ar: boolean;
+  } | null>(null);
+  useLayoutEffect(() => {
+    setSnapshotId(initialSnapshotId);
+    setAuthoring(false);
+  }, [initialSnapshotId]);
   const [saved, setSaved] = useState<DeliveryPackage | null>(null);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
@@ -75,16 +87,40 @@ export default function DeliveryDraft({
             )}
           </p>
           <p>
-            {saved.snapshot.input_state === "insufficient"
+            {saved.snapshot.substantive_complete
               ? l(
-                  "Available scope information is insufficient. Missing inputs are highlighted yellow in the saved template.",
-                  "معلومات النطاق المتاحة غير كافية. مواضع التعبئة الناقصة مظللة بالأصفر في القالب المحفوظ.",
+                  "Substantive responses have a current human review. The draft still requires final approval before external use.",
+                  "خضعت الاستجابات الفعلية لمراجعة بشرية مرتبطة بالمصادر الحالية. تحتاج المسودة إلى اعتماد نهائي قبل استخدامها خارجيًا.",
                 )
-              : l(
-                  "Available source content and accepted progress are saved. The response is still incomplete; missing inputs are highlighted yellow. Model processing continues separately.",
-                  "حُفظ محتوى المصدر المتاح والتقدم المقبول. الاستجابة ما زالت غير مكتملة، والمدخلات الناقصة مظللة بالأصفر. معالجة النماذج مستمرة بشكل مستقل.",
-                )}
+              : saved.snapshot.input_state === "insufficient"
+                ? l(
+                    "Available scope information is insufficient. Missing inputs are highlighted yellow in the saved template.",
+                    "معلومات النطاق المتاحة غير كافية. مواضع التعبئة الناقصة مظللة بالأصفر في القالب المحفوظ.",
+                  )
+                : l(
+                    "Available source content and accepted progress are saved. The response is still incomplete; missing inputs are highlighted yellow. Model processing status is tracked separately.",
+                    "حُفظ محتوى المصدر المتاح والتقدم المقبول. الاستجابة ما زالت غير مكتملة، والمدخلات الناقصة مظللة بالأصفر. تُعرض حالة معالجة النماذج بصورة مستقلة.",
+                  )}
           </p>
+          {Number.isSafeInteger(saved.snapshot.delivery_revision) &&
+            !authoring && (
+              <Button
+                onClick={() => {
+                  setAuthoringStart({
+                    snapshotId,
+                    deliveryRevision: saved.snapshot.delivery_revision!,
+                    ar,
+                  });
+                  setAuthoring(true);
+                }}
+              >
+                {l(
+                  "Write and review the responses",
+                  "كتابة الاستجابات ومراجعتها",
+                )}
+              </Button>
+            )}
+
           {saved.status === "preparing" && (
             <p role="status">
               {l(
@@ -189,6 +225,13 @@ export default function DeliveryDraft({
         <p role="status">
           {l("Loading saved draft…", "تحميل المسودة المحفوظة…")}
         </p>
+      )}
+      {authoring && authoringStart && (
+        <ProposalAuthoring
+          client={client}
+          {...authoringStart}
+          onPublished={setSnapshotId}
+        />
       )}
       {error && <p role="alert">{error}</p>}
       {(error || saved?.status === "blocked") && (

@@ -61,11 +61,11 @@ it.each([
     expect(f.timing.sleep).toHaveBeenCalledExactlyOnceWith(5000);
     expect(f.backend.internal.mock.calls).toEqual([
       [
-        "wake_backend_queue_status_v3",
+        "wake_backend_queue_status_v4",
         { job_id: job.id, lease: job.lease_token },
       ],
       [
-        "wake_backend_queue_status_v3",
+        "wake_backend_queue_status_v4",
         { job_id: job.id, lease: job.lease_token },
       ],
     ]);
@@ -130,11 +130,11 @@ it.each([1, 30000, 60000])(
     expect(f.timing.sleep).toHaveBeenCalledExactlyOnceWith(retry_after_ms);
     expect(f.backend.internal.mock.calls).toEqual([
       [
-        "wake_backend_queue_status_v3",
+        "wake_backend_queue_status_v4",
         { job_id: job.id, lease: job.lease_token },
       ],
       [
-        "wake_backend_queue_revision_v3",
+        "wake_backend_queue_revision_v4",
         { job_id: job.id, lease: job.lease_token, expected_revision: 17 },
       ],
     ]);

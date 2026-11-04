@@ -709,3 +709,65 @@ it("still rejects a newly pinned projection with stale source hashes", async () 
     ),
   ).rejects.toThrow("STALE_INPUT");
 });
+
+it("retains accepted sibling provenance and preserves the human-selected draft when background units finish", async () => {
+  const o = await opportunity(),
+    p = await plan(o);
+  const accepted = await section(p, true, 1);
+  const before = await row("select * from public.proposals where id=$1", [
+    p.proposal_id,
+  ]);
+  const original = await context(before.active_delivery_snapshot_id);
+  const opened = await f.rpc("proposal_authoring_command", [
+    f.owner,
+    "open",
+    JSON.stringify({
+      snapshot_id: original.id,
+      expected_delivery_revision: before.delivery_revision,
+    }),
+    crypto.randomUUID(),
+  ]);
+  expect(
+    opened.revision.body.sections.some((s: any) =>
+      JSON.stringify(s.content_blocks).includes("Synthetic accepted prose 1"),
+    ),
+  ).toBe(true);
+  expect(opened.revision.body.requirements).toEqual([]);
+  const { buildAuthoredPayload } =
+    await import("../../supabase/functions/_shared/proposalAuthoring");
+  const payload = buildAuthoredPayload(opened);
+  const saved = await f.rpc("publish_authored_delivery", [
+    f.owner,
+    opened.session.id,
+    opened.session.revision,
+    opened.context_hash,
+    JSON.stringify(payload),
+    null,
+    crypto.randomUUID(),
+  ]);
+  expect(saved.payload).toMatchObject({
+    substantive_complete: false,
+    assurance_state: "unreviewed",
+  });
+  await section(p, true, 2);
+  const after = await row("select * from public.proposals where id=$1", [
+    p.proposal_id,
+  ]);
+  expect(after.active_delivery_snapshot_id).toBe(saved.id);
+  expect(after.active_version_id).toBe(before.active_version_id);
+  const progress = await row(
+    "select * from public.proposal_delivery_snapshots where proposal_id=$1 and plan_id=$2 order by ordinal desc limit 1",
+    [p.proposal_id, p.id],
+  );
+  expect(
+    progress.payload.sections.filter((s: any) => s.kind === "accepted_unit"),
+  ).toHaveLength(2);
+  const retained = await context(original.id);
+  expect(
+    retained.payload.sections.find((s: any) => s.kind === "accepted_unit")
+      .provenance.original_unit,
+  ).toEqual(accepted.output);
+  expect(
+    await f.rpc("proposal_authoring_context", [opened.session.id, f.owner]),
+  ).toMatchObject({ revision: { id: opened.revision.id } });
+});

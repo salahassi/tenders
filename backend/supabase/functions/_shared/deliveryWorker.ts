@@ -2,7 +2,7 @@ import type { Backend } from "./backend.ts";
 import { AppError } from "./http.ts";
 import {
   buildDeliveryExport,
-  DELIVERY_RENDERER_VERSION,
+  deliveryRendererVersion,
   DOCX_MIME,
   type DeliveryVolume,
 } from "./deliveryExport.ts";
@@ -44,7 +44,7 @@ export async function processDeliveryExport(
   const identity = { job_id: job.id, lease: job.lease_token };
   try {
     let context = await backend.internal("delivery_export_context", identity);
-    if (context.renderer_version !== DELIVERY_RENDERER_VERSION)
+    if (context.renderer_version !== deliveryRendererVersion(context.snapshot))
       throw new AppError(
         409,
         "DELIVERY_RENDERER_UNSUPPORTED",

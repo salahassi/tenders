@@ -84,14 +84,14 @@ async function wake(id: string, lease = crypto.randomUUID(), details = false) {
 }
 async function runtimeWake(name: string, args: any) {
   expect([
-    "wake_backend_queue_status_v3",
-    "wake_backend_queue_revision_v3",
+    "wake_backend_queue_status_v4",
+    "wake_backend_queue_revision_v4",
   ]).toContain(name);
   await f.db.exec("savepoint runtime_wake_rpc;set local role service_role");
   try {
     return await f.rpc(
       name,
-      name === "wake_backend_queue_revision_v3"
+      name === "wake_backend_queue_revision_v4"
         ? [args.job_id, args.lease, args.expected_revision]
         : [args.job_id, args.lease],
     );
@@ -472,8 +472,8 @@ it("performs one delayed RPC for an accepted request and safely loses a race to 
   const { claimed } = await acceptedPoll();
   let clock = 0;
   const internal = vi.fn(async (name: string, args: any) => {
-    if (name === "wake_backend_queue_status_v3") return runtimeWake(name, args);
-    expect(name).toBe("wake_backend_queue_revision_v3");
+    if (name === "wake_backend_queue_status_v4") return runtimeWake(name, args);
+    expect(name).toBe("wake_backend_queue_revision_v4");
     return runtimeWake(name, args);
   });
   const sleep = vi.fn(async (ms: number) => {
@@ -910,7 +910,7 @@ it.each([false, true])(
     expect(internal).toHaveBeenCalledTimes(2);
     expect(
       internal.mock.calls.every(
-        ([name]) => name === "wake_backend_queue_status_v3",
+        ([name]) => name === "wake_backend_queue_status_v4",
       ),
     ).toBe(true);
     expect(await dispatches()).toBe(claimedDuringWait ? 1 : 2);
@@ -1076,7 +1076,7 @@ it.each([false, true])(
       );
     });
     const internal = vi.fn(async (name: string, args: any = {}) => {
-      if (name === "wake_backend_queue_status_v3")
+      if (name === "wake_backend_queue_status_v4")
         return runtimeWake(name, args);
       return name === "claim_storage_cleanup" ? [] : null;
     });
@@ -1103,7 +1103,7 @@ it.each([false, true])(
     expect(response.status).toBe(200);
     expect(
       internal.mock.calls.filter(
-        ([name]) => name === "wake_backend_queue_status_v3",
+        ([name]) => name === "wake_backend_queue_status_v4",
       ),
     ).toHaveLength(1);
     expect(
@@ -1175,7 +1175,7 @@ it.each(["ready", "future", "capacity"])(
       }
     });
     const internal = vi.fn(async (name: string, args: any = {}) => {
-      if (name === "wake_backend_queue_status_v3")
+      if (name === "wake_backend_queue_status_v4")
         return runtimeWake(name, args);
       throw Error("Synthetic maintenance outage; never expose this body");
     });

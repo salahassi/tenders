@@ -11,6 +11,7 @@ export interface DeliveryPackage {
     content_state: string;
     input_state: string;
     assurance_state: string;
+    substantive_complete?: boolean;
     gap_count: number;
   };
   status: "preparing" | "ready" | "blocked";

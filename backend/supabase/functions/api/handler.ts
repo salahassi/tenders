@@ -10,6 +10,16 @@ import {
   type DeliveryVolume,
 } from "../_shared/deliveryExport.ts";
 import { deliveryBytes } from "../_shared/deliveryWorker.ts";
+import {
+  authoringOpenSchema,
+  authoringSaveSchema,
+  authoringClaimSchema,
+  authoringReviewSchema,
+  assertAuthoringClaims,
+  buildAuthoredPayload,
+  reviewAuthoredResponse,
+  type AuthoringContext,
+} from "../_shared/proposalAuthoring.ts";
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
 import {
   commandSchemas,
@@ -519,6 +529,143 @@ export function createApiHandler(
         );
       }
       const exportPath = path.match(/^\/v1\/exports\/([^/]+)\/context$/);
+      const authoringStatus = path.match(
+        /^\/v1\/delivery-snapshots\/([^/]+)\/authoring-status$/,
+      );
+      if (authoringStatus && request.method === "GET")
+        return respond(
+          await backend.internal("proposal_authoring_status", {
+            snapshot_id: uuid.parse(authoringStatus[1]),
+            actor_id: user.id,
+          }),
+        );
+      const authoringPath = path.match(
+        /^\/v1\/proposal-authoring\/(open|[0-9a-f-]+)(?:\/(context|save|claim|review|refresh|adopt))?$/,
+      );
+      if (authoringPath) {
+        const action = authoringPath[1] === "open" ? "open" : authoringPath[2];
+        const session_id =
+          action === "open" ? undefined : uuid.parse(authoringPath[1]);
+        if (request.method === "GET" && action === "context")
+          return respond(
+            await backend.internal("proposal_authoring_context", {
+              session_id,
+              actor_id: user.id,
+            }),
+          );
+        if (
+          request.method !== "POST" ||
+          !["open", "save", "claim", "review", "refresh", "adopt"].includes(
+            action || "",
+          )
+        )
+          throw new AppError(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "Unsupported authoring action.",
+          );
+        const idempotency_key = z
+          .string()
+          .min(1)
+          .max(200)
+          .parse(request.headers.get("idempotency-key"));
+        const raw = await readJson(request, 2097152);
+        if (action === "adopt") {
+          const input = z
+            .object({
+              expected_revision: z.number().int().positive(),
+              expected_proposal_revision: z.number().int().positive(),
+              review_id: z.uuid(),
+            })
+            .strict()
+            .parse(raw);
+          return respond(
+            await backend.internal("adopt_authored_response", {
+              actor_id: user.id,
+              session_id,
+              ...input,
+              idempotency_key,
+            }),
+          );
+        }
+        if (action === "review") {
+          const review = authoringReviewSchema.parse(raw);
+          const context = (await backend.internal(
+            "proposal_authoring_context",
+            { session_id, actor_id: user.id },
+          )) as AuthoringContext;
+          // Stable across a lost HTTP response; changing input under the same key
+          // is rejected by the transactional receipt, never a second approval.
+          const digest = [
+            ...new Uint8Array(
+              await crypto.subtle.digest(
+                "SHA-256",
+                new TextEncoder().encode(
+                  `${user.id}:${session_id}:${idempotency_key}`,
+                ),
+              ),
+            ),
+          ]
+            .map((v) => v.toString(16).padStart(2, "0"))
+            .join("");
+          const reviewId = `${digest.slice(0, 8)}-${digest.slice(8, 12)}-4${digest.slice(13, 16)}-8${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
+          const evaluated = await reviewAuthoredResponse(
+            context,
+            user.id,
+            review,
+            reviewId,
+          );
+          const snapshot = await backend.internal("publish_authored_delivery", {
+            actor_id: user.id,
+            session_id,
+            expected_revision: review.expected_revision,
+            expected_context_hash: context.context_hash,
+            payload: evaluated.payload,
+            review,
+            idempotency_key,
+          });
+          return respond({ snapshot, report: evaluated.report });
+        }
+        const input =
+          action === "open"
+            ? authoringOpenSchema.parse(raw)
+            : action === "save"
+              ? authoringSaveSchema.parse(raw)
+              : action === "claim"
+                ? authoringClaimSchema.parse(raw)
+                : z
+                    .object({
+                      expected_revision: z.number().int().positive(),
+                      expected_delivery_revision: z
+                        .number()
+                        .int()
+                        .nonnegative(),
+                    })
+                    .strict()
+                    .parse(raw);
+        if (action === "save" && "body" in input)
+          assertAuthoringClaims(input.body);
+        const context = (await backend.internal("proposal_authoring_command", {
+          actor_id: user.id,
+          operation: action,
+          input: { ...input, ...(session_id ? { session_id } : {}) },
+          idempotency_key,
+        })) as AuthoringContext;
+        if (action === "save" || action === "refresh") {
+          const payload = buildAuthoredPayload(context);
+          const snapshot = await backend.internal("publish_authored_delivery", {
+            actor_id: user.id,
+            session_id: context.session.id,
+            expected_revision: context.session.revision,
+            expected_context_hash: context.context_hash,
+            payload,
+            review: null,
+            idempotency_key,
+          });
+          return respond({ ...context, published_snapshot: snapshot });
+        }
+        return respond(context);
+      }
       const deliveryPath = path.match(
         /^\/v1\/delivery-snapshots\/([^/]+)\/(context|package)$/,
       );

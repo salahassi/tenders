@@ -56,7 +56,7 @@ export const deliverySectionSchema = z
     provenance: z.record(z.string(), z.unknown()).nullable(),
   })
   .strict();
-export const deliveryPayloadSchema = z
+export const deliveryPayloadV1Schema = z
   .object({
     version: z.literal(1),
     title: z.string(),
@@ -75,6 +75,47 @@ export const deliveryPayloadSchema = z
     gaps: z.array(deliveryGapSchema),
   })
   .strict();
+
+// New authoring assurance is opt-in. Never reinterpret a saved version-1 draft
+// or render its historical bytes with version-2 labels.
+export const deliveryPayloadV2Schema = deliveryPayloadV1Schema
+  .extend({
+    version: z.literal(2),
+    content_state: z.enum(["authored_draft", "substantive_draft"]),
+    assurance_state: z.enum(["unreviewed", "human_reviewed"]),
+    substantive_complete: z.boolean(),
+    authoring: z
+      .object({
+        session_id: z.uuid(),
+        revision_id: z.uuid(),
+        body_hash: hash,
+        review_id: z.uuid().nullable(),
+        report: z.record(z.string(), z.unknown()).nullable(),
+      })
+      .strict(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (
+      value.substantive_complete !==
+        (value.content_state === "substantive_draft") ||
+      (value.substantive_complete &&
+        (value.assurance_state !== "human_reviewed" ||
+          !value.authoring.review_id ||
+          value.gaps.some(
+            (gap) => gap.required_for === "substantive_completion",
+          )))
+    )
+      context.addIssue({
+        code: "custom",
+        message:
+          "Substantive delivery requires current review and resolved completion gaps.",
+      });
+  });
+export const deliveryPayloadSchema = z.union([
+  deliveryPayloadV1Schema,
+  deliveryPayloadV2Schema,
+]);
 
 export type DeliveryPayload = z.infer<typeof deliveryPayloadSchema>;
 export type DeliveryGap = z.infer<typeof deliveryGapSchema>;

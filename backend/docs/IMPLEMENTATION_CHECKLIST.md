@@ -6160,3 +6160,38 @@ diagnostic enumeration, additional typed-field/provider-context qualification,
 fresh connected frozen-corpus evaluation and independent semantic holdout/domain
 review. These local controls do not establish universal semantic correctness or
 provider capacity for every possible document. No external model calls occurred.
+### 2026-11-04 — W10 optional structured authoring and immutable adoption
+
+**Implemented locally:** source-cited authoring sessions, immutable response revisions,
+explicit responsibility claims, current source/authority checks, human review scoped to
+actual response excerpts, canonical consistency checks, and separate renderer-2 saved
+files. A current Owner/Editor may adopt reviewed content into a new ordinary proposal
+version with immutable requirement mappings; normal compliance, commercial, consistency
+and final-approval gates still apply. Later human edits invalidate prior approval and
+require a new adoption. Source successors retain prior text and provenance, clear stale
+requirement bindings, and require explicit review. Background accepted units remain
+saved without replacing a selected authored delivery. Version-1 payload semantics and
+renderer output remain pinned. New renderer-2 jobs require executor 4; old claims remain
+restricted. New schema privileges support both installed role families.
+
+**Policy update:** manual authoring is an optional authorized workflow, not a mandatory
+staff fallback and not success for an automatic request. The user's later D06 decision
+requires an immediate clear error when all AI agents are unavailable and a request-wide
+600-second automatic issuance limit. Deadline/admission and automatic complete-file
+projection are separate implementation work; this entry does not claim their completion.
+
+**Evidence:** migrated SQL/API/real Word pipeline verifies actual supplied synthetic
+responses without model calls, no automatic approval, renderer-2 download, explicit
+ordinary-version adoption, replay, revision conflicts, current membership, source-change
+successor retention and direct-RPC ACL denial. Focused snapshots/pipeline: 33 tests passed;
+runtime wake/pipeline: 109 passed; authoring/delivery UI: 12 passed. Five real PostgreSQL
+multi-session races passed using the synthetic, network-isolated PostgreSQL 17.6 harness:
+`python3 backend/scripts/testing/authoring_races.py --container <synthetic-container> --output <private-receipt>`.
+Both contenders were observed waiting on the workspace lock. Receipts contain migration
+hashes, identities and counts, not customer content or secrets. Full package validation is
+being reconciled against the integrated phase-2 source/consistency changes; these focused
+results are not a claim that the complete integration suite passed.
+
+**Deployment / hosted acceptance:** not deployed by this change; no production/model/email
+calls. Browser visual acceptance, hosted artifact storage/restore and the separate
+600-second automatic generated-review-draft route remain unclaimed here.

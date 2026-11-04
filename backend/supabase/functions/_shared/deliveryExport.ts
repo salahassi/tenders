@@ -11,6 +11,19 @@ import {
 } from "./export.ts";
 
 export const DELIVERY_RENDERER_VERSION = "1";
+export function deliveryRendererVersion(
+  snapshot: Record<string, any>,
+): "1" | "2" {
+  const parsed = deliveryPayloadSchema.safeParse(snapshot.payload);
+  if (!parsed.success)
+    throw new AppError(
+      422,
+      "DELIVERY_ARTIFACT_INVALID",
+      "The saved draft contract is invalid.",
+    );
+  const payload = parsed.data;
+  return payload.version === 2 ? "2" : "1";
+}
 export const DOCX_MIME =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 export type DeliveryVolume = "combined" | "technical" | "financial";
@@ -174,10 +187,16 @@ function projectDelivery(
   blocks.push(
     {
       type: "paragraph",
-      text: l(
-        "DRAFT — incomplete response; review before external use",
-        "مسودة — الاستجابة غير مكتملة؛ تُراجع قبل الاستخدام الخارجي",
-      ),
+      text:
+        payload.version === 2 && payload.substantive_complete
+          ? l(
+              "DRAFT — substantive responses reviewed; final approval required",
+              "مسودة — روجع محتوى الاستجابات؛ الاعتماد النهائي مطلوب",
+            )
+          : l(
+              "DRAFT — incomplete response; review before external use",
+              "مسودة — الاستجابة غير مكتملة؛ تُراجع قبل الاستخدام الخارجي",
+            ),
     },
     {
       type: "paragraph",
