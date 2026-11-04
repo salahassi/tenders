@@ -6859,3 +6859,35 @@ is still required for whole-file confirmation. Pending/retry messages cover both
 OCR and publication processing. The combined OCR editor, verified-page renderer
 and issuance-panel focused run passes38 tests; frontend typecheck passes. No prior
 reviewer is silently replaced by the current user. Hosted acceptance is separate.
+## W04 — version 2 early/partial saved-delivery acceptance (2026-11-04)
+
+Implemented a separate, explicitly activated `accept-saved-delivery.yml` and
+`delivery-snapshot-acceptance` harness. The old completed-plan export harness and
+its selection remain unchanged. The new read-only selection binds exact current
+snapshot/revision/hash and current allowlisted Owner/source checks. It reuses
+genuine isolated Auth, verifies actual authenticated stored DOCX hashes and
+canonical content/highlights, requires the complete volume set and succeeded
+job, and rechecks source/member/package currentness after download. Pending and
+blocked observations explicitly report no verified deliverable. Template,
+partial, human-reviewed substantive draft and generated issued draft are
+separate expectations. Issuance requires the exact original 600-second request
+receipt; terminal failure cannot be reported as issued. The harness renders no
+new file and performs no business mutation/provider call. Sensitive selections,
+reports and files retain encrypted private transport and logout/cleanup guards.
+
+Local validation: **39 tests passed across 4 backend files**, including **19
+new** transport/canonical DOCX and fully migrated selection cases plus the
+preserved completed-proposal acceptance tests; **8 Python guard tests passed**.
+Backend typecheck/build passed. The modified behavior is tooling only; no
+frontend source changed in this commit. Existing package lockfiles/dependencies
+are unchanged. See `DELIVERY_SNAPSHOT_ACCEPTANCE.md` for exact versioned selection
+and report semantics.
+
+Deployment and hosted acceptance: **not deployed or dispatched**. Local test
+transport uses synthetic fixtures only, never production records; it does not
+prove hosted Auth/Storage, browser tab-close/re-entry, all-page layout, capacity,
+latency or production recovery. Version 2/3 classification is covered locally;
+the canonical generated v3 pipeline tests are a separate integration evidence
+set. Real selected early/partial/generated issuance and authenticated download
+runs remain release gates. This closes the missing harness implementation,
+not those hosted acceptance gates.
