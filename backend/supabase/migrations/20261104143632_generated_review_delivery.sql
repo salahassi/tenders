@@ -66,6 +66,13 @@ create function app_private.draft_generation_snapshot(w uuid,opp uuid,proposal u
  return result-'generated_delivery_version';
 end $$;
 alter function public.advance_generation(uuid,uuid,text,jsonb,jsonb,jsonb) rename to advance_generation_before_generated_delivery;
+-- Renaming a PL/pgSQL function also changes its implicit parameter block label.
+-- Preserve the consistency wrapper's qualified parameter bindings.
+do $$declare definition text;begin
+ select pg_get_functiondef('public.advance_generation_before_generated_delivery(uuid,uuid,text,jsonb,jsonb,jsonb)'::regprocedure) into definition;
+ execute replace(definition,'advance_generation.','advance_generation_before_generated_delivery.');
+end $$;
+
 create function public.advance_generation(job_id uuid,lease uuid,next_stage text,requirements jsonb,steps jsonb,final_result jsonb) returns void language plpgsql security definer set search_path='' as $$declare j public.jobs;p public.generation_plans;v public.proposal_versions;begin
  select * into j from public.jobs where id=job_id;
  perform public.advance_generation_before_generated_delivery(job_id,lease,next_stage,requirements,steps,final_result);

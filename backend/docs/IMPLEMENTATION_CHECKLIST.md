@@ -7208,3 +7208,16 @@ retry guard's parameter ambiguity; ten require renderer-wrapper parameter
 qualification; one historical migration test timed out; the frontend external
 submission journey needs export-transition reconciliation. Those failures remain
 open at this narrow correction and must not be reported as a full-green run.
+
+
+### 2026-11-04 — generated-delivery migration preserves predecessor SQL scope
+
+The generated-delivery wrapper now rebinds the renamed PL/pgSQL predecessor's
+function-qualified parameter label. Without this, the preceding consistency
+wrapper still referenced `advance_generation.job_id` after its implicit label
+had become `advance_generation_before_generated_delivery`, causing a missing
+FROM-clause error at real finalization. The narrow migration repair preserves
+all acceptance/currentness guards. The actual `noticeDetails.test.ts` suite
+passes all 51 cases against the latest consistency migration. Full composed
+flexible-input runtime validation is performed in the integration tree, whose
+fixture uses executor4; this isolated branch's older fixture still claims v2.
