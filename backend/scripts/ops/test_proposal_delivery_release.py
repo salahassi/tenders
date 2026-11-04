@@ -60,6 +60,12 @@ class DeliveryReleaseTests(unittest.TestCase):
             with self.assertRaisesRegex(p.ReleaseError,'SET_CHANGED'):p.verify_source(manifest,migrations=Path(directory))
 
     def test_managed_atomic_batch_replay_drift_and_fault_rollback(self):
+        self.managed_atomic_batch_cases()
+
+    def test_storage_columns_reject_direct_service_and_public_grants(self):
+        self.managed_atomic_batch_cases(column_acl_only=True)
+
+    def managed_atomic_batch_cases(self,column_acl_only=False):
         manifest=self.manifest();sources=p.verify_source(manifest)
         def script(sources=sources):return p.migration_script(manifest,sources).replace("current_database()<>'tenderdesk_app'","current_database()<>'postgres'")
         cases=[
@@ -101,6 +107,13 @@ class DeliveryReleaseTests(unittest.TestCase):
           ('ALTER TABLE public.proposal_delivery_artifacts DISABLE TRIGGER register_delivery_storage_write;','DELIVERY_RELEASE_STORAGE_CONTRACT_INVALID'),
 
         ]
+        if column_acl_only:
+            cases=[
+              (f'GRANT SELECT({column}) ON {table} TO {role};','DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID')
+              for table,column in (('public.storage_write_intents','storage_key'),
+                ('app_private.storage_retirement_batches','operation_nonce'),
+                ('app_private.storage_retirement_keys','storage_key'))
+              for role in ('tdp_app_service','PUBLIC')]
         program="process.on('uncaughtException',e=>{console.error(e.message,e.code,e.position,e.where);process.exit(1)});\nconst release="+json.dumps(script())+';const variants='+json.dumps([(script(sources[:-1]+[sources[-1]+'\n'+s]),code) for s,code in cases])+';\n'
         program+='const baseline='+json.dumps(manifest['baseline_releases'])+';const catalogQuery='+json.dumps(p.CATALOG.replace(' INTO catalog_hash',''))+';\n'
         program+=r"""

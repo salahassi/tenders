@@ -354,6 +354,14 @@ BEGIN
    OR EXISTS(SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a
     LEFT JOIN pg_roles role_row ON role_row.oid=a.grantee WHERE c.oid=to_regclass(target)
      AND (a.grantee=0 OR role_row.rolname IN ('service_role','tdp_app_service')))
+   -- Check direct column ACLs as well as table ACLs. Managed service roles
+   -- inherit the established owner role, so effective privilege probes would
+   -- reject the unchanged baseline instead of detecting a newly added grant.
+   OR EXISTS(SELECT 1 FROM pg_attribute column_row
+    CROSS JOIN LATERAL aclexplode(CASE WHEN cardinality(column_row.attacl)>0 THEN column_row.attacl END) column_acl
+    LEFT JOIN pg_roles role_row ON role_row.oid=column_acl.grantee
+    WHERE column_row.attrelid=to_regclass(target) AND column_row.attnum>0 AND NOT column_row.attisdropped
+     AND (column_acl.grantee=0 OR role_row.rolname IN ('service_role','tdp_app_service')))
    THEN RAISE EXCEPTION 'DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID';END IF;
  END LOOP;
  IF EXISTS(SELECT 1 FROM (VALUES ('public.proposal_delivery_artifacts','register_delivery_storage_write',21),

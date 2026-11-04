@@ -8409,3 +8409,23 @@ checked cloud release and final combined package suites remain separate pending
 gates. The discovered signed resumable-upload bypass must be blocked and qualified
 before any hosted retirement can release an allowance. Private SQL shape checks
 alone do not prove that remote processes stopped or that physical bytes vanished.
+
+### 2026-11-04 — reject direct service column grants in the storage release guard
+
+Independent review found that the new-table guard inspected direct table ACLs
+but missed a direct service-role column grant. An isolated managed-role release
+accepted `SELECT(storage_key)` granted to `tdp_app_service` on the new intent
+table. The same regression now rejects it through `pg_attribute.attacl`, plus
+PUBLIC and direct service grants across all three new storage tables. The check
+uses only explicit ACL entries; established service inheritance of the application
+owner remains valid, and NULL/empty column ACLs are handled without fabricating
+owner grants. Original row/authority comparisons and the exact census exception
+are unchanged.
+
+One focused Python test passes with six new fault variants and the reused
+positive managed release/replay and rollback controls (19.558s on the shared local
+host). The pre-fix test failed because the service column grant was accepted.
+`py_compile` passes. Exact source/log hashes and retained red/green output are in
+[evidence/storage-column-acl-20261104.json](evidence/storage-column-acl-20261104.json).
+No full suite, production operation, deployment, binary/protocol qualification
+or hosted storage acceptance was performed by this slice.
