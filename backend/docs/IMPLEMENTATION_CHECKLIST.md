@@ -6914,3 +6914,14 @@ backend run includes the expanded 83 instruction/metadata/typed-registry/recheck
 cases, all historical wire hashes, and real migrated reserved/unknown/settled
 source-contract phase preservation. These are local deterministic checks, not
 live prompt qualification, deployment or hosted acceptance.
+
+Explicit future prompt-5 campaign: `semantic_v2_metadata_en/ar` now selects the
+same frozen version 2 corpus with verifier policy 5 and distinct case/receipt
+identities. Plain `semantic_v2_en/ar` remains policy 4. JavaScript, Python and the
+workflow choice list all require explicit selection; the live default is still
+false. Python rejects mixed baseline/metadata policy receipts. All eight related
+evaluation test files pass **86/86**, Python gates **21/21**, and backend types/build
+pass after this additive campaign change. The preceding complete package results
+remain 2,429 backend / 325 frontend; four new campaign tests are included in the
+86 focused total. No metadata campaign was run live, and no model gained a new
+qualification or availability claim.

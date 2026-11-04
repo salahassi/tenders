@@ -193,7 +193,7 @@ class EvaluationGuards(unittest.TestCase):
         self.assertIn("github.event_name == 'workflow_dispatch' && inputs.run_live",workflow)
         self.assertIn('default: false',workflow)
         self.assertIn('default: core',workflow)
-        self.assertIn('options: [core, extended, extended_recheck, planning_repair, analysis_verification, analysis_authority, semantic_en, semantic_ar, semantic_v2_en, semantic_v2_ar]',workflow)
+        self.assertIn('options: [core, extended, extended_recheck, planning_repair, analysis_verification, analysis_authority, semantic_en, semantic_ar, semantic_v2_en, semantic_v2_ar, semantic_v2_metadata_en, semantic_v2_metadata_ar]',workflow)
         self.assertIn('liveModelEvaluationExtended.test.ts',workflow)
         self.assertIn('liveModelEvaluationVerification.test.ts',workflow)
         self.assertIn('liveModelEvaluationAuthority.test.ts',workflow)
@@ -201,7 +201,7 @@ class EvaluationGuards(unittest.TestCase):
 
     def test_frozen_semantic_suites_select_actual_catalog_and_both_providers_without_activation(self):
         rows=self.rows(); bindings={r['credential_alias']:'private-test-value' for r in rows}
-        for suite in ('semantic_en','semantic_ar','semantic_v2_en','semantic_v2_ar'):
+        for suite in ('semantic_en','semantic_ar','semantic_v2_en','semantic_v2_ar','semantic_v2_metadata_en','semantic_v2_metadata_ar'):
             self.assertEqual(m.suite_limits(suite),(4,64))
             self.assertEqual(m.expected_case_count(2,suite),32)
             self.assertEqual(m.catalog_sql(suite),m.CATALOG_SQL)
@@ -212,11 +212,11 @@ class EvaluationGuards(unittest.TestCase):
                 self.assertEqual(m.main(),0);cluster.assert_not_called()
 
     def test_semantic_receipts_reject_duplicate_missing_foreign_case_or_corpus_and_false_success(self):
-        for suite in ('semantic_en','semantic_ar','semantic_v2_en','semantic_v2_ar'):
+        for suite in ('semantic_en','semantic_ar','semantic_v2_en','semantic_v2_ar','semantic_v2_metadata_en','semantic_v2_metadata_ar'):
             cases=m.semantic_cases(suite)
             base=m.parse_execution_output('',2,False,suite)
             base.update(complete=True,generations=32,results=[{'provider':p,'model':'fixture','case':c,'passed':False,
-              'qualification':{'corpus_sha256':m.SEMANTIC_V2_CORPUS_SHA256 if suite.startswith('semantic_v2_') else m.SEMANTIC_CORPUS_SHA256,'split':'development',**({'oracle_version':2} if suite.startswith('semantic_v2_') else {})}}
+              'qualification':{'corpus_sha256':m.SEMANTIC_V2_CORPUS_SHA256 if suite.startswith('semantic_v2_') else m.SEMANTIC_CORPUS_SHA256,'split':'development',**({'oracle_version':2} if suite.startswith('semantic_v2_') else {}),**({'verification_policy_version':5} if suite.startswith('semantic_v2_metadata_') else {})}}
               for p in ('openai','qwencloud') for c in sorted(cases)])
             self.assertEqual(m.validate_report(base,2,suite),base)
             def invalid(change):
@@ -230,10 +230,11 @@ class EvaluationGuards(unittest.TestCase):
             invalid(lambda r:r.update(generations=65))
             if suite.startswith('semantic_v2_'):
                 invalid(lambda r:r['results'][0]['qualification'].update(oracle_version=1))
+                invalid(lambda r:r['results'][0]['qualification'].update(verification_policy_version=4 if suite.startswith('semantic_v2_metadata_') else 5))
                 invalid(lambda r:r['results'][0].update(case=next(iter(m.semantic_cases('semantic_'+suite[-2:])))))
 
     def test_changed_semantic_corpus_stops_before_cluster_or_model_access(self):
-        for suite in ('semantic_en','semantic_ar','semantic_v2_en','semantic_v2_ar'):
+        for suite in ('semantic_en','semantic_ar','semantic_v2_en','semantic_v2_ar','semantic_v2_metadata_en','semantic_v2_metadata_ar'):
             with patch.dict(os.environ,{'RUN_LIVE_AI_EVALUATION':'true','AI_EVALUATION_SUITE':suite}), patch.object(Path,'read_bytes',return_value=b'{}'), patch.object(m.access,'prepare_cluster') as cluster, redirect_stdout(io.StringIO()) as output:
                 self.assertEqual(m.main(),1);cluster.assert_not_called()
             self.assertEqual(m.json.loads(output.getvalue())['code'],'EVAL_CORPUS_CHANGED')

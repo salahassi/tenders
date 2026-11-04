@@ -20,7 +20,9 @@ export type EvaluationSuite =
   | "semantic_en"
   | "semantic_ar"
   | "semantic_v2_en"
-  | "semantic_v2_ar";
+  | "semantic_v2_ar"
+  | "semantic_v2_metadata_en"
+  | "semantic_v2_metadata_ar";
 export function limitsForSuite(suite?: EvaluationSuite): typeof LIMITS;
 export function fixtures(suite?: EvaluationSuite): Promise<any[]>;
 export function validateTargets(

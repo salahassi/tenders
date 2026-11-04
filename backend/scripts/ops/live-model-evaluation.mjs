@@ -15,6 +15,7 @@ import { verificationFixtures } from "./live-model-evaluation-verification.mjs";
 import { authorityFixtures } from "./live-model-evaluation-authority.mjs";
 import { semanticFixtures } from "./live-model-evaluation-semantics.mjs";
 import { semanticV2Fixtures } from "./live-model-evaluation-semantics-v2.mjs";
+import { semanticMetadataFixtures } from "./live-model-evaluation-semantics-metadata.mjs";
 import {
   candidateContent,
   validateGroundingReport,
@@ -66,10 +67,12 @@ export function limitsForSuite(suite = "core") {
       "semantic_ar",
       "semantic_v2_en",
       "semantic_v2_ar",
+      "semantic_v2_metadata_en",
+      "semantic_v2_metadata_ar",
     ].includes(suite),
     "EVAL_SUITE_INVALID",
   );
-  if (["semantic_en", "semantic_ar", "semantic_v2_en", "semantic_v2_ar"].includes(suite)) return SEMANTIC_LIMITS;
+  if (["semantic_en", "semantic_ar", "semantic_v2_en", "semantic_v2_ar", "semantic_v2_metadata_en", "semantic_v2_metadata_ar"].includes(suite)) return SEMANTIC_LIMITS;
   return ["analysis_verification", "analysis_authority"].includes(suite)
     ? VERIFICATION_LIMITS
     : suite === "planning_repair"
@@ -142,6 +145,7 @@ export async function fixtures(suite = "core") {
   if (suite === "planning_repair") return planningFixtures();
   if (suite === "analysis_verification") return verificationFixtures();
   if (suite === "analysis_authority") return authorityFixtures();
+  if (["semantic_v2_metadata_en", "semantic_v2_metadata_ar"].includes(suite)) return semanticMetadataFixtures(suite.slice(-2));
   if (["semantic_v2_en", "semantic_v2_ar"].includes(suite)) return semanticV2Fixtures(suite.slice(-2));
   if (["semantic_en", "semantic_ar"].includes(suite)) return semanticFixtures(suite.slice(-2));
   if (suite !== "core") return extendedFixtures();
@@ -318,7 +322,7 @@ export function validateTargets(targets, suite = "core") {
   const ids = new Set();
   for (const t of targets) {
     check(
-      (!["core", "semantic_en", "semantic_ar", "semantic_v2_en", "semantic_v2_ar"].includes(suite) ? ["qwencloud"] : ["openai", "qwencloud"]).includes(
+      (!["core", "semantic_en", "semantic_ar", "semantic_v2_en", "semantic_v2_ar", "semantic_v2_metadata_en", "semantic_v2_metadata_ar"].includes(suite) ? ["qwencloud"] : ["openai", "qwencloud"]).includes(
         t.provider,
       ) &&
         typeof t.model === "string" &&
@@ -335,7 +339,7 @@ export function validateTargets(targets, suite = "core") {
     ids.add(t.provider + ":" + t.model);
     capabilitySchema.parse(t.capabilities);
   }
-  if (["semantic_en", "semantic_ar", "semantic_v2_en", "semantic_v2_ar"].includes(suite))
+  if (["semantic_en", "semantic_ar", "semantic_v2_en", "semantic_v2_ar", "semantic_v2_metadata_en", "semantic_v2_metadata_ar"].includes(suite))
     check(new Set(targets.map((t) => t.provider)).size === 2, "EVAL_BOTH_PROVIDERS_REQUIRED");
   if (suite === "extended_recheck")
     check(
@@ -377,6 +381,8 @@ export async function evaluate(
     "semantic_ar",
     "semantic_v2_en",
     "semantic_v2_ar",
+    "semantic_v2_metadata_en",
+    "semantic_v2_metadata_ar",
   ].includes(suite);
   let generations = 0,
     requests = 0;

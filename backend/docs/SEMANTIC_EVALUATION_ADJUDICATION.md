@@ -16,7 +16,7 @@ made no live model requests and changed no provider settings or billing controls
 ## Recorded results and adjudication
 
 DeepSeek v4 Pro through QwenCloud recorded **11/16 passing English cases** and
-**9/16 passing Arabic cases**. The other three configured targets did not produce
+**9/16 passing Arabic cases**. The other three evaluated targets did not produce
 qualifying answers because of quota or credit availability. These original counts
 are retained; the table explains the observed failures without relabeling the
 original reports.
@@ -47,6 +47,23 @@ checks require the source quantity from the affected reports clause, preserve th
 version 1 scorer bytes, reject mixed-version receipts and require explicit live
 activation. No version 2 live evaluation has been run. Passing these tests proves
 the specified scorer behavior, not model qualification.
+
+## Explicit future metadata-instruction campaign
+
+The separate `semantic_v2_metadata_en` and `semantic_v2_metadata_ar` choices use
+verifier instruction revision 5 with the same frozen version 2 corpus. Their case
+IDs and receipt `verification_policy_version: 5` are distinct. The baseline
+version 2 suites continue to use revision 4, allowing a future explicit comparison
+without rewriting either baseline. No live run of the metadata campaign has been
+performed. The four evaluated targets do not establish availability or quality
+for any other configured model.
+
+The new instructions apply classification handling only to the typed
+`requirements[*].category` path. They retain source and content identifiers, exact
+quotations and the existing report schema. The runtime continues to reject an
+unsupported factual claim even if the verifier incorrectly describes a category
+as a tender fact. Instructions may reduce that error; only a future authorized
+live evaluation can measure whether the model follows them.
 
 ## Evidence integrity
 
