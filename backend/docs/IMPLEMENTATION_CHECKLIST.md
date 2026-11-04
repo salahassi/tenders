@@ -10479,3 +10479,13 @@ No customer rows were copied, no providers called and no production business
 records changed. Older 22-migration and fixture-policy receipts remain historical.
 Application deployment, real saved-proposal/browser acceptance, provider semantic
 qualification, Arabic OCR quality and Word field-update acceptance remain open.
+
+
+### Final predeployment R0 refresh and actual target inspection — 2026-11-04
+
+- Refreshed the remaining-action matrix and R0 discovery index at `8d970aa`, retaining all 74 prior receipt hashes and adding 15 source-specific receipts (89 total). Final manifest has 24 migrations, canonical SHA-256 `4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76`.
+- Closed only the applicable local scopes: `865d840` backend 3,284/193 files, frontend 380/59, both types/builds; 537 operations + 11 schema + 16 Kubernetes; original-CA cloud restore 41933205779, all 13 Auth/Storage HTTP checks, 24 migrations and both cleanups. Runtime qualification, actual exact publication, local label-only promotion and final six-case HTTPS evidence are indexed separately from deployment.
+- Preserved limits: DOCX minimum measured margin 10.88 MiB; previous false disk-medium claim withdrawn; official OCR candidate rejected (3/7 overall, 0/4 Arabic); reserve 10/50 canonical single requests with 40 unsupported/no provider outputs; actual Microsoft Word field update still open.
+- Authorized read-only proposal inspection 41934185072 at `865d840` succeeded after missing encrypted-selection object 404 was retained and the unchanged 172-byte selection was re-uploaded/readback verified. Latest selected proposal remains blocked in analysis, with no active version/zero versions, one committed analysis result and 50 unknown usage rows. Cleanup passed; no model/retry/authorization/business mutation. Public evidence excludes customer identifiers/text.
+- Supported next step after verified release requires fresh server-owned current-contract details and explicit canonical cancel+generate, retaining predecessor accepted results, pins, budgets and unknown accounting. Legacy whole-plan successor helper is unsuitable. No export completion or deployment is claimed by this documentation.
+- Validation: all 89 indexed receipt files/hashes, unchanged prior hashes, action/evidence mappings, final manifest canonical hash and JSON parse checked; documentation-only changes, no package/native rerun.

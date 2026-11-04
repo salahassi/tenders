@@ -1,10 +1,10 @@
 {
-  "version": 4,
+  "version": 5,
   "status": "draft_not_release_acceptance",
-  "generated_at_utc": "2026-11-04T23:14:31.629845+00:00",
+  "generated_at_utc": "2026-11-04T23:35:08.412544+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
-  "observed_root_commit": "a7922ed717bdc6f8d4973fb9aa72979a5549d675",
-  "scope": "Public receipt discovery index for current remaining actions; no tests or external calls performed by this audit.",
+  "observed_root_commit": "8d970aa23f943d5909d194cdd8d466ab4dffee42",
+  "scope": "Public evidence index refreshed at final predeployment source; one authorized read-only hosted inspection is explicitly indexed. No model/provider call, release or business mutation performed by this refresh.",
   "r0_reference": "backend/docs/RELIABLE_PROPOSAL_ACCEPTANCE.md:83",
   "r0_completeness": "This index is not a per-case R0 completion certificate. Linked receipts retain their own source/fixture/image/migration/clock/policy bindings. Missing applicable R0 evidence remains unproven.",
   "never_infer": [
@@ -78,6 +78,20 @@
           "level": "L1/L2 focused correction",
           "observed_result": "Both stale direct-handler response-consumption fixtures corrected;33 affected tests and backend types pass.",
           "limits": "Product busy/approval/actor checks unchanged. Final full integrated rerun remains required."
+        },
+        {
+          "path": "backend/docs/evidence/complete-app-checks-865d840-20261104.json",
+          "sha256": "acd31a5b6cbfc7c7379d72cb0a9dab5c7c435e1c34973791f3dfd1b5ab291405",
+          "level": "L1/L2 complete frozen-source functional gates",
+          "observed_result": "At 865d840 backend 3,284 tests/193 files and frontend 380/59 pass; both package types/builds pass;933-file source map has no changes.",
+          "limits": "Functional checks, not native timing or hosted acceptance. Historical failed diagnostics remain retained."
+        },
+        {
+          "path": "backend/docs/evidence/final-operations-gates-865d840-20261104.json",
+          "sha256": "4e06a1e74b2d13ca23400c275f345fb04b432ebc020a4bbc5b8fc6e8f13b042c",
+          "level": "L1/L2 complete operations/schema/Kubernetes gates",
+          "observed_result": "At 865d840 all 537 operations,11 production-schema and 16 Kubernetes tests pass; source and final24 manifest unchanged.",
+          "limits": "Concurrent functional suites, not a capacity benchmark or actual production mutation."
         }
       ]
     },
@@ -96,7 +110,7 @@
           "sha256": "908f7aad07ff917a3b3cdbdf468cabf022a5d71bf2fa6ce8a617b661317c5908",
           "level": "L3",
           "observed_result": "Seven admitted native render/verification families passed; container peak 649199616/671088640 bytes.",
-          "limits": "Earlier single-job image. Later continuous-worker OOM failures and pending process-isolation API proof remain separate."
+          "limits": "Earlier single-job image. Later continuous-worker OOM failures and subsequent process-isolation API proofs remain separately indexed."
         },
         {
           "path": "backend/docs/evidence/docx-field-qualification-20261104.json",
@@ -333,6 +347,34 @@
           "level": "L1 source/helper verification",
           "observed_result": "26 helper,16 render,two real open-unlinked census and two actual-SDK adapter tests pass; final v2 source contract validates. Actual-Pod runtime/mount/resources/filesystem and target worker count are guarded.",
           "limits": "Synthetic Kubernetes objects; no deployed mutation. Oldauto Pods remain authorized repair input; final target still requires actual 1 worker."
+        },
+        {
+          "path": "backend/docs/evidence/https-api-streaming-diagnostics-20261104.json",
+          "sha256": "9f7440721ec206fd88437f4f74d52e3689cf6a5a594df6a7a5ff06d440634163",
+          "level": "L3 retained proxy diagnostics",
+          "observed_result": "Preserves earlier HTTPS fixture/image/filesystem/oracle failures separately from the final six-case result.",
+          "limits": "Diagnostic outcomes are not final qualification; no earlier failed scope is relabeled."
+        },
+        {
+          "path": "backend/docs/evidence/https-api-streaming-20261104.json",
+          "sha256": "a10f52cf769a39d1204354796039e0bb6147a7a3dfdee5bae63a1a4621aace72",
+          "level": "L3 actual pinned HTTPS/gateway processes",
+          "observed_result": "Exact deployed HTTPS image3a539c44 with final pinned-one-worker gateway passes identity/gzip/zstd full412758765 decoded bytes and three cancellation cases;162 health checks pass, no OOM/swap, cleanup verified. HTTPS peak25833472/134217728bytes.",
+          "limits": "HTTP/1.1 TLS with synthetic varying JSON; actual public LoadBalancer, hosted Auth/SQL, HTTP2/3, PVC durability and concurrent issuance SLO remain unproven."
+        },
+        {
+          "path": "backend/docs/evidence/final-proxy-proof-binding-20261104.json",
+          "sha256": "067e72e568035ecfdcf0b3e1a57392bd34ff5b433d027bf7765717e5724c8914",
+          "level": "L1 source/receipt binding",
+          "observed_result": "Final gateway and HTTPS source/config/image/receipt hashes bind actual retained qualifications;31 HTTPS and13 release checks pass.",
+          "limits": "No native rerun or hosted rollout; actual Pod/config/filesystem readback is a release step."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-manifest-and-https-disk-guards-20261104.json",
+          "sha256": "0626b206fbbb1d5e27b019fd3c4e003834ee442a206276a4ea1bddfc4056e0bb",
+          "level": "L1 release preflight regressions",
+          "observed_result": "Publication/source manifest and actual HTTPS disk-resource guards pass14 restore, 33 HTTPS, 15 release and 15 updater tests.",
+          "limits": "Synthetic negative guards; actual runtime publication/native/managed observations are separate receipts."
         }
       ]
     },
@@ -393,6 +435,13 @@
           "level": "L3 actual isolated Auth/Storage HTTP",
           "observed_result": "Fresh actual shared-helper drill passed all 13 Auth/Storage checks, original CA, 12 offline guards and both cleanup stages on source 28689b9.",
           "limits": "Shared production Auth helper exercised during isolated schema reconstruction; production Auth policies unchanged. No renderer/API capacity/model availability/hosted full-proposal issuance proof."
+        },
+        {
+          "path": "backend/docs/evidence/cloud-restore-20261104-41933205779.json",
+          "sha256": "087bf58995b6010a5d5fbd5f398c91c9dca4fef17c08a3f5a5de163846bc5bf2",
+          "level": "L4 isolated original-CA cloud restore",
+          "observed_result": "At 865d840 run41933205779 applies exact 24 migrations under manifest4cb2e712 and passes all 13 genuine Auth/Storage HTTP checks, original CA/hostname verification and both cleanup stages.",
+          "limits": "Synthetic isolated customer-free data; application renderer not exercised; no deployment, real proposal completion, RTO/RPO or issuance SLO claim."
         }
       ]
     },
@@ -470,6 +519,13 @@
           "level": "L1 pure release guards",
           "observed_result": "30HTTPS,11release-source,15update and13cloud-restore helper checks pass; no canonicalSQL changes.",
           "limits": "Pure fixtures do not qualify native images or hosted resources. Final pinned-worker/HTTPS receipt binding, manifest refreeze and actual renewed restore remain separate."
+        },
+        {
+          "path": "backend/docs/evidence/hosted-proposal-readonly-inspection-20261104.json",
+          "sha256": "04283d6214d284c3a95fbc4235e05a8eba3baf3eb8314207127757435dfb8164",
+          "level": "L4 authorized read-only real-target inspection",
+          "observed_result": "Run41934185072 at865d840 observes latest legacy proposal blocked/analysis/MODEL_CORRECTION_EXHAUSTED, no active version and zero versions, one committed analysis sibling and50 unknown usage rows. Missing historical selection404 retained; unchanged172-byte encrypted re-upload and cleanup succeeded.",
+          "limits": "No retry/provider/business mutation or completed export. Exact identities/content remain private; fresh server details required after deployment."
         }
       ]
     },
@@ -576,6 +632,34 @@
           "level": "L3 independent synthetic controls",
           "observed_result": "Single selected candidate evaluated without further tuning against independently frozen Arabic/mixed identifiers and the unchanged English control.",
           "limits": "Candidate damages mixed identifiers and the prior English pass; not adopted. Full source-bound adjudication is indexed separately."
+        },
+        {
+          "path": "backend/docs/evidence/uploaded-ocr-best-plan-20261104.json",
+          "sha256": "202e91264f49ea99a2a98a1accf3c3cabc5aa1c647210ff3125d6e1719fa9248",
+          "level": "L1 retained prospective plan",
+          "observed_result": "Retains original candidate plan before corrected baseline-provenance successor.",
+          "limits": "Plan is not an OCR result or automatic acceptance."
+        },
+        {
+          "path": "backend/docs/evidence/uploaded-ocr-best-plan-v2-20261104.json",
+          "sha256": "547e043b392d36fb87b6f3ca74135925e880016f29850b2382eb1bfe091032e4",
+          "level": "L1 prospective candidate plan",
+          "observed_result": "Pins official tessdata_best substitution and frozen seven-case whole-page oracle; baseline identified as tessdata_fast.",
+          "limits": "Known prior outcomes make this diagnostic comparison, not blind qualification."
+        },
+        {
+          "path": "backend/docs/evidence/uploaded-ocr-best-native-20261104.json",
+          "sha256": "4140e005f57b7e01abfe3d6f78e90e7914b3d7df28c8bb2a8f06fc9f0603545b",
+          "level": "L3 actual bounded native OCR",
+          "observed_result": "All 7 cases recognized;3 whole-page controls pass,0/4 Arabic pages pass. No provider calls; runtime defaults and mandatory review unchanged.",
+          "limits": "Official candidate fails Arabic acceptance; resource success does not establish source meaning."
+        },
+        {
+          "path": "backend/docs/evidence/uploaded-ocr-best-adjudication-20261104.json",
+          "sha256": "8a8e464effb01610ad20b796ddedfa727e7f0c10388a8a7950d45a726bad8b44",
+          "level": "L3 independent retained adjudication",
+          "observed_result": "Rejects official tessdata_best candidate:3/7 overall,0/4 Arabic,2 English controls and1 blank control pass, no infrastructure failure/OOM.",
+          "limits": "Gold unchanged; no runtime tuning adopted. Automatic Arabic remains unqualified and human correction remains required."
         }
       ]
     },
@@ -593,7 +677,7 @@
           "sha256": "046c9162cbf1e5c8e3f6ec91c04615f518b396a94bcab7c220a974ff1173692d",
           "level": "L2 actual PostgreSQL multiple sessions",
           "observed_result": "Six cases passed: concurrent single render lease, independent nonrender progress, lease replacement, twelve-package simulated burst, stale renderer rejection, and cross-workspace global mutex.",
-          "limits": "Synthetic storage receipts; no measured native throughput or hosted600-second service proof; one case relaxes singleton uniqueness only inside its explicit-workspace test fixture."
+          "limits": "Synthetic storage receipts; no measured native throughput or hosted 600-second service proof; one case relaxes singleton uniqueness only inside its explicit-workspace test fixture."
         }
       ]
     },
@@ -619,7 +703,7 @@
           "sha256": "009440e8790772cf081e4dd1661413b781ffdf2aca17f9cb34779362db471141",
           "level": "L3 actual PostgreSQL/PostgREST",
           "observed_result": "Sequential1/10/25/100-command batches passed at REST128 MiB/500m. Maximum delivered412758838 ordered bytes in1600 validated chunks over84.853s; manifest5.994s, replay48ms without writes, late conflict rolled back all changes.",
-          "limits": "Python digest consumer, not API/browser. PostgreSQL17.6 local1GiB safety fence is not managedDB capacity. Receipt precedes INSERT-backstop amendment; final source binding and actual API batch capacity remain pending."
+          "limits": "Python digest consumer, not API/browser. PostgreSQL17.6 local1GiB safety fence is not managedDB capacity. This historical receipt predates the INSERT backstop and the separately indexed final-source/actual API batch qualification."
         },
         {
           "path": "backend/docs/evidence/command-batch-chunks-sql-20261104.json",
@@ -633,7 +717,7 @@
           "sha256": "b7f9b61149d09dcaa8245076b92207ec3ce3f8d6691f3a03ffc333810ba7adb2",
           "level": "L1/L2",
           "observed_result": "Production API preserves exact ordered JSON values by streaming immutable chunks;71 focused and31 migrated integration cases pass without reconstructing the aggregate.",
-          "limits": "Synthetic upstream transport in these tests; current actual API-image memory proof remains pending. No new business-result quota or automatic retry."
+          "limits": "Synthetic upstream transport in these tests; actual API-image memory is established only by the later separately indexed native receipt. No new business-result quota or automatic retry."
         },
         {
           "path": "backend/docs/evidence/command-batch-insert-fence-20261104.json",
@@ -675,7 +759,7 @@
           "sha256": "0425595652d1cceb88003415329100d6c619f69b1abd5002fe68fd31b386e156",
           "level": "L1/L2 atomic release guards",
           "observed_result": "24-migration authority/source guards and44 rollback fault variants pass under the managed atomic method.",
-          "limits": "No hosted cutover; final actual manifest is still22 entries and must be refrozen with final proxy/runtime contracts."
+          "limits": "No hosted cutover. At this historical receipt the manifest still had22 entries; the later24-entry refreeze and final proof bindings are indexed separately."
         },
         {
           "path": "backend/docs/evidence/command-batch-exact-catalog-guards-20261104.json",
@@ -683,23 +767,32 @@
           "level": "L1/L2 catalog definition guards",
           "observed_result": "Exact legacy-trigger/chunk-constraint definitions reject WHEN(false) and ORtrue weakening; normal release/replay and fault variants pass.",
           "limits": "Canonical migration unchanged; source-specific local evidence, not final whole-suite or deployment acceptance."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-qualification-89af-20261104.json",
+          "sha256": "6e031a746917c8183f59264e6482df0b97e4b2515f9b45f2cfd9378cce80b0ac",
+          "level": "L3 exact image/source/layer inventory",
+          "observed_result": "Qualified89af runtime binds130 source files/146 filesystem entries and 17 ordered layers to native evidence and exact configuration.",
+          "limits": "Read-only never-started container inventory; does not rerun native tests or deploy the image."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-qualified-publication-20261104.json",
+          "sha256": "482838a7210dc9751d2c19393f115cb03e30c2c95c07357bb2a81d973a2ac6ee",
+          "level": "Registry publication with exact readback",
+          "observed_result": "Actual qualified image published as runtime@sha256:67fc1be0f574ea9b65e40408da436c3173fb4f332bb7729fe8da75e1ccaa4d28; pulled layers/config identical, temporary credentials removed.",
+          "limits": "Publication is not workload deployment; no native evidence or business data changed."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-label-promotion-20261104.json",
+          "sha256": "d6d50e529298263595e4d10ea71ca081701ad31a5f08df9e18457e4196357bc6",
+          "level": "Local label-only promotion proof",
+          "observed_result": "Local promotion changes only revision label; ordered layers and runtime config identical, source-bound qualification retained.",
+          "limits": "Probe was not pushed/deployed and does not claim a later release-head promotion has already occurred."
         }
       ]
     }
   ],
-  "pending_runtime_source_note": "At a7922ed, actual API100 and final pinned1 gateway disk transport are qualified at their explicit local scopes. Full current application/ops checks, final HTTPS binding, runtime image promotion, manifest refreeze, renewed24-migration restore and deployment remain pending.",
-  "reported_results_without_ingested_receipt": [
-    {
-      "subject": "Final HTTPS native chain",
-      "status": "pending_final_root_receipt_at_anchor",
-      "limits": "No qualification inferred from process reports; require exact final source/image/encoding/cleanup receipt."
-    },
-    {
-      "subject": "Runtime image provenance and promotion",
-      "status": "implementation_in_progress",
-      "limits": "No pushed/deployed final runtime image or complete release manifest inferred."
-    }
-  ],
+  "reported_results_without_ingested_receipt": [],
   "checklist_summary_counts": {
     "source": "backend/docs/IMPLEMENTATION_CHECKLIST.md",
     "at_commit": "fa3958e857b37bb05407f4a88594a443aadf66d1",
@@ -714,23 +807,28 @@
   },
   "remaining_static_findings": [
     {
-      "subject": "Final whole-path and hosted capacity",
-      "finding": "Actual isolated API100 plus final Nginx transport are measured separately; final HTTPS source-bound receipt/readback and hosted Auth/LoadBalancer acceptance remain distinct. The narrow10.88 MiB DOCX margin remains.",
-      "evidence_kind": "Exact layer receipts, no fabricated combined hosted path."
+      "subject": "Hosted whole-path acceptance",
+      "finding": "Final local API100, DOCX, Nginx and HTTPS layers pass their explicit scopes. Real hosted Auth/LoadBalancer/issuance and actual browser exports remain pending; minimum measured DOCX margin 10.88 MiB is unchanged.",
+      "evidence_kind": "Exact local layer receipts plus read-only actual resource/state observations; no fabricated combined hosted result."
     },
     {
-      "subject": "Final release manifest and cutover",
-      "finding": "File still22migrations/v1gateway; source 24 and finalv2pinned-worker proof. Guards/coordinator integrated; final helper/proof parity, image promotion and refreeze pending.",
-      "evidence_kind": "Direct file census at a7922ed; no release mutation."
+      "subject": "Checked release and current target",
+      "finding": "Final24 manifest4cb2e712, full865d840 functional gates and renewed cloud restore pass. Deployment is pending. Authorized real target has no completed version; an explicit current-contract successor must retain old accepted result/pins/unknown accounting.",
+      "evidence_kind": "Direct manifest hash, complete gates, original-CA restore and authorized read-only inspection."
+    },
+    {
+      "subject": "Remaining semantic and extraction limits",
+      "finding": "Reserve10/50 canonical single requests constructible,40 unsupported,no provider outputs; prior bounded retrieval9/16 remains. Official OCRbest3/7 with 0/4 Arabic rejected. Word field update/save remains unqualified.",
+      "evidence_kind": "Frozen per-case evidence; no score inflation or false automatic correctness."
     },
     {
       "subject": "Qualification scope correction",
-      "finding": "The earlier host-/tmp proxy run falsely labeled tmpfs as disk. Its disk claim is explicitly withdrawn; final native one-worker source validates actual filesystemmagic and FD census.",
-      "evidence_kind": "Preserved original receipts plus explicit correction and independent final rerun."
+      "finding": "Earlier host-/tmp disk claim withdrawn; preserved original failure receipts and final filesystem-verified pinned-worker/HTTPS proofs remain distinct.",
+      "evidence_kind": "Immutable historical hashes plus explicit correction."
     }
   ],
-  "previous_observed_root_commit": "256c50e0deaba7f38e6985a58259e5a108742c60",
-  "refresh_requested_anchor": "a7922ed717bdc6f8d4973fb9aa72979a5549d675",
+  "previous_observed_root_commit": "a7922ed717bdc6f8d4973fb9aa72979a5549d675",
+  "refresh_requested_anchor": "8d970aa23f943d5909d194cdd8d466ab4dffee42",
   "historical_runtime_source_hashes": {
     "backend/deploy/Dockerfile": "503d4774ce8b42d80d8216371f029d22e3d7bc06e51e12593fbe9eb9db9ce001",
     "backend/supabase/functions/_shared/deliveryVerifyIsolation.ts": "44271ef4e47799ba5c6be97fcb5896bea47fe04b64e83e9c8420c7f8345041a8",
@@ -756,5 +854,7 @@
     "backend/deploy/kubernetes/Caddyfile": "f1739441ed4e26ff1806d06a8953bfa7bc8e50e5fb93fab80956ee759cf1bbc0",
     "backend/scripts/ops/storage-gateway-update.py": "5d8b15b9f4cdd19ad17c986a84952a4db7561bb008b4a88151fe35ffde4324c8",
     "backend/scripts/ops/command-batch-cutover.py": "cbded3595dfc8447c3dfa6e4e9cb4d78b7a98ba98de621c287b0d0fb6e1f81e0"
-  }
+  },
+  "historical_revision4_runtime_source_note": "At a7922ed, actual API100 and final pinned1 gateway disk transport are qualified at their explicit local scopes. Full current application/ops checks, final HTTPS binding, runtime image promotion, manifest refreeze, renewed24-migration restore and deployment remain pending.",
+  "current_runtime_source_note": "At8d970aa the865d840 full application/ops gates, final HTTPS source binding, exact qualified image publication, local label-only promotion proof, final24 manifest and renewed isolated24-migration restore pass at their recorded scopes. Deployment and authenticated hosted acceptance remain pending."
 }
