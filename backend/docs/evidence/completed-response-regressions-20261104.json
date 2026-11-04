@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "baseline": "256c50e",
+  "scope": "Direct-handler tests consume complete responses before the next request; product admission and approval rules unchanged",
+  "source_hashes": {
+    "backend/tests/backend/ordinaryExportPipeline.integration.test.ts": "2fc2ddfc4cd2b098de0395f7d74604012e4712fc88deda4a24e3cec46641a656",
+    "backend/tests/backend/uploadedDocumentOcrTransport.test.ts": "3083c5e8680bbb233f602228d68b0470040fd45b2d2d0be6663fb81bc70dc436"
+  },
+  "focused_tests": {
+    "passed": 33,
+    "files": 2,
+    "seconds": 16.84,
+    "log_sha256": "75b7a9b0c80f5a8704fa82b2afe0827dfb86c300a73d3265f5fa635d29beff38"
+  },
+  "typecheck": {
+    "passed": true,
+    "log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220"
+  },
+  "final_full_backend_green": false,
+  "deployment_proven": false
+}

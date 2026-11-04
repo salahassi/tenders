@@ -144,6 +144,11 @@ it("actual API accepts reviewed full-page correction with pinned hashes and stab
   const { handle, backend } = api();
   const response = await handle(request(correction));
   expect(response.status).toBe(202);
+  expect((await response.json()).data).toMatchObject({
+    id,
+    revision: 3,
+    ocr_status: "queued",
+  });
   expect(backend.command).toHaveBeenCalledWith(
     "synthetic-user",
     "document.extraction.correct",

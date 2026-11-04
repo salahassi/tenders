@@ -9757,3 +9757,26 @@ must verify actual runtime gateway bindings, drain observable old transactions,
 acquire the legacy-table lock before the repeatable-read snapshot, then recheck
 zero and install the permanent SQL INSERT backstop. The routing receipt does not
 claim those database or hosted cutover guarantees; the coordinator owns them.
+
+### November 4 — integrated package diagnostic and complete-response test corrections
+
+At `256c50e`, both packages passed typecheck/build; frontend passed all380 tests
+in59 files. The full backend run completed with3,135 passes and two failures
+across189 files in468.51 seconds. All899 captured source hashes were unchanged.
+The [diagnostic receipt](evidence/combined-app-diagnostic-20261104-256c50e.json)
+preserves the exact commands, hashes, durations and failures; this is not a full
+green backend result.
+
+Both failures were direct-handler tests that read only the successful response
+status before making another request. The new heavy-file permit correctly
+remains held until response EOF/cancellation, so the subsequent approval/actor
+assertions saw busy503 rather than reaching their intended checks. The ordinary
+final-export test now consumes and checks the complete byte count before
+invalidating approval; the OCR correction test consumes and checks the accepted
+response before attempting a forged actor. No product gate, permission or
+approval rule was weakened.
+
+All33 tests in the two affected files and backend typecheck pass after these
+corrections; [scoped receipt](evidence/completed-response-regressions-20261104.json).
+A complete final backend rerun remains required after the remaining source
+integration. No deployment, provider call or hosted acceptance occurred.

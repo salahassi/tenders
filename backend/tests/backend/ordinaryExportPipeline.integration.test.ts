@@ -405,7 +405,11 @@ it("renders the real approved ordinary final and rechecks its approval before do
   expect(result.status).toBe("ready");
   expect(d.render.mock.calls[0][0].mode).toBe("final");
   const path = `export-artifacts/${result.artifacts[0].id}/download`;
-  expect((await d.request(path)).status).toBe(200);
+  const downloaded = await d.request(path);
+  expect(downloaded.status).toBe(200);
+  expect((await downloaded.arrayBuffer()).byteLength).toBe(
+    Number(result.artifacts[0].expected_size),
+  );
   await fixture.f.db.query(
     "update public.approvals set invalidated_at=clock_timestamp() where proposal_version_id=$1",
     [d.version],
