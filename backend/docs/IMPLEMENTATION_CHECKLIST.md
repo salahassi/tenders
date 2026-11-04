@@ -70,6 +70,27 @@ are absent. This confirms the new implementation is not deployed yet. API/worker
 use image digest `85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380`;
 image source revisions remain independently unverified. This is a current baseline
 for a guarded release, not hosted proposal/model acceptance or schema-tip proof.
+## November 4 — G12 initial all-page document qualification
+
+The actual integrated renderers 1/2/3 produced **18 verified DOCX files** from
+12 synthetic Arabic/English, combined/separate-volume snapshots. All **91 PDF
+pages** were inspected across 20 labelled contact sheets, with full-page checks
+for field defects. Long tables (40 technical and 32 financial rows), all seven
+typed gap reasons, renderer-3 inline/table placeholders, zero values, Arabic
+direction and repeated headers remained visible without observed clipping or
+overlap. Payload/source/DOCX/PDF/page/contact hashes and explicit visual review
+are recorded in [the G12 qualification report](DELIVERY_VISUAL_QUALIFICATION.md).
+
+**Initial result: corrections required.** LibreOffice does not display TOC page
+number results and renders footer PAGE results yellow across every fixture.
+The shared renderer correction and a fresh all-page rerun remain pending;
+some sparse gap-only final pages are a minor observation. Backend typecheck and
+Python compilation pass for the reproducible fixture/page tools. Existing full
+package gates remain the prior operations evidence below; the coordinator owns
+the final integrated checks. This is synthetic layout evidence only: no model,
+production, hosted download, Microsoft Word or 600-second issuance claim is
+made. Initial artifacts are preserved before any field correction.
+
 ## November 4 — isolated release reconstruction and recovery gate
 
 The explicit `doks-access.yml` **restore** mode uses the established original-CA

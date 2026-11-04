@@ -1,0 +1,484 @@
+{
+  "version": 1,
+  "reviewed_at_utc": "2026-11-04",
+  "stage": "G12",
+  "disposition": "changes_required",
+  "source_hash": "93a13ac87893da6cb3e47f6479f4641158d4f0aae8c496a0979f45a6acac9b3c",
+  "render_receipt_sha256": "f1895329de090dc3d5e29b70af04681163f7ed74678448352acb15e9e0547a66",
+  "page_receipt_sha256": "cf584b6f94a380c2b51e02287abdeb6e739acc746e92262b184d446e25402b7d",
+  "method": "Manual visual inspection of all 20 labelled contact sheets, containing every page; additional full-page TOC inspection. DOCX contents independently checked with actual verifyExportDocx.",
+  "documents_reviewed": 18,
+  "pages_reviewed": 91,
+  "files": [
+    {
+      "file": "v1-en-combined-combined",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v1-en-combined-combined-01.png",
+          "sha256": "304b8845d92c239bce24cf55b995595f8fab9ff10fcb21d6b3989934685ea8ff",
+          "pages": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v1-en-separate-technical",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v1-en-separate-technical-01.png",
+          "sha256": "5e4d01e43929cf9ea496333cd6f4bece81e89a5a98fc1c7ad3bc4f70541412a4",
+          "pages": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v1-en-separate-financial",
+      "pages_reviewed": [
+        1,
+        2,
+        3
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v1-en-separate-financial-01.png",
+          "sha256": "e3ff71a154410fb1b98b1031e15269cad84591a8314f19f40f58944b11961dd3",
+          "pages": [
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v1-ar-combined-combined",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v1-ar-combined-combined-01.png",
+          "sha256": "387d40c4f23e555f82f7b0d92967401004b09948b0ea05202c21f31a6c68fd10",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v1-ar-separate-technical",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v1-ar-separate-technical-01.png",
+          "sha256": "4c76a548101ee875d45869ecb7f9d6c6cf9e9f28e3c07bf339ba55f7b1b09f9f",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v1-ar-separate-financial",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v1-ar-separate-financial-01.png",
+          "sha256": "d15284da27900174ce73ef0b5bc7a55f23af45c02ac1762489847c386600fca7",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v2-en-combined-combined",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v2-en-combined-combined-01.png",
+          "sha256": "00ec5f7028d6c3333f90a2a24d50cf66a3709275f1786b3a7c9c5184018499e1",
+          "pages": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v2-en-separate-technical",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v2-en-separate-technical-01.png",
+          "sha256": "df30018266f4fbc5a4d02c77f7de475f506e14f288f135fa6b93c2f9ef52ca16",
+          "pages": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v2-en-separate-financial",
+      "pages_reviewed": [
+        1,
+        2,
+        3
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v2-en-separate-financial-01.png",
+          "sha256": "d5ed2e1a96c7bafdbbc0e24287d00fe3ff3e7ec2682c489970889190ccad917a",
+          "pages": [
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v2-ar-combined-combined",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v2-ar-combined-combined-01.png",
+          "sha256": "2284ca3836d3709cf09fe1c5baaacaf92c3e2caf7337270626f0fd553c5da6c5",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v2-ar-separate-technical",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v2-ar-separate-technical-01.png",
+          "sha256": "88e1a1b1f84ef260a9b6f2e19f235e121c6aa185e87b8757e1020b7b52823c1d",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v2-ar-separate-financial",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v2-ar-separate-financial-01.png",
+          "sha256": "26fd71c16704edd2386dd819975e0c8e7f421107ff638ec67343d45efd5f1d9d",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v3-en-combined-combined",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v3-en-combined-combined-01.png",
+          "sha256": "7b70f73951956b36da8337c13f58fb82f38b205d3bd13e67c40468a35361fc48",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "file": "contact-sheets/v3-en-combined-combined-02.png",
+          "sha256": "338abeb5777e2028cc93ca527748e2598a24cc4f86a31a63ef55c2db3fde9354",
+          "pages": [
+            7,
+            8,
+            9
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v3-en-separate-technical",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v3-en-separate-technical-01.png",
+          "sha256": "dbdc6b8260b3b44854d5349ba85d69d61ea913df233e4ee372f9a021f4368e3e",
+          "pages": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v3-en-separate-financial",
+      "pages_reviewed": [
+        1,
+        2,
+        3
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v3-en-separate-financial-01.png",
+          "sha256": "9d820358a383994396cf82214f27808b07926bfd59d32da71d1c33551f38369e",
+          "pages": [
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v3-ar-combined-combined",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v3-ar-combined-combined-01.png",
+          "sha256": "735ae82d07f7ee9f6f9e1cbdb3bb576a8d27fbc4cf19a0728fafa98303e9a639",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v3-ar-separate-technical",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v3-ar-separate-technical-01.png",
+          "sha256": "10e946ab6efadf52ae683d93b11f814659447b6865d0d3186417c9c13650fb22",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v3-ar-separate-financial",
+      "pages_reviewed": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v3-ar-separate-financial-01.png",
+          "sha256": "08c872f1b938408e73423c73f8544f7f12e441be4af29efc6585f64b96b8165e",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "file": "contact-sheets/v3-ar-separate-financial-02.png",
+          "sha256": "ff0adcdb321c606f569b878959180678f53064821aa048d30d8724d4bef3e9d9",
+          "pages": [
+            7,
+            8,
+            9,
+            10
+          ]
+        }
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "id": "G12-01",
+      "severity": "medium",
+      "status": "open",
+      "description": "LibreOffice PDF TOC displays headings and dot leaders but no page-number results. All 18 documents affected. OOXML contains TOC and PAGEREF instructions; a field-interoperability correction is required, not estimated numbers.",
+      "evidence": "pages/v1-en-combined-combined-002.png"
+    },
+    {
+      "id": "G12-02",
+      "severity": "medium",
+      "status": "open",
+      "description": "Footer PAGE field result is yellow although it is not a missing input. All 91 inspected pages affected; original footer XML does not explicitly set highlight.",
+      "evidence": "pages/v1-en-combined-combined-002.png"
+    },
+    {
+      "id": "G12-03",
+      "severity": "low",
+      "status": "observed",
+      "description": "Some final pages contain only one or two gap paragraphs. Content remains visible; page layout is sparse.",
+      "examples": [
+        "v1-ar-separate-financial:5",
+        "v2-ar-separate-financial:5",
+        "v2-en-separate-technical:4",
+        "v3-en-separate-technical:4"
+      ]
+    }
+  ],
+  "observed_passes": [
+    "Arabic shaping and RTL text are legible with mixed-direction identifiers.",
+    "All expected typed gap labels are visible and yellow in each applicable volume.",
+    "Generated-review inline and table-cell placeholders are yellow.",
+    "Long tables repeat their headers and retain all 40 technical and 32 financial rows without observed clipping or overlap.",
+    "Technical and financial volume contents are separated as requested; shared sections repeat intentionally.",
+    "Zero numeric values and cover/draft assurance labels remain visible."
+  ],
+  "limits": [
+    "Synthetic layout fixtures only; no customer data or database/model/provider calls.",
+    "LibreOfficeDev 26.8 conversion; Microsoft Word desktop/web not tested.",
+    "No claim of model accuracy, source truth, business approval, production issuance, 600-second SLO, or maximal-size document coverage.",
+    "Current initial qualification predates field fixes and pending ordinary-export integration. Fresh source-bound final rerun required."
+  ]
+}
