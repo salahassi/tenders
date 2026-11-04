@@ -60,8 +60,16 @@ class DeliveryReleaseTests(unittest.TestCase):
         for name,text in [(p.https_capacity.CONFIG,config),(p.https_capacity.QUALIFICATION,json.dumps(self.https_qualification))]:
             path=self.gateway_root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
 
+        # Explicitly synthetic publication fixture: no image is published here.
+        runtime_receipt={'version':1,'qualified_image':{'id':'sha256:89afc8a31d76e1616ad17e5896e0fc54f0acdc41cd7da389af456386f3e998fe'},'fixture':'synthetic-only'}
+        runtime_bytes=json.dumps(runtime_receipt).encode()
+        runtime_helper="QUALIFIED_ID = "+repr(runtime_receipt['qualified_image']['id'])+"\nREGISTRY = 'registry.digitalocean.com/tenderdesk-a6093a76/runtime'\nRECEIPT_SHA256 = "+repr(hashlib.sha256(runtime_bytes).hexdigest())+'\n'
+        self.runtime_publication={'version':1,'qualified_image_id':runtime_receipt['qualified_image']['id'],'reference':'registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:'+'d'*64,'fixture':'synthetic-only'}
+        for name,data in [(p.RUNTIME_HELPER,runtime_helper.encode()),(p.RUNTIME_QUALIFICATION,runtime_bytes),(p.RUNTIME_PUBLICATION,json.dumps(self.runtime_publication).encode())]:
+            target=self.gateway_root/name;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(data)
+
     def verify(self,manifest,**kwargs):
-        return p.verify_source(manifest,gateway_root=self.gateway_root,https_root=self.gateway_root,**kwargs)
+        return p.verify_source(manifest,gateway_root=self.gateway_root,https_root=self.gateway_root,runtime_root=self.gateway_root,**kwargs)
 
     def inventory(self):
         return {'version':1,'namespace':'tenderdesk-dev','ready_workloads':10,'inventory':'captured',
@@ -72,7 +80,7 @@ class DeliveryReleaseTests(unittest.TestCase):
             {'release':'prior-release-'+str(i),'migration_sha256':str(i)*64} for i in range(1,7)]}}
 
     def manifest(self):
-        return p.freeze(self.inventory(),gateway_root=self.gateway_root,https_root=self.gateway_root)
+        return p.freeze(self.inventory(),gateway_root=self.gateway_root,https_root=self.gateway_root,runtime_root=self.gateway_root)
 
     def test_every_final_contract_is_required_before_freezing(self):
         manifest=self.manifest()
@@ -86,7 +94,7 @@ class DeliveryReleaseTests(unittest.TestCase):
             for name in p.REQUIRED:
                 path=folder/name;data=path.read_bytes();path.unlink()
                 with self.subTest(name=name),self.assertRaisesRegex(p.ReleaseError,'MIGRATION_MISSING'):
-                    p.freeze(self.inventory(),migrations=folder,gateway_root=self.gateway_root,https_root=self.gateway_root)
+                    p.freeze(self.inventory(),migrations=folder,gateway_root=self.gateway_root,https_root=self.gateway_root,runtime_root=self.gateway_root)
                 path.write_bytes(data)
 
     def test_final_capabilities_cannot_be_downgraded_or_coerced(self):
@@ -161,7 +169,7 @@ class DeliveryReleaseTests(unittest.TestCase):
             with self.subTest(mutation=mutation),self.assertRaises(p.ReleaseError):self.verify(changed)
         bad=self.inventory();next(row for row in bad['workloads'] if row['name']=='gateway')['image']='registry.example/nginx@sha256:'+'f'*64
         with self.assertRaisesRegex(p.ReleaseError,'GATEWAY_IMAGE_CHANGED'):
-            p.freeze(bad,gateway_root=self.gateway_root,https_root=self.gateway_root)
+            p.freeze(bad,gateway_root=self.gateway_root,https_root=self.gateway_root,runtime_root=self.gateway_root)
 
     def test_streaming_proof_requires_exact_disk_envelope_and_transitive_receipt(self):
         manifest=self.manifest();path=self.gateway_root/p.GATEWAY_STREAM_QUALIFICATION;raw=path.read_bytes()
@@ -225,10 +233,31 @@ class DeliveryReleaseTests(unittest.TestCase):
         changed=copy.deepcopy(manifest);del changed['https_configuration']
         with self.assertRaisesRegex(p.ReleaseError,'MANIFEST_INVALID'):self.verify(changed)
         changed=self.inventory();next(row for row in changed['workloads'] if row['name']=='https')['image']=self.https_image[:-1]+'f'
-        with self.assertRaisesRegex(p.ReleaseError,'HTTPS_IMAGE_CHANGED'):p.freeze(changed,gateway_root=self.gateway_root,https_root=self.gateway_root)
+        with self.assertRaisesRegex(p.ReleaseError,'HTTPS_IMAGE_CHANGED'):p.freeze(changed,gateway_root=self.gateway_root,https_root=self.gateway_root,runtime_root=self.gateway_root)
         path=self.gateway_root/p.https_capacity.QUALIFICATION
         path.write_text(json.dumps({**self.https_qualification,'receipt_revision':2}))
         with self.assertRaisesRegex(p.ReleaseError,'HTTPS_SOURCE_CHANGED'):self.verify(manifest)
+
+    def test_runtime_qualification_manifest_binds_all_operational_inputs(self):
+        manifest=self.manifest();value=manifest['runtime_qualification'];self.verify(manifest)
+        self.assertEqual(value['published_reference'],self.runtime_publication['reference'])
+        for key in value:
+            changed=copy.deepcopy(manifest);changed['runtime_qualification'][key]=None
+            with self.subTest(key=key),self.assertRaisesRegex(p.ReleaseError,'RUNTIME_SOURCE_CHANGED'):self.verify(changed)
+        for filename in (p.RUNTIME_HELPER,p.RUNTIME_PUBLICATION):
+            path=self.gateway_root/filename;raw=path.read_bytes();path.write_bytes(raw+b'\n')
+            with self.subTest(filename=filename),self.assertRaisesRegex(p.ReleaseError,'RUNTIME_SOURCE_CHANGED'):self.verify(manifest)
+            path.write_bytes(raw)
+        receipt=self.gateway_root/p.RUNTIME_QUALIFICATION;receipt.write_bytes(receipt.read_bytes()+b'\n')
+        with self.assertRaisesRegex(p.ReleaseError,'RUNTIME_QUALIFICATION_INVALID'):self.verify(manifest)
+
+    def test_pending_or_wrong_runtime_publication_cannot_freeze(self):
+        path=self.gateway_root/p.RUNTIME_PUBLICATION
+        for field,value in [('reference',None),('reference','registry.other/runtime@sha256:'+'d'*64),('qualified_image_id','sha256:'+'f'*64),('version',True)]:
+            path.write_text(json.dumps({**self.runtime_publication,field:value}))
+            with self.subTest(field=field,value=value),self.assertRaisesRegex(p.ReleaseError,'RUNTIME_PUBLICATION_REQUIRED'):self.manifest()
+        path.unlink()
+        with self.assertRaisesRegex(p.ReleaseError,'RUNTIME_QUALIFICATION_UNAVAILABLE'):self.manifest()
 
     def test_gateway_qualification_is_strict_and_current(self):
         path=self.gateway_root/p.GATEWAY_QUALIFICATION;raw=path.read_bytes()

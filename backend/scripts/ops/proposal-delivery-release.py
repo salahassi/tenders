@@ -170,7 +170,41 @@ def https_configuration(root=ROOT):
     try:return https_capacity.source_contract(root)
     except https_capacity.HttpsError as error:raise ReleaseError(str(error)) from None
 
-def freeze(inventory, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT, auth_root=ROOT, https_root=ROOT):
+RUNTIME_HELPER = 'scripts/ops/runtime-qualification.py'
+RUNTIME_QUALIFICATION = 'docs/evidence/runtime-qualification-89af-20261104.json'
+RUNTIME_PUBLICATION = 'docs/evidence/runtime-qualified-publication-20261104.json'
+
+def runtime_qualification(root=ROOT):
+    values={}
+    for key,name in [('helper',RUNTIME_HELPER),('receipt',RUNTIME_QUALIFICATION),('publication',RUNTIME_PUBLICATION)]:
+        path=root/name
+        if not path.is_file() or path.is_symlink() or path.stat().st_size>1048576:
+            raise ReleaseError('DELIVERY_RELEASE_RUNTIME_QUALIFICATION_UNAVAILABLE')
+        try:values[key]=(path.read_bytes(),path.read_text())
+        except (OSError,UnicodeError):raise ReleaseError('DELIVERY_RELEASE_RUNTIME_QUALIFICATION_UNAVAILABLE') from None
+    try:
+        tree=ast.parse(values['helper'][1]);constants={}
+        for name in ('QUALIFIED_ID','RECEIPT_SHA256','REGISTRY'):
+            found=[ast.literal_eval(node.value) for node in tree.body if isinstance(node,ast.Assign)
+              and any(isinstance(target,ast.Name) and target.id==name for target in node.targets)]
+            if len(found)!=1:raise ValueError()
+            constants[name]=found[0]
+        receipt=json.loads(values['receipt'][1]);publication=json.loads(values['publication'][1])
+    except (SyntaxError,ValueError,TypeError):raise ReleaseError('DELIVERY_RELEASE_RUNTIME_QUALIFICATION_INVALID') from None
+    if (constants['QUALIFIED_ID']!='sha256:89afc8a31d76e1616ad17e5896e0fc54f0acdc41cd7da389af456386f3e998fe'
+      or constants['REGISTRY']!='registry.digitalocean.com/tenderdesk-a6093a76/runtime'
+      or digest(values['receipt'][0])!=constants['RECEIPT_SHA256'] or not isinstance(receipt,dict)
+      or type(receipt.get('version')) is not int or receipt['version']!=1
+      or not isinstance(receipt.get('qualified_image'),dict) or receipt['qualified_image'].get('id')!=constants['QUALIFIED_ID']):
+        raise ReleaseError('DELIVERY_RELEASE_RUNTIME_QUALIFICATION_INVALID')
+    if (not isinstance(publication,dict) or type(publication.get('version')) is not int or publication['version']!=1
+      or publication.get('qualified_image_id')!=constants['QUALIFIED_ID'] or not isinstance(publication.get('reference'),str)
+      or not re.fullmatch(re.escape(constants['REGISTRY'])+r'@sha256:[a-f0-9]{64}',publication['reference'])):
+        raise ReleaseError('DELIVERY_RELEASE_RUNTIME_PUBLICATION_REQUIRED')
+    return {'version':1,'qualified_image_id':constants['QUALIFIED_ID'],'receipt_sha256':digest(values['receipt'][0]),
+      'helper_sha256':digest(values['helper'][0]),'publication_sha256':digest(values['publication'][0]),'published_reference':publication['reference']}
+
+def freeze(inventory, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT, auth_root=ROOT, https_root=ROOT, runtime_root=ROOT):
     if (inventory.get('version')!=1 or inventory.get('namespace')!='tenderdesk-dev' or inventory.get('ready_workloads')!=10
       or inventory.get('inventory')!='captured' or inventory.get('bootstrap_run') is not False
       or inventory.get('business_mutations')!=0 or inventory.get('schema_mutations')!=0
@@ -193,7 +227,8 @@ def freeze(inventory, *, migrations=ROOT/'supabase/migrations', gateway_root=ROO
     https=https_configuration(https_root)
     if images['https']!=https['image']:raise ReleaseError('DELIVERY_RELEASE_HTTPS_IMAGE_CHANGED')
     if images['gateway']!=gateway['gateway_image']:raise ReleaseError('DELIVERY_RELEASE_GATEWAY_IMAGE_CHANGED')
-    return {'version':1,'release':RELEASE,'gateway_configuration':gateway,'https_configuration':https,'application_auth_read':auth_read.contract(auth_root),'baseline_images':images,'baseline_native_schedules':schedules,**json.loads(canonical(CAPABILITIES)),'baseline_catalog_sha256':schema['routine_catalog_sha256'],
+    qualification=runtime_qualification(runtime_root)
+    return {'version':1,'release':RELEASE,'runtime_qualification':qualification,'gateway_configuration':gateway,'https_configuration':https,'application_auth_read':auth_read.contract(auth_root),'baseline_images':images,'baseline_native_schedules':schedules,**json.loads(canonical(CAPABILITIES)),'baseline_catalog_sha256':schema['routine_catalog_sha256'],
       'baseline_releases':releases,'migrations':[{'name':p.name,'sha256':digest(p.read_bytes())} for p in files]}
 
 def validate_runtime_baseline(manifest):
@@ -219,8 +254,8 @@ def validate_runtime_baseline(manifest):
             for quantity in group.values():
                 if quantity is not None and (not isinstance(quantity,str) or len(quantity)>24 or not re.fullmatch(r'[0-9]{1,15}(?:\.[0-9]{1,9})?(?:m|Ki|Mi|Gi|Ti|K|M|G|T)?',quantity)):raise ReleaseError('DELIVERY_RELEASE_NATIVE_BASELINE_REQUIRED')
 
-def verify_source(manifest, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT, auth_root=ROOT, https_root=ROOT):
-    if not isinstance(manifest,dict) or set(manifest)!={'version','release','baseline_catalog_sha256','baseline_releases','migrations','baseline_images','baseline_native_schedules','gateway_configuration','https_configuration','application_auth_read',*CAPABILITIES} or manifest['version']!=1 or manifest['release']!=RELEASE:
+def verify_source(manifest, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT, auth_root=ROOT, https_root=ROOT, runtime_root=ROOT):
+    if not isinstance(manifest,dict) or set(manifest)!={'version','release','baseline_catalog_sha256','baseline_releases','migrations','baseline_images','baseline_native_schedules','gateway_configuration','https_configuration','runtime_qualification','application_auth_read',*CAPABILITIES} or manifest['version']!=1 or manifest['release']!=RELEASE:
         raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     if not re.fullmatch('[a-f0-9]{64}',manifest['baseline_catalog_sha256']): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     validate_runtime_baseline(manifest)
@@ -232,6 +267,7 @@ def verify_source(manifest, *, migrations=ROOT/'supabase/migrations', gateway_ro
     https=https_configuration(https_root)
     if canonical(manifest['https_configuration'])!=canonical(https):raise ReleaseError('DELIVERY_RELEASE_HTTPS_SOURCE_CHANGED')
     if manifest['baseline_images']['https']!=https['image']:raise ReleaseError('DELIVERY_RELEASE_HTTPS_IMAGE_CHANGED')
+    if canonical(manifest['runtime_qualification'])!=canonical(runtime_qualification(runtime_root)):raise ReleaseError('DELIVERY_RELEASE_RUNTIME_SOURCE_CHANGED')
     receipts=manifest['baseline_releases']
     if not isinstance(receipts,dict) or len(receipts)!=6 or any(not re.fullmatch('[a-z][a-z0-9-]{1,100}',k) or not re.fullmatch('[a-f0-9]{64}',v) for k,v in receipts.items()):
         raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')

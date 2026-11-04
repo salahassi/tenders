@@ -10383,3 +10383,28 @@ anchor. Static verification checks every linked receipt hash and all nine
 action/evidence mappings; no tests, provider calls or production operations
 were performed by this refresh. Native document minimum margin remains
 10.88 MiB; the index preserves each measurement's exact fixture/source limits.
+
+### November 4 — freeze runtime promotion provenance and verify HTTPS temporary storage
+
+The release manifest now binds the runtime qualification helper, immutable
+89af image qualification receipt, and actual publication receipt/reference.
+Missing or null publication blocks freezing; byte drift in any bound input
+invalidates the manifest. This preserves the reviewed label-only promotion path
+and does not equate a source revision label with a native-qualified filesystem.
+The image helper separately verifies the full ordered layers and image
+configuration at preparation and final selected-digest inspection. Canonical
+migrations and existing receipt history are unchanged.
+
+HTTPS now also checks that `/tmp` is a whole writable default-medium emptyDir
+with at least the qualified configured size, then reads its actual filesystem
+magic through a fixed `stat` command in each ready Pod before and after rollout.
+Memory-backed, unknown, changed or partial mounts fail closed. The declaration is
+not presented as a hard filesystem cap; no TLS-state content is read.
+
+Local checks passed: 33 HTTPS boundary tests, 15 release/source tests, 15 updater
+fault tests and 14 cloud-restore helper tests. The actual frozen runtime helper
+and qualification artifact were read and its still-null publication correctly
+refused at this check. [Evidence](evidence/runtime-manifest-and-https-disk-guards-20261104.json)
+binds the local source/logs. Actual publication, final manifest, the renewed
+isolated cloud drill, complete integration suites and hosted deployment remain
+separate root-owned gates; no hosted operation was performed by these checks.

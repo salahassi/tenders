@@ -77,11 +77,22 @@ def container(spec,contract):
  need(len(v)==1 and set(v[0])=={'name','configMap'} and v[0]['configMap'].get('name')=='https-config' and not v[0]['configMap'].get('items'),'MOUNT_CHANGED')
  return c
 
+def temporary_volume(spec,parse_resources):
+ c=spec['containers'][0];mounts=[m for m in c['volumeMounts'] if m.get('mountPath')=='/tmp']
+ need(len(mounts)==1 and not mounts[0].get('readOnly') and not mounts[0].get('subPath') and not mounts[0].get('subPathExpr'),'TMP_MOUNT_CHANGED')
+ volumes=[v for v in spec.get('volumes',[]) if v.get('name')==mounts[0].get('name')]
+ need(len(volumes)==1 and set(volumes[0])=={'name','emptyDir'} and isinstance(volumes[0]['emptyDir'],dict) and not volumes[0]['emptyDir'].get('medium'),'TMP_VOLUME_CHANGED')
+ # Reuse the exact quantity parser; the synthetic CPU here only supplies its
+ # required shape. This is a configured storage minimum, not a hard-cap claim.
+ value=parse_resources({'limits':{'cpu':'300m','memory':volumes[0]['emptyDir'].get('sizeLimit')}},1,MINIMUM_CPU,67108864,'DELIVERY_HTTPS_TMP_')
+ return {'configured_size_bytes':value['memory_bytes'],'hard_filesystem_cap_proved':False}
+
 def observed(d,deployment,contract,parse_resources):
  spec=deployment.get('spec',{});replicas=spec.get('replicas');template=spec.get('template',{})
  need(type(replicas) is int and replicas>=1 and template.get('metadata',{}).get('annotations',{}).get(CHECKSUM)==contract['config_data_sha256'],'TEMPLATE_CHANGED')
  c=container(template.get('spec',{}),contract)
  resources=parse_resources(c.get('resources',{}),replicas,MINIMUM_CPU,MINIMUM_MEMORY,'DELIVERY_HTTPS_')
+ tmp=temporary_volume(template.get('spec',{}),parse_resources)
  selector=spec.get('selector',{}).get('matchLabels')
  need(isinstance(selector,dict) and bool(selector),'SELECTOR_INVALID')
  try:pods=json.loads(d.command(['get','pods','-n',d.NAMESPACE,'-o','json']))['items']
@@ -98,10 +109,13 @@ def observed(d,deployment,contract,parse_resources):
   pc=container(pod.get('spec',{}),contract)
   need(pc.get('env')==c.get('env'),'POD_ENVIRONMENT_CHANGED')
   pod_resources=parse_resources(pc.get('resources',{}),1,MINIMUM_CPU,MINIMUM_MEMORY,'DELIVERY_HTTPS_')
+  pod_tmp=temporary_volume(pod.get('spec',{}),parse_resources)
+  observed_fs=d.command(['exec',meta['name'],'-n',d.NAMESPACE,'--','stat','-f','-c','%T %t','/tmp']).strip().split()
+  need(len(observed_fs)==2 and observed_fs[1].lower() in ('794c7630','ef53','58465342','9123683e'),'TMP_FILESYSTEM_UNQUALIFIED')
   actual=d.command(['exec',meta['name'],'-n',d.NAMESPACE,'--','cat','/etc/caddy/Caddyfile'])
   need(data_hash({'Caddyfile':actual})==contract['config_data_sha256'],'RUNNING_CONFIG_CHANGED')
-  observed_pods.append({'uid':meta['uid'],'container_id':statuses[0]['containerID'],'resources':pod_resources})
- return {'deployment':resources,'ready_pods':sorted(observed_pods,key=lambda p:p['uid']),'hosted_load_qualified':False}
+  observed_pods.append({'uid':meta['uid'],'container_id':statuses[0]['containerID'],'resources':pod_resources,'tmp':pod_tmp,'tmp_filesystem_magic':observed_fs[1].lower()})
+ return {'deployment':resources,'tmp':tmp,'ready_pods':sorted(observed_pods,key=lambda p:p['uid']),'hosted_load_qualified':False}
 
 def preflight(d,contract,parse_resources):
  need(source_contract()==contract,'MANIFEST_CHANGED')

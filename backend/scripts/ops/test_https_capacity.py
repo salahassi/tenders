@@ -82,6 +82,7 @@ class ReadOnlyDriver:
                                    'state': {'running': {'startedAt': '2026-11-04T00:00:00Z'}}}]}}]
         self.mounted = {'https-synthetic-pod': CONFIG_TEXT}
         self.pods_response = None
+        self.filesystem = 'UNKNOWN 794c7630\n'
 
     def get(self, kind, name):
         self.calls.append(('get', kind, name))
@@ -96,6 +97,8 @@ class ReadOnlyDriver:
         if args == ['get', 'pods', '-n', self.NAMESPACE, '-o', 'json']:
             return self.pods_response if self.pods_response is not None else json.dumps({'items': self.pods})
         for pod_name, text in self.mounted.items():
+            if args == ['exec', pod_name, '-n', self.NAMESPACE, '--', 'stat', '-f', '-c', '%T %t', '/tmp']:
+                return self.filesystem
             if args == ['exec', pod_name, '-n', self.NAMESPACE, '--', 'cat', '/etc/caddy/Caddyfile']:
                 return text
         # This intentionally refuses Secret reads, shell execution, TLS private
@@ -409,6 +412,30 @@ class HttpsCapacityTests(unittest.TestCase):
             change(self.driver)
             with self.assertRaisesRegex(h.HttpsError, 'POD_CHANGED'):
                 self.verify(state)
+
+    def test_tmp_requires_whole_writable_default_disk_emptydir(self):
+        for location in ('deployment','pod'):
+            for change in ('memory','missing','readonly','subpath','small','unknownsize'):
+                def mutate(d):
+                    spec=d.deployment['spec']['template']['spec'] if location=='deployment' else d.pods[0]['spec']
+                    mount=next(m for m in spec['containers'][0]['volumeMounts'] if m['mountPath']=='/tmp')
+                    volume=next(v for v in spec['volumes'] if v['name']==mount['name'])
+                    if change=='memory':volume['emptyDir']['medium']='Memory'
+                    if change=='missing':volume.pop('emptyDir')
+                    if change=='readonly':mount['readOnly']=True
+                    if change=='subpath':mount['subPath']='part'
+                    if change=='small':volume['emptyDir']['sizeLimit']='63Mi'
+                    if change=='unknownsize':volume['emptyDir']['sizeLimit']='invalid'
+                with self.subTest(location=location,change=change):self.fault(mutate)
+
+    def test_actual_tmp_filesystem_must_be_recognized_disk_and_stable(self):
+        for value in ('tmpfs 1021994','UNKNOWN bad','UNKNOWN','UNKNOWN 794c7630 extra'):
+            self.fault(lambda d:setattr(d,'filesystem',value),'TMP_FILESYSTEM_UNQUALIFIED')
+        self.driver=ReadOnlyDriver(self.contract);state=self.preflight()
+        self.driver.filesystem='tmpfs 1021994'
+        with self.assertRaisesRegex(h.HttpsError,'TMP_FILESYSTEM_UNQUALIFIED'):self.verify(state)
+        self.driver.filesystem='ext2/ext3 ef53'
+        with self.assertRaisesRegex(h.HttpsError,'POD_CHANGED'):self.verify(state)
 
     def test_gateway_one_worker_proof_and_source_cannot_be_substituted(self):
         for value in (True,0,2,'1',None):
