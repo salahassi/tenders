@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { BackendClient } from "./backendClient";
 import {
   createConnectedExport,
@@ -11,6 +11,7 @@ export function useConnectedExport(
   client: BackendClient | null | undefined,
   afterDownload?: () => void | Promise<void>,
   onError?: (message: string) => void,
+  scope?: string,
 ) {
   const active = useRef<AbortController | null>(null),
     complete = useRef(afterDownload);
@@ -22,12 +23,19 @@ export function useConnectedExport(
     [saved, setSaved] = useState<DurableExportPackage | null>(null),
     [error, setError] = useState(""),
     [paused, setPaused] = useState(false);
-  useEffect(
-    () => () => {
+  useLayoutEffect(() => {
+    active.current?.abort();
+    active.current = null;
+    setBusy(false);
+    setVersionId(null);
+    setSaved(null);
+    setError("");
+    setPaused(false);
+    return () => {
       active.current?.abort();
-    },
-    [client],
-  );
+      active.current = null;
+    };
+  }, [client, scope]);
   async function execute(
     version: string,
     mode: "draft" | "final",

@@ -7112,3 +7112,15 @@ gates; no deployment or production call was performed for this frontend slice.
 The historical full completed-proposal browser acceptance harness is being
 adapted separately to this durable path; its explicit legacy HTTP path stays
 separate.
+
+Independent frontend review found a stale display-scope issue in the first
+ordinary-client slice. The shared hook now aborts observation and clears visible
+busy/package/error state on connection or explicit version changes. Editor and
+ExportPanel supply the current version scope; the list keeps its explicit
+clicked-version operation. Cleanup runs at commit before the new version is
+painted, so an old response cannot release files or report success as the newly
+displayed content. Added delayed-completion regressions for both client and
+version replacement; no server cancellation or automatic retry is introduced.
+Final scope-fix validation: **341/341 frontend tests in 54 files**, frontend
+build/typecheck passed. The independent review finding is fixed locally; hosted
+browser re-entry and ordinary backend combined acceptance remain pending.

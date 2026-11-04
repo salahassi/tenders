@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { useConnectedExport } from "../lib/useConnectedExport";
 import ConnectedExportStatus from "../components/ConnectedExportStatus";
@@ -14,18 +14,27 @@ vi.mock("../lib/connectedExport", async () => ({
 }));
 const client = {} as any,
   completed = vi.fn();
-function Harness() {
-  const flow = useConnectedExport(client, completed);
+function Harness({
+  connection = client,
+  version = "version",
+}: {
+  connection?: any;
+  version?: string;
+}) {
+  const flow = useConnectedExport(connection, completed, undefined, version);
   return (
     <>
-      <button onClick={() => void flow.start("version", "draft")}>
+      <button onClick={() => void flow.start(version, "draft")}>
         Download
       </button>
       <ConnectedExportStatus flow={flow} />
     </>
   );
 }
-afterEach(() => vi.resetAllMocks());
+afterEach(() => {
+  cleanup();
+  vi.resetAllMocks();
+});
 it("unmount aborts observation and suppresses late download notification while server request remains independent", async () => {
   let signal: AbortSignal | undefined;
   vi.mocked(createConnectedExport).mockImplementation(
@@ -76,3 +85,42 @@ it("a blocked package offers an explicit retry; rendering the status cannot star
   );
   expect(completed).toHaveBeenCalledOnce();
 });
+
+it.each(["client", "version"])(
+  "clears stale state on %s change and rejects late completion from the old displayed scope",
+  async (kind) => {
+    let finish!: () => void;
+    let signal: AbortSignal | undefined;
+    vi.mocked(createConnectedExport).mockImplementationOnce(
+      async (_c, _v, _m, options) =>
+        new Promise((resolve) => {
+          signal = options?.signal;
+          finish = () => resolve([]);
+        }),
+    );
+    const view = render(<Harness />);
+    fireEvent.click(screen.getByText("Download"));
+    expect(
+      await screen.findByText(/being prepared and verified on the server/),
+    ).toBeInTheDocument();
+    const changed = kind === "client" ? {} : client;
+    const version = kind === "version" ? "new-version" : "version";
+    view.rerender(<Harness connection={changed} version={version} />);
+    expect(signal?.aborted).toBe(true);
+    expect(
+      screen.queryByText(/being prepared and verified on the server/),
+    ).not.toBeInTheDocument();
+    await act(async () => finish());
+    expect(completed).not.toHaveBeenCalled();
+    vi.mocked(createConnectedExport).mockResolvedValueOnce([]);
+    fireEvent.click(screen.getByText("Download"));
+    await act(async () => {});
+    expect(createConnectedExport).toHaveBeenLastCalledWith(
+      changed,
+      version,
+      "draft",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    expect(completed).toHaveBeenCalledOnce();
+  },
+);

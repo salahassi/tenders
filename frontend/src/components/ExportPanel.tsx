@@ -16,10 +16,15 @@ export default function ExportPanel({ proposal }: { proposal: Proposal }) {
     [selected, setSelected] = useState(""),
     [file, setFile] = useState<File | null>(null),
     [result, setResult] = useState("");
-  const exportFlow = useConnectedExport(backend, async () => {
-    setResult("The complete verified Word package was downloaded.");
-    await load();
-  });
+  const exportFlow = useConnectedExport(
+    backend,
+    async () => {
+      setResult("The complete verified Word package was downloaded.");
+      await load();
+    },
+    undefined,
+    proposal.versionId,
+  );
   const owner = state.settings.role === "Owner";
   async function load() {
     if (!backend || !proposal.versionId) return;

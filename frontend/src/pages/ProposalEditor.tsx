@@ -248,6 +248,7 @@ function ProposalReviewPage({
       );
     },
     (message) => notify(message, "error"),
+    proposal.versionId,
   );
   const [regenerateOpen, setRegenerateOpen] = useState(false);
   const [busyInputs, setBusyInputs] = useState<Record<string, boolean>>({});
