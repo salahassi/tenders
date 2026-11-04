@@ -6278,3 +6278,17 @@ CAS conflicts and lost-response replay; frontend typecheck passed. These are not
 real-browser or hosted authorization evidence. W02 backend integration and final
 package/browser acceptance remain separate pending checks. No production data or
 model calls were made by this interface change.
+
+### 2026-11-04 — Extended production inventory receipt
+
+GitHub Actions run [41849412810](https://github.com/salahassi/tenders/actions/runs/41849412810)
+at source `59c6b309470cacf4dd605325e9a76cb132b88449` succeeded with original cluster
+CA verification, ten ready workloads and verified temporary-client cleanup. The
+read-only receipt is `evidence/digitalocean-inventory-20261104-41849412810.json`.
+It captures actual native browser/OCR schedules, immutable images, resource limits,
+queue counts and capacity without business/schema mutation, model calls or bootstrap.
+The six production release receipts and routine catalog hash match the first inventory.
+New delivery/issuance schema is still absent: this is baseline evidence, not deployment
+or proof of the new 600-second SLO. Earlier run 41845129587 failed because the observer
+incorrectly assumed renderer schedule defaults; TLS access passed. The observer now
+records bounded actual settings and explicit/default fields instead.
