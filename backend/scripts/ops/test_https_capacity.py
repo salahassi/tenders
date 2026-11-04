@@ -34,7 +34,7 @@ FLAGS = ('passed', 'actual_binary_exercised', 'exact_delivery_qualified', 'cance
          'temporary_budget_qualified', 'resource_envelope_qualified', 'tls_streaming_qualified',
          'cleanup_confirmed', 'source_unchanged', 'synthetic_only', 'https_is_deployed_registry_image')
 CONFIG_TEXT = '# Synthetic Caddy fixture; no native qualification is asserted.\n'
-GATEWAY_TEXT = '# Synthetic gateway fixture; no native qualification is asserted.\n'
+GATEWAY_TEXT = 'worker_processes 1;\n# Synthetic gateway fixture; no native qualification is asserted.\n'
 
 
 def digest(value):
@@ -116,7 +116,7 @@ class HttpsCapacityTests(unittest.TestCase):
         self.receipt.update(production_calls=0, customer_calls=0, model_calls=0,
             images={'https': IMAGE},
             image_binding={'kind': 'exact_deployed_registry_digest', 'repo_digest': IMAGE, 'local_image_id': IMAGE_ID},
-            resources={'https_memory_bytes': 134217728, 'https_cpu_millicores': 300,'tmp_budget_per_service_bytes':67108864},
+            resources={'https_memory_bytes': 134217728, 'https_cpu_millicores': 300,'tmp_budget_per_service_bytes':67108864,'gateway_workers':1,'gateway_worker_count_basis':'exact production directive, no worker-count transform'},
             payload={'bytes':412758765},
             mount_filesystems={name:{'statfs_magic':{'/tmp':'794c7630'}} for name in ('https','gateway')},
             tls={'verification_enabled': True, 'actual_handshake_verified': True},
@@ -409,6 +409,16 @@ class HttpsCapacityTests(unittest.TestCase):
             change(self.driver)
             with self.assertRaisesRegex(h.HttpsError, 'POD_CHANGED'):
                 self.verify(state)
+
+    def test_gateway_one_worker_proof_and_source_cannot_be_substituted(self):
+        for value in (True,0,2,'1',None):
+            self.write_receipt(lambda r:r['resources'].update(gateway_workers=value))
+            with self.subTest(value=value),self.assertRaisesRegex(h.HttpsError,'GATEWAY_WORKERS_UNQUALIFIED'):source_contract(self.root)
+        self.write_receipt(lambda r:r['resources'].update(gateway_worker_count_basis='fixture transform'))
+        with self.assertRaisesRegex(h.HttpsError,'GATEWAY_WORKERS_UNQUALIFIED'):source_contract(self.root)
+        self.write_receipt()
+        (self.root/h.GATEWAY).write_text(GATEWAY_TEXT.replace('worker_processes 1;','worker_processes auto;'))
+        with self.assertRaisesRegex(h.HttpsError,'GATEWAY_WORKERS_UNQUALIFIED'):source_contract(self.root)
 
     def test_actual_pod_public_host_must_match_deployment_literal(self):
         self.driver.pods[0]['spec']['containers'][0]['env'][0]['value']='other.valid.example.test'

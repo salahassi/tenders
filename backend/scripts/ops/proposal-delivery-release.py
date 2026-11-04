@@ -96,8 +96,8 @@ GATEWAY_BEFORE = 'scripts/ops/storage-retirement/gateway-before.conf'
 GATEWAY_AFTER = 'deploy/kubernetes/gateway.conf'
 GATEWAY_QUALIFICATION = 'docs/evidence/storage-retirement-binary-20261104.json'
 GATEWAY_STORAGE_QUALIFIED = 'scripts/ops/storage-retirement/gateway-storage-qualified.conf'
-GATEWAY_BATCH_QUALIFICATION = 'docs/evidence/legacy-batch-gateway-disk-streaming-20261104.json'
-GATEWAY_STREAM_QUALIFICATION = 'docs/evidence/api-proxy-streaming-disk-20261104.json'
+GATEWAY_BATCH_QUALIFICATION = 'docs/evidence/legacy-batch-gateway-pinned-worker-20261104.json'
+GATEWAY_STREAM_QUALIFICATION = 'docs/evidence/api-proxy-streaming-pinned-worker-20261104.json'
 GATEWAY_BASELINE_SHA256 = '4907ecf81e2fa1e97754202906873ccd7c34e3dcbe26dd1e60cf4e276c639d23'
 
 def gateway_configuration(root=ROOT):
@@ -125,6 +125,8 @@ def gateway_configuration(root=ROOT):
     if len(images)!=1 or not isinstance(images[0],str) or not re.fullmatch(r'[a-zA-Z0-9./:_-]+@sha256:[a-f0-9]{64}',images[0]):
         raise ReleaseError('DELIVERY_RELEASE_GATEWAY_IMAGE_UNQUALIFIED')
     image=images[0];after_hash=digest(values['after'][0])
+    if re.findall(r'(?m)^worker_processes\s+([^;]+);',values['after'][1])!=['1']:
+        raise ReleaseError('DELIVERY_RELEASE_GATEWAY_WORKER_SOURCE_INVALID')
     if (not isinstance(receipt,dict) or any(receipt.get(key) is not True for key in
       ('passed','actual_binary_exercised','gateway_resumable_denial_qualified','signed_tus_bypass_confirmed'))
       or type(receipt.get('production_calls')) is not int or receipt['production_calls']!=0
@@ -148,9 +150,10 @@ def gateway_configuration(root=ROOT):
         raise ReleaseError('DELIVERY_RELEASE_GATEWAY_STREAM_QUALIFICATION_INVALID')
     envelope=stream.get('envelope',{})
     if (not isinstance(envelope,dict) or any(type(envelope.get(key)) is not int or envelope[key]!=value for key,value in
-       [('gateway_memory_bytes',67108864),('gateway_cpu_millicores',200),('tmp_budget_bytes',67108864)])
+       [('gateway_memory_bytes',67108864),('gateway_cpu_millicores',200),('tmp_budget_bytes',67108864),('gateway_worker_processes',1)])
       or envelope.get('tmp_medium')!='disk' or envelope.get('census_includes_open_unlinked_files') is not True
       or stream.get('actual_gateway_tmp_filesystem_magic') not in ('794c7630','ef53','58465342','9123683e')
+      or type(stream.get('running_gateway_worker_count')) is not int or stream['running_gateway_worker_count']!=1
       or type(stream.get('payload_bytes')) is not int or stream['payload_bytes']!=412758765):
         raise ReleaseError('DELIVERY_RELEASE_GATEWAY_STREAM_ENVELOPE_INVALID')
     def data_hash(text):

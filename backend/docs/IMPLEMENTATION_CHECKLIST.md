@@ -10285,3 +10285,21 @@ HTTP/2/3, concurrent/hosted load, public certificate renewal, production PVC
 behavior and proposal600s acceptance remain separate gates. Transfer timings
 include intentional slow-client pacing. The new gateway target is not claimed
 already deployed; no product configuration or production records were changed.
+
+### November 4 — final proxy proof uses the production worker count
+
+The source binding now requires the final pinned-worker Gateway receipts and
+exactly one declared and observed Nginx worker. The HTTPS qualification must also
+record that same production directive without a worker-count transformation.
+Prior disk receipts remain unchanged and retain their narrower fixture scope.
+The release and runtime Gateway helper produce identical proof contracts; fault
+checks reject automatic/multiple workers, boolean/string count coercion, and a
+tmpfs filesystem presented as the qualified disk case.
+
+All 13 pure release tests and 31 HTTPS guard tests passed. The source validators
+also accepted the retained final Gateway and HTTPS native receipts: Gateway
+configuration `c1a25c41…795ba`, routing receipt `8d395eec…e6014`, and HTTPS receipt
+`a10f52cf…ace72`. [Binding evidence](evidence/final-proxy-proof-binding-20261104.json)
+records exact hashes and the separate native-proof scope; this check itself did
+not rerun containers or contact production. Hosted configuration, filesystem,
+worker-count and process readback remain required during the reviewed rollout.

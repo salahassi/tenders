@@ -8,6 +8,9 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import ExitStack
+from types import SimpleNamespace
+from unittest.mock import patch
 
 SPEC=importlib.util.spec_from_file_location('tested_delivery_release',Path(__file__).with_name('proposal-delivery-release.py'))
 p=importlib.util.module_from_spec(SPEC);sys.modules[SPEC.name]=p;SPEC.loader.exec_module(p)
@@ -21,7 +24,7 @@ class DeliveryReleaseTests(unittest.TestCase):
         baseline=(p.ROOT/p.GATEWAY_BEFORE).read_text()
         self.gateway_image='docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8'
         self.gateway_storage=baseline+'\n# Synthetic prior target; no runtime qualification asserted.\n'
-        self.gateway_after=self.gateway_storage+'# Synthetic combined target.\n'
+        self.gateway_after=self.gateway_storage.replace('worker_processes auto;', 'worker_processes 1;')+'# Synthetic combined target.\n'
         self.qualification={'passed':True,'actual_binary_exercised':True,'production_calls':0,'customer_calls':0,
           'gateway_resumable_denial_qualified':True,'signed_tus_bypass_confirmed':True,
           'gateway_config_source_sha256':hashlib.sha256(self.gateway_storage.encode()).hexdigest(),
@@ -34,8 +37,8 @@ class DeliveryReleaseTests(unittest.TestCase):
           'storage_qualification_sha256':hashlib.sha256(json.dumps(self.qualification).encode()).hexdigest()}
         self.stream_qualification={'fixture':'synthetic-only',**dict.fromkeys(('passed','actual_binary_exercised','cleanup_confirmed','exact_delivery_qualified','cancellation_qualified','temporary_budget_qualified','gateway_memory_qualified'),True),
           'gateway_image':self.gateway_image,'gateway_config_source_sha256':hashlib.sha256(self.gateway_after.encode()).hexdigest(),
-          'production_calls':0,'customer_calls':0,'payload_bytes':412758765,'actual_gateway_tmp_filesystem_magic':'794c7630',
-          'envelope':{'gateway_memory_bytes':67108864,'gateway_cpu_millicores':200,'tmp_budget_bytes':67108864,'tmp_medium':'disk','census_includes_open_unlinked_files':True}}
+          'production_calls':0,'customer_calls':0,'payload_bytes':412758765,'running_gateway_worker_count':1,'actual_gateway_tmp_filesystem_magic':'794c7630',
+          'envelope':{'gateway_worker_processes':1,'gateway_memory_bytes':67108864,'gateway_cpu_millicores':200,'tmp_budget_bytes':67108864,'tmp_medium':'disk','census_includes_open_unlinked_files':True}}
         self.batch_qualification['api_proxy_streaming_receipt_sha256']=hashlib.sha256(json.dumps(self.stream_qualification).encode()).hexdigest()
         for name,text in ((p.GATEWAY_BEFORE,baseline),(p.GATEWAY_AFTER,self.gateway_after),
           (p.GATEWAY_QUALIFICATION,json.dumps(self.qualification)),(p.GATEWAY_STREAM_QUALIFICATION,json.dumps(self.stream_qualification)),
@@ -49,7 +52,7 @@ class DeliveryReleaseTests(unittest.TestCase):
         self.https_qualification={**dict.fromkeys(flags,True),'fixture':'synthetic-only',
           'production_calls':0,'customer_calls':0,'model_calls':0,'images':{'https':self.https_image},
           'image_binding':{'kind':'exact_deployed_registry_digest','repo_digest':self.https_image,'local_image_id':'sha256:'+'c'*64},
-          'resources':{'https_memory_bytes':134217728,'https_cpu_millicores':300,'tmp_budget_per_service_bytes':67108864},
+          'resources':{'https_memory_bytes':134217728,'https_cpu_millicores':300,'tmp_budget_per_service_bytes':67108864,'gateway_workers':1,'gateway_worker_count_basis':'exact production directive, no worker-count transform'},
           'payload':{'bytes':412758765},'mount_filesystems':{name:{'statfs_magic':{'/tmp':'794c7630'}} for name in ('https','gateway')},
           'tls':{'verification_enabled':True,'actual_handshake_verified':True},'qualified_encodings':['identity','gzip','zstd'],
           'source_hashes':{'backend/'+p.https_capacity.CONFIG:hashlib.sha256(config.encode()).hexdigest(),
@@ -177,6 +180,39 @@ class DeliveryReleaseTests(unittest.TestCase):
         path.write_bytes(raw);batch_path.write_bytes(batch_raw)
         path.write_text(json.dumps({**self.stream_qualification,'receipt_revision':2}))
         with self.assertRaisesRegex(p.ReleaseError,'STREAM_QUALIFICATION_INVALID'):self.verify(manifest)
+
+    def test_gateway_declared_and_running_worker_counts_are_exact(self):
+        path=self.gateway_root/p.GATEWAY_STREAM_QUALIFICATION;batch_path=self.gateway_root/p.GATEWAY_BATCH_QUALIFICATION
+        for field in ('gateway_worker_processes','running_gateway_worker_count'):
+            for value in (None,True,0,2,'1'):
+                changed=copy.deepcopy(self.stream_qualification)
+                (changed['envelope'] if field=='gateway_worker_processes' else changed)[field]=value
+                path.write_text(json.dumps(changed))
+                batch_path.write_text(json.dumps({**self.batch_qualification,'api_proxy_streaming_receipt_sha256':hashlib.sha256(path.read_bytes()).hexdigest()}))
+                with self.subTest(field=field,value=value),self.assertRaisesRegex(p.ReleaseError,'STREAM_ENVELOPE_INVALID'):self.manifest()
+        path.write_text(json.dumps(self.stream_qualification));batch_path.write_text(json.dumps(self.batch_qualification))
+        target=self.gateway_root/p.GATEWAY_AFTER
+        for replacement in ('worker_processes auto;','worker_processes 2;','worker_processes 1;\nworker_processes 1;'):
+            target.write_text(self.gateway_after.replace('worker_processes 1;',replacement))
+            with self.subTest(replacement=replacement),self.assertRaisesRegex(p.ReleaseError,'WORKER_SOURCE_INVALID'):self.manifest()
+
+    def test_release_and_gateway_helper_bind_the_same_final_proof_chain(self):
+        spec=importlib.util.spec_from_file_location('gateway_parity',Path(__file__).with_name('storage-gateway-update.py'))
+        helper=importlib.util.module_from_spec(spec);spec.loader.exec_module(helper)
+        self.assertEqual(helper.BATCH_QUALIFICATION.name,Path(p.GATEWAY_BATCH_QUALIFICATION).name)
+        self.assertEqual(helper.STREAM_QUALIFICATION.name,Path(p.GATEWAY_STREAM_QUALIFICATION).name)
+        paths={'BASELINE':p.GATEWAY_BEFORE,'TARGET':p.GATEWAY_AFTER,'QUALIFICATION':p.GATEWAY_QUALIFICATION,
+          'STORAGE_QUALIFIED':p.GATEWAY_STORAGE_QUALIFIED,'BATCH_QUALIFICATION':p.GATEWAY_BATCH_QUALIFICATION,'STREAM_QUALIFICATION':p.GATEWAY_STREAM_QUALIFICATION}
+        driver=SimpleNamespace(NAMESPACE='tenderdesk-dev',renderer=SimpleNamespace(NGINX_IMAGE=self.gateway_image))
+        with ExitStack() as stack:
+            for name,path in paths.items():stack.enter_context(patch.object(helper,name,self.gateway_root/path))
+            self.assertEqual(helper.source_contract(driver)[0],p.gateway_configuration(self.gateway_root))
+            stream_path=self.gateway_root/p.GATEWAY_STREAM_QUALIFICATION;batch_path=self.gateway_root/p.GATEWAY_BATCH_QUALIFICATION
+            for key,value in [('running_gateway_worker_count',True),('running_gateway_worker_count',2),('actual_gateway_tmp_filesystem_magic','1021994')]:
+                changed={**self.stream_qualification,key:value};stream_path.write_text(json.dumps(changed))
+                batch_path.write_text(json.dumps({**self.batch_qualification,'api_proxy_streaming_receipt_sha256':hashlib.sha256(stream_path.read_bytes()).hexdigest()}))
+                with self.subTest(key=key,value=value),self.assertRaises(helper.GatewayError):helper.source_contract(driver)
+                with self.assertRaises(p.ReleaseError):p.gateway_configuration(self.gateway_root)
 
     def test_https_source_manifest_identity_and_changed_proof_refuse(self):
         manifest=self.manifest();contract=manifest['https_configuration'];self.verify(manifest)

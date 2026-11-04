@@ -41,6 +41,7 @@ def source_contract(root=None):
  need(isinstance(image,str) and re.fullmatch(r'registry\.digitalocean\.com/tenderdesk-a6093a76/https@sha256:[a-f0-9]{64}',image),'IMAGE_UNQUALIFIED')
  need(binding.get('kind')=='exact_deployed_registry_digest' and binding.get('repo_digest')==image and isinstance(binding.get('local_image_id'),str) and re.fullmatch(r'sha256:[a-f0-9]{64}',binding['local_image_id']),'IMAGE_UNQUALIFIED')
  need(type(resources.get('https_memory_bytes')) is int and resources['https_memory_bytes']==MINIMUM_MEMORY and type(resources.get('https_cpu_millicores')) is int and resources['https_cpu_millicores']==MINIMUM_CPU,'ENVELOPE_UNQUALIFIED')
+ need(re.findall(r'(?m)^worker_processes\s+([^;]+);',values['gateway'][1])==['1'] and type(resources.get('gateway_workers')) is int and resources['gateway_workers']==1 and resources.get('gateway_worker_count_basis')=='exact production directive, no worker-count transform','GATEWAY_WORKERS_UNQUALIFIED')
  need(isinstance(r.get('payload'),dict) and type(r['payload'].get('bytes')) is int and r['payload']['bytes']==412758765 and type(resources.get('tmp_budget_per_service_bytes')) is int and resources['tmp_budget_per_service_bytes']==67108864,'ENVELOPE_UNQUALIFIED')
  fs=r.get('mount_filesystems',{})
  need(isinstance(fs,dict) and all(isinstance(fs.get(name),dict) and isinstance(fs[name].get('statfs_magic'),dict) and fs[name]['statfs_magic'].get('/tmp')=='794c7630' for name in ('gateway','https')),'FILESYSTEM_UNQUALIFIED')
