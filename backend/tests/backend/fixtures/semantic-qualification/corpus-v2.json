@@ -1,0 +1,478 @@
+{
+  "version": 2,
+  "split": "development",
+  "synthetic": true,
+  "families": 8,
+  "paired_cases": 32,
+  "languages": [
+    "en",
+    "ar"
+  ],
+  "task": "verify_grounding",
+  "original_task": "analyze_chunk",
+  "policy": {
+    "critical_false_acceptances": 0,
+    "faithful_false_rejections": 0,
+    "repetitions": 1,
+    "automatic_retries": 0,
+    "missing_or_invalid_reports": "not_qualified",
+    "holdout_status": "not_supplied_or_qualified",
+    "scope": "Only these frozen synthetic pairs; no population accuracy or universal correctness claim."
+  },
+  "cases": [
+    {
+      "family": "modality",
+      "language": "en",
+      "source": "The supplier may provide an optional workshop.",
+      "faithful": {
+        "text": "The supplier may provide an optional workshop.",
+        "mandatory": false
+      },
+      "mutated": {
+        "text": "The supplier must provide a workshop.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "optional|may|discretion|اختيار|يجوز",
+          "mandatory|required|must|إلزام|يجب"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "must"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    },
+    {
+      "family": "modality",
+      "language": "ar",
+      "source": "يجوز للمورد تقديم ورشة عمل اختيارية.",
+      "faithful": {
+        "text": "يجوز للمورد تقديم ورشة عمل اختيارية.",
+        "mandatory": false
+      },
+      "mutated": {
+        "text": "يجب على المورد تقديم ورشة عمل.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "optional|may|discretion|اختيار|يجوز",
+          "mandatory|required|must|إلزام|يجب"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "يجب"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    },
+    {
+      "family": "prohibition",
+      "language": "en",
+      "source": "The supplier must not subcontract the security assessment.",
+      "faithful": {
+        "text": "The supplier must not subcontract the security assessment.",
+        "mandatory": true
+      },
+      "mutated": {
+        "text": "The supplier may subcontract the security assessment.",
+        "mandatory": false
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "prohibit|not|forbid|حظر|منع|لا يجوز",
+          "subcontract|الباطن"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "may"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    },
+    {
+      "family": "prohibition",
+      "language": "ar",
+      "source": "لا يجوز للمورد التعاقد من الباطن لتنفيذ التقييم الأمني.",
+      "faithful": {
+        "text": "لا يجوز للمورد التعاقد من الباطن لتنفيذ التقييم الأمني.",
+        "mandatory": true
+      },
+      "mutated": {
+        "text": "يجوز للمورد التعاقد من الباطن لتنفيذ التقييم الأمني.",
+        "mandatory": false
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "prohibit|not|forbid|حظر|منع|لا يجوز",
+          "subcontract|الباطن"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "يجوز"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    },
+    {
+      "family": "actor",
+      "language": "en",
+      "source": "The buyer must provide the test accounts.",
+      "faithful": {
+        "text": "The buyer must provide the test accounts.",
+        "mandatory": true
+      },
+      "mutated": {
+        "text": "The supplier must provide the test accounts.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "buyer|customer|مشتري|العميل",
+          "supplier|vendor|مورد"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "supplier"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    },
+    {
+      "family": "actor",
+      "language": "ar",
+      "source": "يجب على المشتري توفير حسابات الاختبار.",
+      "faithful": {
+        "text": "يجب على المشتري توفير حسابات الاختبار.",
+        "mandatory": true
+      },
+      "mutated": {
+        "text": "يجب على المورد توفير حسابات الاختبار.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "buyer|customer|مشتري|العميل",
+          "supplier|vendor|مورد"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "المورد"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    },
+    {
+      "family": "trigger",
+      "language": "en",
+      "source": "The supplier must deliver the migration tool only if the buyer approves phase two.",
+      "faithful": {
+        "text": "The supplier must deliver the migration tool only if the buyer approves phase two.",
+        "mandatory": true
+      },
+      "mutated": {
+        "text": "The supplier must deliver the migration tool regardless of phase two approval.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "if|condition|trigger|phase|approval|شرط|مرحلة|اعتماد",
+          "uncondition|omit|without|always|remove|مطلق|دون|حذف|إسقاط|اسقاط|يسقط|يزيل|غير مشروط"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "regardless"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    },
+    {
+      "family": "trigger",
+      "language": "ar",
+      "source": "يجب على المورد تسليم أداة الترحيل فقط إذا اعتمد المشتري المرحلة الثانية.",
+      "faithful": {
+        "text": "يجب على المورد تسليم أداة الترحيل فقط إذا اعتمد المشتري المرحلة الثانية.",
+        "mandatory": true
+      },
+      "mutated": {
+        "text": "يجب على المورد تسليم أداة الترحيل بغض النظر عن اعتماد المرحلة الثانية.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "if|condition|trigger|phase|approval|شرط|مرحلة|اعتماد",
+          "uncondition|omit|without|always|remove|مطلق|دون|حذف|إسقاط|اسقاط|يسقط|يزيل|غير مشروط"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "بغض النظر"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    },
+    {
+      "family": "exception",
+      "language": "en",
+      "source": "The supplier must delete all records after contract closure, except records whose retention is required by law.",
+      "faithful": {
+        "text": "The supplier must delete all records after contract closure, except records whose retention is required by law.",
+        "mandatory": true
+      },
+      "mutated": {
+        "text": "The supplier must delete all records after contract closure, including records whose retention is required by law.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "except|unless|retention|legal|استثناء|قانون|احتفاظ",
+          "delet|eras|مح|حذف"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "including"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    },
+    {
+      "family": "exception",
+      "language": "ar",
+      "source": "يجب على المورد حذف جميع السجلات بعد إغلاق العقد باستثناء السجلات التي يوجب القانون الاحتفاظ بها.",
+      "faithful": {
+        "text": "يجب على المورد حذف جميع السجلات بعد إغلاق العقد باستثناء السجلات التي يوجب القانون الاحتفاظ بها.",
+        "mandatory": true
+      },
+      "mutated": {
+        "text": "يجب على المورد حذف جميع السجلات بعد إغلاق العقد بما فيها السجلات التي يوجب القانون الاحتفاظ بها.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "except|unless|retention|legal|استثناء|قانون|احتفاظ",
+          "delet|eras|مح|حذف"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "بما فيها"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    },
+    {
+      "family": "unit_translation",
+      "language": "en",
+      "source": "يجب على المورد تسليم البوابة خلال 30 يوما.",
+      "faithful": {
+        "text": "The supplier must deliver the portal within 30 days.",
+        "mandatory": true
+      },
+      "mutated": {
+        "text": "The supplier must deliver the portal within 30 months.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "day|يوم|أيام|ايام",
+          "month|شهر|أشهر|اشهر"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "months"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    },
+    {
+      "family": "unit_translation",
+      "language": "ar",
+      "source": "The supplier must deliver the portal within 30 days.",
+      "faithful": {
+        "text": "يجب على المورد تسليم البوابة خلال 30 يوما.",
+        "mandatory": true
+      },
+      "mutated": {
+        "text": "يجب على المورد تسليم البوابة خلال 30 شهرا.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "day|يوم|أيام|ايام",
+          "month|شهر|أشهر|اشهر"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "شهرا"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    },
+    {
+      "family": "number_association",
+      "language": "en",
+      "source": "The supplier must deliver 12 reports. The buyer must supply 36 test accounts.",
+      "faithful": {
+        "text": "The supplier must deliver 12 reports.",
+        "mandatory": true
+      },
+      "mutated": {
+        "text": "The supplier must deliver 36 reports.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "12|١٢|twelve|اثني|اثنا",
+          "36|٣٦|thirty.six|ستة وثلاث"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "36 reports"
+        ],
+        "candidate_path": "requirements[0].text",
+        "supporting_source_spans": [
+          "12 reports"
+        ]
+      },
+      "unchanged_requirements": [
+        {
+          "text": "The buyer must supply 36 test accounts.",
+          "mandatory": true
+        }
+      ]
+    },
+    {
+      "family": "number_association",
+      "language": "ar",
+      "source": "يجب على المورد تسليم 12 تقريرا. يجب على المشتري توفير 36 حساب اختبار.",
+      "faithful": {
+        "text": "يجب على المورد تسليم 12 تقريرا.",
+        "mandatory": true
+      },
+      "mutated": {
+        "text": "يجب على المورد تسليم 36 تقريرا.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "12|١٢|twelve|اثني|اثنا",
+          "36|٣٦|thirty.six|ستة وثلاث"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "36 تقريرا"
+        ],
+        "candidate_path": "requirements[0].text",
+        "supporting_source_spans": [
+          "12 تقريرا"
+        ]
+      },
+      "unchanged_requirements": [
+        {
+          "text": "يجب على المشتري توفير 36 حساب اختبار.",
+          "mandatory": true
+        }
+      ]
+    },
+    {
+      "family": "consequence",
+      "language": "en",
+      "source": "If delivery is late, the buyer may deduct the agreed delay fee.",
+      "faithful": {
+        "text": "If delivery is late, the buyer may deduct the agreed delay fee.",
+        "mandatory": false
+      },
+      "mutated": {
+        "text": "If delivery is late, the buyer must automatically deduct the agreed delay fee.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "may|discretion|يجوز|جواز",
+          "automat|must|mandatory|تلقائ|يجب|إلزام"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "must",
+          "automatically"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    },
+    {
+      "family": "consequence",
+      "language": "ar",
+      "source": "في حال تأخر التسليم يجوز للمشتري خصم غرامة التأخير المتفق عليها.",
+      "faithful": {
+        "text": "في حال تأخر التسليم يجوز للمشتري خصم غرامة التأخير المتفق عليها.",
+        "mandatory": false
+      },
+      "mutated": {
+        "text": "في حال تأخر التسليم يجب على المشتري خصم غرامة التأخير المتفق عليها تلقائيا.",
+        "mandatory": true
+      },
+      "oracle": {
+        "defect_term_groups": [
+          "may|discretion|يجوز|جواز",
+          "automat|must|mandatory|تلقائ|يجب|إلزام"
+        ],
+        "field_paths": [
+          "requirements[0].text",
+          "requirements[0].mandatory"
+        ],
+        "offending_candidate_spans": [
+          "يجب",
+          "تلقائيا"
+        ],
+        "candidate_path": "requirements[0].text"
+      }
+    }
+  ],
+  "oracle_version": 2,
+  "supersedes_scoring_version": 1
+}

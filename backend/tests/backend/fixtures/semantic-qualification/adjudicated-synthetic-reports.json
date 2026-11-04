@@ -1,0 +1,194 @@
+{
+  "synthetic": true,
+  "purpose": "Offline scorer regression only; original live receipts remain unchanged.",
+  "reports": [
+    {
+      "original_case": "semantic_en_number_association_mutated_v1",
+      "origin_report_sha256": "cff35684dae39fa98cb5f09ade67b5372e3730efa51802b3d257142e742cb003",
+      "synthetic_candidate": {
+        "checked_candidate_hash": "6d055ea412c30cd04ec8791ccfa48604dd55a9a6381ad450bc0daa9d001926c5",
+        "reviewed_all_content": true,
+        "processed_content_ids": [
+          "content-0",
+          "content-1",
+          "content-2",
+          "content-3",
+          "content-4"
+        ],
+        "claims": [
+          {
+            "id": "claim-content-0",
+            "claim": "The supplier must deliver 36 reports.",
+            "candidate_quote": "The supplier must deliver 36 reports.",
+            "kind": "tender_fact",
+            "status": "contradicted",
+            "source_refs": [],
+            "finding": "The source states the supplier must deliver 12 reports, not 36."
+          },
+          {
+            "id": "claim-content-2",
+            "claim": "The buyer must supply 36 test accounts.",
+            "candidate_quote": "The buyer must supply 36 test accounts.",
+            "kind": "tender_fact",
+            "status": "supported",
+            "source_refs": [
+              {
+                "id": "eval-source-1",
+                "quote": "The buyer must supply 36 test accounts."
+              }
+            ],
+            "finding": "Supported by the source."
+          },
+          {
+            "id": "claim-content-4a",
+            "claim": "The supplier must deliver 36 reports.",
+            "candidate_quote": "The supplier must deliver 36 reports. The buyer must supply 36 test accounts.",
+            "kind": "tender_fact",
+            "status": "contradicted",
+            "source_refs": [],
+            "finding": "The source states the supplier must deliver 12 reports, not 36."
+          },
+          {
+            "id": "claim-content-4b",
+            "claim": "The buyer must supply 36 test accounts.",
+            "candidate_quote": "The supplier must deliver 36 reports. The buyer must supply 36 test accounts.",
+            "kind": "tender_fact",
+            "status": "supported",
+            "source_refs": [
+              {
+                "id": "eval-source-1",
+                "quote": "The buyer must supply 36 test accounts."
+              }
+            ],
+            "finding": "Supported by the source."
+          }
+        ],
+        "processed_requirement_ids": [
+          "eval-source-1"
+        ],
+        "requirement_checks": [
+          {
+            "requirement_id": "eval-source-1",
+            "status": "contradicted",
+            "candidate_quote": "The supplier must deliver 36 reports. The buyer must supply 36 test accounts.",
+            "source_refs": [
+              {
+                "id": "eval-source-1",
+                "quote": "The supplier must deliver 12 reports."
+              },
+              {
+                "id": "eval-source-1",
+                "quote": "The buyer must supply 36 test accounts."
+              }
+            ],
+            "finding": "Source block 'eval-source-1' is not faithfully extracted. The extracted obligation for supplier reports uses 36 instead of the source's 12 reports. The buyer obligation for 36 test accounts is correctly retained."
+          }
+        ],
+        "findings": [
+          {
+            "severity": "blocking",
+            "code": "EXTRACTED_QUANTITY_MISMATCH",
+            "detail": "Content units 'content-0' and 'content-4' state the supplier must deliver 36 reports. The source 'eval-source-1' specifies 12 reports.",
+            "claim_ids": [
+              "claim-content-0",
+              "claim-content-4a"
+            ],
+            "requirement_ids": []
+          }
+        ]
+      }
+    },
+    {
+      "original_case": "semantic_ar_trigger_mutated_v1",
+      "origin_report_sha256": "3281a3ee0831b35def261dd6281062a2de6b63ed30fc34d5e0ba6cb0ce72cd9a",
+      "synthetic_candidate": {
+        "checked_candidate_hash": "41b0d2e0f98059004844caac50bedf9a8c7216427f1ba0e2c1bf79e2436bd67e",
+        "reviewed_all_content": true,
+        "processed_content_ids": [
+          "content-0",
+          "content-1",
+          "content-2"
+        ],
+        "claims": [
+          {
+            "id": "claim-1",
+            "claim": "يجب على المورد تسليم أداة الترحيل بغض النظر عن اعتماد المرحلة الثانية.",
+            "candidate_quote": "يجب على المورد تسليم أداة الترحيل بغض النظر عن اعتماد المرحلة الثانية.",
+            "kind": "tender_fact",
+            "status": "contradicted",
+            "source_refs": [
+              {
+                "id": "eval-source-1",
+                "quote": "يجب على المورد تسليم أداة الترحيل فقط إذا اعتمد المشتري المرحلة الثانية."
+              }
+            ],
+            "finding": "يُغيّر شرط التسليم. ينص المصدر على التسليم \"فقط إذا اعتمد المشتري المرحلة الثانية\"، مما يجعله مشروطاً. أما النص المرشح فيزيل القيد ويجعل التسليم غير مشروط، وهو ما يُخالف المصدر."
+          },
+          {
+            "id": "claim-2",
+            "claim": "يُستخدم تصنيف \"تسليمات\" (deliverables).",
+            "candidate_quote": "deliverables",
+            "kind": "assumption",
+            "status": "insufficient",
+            "source_refs": [],
+            "finding": "كلمة بالإنجليزية لا تظهر في نص المصدر. يُفترض أنها علامة تصنيف داخلية ولا تُثبت شرط التسليم الفعلي."
+          },
+          {
+            "id": "claim-3",
+            "claim": "يجب على المورد تسليم أداة الترحيل بغض النظر عن اعتماد المرحلة الثانية.",
+            "candidate_quote": "يجب على المورد تسليم أداة الترحيل بغض النظر عن اعتماد المرحلة الثانية.",
+            "kind": "tender_fact",
+            "status": "contradicted",
+            "source_refs": [
+              {
+                "id": "eval-source-1",
+                "quote": "يجب على المورد تسليم أداة الترحيل فقط إذا اعتمد المشتري المرحلة الثانية."
+              }
+            ],
+            "finding": "نفس المخالفة الواردة في claim-1. يكرر نفس النص المخالف للمصدر."
+          }
+        ],
+        "processed_requirement_ids": [
+          "eval-source-1"
+        ],
+        "requirement_checks": [
+          {
+            "requirement_id": "eval-source-1",
+            "status": "contradicted",
+            "candidate_quote": "يجب على المورد تسليم أداة الترحيل بغض النظر عن اعتماد المرحلة الثانية.",
+            "source_refs": [
+              {
+                "id": "eval-source-1",
+                "quote": "يجب على المورد تسليم أداة الترحيل فقط إذا اعتمد المشتري المرحلة الثانية."
+              }
+            ],
+            "finding": "المصدر يشترط التسليم باعتماد المشتري للمرحلة الثانية. النص المرشح يُسقط هذا الشرط ويُصبح التسليم غير مشروط، وهو استخراج خاطئ لمعنى المصدر."
+          }
+        ],
+        "findings": [
+          {
+            "severity": "blocking",
+            "code": "EXTRACTED_OBLIGATION_CONTRADICTED",
+            "detail": "يُزيل النص المرشح قيد \"فقط إذا اعتمد المشتري المرحلة الثانية\" من المصدر ويجعل التسليم إلزامياً بغض النظر عن الاعتماد. هذا يُغيّر نطاق الالتزام ويُخالف المصدر.",
+            "claim_ids": [
+              "claim-1",
+              "claim-3"
+            ],
+            "requirement_ids": [
+              "eval-source-1"
+            ]
+          },
+          {
+            "severity": "advisory",
+            "code": "ASSUMPTION_WITHOUT_SOURCE",
+            "detail": "يحتوي النص المرشح على تصنيف إنجليزي \"deliverables\" لا يظهر في المصدر. يبدو أنه علامة داخلية لا تعكس مضمون المصدر.",
+            "claim_ids": [
+              "claim-2"
+            ],
+            "requirement_ids": []
+          }
+        ]
+      }
+    }
+  ]
+}

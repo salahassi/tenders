@@ -18,7 +18,9 @@ export type EvaluationSuite =
   | "analysis_verification"
   | "analysis_authority"
   | "semantic_en"
-  | "semantic_ar";
+  | "semantic_ar"
+  | "semantic_v2_en"
+  | "semantic_v2_ar";
 export function limitsForSuite(suite?: EvaluationSuite): typeof LIMITS;
 export function fixtures(suite?: EvaluationSuite): Promise<any[]>;
 export function validateTargets(

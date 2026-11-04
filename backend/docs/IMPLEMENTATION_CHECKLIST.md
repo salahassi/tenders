@@ -6778,3 +6778,20 @@ Word visual QA and live request timing are separate acceptance evidence. Ordinar
 approved-version export still requires the subsequent durable `render_export` package
 path; this generated-review-draft change does not close that separate browser-dependent
 workflow or claim a production deployment.
+## November 4 — separately versioned semantic scorer correction
+
+Added explicit `semantic_v2_en` and `semantic_v2_ar` evaluation suites with an
+independently frozen version 2 corpus. Version 1 corpus/scorer bytes and original
+live results remain unchanged. Version 2 accepts correctly bound full-summary
+quotations, requires quantity-plus-object gold spans and the affected source
+quantity, and recognizes the observed Arabic condition-removal forms. It does
+not relax canonical verifier coverage, source references or candidate hashes.
+
+Local focused tests: both semantic suites **49/49**, including 44 version 2 cases
+and the five original version 1 tests; Python activation/report gates **21/21**.
+The 44 include 32 controls, two sanitized saved reports, six specified negatives,
+source-object binding, immutable version pins and both unavailable-provider suites.
+All transports in local tests are controlled fixtures; no live calls or deployment
+occurred. Full combined package checks follow the separate metadata-prompt fix.
+The sanitized adjudication document retains original unqualified counts and raw
+report hashes; this scorer correction does not qualify any model or restore quota.
