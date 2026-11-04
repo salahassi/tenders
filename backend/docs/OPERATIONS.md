@@ -1,5 +1,10 @@
 # Operating the connected trial
 
+For the current DigitalOcean deployment, start with the
+[permanent DO access runbook](DIGITALOCEAN_ACCESS_RUNBOOK.md) and the latest
+[implementation checklist](IMPLEMENTATION_CHECKLIST.md). The dated trial notes
+below describe their recorded stage and do not replace the current access route.
+
 ## JavaScript sources and human verification
 
 The Edge reader queues public pages that need a browser. `Collect JavaScript

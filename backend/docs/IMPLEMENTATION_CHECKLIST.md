@@ -300,6 +300,29 @@ integration, measured delivery/queue SLOs, storage saturation and isolated resto
 exercises (D01/D04/D05). In-flight housekeeping can still consume the remaining
 worker invocation after business commit; this change does not claim a measured
 latency bound, independent maintenance service or completed cloud restore.
+## November 4 — permanent DigitalOcean access reference
+
+The Owner requested an immediately discoverable, persistent reference for the
+established GitHub Actions route to DigitalOcean. The new
+[DIGITALOCEAN_ACCESS_RUNBOOK.md](DIGITALOCEAN_ACCESS_RUNBOOK.md) records the fixed
+cluster/namespace, runner and validation helpers, credential/TLS boundaries,
+workflow-selection procedure, historical successful runs and required new-run
+evidence. Root `AGENTS.md`, the original Kubernetes guide and the operations
+entry point link directly to it. This documentation is published separately on
+the default branch so future checkouts can find it before runtime changes merge.
+
+The known local Envoy certificate failure is distinguished from the verified
+runner route. Existing full access checks can also perform isolated compatibility
+bootstrap, and diagnostic workflows can have conditional repair steps; reading
+the whole workflow remains necessary before dispatch. No unimplemented inventory
+mode is presented as available.
+
+Validation: all relative runbook links and referenced workflow/helper paths were
+checked against the repository; the documented route and historical run results
+were reconciled with the actual workflow definitions and GitHub metadata. This is
+a documentation-only change, with no application/schema/runtime modifications,
+workflow dispatch, certificate/firewall change or production mutation. Existing
+application test results are not recast as a fresh deployment acceptance.
 
 ## November 4 — complete proposal-delivery remediation and acceptance plan
 
