@@ -78,7 +78,12 @@ class PostgresFixture:
         if config["NetworkMode"] != "none" or config.get("PortBindings"):
             raise RuntimeError("Refusing a container with network/host-port exposure")
         for _ in range(100):
-            if docker("exec", self.container, "pg_isready", "-U", "postgres").returncode == 0:
+            # The official image briefly starts a temporary initialization
+            # server before replacing PID 1 with the final postmaster. A ready
+            # response from that temporary socket is not stable acceptance.
+            pid1 = docker("exec", self.container, "cat", "/proc/1/comm")
+            if (pid1.returncode == 0 and pid1.stdout.strip() == "postgres"
+                    and docker("exec", self.container, "pg_isready", "-U", "postgres").returncode == 0):
                 break
             time.sleep(.1)
         else:

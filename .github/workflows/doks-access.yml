@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Inventory reads current workloads/catalog; bootstrap creates isolated compatibility resources
+        description: Inventory reads current state; bootstrap checks compatibility; restore drills the frozen release in an isolated database
         type: choice
         required: true
         default: inventory
-        options: [inventory, bootstrap]
+        options: [inventory, bootstrap, restore]
   push:
     branches: [codex/doks-access]
     paths:
@@ -263,6 +263,26 @@ jobs:
           python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
           python3 -m unittest discover -s backend/scripts/ops/bootstrap -p 'test_*.py'
           python3 backend/scripts/ops/bootstrap/acceptance.py --self-test
+
+      - name: Check isolated application restore guards
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'restore' }}
+        run: python3 -m unittest discover -s backend/scripts/ops -p 'test_proposal_cloud_restore.py'
+
+      - name: Reconstruct reviewed application and exercise isolated Auth Storage restore
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'restore' }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/proposal-cloud-restore.py
+
+      - name: Remove only this restore drill's isolated database roles and resources
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.mode == 'restore' }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -f backend/scripts/ops/proposal-cloud-restore.py ] && [ -x "${KUBECTL:-}" ]; then
+            python3 backend/scripts/ops/proposal-cloud-restore.py --cleanup
+          fi
 
       - name: Inspect source and target migration prerequisites
         if: ${{ github.event_name == 'push' || inputs.mode == 'bootstrap' }}

@@ -146,7 +146,7 @@ def build_schema(catalog: dict, role_prefix: str, expected_database: str, *, sou
     routines = [row for row in catalog["routines"]
                 if row["schema"] in APPLICATION_SCHEMAS
                 and row["proname"] != "rls_auto_enable"
-                and (row["schema"], row["proname"]) not in PLATFORM_REPLACEMENTS]
+                and (source_role_prefix is not None or (row["schema"], row["proname"]) not in PLATFORM_REPLACEMENTS)]
     if any(row["owner"] != source_owner or row["language"] not in {"sql", "plpgsql"}
            or row["prokind"] != "f" for row in routines):
         raise ValueError("Unsupported application routine")
@@ -273,7 +273,7 @@ def build_schema(catalog: dict, role_prefix: str, expected_database: str, *, sou
         "constraints": len(constraints), "standalone_indexes": index_count,
         "triggers": len(triggers), "policies": len(policies),
         "upstream_auth_storage_required": True, "production_rows_included": False,
-        "requires_runtime_dispatcher_replacement": True,
+        "requires_runtime_dispatcher_replacement": source_role_prefix is None,
     }
     return "\n".join(sql) + "\n", manifest
 

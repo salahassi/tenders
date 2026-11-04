@@ -46,6 +46,49 @@ release remains blocked even when the helper's isolated tests pass.
 
 ## Run and observe the release
 
+Before production mutation, dispatch the isolated recovery gate at the same
+reviewed branch containing the frozen manifest:
+
+```sh
+gh workflow run doks-access.yml --repo salahassi/tenders --ref <reviewed-release-ref> -f mode=restore
+```
+
+This mode is separate from inventory and the older compatibility bootstrap. It
+reads catalog metadata from the current application database through the same
+verified runner route. The exact six-release baseline is reconstructed into a
+nonce-owned database, then the frozen additive migrations run under isolated
+managed roles. Only those role names are rebound; source and mapped-body hashes
+are recorded. Unexpected legacy roles block the drill rather than receiving
+grants. If the exact final release and its routine catalog receipt are already
+deployed, the clone uses that schema and does not apply the batch again.
+
+Captured function definitions stay private in memory and owned Kubernetes
+Secrets, split into bounded chunks and verified by SHA-256 before execution.
+No production business rows are copied. Genuine isolated Auth and Storage
+services create two synthetic users. The first Owner saves reviewed synthetic
+source evidence and a private file; the public backup functions save rows and
+bytes in memory. A database/comment/fixture guard then removes only that
+synthetic source workspace and its frozen table scope. Transactional trigger
+restoration and rollback checks protect the fixture reset. The singleton
+workspace constraint remains intact. Canonical bootstrap creates the second
+Owner's new workspace, and the ordinary restore functions import the backup.
+
+Acceptance checks retained file hashes and distinct restored paths, unchanged
+historical source confirmations with new Owner revocations, cleared requirement
+assurance, previous-Owner denial, idempotent replay and zero model usage. Its
+small document bytes are an explicit Storage fixture; this gate does **not**
+exercise the application renderer or establish 600-second delivery latency.
+The result is successful only after the exact temporary database, roles,
+namespace and source SQL client have been removed. Raw catalog, credentials,
+user identifiers, source content and file bytes are never public artifacts.
+
+Local validation has two distinct layers: the schema tests reconstruct actual
+managed-role PGlite catalogs and assert column/RPC/row-security boundaries;
+`scripts/testing/cloud_restore_postgres.py` executes the full reconstruction,
+additive batch and public backup/restore in a network-isolated real PostgreSQL
+container with Auth/Storage schema stubs. The cloud gate is still required for
+actual HTTP authentication and stored-byte acceptance.
+
 After the workflow exists on the default branch and the reviewed revision has
 been published, the coordinator can dispatch:
 

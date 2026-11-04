@@ -39,6 +39,7 @@ jobs:
           npm --prefix backend test -- --maxWorkers=1
           npm --prefix backend run build
           python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
+          python3 -m unittest discover -s backend/scripts/ops/production-schema -p 'test_*.py'
           python3 -m unittest discover -s backend/deploy/kubernetes -p 'test_*.py'
       - name: Prepare original-CA cluster access and expiring image credentials
         env:

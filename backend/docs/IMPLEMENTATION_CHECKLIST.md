@@ -70,6 +70,46 @@ are absent. This confirms the new implementation is not deployed yet. API/worker
 use image digest `85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380`;
 image source revisions remain independently unverified. This is a current baseline
 for a guarded release, not hosted proposal/model acceptance or schema-tip proof.
+## November 4 — isolated release reconstruction and recovery gate
+
+The explicit `doks-access.yml` **restore** mode uses the established original-CA
+runner route. It reads only the actual managed application catalog and verifies
+either the frozen six-release baseline or the exact final release/catalog pair.
+The baseline is reconstructed under nonce roles in a disposable database, then
+the complete hash-verified additive batch is applied there with only managed
+role names rebound. Unexpected legacy roles fail closed. The production source
+supplies no customer rows. Raw definitions stay private in bounded Secret chunks
+with a concatenated SHA-256 check; setup, schema, HTTP acceptance and cleanup
+remain separate failure boundaries.
+
+The drill uses real isolated Auth/Storage and ordinary public backup/restore
+functions. Synthetic source rows and file bytes are backed up before a guarded
+fixture reset. Exact database/comment/source identity, a frozen table allowlist,
+and trigger fingerprints constrain that reset. An injected FK failure proves
+transactional rollback restores rows and trigger state. The application singleton
+workspace constraint is retained: only after removing the synthetic source does
+canonical bootstrap create the second verified Owner's new target workspace.
+Restoration retains original file hashes and historical source confirmations,
+adds current-Owner revocations, clears live requirement assurance, denies the old
+Owner, preserves idempotent replay and invokes no model. Storage fixture bytes
+are explicitly separate from actual application renderer acceptance.
+
+Local evidence: **319 operations tests**, **11 schema tests** and **eight real
+PostgreSQL reconstruction/recovery checks** pass. The PostgreSQL receipt records
+all **16 currently integrated additive migrations**, including renderer version
+3 and restored-source assurance, under a non-superuser managed owner. Its Auth
+and Storage schemas are stubs; actual cloud HTTP/bytes remain pending. The
+PostgreSQL harness now waits for the final PID-1 postmaster, avoiding the official
+image's temporary initialization-server readiness race. The release workflow
+explicitly discovers the schema tests in their hyphenated directory.
+
+Deployment, cloud restore and 600-second hosted issuance remain **unverified**.
+No production dispatch/mutation, external model or email call was made here.
+The final reconstruction must be rerun after the remaining ordinary-export
+migration joins the release. Existing package gates from this operations slice
+(backend 2,156/131 files; frontend 299/46; both typechecks/builds) are unchanged;
+the coordinator owns the final integrated package and hosted gates.
+
 ## November 4 — managed catalog reconstruction and native entrypoint guard
 
 The schema reconstruction builder accepts an explicitly named managed source

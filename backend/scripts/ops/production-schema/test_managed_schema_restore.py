@@ -20,7 +20,7 @@ class ManagedSchemaTests(unittest.TestCase):
   root=Path(__file__).resolve().parents[3]
   program=r"""
 process.on('uncaughtException',e=>{console.error(e.message,e.code,e.position,e.where);process.exit(1)});
-import {PGlite} from '@electric-sql/pglite';import {spawnSync} from 'node:child_process';
+import {PGlite} from '@electric-sql/pglite';import {spawnSync} from 'node:child_process';import {readFile} from 'node:fs/promises';
 const source=new PGlite();
 const roles=async(db,prefix)=>{
  for(const suffix of ['owner','authadmin','storageadmin','authenticator','anon','authenticated','service'])await db.exec(`create role ${prefix}_${suffix} nosuperuser nobypassrls nocreatedb nocreaterole`);
@@ -47,13 +47,17 @@ revoke all on function public.delivery_context(uuid) from public;grant execute o
 create function public.complete_delivery() returns boolean language sql security definer set search_path='' as $$select true$$;
 revoke all on function public.complete_delivery() from public;grant execute on function public.complete_delivery() to tdp_app_service;
 reset role;`);
-const query=async(q)=>(await source.query(q)).rows;
-const cat={relations:await query(`select c.oid,n.nspname schema,c.relname,c.relkind,pg_get_userbyid(c.relowner) owner,c.relispartition is_partition,c.relpersistence,c.relrowsecurity,c.relforcerowsecurity,c.reloptions,c.relacl::text acl,case when c.relkind='v' then pg_get_viewdef(c.oid) end view_definition from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('public','app_private') and c.relkind in ('r','v','S')`),
- columns:await query(`select n.nspname schema,c.relname,a.attnum,a.attname,format_type(a.atttypid,a.atttypmod) data_type,a.attacl::text acl,a.attgenerated,a.attislocal,a.attidentity,a.attnotnull,pg_get_expr(d.adbin,d.adrelid) default_expression,case when a.attcollation<>0 then '"default"' end collation from pg_attribute a join pg_class c on c.oid=a.attrelid join pg_namespace n on n.oid=c.relnamespace left join pg_attrdef d on d.adrelid=c.oid and d.adnum=a.attnum where n.nspname in ('public','app_private') and c.relkind in ('r','v') and a.attnum>0 and not a.attisdropped`),
- constraints:await query(`select c.conrelid,c.contypid,c.conparentid,c.convalidated,c.contype,n.nspname schema,c.conname,pg_get_constraintdef(c.oid) definition from pg_constraint c join pg_namespace n on n.oid=c.connamespace where n.nspname in ('public','app_private')`),
- indexes:[],types:[],sequences:[],dependencies:[],
- routines:await query(`select n.nspname schema,p.proname,pg_get_userbyid(p.proowner) owner,l.lanname language,p.prokind,pg_get_function_identity_arguments(p.oid) identity_arguments,pg_get_functiondef(p.oid) definition,p.proacl::text acl from pg_proc p join pg_namespace n on n.oid=p.pronamespace join pg_language l on l.oid=p.prolang where n.nspname in ('public','app_private')`)};
-cat['triggers-policies']=[{export:{triggers:[],policies:await query(`select n.nspname schema,c.relname,p.polname,p.polpermissive,p.polcmd,array(select pg_get_userbyid(unnest(p.polroles))) roles,pg_get_expr(p.polqual,p.polrelid) using_expression,pg_get_expr(p.polwithcheck,p.polrelid) check_expression from pg_policy p join pg_class c on c.oid=p.polrelid join pg_namespace n on n.oid=c.relnamespace`)}}];
+await source.exec(`set role tdp_app_owner;
+create table app_private.application_release_history(release text primary key,migration_sha256 text not null);
+create function app_private.backup_tables() returns text[] language sql immutable as $$select array['proposal_delivery_snapshots']::text[]$$;
+insert into public.proposal_delivery_snapshots values('10000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001','{"private":"SYNTHETIC_SECRET_ROW_NEVER_EXPORT"}');
+insert into app_private.application_release_history values('proposal-delivery-reliability-v1',repeat('f',64));
+insert into app_private.application_release_history select 'proposal-delivery-reliability-v1-catalog',encode(sha256(convert_to(coalesce(string_agg(p.oid::regprocedure::text||':'||pg_get_functiondef(p.oid)||':'||coalesce(p.proacl::text,''),E'\\n' ORDER BY p.oid::regprocedure::text),''),'UTF8')),'hex') from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in ('public','app_private') and p.prokind='f';reset role;`);
+let capture=(await readFile('scripts/ops/production-schema/capture_managed_catalog.sql','utf8')).replace("current_database()<>'tenderdesk_app'","current_database()<>'postgres'").replace('__RELEASE_MANIFEST_SHA256__','f'.repeat(64)).replace('__BASELINE_RELEASES_JSON__','{}');
+const captured=await source.exec(capture);const payload=captured.find(r=>r.rows[0]?.private_catalog)?.rows[0].private_catalog;
+if(!payload||payload.source_rows_copied!==0||JSON.stringify(payload).includes('SYNTHETIC_SECRET_ROW_NEVER_EXPORT'))throw Error('CATALOG_CAPTURE_LEAKED_ROWS');
+if((await source.query('select count(*)::int n from public.proposal_delivery_snapshots')).rows[0].n!==1)throw Error('CATALOG_CAPTURE_MUTATED_SOURCE');
+const cat=payload.catalog;
 const build=spawnSync('python3',['-c',`import sys,json;sys.path.insert(0,'scripts/ops/production-schema');from build_schema import build_schema;sql,manifest=build_schema(json.load(sys.stdin),'restored','postgres',source_role_prefix='tdp_app');print(json.dumps({'sql':sql,'manifest':manifest}))`],{input:JSON.stringify(cat),encoding:'utf8'});
 if(build.status!==0)throw Error(build.stderr);const {sql,manifest}=JSON.parse(build.stdout);
 if(manifest.source_role_prefix!=='tdp_app')throw Error('SOURCE_FAMILY_NOT_RECORDED');
