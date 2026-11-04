@@ -1,0 +1,74 @@
+{
+  "checks": [
+    {
+      "command": "vitest run tests/backend/commandBatchChunks.test.ts --maxWorkers=1",
+      "later_test_only_change": "Added key:string annotation after TypeScript inferred crypto.randomUUID template literal; SQL/runtime unchanged and final typecheck passed.",
+      "log_sha256": "684d0fd11f8201abce30d90e52c06cd5e994e09e4762912e14a04fa244926c7a",
+      "seconds": 2.75,
+      "test_file_sha256_at_execution": "dd569a0a21ecf6280d54c3fcc93e4d89bfbde331e724962798ed3426775cde04",
+      "tests_passed": 16
+    },
+    {
+      "command": "vitest run tests/backend/modelCatalog.test.ts -t 'saves model routes through the same transactional batch RPC' --maxWorkers=1",
+      "log_sha256": "791215f1d3f9634a209b0502f08d614a936924038e2ec197af9f26494755e5dd",
+      "seconds": 2.42,
+      "tests_passed": 1,
+      "tests_skipped": 89
+    },
+    {
+      "command": "npm run typecheck",
+      "log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220",
+      "passed": true
+    }
+  ],
+  "coverage": [
+    "old receipt row preservation and unchanged old RPC authority",
+    "legacy public/private transport cutover refuses before effects",
+    "historical saved aggregate replay refuses before remutation",
+    "complete ordered canonical UTF8 chunks and hashes",
+    "new receipt replay without repeated audit/business writes",
+    "late command failure atomic rollback",
+    "genuine authorized Arabic export spanning chunks",
+    "current actor/membership ownership checks",
+    "expiry no implicit remutation",
+    "null/negative/out-of-range indices",
+    "exact UUID purge across chunk boundary",
+    "unrelated batch survives authorized purge",
+    "late purge failure restores cached bytes and business rows",
+    "private table/helper ACLs",
+    "existing100-command admission preserved",
+    "current public dispatcher model-route compatibility"
+  ],
+  "limits": {
+    "api_streaming_exercised": false,
+    "deployment_qualified": false,
+    "full_backend_suite_claimed": false,
+    "hosted_calls": 0,
+    "model_calls": 0,
+    "open_gates": [
+      "actual chunked PostgreSQL/PostgREST capacity regression after reproduced10-result OOM",
+      "legacy authoritative aggregate normalization/census qualification",
+      "old API/direct legacy RPC admission fence and in-flight DB settlement before cutover",
+      "release capability/source binding and final integration suite"
+    ],
+    "postgrest_exercised_by_this_receipt": false,
+    "real_postgresql_process_exercised_by_this_receipt": false
+  },
+  "passed": true,
+  "red_evidence": {
+    "cause": "PLpgSQL local manifest variable incorrectly qualified as a function argument; fixed with distinct response_manifest name.",
+    "initial_typecheck_log_sha256": "c0e508127905d252b070256ab631054d8e1f7cbf13b0be518c3ff23be5e22149",
+    "log_sha256": "2166dfa754c1e980d3172fc35e6a0bec0e6de90baaba38c5a982677c7fd0e77b",
+    "sql_first_attempt_tests_failed": 11,
+    "sql_first_attempt_tests_passed": 5,
+    "typecheck_fix": "Test key annotation and dependency-only links to both root lockfile installations; no dependency/product change."
+  },
+  "scope": "local_pglite_bounded_batch_sql_functional_checks",
+  "source_base_revision": "5a48598e7d72b1a7a121d424645a9428c917e4f8",
+  "sources": {
+    "backend/supabase/migrations/20261104212818_bounded_command_batch_results.sql": "ce77978cce4a0c09ea93ca3939b1d90029bd9987da303346752ccb2ac96796b6",
+    "backend/tests/backend/commandBatchChunks.test.ts": "9b861279fbc19098feafbbbd734286d573e52cf8b52141ea45867007db9356c9",
+    "backend/tests/backend/modelCatalog.test.ts": "6f20b32245dde2695f969da198abf36499a8d860f6e4811e8ded0b0cb9a5c64e"
+  },
+  "version": 1
+}

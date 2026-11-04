@@ -4037,10 +4037,20 @@ it("saves model routes through the same transactional batch RPC used by the brow
   const key = crypto.randomUUID();
   await f.db.exec("set local role authenticated");
   try {
-    const first = await f.rpc("app_batch", [commands, key]);
-    const replay = await f.rpc("app_batch", [commands, key]);
+    const first = await f.rpc("app_batch_prepare", [commands, key]);
+    const replay = await f.rpc("app_batch_prepare", [commands, key]);
     expect(replay).toEqual(first);
-    expect(first[0].model_ids).toEqual(models.map((m) => m.id));
+    expect(first.result_count).toBe(1);
+    expect(first.results[0].chunk_count).toBe(1);
+    const chunk = await f.rpc("app_batch_result_chunk", [
+      first.receipt_id,
+      0,
+      0,
+    ]);
+    const result = JSON.parse(
+      Buffer.from(chunk.data_base64, "base64").toString("utf8"),
+    );
+    expect(result.model_ids).toEqual(models.map((m) => m.id));
   } finally {
     await f.db.exec("reset role");
   }

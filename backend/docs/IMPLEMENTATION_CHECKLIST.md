@@ -9433,3 +9433,45 @@ model call, application deployment or release-baseline replacement occurred.
 The original inventory remains the frozen release baseline. The REST memory
 limit now matches the independently reproduced local upstream OOM's envelope;
 the repair and exact regression remain pending.
+
+### November 4 — implement atomic batch results with bounded transport framing
+
+CLI-created migration `20261104212818_bounded_command_batch_results.sql` keeps
+the existing 100-command/1 MiB input contract and calls the current public
+dispatcher within one workspace-locked transaction. It stores each actual
+returned result as canonical UTF-8 bytes in fixed 256 KiB private chunks and
+returns a small ordered manifest. It does not build a growing JSONB batch array
+or infer results from child command receipts. Descriptor/chunk hashes and exact
+lengths bind every result. Authenticated reads recheck the original actor,
+current membership, expiry and purge state; private tables/helpers have no new
+browser or service grants. Canonical base64 has no inserted line breaks.
+
+Both old aggregate RPC entry points now fail with
+`TRANSPORT_UPGRADE_REQUIRED` before effects. Existing legacy receipt rows and
+function authority remain unchanged. An existing legacy batch key currently
+fails with `BATCH_LEGACY_NORMALIZATION_REQUIRED` before any command is repeated.
+This is an explicitly unfinished compatibility gate, not a release-ready
+fallback. The rollout must fence old API/direct-RPC admission and settle
+already-running legacy transactions; changing a function body alone does not
+stop an in-flight old invocation.
+
+The new completed cache has the existing 24-hour retention boundary. While an
+expired receipt remains present, a retry returns `BATCH_RESULT_EXPIRED` instead
+of silently executing commands again. Existing workspace-locked maintenance
+then removes expired cache rows. Purge preserves the original UUID-match scope:
+each chunk plus the next same-result chunk's first 35 bytes is checked without
+rebuilding the result. Only matching receipts are invalidated; unrelated cached
+results remain readable. Purge and late failures remain transactional.
+
+Local PGlite evidence: all 16 new functional cases pass, including historical
+row/ACL preservation, full UTF-8 reconstruction, replay, late-command rollback,
+current ownership, expiry, exact cross-boundary purge, unrelated-result survival
+and late-purge rollback. The public-dispatch model-route regression passes
+(one selected test, 89 skipped), and backend typecheck passes. A first-run SQL
+variable-qualification failure and the subsequent test-only type annotation
+are recorded in the [scoped receipt](evidence/command-batch-chunks-sql-20261104.json).
+Dependencies were reused through temporary links to both root installations;
+no dependency versions changed. No hosted/model calls occurred. Actual
+PostgreSQL/PostgREST chunked capacity, authoritative legacy normalization,
+guarded cutover, source-bound release capabilities and final integration remain
+open; no deployment or final capacity qualification is claimed here.
