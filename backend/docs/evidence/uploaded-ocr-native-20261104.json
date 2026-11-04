@@ -5,12 +5,34 @@
   "native_worker_sha256": "677b263b40b87f8a42cf1c119cda7114bdffc1fc82fe4a981cf74c1477a1bd2a",
   "manifest_sha256": "b2828aab7a4d07a32ddb74836b5abd2fa5a86afd5b68b86675deb7100e6632de",
   "engine": "Tesseract 5.3.0; ara+eng; Poppler 22.12",
-  "limits": { "network": "none", "memory_mib": 768, "cpus": 1, "pids": 64 },
+  "limits": {
+    "network": "none",
+    "memory_mib": 768,
+    "cpus": 1,
+    "pids": 64
+  },
   "cases": [
-    { "case": "scanned_en_exact_obligations", "passed": true, "elapsed_ms": 465, "confidence": 96, "numeric_uncertainty": false },
-    { "case": "scanned_ar_exact_obligations", "passed": false, "elapsed_ms": 418, "reason": "First obligation omitted; deadline and prohibition words changed" },
-    { "case": "mixed_pdf_exact_page_and_blank", "passed": true },
-    { "case": "original_hash_and_page_count_mismatch", "passed": true }
+    {
+      "case": "scanned_en_exact_obligations",
+      "passed": true,
+      "elapsed_ms": 465,
+      "confidence": 96,
+      "numeric_uncertainty": false
+    },
+    {
+      "case": "scanned_ar_exact_obligations",
+      "passed": false,
+      "elapsed_ms": 418,
+      "reason": "First obligation omitted; deadline and prohibition words changed"
+    },
+    {
+      "case": "mixed_pdf_exact_page_and_blank",
+      "passed": true
+    },
+    {
+      "case": "original_hash_and_page_count_mismatch",
+      "passed": true
+    }
   ],
   "arabic_followup_same_image": {
     "fixture_sha256": "70cb0b2e615d8c9880ab414a87c7eadc7bc6129268e203010006e74be844331b",
@@ -22,5 +44,26 @@
   },
   "qualified_for_automatic_arabic_semantic_acceptance": false,
   "operational_conclusion": "Mean confidence and numeric confidence cannot establish complete or correct source meaning. Keep OCR unconfirmed and provide source-bound visual review and immutable authorized page correction.",
-  "earlier_image_failure": "Runtime user could not read root-owned COPY package files. COPY ownership was fixed before this measured recognition run."
+  "earlier_image_failure": "Runtime user could not read root-owned COPY package files. COPY ownership was fixed before this measured recognition run.",
+  "final_integrated_native_run": {
+    "image_id": "sha256:42bda8349d80507c1b7d5fd299d1c9be59ece8f559256bfc8b8bf90f6d8b40af",
+    "worker_sha256": "6e25ec361d2df181b8aa7bafbde65da982cb976a717e15e1acbf9d9bb254092b",
+    "network": "none",
+    "memory_mib": 768,
+    "cpus": 1,
+    "pids": 64,
+    "tmpfs_mib": 256,
+    "cases_passed": 3,
+    "cases_failed": 1,
+    "english_elapsed_ms": 449,
+    "arabic_elapsed_ms": 411,
+    "arabic_missing_first_obligation": true,
+    "oracle_or_fixture_changed": false,
+    "automatic_arabic_qualified": false
+  },
+  "local_temp_capacity_failure": {
+    "observed": true,
+    "classification": "Local Docker writable-layer ENOSPC before recognition; no accuracy score",
+    "resolution": "Bounded tmpfs used for acceptance. Deployed native CronJob already mounts bounded writable emptyDir. Regenerable dependencies in completed local worktrees were removed; active source and data retained."
+  }
 }

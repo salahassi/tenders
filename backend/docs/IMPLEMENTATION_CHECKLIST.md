@@ -6703,3 +6703,11 @@ an explicit retryable error. Selection/unmount still cancels immediately and lea
 confirmation disabled. Thirteen component tests and frontend typecheck pass,
 including an actual pending fetch aborted at the deadline. No provider or hosted
 request ran for this check.
+
+The final integrated native OCR image `42bda8349d80507c1b7d5fd299d1c9be59ece8f559256bfc8b8bf90f6d8b40af`
+was rerun offline with the unchanged frozen corpus, 768MiB/one CPU and a bounded
+256MiB temporary filesystem. Three cases passed; the Arabic exact-obligation case
+still failed with the same omitted first obligation. The evidence retains that
+failure. An earlier local container temporary-filesystem capacity error was
+separated from recognition quality; the deployed CronJob already has a bounded
+writable temporary volume. These are native local results, not hosted OCR acceptance.
