@@ -8,8 +8,11 @@ GitHub Actions → DigitalOcean access runbook is merged on `main` through PR25;
 the current reliability implementation is still draft PR24.
 
 - Both lockfile installs pass. Final frontend typecheck, **359 tests / 57 files**,
-  and build pass. The combined backend suite is running on committed source
-  `c9f1c5b` in an isolated checkout; a queue-index assertion is under review.
+  and build pass. The combined backend suite on committed source `c9f1c5b`
+  completed with 2,889 passing tests and two stale assertions. Both assertions
+  are corrected; their focused suites pass 32 and 24 tests respectively.
+  The [combined diagnostic receipt](evidence/combined-backend-diagnostic-20261104.json)
+  retains the red run; the complete final source still needs a green run.
   Combined operational checks pass: 391 tests, plus 11 schema-helper and 15
   Kubernetes-render tests. Final runtime changes still require their own checks.
 - Exact native Deno render and asynchronous content verification pass all seven
