@@ -9289,3 +9289,36 @@ DO metadata-fetch reuse, unchanged old receipt fields and verified cleanup.
 These are local correctness tests, not a hosted SQL/session or capacity result.
 Root source review found no material blocker before integration. Fresh hosted
 inventory remains pending the reviewed Actions dispatch.
+
+### November 4 — preserve accepted structured sections beyond the legacy text ceiling
+
+Independent SQL reproduction at `f80858f` confirmed that actual `nextStage` →
+`advance_generation` rejects a schema-accepted 100-table/50,000-cell section at
+`proposal_sections_body_check`. A 69 × 20,000-character mixed Arabic/Latin
+response was accepted by the actual authoring save and substantive-review API,
+then adoption failed at persistence. No live model or customer content was used.
+
+New CLI-created migration `20261104212300_structured_section_body_bound.sql`
+changes only that CHECK: free text retains the 100,000-character ceiling; larger
+bodies must be bounded by their own complete array `content_blocks::text`
+character length. Existing source/model/authoring/snapshot/export limits remain.
+There is no truncation, replacement prose, new fixed larger allowance, row rewrite,
+procedure replacement, permission change, or relaxation of content/approval scans.
+
+Seven focused migrated SQL/API tests pass. They cover generated text/tables,
+authored text and JSON-table projections, a derived compliance matrix, full
+body/source hashes and ordinary export projection, legacy/undersized/scalar-source
+negative controls, and actual old-row/owner/ACL/RLS/policy/column preservation
+across the migration boundary. A missing-input marker and monetary price after
+character 100,000 still trigger approval blockers; technical rendering still
+rejects the late price. The adopted mixed-script body retains 1,380,472 characters;
+its actual ordinary snapshot is 4,146,977 UTF-8 bytes and RenderModel 2,073,219
+bytes. These measurements distinguish serialization from PostgreSQL compressed
+storage size. See `evidence/section-body-persistence-20261104.json` for fixture,
+source/migration hashes and retained red/green log hashes.
+
+Backend typecheck and build pass. Final combined suites, exact native rendering
+of the three saved ordinary projections, release manifest/schema refreeze and
+hosted acceptance remain separate pending gates. Frontend source/dependencies
+were not changed; the parent owns final complete package checks. No deployment,
+external provider call, hosted Auth/Storage action or production write occurred.
