@@ -9723,6 +9723,43 @@ classifier. No genuine Microsoft Word engine was available; the separate Word
 update/save gate remains open. See `docs/ARABIC_OCR_DIAGNOSTIC.md` and
 `docs/evidence/uploaded-ocr-adjudication-20261104.json`.
 
+## November 4 — A06 official best-model comparison rejected
+
+**Implementation:** inspected the existing pinned OCR image and established that
+Debian's Arabic and English language packages use `tessdata_fast`. Added one
+explicit offline qualification harness and a pre-output plan for official
+`tessdata_best` Arabic and English files, pinned to upstream commit
+`e12c65a915945e4c28e237a9b52bc4a8f39a0cec`. Runtime recognition, source eligibility
+and mandatory visual page review were not changed. Independent source review
+verified all asset, source, gold, oracle and page-selection hashes. A preserved
+successor plan fixed incomplete-result recording before any recognition output;
+the candidate and all test inputs remained unchanged.
+
+**Actual native evidence:** the exact seven planned cases ran at 768 MiB/one CPU,
+with network disabled and read-only inputs. Three controls passed: English,
+the selected English scan within a mixed PDF, and its blank page. All four Arabic
+pages failed the unchanged complete-page oracle. The candidate is rejected;
+no output-driven parameter search followed. The records-retention defect is
+reported as a malformed prohibition token without asserting that its intended
+meaning necessarily reverses. The run completed in 4.88 seconds including cleanup;
+peak memory was 164,823,040 bytes, with no out-of-memory or swap events. All source
+hashes stayed unchanged and the container was removed. The explicit quality gate
+was false, exit 1; infrastructure failures and skipped cases were zero.
+
+**Validation:** backend typecheck and build passed; all 16 existing pure OCR oracle
+regressions passed in 111 ms. The actual seven-case candidate run is deliberately
+reported as a quality failure, not a green accuracy suite. Full combined package
+checks remain root-owned. The earlier frozen controls have known prior-model
+outcomes; this comparison does not establish a blinded or universal accuracy rate.
+
+**Deployment / remaining:** no deployment, provider inference, customer data or
+hosted acceptance. Automatic Arabic OCR remains unqualified; preserve the current
+source-bound visual correction workflow. Official best-model branding did not
+resolve the observed obligation and qualifier failures. See the updated
+`docs/ARABIC_OCR_DIAGNOSTIC.md`, frozen plan
+`docs/evidence/uploaded-ocr-best-plan-v2-20261104.json`, raw results and separate
+`docs/evidence/uploaded-ocr-best-adjudication-20261104.json`.
+
 ### November 4 — qualify the permanent legacy command RPC gateway fence
 
 Both gateway ports now reject the retired `app_batch` and `apply_batch` RPCs
