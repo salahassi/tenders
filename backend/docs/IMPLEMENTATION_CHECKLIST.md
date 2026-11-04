@@ -8821,3 +8821,37 @@ product's 10 MiB file limit, whole application rendering, production Auth policy
 or a successful hosted restore. No application migration, production configuration
 or hosted service was changed. The next reviewed hosted restore retry remains a
 separate gate.
+
+
+### 2026-11-04 — respect explicit managed SET ROLE authority in retirement
+
+Real non-superuser PostgreSQL qualification reproduced the retirement adapter's
+incorrect inherited-privilege assumption. Managed setup grants INHERIT FALSE,
+SET TRUE: `pg_has_role(..., 'USAGE')` rejects that legitimate administrator,
+while an inherited-only caller can pass USAGE without permission to SET ROLE.
+The adapter now checks SET authority. Exact object owners and the installed
+function fingerprint are resolved through catalogs before role changes, avoiding
+schema-qualified casts that themselves require the deliberately absent inherited
+schema USAGE. Fence installation retains its exact owner/function/trigger checks
+and revokes only the temporary execution grant it added.
+
+The same authority correction covers census, multipart and metadata readbacks.
+Storage reads/deletion run as the actual authorized Storage owner; the complete
+collision census switches to the application owner in the same repeatable-read
+transaction. It does not grant schemas to the administrator or broaden roles.
+
+All 41 focused tests passed in 9.740s: eight actual PostgreSQL 17.6 authority cases
+and 33 existing adapter/coordinator controls. Tests cover SET versus inheritance,
+real role transitions, fence replay, unchanged schema/function ACL and membership,
+complete cross-owner census, missing SET refusal, multipart detection and exact
+quoted-key deletion with unrelated rows preserved. A prior expanded attempt
+stopped before PostgreSQL execution because Docker had no disk space; its log is
+retained separately. The final disposable network-none container was removed.
+Evidence and red/green hashes are in
+`evidence/storage-retirement-owner-authority-20261104.json`.
+
+No production, external service, file deletion or quota-release operation ran.
+PostgreSQL 18 on the managed deployment remains an explicit guarded-release
+check; this local execution is PostgreSQL 17.6. Pinned Storage binary behavior,
+Kubernetes quiescence and hosted retirement acceptance retain their separate
+qualification requirements.

@@ -50,6 +50,11 @@ def guard_source():
  text=path.read_text();start=text.index('create function public.guard_retired_storage_write()');end=text.index('end$$;',start)+len('end$$;')
  return text[start:end]
 
+def storage_role_sql():
+ # Resolve the actual table owner without requiring inherited schema USAGE.
+ # Permission to SET ROLE, not inherited ownership, authorizes the transition.
+ return "do $retire$ declare owner_name name;begin select pg_get_userbyid(r.relowner) into owner_name from pg_class r join pg_namespace n on n.oid=r.relnamespace where n.nspname='storage' and r.relname='objects'; if owner_name is null or not pg_has_role(session_user,owner_name,'SET') then raise exception 'STORAGE_RETIREMENT_OWNER_AUTHORITY_REQUIRED';end if;execute format('set local role %I',owner_name);end $retire$;"
+
 class KubernetesAdapter:
  def __init__(self,directory,client,selection):
   self.directory=Path(directory);self.client=client;self.selection=selection;self.nonce=selection['operation_nonce'];self.capture_value=None
@@ -65,6 +70,7 @@ class KubernetesAdapter:
   if role:pre+='set local role '+role+';'
   return d.sql(self.client.pod,pre+statement+';commit;')
  def query(self,statement,role='tdp_app_owner'):return json.loads(self.sql(statement,role))
+ def storage_query(self,statement):return self.query(storage_role_sql()+statement,None)
  def items(self,kind):
   result=json.loads(d.command(['get',kind,'-n',d.NAMESPACE,'-o','json']))
   c.require(isinstance(result.get('items'),list) and len(result['items'])<=1000,'STORAGE_RETIREMENT_RESOURCE_CENSUS_INVALID');return result['items']
@@ -133,21 +139,24 @@ class KubernetesAdapter:
   self.capture_value={'workloads':workloads,'pods':selected_pods,'pvc':pvc,'namespace_uid':selection['namespace_uid'],'storage_configuration':observed,'storage_ingress_policy_uid':policy['metadata']['uid']}
   self.save();return self.capture_value
  def install_fence(self,capture):
-  observed=self.query("select jsonb_build_object('owner',pg_get_userbyid(proowner),'security_definer',prosecdef,'config',proconfig,'body_sha256',encode(sha256(convert_to(prosrc,'UTF8')),'hex')) from pg_proc where oid='public.guard_retired_storage_write()'::regprocedure",None)
+  # SET-only managed administrators intentionally lack inherited schema USAGE.
+  # Resolve exact objects through catalogs before assuming their owner roles;
+  # regclass/regprocedure name casts would require schema USAGE too early.
+  observed=self.query("select jsonb_build_object('owner',pg_get_userbyid(p.proowner),'security_definer',p.prosecdef,'config',p.proconfig,'body_sha256',encode(sha256(convert_to(p.prosrc,'UTF8')),'hex')) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='guard_retired_storage_write' and p.pronargs=0 and p.prokind='f'",None)
   c.require(observed=={'owner':'tdp_app_owner','security_definer':True,'config':['search_path=""'],'body_sha256':self.binary.get('guard_body_sha256')},'STORAGE_RETIREMENT_INSTALLED_GUARD_CHANGED')
   # Explicitly inspect actual owners and require the connected administrator can
   # assume BOTH owners. Never create roles, broaden managed ownership or rely on
   # a presumed postgres superuser. A temporary CREATE TRIGGER execute grant is
   # revoked in the same transaction only when this transaction added it.
-  self.sql("""do $retire$ declare storage_owner name;function_owner name;caller name:=current_user;had_execute boolean;begin
+  self.sql("""do $retire$ declare storage_owner name;function_owner name;storage_oid oid;function_oid oid;caller name:=current_user;had_execute boolean;begin
    if current_database()<>'tenderdesk_app' then raise exception 'STORAGE_RETIREMENT_DATABASE_MISMATCH';end if;
-   select pg_get_userbyid(relowner) into storage_owner from pg_class where oid='storage.objects'::regclass;
-   select pg_get_userbyid(proowner) into function_owner from pg_proc where oid='public.guard_retired_storage_write()'::regprocedure;
-   if storage_owner is null or function_owner<>'tdp_app_owner' or not pg_has_role(session_user,storage_owner,'USAGE') or not pg_has_role(session_user,function_owner,'USAGE') then raise exception 'STORAGE_RETIREMENT_OWNER_AUTHORITY_REQUIRED';end if;
-   if exists(select 1 from pg_trigger where tgrelid='storage.objects'::regclass and tgname='tenderdesk_retired_storage_write') then
-    if not exists(select 1 from pg_trigger where tgrelid='storage.objects'::regclass and tgname='tenderdesk_retired_storage_write' and tgenabled='O' and tgtype=23 and tgfoid='public.guard_retired_storage_write()'::regprocedure) then raise exception 'STORAGE_RETIREMENT_FOREIGN_TRIGGER';end if;
+   select r.oid,pg_get_userbyid(r.relowner) into storage_oid,storage_owner from pg_class r join pg_namespace n on n.oid=r.relnamespace where n.nspname='storage' and r.relname='objects';
+   select p.oid,pg_get_userbyid(p.proowner) into function_oid,function_owner from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='guard_retired_storage_write' and p.pronargs=0 and p.prokind='f';
+   if storage_owner is null or function_owner is null or function_owner<>'tdp_app_owner' or not pg_has_role(session_user,storage_owner,'SET') or not pg_has_role(session_user,function_owner,'SET') then raise exception 'STORAGE_RETIREMENT_OWNER_AUTHORITY_REQUIRED';end if;
+   if exists(select 1 from pg_trigger where tgrelid=storage_oid and tgname='tenderdesk_retired_storage_write') then
+    if not exists(select 1 from pg_trigger where tgrelid=storage_oid and tgname='tenderdesk_retired_storage_write' and tgenabled='O' and tgtype=23 and tgfoid=function_oid) then raise exception 'STORAGE_RETIREMENT_FOREIGN_TRIGGER';end if;
    else
-    had_execute:=has_function_privilege(storage_owner,'public.guard_retired_storage_write()','EXECUTE');
+    had_execute:=has_function_privilege(storage_owner,function_oid,'EXECUTE');
     execute format('set local role %I',function_owner);
     if not had_execute then execute format('grant execute on function public.guard_retired_storage_write() to %I',storage_owner);end if;
     execute format('set local role %I',storage_owner);
@@ -156,11 +165,20 @@ class KubernetesAdapter:
     if not had_execute then execute format('revoke execute on function public.guard_retired_storage_write() from %I',storage_owner);end if;
     execute format('set local role %I',caller);
    end if;end $retire$""",None)
-  self.fence_sha=self.query("select to_jsonb(encode(sha256(convert_to(pg_get_functiondef('public.guard_retired_storage_write()'::regprocedure)||pg_get_triggerdef(oid),'UTF8')),'hex')) from pg_trigger where tgrelid='storage.objects'::regclass and tgname='tenderdesk_retired_storage_write'",None)
+  self.fence_sha=self.query("select to_jsonb(encode(sha256(convert_to(pg_get_functiondef(p.oid)||pg_get_triggerdef(t.oid),'UTF8')),'hex')) from pg_trigger t join pg_class r on r.oid=t.tgrelid join pg_namespace rn on rn.oid=r.relnamespace join pg_proc p on p.oid=t.tgfoid join pg_namespace pn on pn.oid=p.pronamespace where rn.nspname='storage' and r.relname='objects' and t.tgname='tenderdesk_retired_storage_write' and pn.nspname='public' and p.proname='guard_retired_storage_write' and p.pronargs=0 and p.prokind='f'",None)
  def prepare(self,selection):return self.query('select app_private.prepare_storage_write_retirement('+literal(selection['actor_id'])+','+literal(selection['operation_nonce'])+','+literal(selection['selection'])+'::jsonb)')
  def census(self):
   # Every version/marker/archived row, and every uncertain metadata-free app key.
-  return self.query("select coalesce(jsonb_agg(storage_key),'[]') from (select name storage_key from storage.objects where bucket_id='tenderdesk-private' union select key from storage.s3_multipart_uploads where bucket_id='tenderdesk-private' union select key from storage.s3_multipart_uploads_parts where bucket_id='tenderdesk-private' union select storage_key from public.storage_write_intents union select storage_key from public.storage_cleanup_queue union select storage_key from public.documents union select storage_key from public.export_artifacts union select storage_key from public.proposal_delivery_artifacts union select storage_key from public.export_package_volumes union select storage_key from public.restore_files) keys",None)
+  # Read both owners in one stable snapshot without granting either schema to
+  # the session administrator. The private intermediate set is transaction-local.
+  return self.query("set transaction isolation level repeatable read;"+storage_role_sql()+"""
+do $retire_census$ begin
+ perform set_config('tenderdesk.storage_retirement_census',(select coalesce(jsonb_agg(storage_key),'[]')::text from (select name storage_key from storage.objects where bucket_id='tenderdesk-private' union select key from storage.s3_multipart_uploads where bucket_id='tenderdesk-private' union select key from storage.s3_multipart_uploads_parts where bucket_id='tenderdesk-private') keys),true);
+ if not pg_has_role(session_user,'tdp_app_owner','SET') then raise exception 'STORAGE_RETIREMENT_OWNER_AUTHORITY_REQUIRED';end if;
+ set local role tdp_app_owner;
+end $retire_census$;
+select coalesce(jsonb_agg(storage_key),'[]') from (select jsonb_array_elements_text(current_setting('tenderdesk.storage_retirement_census')::jsonb) storage_key union select storage_key from public.storage_write_intents union select storage_key from public.storage_cleanup_queue union select storage_key from public.documents union select storage_key from public.export_artifacts union select storage_key from public.proposal_delivery_artifacts union select storage_key from public.export_package_volumes union select storage_key from public.restore_files) keys
+""",None)
  def protect_pods(self,capture,nonce):
   # Keep the full original Pod identity set in the API before stopping anything.
   # It survives local journal loss and remains even if a Pod is force-removed by
@@ -209,7 +227,7 @@ class KubernetesAdapter:
    if any(v.get('persistentVolumeClaim',{}).get('claimName')=='private-objects' for v in p.get('spec',{}).get('volumes',[])):
     c.require(p['metadata']['uid'] in allowed,'STORAGE_RETIREMENT_OTHER_PVC_WRITER')
  def assert_no_multipart(self,key):
-  count=self.query("select to_jsonb((select count(*) from storage.s3_multipart_uploads where bucket_id='tenderdesk-private' and key="+literal(key)+")+(select count(*) from storage.s3_multipart_uploads_parts where bucket_id='tenderdesk-private' and key="+literal(key)+"))",None)
+  count=self.storage_query("select to_jsonb((select count(*) from storage.s3_multipart_uploads where bucket_id='tenderdesk-private' and key="+literal(key)+")+(select count(*) from storage.s3_multipart_uploads_parts where bucket_id='tenderdesk-private' and key="+literal(key)+"))")
   c.require(count==0,'STORAGE_RETIREMENT_MULTIPART_PRESENT')
  def ensure_physical_pod(self):
   if self.physical_uid:
@@ -251,8 +269,8 @@ class KubernetesAdapter:
  def delete_metadata(self,key):
   # Pinned server protects direct DELETE; this exact local setting is verified
   # by the independent binary fixture before this adapter is enabled.
-  self.sql("do $retire$ declare owner_name name;begin select pg_get_userbyid(relowner) into owner_name from pg_class where oid='storage.objects'::regclass; if not pg_has_role(session_user,owner_name,'USAGE') then raise exception 'STORAGE_RETIREMENT_OWNER_AUTHORITY_REQUIRED';end if;execute format('set local role %I',owner_name);end $retire$; set local storage.allow_delete_query='true';delete from storage.objects where bucket_id='tenderdesk-private' and name="+literal(key),None)
- def metadata_remaining(self,key):return self.query("select to_jsonb(count(*)) from storage.objects where bucket_id='tenderdesk-private' and name="+literal(key),None)
+  self.sql(storage_role_sql()+"set local storage.allow_delete_query='true';delete from storage.objects where bucket_id='tenderdesk-private' and name="+literal(key),None)
+ def metadata_remaining(self,key):return self.storage_query("select to_jsonb(count(*)) from storage.objects where bucket_id='tenderdesk-private' and name="+literal(key))
  def identity(self):
   revision=os.environ.get('GITHUB_SHA','');run=os.environ.get('GITHUB_RUN_ID','');attempt=os.environ.get('GITHUB_RUN_ATTEMPT','')
   c.require(re.fullmatch('[a-f0-9]{40}',revision) and re.fullmatch('[0-9]{1,20}',run) and re.fullmatch('[0-9]{1,6}',attempt),'STORAGE_RETIREMENT_RUN_IDENTITY_INVALID')
