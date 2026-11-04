@@ -47,13 +47,33 @@ def acceptance_source(base):
     return result,checks
 
 def validate_catalog(value):
-    if (not isinstance(value,dict) or set(value)!={'catalog_sha256','source_rows_copied','source_stage','catalog'}
+    if (not isinstance(value,dict) or set(value)!={'catalog_sha256','source_rows_copied','source_stage','catalog','auth_read_authority'}
       or value['source_rows_copied']!=0 or value['source_stage'] not in ('baseline','released')
       or not re.fullmatch('[a-f0-9]{64}',value.get('catalog_sha256',''))):raise RestoreError('RESTORE_SOURCE_CATALOG_INVALID')
     catalog=value['catalog']
     if not isinstance(catalog,dict):raise RestoreError('RESTORE_SOURCE_CATALOG_INVALID')
     public={r['relname'] for r in catalog['relations'] if r['schema']=='public' and r['relkind']=='r'}
     if not {'workspaces','opportunities','proposals'}<=public:raise RestoreError('RESTORE_SOURCE_CAPABILITIES_REQUIRED')
+    validate_auth_authority(value['auth_read_authority'])
+    return value
+
+def validate_auth_authority(value):
+    fields={'application_owner','application_owner_superuser','application_owner_bypassrls','bootstrap_function_owner','tables'}
+    if not isinstance(value,dict) or set(value)!=fields or value['application_owner']!='tdp_app_owner':raise RestoreError('RESTORE_AUTH_METADATA_INVALID')
+    if any(type(value[key]) is not bool for key in ('application_owner_superuser','application_owner_bypassrls')):raise RestoreError('RESTORE_AUTH_METADATA_INVALID')
+    if value['bootstrap_function_owner'] is not None and not re.fullmatch('[a-z_][a-z0-9_]{0,62}',value['bootstrap_function_owner']):raise RestoreError('RESTORE_AUTH_METADATA_INVALID')
+    tables=value['tables']
+    if not isinstance(tables,list) or len(tables)!=2 or {row.get('table') for row in tables if isinstance(row,dict)}!={'users','identities'}:raise RestoreError('RESTORE_AUTH_METADATA_INVALID')
+    for row in tables:
+        if set(row)!={'table','owner','rls_enabled','force_rls','app_owner_select','app_owner_effective_owner','applicable_policies'}:raise RestoreError('RESTORE_AUTH_METADATA_INVALID')
+        if not isinstance(row['owner'],str) or not re.fullmatch('[a-z_][a-z0-9_]{0,62}',row['owner']):raise RestoreError('RESTORE_AUTH_METADATA_INVALID')
+        if any(type(row[key]) is not bool for key in ('rls_enabled','force_rls','app_owner_select','app_owner_effective_owner')):raise RestoreError('RESTORE_AUTH_METADATA_INVALID')
+        if not isinstance(row['applicable_policies'],list) or len(row['applicable_policies'])>4:raise RestoreError('RESTORE_AUTH_METADATA_INVALID')
+        for policy in row['applicable_policies']:
+            if (not isinstance(policy,dict) or set(policy)!={'command','permissive','count','unconditional_count'}
+              or policy['command'] not in ('r','*') or type(policy['permissive']) is not bool
+              or type(policy['count']) is not int or type(policy['unconditional_count']) is not int
+              or not 0<=policy['unconditional_count']<=policy['count']<=1000):raise RestoreError('RESTORE_AUTH_METADATA_INVALID')
     return value
 
 def capture(manifest):
@@ -105,22 +125,34 @@ def isolated_migrations(manifest,state):
     parts.append('COMMIT;')
     return '\n'.join(parts),receipts
 
-def schema_source(value,state,release_manifest):
+def upstream_access_source(state):
     bootstrap.validate_state(state)
-    sql,_=builder.build_schema(value['catalog'],state['role_prefix'],state['database'],source_role_prefix='tdp_app')
-    additions,receipts=isolated_migrations(release_manifest,state) if value['source_stage']=='baseline' else ('',[])
-    # Upstream service migrations establish auth.uid and Storage tables. Reapply
-    # only the application role access needed by their captured policies.
+    # Auth v2.197.0 enables RLS on users and identities. SELECT grants alone do
+    # not let the separate NOBYPASS app owner resolve verified identities.
+    # This access exists only in the nonce/comment-bound disposable database;
+    # browser roles gain neither a policy nor direct Auth table privileges.
     role=lambda suffix:builder.identifier(state['role_prefix']+'_'+suffix)
     comment=builder.literal('tenderdesk-isolated-bootstrap:'+state['database']+':'+state['role_prefix'])
-    guard=f"""DO $$BEGIN IF current_database()<>{builder.literal(state['database'])} OR
+    return f"""DO $$BEGIN IF current_database()<>{builder.literal(state['database'])} OR
       (select shobj_description(oid,'pg_database') from pg_database where datname=current_database()) IS DISTINCT FROM {comment}
       THEN RAISE EXCEPTION 'RESTORE_TARGET_DATABASE_GUARD';END IF;END$$;
       BEGIN;SET LOCAL ROLE {role('authadmin')};
+      DO $$BEGIN IF (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace
+        where n.nspname='auth' and c.relname in ('users','identities') and c.relkind='r'
+          and c.relrowsecurity and c.relowner=current_user::regrole)<>2
+        THEN RAISE EXCEPTION 'RESTORE_AUTH_RLS_PREREQUISITE';END IF;END$$;
+      CREATE POLICY cloud_restore_application_identity_read ON auth.users FOR SELECT TO {role('owner')} USING (true);
+      CREATE POLICY cloud_restore_application_identity_read ON auth.identities FOR SELECT TO {role('owner')} USING (true);
       GRANT EXECUTE ON FUNCTION auth.uid() TO {role('owner')},{role('anon')},{role('authenticated')},{role('service')};
       RESET ROLE;SET LOCAL ROLE {role('storageadmin')};
       GRANT SELECT,INSERT,UPDATE,DELETE ON storage.objects,storage.buckets TO {role('authenticated')},{role('service')};COMMIT;
     """
+
+def schema_source(value,state,release_manifest):
+    bootstrap.validate_state(state)
+    sql,_=builder.build_schema(value['catalog'],state['role_prefix'],state['database'],source_role_prefix='tdp_app')
+    additions,receipts=isolated_migrations(release_manifest,state) if value['source_stage']=='baseline' else ('',[])
+    guard=upstream_access_source(state)
     result=guard+sql+additions+fixture_source(state)
     raw=result.encode()
     if not 1<=len(raw)<=MAX_SCHEMA_BYTES:raise RestoreError('RESTORE_SCHEMA_SIZE_LIMIT')
@@ -174,6 +206,7 @@ def run():
     if (manifest['minimum_worker_executor']!=4 or manifest['renderer_versions']!=[1,2,3]
       or '20261104150228_restored_source_review_assurance.sql' not in names):raise RestoreError('RESTORE_FINAL_SOURCE_CONTRACT_REQUIRED')
     value=capture(manifest)
+    emit('source_auth_metadata',source_auth_read_authority=value['auth_read_authority'])
     original=bootstrap.sql_job
     mapped_receipts=[]
     def factory(state,owner,assets):
@@ -185,6 +218,7 @@ def run():
     finally:bootstrap.sql_job=original
     if result:raise RestoreError('RESTORE_ACCEPTANCE_OR_CLEANUP_FAILED')
     return {'source_revision':os.environ['GITHUB_SHA'],'source_catalog_sha256':value['catalog_sha256'],
+      'source_auth_read_authority':value['auth_read_authority'],
       'source_manifest_sha256':release.digest(release.canonical(manifest).encode()),'source_rows_copied':0,'source_stage':value['source_stage'],
       'isolated_additive_migrations_applied':len(manifest['migrations']) if value['source_stage']=='baseline' else 0,
       'isolated_migration_receipts':mapped_receipts,
@@ -210,11 +244,16 @@ def main(argv=()):
         safe=str(error) if isinstance(error,(RestoreError,release.ReleaseError,images.ImageError)) and re.fullmatch('[A-Z_]{1,100}',str(error)) else 'RESTORE_DRILL_FAILED'
         # Never expose catalog, SQL, resource manifest or HTTP error bodies.
         diagnostics=[]
+        source_auth=None
         for line in captured.getvalue().splitlines():
             try:value=json.loads(line)
             except ValueError:continue
+            if value.get('cloud_restore')=='source_auth_metadata':
+                try:source_auth=validate_auth_authority(value.get('source_auth_read_authority'))
+                except (RestoreError,TypeError):pass
             code=value.get('code')
             if value.get('probe')=='compatible_services' and isinstance(code,str) and re.fullmatch('[A-Z][A-Z0-9_]{2,80}',code):diagnostics.append(code)
-        emit('blocked',code=safe,**({'diagnostics':diagnostics[:8]} if diagnostics else {}));return 1
+        emit('blocked',code=safe,**({'diagnostics':diagnostics[:8]} if diagnostics else {}),
+          **({'source_auth_read_authority':source_auth} if source_auth is not None else {}));return 1
 
 if __name__=='__main__':sys.exit(main(sys.argv[1:]))

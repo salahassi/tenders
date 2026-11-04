@@ -62,6 +62,7 @@ def run(repository):
      create schema auth authorization {role('authadmin')};create schema storage authorization {role('storageadmin')};
      create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz);create table auth.identities(user_id uuid,provider text,identity_data jsonb);
      alter table auth.users owner to {role('authadmin')};alter table auth.identities owner to {role('authadmin')};
+     alter table auth.users enable row level security;alter table auth.identities enable row level security;
      create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;alter function auth.uid() owner to {role('authadmin')};
      create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
      create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text);alter table storage.objects enable row level security;

@@ -18,7 +18,25 @@ BEGIN
  PERFORM set_config('tenderdesk.restore_source_catalog_hash',catalog_hash,true);
  PERFORM set_config('tenderdesk.restore_source_stage',stage,true);
 END $capture_guard$;
-SELECT jsonb_build_object('catalog_sha256',current_setting('tenderdesk.restore_source_catalog_hash'),'source_stage',current_setting('tenderdesk.restore_source_stage'),'source_rows_copied',0,'catalog',jsonb_build_object(
+SELECT jsonb_build_object('catalog_sha256',current_setting('tenderdesk.restore_source_catalog_hash'),'source_stage',current_setting('tenderdesk.restore_source_stage'),'source_rows_copied',0,
+ 'auth_read_authority',jsonb_build_object(
+  'application_owner','tdp_app_owner',
+  'application_owner_superuser',(select rolsuper from pg_roles where rolname='tdp_app_owner'),
+  'application_owner_bypassrls',(select rolbypassrls from pg_roles where rolname='tdp_app_owner'),
+  'bootstrap_function_owner',(select pg_get_userbyid(proowner) from pg_proc where oid=to_regprocedure('public.bootstrap_workspace(uuid,text)')),
+  'tables',(select jsonb_agg(jsonb_build_object(
+   'table',c.relname,'owner',pg_get_userbyid(c.relowner),'rls_enabled',c.relrowsecurity,'force_rls',c.relforcerowsecurity,
+   'app_owner_select',has_table_privilege('tdp_app_owner',c.oid,'SELECT'),
+   'app_owner_effective_owner',pg_has_role('tdp_app_owner',c.relowner,'USAGE'),
+   'applicable_policies',(select coalesce(jsonb_agg(to_jsonb(policy_summary) order by command,permissive),'[]') from (
+    select p.polcmd::text command,p.polpermissive permissive,count(*) count,
+     count(*) filter(where p.polqual is null or pg_get_expr(p.polqual,p.polrelid) in ('true','(true)')) unconditional_count
+    from pg_policy p where p.polrelid=c.oid and p.polcmd in ('r','*')
+     and exists(select 1 from unnest(p.polroles) policy_role where case when policy_role=0 then true else pg_has_role('tdp_app_owner',policy_role,'USAGE') end)
+    group by p.polcmd,p.polpermissive) policy_summary)
+   ) order by c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace
+    where n.nspname='auth' and c.relname in ('users','identities') and c.relkind='r')),
+ 'catalog',jsonb_build_object(
  'relations',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY x.schema,x.relname),'[]') FROM (
   SELECT c.oid::bigint oid,n.nspname schema,c.relname,c.relkind,pg_get_userbyid(c.relowner) owner,c.relispartition is_partition,c.relpersistence,c.relrowsecurity,c.relforcerowsecurity,c.reloptions,c.relacl::text acl,case when c.relkind='v' then pg_get_viewdef(c.oid) end view_definition
   FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname IN ('public','app_private') AND c.relkind IN ('r','p','v','m','S'))x),

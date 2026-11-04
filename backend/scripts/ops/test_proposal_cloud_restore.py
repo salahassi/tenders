@@ -1,5 +1,6 @@
 """Offline boundaries; live Auth/Storage restore is a separate runner gate."""
 import base64
+import copy
 from contextlib import redirect_stdout
 import importlib.util
 import io
@@ -7,6 +8,8 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import sys
+import types
 import unittest
 from unittest.mock import Mock,patch
 
@@ -26,6 +29,42 @@ class CloudRestoreTests(unittest.TestCase):
   self.assertIn("Acceptance=RestoreAcceptance",source)
   self.assertIn("'actual_application_renderer_exercised':False",source)
   with self.assertRaises(m.RestoreError):m.acceptance_source('foreign script')
+ def test_rpc_errors_expose_only_status_and_allowlisted_error_class(self):
+  module=types.ModuleType('isolated_restore_acceptance_test');sys.modules[module.__name__]=module
+  self.addCleanup(sys.modules.pop,module.__name__,None)
+  exec(m.acceptance_source(self.assets['acceptance.py'])[0],module.__dict__)
+  cfg=types.SimpleNamespace(rest_url='http://127.0.0.1:3000',service_key='synthetic-only')
+  for body,expected in (({'code':'P0001','message':'SECRET SQL AND ROW','details':'SECRET'},'P0001'),
+    ({'code':'42501','hint':'SECRET'},'42501'),({'code':'SECRET_CUSTOMER_VALUE'},'UNCLASSIFIED'),
+    ({'code':['P0001']},'UNCLASSIFIED'),('PRIVATE NONJSON','UNCLASSIFIED')):
+   raw=json.dumps(body).encode() if isinstance(body,dict) else body.encode()
+   client=Mock();client.request.return_value=module.Response(400,raw)
+   with self.assertRaises(module.ProbeFailure) as caught:
+    module.RestoreAcceptance(cfg,client).rpc('cloud_restore_fixture_users')
+   self.assertEqual(caught.exception.code,'RESTORE_RPC_CLOUD_RESTORE_FIXTURE_USERS_HTTP_400_'+expected)
+   self.assertNotIn('SECRET',caught.exception.code)
+  client.request.return_value=module.Response(200,b'{"source_workspace":"synthetic"}')
+  self.assertEqual(module.RestoreAcceptance(cfg,client).rpc('cloud_restore_fixture_users'),{'source_workspace':'synthetic'})
+ def test_synthetic_artifact_obeys_one_send_then_readback_then_completion(self):
+  module=types.ModuleType('isolated_restore_write_test');sys.modules[module.__name__]=module
+  self.addCleanup(sys.modules.pop,module.__name__,None)
+  exec(m.acceptance_source(self.assets['acceptance.py'])[0],module.__dict__)
+  probe=module.RestoreAcceptance(types.SimpleNamespace(service_key='synthetic-only'),Mock())
+  trace=Mock();probe.rpc=trace.rpc;probe.storage_put=trace.put;probe.storage_get=trace.get
+  probe.rpc.side_effect=[{'send':True,'state':'unknown'},{}];probe.storage_get.return_value=b'fixture'
+  job={'id':'job','lease_token':'lease'};artifact={'id':'artifact','storage_key':'fixture-key'}
+  probe.publish_fixture_artifact(job,artifact,b'fixture','a'*64)
+  self.assertEqual([c[0] for c in trace.mock_calls],['rpc','put','get','rpc'])
+  self.assertEqual(trace.mock_calls[0].args[0],'begin_render_storage_write')
+  self.assertEqual(trace.mock_calls[0].args[1]['expected_size'],7)
+  self.assertEqual(trace.mock_calls[-1].args[0],'complete_delivery_artifact')
+  trace.reset_mock();probe.rpc.side_effect=None;probe.rpc.return_value={'send':False,'state':'unknown'}
+  with self.assertRaises(module.ProbeFailure) as caught:probe.publish_fixture_artifact(job,artifact,b'fixture','a'*64)
+  self.assertEqual(caught.exception.code,'RESTORE_FIXTURE_STORAGE_SEND_NOT_AUTHORIZED')
+  self.assertEqual([c[0] for c in trace.mock_calls],['rpc'])
+  trace.reset_mock();probe.rpc.return_value={'send':True,'state':'unknown'};probe.storage_get.return_value=b'changed'
+  with self.assertRaises(module.ProbeFailure):probe.publish_fixture_artifact(job,artifact,b'fixture','a'*64)
+  self.assertEqual([c[0] for c in trace.mock_calls],['rpc','put','get'])
  def test_private_schema_chunks_exact_bytes_hash_and_cleanup_parent(self):
   raw=('synthetic private DDL العربية\n'*10000).encode();created=[]
   parent=[{'uid':'parent-job-uid'}]
@@ -66,6 +105,15 @@ class CloudRestoreTests(unittest.TestCase):
   self.assertIn('triggers_after is distinct from triggers_before',value)
   self.assertIn('CLOUD_RESTORE_NONFIXTURE_ROWS',value)
   self.assertNotIn('session_replication_role',value);self.assertNotIn('disable trigger all',value)
+ def test_upstream_identity_rls_access_is_isolated_owner_select_only(self):
+  value=m.upstream_access_source(self.state)
+  self.assertIn(self.state['database'],value);self.assertIn('shobj_description',value)
+  self.assertIn('RESTORE_AUTH_RLS_PREREQUISITE',value)
+  for table in ('users','identities'):
+   self.assertIn('ON auth.'+table+' FOR SELECT TO "'+self.state['role_prefix']+'_owner" USING (true)',value)
+  self.assertNotIn('DISABLE ROW LEVEL SECURITY',value)
+  self.assertNotIn('BYPASSRLS',value)
+  self.assertNotIn('FOR ALL',value)
  def test_capture_failure_always_cleans_exact_observer_and_does_not_copy_rows(self):
   client=Mock();client.labels={}
   manifest={'baseline_catalog_sha256':'a'*64,'baseline_releases':{}}
@@ -81,6 +129,20 @@ class CloudRestoreTests(unittest.TestCase):
   output=io.StringIO()
   with patch.object(m,'run',side_effect=failure),redirect_stdout(output):self.assertEqual(m.main(),1)
   value=json.loads(output.getvalue());self.assertEqual(value,{'cloud_restore':'blocked','code':'RESTORE_DRILL_FAILED'})
+ def test_auth_metadata_is_allowlisted_without_rows_policy_text_or_unproved_visibility(self):
+  metadata={'application_owner':'tdp_app_owner','application_owner_superuser':False,'application_owner_bypassrls':False,
+   'bootstrap_function_owner':'tdp_app_owner','tables':[{'table':table,'owner':'tdp_app_authadmin','rls_enabled':True,'force_rls':False,
+    'app_owner_select':True,'app_owner_effective_owner':False,'applicable_policies':[]} for table in ('identities','users')]}
+  self.assertEqual(m.validate_auth_authority(metadata),metadata)
+  for key in ('rows','predicate','sql','visible_users'):
+   bad=copy.deepcopy(metadata);bad['tables'][0][key]='PRIVATE'
+   with self.assertRaises(m.RestoreError):m.validate_auth_authority(bad)
+  conditional=copy.deepcopy(metadata);conditional['tables'][0]['applicable_policies']=[{'command':'r','permissive':True,'count':1,'unconditional_count':0}]
+  self.assertEqual(m.validate_auth_authority(conditional),conditional)
+  def failure():m.emit('source_auth_metadata',source_auth_read_authority=metadata);raise RuntimeError('PRIVATE')
+  output=io.StringIO()
+  with patch.object(m,'run',side_effect=failure),redirect_stdout(output):self.assertEqual(m.main(),1)
+  self.assertEqual(json.loads(output.getvalue())['source_auth_read_authority'],metadata)
  def test_workflow_restore_is_explicit_and_other_modes_keep_existing_scope(self):
   workflow=(HERE.parents[2]/'.github/workflows/doks-access.yml').read_text()
   self.assertIn('default: inventory',workflow);self.assertIn('options: [inventory, bootstrap, restore, models]',workflow)

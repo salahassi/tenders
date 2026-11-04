@@ -23,7 +23,19 @@ RESTORE_CHECKS = {
 
 class RestoreAcceptance(Acceptance):
     def rpc(self,name,body=None,token=None,statuses={200}):
-        return expect(self.client.request(self.config.rest_url,'/rpc/'+name,method='POST',token=token or self.config.service_key,data=body or {}),statuses,'RESTORE_RPC_'+name.upper()+'_FAILED').json('RESTORE_RPC_RESPONSE_INVALID')
+        response=self.client.request(self.config.rest_url,'/rpc/'+name,method='POST',token=token or self.config.service_key,data=body or {})
+        if response.status not in statuses:
+            # Only fixed protocol/error classes survive the private response.
+            # Never echo message, details, hint, SQL, identifiers or row values.
+            allowed={'P0001','42501','23505','23503','23514','42703','42P01','42883','42702','22P02','PGRST202','PGRST301'}
+            state='UNCLASSIFIED'
+            try:
+                value=json.loads(response.body)
+                if isinstance(value,dict) and isinstance(value.get('code'),str) and value['code'] in allowed:state=value['code']
+            except (ValueError,UnicodeError):pass
+            status=str(response.status) if type(response.status) is int and 0<=response.status<=599 else 'UNKNOWN'
+            raise ProbeFailure('RESTORE_RPC_'+name.upper()+'_HTTP_'+status+'_'+state,response.status)
+        return response.json('RESTORE_RPC_RESPONSE_INVALID')
 
     def rows(self,table,query,token):
         return expect(self.client.request(self.config.rest_url,'/'+table+'?'+query,token=token),{200},'RESTORE_ROWS_READ_FAILED').json('RESTORE_ROWS_INVALID')
@@ -49,6 +61,16 @@ class RestoreAcceptance(Acceptance):
     def storage_get(self,key,token):
         path='/object/authenticated/tenderdesk-private/'+urllib.parse.quote(key,safe='/')
         return expect(self.client.request(self.config.storage_url,path,token=token),{200},'RESTORE_STORAGE_DOWNLOAD_FAILED').body
+
+    def publish_fixture_artifact(self,job,artifact,data,checksum):
+        intent=self.rpc('begin_render_storage_write',{'job_id':job['id'],'lease':job['lease_token'],
+          'storage_key':artifact['storage_key'],'expected_hash':checksum,'expected_size':len(data)})
+        if not isinstance(intent,dict) or intent.get('send') is not True or intent.get('state')!='unknown':
+            raise ProbeFailure('RESTORE_FIXTURE_STORAGE_SEND_NOT_AUTHORIZED')
+        self.storage_put(artifact['storage_key'],data,self.config.service_key)
+        if self.storage_get(artifact['storage_key'],self.config.service_key)!=data:raise ProbeFailure('RESTORE_ORIGINAL_STORAGE_BYTES_CHANGED')
+        self.rpc('complete_delivery_artifact',{'job_id':job['id'],'lease':job['lease_token'],
+          'artifact_id':artifact['id'],'actual_hash':checksum,'actual_size':len(data)})
 
     def run(self):
         self.ready();a,b=self.auth();source_user,source_token=a;target_user,target_token=b
@@ -85,9 +107,7 @@ class RestoreAcceptance(Acceptance):
             doc.writestr('word/document.xml','<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body><w:p><w:r><w:t>ISOLATED STORAGE RESTORE FIXTURE; no model-generated proposal.</w:t></w:r></w:p></w:body></w:document>')
         data=stream.getvalue();checksum=hashlib.sha256(data).hexdigest();original={}
         for artifact in export['artifacts']:
-            self.storage_put(artifact['storage_key'],data,self.config.service_key)
-            if self.storage_get(artifact['storage_key'],self.config.service_key)!=data:raise ProbeFailure('RESTORE_ORIGINAL_STORAGE_BYTES_CHANGED')
-            self.rpc('complete_delivery_artifact',{'job_id':job['id'],'lease':job['lease_token'],'artifact_id':artifact['id'],'actual_hash':checksum,'actual_size':len(data)})
+            self.publish_fixture_artifact(job,artifact,data,checksum)
             original[artifact['id']]=artifact['storage_key']
         self.rpc('finish_delivery_export',{'job_id':job['id'],'lease':job['lease_token']})
         expect(self.client.request(self.config.rest_url,'/rpc/delivery_artifact_context',method='POST',token=source_token,data={'artifact_id':next(iter(original)),'actor_id':source_user}),{401,403,404},'RESTORE_BROWSER_SERVICE_RPC_ALLOWED')

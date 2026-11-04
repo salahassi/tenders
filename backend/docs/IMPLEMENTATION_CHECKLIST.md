@@ -8747,3 +8747,36 @@ positive coverage for independent render/non-render admission and unchanged mode
 reservation capacity. This resolves the confirmed index-name assertion only;
 root owns the remaining combined-suite failure and final integrated rerun. No
 provider calls, deployment or production mutations occurred.
+
+### November 4 — isolate the cloud restore Auth RLS prerequisite
+
+Cloud drill `41902822255` failed at `cloud_restore_fixture_users`; original TLS,
+offline guards and both cleanup steps passed. The pinned Auth v2.197.0 migration
+[`20240612123726_enable_rls_update_grants.up.sql`](https://github.com/supabase/auth/blob/v2.197.0/migrations/20240612123726_enable_rls_update_grants.up.sql)
+enables row-level security on `auth.users` and `auth.identities`. The disposable
+application owner had SELECT grants but no applicable read policy. Previous local
+Auth stubs did not enable that RLS and therefore missed this integration boundary.
+
+A tiny real PostgreSQL regression now reproduces the exact fixture rejection,
+then passes the unchanged fixture and canonical workspace bootstrap after adding
+SELECT-only policies for the nonce-bound application owner. Policy creation runs
+as the actual Auth table owner, checks both RLS flags and ownership, and requires
+the exact disposable database/comment. Browser denial, Auth write denial, other
+Auth table denial and NOBYPASS roles remain verified. This is an explicit isolated
+harness prerequisite; it is not a claim that production has the same read policy.
+The production catalog capture excludes Auth policies, and repository setup alone
+does not establish current production Auth visibility. The next read-only capture
+reports only owner/RLS flags, effective application-owner SELECT/inheritance and
+applicable SELECT-policy counts/commands; conditional predicates remain unproved.
+No user rows, predicate text, SQL, secrets or production permissions are changed.
+
+RPC errors now retain HTTP status and a fixed allowlist of SQLSTATE/PostgREST
+classes while discarding response messages/details/hints. The synthetic artifact
+also obtains its one-time send permission before PUT, verifies readback before
+completion, and refuses a replayed send; this is not whole-worker qualification.
+Twelve offline helper
+tests and five real PostgreSQL checks pass; the latter use Auth table stubs with
+the actual pinned RLS behavior, not live Auth HTTP. The narrow regression cleans
+its exact temporary database and roles. The 22 frozen application migrations are
+unchanged. Hosted restore retry and actual production Auth metadata verification
+remain separate pending gates; no hosted call occurred in this correction.
