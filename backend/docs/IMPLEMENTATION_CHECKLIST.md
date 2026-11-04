@@ -7440,3 +7440,23 @@ key after the workspace lock, before inserting their successor receipt. Re-entry
 reuses the same package, job and original deadline. The ordinary pipeline suite passes
 21 cases including expired API receipt replay, with no duplicate job or clock renewal.
 No customer data or external calls were used.
+
+### 2026-11-04 — G10 actual generated-package capacity transfer
+
+Four additional cases in `generatedDeliveryPipeline.integration.test.ts` exercise
+migration160125 against the actual projection, leased renderer, DOCX verification,
+whole-package completion and issuance receipt. For both combined and separate
+technical/financial outputs, the existing20 MiB complete-file allowance transfers
+into exact10 MiB artifact slots without double counting; independently verified
+actual bytes replace those reservations, the request becomes issued, and any unused
+allowance is released. The original accepted time/deadline remain unchanged.
+
+A changed source prevents capacity transfer and rendering; its terminal failure
+receipt releases only unused allowance and retains the accepted proposal version.
+A deliberately injected delegated-capacity failure rolls back the allowance decrease
+and all artifact reservations atomically. The full generated-delivery suite passes
+17 cases and backend typecheck passes. These new cases prime the canonical
+pre-billable capacity helper directly with synthetic accepted/verifier records;
+actual model-reservation admission and concurrent storage writers are covered by
+the separate capacity RPC/PostgreSQL suites. No paid model, external storage or
+production action occurred in these checks.

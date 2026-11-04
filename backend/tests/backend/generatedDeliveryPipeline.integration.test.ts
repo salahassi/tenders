@@ -1115,3 +1115,208 @@ it("issues two genuine volumes only after both byte-verified files are ready; on
     );
   }
 });
+
+it.each([false, true])(
+  "transfers the pre-model complete-file allowance into the actual %s volume package without double counting",
+  async (separate) => {
+    const { j, issuance } = await setup(undefined, 0, false, separate);
+    const job = await claim(j.id);
+    const t = transport();
+    const baseline = Number(
+      (await row("select app_private.storage_reserved_bytes($1) bytes", [f.w]))
+        .bytes,
+    );
+    // Call the canonical pre-billable allowance helper directly. Model-reservation
+    // admission itself is covered by proposalIssuanceCapacity's real RPC tests;
+    // these completed candidate/verifier records remain synthetic fixtures.
+    await f.db.query(
+      "select app_private.ensure_issuance_file_capacity($1,$2)",
+      [job.id, job.lease_token],
+    );
+    expect(
+      Number(
+        (
+          await row(
+            "select reserved_file_bytes bytes from public.proposal_issuance_requests where id=$1",
+            [issuance.id],
+          )
+        ).bytes,
+      ),
+    ).toBe(20971520);
+    const projected = await processGeneratedDelivery(t.backend, job);
+    expect(projected).toMatchObject({ projected: true });
+    const rendering = await rpc("claim_backend_local_job_v4");
+    expect(rendering.type).toBe("render_delivery");
+    const context = await rpc("delivery_export_context", {
+      job_id: rendering.id,
+      lease: rendering.lease_token,
+    });
+    const expectedVolumes = separate ? 2 : 1;
+    expect(context.artifacts).toHaveLength(expectedVolumes);
+    expect(
+      context.artifacts.every(
+        (a: any) => Number(a.reserved_bytes) === 10485760,
+      ),
+    ).toBe(true);
+    expect(
+      Number(
+        (
+          await row(
+            "select reserved_file_bytes bytes from public.proposal_issuance_requests where id=$1",
+            [issuance.id],
+          )
+        ).bytes,
+      ),
+    ).toBe(20971520 - expectedVolumes * 10485760);
+    expect(
+      Number(
+        (
+          await row("select app_private.storage_reserved_bytes($1) bytes", [
+            f.w,
+          ])
+        ).bytes,
+      ),
+    ).toBe(baseline + 20971520);
+    const output = await processDeliveryExport(
+      t.backend,
+      rendering,
+      async (model) =>
+        new Uint8Array(await (await renderDocx(model, fonts)).arrayBuffer()),
+    );
+    expect(output.error_code).toBeFalsy();
+    const finished = await row(
+      "select outcome,reserved_file_bytes,accepted_at,deadline_at from public.proposal_issuance_requests where id=$1",
+      [issuance.id],
+    );
+    expect(finished.outcome).toBe("issued");
+    expect(Number(finished.reserved_file_bytes)).toBe(0);
+    expect(finished.accepted_at).toEqual(issuance.accepted_at);
+    expect(finished.deadline_at).toEqual(issuance.deadline_at);
+    const actual = Number(
+      (
+        await row(
+          "select sum(expected_size) bytes from public.proposal_delivery_artifacts where job_id=$1 and status='ready'",
+          [rendering.id],
+        )
+      ).bytes,
+    );
+    expect(
+      Number(
+        (
+          await row("select app_private.storage_reserved_bytes($1) bytes", [
+            f.w,
+          ])
+        ).bytes,
+      ),
+    ).toBe(baseline + actual);
+    expect(t.objects.size).toBe(expectedVolumes);
+    expect(
+      (await row("select count(*)::int n from public.provider_usage")).n,
+    ).toBe(0);
+  },
+);
+it("does not consume the file allowance on a stale-source render context and releases it on the terminal failure receipt", async () => {
+  const { j, issuance, o, v } = await setup();
+  const job = await claim(j.id);
+  const t = transport();
+  await f.db.query("select app_private.ensure_issuance_file_capacity($1,$2)", [
+    job.id,
+    job.lease_token,
+  ]);
+  await processGeneratedDelivery(t.backend, job);
+  const rendering = await rpc("claim_backend_local_job_v4");
+  await f.db.query(
+    "update public.opportunities set title='Changed source before capacity transfer' where id=$1",
+    [o.id],
+  );
+  await expect(
+    rpc("delivery_export_context", {
+      job_id: rendering.id,
+      lease: rendering.lease_token,
+    }),
+  ).rejects.toMatchObject({ code: "STALE_INPUT" });
+  expect(
+    Number(
+      (
+        await row(
+          "select reserved_file_bytes bytes from public.proposal_issuance_requests where id=$1",
+          [issuance.id],
+        )
+      ).bytes,
+    ),
+  ).toBe(20971520);
+  expect(
+    Number(
+      (
+        await row(
+          "select coalesce(sum(reserved_bytes),0) bytes from public.proposal_delivery_artifacts where job_id=$1",
+          [rendering.id],
+        )
+      ).bytes,
+    ),
+  ).toBe(0);
+  const render = vi.fn(async () => new Uint8Array());
+  const failed = await processDeliveryExport(t.backend, rendering, render);
+  expect(failed.error_code).toBe("STALE_INPUT");
+  expect(render).not.toHaveBeenCalled();
+  expect(t.objects.size).toBe(0);
+  const outcome = await row(
+    "select outcome,reserved_file_bytes from public.proposal_issuance_requests where id=$1",
+    [issuance.id],
+  );
+  expect(outcome.outcome).toBe("failed");
+  expect(Number(outcome.reserved_file_bytes)).toBe(0);
+  expect(
+    (
+      await row(
+        "select count(*)::int n from public.proposal_versions where id=$1",
+        [v.id],
+      )
+    ).n,
+  ).toBe(1);
+});
+it("rolls back an allowance transfer when the delegated artifact reservation fails", async () => {
+  const { j, issuance } = await setup(undefined, 0, false, true);
+  const job = await claim(j.id);
+  await f.db.query("select app_private.ensure_issuance_file_capacity($1,$2)", [
+    job.id,
+    job.lease_token,
+  ]);
+  await processGeneratedDelivery(transport().backend, job);
+  const rendering = await rpc("claim_backend_local_job_v4");
+  // Fault injection after admission: bypass canonical writers to force the
+  // delegated capacity check to fail after the allowance-decrease statement.
+  await f.db.query(
+    "insert into public.storage_cleanup_queue(workspace_id,storage_key,estimated_size,reason) values($1,'synthetic/transfer-rollback',262144000,'Synthetic injected delegate failure')",
+    [f.w],
+  );
+  await expect(
+    rpc("delivery_export_context", {
+      job_id: rendering.id,
+      lease: rendering.lease_token,
+    }),
+  ).rejects.toMatchObject({ code: "STORAGE_CAP_REACHED" });
+  expect(
+    Number(
+      (
+        await row(
+          "select reserved_file_bytes bytes from public.proposal_issuance_requests where id=$1",
+          [issuance.id],
+        )
+      ).bytes,
+    ),
+  ).toBe(20971520);
+  expect(
+    Number(
+      (
+        await row(
+          "select coalesce(sum(reserved_bytes),0) bytes from public.proposal_delivery_artifacts where job_id=$1",
+          [rendering.id],
+        )
+      ).bytes,
+    ),
+  ).toBe(0);
+  expect(
+    (await row("select count(*)::int n from public.provider_usage")).n,
+  ).toBe(0);
+});
