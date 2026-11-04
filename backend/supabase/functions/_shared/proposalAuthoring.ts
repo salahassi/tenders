@@ -210,6 +210,7 @@ export type AuthoringContext = {
   context_hash: string;
   source_manifest?: DeliveryPayload["source_manifest"];
   inventory_missing_ids?: string[];
+  input_review_complete?: boolean;
 };
 
 export async function reviewAuthoredResponse(
@@ -267,6 +268,7 @@ export async function reviewAuthoredResponse(
     confirmed_shared_decisions: body.confirmed_shared_decisions,
     separate_volumes: context.snapshot.payload.separate_volumes,
     input_complete:
+      context.input_review_complete !== false &&
       context.snapshot.payload.input_state === "available" &&
       !body.pending_inputs.some(
         (g) => g.required_for === "substantive_completion",

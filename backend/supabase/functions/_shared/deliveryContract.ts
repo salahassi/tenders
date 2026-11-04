@@ -112,9 +112,42 @@ export const deliveryPayloadV2Schema = deliveryPayloadV1Schema
           "Substantive delivery requires current review and resolved completion gaps.",
       });
   });
+export const generatedReceiptPinSchema = z
+  .object({
+    step_id: z.uuid(),
+    receipt_id: z.uuid(),
+    verification_receipt_id: z.uuid(),
+    candidate_hash: hash,
+  })
+  .strict();
+export const deliveryPayloadV3Schema = deliveryPayloadV1Schema
+  .extend({
+    version: z.literal(3),
+    content_state: z.literal("generated_review_draft"),
+    assurance_state: z.enum(["model_checked", "source_review_required"]),
+    generation: z
+      .object({
+        proposal_version_id: z.uuid(),
+        plan_id: z.uuid(),
+        version_content_hash: hash,
+        plan_input_hash: hash,
+        machine_validation: z
+          .object({
+            version: z.literal(1),
+            policy: z.literal("generated-delivery-v1"),
+            passed: z.literal(true),
+          })
+          .passthrough(),
+        machine_validation_hash: hash,
+        receipt_pins: z.array(generatedReceiptPinSchema).min(1),
+      })
+      .strict(),
+  })
+  .strict();
 export const deliveryPayloadSchema = z.union([
   deliveryPayloadV1Schema,
   deliveryPayloadV2Schema,
+  deliveryPayloadV3Schema,
 ]);
 
 export type DeliveryPayload = z.infer<typeof deliveryPayloadSchema>;

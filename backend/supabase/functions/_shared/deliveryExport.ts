@@ -13,7 +13,7 @@ import {
 export const DELIVERY_RENDERER_VERSION = "1";
 export function deliveryRendererVersion(
   snapshot: Record<string, any>,
-): "1" | "2" {
+): "1" | "2" | "3" {
   const parsed = deliveryPayloadSchema.safeParse(snapshot.payload);
   if (!parsed.success)
     throw new AppError(
@@ -22,7 +22,7 @@ export function deliveryRendererVersion(
       "The saved draft contract is invalid.",
     );
   const payload = parsed.data;
-  return payload.version === 2 ? "2" : "1";
+  return payload.version === 3 ? "3" : payload.version === 2 ? "2" : "1";
 }
 export const DOCX_MIME =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -188,15 +188,20 @@ function projectDelivery(
     {
       type: "paragraph",
       text:
-        payload.version === 2 && payload.substantive_complete
+        payload.version === 3
           ? l(
-              "DRAFT — substantive responses reviewed; final approval required",
-              "مسودة — روجع محتوى الاستجابات؛ الاعتماد النهائي مطلوب",
+              "GENERATED RESPONSE DRAFT — model checks recorded; final source review and approval required",
+              "مسودة الاستجابة المولدة — سُجلت فحوص النماذج؛ مراجعة المصادر والاعتماد النهائي مطلوبان",
             )
-          : l(
-              "DRAFT — incomplete response; review before external use",
-              "مسودة — الاستجابة غير مكتملة؛ تُراجع قبل الاستخدام الخارجي",
-            ),
+          : payload.version === 2 && payload.substantive_complete
+            ? l(
+                "DRAFT — substantive responses reviewed; final approval required",
+                "مسودة — روجع محتوى الاستجابات؛ الاعتماد النهائي مطلوب",
+              )
+            : l(
+                "DRAFT — incomplete response; review before external use",
+                "مسودة — الاستجابة غير مكتملة؛ تُراجع قبل الاستخدام الخارجي",
+              ),
     },
     {
       type: "paragraph",
@@ -350,7 +355,7 @@ function projectDelivery(
       "Every missing input must appear in the draft.",
     );
   const model: RenderModel = {
-    placeholder_version: 1,
+    placeholder_version: payload.version === 3 ? 2 : 1,
     id: snapshot.id,
     version: snapshot.ordinal,
     mode: "draft",

@@ -92,15 +92,20 @@ export default function DeliveryDraft({
                   "Substantive responses have a current human review. The draft still requires final approval before external use.",
                   "خضعت الاستجابات الفعلية لمراجعة بشرية مرتبطة بالمصادر الحالية. تحتاج المسودة إلى اعتماد نهائي قبل استخدامها خارجيًا.",
                 )
-              : saved.snapshot.input_state === "insufficient"
+              : saved.snapshot.content_state === "generated_review_draft"
                 ? l(
-                    "Available scope information is insufficient. Missing inputs are highlighted yellow in the saved template.",
-                    "معلومات النطاق المتاحة غير كافية. مواضع التعبئة الناقصة مظللة بالأصفر في القالب المحفوظ.",
+                    "The generated responses passed the saved machine checks. Review the remaining yellow inputs and supporting sources before final approval and external use.",
+                    "اجتازت الاستجابات المولدة الفحوص الآلية المحفوظة. راجع المدخلات المتبقية المظللة بالأصفر والمصادر الداعمة قبل الاعتماد النهائي والاستخدام الخارجي.",
                   )
-                : l(
-                    "Available source content and accepted progress are saved. The response is still incomplete; missing inputs are highlighted yellow. Model processing status is tracked separately.",
-                    "حُفظ محتوى المصدر المتاح والتقدم المقبول. الاستجابة ما زالت غير مكتملة، والمدخلات الناقصة مظللة بالأصفر. تُعرض حالة معالجة النماذج بصورة مستقلة.",
-                  )}
+                : saved.snapshot.input_state === "insufficient"
+                  ? l(
+                      "Available scope information is insufficient. Missing inputs are highlighted yellow in the saved template.",
+                      "معلومات النطاق المتاحة غير كافية. مواضع التعبئة الناقصة مظللة بالأصفر في القالب المحفوظ.",
+                    )
+                  : l(
+                      "Available source content and accepted progress are saved. The response is still incomplete; missing inputs are highlighted yellow. Model processing status is tracked separately.",
+                      "حُفظ محتوى المصدر المتاح والتقدم المقبول. الاستجابة ما زالت غير مكتملة، والمدخلات الناقصة مظللة بالأصفر. تُعرض حالة معالجة النماذج بصورة مستقلة.",
+                    )}
           </p>
           {Number.isSafeInteger(saved.snapshot.delivery_revision) &&
             !authoring && (

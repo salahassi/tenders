@@ -23,7 +23,7 @@ export type ExportBlock =
   | { type: "toc"; text: string };
 export interface RenderModel {
   /** New delivery snapshots use typed placeholders; legacy exports keep their pinned behavior. */
-  placeholder_version?: 1;
+  placeholder_version?: 1 | 2;
   id: string;
   version: number;
   mode: string;
@@ -66,6 +66,8 @@ export async function renderDocx(
             rightToLeft: /[\u0600-\u06ff]/.test(t),
             highlight:
               placeholder ||
+              (model.placeholder_version === 2 &&
+                /\[INPUT REQUIRED|\[مطلوب|\[مدخل(?:ات)? مطلوب/iu.test(text)) ||
               (!model.placeholder_version && /\[INPUT REQUIRED/i.test(text))
                 ? "yellow"
                 : undefined,

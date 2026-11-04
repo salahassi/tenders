@@ -1,5 +1,6 @@
 import { processGeneration } from "../_shared/generation.ts";
 import { processDeliveryExport } from "../_shared/deliveryWorker.ts";
+import { processGeneratedDelivery } from "../_shared/generatedDeliveryWorker.ts";
 import { processAutomaticSource } from "../_shared/automaticSources.ts";
 import { processModelProbe } from "../_shared/modelProbe.ts";
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
@@ -77,6 +78,10 @@ export function createWorkerHandler(
             return withMaintenance(response({ data: { claimed: false } }));
         }
         const processClaimed = async () => {
+          if (job.type === "prepare_generated_delivery") {
+            const saved = await processGeneratedDelivery(backend, job);
+            return response({ data: { job_id: job.id, ...saved } });
+          }
           if (job.type === "render_delivery") {
             const saved = await processDeliveryExport(backend, job);
             return response({ data: { job_id: job.id, ...saved } });

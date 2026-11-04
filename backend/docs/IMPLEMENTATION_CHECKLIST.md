@@ -6727,3 +6727,54 @@ incorrectly says all cases are unimplemented. AR-02 and execution step 6 now mat
 the owner's already-resolved D06: immediate no-agent error, request-wide600s guard,
 no mandatory human fallback and no template-as-full-success. This reconciles
 superseded wording; it does not change the owner's policy or erase failed evidence.
+### 2026-11-04 — Automatic generated review draft and durable complete-package issuance
+
+**Implemented locally:** a completed, explicitly admitted generation request atomically
+queues `prepare_generated_delivery`; a separately leased local worker reconstructs the
+actual accepted assembly and checks its chosen whole-candidate verifier receipts without
+another model call. Immutable payload/renderer 3 preserves every accepted section and
+required volume, original version/input hashes and receipt identities. It is a
+`generated_review_draft`, `substantive_complete=false`, and `source_review_required`;
+it never invents human assurance or final approval. Historical renderer 1 and manual
+renderer 2 retain their own contracts. New projection/render jobs require executor 4.
+Known machine defects, source restatement, generic responses, missing verifier receipts
+and render-policy omissions fail explicitly. Missing company/commercial facts remain
+specific yellow review inputs when a substantive verified response exists.
+
+**Currentness and lifecycle:** both projection publication and in-progress render
+boundaries recheck current source documents/OCR leaves and confirmed source-obligation
+reviews. Changed sources or revoked actors cannot publish after waiting for the workspace
+lock. Optional authored content remains selected when background generation completes.
+Unconfirmed OCR/page coverage cannot become a substantively complete human-reviewed
+authoring result; the server-derived qualification joins its context hash and adoption
+gates. Historical immutable files remain governed by their original read authorization.
+Only a complete, verified required-volume package can finish the original 600-second
+issuance request. Explicit authorized local retry creates a new deadline and reuses the
+accepted version; historical unknown usage remains unchanged. Unadmitted/historical
+plans are not silently opted into the new issuance protocol.
+
+**Evidence:** `generatedDeliveryPipeline.integration.test.ts` has 13 passing migrated
+SQL/worker/actual DOCX/API cases, including genuine technical + financial volumes,
+no first-volume success/download, deadline expiry before upload, exact-version retry,
+same-key replay, unchanged unknown usage, revoked membership, changed source meaning,
+actual corrected extraction successor, exclusive-lease recovery and Arabic/English
+paragraph/table yellow OOXML checks. The focused projection, runtime, renderer and old delivery regression run
+passed 52 tests across five files. Backend typecheck/build and frontend typecheck/build passed; the full
+frontend suite passed 302 tests. These are local synthetic receipts, not hosted model
+qualification or real-browser visual acceptance.
+
+Three real PostgreSQL multi-session publication races passed with both contenders
+observed waiting on the workspace lock: duplicate publication has one snapshot/audit/job;
+source edit and actor revocation reject publication. Reproduce with
+`python3 backend/scripts/testing/generated_delivery_races.py --container <synthetic-container> --output <private-receipt>`.
+The portable `generated_delivery_fixture.py` contains synthetic structural receipt data;
+it does not establish live model semantic quality. The private receipt records the exact
+migration hashes and PostgreSQL image digest. No customer data, secrets, paid model calls,
+production writes, or email were used.
+
+**Integration / deployment limits:** complete backend regression and final release
+capability checks belong to the composed phase-2 tree. Hosted storage/restore, native
+Word visual QA and live request timing are separate acceptance evidence. Ordinary
+approved-version export still requires the subsequent durable `render_export` package
+path; this generated-review-draft change does not close that separate browser-dependent
+workflow or claim a production deployment.

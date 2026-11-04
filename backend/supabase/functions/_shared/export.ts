@@ -12,7 +12,7 @@ export type ExportBlock =
   | { type: "table"; headers: string[]; rows: string[][] }
   | { type: "toc"; text: string };
 export interface RenderModel {
-  placeholder_version?: 1;
+  placeholder_version?: 1 | 2;
   id: string;
   version: number;
   mode: string;
@@ -648,15 +648,18 @@ export function verifyExportDocx(bytes: Uint8Array, model: RenderModel) {
       "EXPORT_CONTENT_MISMATCH",
       "Word content does not match the authorized proposal. Generate a new version for content changes.",
     );
-  if (model.placeholder_version === 1) {
+  if (model.placeholder_version === 1 || model.placeholder_version === 2) {
+    const inlineGap = (text: string) =>
+      model.placeholder_version === 2 &&
+      /\[INPUT REQUIRED|\[مطلوب|\[مدخل(?:ات)? مطلوب/iu.test(text);
     const expectedGaps = model.blocks.flatMap((block) =>
       block.type === "table"
         ? [block.headers, ...block.rows]
             .flat()
             .filter((text) => normalize(text))
-            .map(() => false)
+            .map((text) => inlineGap(text))
         : normalize(block.text)
-          ? [block.type === "placeholder"]
+          ? [block.type === "placeholder" || inlineGap(block.text)]
           : [],
     );
     if (
