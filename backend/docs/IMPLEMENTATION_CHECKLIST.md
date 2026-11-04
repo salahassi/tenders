@@ -1,5 +1,23 @@
 # Implementation status and continuation plan
 
+## November 4 — hosted inventory and original-CA access verified
+
+[Run 41841720671](https://github.com/salahassi/tenders/actions/runs/41841720671)
+completed successfully on `7b8808174fbf62d53364e56084102a901bc1338d`.
+The original cluster CA/hostname checks, inventory read and temporary client/credential
+cleanup all executed successfully; every bootstrap step was skipped. All ten owned
+application Deployments had one desired/ready/updated replica and observed current
+generation. No business/schema/model operation ran. The exact sanitized receipt is
+[`evidence/digitalocean-inventory-20261104.json`](evidence/digitalocean-inventory-20261104.json).
+
+There is no canonical migration ledger on this database; six named application
+release receipts are present, ending with the November 3 prompt-identity and
+model-admission-fairness releases. Delivery snapshot/artifact tables and executor3
+are absent. This confirms the new implementation is not deployed yet. API/worker
+use image digest `85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380`;
+image source revisions remain independently unverified. This is a current baseline
+for a guarded release, not hosted proposal/model acceptance or schema-tip proof.
+
 ## November 4 — scoped runner inventory mode (phase 2 W00)
 
 Implementation: manual `doks-access.yml` runs now default to `mode=inventory`.

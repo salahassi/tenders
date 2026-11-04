@@ -54,16 +54,30 @@ conditional steps and the called helper. A name containing "check", "inspect" or
 
 | Need | Existing workflow and boundary |
 | --- | --- |
-| Inspect the established access implementation | [`doks-access.yml`](../../.github/workflows/doks-access.yml). Its existing full path also runs migration compatibility/isolated service bootstrap; do not start that full path just to read current workload metadata. |
+| Inspect current workloads and schema | [`doks-access.yml`](../../.github/workflows/doks-access.yml), explicit `mode=inventory` on a revision containing `7b8808174fbf62d53364e56084102a901bc1338d`. It reads metadata through a temporary owned SQL client and verifies cleanup. `mode=bootstrap` still creates isolated compatibility resources and must be selected separately. |
 | Read one proposal's recovery state | [`inspect-proposal-recovery.yml`](../../.github/workflows/inspect-proposal-recovery.yml). Requires the reviewed encrypted selection object and plaintext hash; does not authorize or retry model processing. |
 | Read retained proposal graph evidence | [`diagnose-proposal-graph.yml`](../../.github/workflows/diagnose-proposal-graph.yml). Follow its exact scoped input and private evidence handling. |
 | Diagnose HTTPS startup | [`diagnose-https.yml`](../../.github/workflows/diagnose-https.yml). Contains conditional repair steps and private diagnostic upload; inspect trigger/conditions before using it. |
 | Release application changes | Select the specific reviewed `deploy-*.yml` and its helper. Check the exact migration set, immutable image, target namespace, rollout and acceptance. Historical release workflows do not automatically include newly added migrations. |
 | Evaluate models | [`evaluate-ai-models.yml`](../../.github/workflows/evaluate-ai-models.yml). Live activation is separate from inventory and may make paid provider requests; use only the authorized campaign and its limits. |
 
-A dedicated inventory-only mode is being implemented separately. Until its code
-and workflow revision are published and verified, do not invent a `mode` input
-or describe that mode as available. Update this reference when the mode lands.
+The inventory mode was verified on the published branch
+`codex/proposal-reliability-implementation`, commit
+`7b8808174fbf62d53364e56084102a901bc1338d`, in
+[run 41841720671](https://github.com/salahassi/tenders/actions/runs/41841720671).
+Use a reviewed ref that contains that commit; older `main` revisions do not have
+this input. For that published branch, the exact dispatch is:
+
+```sh
+gh workflow run doks-access.yml --repo salahassi/tenders \
+  --ref codex/proposal-reliability-implementation -f mode=inventory
+```
+
+Check the run head SHA and executed steps after dispatch. The observed schema,
+image digests and cleanup receipt are saved in
+[`evidence/digitalocean-inventory-20261104.json`](evidence/digitalocean-inventory-20261104.json).
+Ten ready workloads prove inventory readiness at that observation, not proposal
+workflow acceptance. The new delivery tables were absent at that time.
 
 Prefer the connected GitHub tools for metadata when available. With an already
 configured GitHub CLI, these commands inspect definitions/history only:
