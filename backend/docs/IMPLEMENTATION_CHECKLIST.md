@@ -7864,3 +7864,40 @@ These receipts precede pending deadline metadata and storage-upload ambiguity
 corrections. The final source manifest, cloud restore and combined application
 gates must use their later exact hashes. No manifest was frozen for deployment,
 no hosted workflow was dispatched, and no production resources were changed.
+
+
+### 2026-11-04 — G10 sparse-table extremes and derived shape bound
+
+Two further actual API admission cases retain their separate frozen inputs. With
+ten named headers and fifty empty row arrays per table, the current JSONB ceiling
+admits 3,574 full tables: 178,700 explicitly supplied rows and 1,787,000 implicit
+data-cell positions after rectangular rendering. With empty headers and the
+shortest section metadata (unique one-character keys/title, shared volume), it
+admits 4,143 full tables: 207,150 rows, 2,071,500 data-cell positions and 41,430
+header cells. The next full table is rejected in both families without changing
+the saved revision. Every header and original row array survives persistence and
+projection; no input cap or schema restriction was added.
+
+The test derives a conservative normalized-table-cell bound instead of treating a
+convenient sample as the entire admitted range. It measures JSONB cost for all
+2,760 cheapest legal width/row/header-count shapes, including establishing a wider
+ragged row beneath fewer headers. Ten empty headers and fifty empty rows maximize
+cells per byte: 510 normalized cells cost 504 bytes. Nonempty strings and further
+supplied cells add storage without increasing this shape's width. Actual SQL
+confirms array-element additivity and the minimum required wrappers: 284 fixed
+input bytes and 204 bytes per section. Each section holds at most 100 tables, each
+table at most 510 normalized cells. These facts give a conservative ceiling of
+**2,113,160 normalized table cells** within the current authoring JSONB/schema
+contract. The accepted full-table fixture contains **2,112,930**, only 230 below
+that bound; a partial final table may occupy some remainder. This is a table-cell
+count bound, not a universal document-memory or latency guarantee.
+
+The integrated suite passes **19/19**, and both package typechecks pass on the
+current renderer (`178eb04`) and bounded verifier (`116fc55`).
+[The sparse density receipt](evidence/proposal-capacity-sparse-20261104.json)
+records all 19 cases, the derivation, actual admission sizes and stable hashes for
+source files including all three delegated verifier helpers. Earlier 14/17-case
+receipts and the named-header fixture are retained. Native render/verification
+under process/container limits is owned by the separate renderer qualification;
+these API checks do not assert it passed, nor hosted concurrency or production SLO.
+No external providers, customer data, deployment or production writes were used.

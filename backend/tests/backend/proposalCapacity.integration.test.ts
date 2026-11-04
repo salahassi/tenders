@@ -566,6 +566,8 @@ it.each([
     short: false,
     empty: false,
     ragged: false,
+    sparse: false,
+    minimal: false,
   },
   {
     name: "dense-short-authored",
@@ -573,6 +575,8 @@ it.each([
     short: true,
     empty: false,
     ragged: false,
+    sparse: false,
+    minimal: false,
   },
   {
     name: "dense-body-limit-authored",
@@ -580,6 +584,8 @@ it.each([
     short: true,
     empty: false,
     ragged: false,
+    sparse: false,
+    minimal: false,
   },
   {
     name: "dense-empty-body-limit-authored",
@@ -587,6 +593,8 @@ it.each([
     short: true,
     empty: true,
     ragged: false,
+    sparse: false,
+    minimal: false,
   },
   {
     name: "dense-ragged-authored",
@@ -594,10 +602,38 @@ it.each([
     short: false,
     empty: false,
     ragged: true,
+    sparse: false,
+    minimal: false,
+  },
+  {
+    name: "dense-sparse-body-limit-authored",
+    tables: 0,
+    short: true,
+    empty: true,
+    ragged: false,
+    sparse: true,
+    minimal: false,
+  },
+  {
+    name: "dense-minimal-sparse-body-limit-authored",
+    tables: 0,
+    short: true,
+    empty: true,
+    ragged: false,
+    sparse: true,
+    minimal: true,
   },
 ])(
   "admits and preserves every cell of $name through the actual authorized authoring API and immutable delivery payload",
-  async ({ name, tables: targetTables, short, empty, ragged }) => {
+  async ({
+    name,
+    tables: targetTables,
+    short,
+    empty,
+    ragged,
+    sparse,
+    minimal,
+  }) => {
     const o = await opportunity(),
       t = h.transport();
     await upload(
@@ -624,26 +660,33 @@ it.each([
     const context = (await opened.json()).data;
     const table = (index: number) => ({
       type: "table" as const,
-      headers: Array.from(
-        { length: ragged ? 1 : 10 },
-        (_, col) => `Column ${col}`,
+      headers: Array.from({ length: ragged ? 1 : 10 }, (_, col) =>
+        minimal ? "" : `Column ${col}`,
       ),
       rows: Array.from({ length: 50 }, (_, row) =>
-        Array.from({ length: 10 }, (_, col) =>
-          empty
-            ? ""
-            : short
-              ? "S"
-              : `Cell ${index}/${row}/${col}: required acceptance evidence remains pending. مراجعة المصدر مطلوبة.`,
-        ),
+        sparse
+          ? []
+          : Array.from({ length: 10 }, (_, col) =>
+              empty
+                ? ""
+                : short
+                  ? "S"
+                  : `Cell ${index}/${row}/${col}: required acceptance evidence remains pending. مراجعة المصدر مطلوبة.`,
+            ),
       ),
     });
     const makeBody = (count: number) => ({
       ...context.revision.body,
       sections: Array.from({ length: Math.ceil(count / 100) }, (_, index) => ({
-        key: index ? `dense-table-${index}` : "dense-table",
-        title: "Synthetic dense table capacity case",
-        volume: "technical",
+        key: minimal
+          ? "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"[
+              index
+            ] || `s${index}`
+          : index
+            ? `dense-table-${index}`
+            : "dense-table",
+        title: minimal ? "S" : "Synthetic dense table capacity case",
+        volume: minimal ? "shared" : "technical",
         content_blocks: Array.from(
           { length: Math.min(count - index * 100, 100) },
           (_, j) => table(index * 100 + j),
@@ -705,6 +748,113 @@ it.each([
       ).toBeGreaterThan(2097152);
     }
     const body = makeBody(count);
+    let densityBound: Record<string, unknown> | undefined;
+    if (minimal) {
+      // For a chosen rendered width, the cheapest legal table either establishes
+      // it in empty headers or in one empty-string row. Every other row can be
+      // empty; nonempty strings or extra supplied cells only add JSONB bytes.
+      const candidates: {
+        width: number;
+        headerCount: number;
+        rowCount: number;
+        cells: number;
+        table: { type: string; headers: string[]; rows: string[][] };
+      }[] = [];
+      for (let width = 1; width <= 10; width++)
+        for (let rowCount = 0; rowCount <= 50; rowCount++)
+          for (let headerCount = 1; headerCount <= width; headerCount++) {
+            if (rowCount === 0 && headerCount < width) continue;
+            candidates.push({
+              width,
+              headerCount,
+              rowCount,
+              cells: width * (rowCount + 1),
+              table: {
+                type: "table",
+                headers: Array(headerCount).fill(""),
+                rows: Array.from({ length: rowCount }, (_, row) =>
+                  row === 0 && headerCount < width ? Array(width).fill("") : [],
+                ),
+              },
+            });
+          }
+      const costs = (
+        await h.f.db.query<{ ordinal: number; bytes: number }>(
+          "select ordinality::int ordinal,pg_column_size(value)::int bytes from jsonb_array_elements($1::jsonb) with ordinality",
+          [JSON.stringify(candidates.map((candidate) => candidate.table))],
+        )
+      ).rows;
+      const best = costs.reduce((best, entry) =>
+        candidates[entry.ordinal - 1].cells * best.bytes >
+        candidates[best.ordinal - 1].cells * entry.bytes
+          ? entry
+          : best,
+      );
+      const winner = candidates[best.ordinal - 1];
+      expect(winner).toMatchObject({
+        width: 10,
+        headerCount: 10,
+        rowCount: 50,
+        cells: 510,
+      });
+      // A JSONB array's four-byte entry replaces the standalone datum's four-byte
+      // length header. Confirm additivity/alignment in an actual body before
+      // using the best single-table ratio as a conservative whole-input bound.
+      expect(
+        (await databaseSize(makeBody(100))) -
+          (await databaseSize(makeBody(99))),
+      ).toBe(best.bytes);
+      expect(await databaseSize(body)).toBeGreaterThanOrEqual(
+        count * best.bytes,
+      );
+      const upper = Math.floor((2097152 * winner.cells) / best.bytes);
+      expect(count * 510).toBeLessThanOrEqual(upper);
+      expect(Object.keys(context.revision.body).sort()).toEqual([
+        "confirmed_shared_decisions",
+        "fulfillment",
+        "pending_inputs",
+        "requirements",
+        "reuse",
+        "sections",
+        "version",
+      ]);
+      const fixedBytes = await databaseSize(makeBody(0));
+      const sectionBytes =
+        (await databaseSize(makeBody(1))) - fixedBytes - best.bytes;
+      expect(
+        (await databaseSize(makeBody(101))) -
+          (await databaseSize(makeBody(100))),
+      ).toBe(sectionBytes + best.bytes);
+      let low = 0,
+        high = 100 * 100 * 51 * 10;
+      while (low < high) {
+        const cells = Math.ceil((low + high) / 2);
+        const minimumBytes =
+          fixedBytes +
+          sectionBytes * Math.ceil(cells / (100 * winner.cells)) +
+          Math.ceil((cells * best.bytes) / winner.cells);
+        if (minimumBytes <= 2097152) low = cells;
+        else high = cells - 1;
+      }
+      expect(count * 510).toBeLessThanOrEqual(low);
+      densityBound = {
+        candidate_shapes_measured: candidates.length,
+        best_width: winner.width,
+        best_header_count: winner.headerCount,
+        best_rows: winner.rowCount,
+        best_table_jsonb_bytes: best.bytes,
+        best_table_normalized_cells: winner.cells,
+        conservative_normalized_cell_upper_bound: upper,
+        minimum_fixed_input_bytes: fixedBytes,
+        minimum_section_overhead_bytes: sectionBytes,
+        conservative_cell_bound_with_required_wrappers: low,
+        accepted_full_table_fixture_gap_to_bound: low - count * 510,
+        full_table_fixture_normalized_cells: count * 510,
+        schema_only_normalized_cell_bound: 100 * 100 * 51 * 10,
+        scope:
+          "normalized table cells under current authoring JSONB/schema limits; excludes prose bytes and does not prove runtime latency",
+      };
+    }
     const tables = body.sections.flatMap(
       (section: { content_blocks: ReturnType<typeof table>[] }) =>
         section.content_blocks,
@@ -737,14 +887,18 @@ it.each([
     ).rows[0];
     expect(
       persisted.payload.sections
-        .filter((section: any) => section.section_key.startsWith("dense-table"))
+        .filter((section: any) =>
+          body.sections.some(
+            (candidate: any) => candidate.key === section.section_key,
+          ),
+        )
         .flatMap((section: any) => section.content_blocks),
     ).toEqual(tables);
     const model = buildDeliveryExport(snapshot, "combined");
     const projected = model.blocks.filter((block) => block.type === "table");
     expect(projected).toEqual(tables);
     expect(projected.flatMap((block) => block.rows.flat())).toHaveLength(
-      count * 500,
+      sparse ? 0 : count * 500,
     );
     expect(t.backend.storeDeliveryObject).not.toHaveBeenCalled();
     const encoded = JSON.stringify(model);
@@ -758,7 +912,14 @@ it.each([
       one_more_table_rejected: targetTables === 0,
       rows_per_table: 50,
       columns: 10,
-      cells: count * 500,
+      cells: sparse ? 0 : count * 500,
+      implicit_data_cell_positions: sparse ? count * 500 : 0,
+      explicit_rows: count * 50,
+      expected_normalized_cells_including_headers: count * 510,
+      authored_row_arrays_preserved: true,
+      sparse_rows: sparse,
+      minimal_section_and_header_text: minimal,
+      ...(densityBound ? { density_bound: densityBound } : {}),
       cell_text: empty ? "empty" : short ? "one-character" : "mixed-language",
       authored_cells_preserved: true,
       accepted_by_actual_api: true,
@@ -921,10 +1082,10 @@ afterAll(async () => {
     JSON.stringify(
       {
         fixture: "synthetic-only",
-        intended_cases: 17,
+        intended_cases: 19,
         completed_cases: capacityChecks.length + capacityMeasurements.length,
         all_cases_passed:
-          capacityChecks.length + capacityMeasurements.length === 17,
+          capacityChecks.length + capacityMeasurements.length === 19,
         scope:
           "local migrated PGlite SQL, actual API handlers, real DOCX renderer; synthetic token and Map-storage adapters",
         model_calls: 0,
