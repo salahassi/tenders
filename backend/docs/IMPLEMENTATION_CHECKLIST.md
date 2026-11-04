@@ -10707,3 +10707,22 @@ workflow has been dispatched. Initial allocation acknowledgment loss can require
 ownership reconciliation; the intended durable interruption checkpoint is the
 qualified recovery scope. Whole-cluster restore continuity, actual worker
 capacity and user-defined recovery objectives remain open.
+
+### November 4 — retain a bounded PaddleOCR feasibility proposal for A06
+
+The [candidate assessment](ARABIC_OCR_PADDLE_FEASIBILITY.md) evaluates the official
+mobile detector and Arabic v5 recognizer as a materially different local option.
+Its [receipt](evidence/arabic-paddle-feasibility-20261104.json) retains immutable
+source/model/package pins and verifies 23 recovered small source/metadata files.
+Four core wheels alone declare 897,243,540 expanded bytes, before dependencies and
+container overhead; the 768 MiB/one-CPU fit remains unmeasured. Upstream display
+transformation and left-to-right box sorting leave logical mixed-script and Arabic
+column order unresolved.
+
+A fixed experiment is proposed with six newly authored and independently reviewed
+pages plus all seven retained development controls. The candidate has not been
+installed, run, adopted or deployed; no default, product limit, runtime image or
+model-routing policy changed. The resumed checks are hash/arithmetic/document
+validation only. No application or native tests were rerun for this documentation
+change. Independent review remains required; the reviewer could not be spawned
+because the agent-thread limit was reached. A06 and hosted acceptance remain open.
