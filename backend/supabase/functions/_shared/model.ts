@@ -3,7 +3,7 @@ import {
   providerFailureAffects,
   type ProviderFailureScope,
 } from "./modelProviderErrors.ts";
-import { blockedContent, contentPolicyCategories } from "./contentPolicy.ts";
+import { blockedContent } from "./contentPolicy.ts";
 export { blockedContent } from "./contentPolicy.ts";
 import {
   DEFAULT_OUTPUT_CEILING,
@@ -60,7 +60,6 @@ import {
   sourceReadingPrompt,
   sourceSystemInstructions,
   normalizedEvidence,
-  validateSourcePageResult,
 } from "./sourceModel.ts";
 import { z } from "zod";
 import {
@@ -88,10 +87,9 @@ import {
   type ModelValidationDiagnostic,
   MAX_MODEL_VALIDATION_DIAGNOSTICS,
 } from "./modelValidationDiagnostics.ts";
-import {
-  collectReferenceDiagnostics,
-  quoteReferenceDiagnostic,
-} from "./modelReferenceDiagnostics.ts";
+import { collectReferenceDiagnostics } from "./modelReferenceDiagnostics.ts";
+import { collectDomainDiagnostics } from "./modelDomainDiagnostics.ts";
+import { mergeModelValidationDiagnostics } from "./modelValidationDiagnostics.ts";
 export class ModelError extends Error {
   constructor(
     public code: string,
@@ -319,41 +317,6 @@ export function available(
   )
     throw new ModelError("PROVIDER_WORKSPACE_REQUIRED");
 }
-function validateQuotes(
-  refs: { id: string; quote: string }[],
-  evidence: Evidence[],
-  kind?: Evidence["kind"],
-  path = "$",
-) {
-  for (const [index, ref] of refs.entries()) {
-    const diagnostic = quoteReferenceDiagnostic(
-      ref,
-      evidence.find((e) => e.id === ref.id),
-      kind,
-      `${path}[${index}].quote`,
-    );
-    if (diagnostic)
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [diagnostic]);
-  }
-}
-const sameIds = (actual: string[], expected: string[]) =>
-  new Set(actual).size === actual.length &&
-  actual.length === expected.length &&
-  expected.every((x) => actual.includes(x));
-function coverageError(
-  paths: string[],
-  requiredIds: string[] = [],
-  reason:
-    | "required_ids_mismatch"
-    | "required_content_missing" = "required_ids_mismatch",
-) {
-  return new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
-    validationDiagnostic("MODEL_COVERAGE_INCOMPLETE", reason, {
-      paths,
-      requirement_ids: requiredIds,
-    }),
-  ]);
-}
 /** Application-owned scope criteria, including the original task on repairs. */
 export function classificationScopePolicy(
   task: ModelTask,
@@ -436,345 +399,31 @@ export function validateModelResult(
       paths: [error.source_path],
     }),
   );
-  const completeDiagnostics = sourceErrors.length
-    ? [
-        ...new Map(
-          [...sourceErrors, ...referenceErrors.diagnostics].map(
-            (diagnostic) => [JSON.stringify(diagnostic), diagnostic],
-          ),
-        ).values(),
-      ].sort(
-        (a, b) =>
-          (a.paths[0] ?? "").localeCompare(b.paths[0] ?? "") ||
-          a.reason.localeCompare(b.reason),
-      )
-    : referenceErrors.diagnostics;
-  if (completeDiagnostics.length || referenceErrors.code)
+  const domain = collectDomainDiagnostics(
+    task,
+    result,
+    evidence,
+    requiredIds,
+    options,
+  );
+  const merged = mergeModelValidationDiagnostics(
+    referenceErrors,
+    { diagnostics: sourceErrors },
+    domain,
+  );
+  if (merged.diagnostics.length || referenceErrors.code || domain.terminalCode)
     throw new ModelError(
-      completeDiagnostics[0]?.code ?? referenceErrors.code!,
+      domain.terminalCode ??
+        merged.diagnostics[0]?.code ??
+        referenceErrors.code!,
       null,
-      completeDiagnostics.slice(0, MAX_MODEL_VALIDATION_DIAGNOSTICS),
-      referenceErrors.omittedCount +
-        Math.max(
-          0,
-          completeDiagnostics.length - MAX_MODEL_VALIDATION_DIAGNOSTICS,
-        ),
+      merged.diagnostics,
+      merged.omittedCount,
     );
   try {
     validateSourceCandidate(task, result, options?.sourceContext, evidence);
   } catch (error) {
     throw sourceValidationError(error);
-  }
-  if (task === "verify_grounding") {
-    if (
-      !sameIds(result.processed_requirement_ids, requiredIds) ||
-      !sameIds(
-        result.requirement_checks.map((r: any) => r.requirement_id),
-        requiredIds,
-      ) ||
-      new Set(result.claims.map((claim: any) => claim.id)).size !==
-        result.claims.length
-    ) {
-      console.warn(
-        "model_coverage_diagnostic",
-        JSON.stringify({
-          phase: "requirements",
-          expected: requiredIds.length,
-          processed: result.processed_requirement_ids.length,
-          checks: result.requirement_checks.length,
-          matched: requiredIds.filter((id) =>
-            result.processed_requirement_ids.includes(id),
-          ).length,
-          unique_claims:
-            new Set(result.claims.map((claim: any) => claim.id)).size ===
-            result.claims.length,
-        }),
-      );
-      throw coverageError(
-        ["$.processed_requirement_ids", "$.requirement_checks", "$.claims"],
-        requiredIds,
-      );
-    }
-    for (const [index, claim] of result.claims.entries()) {
-      validateQuotes(
-        claim.source_refs,
-        evidence,
-        claim.kind === "company_fact" && claim.status === "supported"
-          ? "company"
-          : undefined,
-        `$.claims[${index}].source_refs`,
-      );
-      // Missing support is a semantic defect for candidate repair, rather
-      // than malformed verifier output. groundingDefects independently blocks
-      // these claims even when the verifier incorrectly labels them supported.
-    }
-    for (const [index, requirement] of result.requirement_checks.entries())
-      validateQuotes(
-        requirement.source_refs,
-        evidence,
-        undefined,
-        `$.requirement_checks[${index}].source_refs`,
-      );
-    if (
-      result.findings.some(
-        (f: any) =>
-          f.claim_ids.some(
-            (id: string) => !result.claims.some((c: any) => c.id === id),
-          ) ||
-          f.requirement_ids.some((id: string) => !requiredIds.includes(id)),
-      )
-    )
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-        validationDiagnostic(
-          "EVIDENCE_REFERENCE_INVALID",
-          "invalid_finding_reference",
-          { paths: ["$.findings"] },
-        ),
-      ]);
-  }
-  if (task === "inspect_source_page") {
-    try {
-      validateSourcePageResult(result, evidence);
-    } catch {
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-        validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "invalid_scope", {
-          paths: ["$"],
-        }),
-      ]);
-    }
-  }
-  if (blockedContent(JSON.stringify(result))) {
-    // Report categories only; never include a model result or matched text.
-    console.warn(
-      "model_content_policy",
-      JSON.stringify({
-        task,
-        categories: contentPolicyCategories(JSON.stringify(result)),
-      }),
-    );
-    throw new ModelError("MODEL_OUTPUT_POLICY_BLOCKED");
-  }
-  if (task === "summarize_review") {
-    if (!sameIds(result.processed_review_ids, requiredIds))
-      throw coverageError(["$.processed_review_ids"], requiredIds);
-    for (const [index, directive] of result.directives.entries())
-      validateQuotes(
-        directive.source_refs,
-        evidence,
-        "review",
-        `$.directives[${index}].source_refs`,
-      );
-    if (result.questions.some((q: any) => q.requirement_ids.length))
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-        validationDiagnostic(
-          "EVIDENCE_REFERENCE_INVALID",
-          "invalid_finding_reference",
-          { paths: ["$.questions"] },
-        ),
-      ]);
-    if (!result.directives.length && !result.questions.length)
-      throw coverageError(
-        ["$.directives", "$.questions"],
-        requiredIds,
-        "required_content_missing",
-      );
-  }
-  if (task === "classify_opportunity" && result.scope_decision) {
-    validateQuotes(
-      result.scope_decision.notice_evidence,
-      evidence,
-      "notice",
-      "$.scope_decision.notice_evidence",
-    );
-    validateQuotes(
-      result.scope_decision.company_evidence || [],
-      evidence,
-      "company",
-      "$.scope_decision.company_evidence",
-    );
-  }
-  if (task === "classify_opportunity")
-    for (const [key, factor] of Object.entries(result.factors) as [
-      string,
-      any,
-    ][]) {
-      validateQuotes(
-        factor.notice_evidence,
-        evidence,
-        "notice",
-        `$.factors.${key}.notice_evidence`,
-      );
-      validateQuotes(
-        factor.company_evidence,
-        evidence,
-        "company",
-        `$.factors.${key}.company_evidence`,
-      );
-      let selectedKeywordScope = false;
-      if (
-        key === "scope" &&
-        factor.rating !== null &&
-        factor.notice_evidence.length &&
-        !factor.company_evidence.length &&
-        result.scope_decision?.status !== "uncertain" &&
-        result.scope_decision?.keyword_evidence?.length
-      ) {
-        const policy = serviceScopeSchema.safeParse(options?.scopePolicy);
-        if (policy.success && policy.data.scope !== "company_knowledge") {
-          // Interests can establish service relevance, never company capacity,
-          // experience or eligibility. Both notice quote arrays were checked
-          // above; every selected term must belong to the frozen policy.
-          validateScopeDecision(result, policy.data);
-          selectedKeywordScope = true;
-        }
-      }
-      if (
-        factor.rating !== null &&
-        (!factor.notice_evidence.length ||
-          (!factor.company_evidence.length && !selectedKeywordScope))
-      )
-        throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-          validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "source_missing", {
-            paths: [
-              `$.factors.${key}.notice_evidence`,
-              `$.factors.${key}.company_evidence`,
-            ],
-          }),
-        ]);
-    }
-  if (task === "analyze_chunk") {
-    if (!sameIds(result.processed_block_ids, requiredIds))
-      throw coverageError(["$.processed_block_ids"], requiredIds);
-    for (const [index, req] of result.requirements.entries())
-      validateQuotes(
-        req.source_refs,
-        options?.draftInputVersion === 1
-          ? evidence.filter((source) => ["rfp", "notice"].includes(source.kind))
-          : evidence,
-        options?.draftInputVersion === 1 ? undefined : "rfp",
-        `$.requirements[${index}].source_refs`,
-      );
-  }
-  if (
-    ["plan_proposal", "review_proposal"].includes(task) &&
-    !sameIds(result.processed_requirement_ids, requiredIds)
-  )
-    throw coverageError(["$.processed_requirement_ids"], requiredIds);
-  if (task === "plan_blueprint" || task === "plan_structure") {
-    for (const [index, decision] of result.decisions.entries())
-      validateQuotes(
-        decision.evidence_refs,
-        evidence,
-        decision.kind === "company_fact" ? "company" : undefined,
-        `$.decisions[${index}].evidence_refs`,
-      );
-  }
-  if (task === "plan_proposal") {
-    if (result.sections.some((s: any) => s.key.startsWith("fixed-")))
-      throw new ModelError("TEMPLATE_BLOCK_OVERRIDE");
-    const addressed = [
-      ...result.sections.flatMap((s: any) => s.requirement_ids),
-      ...result.questions.flatMap((q: any) => q.requirement_ids),
-    ];
-    if (
-      requiredIds.some((x) => !addressed.includes(x)) ||
-      addressed.some((x) => !requiredIds.includes(x))
-    )
-      throw coverageError(
-        ["$.sections", "$.questions"],
-        requiredIds,
-        "required_content_missing",
-      );
-  }
-  if (task === "draft_section") {
-    if (
-      result.requirement_ids.some((x: string) => !requiredIds.includes(x)) ||
-      requiredIds.some(
-        (x) =>
-          !result.requirement_ids.includes(x) &&
-          !result.questions.some((q: any) => q.requirement_ids.includes(x)),
-      )
-    )
-      throw coverageError(
-        ["$.requirement_ids", "$.questions"],
-        requiredIds,
-        "required_content_missing",
-      );
-    validateQuotes(
-      result.evidence_refs,
-      evidence,
-      undefined,
-      "$.evidence_refs",
-    );
-    for (const [index, claim] of result.company_claims.entries()) {
-      const fact = evidence.find(
-        (e) => e.id === claim.source_id && e.kind === "company" && e.verified,
-      );
-      if (
-        !fact ||
-        (options?.independentGrounding
-          ? !normalizedEvidence(claim.quote) ||
-            !normalizedEvidence(fact.text).includes(
-              normalizedEvidence(claim.quote),
-            )
-          : !fact.text.includes(claim.quote) ||
-            !claim.quote.includes(claim.claim))
-      )
-        throw new ModelError("UNSUPPORTED_COMPANY_CLAIM", null, [
-          validationDiagnostic(
-            "UNSUPPORTED_COMPANY_CLAIM",
-            "unsupported_company_claim",
-            {
-              paths: [
-                `$.company_claims[${index}].source_id`,
-                `$.company_claims[${index}].quote`,
-              ],
-              evidence_ids: [claim.source_id],
-            },
-          ),
-        ]);
-      // This guard checks citation provenance, not semantic equivalence. A
-      // paraphrase, translation or claim summary need not be a substring of its
-      // verbatim source quote (or the section body). The mandatory V2 grounding
-      // graph independently checks all candidate text and declared claims
-      // before accepting the section. Legacy execution retains its old guards.
-    }
-    const text = result.content_blocks
-      .map((b: any) =>
-        b.type === "table" ? [b.headers, ...b.rows].flat().join(" ") : b.text,
-      )
-      .join("\n");
-    for (const sentence of text.split(/[.!?\n]/))
-      if (
-        !options?.independentGrounding &&
-        /we (?:hold|are certified|have delivered|are licensed)|our (?:certifications|customers)|لدينا شهاد|نمتلك شهاد|نحن معتمد|عملاؤنا/i.test(
-          sentence,
-        ) &&
-        !sentence.includes("[INPUT REQUIRED") &&
-        !result.company_claims.some((c: any) =>
-          c.quote.includes(sentence.trim()),
-        )
-      )
-        throw new ModelError("UNSUPPORTED_COMPANY_CLAIM");
-  }
-  if (task === "review_proposal") {
-    if (
-      !sameIds(
-        result.responses.map((r: any) => r.requirement_id),
-        requiredIds,
-      )
-    )
-      throw coverageError(["$.responses"], requiredIds);
-    for (const [index, response] of result.responses.entries()) {
-      validateQuotes(
-        response.evidence_refs,
-        evidence,
-        undefined,
-        `$.responses[${index}].evidence_refs`,
-      );
-      if (response.status === "not_applicable_approved")
-        throw new ModelError("MODEL_CANNOT_APPROVE");
-    }
   }
   return result;
 }

@@ -103,6 +103,44 @@ export function validationDiagnostic(
   return result;
 }
 
+/** Merge independent, schema-bounded checks without losing overflow accounting.
+ * Do not submit overlapping pre-truncated traversals: omitted entries have no
+ * observable identity and cannot safely be guessed or deduplicated.
+ */
+export function mergeModelValidationDiagnostics(
+  ...groups: {
+    diagnostics: readonly ModelValidationDiagnostic[];
+    omittedCount?: number;
+  }[]
+) {
+  const unique = new Map<string, ModelValidationDiagnostic>();
+  let omitted = 0;
+  for (const group of groups) {
+    if (
+      !Number.isSafeInteger(group.omittedCount ?? 0) ||
+      (group.omittedCount ?? 0) < 0
+    )
+      throw new TypeError("INVALID_OMITTED_DIAGNOSTIC_COUNT");
+    omitted += group.omittedCount ?? 0;
+    for (const item of group.diagnostics) {
+      const normalized = validationDiagnostic(item.code, item.reason, item);
+      unique.set(JSON.stringify(normalized), normalized);
+    }
+  }
+  const all = [...unique.values()].sort(
+    (a, b) =>
+      (a.paths[0] ?? "").localeCompare(b.paths[0] ?? "") ||
+      a.reason.localeCompare(b.reason) ||
+      a.code.localeCompare(b.code) ||
+      JSON.stringify(a).localeCompare(JSON.stringify(b)),
+  );
+  return {
+    diagnostics: all.slice(0, MAX_MODEL_VALIDATION_DIAGNOSTICS),
+    omittedCount:
+      omitted + Math.max(0, all.length - MAX_MODEL_VALIDATION_DIAGNOSTICS),
+  };
+}
+
 type UntrustedVerificationReport = ReturnType<
   typeof modelSchemas.verify_grounding.parse
 >;

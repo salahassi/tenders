@@ -7124,3 +7124,29 @@ version replacement; no server cancellation or automatic retry is introduced.
 Final scope-fix validation: **341/341 frontend tests in 54 files**, frontend
 build/typecheck passed. The independent review finding is fixed locally; hosted
 browser re-entry and ordinary backend combined acceptance remain pending.
+ME05 base-validator closure (2026-11-04): schema-valid reference, source tuple,
+source-page field/link, classification, review authority, draft ownership and
+proposal-template diagnostics are now collected together. Grounding collects
+independent candidate quotes, numeric mismatches, requirement quotes, finding
+references, declared company-claim coverage and verifier identity coverage.
+Reports retain at most32 deterministic diagnostics and count every independent
+omitted check; source text and arbitrary error messages are never copied into
+that envelope. A wrong candidate identity stops candidate-dependent judgments;
+an invalid citation cannot itself justify a derived numeric mismatch. Malformed
+schemas remain prerequisites. Forbidden model approval/template/policy codes
+remain terminal and evidence/semantic gates are not weakened. The source-page
+public validator retains its established error codes while the model boundary
+receives exact field paths. No model schema, candidate adapter, paid phase pin,
+wire format, prompt or correction allowance changed.
+
+Validation: the new regression corpus initially failed15 of29 cases against the
+original validators (14 valid/prerequisite controls passed). The final suite adds
+an explicit duplicate-identity/coverage case; all30 new cases pass, including all
+13 task registry valid controls and31/32/33/60 diagnostic boundaries. Focused14
+files /345 tests pass, including historical paid verification phase hashes,
+repair format, writer handoff, source-scoped repair and numeric structural
+references. Backend typecheck/build pass. Context-specific blueprint/planning/
+commercial/reference collection in generation.ts is assigned separately to the
+operations agent; do not infer that this base slice closes those checks. Full
+combined backend/frontend regression, independent code review and hosted release
+remain separate gates; no provider calls or deployed correctness claim was made.

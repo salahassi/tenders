@@ -111,27 +111,19 @@ export function collectReferenceDiagnostics(
       ),
     );
   } else if (task === "verify_grounding") {
-    // Preserve the established combined coverage diagnostic for this contract.
+    coverage(result.processed_requirement_ids, "$.processed_requirement_ids");
+    coverage(
+      result.requirement_checks.map((r: any) => r.requirement_id),
+      "$.requirement_checks",
+    );
     if (
-      !sameIds(result.processed_requirement_ids, requiredIds) ||
-      !sameIds(
-        result.requirement_checks.map((r: any) => r.requirement_id),
-        requiredIds,
-      ) ||
       new Set(result.claims.map((r: any) => r.id)).size !== result.claims.length
     )
       add(
         validationDiagnostic(
           "MODEL_COVERAGE_INCOMPLETE",
-          "required_ids_mismatch",
-          {
-            paths: [
-              "$.processed_requirement_ids",
-              "$.requirement_checks",
-              "$.claims",
-            ],
-            requirement_ids: requiredIds,
-          },
+          "duplicate_claim_ids",
+          { paths: ["$.claims"] },
         ),
       );
     result.claims.forEach((claim: any, index: number) =>
@@ -217,6 +209,8 @@ export function collectReferenceDiagnostics(
           ),
         );
     }
+  } else if (task === "plan_proposal") {
+    coverage(result.processed_requirement_ids, "$.processed_requirement_ids");
   } else if (task === "review_proposal") {
     coverage(result.processed_requirement_ids, "$.processed_requirement_ids");
     coverage(
