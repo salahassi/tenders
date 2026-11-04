@@ -1,0 +1,19 @@
+{
+  "baseline_guard_cases": 4,
+  "canonical_migration_changed": false,
+  "hosted_calls": 0,
+  "log_sha256": "21106f0f4bf2ecff3a4faf6eff8627ce46c02d8d7fc9ab8ca671088850635280",
+  "managed_atomic_contract_faults": 4,
+  "new_negative_definitions": [
+    "WHEN(false)",
+    "CHECK(original_bound OR true)"
+  ],
+  "normal_release_and_replay": true,
+  "passed": true,
+  "scope": "exact normalized legacy trigger and chunk constraint definitions",
+  "source_sha256": {
+    "backend/scripts/ops/proposal-delivery-release.py": "47b23edb174f77ca1220eb01c76022e6435cb9ecef6421732e8dd38d8821348a",
+    "backend/scripts/ops/test_proposal_delivery_release.py": "2f8becd61f4d8e9a0af748a49e9ff502da0d3a102c6a1726b2af4a46a415a03c"
+  },
+  "version": 1
+}

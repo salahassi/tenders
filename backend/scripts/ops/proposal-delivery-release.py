@@ -499,10 +499,11 @@ BEGIN
  END LOOP;
  IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='app_private.idempotency_records'::regclass
    AND tgname='reject_legacy_batch_insert' AND tgenabled='O' AND tgtype=7
-   AND tgfoid='app_private.reject_legacy_batch_insert()'::regprocedure AND tgqual IS NOT NULL)
+   AND tgfoid='app_private.reject_legacy_batch_insert()'::regprocedure
+   AND pg_get_triggerdef(oid)='CREATE TRIGGER reject_legacy_batch_insert BEFORE INSERT ON app_private.idempotency_records FOR EACH ROW WHEN (((new.method = ''BATCH''::text) AND (new.route = ''commands''::text))) EXECUTE FUNCTION app_private.reject_legacy_batch_insert()')
   OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='app_private.command_batch_chunks'::regclass
    AND conname='command_batch_chunks_data_check' AND contype='c' AND convalidated
-   AND position('262144' in pg_get_constraintdef(oid))>0)
+   AND pg_get_constraintdef(oid)='CHECK (((octet_length(data) >= 1) AND (octet_length(data) <= 262144)))')
   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_BATCH_CONTRACT_INVALID';END IF;
  PERFORM set_config('tenderdesk.delivery_release_receipt',jsonb_build_object('release','__RELEASE__',
   'manifest_sha256','__CHECKSUM__','catalog_sha256',catalog_hash,'replayed',saved_manifest IS NOT NULL)::text,true);

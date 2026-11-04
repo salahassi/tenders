@@ -187,7 +187,7 @@ class DeliveryReleaseTests(unittest.TestCase):
     def test_late_platform_auth_failure_rolls_back_entire_application_batch(self):
         self.managed_atomic_batch_cases(auth_only=True)
 
-    def managed_atomic_batch_cases(self,column_acl_only=False,auth_only=False):
+    def managed_atomic_batch_cases(self,column_acl_only=False,auth_only=False,batch_contract_only=False):
         manifest=self.manifest();sources=self.verify(manifest)
         def script(sources=sources):return p.migration_script(manifest,sources).replace("current_database()<>'tenderdesk_app'","current_database()<>'postgres'")
         cases=[
@@ -235,6 +235,8 @@ class DeliveryReleaseTests(unittest.TestCase):
           ('ALTER TABLE app_private.command_batch_results DISABLE ROW LEVEL SECURITY;','DELIVERY_RELEASE_BATCH_TABLE_AUTHORITY_INVALID'),
           ('ALTER TABLE app_private.idempotency_records DISABLE TRIGGER reject_legacy_batch_insert;','DELIVERY_RELEASE_BATCH_CONTRACT_INVALID'),
           ('ALTER TABLE app_private.command_batch_chunks DROP CONSTRAINT command_batch_chunks_data_check;','DELIVERY_RELEASE_BATCH_CONTRACT_INVALID'),
+          ('DROP TRIGGER reject_legacy_batch_insert ON app_private.idempotency_records;CREATE TRIGGER reject_legacy_batch_insert BEFORE INSERT ON app_private.idempotency_records FOR EACH ROW WHEN(false) EXECUTE FUNCTION app_private.reject_legacy_batch_insert();','DELIVERY_RELEASE_BATCH_CONTRACT_INVALID'),
+          ('ALTER TABLE app_private.command_batch_chunks DROP CONSTRAINT command_batch_chunks_data_check;ALTER TABLE app_private.command_batch_chunks ADD CONSTRAINT command_batch_chunks_data_check CHECK(octet_length(data) between 1 and 262144 OR true);','DELIVERY_RELEASE_BATCH_CONTRACT_INVALID'),
 
         ]
         if column_acl_only:
@@ -245,6 +247,7 @@ class DeliveryReleaseTests(unittest.TestCase):
                 ('app_private.storage_retirement_keys','storage_key'))
               for role in ('tdp_app_service','PUBLIC')]
         if auth_only:cases=[]
+        if batch_contract_only:cases=[case for case in cases if case[1]=='DELIVERY_RELEASE_BATCH_CONTRACT_INVALID']
         program="process.on('uncaughtException',e=>{console.error(e.message,e.code,e.position,e.where);process.exit(1)});\nconst release="+json.dumps(script())+';const variants='+json.dumps([(script(sources[:-1]+[sources[-1]+'\n'+s]),code) for s,code in cases])+';const guardKinds='+json.dumps(['auth'] if auth_only else ['catalog','ledger','partial','database'])+';\n'
         program+='const baseline='+json.dumps(manifest['baseline_releases'])+';const catalogQuery='+json.dumps(p.CATALOG.replace(' INTO catalog_hash',''))+';\n'
         program+=r"""

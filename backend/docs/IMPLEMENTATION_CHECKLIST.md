@@ -9841,3 +9841,15 @@ Nine pure release-binding checks and22retirement control-flow tests passed; the
 [receipt](evidence/command-batch-gateway-binding-20261104.json) records exact scope.
 This slice runs no new native/hosted test. The bounded transaction-drain and
 actual old gateway-process exit coordinator remain pending before deployment.
+
+### November 4 — reject semantically disabled batch catalog guards
+
+Release verification now binds the exact normalized legacy INSERT trigger
+definition and the exact normalized chunk-size CHECK. A non-null `WHEN(false)`
+or an enlarged `CHECK(original_bound OR true)` no longer passes a superficial
+presence/substring check. The actual managed atomic fixture rejected both new
+faults, as well as the disabled-trigger/missing-constraint controls, with full
+rollback; normal release/replay and four baseline guards passed. The
+[receipt](evidence/command-batch-exact-catalog-guards-20261104.json) binds this
+source-only guard correction. Canonical migration bytes did not change; hosted
+cutover and final integrated checks remain separate gates.
