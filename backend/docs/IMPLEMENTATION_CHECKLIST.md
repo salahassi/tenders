@@ -9054,3 +9054,33 @@ sequencing, valid large-batch streaming and final actual-image proof remain open
 Every newly indexed receipt hash was checked. No source edits, project tests,
 provider calls or production mutations were performed by this audit. The final
 combined application checks and deployment/hosted acceptance are still required.
+
+### November 4 — stream complete command batch results through the API
+
+Implementation: the dedicated `batchTransport.ts` module sends the same single
+authenticated PostgREST `app_batch` request with the caller JWT, publishable key,
+public schema and unchanged ordered commands/idempotency key. Successful JSON
+bytes stream into the existing `{data,meta:{request_id}}` envelope without a
+result parse/stringify copy, command splitting, response quota or SQL change.
+Both stream layers use zero-prefetch backpressure. Request abort and downstream
+cancellation stop the upstream fetch; terminal errors wait for source cancellation
+to settle so a surrounding admission permit can retain ownership through cleanup.
+Redirects and ambiguous configured URLs are rejected. Existing database and
+platform timeouts remain; the previous batch SDK call set no client timeout.
+
+Only error diagnostics are bounded to 64 KiB. Valid PostgREST errors retain the
+existing `databaseError` mapping, including proven transaction-aborting SQLSTATEs.
+Transport/protocol failures have sanitized, non-retryable errors because commit
+state may be unknown. A partial response fails without appending success metadata.
+The transport does not automatically replay any request.
+
+Local evidence: 29 focused synthetic transport tests pass, including exact JSON
+and split UTF-8, CORS/request metadata, caller authority and URL construction,
+observed upstream pull counts during a paused consumer, an 8 MiB streamed hash,
+bounded diagnostics, abort before/after headers, delayed source cancellation and
+partial body failure. A targeted strict TypeScript check of the module/tests passes.
+These fixtures exercise API transport only; they do not qualify database response
+buffering, native renderer capacity, a real authenticated HTTP connection or hosted
+load. Backend/handler and admission integration is a separate owned change; full
+repository checks and final integrated native/runtime qualification remain open.
+No external, provider, accounting, SQL or production operation occurred.
