@@ -121,9 +121,15 @@ The coordinator performs these operations:
    can reach the physical upload path. Its records have no workspace or artifact
    foreign key and are not removed by tenant purge.
 4. Preserve the original worker, gateway and Storage specifications and durably
-   record every original Pod identity. Add a nonce finalizer to each observed old Pod, then set those three Deployments to zero
-   with checks for unique ID and resource version. Wait for kubelet-reported
-   terminated container IDs, completion timestamps and exit codes. Replica zero,
+   record every original Pod identity and exact container name/ID map. Read that
+   journal back before protecting Pods or stopping workloads. Add a nonce
+   finalizer to each observed old Pod, then set those three Deployments to zero
+   with checks for unique ID and resource version. Require both the current
+   container status and termination record to name the captured container.
+   Accept only `Completed`, `Error` or `OOMKilled`, with valid ordered start/finish
+   times and an integer exit code from 0 through 255. `NodeLost`,
+   `ContainerStatusUnknown`, a missing inner container ID, an epoch timestamp or
+   a different container never proves exit. Replica zero,
    Pod disappearance, a client timeout or elapsed grace time alone is insufficient.
 5. Confirm that no unobserved process mounts the same persistent volume. Mount the
    exact claim in a temporary Pod using the qualified image and the old Storage
@@ -140,7 +146,9 @@ The coordinator performs these operations:
    file identity and references before marking existing cleanup rows done.
 7. Restore each original replica count independently and wait for workload rollout.
    Before removing any original Pod finalizer, durably save the actual termination
-   receipts for every original Pod in that workload. Mixed live/terminated groups
+   receipts for every original Pod in that workload and read back the exact
+   complete journal. The saved proof retains the container IDs, reason, start
+   and finish times, and exit code. Mixed live/terminated groups
    retain every Pod record. Later garbage collection or a lost finalizer-removal
    reply is resolved only using those saved per-Pod receipts. Remove only the
    operation's temporary Pod and proven finalizers. A failure to restore
@@ -179,6 +187,11 @@ has no deletion timestamp. Restoring Deployment replicas does not fence an
 already queued controller deletion. A future retirement refuses any unresolved
 old Pod identity. An already saved real termination receipt can resolve a Pod
 that Kubernetes has since garbage-collected; mere disappearance cannot.
+Recovery always uses the journal's original container IDs, rather than adopting
+the IDs of a currently found Pod. Duplicate identities, extra processes, changed
+container IDs and saved proofs that do not match the captured name/ID map reject
+recovery. Older UID-only journals lack this evidence and are refused; operators
+must not fill in missing identity from a replacement process to force acceptance.
 
 Use the same private selection with `mode=reconcile-processes` to explicitly
 finish an interrupted stop. It first restores the intended replicas, then sends
@@ -234,3 +247,13 @@ uploads: its successful qualification depends on the exact gateway denial and
 cluster-only exposure checks. These proofs do not establish hosted Kubernetes
 shutdown or persistent-volume behavior. The reviewed operation remains unrun in
 production until a separately recorded hosted execution.
+
+The subsequent [process-exit correction receipt](evidence/storage-retirement-exit-proof-20261104.json)
+retains four actual Python red/green reproductions against merged source
+`2ac0613` and 54 focused coordinator/adapter tests. The earlier implementation
+accepted a valid but different container ID, a missing inner ID or an unknown
+termination reason. The corrected code rejects those cases before file removal
+or accounting completion and preserves strong identity proofs during recovery.
+These are synthetic control-flow tests; they do not establish actual kubelet
+termination or a recovery-time/recovery-point objective. The release workflow
+does not invoke this manual helper, and the runtime image does not copy it.

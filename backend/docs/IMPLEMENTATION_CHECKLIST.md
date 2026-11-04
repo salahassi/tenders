@@ -10512,3 +10512,34 @@ Vitest worker (15 executions), followed by backend typecheck/build. All 177
 test/runtime/font/lockfile hashes were unchanged across those runs. These focused
 functional checks do not replace the corrected complete GitHub CI gate, which
 remains required before release.
+
+### November 4 — bind manual storage retirement to actual captured processes
+
+The separate manual retirement coordinator now requires the exact container IDs
+captured before stopping workloads in both current and terminated status. It
+rejects unknown/lost states, missing inner IDs, invalid or unordered timestamps
+and exit codes outside the integer range 0–255. Its durable recovery journal
+stores container names/IDs and the full exit proof. Recovery cannot adopt a
+replacement container, an extra process, an older UID-only journal or a saved
+proof for another identity. Initial identity and completed exit journals are
+read back before Pod protection and finalizer removal, respectively; existing
+compare-and-set checks, mixed-group retention and immediate-GC recovery remain.
+
+[The correction receipt](evidence/storage-retirement-exit-proof-20261104.json)
+retains four reproduced failures against merged source `2ac0613`, the corrected
+rejections and 54 passing focused Python tests. It also discloses the initial
+development failure and the existing eight local PostgreSQL authority tests
+selected by an overly broad first test pattern. No hosted operation or physical
+retirement was performed. Independent read review covered captured identity,
+resumed processes, saved-proof validation and finalizer ordering.
+
+This changes only the manual operations helper, tests and documentation. The
+release workflow does not invoke that helper, its two Python modules are not
+runtime image inputs or independently bound manifest fields, and all 24 canonical
+migrations remain unchanged. Source verification still returns manifest
+`4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76`;
+no refreeze is required for this correction. Actual retirement must use the
+corrected, reviewed workflow ref. Isolated hosted Kubernetes/PVC interruption and
+recovery acceptance remains to be implemented and run separately. Whole-cluster
+restore continuity and user-specified recovery-time/recovery-point objectives
+remain unproved and undefined, respectively.

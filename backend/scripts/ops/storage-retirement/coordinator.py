@@ -66,43 +66,77 @@ def check_collisions(selected,census):
   if key in keys:continue
   require(not any(overlapping(key,selected) for selected in keys),'STORAGE_RETIREMENT_NAMESPACE_COLLISION')
 
+def container_identities(pod):
+ expected={x['name'] for x in pod['spec']['containers']};statuses=pod.get('status',{}).get('containerStatuses',[])
+ require(isinstance(statuses,list) and len(statuses)==len(expected),'STORAGE_RETIREMENT_PROCESS_PROOF_INVALID')
+ result=[]
+ for status in statuses:
+  name=status.get('name');cid=status.get('containerID')
+  require(name in expected and isinstance(cid,str) and re.fullmatch(r'(containerd|docker|cri-o)://[a-f0-9]{64}',cid),'STORAGE_RETIREMENT_PROCESS_PROOF_INVALID')
+  result.append({'name':name,'container_id':cid})
+ require(len({x['name'] for x in result})==len(expected),'STORAGE_RETIREMENT_PROCESS_PROOF_INVALID')
+ return sorted(result,key=lambda x:x['name'])
+
+def pod_identity(pod):
+ return {'name':pod['metadata']['name'],'uid':pod['metadata']['uid'],'containers':container_identities(pod)}
+
+def validate_identity(identity):
+ require(isinstance(identity,dict) and set(identity)=={'name','uid','containers'} and valid_uuid(identity['uid']) and isinstance(identity['name'],str) and re.fullmatch('[a-z0-9-]{1,253}',identity['name']),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+ cs=identity['containers'];require(isinstance(cs,list) and 1<=len(cs)<=10,'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+ for x in cs:
+  require(isinstance(x,dict) and set(x)=={'name','container_id'} and isinstance(x['name'],str) and re.fullmatch('[a-z0-9-]{1,63}',x['name']) and isinstance(x['container_id'],str) and re.fullmatch(r'(containerd|docker|cri-o)://[a-f0-9]{64}',x['container_id']),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+ require(len({x['name'] for x in cs})==len(cs) and cs==sorted(cs,key=lambda x:x['name']),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+ return identity
+
+def validate_saved_termination(value,uid,expected):
+ require(isinstance(value,dict) and set(value)=={'uid','containers'} and value['uid']==uid and isinstance(value['containers'],list) and len(value['containers'])==len(expected),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+ ids={x['name']:x['container_id'] for x in expected};names=[]
+ for item in value['containers']:
+  require(isinstance(item,dict) and set(item)=={'name','container_id','started_at','finished_at','exit_code','reason'} and item['name'] in ids and item['container_id']==ids[item['name']] and type(item['exit_code']) is int and 0<=item['exit_code']<=255 and item['reason'] in ('Completed','Error','OOMKilled'),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+  stamps=[]
+  for key in ('started_at','finished_at'):
+   raw=item[key]
+   require(isinstance(raw,str) and re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+(?:Z|[+]00:00)',raw),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+   try:stamp=datetime.fromisoformat(raw.replace('Z','+00:00'))
+   except ValueError:raise RetirementError('STORAGE_RETIREMENT_POD_JOURNAL_INVALID') from None
+   require(datetime(1970,1,1,tzinfo=timezone.utc)<stamp<=datetime.now(timezone.utc),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID');stamps.append(stamp)
+  require(stamps[0]<=stamps[1],'STORAGE_RETIREMENT_POD_JOURNAL_INVALID');names.append(item['name'])
+ require(len(set(names))==len(ids),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+ return value
+
+def validate_process_journal(value,nonce):
+ require(isinstance(value,dict) and set(value)=={'nonce','pods','termination'} and value['nonce']==nonce and isinstance(value['pods'],list) and 1<=len(value['pods'])<=100 and isinstance(value['termination'],dict),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+ for identity in value['pods']:validate_identity(identity)
+ require(len({p['uid'] for p in value['pods']})==len(value['pods']) and len({p['name'] for p in value['pods']})==len(value['pods']) and set(value['termination'])<=set(p['uid'] for p in value['pods']),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
+ for identity in value['pods']:
+  if identity['uid'] in value['termination']:validate_saved_termination(value['termination'][identity['uid']],identity['uid'],identity['containers'])
+ return value
+
 def terminated_pod(original,current,nonce):
  require(current is not None,'STORAGE_RETIREMENT_POD_DISAPPEARED_WITHOUT_PROOF')
  meta=current.get('metadata',{});old=original['metadata']
  require(meta.get('uid')==old['uid'] and meta.get('annotations',{}).get(ANNOTATION)==nonce and FINALIZER in meta.get('finalizers',[]),'STORAGE_RETIREMENT_POD_OWNERSHIP_CHANGED')
  require(current.get('spec')==original.get('spec'),'STORAGE_RETIREMENT_POD_SPEC_CHANGED')
- # A container can temporarily terminate in a live restartPolicy=Always Pod.
- # Only a deleting or terminal-phase Pod establishes that it cannot restart.
  if not meta.get('deletionTimestamp') and current.get('status',{}).get('phase') not in ('Succeeded','Failed'):return None
- expected={x['name'] for x in original['spec']['containers']}
- statuses=current.get('status',{}).get('containerStatuses',[])
+ require(current.get('status',{}).get('reason') not in ('NodeLost','ContainerStatusUnknown'),'STORAGE_RETIREMENT_PROCESS_PROOF_INVALID')
+ expected=container_identities(original);statuses=current.get('status',{}).get('containerStatuses',[])
  require(isinstance(statuses,list),'STORAGE_RETIREMENT_PROCESS_PROOF_INVALID')
  if len(statuses)!=len(expected):return None
+ require(container_identities(current)==expected,'STORAGE_RETIREMENT_PROCESS_PROOF_INVALID')
  result=[]
  for status in statuses:
-  require(status.get('name') in expected,'STORAGE_RETIREMENT_PROCESS_PROOF_INVALID')
   state=status.get('state',{}).get('terminated')
   if not state:return None
-  cid=state.get('containerID',status.get('containerID'))
-  require(isinstance(cid,str) and re.fullmatch(r'(containerd|docker|cri-o)://[a-f0-9]{64}',cid) and type(state.get('exitCode')) is int,'STORAGE_RETIREMENT_PROCESS_PROOF_INVALID')
-  stamp=state.get('finishedAt')
-  try:date=datetime.fromisoformat(stamp.replace('Z','+00:00'))
-  except (AttributeError,ValueError):raise RetirementError('STORAGE_RETIREMENT_PROCESS_PROOF_INVALID') from None
-  require(date.tzinfo is not None and date<=datetime.now(timezone.utc),'STORAGE_RETIREMENT_PROCESS_PROOF_INVALID')
-  result.append({'name':status['name'],'container_id':cid,'finished_at':stamp,'exit_code':state['exitCode']})
- require(len({x['name'] for x in result})==len(expected),'STORAGE_RETIREMENT_PROCESS_PROOF_INVALID')
- return {'uid':old['uid'],'containers':sorted(result,key=lambda x:x['name'])}
+  result.append({'name':status['name'],'container_id':state.get('containerID'),'started_at':state.get('startedAt'),
+   'finished_at':state.get('finishedAt'),'exit_code':state.get('exitCode'),'reason':state.get('reason')})
+ proof={'uid':old['uid'],'containers':sorted(result,key=lambda x:x['name'])}
+ try:return validate_saved_termination(proof,old['uid'],expected)
+ except RetirementError:raise RetirementError('STORAGE_RETIREMENT_PROCESS_PROOF_INVALID') from None
 
-def validate_saved_termination(value,uid):
- require(isinstance(value,dict) and set(value)=={'uid','containers'} and value['uid']==uid and isinstance(value['containers'],list) and 1<=len(value['containers'])<=10,'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
- names=[]
- for container in value['containers']:
-  require(isinstance(container,dict) and set(container)=={'name','container_id','finished_at','exit_code'} and isinstance(container['name'],str) and re.fullmatch('[a-z0-9-]{1,63}',container['name']) and isinstance(container['container_id'],str) and re.fullmatch(r'(containerd|docker|cri-o)://[a-f0-9]{64}',container['container_id']) and type(container['exit_code']) is int,'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
-  try:stamp=datetime.fromisoformat(container['finished_at'].replace('Z','+00:00'))
-  except (AttributeError,ValueError):raise RetirementError('STORAGE_RETIREMENT_POD_JOURNAL_INVALID') from None
-  require(stamp.tzinfo is not None and stamp<=datetime.now(timezone.utc),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID');names.append(container['name'])
- require(len(set(names))==len(names),'STORAGE_RETIREMENT_POD_JOURNAL_INVALID')
- return value
+def database_process_proof(proof):
+ # The trusted runner validated the stronger exit proof. Keep the existing SQL
+ # evidence shape; durable Kubernetes journals retain reason/start and identities.
+ return {'uid':proof['uid'],'containers':[{k:v for k,v in item.items() if k not in ('started_at','reason')} for item in proof['containers']]}
 
 def retire(adapter,selection,*,clock=time.monotonic,pause=time.sleep,timeout=420):
  """Finish only after actual old-container exit + exact metadata/PVC absence.
@@ -134,7 +168,7 @@ def retire(adapter,selection,*,clock=time.monotonic,pause=time.sleep,timeout=420
     for original in capture['pods'][name]:
      result=terminated_pod(original,adapter.pod(original['metadata']['name']),nonce)
      if result is None:complete=False
-     else:pods.append(result)
+     else:pods.append(database_process_proof(result))
     expected=capture['workloads'][name]
     proofs.append({'name':name,'deployment_uid':expected['metadata']['uid'],'image':expected['spec']['template']['spec']['containers'][0]['image'],
       'original_replicas':expected['spec']['replicas'],'pods':pods})
