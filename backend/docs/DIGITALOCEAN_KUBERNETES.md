@@ -17,6 +17,22 @@ does not require a custom domain or a replacement certificate. This moves the
 Kubernetes client to the runner; it does not repair the development environment's
 direct connection.
 
+## Current inventory and explicit compatibility modes
+
+The reviewed workflow's manual default is now `mode=inventory`. This mode reads
+current owned workload image digests, deployment revisions/readiness and the
+application's catalog/release receipts. Its only temporary resources are a
+nonce-owned SQL client and credential Secret, cleaned in the helper and again in
+an unconditional workflow step. It does not bootstrap a database, mutate the
+application, call models or publish private artifacts. Missing canonical history
+and uninspected image source revisions remain explicitly unknown.
+
+Use `mode=bootstrap` only when the isolated Auth/Storage compatibility exercise is
+intended. That mode and the existing `codex/doks-access` push trigger retain the
+bootstrap behavior described below. An inventory dispatch must specify the
+reviewed ref containing the mode; the release coordinator records its actual
+run and current observations in the implementation checklist.
+
 ## Credential setup and first run
 
 In this repository's **Settings → Secrets and variables → Actions**, add the

@@ -1,5 +1,46 @@
 # Implementation status and continuation plan
 
+## November 4 — scoped runner inventory mode (phase 2 W00)
+
+Implementation: manual `doks-access.yml` runs now default to `mode=inventory`.
+The established one-hour kubeconfig, original cluster CA and hostname checks
+remain in place. `mode=bootstrap` explicitly retains the prior isolated
+compatibility workflow, as does its existing dedicated branch push trigger.
+Both bootstrap cleanup paths are mode-gated; inventory cannot accidentally invoke
+them. Checkout includes the helper's reviewed dependencies and workflow tests.
+
+The inventory reads only owned application deployments, observed image digests,
+Kubernetes revisions/readiness and read-only application catalog/release receipts.
+It rejects workload image/generation changes across the catalog read. Missing
+canonical migration history remains unknown rather than being inferred from a
+historical receipt. Image source commits are explicitly uninspected, separate
+from the runner source revision. Raw manifests, credentials, database exception
+bodies, function source and customer content are withheld from public output.
+Only validated fields and allowlisted release names are emitted.
+
+The database read uses the existing nonce-owned temporary client with full
+managed-database TLS verification; it creates no bootstrap database/roles and
+executes no business, migration, model or notification command. A private
+current-run cleanup journal permits the unconditional workflow cleanup to retry
+the exact client/Secret cleanup after a failed or interrupted helper. Foreign
+run names, altered ownership or permissive journal files fail closed.
+
+Local evidence: **14 Python inventory guard/redaction/lifecycle tests** and
+**three actual PGlite catalog-query cases** pass. The latter verify target-database
+rejection, optional historical ledgers and absence of routine source in receipts.
+Both lockfile installs, typechecks and builds pass; the existing **2,151 backend
+cases/129 files** and **299 frontend cases/46 files** pass, with the three new
+catalog cases separately verified. Existing frontend bundle/runtime-config and
+`whatwg-encoding` warnings remain. No external workflow, Kubernetes call, model,
+production database or email operation was performed by this implementation.
+
+Run only after the reviewed branch is published:
+`gh workflow run doks-access.yml --repo salahassi/tenders --ref codex/reliability-v2-operations -f mode=inventory`.
+The release coordinator may use the reviewed integration ref containing this
+change. Hosted current-state evidence remains pending that actual run; W09/W11
+capacity, measured latency, isolated cloud restore and rollout gates remain open.
+
+
 ## November 4 — integrated durable draft rendering and independent review
 
 Stages 3–7: six parallel implementation tracks are integrated on
