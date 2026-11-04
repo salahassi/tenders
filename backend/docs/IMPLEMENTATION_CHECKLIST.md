@@ -7407,3 +7407,20 @@ and hosted stopwatch/download acceptance. Structural SQL races do not establish
 semantic correctness or real DOCX rendering. The workflow-owned capacity tests
 remain in their separate root commit; this component adds the lifecycle/managed
 role tests and portable PostgreSQL script only.
+
+### 2026-11-04 — ordinary download lock boundary and expired replay correction
+
+Independent review reproduced a source-change race in final download authorization:
+the package source check preceded the legacy delegate's workspace-lock wait. The
+wrapper now acquires that lock before checking package/source/approval currentness,
+then keeps it through the existing final authorization. A real PostgreSQL contender
+observed waiting is denied with `STALE_INPUT` after a source edit; the former wrapper
+returned authorization in the same race. The portable ordinary race suite now passes
+six cases, including this final-read boundary (synthetic database artifact receipts;
+actual DOCX bytes remain covered separately by the pipeline suite).
+
+Expired idempotency rows are deleted only for the exact authenticated actor/operation/
+key after the workspace lock, before inserting their successor receipt. Re-entry still
+reuses the same package, job and original deadline. The ordinary pipeline suite passes
+21 cases including expired API receipt replay, with no duplicate job or clock renewal.
+No customer data or external calls were used.

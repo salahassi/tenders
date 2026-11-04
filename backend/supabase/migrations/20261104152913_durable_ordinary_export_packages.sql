@@ -133,6 +133,7 @@ declare w uuid;actor uuid:=auth.uid();v public.proposal_versions;prop public.pro
   if replay.body_hash<>digest then raise exception 'IDEMPOTENCY_CONFLICT';end if;
   select * into p from public.export_packages where id=(replay.result->>'id')::uuid;perform app_private.check_export_package(p,actor,false);return replay.result;
  end if;
+ delete from app_private.idempotency_records x where x.workspace_id=w and x.actor_id=actor and x.method='COMMAND' and x.route=operation and x.key=idempotency_key and x.expires_at<=now();
  if operation='export.package.prepare' then
   select * into v from public.proposal_versions where id=(input->>'proposal_version_id')::uuid;
   if v.revision is distinct from (input->>'expected_revision')::integer then raise exception 'REVISION_CONFLICT';end if;
@@ -262,7 +263,11 @@ create function public.artifact_context(artifact_id uuid) returns jsonb language
  if p.id is not null then result:=result||jsonb_build_object('package',jsonb_build_object('id',p.id,'revision',p.revision));end if;return result;
 end $$;
 alter function public.authorize_artifact_download(uuid,uuid,text) rename to authorize_artifact_download_before_export_package;
-create function public.authorize_artifact_download(artifact_id uuid,actor_id uuid,actual_hash text) returns jsonb language plpgsql security definer set search_path='' as $$begin
+create function public.authorize_artifact_download(artifact_id uuid,actor_id uuid,actual_hash text) returns jsonb language plpgsql security definer set search_path='' as $$declare w uuid;begin
+ select workspace_id into w from public.export_artifacts where id=artifact_id;
+ -- Currentness must be checked after any workspace-lock wait, not before the
+ -- legacy delegate acquires that lock. The lock remains held through its check.
+ perform 1 from public.workspaces where id=w for update;
  perform app_private.check_export_package_download(artifact_id,actor_id);return public.authorize_artifact_download_before_export_package(artifact_id,actor_id,actual_hash);
 end $$;
 

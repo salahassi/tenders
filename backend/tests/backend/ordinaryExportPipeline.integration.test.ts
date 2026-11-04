@@ -773,3 +773,22 @@ it("requires service authority, exact failure CAS and current source before inva
     ).rows[0].status,
   ).toBe("ready");
 });
+it("reuses the package after an expired command receipt without duplicate records or a new deadline", async () => {
+  const d = await setup();
+  const key = crypto.randomUUID();
+  const first = await d.prepare(key);
+  await fixture.f.db.exec(
+    "update app_private.idempotency_records set expires_at=now()-interval '1 second'",
+  );
+  const next = await d.prepare(key);
+  expect(next.id).toBe(first.id);
+  expect(next.deadline_at).toBe(first.deadline_at);
+  expect(next.job.id).toBe(first.job.id);
+  expect(
+    (
+      await fixture.f.db.query<any>(
+        "select count(*) n from app_private.idempotency_records where route='export.package.prepare'",
+      )
+    ).rows[0].n,
+  ).toBe(1);
+});

@@ -57,6 +57,20 @@ def run(f):
     assert f.scalar(f"select count(*) from public.export_packages where proposal_version_id={literal(v)}") == '0'
     f.sql(f"update public.memberships set active=true where workspace_id={literal(f.workspace)} and user_id={literal(OWNER)};")
     cases.append({'case': 'membership-revocation-while-waiting', 'passed': True, 'contenders_observed_waiting': 2, 'packages': 0})
+    # Storage bytes themselves are tested by the API/DOCX suite. This synthetic
+    # verified receipt isolates the final download authorization transaction.
+    f.sql("update public.jobs set status='canceled' where type='render_export' and status='queued';")
+    o, v, payload = setup(f)
+    package = f.command('export.package.prepare', payload)
+    job = f.value('select public.claim_backend_job_v4()')
+    slot = f.value(f"select to_jsonb(s) from public.export_package_volumes s where package_id={literal(package['id'])}")
+    artifact = f.value(f"select public.complete_export_package_volume({literal(job['id'])},{literal(job['lease_token'])},{literal(slot['id'])},{literal('a'*64)},100)")
+    f.sql(f"select public.finish_export_package({literal(job['id'])},{literal(job['lease_token'])})")
+    download = f"select public.authorize_artifact_download({literal(artifact['id'])},{literal(OWNER)},{literal('a'*64)})"
+    assert f.sql(download, False).returncode == 0
+    results = f.race([download], before_release=f"update public.opportunities set title='Changed during final download authorization wait' where id={literal(o['id'])};")
+    assert results[0].returncode and 'STALE_INPUT' in results[0].stderr, results[0].stderr
+    cases.append({'case': 'download-source-edit-while-waiting', 'passed': True, 'contenders_observed_waiting': 1, 'authorization_granted': False})
     _, v1, p1 = setup(f, True); _, v2, p2 = setup(f, True)
     f.sql(f"insert into public.storage_cleanup_queue(workspace_id,storage_key,estimated_size,reason) select {literal(f.workspace)},'synthetic/export-race-capacity',262144000-app_private.storage_reserved_bytes({literal(f.workspace)})-22000000,'Synthetic boundary';")
     results = f.race([f.command_sql('export.package.prepare', p1), f.command_sql('export.package.prepare', p2)])
