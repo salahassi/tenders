@@ -7725,7 +7725,7 @@ selector under canonical workspace locking/lease publication. While the first
 render lease is uncommitted and invisible, the second render cannot start, but a
 model job progresses; a second non-render remains queued. This is not a claim of
 multiworkspace product support. Receipt with exact migration hashes:
-`/workspace/work/ai-resume/due-diligence/document-render-admission-postgres.json`.
+[document-render-admission-postgres-20261104.json](evidence/document-render-admission-postgres-20261104.json).
 
 This admission proof concerns logical leases. The native process semaphore and
 termination/reap tests separately fence an old physical child after cancellation
