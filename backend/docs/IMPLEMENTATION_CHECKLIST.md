@@ -35,6 +35,25 @@ are absent. This confirms the new implementation is not deployed yet. API/worker
 use image digest `85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380`;
 image source revisions remain independently unverified. This is a current baseline
 for a guarded release, not hosted proposal/model acceptance or schema-tip proof.
+## November 4 — native schedule and queue/capacity observations (phase 2 W00/W09)
+
+Implementation: scoped inventory additionally reads the two owned native
+CronJobs, returning only immutable image, bounded schedule/concurrency/deadline,
+resources and generation. It rejects a schedule changing during the database
+read. Credentials, environment variables and arbitrary metadata remain private.
+The same read-only transaction now returns anonymous queue-class counts, oldest
+due age, expired leases, delivery artifact reservations and aggregate workspace
+storage use. Absent pre-release tables produce null measurements.
+
+Local evidence: **16 Python inventory tests** and **four actual PGlite query
+cases** pass. Seeded isolated SQL proves due/future queue separation, retained
+expired leases, artifact byte accounting and unchanged rows. The 24-hour
+`terminal_row_elapsed_p95_seconds` statistic is explicitly elapsed creation to
+last terminal-row update, not a measured first-file or end-to-end delivery SLO.
+Counts/ages alone neither certify throughput nor close the capacity gate. No
+live inventory, native worker, model or database mutation was run for this
+follow-up; the coordinator must capture native baseline images before rollout.
+
 ## November 4 — managed-role migration compatibility (phase 2 W11)
 
 Implementation: the six not-yet-deployed delivery/recovery migrations now apply

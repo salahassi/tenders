@@ -17,7 +17,7 @@ p=importlib.util.module_from_spec(SPEC);sys.modules[SPEC.name]=p;SPEC.loader.exe
 
 def schema():
  return {'version':1,'database_identity_verified':True,'releases':[{'release':'analysis-verifier-recheck-v1','migration_sha256':'a'*64,'applied_at':'2026-11-03T03:00:00+00:00'}],
-  'canonical_migrations':None,'routine_catalog_sha256':'b'*64,'capabilities':{key:False for key in p.CAPABILITIES}}
+  'canonical_migrations':None,'routine_catalog_sha256':'b'*64,'metrics':{'window_hours':24,'jobs':None,'delivery':None,'capacity':None},'capabilities':{key:False for key in p.CAPABILITIES}}
 
 
 def workloads():
@@ -32,6 +32,15 @@ def workloads():
  return values,pods
 
 
+def schedules():
+ return [{'metadata':{'name':'native-'+name,'namespace':p.d.NAMESPACE,'generation':1,'labels':{'app.kubernetes.io/managed-by':'tenderdesk-deployment'}},
+  'spec':{'schedule':'*/10 * * * *','concurrencyPolicy':'Forbid','suspend':False,'jobTemplate':{'spec':{'activeDeadlineSeconds':600,'backoffLimit':0,
+  'template':{'spec':{'containers':[{'name':name,'image':'registry.digitalocean.com/tenderdesk-a6093a76/'+name+'@sha256:'+'e'*64,
+  'env':[{'name':'PRIVATE','value':'private-credential'}], 'resources':{'requests':{'cpu':'100m','memory':'256Mi'},'limits':{'cpu':'1000m','memory':'768Mi'}}}]}}}}}} for name in ('browser','ocr')]
+
+def responses(values,pods,after=None):
+ return [json.dumps({'items':values}),json.dumps({'items':pods}),json.dumps({'items':schedules()}),json.dumps({'items':after or values}),json.dumps({'items':schedules()})]
+
 class InventoryTests(unittest.TestCase):
  def test_only_allowlisted_fields_leave_private_resource_and_schema_buffers(self):
   output=json.dumps(p.public_workloads(*workloads()))
@@ -39,6 +48,21 @@ class InventoryTests(unittest.TestCase):
   self.assertEqual(len(json.loads(output)),10)
   self.assertTrue(all(x['image_source_revision'] is None for x in json.loads(output)))
   self.assertEqual(p.public_schema(schema())['canonical_migrations'],None)
+
+ def test_metric_labels_and_counts_cannot_carry_private_text(self):
+  value={'window_hours':24,'jobs':[{'class':'local','pending':2,'due':1,'running':0,'blocked':0,'expired_leases':0,'oldest_due_age_seconds':5.5,'succeeded_in_window':0,'terminal_row_elapsed_p95_seconds':None}],'delivery':None,'capacity':None}
+  self.assertEqual(p.public_metrics(value),value)
+  for change in (lambda v:v['jobs'][0].update({'class':'customer-private'}),lambda v:v['jobs'][0].update(pending='secret'),lambda v:v['jobs'][0].update(oldest_due_age_seconds=float('nan')),lambda v:v.update(extra='secret')):
+   bad=copy.deepcopy(value);change(bad)
+   with self.assertRaises(p.InventoryError):p.public_metrics(bad)
+
+ def test_native_schedule_projection_is_bounded_and_has_no_credentials(self):
+  result=p.public_schedules(schedules());self.assertEqual(len(result),2)
+  self.assertNotIn('private-credential',json.dumps(result));self.assertNotIn('env',json.dumps(result))
+  self.assertEqual(result[1]['active_deadline_seconds'],600)
+  for change in (lambda x:x[0]['spec'].update(schedule='private-text'),lambda x:x[0]['spec'].update(concurrencyPolicy='Allow'),lambda x:x.pop(),lambda x:x[0]['metadata']['labels'].clear()):
+   values=schedules();change(values)
+   with self.assertRaises(p.InventoryError):p.public_schedules(values)
 
  def test_unknown_release_name_is_not_public_and_no_tip_is_invented(self):
   value=schema();value['releases'][0]['release']='customer-document-content'
@@ -79,14 +103,14 @@ class InventoryTests(unittest.TestCase):
  def test_cleanup_attempted_after_sql_failure_and_cleanup_failure_blocks_success(self):
   values,pods=workloads()
   for fail in ('query','cleanup'):
-   with self.subTest(fail=fail),patch.dict(os.environ,{'GITHUB_SHA':'d'*40}),patch.object(p.d,'command',side_effect=[json.dumps({'items':values}),json.dumps({'items':pods}),json.dumps({'items':values})]),patch.object(p.observer,'Client') as client,patch.object(p,'save_client'),patch.object(p,'clear_client'),patch.object(p.d,'sql',side_effect=RuntimeError('private') if fail=='query' else None,return_value=json.dumps(schema())):
+   with self.subTest(fail=fail),patch.dict(os.environ,{'GITHUB_SHA':'d'*40}),patch.object(p.d,'command',side_effect=responses(values,pods)),patch.object(p.observer,'Client') as client,patch.object(p,'save_client'),patch.object(p,'clear_client'),patch.object(p.d,'sql',side_effect=RuntimeError('private') if fail=='query' else None,return_value=json.dumps(schema())):
     if fail=='cleanup':client.return_value.cleanup.side_effect=RuntimeError('private cleanup credential')
     with self.assertRaises(Exception):p.inventory()
     client.return_value.prepare.assert_called_once();client.return_value.cleanup.assert_called_once()
 
  def test_complete_inventory_does_not_claim_bootstrap_or_mutations(self):
   values,pods=workloads()
-  with patch.dict(os.environ,{'GITHUB_SHA':'d'*40}),patch.object(p.d,'command',side_effect=[json.dumps({'items':values}),json.dumps({'items':pods}),json.dumps({'items':values})]),patch.object(p.observer,'Client') as client,patch.object(p,'save_client'),patch.object(p,'clear_client'),patch.object(p.d,'sql',return_value=json.dumps(schema())):
+  with patch.dict(os.environ,{'GITHUB_SHA':'d'*40}),patch.object(p.d,'command',side_effect=responses(values,pods)),patch.object(p.observer,'Client') as client,patch.object(p,'save_client'),patch.object(p,'clear_client'),patch.object(p.d,'sql',return_value=json.dumps(schema())):
    client.return_value.labels={}
    result=p.inventory()
    self.assertEqual(result['ready_workloads'],10)
@@ -95,7 +119,7 @@ class InventoryTests(unittest.TestCase):
 
  def test_image_change_during_database_read_does_not_produce_mixed_inventory_receipt(self):
   values,pods=workloads();after=copy.deepcopy(values);after[0]['metadata']['generation']=3
-  with patch.dict(os.environ,{'GITHUB_SHA':'d'*40}),patch.object(p.d,'command',side_effect=[json.dumps({'items':values}),json.dumps({'items':pods}),json.dumps({'items':after})]),patch.object(p.observer,'Client'),patch.object(p,'save_client'),patch.object(p,'clear_client'),patch.object(p.d,'sql',return_value=json.dumps(schema())):
+  with patch.dict(os.environ,{'GITHUB_SHA':'d'*40}),patch.object(p.d,'command',side_effect=responses(values,pods,after)),patch.object(p.observer,'Client'),patch.object(p,'save_client'),patch.object(p,'clear_client'),patch.object(p.d,'sql',return_value=json.dumps(schema())):
    with self.assertRaisesRegex(p.InventoryError,'INVENTORY_WORKLOAD_CHANGED_DURING_READ'):p.inventory()
 
  def test_main_suppresses_raw_transport_database_and_cleanup_exception_bodies(self):

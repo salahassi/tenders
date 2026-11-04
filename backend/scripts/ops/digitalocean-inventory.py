@@ -26,7 +26,7 @@ OWNER = 'tenderdesk-read-only-inventory'
 NAMES = ('api','worker','frontend','auth','rest','storage','source-browser','scheduler','gateway','https')
 RELEASES = frozenset(('flexible-proposal-inputs-v1','requested-model-processing-v1','ai-execution-reliability-v1',
  'analysis-verifier-recheck-v1','analysis-recheck-prompt-identity-v1','model-admission-fairness-v1',
- 'model-admission-and-recheck-binding-v1','proposal-delivery-reliability-v1'))
+ 'model-admission-and-recheck-binding-v1','proposal-delivery-reliability-v1','proposal-delivery-reliability-v1-catalog'))
 HEX = re.compile(r'[a-f0-9]{64}')
 SOURCE = re.compile(r'[a-f0-9]{40}')
 IMAGE = re.compile(r'registry\.digitalocean\.com/tenderdesk-a6093a76/(?:runtime|frontend|browser|ocr|https)@sha256:[a-f0-9]{64}')
@@ -49,8 +49,29 @@ def image(value):
         raise InventoryError('INVENTORY_UNREVIEWED_IMAGE')
     return value
 
+def public_metrics(value):
+    if not isinstance(value,dict) or set(value)!={'window_hours','jobs','delivery','capacity'} or value['window_hours']!=24: raise InventoryError('INVENTORY_SCHEMA_INVALID')
+    jobs=value['jobs']
+    if jobs is not None:
+        if not isinstance(jobs,list) or len(jobs)>5: raise InventoryError('INVENTORY_SCHEMA_INVALID')
+        classes=set()
+        for row in jobs:
+            if not isinstance(row,dict) or set(row)!={'class','pending','due','running','blocked','expired_leases','oldest_due_age_seconds','succeeded_in_window','terminal_row_elapsed_p95_seconds'} or row['class'] not in ('local','poll','proposal','background','other') or row['class'] in classes: raise InventoryError('INVENTORY_SCHEMA_INVALID')
+            classes.add(row['class'])
+            for key in ('pending','due','running','blocked','expired_leases','succeeded_in_window'): integer(row[key],1000000000)
+            for key in ('oldest_due_age_seconds','terminal_row_elapsed_p95_seconds'):
+                if row[key] is None and key=='terminal_row_elapsed_p95_seconds': continue
+                if type(row[key]) not in (int,float) or not 0<=row[key]<=315576000: raise InventoryError('INVENTORY_SCHEMA_INVALID')
+    for key,fields in {'delivery':{'pending','ready','expired','reserved_bytes','ready_bytes'},'capacity':{'workspace_count','total_reserved_bytes','largest_workspace_reserved_bytes','workspaces_at_or_above_limit','workspace_limit_bytes'}}.items():
+        row=value[key]
+        if row is None: continue
+        if not isinstance(row,dict) or set(row)!=fields: raise InventoryError('INVENTORY_SCHEMA_INVALID')
+        for item in row.values(): integer(item,10**15)
+        if key=='capacity' and row['workspace_limit_bytes']!=262144000: raise InventoryError('INVENTORY_SCHEMA_INVALID')
+    return value
+
 def public_schema(value):
-    fields={'version','database_identity_verified','releases','canonical_migrations','routine_catalog_sha256','capabilities'}
+    fields={'version','database_identity_verified','releases','canonical_migrations','routine_catalog_sha256','capabilities','metrics'}
     if not isinstance(value,dict) or set(value)!=fields or type(value['version']) is not int or value['version']!=1 or value['database_identity_verified'] is not True:
         raise InventoryError('INVENTORY_SCHEMA_INVALID')
     if not isinstance(value['releases'],list) or len(value['releases'])>200: raise InventoryError('INVENTORY_SCHEMA_INVALID')
@@ -73,7 +94,7 @@ def public_schema(value):
     capabilities=value['capabilities']
     if not isinstance(capabilities,dict) or set(capabilities)!=CAPABILITIES or any(type(v) is not bool for v in capabilities.values()): raise InventoryError('INVENTORY_SCHEMA_INVALID')
     return {'release_history':releases,'canonical_migrations':canonical,'routine_catalog_sha256':digest(value['routine_catalog_sha256']),
-            'capabilities':capabilities,'source_tip_basis':'canonical_history_if_present_otherwise_release_receipts_only'}
+            'capabilities':capabilities,'metrics':public_metrics(value['metrics']),'source_tip_basis':'canonical_history_if_present_otherwise_release_receipts_only'}
 
 def public_workloads(deployments,pods):
     if not isinstance(deployments,list) or not isinstance(pods,list) or len(deployments)>100 or len(pods)>500: raise InventoryError('INVENTORY_WORKLOADS_INVALID')
@@ -110,6 +131,29 @@ def public_workloads(deployments,pods):
           'image_source_revision':None,'image_source_revision_status':'not_independently_inspected'}
     if set(selected)!=set(NAMES): raise InventoryError('INVENTORY_REQUIRED_WORKLOAD_MISSING')
     return [selected[name] for name in NAMES]
+
+def public_schedules(values):
+    if not isinstance(values,list) or len(values)>100: raise InventoryError('INVENTORY_SCHEDULE_INVALID')
+    result={}
+    for value in values:
+        meta=value.get('metadata',{});name=meta.get('name')
+        if name not in ('native-browser','native-ocr'): continue
+        if name in result or meta.get('namespace')!=d.NAMESPACE or meta.get('labels',{}).get('app.kubernetes.io/managed-by')!='tenderdesk-deployment':
+            raise InventoryError('INVENTORY_OWNERSHIP_INVALID')
+        spec=value.get('spec',{});job=spec.get('jobTemplate',{}).get('spec',{});pod=job.get('template',{}).get('spec',{})
+        containers=pod.get('containers',[])
+        if len(containers)!=1 or containers[0].get('name')!=name.removeprefix('native-') or spec.get('schedule')!='*/10 * * * *' or spec.get('concurrencyPolicy')!='Forbid' or type(spec.get('suspend',False)) is not bool:
+            raise InventoryError('INVENTORY_SCHEDULE_INVALID')
+        container=containers[0];resources=container.get('resources',{})
+        if set(resources)!={'requests','limits'} or any(set(v)!={'cpu','memory'} for v in resources.values()): raise InventoryError('INVENTORY_SCHEDULE_INVALID')
+        for resource in resources.values():
+            if not re.fullmatch(r'[0-9]{1,5}m?',str(resource['cpu'])) or not re.fullmatch(r'[0-9]{1,5}(?:Mi|Gi)',str(resource['memory'])): raise InventoryError('INVENTORY_SCHEDULE_INVALID')
+        result[name]={'name':name,'image':image(container.get('image')),'schedule':spec['schedule'],
+          'concurrency_policy':'Forbid','suspended':spec.get('suspend',False),'active_deadline_seconds':integer(job.get('activeDeadlineSeconds'),1800),
+          'backoff_limit':integer(job.get('backoffLimit'),10),'resources':resources,
+          'generation':integer(meta.get('generation',0))}
+    if set(result)!={'native-browser','native-ocr'}: raise InventoryError('INVENTORY_REQUIRED_SCHEDULE_MISSING')
+    return [result[name] for name in sorted(result)]
 
 def journal_path():
     run,attempt=os.environ.get('GITHUB_RUN_ID',''),os.environ.get('GITHUB_RUN_ATTEMPT','')
@@ -148,6 +192,7 @@ def inventory():
     deployments=json.loads(d.command(['get','deployments','-n',d.NAMESPACE,'-o','json']))['items']
     pods=json.loads(d.command(['get','pods','-n',d.NAMESPACE,'-o','json']))['items']
     workloads=public_workloads(deployments,pods)
+    schedules=public_schedules(json.loads(d.command(['get','cronjobs','-n',d.NAMESPACE,'-o','json']))['items'])
     client=observer.Client(60)
     client.labels['app.kubernetes.io/managed-by']=OWNER
     save_client(client)
@@ -162,11 +207,13 @@ def inventory():
         except Exception: raise InventoryError('INVENTORY_TEMPORARY_CLIENT_CLEANUP_NOT_CONFIRMED') from None
     after=json.loads(d.command(['get','deployments','-n',d.NAMESPACE,'-o','json']))['items']
     final=public_workloads(after,pods)
+    final_schedules=public_schedules(json.loads(d.command(['get','cronjobs','-n',d.NAMESPACE,'-o','json']))['items'])
+    if schedules!=final_schedules: raise InventoryError('INVENTORY_WORKLOAD_CHANGED_DURING_READ')
     keys=('name','image','generation','kubernetes_revision','desired')
     if [{k:w[k] for k in keys} for w in final]!=[{k:w[k] for k in keys} for w in workloads]:
         raise InventoryError('INVENTORY_WORKLOAD_CHANGED_DURING_READ')
     return {'inventory':'captured','version':1,'namespace':d.NAMESPACE,'runner_source_revision':revision,'observed_at':datetime.now(timezone.utc).isoformat(),
-      'workloads':workloads,'ready_workloads':sum(w['desired']>0 and w['ready']==w['desired']==w['updated'] and w['unavailable']==0 and w['observed_generation']>=w['generation'] for w in workloads),
+      'workloads':workloads,'native_schedules':schedules,'ready_workloads':sum(w['desired']>0 and w['ready']==w['desired']==w['updated'] and w['unavailable']==0 and w['observed_generation']>=w['generation'] for w in workloads),
       'schema':schema,'business_mutations':0,'schema_mutations':0,'models_called':0,'bootstrap_run':False,'temporary_client_cleanup_verified':True}
 
 def main(argv=()):
@@ -183,7 +230,8 @@ def main(argv=()):
         allowed={'INVENTORY_COUNT_INVALID','INVENTORY_DIGEST_INVALID','INVENTORY_SCHEMA_INVALID','INVENTORY_UNREVIEWED_IMAGE',
           'INVENTORY_WORKLOADS_INVALID','INVENTORY_OWNERSHIP_INVALID','INVENTORY_POD_IMAGE_INVALID','INVENTORY_REVISION_INVALID',
           'INVENTORY_REQUIRED_WORKLOAD_MISSING','INVENTORY_RUN_SOURCE_INVALID','INVENTORY_TEMPORARY_CLIENT_CLEANUP_NOT_CONFIRMED',
-          'INVENTORY_CLEANUP_JOURNAL_INVALID','INVENTORY_MODE_INVALID','INVENTORY_WORKLOAD_CHANGED_DURING_READ'}
+          'INVENTORY_CLEANUP_JOURNAL_INVALID','INVENTORY_MODE_INVALID','INVENTORY_WORKLOAD_CHANGED_DURING_READ',
+          'INVENTORY_SCHEDULE_INVALID','INVENTORY_REQUIRED_SCHEDULE_MISSING'}
         code=str(error) if isinstance(error,InventoryError) and str(error) in allowed else 'INVENTORY_FAILED'
         print(json.dumps({'inventory':'failed','code':code}),flush=True)
         return 1
