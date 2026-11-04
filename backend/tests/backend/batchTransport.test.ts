@@ -183,6 +183,82 @@ it("does not read upstream before demand or prefetch while the consumer is pause
   expect(body.locked).toBe(false);
 });
 
+it("accepts an array boundary split across chunks with JSON whitespace and empty chunks", async () => {
+  const chunks = [
+    "",
+    " \t",
+    "\r\n",
+    "[",
+    "\t",
+    '["عربي"]',
+    "\n",
+    "]",
+    "",
+    "\t\r\n ",
+  ];
+  const source = upstream(chunks.map((chunk) => encoder.encode(chunk)));
+  const response = batchEnvelopeResponse(
+    await transport(fetchResponse(source.body)),
+    "boundary",
+    new Headers(),
+  );
+  const text = await response.text();
+  expect(text).toBe(
+    `{"data":${chunks.join("")},"meta":{"request_id":"boundary"}}`,
+  );
+  expect(JSON.parse(text)).toEqual({
+    data: [["عربي"]],
+    meta: { request_id: "boundary" },
+  });
+  expect(source.body.locked).toBe(false);
+});
+
+it.each([
+  "null",
+  "42",
+  "true",
+  '"scalar"',
+  "{}",
+  " \t\r\n",
+  "[",
+  "[1",
+  "[1] false",
+  "\f[]",
+  "[]\v",
+  "null]",
+])(
+  "fails an invalid app_batch array boundary without success metadata: %j",
+  async (raw) => {
+    const source = upstream(
+      Array.from(encoder.encode(raw), (byte) => Uint8Array.of(byte)),
+    );
+    const fetcher = fetchResponse(source.body);
+    const body = await transport(fetcher);
+    const response = batchEnvelopeResponse(
+      body,
+      "invalid-boundary",
+      new Headers(),
+    );
+    const reader = response.body!.getReader();
+    let received = "";
+    const consume = async () => {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) return;
+        received += decoder.decode(value);
+      }
+    };
+    await expect(consume()).rejects.toMatchObject({
+      code: "DATABASE_RESPONSE_UNAVAILABLE",
+      retryable: false,
+    });
+    expect(received).not.toContain('"meta":');
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(source.body.locked).toBe(false);
+    expect(body.locked).toBe(false);
+  },
+);
+
 it("streams an 8 MiB synthetic result without accumulating it or adding an output quota", async () => {
   const block = encoder.encode("a".repeat(64 * 1024));
   const count = 128;

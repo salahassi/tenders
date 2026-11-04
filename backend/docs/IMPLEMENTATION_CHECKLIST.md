@@ -9085,6 +9085,17 @@ load. Backend/handler and admission integration is a separate owned change; full
 repository checks and final integrated native/runtime qualification remain open.
 No external, provider, accounting, SQL or production operation occurred.
 
+The follow-up transport guard now requires the first and last non-whitespace
+bytes to be `[` and `]`, accepting only JSON's four whitespace bytes at those
+boundaries. Scalars, objects, blank bodies and visibly truncated arrays fail the
+stream before success metadata is appended. This uses constant state, preserves
+raw UTF-8 and adds no size limit; it does not validate internal JSON syntax, which
+remains the configured PostgREST JSONB serializer's contract. All 42 focused tests
+and the targeted strict TypeScript check pass, including chunk-boundary and
+negative controls plus the previous backpressure/cancellation regression cases.
+Upstream SQL/PostgREST memory qualification and integrated native/hosted evidence
+remain open.
+
 ### November 4 — preserve the scoped operational suite results and source drift
 
 At root revision `a6676866ea3247b85c1bfde7e140655ce126e444`, the canonical

@@ -5,6 +5,10 @@ import { AppError, databaseError } from "./http.ts";
 const ERROR_BODY_LIMIT = 64 * 1024;
 const encoder = new TextEncoder();
 
+function jsonWhitespace(byte: number): boolean {
+  return byte === 0x20 || byte === 0x09 || byte === 0x0a || byte === 0x0d;
+}
+
 export interface BatchTransportOptions {
   url: string;
   publishableKey: string;
@@ -168,7 +172,8 @@ export async function postgrestBatchBody(
       throw unavailable();
 
     const source = reader;
-    let received = false;
+    let arrayStarted = false;
+    let lastTokenByte = 0;
     return new ReadableStream<Uint8Array>(
       {
         start(controller) {
@@ -179,13 +184,30 @@ export async function postgrestBatchBody(
             const { done, value } = await source.read();
             if (finished) return;
             if (done) {
-              if (!received) throw unavailable();
+              if (!arrayStarted || lastTokenByte !== 0x5d) throw unavailable();
               finished = true;
               detach();
               source.releaseLock();
               controller.close();
             } else {
-              received ||= value.byteLength > 0;
+              // app_batch returns a JSONB array. Check its outer boundary while
+              // preserving raw UTF-8 and allowing only JSON whitespace. This is
+              // not a full JSON parser: internal syntax remains PostgREST's
+              // serialization contract, without another aggregate allocation.
+              if (!arrayStarted) {
+                for (const byte of value) {
+                  if (jsonWhitespace(byte)) continue;
+                  if (byte !== 0x5b) throw unavailable();
+                  arrayStarted = true;
+                  break;
+                }
+              }
+              for (let i = value.byteLength - 1; i >= 0; i--) {
+                const byte = value[i];
+                if (jsonWhitespace(byte)) continue;
+                lastTokenByte = byte;
+                break;
+              }
               controller.enqueue(value);
             }
           } catch {
