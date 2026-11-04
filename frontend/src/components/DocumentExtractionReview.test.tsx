@@ -390,3 +390,40 @@ it("rejects wrong-document and oversized-original responses and keeps viewers re
   await screen.findByRole("alert");
   expect(saveButton()).toBeDisabled();
 });
+
+it("ends a stalled original fetch without enabling page confirmation", async () => {
+  vi.useFakeTimers();
+  try {
+    vi.mocked(fetch).mockImplementation(
+      (_url, options) =>
+        new Promise((_resolve, reject) => {
+          options!.signal!.addEventListener(
+            "abort",
+            () => reject(new DOMException("Aborted", "AbortError")),
+            { once: true },
+          );
+        }),
+    );
+    render(
+      <DocumentExtractionReview
+        client={asClient(client())}
+        documentId={documentId}
+        canEdit
+      />,
+    );
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30000);
+    });
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Loading the original timed out",
+    );
+    expect(confirmation()).toBeDisabled();
+    expect(saveButton()).toBeDisabled();
+  } finally {
+    vi.useRealTimers();
+  }
+});

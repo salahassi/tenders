@@ -6696,3 +6696,10 @@ source restore, existing recovery and applicability tests pass **10/10**; backen
 typecheck/build pass. Independent SQL review found no blocking issue. This is
 local validation, not deployed or hosted restore acceptance; the isolated cloud
 restore acceptance will separately exercise the actual managed catalog and files.
+
+Independent browser review follow-up: the signed-original fetch and byte stream now
+share a 30-second abort deadline, scoped separately from the editor so a stall shows
+an explicit retryable error. Selection/unmount still cancels immediately and leaves
+confirmation disabled. Thirteen component tests and frontend typecheck pass,
+including an actual pending fetch aborted at the deadline. No provider or hosted
+request ran for this check.

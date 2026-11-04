@@ -137,15 +137,35 @@ export default function DocumentExtractionReview({
           throw new Error(
             "The original preview link is unavailable. Reload the source.",
           );
-        const response = await fetch(url, {
-          signal: controller.signal,
-          redirect: "error",
-          credentials: "omit",
-          referrerPolicy: "no-referrer",
+        const previewController = new AbortController();
+        const abortPreview = () => previewController.abort();
+        controller.signal.addEventListener("abort", abortPreview, {
+          once: true,
         });
-        if (!response.ok)
-          throw new Error("The original PDF could not be loaded.");
-        const bytes = await boundedPdf(response);
+        const timeout = setTimeout(abortPreview, 30000);
+        let bytes: ArrayBuffer;
+        try {
+          const response = await fetch(url, {
+            signal: previewController.signal,
+            redirect: "error",
+            credentials: "omit",
+            referrerPolicy: "no-referrer",
+          });
+          if (!response.ok)
+            throw new Error("The original PDF could not be loaded.");
+          bytes = await boundedPdf(response);
+        } catch (failure) {
+          if (previewController.signal.aborted && !controller.signal.aborted)
+            throw new Error(
+              language === "ar"
+                ? "انتهت مهلة تحميل الأصل. أعد التحميل للمحاولة مجددًا."
+                : "Loading the original timed out. Reload the source to try again.",
+            );
+          throw failure;
+        } finally {
+          clearTimeout(timeout);
+          controller.signal.removeEventListener("abort", abortPreview);
+        }
         const digest = [
           ...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
         ]
