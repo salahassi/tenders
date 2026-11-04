@@ -57,7 +57,7 @@ export function followupCompanyEvidence(sources: Source[], requirements: Require
     // source qualifiers, not just the nearest search hit.
     paragraphs.forEach((p,i) => {if(qualifier.test(p.text)) required.add(i);});
     const picked = [...required].sort((a,b)=>a-b).map(i => paragraphs[i]);
-    const evidence = {...source,text:picked.map(p=>p.text).join("\n[… omitted source text …]\n")};
+    const evidence = {...source,verified:false,text:picked.map(p=>p.text).join("\n[… omitted source text …]\n")};
     return {source,evidence,picked,requirements:matches.filter(m=>m.indexes.length).map(m=>m.id)};
   }).filter(c=>c.requirements.length && c.picked.length).sort((a,b)=>b.requirements.length-a.requirements.length || a.source.id.localeCompare(b.source.id));
   for(const candidate of candidates) {
@@ -70,7 +70,15 @@ export function followupCompanyEvidence(sources: Source[], requirements: Require
   const complete = retrieveCompanyEvidence(eligible.filter(s=>!partialParents.has(JSON.stringify(s.reference))),queries.map(r=>({...r,text:r.text+" "+r.terms.join(" ")})),remaining,priorityIds);
   selected.push(...complete.evidence);claimEligibleIds.push(...complete.evidence.map(s=>s.id));
   remaining-=complete.coverage.supplied_bytes;
+  const parentKey = (s: Source) => JSON.stringify([s.reference.entity_kind,s.reference.entity_id,s.reference.content_hash]);
+  const completeParents = new Set(complete.evidence.map(parentKey));
+  const availableParents = new Set(eligible.map(parentKey));
   return {evidence:selected,claimEligibleIds,coverage:{...first.coverage,version:2,followup_performed:true,
+    supplied_sources:completeParents.size, omitted_sources:availableParents.size-completeParents.size,
+    partial_sources:partialParents.size,
+    cited_source_coverage_complete:priorityIds.every(id=>claimEligibleIds.includes(id)),
+    requirement_coverage:requirements.map(r=>({requirement_id:r.id,semantic_support:"not_evaluated",retrieval_gap:true,
+      discovery_span_source_ids:spans.filter(s=>s.requirement_ids.includes(r.id)).map(s=>s.source_id)})),
     supplied_blocks:selected.length,supplied_bytes:budget-remaining,selection_complete:false,supplied_sources_complete:spans.length===0,
     capability_absence_proven:false,spans,unresolved_requirement_ids:requirements.map(r=>r.id),
     gap:"context_capacity",semantic_support:"not_evaluated",

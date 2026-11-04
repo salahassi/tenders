@@ -95,6 +95,17 @@ full suites and deployment are not yet complete in this core commit. Bilingual
 retrieval aliases are bounded hints, not semantic authority or an exhaustive
 recall guarantee; unbounded source paragraphs retain an explicit capacity gap.
 
+Generation integration now applies the targeted pass only under a new frozen
+`company_followup_version:1`; both graph input and independent whole-source
+validation retain partial company evidence as unverified discovery context.
+The full parent reference remains in the authorization manifest. New assembly
+persists a versioned substantive report and finalization gaps without discarding
+draft sections; model `answered` labels cannot certify the human review. Snapshot
+wrapping preserves every prior pin and its absence. Local focused integration:
+59 tests across four files pass, including exact parent authorization, source
+revocation, late overflow evidence, partial-claim rejection and draft assembly.
+Normal proposal review/approval route, complete suites and deployment remain open.
+
 ## November 4 — integrated durable draft rendering and independent review
 
 Stages 3–7: six parallel implementation tracks are integrated on

@@ -40,6 +40,8 @@ import {
   encodedSize,
   retrieveCompanyEvidence,
 } from "./companyEvidenceRetrieval.ts";
+import { followupCompanyEvidence, COMPANY_FOLLOWUP_INSTRUCTION } from "./companyEvidenceFollowup.ts";
+import { assessProposalConsistency, type ConsistencyRequirement, type ConsistencySection } from "./proposalConsistency.ts";
 import {
   batchGenerationRequirements,
   requirementModelContext,
@@ -649,12 +651,12 @@ export function taskInput(ctx: PlanContext) {
       COMPANY_CONTEXT_BYTE_LIMIT - encodedSize({ context, evidence: baseline }),
     );
     let limit = Math.min(COMPANY_EVIDENCE_BYTE_LIMIT, remaining);
-    let selected = retrieveCompanyEvidence(
-      frozen.knowledge,
-      retrievalRequirements,
-      limit,
-      citedCompanyIds,
-    );
+    const followup = frozen.company_followup_version === 1;
+    const instruction = followup ? COMPANY_FOLLOWUP_INSTRUCTION : COMPANY_RETRIEVAL_INSTRUCTION;
+    const select = (budget: number) => followup
+      ? followupCompanyEvidence(frozen.knowledge, retrievalRequirements, budget, citedCompanyIds)
+      : retrieveCompanyEvidence(frozen.knowledge, retrievalRequirements, budget, citedCompanyIds);
+    let selected = select(limit);
     // Coverage metadata and the instruction are context too. Reduce only the
     // added company budget; never truncate buyer requirements or source blocks.
     while (
@@ -662,14 +664,14 @@ export function taskInput(ctx: PlanContext) {
       encodedSize({
         evidence: selected.evidence,
         coverage: selected.coverage,
-        instruction: COMPANY_RETRIEVAL_INSTRUCTION,
+        instruction,
       }) > remaining
     ) {
       const excess =
         encodedSize({
           evidence: selected.evidence,
           coverage: selected.coverage,
-          instruction: COMPANY_RETRIEVAL_INSTRUCTION,
+          instruction,
         }) - remaining;
       // Jump below the bytes actually admitted; reducing unused budget one byte
       // at a time can otherwise repeat the same selection thousands of times.
@@ -677,17 +679,16 @@ export function taskInput(ctx: PlanContext) {
         0,
         Math.min(limit, selected.coverage.supplied_bytes) - Math.max(1, excess),
       );
-      selected = retrieveCompanyEvidence(
-        frozen.knowledge,
-        retrievalRequirements,
-        limit,
-        citedCompanyIds,
-      );
+      selected = select(limit);
     }
     evidence = [...baseline, ...selected.evidence];
     context.company_evidence_coverage = selected.coverage;
     context.company_retrieval_version = 1;
-    context.instruction += " " + COMPANY_RETRIEVAL_INSTRUCTION;
+    if (followup) {
+      context.company_followup_version = 1;
+      context.company_claim_eligible_source_ids = "claimEligibleIds" in selected ? selected.claimEligibleIds : [];
+    }
+    context.instruction += " " + instruction;
   }
   evidence = Array.from(new Map(evidence.map((e) => [e.id, e])).values());
   // All evidence actually in the prompt and provenance of generated paragraphs stay gated.
@@ -716,6 +717,19 @@ export function taskInput(ctx: PlanContext) {
     requiredIds,
     manifest,
   };
+}
+/** Revalidate against immutable whole text without upgrading discovery spans or
+ * omitted sources into company proof. The model/verification graph receives
+ * the same verified=false restriction for partial company context. */
+export function generationValidationEvidence(ctx: PlanContext, input: ReturnType<typeof taskInput>): Evidence[] {
+  const eligible = input.context.company_followup_version === 1
+    ? new Set<string>(input.context.company_claim_eligible_source_ids || []) : null;
+  const supplied = new Set(input.evidence.map(e => e.id));
+  return [
+    ...allEvidence(ctx).filter(e => !eligible || e.kind !== "company" || supplied.has(e.id))
+      .map(e => eligible && e.kind === "company" ? {...e, verified: e.verified && eligible.has(e.id)} : e),
+    ...input.evidence.filter(e => e.id === `proposal-review:${ctx.step.id}` && e.kind === "review"),
+  ] as Evidence[];
 }
 async function stableId(planId: string, value: string) {
   const hash = await sha256(planId + "\n" + value);
@@ -1203,8 +1217,27 @@ export async function nextStage(ctx: PlanContext): Promise<{
       blocking_level: "finalization",
       section_key: finding.section_ids?.[0] || null,
     });
+  const consistency = frozen.proposal_consistency_version === 1
+    ? await assessProposalConsistency({
+      requirements: ctx.requirements as ConsistencyRequirement[],
+      sections: sections as ConsistencySection[],
+      sources: allEvidence(ctx) as Evidence[],
+      // Model review answers are evidence of model review, not an authorized
+      // human's source/content-bound substantive fulfillment attestation.
+      fulfillment: [], human_review: null, separate_volumes: separate,
+      input_complete: !(frozen.input_materials?.documents || []).some((d: Row) =>
+        d.used_for_draft === false || d.extraction_coverage?.complete === false),
+    }) : null;
+  if (consistency) for (const gap of consistency.diagnostics) questions.push({
+    question: gap.detail,
+    blocking_level: "finalization",
+    reason: gap.code,
+    requirement_ids: gap.requirement_ids,
+    section_key: gap.section_keys[0] || null,
+  });
   output.next_stage = "completed";
   output.final_result = {
+    ...(consistency ? {consistency_report: consistency} : {}),
     sections,
     section_outline: createSectionOutline(
       plannedSections(ctx),
@@ -1316,13 +1349,7 @@ export async function processGeneration(
       validateModelResult(
         input.task,
         result,
-        [
-          ...allEvidence(ctx!),
-          ...input.evidence.filter(
-            (e) =>
-              e.id === `proposal-review:${ctx!.step.id}` && e.kind === "review",
-          ),
-        ] as Evidence[],
+        generationValidationEvidence(ctx!, input),
         input.requiredIds,
         {
           ...options,

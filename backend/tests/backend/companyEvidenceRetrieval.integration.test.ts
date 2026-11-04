@@ -231,3 +231,13 @@ it("applies at the historical migration boundary without changing saved input ha
     await old.db.close();
   }
 }, 30000);
+
+it("pins new followup/consistency only while preserving every historical compatibility field",async()=>{
+ const p=await plan();
+ expect(p.frozen_context).toMatchObject({company_retrieval_version:1,company_followup_version:1,proposal_consistency_version:1,extraction_coverage_version:1,delivery_projection_version:1});
+ const legacy={...p.frozen_context};delete legacy.company_followup_version;delete legacy.proposal_consistency_version;
+ expect(await refreshed(p,legacy)).toEqual(legacy);
+ expect(await refreshed(p,{...legacy,company_followup_version:7,proposal_consistency_version:8})).toEqual({...legacy,company_followup_version:7,proposal_consistency_version:8});
+ const allowed=await f.db.query<any>("select has_function_privilege('authenticated','app_private.draft_generation_snapshot_before_consistency(uuid,uuid,uuid,uuid,jsonb)','EXECUTE') allowed");
+ expect(allowed.rows[0].allowed).toBe(false);
+});

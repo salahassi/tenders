@@ -5,7 +5,8 @@ import {
   encodedSize,
   COMPANY_EVIDENCE_BYTE_LIMIT,
 } from "../../supabase/functions/_shared/companyEvidenceRetrieval";
-import { taskInput } from "../../supabase/functions/_shared/generation";
+import { taskInput, generationValidationEvidence, nextStage } from "../../supabase/functions/_shared/generation";
+import { validateModelResult } from "../../supabase/functions/_shared/model";
 
 function source(
   id: string,
@@ -317,4 +318,36 @@ it("reduces company evidence when the existing buyer context consumes capacity a
     supplied_bytes: 0,
     gap: "context_capacity",
   });
+});
+
+it("new targeted followup reaches a late omitted source but cannot promote its partial quote to company proof", () => {
+  const ctx = context();
+  ctx.plan.frozen_context.company_followup_version = 1;
+  const filler = "Unrelated historical material. ".repeat(1800);
+  ctx.plan.frozen_context.knowledge = [source("large", filler + "\n\nIntroduction.\n\nWe deliver workflow approval systems.\n\nEvidence note.\n\n" + filler + "\n\nOnly for private systems.")];
+  const input = taskInput(ctx);
+  const partial = input.evidence.find(e => e.id === "large")!;
+  expect(partial.text).toContain("Only for private systems.");
+  expect(partial.verified).toBe(false);
+  expect(input.context.company_claim_eligible_source_ids).toEqual([]);
+  expect(input.manifest).toContainEqual(ctx.plan.frozen_context.knowledge[0].reference);
+  const validation = generationValidationEvidence(ctx, input);
+  expect(validation.find(e => e.id === "large")?.text).toBe(ctx.plan.frozen_context.knowledge[0].text);
+  expect(validation.find(e => e.id === "large")?.verified).toBe(false);
+  const candidate = {key:"approach",title:"Workflow",content_blocks:[{type:"paragraph",text:"We deliver workflow approval systems."}],requirement_ids:["R1"],evidence_refs:[],company_claims:[{claim:"We deliver workflow approval systems.",source_id:"large",quote:"We deliver workflow approval systems."}],assumptions:[],questions:[]};
+  expect(() => validateModelResult("draft_section",candidate,validation,["R1"],{independentGrounding:true})).toThrow();
+});
+it("assembly persists substantive gaps despite model answered labels and still returns all draft content", async () => {
+  const ctx = context();
+  ctx.plan.stage = "review";
+  ctx.plan.frozen_context.proposal_consistency_version = 1;
+  const draft = {key:"approach",title:"Workflow",volume:"technical",content_blocks:[{type:"paragraph",text:"We comply with every requirement."}],requirement_ids:["R1"],evidence_refs:[],company_claims:[],assumptions:[],questions:[]};
+  ctx.steps = [{task:"draft_section",status:"completed",input:{section:{key:"approach",volume:"technical"}},output:draft},
+    {task:"review_proposal",status:"completed",input:{},output:{responses:[{requirement_id:"R1",status:"answered",rationale:"Model says complete",section_ids:["approach"]}],findings:[]}}];
+  const result = await nextStage(ctx);
+  expect(result.next_stage).toBe("completed");
+  expect(result.final_result!.sections[0].body).toBe("We comply with every requirement.");
+  expect(result.final_result!.consistency_report.substantive_complete).toBe(false);
+  expect(result.final_result!.consistency_report.coverage[0].missing_fields).toContain("response");
+  expect(result.final_result!.questions.some((q:any) => q.reason === "REQUIREMENT_RESPONSE_INCOMPLETE")).toBe(true);
 });
