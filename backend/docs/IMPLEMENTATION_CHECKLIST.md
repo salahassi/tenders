@@ -7221,3 +7221,10 @@ all acceptance/currentness guards. The actual `noticeDetails.test.ts` suite
 passes all 51 cases against the latest consistency migration. Full composed
 flexible-input runtime validation is performed in the integration tree, whose
 fixture uses executor4; this isolated branch's older fixture still claims v2.
+Legacy guard integration follow-up: qualified app_command.input in the job/step
+join to avoid collision with generation_steps.input. The original full-run two
+failures (independent discovery retry and targeted model retry) now pass in their
+actual migrated suites:42 tests. The portable current-contract script now also
+checks the model-job retry successor error. The isolated frontend app journey
+rerun passes19/19, including external submission; its earlier full-run failure
+was not reproduced, and no product behavior was changed for that timing failure.

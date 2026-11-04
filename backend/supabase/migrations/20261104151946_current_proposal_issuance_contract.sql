@@ -13,7 +13,7 @@ declare p public.generation_plans;proposal public.proposals;opportunity public.o
   select * into p from public.generation_plans where id=(input->>'id')::uuid and kind='proposal';
  elsif operation='job.action' and input->>'action'='retry' then
   select plan.* into p from public.generation_plans plan join public.generation_steps step on step.plan_id=plan.id
-   where step.job_id=(input->>'id')::uuid and plan.kind='proposal';
+   where step.job_id=(app_command.input->>'id')::uuid and plan.kind='proposal';
  elsif operation='proposal.generate' then
   select * into p from public.generation_plans where opportunity_id=(input->>'id')::uuid and kind='proposal' and status in ('queued','running','blocked') order by created_at desc limit 1;
  elsif operation='proposal.regenerate' then

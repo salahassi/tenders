@@ -31,6 +31,8 @@ def run(f):
     current=f.value(f"select to_jsonb(p) from public.generation_plans p where id={literal(p['id'])}")
     assert_guard(f,p['id'],'generation.retry',{'id':p['id'],'expected_revision':current['revision']},'proposal.generate')
     assert_guard(f,p['id'],'proposal.generate',payload,'proposal.generate')
+    job=f.value(f"select to_jsonb(j) from public.jobs j join public.generation_steps s on s.job_id=j.id where s.plan_id={literal(p['id'])} order by s.ordinal limit 1")
+    assert_guard(f,p['id'],'job.action',{'id':job['id'],'expected_revision':job['revision'],'action':'retry','reason':'Explicit current-contract successor'},'proposal.generate')
     f.command('generation.cancel',{'id':p['id'],'expected_revision':current['revision'],'reason':'Explicit current-contract successor'})
     new=f.command('proposal.generate',payload)
     successor=f.value(f"select to_jsonb(p) from public.generation_plans p where id={literal(new['id'])}")
