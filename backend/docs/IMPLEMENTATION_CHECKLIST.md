@@ -9617,3 +9617,33 @@ legacy receipt must stop that cutover before effects; this observation must not
 be treated as a durable zero-state guarantee or permission to discard history.
 The existing typed legacy gate remains, and the original release baseline is
 unchanged. No application rollout or hosted proposal acceptance occurred.
+
+### November 4 — qualify the complete upstream chunked batch at100 commands
+
+The actual pinned PostgREST 14.18 process passed sequential batches of 1, 10,
+25 and the existing maximum 100 renewals at unchanged 128 MiB/500m. Each result
+contained the valid 4.13 MB serialized synthetic export snapshot used for the
+earlier ten-result OOM reproduction. The 100-result case delivered all
+412,758,838 array bytes through 1,600 independently authenticated chunks in
+84.853 seconds; its mutation/manifest response took 5.994 seconds. Every chunk
+identity, decoded length, SHA, complete result SHA, result order and expected
+revision matched. No legacy aggregate receipt was created.
+
+At100 results the kernel peaks were 46,141,440 bytes for PostgREST and
+193,982,464 bytes for local PostgreSQL. The latter includes processes/cache and
+the bounded data tmpfs under the separate 1 GiB/one-core fixture limit. Both
+processes remained alive with no OOM. Replaying the maximum request returned
+the identical small manifest in48 ms without new business/audit/receipt/chunk
+writes. A later real revision conflict after ten successful large commands
+rolled all of them back. Source hashes and removal of both owned containers
+were verified. The [receipt](evidence/upstream-batch-chunks-capacity-20261104.json)
+binds the exact SQL/harness, per-case measurements and external log hashes;
+the earlier aggregate-path OOM evidence remains retained.
+
+This qualifies the recorded upstream protocol and compressible structural
+fixture, not actual Auth HTTP, full writer/generation reachability, an API image,
+a browser, managed PostgreSQL 18 sizing or production SLOs. It precedes the
+approved legacy INSERT-backstop amendment, which needs separate concurrency
+proof and final source binding. Admission fencing/drain, a locked zero legacy
+census, final API memory qualification, release capabilities and hosted
+acceptance remain open. No model, customer-data or production operation occurred.

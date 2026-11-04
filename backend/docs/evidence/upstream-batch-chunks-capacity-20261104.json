@@ -1,0 +1,1255 @@
+{
+  "api_streaming_exercised": false,
+  "cases": [
+    {
+      "after": {
+        "postgres": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 121,
+            "nr_throttled": 5,
+            "system_usec": 1758137,
+            "throttled_usec": 28806,
+            "usage_usec": 5563587,
+            "user_usec": 3805449
+          },
+          "memory.current": 119279616,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 1073741824,
+          "memory.peak": 150605824
+        },
+        "postgrest": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 13,
+            "nr_throttled": 0,
+            "system_usec": 29406,
+            "throttled_usec": 0,
+            "usage_usec": 56127,
+            "user_usec": 26721
+          },
+          "memory.current": 27283456,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 134217728,
+          "memory.peak": 28876800
+        }
+      },
+      "before": {
+        "postgres": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 111,
+            "nr_throttled": 5,
+            "system_usec": 1655350,
+            "throttled_usec": 28806,
+            "usage_usec": 5215031,
+            "user_usec": 3559680
+          },
+          "memory.current": 110317568,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 1073741824,
+          "memory.peak": 150605824
+        },
+        "postgrest": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 3,
+            "nr_throttled": 0,
+            "system_usec": 15093,
+            "throttled_usec": 0,
+            "usage_usec": 34191,
+            "user_usec": 19098
+          },
+          "memory.current": 17698816,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 134217728,
+          "memory.peak": 17715200
+        }
+      },
+      "chunk_transport": {
+        "array_bytes": 4127587,
+        "chunks_received": 16,
+        "decoded_result_bytes": 4127585,
+        "elapsed_seconds": 0.943,
+        "http_response_bytes": 5507386,
+        "passed": true,
+        "prepare": {
+          "array_delimiters": false,
+          "bytes": 260,
+          "client_exit": 0,
+          "elapsed_seconds": 0.125,
+          "first_byte_seconds": 0.124,
+          "http_status": 200,
+          "safety_stop": null,
+          "sha256": "fa8afb9906b7fbd98188749ba2f31d141db07de70c8ba8d40249eea8ea9d7153"
+        },
+        "receipt_id": "6d9bce32-e9f1-4b41-a04d-4ddc098d07ff",
+        "result_hashes": [
+          "8f18192124dfe0189a9415597a15e5718f9b417153551dba4e8d2dcc783defa4"
+        ],
+        "sha256": "1172054d42dcf77d7fcab813f1cc508d830730a4e03c98d6c83f7adbf5bc703a"
+      },
+      "count": 1,
+      "database": {
+        "batch_receipt_count": 1,
+        "chunks_relation_bytes": 155648,
+        "command_receipts": 1,
+        "legacy_aggregate_count": 0,
+        "ordered_exact_snapshots": true,
+        "receipts_relation_bytes": 212992,
+        "result_count": 1,
+        "revision_after": 2
+      },
+      "passed": true,
+      "revision_before": 1,
+      "states": {
+        "postgres": {
+          "ExitCode": 0,
+          "FinishedAt": "0001-01-01T00:00:00Z",
+          "OOMKilled": false,
+          "Running": true,
+          "StartedAt": "2026-11-04T21:49:50.127043077Z"
+        },
+        "postgrest": {
+          "ExitCode": 0,
+          "FinishedAt": "0001-01-01T00:00:00Z",
+          "OOMKilled": false,
+          "Running": true,
+          "StartedAt": "2026-11-04T21:50:00.839391496Z"
+        }
+      },
+      "telemetry": {
+        "postgres": {
+          "kernel_peak_bytes": 150605824,
+          "last": {
+            "cpu.stat": {
+              "burst_usec": 0,
+              "nice_usec": 0,
+              "nr_bursts": 0,
+              "nr_periods": 121,
+              "nr_throttled": 5,
+              "system_usec": 1754236,
+              "throttled_usec": 28806,
+              "usage_usec": 5546993,
+              "user_usec": 3792757
+            },
+            "memory.current": 119234560,
+            "memory.events": {
+              "high": 0,
+              "low": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_group_kill": 0,
+              "oom_kill": 0
+            },
+            "memory.max": 1073741824,
+            "memory.peak": 150605824
+          },
+          "sample_count": 19,
+          "sampled_peak_bytes": 136441856
+        },
+        "postgrest": {
+          "kernel_peak_bytes": 28876800,
+          "last": {
+            "cpu.stat": {
+              "burst_usec": 0,
+              "nice_usec": 0,
+              "nr_bursts": 0,
+              "nr_periods": 12,
+              "nr_throttled": 0,
+              "system_usec": 29406,
+              "throttled_usec": 0,
+              "usage_usec": 55083,
+              "user_usec": 25676
+            },
+            "memory.current": 26767360,
+            "memory.events": {
+              "high": 0,
+              "low": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_group_kill": 0,
+              "oom_kill": 0
+            },
+            "memory.max": 134217728,
+            "memory.peak": 28876800
+          },
+          "sample_count": 19,
+          "sampled_peak_bytes": 27062272
+        }
+      }
+    },
+    {
+      "after": {
+        "postgres": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 207,
+            "nr_throttled": 5,
+            "system_usec": 2550676,
+            "throttled_usec": 28806,
+            "usage_usec": 8693396,
+            "user_usec": 6142719
+          },
+          "memory.current": 123637760,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 1073741824,
+          "memory.peak": 152346624
+        },
+        "postgrest": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 95,
+            "nr_throttled": 0,
+            "system_usec": 79261,
+            "throttled_usec": 0,
+            "usage_usec": 222887,
+            "user_usec": 143626
+          },
+          "memory.current": 36855808,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 134217728,
+          "memory.peak": 40972288
+        }
+      },
+      "before": {
+        "postgres": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 123,
+            "nr_throttled": 5,
+            "system_usec": 1774312,
+            "throttled_usec": 28806,
+            "usage_usec": 5621398,
+            "user_usec": 3847085
+          },
+          "memory.current": 119615488,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 1073741824,
+          "memory.peak": 152346624
+        },
+        "postgrest": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 14,
+            "nr_throttled": 0,
+            "system_usec": 29406,
+            "throttled_usec": 0,
+            "usage_usec": 56286,
+            "user_usec": 26879
+          },
+          "memory.current": 27283456,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 134217728,
+          "memory.peak": 28876800
+        }
+      },
+      "chunk_transport": {
+        "array_bytes": 41275873,
+        "chunks_received": 160,
+        "decoded_result_bytes": 41275853,
+        "elapsed_seconds": 8.365,
+        "http_response_bytes": 55072754,
+        "passed": true,
+        "prepare": {
+          "array_delimiters": false,
+          "bytes": 1494,
+          "client_exit": 0,
+          "elapsed_seconds": 0.656,
+          "first_byte_seconds": 0.654,
+          "http_status": 200,
+          "safety_stop": null,
+          "sha256": "a52c008f34e067fce624f26a26a31f3d86ed5252209547b061a0d4998e7f1bd6"
+        },
+        "receipt_id": "5c3fc514-26ee-4080-bcb1-61507396bda7",
+        "result_hashes": [
+          "f1a69f127e881b2f74ef28d8fe84fbe6e03b3508201cb3d5581e42918a28c12f",
+          "3b819bb172c7e9cf0f8863f3a311249b33d6b2fd90e9d7c2c046c8749ff106d6",
+          "75d0f4bbed5f19e948725caff750d6f6d4eb3f094eb3253c6c3352c5100e9cbb",
+          "8e8ee23ff82bcb0b21d5cf5489fffd8e91f709afffe8302d7a6a5e872170b43c",
+          "5efb27ee06a62d49a84df69ab1698dbf0494ae5d992c869a1a12e9513479d1ac",
+          "bd3ce30f3db5775afc543607c527b4c93e0824dc9761bde04f3467e13b449e06",
+          "8392a61689777e3c8ff08054aafb29199e51e6f60101e1d5362d8d2fb8f68dfa",
+          "ebd722b34f747e02c82f588faba28c6ace843c6174b41f9c957ed31d7a0f70ff",
+          "ebe1d2e2e1ec6af3ebc5a74fe80fa0b2f0774b8cd33d01f16a236e79f5ec4a72",
+          "a4607f661279c691b67fe03f1fc565891e8ec09a05d68d5d688a610ccfa45fa3"
+        ],
+        "sha256": "c4737375532694a403d0e7c1ed608ed55eebd27c887ca4bf717a7e1e6a6d116d"
+      },
+      "count": 10,
+      "database": {
+        "batch_receipt_count": 1,
+        "chunks_relation_bytes": 1040384,
+        "command_receipts": 10,
+        "legacy_aggregate_count": 0,
+        "ordered_exact_snapshots": true,
+        "receipts_relation_bytes": 942080,
+        "result_count": 10,
+        "revision_after": 12
+      },
+      "passed": true,
+      "revision_before": 2,
+      "states": {
+        "postgres": {
+          "ExitCode": 0,
+          "FinishedAt": "0001-01-01T00:00:00Z",
+          "OOMKilled": false,
+          "Running": true,
+          "StartedAt": "2026-11-04T21:49:50.127043077Z"
+        },
+        "postgrest": {
+          "ExitCode": 0,
+          "FinishedAt": "0001-01-01T00:00:00Z",
+          "OOMKilled": false,
+          "Running": true,
+          "StartedAt": "2026-11-04T21:50:00.839391496Z"
+        }
+      },
+      "telemetry": {
+        "postgres": {
+          "kernel_peak_bytes": 152346624,
+          "last": {
+            "cpu.stat": {
+              "burst_usec": 0,
+              "nice_usec": 0,
+              "nr_bursts": 0,
+              "nr_periods": 206,
+              "nr_throttled": 5,
+              "system_usec": 2549124,
+              "throttled_usec": 28806,
+              "usage_usec": 8679023,
+              "user_usec": 6129899
+            },
+            "memory.current": 125280256,
+            "memory.events": {
+              "high": 0,
+              "low": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_group_kill": 0,
+              "oom_kill": 0
+            },
+            "memory.max": 1073741824,
+            "memory.peak": 152346624
+          },
+          "sample_count": 166,
+          "sampled_peak_bytes": 138383360
+        },
+        "postgrest": {
+          "kernel_peak_bytes": 40972288,
+          "last": {
+            "cpu.stat": {
+              "burst_usec": 0,
+              "nice_usec": 0,
+              "nr_bursts": 0,
+              "nr_periods": 95,
+              "nr_throttled": 0,
+              "system_usec": 78768,
+              "throttled_usec": 0,
+              "usage_usec": 221501,
+              "user_usec": 142733
+            },
+            "memory.current": 40697856,
+            "memory.events": {
+              "high": 0,
+              "low": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_group_kill": 0,
+              "oom_kill": 0
+            },
+            "memory.max": 134217728,
+            "memory.peak": 40972288
+          },
+          "sample_count": 166,
+          "sampled_peak_bytes": 40697856
+        }
+      }
+    },
+    {
+      "after": {
+        "postgres": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 426,
+            "nr_throttled": 5,
+            "system_usec": 4585920,
+            "throttled_usec": 28806,
+            "usage_usec": 16617678,
+            "user_usec": 12031757
+          },
+          "memory.current": 132255744,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 1073741824,
+          "memory.peak": 158121984
+        },
+        "postgrest": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 301,
+            "nr_throttled": 0,
+            "system_usec": 221171,
+            "throttled_usec": 0,
+            "usage_usec": 646658,
+            "user_usec": 425487
+          },
+          "memory.current": 41156608,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 134217728,
+          "memory.peak": 43950080
+        }
+      },
+      "before": {
+        "postgres": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 210,
+            "nr_throttled": 5,
+            "system_usec": 2623746,
+            "throttled_usec": 28806,
+            "usage_usec": 8891228,
+            "user_usec": 6267482
+          },
+          "memory.current": 124096512,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 1073741824,
+          "memory.peak": 158121984
+        },
+        "postgrest": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 97,
+            "nr_throttled": 0,
+            "system_usec": 79381,
+            "throttled_usec": 0,
+            "usage_usec": 223226,
+            "user_usec": 143844
+          },
+          "memory.current": 36855808,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 134217728,
+          "memory.peak": 40972288
+        }
+      },
+      "chunk_transport": {
+        "array_bytes": 103189700,
+        "chunks_received": 400,
+        "decoded_result_bytes": 103189650,
+        "elapsed_seconds": 21.537,
+        "http_response_bytes": 137681954,
+        "passed": true,
+        "prepare": {
+          "array_delimiters": false,
+          "bytes": 3564,
+          "client_exit": 0,
+          "elapsed_seconds": 1.53,
+          "first_byte_seconds": 1.527,
+          "http_status": 200,
+          "safety_stop": null,
+          "sha256": "1c2f1510ef615d4b373a4ce95484331c802f04a16c802f477a305ba7c6539d34"
+        },
+        "receipt_id": "ee2051dc-863e-468c-b6fb-a785a1d11de7",
+        "result_hashes": [
+          "115a115ae6562ad3c6d60f3e73a5fbe178367f7d3fc5a693cc20cd250c5588f4",
+          "43e1965a9793a0537c25e5b2c3e3bbd72d3b0d5ba6f1aec7bcf50facaf02df83",
+          "4b3e0ec6ab787cffb4bdcad7bf8e223c824a25d6fb7feff94fcbb925c8e60b3f",
+          "483805462935e9b85a970733fafc060605fe4747e610a72f890549c519518837",
+          "c7c460b5d82df5e1f023f1584652d701575aea491ef79f4a71eb3ef8b0dcdec1",
+          "1641ce52c1ac8ec7d44c40df8f15c0f30539c4de22f23a218c6ee58d3a693602",
+          "02bdcf180a394ae5f354af8bdbb0e7e0235cc0916b59c3757e7895da77327a9b",
+          "08b577b21df02c33ffb17f21e9728f18eeaa967abd721cdea27c39f5ab89cd76",
+          "c877104f6f9603e91c32845712f6da237ed34168a318fce3273526598b9bf359",
+          "182c0ef76a24f21fd5601974fc7011c2b7b266bf58dc88c133c52f53213c2a58",
+          "6a4c4154cee5a6da4d132e6557d3cfce90fe9ef1ac935ea059faa0dc05a4a1e7",
+          "07eefc672bc9a68ae5372a4ad697e9644338212693e712ffcab1a8a1c95f9a07",
+          "b05323c3b3a144d3ba38ddc85caca17daaf1916546765a8104afddfdd985f033",
+          "a3c9946b50eb06326fe5eecd9ad32e45552bf90ced9295b4d71d42810495f994",
+          "b5909a3ecbf180fec70e3625e6a85123778a8c5e9c16164f656f8372527bc431",
+          "220c4c5efd61a5e78bbc812a9d414595d6a555621a7b37562338f7888ab0bb74",
+          "3aca83fa19d0dfd3293b7b8af33775b0380a4cffdd667f9d6b2633859407039c",
+          "e1496165812130ff770c52a5b7d2d2aa161217352d51cd0de6e44946c875fbad",
+          "4a65cf8670a11cb5c61a1c26ae2636101d34453143e6b71e5e57d6ee05a8ea08",
+          "61e1709341235b8bedd2461cdf3884184a85518417c395ace0d26b8a30b0567a",
+          "7dfe24356888b569ea82dd5e9303e778857af039e9eda1d1d8ef2a50581abf46",
+          "427e91bf282951a9fc28e626cf41a07c7f7207406ab74b125cdc1ee79d39f1cc",
+          "6400a6e8b28819ce5a22079d40b8d5d49a1f3016b4c366cb49bb93d8ab4d9b95",
+          "fff4d45b53b0914d81904eb7c237ca2a3032cf38fd588767e426eb0c3c9627d5",
+          "414f50497ef1c19a0070e79d735499be42f6031ed4cb724fda745165da7973fc"
+        ],
+        "sha256": "dfc79af4d8b5cddd245e02b537a3b258eb17c655b61a07d6d08ecd8e1fc8b210"
+      },
+      "count": 25,
+      "database": {
+        "batch_receipt_count": 1,
+        "chunks_relation_bytes": 3186688,
+        "command_receipts": 25,
+        "legacy_aggregate_count": 0,
+        "ordered_exact_snapshots": true,
+        "receipts_relation_bytes": 2785280,
+        "result_count": 25,
+        "revision_after": 37
+      },
+      "passed": true,
+      "revision_before": 12,
+      "states": {
+        "postgres": {
+          "ExitCode": 0,
+          "FinishedAt": "0001-01-01T00:00:00Z",
+          "OOMKilled": false,
+          "Running": true,
+          "StartedAt": "2026-11-04T21:49:50.127043077Z"
+        },
+        "postgrest": {
+          "ExitCode": 0,
+          "FinishedAt": "0001-01-01T00:00:00Z",
+          "OOMKilled": false,
+          "Running": true,
+          "StartedAt": "2026-11-04T21:50:00.839391496Z"
+        }
+      },
+      "telemetry": {
+        "postgres": {
+          "kernel_peak_bytes": 158121984,
+          "last": {
+            "cpu.stat": {
+              "burst_usec": 0,
+              "nice_usec": 0,
+              "nr_bursts": 0,
+              "nr_periods": 425,
+              "nr_throttled": 5,
+              "system_usec": 4584492,
+              "throttled_usec": 28806,
+              "usage_usec": 16603198,
+              "user_usec": 12018705
+            },
+            "memory.current": 133812224,
+            "memory.events": {
+              "high": 0,
+              "low": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_group_kill": 0,
+              "oom_kill": 0
+            },
+            "memory.max": 1073741824,
+            "memory.peak": 158121984
+          },
+          "sample_count": 427,
+          "sampled_peak_bytes": 141508608
+        },
+        "postgrest": {
+          "kernel_peak_bytes": 43950080,
+          "last": {
+            "cpu.stat": {
+              "burst_usec": 0,
+              "nice_usec": 0,
+              "nr_bursts": 0,
+              "nr_periods": 300,
+              "nr_throttled": 0,
+              "system_usec": 221171,
+              "throttled_usec": 0,
+              "usage_usec": 645577,
+              "user_usec": 424406
+            },
+            "memory.current": 40656896,
+            "memory.events": {
+              "high": 0,
+              "low": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_group_kill": 0,
+              "oom_kill": 0
+            },
+            "memory.max": 134217728,
+            "memory.peak": 43950080
+          },
+          "sample_count": 427,
+          "sampled_peak_bytes": 43950080
+        }
+      }
+    },
+    {
+      "after": {
+        "postgres": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 1280,
+            "nr_throttled": 35,
+            "system_usec": 12448292,
+            "throttled_usec": 33639,
+            "usage_usec": 48051633,
+            "user_usec": 35603341
+          },
+          "memory.current": 172945408,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 1073741824,
+          "memory.peak": 193982464
+        },
+        "postgrest": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 1107,
+            "nr_throttled": 0,
+            "system_usec": 784619,
+            "throttled_usec": 0,
+            "usage_usec": 2351213,
+            "user_usec": 1566594
+          },
+          "memory.current": 44978176,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 134217728,
+          "memory.peak": 46141440
+        }
+      },
+      "before": {
+        "postgres": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 431,
+            "nr_throttled": 5,
+            "system_usec": 4761202,
+            "throttled_usec": 28806,
+            "usage_usec": 17055551,
+            "user_usec": 12294349
+          },
+          "memory.current": 132435968,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 1073741824,
+          "memory.peak": 165277696
+        },
+        "postgrest": {
+          "cpu.stat": {
+            "burst_usec": 0,
+            "nice_usec": 0,
+            "nr_bursts": 0,
+            "nr_periods": 303,
+            "nr_throttled": 0,
+            "system_usec": 221171,
+            "throttled_usec": 0,
+            "usage_usec": 647350,
+            "user_usec": 426178
+          },
+          "memory.current": 41156608,
+          "memory.events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "memory.max": 134217728,
+          "memory.peak": 43950080
+        }
+      },
+      "chunk_transport": {
+        "array_bytes": 412758838,
+        "chunks_received": 1600,
+        "decoded_result_bytes": 412758638,
+        "elapsed_seconds": 84.853,
+        "http_response_bytes": 550728107,
+        "passed": true,
+        "prepare": {
+          "array_delimiters": false,
+          "bytes": 13915,
+          "client_exit": 0,
+          "elapsed_seconds": 5.994,
+          "first_byte_seconds": 5.991,
+          "http_status": 200,
+          "safety_stop": null,
+          "sha256": "7a6752b336483aefa4f746066101bce38e80cd0445d03693308c8f069e4bb2b7"
+        },
+        "receipt_id": "7bc75966-a0c8-4407-b34e-9fcd850e1eb1",
+        "result_hashes": [
+          "2978f972326e52ecb1816403a4147aba7f3e082f45805fe152761113e457834a",
+          "4e693c3dee07d1f1de51f43d8a9edf4684ddc76c4fb8f8e0356ec5eec4899343",
+          "640202686d68cfe42f523d6466a9740cc429040bda30558e58aa0ad8e42ef261",
+          "0b1072e3d0183cdb03218bcc4a9e07f6ef40121bfccbc86f663e3dc875b2bd31",
+          "eff9ff08135f1f0ab2f589595140951a903d8bf09b06d97fcad8cd80f194da80",
+          "4c6d69770d611fa9e31f13b7e54c8fa1bab8156b6deb922e793d3dab56f6d595",
+          "0b3226ded36e3fbb3a238867d8df2c897c6a824a687383ee9e05a31edf66301a",
+          "d407c4722a12cd679020970c72a837d29dd70e9b00d64f15d5a2065b8df87735",
+          "f0e547742f042ab17e13814b8c38e24e3cf5236f59de213dbd7079ec8d8b14b4",
+          "39ed662f9ceff60507010de39d13df5be46bb2a4a86d39419af14acb06f256f4",
+          "a90edc3019d94fb5dcbafe1d113d53c9de4b309da9a4c9f205bb11258d7986e6",
+          "fa6d5c1c43940da79c5c8d7ce303f392adfb0169553601b71c7f87b1b46aa7b4",
+          "48ed13d44019aea0f409e58d7f3cffca6a70c4d07634e98642a1f75d3c8ed543",
+          "980a11f26e1e9209a1f2065a61763397457c5334a53e3c90d8d44787e275b046",
+          "0d85163bb20f3e02c3be5f7ec620d4cfc2e951f099a4ed8afe496d1598b031b4",
+          "43ceb55415dc16d7ae3305f698c60f53908f11e078da8eeabc2be15595838266",
+          "381afc9669a773be830292737c225e7210a384c299bd9487235bbbcbe992cd59",
+          "ddfec8d255e9fe36cd10233cd2b75de227abed2c1c451bd744c1bb56b5ce5b21",
+          "baeebd11c37663eabbafc70d784da834d1bd66d82377769efae13a3cbb69107d",
+          "83510a928ddffc772150e9a0b1b6da05e5d4842d1046aaaa43a01b877440c9b9",
+          "07679dbe7555f92c6f4abd23f6d9b41f389924b8a25a81fab6b80e3ad0d2e26c",
+          "d9a1471873eb2296765b4ea8654d7d369e65836e733051a02b4d7638d88f7af7",
+          "450214edb4e8b9588c7a26491cbad7ec0d55b57cae6c667582c07c6103493525",
+          "12ff8e3084b2bde574aa8afc70fbf511ec1a4309511dc9aa2fcaeb9a2605ddf2",
+          "25747dbdb3f3526b9d741a0eed22e0d7ecbe15de35eadd69e307bc23178f1c6f",
+          "0f0fb80d6f6e01082101a1155321a8e4e9c0f18a9a4404858604305ecffc39d1",
+          "6b2973be28fffd570c29550cea093fd9dd0e39934af2cb25db7c2eab4bd4eb53",
+          "ac03db6ed45e30788d32c98c8ce790b3c96ab963de633caf4876d5b537672c7f",
+          "fb8c49d94597b98547a236f5913c71654655c8191b51b1ea5422fe09b3a2ea09",
+          "87e0888e8e96695dc6e21bed593d48a440970745078d70fd7f32ef2afc850719",
+          "d12742d9d8fdd0822263b75c57e1a135b8827e3a263ff6bde9138ccb3464d022",
+          "5f5acc1c7f0fed5502a4e357d7c1d3ad186c8da6f6a58bdba8d018f15f8d9ca8",
+          "b39b9acc9613008046aa3bc705434d6e7ec304608d270d48b15ad1a43f30e2a7",
+          "9aa43d8ceaa6a5910052eeb596e2a2420610ffb3380fe3073d805a28eb33f6d3",
+          "ca5350b588fb68a7766e39da438c3e9a6049b3af9051feb300e0d0026e4fdcdd",
+          "caa662a652899259898d33c32ea52f1b61a990fd7032e0ee806b7cd94ed0b268",
+          "df85a45b638d49e9e359994cd2435fbc3e43aa9595e7a6bd518a839a4013a1bb",
+          "b73f528016caa967f36af7f4557abe729d12f5b2306cc20ba7ab63497272d965",
+          "800a9455f81af1414cb73a31f3b038b6272c89fc803822e6109ce30fcbbd39ad",
+          "5fe8918be65fe59725183cf01d6af14eab89e525f6deadbbe9dcdd1235923aff",
+          "00e4c5c863eeb6e5df69353b62810b360b19ca36b7efc697533d358a9e4c11d9",
+          "8860ed60afdb4b8b7b895ceafe50ec3b2d8bb7ad2edda2c7dcd7a401a7147853",
+          "0647241efdae534c7eea74d3fcb7bf3a49af4fd540e7c87fb101d81f40e5d137",
+          "8d867eca895b579b7d1fbedbb117c960916aea2f74aee59fe3aaf448798809f9",
+          "86b25832ea63b13d4711b466a47e32875ed573833f9cf94460ccd4a14ed0e5d5",
+          "ac84fca69f0160b29a93cfc178230de2cd9dca3a17fd6bb40dd811afe09f8c12",
+          "1cf8617789422cf776c4b69cee68cbe5feaf990e1eb02b47a6a39c25fa35d441",
+          "8bd79a211861db1f9f8cdbc24707ee74cfed047ebf67864da7111003cb4b122b",
+          "82cb3f5cf90b4d6df1ec6d603968eb0e4a6b6e55b5c697cc3c089b69967e3c93",
+          "d8300ec93e9ffae8b3aaf66eb5553d28dad560f6aad2587c9cfd341db7a91c96",
+          "cff9b6fd0f415175f0aa516a2757fb7d3495de6c654aeb3858faf42ab0a3e9fc",
+          "d8142aac00da25024009ca457d56651d19235de4b0c0ab9a3568589d35232974",
+          "d52f42fd3bcb8d3dd4660256049fd1501c71d3b108b8f0860393fcb46d4c1a07",
+          "a96a135acb0a9366e102aa5f570d5e48f83435ef22a9e14dc95248df2c869602",
+          "1b2250e40d364b28e875a38ea0b2262e26fc1f6fbbdcbec4ba30ff66adac8eb6",
+          "48e09664e62adacfe8c84bb66c36c4c01c417a3fde9cd6f0b2aacce7e4cf9e71",
+          "4b783532247b04943f878b5860b6e9e34c0334c8496697e072d2978b9eb7aec2",
+          "01329bbb7b51e05b6125897facf1d1165c26c66b94964ab013444589b36890e0",
+          "a9b961c316b92f603614af920b9aac48c891c5dc9e99e55c5046fd9d0b6df5b4",
+          "236b12ec54d9912b050e01a779fd6c30ee07743f4e1a62bb8fd7ab1668884cc4",
+          "bbd1a6174850cf659baa97e20f639c07be227027453502e3eb64555ffd9fc949",
+          "af367f2444ab7f4b8f7b598bccb7b5124eedb3aab7ff2c54e8e9bca11d2042e0",
+          "c01288f4967e79542e49d0e88964a083b35b9271efe0d16bd9a45c5bae6d2372",
+          "a74b44c543a895e995fe756f43f7aeeff9ad9b20663e0d60943b0d923a8c0258",
+          "565e68e7c9344eb168c8fd4ddc3bc4def28b26d323de68d19eb4925bb186b206",
+          "0cccccc85742078c6993c9376630a0f290f5497985aed6a9ec2641a724b0bc8e",
+          "e5da7128309d0ee175b684c96cebfab5b66b7a17293f7c7d9c13f9b67bc6a1a5",
+          "7898b21466de69f18e9bfd0389e67c771a6d6877847d0111f2491f2534e6d4c8",
+          "d42112d5360163db082dff3ea761346a8768b6a8aca2eb244c0c4b986a619f4f",
+          "2562a374aa29b9e128e807655048a1ddda45f54292a713e7e4f24516bd1edec6",
+          "14f3e2dd18f5b9385a4a17de64ec97ddff98ba19271aa00af9f7d580212fb2ab",
+          "086f135c2935219e8a9f5ffc3e18a84bd000b6c8eed79f657f4753f700af87a6",
+          "2014a06a86e125f8d863c9326b0af98c56cd24da1b5fbb97d92fc010c18bb4f3",
+          "0e44a1511e38b9e9e183ebd1ae7c92b9b8b80fb6cde0520f2dc91624b15ae3b0",
+          "331c1233969f9f92359068d8341da575093c2041099e554a8e253a476219a1da",
+          "dabab645d15c7fc00aabd4d7e27769bf99625f4c6dbbc2f5afbedb067e1cdb61",
+          "ef9da24b72cb72169ede343947c27385b0eb5cc4766d1ff24b342f924b91627b",
+          "a8462da2d3c5a7ffea553397f4bb4f11db145476f75fcde8aac4b094b04e2f7f",
+          "e928a7d132bed7508c886faa33cb402bd210d490f6756bf8a97ff98a2ad9483b",
+          "3f7d58c041f86da178690a18e9c08824b2a7b5999344906a6c44e6a58ff9634f",
+          "8ead469ae6f935468cac597a443b4cca66194d04ee281af22678a8c312d6a424",
+          "77f0625a2286d67645b055388fb749f818592a57b1762149c4523192bf37c42a",
+          "340dec95061a216bb3d4f6aa3f046c736aafbd0dd324b39f193773bc0f6d8316",
+          "8a4fdcae28c571763c6782cd61c2b8d97be66293034ccf2f4b0eee328f48e88e",
+          "d04ea7e28b035f285acdcdb1b460f285b0dbabe2f96dd19676447f49884af540",
+          "cc063e4f20e8dd16c90dae857166a547728e6f67578848032d67663a4dd23e79",
+          "9bae6523b9d126cecbbf4bc0967d96a68f76520ccf256bd4ddb8b79b7c1a9f2f",
+          "b76c18174b46d5645111e912b374a7aa2a1cc64d41a548d9b121382a5be8f925",
+          "1d246778a2eb01edcc45636298d99095e5740e2ba26cd0c90671c3ca677a01c2",
+          "60aad8a48bf2fb0d2fd1fff4b76998400e6837c1c178b89ad9050bbaeb5478e9",
+          "87713a9128dcdafb676f1ef4af9d83c84379915286404c35265b51e1f62b00a7",
+          "2273ad178f978e084639e8bf589f19d88bbcaf58972d3b236d5f8bb8fb23eeae",
+          "1ca8d003b580adede686e8be90d0a3b17f2f575a82fb442f7068602b8b2d1a08",
+          "da9dd6fe63132a3e8881c5d1a408d9e1d77ba1f4e4bb4ec43ce32eeb4b32c43b",
+          "0f173503280a1a84c5db74ce8aa3ec0291873a73cbcbacf6664effc55e2b21b2",
+          "2fc54227b8a370bae586cb3825a5319b15bb0d187928a36ec6e0216290af0b02",
+          "ece7222d8e0c62ee88e30bf8068a3458dbc6cfbfd3cfc7d5c127d091fd8fa9d0",
+          "bb1f93e79e13bb06f961f7d910859c688cd6f95dab2bd02919d9cb5f73e47500",
+          "cda772845c7c3f5e370426a10aef4c9ffb8b79ad1de92d4ab396fb2dd7d9856f",
+          "77ac732a693ee3d54a014b705cce97fbdea1b64f53fb0c0f00136bd87fcbe60c"
+        ],
+        "sha256": "2ea7c0ff32cd731d8be186dcd650ef3d26f64440fb0fa433c156a57d8a5483a7"
+      },
+      "count": 100,
+      "database": {
+        "batch_receipt_count": 1,
+        "chunks_relation_bytes": 11837440,
+        "command_receipts": 100,
+        "legacy_aggregate_count": 0,
+        "ordered_exact_snapshots": true,
+        "receipts_relation_bytes": 10100736,
+        "result_count": 100,
+        "revision_after": 137
+      },
+      "passed": true,
+      "revision_before": 37,
+      "states": {
+        "postgres": {
+          "ExitCode": 0,
+          "FinishedAt": "0001-01-01T00:00:00Z",
+          "OOMKilled": false,
+          "Running": true,
+          "StartedAt": "2026-11-04T21:49:50.127043077Z"
+        },
+        "postgrest": {
+          "ExitCode": 0,
+          "FinishedAt": "0001-01-01T00:00:00Z",
+          "OOMKilled": false,
+          "Running": true,
+          "StartedAt": "2026-11-04T21:50:00.839391496Z"
+        }
+      },
+      "telemetry": {
+        "postgres": {
+          "kernel_peak_bytes": 193982464,
+          "last": {
+            "cpu.stat": {
+              "burst_usec": 0,
+              "nice_usec": 0,
+              "nr_bursts": 0,
+              "nr_periods": 1279,
+              "nr_throttled": 35,
+              "system_usec": 12448292,
+              "throttled_usec": 33639,
+              "usage_usec": 48036752,
+              "user_usec": 35588460
+            },
+            "memory.current": 173215744,
+            "memory.events": {
+              "high": 0,
+              "low": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_group_kill": 0,
+              "oom_kill": 0
+            },
+            "memory.max": 1073741824,
+            "memory.peak": 193982464
+          },
+          "sample_count": 1684,
+          "sampled_peak_bytes": 186073088
+        },
+        "postgrest": {
+          "kernel_peak_bytes": 46141440,
+          "last": {
+            "cpu.stat": {
+              "burst_usec": 0,
+              "nice_usec": 0,
+              "nr_bursts": 0,
+              "nr_periods": 1107,
+              "nr_throttled": 0,
+              "system_usec": 784463,
+              "throttled_usec": 0,
+              "usage_usec": 2350142,
+              "user_usec": 1565678
+            },
+            "memory.current": 45056000,
+            "memory.events": {
+              "high": 0,
+              "low": 0,
+              "max": 0,
+              "oom": 0,
+              "oom_group_kill": 0,
+              "oom_kill": 0
+            },
+            "memory.max": 134217728,
+            "memory.peak": 46141440
+          },
+          "sample_count": 1684,
+          "sampled_peak_bytes": 45846528
+        }
+      }
+    }
+  ],
+  "cleanup_verified": true,
+  "customer_rows": 0,
+  "final_states": {
+    "postgres": {
+      "ExitCode": 0,
+      "FinishedAt": "0001-01-01T00:00:00Z",
+      "OOMKilled": false,
+      "Running": true,
+      "StartedAt": "2026-11-04T21:49:50.127043077Z"
+    },
+    "postgrest": {
+      "ExitCode": 0,
+      "FinishedAt": "0001-01-01T00:00:00Z",
+      "OOMKilled": false,
+      "Running": true,
+      "StartedAt": "2026-11-04T21:50:00.839391496Z"
+    }
+  },
+  "fixture": {
+    "sections": 42,
+    "snapshot_sha256": "946d4151b9d983d53af1e1514a5636c67860f1637ab528384af8d0b766095bc1",
+    "snapshot_stored_bytes": 68649,
+    "snapshot_text_bytes": 4126748
+  },
+  "hosted_calls": 0,
+  "images": {
+    "postgres": "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+    "postgrest": "docker.io/postgrest/postgrest:v14.18@sha256:c847127074bd26e1b8d3f7c0e6e01e5346f4b85dd34f5d699fd230af960827c0"
+  },
+  "late_failure": {
+    "all_business_audit_and_chunk_writes_rolled_back": true,
+    "revision_conflict": true,
+    "successful_commands_before_conflict": 10
+  },
+  "limits": {
+    "network": "shared_loopback_none",
+    "per_case_wall_seconds": 120,
+    "postgres_cpus": 1,
+    "postgres_memory": 1073741824,
+    "postgres_tmpfs_bytes_counted_in_memory": 536870912,
+    "postgrest_cpus": 0.5,
+    "postgrest_memory": 134217728,
+    "published_ports": [],
+    "sql_statement_timeout_seconds": 90,
+    "swap": false
+  },
+  "limits_are_local_safety_fences_not_observed_managed_database_resources": true,
+  "maximum_replay": {
+    "http": {
+      "array_delimiters": false,
+      "bytes": 13915,
+      "client_exit": 0,
+      "elapsed_seconds": 0.048,
+      "first_byte_seconds": 0.047,
+      "http_status": 200,
+      "safety_stop": null,
+      "sha256": "7a6752b336483aefa4f746066101bce38e80cd0445d03693308c8f069e4bb2b7"
+    },
+    "identical_manifest": true,
+    "no_extra_writes": true
+  },
+  "model_calls": 0,
+  "passed": true,
+  "production_capacity_qualified": false,
+  "qualification": {
+    "actual_auth_http_exercised": false,
+    "api_runtime_image_exercised": false,
+    "fixture_limit": "Compressible valid4.13MB serialized snapshot, not physical4MiB storage-cap/worst-compression or full proposal-generation/API writer reachability qualification.",
+    "fixture_origin": "Existing synthetic ordinary export structural fixture; real authenticated export.prepare and HTTP batch/chunk RPCs, no application constraints/triggers disabled or snapshot overwritten.",
+    "managed_postgresql_18_exercised": false,
+    "process_scope": "Sequential cases share the same actual pinned PostgREST process under128MiB/500m. PostgreSQL17.6 has local1GiB/1CPU safety fence and512MiB tmpfs counted in memory; this does not establish managedDB RAM/vCPU.",
+    "remaining_gates": [
+      "legacy admission fence/drain and cached-old-function transaction settlement",
+      "locked zero legacy census during atomic cutover",
+      "final source/capability binding",
+      "actual API runtime memory qualification and complete integration",
+      "hosted deployment and proposal acceptance"
+    ],
+    "source_limit": "This receipt binds the core212818 migration before the later approved legacy INSERT backstop/cutover amendment. That amendment requires separate validation and final integrated source binding.",
+    "status": "specific_upstream_chunk_transport_matrix_passed",
+    "transport_scope": "Local Python digest consumer validates every bounded RPC chunk and complete ordered result hashes without building a full array. It is not the application API handler or browser consumer."
+  },
+  "retained_external_evidence": {
+    "directory": "/workspace/output/upstream-batch-chunks-r1",
+    "log_manifest_sha256": "58165a2ea4d1fb8607b095595754a2c7b36476e8283c596d1dfe3e608a308284",
+    "logs_count": 2183,
+    "original_receipt_sha256": "7a8a16b399d0e5457a2b2022aec8c5583cfecbea5b8b72d02a8c6154c41a4f10"
+  },
+  "scope": "isolated_actual_postgresql_and_postgrest_batch_capacity",
+  "server_version": "17.6",
+  "source_hashes": {
+    "backend/scripts/testing/ordinary_export_races.py": "1f77ade3aa9d2d24670f6befcb4745631403b8b38852eeed3f3a875388771ab1",
+    "backend/scripts/testing/postgres_races.py": "75b6595d59ef17eb01ca392400270fa4453f3cc76126f72706a82695b1cd5071",
+    "backend/scripts/testing/upstream_batch_capacity.py": "1758f09b1d7cb3d2ae24808669a1ff0546571b27b32399ee77d58f63286e621e",
+    "backend/supabase/migrations/20261014164945_backend_activation.sql": "9077d51c08f7b4c2b80895aead9820c771e1f4298684c34adab5c5ba12e03a72",
+    "backend/supabase/migrations/20261014165050_transactional_commands.sql": "4e73d1985ba6791af492fb5bedced4104b8d095a3e507a4784bd47ba617b4d54",
+    "backend/supabase/migrations/20261014165059_private_storage_and_jobs.sql": "8a5adf557745b32c0da6a25fdc0270f0b38fda1df28f74062d02d30afaf7f956",
+    "backend/supabase/migrations/20261014165444_harden_rpc_boundary.sql": "e7331e3fef66e09a6422847e21bc361cb91a72c384336409d964b0499a57ad9d",
+    "backend/supabase/migrations/20261014224705_connected_workspace_commands.sql": "26f6864220985eedf0c400647308ee0e772fae09c0f06845106be1c445068064",
+    "backend/supabase/migrations/20261014224723_email_password_identities.sql": "7a122c16e85310acbb69b601b004d284d5f7328a3153b0424c33ef6f36fbb590",
+    "backend/supabase/migrations/20261014224747_owner_invitations.sql": "6290359417d546214d623ec69345913eca6086b68c1048726289a6674e89fda0",
+    "backend/supabase/migrations/20261014224757_restricted_owner_setup.sql": "c6733b56bea9e6e7359edb7d679c2d8566c6af6a598430a669bfb2508e802bb2",
+    "backend/supabase/migrations/20261015102156_durable_evidence_workflows.sql": "39ad9bcf3f8e9c6e9286a73e8997ec6db2d0af6e9378cee4b23f319c76f2f594",
+    "backend/supabase/migrations/20261015103203_collection_and_dispatch.sql": "d32587733651e677537c6ebbab64d74484321ecb1d592347d4f88f62b1032daa",
+    "backend/supabase/migrations/20261015104947_model_policy_and_budget.sql": "8ec8f5e3dcad81f8682bd023d5b26f109cd635fc02282363f942ecf562fcfb20",
+    "backend/supabase/migrations/20261015181000_persistent_generation.sql": "a7bb418a4496c8782d7187e57908bace24a9669b3e67ae51168b020ffc0db7ee",
+    "backend/supabase/migrations/20261015183000_commercial_and_approval.sql": "19d73273889ef1f5c9e99b591390f9efa90c542d96cf9ea4967c7337bcf64541",
+    "backend/supabase/migrations/20261015185000_generation_assets.sql": "f38be561af789658648fa255e2fcbd492f8c7b0274791bc3636359daadcab5d2",
+    "backend/supabase/migrations/20261015192000_cloud_content_eligibility.sql": "4d4a539932c486c07f5ffb68a1115fdd0f10eb3022509b361b389e47b63c60eb",
+    "backend/supabase/migrations/20261015195000_export_authorization.sql": "c499539d6588443b092287047aafef8f4c5a4ccd2d72788b7c6cd422b12cc2d0",
+    "backend/supabase/migrations/20261015202000_acquisition_and_submission.sql": "0dcbb27a3515a6197b60169e53c034e4cce7fa93c7514c927e311b526d0b2cf7",
+    "backend/supabase/migrations/20261015204000_workspace_recovery.sql": "f74a28e4b2564252b93a171d364128800dafe827fd10735f067996dfc31f8d21",
+    "backend/supabase/migrations/20261015210000_operations_and_retention.sql": "7a4230f60a7ffde6b6493ca9fde8ea77fb0cb208ec2c279c217c9eefa59ef639",
+    "backend/supabase/migrations/20261015213000_reassessment_and_feedback.sql": "ed1b27e9abcbedfb709fceb8beb23710c2fbeeb8298949de8809b1a75712fcce",
+    "backend/supabase/migrations/20261015220000_dispatcher_extension_schema.sql": "9602ac60fa95d8f07935f0be75de2a3aa2da7e1e0a2294efd4b55fe6870b4066",
+    "backend/supabase/migrations/20261016013000_claim_designated_owner.sql": "bdb9cd8fe8107843bab290b0db7fae30051a5b839d5b622ff745fae9943b810f",
+    "backend/supabase/migrations/20261016120000_model_provider_pool.sql": "db8d939f69dded1f3208ab738c384af73e5a6f5b7fd3da591ae3cb1186849b25",
+    "backend/supabase/migrations/20261016130000_optional_free_providers.sql": "17b8f32d0c4409b7879bdd0624c8031514ff9fcfcd018c4e80f9afd2bc6c8151",
+    "backend/supabase/migrations/20261016220000_model_pool_runtime_fixes.sql": "20852b74f8d5176441b3e91e80e5f263af09d1fe1884aabd558dcc7eeeb8456c",
+    "backend/supabase/migrations/20261017154306_continuous_gemini_free_tier.sql": "9411102d2be4eea6325c66e0da791d542a49c8fbaf642a999adb8c9e4f080a48",
+    "backend/supabase/migrations/20261017180227_independent_gemini_requests.sql": "83528e2121329005ed2b7693a10ca09fe96eb1b5dce32c5cfd244cf2a193969f",
+    "backend/supabase/migrations/20261017182619_durable_gemini_background.sql": "6ce19b247e3fb134d7bd1217a36297746bce821ec06fda4078953ae755a0bf58",
+    "backend/supabase/migrations/20261017191753_round_robin_model_routing.sql": "83cd1e2f4b3e82f8b8dba0e6272712446a18941993ea68bafbcc91dbf815009a",
+    "backend/supabase/migrations/20261017212026_preserve_round_robin_cursor_on_poll.sql": "b5acf870d48db2819ea79a4c713d00022a9dd809ab37eefe1741ac785fb73d52",
+    "backend/supabase/migrations/20261017212401_deterministic_global_model_rotation.sql": "9275522d7452c860f4f7dae2939a9a61f877caaf2bc2e796c79a5c31197e11e5",
+    "backend/supabase/migrations/20261017234946_prioritize_collection_and_cancel_stale_source_jobs.sql": "2b241c523ac8bc106ae94840c63e75c8bbf783b7b631fb7e26e213fb3162f94f",
+    "backend/supabase/migrations/20261017235819_keep_generation_progress_and_resumed_sources_moving.sql": "335c481fcfa745b8f9d89d38d9af743fc2f0dcfceb30f55a3e8a12126ca3d8b3",
+    "backend/supabase/migrations/20261018075948_software_discovery_and_public_assessment.sql": "1efc7a4744900636b2bb920c1b3822308178769fc02f8db9688007553a91e6a2",
+    "backend/supabase/migrations/20261018083848_require_confirmed_software_scope_for_inbox.sql": "1bf7f41057106114280ab506cd96a3a15ac61b44afee4acd1de64c6796809a15",
+    "backend/supabase/migrations/20261018085618_notice_detail_evidence.sql": "2f7c621e5bbfdf65559bd2a2f9471af5c7ecccb8439f3a28970dfe1afeabdc65",
+    "backend/supabase/migrations/20261018093019_bounded_detail_assessment_queue.sql": "988f3928db0c89f76c0777625b813921622721f083d19c2f1ea85e9c8f92ae1d",
+    "backend/supabase/migrations/20261018094600_bounded_assessment_output_repair.sql": "fef8439778ef605158663744ed30f403bd060428785de7f16b664dda858ca337",
+    "backend/supabase/migrations/20261018095000_reconcile_superseded_model_usage.sql": "51893831dba1697a0cc653705c0bda7cf644d792f1fa7838ac652422bdc0576d",
+    "backend/supabase/migrations/20261018101911_zai_free_provider.sql": "180c9015a4a5c67bfe0abd8e2c5414a72c70eb98abef81a33002c2965c0d6dd4",
+    "backend/supabase/migrations/20261018103438_provider_pool_status.sql": "d71872d61a65f76e94db723fe9f48653b8b023944d5027ebaeca1b9da89bc882",
+    "backend/supabase/migrations/20261018104130_company_knowledge_processing_policy.sql": "b4fa400e9d286dbc5f3e0e19abad3709984f43388f10465527971a6827625a6f",
+    "backend/supabase/migrations/20261018105109_credential_model_routing.sql": "dd93f66934763b2661217d90e23f47ae5b2f852c5fd5e09144463aa4955c99bc",
+    "backend/supabase/migrations/20261018112447_model_activity_observability.sql": "9655e86ec383ae3e790c3a10bfa17911d8a9d9514573fe1ff3c93c1467b08381",
+    "backend/supabase/migrations/20261018114536_preserve_targeted_probe_identity.sql": "de1cc5db2affe6ae78651fb24965dc65abf7c632b3ad046b7837c16cd829e15d",
+    "backend/supabase/migrations/20261018135823_provider_rejection_diagnostics.sql": "02c456d1a37fb75e326330889e4406a020f7aa3acd8e7e75899ef552dc6330f5",
+    "backend/supabase/migrations/20261018142401_openai_claude_providers.sql": "018676f0af2d3b78148bb31c90eff3eae7cd69849d474301eb519c1f1caffff6",
+    "backend/supabase/migrations/20261018172905_cloudflare_automatic_routing.sql": "201b0d16dee7af10f94e46ac3efe836bbc847d43d15fcef933367884c67dab79",
+    "backend/supabase/migrations/20261018210235_configurable_company_scope.sql": "5a4846b54753cf6a1063c4761b72b7cc23c8020061a785a9cfc9fe153256f519",
+    "backend/supabase/migrations/20261018210646_configure_scope_command.sql": "858bd08f681e568108c9271d4d7e0e0f039947f22204f061c503b81fe1f95575",
+    "backend/supabase/migrations/20261018210648_scope_assessment_visibility.sql": "febb80459dbd6e5d50dcc9ae744dd43f2d6166689ddf3a49b1394d7698d63094",
+    "backend/supabase/migrations/20261018223214_rejected_request_reservation_accounting.sql": "432fc1c81e6574f07eecd462d8fa582b1850712281f5ccec4cc0439bd421a29a",
+    "backend/supabase/migrations/20261019085418_autonomous_processing.sql": "9899492e573491836c0fad085969c225fb87c4c1d951acb57446290cb880cc8a",
+    "backend/supabase/migrations/20261019085420_notification_preferences_schema.sql": "082a1fd02bfaad9cd326446aca1858a5ff251a708838419e488c455c8343c162",
+    "backend/supabase/migrations/20261019085421_notification_preferences_commands.sql": "04f16876577666f97e0d27ce835843bb618ee6783502934ce902c1f96a95a042",
+    "backend/supabase/migrations/20261019085422_notification_delivery_worker.sql": "ee62380580c90a12b876cd104e91d5333175df091be2c9e95a6b0b164fb8e4ec",
+    "backend/supabase/migrations/20261019113019_remove_enabled_source_limit.sql": "da7831054b7dcc41c747b894c17e49a44a6717ee0a7bd24ee0876d8da507eb8f",
+    "backend/supabase/migrations/20261019133005_automatic_source_state.sql": "6e699e1bebcbab4105620be61f62ec78be89d5a12a10c3fe510f191ae1d116d7",
+    "backend/supabase/migrations/20261019133009_automatic_source_completion.sql": "d6e1a84fa5ae224f4c41c4502c07e197aa5f0be227cc1a5201c03ac051ccc107",
+    "backend/supabase/migrations/20261019133012_automatic_source_commands.sql": "1db6043ee56a8ae41bf10ae64994612b60cad0f0d11cc1fb3edb7dd065047c16",
+    "backend/supabase/migrations/20261019133813_prevent_source_queue_starvation.sql": "ff7e465196b060477f7105c5ec90f960c92b3272af3f4a68a13ca761bcc6d5f8",
+    "backend/supabase/migrations/20261019134558_independent_source_discovery_retry.sql": "c69744dbba7fc9ffc0d4525450f101216ff0c3c5cda73a007d67de4f81b15564",
+    "backend/supabase/migrations/20261019141504_grouped_processing_alerts.sql": "611db85759f5209b1f11128b0689f577e845ffeeee009fd43f4a1c4bb343dacc",
+    "backend/supabase/migrations/20261019141931_provider_specific_retry_wait.sql": "1a32b97ea9bb72d1d0dc54b40f3eedb9e7f6e67798e621950da8e51b30fe0225",
+    "backend/supabase/migrations/20261019182158_incident_aware_failure_notifications.sql": "54f270e7447430501bead0fb4b89d4fe069b5a5e3ba2a7d5e5ccca422365903f",
+    "backend/supabase/migrations/20261019182448_provider_outage_backoff.sql": "d6ba6606db33b11429ce012a3f2b9990954c144fa4463177b0310a659ea72f81",
+    "backend/supabase/migrations/20261019184444_daily_failure_preferences.sql": "39b16599771cd490fb121013dd67384a95db2b090ccf259166ce3ab10aae347c",
+    "backend/supabase/migrations/20261019184446_incident_notification_tick.sql": "7f074fbb046bfc263c59b587764fe4fab47a097e3456c8c186d0847b53e1b9b5",
+    "backend/supabase/migrations/20261019184448_incident_notification_claim.sql": "e98252c02e482a5b5e3a5dc2cab2a87bb891be14132f353bb51a6ea762eb2ab0",
+    "backend/supabase/migrations/20261019204907_proposal_trial_readiness.sql": "d81639ba062200286ec2c77755ea8f15b0acdbcb0ed8b78cb28015dfc9e5cd00",
+    "backend/supabase/migrations/20261019230940_generation_resume_provider_scope.sql": "09f392f8fce259b2e26dbc941a50f9fa7d09f02f51b68b0a2025885fa873ff6e",
+    "backend/supabase/migrations/20261020000907_durable_model_round_continuation.sql": "ab519a36979c5c5d55aa8d430dfab8e46ef012d5559b276d87b2147058f61eb9",
+    "backend/supabase/migrations/20261020070522_scoped_proposal_evidence_refresh.sql": "71ad7f8c09e8d7a55f85eed86a28cd5bfc0d59fedd2dde78737eeee99b30eb85",
+    "backend/supabase/migrations/20261020095212_durable_provider_background_and_worker.sql": "70ad1cc05fbd17f89b8bf468d593b45da2df6e63dcabef4025ab56b373af8c7e",
+    "backend/supabase/migrations/20261020141244_model_catalog_and_task_routes.sql": "8cef73c01c98cbf517e4ad965030332c454355b8cfbac571f92dcaca36ac5228",
+    "backend/supabase/migrations/20261020141542_model_target_identity_and_execution.sql": "97b762602dcfecfd25b910ec558684517acb17c6e29da37ee4312af8547a3a1d",
+    "backend/supabase/migrations/20261020143042_durable_model_graph.sql": "7e792cf21220368bd239c5347537e69bb2215e2234cbced653cde057a8bd51c3",
+    "backend/supabase/migrations/20261020150037_model_graph_recovery_and_retention.sql": "b162703ae04eb0c3ab5952893b43d4b8fec8a3093b76c2ce73d309468f4cdc43",
+    "backend/supabase/migrations/20261020195225_automatic_model_transport.sql": "69a29d26e6a7d9f07719136af59235231f4c6ead8f58e55ef812a59dc75ec797",
+    "backend/supabase/migrations/20261020211500_confidentiality_requirement_labels.sql": "f9f4b703e0a74750416db0631d034172dac001b2d8f437e83ba4d5f5c54a4663",
+    "backend/supabase/migrations/20261020212000_accepted_request_observability.sql": "8ca91e535bf39ed4bdb526803f2b567709b5cf65e6423fed0ee4164a99104a94",
+    "backend/supabase/migrations/20261020212500_model_capacity_wait.sql": "bff5af23b6a6d98307529410e7da247ea82bca994876262c9ed3f533dc2e1680",
+    "backend/supabase/migrations/20261020220700_source_model_capacity_recovery.sql": "db2056fa7ef70809e3dc3e6efe47ff7c322cd09374f0b5a06ce5dd15a94b632f",
+    "backend/supabase/migrations/20261021002125_scope_model_resume_to_phase.sql": "806c05b3fb62629b68400693efe77098944d646a7606de0ea03ca4ea5fc5a095",
+    "backend/supabase/migrations/20261021003448_reconcile_orphaned_model_reservations.sql": "0a07cbadfd60ead6e123cce51595e6d6947760f787950bb9b4e60afed2a3d2c7",
+    "backend/supabase/migrations/20261021005033_scope_unknown_task_reservations_to_phase.sql": "df24dbe3a734a4b491c1d22bfca39744a2c91bff7f0c11d8cd5d7c22231d67d4",
+    "backend/supabase/migrations/20261021010317_healthy_model_poll_eligibility.sql": "e9f8888f2b8d2337ccd222df18cdd375c12edbe708fc5e88a4084e9b39ac7044",
+    "backend/supabase/migrations/20261021071021_model_continuation_queue_fairness.sql": "df72ad9db1536083599a2db9f4859c052be48451e0ce9bde523fb5062f569571",
+    "backend/supabase/migrations/20261021071753_complete_draft_export_context.sql": "fba9192b8ee3f4cc3ce02737a956853c1699fc209dad9d645ee715576e7434f2",
+    "backend/supabase/migrations/20261021073417_immutable_model_phase_prompt_pin.sql": "99a0c93774665e8d5e65b29502f0d323b8fc72812b6668302fc664ce81dac51b",
+    "backend/supabase/migrations/20261021085510_bounded_queue_wakeup.sql": "523907b692ef1e0b3de5a80243725c11dd9f8cefb22e02e096fd678ffd558d61",
+    "backend/supabase/migrations/20261021091037_retained_verification_recovery_guard.sql": "2aaab9129c9d8a0b826eee6e6558efe6197713dd7b4f2eca9301c42396e257a6",
+    "backend/supabase/migrations/20261021092435_generation_plan_blocked_status.sql": "42c3eab71e42785b4bdb0168f587697c4953e185033f715d9632fdcb00dc7a7e",
+    "backend/supabase/migrations/20261021094701_terminal_queue_wakeup.sql": "ab9d70b632a79000b9283fed10a187fc9872df766699d98abfb3466a3f12392b",
+    "backend/supabase/migrations/20261021095309_deferred_queue_wakeup.sql": "0f99224c1c62faec97a49f12bf8040c3298fff3ff63b0add8a5b24ef5de696aa",
+    "backend/supabase/migrations/20261021095545_automatic_gemini_reasoning.sql": "88241d9f10b57234a73e1ee2d4ebafc9d92dc839883cbab5ae31c4825352a2e6",
+    "backend/supabase/migrations/20261021102512_recover_paid_writer_candidate.sql": "441e8accbb23b4030800d094c58bdb28648798e36c5bdfa21c3246dc41a0c16a",
+    "backend/supabase/migrations/20261021120717_retry_one_generation_job.sql": "070e7648a89563bbff18c6272d396adbe54f320c8dd1c77dc67ad5a5ef0ce40a",
+    "backend/supabase/migrations/20261021120832_accepted_model_poll_wakeup.sql": "9d4fbe5e8912363113dfe9bed2e9764b2a420045ba0f9c6bfc61426fae492c15",
+    "backend/supabase/migrations/20261021123321_preserve_unchanged_notice_details.sql": "567aee2700a3fab19d09e17de2f716e258b046e5a0db9029331df5c6f245244a",
+    "backend/supabase/migrations/20261021130940_wake_unchanged_notice_continuations.sql": "3df7d9ecb13d65ed5b7cc1ec6ff64caf282cb1ec0213ab332f19675fb19ea162",
+    "backend/supabase/migrations/20261021131353_proposal_section_outline.sql": "06b0ea2c4e9ba8622819f64c5c1aa399b9bb633ba39a628e320ec10e1962ff42",
+    "backend/supabase/migrations/20261021131657_recover_alternate_paid_writer.sql": "69f581623975a6937c5b576f35ef711edae0f7840fdc7a3d9dc8043c1270f1bc",
+    "backend/supabase/migrations/20261021134321_recover_invalid_verification_for_repair.sql": "7d29ad6d75e75b276ddadc30ebddc7124d91c4bf262f2d8137e718dd3d1b10b5",
+    "backend/supabase/migrations/20261021140001_writer_validation_handoff.sql": "9200618d2dc236f7ff799c2013ac118a9ba9fbece1072a4264f61df041d791af",
+    "backend/supabase/migrations/20261021194000_unmapped_draft_rfp_context.sql": "29fcbdae4b8ba4eb4c482037a86adb349794b545c8590d173dabc164aaf057ea",
+    "backend/supabase/migrations/20261021210000_bounded_parallel_model_requests.sql": "b2b23bbef635d2e8bc45c74a0e37fabf975d6ad9721c7580dfc25dd57c05752f",
+    "backend/supabase/migrations/20261021220730_fair_generation_queue.sql": "307acff3753ce11f74a4adfe429e606d74ecb37f6d3e64d9d1191af7142e626b",
+    "backend/supabase/migrations/20261021221342_semantic_proposal_workflow.sql": "e991702443b3d7dc236e17fc43f736bce187c563ed78453bf7e55bc9f4a0022a",
+    "backend/supabase/migrations/20261022070632_bounded_hierarchical_planning.sql": "d46b69d0ecd24bccfe7e1096e49398b0879edc2c26ced06c9530136c9948beef",
+    "backend/supabase/migrations/20261022081448_prioritize_proposal_continuations.sql": "6a89e6fe5f1f676933f582cb7af8ab9cca45f6e5cdd707298a851beb0a6944f1",
+    "backend/supabase/migrations/20261022100048_generic_revalidated_scope_recovery.sql": "cb4e3186d7b8f14bedf96ba9ee8705c76d1881676171aaec70e0200d4796bddd",
+    "backend/supabase/migrations/20261022102239_transient_database_recovery.sql": "cff3c28224a9e00182facac8e61869827975cd89c9b3716be278158b0f899a0f",
+    "backend/supabase/migrations/20261022105324_revalidate_retained_writer.sql": "a4856c34681e4e211631535513e5bcd76498badec20cba8ef0ded19b8c725e2f",
+    "backend/supabase/migrations/20261022110839_review_verification_boundary_recheck.sql": "a27b32baba3571c9923b33ddf1232f4526bbda07469d2ac3c51d897ebb3b4647",
+    "backend/supabase/migrations/20261022113053_citable_review_context_recovery.sql": "796593dd5611dcc03abebf581d7eb1d900f54167efe27983543ecca45bb431b5",
+    "backend/supabase/migrations/20261022142237_recover_legacy_review_on_resume.sql": "a72eab36eab95f959c68989290dcbb0b13dbbab1932e44dde37d3fed0308dd59",
+    "backend/supabase/migrations/20261022142238_source_browser_queue.sql": "4afd4cdc06312b5b7e0c1390df84249264570f43b68ab455bc6d4a92de2883f9",
+    "backend/supabase/migrations/20261022144816_preserve_frozen_knowledge_on_addition.sql": "dae1c381034563b1780f6e33f6a6a740c28e15e75afee66f527fb4673bfbb21d",
+    "backend/supabase/migrations/20261022150402_browser_worker_actions_identity.sql": "ff68ed88b1919de07a00f04cacd69a1ecb064411dea5d7caf3af0c517b696b27",
+    "backend/supabase/migrations/20261022195526_prioritize_static_tender_fetches.sql": "ecde59c176014fb0509af93aef4a88d90b352de0ee1424a9c3745b1db13deecf",
+    "backend/supabase/migrations/20261022200046_prioritize_ready_browser_continuations.sql": "a4dd750ce47db746c9b5b42ef7cba624f737b1d1f234437a26ebc4036deed796",
+    "backend/supabase/migrations/20261022230741_scope_assessment_currentness.sql": "cbc989c7e51b5a3bf5ca5991395c513d138404453dbecfb3d84f7b64014ec271",
+    "backend/supabase/migrations/20261022231343_public_notice_ocr_queue.sql": "ea094733b47775884b8dafc04920eba89550f846f2e02c4a1daf98d7c24849dc",
+    "backend/supabase/migrations/20261022231428_render_public_notice_details.sql": "1d5e15662f0da7ad72e225fc70d059ad1e838682994cfc918e26d1dee2e68929",
+    "backend/supabase/migrations/20261022231840_align_notice_confidentiality_labels.sql": "cec57588d6b1038452df3f8edefbf1d1123640eaafb47ae28e2833dc33940674",
+    "backend/supabase/migrations/20261022235500_prioritize_configured_dom_sources.sql": "f84e40109a01c085d3cda4bf37dae83172a09ff7fd1873d515535e4e04d89d0c",
+    "backend/supabase/migrations/20261023001313_retry_transient_public_read_receipts.sql": "d4f656bfbd2eff4aeef5da0c33df60645ce55154573f20ecae5668e4729f4a89",
+    "backend/supabase/migrations/20261023002056_allow_current_browser_completion_during_parent_resume.sql": "c7c6aa25e6fe9158f89dd52d8bc2c404d61788cc923a4cb7f931d58883c058d7",
+    "backend/supabase/migrations/20261023003552_wake_durable_reader_and_graph_handoffs.sql": "0e37cd485fa4bad2f27438c1a29febab3a7692eb467f7d5f56f10dc8c08c2943",
+    "backend/supabase/migrations/20261023150859_recover_completed_proposal_draft.sql": "d4654615a25d223867d1c9b9d8a258258531623c9b91b227c33d03543bb6e163",
+    "backend/supabase/migrations/20261023160416_isolate_notice_ocr_waits.sql": "af867e00102a0f8c903fccbd8ab618caea1618264441190b59e7e9bf5d2b4d37",
+    "backend/supabase/migrations/20261026112011_openrouter_provider.sql": "6e7eba1a7a50178add823d7a868a50481e8ff3fcedf74fa7b37e4e0a33512db8",
+    "backend/supabase/migrations/20261031115846_requested_model_processing.sql": "3eedc737b3b813e30f802b1ea39d42f8d017e4d06e7f9dada535a23bcb2ed3ac",
+    "backend/supabase/migrations/20261031202143_flexible_proposal_input_drafts.sql": "5bac8ff0a8e070688873b2e6c020a3c7ddb51c7dc8e0ad8005735e4e653ccf6c",
+    "backend/supabase/migrations/20261102231710_writer_handoff_usage_blocker.sql": "f15bd6dbfea0df624fff79e79c36770ee4625230893379fdb51e6341f09db9a1",
+    "backend/supabase/migrations/20261102231721_terminal_background_request_lifecycle.sql": "f7f4d59258ed951d4c2a955ff8cf28245f67411e658b6948fa91e09cec8ebc07",
+    "backend/supabase/migrations/20261103022500_analysis_verifier_recheck.sql": "cead30c43776e35822e4fa63476223a5ff4abe8de35218286d66dd5bd8c22382",
+    "backend/supabase/migrations/20261103031500_analysis_recheck_prompt_identity.sql": "30f79868deaa94daab1554584aede2545a1611a29f7b19d26503e75f57720f14",
+    "backend/supabase/migrations/20261103032000_model_admission_fairness.sql": "3bb13dd60fb4322ac3ba70c534ec6165a668da547318d1ea49232ae1d401c927",
+    "backend/supabase/migrations/20261104121022_partial_document_coverage.sql": "7a33a9794c32d398d8fa2740c80f9dce0f9eeac93c7af5616947fb24bcdb9663",
+    "backend/supabase/migrations/20261104121116_proposal_delivery_snapshots.sql": "323ae4275ffd64bf61413f961d9a753674154a63241cfc63230f6e2ccf27e6d2",
+    "backend/supabase/migrations/20261104121423_provider_failure_scope.sql": "68410a020a500f45587fbf845c947aff491d0f6586a3a1b09be6593b840f715a",
+    "backend/supabase/migrations/20261104121443_automatic_usage_recovery.sql": "0121ca91d4cdaea64eaacbce44ee790609ae03278a771ce1773a08e97f6170b8",
+    "backend/supabase/migrations/20261104122015_company_evidence_retrieval.sql": "4cf7302d5a137e33741a1369eb65a9563ea37da5b9428a3222ad0566c48fedee",
+    "backend/supabase/migrations/20261104122333_durable_delivery_artifacts.sql": "40e413760862579d6caddf79ddbb4c42134f05a4657cef5c15294be5d2aaf128",
+    "backend/supabase/migrations/20261104133930_durable_uploaded_document_ocr.sql": "1f189df86545aec22f2d4ee8053912b0edad36fd4fa915caf3e5df3d68638f9d",
+    "backend/supabase/migrations/20261104134540_source_evidence_authority.sql": "fba123633c45282cbf12a2f7907768c647032da673d65a7853433fab615bce0e",
+    "backend/supabase/migrations/20261104134646_structured_proposal_authoring.sql": "1ee8a3bdc3c5eaa0b698f22565653d8d0a73b4cb4f42d4c36c893cbb4bf46bd5",
+    "backend/supabase/migrations/20261104135306_proposal_consistency_contract.sql": "1b8401b675194055d69d78e38ffc3f73f9f4d1036b7ce3fc66fe64cff8a6cdfe",
+    "backend/supabase/migrations/20261104135748_proposal_consistency_review.sql": "b31ae1d9dc08e4dea56cd32af49cb2c430f7a8ef18d1d4104c50fcaec5107097",
+    "backend/supabase/migrations/20261104140628_authored_response_adoption.sql": "2afe615339f15807baf38ff761df392222de529dac233acaeb81f225506f3404",
+    "backend/supabase/migrations/20261104142525_proposal_issuance_deadline.sql": "5d81ed380b3c4c0eb2637cf4e9ebea566b6b86e5a4a42adcc476391e475aca51",
+    "backend/supabase/migrations/20261104143632_generated_review_delivery.sql": "8da4bdcbd534b04f62d157bbd49d2aa2a5e0224cdfd7fdd19f18682653dfeeaa",
+    "backend/supabase/migrations/20261104144002_requirement_applicability_binding.sql": "dca1898a34571f6ccf88ce57bf24e84f5faed983d81dc5aa348b320155ebfb3b",
+    "backend/supabase/migrations/20261104150228_restored_source_review_assurance.sql": "d2e9f7b70f4cf2379d1a488b72612cb07afae9636eeed337b27c2225ecf6659a",
+    "backend/supabase/migrations/20261104151946_current_proposal_issuance_contract.sql": "4413206e83a6a19755d969d70b6ca4dc370c76ba79e57159d7f206d96d0a841e",
+    "backend/supabase/migrations/20261104152913_durable_ordinary_export_packages.sql": "c697b1117d8a9398cbdb48848c4090870960e9ec7679577207bd9392f7589c52",
+    "backend/supabase/migrations/20261104160125_proposal_issuance_file_capacity.sql": "46ba7ddc4c1d004557bd35e7c11c99c89f416349554e1411197c2193f9d16723",
+    "backend/supabase/migrations/20261104163406_serialize_local_document_rendering.sql": "6f1a87cff03d035446cce8e8aefab0e09ce23c2d2c1d4d59377f741e89e2f088",
+    "backend/supabase/migrations/20261104170442_durable_storage_write_intents.sql": "a89083335e0e61107ab7939f3582fa7dc8e664615bcc6fe8180eb5630df623c9",
+    "backend/supabase/migrations/20261104172700_storage_write_retirement_proofs.sql": "5269599b431da34c3f7ee77d06442441e692c9f2b754d2f2050a42e06dbe1634",
+    "backend/supabase/migrations/20261104212818_bounded_command_batch_results.sql": "ce77978cce4a0c09ea93ca3939b1d90029bd9987da303346752ccb2ac96796b6"
+  },
+  "source_revision": "4a27d16dc56c1242bff0bbd205bce8d38935ba83",
+  "source_unchanged": true,
+  "transport": "chunks",
+  "version": 1
+}
