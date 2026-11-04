@@ -192,6 +192,35 @@ These integrity checks and scoped human reviews do not establish exhaustive
 semantic truth or prove cross-language recall; independent qualification and
 production evidence remain separate.
 
+Normal proposal review and approval integration is implemented locally. A usable
+scoped review panel records actual response excerpts, implementation method,
+deliverable, acceptance evidence, preserved/equivalent qualifiers and explicit
+shared numeric/date/decision bindings. The API computes the report from server
+content and authenticated identity; client pass flags are rejected. The service
+commit rechecks workspace role after locking, source/authority/material currentness,
+actual section rows, current Decimal calculation/delivery records, expected
+revision and actor-specific idempotency. A superseded review cannot replay as
+current. The approval wrapper retains every prior blocker and binds its review
+hash to the accepted current report. Initial draft assembly remains deliverable.
+New report/review columns use the existing version backup/retention contract;
+restored history cannot bypass current role/source checks. ACL handling supports
+both Supabase and managed DigitalOcean role families.
+
+Local evidence: 83 focused tests in six files pass, including a real migrated
+source-authority inventory through service review and actual final approval,
+source/body/member/revision/calculation change rejection, full-proof retention,
+partial-claim rejection and API trusted-report denial. A 64-test assessment/review
+regression passed after correcting function-qualified parameter labels in the
+renamed generation delegate. Both package typechecks and builds pass; all 301
+frontend tests in 47 files pass. The standalone full backend run with W05's
+copied migration but without its runtime/test integration reported 2,168 passing
+and 36 failing tests: source-contract fixture/runtime mismatches, the subsequently
+fixed generation-wrapper label regression, and one historical migration timeout.
+Combined W05/W06/W08/W10 full backend validation remains a root integration gate;
+this entry does not claim that gate passed. No production or paid model call was
+made. Ordinary final approval still requires explicit current human review;
+that does not wait inside generation or mask provider-unavailability errors.
+
 ## November 4 — integrated durable draft rendering and independent review
 
 Stages 3–7: six parallel implementation tracks are integrated on

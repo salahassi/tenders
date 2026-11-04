@@ -1,3 +1,4 @@
+import ProposalConsistencyReview from "./ProposalConsistencyReview";
 import { useEffect, useState } from "react";
 import { useApp } from "../lib/store";
 import { Button, Field } from "./ui";
@@ -112,6 +113,14 @@ export default function ApprovalPanel({ proposal }: { proposal: Proposal }) {
               await refresh?.();
             }}
           />
+          {data.plan.frozen_context.proposal_consistency_version === 1 && (
+            <ProposalConsistencyReview
+              key={proposal.versionId}
+              client={backend}
+              versionId={proposal.versionId}
+              onSaved={load}
+            />
+          )}
           <section className="panel commercial-panel">
             <h2>Requirement coverage and final review</h2>
             <p>

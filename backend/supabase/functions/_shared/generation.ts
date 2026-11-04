@@ -1293,7 +1293,7 @@ export async function nextStage(ctx: PlanContext): Promise<{
       // Model review answers are evidence of model review, not an authorized
       // human's source/content-bound substantive fulfillment attestation.
       fulfillment: [], human_review: null, separate_volumes: separate,
-      input_complete: !(frozen.input_materials?.documents || []).some((d: Row) =>
+      input_complete: Array.isArray(frozen.input_materials?.documents) && !frozen.input_materials.documents.some((d: Row) =>
         d.used_for_draft === false || d.extraction_coverage?.complete === false),
     }) : null;
   if (consistency) for (const gap of consistency.diagnostics) questions.push({

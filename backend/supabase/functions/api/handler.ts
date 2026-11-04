@@ -1,3 +1,7 @@
+import {
+  proposalConsistencyReviewSchema,
+  reviewProposalConsistency,
+} from "../_shared/proposalConsistencyReview.ts";
 import { recoveryRoute } from "../_shared/recovery.ts";
 import { buildExportModel, verifyExportDocx } from "../_shared/export.ts";
 import {
@@ -698,6 +702,15 @@ export function createApiHandler(
             source_id: uuid.parse(verification[1]),
           }),
         );
+      const consistencyPath = path.match(
+        /^\/v1\/proposal-versions\/([^/]+)\/consistency$/,
+      );
+      if (request.method === "GET" && consistencyPath)
+        return respond(
+          await backend.userRpc(token, "proposal_consistency_context", {
+            version_id: uuid.parse(consistencyPath[1]),
+          }),
+        );
       const complete = path.match(
         /^\/v1\/documents\/([^/]+)\/complete-upload$/,
       );
@@ -708,6 +721,35 @@ export function createApiHandler(
           "IDEMPOTENCY_KEY_REQUIRED",
           "Supply an Idempotency-Key of at most 200 characters.",
         );
+      if (request.method === "POST" && consistencyPath) {
+        const input = proposalConsistencyReviewSchema.parse(
+          await readJson(request),
+        );
+        const versionId = uuid.parse(consistencyPath[1]);
+        const context = await backend.userRpc(
+          token,
+          "proposal_consistency_context",
+          { version_id: versionId },
+        );
+        const { report, review } = await reviewProposalConsistency(
+          context,
+          input,
+          user.id,
+        );
+        return respond(
+          await backend.internal("complete_proposal_consistency", {
+            version_id: versionId,
+            actor_id: user.id,
+            expected_revision: input.expected_revision,
+            binding_hash: input.binding_hash,
+            request_body: input,
+            idempotency_key: key,
+            report,
+            review,
+          }),
+          201,
+        );
+      }
       if (
         request.method === "POST" &&
         ["/v1/estimates", "/v1/deliveries"].includes(path)
