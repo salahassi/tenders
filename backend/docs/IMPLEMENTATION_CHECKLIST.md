@@ -8088,3 +8088,22 @@ but delivery envelopes do not impose those bounds universally: source chunks
 allow 12,000 and legacy section bodies allow 100,000 characters. The fix therefore
 streams body/cell runs independently of the modern authoring bounds. No provider,
 production or billing calls were made.
+
+### 2026-11-04 — actual final native renderer and asynchronous content validation
+
+The frozen synthetic admitted matrix passes all seven cases through the actual
+Deno child and final asynchronous DOCX verifier, with the API/worker application
+imports loaded. Sources, inputs, immutable runtime image and output hashes are
+recorded in `evidence/native-renderer-capacity-20261104.json`; raw DOCX files remain
+in the local output evidence directory. No provider or hosted requests occur.
+
+At the unchanged 128 MiB child heap, 30-second render attempt, 1 CPU and 640 MiB
+container limit, the 4,143-table fixture preserves 2,112,930 normalized cells:
+11.62 seconds rendering and 56.13 seconds including full content verification.
+The 1.38-million-character alternating-script fixture takes 3.44 / 22.91 seconds.
+The 405,000 explicit empty cells, 329,000 nonempty cells, 50,000 cells, 10,000
+paragraphs and ragged-row fixture also verify exactly. The matrix leaves no child
+running and observes at most one child. Peak container usage is 649,199,616 bytes,
+only about 21.9 MB below the limit; this is measured offline evidence with modest
+headroom, not a production concurrency or latency guarantee. A separate actual
+worker two-volume/readback/deadline qualification remains outstanding.
