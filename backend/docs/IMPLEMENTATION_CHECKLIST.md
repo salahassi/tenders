@@ -8671,3 +8671,28 @@ and explicit storage maintenance cannot concurrently change the same workloads.
 The physical adapter already writes each scope file once; inspection confirmed
 there is no duplicate scope write in the committed helper. Workflow source checks
 verify the shared group and cancellation setting. No hosted operation occurred.
+
+
+### 2026-11-04 — bound repeated private-key marker policy scans
+
+Confirmed a second policy CPU defect in the actual shared content-policy path:
+a synthetic 1 MiB line containing repeated `-----BEGIN ` markers without a
+`PRIVATE KEY` suffix exceeded a strict three-second isolated Node timeout. The
+fresh old-code regression passed 29 controls and failed the bounded subprocess
+case. Replaced only that greedy private-key branch with a single-pass literal
+marker scan. The same case-insensitive BEGIN-before-PRIVATE-KEY rule and exact
+JavaScript dot-excluded line terminators are retained; credential assignment,
+email and confidentiality categories retain their existing behavior and order.
+
+All 119 focused tests across three files passed in 1.96s, including 41,371
+exhaustive marker/terminator sequences, 27 explicit policy/case/Unicode controls,
+the earlier email parity corpus and synthetic provider-policy tests. Actual
+1 MiB missing/matching-suffix scans used 2.934–8.361ms of process CPU across all
+three policy entrypoints, within the predeclared local one-second CPU bound.
+Backend typecheck passed. Source, test, red/green logs and CPU observations are
+bound in `evidence/content-policy-credential-complexity-20261104.json`.
+
+No provider calls, production changes, paid-wire changes or production budget
+changes occurred. Root's combined gates, rebuilt actual-image resource proof
+and deployment remain separate; a local policy timing pass is not a render
+memory/deadline qualification.
