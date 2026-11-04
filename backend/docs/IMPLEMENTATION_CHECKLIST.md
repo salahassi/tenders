@@ -32,6 +32,29 @@ the current reliability implementation is still draft PR24.
 The evidence files referenced by the detailed entries retain their exact scope
 and source hashes. Historical failures are retained rather than relabeled.
 
+### November 4 — frozen schema and gateway contract for the isolated cloud drill
+
+The exact 22-migration manifest is now committed at
+`backend/scripts/ops/proposal-delivery-release.json`, canonical SHA-256
+`8de17c4f4a3f625259c8f0318e0d51d5f344e607aecbcd737923f7e3e765a58e`.
+Its baseline is the sanitized inner receipt of successful inventory run
+41881660683; it binds the qualified gateway before/after configuration and
+pinned-binary receipt. Local freeze and source verification pass.
+
+This permits the reviewed `doks-access.yml` **mode=restore** drill on the
+published committed checkout while runtime work continues. That drill copies
+catalog metadata only into a nonce-owned isolated database and exercises actual
+Auth/Storage with synthetic fixtures. It does not deploy application images,
+copy customer rows, invoke models or qualify the application renderer. Its
+hosted result remains pending.
+
+The actual worker steady-state test remains **failed**: the temporary 256 MiB
+parent-heap cap completed the first two-volume job in about 113 seconds, then
+the unchanged 640 MiB container was OOM-killed when starting the second job.
+Native verification process isolation is being implemented and independently
+reviewed. The earlier single-job capacity results do not close this gate; final
+combined checks, image qualification, rollout and hosted issuance are pending.
+
 ## November 4 — historical recovery transitions qualified at current schema
 
 G13 now has twelve additional public-command integration cases combining paid
