@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "captured_at": "2026-11-04T19:50:51.100294+00:00",
+  "scope": "Independent synthetic Python Kubernetes-API state regression; no Kubernetes, PostgreSQL, native container or hosted call.",
+  "production_calls": 0,
+  "finding": "Removing a terminal Pod finalizer before durable per-UID exit proof could lose its identity through immediate garbage collection and permanently block later recovery of a mixed group.",
+  "correction": "Persist exact observed termination receipts in the Deployment journal before finalizer removal; retain mixed groups; recapture the remaining journal after initial restore.",
+  "test": "Unchanged independent script: two captured Storage Pods A/B; A terminal and immediately garbage-collected on finalizer removal, then B terminal and fresh-run restore.",
+  "red": "A removed; fresh recovery refused despite B terminal.",
+  "green": "A retained while B runs; after B exits fresh recovery completes and clears pending journal.",
+  "green_source_sha256": {
+    "backend/scripts/ops/storage-retirement/coordinator.py": "38e02acb2455e98f361ffc5331caba4312a72f1c03752cf58e13701b9723ca90",
+    "backend/scripts/ops/storage-retirement/kubernetes.py": "df83c28dbd0b32566d616eacc982de4b1c1d756b2ff57687a29cfc531c79ec76",
+    "backend/scripts/ops/test_storage_retirement_kubernetes.py": "5cc3640b956923381842efe9b6e38fbf71666b0e37109b3bca44aed0cf87abb5"
+  },
+  "artifacts": {
+    "review-retirement-gc.py": {
+      "sha256": "de7f7c2efa2f617937d1b414a969f4deb1ed22909438480991b9072ecb260ffa",
+      "content": "import copy,importlib.util,json,sys,uuid\nfrom pathlib import Path\nrepo=Path(sys.argv[1]);ops=repo/'backend/scripts/ops';sys.path.insert(0,str(ops))\nspec=importlib.util.spec_from_file_location('reviewed_kube_fixture',ops/'test_storage_retirement_kubernetes.py');m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)\nf=m.AdapterTests('test_captures_actual_pvc_and_selected_nonsecret_settings');f.setUp()\ntry:\n f.s['expected_workloads']['storage']['replicas']=2\n dep=f.cluster.resources['deployment','storage'];dep['spec']['replicas']=2;dep['status'].update(readyReplicas=2,updatedReplicas=2)\n a=f.cluster.resources['pod','storage-pod'];b=copy.deepcopy(a);b['metadata'].update(name='storage-pod-b',uid=str(uuid.uuid4()));f.cluster.resources['pod','storage-pod-b']=b\n captured=f.a.capture(f.s);f.a.protect_pods(captured,f.a.nonce);f.a.stop(captured,f.a.nonce)\n a['metadata']['deletionTimestamp']='2026-11-04T00:00:00Z'\n original=f.cluster.command\n def command(args,**kwargs):\n  result=original(args,**kwargs)\n  if args[:2]==['patch','pod']:\n   pod=f.cluster.resources.get(('pod',args[2]))\n   if pod and pod['metadata'].get('deletionTimestamp') and not pod['metadata'].get('finalizers'):\n    f.cluster.resources.pop(('pod',args[2]))\n  return result\n f.cluster.command=command\n errors=[]\n try:f.a.restore(captured,f.a.nonce)\n except Exception as e:errors.append(str(e))\n removed_a=('pod','storage-pod') not in f.cluster.resources\n # B eventually exits, so every original process now has an observed terminal\n # result. Recovery must not require resurrecting A after its proven GC.\n from datetime import datetime,timezone\n b['metadata']['deletionTimestamp']=datetime.now(timezone.utc).isoformat()\n b['status']['containerStatuses'][0].update(containerID='containerd://'+'b'*64,state={'terminated':{'exitCode':0,'finishedAt':datetime.now(timezone.utc).isoformat()}})\n fresh=m.k.KubernetesAdapter(f.temp.name,f.a.client,f.s)\n success=True\n try:fresh.restore(fresh.recovery_capture(),fresh.nonce)\n except Exception as e:success=False;errors.append(str(e))\n result={'fixture':'synthetic-python-kubernetes-api-only','production_calls':0,'removed_terminal_a_after_finalizer':removed_a,'recovery_after_b_terminated':success,'errors':errors,'pending_marker':f.cluster.resources['deployment','storage']['metadata'].get('annotations',{}).get(m.k.UNCERTAIN)}\n print(json.dumps(result))\n if not success:raise SystemExit(1)\nfinally:f.tearDown()\n"
+    },
+    "storage-retirement-gc-red.log": {
+      "sha256": "b431ae5693c492ef70f1c8a983b8152d3c182edbe5e2c32e5b3b72350b649785",
+      "content": "{\"fixture\": \"synthetic-python-kubernetes-api-only\", \"production_calls\": 0, \"removed_terminal_a_after_finalizer\": true, \"recovery_after_b_terminated\": false, \"errors\": [\"STORAGE_RETIREMENT_PROCESS_RECONCILIATION_REQUIRED\", \"STORAGE_RETIREMENT_PROCESS_RECONCILIATION_REQUIRED\"], \"pending_marker\": \"{\\\"nonce\\\":\\\"d84b56a4-18fe-441e-943d-ca7dfff3afcc\\\",\\\"pods\\\":[{\\\"name\\\":\\\"storage-pod\\\",\\\"uid\\\":\\\"783b83f9-16c5-495b-8301-42d0a12ec0c4\\\"},{\\\"name\\\":\\\"storage-pod-b\\\",\\\"uid\\\":\\\"8f8ed5aa-66b0-4d9f-945e-7cb04f155c41\\\"}]}\"}\n"
+    },
+    "storage-retirement-gc-green.log": {
+      "sha256": "6fa9f10849d11f277d74f4b693bbcb53f84bde13407d595f30b14b12e0d96b47",
+      "content": "{\"fixture\": \"synthetic-python-kubernetes-api-only\", \"production_calls\": 0, \"removed_terminal_a_after_finalizer\": false, \"recovery_after_b_terminated\": true, \"errors\": [\"STORAGE_RETIREMENT_PROCESS_RECONCILIATION_REQUIRED\"], \"pending_marker\": null}\n"
+    }
+  },
+  "limits": [
+    "The pre-fix coordinator source hash was not separately captured; the red log and independent script are retained.",
+    "This confirms code behavior under an immediate-GC synthetic API; real kubelet exit observation and cloud retirement still need their own hosted proof.",
+    "The source owner separately reports31 coordinator/adapter tests; those are not counted as independently rerun here."
+  ]
+}

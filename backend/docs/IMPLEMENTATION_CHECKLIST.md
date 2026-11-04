@@ -8577,3 +8577,24 @@ provider call or hosted retirement acceptance occurred. Root owns final package
 checks, manifest freeze, isolated cloud restore, release and hosted acceptance.
 The procedure and recovery/whole-cluster boundaries are documented in
 [STORAGE_WRITE_RETIREMENT_RUNBOOK.md](STORAGE_WRITE_RETIREMENT_RUNBOOK.md).
+
+### 2026-11-04 — independently verify retirement recovery after immediate Pod deletion
+
+A separate synthetic Kubernetes API reproduction exposed a recovery dead end:
+with two original Pods, cleanup removed the terminal Pod's finalizer before
+durable per-UID proof was retained. Immediate garbage collection erased that
+identity, and fresh recovery remained blocked even after the other Pod exited.
+The corrected coordinator saves exact observed termination receipts in its
+Deployment journal before removing finalizers and retains mixed terminal/live
+groups. The unchanged independent script then passes: the first record remains
+while its peer runs, and fresh recovery completes after the peer exits.
+
+The independent red and green output, unchanged script and reviewed green-source
+hashes are retained in
+[evidence/storage-retirement-gc-review-20261104.json](evidence/storage-retirement-gc-review-20261104.json).
+The pre-fix coordinator source hash was not separately recorded; that limit is
+explicit in the receipt. This is a small pure-Python API-state regression, not a
+real kubelet termination, PostgreSQL, native-container or hosted retirement test.
+No production/provider calls or CPU-heavy suites were run by this review. The
+final scoped source review found no additional material blocker after the fix;
+checked rollout and hosted physical/process observations remain separate gates.
