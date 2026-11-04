@@ -7,6 +7,7 @@ type RequestOptions = {
   body?: unknown;
   idempotencyKey?: string;
   signal?: AbortSignal;
+  expectedIdentity?: string;
 };
 
 export interface DocumentExtractionReviewData {
@@ -76,6 +77,30 @@ export class BackendRequestError extends Error {
     super(message);
   }
 }
+/** Browser stale-result guard only; server Auth and membership remain authoritative. */
+export async function currentBackendIdentity(
+  client: BackendClient,
+  expected?: string,
+): Promise<string> {
+  const {
+    data: { session },
+    error,
+  } = await client.auth.auth.getSession();
+  if (error) throw error;
+  const identity = session?.user?.id || session?.access_token;
+  if (
+    !session?.access_token ||
+    !identity ||
+    (expected && identity !== expected)
+  )
+    throw new BackendRequestError(
+      "UNAUTHENTICATED",
+      "Sign in to continue.",
+      401,
+    );
+  return identity;
+}
+
 export class BackendClient {
   readonly auth: SupabaseClient;
   private heavyTail: Promise<void> = Promise.resolve();
@@ -160,6 +185,7 @@ export class BackendClient {
       path,
       options.signal,
       (identity) => this.sendRequest<T>(path, options, identity),
+      options.expectedIdentity,
     );
   }
 
@@ -168,9 +194,11 @@ export class BackendClient {
     path: string,
     signal: AbortSignal | undefined,
     send: (identity?: string) => Promise<T>,
+    expectedIdentity?: string,
   ): Promise<T> {
     signal?.throwIfAborted();
-    if (!isHeavyFileRequest(method, path.split("?")[0])) return send();
+    if (!isHeavyFileRequest(method, path.split("?")[0]))
+      return send(expectedIdentity);
     // One browser client shares the API's heavy-file lane, including full
     // JSON reads and all artifact bytes. This queues sends, never retries them.
     // Capture identity now: queued work must not inherit a later sign-in.
@@ -197,7 +225,14 @@ export class BackendClient {
           "Sign in to continue.",
           401,
         );
-      return await send(session.user?.id || session.access_token);
+      const identity = session.user?.id || session.access_token;
+      if (expectedIdentity && identity !== expectedIdentity)
+        throw new BackendRequestError(
+          "UNAUTHENTICATED",
+          "Sign in to continue.",
+          401,
+        );
+      return await send(identity);
     } finally {
       release();
     }
@@ -261,6 +296,7 @@ export class BackendClient {
     resource: string,
     filters: Record<string, string> = {},
   ): Promise<T[]> {
+    const identity = await currentBackendIdentity(this);
     const rows: T[] = [];
     // Activity uses lossless decimal sequence IDs in descending order;
     // the remaining generic resources use ascending UUID IDs.
@@ -279,7 +315,7 @@ export class BackendClient {
       const { data } = await this.request<{
         records: T[];
         next_cursor: string | null;
-      }>(`/v1/${resource}?${query}`);
+      }>(`/v1/${resource}?${query}`, { expectedIdentity: identity });
       if (
         !Array.isArray(data.records) ||
         (data.next_cursor !== null && typeof data.next_cursor !== "string")
@@ -311,6 +347,7 @@ export class BackendClient {
       cursor = data.next_cursor;
       if (cursor) seen.add(cursor);
     } while (cursor);
+    await currentBackendIdentity(this, identity);
     return rows;
   }
   async downloadArtifact(id: string, signal?: AbortSignal): Promise<Blob> {

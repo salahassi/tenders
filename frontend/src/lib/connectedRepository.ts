@@ -9,7 +9,11 @@ import type {
   DocumentRecord,
   ProposalReview,
 } from "../types";
-import { BackendClient, BackendRequestError } from "./backendClient";
+import {
+  BackendClient,
+  BackendRequestError,
+  currentBackendIdentity,
+} from "./backendClient";
 
 import { getLocalFile } from "./knowledgeFiles";
 import { getReviewDocuments } from "./proposalReview";
@@ -137,7 +141,11 @@ export class ConnectedRepository {
       throw new Error("A newer workspace request replaced this response.");
   }
 
-  private async list(path: string, generation: number): Promise<Row[]> {
+  private async list(
+    path: string,
+    generation: number,
+    identity: string,
+  ): Promise<Row[]> {
     const rows: Row[] = [];
     // Required workspace records stay complete as the workspace grows.
     // Audit history is read separately by the decision-history panel.
@@ -149,6 +157,7 @@ export class ConnectedRepository {
       this.assertCurrentLoad(generation);
       const { data } = await this.client.request<unknown>(
         `/v1/${path}?limit=${pageSize}${cursor ? `&cursor=${cursor}` : ""}`,
+        { expectedIdentity: identity },
       );
       this.assertCurrentLoad(generation);
       const schema = ["audit-events", "regeneration-requests"].includes(path)
@@ -185,6 +194,10 @@ export class ConnectedRepository {
 
   async load(): Promise<AppState> {
     const generation = ++this.loadGeneration;
+    const captured = currentBackendIdentity(this.client).then(
+      (identity) => ({ identity }),
+      (error: unknown) => ({ error }),
+    );
     const previous = this.loadTail;
     let release!: () => void;
     this.loadTail = new Promise<void>((resolve) => {
@@ -193,14 +206,22 @@ export class ConnectedRepository {
     await previous;
     try {
       this.assertCurrentLoad(generation);
-      return await this.loadCurrent(generation);
+      const result = await captured;
+      if ("error" in result) throw result.error;
+      this.assertCurrentLoad(generation);
+      return await this.loadCurrent(generation, result.identity);
     } finally {
       release();
     }
   }
 
-  private async loadCurrent(generation: number): Promise<AppState> {
-    const { data } = await this.client.request<unknown>("/v1/bootstrap");
+  private async loadCurrent(
+    generation: number,
+    identity: string,
+  ): Promise<AppState> {
+    const { data } = await this.client.request<unknown>("/v1/bootstrap", {
+      expectedIdentity: identity,
+    });
     this.assertCurrentLoad(generation);
     const boot = z
       .object({
@@ -247,7 +268,8 @@ export class ConnectedRepository {
     // table. Parallel lists would compete for the server's heavy-file lane.
     const tables: (readonly [string, Row[]])[] = [];
     for (const path of paths)
-      tables.push([path, await this.list(path, generation)]);
+      tables.push([path, await this.list(path, generation, identity)]);
+    await currentBackendIdentity(this.client, identity);
     this.assertCurrentLoad(generation);
     this.rows = Object.fromEntries(tables);
     this.workspace = boot.workspace;

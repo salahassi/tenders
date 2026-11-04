@@ -93,6 +93,16 @@ function fixture(fail = false) {
     repository: new ConnectedRepository({
       request,
       uploadOriginal,
+      auth: {
+        auth: {
+          getSession: async () => ({
+            data: {
+              session: { access_token: "synthetic-token", user: { id: actor } },
+            },
+            error: null,
+          }),
+        },
+      },
     } as unknown as BackendClient),
     commands,
     parts,

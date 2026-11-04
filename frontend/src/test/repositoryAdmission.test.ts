@@ -5,6 +5,16 @@ import { BackendClient, BackendRequestError } from "../lib/backendClient";
 vi.mock("../lib/deployment", () => ({ deployment: {} }));
 const id = (n: number) =>
   `00000000-0000-4000-8000-${n.toString(16).padStart(12, "0")}`;
+const auth = {
+  auth: {
+    getSession: async () => ({
+      data: {
+        session: { access_token: "synthetic-token", user: { id: id(1) } },
+      },
+      error: null,
+    }),
+  },
+};
 const envelope = (data: unknown) => ({
   data,
   meta: { request_id: "synthetic" },
@@ -54,6 +64,7 @@ it("serializes complete required tables and preserves one-record content pages p
   });
   const state = await new ConnectedRepository({
     request,
+    auth,
   } as unknown as BackendClient).load();
   expect(peak).toBe(1);
   expect(request).toHaveBeenCalledTimes(19);
@@ -84,6 +95,7 @@ it("serializes overlapping loads and does not send or publish superseded queued 
   );
   const repository = new ConnectedRepository({
     request,
+    auth,
   } as unknown as BackendClient);
   const old = repository.load();
   await vi.waitFor(() => expect(request).toHaveBeenCalledTimes(1));
@@ -117,6 +129,7 @@ it("stops superseded pagination before another page and leaves the next load usa
   });
   const repository = new ConnectedRepository({
     request,
+    auth,
   } as unknown as BackendClient);
   const old = repository.load();
   await vi.waitFor(() => expect(held).toBe(true));
@@ -146,6 +159,7 @@ it("does not retry external busy and releases load sequencing for explicit refre
   });
   const repository = new ConnectedRepository({
     request,
+    auth,
   } as unknown as BackendClient);
   await expect(repository.load()).rejects.toBe(busy);
   expect(

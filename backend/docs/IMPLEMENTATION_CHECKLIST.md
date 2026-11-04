@@ -9245,3 +9245,14 @@ and artifact-byte sequencing. Frontend typecheck passes. The shared classifier
 is supplied by the companion API commit; it is not duplicated in this browser
 commit. Full integrated frontend/backend/native and hosted checks remain
 separate; no provider calls, production writes or dependency changes occurred.
+
+A subsequent independent review found that per-send identity binding alone could
+still mix users across a multi-page logical read. The follow-up captures identity
+at the start of the complete list/load, carries it across every page and table,
+and rechecks before publishing the result. An account switch rejects continuation
+before another user's fetch; it also rejects a changed identity after the final
+page. Four actual-client regressions fail against `d4fb950` and pass with the
+follow-up. The focused pure suite now passes 22 tests, and frontend typecheck
+passes. Existing connected-file fixtures explicitly supply their synthetic Auth
+identity. The guard is client-side stale-result prevention, not a replacement for
+server authorization; full integrated and hosted verification remain separate.

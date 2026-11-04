@@ -285,3 +285,77 @@ it("rejects repeated or increasing model-activity sequences", async () => {
     vi.restoreAllMocks();
   }
 });
+
+it.each([true, false])(
+  "pins one identity across a whole list, including final publication (continuation=%s)",
+  async (continuation) => {
+    const fetcher = vi.fn(
+      async () =>
+        ({
+          ok: true,
+          status: 200,
+          json: async () => {
+            auth.getSession.mockResolvedValue(session(9, "other-token"));
+            return envelope({
+              records: [{ id: id(2), text: "Original user's source" }],
+              next_cursor: continuation ? id(2) : null,
+            });
+          },
+        }) as Response,
+    );
+    vi.stubGlobal("fetch", fetcher);
+    await expect(client.list("documents")).rejects.toMatchObject({
+      code: "UNAUTHENTICATED",
+    });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  },
+);
+
+it.each(["knowledge", "opportunity-discovery"])(
+  "pins a whole repository load across identity change at %s",
+  async (changedResource) => {
+    const { ConnectedRepository } = await import("../lib/connectedRepository");
+    const fetcher = vi.fn(async (url: string) => {
+      const path = new URL(url).pathname.split("/api")[1];
+      if (path === "/v1/bootstrap")
+        return response({
+          membership: { workspace_id: id(10), user_id: id(1), role: "Owner" },
+          workspace: {
+            id: id(10),
+            revision: 1,
+            name: "Original user workspace",
+            settings: {},
+          },
+          operations: null,
+        });
+      if (path === `/v1/${changedResource}`)
+        return {
+          ok: true,
+          status: 200,
+          json: async () => {
+            auth.getSession.mockResolvedValue(session(9, "other-token"));
+            return envelope(
+              changedResource === "knowledge"
+                ? {
+                    records: [
+                      { id: id(2), revision: 1, content: "Old source" },
+                    ],
+                    next_cursor: id(2),
+                  }
+                : { records: [], next_cursor: null },
+            );
+          },
+        } as Response;
+      return response({ records: [], next_cursor: null });
+    });
+    vi.stubGlobal("fetch", fetcher);
+    await expect(new ConnectedRepository(client).load()).rejects.toMatchObject({
+      code: "UNAUTHENTICATED",
+    });
+    expect(
+      fetcher.mock.calls.filter(([url]) =>
+        new URL(url).pathname.endsWith(`/v1/${changedResource}`),
+      ),
+    ).toHaveLength(1);
+  },
+);
