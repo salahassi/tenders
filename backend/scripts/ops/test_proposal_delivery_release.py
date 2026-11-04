@@ -20,13 +20,21 @@ class DeliveryReleaseTests(unittest.TestCase):
         self.gateway_root=Path(temporary.name)
         baseline=(p.ROOT/p.GATEWAY_BEFORE).read_text()
         self.gateway_image='docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8'
-        self.gateway_after=baseline+'\n# Synthetic test target; no runtime qualification asserted.\n'
+        self.gateway_storage=baseline+'\n# Synthetic prior target; no runtime qualification asserted.\n'
+        self.gateway_after=self.gateway_storage+'# Synthetic combined target.\n'
         self.qualification={'passed':True,'actual_binary_exercised':True,'production_calls':0,'customer_calls':0,
           'gateway_resumable_denial_qualified':True,'signed_tus_bypass_confirmed':True,
-          'gateway_config_source_sha256':hashlib.sha256(self.gateway_after.encode()).hexdigest(),
+          'gateway_config_source_sha256':hashlib.sha256(self.gateway_storage.encode()).hexdigest(),
           'gateway_image':self.gateway_image,'fixture':'synthetic-only'}
+        self.batch_qualification={'passed':True,'actual_binary_exercised':True,'production_calls':0,'customer_calls':0,
+          'legacy_rpc_denial_qualified':True,'gateway_resumable_denial_qualified':True,'ordinary_routing_preserved':True,
+          'restart_denial_qualified':True,'cleanup_confirmed':True,'gateway_image':self.gateway_image,
+          'gateway_before_source_sha256':hashlib.sha256(self.gateway_storage.encode()).hexdigest(),
+          'gateway_config_source_sha256':hashlib.sha256(self.gateway_after.encode()).hexdigest(),
+          'storage_qualification_sha256':hashlib.sha256(json.dumps(self.qualification).encode()).hexdigest()}
         for name,text in ((p.GATEWAY_BEFORE,baseline),(p.GATEWAY_AFTER,self.gateway_after),
           (p.GATEWAY_QUALIFICATION,json.dumps(self.qualification)),
+          (p.GATEWAY_STORAGE_QUALIFIED,self.gateway_storage),(p.GATEWAY_BATCH_QUALIFICATION,json.dumps(self.batch_qualification)),
           ('deploy/kubernetes/render.py','NGINX_IMAGE = '+repr(self.gateway_image)+'\n')):
             path=self.gateway_root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
 
@@ -64,7 +72,7 @@ class DeliveryReleaseTests(unittest.TestCase):
           ('ordinary_renderer_version','ordinary-1'),('current_proposal_issuance_contract',True),
           ('issuance_file_capacity_version',0),('global_renderer_limit',2),
           ('storage_write_intents_version',False),('storage_retirement_version',0),('storage_gateway_guard_version',True),('application_auth_read_version',0),
-          ('command_batch_transport_version',0),('command_batch_chunk_bytes',1048576),('legacy_batch_insert_fence_version',True)):
+          ('command_batch_transport_version',0),('command_batch_chunk_bytes',1048576),('legacy_batch_insert_fence_version',True),('legacy_batch_gateway_fence_version',False)):
             manifest=self.manifest();manifest[key]=value
             with self.subTest(key=key),self.assertRaisesRegex(p.ReleaseError,'CAPABILITY_SOURCE_MISMATCH'):
                 self.verify(manifest)
@@ -109,13 +117,14 @@ class DeliveryReleaseTests(unittest.TestCase):
 
     def test_gateway_manifest_binds_raw_and_rendered_config_receipt_and_image(self):
         manifest=self.manifest();value=manifest['gateway_configuration']
-        self.assertEqual(value['version'],1)
+        self.assertEqual(value['version'],2)
         self.assertEqual(value['before_source_sha256'],p.GATEWAY_BASELINE_SHA256)
         self.assertEqual(value['after_source_sha256'],hashlib.sha256(self.gateway_after.encode()).hexdigest())
         self.assertEqual(value['after_data_sha256'],hashlib.sha256(json.dumps(
           {'nginx.conf':self.gateway_after.replace('__NAMESPACE__','tenderdesk-dev')},sort_keys=True).encode()).hexdigest())
         self.assertNotEqual(value['after_source_sha256'],value['after_data_sha256'])
-        self.assertEqual(value['qualification_sha256'],hashlib.sha256((self.gateway_root/p.GATEWAY_QUALIFICATION).read_bytes()).hexdigest())
+        self.assertEqual(value['qualification_sha256'],hashlib.sha256((self.gateway_root/p.GATEWAY_BATCH_QUALIFICATION).read_bytes()).hexdigest())
+        self.assertEqual(value['storage_qualification_sha256'],hashlib.sha256((self.gateway_root/p.GATEWAY_QUALIFICATION).read_bytes()).hexdigest())
         self.assertEqual(value['gateway_image'],self.gateway_image)
         self.verify(manifest)
         for key in value:
@@ -141,14 +150,14 @@ class DeliveryReleaseTests(unittest.TestCase):
             with self.subTest(key=key),self.assertRaisesRegex(p.ReleaseError,'GATEWAY_QUALIFICATION_INVALID'):
                 self.manifest()
             path.write_bytes(raw)
-        manifest=self.manifest();path.write_text(json.dumps({**self.qualification,'receipt_revision':2}))
+        manifest=self.manifest();path=self.gateway_root/p.GATEWAY_BATCH_QUALIFICATION;raw=path.read_bytes();path.write_text(json.dumps({**self.batch_qualification,'receipt_revision':2}))
         with self.assertRaisesRegex(p.ReleaseError,'GATEWAY_SOURCE_CHANGED'):self.verify(manifest)
         path.write_bytes(raw)
         after=self.gateway_root/p.GATEWAY_AFTER;after.write_text(self.gateway_after+'# unreviewed change\n')
         with self.assertRaisesRegex(p.ReleaseError,'GATEWAY_QUALIFICATION_INVALID'):self.verify(manifest)
 
     def test_gateway_missing_symlink_and_unreviewed_baseline_fail_closed(self):
-        for name in (p.GATEWAY_BEFORE,p.GATEWAY_AFTER,p.GATEWAY_QUALIFICATION,'deploy/kubernetes/render.py'):
+        for name in (p.GATEWAY_BEFORE,p.GATEWAY_AFTER,p.GATEWAY_QUALIFICATION,p.GATEWAY_BATCH_QUALIFICATION,p.GATEWAY_STORAGE_QUALIFIED,'deploy/kubernetes/render.py'):
             path=self.gateway_root/name;raw=path.read_bytes();path.unlink()
             with self.subTest(name=name),self.assertRaisesRegex(p.ReleaseError,'GATEWAY_SOURCE_UNAVAILABLE'):self.manifest()
             other=path.with_name(path.name+'.copied');other.write_bytes(raw);path.symlink_to(other)
@@ -156,6 +165,18 @@ class DeliveryReleaseTests(unittest.TestCase):
             path.unlink();path.write_bytes(raw)
         baseline=self.gateway_root/p.GATEWAY_BEFORE;baseline.write_text(baseline.read_text()+'# changed\n')
         with self.assertRaisesRegex(p.ReleaseError,'GATEWAY_BASELINE_CHANGED'):self.manifest()
+
+    def test_combined_gateway_proof_cannot_borrow_prior_storage_qualification(self):
+        path=self.gateway_root/p.GATEWAY_BATCH_QUALIFICATION;raw=path.read_bytes()
+        for key,value in [('passed',False),('actual_binary_exercised',1),('legacy_rpc_denial_qualified',False),
+          ('gateway_resumable_denial_qualified',False),('ordinary_routing_preserved',False),('restart_denial_qualified',False),
+          ('cleanup_confirmed',False),('gateway_before_source_sha256','f'*64),('storage_qualification_sha256','f'*64),
+          ('production_calls',True),('customer_calls',1)]:
+            path.write_text(json.dumps({**self.batch_qualification,key:value}))
+            with self.subTest(key=key),self.assertRaisesRegex(p.ReleaseError,'GATEWAY_QUALIFICATION_INVALID'):self.manifest()
+        path.write_bytes(raw)
+        prior=self.gateway_root/p.GATEWAY_STORAGE_QUALIFIED;prior.write_text(prior.read_text()+'# changed\n')
+        with self.assertRaisesRegex(p.ReleaseError,'GATEWAY_QUALIFICATION_INVALID'):self.manifest()
 
     def test_managed_atomic_batch_replay_drift_and_fault_rollback(self):
         self.managed_atomic_batch_cases()

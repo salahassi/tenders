@@ -1,0 +1,18 @@
+{
+  "actual_gateway_manifest_and_helper_contract_identical": true,
+  "historical_storage_receipt_sha256": "1831842de23dc097269b403987d2530bb486f2fc01c4bde0cb491fd5ae369ff3",
+  "hosted_calls": 0,
+  "new_native_tests_run_in_this_slice": 0,
+  "new_route_receipt_sha256": "089b024a09e3306fe0fe95e7d5ef213469e57eaaff8ca09466723c7b34ca7711",
+  "passed": true,
+  "release_pure_tests_passed": 9,
+  "retirement_control_flow_tests_passed": 22,
+  "scope": "current gateway qualification chain and unchanged historical physical proof",
+  "source_sha256": {
+    "backend/scripts/ops/proposal-delivery-release.py": "cf7a766b84c762ced7bf2a57bf70f89e029335adcaba21dae9d0710a90d3579f",
+    "backend/scripts/ops/storage-retirement/kubernetes.py": "2224a180aa9319e5c6d6b81510c7b25983943c7c070137b29111d9647a7dd02a",
+    "backend/scripts/ops/test_proposal_delivery_release.py": "1d9369b78ac52803646192fce5b99bdb92f4e1864e33174db8fd1608310dd49d",
+    "backend/scripts/ops/test_storage_retirement_kubernetes.py": "3a0ab006862cc57575c1b84d6255a4cd31f8b425e7b325e2988e41fee5a5505b"
+  },
+  "version": 1
+}

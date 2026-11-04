@@ -55,6 +55,14 @@ def storage_role_sql():
  # Permission to SET ROLE, not inherited ownership, authorizes the transition.
  return "do $retire$ declare owner_name name;begin select pg_get_userbyid(r.relowner) into owner_name from pg_class r join pg_namespace n on n.oid=r.relnamespace where n.nspname='storage' and r.relname='objects'; if owner_name is null or not pg_has_role(session_user,owner_name,'SET') then raise exception 'STORAGE_RETIREMENT_OWNER_AUTHORITY_REQUIRED';end if;execute format('set local role %I',owner_name);end $retire$;"
 
+def validate_gateway_binary(contract,binary,receipt_sha256):
+ # The current gateway is separately qualified for both retained TUS denial and
+ # legacy RPC denial. Keep the historical physical proof bound to the exact
+ # earlier config it actually exercised, never relabel it as the new config.
+ c.require(contract.get('version')==2 and contract.get('storage_qualification_sha256')==receipt_sha256
+  and contract.get('storage_qualified_source_sha256')==binary.get('gateway_config_source_sha256')
+  and contract.get('gateway_image')==binary.get('gateway_image'),'STORAGE_RETIREMENT_GATEWAY_PROOF_CHANGED')
+
 class KubernetesAdapter:
  def __init__(self,directory,client,selection):
   self.directory=Path(directory);self.client=client;self.selection=selection;self.nonce=selection['operation_nonce'];self.capture_value=None
@@ -82,6 +90,7 @@ class KubernetesAdapter:
   # receipt, not a supplied assertion that the tag's public source matches it.
   c.require(self.binary.get('passed') is True and self.binary.get('actual_binary_exercised') is True and self.binary.get('production_calls')==0 and self.binary.get('customer_calls')==0,'STORAGE_RETIREMENT_BINARY_UNQUALIFIED')
   c.require(self.binary.get('storage_image')==c.STORAGE_IMAGE and self.binary.get('physical_module_sha256')==c.digest(self.helper.read_bytes()) and self.binary.get('guard_function_source_sha256')==c.digest(guard_source()),'STORAGE_RETIREMENT_BINARY_BINDING_CHANGED')
+  validate_gateway_binary(gateway.source_contract(d)[0],self.binary,expected)
  def capture(self,selection):
   d.probe.validate_cluster();namespace=d.get('namespace',d.NAMESPACE)
   c.require(namespace and namespace['metadata']['uid']==selection['namespace_uid'] and namespace['metadata'].get('labels',{}).get('app.kubernetes.io/managed-by')=='tenderdesk-deployment','STORAGE_RETIREMENT_NAMESPACE_CHANGED')

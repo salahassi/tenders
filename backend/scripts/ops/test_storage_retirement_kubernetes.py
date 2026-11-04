@@ -214,4 +214,13 @@ class AdapterTests(unittest.TestCase):
   self.cluster.resources['networkpolicy','internal-services']['spec']['ingress']=[{}]
   with self.assertRaisesRegex(c.RetirementError,'NETWORK_BOUNDARY_CHANGED'):self.a.capture(self.s)
   self.assertEqual(self.cluster.patched,0)
+class GatewayProofChainTests(unittest.TestCase):
+ def test_historical_physical_receipt_remains_bound_to_its_executed_config(self):
+  binary={'gateway_config_source_sha256':'a'*64,'gateway_image':'pinned-image'}
+  contract={'version':2,'storage_qualification_sha256':'b'*64,'storage_qualified_source_sha256':'a'*64,
+   'after_source_sha256':'c'*64,'gateway_image':'pinned-image'}
+  k.validate_gateway_binary(contract,binary,'b'*64)
+  for key,value in [('version',1),('storage_qualification_sha256','c'*64),('storage_qualified_source_sha256','c'*64),('gateway_image','different')]:
+   with self.subTest(key=key),self.assertRaisesRegex(c.RetirementError,'GATEWAY_PROOF_CHANGED'):
+    k.validate_gateway_binary({**contract,key:value},binary,'b'*64)
 if __name__=='__main__':unittest.main()

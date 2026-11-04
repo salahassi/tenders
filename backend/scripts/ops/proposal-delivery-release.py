@@ -49,7 +49,8 @@ CAPABILITIES = {'executor_max':4,'renderer_versions':[1,2,3],
  'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1,
  'global_renderer_limit':1,'storage_write_intents_version':1,
  'storage_retirement_version':1,'storage_gateway_guard_version':1,'application_auth_read_version':1,
- 'command_batch_transport_version':1,'command_batch_chunk_bytes':262144,'legacy_batch_insert_fence_version':1}
+ 'command_batch_transport_version':1,'command_batch_chunk_bytes':262144,'legacy_batch_insert_fence_version':1,
+ 'legacy_batch_gateway_fence_version':1}
 # These utility locks must precede the first query snapshot of the atomic
 # release. Already-accessed old batches settle first; cached old bodies which
 # have not accessed this table are stopped by the persistent INSERT trigger.
@@ -92,6 +93,8 @@ def literal(value): return "'"+value.replace("'","''")+"'"
 GATEWAY_BEFORE = 'scripts/ops/storage-retirement/gateway-before.conf'
 GATEWAY_AFTER = 'deploy/kubernetes/gateway.conf'
 GATEWAY_QUALIFICATION = 'docs/evidence/storage-retirement-binary-20261104.json'
+GATEWAY_STORAGE_QUALIFIED = 'scripts/ops/storage-retirement/gateway-storage-qualified.conf'
+GATEWAY_BATCH_QUALIFICATION = 'docs/evidence/legacy-batch-gateway-20261104.json'
 GATEWAY_BASELINE_SHA256 = '4907ecf81e2fa1e97754202906873ccd7c34e3dcbe26dd1e60cf4e276c639d23'
 
 def gateway_configuration(root=ROOT):
@@ -100,7 +103,8 @@ def gateway_configuration(root=ROOT):
     # used by render.py's ConfigMap checksum. No network or gateway mutation.
     values={}
     for label,name in (('before',GATEWAY_BEFORE),('after',GATEWAY_AFTER),
-      ('qualification',GATEWAY_QUALIFICATION),('renderer','deploy/kubernetes/render.py')):
+      ('qualification',GATEWAY_QUALIFICATION),('storage_qualified',GATEWAY_STORAGE_QUALIFIED),
+      ('batch_qualification',GATEWAY_BATCH_QUALIFICATION),('renderer','deploy/kubernetes/render.py')):
         path=root/name
         if not path.is_file() or path.is_symlink() or path.stat().st_size>1048576:
             raise ReleaseError('DELIVERY_RELEASE_GATEWAY_SOURCE_UNAVAILABLE')
@@ -112,7 +116,7 @@ def gateway_configuration(root=ROOT):
         tree=ast.parse(values['renderer'][1])
         images=[ast.literal_eval(node.value) for node in tree.body if isinstance(node,ast.Assign)
           and any(isinstance(target,ast.Name) and target.id=='NGINX_IMAGE' for target in node.targets)]
-        receipt=json.loads(values['qualification'][1])
+        receipt=json.loads(values['qualification'][1]);batch=json.loads(values['batch_qualification'][1])
     except (SyntaxError,ValueError,TypeError):
         raise ReleaseError('DELIVERY_RELEASE_GATEWAY_QUALIFICATION_INVALID') from None
     if len(images)!=1 or not isinstance(images[0],str) or not re.fullmatch(r'[a-zA-Z0-9./:_-]+@sha256:[a-f0-9]{64}',images[0]):
@@ -122,16 +126,26 @@ def gateway_configuration(root=ROOT):
       ('passed','actual_binary_exercised','gateway_resumable_denial_qualified','signed_tus_bypass_confirmed'))
       or type(receipt.get('production_calls')) is not int or receipt['production_calls']!=0
       or type(receipt.get('customer_calls')) is not int or receipt['customer_calls']!=0
-      or receipt.get('gateway_config_source_sha256')!=after_hash or receipt.get('gateway_image')!=image
+      or receipt.get('gateway_config_source_sha256')!=digest(values['storage_qualified'][0]) or receipt.get('gateway_image')!=image
       or after_hash==GATEWAY_BASELINE_SHA256):
+        raise ReleaseError('DELIVERY_RELEASE_GATEWAY_QUALIFICATION_INVALID')
+    if (not isinstance(batch,dict) or any(batch.get(key) is not True for key in
+      ('passed','actual_binary_exercised','legacy_rpc_denial_qualified','gateway_resumable_denial_qualified',
+       'ordinary_routing_preserved','restart_denial_qualified','cleanup_confirmed'))
+      or any(type(batch.get(key)) is not int or batch[key]!=0 for key in ('production_calls','customer_calls'))
+      or batch.get('gateway_image')!=image or batch.get('gateway_config_source_sha256')!=after_hash
+      or batch.get('gateway_before_source_sha256')!=digest(values['storage_qualified'][0])
+      or batch.get('storage_qualification_sha256')!=digest(values['qualification'][0])):
         raise ReleaseError('DELIVERY_RELEASE_GATEWAY_QUALIFICATION_INVALID')
     def data_hash(text):
         # Deliberately matches render.py: default JSON whitespace/ASCII escaping.
         return digest(json.dumps({'nginx.conf':text.replace('__NAMESPACE__','tenderdesk-dev')},sort_keys=True).encode())
-    return {'version':1,'before_source_sha256':GATEWAY_BASELINE_SHA256,
+    return {'version':2,'before_source_sha256':GATEWAY_BASELINE_SHA256,
       'after_source_sha256':after_hash,'before_data_sha256':data_hash(values['before'][1]),
       'after_data_sha256':data_hash(values['after'][1]),
-      'qualification_sha256':digest(values['qualification'][0]),'gateway_image':image}
+      'qualification_sha256':digest(values['batch_qualification'][0]),
+      'storage_qualification_sha256':digest(values['qualification'][0]),
+      'storage_qualified_source_sha256':digest(values['storage_qualified'][0]),'gateway_image':image}
 
 def freeze(inventory, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT, auth_root=ROOT):
     if (inventory.get('version')!=1 or inventory.get('namespace')!='tenderdesk-dev' or inventory.get('ready_workloads')!=10

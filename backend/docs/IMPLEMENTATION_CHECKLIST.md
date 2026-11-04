@@ -9828,3 +9828,16 @@ the complete new batch extension; neither asserts a claim about payloads.
 Gateway v2 source binding, live API upstream verification, durable gateway exit
 proof and bounded old-transaction drain remain separate coordinator work. No
 hosted change or final API/runtime qualification is claimed.
+
+### November 4 — bind combined gateway qualification without rewriting old proof
+
+The release manifest uses gateway contract version2: its current combined route
+receipt binds both legacy RPC denial and retained resumable-upload denial, while
+the unchanged historical Storage physical proof stays bound to the prior config
+that it actually exercised. Retirement validates this exact chain before its
+existing installed-gateway/current-process checks. The source-freeze helper and
+rollout helper produce identical contracts from the committed actual receipts.
+Nine pure release-binding checks and22retirement control-flow tests passed; the
+[receipt](evidence/command-batch-gateway-binding-20261104.json) records exact scope.
+This slice runs no new native/hosted test. The bounded transaction-drain and
+actual old gateway-process exit coordinator remain pending before deployment.
