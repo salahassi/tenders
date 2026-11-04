@@ -7254,3 +7254,46 @@ Explicit index/field refresh and exported DOCX cache verification are being
 qualified separately; no page estimator, static number or production layout-engine
 stage is introduced by this footer fix. Microsoft Word desktop acceptance remains
 separate from local LibreOffice evidence.
+
+### 2026-11-04 — W04 ordinary draft/final export runs durably on the server
+
+**Implemented locally:** `export.package.prepare` freezes the exact canonical
+ordinary export request and required volume set, reserves the existing 10 MiB
+per-file bound under the workspace lock, and queues executor-4 `render_export`.
+Fresh page/re-entry keys reuse the same package/job/deadline; the immutable renderer
+marker `ordinary-2` selects explicit yellow missing-input runs. Historical unmarked
+requests retain their existing renderer policy. Draft and final labels/approval
+rules remain distinct from generated review drafts. The old calendar-based export
+count limit is removed; actual database/storage capacity checks remain.
+
+The leased worker renders, uploads immutably, independently reads/verifies actual
+DOCX bytes, and publishes existing `export_artifacts` only from verified receipts.
+All required volumes must be ready before any package download. Lost upload replies
+and finalization crashes reuse verified bytes. Current actor, source/OCR leaf,
+reviewed source meaning, version revision and final approval are checked before
+render/upload/commit and again after download reads. Request acceptance through
+whole-package completion is bounded to 600 seconds; known terminal failures close
+earlier. Explicit revision-checked retry is the only operation that grants a new
+600-second authorization. Ready siblings and historical artifacts remain intact.
+
+**Lifecycle:** package metadata joins the canonical backup/restore/purge contract.
+Restore retains verified historical file receipts but blocks prior package issuance
+and final approval; current authorization is required for a fresh draft. Unconfirmed
+uploads transfer their full reservation to delayed cleanup and retries use new
+private keys. Pending/ready package storage participates in the existing workspace
+ledger. Frozen package/request identity has database mutation guards. Both configured
+role families receive conditional privileges; user reads use current-authority RPCs.
+
+**Evidence:** `ordinaryExportPipeline.integration.test.ts` passes 17 local migrated
+SQL/API/worker/actual-DOCX cases, including two volumes, explicit final approval,
+late invalidation, public backup/restore, confirmed purge, expired-byte retry,
+post-read membership revocation, missing-input highlighting and exact deadline replay.
+The ordinary export/structure/acceptance, prior artifact and recovery regression run
+passes 86 tests across six files, with another 41 worker/API regression cases passing. Both packages' typecheck/build and all 302 frontend tests pass. Five real
+PostgreSQL lock-observed races pass: fresh-key re-entry, same-key replay, source edit,
+membership revocation, and competing two-volume capacity reservations. Reproduce with
+`backend/scripts/testing/ordinary_export_races.py`; private receipts record exact
+migration hashes and the pinned PostgreSQL image digest. These are synthetic local
+checks; they do not claim production deployment, hosted-storage qualification or
+native Word visual acceptance. API metadata and browser re-entry integration are
+composed with the parent/W08 changes before release.

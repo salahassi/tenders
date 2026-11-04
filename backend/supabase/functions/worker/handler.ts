@@ -1,4 +1,5 @@
 import { processGeneration } from "../_shared/generation.ts";
+import { processOrdinaryExport } from "../_shared/ordinaryExportWorker.ts";
 import { processDeliveryExport } from "../_shared/deliveryWorker.ts";
 import { processGeneratedDelivery } from "../_shared/generatedDeliveryWorker.ts";
 import { processAutomaticSource } from "../_shared/automaticSources.ts";
@@ -80,6 +81,10 @@ export function createWorkerHandler(
         const processClaimed = async () => {
           if (job.type === "prepare_generated_delivery") {
             const saved = await processGeneratedDelivery(backend, job);
+            return response({ data: { job_id: job.id, ...saved } });
+          }
+          if (job.type === "render_export") {
+            const saved = await processOrdinaryExport(backend, job);
             return response({ data: { job_id: job.id, ...saved } });
           }
           if (job.type === "render_delivery") {

@@ -23,7 +23,13 @@ export interface RenderModel {
   blocks: ExportBlock[];
 }
 const clean = (v: unknown) => (typeof v === "string" ? v : "");
-export function buildExportModel(request: Row): RenderModel {
+export function buildExportModel(
+  request: Row,
+  placeholderPolicy: 2 | undefined = request.snapshot
+    ?.export_renderer_version === "ordinary-2"
+    ? 2
+    : undefined,
+): RenderModel {
   const s = request.snapshot,
     rtl = s.language === "ar",
     l = (en: string, ar: string) => (rtl ? ar : en),
@@ -52,7 +58,10 @@ export function buildExportModel(request: Row): RenderModel {
   // Column headings already identify each missing input. Short localized cell
   // values stay readable in narrow RTL tables and never imply a zero amount.
   const cell = (value: unknown) =>
-    clean(value).trim() || l("Not supplied", "غير محدد");
+    clean(value).trim() ||
+    (placeholderPolicy === 2
+      ? unknown(l("Not supplied", "غير محدد"))
+      : l("Not supplied", "غير محدد"));
   const sectionTitle = (key: string) =>
     s.sections.find((section: Row) => section.section_key === key)?.title ||
     l("Unlinked section", "قسم غير مرتبط");
@@ -369,7 +378,9 @@ export function buildExportModel(request: Row): RenderModel {
           `${cell(line.quantity)} ${clean(line.unit)}`.trim(),
           cell(line.period_count),
           `${line.included_in_base ? l("Proposed base", "أساسي مقترح") : l("Outside proposed base", "خارج الأساسي المقترح")} · ${charge[line.charge_group] || clean(line.charge_group)}`,
-          l("Awaiting confirmed pricing", "بانتظار تأكيد التسعير"),
+          placeholderPolicy === 2
+            ? unknown(l("confirm pricing", "تأكيد التسعير"))
+            : l("Awaiting confirmed pricing", "بانتظار تأكيد التسعير"),
         ]),
       });
       for (const line of proposed.lines) {
@@ -436,7 +447,8 @@ export function buildExportModel(request: Row): RenderModel {
           });
     }
   }
-  const model = {
+  const model: RenderModel = {
+    ...(placeholderPolicy === 2 ? { placeholder_version: 2 as const } : {}),
     id: request.id,
     version: s.ordinal,
     mode: request.mode,

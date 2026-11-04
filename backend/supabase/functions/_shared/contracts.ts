@@ -182,6 +182,16 @@ export const commandSchemas = {
       reason: z.string().min(10).max(3000),
     })
     .strict(),
+  "export.package.prepare": z
+    .object({
+      proposal_version_id: uuid,
+      expected_revision: revision,
+      mode: z.enum(["draft", "final"]),
+    })
+    .strict(),
+  "export.package.retry": z
+    .object({ id: uuid, expected_revision: revision })
+    .strict(),
   "export.prepare": z
     .object({
       proposal_version_id: uuid,
