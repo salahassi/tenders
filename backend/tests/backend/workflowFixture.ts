@@ -92,6 +92,12 @@ export async function historicalGenerationCommand(
   input: unknown,
   key = crypto.randomUUID(),
 ) {
+  const installed = (
+    await fixture.db.query<{ installed: boolean }>(
+      "select exists(select 1 from pg_trigger where tgrelid='app_private.generation_processing_requests'::regclass and tgname='admit_proposal_issuance' and tgenabled<>'D') installed",
+    )
+  ).rows[0].installed;
+  if (!installed) return fixture.command(operation, input, key);
   await fixture.db.exec(
     "alter table app_private.generation_processing_requests disable trigger admit_proposal_issuance",
   );

@@ -423,3 +423,35 @@ it("creates a fresh authorized request on explicit retry while retaining old imm
   });
   expect(await f.rpc("claim_backend_job_v3")).toBeNull();
 });
+
+it("keeps optional partial-draft render failures independent of viable automatic generation", async () => {
+  const x = await setup();
+  const render = await row(
+    "update public.jobs set status='running',lease_token=gen_random_uuid(),lease_until=now()+interval '3 minutes' where type='render_delivery' and entity_id in(select id from public.proposal_delivery_snapshots where plan_id=$1) returning *",
+    [x.p.id],
+  );
+  await f.rpc("fail_delivery_export", [
+    render.id,
+    render.lease_token,
+    "DELIVERY_ARTIFACT_INVALID",
+  ]);
+  expect(
+    (
+      await row(
+        "select outcome from public.proposal_issuance_requests where id=$1",
+        [x.request.id],
+      )
+    ).outcome,
+  ).toBe("active");
+  expect(await f.rpc("claim_backend_job_v3")).toBeNull();
+  expect(
+    (
+      await row(
+        "select outcome from public.proposal_issuance_requests where id=$1",
+        [x.request.id],
+      )
+    ).outcome,
+  ).toBe("active");
+  await f.db.exec("select set_config('app.worker_executor','4',true)");
+  expect((await f.rpc("claim_backend_job")).id).toBe(x.job.id);
+});

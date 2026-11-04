@@ -6647,3 +6647,22 @@ The issuance status read route is also documented in the generated OpenAPI contr
 including current membership, database time, effective timeout, and complete draft
 package semantics. Regenerated the contract from the canonical command schemas;
 no runtime or deployment behavior changed by this documentation follow-up.
+D06 follow-up: required final renderer-3 failure closes the issuance; an optional
+initial/partial renderer-1 preview failure retains independent model progress.
+A verified issued package cancels leftover optional work without deleting ready
+bytes. Closed-request late failure recording is idempotent. Explicit local retry
+now checks the exact accepted active version and hash, and avoids a PL/pgSQL
+parameter/ON CONFLICT ambiguity found by the renderer agent's real SQL retry.
+Historical migration fixtures also handle the genuine pre-deadline schema where
+there is no admission trigger yet. Verifier-child tests preserve the entire
+immutable pin object and separately assert the required runtime floor.
+
+Follow-up validation: 110 delivery/routing/managed/deadline cases passed, followed
+by 71 deadline/managed-role and historical prompt/recheck cases. The broad backend
+run before these final fixture corrections passed 2,182 of 2,197; its 15 failures
+were all the absent-trigger setup at the deliberate historical migration boundary,
+now corrected and rerun. Root's combined run additionally exposed two runtime-floor
+fixture assertions; the follow-up preserves exact verifier pin assertions and uses
+the current worker for that sibling. A final combined full run and renderer-3
+issuance/retry acceptance remain required; no full-green or deployment claim is
+made from these focused runs.

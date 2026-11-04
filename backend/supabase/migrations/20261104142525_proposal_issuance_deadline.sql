@@ -89,6 +89,7 @@ declare r record;n integer:=0;begin
  for r in select request.id,terminal.error_code from public.proposal_issuance_requests request
   cross join lateral(select j.error_code from public.jobs j where j.workspace_id=request.workspace_id
    and j.checkpoint->>'issuance_request_id'=request.id::text and j.status in ('blocked','failed')
+   and (j.type<>'render_delivery' or exists(select 1 from public.proposal_delivery_snapshots s where s.id=j.entity_id and s.payload->'version'='3'::jsonb))
    order by j.updated_at,j.id limit 1) terminal
   where request.outcome='active' and (target_workspace is null or request.workspace_id=target_workspace)
   order by request.workspace_id,request.id loop
@@ -226,7 +227,7 @@ declare j public.jobs;r public.proposal_issuance_requests;begin
  select * into j from public.jobs where id=job_id;
  if j.checkpoint ? 'issuance_request_id' then
   select * into r from public.proposal_issuance_requests where id=(j.checkpoint->>'issuance_request_id')::uuid and workspace_id=j.workspace_id;
-  if r.outcome='failed' then return;end if;
+  if r.outcome<>'active' then return;end if;
   if j.lease_token is distinct from lease or lease is null then raise exception 'STALE_LEASE';end if;
   if app_private.issuance_deadline_reached(r.deadline_at,clock_timestamp()) or error_code in ('PROPOSAL_ISSUANCE_TIMEOUT','AI_AGENTS_UNAVAILABLE') then
    perform app_private.fail_proposal_issuance(r.id,error_code);return;
@@ -243,13 +244,15 @@ declare j public.jobs;r public.proposal_issuance_requests;begin
  select * into j from public.jobs where id=job_id;
  if j.checkpoint ? 'issuance_request_id' then
   select * into r from public.proposal_issuance_requests where id=(j.checkpoint->>'issuance_request_id')::uuid and workspace_id=j.workspace_id;
-  if r.outcome='failed' then return;end if;
+  if r.outcome<>'active' then return;end if;
   if j.lease_token is distinct from lease or lease is null then raise exception 'STALE_LEASE';end if;
   if app_private.issuance_deadline_reached(r.deadline_at,clock_timestamp()) or error_code='PROPOSAL_ISSUANCE_TIMEOUT' then perform app_private.fail_proposal_issuance(r.id,error_code);return;end if;
  end if;
  perform public.fail_delivery_export_before_issuance(job_id,lease,error_code);
  select * into j from public.jobs where id=job_id;
- if r.id is not null and j.status in ('blocked','failed','canceled') then perform app_private.fail_proposal_issuance(r.id,coalesce(j.error_code,error_code));end if;
+ if r.id is not null and j.status in ('blocked','failed','canceled')
+  and exists(select 1 from public.proposal_delivery_snapshots s where s.id=j.entity_id and s.payload->'version'='3'::jsonb)
+ then perform app_private.fail_proposal_issuance(r.id,coalesce(j.error_code,error_code));end if;
 end $$;
 
 create function app_private.complete_proposal_issuance(request_id uuid,snapshot_id uuid) returns boolean
@@ -279,6 +282,8 @@ declare r public.proposal_issuance_requests;s public.proposal_delivery_snapshots
  -- Recheck after all validation work, so equality at 600 seconds cannot commit.
  if app_private.issuance_deadline_reached(r.deadline_at,clock_timestamp()) then perform app_private.fail_proposal_issuance(r.id,'PROPOSAL_ISSUANCE_TIMEOUT');return false;end if;
  update public.proposal_issuance_requests set outcome='issued',completed_at=clock_timestamp(),issued_snapshot_id=s.id where id=r.id;
+ update public.jobs set status='canceled',cancel_requested=true,lease_token=null,lease_until=null,revision=revision+1,updated_at=now()
+  where workspace_id=r.workspace_id and checkpoint->>'issuance_request_id'=r.id::text and id<>j.id and status in ('queued','running','retry_wait','quota_wait','blocked');
  return true;
 end $$;
 
@@ -312,7 +317,7 @@ end $$;
 -- Legacy model routing is still possible for a newly authorized historical
 -- plan. Its NEW reservations share the same deadline; settlement remains free.
 alter function public.reserve_model_call(uuid,uuid,text,text,integer,integer,jsonb,text) rename to reserve_model_call_before_issuance;
-create function public.reserve_model_call(job_id uuid,lease uuid,call_key text,input_hash text,input_tokens integer,output_tokens integer,manifest jsonb,target_provider text default null) returns jsonb
+create function public.reserve_model_call(job_id uuid,lease uuid,call_key text,input_hash text,input_tokens integer,output_tokens integer,manifest jsonb,target_provider text) returns jsonb
 language plpgsql security definer set search_path='' as $$begin
  perform app_private.assert_issuance_job(job_id);
  return public.reserve_model_call_before_issuance(job_id,lease,call_key,input_hash,input_tokens,output_tokens,manifest,target_provider);
@@ -444,11 +449,14 @@ declare p public.generation_plans;j public.jobs;r public.proposal_issuance_reque
   or not(j.type='prepare_generated_delivery' and j.entity_id=p.id or j.type='render_delivery' and exists(select 1 from public.proposal_delivery_snapshots s
     where s.id=j.entity_id and s.plan_id=p.id and s.payload->'version'='3'::jsonb))
   or p.stage<>'completed' or not exists(select 1 from public.proposals prop join public.proposal_versions v on v.id=prop.active_version_id
-    where prop.id=p.proposal_id and v.plan_id=p.id and v.workspace_id=p.workspace_id)
+    where prop.id=p.proposal_id and v.plan_id=p.id and v.workspace_id=p.workspace_id
+     and (j.type='prepare_generated_delivery' and v.id::text=j.checkpoint->>'generated_version_id' and v.content_hash=j.checkpoint->>'generated_version_hash'
+      or j.type='render_delivery' and exists(select 1 from public.proposal_delivery_snapshots s where s.id=j.entity_id
+       and s.payload#>>'{generation,proposal_version_id}'=v.id::text and s.payload#>>'{generation,version_content_hash}'=v.content_hash)))
  then raise exception 'PROPOSAL_RENDER_RETRY_REQUIRED';end if;
  insert into public.proposal_issuance_requests(workspace_id,plan_id,requested_by,operation,idempotency_key,accepted_at,deadline_at)
  values(p.workspace_id,p.id,auth.uid(),operation,idempotency_key,transaction_timestamp(),transaction_timestamp()+interval '600 seconds')
- on conflict(workspace_id,plan_id,requested_by,operation,idempotency_key) do nothing returning * into r;
+ on conflict do nothing returning * into r;
  if r.id is null then
   select * into r from public.proposal_issuance_requests q where q.workspace_id=p.workspace_id and q.plan_id=p.id and q.requested_by=auth.uid()
    and q.operation=authorize_local_issuance_retry.operation and q.idempotency_key=authorize_local_issuance_retry.idempotency_key;
@@ -522,4 +530,13 @@ end $$;
 do $$ declare definition text;begin
  definition:=pg_get_functiondef('app_private.app_command_before_issuance_retry(text,jsonb,text)'::regprocedure);
  execute replace(definition,'app_command.','app_command_before_issuance_retry.');
+end $$;
+
+-- Explicit least privilege also covers installations with custom default ACLs.
+do $$ declare role_name text;begin
+ foreach role_name in array array['anon','authenticated','service_role','tdp_app_anon','tdp_app_authenticated','tdp_app_service'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then
+   execute format('revoke all on function app_private.authorize_local_issuance_retry(uuid,uuid,text,text) from %I',role_name);
+  end if;
+ end loop;
 end $$;
