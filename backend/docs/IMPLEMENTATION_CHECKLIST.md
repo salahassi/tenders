@@ -6666,3 +6666,24 @@ fixture assertions; the follow-up preserves exact verifier pin assertions and us
 the current worker for that sibling. A final combined full run and renderer-3
 issuance/retry acceptance remain required; no full-green or deployment claim is
 made from these focused runs.
+
+## November 4 — source-review assurance after backup restore (W05)
+
+Migration `20261104150228_restored_source_review_assurance.sql` restores original
+source authority and obligation review history without reactivating imported
+confirmations. A narrow requirement-import exception requires the actual current
+Owner, an unexpired committing restore session created by that Owner, and the
+canonical restored plan markers. A session setting alone grants no exception.
+Restored requirement tuples and citations remain intact, with live review and
+authority fields reset to pending/unknown. New current-Owner revocation revisions
+retain the imported historical rows unchanged. The transaction restores its prior
+scope setting; an idempotent restore replay does not revoke later explicit reviews.
+
+The real public backup/stage/file-completion/commit roundtrip passes in the local
+migrated database, including incomplete-restore rollback, forged scope denial,
+private-helper ACL denial, original-history preservation, restored assurance
+reset, ordinary-write guard retention and replay after reauthorization. Combined
+source restore, existing recovery and applicability tests pass **10/10**; backend
+typecheck/build pass. Independent SQL review found no blocking issue. This is
+local validation, not deployed or hosted restore acceptance; the isolated cloud
+restore acceptance will separately exercise the actual managed catalog and files.
