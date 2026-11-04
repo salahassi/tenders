@@ -1,0 +1,2281 @@
+{
+  "version": 1,
+  "source_hash": "0cd6b465933fafe95d8e8901e538778783cb0e37aabfc38f916d390b4d75e23c",
+  "repository_revision": "ddd35b6e721215a891a4f06f2ef0e03798d91e50",
+  "render_receipt_sha256": "13c4ca7a04c9ee60fd8e5aca5164d61e67808930265df8364b507b1fd5d13a9a",
+  "page_receipt_sha256": "a1eeffc7abdaaedc6db4cae0f9aa21e160b3bde0748ee3a5af8b27d812d2966d",
+  "prior_review_sha256": "bfe2b9751460228be3cc63174ebffa24ea09b84660ec4f8b0704f51dd6f9f863",
+  "prior_render_receipt_sha256": "ef4af22b2d764fd157318a7745a1c99def1fb28f1a91209f1cc493a91fa30e9e",
+  "prior_page_receipt_sha256": "396df281bcfccea71ab1a9f5f811c77fa327a7b8915dae02a2ca3784ed434ab8",
+  "engine": {
+    "libreoffice": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5",
+    "node": "v24.19.0",
+    "python": "3.12.14",
+    "pymupdf": "1.26.6",
+    "pillow": "12.3.0",
+    "executables_and_core": {
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/bin/override/soffice": "35c5a2736f68e6370a7b9fe5082e66bc438c1a8de11261d6c4bc847073ced45b",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/soffice": "d14c5c8aa975640aafc8a62474a23a67fb46cd5fa95fae3771f76b7399a04c50",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/soffice.libreoffice": "3d585422d7cdddf9bcc954e7064da24c7e44d43508a5abaeb11de9d918d24f13",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/soffice.bin": "d905a74dc92eaccb22481ba2de1345666a074a5f0d48322aaad1b6dc8a9e1e40",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/libsofficeapp.so": "1a26a77a054c57e2fef3db9b22d16a328563fe0e37f8d2127d57bb1513a540e5",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/libswlo.so": "1fa7e359551d7c402eae707d632f88f427b721a5a3988ba5d42869be49b68cf0",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/libvcllo.so": "b6a2f1836bd0ce0bc1cee1fee10c5e587c8d0852e51ae8a480d47d44ebbd271d",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/libpdffilterlo.so": "9b969422430c389afa8e0864ee0654732b99a16e5f2c053396ddccd216a9c9ee",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/versionrc": "2372c1c0631b0c78e206d15cd6d4e4a4f480030fe017ca70c5fb15ef17334c0c",
+      "/usr/bin/pdffonts": "98044d6f76642d38a99067ac6da41b25a293dd26f05973ba557a9bcae34b877c"
+    }
+  },
+  "harness": {
+    "backend/scripts/testing/delivery_visual_fixtures.ts": "f44c007e525720d457acf1cc2c7d457bbd9433c3ed5ad6cd0b75f86fd0cb0723",
+    "backend/scripts/testing/delivery_visual_pages.py": "443331fe36dd8bebc5d2ec8287486d24daf34aa2dcc0c56b7810d17ec454f9ee"
+  },
+  "counts": {
+    "documents": 18,
+    "pages": 91,
+    "exact_prior_image_matches": 91,
+    "changed_pages": 0,
+    "footer_pages_checked": 91,
+    "incorrect_footer_numbers": 0,
+    "yellow_footer_intersections": 0,
+    "undefined_xml_elements": 0,
+    "out_of_page_spans": 0
+  },
+  "image_comparison": [
+    {
+      "file": "v1-en-combined-combined",
+      "page": 1,
+      "prior_png": "pages/v1-en-combined-combined-001.png",
+      "current_png": "pages/v1-en-combined-combined-001.png",
+      "identical_sha256": "ecd61c28c16195526405b854b9ee205606af4edf852729e8411e41865f8f14c8"
+    },
+    {
+      "file": "v1-en-combined-combined",
+      "page": 2,
+      "prior_png": "pages/v1-en-combined-combined-002.png",
+      "current_png": "pages/v1-en-combined-combined-002.png",
+      "identical_sha256": "ed763ca5797c0a5ee645f0af25efe5e4744f3450375882d5e75b75c4b96ed631"
+    },
+    {
+      "file": "v1-en-combined-combined",
+      "page": 3,
+      "prior_png": "pages/v1-en-combined-combined-003.png",
+      "current_png": "pages/v1-en-combined-combined-003.png",
+      "identical_sha256": "903e4cc005399bf99593a0c76014156ccf24b87398c5cf775010cf05e8f98298"
+    },
+    {
+      "file": "v1-en-combined-combined",
+      "page": 4,
+      "prior_png": "pages/v1-en-combined-combined-004.png",
+      "current_png": "pages/v1-en-combined-combined-004.png",
+      "identical_sha256": "eb54ab7c071c884599346e6c1fb8e4987b24d2caa3dbd97def377313d8ae13a1"
+    },
+    {
+      "file": "v1-en-separate-technical",
+      "page": 1,
+      "prior_png": "pages/v1-en-separate-technical-001.png",
+      "current_png": "pages/v1-en-separate-technical-001.png",
+      "identical_sha256": "223d1cabb97d08fee4c68f02d4c9a8985c3797c4a8fbfba73e452811739f83bf"
+    },
+    {
+      "file": "v1-en-separate-technical",
+      "page": 2,
+      "prior_png": "pages/v1-en-separate-technical-002.png",
+      "current_png": "pages/v1-en-separate-technical-002.png",
+      "identical_sha256": "6b72f4946241fa6360f2e5eaf48551eef9f732a19c5650a6f30b7f0db8ac1d62"
+    },
+    {
+      "file": "v1-en-separate-technical",
+      "page": 3,
+      "prior_png": "pages/v1-en-separate-technical-003.png",
+      "current_png": "pages/v1-en-separate-technical-003.png",
+      "identical_sha256": "903e4cc005399bf99593a0c76014156ccf24b87398c5cf775010cf05e8f98298"
+    },
+    {
+      "file": "v1-en-separate-technical",
+      "page": 4,
+      "prior_png": "pages/v1-en-separate-technical-004.png",
+      "current_png": "pages/v1-en-separate-technical-004.png",
+      "identical_sha256": "221911a80e9dba7ca8bc6c7b11df95cbbe311bc67f4894dd295eba622ca8470f"
+    },
+    {
+      "file": "v1-en-separate-financial",
+      "page": 1,
+      "prior_png": "pages/v1-en-separate-financial-001.png",
+      "current_png": "pages/v1-en-separate-financial-001.png",
+      "identical_sha256": "5741438c84919587d23828125f2ed788abf67116ffff6a4a9b2a5d6d8e694238"
+    },
+    {
+      "file": "v1-en-separate-financial",
+      "page": 2,
+      "prior_png": "pages/v1-en-separate-financial-002.png",
+      "current_png": "pages/v1-en-separate-financial-002.png",
+      "identical_sha256": "af5ea7d28e981812237fb836f65c48d86f6d3404e536cc752839e6da0c202f93"
+    },
+    {
+      "file": "v1-en-separate-financial",
+      "page": 3,
+      "prior_png": "pages/v1-en-separate-financial-003.png",
+      "current_png": "pages/v1-en-separate-financial-003.png",
+      "identical_sha256": "aac3b994525bb6ce9b8805438836fca74566e2733f778acf6478b24302d175e6"
+    },
+    {
+      "file": "v1-ar-combined-combined",
+      "page": 1,
+      "prior_png": "pages/v1-ar-combined-combined-001.png",
+      "current_png": "pages/v1-ar-combined-combined-001.png",
+      "identical_sha256": "099d600e54d22bea6fff083a01c0e8f5384fe265d8a45e5bb67e6321e52bdd99"
+    },
+    {
+      "file": "v1-ar-combined-combined",
+      "page": 2,
+      "prior_png": "pages/v1-ar-combined-combined-002.png",
+      "current_png": "pages/v1-ar-combined-combined-002.png",
+      "identical_sha256": "29638c3502be58ee0587babffea60dd2c92ee4ca66bf940013d59ec5fa6ad1f0"
+    },
+    {
+      "file": "v1-ar-combined-combined",
+      "page": 3,
+      "prior_png": "pages/v1-ar-combined-combined-003.png",
+      "current_png": "pages/v1-ar-combined-combined-003.png",
+      "identical_sha256": "112c02a2ca1c2d64d59bd721c02ee60054b1f9c22eb8e1c5b12c97286696cb5c"
+    },
+    {
+      "file": "v1-ar-combined-combined",
+      "page": 4,
+      "prior_png": "pages/v1-ar-combined-combined-004.png",
+      "current_png": "pages/v1-ar-combined-combined-004.png",
+      "identical_sha256": "17f56768b21e00e0f8e0669799f9df17d9d5646e6354231a1d1bdbfcd5c62676"
+    },
+    {
+      "file": "v1-ar-combined-combined",
+      "page": 5,
+      "prior_png": "pages/v1-ar-combined-combined-005.png",
+      "current_png": "pages/v1-ar-combined-combined-005.png",
+      "identical_sha256": "305b2be881ac4f68bcc5091100b9fc36100973ca578dcc6ad2fa3e1a212cee44"
+    },
+    {
+      "file": "v1-ar-combined-combined",
+      "page": 6,
+      "prior_png": "pages/v1-ar-combined-combined-006.png",
+      "current_png": "pages/v1-ar-combined-combined-006.png",
+      "identical_sha256": "61882fa6b948b6eb3fbd5cb4865fead93742fee663b23c0df2f7f5d510dfc7ae"
+    },
+    {
+      "file": "v1-ar-separate-technical",
+      "page": 1,
+      "prior_png": "pages/v1-ar-separate-technical-001.png",
+      "current_png": "pages/v1-ar-separate-technical-001.png",
+      "identical_sha256": "6741fe27622f2d6ac40bc0ce2f356c5b05103f95586dce4eff4c1759eb9dac7d"
+    },
+    {
+      "file": "v1-ar-separate-technical",
+      "page": 2,
+      "prior_png": "pages/v1-ar-separate-technical-002.png",
+      "current_png": "pages/v1-ar-separate-technical-002.png",
+      "identical_sha256": "eeba48baabe26a0e00736caad40b53bb4077ddf1b0cb8f15650998381c3c19c4"
+    },
+    {
+      "file": "v1-ar-separate-technical",
+      "page": 3,
+      "prior_png": "pages/v1-ar-separate-technical-003.png",
+      "current_png": "pages/v1-ar-separate-technical-003.png",
+      "identical_sha256": "112c02a2ca1c2d64d59bd721c02ee60054b1f9c22eb8e1c5b12c97286696cb5c"
+    },
+    {
+      "file": "v1-ar-separate-technical",
+      "page": 4,
+      "prior_png": "pages/v1-ar-separate-technical-004.png",
+      "current_png": "pages/v1-ar-separate-technical-004.png",
+      "identical_sha256": "17f56768b21e00e0f8e0669799f9df17d9d5646e6354231a1d1bdbfcd5c62676"
+    },
+    {
+      "file": "v1-ar-separate-technical",
+      "page": 5,
+      "prior_png": "pages/v1-ar-separate-technical-005.png",
+      "current_png": "pages/v1-ar-separate-technical-005.png",
+      "identical_sha256": "9f43aa93d35dd7e5c812a7a6ae5738454bd7a4ce0e6961db9ad4f69c7590a448"
+    },
+    {
+      "file": "v1-ar-separate-financial",
+      "page": 1,
+      "prior_png": "pages/v1-ar-separate-financial-001.png",
+      "current_png": "pages/v1-ar-separate-financial-001.png",
+      "identical_sha256": "566d260dbb0087cb49ebae3876d24f1c9bff865997fdc20ff8f3406dd88ed415"
+    },
+    {
+      "file": "v1-ar-separate-financial",
+      "page": 2,
+      "prior_png": "pages/v1-ar-separate-financial-002.png",
+      "current_png": "pages/v1-ar-separate-financial-002.png",
+      "identical_sha256": "a601dc5db2a7094b082c819b5f68f2f65a1e146f10224afcd73aa5d9b59187e9"
+    },
+    {
+      "file": "v1-ar-separate-financial",
+      "page": 3,
+      "prior_png": "pages/v1-ar-separate-financial-003.png",
+      "current_png": "pages/v1-ar-separate-financial-003.png",
+      "identical_sha256": "112c02a2ca1c2d64d59bd721c02ee60054b1f9c22eb8e1c5b12c97286696cb5c"
+    },
+    {
+      "file": "v1-ar-separate-financial",
+      "page": 4,
+      "prior_png": "pages/v1-ar-separate-financial-004.png",
+      "current_png": "pages/v1-ar-separate-financial-004.png",
+      "identical_sha256": "dd7d163e0c0e928d5c721792efda6df76c989133e9c710d078fa65fe16b29568"
+    },
+    {
+      "file": "v1-ar-separate-financial",
+      "page": 5,
+      "prior_png": "pages/v1-ar-separate-financial-005.png",
+      "current_png": "pages/v1-ar-separate-financial-005.png",
+      "identical_sha256": "ee6e5da7e6afee323d36e774044f616d06c41ece1568e658440c52be8f29dc8d"
+    },
+    {
+      "file": "v2-en-combined-combined",
+      "page": 1,
+      "prior_png": "pages/v2-en-combined-combined-001.png",
+      "current_png": "pages/v2-en-combined-combined-001.png",
+      "identical_sha256": "a9477d245bc2ff37c68bbe9c133e85be9372832870f9a506c4de134ace6845fd"
+    },
+    {
+      "file": "v2-en-combined-combined",
+      "page": 2,
+      "prior_png": "pages/v2-en-combined-combined-002.png",
+      "current_png": "pages/v2-en-combined-combined-002.png",
+      "identical_sha256": "ed763ca5797c0a5ee645f0af25efe5e4744f3450375882d5e75b75c4b96ed631"
+    },
+    {
+      "file": "v2-en-combined-combined",
+      "page": 3,
+      "prior_png": "pages/v2-en-combined-combined-003.png",
+      "current_png": "pages/v2-en-combined-combined-003.png",
+      "identical_sha256": "91dc1d4fe5a795addb30385df960581436789a612b2f31fb3b57f9201b79bcfe"
+    },
+    {
+      "file": "v2-en-combined-combined",
+      "page": 4,
+      "prior_png": "pages/v2-en-combined-combined-004.png",
+      "current_png": "pages/v2-en-combined-combined-004.png",
+      "identical_sha256": "3222fc176946ac00ac7cb471982485afe563a8560186c698ca526d0f2e8ea12d"
+    },
+    {
+      "file": "v2-en-separate-technical",
+      "page": 1,
+      "prior_png": "pages/v2-en-separate-technical-001.png",
+      "current_png": "pages/v2-en-separate-technical-001.png",
+      "identical_sha256": "dc9563cc09194fe17aa7ac87f661df5a1353d98ad3a3030ecac1ecaf079507f7"
+    },
+    {
+      "file": "v2-en-separate-technical",
+      "page": 2,
+      "prior_png": "pages/v2-en-separate-technical-002.png",
+      "current_png": "pages/v2-en-separate-technical-002.png",
+      "identical_sha256": "6b72f4946241fa6360f2e5eaf48551eef9f732a19c5650a6f30b7f0db8ac1d62"
+    },
+    {
+      "file": "v2-en-separate-technical",
+      "page": 3,
+      "prior_png": "pages/v2-en-separate-technical-003.png",
+      "current_png": "pages/v2-en-separate-technical-003.png",
+      "identical_sha256": "91dc1d4fe5a795addb30385df960581436789a612b2f31fb3b57f9201b79bcfe"
+    },
+    {
+      "file": "v2-en-separate-technical",
+      "page": 4,
+      "prior_png": "pages/v2-en-separate-technical-004.png",
+      "current_png": "pages/v2-en-separate-technical-004.png",
+      "identical_sha256": "7746e0ca61c80589fda580d08d4207076ed8e20461a45ef32518568c5230cb6a"
+    },
+    {
+      "file": "v2-en-separate-financial",
+      "page": 1,
+      "prior_png": "pages/v2-en-separate-financial-001.png",
+      "current_png": "pages/v2-en-separate-financial-001.png",
+      "identical_sha256": "72f6e694c82ba167d43cd0e89d9e03424ae8b9a70be43028bd0eea950f977222"
+    },
+    {
+      "file": "v2-en-separate-financial",
+      "page": 2,
+      "prior_png": "pages/v2-en-separate-financial-002.png",
+      "current_png": "pages/v2-en-separate-financial-002.png",
+      "identical_sha256": "af5ea7d28e981812237fb836f65c48d86f6d3404e536cc752839e6da0c202f93"
+    },
+    {
+      "file": "v2-en-separate-financial",
+      "page": 3,
+      "prior_png": "pages/v2-en-separate-financial-003.png",
+      "current_png": "pages/v2-en-separate-financial-003.png",
+      "identical_sha256": "71d3178d191e04f849bf6f5d24f4c08a481f4e673f0dd7539eb9e8ddb5e17d2d"
+    },
+    {
+      "file": "v2-ar-combined-combined",
+      "page": 1,
+      "prior_png": "pages/v2-ar-combined-combined-001.png",
+      "current_png": "pages/v2-ar-combined-combined-001.png",
+      "identical_sha256": "f26c9824e82eb2f5c774e915c84772cce4b3c1702ebffda0b6b982c748fab528"
+    },
+    {
+      "file": "v2-ar-combined-combined",
+      "page": 2,
+      "prior_png": "pages/v2-ar-combined-combined-002.png",
+      "current_png": "pages/v2-ar-combined-combined-002.png",
+      "identical_sha256": "29638c3502be58ee0587babffea60dd2c92ee4ca66bf940013d59ec5fa6ad1f0"
+    },
+    {
+      "file": "v2-ar-combined-combined",
+      "page": 3,
+      "prior_png": "pages/v2-ar-combined-combined-003.png",
+      "current_png": "pages/v2-ar-combined-combined-003.png",
+      "identical_sha256": "6ea6c05aea77e5b721750708fb422995320cbcf55696778397d54b67ece24434"
+    },
+    {
+      "file": "v2-ar-combined-combined",
+      "page": 4,
+      "prior_png": "pages/v2-ar-combined-combined-004.png",
+      "current_png": "pages/v2-ar-combined-combined-004.png",
+      "identical_sha256": "17f56768b21e00e0f8e0669799f9df17d9d5646e6354231a1d1bdbfcd5c62676"
+    },
+    {
+      "file": "v2-ar-combined-combined",
+      "page": 5,
+      "prior_png": "pages/v2-ar-combined-combined-005.png",
+      "current_png": "pages/v2-ar-combined-combined-005.png",
+      "identical_sha256": "c845aa27105a2df38743aa8773e5cfd3460068864e9776f12c8ab0d4bbdc7a7a"
+    },
+    {
+      "file": "v2-ar-combined-combined",
+      "page": 6,
+      "prior_png": "pages/v2-ar-combined-combined-006.png",
+      "current_png": "pages/v2-ar-combined-combined-006.png",
+      "identical_sha256": "723404e579b0c41869d06a47f396ad9c465df95373bd7e7cad649fe7fc4f6764"
+    },
+    {
+      "file": "v2-ar-separate-technical",
+      "page": 1,
+      "prior_png": "pages/v2-ar-separate-technical-001.png",
+      "current_png": "pages/v2-ar-separate-technical-001.png",
+      "identical_sha256": "d0cf7fb8d581b55be0e438f98747e7fbbf080ba9aeadc184e0cda6649db3dbb6"
+    },
+    {
+      "file": "v2-ar-separate-technical",
+      "page": 2,
+      "prior_png": "pages/v2-ar-separate-technical-002.png",
+      "current_png": "pages/v2-ar-separate-technical-002.png",
+      "identical_sha256": "eeba48baabe26a0e00736caad40b53bb4077ddf1b0cb8f15650998381c3c19c4"
+    },
+    {
+      "file": "v2-ar-separate-technical",
+      "page": 3,
+      "prior_png": "pages/v2-ar-separate-technical-003.png",
+      "current_png": "pages/v2-ar-separate-technical-003.png",
+      "identical_sha256": "6ea6c05aea77e5b721750708fb422995320cbcf55696778397d54b67ece24434"
+    },
+    {
+      "file": "v2-ar-separate-technical",
+      "page": 4,
+      "prior_png": "pages/v2-ar-separate-technical-004.png",
+      "current_png": "pages/v2-ar-separate-technical-004.png",
+      "identical_sha256": "17f56768b21e00e0f8e0669799f9df17d9d5646e6354231a1d1bdbfcd5c62676"
+    },
+    {
+      "file": "v2-ar-separate-technical",
+      "page": 5,
+      "prior_png": "pages/v2-ar-separate-technical-005.png",
+      "current_png": "pages/v2-ar-separate-technical-005.png",
+      "identical_sha256": "9f43aa93d35dd7e5c812a7a6ae5738454bd7a4ce0e6961db9ad4f69c7590a448"
+    },
+    {
+      "file": "v2-ar-separate-financial",
+      "page": 1,
+      "prior_png": "pages/v2-ar-separate-financial-001.png",
+      "current_png": "pages/v2-ar-separate-financial-001.png",
+      "identical_sha256": "fc2eb7327e48a07671e30b744dc161871f624554381d4792f010b364063a3f9c"
+    },
+    {
+      "file": "v2-ar-separate-financial",
+      "page": 2,
+      "prior_png": "pages/v2-ar-separate-financial-002.png",
+      "current_png": "pages/v2-ar-separate-financial-002.png",
+      "identical_sha256": "a601dc5db2a7094b082c819b5f68f2f65a1e146f10224afcd73aa5d9b59187e9"
+    },
+    {
+      "file": "v2-ar-separate-financial",
+      "page": 3,
+      "prior_png": "pages/v2-ar-separate-financial-003.png",
+      "current_png": "pages/v2-ar-separate-financial-003.png",
+      "identical_sha256": "6ea6c05aea77e5b721750708fb422995320cbcf55696778397d54b67ece24434"
+    },
+    {
+      "file": "v2-ar-separate-financial",
+      "page": 4,
+      "prior_png": "pages/v2-ar-separate-financial-004.png",
+      "current_png": "pages/v2-ar-separate-financial-004.png",
+      "identical_sha256": "608021217d4de0230e3ed1fa550d029cadf0e6c226418c3221150f7f5615331b"
+    },
+    {
+      "file": "v2-ar-separate-financial",
+      "page": 5,
+      "prior_png": "pages/v2-ar-separate-financial-005.png",
+      "current_png": "pages/v2-ar-separate-financial-005.png",
+      "identical_sha256": "ee6e5da7e6afee323d36e774044f616d06c41ece1568e658440c52be8f29dc8d"
+    },
+    {
+      "file": "v3-en-combined-combined",
+      "page": 1,
+      "prior_png": "pages/v3-en-combined-combined-001.png",
+      "current_png": "pages/v3-en-combined-combined-001.png",
+      "identical_sha256": "6568d07a3b34606d59bc9d734269ee7c6abff42ea058b899bebe02bf86dd42e4"
+    },
+    {
+      "file": "v3-en-combined-combined",
+      "page": 2,
+      "prior_png": "pages/v3-en-combined-combined-002.png",
+      "current_png": "pages/v3-en-combined-combined-002.png",
+      "identical_sha256": "ed763ca5797c0a5ee645f0af25efe5e4744f3450375882d5e75b75c4b96ed631"
+    },
+    {
+      "file": "v3-en-combined-combined",
+      "page": 3,
+      "prior_png": "pages/v3-en-combined-combined-003.png",
+      "current_png": "pages/v3-en-combined-combined-003.png",
+      "identical_sha256": "ad046db36c4f859b39007fedf016da6cb6e8d26c379c7db16cd7cb003e176151"
+    },
+    {
+      "file": "v3-en-combined-combined",
+      "page": 4,
+      "prior_png": "pages/v3-en-combined-combined-004.png",
+      "current_png": "pages/v3-en-combined-combined-004.png",
+      "identical_sha256": "adf4330f0b1a8ae9173b6277b1e6c41fbd4059b0e2d6c0d7ecff47bebea290d0"
+    },
+    {
+      "file": "v3-en-combined-combined",
+      "page": 5,
+      "prior_png": "pages/v3-en-combined-combined-005.png",
+      "current_png": "pages/v3-en-combined-combined-005.png",
+      "identical_sha256": "48b6f99ee718782cdb1d0b18cba6c4a292cb3f7189b2798dbc8f3e42a7c9642c"
+    },
+    {
+      "file": "v3-en-combined-combined",
+      "page": 6,
+      "prior_png": "pages/v3-en-combined-combined-006.png",
+      "current_png": "pages/v3-en-combined-combined-006.png",
+      "identical_sha256": "0029f90146052c73b3edccfbe230837c0b8bca49ff36bd1b0441f6a439bb0e34"
+    },
+    {
+      "file": "v3-en-combined-combined",
+      "page": 7,
+      "prior_png": "pages/v3-en-combined-combined-007.png",
+      "current_png": "pages/v3-en-combined-combined-007.png",
+      "identical_sha256": "ba30ee0779cfd6fe327d17605a6cda4049b8151f43b011c151aa39889e501ffc"
+    },
+    {
+      "file": "v3-en-combined-combined",
+      "page": 8,
+      "prior_png": "pages/v3-en-combined-combined-008.png",
+      "current_png": "pages/v3-en-combined-combined-008.png",
+      "identical_sha256": "8173c748cc0c421421d510fb98b4ff9d75e89d4ed613aa9797f3531559bcb2a3"
+    },
+    {
+      "file": "v3-en-combined-combined",
+      "page": 9,
+      "prior_png": "pages/v3-en-combined-combined-009.png",
+      "current_png": "pages/v3-en-combined-combined-009.png",
+      "identical_sha256": "0ce43f242ce01daca98868b21ae8755f826b0271b421294544c2942ff9ed5663"
+    },
+    {
+      "file": "v3-en-separate-technical",
+      "page": 1,
+      "prior_png": "pages/v3-en-separate-technical-001.png",
+      "current_png": "pages/v3-en-separate-technical-001.png",
+      "identical_sha256": "7acce28bf7f889c72c1d3af20cacb3da54694799b01e1b86aeed0492f3f6b96b"
+    },
+    {
+      "file": "v3-en-separate-technical",
+      "page": 2,
+      "prior_png": "pages/v3-en-separate-technical-002.png",
+      "current_png": "pages/v3-en-separate-technical-002.png",
+      "identical_sha256": "6b72f4946241fa6360f2e5eaf48551eef9f732a19c5650a6f30b7f0db8ac1d62"
+    },
+    {
+      "file": "v3-en-separate-technical",
+      "page": 3,
+      "prior_png": "pages/v3-en-separate-technical-003.png",
+      "current_png": "pages/v3-en-separate-technical-003.png",
+      "identical_sha256": "ad046db36c4f859b39007fedf016da6cb6e8d26c379c7db16cd7cb003e176151"
+    },
+    {
+      "file": "v3-en-separate-technical",
+      "page": 4,
+      "prior_png": "pages/v3-en-separate-technical-004.png",
+      "current_png": "pages/v3-en-separate-technical-004.png",
+      "identical_sha256": "8d0755522e993c82b980b8e3a9f79fd27143491cc241c482c0fc3a80ee96f64f"
+    },
+    {
+      "file": "v3-en-separate-financial",
+      "page": 1,
+      "prior_png": "pages/v3-en-separate-financial-001.png",
+      "current_png": "pages/v3-en-separate-financial-001.png",
+      "identical_sha256": "bff4ae3d0bd4cedad14568fed818fee1918823e8920a437a8d980ab8daa322ee"
+    },
+    {
+      "file": "v3-en-separate-financial",
+      "page": 2,
+      "prior_png": "pages/v3-en-separate-financial-002.png",
+      "current_png": "pages/v3-en-separate-financial-002.png",
+      "identical_sha256": "af5ea7d28e981812237fb836f65c48d86f6d3404e536cc752839e6da0c202f93"
+    },
+    {
+      "file": "v3-en-separate-financial",
+      "page": 3,
+      "prior_png": "pages/v3-en-separate-financial-003.png",
+      "current_png": "pages/v3-en-separate-financial-003.png",
+      "identical_sha256": "e8f6c552aaec7e8faa22377dca32afed4f76c8e066ded5c182d364529294ef6a"
+    },
+    {
+      "file": "v3-ar-combined-combined",
+      "page": 1,
+      "prior_png": "pages/v3-ar-combined-combined-001.png",
+      "current_png": "pages/v3-ar-combined-combined-001.png",
+      "identical_sha256": "dc5f19e0b3b25426dfda5071ed439a7c3e33920e6d1cd66ca2271186742b3f3f"
+    },
+    {
+      "file": "v3-ar-combined-combined",
+      "page": 2,
+      "prior_png": "pages/v3-ar-combined-combined-002.png",
+      "current_png": "pages/v3-ar-combined-combined-002.png",
+      "identical_sha256": "29638c3502be58ee0587babffea60dd2c92ee4ca66bf940013d59ec5fa6ad1f0"
+    },
+    {
+      "file": "v3-ar-combined-combined",
+      "page": 3,
+      "prior_png": "pages/v3-ar-combined-combined-003.png",
+      "current_png": "pages/v3-ar-combined-combined-003.png",
+      "identical_sha256": "b133e7d0efdd36b7e68f4bb08502fd1efd676586a5fdb2a6db1ef10cd29a2b42"
+    },
+    {
+      "file": "v3-ar-combined-combined",
+      "page": 4,
+      "prior_png": "pages/v3-ar-combined-combined-004.png",
+      "current_png": "pages/v3-ar-combined-combined-004.png",
+      "identical_sha256": "cdd8adc00c5a25e732252bda8740eea9607bff32adcc25712609dcaf4d0ae2d7"
+    },
+    {
+      "file": "v3-ar-combined-combined",
+      "page": 5,
+      "prior_png": "pages/v3-ar-combined-combined-005.png",
+      "current_png": "pages/v3-ar-combined-combined-005.png",
+      "identical_sha256": "4736fb9d90c4e9f543bfc04e03310d825d25b2d6da21517cc1c48accbf68fdef"
+    },
+    {
+      "file": "v3-ar-combined-combined",
+      "page": 6,
+      "prior_png": "pages/v3-ar-combined-combined-006.png",
+      "current_png": "pages/v3-ar-combined-combined-006.png",
+      "identical_sha256": "1c7a8da43fbd514aad5d0e5aad3bad6446053ccda22a71969b8ee6e49367384c"
+    },
+    {
+      "file": "v3-ar-separate-technical",
+      "page": 1,
+      "prior_png": "pages/v3-ar-separate-technical-001.png",
+      "current_png": "pages/v3-ar-separate-technical-001.png",
+      "identical_sha256": "d371964e6349c2c38f93f4f61a827d42b40a3f4ec858644cfe213ad4b9336509"
+    },
+    {
+      "file": "v3-ar-separate-technical",
+      "page": 2,
+      "prior_png": "pages/v3-ar-separate-technical-002.png",
+      "current_png": "pages/v3-ar-separate-technical-002.png",
+      "identical_sha256": "eeba48baabe26a0e00736caad40b53bb4077ddf1b0cb8f15650998381c3c19c4"
+    },
+    {
+      "file": "v3-ar-separate-technical",
+      "page": 3,
+      "prior_png": "pages/v3-ar-separate-technical-003.png",
+      "current_png": "pages/v3-ar-separate-technical-003.png",
+      "identical_sha256": "b133e7d0efdd36b7e68f4bb08502fd1efd676586a5fdb2a6db1ef10cd29a2b42"
+    },
+    {
+      "file": "v3-ar-separate-technical",
+      "page": 4,
+      "prior_png": "pages/v3-ar-separate-technical-004.png",
+      "current_png": "pages/v3-ar-separate-technical-004.png",
+      "identical_sha256": "cdd8adc00c5a25e732252bda8740eea9607bff32adcc25712609dcaf4d0ae2d7"
+    },
+    {
+      "file": "v3-ar-separate-technical",
+      "page": 5,
+      "prior_png": "pages/v3-ar-separate-technical-005.png",
+      "current_png": "pages/v3-ar-separate-technical-005.png",
+      "identical_sha256": "37ec5100f32516a0b43bdcb0c4bf5302c980b15ae8f2dc5db4280439159793d1"
+    },
+    {
+      "file": "v3-ar-separate-financial",
+      "page": 1,
+      "prior_png": "pages/v3-ar-separate-financial-001.png",
+      "current_png": "pages/v3-ar-separate-financial-001.png",
+      "identical_sha256": "e2901ca8b4e190c0bfec0a2bf851c7ce9b7675f19d8842cba91142e07f9ddc31"
+    },
+    {
+      "file": "v3-ar-separate-financial",
+      "page": 2,
+      "prior_png": "pages/v3-ar-separate-financial-002.png",
+      "current_png": "pages/v3-ar-separate-financial-002.png",
+      "identical_sha256": "a601dc5db2a7094b082c819b5f68f2f65a1e146f10224afcd73aa5d9b59187e9"
+    },
+    {
+      "file": "v3-ar-separate-financial",
+      "page": 3,
+      "prior_png": "pages/v3-ar-separate-financial-003.png",
+      "current_png": "pages/v3-ar-separate-financial-003.png",
+      "identical_sha256": "6ea6c05aea77e5b721750708fb422995320cbcf55696778397d54b67ece24434"
+    },
+    {
+      "file": "v3-ar-separate-financial",
+      "page": 4,
+      "prior_png": "pages/v3-ar-separate-financial-004.png",
+      "current_png": "pages/v3-ar-separate-financial-004.png",
+      "identical_sha256": "8ae08da7bc66005b124784bab5b7c31dbf6d2a54c18babe6af0f55267a6fbd59"
+    },
+    {
+      "file": "v3-ar-separate-financial",
+      "page": 5,
+      "prior_png": "pages/v3-ar-separate-financial-005.png",
+      "current_png": "pages/v3-ar-separate-financial-005.png",
+      "identical_sha256": "d7b20a3da9f1eb9ab4035cd8b1a661d7f147ff28af438eafa9e8946419d15474"
+    },
+    {
+      "file": "v3-ar-separate-financial",
+      "page": 6,
+      "prior_png": "pages/v3-ar-separate-financial-006.png",
+      "current_png": "pages/v3-ar-separate-financial-006.png",
+      "identical_sha256": "11584108f24f8e98dc027ee38cfc82f80df4f2f4df1eaf111a2c40354c0a2d66"
+    },
+    {
+      "file": "v3-ar-separate-financial",
+      "page": 7,
+      "prior_png": "pages/v3-ar-separate-financial-007.png",
+      "current_png": "pages/v3-ar-separate-financial-007.png",
+      "identical_sha256": "9e6246e3d11e2a6ce1b71076092153122d16f6de0cb76469ec314b405797fa67"
+    },
+    {
+      "file": "v3-ar-separate-financial",
+      "page": 8,
+      "prior_png": "pages/v3-ar-separate-financial-008.png",
+      "current_png": "pages/v3-ar-separate-financial-008.png",
+      "identical_sha256": "105c3baf8518a268c1c98bc22baf99f79064e33d4ca71e288524b3ef774a2d8e"
+    },
+    {
+      "file": "v3-ar-separate-financial",
+      "page": 9,
+      "prior_png": "pages/v3-ar-separate-financial-009.png",
+      "current_png": "pages/v3-ar-separate-financial-009.png",
+      "identical_sha256": "c450171e3cdf2279a3775e70b2136782df8021de010403ba19fba6351bf9f872"
+    },
+    {
+      "file": "v3-ar-separate-financial",
+      "page": 10,
+      "prior_png": "pages/v3-ar-separate-financial-010.png",
+      "current_png": "pages/v3-ar-separate-financial-010.png",
+      "identical_sha256": "c6f274e2c58a26b8aaf0da9568dbc2d12f6c122d2fa3ce6bc40c60c89fda6de8"
+    }
+  ],
+  "documents": [
+    {
+      "file": "v1-en-combined-combined",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 3,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 3
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "Draft — review required · 1",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "Draft — review required · 2",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "Draft — review required · 3",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "Draft — review required · 4",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v1-en-separate-technical",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 2,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 2
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "Draft — review required · 1",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "Draft — review required · 2",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "Draft — review required · 3",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "Draft — review required · 4",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v1-en-separate-financial",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 2,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 2
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "Draft — review required · 1",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "Draft — review required · 2",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "Draft — review required · 3",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v1-ar-combined-combined",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 3,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 3
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 1",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 2",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 3",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 4",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 5,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 5",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 6,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 6",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v1-ar-separate-technical",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 2,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 2
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 1",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 2",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 3",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 4",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 5,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 5",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v1-ar-separate-financial",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 2,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 2
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 1",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 2",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 3",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 4",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 5,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 5",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v2-en-combined-combined",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 3,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 3
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "Draft — review required · 1",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "Draft — review required · 2",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "Draft — review required · 3",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "Draft — review required · 4",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v2-en-separate-technical",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 2,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 2
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "Draft — review required · 1",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "Draft — review required · 2",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "Draft — review required · 3",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "Draft — review required · 4",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v2-en-separate-financial",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 2,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 2
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "Draft — review required · 1",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "Draft — review required · 2",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "Draft — review required · 3",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v2-ar-combined-combined",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 3,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 3
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 1",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 2",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 3",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 4",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 5,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 5",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 6,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 6",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v2-ar-separate-technical",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 2,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 2
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 1",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 2",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 3",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 4",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 5,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 5",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v2-ar-separate-financial",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 2,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 2
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 1",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 2",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 3",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 4",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 5,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 5",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v3-en-combined-combined",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 3,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 3
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "Draft — review required · 1",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "Draft — review required · 2",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "Draft — review required · 3",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "Draft — review required · 4",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 5,
+          "footer_text": "Draft — review required · 5",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 6,
+          "footer_text": "Draft — review required · 6",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 7,
+          "footer_text": "Draft — review required · 7",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 8,
+          "footer_text": "Draft — review required · 8",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 9,
+          "footer_text": "Draft — review required · 9",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v3-en-separate-technical",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 2,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 2
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "Draft — review required · 1",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "Draft — review required · 2",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "Draft — review required · 3",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "Draft — review required · 4",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v3-en-separate-financial",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 2,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 2
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "Draft — review required · 1",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "Draft — review required · 2",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "Draft — review required · 3",
+          "footer_bbox": [
+            234.9499969482422,
+            786.4527587890625,
+            360.6099853515625,
+            800.4827270507812
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v3-ar-combined-combined",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 3,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 3
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 1",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 2",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 3",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 4",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 5,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 5",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 6,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 6",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v3-ar-separate-technical",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 2,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 2
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 1",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 2",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 3",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 4",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 5,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 5",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    },
+    {
+      "file": "v3-ar-separate-financial",
+      "all_xml_no_undefined_elements": true,
+      "footer_fields": [
+        {
+          "part": "word/footer1.xml",
+          "page_tokens": [
+            "begin",
+            "PAGE",
+            "separate",
+            "end"
+          ],
+          "all_tokens_direct_run_children": true,
+          "neutral_highlight_each_token": true,
+          "field_result_cache_empty": true
+        }
+      ],
+      "toc": {
+        "toc_instructions": [
+          "TOC \\h \\o \"1-2\""
+        ],
+        "pageref_count": 2,
+        "update_fields_enabled": true,
+        "empty_pageref_caches_checked": 2
+      },
+      "pages": [
+        {
+          "page": 1,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 1",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 2,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 2",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 3,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 3",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 4,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 4",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 5,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 5",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 6,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 6",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 7,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 7",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 8,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 8",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 9,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 9",
+          "footer_bbox": [
+            223.4499969482422,
+            775.0028076171875,
+            371.78460693359375,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        },
+        {
+          "page": 10,
+          "footer_text": "مسودة — تحتاج إلى مراجعة · 10",
+          "footer_bbox": [
+            220.8000030517578,
+            775.0028076171875,
+            374.4346008300781,
+            800.4937744140625
+          ],
+          "correct_page_number": true,
+          "yellow_drawings_intersecting_footer": 0
+        }
+      ]
+    }
+  ]
+}

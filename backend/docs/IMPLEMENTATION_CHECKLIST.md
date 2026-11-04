@@ -8192,3 +8192,33 @@ pinned image, exact migration hashes and scoped runtime source hashes in
 [evidence/storage-write-intent-postgres-20261104.json](evidence/storage-write-intent-postgres-20261104.json); all five pass on the final scoped SQL. Storage
 server I/O and physical retirement are explicitly outside that database proof.
 No production, provider, customer document or email calls were made.
+### 2026-11-04 — final renderer representative visual qualification
+
+A frozen checkout at `ddd35b6e721215a891a4f06f2ef0e03798d91e50` generated 18
+actual DOCX files from 12 synthetic snapshots with the corrected typed PAGE
+footer, streamed tables, lazy native runs and final strict verifier/run budget.
+All 18 passed actual strict verification. LibreOffice converted them to 91
+pages with zero out-of-page text spans. Every current page PNG hash exactly
+matches a previously inspected page: 91 inherited visual inspections, zero
+changed pages. The current English and Arabic TOC pages were additionally
+inspected at full size. This is exact-image reuse, not 91 new manual inspections.
+
+Fresh XML checks across all documents find no `undefined` elements, proper
+direct-run PAGE tokens with neutral highlight, native TOC/PAGEREF instructions,
+enabled UpdateFields and empty page-number caches. Every actual PDF footer
+contains the correct page number and zero intersecting yellow drawings. The
+previous visually matching footer revision had invalid wrappers; its images
+are not used as proof of final XML correctness. Immutable source, helper,
+engine, font, payload, model, DOCX, PDF and page hashes are recorded in
+`evidence/g12-renderer-qualified-{render-receipt,page-receipt,audit,review}-20261104.json`
+and summarized in `DELIVERY_VISUAL_QUALIFICATION.md`.
+
+The representative matrix preserves reviewed Arabic/English shaping, tables,
+yellow information gaps and volume separation. LibreOffice still omits TOC
+page-number results in all 18 conversions; actual Word desktop/web update/save
+remains untested. Sparse final pages remain a minor inherited issue. This
+qualification neither changes product code nor establishes every dense-layout,
+model-semantic, hosted-storage or 600-second issuance outcome. Dense capacity
+and worker lifecycle have separate receipts. No full suites, provider calls,
+production mutations or deployment were performed in this QA-only change;
+root's final combined and deployment gates remain separate.

@@ -1,12 +1,58 @@
 # Delivery document visual qualification
 
-The footer correction has now been independently verified on all 91 pages of a
-fresh 18-document run. Footer numbers have their correct values and no yellow
-highlight; every required gap remains visible and yellow. The native TOC page
-number compatibility issue in LibreOffice remains open. This qualification
-does not cover the subsequent dense-renderer capacity work or Microsoft Word.
+The final streaming renderer and strict verifier produced 18 DOCX files and
+91 pages with exactly the same page-image hashes as the previously inspected
+matrix. All 91 footer numbers are correct and have no yellow highlight. Fresh
+XML checks confirm proper native PAGE fields and no `undefined` elements.
+Representative layout is preserved; native TOC page-number compatibility in
+LibreOffice and actual Microsoft Word update/save remain open.
 
-## Footer correction evidence
+## Final renderer qualification
+
+The frozen source is `ddd35b6e721215a891a4f06f2ef0e03798d91e50`, including the
+corrected native footer, streamed tables and lazy text runs, strict field/table
+validation and model-derived run allowance. Its source fingerprint is
+`0cd6b465933fafe95d8e8901e538778783cb0e37aabfc38f916d390b4d75e23c`.
+The [render receipt](evidence/g12-renderer-qualified-render-receipt-20261104.json),
+[page receipt](evidence/g12-renderer-qualified-page-receipt-20261104.json),
+[independent audit](evidence/g12-renderer-qualified-audit-20261104.json) and
+[review](evidence/g12-renderer-qualified-review-20261104.json) bind source,
+helpers, package lockfiles, fonts, engine and actual outputs.
+
+The actual source validator accepted all 18 DOCX files. The 12 synthetic
+snapshots, all 18 render models and all page counts match the prior reviewed
+matrix. Every old and current page PNG was hashed from disk: all 91 pairs are
+identical, so the prior inspection of those exact images is retained. This is
+not a claim that all 91 pages were manually inspected again. The current
+English and Arabic TOC pages were additionally inspected at full size; zero
+pages changed and therefore no changed page remained unreviewed.
+
+Every current footer has native begin/instruction/separate/end PAGE tokens,
+each directly within a Word run and explicitly neutral-highlighted. No XML
+part contains an `undefined` element. Native TOC/PAGEREF instructions,
+UpdateFields and empty page-number caches are preserved. All 91 actual PDF
+footer text blocks have the expected page number and zero intersecting yellow
+drawings. The page geometry check finds zero text spans outside page bounds.
+These checks support the explicit renderer contract; they are not full OOXML
+schema validation or proof against every possible visibility style.
+
+The actual conversion engine was LibreOfficeDev
+`26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5`, with Node 24.19.0,
+PyMuPDF 1.26.6 and Pillow 12.3.0. Receipts include executable, harness and
+bundled Amiri/Carlito hashes. Outputs are retained at
+`/workspace/output/reliability-phase2-g12-qualified`. Neither the directory
+name nor this representative layout result means unrestricted release
+acceptance. No model, database or production calls were made.
+
+LibreOffice still shows TOC headings and dot leaders without page-number
+results in all 18 documents. The native Word update contract is preserved
+without fabricated cached numbers; actual desktop/web Word update and save
+have not been tested. The inherited sparse-final-page issue is unchanged.
+Dense-capacity rendering, worker lifecycle, hosted storage, model semantics,
+source assurance, final approval and hosted 600-second issuance remain
+separate evidence categories.
+
+## Historical footer correction evidence
 
 The source fingerprint is
 `6f2ce72b30825b7d45d109e5e7baf90f2769cedb6505dddcd7027a30980ae771`
@@ -22,13 +68,14 @@ identical to the initial run, and all page counts remain unchanged. All 20
 contact sheets were inspected again, covering every page. The PDF footer checks
 also find the correct page number and zero yellow drawings in every footer.
 
-The fresh artifacts are retained at
+Those historical artifacts are retained at
 `/workspace/output/reliability-phase2-g12-final`; the directory name does not
-mean release acceptance. The later capacity investigation changes renderer
-source, so its final source needs fresh output hashes and comparison with this
-reviewed matrix. Any changed page must be inspected. Ordinary-export transport,
-high-density accepted payloads, concurrent renderer memory, live storage and
-the issuance deadline remain separate checks.
+mean release acceptance. Later inspection found inherited `undefined` wrappers
+around that revision's PAGE tokens even though LibreOffice displayed them.
+The final run above separately verifies their corrected native XML; matching
+historical images are reused only as visual evidence. Ordinary-export
+transport, high-density accepted payloads, concurrent renderer memory, live
+storage and the issuance deadline retain their separate checks.
 
 The footer correction deliberately preserves native TOC/PAGEREF instructions.
 LibreOffice direct conversion still shows leaders without TOC page numbers.
