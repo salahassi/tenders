@@ -70,6 +70,38 @@ def run(f):
     final=int(f.scalar(f"select app_private.storage_reserved_bytes({literal(f.workspace)})"))
     assert final<=262144000
     cases.append({'case':'competing document and artifact capacity stays atomic','passed':True,'contenders_observed_waiting':2,'reserved_bytes':final,'cap_bytes':262144000})
+    # Simulate the durable state left by a snapshot saved before the artifact
+    # trigger existed. The separate PGlite case applies the actual two migrations.
+    opportunity=f.opportunity()
+    f.sql('alter table public.proposal_delivery_snapshots disable trigger enqueue_delivery_export')
+    try:
+        snapshot=f.command('delivery.snapshot.prepare', {'opportunity_id':opportunity['id'],'expected_revision':opportunity['revision']})
+    finally:
+        f.sql('alter table public.proposal_delivery_snapshots enable trigger enqueue_delivery_export')
+    package=f.value(f"begin;set local request.jwt.claim.sub={literal(OWNER)};select public.delivery_package({literal(snapshot['id'])});commit;")
+    assert package['status']=='blocked' and package['artifacts']==[] and package['job']['error_code']=='DELIVERY_NOT_QUEUED'
+    retry={'snapshot_id':snapshot['id'],'expected_delivery_revision':package['snapshot']['delivery_revision']}
+    raced=f.race([f.command_sql('delivery.snapshot.retry',retry),f.command_sql('delivery.snapshot.retry',retry)])
+    assert sorted(r.returncode==0 for r in raced)==[False,True],[(r.returncode,r.stderr) for r in raced]
+    assert any('REVISION_CONFLICT' in r.stderr for r in raced)
+    assert f.scalar(f"select count(*) from public.jobs where type='render_delivery' and entity_id={literal(snapshot['id'])}")=='1'
+    assert f.scalar(f"select count(*) from public.proposal_delivery_artifacts where snapshot_id={literal(snapshot['id'])} and reserved_bytes=0")=='1'
+    assert f.scalar(f"select count(*) from public.audit_events where action='delivery.render.initialized' and entity_id={literal(snapshot['id'])}")=='1'
+    cases.append({'case':'concurrent explicit initialization creates one missing queue bundle','passed':True,'contenders_observed_waiting':2})
+    opportunity=f.opportunity()
+    f.sql('alter table public.proposal_delivery_snapshots disable trigger enqueue_delivery_export')
+    try:
+        snapshot=f.command('delivery.snapshot.prepare', {'opportunity_id':opportunity['id'],'expected_revision':opportunity['revision']})
+    finally:
+        f.sql('alter table public.proposal_delivery_snapshots enable trigger enqueue_delivery_export')
+    revision=int(f.scalar(f"select delivery_revision from public.proposals where id={literal(snapshot['proposal_id'])}"))
+    demote=f"update public.memberships set role='Reviewer' where workspace_id={literal(f.workspace)} and user_id={literal(OWNER)};"
+    raced=f.race([f.command_sql('delivery.snapshot.retry',{'snapshot_id':snapshot['id'],'expected_delivery_revision':revision})],before_release=demote)
+    assert raced[0].returncode and 'ROLE_FORBIDDEN' in raced[0].stderr, raced[0].stderr
+    assert f.scalar(f"select count(*) from public.jobs where type='render_delivery' and entity_id={literal(snapshot['id'])}")=='0'
+    assert f.scalar(f"select count(*) from public.proposal_delivery_artifacts where snapshot_id={literal(snapshot['id'])}")=='0'
+    f.sql(f"update public.memberships set role='Owner' where workspace_id={literal(f.workspace)} and user_id={literal(OWNER)}")
+    cases.append({'case':'write-role demotion while waiting blocks missing queue initialization','passed':True,'contenders_observed_waiting':1})
     return cases
 
 if __name__=='__main__':

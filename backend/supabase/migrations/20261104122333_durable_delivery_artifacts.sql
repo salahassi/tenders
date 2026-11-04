@@ -202,18 +202,24 @@ end $$;
 
 create function public.delivery_package(snapshot_id uuid) returns jsonb
 language plpgsql stable security definer set search_path='' as $$
-declare s public.proposal_delivery_snapshots;j public.jobs;artifacts jsonb;ready boolean;begin
+declare s public.proposal_delivery_snapshots;j public.jobs;artifacts jsonb;ready boolean;missing_queue boolean;begin
  select * into s from public.proposal_delivery_snapshots where id=snapshot_id;
  perform app_private.check_delivery_snapshot(s,auth.uid());
- select * into j from public.jobs where workspace_id=s.workspace_id and id=(select a.job_id from public.proposal_delivery_artifacts a where a.snapshot_id=s.id limit 1);
- perform app_private.check_delivery_volume_set(s,j.id);
+ missing_queue:=not exists(select 1 from public.proposal_delivery_artifacts where workspace_id=s.workspace_id and proposal_delivery_artifacts.snapshot_id=s.id)
+  and not exists(select 1 from public.jobs where workspace_id=s.workspace_id and type='render_delivery' and entity_id=s.id);
+ if missing_queue then
+  artifacts:='[]'::jsonb;ready:=false;j.status:='not_queued';j.error_code:='DELIVERY_NOT_QUEUED';
+ else
+  select * into j from public.jobs where workspace_id=s.workspace_id and id=(select a.job_id from public.proposal_delivery_artifacts a where a.snapshot_id=s.id limit 1);
+  perform app_private.check_delivery_volume_set(s,j.id);
  select jsonb_agg(jsonb_build_object('id',a.id,'volume',a.volume,'status',a.status,'content_hash',a.content_hash,
   'expected_size',a.expected_size,'original_name',a.original_name,'mime_type',a.mime_type) order by a.volume),bool_and(a.status='ready')
  into artifacts,ready from public.proposal_delivery_artifacts a where a.job_id=j.id;
+ end if;
  return jsonb_build_object('snapshot',jsonb_build_object('id',s.id,'proposal_id',s.proposal_id,'delivery_revision',(select delivery_revision from public.proposals where id=s.proposal_id),'ordinal',s.ordinal,'language',s.payload->>'language',
   'content_state',s.payload->>'content_state','input_state',s.payload->>'input_state','assurance_state',s.payload->>'assurance_state',
   'gap_count',jsonb_array_length(s.payload->'gaps')),
-  'status',case when ready and j.status='succeeded' then 'ready' when j.status in ('blocked','failed','canceled') then 'blocked' else 'preparing' end,
+  'status',case when missing_queue then 'blocked' when ready and j.status='succeeded' then 'ready' when j.status in ('blocked','failed','canceled') then 'blocked' else 'preparing' end,
   'artifacts',artifacts,'job',jsonb_build_object('id',j.id,'status',j.status,'error_code',j.error_code,'next_attempt_at',case when isfinite(j.next_attempt_at) then j.next_attempt_at end));
 end $$;
 create function public.delivery_artifact_context(artifact_id uuid,actor_id uuid) returns jsonb
@@ -275,11 +281,13 @@ alter function app_private.app_command(text,jsonb,text) rename to app_command_be
 create function app_private.app_command(operation text,input jsonb,idempotency_key text) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare w uuid;actor uuid:=auth.uid();s public.proposal_delivery_snapshots;p public.proposals;j public.jobs;
- next_job uuid;attempt integer;replay app_private.idempotency_records;digest text;result jsonb;
+ next_job uuid;attempt integer;replay app_private.idempotency_records;digest text;result jsonb;initialize boolean;volume text;artifact uuid;
 begin
  if operation<>'delivery.snapshot.retry' then return app_private.app_command_before_delivery_retry(operation,input,idempotency_key);end if;
  select m.workspace_id into w from public.memberships m where m.user_id=actor and app_private.member_role(m.workspace_id) is not null limit 1;
  perform app_private.delivery_actor(w,actor,true);perform 1 from public.workspaces where id=w for update;
+ -- Membership can change while the caller waits for the workspace lock.
+ perform app_private.delivery_actor(w,actor,true);
  if exists(select 1 from public.restore_sessions where workspace_id=w and state in ('staging','committing')) then raise exception 'RESTORE_IN_PROGRESS';end if;
  perform app_private.check_keys(input,array['snapshot_id','expected_delivery_revision']);
  if idempotency_key is null or length(idempotency_key) not between 1 and 200 or pg_column_size(input)>65536 then raise exception 'INVALID_INPUT';end if;
@@ -290,21 +298,38 @@ begin
  if replay.key is not null then if replay.body_hash is distinct from digest then raise exception 'IDEMPOTENCY_CONFLICT';end if;return replay.result;end if;
  select * into p from public.proposals where workspace_id=w and id=s.proposal_id for update;
  if p.delivery_revision is distinct from (input->>'expected_delivery_revision')::integer then raise exception 'REVISION_CONFLICT';end if;
- select * into j from public.jobs where workspace_id=w and id=(select a.job_id from public.proposal_delivery_artifacts a where a.snapshot_id=s.id limit 1) for update;
- perform app_private.check_delivery_volume_set(s,j.id);
- if j.id is null or j.status not in ('blocked','failed','canceled') or j.lease_token is not null or j.lease_until is not null then raise exception 'DELIVERY_RETRY_NOT_ALLOWED';end if;
- select coalesce(max(coalesce((checkpoint->>'delivery_attempt')::int,1)),0)+1 into attempt from public.jobs where workspace_id=w and type='render_delivery' and entity_id=s.id;
+ -- A snapshot saved before this queue migration has neither rows nor jobs.
+ -- Only an explicit current request initializes it; mixed/partial state fails
+ -- the normal immutable volume check rather than being guessed or repaired.
+ initialize:=not exists(select 1 from public.proposal_delivery_artifacts where workspace_id=w and snapshot_id=s.id)
+  and not exists(select 1 from public.jobs where workspace_id=w and type='render_delivery' and entity_id=s.id);
+ if initialize then attempt:=1;
+ else
+  select * into j from public.jobs where workspace_id=w and id=(select a.job_id from public.proposal_delivery_artifacts a where a.snapshot_id=s.id limit 1) for update;
+  perform app_private.check_delivery_volume_set(s,j.id);
+  if j.id is null or j.status not in ('blocked','failed','canceled') or j.lease_token is not null or j.lease_until is not null then raise exception 'DELIVERY_RETRY_NOT_ALLOWED';end if;
+  select coalesce(max(coalesce((checkpoint->>'delivery_attempt')::int,1)),0)+1 into attempt from public.jobs where workspace_id=w and type='render_delivery' and entity_id=s.id;
+ end if;
  insert into public.jobs(workspace_id,type,entity_id,input_hash,status,created_by,checkpoint)
  values(w,'render_delivery',s.id,s.content_hash,'queued',actor,jsonb_build_object('model_executor',3,'delivery_renderer_version','1','delivery_retry_policy',1,'delivery_attempt',attempt)) returning id into next_job;
+ if initialize then
+  foreach volume in array app_private.delivery_volumes(s) loop
+   artifact:=gen_random_uuid();
+   insert into public.proposal_delivery_artifacts(id,workspace_id,snapshot_id,job_id,renderer_version,volume,storage_key,original_name,created_by)
+   values(artifact,w,s.id,next_job,'1',volume,w::text||'/deliveries/'||s.id::text||'/1/'||artifact::text||'.docx',
+    'proposal-draft-'||s.ordinal::text||'-'||volume||'.docx',actor);
+  end loop;
+ else
  update public.proposal_delivery_artifacts set job_id=next_job,
   storage_key=case when status='expired' then w::text||'/deliveries/'||s.id::text||'/1/'||next_job::text||'/'||id::text||'.docx' else storage_key end,
   expected_size=case when status='expired' then null else expected_size end,
   content_hash=case when status='expired' then null else content_hash end,
   status=case when status='expired' then 'pending' else status end,revision=revision+1,updated_at=now()
  where workspace_id=w and snapshot_id=s.id;
+ end if;
  update public.proposals set delivery_revision=delivery_revision+1 where id=p.id;
  insert into public.audit_events(workspace_id,actor_id,action,entity_type,entity_id,details)
- values(w,actor,'delivery.render.retried','proposal_delivery_snapshot',s.id,jsonb_build_object('previous_job_id',j.id,'job_id',next_job,'delivery_attempt',attempt));
+ values(w,actor,case when initialize then 'delivery.render.initialized' else 'delivery.render.retried' end,'proposal_delivery_snapshot',s.id,jsonb_build_object('previous_job_id',j.id,'job_id',next_job,'delivery_attempt',attempt));
  result:=to_jsonb(s);
  delete from app_private.idempotency_records where workspace_id=w and actor_id=actor and method='COMMAND' and route=operation and key=idempotency_key;
  insert into app_private.idempotency_records(workspace_id,actor_id,method,route,key,body_hash,result) values(w,actor,'COMMAND',operation,idempotency_key,digest,result);

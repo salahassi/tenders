@@ -83,6 +83,28 @@ Deployment/hosted acceptance: **not deployed, no production or provider calls**.
 This is the persisted foundation, not a substantively complete non-model route,
 DOCX renderer or all-workflow closure. Renderer/API/UI integration, combined branch regression and actual Word/RTL/visual acceptance
 remain separate gates in the delivery plan.
+## November 4 — explicit recovery for snapshots predating the artifact queue
+
+Implementation: a source-authorized snapshot with neither artifact rows nor
+renderer jobs reports a blocked `DELIVERY_NOT_QUEUED` package with no files and
+its current delivery revision. This read does not enqueue work. An explicit
+`delivery.snapshot.retry` initializes the exact immutable volume set only when
+both counts are zero under the existing workspace/proposal lock, current write
+role/source checks and revision/idempotency guards. It creates attempt 1 under
+the current requester, reserves no storage and records a distinct initialization
+audit. Existing partial or inconsistent bundles still fail closed. Historical
+snapshots, hashes and payloads are unchanged; no automatic history backfill occurs.
+
+Local evidence: all **45 artifact database cases** pass. Two cases create
+snapshots using the foundation migration, then apply the actual artifact migration
+and initialize combined or separate packages; repeated reads stay unchanged,
+idempotent requests reuse the single bundle, and stale revisions/partial states
+are rejected. All **eight real PostgreSQL concurrency cases** pass, including
+two simultaneous explicit initializations producing exactly one job/artifact/audit
+and one revision conflict, and write-role demotion while waiting preventing any
+initialization. Write authority is rechecked after acquiring the workspace lock. Backend typecheck passes. Deployment, integrated full
+suites and hosted acceptance remain separate release gates.
+
 ## November 4 — delivery verifier failure receipt compatibility
 
 Implementation: `EXPORT_PLACEHOLDER_MISMATCH`, `BUYER_VOLUME_RULE` and

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from "vitest";
 import { workflowFixture } from "./workflowFixture";
+import { readFile } from "node:fs/promises";
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
   f = await workflowFixture();
@@ -973,3 +974,189 @@ it("rejects retry from read-only membership or stale delivery revision", async (
   ).rejects.toThrow("ROLE_FORBIDDEN");
   expect((await job(s)).status).toBe("blocked");
 });
+it.each([false, true])(
+  "explicitly initializes a pre-queue snapshot across the actual migration boundary (separate: %s)",
+  async (separate) => {
+    const legacy = await workflowFixture(
+      "00000000-0000-4000-8000-000000000088",
+      "20261104121116_proposal_delivery_snapshots.sql",
+    );
+    try {
+      await legacy.db.exec("begin");
+      const source = await legacy.command("source.create", {
+        name: "Synthetic pre-queue source",
+        kind: "manual",
+      });
+      const opportunity = await legacy.command("opportunity.create", {
+        source_id: source.id,
+        title: "Synthetic pre-queue proposal",
+        reference: "SYNTHETIC",
+        description: "Deliver a documented two-stage approval process.",
+        language: "en",
+        decision: "shortlisted",
+      });
+      let snapshot = await legacy.command("delivery.snapshot.prepare", {
+        opportunity_id: opportunity.id,
+        expected_revision: opportunity.revision,
+      });
+      if (separate) {
+        snapshot = (
+          await legacy.db.query<any>(
+            `insert into public.proposal_delivery_snapshots(workspace_id,opportunity_id,proposal_id,base_version_id,ordinal,content_hash,source_manifest,payload,created_by)
+        select workspace_id,opportunity_id,proposal_id,base_version_id,ordinal+1,encode(sha256(convert_to(p::text,'UTF8')),'hex'),source_manifest,p,created_by
+        from public.proposal_delivery_snapshots cross join lateral(select payload||'{"separate_volumes":true}'::jsonb p) x where id=$1 returning *`,
+            [snapshot.id],
+          )
+        ).rows[0];
+      }
+      expect(
+        (
+          await legacy.db.query<any>(
+            "select count(*)::int n from public.jobs where type='render_delivery'",
+          )
+        ).rows[0].n,
+      ).toBe(0);
+      await legacy.db.exec(
+        await readFile(
+          new URL(
+            "../../supabase/migrations/20261104122333_durable_delivery_artifacts.sql",
+            import.meta.url,
+          ),
+          "utf8",
+        ),
+      );
+      const pack = await legacy.rpc("delivery_package", [snapshot.id]);
+      expect(pack).toMatchObject({
+        status: "blocked",
+        artifacts: [],
+        job: {
+          id: null,
+          status: "not_queued",
+          error_code: "DELIVERY_NOT_QUEUED",
+          next_attempt_at: null,
+        },
+      });
+      expect(
+        (
+          await legacy.db.query<any>(
+            "select count(*)::int n from public.jobs where type='render_delivery'",
+          )
+        ).rows[0].n,
+      ).toBe(0);
+      expect(
+        (
+          await legacy.db.query<any>(
+            "select count(*)::int n from public.proposal_delivery_artifacts",
+          )
+        ).rows[0].n,
+      ).toBe(0);
+      const input = {
+          snapshot_id: snapshot.id,
+          expected_delivery_revision: pack.snapshot.delivery_revision,
+        },
+        key = crypto.randomUUID();
+      expect(
+        (await legacy.command("delivery.snapshot.retry", input, key)).id,
+      ).toBe(snapshot.id);
+      await legacy.command("delivery.snapshot.retry", input, key);
+      await expect(
+        legacy.command("delivery.snapshot.retry", input),
+      ).rejects.toThrow("REVISION_CONFLICT");
+      const jobs = (
+        await legacy.db.query<any>(
+          "select * from public.jobs where type='render_delivery'",
+        )
+      ).rows;
+      expect(jobs).toHaveLength(1);
+      expect(jobs[0]).toMatchObject({
+        entity_id: snapshot.id,
+        created_by: legacy.owner,
+        status: "queued",
+        checkpoint: { model_executor: 3, delivery_attempt: 1 },
+      });
+      const files = (
+        await legacy.db.query<any>(
+          "select * from public.proposal_delivery_artifacts order by volume",
+        )
+      ).rows;
+      expect(files.map((a) => a.volume)).toEqual(
+        separate ? ["financial", "technical"] : ["combined"],
+      );
+      expect(
+        files.every(
+          (a) =>
+            a.status === "pending" &&
+            a.reserved_bytes === 0 &&
+            a.created_by === legacy.owner,
+        ),
+      ).toBe(true);
+      expect(
+        (
+          await legacy.db.query<any>(
+            "select count(*)::int n from public.audit_events where action='delivery.render.initialized' and details->>'previous_job_id' is null",
+          )
+        ).rows[0].n,
+      ).toBe(1);
+      const preserved = (
+        await legacy.db.query<any>(
+          "select payload,content_hash from public.proposal_delivery_snapshots where id=$1",
+          [snapshot.id],
+        )
+      ).rows[0];
+      expect(preserved).toEqual({
+        payload: snapshot.payload,
+        content_hash: snapshot.content_hash,
+      });
+      const claimed = await legacy.rpc("claim_backend_job_v3");
+      const context = await legacy.rpc("delivery_export_context", [
+        claimed.id,
+        claimed.lease_token,
+      ]);
+      expect(context.artifacts).toHaveLength(separate ? 2 : 1);
+      expect(
+        (
+          await legacy.db.query<any>(
+            "select count(*)::int n from public.provider_usage",
+          )
+        ).rows[0].n,
+      ).toBe(0);
+      await legacy.db.exec("rollback");
+    } finally {
+      await legacy.db.close();
+    }
+  },
+  30000,
+);
+it.each(["none", "partial"])(
+  "rejects %s artifact sets when a renderer job already exists",
+  async (mode) => {
+    const initial = await setup(),
+      s = await clone(initial.snapshot, true);
+    await f.db.query(
+      "delete from public.proposal_delivery_artifacts where snapshot_id=$1 and ($2='none' or volume='financial')",
+      [s.id, mode],
+    );
+    await expect(userRpc("delivery_package", [s.id])).rejects.toThrow(
+      "DELIVERY_ARTIFACT_INVALID",
+    );
+    const revision = (
+      await row("select delivery_revision from public.proposals where id=$1", [
+        s.proposal_id,
+      ])
+    ).delivery_revision;
+    await expect(
+      f.command("delivery.snapshot.retry", {
+        snapshot_id: s.id,
+        expected_delivery_revision: revision,
+      }),
+    ).rejects.toThrow("DELIVERY_ARTIFACT_INVALID");
+    expect(
+      (
+        await row(
+          "select count(*)::int n from public.jobs where type='render_delivery' and entity_id=$1",
+          [s.id],
+        )
+      ).n,
+    ).toBe(1);
+  },
+);

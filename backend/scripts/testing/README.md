@@ -50,7 +50,9 @@ Supabase Auth/Storage, the server renderer, Word layout or deployment.
 `delivery_artifact_races.py` exercises durable local export receipts with the same
 isolated harness: identical and conflicting receipt commits, current source and
 membership revocation, cancellation, and competing document/artifact capacity
-reservations. It observes real database lock waits before releasing each race.
+reservations, plus competing explicit initialization of a snapshot saved before
+the artifact queue existed. It observes real database lock waits before releasing
+each race.
 
 ```sh
 python3 backend/scripts/testing/delivery_artifact_races.py --output /tmp/artifact-races.json
