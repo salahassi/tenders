@@ -7460,3 +7460,48 @@ pre-billable capacity helper directly with synthetic accepted/verifier records;
 actual model-reservation admission and concurrent storage writers are covered by
 the separate capacity RPC/PostgreSQL suites. No paid model, external storage or
 production action occurred in these checks.
+
+
+### 2026-11-04 — G10 measured input bounds and pre-billable output capacity
+
+The independent capacity regression reproduced a model reservation being admitted
+while the canonical 250 MiB storage ledger was full. After integration of migration
+`20261104160125`, the unchanged regression rejects before any provider reservation,
+renderer invocation or object write, preserving the accepted source and saved draft.
+A second case proves that the existing two-file 20 MiB output allowance is acquired
+once, appears in the shared ledger, excludes a competing 10 MiB upload when only
+1 MiB remains, and retains the original request deadline. Repeated reservation
+commands keep the existing duplicate-call rejection and create no extra usage or
+allowance. Unknown deletion bytes remain accounted for.
+
+`proposalCapacity.integration.test.ts` passes **14/14** on the integrated root.
+Both package typechecks pass. The suite exercises the actual migrated SQL admission
+boundaries at 999,999/1,000,000/1,000,001 extracted characters and 199/200/201 PDF
+pages; the page-count tests deliberately do not claim actual PDF parsing or OCR.
+Three sequential actual API → SQL → DOCX → immutable Map-storage receipt →
+authorized download cases preserve complete source-block coverage and verified
+hashes at 4,000 English, 100,000 mixed and 1,000,000 Arabic characters. Their local
+measured totals were 266 ms, 617 ms and 2,812 ms respectively. These repetitive
+synthetic inputs produced 970,302, 977,062 and 981,948-byte files; compression and
+local adapters make these measurements unsuitable as hosted latency guarantees.
+
+The same suite proves that dense authored table content is genuinely admitted and
+persisted by the authorized API before projecting it into a render model: 10,000
+mixed-language cells, 50,000 short cells, and 329,000 short cells across 658 tables.
+The last is the largest complete-table instance of this specific fixture family
+within the existing HTTP and JSONB input limits, not a global maximum across every
+valid encoding. One additional table is rejected by the existing 2 MiB JSONB bound
+without changing the saved revision. Every admitted cell survives the immutable
+payload and rendering projection. These three admission checks do not themselves
+prove successful native rendering of those tables. The separate native renderer
+work retains its original failure receipts and must complete render **and** verify
+acceptance before that gap can close.
+
+Receipt: [proposal-capacity-local-20261104.json](evidence/proposal-capacity-local-20261104.json).
+It records the complete 14-case denominator, migration hashes, source/font/lockfile
+hashes verified stable before and after the run, input bounds and actual timings.
+Synthetic local tokens and Map storage are explicit; no provider, customer data or
+production calls were used. The request-wide 600-second deadline races are covered
+by the separate real-PostgreSQL suite, not inferred from these local timings.
+Release, hosted storage/authentication, admitted concurrency, network/provider
+latency and the production issuance SLO remain separate acceptance gates.
