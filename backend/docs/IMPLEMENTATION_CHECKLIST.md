@@ -6006,3 +6006,66 @@ preserves those old rows. Final real PostgreSQL race rerun passed **3/3** agains
 the final migration hashes. Provider transport is mocked in these suites; the
 PostgreSQL container has no network or published ports. Frontend checks are
 jsdom/build evidence, not browser visual or hosted artifact acceptance.
+
+## November 4 — W05 source identity, authority and obligation semantics v1
+
+Implemented `sourceEvidence.ts` and CLI migration
+`20261104134540_source_evidence_authority.sql`. New proposal requests pin source
+contract 1 and repair contract 1; an existing snapshot without those pins keeps
+its original schema and input identity. Original Unicode code-point ranges,
+exact quotations, entity/hash/block/extraction identities and current authority
+records are resolved before use. The application materializes requirement text
+from original passages and keeps interpretation separate. Distinct interpreted
+obligations sharing a passage retain distinct identities. Source normalization
+has a reversible mapping; normalization never replaces the original citation.
+
+Owner/Editor authority and obligation review commands append versioned records
+with workspace locking, current membership, expected revision, idempotency and
+audit. Source kind, filename, chronology and numeric precedence never confer
+buyer authority. A clause replacement requires an explicitly confirmed addendum
+relation to the exact older source hash plus an explicit replaced review ID;
+other clauses and original sources remain available. Missing company evidence
+does not remove a buyer obligation. Unknown modality or negation cannot be confirmed. Obligations require a known
+actor; confirmed informational/nonbuyer material can explicitly have no actor. The canonical inventory and final-assurance checker reject stale,
+revoked, superseded or unresolved evidence. Source reviews use the OCR publication
+resolver when installed; an old immutable parent stays historical, not current.
+
+The service-side requirement insertion guard independently checks original
+text, references, source meaning and authority, so bypassing a model parser does
+not persist an unbound v1 requirement. Reviewer reasons remain in append-only
+history and are replaced by a fixed label in model context. Review history joins
+backup manifests and the existing preview-bound Owner purge. RLS and function
+privileges handle both Supabase and managed DigitalOcean role families.
+
+Verification: source tests initially exposed eleven failures, including hidden
+semantic mutations and overlong span IDs; corrected tests cover exact Unicode
+ranges, hash/version/offset changes, negative and conditional meaning, exceptions,
+consequences, actor, quantity/currency/date mutations, independent sibling
+findings, forged confirmation, unresolved meaning, addendum replacement,
+source-bound persistence, legacy pin preservation, revocation and extraction
+successor currentness. Materialized candidates over 768 KiB fail explicitly
+without trimming original passages; W06 maps this condition into the existing
+bounded split path. Exact source metadata does not certify universal semantics.
+Meaning/authority pending review remains explicit and cannot pass the W08 final
+assurance gate. Deterministic tests do not constitute live model qualification.
+
+Local integrated validation includes W06 model/graph hooks from `65fb166`; these
+hooks are a release dependency, not duplicated in the W05 commit. The source and
+runtime suites pass, including all 55 generation/flexible-input cases; historical
+recovery fixtures explicitly freeze the pre-v1 contract before any paid work.
+The final full package and real PostgreSQL counts are recorded below. Frontend
+`typecheck`, all 299 tests and `build` passed. PostgreSQL races observe both
+contenders waiting on the workspace lock: same-key replay appends once,
+different keys against one revision admit one, and a source edit before release
+rejects both stale reviews. Synthetic database only; no provider, production or
+billing call, deployment or hosted acceptance was performed.
+
+Final W05 local integrated package gates: backend **2,176/2,176** in 131 files
+with `npm test -- --testTimeout=15000`, backend `typecheck`/`build`, generated
+OpenAPI, and frontend **299/299** with `typecheck`/`build`. The default five-second
+test allowance had one migration-fixture startup timeout; its isolated rerun
+passed 6/6, and the complete suite passed with the explicit 15-second test
+allowance. This changes no application deadline. Real PostgreSQL races passed
+**3/3** against the final source guard migration; subsequent applicability-only
+projection changes have focused coverage. Hosted/deployed/live-model acceptance
+remains separate.

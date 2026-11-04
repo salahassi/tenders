@@ -1,3 +1,4 @@
+import { sourceContractFixture } from "./sourceContractFixture";
 import { databaseError } from "../../supabase/functions/_shared/http";
 import type {
   Backend,
@@ -460,7 +461,7 @@ function resultFor(ctx: any) {
       .filter((x) => x.kind === "rfp")
       .map((x) => ({ id: x.id, quote: "approval workflow" }));
   if (ctx.step.task === "analyze_chunk")
-    return {
+    return sourceContractFixture(input, {
       processed_block_ids: ids,
       requirements: [
         {
@@ -476,7 +477,7 @@ function resultFor(ctx: any) {
       questions: [],
       separate_volumes: false,
       summary: "Synthetic scope",
-    };
+    });
   if (ctx.step.task === "plan_proposal")
     return {
       processed_requirement_ids: ids,
@@ -559,6 +560,11 @@ async function runPlan(result: (ctx: any) => any = resultFor) {
 
 async function blockedSavedAssembly() {
   const started = await start();
+  // This suite exercises recovery of a pre-v1 paid workflow. Freeze its actual
+  // historical contract before any model work, retaining the old wire identity.
+  await f.db.query(`update public.generation_plans p set frozen_context=app_private.draft_generation_snapshot_before_source_authority(p.workspace_id,p.opportunity_id,p.proposal_id,p.package_id,null) where id=$1`,[started.plan.id]);
+  await f.db.query(`update public.generation_plans set input_hash=encode(sha256(convert_to(frozen_context::text,'UTF8')),'hex') where id=$1`,[started.plan.id]);
+  await f.db.query(`update public.jobs j set input_hash=p.input_hash from public.generation_plans p where j.entity_id=p.id and p.id=$1`,[started.plan.id]);
   for (let i = 0; i < 30; i++) {
     const job = await f.rpc("claim_backend_job");
     const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
@@ -923,7 +929,7 @@ it("persists application-derived part lineage through canonical generation and t
         ...result,
         requirements: Array.from({ length: 9 }, (_, i) => ({
           ...result.requirements![0],
-          text: `Synthetic workflow acceptance requirement ${i + 1}.`,
+          interpretation: `Synthetic workflow acceptance requirement ${i + 1}.`,
         })),
       };
     return result;

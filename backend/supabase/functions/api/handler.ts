@@ -373,6 +373,15 @@ export function createApiHandler(
               .parse(url.searchParams.get("language") || "en"),
           }),
         );
+      const sourceReview = path.match(
+        /^\/v1\/opportunities\/([^/]+)\/source-review$/,
+      );
+      if (sourceReview && request.method === "GET")
+        return respond(
+          await backend.userRpc(token, "source_review_context", {
+            opportunity_id: uuid.parse(sourceReview[1]),
+          }),
+        );
       const readiness = path.match(
         /^\/v1\/proposal-versions\/([^/]+)\/readiness$/,
       );

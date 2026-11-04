@@ -1,4 +1,11 @@
 import {
+  sourceContractContext,
+  sourceRequirementIdentity,
+  resolveSourceSpan,
+  assertSourceBlockHash,
+  validateSourceCandidate,
+} from "./sourceEvidence.ts";
+import {
   hierarchicalPlanning,
   expandStructure,
   validateStructure,
@@ -102,7 +109,23 @@ function relevant(sources: Row[], query: string, max = 6) {
 }
 const allEvidence = (ctx: PlanContext): Row[] => {
   const frozen = ctx.plan.frozen_context;
+  const contract = sourceContractContext(frozen);
+  const aliases = contract
+    ? contract.spans.map((span) => ({
+        id: span.id,
+        text: span.quote,
+        kind: span.entity_kind === "notice" ? "notice" : "rfp",
+        verified: false,
+        reference: {
+          entity_kind: span.entity_kind,
+          entity_id: span.entity_id,
+          content_hash: span.content_hash,
+        },
+        source_span: span,
+      }))
+    : [];
   return [
+    ...aliases,
     frozen.notice,
     ...frozen.blocks,
     ...frozen.knowledge,
@@ -692,6 +715,44 @@ export function taskInput(ctx: PlanContext) {
   }
   evidence = Array.from(new Map(evidence.map((e) => [e.id, e])).values());
   // All evidence actually in the prompt and provenance of generated paragraphs stay gated.
+  if (frozen.source_contract_version === 1) {
+    const catalog = sourceContractContext(frozen)!;
+    const spanIds = new Set(
+      requirements.flatMap((r) => r.source_semantics?.source_span_ids || []),
+    );
+    const spans = catalog.spans.filter((span) =>
+      task === "analyze_chunk"
+        ? span.block_id === input.block_id &&
+          span.start < input.end &&
+          span.end > input.start
+        : spanIds.has(span.id),
+    );
+    const sources = [frozen.notice, ...frozen.blocks];
+    for (const span of spans) {
+      const source = sources.find((s) => s.id === span.block_id);
+      if (!source) throw new ModelError("STALE_INPUT");
+      resolveSourceSpan(span, source as any);
+    }
+    const selected = new Set(spans.map((span) => span.id));
+    const reviews = catalog.reviews.filter((review) =>
+      review.spans.every((span) => selected.has(span.id)),
+    );
+    context.source_contract_version = 1;
+    context.repair_contract_version = 1;
+    context.source_evidence = { version: 1, spans, reviews };
+    context.source_requirements = requirements.map((r) => ({
+      id: r.id,
+      text: r.text,
+      mandatory: r.mandatory,
+      source_refs: r.source_refs,
+      source_semantics: r.source_semantics,
+    }));
+    if (task === "analyze_chunk")
+      evidence.push(...all.filter((source) => selected.has(source.id)));
+    context.instruction =
+      (context.instruction || "") +
+      " Source evidence contract v1: cite only supplied exact span IDs for requirement source_refs and source_semantics.source_span_ids. The application preserves original clause wording separately from your interpretation. Preserve actor, modality, negation, conditions, exceptions, consequences, numeric units, currency and date roles. Source authority comes only from the supplied authority record; never infer it from filename, chronology, document kind or numeric precedence. Only copy review_id/review_status confirmed and its exact tuple when an identical current supplied human review covers all selected spans. Otherwise review_id=null and review_status=pending. Preserve buyer obligations even when company evidence is missing. A pending interpretation is not a reviewed commitment. A proposed approach is distinct from buyer instructions.";
+  }
   const manifest = Array.from(
     new Map(
       evidence.map((e) => [
@@ -899,7 +960,14 @@ export async function nextStage(ctx: PlanContext): Promise<{
               (a, b) =>
                 a.id.localeCompare(b.id) || a.quote.localeCompare(b.quote),
             ),
-          );
+          ) +
+          (frozen.source_contract_version === 1
+            ? "\n" +
+              sourceRequirementIdentity({
+                source_semantics: r.source_semantics,
+                interpretation: r.interpretation,
+              })
+            : "");
         if (!byIdentity.has(identity))
           byIdentity.set(identity, {
             ...r,
@@ -1340,6 +1408,13 @@ export async function processGeneration(
       });
       return;
     }
+    if (ctx.plan.frozen_context.source_contract_version === 1) {
+      for (const source of [
+        ctx.plan.frozen_context.notice,
+        ...ctx.plan.frozen_context.blocks,
+      ])
+        await assertSourceBlockHash(source);
+    }
     const input = taskInput(ctx);
     const validate = (
       result: any,
@@ -1353,12 +1428,19 @@ export async function processGeneration(
         input.requiredIds,
         {
           ...options,
+          ...{ sourceContext: input.context },
           scopePolicy:
             input.task === "classify_opportunity"
               ? ctx!.plan.frozen_context.discovery_scope_policy
               : undefined,
           draftInputVersion: draftInputPolicyVersion(input.task, input.context),
         },
+      );
+      validateSourceCandidate(
+        input.task,
+        result,
+        input.context,
+        input.evidence,
       );
       if (
         input.task === "draft_section" &&

@@ -1,3 +1,8 @@
+import {
+  sourceAuthoritySchema,
+  sourceSpanSchema,
+  obligationTupleSchema,
+} from "./sourceEvidence.ts";
 import { z } from "zod";
 import { documentCoverageSchema } from "./documentCoverage.ts";
 import {
@@ -692,6 +697,32 @@ export const commandSchemas = {
           message: "Supply exactly the file's target record.",
         });
     }),
+  "source.authority.review": z
+    .object({
+      opportunity_id: uuid,
+      entity_kind: z.enum(["document", "notice"]),
+      entity_id: uuid,
+      content_hash: z.string().regex(/^[a-f0-9]{64}$/),
+      expected_revision: z.number().int().nonnegative(),
+      role: sourceAuthoritySchema.shape.role,
+      status: z.enum(["confirmed", "revoked"]),
+      supersedes: sourceAuthoritySchema.shape.supersedes,
+      precedence: sourceAuthoritySchema.shape.precedence,
+      reason: z.string().min(1).max(3000),
+    })
+    .strict(),
+  "source.obligation.review": z
+    .object({
+      opportunity_id: uuid,
+      review_id: uuid.nullable(),
+      expected_revision: z.number().int().nonnegative(),
+      spans: z.array(sourceSpanSchema).min(1).max(8),
+      semantics: obligationTupleSchema,
+      status: z.enum(["confirmed", "revoked"]),
+      reason: z.string().min(1).max(3000),
+      supersedes_review_id: uuid.nullable().optional(),
+    })
+    .strict(),
   "document.confirm": z
     .object({ id: uuid, expected_revision: revision })
     .strict(),

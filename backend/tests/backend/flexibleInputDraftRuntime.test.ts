@@ -1,3 +1,4 @@
+import { sourceContractFixture } from "./sourceContractFixture";
 // @vitest-environment node
 import { beforeAll, afterAll, beforeEach, afterEach, expect, it } from "vitest";
 import { workflowFixture } from "./workflowFixture";
@@ -278,7 +279,7 @@ function proposedResult(ctx: any, extractInventory: boolean): any {
     const source = input.evidence.find((item) =>
       input.requiredIds.includes(item.id),
     )!;
-    return {
+    return sourceContractFixture(input, {
       processed_block_ids: input.requiredIds,
       requirements: extractInventory
         ? [
@@ -305,7 +306,7 @@ function proposedResult(ctx: any, extractInventory: boolean): any {
       summary: extractInventory
         ? "Draft scope from the supplied evidence."
         : "Reference-only draft input; no formal requirement inventory is asserted.",
-    };
+    });
   }
   if (input.task === "plan_proposal") {
     const required = input.context.template.required_sections.filter(
