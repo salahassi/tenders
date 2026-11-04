@@ -4,7 +4,10 @@ const confidentialityMarking =
   /(?:\bconfidential\b|سرية)(?:\s*[:：—–]|\s+-|-(?![\p{L}\p{N}]))|(?:^|[\r\n]|\\[nr]|["=:])\s*(?:confidential|سرية)\s*(?=$|[\r\n"]|\\[nr])|strictly private|سري للغاية/iu;
 const credential =
   /password\s*[:=]|api[_ -]?key\s*[:=]|-----BEGIN .*PRIVATE KEY|\b(?:sk|sb_secret)_[a-z0-9]{12,}/i;
-const email = /[\w.+-]+@[\w.-]+\.[a-z]{2,}/i;
+// Any legacy match can extend left across the same local-part character class.
+// Starting only at that maximal prefix preserves boolean detection and avoids
+// retrying every suffix of a long ASCII word that contains no '@'.
+const email = /(?<![\w.+-])[\w.+-]+@[\w.-]+\.[a-z]{2,}/i;
 
 export function hasRestrictedDocumentContent(value: string) {
   return confidentialityMarking.test(value) || credential.test(value);

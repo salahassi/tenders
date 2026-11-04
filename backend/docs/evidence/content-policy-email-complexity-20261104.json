@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "observed_at": "2026-11-04",
+  "scope": "Equivalent boolean email-policy matching with bounded scanning on admitted ASCII content",
+  "base_revision": "a59efab1449b2cdf0d82c645dcaa2677f409e793",
+  "original_policy_sha256": "5c6d99734c24c85590877c861e717cd48215443c73c0f2c74521d9345aa3a0e3",
+  "policy_sha256": "ac8293c485b14ebd4298617d73cb85b8b7e9df05d9d1803a57102dddb18efa0a",
+  "fixture_bytes": 1048576,
+  "paragraphs": 100,
+  "maximum_ascii_run": 20000,
+  "predeclared_guard": "Less than 1000ms process CPU per public policy entry point; local regression guard, not production request quota",
+  "red": {
+    "entrypoint": "blockedContent",
+    "process_cpu_ms": 5830.97,
+    "test_outcome": "failed declared CPU bound",
+    "test_log_sha256": "64a87a609917ca7c6082c7040e534dd52f7bdf696dcff76a6b90001a140871bc"
+  },
+  "green": {
+    "blockedContent_cpu_ms": 3.674,
+    "contentPolicyCategories_cpu_ms": 3.274,
+    "focused_tests_passed": 89,
+    "files": 2,
+    "focused_suite_duration_seconds": 2.03,
+    "exhaustive_short_strings": 335923,
+    "explicit_unicode_punctuation_controls": 18,
+    "test_log_sha256": "a6da267129dca3d9be5df6c38be3265e1a2a1021382c8842f9933425fd90e4dd",
+    "cpu_log_sha256": "73983a69114d38a9675c562402f3c5749005645e9fa275367024020b982efb51",
+    "backend_typecheck": "passed"
+  },
+  "argument": "Every legacy email match may extend left through the same local-part character class. Requiring a non-class predecessor therefore preserves existence of a match while avoiding retries from each suffix of one maximal prefix. The domain expression and policy categories are unchanged.",
+  "limits": [
+    "This does not redefine valid email syntax or make the legacy detector RFC-complete.",
+    "Actual provider-envelope parse plus rendering/worker lifecycle is qualified separately in the final runtime image.",
+    "No provider calls or production mutations."
+  ]
+}

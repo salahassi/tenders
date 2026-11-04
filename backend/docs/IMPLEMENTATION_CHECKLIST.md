@@ -8446,3 +8446,27 @@ authentication and physical stored bytes remain the isolated cloud drill's gate.
 No production, model, email or provider calls ran. Backend typecheck and build
 also pass after the 22nd migration integration; the complete backend suite and
 remaining operational/gateway changes are still separate pending checks.
+
+### 2026-11-04 — remove quadratic email scanning from content validation
+
+The content-policy email detector now starts only at the beginning of a maximal
+local-part character run. Any previously detected address can extend left across
+that same character class, so boolean detection is preserved while a long ASCII
+word without an at-sign is scanned once instead of at every suffix. The domain
+pattern, confidentiality/credential rules, categories and all callers are
+unchanged. This adds no product quota or response-size reduction.
+
+A predeclared regression used exactly 1,048,576 bytes of draft-shaped JSON with
+100 paragraphs and ASCII runs up to 20,000 characters. The old blockedContent
+call used 5,830.970ms process CPU and failed the one-second local test bound. The
+new blockedContent and contentPolicyCategories calls used 3.674ms and 3.274ms.
+All 89 focused tests passed, including 335,923 exhaustive short boundary strings,
+18 explicit Unicode/punctuation controls, permissive legacy email cases, long
+prefixes/malformed domains and independent policy-category combinations. The
+source and red/green log hashes are in
+`evidence/content-policy-email-complexity-20261104.json`.
+
+Backend typecheck passed. Final actual-image provider-envelope/render qualification, combined gates and deployment require the new
+source; earlier image timings are not promoted to final evidence. No providers,
+production state or billing policy were changed. The unrelated G09 corpus
+remains frozen and its uncommitted harness is excluded from this fix.
