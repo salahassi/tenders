@@ -28,6 +28,8 @@ const roles=async(db,prefix)=>{
  create schema auth authorization ${prefix}_authadmin;create schema storage authorization ${prefix}_storageadmin;
  create table auth.users(id uuid primary key);create table auth.identities(user_id uuid);create table storage.objects(id uuid);
  alter table auth.users owner to ${prefix}_authadmin;alter table auth.identities owner to ${prefix}_authadmin;
+ alter table auth.users enable row level security;alter table auth.identities enable row level security;
+ comment on database postgres is 'tenderdesk-managed-kubernetes:postgres:${prefix}';
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
  grant usage on schema auth,public,storage to ${prefix}_owner,${prefix}_authenticated,${prefix}_anon,${prefix}_service;`);
 };

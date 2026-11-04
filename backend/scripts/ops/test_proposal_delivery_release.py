@@ -63,7 +63,7 @@ class DeliveryReleaseTests(unittest.TestCase):
         for key,value in (('executor_max',3),('minimum_worker_executor',0),('renderer_versions',[1,2]),
           ('ordinary_renderer_version','ordinary-1'),('current_proposal_issuance_contract',True),
           ('issuance_file_capacity_version',0),('global_renderer_limit',2),
-          ('storage_write_intents_version',False),('storage_retirement_version',0),('storage_gateway_guard_version',True)):
+          ('storage_write_intents_version',False),('storage_retirement_version',0),('storage_gateway_guard_version',True),('application_auth_read_version',0)):
             manifest=self.manifest();manifest[key]=value
             with self.subTest(key=key),self.assertRaisesRegex(p.ReleaseError,'CAPABILITY_SOURCE_MISMATCH'):
                 self.verify(manifest)
@@ -79,6 +79,24 @@ class DeliveryReleaseTests(unittest.TestCase):
                 (Path(directory)/row['name']).write_bytes((p.ROOT/'supabase/migrations'/row['name']).read_bytes())
             (Path(directory)/'20261104999999_unreviewed.sql').write_text('select 1;')
             with self.assertRaisesRegex(p.ReleaseError,'SET_CHANGED'):self.verify(manifest,migrations=Path(directory))
+
+    def test_platform_auth_source_is_frozen_and_atomic_after_early_auth_lock(self):
+        manifest=self.manifest();self.verify(manifest)
+        self.assertEqual(manifest['application_auth_read']['version'],1)
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            for name in p.auth_read.contract()['sources']:
+                destination=root/name;destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes((p.ROOT/name).read_bytes())
+            self.verify(manifest,auth_root=root)
+            changed=root/p.auth_read.TEMPLATE;changed.write_text(changed.read_text()+'-- changed\n')
+            with self.assertRaisesRegex(p.ReleaseError,'AUTH_SOURCE_CHANGED'):self.verify(manifest,auth_root=root)
+        altered=copy.deepcopy(manifest);altered['application_auth_read']['version']=2
+        with self.assertRaisesRegex(p.ReleaseError,'AUTH_SOURCE_CHANGED'):self.verify(altered)
+        sql=p.migration_script(manifest,sources=self.verify(manifest))
+        self.assertLess(sql.index('LOCK TABLE auth.users,auth.identities'),sql.index('SELECT pg_advisory_xact_lock'))
+        self.assertLess(sql.index('END $delivery_release$;'),sql.index('DO $auth_read_preflight$'))
+        self.assertLess(sql.index('END $auth_read_policy$;'),sql.index('NOTIFY pgrst'))
+        self.assertEqual(sql.count('COMMIT;'),1)
 
     def test_gateway_manifest_binds_raw_and_rendered_config_receipt_and_image(self):
         manifest=self.manifest();value=manifest['gateway_configuration']
@@ -136,7 +154,10 @@ class DeliveryReleaseTests(unittest.TestCase):
     def test_storage_columns_reject_direct_service_and_public_grants(self):
         self.managed_atomic_batch_cases(column_acl_only=True)
 
-    def managed_atomic_batch_cases(self,column_acl_only=False):
+    def test_late_platform_auth_failure_rolls_back_entire_application_batch(self):
+        self.managed_atomic_batch_cases(auth_only=True)
+
+    def managed_atomic_batch_cases(self,column_acl_only=False,auth_only=False):
         manifest=self.manifest();sources=self.verify(manifest)
         def script(sources=sources):return p.migration_script(manifest,sources).replace("current_database()<>'tenderdesk_app'","current_database()<>'postgres'")
         cases=[
@@ -185,7 +206,8 @@ class DeliveryReleaseTests(unittest.TestCase):
                 ('app_private.storage_retirement_batches','operation_nonce'),
                 ('app_private.storage_retirement_keys','storage_key'))
               for role in ('tdp_app_service','PUBLIC')]
-        program="process.on('uncaughtException',e=>{console.error(e.message,e.code,e.position,e.where);process.exit(1)});\nconst release="+json.dumps(script())+';const variants='+json.dumps([(script(sources[:-1]+[sources[-1]+'\n'+s]),code) for s,code in cases])+';\n'
+        if auth_only:cases=[]
+        program="process.on('uncaughtException',e=>{console.error(e.message,e.code,e.position,e.where);process.exit(1)});\nconst release="+json.dumps(script())+';const variants='+json.dumps([(script(sources[:-1]+[sources[-1]+'\n'+s]),code) for s,code in cases])+';const guardKinds='+json.dumps(['auth'] if auth_only else ['catalog','ledger','partial','database'])+';\n'
         program+='const baseline='+json.dumps(manifest['baseline_releases'])+';const catalogQuery='+json.dumps(p.CATALOG.replace(' INTO catalog_hash',''))+';\n'
         program+=r"""
 import {databaseWithMigrations} from './tests/backend/databaseFixture.ts';
@@ -204,6 +226,11 @@ async function fixture(){
  alter table app_private.application_release_history enable row level security;
  revoke all on app_private.application_release_history from public;
  create role tdp_app_owner nosuperuser nobypassrls nocreatedb nocreaterole;
+ create role tdp_app_authadmin nosuperuser nobypassrls nocreatedb nocreaterole;
+ alter schema auth owner to tdp_app_authadmin;
+ alter table auth.users owner to tdp_app_authadmin;alter table auth.identities owner to tdp_app_authadmin;
+ alter table auth.users enable row level security;alter table auth.identities enable row level security;
+ comment on database postgres is 'tenderdesk-managed-kubernetes:tenderdesk_app:tdp_app';
  alter schema public owner to tdp_app_owner;alter schema app_private owner to tdp_app_owner;
  grant usage on schema auth to tdp_app_owner;grant select,references on auth.users,auth.identities to tdp_app_owner;
  DO $ownership$ DECLARE r record; BEGIN
@@ -247,14 +274,23 @@ for(const [source,expected] of variants){
  if(await one(f.db,'select count(*)::int from app_private.application_release_history')!==6)throw Error('FAULT_LEDGER_ESCAPED');
  await f.db.close();
 }
-for(const kind of ['catalog','ledger','partial','database']){
+for(const kind of guardKinds){
  const f=await fixture();let source=f.sql(release);let expected;
  if(kind==='catalog'){source=release;expected='DELIVERY_RELEASE_BASELINE_CHANGED';}
  if(kind==='ledger'){await f.db.exec("update app_private.application_release_history set migration_sha256=repeat('f',64) where release='prior-release-1'");expected='DELIVERY_RELEASE_LEDGER_CHANGED';}
  if(kind==='partial'){await f.db.exec("insert into app_private.application_release_history(release,migration_sha256) values('proposal-delivery-reliability-v1',repeat('f',64))");expected='DELIVERY_RELEASE_PARTIAL_RECEIPT';}
  if(kind==='database'){source=source.replace("current_database()<>'postgres'","current_database()<>'tenderdesk_app'");expected='DELIVERY_RELEASE_DATABASE_MISMATCH';}
+ if(kind==='auth'){await f.db.exec("set role tdp_app_authadmin;create policy retained_auth_restriction on auth.users for select to tdp_app_owner using(false);reset role;");expected='APPLICATION_AUTH_POLICY_CONFLICT';}
  let denied=false;try{await f.db.exec(source);}catch(e){denied=e.message===expected;await f.db.exec('rollback');if(!denied)throw e;}
- if(!denied)throw Error('GUARD_ACCEPTED '+kind);await f.db.close();
+ if(!denied)throw Error('GUARD_ACCEPTED '+kind);
+ if(kind==='auth'){
+  if(await one(f.db,"select to_regclass('public.proposal_delivery_snapshots')")!==null)throw Error('AUTH_FAILURE_SCHEMA_ESCAPED');
+  if(await one(f.db,'select count(*)::int from app_private.application_release_history')!==6)throw Error('AUTH_FAILURE_LEDGER_ESCAPED');
+  if(await one(f.db,"select count(*)::int from pg_policy where polname='tenderdesk_application_identity_read'")!==0)throw Error('AUTH_FAILURE_POLICY_ESCAPED');
+  if(await one(f.db,"select count(*)::int from pg_policy where polname='retained_auth_restriction'")!==1)throw Error('AUTH_FAILURE_OLD_POLICY_LOST');
+  if(await one(f.db,'select attempts from public.release_preserved_fixture')!==7)throw Error('AUTH_FAILURE_OLD_ROW_CHANGED');
+ }
+ await f.db.close();
 }
 """
         result=subprocess.run(['node','--experimental-strip-types','--input-type=module'],input=program,text=True,capture_output=True,cwd=p.ROOT,timeout=240)

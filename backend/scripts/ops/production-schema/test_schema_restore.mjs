@@ -37,6 +37,9 @@ try {
     CREATE TYPE storage.buckettype AS ENUM ('STANDARD','ANALYTICS','VECTOR');
     ${upstream}
     ALTER TABLE auth.users ADD PRIMARY KEY (id);
+    ALTER TABLE auth.users ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE auth.identities ENABLE ROW LEVEL SECURITY;
+    COMMENT ON DATABASE postgres IS 'tenderdesk-managed-kubernetes:postgres:tdp_app';
     ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
     CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;`);
   for (const suffix of ['owner','authadmin','storageadmin','authenticator','anon','authenticated','service']) {

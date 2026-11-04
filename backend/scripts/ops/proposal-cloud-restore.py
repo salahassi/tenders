@@ -127,10 +127,9 @@ def isolated_migrations(manifest,state):
 
 def upstream_access_source(state):
     bootstrap.validate_state(state)
-    # Auth v2.197.0 enables RLS on users and identities. SELECT grants alone do
-    # not let the separate NOBYPASS app owner resolve verified identities.
-    # This access exists only in the nonce/comment-bound disposable database;
-    # browser roles gain neither a policy nor direct Auth table privileges.
+    # Upstream function/Storage access only. The same source-bound platform
+    # helper used by production now establishes the Auth SELECT policies during
+    # managed schema reconstruction; no independent harness policy remains.
     role=lambda suffix:builder.identifier(state['role_prefix']+'_'+suffix)
     comment=builder.literal('tenderdesk-isolated-bootstrap:'+state['database']+':'+state['role_prefix'])
     return f"""DO $$BEGIN IF current_database()<>{builder.literal(state['database'])} OR
@@ -141,8 +140,6 @@ def upstream_access_source(state):
         where n.nspname='auth' and c.relname in ('users','identities') and c.relkind='r'
           and c.relrowsecurity and c.relowner=current_user::regrole)<>2
         THEN RAISE EXCEPTION 'RESTORE_AUTH_RLS_PREREQUISITE';END IF;END$$;
-      CREATE POLICY cloud_restore_application_identity_read ON auth.users FOR SELECT TO {role('owner')} USING (true);
-      CREATE POLICY cloud_restore_application_identity_read ON auth.identities FOR SELECT TO {role('owner')} USING (true);
       GRANT EXECUTE ON FUNCTION auth.uid() TO {role('owner')},{role('anon')},{role('authenticated')},{role('service')};
       RESET ROLE;SET LOCAL ROLE {role('storageadmin')};
       GRANT SELECT,INSERT,UPDATE,DELETE ON storage.objects,storage.buckets TO {role('authenticated')},{role('service')};COMMIT;
@@ -150,7 +147,8 @@ def upstream_access_source(state):
 
 def schema_source(value,state,release_manifest):
     bootstrap.validate_state(state)
-    sql,_=builder.build_schema(value['catalog'],state['role_prefix'],state['database'],source_role_prefix='tdp_app')
+    sql,_=builder.build_schema(value['catalog'],state['role_prefix'],state['database'],source_role_prefix='tdp_app',
+      database_marker='tenderdesk-isolated-bootstrap:'+state['database']+':'+state['role_prefix'])
     additions,receipts=isolated_migrations(release_manifest,state) if value['source_stage']=='baseline' else ('',[])
     guard=upstream_access_source(state)
     result=guard+sql+additions+fixture_source(state)

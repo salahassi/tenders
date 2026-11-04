@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import ast
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
@@ -16,6 +17,8 @@ import sys
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+_auth_spec=importlib.util.spec_from_file_location('delivery_auth_read',HERE/'application_auth_read.py')
+auth_read=importlib.util.module_from_spec(_auth_spec);_auth_spec.loader.exec_module(auth_read)
 MANIFEST = HERE / 'proposal-delivery-release.json'
 RELEASE = 'proposal-delivery-reliability-v1'
 CUTOFF = '20261103032000_model_admission_fairness.sql'
@@ -43,7 +46,7 @@ CAPABILITIES = {'executor_max':4,'renderer_versions':[1,2,3],
  'minimum_worker_executor':4,'ordinary_renderer_version':'ordinary-2',
  'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1,
  'global_renderer_limit':1,'storage_write_intents_version':1,
- 'storage_retirement_version':1,'storage_gateway_guard_version':1}
+ 'storage_retirement_version':1,'storage_gateway_guard_version':1,'application_auth_read_version':1}
 CATALOG = """SELECT encode(sha256(convert_to(coalesce(string_agg(
  p.oid::regprocedure::text||':'||pg_get_functiondef(p.oid)||':'||coalesce(p.proacl::text,''),E'\\n'
  ORDER BY p.oid::regprocedure::text),''),'UTF8')),'hex') INTO catalog_hash
@@ -118,7 +121,7 @@ def gateway_configuration(root=ROOT):
       'after_data_sha256':data_hash(values['after'][1]),
       'qualification_sha256':digest(values['qualification'][0]),'gateway_image':image}
 
-def freeze(inventory, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT):
+def freeze(inventory, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT, auth_root=ROOT):
     if (inventory.get('version')!=1 or inventory.get('namespace')!='tenderdesk-dev' or inventory.get('ready_workloads')!=10
       or inventory.get('inventory')!='captured' or inventory.get('bootstrap_run') is not False
       or inventory.get('business_mutations')!=0 or inventory.get('schema_mutations')!=0
@@ -139,7 +142,7 @@ def freeze(inventory, *, migrations=ROOT/'supabase/migrations', gateway_root=ROO
     if not isinstance(schedules,list) or {r.get('name') for r in schedules}!={'native-browser','native-ocr'}: raise ReleaseError('DELIVERY_RELEASE_NATIVE_BASELINE_REQUIRED')
     gateway=gateway_configuration(gateway_root)
     if images['gateway']!=gateway['gateway_image']:raise ReleaseError('DELIVERY_RELEASE_GATEWAY_IMAGE_CHANGED')
-    return {'version':1,'release':RELEASE,'gateway_configuration':gateway,'baseline_images':images,'baseline_native_schedules':schedules,**json.loads(canonical(CAPABILITIES)),'baseline_catalog_sha256':schema['routine_catalog_sha256'],
+    return {'version':1,'release':RELEASE,'gateway_configuration':gateway,'application_auth_read':auth_read.contract(auth_root),'baseline_images':images,'baseline_native_schedules':schedules,**json.loads(canonical(CAPABILITIES)),'baseline_catalog_sha256':schema['routine_catalog_sha256'],
       'baseline_releases':releases,'migrations':[{'name':p.name,'sha256':digest(p.read_bytes())} for p in files]}
 
 def validate_runtime_baseline(manifest):
@@ -165,12 +168,13 @@ def validate_runtime_baseline(manifest):
             for quantity in group.values():
                 if quantity is not None and (not isinstance(quantity,str) or len(quantity)>24 or not re.fullmatch(r'[0-9]{1,15}(?:\.[0-9]{1,9})?(?:m|Ki|Mi|Gi|Ti|K|M|G|T)?',quantity)):raise ReleaseError('DELIVERY_RELEASE_NATIVE_BASELINE_REQUIRED')
 
-def verify_source(manifest, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT):
-    if not isinstance(manifest,dict) or set(manifest)!={'version','release','baseline_catalog_sha256','baseline_releases','migrations','baseline_images','baseline_native_schedules','gateway_configuration',*CAPABILITIES} or manifest['version']!=1 or manifest['release']!=RELEASE:
+def verify_source(manifest, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT, auth_root=ROOT):
+    if not isinstance(manifest,dict) or set(manifest)!={'version','release','baseline_catalog_sha256','baseline_releases','migrations','baseline_images','baseline_native_schedules','gateway_configuration','application_auth_read',*CAPABILITIES} or manifest['version']!=1 or manifest['release']!=RELEASE:
         raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     if not re.fullmatch('[a-f0-9]{64}',manifest['baseline_catalog_sha256']): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     validate_runtime_baseline(manifest)
     if canonical({key:manifest[key] for key in CAPABILITIES})!=canonical(CAPABILITIES): raise ReleaseError('DELIVERY_RELEASE_CAPABILITY_SOURCE_MISMATCH')
+    if canonical(manifest['application_auth_read'])!=canonical(auth_read.contract(auth_root)):raise ReleaseError('DELIVERY_RELEASE_AUTH_SOURCE_CHANGED')
     gateway=gateway_configuration(gateway_root)
     if canonical(manifest['gateway_configuration'])!=canonical(gateway):raise ReleaseError('DELIVERY_RELEASE_GATEWAY_SOURCE_CHANGED')
     if manifest['baseline_images']['gateway']!=gateway['gateway_image']:raise ReleaseError('DELIVERY_RELEASE_GATEWAY_IMAGE_CHANGED')
@@ -198,8 +202,13 @@ def migration_script(manifest, sources=None):
     while delimiter in payload: delimiter=delimiter[:-1]+'_$'
     checksum=digest(canonical(manifest).encode())
     return """BEGIN ISOLATION LEVEL REPEATABLE READ;
-SET LOCAL ROLE tdp_app_owner;
 SET LOCAL statement_timeout='180s';SET LOCAL lock_timeout='15s';
+-- Lock upstream Auth relations before the first query establishes the repeatable
+-- read snapshot. A concurrent policy must commit before that snapshot or wait
+-- until this complete release transaction has committed.
+SET LOCAL ROLE tdp_app_authadmin;
+LOCK TABLE auth.users,auth.identities IN SHARE ROW EXCLUSIVE MODE;
+SET LOCAL ROLE tdp_app_owner;
 SELECT pg_advisory_xact_lock(hashtextextended('tenderdesk.proposal-delivery.release',0));
 DO $delivery_release$
 DECLARE r record; target text; catalog_hash text; saved_catalog text; saved_manifest text;
@@ -427,9 +436,10 @@ BEGIN
  PERFORM set_config('tenderdesk.delivery_release_receipt',jsonb_build_object('release','__RELEASE__',
   'manifest_sha256','__CHECKSUM__','catalog_sha256',catalog_hash,'replayed',saved_manifest IS NOT NULL)::text,true);
 END $delivery_release$;
+__AUTH_READ_POLICY__
 SELECT current_setting('tenderdesk.delivery_release_receipt');
 NOTIFY pgrst,'reload schema';COMMIT;
-""".replace('__RENDERERS__','ARRAY['+','.join(map(str,manifest['renderer_versions']))+']::integer[]').replace('__MINIMUM_EXECUTOR__',str(manifest['minimum_worker_executor'])).replace('__EXECUTOR__',str(manifest['executor_max'])).replace('__BASELINE__',literal(canonical(manifest['baseline_releases']))).replace('__BEFORE_HASH__',manifest['baseline_catalog_sha256']).replace('__RELEASE__',RELEASE).replace('__CHECKSUM__',checksum).replace('__ROWS__',ROWS).replace('__AUTHORITY__',AUTHORITY).replace('__CATALOG__',CATALOG).replace('__DELIMITER__',delimiter).replace('__PAYLOAD__',payload)
+""".replace('__AUTH_READ_POLICY__',auth_read.render('tenderdesk_app','tdp_app')).replace('__RENDERERS__','ARRAY['+','.join(map(str,manifest['renderer_versions']))+']::integer[]').replace('__MINIMUM_EXECUTOR__',str(manifest['minimum_worker_executor'])).replace('__EXECUTOR__',str(manifest['executor_max'])).replace('__BASELINE__',literal(canonical(manifest['baseline_releases']))).replace('__BEFORE_HASH__',manifest['baseline_catalog_sha256']).replace('__RELEASE__',RELEASE).replace('__CHECKSUM__',checksum).replace('__ROWS__',ROWS).replace('__AUTHORITY__',AUTHORITY).replace('__CATALOG__',CATALOG).replace('__DELIMITER__',delimiter).replace('__PAYLOAD__',payload)
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)

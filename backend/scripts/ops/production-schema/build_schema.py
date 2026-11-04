@@ -10,10 +10,14 @@ from __future__ import annotations
 import argparse
 from collections import Counter, defaultdict
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
 import re
+
+_auth_spec=importlib.util.spec_from_file_location('schema_auth_read',Path(__file__).resolve().parents[1]/'application_auth_read.py')
+auth_read=importlib.util.module_from_spec(_auth_spec);_auth_spec.loader.exec_module(auth_read)
 
 
 APPLICATION_SCHEMAS = {"public", "app_private"}
@@ -116,7 +120,7 @@ def source_role_mapping(prefix: str | None) -> dict[str, str]:
     return {prefix + "_" + suffix: canonical for canonical, suffix in ROLE_SUFFIXES.items()}
 
 
-def build_schema(catalog: dict, role_prefix: str, expected_database: str, *, source_role_prefix: str | None = None) -> tuple[str, dict]:
+def build_schema(catalog: dict, role_prefix: str, expected_database: str, *, source_role_prefix: str | None = None, database_marker: str | None = None) -> tuple[str, dict]:
     checked_name(role_prefix, "role prefix")
     checked_name(expected_database, "database")
     source_roles = source_role_mapping(source_role_prefix)
@@ -265,7 +269,7 @@ def build_schema(catalog: dict, role_prefix: str, expected_database: str, *, sou
         if row["check_expression"] is not None:
             statement += " WITH CHECK (" + row["check_expression"] + ")"
         sql.append(statement + ";")
-    sql.extend(["RESET ROLE;", "COMMIT;"])
+    sql.extend([auth_read.render(expected_database,role_prefix,marker=database_marker),"RESET ROLE;", "COMMIT;"])
     manifest = {
         "format": "tenderdesk-application-schema-v1", "catalog_sha256": source_hash,
         "database": expected_database, "role_prefix": role_prefix, "source_role_prefix": source_role_prefix,
@@ -274,6 +278,7 @@ def build_schema(catalog: dict, role_prefix: str, expected_database: str, *, sou
         "triggers": len(triggers), "policies": len(policies),
         "upstream_auth_storage_required": True, "production_rows_included": False,
         "requires_runtime_dispatcher_replacement": source_role_prefix is None,
+        "application_auth_read": auth_read.contract(),
     }
     return "\n".join(sql) + "\n", manifest
 

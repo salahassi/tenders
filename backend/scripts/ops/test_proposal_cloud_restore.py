@@ -109,8 +109,11 @@ class CloudRestoreTests(unittest.TestCase):
   value=m.upstream_access_source(self.state)
   self.assertIn(self.state['database'],value);self.assertIn('shobj_description',value)
   self.assertIn('RESTORE_AUTH_RLS_PREREQUISITE',value)
-  for table in ('users','identities'):
-   self.assertIn('ON auth.'+table+' FOR SELECT TO "'+self.state['role_prefix']+'_owner" USING (true)',value)
+  self.assertNotIn('CREATE POLICY',value)
+  policy=m.builder.auth_read.render(self.state['database'],self.state['role_prefix'],
+    marker='tenderdesk-isolated-bootstrap:'+self.state['database']+':'+self.state['role_prefix'])
+  self.assertIn('tenderdesk_application_identity_read',policy)
+  self.assertNotIn('cloud_restore_application_identity_read',policy)
   self.assertNotIn('DISABLE ROW LEVEL SECURITY',value)
   self.assertNotIn('BYPASSRLS',value)
   self.assertNotIn('FOR ALL',value)

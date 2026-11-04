@@ -8932,3 +8932,44 @@ consumer/burst tests. The native permit alone does not bound API inputs allocate
 before admission. The current sequential receipts do not qualify arbitrary
 concurrency, real authenticated HTTP/hosted Storage, or production SLOs. No
 provider, billing or production mutation occurred in this slice.
+
+### November 4 — repair the observed production Auth read boundary
+
+Hosted restore run `41905235686` observed `tdp_app_owner` with SELECT on both Auth
+identity tables, no superuser/BYPASS privilege, no inherited Auth ownership, RLS
+enabled, and no applicable read policy. This confirms a production permission
+gap, distinct from the isolated fixture failure. Later drill `41908346634` passed
+13/13 real Auth/Storage restore checks with cleanup using the temporary harness
+policy; it does not qualify the shared platform repair below.
+
+The reviewed `application-auth-read.sql` platform helper creates only the two
+SELECT policies for the existing application owner. It assumes the actual Auth
+owner through explicit SET authority; verifies exact database marker, ownership,
+RLS, intended SELECT, browser denial and safe role attributes; rejects unknown
+applicable policies and drifted canonical policies; and preserves table/column
+ACLs, ownership, roles, memberships and unrelated policies. It performs no Auth
+row writes or grants and does not disable RLS or add BYPASS privileges.
+
+The release manifest now binds the helper and renderer hashes with capability
+`application_auth_read_version:1`. The policy work shares the same transaction
+as the 22 application migrations and release ledger, before the receipt/COMMIT.
+Auth relation locks have bounded waits and precede the first repeatable-read
+query snapshot. A real two-session PostgreSQL regression reproduced the late-lock
+failure (a hidden concurrent policy changed owner visibility from zero to two
+synthetic rows) and verified early-lock rejection after an observed lock wait.
+No extra advisory lock introduces an inverted lock order. Exact replay preserves
+policy OIDs; an Auth-policy conflict after all application DDL rolls back new
+schema, ledger and policies while preserving old rows and the conflicting policy.
+
+Future managed schema provisioning and isolated restore use the same helper; the
+independent harness policy was removed. Local evidence: 11 real PostgreSQL cases,
+12 helper tests, 9 release tests plus one targeted complete-batch rollback case,
+and two managed schema reconstruction tests pass. The release suite retained
+the existing row, authority, column-ACL and legacy-seed fault cases. Tests used
+the root's already-installed dependency tree through a temporary local symlink;
+the symlink was removed after verification. The legacy full-catalog fixture was
+updated for actual Auth RLS/marker prerequisites but was not separately rerun.
+No model/provider or production mutation occurred. All 22 canonical migration
+files remain unchanged. Root must refreeze the manifest for the new platform
+hashes, run a fresh managed cloud drill with this helper, then execute the reviewed
+release and verify actual production Auth policies. Those hosted gates remain open.
