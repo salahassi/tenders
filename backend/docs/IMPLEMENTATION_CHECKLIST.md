@@ -6409,3 +6409,30 @@ Neither campaign qualifies a provider. Validity/semantic failures and a suspecte
 oracle containment false negative require independent offline adjudication before
 any versioned evaluation correction; private holdout D07 and live complete-proposal
 acceptance remain open. Further live success requires an available provider.
+## November 4 — current content binding for Owner applicability decisions (W08)
+
+Migration `20261104144002_requirement_applicability_binding.sql` extends the
+existing Owner-only `compliance.save` / `not_applicable_approved` action. New
+pinned workflows require `expected_applicability_binding` from the Owner's current
+view. The existing workspace-locked command checks it against the exact current
+source-reviewed requirement, version content/package/evidence and every actual
+section row; a fresh hash is never silently attached to a stale approval. Version
+revision-only changes do not invalidate otherwise identical content. Source
+meaning or authority still pending cannot be waived through this route, and the
+existing mandatory-eligibility prohibition remains intact.
+
+The current consistency context exposes server-derived requirement bindings,
+review reasons and approved exclusions only while the confirming Owner and
+allowlist remain active and all hashes/current sources still match. Legacy and
+restored unconfirmed N/A records acquire no new authority. Restore clears the
+new binding together with existing confirmer fields. There is no parallel role
+or approval mechanism. W08 owns the corresponding UI and coverage classification.
+
+Focused SQL tests pass **8/8**, plus **5/5** existing commercial regressions;
+backend typecheck/build and generated OpenAPI pass. Four real PostgreSQL races
+observed both sessions waiting on the workspace lock: same-key replay appends
+one decision/audit, different keys with one revision admit one, a late section
+edit rejects both old-view requests, and revoking the Owner while waiting rejects
+both requests. Source workflow executor-4 and W08 context migrations are explicit
+integration dependencies. No live model, production, deployment or hosted
+acceptance call was made by this change.

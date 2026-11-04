@@ -308,6 +308,10 @@ export const commandSchemas = {
       proposal_version_id: uuid,
       requirement_id: uuid,
       expected_revision: z.number().int().min(0),
+      expected_applicability_binding: z
+        .string()
+        .regex(/^[a-f0-9]{64}$/)
+        .optional(),
       status: z.enum([
         "answered",
         "partial",
