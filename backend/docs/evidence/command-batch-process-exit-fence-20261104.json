@@ -1,0 +1,35 @@
+{
+  "actual_kubernetes_exit_exercised": false,
+  "control_flow_tests_passed": 34,
+  "duration_seconds": 0.184,
+  "hosted_calls": 0,
+  "log_sha256": "f5dea48cf822c7c7e7320b52d91526a0c6fb0b172db4a0ce8a3902856a707e79",
+  "negative_controls": [
+    "ContainerStatusUnknown",
+    "NodeLost terminal reason",
+    "NodeLost Pod reason",
+    "missing/mismatched terminated.containerID",
+    "zero/unparseable/reversed timestamps",
+    "missing/negative exit code",
+    "replay of saved unknown terminal proof"
+  ],
+  "observer_function_sha256": {
+    "drain_transactions": "79ad163f968cc975221d0b6e273efd172cfeb1e895f435c4817adc26d0cfc6e1",
+    "observe_transactions": "881670f87cd147d0ae49a385d57d5e5c5439cfca07d6622587b85daaadf9baf9",
+    "transaction_observation_sql": "91964ffaae13f42d7f1bdb07223abe8872c280aba2ba90dac5e7b0d1732a2d2d"
+  },
+  "observer_functions_identical_to_actual_pg_qualified_revision": "4c5af32",
+  "passed": true,
+  "positive_controls": [
+    "Completed",
+    "Error143",
+    "OOMKilled137"
+  ],
+  "scope": "actual container exit fence; synthetic Kubernetes control flow only",
+  "source_sha256": {
+    "backend/scripts/ops/command-batch-cutover.py": "cbded3595dfc8447c3dfa6e4e9cb4d78b7a98ba98de621c287b0d0fb6e1f81e0",
+    "backend/scripts/ops/test_command_batch_cutover.py": "411d3bc4ff040b2f68a31130b6b01674d8f4743fc11f83d4e36c30178614e2e7"
+  },
+  "sql_only_postgres_probes_rerun": false,
+  "version": 1
+}

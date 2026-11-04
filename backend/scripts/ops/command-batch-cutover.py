@@ -8,6 +8,7 @@ races after this best-effort admission drain. No customer values are collected.
 import json
 import re
 import time
+from datetime import datetime,timezone
 
 JOURNAL='tenderdesk.io/command-batch-cutover'
 FINALIZER='tenderdesk.io/command-batch-cutover-process'
@@ -18,6 +19,19 @@ def need(ok,code):
 def canonical(v):return json.dumps(v,sort_keys=True,separators=(',',':'))
 def pointer(v):return v.replace('~','~0').replace('/','~1')
 def literal(v):return "'"+v.replace("'","''")+"'"
+def actual_exit(proof,pod):
+ if (not isinstance(proof,dict) or set(proof)!={'container_id','started_at','finished_at','exit_code','reason'}
+  or proof['container_id']!=pod['container_id'] or type(proof['exit_code']) is not int or not 0<=proof['exit_code']<=255
+  or proof['reason'] not in ('Completed','Error','OOMKilled')):return False
+ stamps=[]
+ for key in ('started_at','finished_at'):
+  value=proof[key]
+  if not isinstance(value,str) or not re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z',value):return False
+  try:stamp=datetime.fromisoformat(value[:-1]+'+00:00')
+  except ValueError:return False
+  if stamp<datetime(1970,1,1,tzinfo=timezone.utc):return False
+  stamps.append(stamp)
+ return stamps[1]>=stamps[0]
 def items(d,kind='pods'):
  value=json.loads(d.command(['get',kind,'-n',d.NAMESPACE,'-o','json']))
  need(isinstance(value,dict) and isinstance(value.get('items'),list) and len(value['items'])<=1000,'DELIVERY_BATCH_RESOURCE_CENSUS_INVALID')
@@ -86,9 +100,7 @@ class GatewayDrain:
   for p in v['pods']:
    proof=v['termination'].get(p['uid'])
    if proof is not None:
-    need(isinstance(proof,dict) and set(proof)=={'container_id','finished_at','exit_code'} and proof['container_id']==p['container_id']
-     and type(proof['exit_code']) is int and isinstance(proof['finished_at'],str)
-     and re.fullmatch(r'[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z',proof['finished_at']),'DELIVERY_BATCH_GATEWAY_JOURNAL_INVALID')
+    need(actual_exit(proof,p),'DELIVERY_BATCH_GATEWAY_JOURNAL_INVALID')
   return v
  def prepare(self):
   v=self.read()
@@ -134,7 +146,13 @@ class GatewayDrain:
     need(len(statuses)==1 and statuses[0].get('containerID')==p['container_id'],'DELIVERY_BATCH_GATEWAY_PROCESS_CHANGED')
     term=statuses[0].get('state',{}).get('terminated')
     if term and (current['metadata'].get('deletionTimestamp') or current.get('status',{}).get('phase') in ('Succeeded','Failed')):
-     v['termination'][p['uid']]={'container_id':p['container_id'],'finished_at':term.get('finishedAt'),'exit_code':term.get('exitCode')};changed=True
+     proof={'container_id':term.get('containerID'),'started_at':term.get('startedAt'),'finished_at':term.get('finishedAt'),
+      'exit_code':term.get('exitCode'),'reason':term.get('reason')}
+     # Controllers may mark an unreachable Pod failed without observing its
+     # process exit. A fabricated/unknown terminal state is not a drain fence.
+     need(current.get('status',{}).get('reason') not in ('NodeLost','ContainerStatusUnknown') and actual_exit(proof,p),
+      'DELIVERY_BATCH_GATEWAY_EXIT_UNPROVEN')
+     v['termination'][p['uid']]=proof;changed=True
    if changed:self.save(v,previous);v=self.read()
    if len(v['termination'])==len(v['pods']):break
    need(time.monotonic()<deadline,'DELIVERY_BATCH_GATEWAY_DRAIN_TIMEOUT');time.sleep(2)

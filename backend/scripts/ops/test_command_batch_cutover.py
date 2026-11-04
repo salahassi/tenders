@@ -53,7 +53,8 @@ class Cluster:
  def journal(self):return json.loads(self.values['deployment','gateway']['metadata']['annotations'][c.JOURNAL])
  def terminate(self,index):
   p=self.values['pod','gateway-'+str(index)];p['metadata']['deletionTimestamp']='2026-11-04T22:00:00Z'
-  p['status']['containerStatuses'][0]['state']={'terminated':{'exitCode':0,'finishedAt':'2026-11-04T22:00:01Z'}}
+  status=p['status']['containerStatuses'][0]
+  status['state']={'terminated':{'exitCode':0,'startedAt':'2026-11-04T21:00:00Z','finishedAt':'2026-11-04T22:00:01Z','reason':'Completed','containerID':status['containerID']}}
 
 class GatewayDrainTests(unittest.TestCase):
  def setUp(self):self.d=Cluster();self.a=c.GatewayDrain(self.d,g,self.d.state)
@@ -118,6 +119,32 @@ class GatewayDrainTests(unittest.TestCase):
   with patch.object(self.d,'get',side_effect=get),self.assertRaisesRegex(c.CutoverError,'JOURNAL_CHANGED'):self.a.after_rollout(timeout=0)
   self.assertEqual(len(self.d.journal()['pods']),3)
   self.assertTrue(all(self.d.values['pod','gateway-'+str(i)]['metadata'].get('finalizers') for i in (0,1)))
+ def test_unknown_or_mismatched_terminal_states_keep_identity_and_journal_unproved(self):
+  mutations=[('reason','ContainerStatusUnknown'),('reason','NodeLost'),('reason',None),
+   ('containerID',None),('containerID','containerd://'+'e'*64),('finishedAt','0001-01-01T00:00:00Z'),
+   ('startedAt','0001-01-01T00:00:00Z'),('finishedAt','2026-11-04T20:00:00Z'),('exitCode',-1),('exitCode',None)]
+  for key,value in mutations:
+   d=Cluster(1);a=c.GatewayDrain(d,g,d.state);a.prepare();d.terminate(0)
+   d.values['pod','gateway-0']['status']['containerStatuses'][0]['state']['terminated'][key]=value
+   with self.subTest(key=key,value=value),self.assertRaisesRegex(c.CutoverError,'EXIT_UNPROVEN'):a.after_rollout(timeout=0)
+   self.assertEqual(d.journal()['termination'],{})
+   self.assertEqual(d.values['pod','gateway-0']['metadata']['finalizers'],[c.FINALIZER])
+ def test_node_lost_pod_cannot_override_known_terminal_labels(self):
+  self.a.prepare();self.d.terminate(0);self.d.terminate(1);self.d.values['pod','gateway-0']['status']['reason']='NodeLost'
+  with self.assertRaisesRegex(c.CutoverError,'EXIT_UNPROVEN'):self.a.after_rollout(timeout=0)
+  self.assertEqual(self.d.journal()['termination'],{})
+ def test_actual_error_and_oom_termination_prove_exit_without_claiming_clean_shutdown(self):
+  for reason,code in [('Error',143),('OOMKilled',137)]:
+   d=Cluster(1);a=c.GatewayDrain(d,g,d.state);a.prepare();d.terminate(0)
+   d.values['pod','gateway-0']['status']['containerStatuses'][0]['state']['terminated'].update(reason=reason,exitCode=code)
+   a.after_rollout(timeout=0);proof=next(iter(d.journal()['termination'].values()))
+   self.assertEqual((proof['reason'],proof['exit_code']),(reason,code))
+ def test_saved_unknown_terminal_proof_cannot_be_replayed(self):
+  self.a.prepare();self.d.terminate(0)
+  with self.assertRaisesRegex(c.CutoverError,'DRAIN_TIMEOUT'):self.a.after_rollout(timeout=0)
+  v=self.d.journal();next(iter(v['termination'].values()))['reason']='ContainerStatusUnknown'
+  self.d.values['deployment','gateway']['metadata']['annotations'][c.JOURNAL]=c.canonical(v)
+  with self.assertRaisesRegex(c.CutoverError,'JOURNAL_INVALID'):c.GatewayDrain(self.d,g,self.d.state).prepare()
 
 class BindingTests(unittest.TestCase):
  def fixture(self):

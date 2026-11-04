@@ -9940,3 +9940,18 @@ separates these local checks from actual Kubernetes termination, managed PG18
 visibility, final image capacity and hosted acceptance. The early locked zero
 census and permanent INSERT trigger remain necessary for queued/direct REST
 callers. No hosted mutation or deployment occurred in this slice.
+
+### November 4 — refuse unknown Kubernetes terminal states as exit proof
+
+Gateway drain now binds the terminated state's own container ID to the captured
+ID and accepts only known runtime terminal reasons with valid nonzero ordered
+start/finish timestamps and a concrete exit code. `ContainerStatusUnknown`,
+`NodeLost`, missing or conflicting IDs, invalid timestamps and negative/missing
+exit codes retain the Pod identity and refuse settlement. Saved proof replay
+uses the same validation; a known OOM/error exit proves process termination,
+without claiming a clean shutdown. All 34 focused control-flow tests passed.
+The [receipt](evidence/command-batch-process-exit-fence-20261104.json) records that
+the three observer SQL/drain functions are byte-identical to the actual seven-case
+PostgreSQL-qualified revision; those unrelated probes were not repeated. Actual
+hosted Kubernetes exit proof remains pending. The final gateway source hash is
+also pending the separately assigned slow-consumer streaming qualification.
