@@ -5314,3 +5314,62 @@ modern runtime APIs; production continues to use the existing browser build.
 Page coverage describes extracted text and unresolved pages, not independent
 proof that a page's text layer captures every image, table or buyer obligation.
 Original-to-extraction fidelity and durable OCR remain separate W02 acceptance.
+## November 4 — W08/F09 bounded company-evidence retrieval (local implementation)
+
+The Owner authorized implementation of the reliable proposal delivery plan.
+This slice implements RT-01's bounded retrieval behavior for **newly requested**
+`draft_section`, `plan_commercial` and `review_proposal` work. It does not mark
+all of W08 or RT-02 complete.
+
+`companyEvidenceRetrieval.ts` supplies every verified frozen company source when
+it fits the added-context budget, instead of taking only six literal matches and
+cropping each to 2,000 characters. All blocks with the same immutable source
+identity/hash are admitted together, in their frozen sequence; a later block's
+qualification cannot be silently dropped by this selector. When the bounded
+payload cannot hold everything, already-cited sources take priority and remaining
+whole sources are selected across requirements. Literal matches only prioritize
+selection; they never establish semantic support. Source count/byte coverage,
+capacity omissions, cited-source coverage and per-requirement retrieval gaps
+are explicit. Empty or incomplete retrieval never establishes company capability
+absence. Historical style remains separate from verified company facts.
+
+The 24,000-byte company allowance and 48,000-byte context envelope are conservative
+application bounds, **not** exact provider token counts or universal context
+capacity claims. Existing provider/context checks remain. Oversized sources are
+omitted intact with an explicit gap; no automatic secondary model retrieval,
+vector platform or arbitrary document truncation was introduced.
+
+CLI-created migration `20261104122015_company_evidence_retrieval.sql` wraps the
+existing private draft snapshot function and pins `company_retrieval_version:1`
+only for new requests. Historical absent pins and explicit prior pins survive
+currentness checks unchanged. The wrapper preserves all delegated snapshot fields,
+old rows, jobs, input hashes, source/currentness checks and private ACLs. Existing
+paid requests retain their old six-source/snippet behavior and exact prompt input.
+
+Verification: both package lockfiles were installed using `npm ci`. New synthetic
+retrieval cases exercise source seven, late evidence, Arabic/English in both
+directions, synonyms without literal overlap, equal ranks, requirement-fair
+selection, whole-document qualifiers, cited-source priority, capacity exhaustion,
+unverified/style controls and unchanged historical task inputs. Seven fully
+migrated database cases cover new/old pins, migration-boundary row/job preservation,
+source expiry, revoked verification, exact provider-permission revocation for a
+newly selected seventh source, and private function privileges. Final checks pass **1,868 backend tests across 112 files** and **269 frontend
+tests across 40 files**, plus both packages’ typecheck/build. A final narrow
+capacity-loop improvement was rechecked with **66 focused tests across 5 files**
+and backend typecheck/build. The new retrieval-specific cases total 27 tests
+(20 selector/task-input cases and 7 database cases).
+
+Supabase function security guidance and the relevant database changelog were
+reviewed. The migration creates no public table/API or new permissions. Local
+`supabase db advisors --local --type security --level warn` could not connect
+because no local Supabase server listens on 127.0.0.1:54322; no hosted or retired
+project was queried. Private ACL and actual migration queries passed in PGlite;
+this is not a hosted advisor/authorization acceptance claim.
+
+Deployment and hosted acceptance: **not deployed; not exercised with live models**.
+Company Knowledge permission remains enforced at canonical per-provider preflight;
+this change does not silently grant permission or create a provider-specific
+filtered candidate pool. Permission failure can still stop AI enrichment and must
+remain distinct from invalid RFP input in the delivery workflow. RT-01's broad
+semantic recall/precision calibration, automated targeted follow-up for oversized
+sources, and RT-02's whole-proposal obligation/annex reconciliation remain open.

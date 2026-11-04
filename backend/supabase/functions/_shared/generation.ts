@@ -34,6 +34,13 @@ import {
 import { normalizedEvidence } from "./sourceModel.ts";
 import { validationDiagnostic } from "./modelValidationDiagnostics.ts";
 import {
+  COMPANY_CONTEXT_BYTE_LIMIT,
+  COMPANY_EVIDENCE_BYTE_LIMIT,
+  COMPANY_RETRIEVAL_INSTRUCTION,
+  encodedSize,
+  retrieveCompanyEvidence,
+} from "./companyEvidenceRetrieval.ts";
+import {
   batchGenerationRequirements,
   requirementModelContext,
 } from "./generationBatching.ts";
@@ -227,9 +234,10 @@ export function taskInput(ctx: PlanContext) {
     const query = requirements.map((r) => r.text).join("\n");
     evidence = refsFor(all, [], requirements);
     if (
-      task === "draft_section" ||
-      task === "plan_commercial" ||
-      task === "review_proposal"
+      frozen.company_retrieval_version !== 1 &&
+      (task === "draft_section" ||
+        task === "plan_commercial" ||
+        task === "review_proposal")
     )
       evidence.push(
         ...relevant(
@@ -622,6 +630,64 @@ export function taskInput(ctx: PlanContext) {
       instruction:
         "Only readable supplied page text is evidence. Blank pages and pages awaiting OCR or failed extraction are distinct. Preserve readable content, and never claim all pages or all buyer obligations were reviewed when coverage is incomplete.",
     };
+  }
+  if (
+    frozen.company_retrieval_version === 1 &&
+    ["draft_section", "plan_commercial", "review_proposal"].includes(task)
+  ) {
+    const baseline = evidence.filter((e) => e.kind !== "company");
+    const citedCompanyIds = evidence
+      .filter((e) => e.kind === "company")
+      .map((e) => e.id);
+    const retrievalRequirements = requirements.map((r) => ({
+      id: String(r.id),
+      text: String(r.text),
+      source_refs: r.source_refs,
+    }));
+    const remaining = Math.max(
+      0,
+      COMPANY_CONTEXT_BYTE_LIMIT - encodedSize({ context, evidence: baseline }),
+    );
+    let limit = Math.min(COMPANY_EVIDENCE_BYTE_LIMIT, remaining);
+    let selected = retrieveCompanyEvidence(
+      frozen.knowledge,
+      retrievalRequirements,
+      limit,
+      citedCompanyIds,
+    );
+    // Coverage metadata and the instruction are context too. Reduce only the
+    // added company budget; never truncate buyer requirements or source blocks.
+    while (
+      limit > 0 &&
+      encodedSize({
+        evidence: selected.evidence,
+        coverage: selected.coverage,
+        instruction: COMPANY_RETRIEVAL_INSTRUCTION,
+      }) > remaining
+    ) {
+      const excess =
+        encodedSize({
+          evidence: selected.evidence,
+          coverage: selected.coverage,
+          instruction: COMPANY_RETRIEVAL_INSTRUCTION,
+        }) - remaining;
+      // Jump below the bytes actually admitted; reducing unused budget one byte
+      // at a time can otherwise repeat the same selection thousands of times.
+      limit = Math.max(
+        0,
+        Math.min(limit, selected.coverage.supplied_bytes) - Math.max(1, excess),
+      );
+      selected = retrieveCompanyEvidence(
+        frozen.knowledge,
+        retrievalRequirements,
+        limit,
+        citedCompanyIds,
+      );
+    }
+    evidence = [...baseline, ...selected.evidence];
+    context.company_evidence_coverage = selected.coverage;
+    context.company_retrieval_version = 1;
+    context.instruction += " " + COMPANY_RETRIEVAL_INSTRUCTION;
   }
   evidence = Array.from(new Map(evidence.map((e) => [e.id, e])).values());
   // All evidence actually in the prompt and provenance of generated paragraphs stay gated.
