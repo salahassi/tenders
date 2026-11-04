@@ -35,10 +35,11 @@ the current reliability implementation is still draft PR24.
   Local exact 22-migration PostgreSQL restore passes eight checks. The first
   cloud Auth/Storage drill failed at fixture-user setup; the second failed at
   private-bucket setup. The third drill passes all 13 actual HTTP acceptance
-  checks and both cleanups after correcting the isolated bucket limit. That
-  run uses a fixture Auth policy; the shared production platform policy still
-  needs a fresh drill and deployment. Production catalog metadata confirms Auth
-  RLS blocks application-owner reads despite SELECT grants.
+  checks and both cleanups after correcting the isolated bucket limit. The
+  fourth drill repeats all thirteen checks successfully using the source-bound
+  shared platform Auth helper. Production catalog metadata still confirms Auth
+  RLS blocks application-owner reads despite SELECT grants; deploying that
+  qualified helper remains required to repair production.
   Full hosted package timing, deployment and actual user-flow acceptance remain
   unproven. An optional template is not successful issuance.
 - The latest read-only model binding audit is successful run41869042836;
@@ -68,6 +69,16 @@ the subsequent shared production Auth helper. No customer rows were copied,
 production business records or Auth policies changed, or model calls made.
 The application renderer was not exercised. A fresh shared-helper drill,
 production release and full hosted issuance remain required.
+
+The subsequent [run 41910306855](https://github.com/salahassi/tenders/actions/runs/41910306855)
+at `28689b97503b1fe23f0999909c91427867131c91` repeats all thirteen checks
+successfully with the **shared source-bound platform Auth helper** and refrozen
+manifest `9e3430d1d01af222e3aad0d4aa8cae5e1f0c14942ae0ff258f0a96f6f953e020`.
+Original cluster CA verification, twelve local guards and both cleanup stages
+pass. Its [receipt](evidence/cloud-restore-20261104-41910306855.json) establishes
+the shared helper's isolated Auth/Storage behavior, without copying customer
+rows or changing production Auth policies. Renderer capacity, actual production
+policy repair and hosted full proposal issuance remain separate release gates.
 
 ### November 4 — frozen schema and gateway contract for the isolated cloud drill
 

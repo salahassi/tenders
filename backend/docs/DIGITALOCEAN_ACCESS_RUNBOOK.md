@@ -93,8 +93,13 @@ at `fb43a7a3d54518b98cadbfc344d9c1ad4b6766f4`. Its
 [receipt](evidence/cloud-restore-20261104-41908346634.json) records original CA
 verification, exact file restore, access revocation and idempotent replay. This
 run used a fixture Auth policy; it is not evidence for the later shared platform
-policy, application rendering or production deployment. Use the checklist for
-the latest source-specific release gates.
+policy, application rendering or production deployment. The later
+[run 41910306855](https://github.com/salahassi/tenders/actions/runs/41910306855)
+at `28689b97503b1fe23f0999909c91427867131c91` repeats all thirteen checks using
+the shared platform helper and its frozen source contract. Its
+[receipt](evidence/cloud-restore-20261104-41910306855.json) retains successful
+original-CA verification and both cleanups. Production was not changed. Use the
+checklist for the latest source-specific release gates.
 
 The subsequent read-only model binding audit succeeded at commit
 `bc8e5709183fd228ae1bac207e643e2413e9c9fd` in
