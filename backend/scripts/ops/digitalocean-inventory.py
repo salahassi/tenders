@@ -234,11 +234,38 @@ def capacity_metadata(value):
         if managed!=expected: raise InventoryError('INVENTORY_CAPACITY_INVALID')
     return value
 
+def gateway_capacity_configuration(spec,container):
+    """Allowlisted observed spec facts, never credentials, paths or inferred caps."""
+    mounts=container.get('volumeMounts',[]);volumes=spec.get('volumes',[])
+    if not isinstance(mounts,list) or not isinstance(volumes,list) or any(not isinstance(x,dict) for x in mounts+volumes):
+        raise InventoryError('INVENTORY_CAPACITY_INVALID')
+    selected=[x for x in mounts if x.get('mountPath')=='/tmp']
+    descendants=sum(isinstance(x.get('mountPath'),str) and x['mountPath'].startswith('/tmp/') for x in mounts)
+    kind='missing' if not selected else 'ambiguous';medium=None;limit=None;readonly=None;subpath=None
+    if len(selected)==1:
+        mount=selected[0];readonly=mount.get('readOnly',False)
+        if type(readonly) is not bool: raise InventoryError('INVENTORY_CAPACITY_INVALID')
+        subpath=bool(mount.get('subPath') or mount.get('subPathExpr'))
+        targets=[x for x in volumes if x.get('name')==mount.get('name')]
+        kind='missing' if not targets else 'ambiguous'
+        if len(targets)==1:
+            volume=targets[0];kind='emptyDir' if set(volume)=={'name','emptyDir'} else 'other'
+            if kind=='emptyDir':
+                value=volume['emptyDir']
+                if not isinstance(value,dict): raise InventoryError('INVENTORY_CAPACITY_INVALID')
+                observed=value.get('medium','')
+                medium='default' if observed=='' else 'Memory' if observed=='Memory' else 'other'
+                limit=capacity_resources({'resources':{'limits':{'memory':value.get('sizeLimit')}}})['limits']['memory']
+    return {'entrypoint_recognized':container.get('command')==['nginx','-g','daemon off;'] and not container.get('args'),
+      'temporary_storage':{'mount_count':len(selected),'descendant_mount_count':descendants,'source_kind':kind,
+       'medium':medium,'size_limit':limit,'read_only':readonly,'subpath_present':subpath,
+       'basis':'observed_kubernetes_spec','hard_filesystem_cap_proved':False}}
+
 def capacity_workloads(deployments,pods,rest_role=None):
     result=[]
     for deployment in deployments:
         name=deployment.get('metadata',{}).get('name')
-        if name not in ('api','worker','rest'): continue
+        if name not in ('api','worker','rest','gateway'): continue
         spec=deployment['spec'];container=spec['template']['spec']['containers'][0]
         labels=spec['selector']['matchLabels'];ready=[];matched=0
         for pod in pods:
@@ -248,11 +275,15 @@ def capacity_workloads(deployments,pods,rest_role=None):
             if not any(x.get('name')==name and x.get('ready') is True for x in statuses): continue
             containers=pod.get('spec',{}).get('containers',[]);selected=[x for x in containers if x.get('name')==name]
             if len(selected)!=1: raise InventoryError('INVENTORY_CAPACITY_INVALID')
-            ready.append({'resources':capacity_resources(selected[0]),'configuration':capacity_environment(selected[0],rest_role),
-              'additional_container_count':len(containers)-1})
-        result.append({'name':name,'desired_replicas':integer(spec.get('replicas',0)),
+            observation={'resources':capacity_resources(selected[0]),'configuration':capacity_environment(selected[0],rest_role),
+              'additional_container_count':len(containers)-1}
+            if name=='gateway':observation['gateway_runtime']=gateway_capacity_configuration(pod['spec'],selected[0])
+            ready.append(observation)
+        observation={'name':name,'desired_replicas':integer(spec.get('replicas',0)),
           'deployment_resources':capacity_resources(container),'deployment_configuration':capacity_environment(container,rest_role),
-          'matching_pods':matched,'ready_pod_observations':ready})
+          'matching_pods':matched,'ready_pod_observations':ready}
+        if name=='gateway':observation['deployment_gateway_runtime']=gateway_capacity_configuration(spec['template']['spec'],container)
+        result.append(observation)
     return sorted(result,key=lambda x:x['name'])
 
 def capacity_settings(value):

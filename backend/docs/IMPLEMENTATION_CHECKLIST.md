@@ -10029,3 +10029,21 @@ This change updates documents only. Static validation confirms every indexed
 receipt exists and its SHA256 matches, all historical index rows/hashes remain,
 the nine action IDs are unique and all action evidence references resolve.
 No application, native, provider or production test was run by this refresh.
+
+### November 4 — observe gateway resources and temporary-storage configuration
+
+The existing read-only inventory now includes gateway deployment and ready-Pod
+resource requests/limits in its additive capacity observation. It separately
+projects fixed entrypoint recognition and sanitized temporary-volume facts:
+exact/descendant mount counts, source kind, configured medium/size limit,
+read-only status and subpath presence. Unknown/missing values stay unknown; no
+repository default substitutes for actual observations. Secret values, arbitrary
+paths and volume names are omitted. A Kubernetes sizeLimit is explicitly not
+reported as a proven hard filesystem cap. The original workload/schema receipt
+shape is unchanged, and no resource, credential or permission is modified.
+
+All 22 focused projection/inventory tests passed, including four new controls for
+deployment/Pod drift, unknown storage, submounts and redaction. The
+[source receipt](evidence/gateway-inventory-capacity-projection-20261104.json)
+records local checks only. Hosted values and the separate qualified gateway
+preflight/response-streaming acceptance remain pending the reviewed runner run.
