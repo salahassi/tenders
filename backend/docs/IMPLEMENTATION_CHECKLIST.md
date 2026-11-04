@@ -10440,3 +10440,21 @@ replace that release baseline. Historical 22-migration restore results remain
 limited to their original contract. The renewed exact 24-migration isolated
 cloud restore and complete integrated package/ops checks are the next gates.
 No schema or application deployment occurred during this local freeze.
+
+### November 4 — complete operations gates on frozen 865d840
+
+The complete required Python unittest discovery passed on exact source
+`865d8406fcaf148299184bcbe67522fb0b256258`: 537 operations tests, 11
+production-schema tests and 16 Kubernetes tests (564 total). Each suite exited
+zero and reported `OK`; no failure or skip was reported. All tracked file hashes,
+HEAD and the clean working-tree state matched before and after. The tested
+canonical release manifest SHA-256 is
+`4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76`.
+
+[The retained receipt](evidence/final-operations-gates-865d840-20261104.json)
+records exact commands, counts, source/manifest hashes and private-log hashes.
+Tests ran alongside the separately owned application package suite, so elapsed
+times are functional-test evidence rather than capacity measurements. This does
+not claim completion of that package suite, the renewed hosted restore drill,
+or deployment acceptance. No standalone native benchmark, provider request,
+hosted mutation or workflow dispatch was performed by this check.

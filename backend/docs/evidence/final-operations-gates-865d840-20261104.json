@@ -1,0 +1,80 @@
+{
+  "changed_files": [],
+  "completed_at": "2026-11-04T23:26:27.144030+00:00",
+  "final_clean": true,
+  "final_status": "",
+  "initial_clean": true,
+  "limitations": [
+    "These functional tests ran while the separately owned backend/frontend package suite was active; durations are not capacity or SLO measurements.",
+    "Local synthetic PostgreSQL/PGlite/Auth/Storage fixture tests are not production Auth/Storage or actual rollout proof.",
+    "No standalone native capacity benchmark, external provider call, production mutation or workflow dispatch was performed."
+  ],
+  "manifest_file_sha256": "bf3cee16eedd57730a7dff7a2e03d599c4d491a3b2d9db6fc022d298643f8e51",
+  "manifest_sha256": "4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76",
+  "passed": true,
+  "production_calls": 0,
+  "provider_calls": 0,
+  "scope": "Complete local operations, production-schema and Kubernetes unittest discovery against frozen source; application suites and hosted acceptance separate.",
+  "source_after_sha256": "5c52d281f164486d7e6d440b784ab7c645561eee58fbe55916052d49afecdea9",
+  "source_before_sha256": "5c52d281f164486d7e6d440b784ab7c645561eee58fbe55916052d49afecdea9",
+  "source_revision": "865d8406fcaf148299184bcbe67522fb0b256258",
+  "source_revision_after": "865d8406fcaf148299184bcbe67522fb0b256258",
+  "source_revision_unchanged": true,
+  "source_unchanged": true,
+  "standalone_native_capacity_runs": 0,
+  "started_at": "2026-11-04T23:23:04.147350+00:00",
+  "suites": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "backend/scripts/ops"
+      ],
+      "elapsed_seconds": 200.405,
+      "exit_code": 0,
+      "log_sha256": "1a1c7e8a97a81a9f0ed193b91e058a8ef71cd5ccafec18fcbd3f8425e6af2eb5",
+      "name": "ops",
+      "summary": "OK",
+      "test_runner_seconds": 200.083,
+      "tests": 537
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "backend/scripts/ops/production-schema"
+      ],
+      "elapsed_seconds": 2.492,
+      "exit_code": 0,
+      "log_sha256": "6b9a004d3b360ec9a64876f1329613b1c292387791511f0660d8f754ca98f394",
+      "name": "production-schema",
+      "summary": "OK",
+      "test_runner_seconds": 2.395,
+      "tests": 11
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "backend/deploy/kubernetes"
+      ],
+      "elapsed_seconds": 0.065,
+      "exit_code": 0,
+      "log_sha256": "25d718152414a917d6eb4a014d599eff20a2b538451c2591d104ace11b9de0dd",
+      "name": "kubernetes",
+      "summary": "OK",
+      "test_runner_seconds": 0.009,
+      "tests": 16
+    }
+  ],
+  "version": 1
+}
