@@ -7353,3 +7353,22 @@ it does not fabricate a projection/issued receipt. The dedicated generated
 delivery pipeline continues to prove real projection/render/whole-package
 issuance separately. This resolves six fixture failures exposed after the real
 advance_generation renamed-parameter defect was fixed.
+
+### 2026-11-04 — ordinary package definitive byte-failure recovery
+
+A service-only `report_export_package_artifact_failure` receipt accepts only a
+known storage404 or a measured byte mismatch. It checks current actor/source/final
+approval and exact package revision, artifact ID, original hash and private key.
+Stale receipts make no change. The prior immutable hash/receipt remains in history;
+the package becomes blocked and an explicit authorized retry creates a new key and
+artifact. Corrupt bytes enter canonical cleanup with measured storage accounting;
+a definitive absence releases only the known missing artifact. Transient storage
+errors must never invoke this receipt. No read automatically retries or renews a
+request. `artifact_context` supplies the package ID/revision for API-side CAS.
+
+Twenty ordinary pipeline cases now pass, including actual rendering before missing/
+corrupt receipt, stale CAS, denied user execution, current-source rejection and explicit
+repair. Backend typecheck passes. The root API integration owns invoking this receipt
+on authoritative404/hash/size failure and preserving transient503 behavior. The
+predecessor job-action wrapper uses its separately fixed stable request alias; the
+redundant ordinary-export rename rebinding is removed accordingly.

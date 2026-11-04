@@ -654,3 +654,122 @@ it("dispatches the persisted export job after the original caller is gone, reusi
     warning.mockRestore();
   }
 });
+async function artifactFailure(
+  d: Awaited<ReturnType<typeof setup>>,
+  error_code: "EXPORT_ARTIFACT_MISSING" | "ARTIFACT_MISMATCH",
+) {
+  await d.prepare();
+  const ready = (await d.run()).result;
+  const artifact = ready.artifacts[0];
+  const context = await fixture.rpc(
+    "artifact_context",
+    { artifact_id: artifact.id },
+    "synthetic-owner",
+  );
+  return {
+    ready,
+    artifact,
+    context,
+    args: {
+      artifact_id: artifact.id,
+      actor_id: fixture.f.owner,
+      package_id: context.package.id,
+      expected_revision: context.package.revision,
+      expected_hash: artifact.content_hash,
+      expected_storage_key: context.artifact.storage_key,
+      error_code,
+      actual_size: error_code === "ARTIFACT_MISMATCH" ? 3 : null,
+    },
+  };
+}
+it.each(["EXPORT_ARTIFACT_MISSING", "ARTIFACT_MISMATCH"] as const)(
+  "records only definitive %s and permits an explicit fresh artifact retry",
+  async (code) => {
+    const d = await setup();
+    const { artifact, context, args } = await artifactFailure(d, code);
+    if (code === "EXPORT_ARTIFACT_MISSING")
+      d.objects.delete(context.artifact.storage_key);
+    else d.objects.set(context.artifact.storage_key, new Blob(["bad"]));
+    expect(
+      await fixture.rpc("report_export_package_artifact_failure", args),
+    ).toEqual({ invalidated: true });
+    expect(
+      await fixture.rpc("report_export_package_artifact_failure", args),
+    ).toEqual({ invalidated: false });
+    const blocked = await fixture.rpc(
+      "export_package_context",
+      { package_id: args.package_id },
+      "synthetic-owner",
+    );
+    expect(blocked.error_code).toBe("EXPORT_PACKAGE_BYTES_UNAVAILABLE");
+    expect(
+      (
+        await fixture.f.db.query<any>(
+          "select content_hash,status from public.export_artifacts where id=$1",
+          [artifact.id],
+        )
+      ).rows[0],
+    ).toEqual({ content_hash: artifact.content_hash, status: "expired" });
+    expect(
+      (
+        await fixture.f.db.query<any>(
+          "select count(*) n from public.audit_events where action='export.package.artifact_invalidated' and entity_id=$1",
+          [artifact.id],
+        )
+      ).rows[0].n,
+    ).toBe(1);
+    const cleanup = (
+      await fixture.f.db.query<any>(
+        "select estimated_size from public.storage_cleanup_queue where storage_key=$1",
+        [context.artifact.storage_key],
+      )
+    ).rows;
+    expect(cleanup).toHaveLength(code === "ARTIFACT_MISMATCH" ? 1 : 0);
+    await d.command("export.package.retry", {
+      id: args.package_id,
+      expected_revision: blocked.revision,
+    });
+    const next = (await d.run()).result;
+    expect(next.status).toBe("ready");
+    expect(next.artifacts[0].id).not.toBe(artifact.id);
+  },
+);
+it("requires service authority, exact failure CAS and current source before invalidating a ready package", async () => {
+  const d = await setup();
+  const { args, artifact } = await artifactFailure(
+    d,
+    "EXPORT_ARTIFACT_MISSING",
+  );
+  const acl = (
+    await fixture.f.db.query<any>(
+      "select has_function_privilege('authenticated','public.report_export_package_artifact_failure(uuid,uuid,uuid,integer,text,text,text,bigint)','EXECUTE') allowed",
+    )
+  ).rows[0];
+  expect(acl.allowed).toBe(false);
+  for (const altered of [
+    { expected_revision: args.expected_revision - 1 },
+    { expected_hash: "f".repeat(64) },
+    { expected_storage_key: "wrong/private/key" },
+  ])
+    expect(
+      await fixture.rpc("report_export_package_artifact_failure", {
+        ...args,
+        ...altered,
+      }),
+    ).toEqual({ invalidated: false });
+  await fixture.f.db.query(
+    "update public.opportunities set title='Changed source before failure receipt' where id=(select opportunity_id from public.generation_plans where id=$1)",
+    [d.plan],
+  );
+  await expect(
+    fixture.rpc("report_export_package_artifact_failure", args),
+  ).rejects.toMatchObject({ code: "STALE_INPUT" });
+  expect(
+    (
+      await fixture.f.db.query<any>(
+        "select status from public.export_artifacts where id=$1",
+        [artifact.id],
+      )
+    ).rows[0].status,
+  ).toBe("ready");
+});

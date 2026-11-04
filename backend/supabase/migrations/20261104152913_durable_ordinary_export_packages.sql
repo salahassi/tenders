@@ -117,12 +117,6 @@ end $$;
 
 -- All package commands run through the same authenticated command envelope.
 alter function app_private.app_command(text,jsonb,text) rename to app_command_before_export_package;
--- Preserve the implicit block label used by the preceding job-retry wrapper.
-do $$declare definition text;begin
- select pg_get_functiondef('app_private.app_command_before_export_package(text,jsonb,text)'::regprocedure) into definition;
- execute replace(definition,'app_command.','app_command_before_export_package.');
-end $$;
-
 create function app_private.app_command(operation text,input jsonb,idempotency_key text) returns jsonb language plpgsql security definer set search_path='' as $$
 declare w uuid;actor uuid:=auth.uid();v public.proposal_versions;prop public.proposals;g public.generation_plans;p public.export_packages;r jsonb;gate jsonb;sources jsonb;manifest jsonb;identity text;digest text;replay app_private.idempotency_records;result jsonb;volume text;slot uuid;job uuid;accepted timestamptz;needed bigint;actor_role text;begin
  if operation not in ('export.package.prepare','export.package.retry') then return app_private.app_command_before_export_package(operation,input,idempotency_key);end if;
@@ -262,12 +256,37 @@ create function app_private.check_export_package_download(artifact uuid,actor uu
  if p.status<>'ready' or not exists(select 1 from public.jobs where id=p.current_job_id and status='succeeded') or exists(select 1 from public.export_package_volumes s left join public.export_artifacts a on a.id=s.artifact_id where s.package_id=p.id and (a.id is null or a.status<>'ready' or a.storage_key<>s.storage_key)) then raise exception 'EXPORT_PACKAGE_INCOMPLETE';end if;
 end $$;
 alter function public.artifact_context(uuid) rename to artifact_context_before_export_package;
-create function public.artifact_context(artifact_id uuid) returns jsonb language plpgsql security definer set search_path='' as $$declare result jsonb;begin
- result:=public.artifact_context_before_export_package(artifact_id);perform app_private.check_export_package_download(artifact_id,auth.uid());return result;
+create function public.artifact_context(artifact_id uuid) returns jsonb language plpgsql security definer set search_path='' as $$declare result jsonb;p public.export_packages;begin
+ result:=public.artifact_context_before_export_package(artifact_id);perform app_private.check_export_package_download(artifact_id,auth.uid());
+ select pack.* into p from public.export_packages pack join public.export_package_volumes s on s.package_id=pack.id where s.artifact_id=$1;
+ if p.id is not null then result:=result||jsonb_build_object('package',jsonb_build_object('id',p.id,'revision',p.revision));end if;return result;
 end $$;
 alter function public.authorize_artifact_download(uuid,uuid,text) rename to authorize_artifact_download_before_export_package;
 create function public.authorize_artifact_download(artifact_id uuid,actor_id uuid,actual_hash text) returns jsonb language plpgsql security definer set search_path='' as $$begin
  perform app_private.check_export_package_download(artifact_id,actor_id);return public.authorize_artifact_download_before_export_package(artifact_id,actor_id,actual_hash);
+end $$;
+
+-- Definitive service-observed absence or byte mismatch invalidates only the
+-- exact current package artifact. Transient storage errors never enter here.
+create function public.report_export_package_artifact_failure(artifact_id uuid,actor_id uuid,package_id uuid,expected_revision integer,expected_hash text,expected_storage_key text,error_code text,actual_size bigint default null) returns jsonb
+language plpgsql security definer set search_path='' as $$
+declare p public.export_packages;s public.export_package_volumes;a public.export_artifacts;begin
+ select * into p from public.export_packages where id=package_id;
+ perform app_private.delivery_actor(p.workspace_id,actor_id);perform 1 from public.workspaces where id=p.workspace_id for update;
+ select * into p from public.export_packages where id=package_id for update;
+ perform app_private.check_export_package(p,actor_id);
+ if error_code not in ('EXPORT_ARTIFACT_MISSING','ARTIFACT_MISMATCH') or expected_hash is null or expected_hash!~'^[a-f0-9]{64}$' or expected_storage_key is null or expected_revision is null
+ or (error_code='EXPORT_ARTIFACT_MISSING' and actual_size is not null) or (error_code='ARTIFACT_MISMATCH' and (actual_size is null or actual_size<0)) then raise exception 'INVALID_INPUT';end if;
+ select * into s from public.export_package_volumes where export_package_volumes.package_id=p.id and export_package_volumes.artifact_id=$1;
+ select * into a from public.export_artifacts where id=artifact_id and workspace_id=p.workspace_id;
+ if p.status<>'ready' or p.revision<>expected_revision or s.id is null or a.status<>'ready' or a.content_hash is distinct from expected_hash or a.storage_key is distinct from expected_storage_key or s.storage_key is distinct from expected_storage_key then return jsonb_build_object('invalidated',false);end if;
+ update public.export_artifacts set status='expired',revision=revision+1 where id=a.id;
+ if error_code='ARTIFACT_MISMATCH' then
+  insert into public.storage_cleanup_queue(workspace_id,storage_key,estimated_size,reason) values(p.workspace_id,a.storage_key,greatest(a.expected_size,actual_size),'invalid_export_package_bytes') on conflict(storage_key) do nothing;
+ end if;
+ update public.export_packages set status='blocked',error_code='EXPORT_PACKAGE_BYTES_UNAVAILABLE',revision=revision+1,updated_at=now() where id=p.id;
+ insert into public.audit_events(workspace_id,actor_id,action,entity_type,entity_id,details) values(p.workspace_id,actor_id,'export.package.artifact_invalidated','export_artifact',a.id,jsonb_build_object('package_id',p.id,'expected_hash',expected_hash,'error_code',error_code,'actual_size',actual_size));
+ return jsonb_build_object('invalidated',true);
 end $$;
 
 -- Calendar request counts do not substitute for actual atomic capacity checks.
@@ -357,11 +376,11 @@ do $$declare t text;r text;signature text;begin
  'app_private.app_command_before_export_package(text,jsonb,text)','app_private.app_command(text,jsonb,text)','app_private.export_package_job(uuid,uuid,boolean)',
  'app_private.check_export_package_download(uuid,uuid)','app_private.backup_tables_before_export_packages()','app_private.backup_tables()','app_private.purge_scope_before_export_packages(uuid,uuid)','app_private.purge_scope(uuid,uuid)',
  'public.export_package_context(uuid)','public.export_render_context(uuid,uuid)','public.complete_export_package_volume(uuid,uuid,uuid,text,bigint)','public.finish_export_package(uuid,uuid)','public.fail_export_package(uuid,uuid,text)',
- 'public.artifact_context_before_export_package(uuid)','public.artifact_context(uuid)','public.authorize_artifact_download_before_export_package(uuid,uuid,text)','public.authorize_artifact_download(uuid,uuid,text)',
+ 'public.report_export_package_artifact_failure(uuid,uuid,uuid,integer,text,text,text,bigint)','public.artifact_context_before_export_package(uuid)','public.artifact_context(uuid)','public.authorize_artifact_download_before_export_package(uuid,uuid,text)','public.authorize_artifact_download(uuid,uuid,text)',
  'public.maintenance_tick_before_export_packages()','public.maintenance_tick()'] loop
   execute 'revoke all on function '||signature||' from public';
   foreach r in array array['anon','authenticated','service_role','tdp_app_anon','tdp_app_authenticated','tdp_app_service'] loop if exists(select 1 from pg_roles where rolname=r) then execute 'revoke all on function '||signature||' from '||quote_ident(r);end if;end loop;
  end loop;
  foreach r in array array['authenticated','tdp_app_authenticated'] loop if exists(select 1 from pg_roles where rolname=r) then execute 'grant execute on function app_private.app_command(text,jsonb,text),public.export_package_context(uuid),public.artifact_context(uuid) to '||quote_ident(r);end if;end loop;
- foreach r in array array['service_role','tdp_app_service'] loop if exists(select 1 from pg_roles where rolname=r) then execute 'grant execute on function public.export_render_context(uuid,uuid),public.complete_export_package_volume(uuid,uuid,uuid,text,bigint),public.finish_export_package(uuid,uuid),public.fail_export_package(uuid,uuid,text),public.authorize_artifact_download(uuid,uuid,text),public.maintenance_tick() to '||quote_ident(r);end if;end loop;
+ foreach r in array array['service_role','tdp_app_service'] loop if exists(select 1 from pg_roles where rolname=r) then execute 'grant execute on function public.export_render_context(uuid,uuid),public.complete_export_package_volume(uuid,uuid,uuid,text,bigint),public.finish_export_package(uuid,uuid),public.fail_export_package(uuid,uuid,text),public.authorize_artifact_download(uuid,uuid,text),public.report_export_package_artifact_failure(uuid,uuid,uuid,integer,text,text,text,bigint),public.maintenance_tick() to '||quote_ident(r);end if;end loop;
 end $$;
