@@ -8017,3 +8017,21 @@ cases and two native renderer cases pass; both package typechecks/builds pass.
 The renderer dependency is the separately committed native streaming/ragged
 implementation `178eb04`. Final composed suites, hosted acceptance and deployment
 remain separate release evidence. No production or provider calls.
+
+### 2026-11-04 — explain unresolved file storage without unsafe retry
+
+Operations now displays optional aggregate storage-write uncertainty from the
+server: unfinished uploads, the already-counted retained bytes, files requiring
+administrator checks before deletion, and historical records whose physical
+usage remains unmeasured. These categories do not invent usage or add the held
+bytes to the total again. Private paths and identifiers are not exposed. Older
+status responses without the new field remain usable.
+
+A cleanup blocked by STORAGE_QUIESCENCE_REQUIRED no longer offers a retry that
+cannot satisfy the missing reconciliation; other checked cleanup retries remain
+available. The missing-heartbeat explanation also no longer assumes a paused
+Supabase project for this DigitalOcean deployment. Three focused UI tests and
+frontend typecheck pass, including the absence of an unsafe/ineffective retry and
+compatibility with the old response shape. Backend metadata, storage fencing,
+operational retirement, final combined checks and deployment retain separate
+implementation and acceptance evidence.

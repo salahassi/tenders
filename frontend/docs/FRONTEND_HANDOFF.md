@@ -193,3 +193,14 @@ package check. Final export still requires current approval and source
 currentness. Human-reviewed file uploads remain a separate supported path.
 This replaces browser-worker preparation for ordinary draft/final actions;
 local checks do not establish deployment or hosted acceptance.
+
+### Storage confirmation and deletion (November 4, 2026)
+
+Operations displays optional server-reported counts for unfinished uploads,
+currently held storage bytes, files requiring administrator checks before
+deletion, and older cleanup records whose physical usage needs an audit. Held
+bytes are part of the existing reserved total; historical unknown files are not
+assigned invented sizes. Older status responses without this metadata remain
+supported. Cleanup marked `STORAGE_QUIESCENCE_REQUIRED` has no ineffective retry
+button: an administrator must complete the verified storage reconciliation.
+The panel exposes no private file path or control that releases uncertain quota.
