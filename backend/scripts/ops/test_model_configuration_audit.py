@@ -29,7 +29,7 @@ class ModelConfigurationAuditTests(unittest.TestCase):
   self.assertEqual(m.public_binding_audit([],{}),[])
  def test_cleanup_occurs_even_if_private_catalog_parsing_fails(self):
   client=Mock();client.labels={}
-  with patch.dict(m.os.environ,{'GITHUB_SHA':'a'*40}),patch.object(m.inventory.d.probe,'validate_cluster'),patch.object(m.inventory.observer,'Client',return_value=client),patch.object(m.inventory,'save_client'),patch.object(m.inventory,'clear_client') as clear,patch.object(m.inventory.d,'sql',return_value='private invalid bytes'):
+  with patch.dict(m.os.environ,{'GITHUB_SHA':'a'*40,'DIGITALOCEAN_ACCESS_TOKEN':'synthetic-token'}),patch.object(m.inventory.d.probe,'validate_cluster'),patch.object(m.inventory.observer,'Client',return_value=client),patch.object(m.inventory,'save_client'),patch.object(m.inventory,'clear_client') as clear,patch.object(m.inventory.d,'sql',return_value='private invalid bytes'):
    with self.assertRaises(ValueError):m.run()
    client.cleanup.assert_called_once();clear.assert_called_once()
  def test_private_errors_and_outputs_never_reach_public_receipt(self):
@@ -44,6 +44,12 @@ class ModelConfigurationAuditTests(unittest.TestCase):
   self.assertIn("github.event_name == 'push' || inputs.mode == 'bootstrap'",workflow)
   self.assertIn("github.event_name == 'workflow_dispatch' && inputs.mode == 'restore'",workflow)
   self.assertNotIn('live-model-evaluation.py',workflow)
+  audit_step=workflow.split('- name: Read enabled model bindings and credential presence without provider calls',1)[1].split('\n      - name:',1)[0]
+  self.assertIn('DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}',audit_step)
+ def test_missing_management_credential_fails_before_any_cluster_operation(self):
+  with patch.dict(m.os.environ,{'GITHUB_SHA':'a'*40},clear=True),patch.object(m.inventory.d.probe,'validate_cluster') as cluster:
+   with self.assertRaisesRegex(m.AuditError,'MODEL_AUDIT_TOKEN_REQUIRED'):m.run()
+   cluster.assert_not_called()
  def test_prefix_table_matches_application_provider_aliases(self):
   backend=(HERE.parents[1]/'supabase/functions/_shared/backend.ts').read_text()
   for provider,prefix in m.PREFIX.items():self.assertIn(f'{provider}: "{prefix}"',backend)

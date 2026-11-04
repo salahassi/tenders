@@ -270,6 +270,8 @@ jobs:
 
       - name: Read enabled model bindings and credential presence without provider calls
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'models' }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         run: python3 backend/scripts/ops/model-configuration-audit.py
 
       - name: Check isolated application restore guards

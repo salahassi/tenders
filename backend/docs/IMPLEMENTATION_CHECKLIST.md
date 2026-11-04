@@ -7505,3 +7505,28 @@ production calls were used. The request-wide 600-second deadline races are cover
 by the separate real-PostgreSQL suite, not inferred from these local timings.
 Release, hosted storage/authentication, admitted concurrency, network/provider
 latency and the production issuance SLO remain separate acceptance gates.
+
+
+## November 4 — hosted model-audit credential binding correction
+
+Run41863551387 at6ee38ac passed original cluster CA/hostname verification and
+read-only readiness. The new model-audit step then failed before its catalog
+read because its workflow step omitted DIGITALOCEAN_ACCESS_TOKEN, which the
+scoped observer requires to obtain short-lived database credentials. Both
+owned-client and credential cleanup succeeded; bootstrap/restore/model calls
+were skipped. This is a diagnostic wiring defect, not a TLS regression or a
+provider availability result. Direct GitHub job logs supersede stale CLI status
+responses that still reported the job queued.
+
+The selected step now receives the existing repository credential through the
+normal environment binding. A missing binding fails explicitly before any
+cluster operation. Eight redaction/binding/cleanup tests pass, including exact
+workflow-step wiring. No secret value was printed and no provider configuration
+was changed. The corrected hosted audit is pending; use connected GitHub job
+steps/logs for fresh execution evidence.
+
+Regenerated OpenAPI for the two canonical ordinary package commands added by
+the export implementation; its authenticated GET boundary was already recorded.
+The combined actual ordinary SQL/API/DOCX suite passed20/20 after integrating
+definitive missing/corrupt file recovery; later lifecycle fixes require their
+separate focused and final combined evidence.

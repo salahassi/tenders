@@ -56,6 +56,7 @@ def public_binding_audit(catalog, bindings):
 
 def run():
  if not re.fullmatch('[a-f0-9]{40}',os.environ.get('GITHUB_SHA','')): raise AuditError('MODEL_AUDIT_SOURCE_INVALID')
+ if not os.environ.get('DIGITALOCEAN_ACCESS_TOKEN'): raise AuditError('MODEL_AUDIT_TOKEN_REQUIRED')
  inventory.d.probe.validate_cluster()
  client=inventory.observer.Client(60)
  client.labels['app.kubernetes.io/managed-by']=inventory.OWNER
