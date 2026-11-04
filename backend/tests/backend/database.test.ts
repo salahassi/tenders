@@ -434,7 +434,7 @@ describe("queue integration through migrated PostgreSQL functions", () => {
     }
   });
 
-  it("allows one active job across repeated dispatches and records a heartbeat", async () => {
+  it("allows one active non-render job across repeated dispatches and records a heartbeat", async () => {
     await queueJob();
     await queueJob();
     const first = await claim();
@@ -447,7 +447,12 @@ describe("queue integration through migrated PostgreSQL functions", () => {
       db.query("update public.jobs set status='running' where id=$1", [
         pending,
       ]),
-    ).rejects.toThrow(/one_active_job_per_workspace/);
+    ).rejects.toMatchObject({
+      code: "23505",
+      // Draft-section work retains its hard single-job lane. Local rendering
+      // has a separate lane under the globally serialized render admission.
+      constraint: "one_active_non_render_job_per_workspace",
+    });
     expect((await readJob(pending)).attempts).toBe(0);
     const heartbeat = await db.query<{ last_heartbeat_at: string | null }>(
       "select last_heartbeat_at from public.operations where workspace_id=$1",

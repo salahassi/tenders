@@ -8725,3 +8725,22 @@ in `evidence/commercial-diagnostic-contract-20261104.json`. The other database
 constraint-name expectation and final combined run are separately owned; this
 focused result does not establish a full-suite pass. No provider calls,
 production mutations or deployment occurred.
+
+### 2026-11-04 — Combined-suite queue constraint regression
+
+The combined backend run at `c9f1c5b` exposed a stale test expectation:
+`database.test.ts` still named the former blanket one-active-job index. Migration
+`20261104163406_serialize_local_document_rendering.sql` deliberately retains the
+hard non-render lane for `draft_section` under
+`one_active_non_render_job_per_workspace` and adds a separate globally serialized
+render lane. The test now identifies its non-render scope and requires both
+SQLSTATE `23505` and that exact constraint. Duplicate active work must still fail,
+leave attempts at zero, record the heartbeat and allow the pending claim only
+after the first lease finishes. No production SQL or scheduling guard changed.
+
+Local verification: `database.test.ts` and `documentRenderAdmission.test.ts` pass
+**32/32 across two files** with `--maxWorkers=1` (6.43 seconds). The latter retains
+positive coverage for independent render/non-render admission and unchanged model
+reservation capacity. This resolves the confirmed index-name assertion only;
+root owns the remaining combined-suite failure and final integrated rerun. No
+provider calls, deployment or production mutations occurred.
