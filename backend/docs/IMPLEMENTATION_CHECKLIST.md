@@ -1,5 +1,23 @@
 # Implementation status and continuation plan
 
+## November 4 — frozen bilingual semantic development campaign
+
+Implementation: two explicit live-evaluation suites now cover eight independent
+faithful/mutated semantic families in English and Arabic (32 cases total).
+Gold is excluded from provider input, corpus bytes are pinned in both entrypoints,
+and the canonical format pin, prompt and grounding validator run before scoring.
+Exact targets come from the enabled catalog. Each language is bounded to four
+targets/64 generation calls and one attempt per case; failures and unknown usage
+are retained. This changes evaluation tooling, not product call/billing policy.
+
+Local evidence: **21 Python evaluation guard tests** pass and **30 tests across
+five evaluation suites** passed before the final additional short-span oracle
+case; the updated semantic suite passes **5/5**. Provider transport is mocked.
+The independent oracle review and exact frozen scope/thresholds are recorded in
+[`SEMANTIC_QUALIFICATION_CAMPAIGN.md`](SEMANTIC_QUALIFICATION_CAMPAIGN.md).
+No live evaluation has run for this corpus yet. This is development qualification,
+not closure of private holdout D07, all-task ME-08/14, or production acceptance.
+
 ## November 4 — hosted inventory and original-CA access verified
 
 [Run 41841720671](https://github.com/salahassi/tenders/actions/runs/41841720671)
