@@ -29,13 +29,20 @@ provenance, metadata permissions, and confirmed purge. **43 generation tests**,
 **12 flexible-input tests**, **6 operations tests**, and the full recovery test
 pass; recovery now explicitly checks immutable snapshot/pointer restoration and
 absence of duplicate publication or restored approval. Backend typecheck/build
-pass. These sequential embedded-PostgreSQL tests do not prove simultaneous
-multi-connection races; an isolated real PostgreSQL race harness remains pending.
+pass. The isolated `scripts/testing/postgres_races.py` harness also passes
+**6 boundary checks on PostgreSQL 17.6**, including 5 contested-write/replay
+scenarios with sessions observed waiting on actual workspace locks: duplicate
+prepare, accepted siblings, concurrent human edits, source change and membership
+revocation. The separate check proves an early snapshot leaves the running
+plan's base valid. Repeated prepare retains accepted progress. The image digest
+is pinned, networking is disabled, no host port or data volume is published,
+and the private receipt records migration hashes rather than customer content.
+The harness is reusable against the integrated migration tree; it is not hosted
+Supabase Auth/Storage or renderer acceptance.
 
 Deployment/hosted acceptance: **not deployed, no production or provider calls**.
 This is the persisted foundation, not a substantively complete non-model route,
-DOCX renderer or all-workflow closure. Renderer/API/UI integration, real database
-race checks, combined branch regression and actual Word/RTL/visual acceptance
+DOCX renderer or all-workflow closure. Renderer/API/UI integration, combined branch regression and actual Word/RTL/visual acceptance
 remain separate gates in the delivery plan.
 ## November 4 — worker maintenance isolation (F11 / part of W09)
 

@@ -496,6 +496,13 @@ it("preserves accepted siblings and original pins while excluding modern unaccep
   expect((await context(initial.id)).payload).toEqual(initial.payload);
   expect(prop.active_version_id).toBeNull();
   expect(prop.delivery_revision).toBe(3);
+  expect(await prepare(o)).toEqual(s);
+  expect(
+    await row(
+      "select count(*)::int n from public.proposal_delivery_snapshots where proposal_id=$1",
+      [prop.id],
+    ),
+  ).toEqual({ n: 3 });
 });
 
 it("includes immutable delivery metadata in backup/purge and defers circular restore references", async () => {

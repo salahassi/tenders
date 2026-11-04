@@ -316,7 +316,11 @@ begin
   select * into prop from public.proposals where workspace_id=w and opportunity_id=o.id for update;
   if prop.id is null then insert into public.proposals(workspace_id,opportunity_id,title,language,state,created_by)
    values(w,o.id,o.title,o.language,'draft',actor) returning * into prop;end if;
-  snapshot:=app_private.publish_delivery_snapshot(prop.id,null,actor,input->>'intake_failure');
+  -- An existing proposal keeps its accepted siblings when the caller asks
+  -- for a file again. Do not replace that progress with a source-only draft.
+  select * into p from public.generation_plans where workspace_id=w and proposal_id=prop.id and kind='proposal'
+   and status not in ('failed','canceled') order by created_at desc,id desc limit 1;
+  snapshot:=app_private.publish_delivery_snapshot(prop.id,p.id,actor,input->>'intake_failure');
  else
   perform app_private.check_keys(input,array['proposal_id','expected_revision','expected_delivery_revision']);
   select * into prop from public.proposals where workspace_id=w and id=(input->>'proposal_id')::uuid for update;
