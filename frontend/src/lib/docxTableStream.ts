@@ -3,7 +3,7 @@ import type { IXmlableObject } from "docx";
 
 export interface StreamedTable {
   marker: string;
-  xml(): Iterable<string>;
+  xml(): Iterable<string | Uint8Array>;
 }
 
 const escapeXml = (value: unknown) =>
@@ -90,7 +90,9 @@ export async function packStreamedTables(
           throw Error("Native table slot is missing or duplicated");
         entry.push(encoded.encode(document.slice(position, index)));
         for (const fragment of table.xml())
-          entry.push(encoded.encode(fragment));
+          entry.push(
+            typeof fragment === "string" ? encoded.encode(fragment) : fragment,
+          );
         position = index + marker.length;
       }
       entry.push(encoded.encode(document.slice(position)), true);

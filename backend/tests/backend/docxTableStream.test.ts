@@ -198,6 +198,27 @@ it("reuses repeated row XML without copying keep-next onto the last row", async 
   expect(rows[3].match(/<w:keepNext w:val="false"\/>/g)).toHaveLength(2);
   expect(verifyExportDocx(bytes, model)).toBe(true);
 });
+it.each(["en", "ar"])(
+  "preserves alternating and long native paragraph/cell text in %s",
+  async (language) => {
+    const model = tableModel(`${language}-2`);
+    const paragraph = "aب".repeat(10000),
+      legacyParagraph = "Legacy source text ".repeat(5000),
+      cell = "aب".repeat(1000);
+    model.blocks = [
+      ...model.blocks.slice(0, 3),
+      { type: "paragraph", text: paragraph },
+      { type: "paragraph", text: legacyParagraph },
+      { type: "table", headers: ["Evidence"], rows: [[cell]] },
+    ];
+    const bytes = new Uint8Array(
+      await (await renderDocx(model, fonts)).arrayBuffer(),
+    );
+    const document = strFromU8(unzipSync(bytes)["word/document.xml"]);
+    expect(document.match(/<w:rtl\/>/g)?.length).toBeGreaterThanOrEqual(11000);
+    expect(verifyExportDocx(bytes, model)).toBe(true);
+  },
+);
 it("rejects unsupported raw XML nodes and attribute names", () => {
   expect(() => nativeTableXml({ _raw: "<w:ins/>" })).toThrow();
   expect(() =>

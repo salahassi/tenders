@@ -8060,3 +8060,31 @@ and builds pass. No claim is made that this synthetic XML fixture proves the
 native renderer's full admitted 69-paragraph direction-density case: final Deno
 render/verify, process/container memory and timing evidence remain with that
 separate qualification. No hosted or production/provider calls were performed.
+
+### 2026-11-04 — lazy native text runs for admitted direction-density input
+
+The actual authenticated authoring fixture containing 69 distinct 20,000-character
+Arabic/Latin alternating paragraphs exhausted the original 128 MiB child V8 heap
+in 2.2 seconds. Paragraph grouping alone did not remove this failure. Body and
+cell text now serialize one native run at a time into the compressed archive;
+empty native paragraph/row wrappers retain properties and relationships. The
+renderer and verifier share the exact historical segmentation iterator. A bounded
+64-entry cache reuses short native runs, and repeated small rows retain their
+exact positional properties. Content is neither truncated nor capped by these
+optimization bounds. Native headings, TOC, numbering, footer and fonts remain.
+
+At unchanged child heap and attempt deadline, the same frozen admitted fixture
+rendered in 4.77 seconds with 397,221,888-byte full-application container peak,
+producing 295,825,209 bytes of document XML. This render-only receipt is preserved
+separately from final combined asynchronous verification. The original failed
+receipt is retained. The shared final verifier separately accepted those bytes;
+final exact-source Deno and worker lifecycle qualification remains pending.
+
+All 36 scoped renderer, footer and process-isolation cases pass, including frozen
+native XML goldens, ragged rows, repeated-row keep-next, long legacy paragraphs,
+20,000-character alternating paragraphs and 2,000-character alternating cells.
+Frontend typecheck passes. Modern model paragraph/cell bounds are 20,000/2,000,
+but delivery envelopes do not impose those bounds universally: source chunks
+allow 12,000 and legacy section bodies allow 100,000 characters. The fix therefore
+streams body/cell runs independently of the modern authoring bounds. No provider,
+production or billing calls were made.

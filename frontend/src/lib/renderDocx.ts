@@ -21,6 +21,7 @@ import {
   packStreamedTables,
   type StreamedTable,
 } from "./docxTableStream.ts";
+import { docxRunSegments } from "../../../backend/supabase/functions/_shared/docxRunSegments.ts";
 export type ExportBlock =
   | { type: "paragraph" | "bullet" | "heading" | "title"; text: string }
   | { type: "placeholder"; text: string; gap_id: string }
@@ -49,35 +50,68 @@ export async function renderDocx(
   const rtl = model.language === "ar",
     font = { ascii: "Carlito", hAnsi: "Carlito", cs: "Amiri" },
     size = rtl ? 29 : 23;
+  const highlighted = (text: string, placeholder: boolean) =>
+    placeholder ||
+    (model.placeholder_version === 2 &&
+      /\[INPUT REQUIRED|\[مطلوب|\[مدخل(?:ات)? مطلوب/iu.test(text)) ||
+    (!model.placeholder_version && /\[INPUT REQUIRED/i.test(text));
+  const runOptions = (
+    text: string,
+    bold: boolean,
+    runSize: number,
+    highlight: boolean,
+  ) => ({
+    text: rtl && /^[A-Za-z0-9]/.test(text) ? "\u200e" + text + "\u200e" : text,
+    bold,
+    font,
+    size:
+      rtl && runSize === size && !/[\u0600-\u06ff]/.test(text) ? 23 : runSize,
+    rightToLeft: /[\u0600-\u06ff]/.test(text),
+    highlight: highlight ? ("yellow" as const) : undefined,
+  });
   function runs(
     text: string,
     bold = false,
     runSize = size,
     placeholder = false,
   ) {
-    return text
-      .split(/([A-Za-z0-9](?:[A-Za-z0-9 .,:%_/@()+\-]*[A-Za-z0-9%])?)/g)
-      .filter(Boolean)
-      .map(
-        (t) =>
-          new TextRun({
-            text: rtl && /^[A-Za-z0-9]/.test(t) ? "\u200e" + t + "\u200e" : t,
-            bold,
-            font,
-            size:
-              rtl && runSize === size && !/[\u0600-\u06ff]/.test(t)
-                ? 23
-                : runSize,
-            rightToLeft: /[\u0600-\u06ff]/.test(t),
-            highlight:
-              placeholder ||
-              (model.placeholder_version === 2 &&
-                /\[INPUT REQUIRED|\[مطلوب|\[مدخل(?:ات)? مطلوب/iu.test(text)) ||
-              (!model.placeholder_version && /\[INPUT REQUIRED/i.test(text))
-                ? "yellow"
-                : undefined,
-          }),
-      );
+    const highlight = highlighted(text, placeholder);
+    return Array.from(
+      docxRunSegments(text),
+      (part) => new TextRun(runOptions(part, bold, runSize, highlight)),
+    );
+  }
+  const encoded = new TextEncoder(),
+    runCache = new Map<string, Uint8Array>();
+  function* textXml(
+    text: string,
+    bold = false,
+    runSize = size,
+    placeholder = false,
+  ): Iterable<Uint8Array> {
+    const highlight = highlighted(text, placeholder);
+    for (const part of docxRunSegments(text)) {
+      // Bound the optimization, never the content. Long or unique runs are
+      // serialized individually; repeated short runs retain at most 64 entries.
+      const key =
+        part.length <= 256
+          ? JSON.stringify([part, bold, runSize, highlight])
+          : undefined;
+      let bytes = key ? runCache.get(key) : undefined;
+      if (!bytes) {
+        bytes = encoded.encode(
+          nativeTableXml(
+            new TextRun(runOptions(part, bold, runSize, highlight)).prepForXml({
+              file: doc,
+              viewWrapper: doc.Document,
+              stack: [],
+            })!,
+          ),
+        );
+        if (key && runCache.size < 64) runCache.set(key, bytes);
+      }
+      yield bytes;
+    }
   }
   const para = (
     text: string,
@@ -108,12 +142,11 @@ export async function renderDocx(
     });
   const children: (Paragraph | Table | TableOfContents)[] = [];
   const tables: StreamedTable[] = [];
-  const preparedParagraphs: Array<{ build(): Paragraph; xml?: string }> = [];
-  let currentGroup: Array<() => Iterable<string>> | undefined;
+  let currentGroup: Array<() => Iterable<string | Uint8Array>> | undefined;
   const tableNonce = crypto.randomUUID();
-  function appendStream(xml: () => Iterable<string>) {
+  function appendStream(xml: () => Iterable<string | Uint8Array>) {
     if (!currentGroup) {
-      const group: Array<() => Iterable<string>> = [];
+      const group: Array<() => Iterable<string | Uint8Array>> = [];
       const marker = `TENDERDESK_TABLE_${tableNonce}_${tables.length}`;
       tables.push({
         marker,
@@ -126,13 +159,24 @@ export async function renderDocx(
     }
     currentGroup.push(xml);
   }
-  function appendParagraph(build: () => Paragraph) {
-    const item = { build, xml: undefined as string | undefined };
-    preparedParagraphs.push(item);
+  function appendParagraph(
+    buildEmpty: () => Paragraph,
+    text = "",
+    placeholder = false,
+  ) {
     appendStream(function* () {
-      if (item.xml === undefined)
-        throw Error("Native paragraph was not prepared");
-      yield item.xml;
+      const wrapper = nativeTableXml(
+        buildEmpty().prepForXml({
+          file: doc,
+          viewWrapper: doc.Document,
+          stack: [],
+        })!,
+      );
+      if (!wrapper.endsWith("</w:p>"))
+        throw Error("Native paragraph template is invalid");
+      yield wrapper.slice(0, -6);
+      yield* textXml(text, false, size, placeholder);
+      yield "</w:p>";
     });
   }
   let afterToc = false;
@@ -163,6 +207,7 @@ export async function renderDocx(
       afterToc = false;
     }
     if (b.type === "table") {
+      const rowCount = b.rows.length;
       const columnCount = Math.max(
         b.headers.length,
         ...b.rows.map((row) => row.length),
@@ -201,7 +246,7 @@ export async function renderDocx(
           insideVertical: border,
         },
       };
-      const buildRow = (row: string[], index: number) =>
+      const buildEmptyRow = (index: number) =>
         new TableRow({
           tableHeader: index === 0,
           cantSplit: true,
@@ -216,7 +261,7 @@ export async function renderDocx(
                   new Paragraph({
                     bidirectional: rtl,
                     spacing: { after: 60, line: rtl ? 340 : 280 },
-                    children: runs(row[i] || "", index === 0),
+                    children: [],
                     widowControl: true,
                     keepNext:
                       headers.length === 2 &&
@@ -235,9 +280,31 @@ export async function renderDocx(
         if (!empty.endsWith("</w:tbl>"))
           throw Error("Native table template is invalid");
         yield empty.slice(0, -8);
-        yield nativeTableXml(buildRow(headers, 0).prepForXml(context)!);
+        const templates = new Map<string, string[]>();
+        function* rowXml(
+          row: string[],
+          index: number,
+        ): Iterable<string | Uint8Array> {
+          const kind = `${index === 0}:${headers.length === 2 && rowCount <= 7 && index < rowCount}`;
+          let pieces = templates.get(kind);
+          if (!pieces) {
+            pieces = nativeTableXml(
+              buildEmptyRow(index).prepForXml(context)!,
+            ).split("</w:p>");
+            if (pieces.length !== headers.length + 1)
+              throw Error("Native row template is invalid");
+            templates.set(kind, pieces);
+          }
+          for (let column = 0; column < headers.length; column++) {
+            yield pieces[column];
+            yield* textXml(row[column] || "", index === 0);
+            yield "</w:p>";
+          }
+          yield pieces[headers.length];
+        }
+        yield* rowXml(headers, 0);
         let previousKey: string | undefined,
-          previousXml = "";
+          previousXml: Uint8Array | undefined;
         for (let index = 0; index < b.rows.length; index++) {
           // Dense sparse tables repeat the same native row. Reuse exactly its
           // XML, still emitting every row/cell; keep-next is the only data-row
@@ -248,13 +315,24 @@ export async function renderDocx(
               b.rows.length <= 7 &&
               index + 1 < b.rows.length,
           ]);
+          if (
+            b.rows[index].reduce((total, text) => total + text.length, 0) > 4096
+          ) {
+            previousKey = undefined;
+            previousXml = undefined;
+            yield* rowXml(b.rows[index], index + 1);
+            continue;
+          }
           if (key !== previousKey) {
-            previousXml = nativeTableXml(
-              buildRow(b.rows[index], index + 1).prepForXml(context)!,
+            const decoder = new TextDecoder();
+            previousXml = encoded.encode(
+              Array.from(rowXml(b.rows[index], index + 1), (part) =>
+                typeof part === "string" ? part : decoder.decode(part),
+              ).join(""),
             );
             previousKey = key;
           }
-          yield previousXml;
+          yield previousXml!;
         }
         yield "</w:tbl>";
       });
@@ -263,12 +341,13 @@ export async function renderDocx(
       appendParagraph(
         () =>
           new Paragraph({
-            children: runs(b.text),
+            children: [],
             bullet: { level: 0 },
             bidirectional: rtl,
             spacing: { after: 120 },
             widowControl: true,
           }),
+        b.text,
       );
     else {
       const build = () =>
@@ -285,7 +364,18 @@ export async function renderDocx(
       if (b.type === "heading" || b.type === "title") {
         currentGroup = undefined;
         children.push(build());
-      } else appendParagraph(build);
+      } else
+        appendParagraph(
+          () =>
+            para(
+              "",
+              undefined,
+              model.blocks[blockIndex + 1]?.type === "table",
+              b.type === "placeholder",
+            ),
+          b.text,
+          b.type === "placeholder",
+        );
     }
   }
   const title = model.blocks.find((b) => b.type === "title");
@@ -400,13 +490,13 @@ export async function renderDocx(
       },
     ],
   });
-  // Native bullet numbering must be registered before the skeleton's numbering
-  // part is packed. Retain compact paragraph XML, never all paragraph objects.
-  for (const paragraph of preparedParagraphs)
-    paragraph.xml = nativeTableXml(
-      paragraph
-        .build()
-        .prepForXml({ file: doc, viewWrapper: doc.Document, stack: [] })!,
-    );
+  // Only the native default bullet is supported here. Register its empty
+  // exemplar before packing; all actual text/runs remain lazy and unchanged.
+  if (model.blocks.some((block) => block.type === "bullet"))
+    new Paragraph({ children: [], bullet: { level: 0 } }).prepForXml({
+      file: doc,
+      viewWrapper: doc.Document,
+      stack: [],
+    });
   return packStreamedTables(await Packer.toBlob(doc), tables);
 }
