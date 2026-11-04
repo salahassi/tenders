@@ -23,6 +23,9 @@ const model: verifier.RenderModel = {
     { type: "paragraph", text: "Configure approved workflow." },
   ],
 };
+// Real DOCX archives include four embedded fonts and repeated canonical scans.
+// Use the same bounded integration budget as deliveryExport.test.ts.
+const DOCX_TEST_TIMEOUT_MS = 30_000;
 let bytes: Uint8Array;
 beforeAll(async () => {
   const fonts = Object.fromEntries(
@@ -43,7 +46,7 @@ beforeAll(async () => {
     ),
   ) as FontData;
   bytes = new Uint8Array(await (await renderDocx(model, fonts)).arrayBuffer());
-});
+}, DOCX_TEST_TIMEOUT_MS);
 afterEach(() => vi.restoreAllMocks());
 it("reuses only privately verified identical bytes and exact current model binding", async () => {
   const spy = vi.spyOn(verifier, "verifyOwnedExportDocxSnapshot");
@@ -68,7 +71,7 @@ it("reuses only privately verified identical bytes and exact current model bindi
     readback.hash,
   );
   expect(spy).toHaveBeenCalledTimes(2);
-});
+}, DOCX_TEST_TIMEOUT_MS);
 it("mutated model or changed bytes cannot borrow a previous verification", async () => {
   const spy = vi.spyOn(verifier, "verifyOwnedExportDocxSnapshot");
   const current = structuredClone(model),
@@ -89,7 +92,7 @@ it("mutated model or changed bytes cannot borrow a previous verification", async
     deliveryBytes(zipSync(archive), model, undefined, proof),
   ).rejects.toThrow("content");
   expect(spy).toHaveBeenCalledTimes(3);
-});
+}, DOCX_TEST_TIMEOUT_MS);
 it("cancellation returns no proof even when bytes previously passed", async () => {
   const proof = await deliveryBytes(bytes, model),
     abort = new AbortController();
@@ -97,7 +100,7 @@ it("cancellation returns no proof even when bytes previously passed", async () =
   await expect(
     deliveryBytes(bytes, model, abort.signal, proof),
   ).rejects.toThrow("user canceled");
-});
+}, DOCX_TEST_TIMEOUT_MS);
 
 it("captures the model before a delayed Blob read and cannot lend that proof to a later model", async () => {
   let release!: (value: ArrayBuffer) => void;
@@ -120,7 +123,7 @@ it("captures the model before a delayed Blob read and cannot lend that proof to 
   await expect(deliveryBytes(bytes, current, undefined, proof)).rejects.toThrow(
     "content",
   );
-});
+}, DOCX_TEST_TIMEOUT_MS);
 
 it("owns its byte snapshot before yielding and never lends verification to changed input", async () => {
   const mutable = new Uint8Array(bytes),
@@ -131,4 +134,4 @@ it("owns its byte snapshot before yielding and never lends verification to chang
   await expect(
     deliveryBytes(mutable, model, undefined, proof),
   ).rejects.toThrow();
-});
+}, DOCX_TEST_TIMEOUT_MS);

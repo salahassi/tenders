@@ -10489,3 +10489,26 @@ qualification, Arabic OCR quality and Word field-update acceptance remain open.
 - Authorized read-only proposal inspection 41934185072 at `865d840` succeeded after missing encrypted-selection object 404 was retained and the unchanged 172-byte selection was re-uploaded/readback verified. Latest selected proposal remains blocked in analysis, with no active version/zero versions, one committed analysis result and 50 unknown usage rows. Cleanup passed; no model/retry/authorization/business mutation. Public evidence excludes customer identifiers/text.
 - Supported next step after verified release requires fresh server-owned current-contract details and explicit canonical cancel+generate, retaining predecessor accepted results, pins, budgets and unknown accounting. Legacy whole-plan successor helper is unsuitable. No export completion or deployment is claimed by this documentation.
 - Validation: all 89 indexed receipt files/hashes, unchanged prior hashes, action/evidence mappings, final manifest canonical hash and JSON parse checked; documentation-only changes, no package/native rerun.
+
+### November 4 — real-DOCX byte-proof CI timeout correction
+
+Automatic main verification [41934787660](https://github.com/salahassi/tenders/actions/runs/41934787660/job/126940409515)
+at `2ac061349cb09ca796dc27a30de7450dbf4d5021` passed 3,283 backend tests and
+failed only the first `deliveryByteProof.test.ts` case: 5,239 ms against Vitest's
+5,000 ms default. The [retained evidence](evidence/delivery-byte-proof-ci-timeout-20261104.json)
+binds the original complete CI log hash and exact failure. The release attempt
+was canceled during verification before cluster access; no deployment occurred.
+
+The five real-DOCX cases and their font/render setup now have an explicit bounded
+30-second integration-test budget, matching neighboring DOCX integration tests.
+All callback bodies and assertions are unchanged. The first case still calls
+`deliveryBytes` four times and performs two real canonical archive verifications;
+the proof-reuse, forged-receipt, changed-content/model, cancellation and immutable
+snapshot checks remain intact. No product timeout, runtime source or native image
+changed, and no verifier mock was added.
+
+All five cases passed in three consecutive runs with one logical CPU and one
+Vitest worker (15 executions), followed by backend typecheck/build. All 177
+test/runtime/font/lockfile hashes were unchanged across those runs. These focused
+functional checks do not replace the corrected complete GitHub CI gate, which
+remains required before release.
