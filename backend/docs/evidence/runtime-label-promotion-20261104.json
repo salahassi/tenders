@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "qualified_reference": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:67fc1be0f574ea9b65e40408da436c3173fb4f332bb7729fe8da75e1ccaa4d28",
+  "qualification_sha256": "6e031a746917c8183f59264e6482df0b97e4b2515f9b45f2cfd9378cce80b0ac",
+  "target_revision_label": "ff9c6df52dc14beb3aaf1bd2fefeeedc217ea0a5",
+  "native_tests_repeated": false,
+  "pushed": false,
+  "production_changed": false,
+  "passed": true,
+  "promoted_image_id": "sha256:2b197eb803779c0d8ff0ac0de22a14c27fbfe75ad3270785a56717e5b39aaf23",
+  "ordered_layers_identical": true,
+  "runtime_config_identical": true,
+  "only_revision_label_changed": true,
+  "recipe_sha256": "55e4157069178149c43cf408e6a956f8eb810cb280290a3bbfcd87292b82d619",
+  "temporary_build_context_removed": true,
+  "seconds": 0.17
+}

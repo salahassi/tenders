@@ -50,13 +50,15 @@ model-quality, hosted acceptance, production service-level or desktop Word proof
 ## Exact publication and promotion sequence
 
 The [publication binding](evidence/runtime-qualified-publication-20261104.json)
-currently has a null registry reference. Preparation fails before Docker activity
-in that state. A local image ID is never substituted for a registry manifest
-digest. The pending operation is to publish the existing image89af unchanged,
-verify its returned own-registry digest and image ID, and record that immutable
-reference. Publication does not entail rebuilding application sources.
+now records the actual immutable registry reference
+`registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:67fc1be0f574ea9b65e40408da436c3173fb4f332bb7729fe8da75e1ccaa4d28`.
+The existing image was published unchanged, pulled back by digest, and verified
+as exactly image89af with identical layers and Config. Temporary push credentials
+were removed. No application deployment or native rerun occurred. The original
+null-reference preparation state failed closed; a local image ID was never
+substituted for a registry manifest digest.
 
-Once that binding is recorded, the release verifies the current checkout's
+With that binding recorded, the release verifies the current checkout's
 complete input closure, then pulls the exact qualified digest and requires its
 original image ID, layers, platform, Config and labels. A missing candidate is
 promoted using an otherwise empty temporary context containing exactly:
@@ -88,8 +90,11 @@ wrong qualified image/digest, pending publication, TLS lookup failure, reuse,
 and the two-instruction promotion with verification before any mocked push.
 The Docker build/push operations in these tests are controlled subprocess mocks.
 
-Actual registry publication, actual label-only promotion and digest verification,
-the final release manifest, cloud restore/cutover and hosted acceptance remain
-separate work. The guard intentionally stays blocked until the publication
-binding is populated with an observed digest. Additional documentation or release
-metadata commits do not require rebuilding the qualified executable filesystem.
+Actual registry publication and an actual local label-only promotion have passed.
+The [promotion receipt](evidence/runtime-label-promotion-20261104.json) records
+image `2b197eb80377` for revision label `ff9c6df52dc14beb3aaf1bd2fefeeedc217ea0a5`,
+with identical ordered layers and runtime Config and no other label change.
+The promoted local probe was not pushed or deployed. Final release promotion,
+manifest, cloud restore/cutover and hosted acceptance remain separate gates.
+Additional documentation or release metadata commits do not require rebuilding
+the qualified executable filesystem.

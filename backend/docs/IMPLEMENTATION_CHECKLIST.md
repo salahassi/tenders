@@ -10408,3 +10408,35 @@ refused at this check. [Evidence](evidence/runtime-manifest-and-https-disk-guard
 binds the local source/logs. Actual publication, final manifest, the renewed
 isolated cloud drill, complete integration suites and hosted deployment remain
 separate root-owned gates; no hosted operation was performed by these checks.
+
+### November 4 — publish the unchanged qualified runtime and prove label-only promotion
+
+The existing native-qualified image89af was published under immutable registry
+reference `runtime@sha256:67fc1be0f574ea9b65e40408da436c3173fb4f332bb7729fe8da75e1ccaa4d28`,
+pulled back by that digest, and verified against all qualified layers, platform,
+Config and labels. The 130-file checkout/native evidence closure still matches.
+The [publication binding](evidence/runtime-qualified-publication-20261104.json)
+records the 29.186-second operation and removal of its temporary credentials.
+No application workload, source filesystem or customer record was changed.
+
+An actual local two-instruction FROM/LABEL promotion also passed with network and
+pull disabled, retaining every ordered RootFS layer and runtime Config field and
+changing only the source revision label. Its [receipt](evidence/runtime-label-promotion-20261104.json)
+records the distinct resulting image ID and exact recipe; that local probe was
+not pushed. This closes image identity/publication preparation without pretending
+a metadata digest change is a new native capacity test. The 22 focused tests
+remain source evidence; final source freeze, combined checks, isolated restore,
+release promotion/rollout and hosted acceptance remain separate gates.
+
+### November 4 — refreeze the complete 24-migration release from the original baseline
+
+The manifest now contains all 24 reviewed migrations, the final one-worker
+Gateway transport/routing chain, exact deployed HTTPS proof, shared Auth helper,
+and the runtime qualification/publication binding. Canonical manifest SHA256:
+`4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76`.
+Source verification passed. Freeze used only the unchanged inner inventory
+receipt from run41881660683; later capacity/visibility observations did not
+replace that release baseline. Historical 22-migration restore results remain
+limited to their original contract. The renewed exact 24-migration isolated
+cloud restore and complete integrated package/ops checks are the next gates.
+No schema or application deployment occurred during this local freeze.
