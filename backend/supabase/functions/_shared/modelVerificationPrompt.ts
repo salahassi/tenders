@@ -9,7 +9,11 @@ import {
 export async function pinVerificationPrompt(o: {
   backend: Pick<Backend, "internal">;
   store: Pick<ModelGraphStore, "action">;
-  job: { id: string; lease_token: string };
+  job: {
+    id: string;
+    lease_token: string;
+    checkpoint?: Record<string, unknown>;
+  };
   requestPrefix: string;
   context: any;
   evidence: Evidence[];
@@ -41,7 +45,13 @@ export async function pinVerificationPrompt(o: {
     const version = started
       ? 1
       : o.context?.original_task === "analyze_chunk"
-        ? 4
+        ? o.context.original_context?.source_contract_version === 1 &&
+          o.context.candidate &&
+          typeof o.context.candidate === "object" &&
+          !Array.isArray(o.context.candidate) &&
+          !Object.hasOwn(o.job.checkpoint ?? {}, "verifier_recheck")
+          ? 5
+          : 4
         : o.context?.original_task === "review_proposal"
           ? 3
           : 2;
@@ -57,7 +67,7 @@ export async function pinVerificationPrompt(o: {
   const value = pin.value;
   if (
     value.legacy_input_hash !== legacyInputHash ||
-    ![1, 2, 3, 4].includes(value.version) ||
+    ![1, 2, 3, 4, 5].includes(value.version) ||
     (value.version >= 2 &&
       value.instructions !== verificationPolicyText(value.version))
   )

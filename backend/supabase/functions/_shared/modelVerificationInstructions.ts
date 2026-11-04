@@ -1,6 +1,6 @@
 // Immutable application policy. Never interpolate provider, user or document
 // instructions here. New wording requires a new phase-pinned policy version.
-export type VerificationRevision = 1 | 2 | 3 | 4;
+export type VerificationRevision = 1 | 2 | 3 | 4 | 5;
 export const VERIFICATION_PROMPT_V2 =
   "tenderdesk-grounding-v2-contiguous-quotes";
 export const VERIFICATION_INSTRUCTIONS_V2 =
@@ -47,6 +47,19 @@ export const VERIFICATION_INSTRUCTIONS_V4 =
   "All factual assertions still need exact supporting source quotations. Source-location references to paragraphs or tables must match the cited source's supplied extraction markers; their locator numbers do not prove prices, dates or quantities. " +
   "For a corrective verification report, recheck verdicts against this source-block scope and retain every justified defect. Return every scoped source ID and content ID exactly; do not discard a check to avoid reporting a defect.";
 
+// Version 5 changes instructions only. Content IDs, candidate/source quotations,
+// report schema and factual evidence guards keep their existing contracts.
+export const VERIFICATION_PROMPT_V5 =
+  "tenderdesk-grounding-v5-analysis-metadata";
+export const VERIFICATION_INSTRUCTIONS_V5 =
+  VERIFICATION_INSTRUCTIONS_V4 +
+  " " +
+  "For a typed analyze_chunk candidate, requirements[*].category is application classification metadata, with the allowed values scope, functional, technical, security, integration, data, operations, deliverables, timeline, team, eligibility, commercial, contractual and submission. " +
+  "An exact enum value at that typed category path does not assert a buyer obligation, company capability or commercial commitment. Process its content ID, but do not manufacture a claim, missing-evidence defect, assumption or question solely because that label is not quoted in the source. " +
+  "This distinction applies only to the category field visible in the typed candidate. It is not a word-based exemption: the same words inside requirements[*].text, interpretation, acceptance_evidence, owner_question, summary or other narrative retain their ordinary meaning and require normal verification. " +
+  "Do not exclude source_semantics, mandatory, actor, negation, conditions, exceptions, quantities, dates, consequences, scope or any narrative assertion from review. A category label cannot turn an optional buyer clause into a mandatory obligation or establish that the company meets it. " +
+  "Report genuine narrative factual claims with exact evidence and retain every justified contradiction or missing-source defect. Keep every processed content ID and required source ID exactly; never invent IDs, silently add missing IDs or remove checks to make a report pass.";
+
 export function analysisVerificationCoverage(
   context: unknown,
   requiredIds: string[],
@@ -72,14 +85,18 @@ export function analysisVerificationCoverage(
   };
 }
 export const verificationPolicyText = (revision: VerificationRevision) =>
-  revision === 4
-    ? VERIFICATION_INSTRUCTIONS_V4
-    : revision === 3
-      ? VERIFICATION_INSTRUCTIONS_V3
-      : VERIFICATION_INSTRUCTIONS_V2;
+  revision === 5
+    ? VERIFICATION_INSTRUCTIONS_V5
+    : revision === 4
+      ? VERIFICATION_INSTRUCTIONS_V4
+      : revision === 3
+        ? VERIFICATION_INSTRUCTIONS_V3
+        : VERIFICATION_INSTRUCTIONS_V2;
 export const verificationPolicyVersion = (revision: VerificationRevision) =>
-  revision === 4
-    ? VERIFICATION_PROMPT_V4
-    : revision === 3
-      ? VERIFICATION_PROMPT_V3
-      : VERIFICATION_PROMPT_V2;
+  revision === 5
+    ? VERIFICATION_PROMPT_V5
+    : revision === 4
+      ? VERIFICATION_PROMPT_V4
+      : revision === 3
+        ? VERIFICATION_PROMPT_V3
+        : VERIFICATION_PROMPT_V2;

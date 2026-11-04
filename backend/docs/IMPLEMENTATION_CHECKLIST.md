@@ -6891,3 +6891,26 @@ the canonical generated v3 pipeline tests are a separate integration evidence
 set. Real selected early/partial/generated issuance and authenticated download
 runs remain release gates. This closes the missing harness implementation,
 not those hosted acceptance gates.
+## November 4 — phase-pinned analysis classification instructions
+
+Verifier instruction revision 5 distinguishes the typed
+`requirements[*].category` enum from narrative assertions. It retains every
+content ID and source ID and asks the verifier not to invent a factual claim
+solely for a classification label. The same words in narrative, and all modality,
+authority, actor, quantity, date and condition fields, retain ordinary verification.
+No validator strips reported defects, repairs IDs or relaxes factual evidence.
+
+Only a genuinely unstarted typed analysis verification phase with frozen
+`source_contract_version: 1` selects revision 5. Existing instruction pins,
+prepared/settled/unknown usage and the explicitly version 4 recheck route preserve
+their previous identity. Candidate content, schemas and batch partitioning remain
+unchanged. Both semantic scorer suites still use explicit revision 4; their
+results do not qualify this new prompt. This is an instruction improvement, not a
+guarantee that a live model will obey it; no fresh provider call was made.
+
+Full local backend checks pass **2,429/2,429** in 152 files; frontend passes
+**325/325** in 52 files. Both package typechecks and builds pass. The complete
+backend run includes the expanded 83 instruction/metadata/typed-registry/recheck
+cases, all historical wire hashes, and real migrated reserved/unknown/settled
+source-contract phase preservation. These are local deterministic checks, not
+live prompt qualification, deployment or hosted acceptance.

@@ -1652,7 +1652,7 @@ export function modelPrompt(
   semanticRevision: SemanticRevision = 0,
 ) {
   const coverageContract =
-    task === "verify_grounding" && verificationRevision === 4
+    task === "verify_grounding" && verificationRevision >= 4
       ? analysisVerificationCoverage(context, requiredIds)
       : undefined;
   const original =
