@@ -6521,3 +6521,102 @@ semantic qualification under the approved campaign. No provider calls, payment
 changes, daily application caps, or billing/free-only policy changes were made by
 this component. Public Supabase database-function guidance was consulted for the
 migration; local PGlite checks are not hosted PostgreSQL/cron acceptance.
+
+## November 4 — W02 durable uploaded OCR and reviewed extraction successors
+
+**Implementation:** local code/migration implemented; integration and hosted
+acceptance remain separate. Migration `20261104133930_durable_uploaded_document_ocr.sql`
+adds service-only, workspace-bound OCR requests/pages, leases, fixed retry
+receipts and private original-copy publication. Accepted mixed PDFs queue only
+unresolved pages. Existing readable text, page order, source hashes, historical
+blocks and paid request pins remain retained. A verified physical copy is
+reserved against combined storage capacity before upload; only its verified
+hash/size and current actor/source permit atomic successor publication. Ordinary
+upload completion cannot publish an OCR reservation. Restart, duplicate replies,
+copy-response loss, capacity failure and expired reservations have explicit
+recovery paths. Pending-copy expiry cannot archive the readable parent.
+
+The existing native OCR CronJob now drains uploaded and public queues fairly
+through `scripts/backend/native-ocr-worker.ts`. The run remains bounded to nine
+minutes and ten rounds; each family receives a turn. A whole attempt must fit
+inside the remaining budget, including native execution, gateway timeouts and
+possible identity renewal. Uploaded processing uses the existing 10 MiB original
+and 200-page admission limits, one selected page, a 2,000-pixel raster, one native
+thread and a 90-second native deadline. It never labels a scan, timeout, parser
+failure or resource limit as a business-invalid RFP. The single CronJob is
+retained; no new schedule or vendor was added.
+
+**Recognition and review:** the frozen real offline synthetic Arabic test failed
+with confidence **82** and `numeric_uncertainty=false`: an obligation was omitted
+and prohibition/deadline words changed. Its exact text/hash is a SQL regression
+fixture; the independent native receipt is
+`docs/evidence/uploaded-ocr-native-20261104.json` in the integration branch.
+The Arabic oracle was not weakened. This Tesseract policy does not qualify
+Arabic output as readable evidence solely from confidence; candidates stay
+available for visual correction. English recognition and mixed-page extraction
+passed the frozen native cases, but all OCR text remains unconfirmed. Known
+blank pages also require explicit page review before confirmation.
+
+`GET /v1/documents/{id}/extraction` returns authorized page text, previous page
+hashes, review state and the existing 300-second private-original URL, with a
+second authorization check before responding. The bounded correction command
+accepts complete reviewed page text, original/extraction/page hashes, expected
+revision and explicit blank confirmation. It persists a new human extraction
+successor; it never rewrites old text under an old hash. Supplied actors cannot
+replace the authenticated actor. A new explicit correction may supersede
+unfinished work while preserving its receipts and ambiguous-byte reservations.
+Company Knowledge verification cannot bypass unreviewed OCR. Restored receipts
+retain historical provenance; restored human review requires fresh current-user
+review. Legacy image-only PDFs and legacy text with intact page anchors can
+recover coverage without rewriting the old record. Nonempty historical text
+without trustworthy page anchors requires a new correctly extracted upload;
+its page positions are not guessed.
+
+**Source selection and storage:** fresh snapshots select only current published
+extractions before the existing context-size guard. Historical proposal
+resumptions select their pinned RFP sources before that guard. With the W05
+source contract, a superseded source refuses continuation as stale while the
+saved paid context remains unchanged. The independent source-review context
+selects the child and does not inherit buyer authority. The optional
+`document_ocr_published(child, actor)` hook lets authored-review sessions record
+source change without replacing accepted prose. One successor stores one
+additional complete original: physical storage amplification is measured as
+100 → 200 bytes in synthetic reservation tests and still counts historical
+originals/cleanup bytes. Group reviewed pages into one correction to avoid one
+physical copy per page; no logical deduplication is represented as free storage.
+
+**Local verification:** dedicated SQL/gateway/API suites cover mixed-page
+retention, exact Arabic failure classification, full paragraph/blank review,
+revision/hash mismatch, current membership revocation after stored-byte read,
+late leases, idempotency, immutable copy reuse, family archive/history guards,
+capacity/expiry, legacy image-only recovery and native/ human restore. A
+900,000-character source with eleven retained extraction versions proves early
+source selection stays bounded without replacing prior paid pins. Combined OCR
+plus W05 migration testing passed 26 cases, including current-source exclusion
+and stale paid-contract refusal. Both package typechecks/builds passed; frontend
+300 tests passed (includes the new real client transport/cancellation contract).
+The core backend suite passed **2,185/2,185** tests across 131 files. The final
+review-metadata/disk-capacity delta passed **37/37** focused tests; its combined
+full-suite repeat remains separate integration evidence. Root-owned
+visual page-review UI and its tests are integrated separately in commit
+`6de550e`; this entry does not claim browser visual acceptance for those controls.
+
+**Native image / deployment:** local image
+`tenderdesk-uploaded-ocr:v2-final-r2` is
+`sha256:42bda8349d80507c1b7d5fd299d1c9be59ece8f559256bfc8b8bf90f6d8b40af`.
+Offline imports under runtime UID 1000 passed with 768 MiB, one CPU and no
+network. COPY ownership fixes the measured unreadable-package failure. The
+final image uses the same recognition algorithm as the failed Arabic oracle;
+automatic Arabic semantic qualification remains **failed**. No image push,
+production migration, deployment, customer data, provider call or hosted
+upload-to-file result is claimed. OCR is independent source improvement and
+cannot promise 200 scans or human review within an issuance deadline; the
+issuance contract must retain current coverage/gaps and report a truthful
+terminal result rather than silently treat unresolved pages as empty input.
+
+Final native capacity handling maps temporary-disk `ENOSPC`/`EDQUOT` to
+`DOCUMENT_OCR_CAPACITY`, with source hash rejection before temporary allocation.
+The deployment already mounts native `/tmp` as a bounded 1 GiB writable
+`emptyDir`; local native reruns use an explicit tmpfs to avoid the measured
+shared build-host overlay exhaustion. This is a resource failure, not an
+Arabic recognition result. The rebuilt r2 image identity is recorded above.

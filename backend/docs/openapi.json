@@ -12168,6 +12168,123 @@
                           ],
                           "properties": {
                             "operation": {
+                              "const": "document.extraction.correct"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "expected_original_hash": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "expected_extraction_hash": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "pages": {
+                                  "minItems": 1,
+                                  "maxItems": 200,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "page": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 200
+                                      },
+                                      "expected_page_text_hash": {
+                                        "type": "string",
+                                        "pattern": "^[a-f0-9]{64}$"
+                                      },
+                                      "text": {
+                                        "type": "string",
+                                        "maxLength": 20000
+                                      },
+                                      "blank_confirmed": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "page",
+                                      "expected_page_text_hash",
+                                      "text",
+                                      "blank_confirmed"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "review_confirmed": {
+                                  "type": "boolean",
+                                  "const": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "expected_revision",
+                                "expected_original_hash",
+                                "expected_extraction_hash",
+                                "pages",
+                                "review_confirmed"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "document.ocr.retry"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "expected_revision"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
                               "const": "document.confirm"
                             },
                             "input": {
@@ -13218,6 +13335,262 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/extraction": {
+      "get": {
+        "operationId": "document.extraction.read",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "description": "Authorized page text, exact original/extraction/page hashes, pending recognition candidates and explicit review state; includes the existing 300-second private original URL after a second authorization check. OCR confidence never confirms source meaning.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      },
+      "post": {
+        "operationId": "document.extraction.correct",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "description": "Up to 200 explicitly reviewed full pages, bounded to 8MiB JSON. Binds document revision, original bytes, extraction and previous page hashes. Empty text requires explicit visual blank confirmation. Returns202 after persisting an immutable correction request; verified original-copy publication is asynchronous. Reuse the same idempotency key and payload after a lost response.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "expected_revision": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "expected_original_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "expected_extraction_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "pages": {
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 200
+                        },
+                        "expected_page_text_hash": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 20000
+                        },
+                        "blank_confirmed": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "expected_page_text_hash",
+                        "text",
+                        "blank_confirmed"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "review_confirmed": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "expected_revision",
+                  "expected_original_hash",
+                  "expected_extraction_hash",
+                  "pages",
+                  "review_confirmed"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Correction persisted; source successor awaits verified copy publication"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/ocr": {
+      "get": {
+        "operationId": "document.ocr.read",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "description": "Authorized OCR progress, retry/review state and published successor ID; no source bytes or storage key.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful command result"

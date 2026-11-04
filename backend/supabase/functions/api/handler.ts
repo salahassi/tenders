@@ -831,6 +831,39 @@ export function createApiHandler(
         headers.set("content-disposition", "attachment");
         return new Response(bytes, { headers });
       }
+      const extractionReview = path.match(
+        /^\/v1\/documents\/([^/]+)\/(extraction|ocr)$/,
+      );
+      if (request.method === "GET" && extractionReview) {
+        const document_id = uuid.parse(extractionReview[1]);
+        if (extractionReview[2] === "ocr")
+          return respond(
+            await backend.userRpc(token, "uploaded_document_ocr_status", {
+              document_id,
+            }),
+          );
+        const review = await backend.userRpc(
+          token,
+          "uploaded_document_extraction",
+          { document_id },
+        );
+        const original = await backend.one(token, "documents", document_id);
+        const original_download_url = await backend.download(
+          original.storage_key,
+        );
+        // A revocation while issuing the short-lived URL cannot return a new
+        // review response. The existing private-original URL expires in 300s.
+        await backend.userRpc(token, "uploaded_document_extraction", {
+          document_id,
+        });
+        return respond({
+          ...review,
+          original_download_url,
+          original_download_expires_at: new Date(
+            Date.now() + 300000,
+          ).toISOString(),
+        });
+      }
       const downloads = path.match(/^\/v1\/documents\/([^/]+)\/download$/);
       if (request.method === "GET" && downloads) {
         const document = await backend.one(
@@ -903,6 +936,24 @@ export function createApiHandler(
           }),
           201,
         );
+      }
+      if (request.method === "POST" && extractionReview?.[2] === "extraction") {
+        const input = commandSchemas["document.extraction.correct"].parse(
+          await readJson(request, 8388608),
+        );
+        if (input.id !== uuid.parse(extractionReview[1]))
+          throw new AppError(
+            400,
+            "INVALID_INPUT",
+            "The document ID differs from the route.",
+          );
+        const corrected = await backend.command(
+          token,
+          "document.extraction.correct",
+          input,
+          key,
+        );
+        return respond(corrected, 202, { revision: corrected.revision });
       }
       if (
         request.method === "POST" &&

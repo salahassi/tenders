@@ -5,12 +5,12 @@ WORKDIR /app/backend
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates poppler-utils tesseract-ocr tesseract-ocr-ara tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/*
-COPY backend/package.json backend/package-lock.json ./
+COPY --chown=1000:1000 backend/package.json backend/package-lock.json ./
 RUN --mount=type=secret,id=proxy_ca \
     if [ -f /run/secrets/proxy_ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/proxy_ca; fi; \
     npm ci --include=dev --ignore-scripts && npm cache clean --force \
     && chmod -R a+rX node_modules
-COPY backend/scripts/backend ./scripts/backend
-COPY backend/supabase/functions/_shared ./supabase/functions/_shared
+COPY --chown=1000:1000 backend/scripts/backend ./scripts/backend
+COPY --chown=1000:1000 backend/supabase/functions/_shared ./supabase/functions/_shared
 USER 1000:1000
-CMD ["node", "--experimental-transform-types", "scripts/backend/public-notice-ocr-worker.ts"]
+CMD ["node", "--experimental-transform-types", "scripts/backend/native-ocr-worker.ts"]

@@ -727,6 +727,31 @@ export const commandSchemas = {
       supersedes_review_id: uuid.nullable().optional(),
     })
     .strict(),
+  "document.extraction.correct": z
+    .object({
+      id: uuid,
+      expected_revision: revision,
+      expected_original_hash: z.string().regex(/^[a-f0-9]{64}$/),
+      expected_extraction_hash: z.string().regex(/^[a-f0-9]{64}$/),
+      pages: z
+        .array(
+          z
+            .object({
+              page: z.number().int().min(1).max(200),
+              expected_page_text_hash: z.string().regex(/^[a-f0-9]{64}$/),
+              text: z.string().max(20000),
+              blank_confirmed: z.boolean(),
+            })
+            .strict(),
+        )
+        .min(1)
+        .max(200),
+      review_confirmed: z.literal(true),
+    })
+    .strict(),
+  "document.ocr.retry": z
+    .object({ id: uuid, expected_revision: revision })
+    .strict(),
   "document.confirm": z
     .object({ id: uuid, expected_revision: revision })
     .strict(),

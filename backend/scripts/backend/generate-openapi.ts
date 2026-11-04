@@ -393,6 +393,63 @@ paths["/v1/documents/{id}/complete-upload"] = {
   },
 };
 
+for (const suffix of ["extraction", "ocr"]) {
+  paths[`/v1/documents/{id}/${suffix}`] = {
+    get: {
+      operationId: `document.${suffix}.read`,
+      security: [{ userJWT: [] }],
+      description:
+        suffix === "extraction"
+          ? "Authorized page text, exact original/extraction/page hashes, pending recognition candidates and explicit review state; includes the existing 300-second private original URL after a second authorization check. OCR confidence never confirms source meaning."
+          : "Authorized OCR progress, retry/review state and published successor ID; no source bytes or storage key.",
+      parameters: [
+        {
+          in: "path",
+          name: "id",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      responses,
+    },
+  };
+}
+paths["/v1/documents/{id}/extraction"].post = {
+  operationId: "document.extraction.correct",
+  security: [{ userJWT: [] }],
+  description:
+    "Up to 200 explicitly reviewed full pages, bounded to 8MiB JSON. Binds document revision, original bytes, extraction and previous page hashes. Empty text requires explicit visual blank confirmation. Returns202 after persisting an immutable correction request; verified original-copy publication is asynchronous. Reuse the same idempotency key and payload after a lost response.",
+  parameters: [
+    {
+      in: "path",
+      name: "id",
+      required: true,
+      schema: { type: "string", format: "uuid" },
+    },
+    {
+      in: "header",
+      name: "Idempotency-Key",
+      required: true,
+      schema: { type: "string", minLength: 1, maxLength: 200 },
+    },
+  ],
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: z.toJSONSchema(commandSchemas["document.extraction.correct"]),
+      },
+    },
+  },
+  responses: {
+    ...responses,
+    "202": {
+      description:
+        "Correction persisted; source successor awaits verified copy publication",
+    },
+  },
+};
+
 const recoveryPaths: Array<[string, string, string, unknown?]> = [
   [
     "/v1/opportunities/{id}/archive",

@@ -1,4 +1,8 @@
 import { z } from "zod";
+import {
+  uploadedOcrInput,
+  publishUploadedOcr,
+} from "./uploadedDocumentOcrGateway.ts";
 import { Backend, type BackendEnvironment } from "./backend.ts";
 import {
   verifyBrowserIdentity,
@@ -10,6 +14,16 @@ const identity = { request_id: z.uuid(), lease: z.uuid() };
 const schemas = {
   claim: z.object({}).strict(),
   ocr_claim: z.object({}).strict(),
+  uploaded_ocr_claim: z.object({}).strict(),
+  uploaded_ocr_input: z.object(identity).strict(),
+  uploaded_ocr_publish: z.object(identity).strict(),
+  uploaded_ocr_complete: z
+    .object({
+      ...identity,
+      result: z.record(z.string(), z.unknown()).nullable(),
+      error_code: z.string().nullable(),
+    })
+    .strict(),
   ocr_complete: z
     .object({
       ...identity,
@@ -78,6 +92,10 @@ export function createBrowserGateway(
             "session_save",
             "ocr_claim",
             "ocr_complete",
+            "uploaded_ocr_claim",
+            "uploaded_ocr_input",
+            "uploaded_ocr_complete",
+            "uploaded_ocr_publish",
           ]),
           payload: z.unknown(),
         })
@@ -90,7 +108,24 @@ export function createBrowserGateway(
         data = await backend.internal("claim_source_browser_page");
       else if (input.action === "ocr_claim")
         data = await backend.internal("claim_notice_ocr");
-      else if (input.action === "ocr_complete")
+      else if (input.action === "uploaded_ocr_claim")
+        data = await backend.internal("claim_uploaded_document_ocr");
+      else if (input.action === "uploaded_ocr_complete")
+        data = await backend.internal(
+          "complete_uploaded_document_ocr_page",
+          payload,
+        );
+      else if (
+        input.action === "uploaded_ocr_input" ||
+        input.action === "uploaded_ocr_publish"
+      ) {
+        const p = payload as { request_id: string; lease: string };
+        data = await (
+          input.action === "uploaded_ocr_input"
+            ? uploadedOcrInput
+            : publishUploadedOcr
+        )(backend, p.request_id, p.lease);
+      } else if (input.action === "ocr_complete")
         data = await backend.internal("complete_notice_ocr", payload);
       else if (input.action === "complete")
         data = await backend.internal("complete_source_browser_page", payload);

@@ -290,10 +290,26 @@ export class ConnectedRepository {
       tags: strings(r.tags),
     }));
     const documents = this.rows.documents.filter(
-      (d) => !d.archived && !["pending", "expired"].includes(str(d, "status")),
+      (d) =>
+        !d.archived &&
+        !["pending", "expired"].includes(str(d, "status")) &&
+        !this.rows.documents.some(
+          (child) =>
+            child.id === d.ocr_successor_id &&
+            child.ocr_parent_document_id === d.id &&
+            !child.archived &&
+            ["ready", "partial"].includes(str(child, "status")) &&
+            child.uploaded_size === child.expected_size,
+        ),
     );
     const document = (d: Row) => ({
       id: d.id,
+      revision: Number(d.revision),
+      extractionHash: str(d, "extraction_hash"),
+      extractionVersion: str(d, "extraction_version") || undefined,
+      ocrStatus: (d.ocr_status ?? null) as DocumentRecord["ocrStatus"],
+      ocrParentDocumentId: str(d, "ocr_parent_document_id") || null,
+      ocrSuccessorId: str(d, "ocr_successor_id") || null,
       name: str(d, "original_name"),
       size: Number(d.uploaded_size ?? d.expected_size),
       uploadedAt: str(d, "created_at"),

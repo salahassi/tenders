@@ -344,6 +344,24 @@ export class Backend {
       );
     return data;
   }
+  async copyOriginalForOcr(source: string, destination: string) {
+    const storage = createClient(this.env.url, this.env.serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        fetch: (input, init) =>
+          fetch(input, { ...init, signal: AbortSignal.timeout(20000) }),
+      },
+    }).storage;
+    const { error } = await storage
+      .from("tenderdesk-private")
+      .copy(source, destination);
+    if (error)
+      throw new AppError(
+        503,
+        "DOCUMENT_OCR_STORAGE_UNAVAILABLE",
+        "The OCR original copy is not confirmed.",
+      );
+  }
   async storeDeliveryObject(path: string, bytes: Uint8Array, mime: string) {
     const storage = createClient(this.env.url, this.env.serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },

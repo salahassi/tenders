@@ -149,3 +149,26 @@ execution remains separate unfinished work. Worker extraction errors expose
 `EXTRACTION_FAILED` for a truthful independent template/disposition flow;
 processing limits and parser failures are not proof of a business-invalid RFP.
 See the implementation checklist for deployment and hosted acceptance status.
+
+### Durable uploaded OCR and explicit page correction (November 4 local implementation)
+
+Accepted unresolved PDF pages now have durable server OCR status. The connected
+repository selects only the current published extraction; pending copy
+reservations and retained ancestors do not duplicate document cards. Document
+records expose revision, extraction hash/version and OCR lineage/status.
+`BackendClient.documentExtraction(id, signal)` supplies page text and exact
+source/page hashes for visual review. `correctDocumentExtraction(input, key,
+signal)` submits a reviewed full-page batch, with explicit blank confirmation,
+and preserves cancellation and idempotency through the dedicated API route.
+The returned parent is queued; the worker must verify the original copy before
+the successor becomes current. Reload/current-status polling must retain the
+entered correction on failure and navigate to the published child explicitly.
+
+Confidence never confirms meaning. The frozen native Arabic test failed despite
+confidence82 and no numeric uncertainty, so Arabic candidates require correction
+and review. All OCR pages and known blank pages require explicit page-bound
+review before confirmation; Company Knowledge verification respects that guard.
+The root integration adds the shared page/image editor in OpportunityDetail and
+Knowledge. Draft delivery remains independent while OCR/review is incomplete.
+The native and hosted acceptance limits are recorded in the implementation
+checklist; these local contracts do not establish deployment.
