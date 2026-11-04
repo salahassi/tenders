@@ -22,17 +22,23 @@ async function respond(value: unknown) {
     offset += await runtime.stdout.write(bytes.subarray(offset));
 }
 try {
-  const { model, bytes } = await readVerificationFrame(runtime.stdin.readable);
+  let { model, bytes } = await readVerificationFrame(runtime.stdin.readable);
+  // Hash the exact private frame before inflater allocation churn. The bounded
+  // verifier only reads these bytes; success still requires its full scan.
+  const model_hash = await docxDigest(model),
+    document_hash = await docxDigest(bytes),
+    size = bytes.length;
   const parsed = JSON.parse(
     new TextDecoder("utf-8", { fatal: true }).decode(model),
   );
+  model = new Uint8Array();
   await verifyBoundedDocxAsync(bytes, parsed, blockedContent);
   await respond({
     version: 1,
     verified: true,
-    model_hash: await docxDigest(model),
-    document_hash: await docxDigest(bytes),
-    size: bytes.length,
+    model_hash,
+    document_hash,
+    size,
   });
 } catch (error) {
   if (

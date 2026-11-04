@@ -6,6 +6,7 @@ import { exportSectionGroups } from "./proposalOutline.ts";
 import {
   hasNativeVerifierRuntime,
   verifyDeliveryIsolated,
+  verifyOwnedDeliverySnapshot,
 } from "./deliveryVerifyIsolation.ts";
 type Row = Record<string, any>;
 export type ExportBlock =
@@ -510,4 +511,21 @@ export function verifyExportDocxAsync(
   if (hasNativeVerifierRuntime())
     return verifyDeliveryIsolated(bytes, model, signal);
   return verifyBoundedDocxAsync(bytes, model, blockedContent, signal);
+}
+
+/** Internal deliveryBytes bridge. Both inputs are already private call-time
+ * snapshots; no caller-owned buffer or mutable model is accepted on this path. */
+export function verifyOwnedExportDocxSnapshot(
+  bytes: Uint8Array,
+  modelJson: string,
+  signal?: AbortSignal,
+) {
+  if (hasNativeVerifierRuntime())
+    return verifyOwnedDeliverySnapshot(bytes, modelJson, signal);
+  return verifyBoundedDocxAsync(
+    bytes,
+    JSON.parse(modelJson) as RenderModel,
+    blockedContent,
+    signal,
+  );
 }

@@ -7,6 +7,7 @@ import {
 import {
   verifyDeliveryIsolated,
   hasNativeVerifierRuntime,
+  verifyOwnedDeliverySnapshot,
 } from "../../supabase/functions/_shared/deliveryVerifyIsolation.ts";
 import {
   acceptVerificationVerdict,
@@ -198,6 +199,34 @@ it("frames exact call-time input snapshots and returns only a verified boolean",
   });
   expect([...frame.bytes]).toEqual([1, 2, 3]);
   expect(f.process.kill).not.toHaveBeenCalled();
+});
+it("frames an already-owned serialized snapshot without reparsing its object graph", async () => {
+  const f = fixture(true),
+    snapshot = JSON.stringify({
+      id: "owned",
+      rows: Array.from({ length: 100 }, () => []),
+    });
+  const parse = JSON.parse;
+  const spy = vi.spyOn(JSON, "parse").mockImplementation((text, reviver) => {
+    if (text === snapshot)
+      throw Error("Owned model must not be reconstructed in the parent");
+    return parse(text, reviver);
+  });
+  try {
+    await expect(
+      verifyOwnedDeliverySnapshot(
+        new Uint8Array(document),
+        snapshot,
+        undefined,
+        () => f.process,
+      ),
+    ).resolves.toBe(true);
+    const frame = await readVerificationFrame(stream(f.chunks));
+    expect(new TextDecoder().decode(frame.model)).toBe(snapshot);
+    expect(frame.bytes).toEqual(document);
+  } finally {
+    spy.mockRestore();
+  }
 });
 it("does not fall back when a Deno runtime has no usable command implementation", async () => {
   vi.stubGlobal("Deno", {});

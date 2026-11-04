@@ -9294,6 +9294,39 @@ final integrated image/release acceptance remain pending. Original raw receipts
 are retained unchanged. Backend typecheck passed; no provider or production
 calls, resource changes, or payload-cap changes occurred.
 
+The next native repeat failed before the corrected cancellation control: the
+same image/input at 384 MiB / 700m returned `DELIVERY_RENDER_FAILED` after about
+103s, and Docker recorded OOMKilled. The prior 1.76 MiB margin was therefore not
+stable capacity; the API release gate remains open. This red receipt is retained
+as `evidence/native-api-repeat-oom-20261104.json`. No heap or resource increase
+has been applied.
+
+The resulting lifetime fix eliminates the delivery byte path's duplicated
+model-object parse/stringify, snapshots model JSON before an asynchronous Blob
+read, and hashes already-private bytes without an additional explicit copy.
+Only the internal owned-snapshot bridge avoids the copy; the generic verifier
+still snapshots caller bytes/model before yielding. Child frame hashes are now
+computed before inflater allocation churn, and the raw model frame is released
+after parsing. Full canonical validation, exact hashes/size, successful child
+exit, abort/deadline/reap and private within-run proof binding remain required.
+All 47 focused tests across four files and backend typecheck pass, including
+model mutation during delayed Blob reading, byte mutation, forged/stale proof,
+generic call-time snapshots, abort/timeout and shared native-process admission.
+Independent source review found no material ownership/hash regression. Actual
+native repeat measurements of this fix are still pending.
+
+Separately, all three ordinary projections from the persisted section-body
+fixtures now render and verify with the current worker's placeholder policy2:
+generated100 tables (3.064s), authored100 tables (2.903s), and69 mixed-script
+paragraphs (21.008s). Source requests and frozen legacy projections are both
+hash-bound; the current policy is applied explicitly. At 640 MiB /1CPU the peak
+was406,900,736 bytes, no OOM events, swap0. The large ordinary DOCX is3,177,596
+compressed bytes and298,012,602 expanded bytes. This proves content/renderability
+of those saved projections, not approval or semantic completeness. It also
+provides the exact file for the separately owned reviewed-upload40MiB original
+archive-limit red/green test. Receipt:
+`evidence/native-ordinary-body-20261104.json`.
+
 ### 2026-11-04 — Additive read-only capacity inventory preparation
 
 The inventory now adds `capacity_observation` without changing its existing

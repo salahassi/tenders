@@ -96,8 +96,35 @@ export async function verifyDeliveryIsolated(
     );
   // Preserve call-time input identity even if a caller mutates its objects while
   // waiting. No untrusted or historical receipt can bypass this proof.
-  let modelJson = JSON.stringify(model),
-    bytes = new Uint8Array(document);
+  return verifyOwnedDeliverySnapshot(
+    new Uint8Array(document),
+    JSON.stringify(model),
+    signal,
+    createProcess,
+    timeoutMs,
+    started,
+  );
+}
+
+/** Internal ownership boundary: the caller has already created private bytes
+ * and an immutable JSON snapshot and must not expose/mutate bytes until this
+ * settles. The generic object API above always takes its own snapshots. This
+ * avoids reconstructing a full object graph only to immediately serialize it. */
+export async function verifyOwnedDeliverySnapshot(
+  bytes: Uint8Array,
+  modelJson: string,
+  signal?: AbortSignal,
+  createProcess: () => RendererProcess = createVerifier,
+  timeoutMs = 180_000,
+  started = performance.now(),
+): Promise<true> {
+  signal?.throwIfAborted();
+  if (!bytes.length || bytes.length > DOCX_FRAME_LIMIT)
+    throw new AppError(
+      413,
+      "FILE_SIZE_INVALID",
+      "The Word document is outside the supported size.",
+    );
   const queueBudget = timeoutMs - (performance.now() - started);
   if (queueBudget <= 0) throw verificationTimeout();
   const release = await acquireNativeDocxProcess(

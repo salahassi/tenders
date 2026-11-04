@@ -150,6 +150,10 @@ if (runtime.args[1] === "ordinary-render-capacity") {
     const renderedMs = Math.round(performance.now() - started);
     await verifyArtifact(bytes, model);
     await runtime.writeFile(`/outputs/${name}-128.docx`, bytes);
+    await runtime.writeFile(
+      `/outputs/${name}.json`,
+      new TextEncoder().encode(JSON.stringify(model)),
+    );
     cases.push({
       name,
       outcome: "verified",

@@ -47,5 +47,12 @@
     "Corrected heavy reacquisition after cancel",
     "Actual native current-policy ordinary projections for three persisted body-bound fixtures",
     "Final integrated image startup/worker and release acceptance after upstream batch fix"
-  ]
+  ],
+  "followup": {
+    "repeat_outcome": "The corrected cancellation probe failed before reaching response/cancel: same immutable image/input/resources, DELIVERY_RENDER_FAILED at103s and Docker OOMKilled true. The earlier two-pass result is historical scoped evidence, not stable release capacity.",
+    "repeat_receipt": "native-api-repeat-oom-20261104.json",
+    "ordinary_projections": "All3 actual saved ordinary requests reprojected under current worker policy2 rendered and canonical-verified at640MiB/1CPU; legacy projections were matched to their saved requests before reprojection.",
+    "ordinary_receipt": "native-ordinary-body-20261104.json",
+    "release_gate": "open until lifetime fix passes actual native repeats; no heap/resource increase"
+  }
 }

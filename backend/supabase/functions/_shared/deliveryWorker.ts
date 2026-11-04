@@ -10,7 +10,8 @@ import {
   DOCX_MIME,
   type DeliveryVolume,
 } from "./deliveryExport.ts";
-import { verifyExportDocxAsync, type RenderModel } from "./export.ts";
+import { verifyOwnedExportDocxSnapshot, type RenderModel } from "./export.ts";
+import { docxDigest } from "./deliveryVerifyProtocol.ts";
 import { renderDeliveryIsolated } from "./deliveryRenderIsolation.ts";
 import { DeliveryWorkBudget } from "./deliveryWorkBudget.ts";
 
@@ -23,14 +24,6 @@ const byteProofs = new WeakMap<
   VerifiedDeliveryBytes,
   { hash: string; size: number; modelHash: string }
 >();
-async function sha256(bytes: Uint8Array) {
-  return Array.from(
-    new Uint8Array(
-      await crypto.subtle.digest("SHA-256", new Uint8Array(bytes).buffer),
-    ),
-    (value) => value.toString(16).padStart(2, "0"),
-  ).join("");
-}
 /** The private receipt binds exact bytes and the full current model. Caller-made
  * receipts and later model/receipt mutation cannot skip current verification. */
 export async function deliveryBytes(
@@ -40,10 +33,23 @@ export async function deliveryBytes(
   prior?: VerifiedDeliveryBytes,
 ): Promise<VerifiedDeliveryBytes> {
   signal?.throwIfAborted();
+  // Snapshot model identity before any asynchronous Blob read. This outer
+  // function returns directly, so its caller-owned model/Blob are not retained
+  // in the verification suspension frame.
+  const modelJson = JSON.stringify(model);
+  const input =
+    blob instanceof Uint8Array ? new Uint8Array(blob) : blob.arrayBuffer();
+  return completeDeliveryByteSnapshot(input, modelJson, signal, prior);
+}
+
+async function completeDeliveryByteSnapshot(
+  input: Uint8Array | Promise<ArrayBuffer>,
+  modelJson: string,
+  signal?: AbortSignal,
+  prior?: VerifiedDeliveryBytes,
+): Promise<VerifiedDeliveryBytes> {
   const bytes =
-    blob instanceof Uint8Array
-      ? new Uint8Array(blob)
-      : new Uint8Array(await blob.arrayBuffer());
+    input instanceof Uint8Array ? input : new Uint8Array(await input);
   if (!bytes.length || bytes.length > 10485760)
     throw new AppError(
       422,
@@ -51,9 +57,8 @@ export async function deliveryBytes(
       "The draft file is outside the supported size.",
     );
   signal?.throwIfAborted();
-  const modelJson = JSON.stringify(model);
-  const hash = await sha256(bytes),
-    modelHash = await sha256(new TextEncoder().encode(modelJson));
+  const hash = await docxDigest(bytes),
+    modelHash = await docxDigest(new TextEncoder().encode(modelJson));
   signal?.throwIfAborted();
   const proof = prior && byteProofs.get(prior);
   if (
@@ -61,12 +66,15 @@ export async function deliveryBytes(
     proof.hash !== hash ||
     proof.size !== bytes.length ||
     proof.modelHash !== modelHash
-  )
-    await verifyExportDocxAsync(
+  ) {
+    const verification = verifyOwnedExportDocxSnapshot(
       bytes,
-      JSON.parse(modelJson) as RenderModel,
+      modelJson,
       signal,
     );
+    modelJson = "";
+    await verification;
+  }
   signal?.throwIfAborted();
   const result = { bytes, hash, size: bytes.length };
   byteProofs.set(result, { hash, size: bytes.length, modelHash });

@@ -1,0 +1,24 @@
+{
+  "scope": "Private snapshot/lifetime source fix; native capacity qualification pending",
+  "changes": [
+    "deliveryBytes snapshots model before asynchronous Blob read and returns directly into an owned-byte helper, eliminating the retained parse/stringify object clone",
+    "Private bytes are hashed without an extra explicit document copy; generic verifier still snapshots caller-owned bytes/model",
+    "Internal immutable JSON bridge uses the same child/canonical verdict and never exposes owned bytes before settlement",
+    "Child hashes exact private frames before inflation, releases raw model frame, and still requires full canonical scan plus exact successful verdict"
+  ],
+  "heap_or_resource_policy_changed": false,
+  "canonical_verifier_changed": false,
+  "focused_tests": {
+    "passed": 47,
+    "files": 4,
+    "log_sha256": "774d36dbfdea64347166de4d04d50c6e8527d5be0ff26864d79a17fd091fdf79"
+  },
+  "typecheck": {
+    "passed": true,
+    "log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220"
+  },
+  "independent_source_review": "Adjacent agent found no material ownership/hash/abort regression; no native claim follows from source review",
+  "native_repeat_pending": true,
+  "red_receipt_sha256": "418c7f6eff453a3cc0f00b77caf779de50d724470f601f2f5f87d7ae74ec77f0",
+  "ordinary_receipt_sha256": "75c4fb876bea51150554575f84a7e853b9ae28c9be3b2088d4def49d76cba45e"
+}
