@@ -59,6 +59,21 @@ Deployment/hosted acceptance: **not deployed, no production or provider calls**.
 This is the persisted foundation, not a substantively complete non-model route,
 DOCX renderer or all-workflow closure. Renderer/API/UI integration, combined branch regression and actual Word/RTL/visual acceptance
 remain separate gates in the delivery plan.
+## November 4 — delivery verifier failure receipt compatibility
+
+Implementation: `EXPORT_PLACEHOLDER_MISMATCH`, `BUYER_VOLUME_RULE` and
+`TECHNICAL_VOLUME_CONTAINS_PRICE` are terminal delivery failure codes. A canonical
+verifier rejection now records a blocked package, releases the worker lease and
+retains pending storage accountability instead of rejecting the failure receipt
+as `INVALID_INPUT`. The immutable draft and its valid-input classification remain
+preserved; no ready artifact or model usage is fabricated.
+
+Local evidence: all **41 artifact database cases** pass, including each newly
+accepted terminal code; backend typecheck passes. The integration owner also has
+a renderer-to-database test using a genuine rendered DOCX with yellow highlighting
+removed, then passing the verifier's actual error code to the failure RPC.
+Deployment and hosted acceptance remain pending; this adds no production call.
+
 ## November 4 — durable local delivery artifacts (W03/W09, EX-01/OP-04)
 
 Implementation: each immutable delivery snapshot creates a deduplicated local

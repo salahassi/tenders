@@ -361,6 +361,9 @@ it.each([
   "DELIVERY_ARTIFACT_INVALID",
   "DELIVERY_GAP_INVALID",
   "DELIVERY_RENDERER_UNSUPPORTED",
+  "EXPORT_PLACEHOLDER_MISMATCH",
+  "BUYER_VOLUME_RULE",
+  "TECHNICAL_VOLUME_CONTAINS_PRICE",
 ])("blocks content/version %s without relabeling valid input", async (code) => {
   const { snapshot: s } = await setup(),
     j = await claim(s);
@@ -370,6 +373,18 @@ it.each([
   expect(metadata.status).toBe("blocked");
   expect(metadata.job.error_code).toBe(code);
   expect(metadata.snapshot.input_state).toBe("available");
+  expect(await job(s)).toMatchObject({
+    status: "blocked",
+    error_code: code,
+    lease_token: null,
+    lease_until: null,
+  });
+  expect((await artifacts(s))[0]).toMatchObject({
+    status: "pending",
+    content_hash: null,
+    expected_size: null,
+    reserved_bytes: 10485760,
+  });
   expect(await f.rpc("claim_backend_job_v3")).toBeNull();
 });
 it("rejects arbitrary diagnostics and foreign artifact IDs", async () => {
