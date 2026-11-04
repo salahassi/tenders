@@ -10156,3 +10156,20 @@ restore, and hosted preflight/deployment/readback remain separate required gates
 Root's read-only runs observed gateway 64 MiB/200m and HTTPS 128 MiB/300m in both
 Deployment and ready Pod specs; those observations alone do not prove cgroup
 headroom, storage enforcement, concurrent load, or issuance latency.
+
+### November 4 — preserve unsuccessful explicit TOC-refresh diagnostics
+
+The existing LibreOffice visual harness converts DOCX to PDF without an explicit
+document-index refresh call. Two bounded attempts used an isolated personal
+macro profile to request that refresh on one existing synthetic English fixture.
+Both exited zero without producing the required markers or new PDF/DOCX; neither
+is accepted as refresh execution. The first startup replaced the module registry
+with its default; the second retained the requested module but still supplied no
+execution evidence. Both owned processes exited, and the original DOCX hash is
+unchanged. The [diagnostic](evidence/toc-explicit-refresh-diagnostic-20261104.json)
+preserves these failures rather than treating process exit zero as success.
+
+No renderer, canonical validation, source text, page numbers or production state
+changed. The reason for the absent caches is not established; the earlier 18-file
+LibreOffice result and the separate Microsoft Word update/save limitation remain
+open. No Word engine, model or hosted operation was invoked.
