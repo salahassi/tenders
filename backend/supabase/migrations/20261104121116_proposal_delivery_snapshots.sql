@@ -32,19 +32,45 @@ alter table public.proposals add constraint active_delivery_belongs_to_proposal
  references public.proposal_delivery_snapshots(workspace_id,proposal_id,id) deferrable initially immediate;
 
 alter table public.proposal_delivery_snapshots enable row level security;
-revoke all on public.proposal_delivery_snapshots from public,anon,authenticated;
-grant all on public.proposal_delivery_snapshots to service_role;
+do $role_acl$ declare role_name text;begin
+ revoke all on public.proposal_delivery_snapshots from public;
+ foreach role_name in array array['anon','tdp_app_anon','authenticated','tdp_app_authenticated'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'revoke all on public.proposal_delivery_snapshots from '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
+do $role_acl$ declare role_name text;begin
+ foreach role_name in array array['service_role','tdp_app_service'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'grant all on public.proposal_delivery_snapshots to '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
 -- Contents are read only through the current-source RPC. Direct reads expose
 -- metadata only, so a stale source cannot bypass the RPC via the Data API.
-grant select(id,workspace_id,opportunity_id,proposal_id,plan_id,base_version_id,ordinal,
- content_hash,created_by,created_at,revision) on public.proposal_delivery_snapshots to authenticated;
-create policy member_metadata on public.proposal_delivery_snapshots for select to authenticated
- using(app_private.member_role(workspace_id) is not null);
+do $role_acl$ declare role_name text;begin
+ foreach role_name in array array['authenticated','tdp_app_authenticated'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'grant select(id,workspace_id,opportunity_id,proposal_id,plan_id,base_version_id,ordinal,
+ content_hash,created_by,created_at,revision) on public.proposal_delivery_snapshots to '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
+do $role_policy$ declare roles text;begin
+ select string_agg(quote_ident(rolname),',' order by rolname) into roles from pg_roles where rolname in ('authenticated','tdp_app_authenticated');
+ if roles is null then raise exception 'DELIVERY_AUTHENTICATED_ROLE_REQUIRED';end if;
+ execute 'create policy member_metadata on public.proposal_delivery_snapshots for select to '||roles||'
+ using(app_private.member_role(workspace_id) is not null)';
+end $role_policy$;
 create view public.proposal_delivery_records with(security_invoker=true) as
  select id,workspace_id,opportunity_id,proposal_id,plan_id,base_version_id,ordinal,
  content_hash,created_by,created_at,revision from public.proposal_delivery_snapshots;
-revoke all on public.proposal_delivery_records from public,anon;
-grant select on public.proposal_delivery_records to authenticated,service_role;
+do $role_acl$ declare role_name text;begin
+ revoke all on public.proposal_delivery_records from public;
+ foreach role_name in array array['anon','tdp_app_anon'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'revoke all on public.proposal_delivery_records from '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
+do $role_acl$ declare role_name text;begin
+ foreach role_name in array array['authenticated','tdp_app_authenticated','service_role','tdp_app_service'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'grant select on public.proposal_delivery_records to '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
 
 create function app_private.delivery_snapshot_immutable() returns trigger
 language plpgsql set search_path='' as $$begin raise exception 'DELIVERY_SNAPSHOT_IMMUTABLE';end $$;
@@ -399,6 +425,19 @@ do $$ declare signature text;role_name text;begin
   end loop;
  end loop;
 end $$;
-revoke all on function app_private.app_command(text,jsonb,text) from public,anon;
-grant execute on function app_private.app_command(text,jsonb,text),public.delivery_context(uuid) to authenticated;
-grant execute on function public.delivery_context_for_actor(uuid,uuid) to service_role;
+do $role_acl$ declare role_name text;begin
+ revoke all on function app_private.app_command(text,jsonb,text) from public;
+ foreach role_name in array array['anon','tdp_app_anon'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'revoke all on function app_private.app_command(text,jsonb,text) from '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
+do $role_acl$ declare role_name text;begin
+ foreach role_name in array array['authenticated','tdp_app_authenticated'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'grant execute on function app_private.app_command(text,jsonb,text),public.delivery_context(uuid) to '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
+do $role_acl$ declare role_name text;begin
+ foreach role_name in array array['service_role','tdp_app_service'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'grant execute on function public.delivery_context_for_actor(uuid,uuid) to '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;

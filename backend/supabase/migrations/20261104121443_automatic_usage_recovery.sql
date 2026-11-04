@@ -16,7 +16,12 @@ returns boolean language sql stable set search_path='' as $$
     and (u.remote_request_id is null or u.remote_deadline is not null))
   ),false) end;
 $$;
-revoke all on function app_private.model_usage_blocks_recovery(public.jobs,public.provider_usage,timestamptz) from public,anon,authenticated,service_role;
+do $role_acl$ declare role_name text;begin
+ revoke all on function app_private.model_usage_blocks_recovery(public.jobs,public.provider_usage,timestamptz) from public;
+ foreach role_name in array array['anon','tdp_app_anon','authenticated','tdp_app_authenticated','service_role','tdp_app_service'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'revoke all on function app_private.model_usage_blocks_recovery(public.jobs,public.provider_usage,timestamptz) from '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
 
 -- An append-only audit event is lineage, not a usage settlement or allowance.
 -- Callers hold the workspace lock; replay of the same eligible set is a no-op.
@@ -47,7 +52,12 @@ begin
   jsonb_build_object('version',1,'operation',operation_name,'operation_key_hash',encode(sha256(convert_to(operation_key,'UTF8')),'hex'),
    'identity',identity,'job_revision',j.revision,'receipts',receipts,'usage_unchanged',true,'candidate_allowances_unchanged',true));
 end $$;
-revoke all on function app_private.record_model_usage_recovery(public.jobs,text,text,text,text,jsonb) from public,anon,authenticated,service_role;
+do $role_acl$ declare role_name text;begin
+ revoke all on function app_private.record_model_usage_recovery(public.jobs,text,text,text,text,jsonb) from public;
+ foreach role_name in array array['anon','tdp_app_anon','authenticated','tdp_app_authenticated','service_role','tdp_app_service'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'revoke all on function app_private.record_model_usage_recovery(public.jobs,text,text,text,text,jsonb) from '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
 
 -- Patch only the reviewed guard/lineage points in final migrated functions.
 -- Preserve later wrappers, owner/source/revision checks and exact old payloads.

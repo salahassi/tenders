@@ -17,6 +17,25 @@ are absent. This confirms the new implementation is not deployed yet. API/worker
 use image digest `85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380`;
 image source revisions remain independently unverified. This is a current baseline
 for a guarded release, not hosted proposal/model acceptance or schema-tip proof.
+## November 4 — managed-role migration compatibility (phase 2 W11)
+
+Implementation: the six not-yet-deployed delivery/recovery migrations now apply
+with either the Supabase role names or the existing DigitalOcean `tdp_app_*`
+roles. Five files required conditional ACL/policy corrections; the company
+retrieval migration already handled both families. The policy expression and
+service-only RPC boundaries are unchanged. No role is created or promoted, and
+no live database has been modified. Their final release hashes must be generated
+after integration, rather than retaining the earlier local source hashes.
+
+Local evidence: **74 tests across four files** pass, including a full migration
+batch under a non-superuser, non-BYPASSRLS `tdp_app_owner` with all three legacy
+roles absent. A historical blocked job is byte-for-byte unchanged, current
+members can prepare/read the draft package, browser-role reads of private
+payloads and service RPC execution remain denied, and the managed service role
+can claim/reserve the local artifact. Existing delivery, snapshot and document
+coverage tests pass with the legacy role family. Backend typecheck passes.
+The earlier full package checks remain applicable to runtime code;
+production migration and hosted acceptance remain pending coordinator rollout.
 
 ## November 4 — scoped runner inventory mode (phase 2 W00)
 

@@ -26,8 +26,17 @@ create table public.proposal_delivery_artifacts (
 );
 create index delivery_artifact_job on public.proposal_delivery_artifacts(workspace_id,job_id);
 alter table public.proposal_delivery_artifacts enable row level security;
-revoke all on public.proposal_delivery_artifacts from public,anon,authenticated;
-grant all on public.proposal_delivery_artifacts to service_role;
+do $role_acl$ declare role_name text;begin
+ revoke all on public.proposal_delivery_artifacts from public;
+ foreach role_name in array array['anon','tdp_app_anon','authenticated','tdp_app_authenticated'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'revoke all on public.proposal_delivery_artifacts from '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
+do $role_acl$ declare role_name text;begin
+ foreach role_name in array array['service_role','tdp_app_service'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'grant all on public.proposal_delivery_artifacts to '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
 
 alter function app_private.storage_reserved_bytes(uuid) rename to storage_reserved_bytes_before_delivery;
 create function app_private.storage_reserved_bytes(w uuid) returns bigint
@@ -471,9 +480,17 @@ do $$ declare signature text;role_name text;begin
   end loop;
  end loop;
 end $$;
-grant execute on function app_private.app_command(text,jsonb,text),public.delivery_package(uuid) to authenticated;
-grant execute on function public.delivery_export_context(uuid,uuid),public.complete_delivery_artifact(uuid,uuid,uuid,text,bigint),
+do $role_acl$ declare role_name text;begin
+ foreach role_name in array array['authenticated','tdp_app_authenticated'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'grant execute on function app_private.app_command(text,jsonb,text),public.delivery_package(uuid) to '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
+do $role_acl$ declare role_name text;begin
+ foreach role_name in array array['service_role','tdp_app_service'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'grant execute on function public.delivery_export_context(uuid,uuid),public.complete_delivery_artifact(uuid,uuid,uuid,text,bigint),
  public.finish_delivery_export(uuid,uuid),public.fail_delivery_export(uuid,uuid,text),
  public.delivery_artifact_context(uuid,uuid),public.authorize_delivery_artifact_download(uuid,uuid,text),
  public.claim_backend_job_v3(),public.claim_backend_local_job_v3(),
- public.wake_backend_queue_status_v3(uuid,uuid),public.wake_backend_queue_revision_v3(uuid,uuid,bigint) to service_role;
+ public.wake_backend_queue_status_v3(uuid,uuid),public.wake_backend_queue_revision_v3(uuid,uuid,bigint) to '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;

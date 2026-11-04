@@ -60,7 +60,12 @@ language sql stable set search_path='' as $$
  )
  select provider,model,project_ref,connection_id,failure_scope,least(until_at,now()+interval '1 day') from waits where until_at>now();
 $$;
-revoke all on function app_private.provider_failure_windows(uuid) from public,anon,authenticated,service_role;
+do $role_acl$ declare role_name text;begin
+ revoke all on function app_private.provider_failure_windows(uuid) from public;
+ foreach role_name in array array['anon','tdp_app_anon','authenticated','tdp_app_authenticated','service_role','tdp_app_service'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'revoke all on function app_private.provider_failure_windows(uuid) from '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
 
 create or replace function public.task_model_retry_windows(job_id uuid,lease uuid) returns jsonb
 language plpgsql security definer set search_path='' as $$

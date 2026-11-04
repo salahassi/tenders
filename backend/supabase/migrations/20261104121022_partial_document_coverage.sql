@@ -36,7 +36,12 @@ begin
  return coverage->'complete'=to_jsonb(complete) and (extraction_status=expected or extraction_status='expired');
 exception when others then return false;
 end $$;
-revoke all on function app_private.valid_document_coverage(jsonb,text,text,integer) from public,anon,authenticated,service_role;
+do $role_acl$ declare role_name text;begin
+ revoke all on function app_private.valid_document_coverage(jsonb,text,text,integer) from public;
+ foreach role_name in array array['anon','tdp_app_anon','authenticated','tdp_app_authenticated','service_role','tdp_app_service'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'revoke all on function app_private.valid_document_coverage(jsonb,text,text,integer) from '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
 alter table public.documents add constraint valid_extraction_coverage
  check((extraction_coverage is null and status<>'partial') or
   (status='pending' and jsonb_typeof(extraction_coverage)='object' and pg_column_size(extraction_coverage)<=65536) or
@@ -71,8 +76,17 @@ begin
  return answer;
 end $$;
 
-revoke all on function public.accept_uploaded_document_with_coverage(uuid,uuid,text,bigint,text,text,text,jsonb) from public,anon,authenticated;
-grant execute on function public.accept_uploaded_document_with_coverage(uuid,uuid,text,bigint,text,text,text,jsonb) to service_role;
+do $role_acl$ declare role_name text;begin
+ revoke all on function public.accept_uploaded_document_with_coverage(uuid,uuid,text,bigint,text,text,text,jsonb) from public;
+ foreach role_name in array array['anon','tdp_app_anon','authenticated','tdp_app_authenticated'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'revoke all on function public.accept_uploaded_document_with_coverage(uuid,uuid,text,bigint,text,text,text,jsonb) from '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
+do $role_acl$ declare role_name text;begin
+ foreach role_name in array array['service_role','tdp_app_service'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'grant execute on function public.accept_uploaded_document_with_coverage(uuid,uuid,text,bigint,text,text,text,jsonb) to '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
 
 -- Current source authorization can read the useful text of a partial source;
 -- it still checks workspace, current hash, archival and requested-use policy.
@@ -84,7 +98,12 @@ do $$ declare definition text;old text;begin
 end $$;
 
 alter function app_private.draft_generation_snapshot(uuid,uuid,uuid,uuid,jsonb) rename to draft_generation_snapshot_before_page_coverage;
-revoke all on function app_private.draft_generation_snapshot_before_page_coverage(uuid,uuid,uuid,uuid,jsonb) from public,anon,authenticated,service_role;
+do $role_acl$ declare role_name text;begin
+ revoke all on function app_private.draft_generation_snapshot_before_page_coverage(uuid,uuid,uuid,uuid,jsonb) from public;
+ foreach role_name in array array['anon','tdp_app_anon','authenticated','tdp_app_authenticated','service_role','tdp_app_service'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'revoke all on function app_private.draft_generation_snapshot_before_page_coverage(uuid,uuid,uuid,uuid,jsonb) from '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
 create function app_private.draft_generation_snapshot(w uuid,opp uuid,proposal uuid,package uuid,prior jsonb default null)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare result jsonb;all_blocks jsonb;blocks jsonb;materials jsonb;partial_reviews jsonb;notice_fallback boolean;
@@ -123,7 +142,12 @@ begin
  if pg_column_size(result)>8388608 then raise exception 'GENERATION_CONTEXT_CAP_REACHED';end if;
  return result;
 end $$;
-revoke all on function app_private.draft_generation_snapshot(uuid,uuid,uuid,uuid,jsonb) from public,anon,authenticated,service_role;
+do $role_acl$ declare role_name text;begin
+ revoke all on function app_private.draft_generation_snapshot(uuid,uuid,uuid,uuid,jsonb) from public;
+ foreach role_name in array array['anon','tdp_app_anon','authenticated','tdp_app_authenticated','service_role','tdp_app_service'] loop
+  if exists(select 1 from pg_roles where rolname=role_name) then execute 'revoke all on function app_private.draft_generation_snapshot(uuid,uuid,uuid,uuid,jsonb) from '||quote_ident(role_name);end if;
+ end loop;
+end $role_acl$;
 
 do $$ declare role_name text;begin
  foreach role_name in array array['tdp_app_anon','tdp_app_authenticated','tdp_app_service'] loop
