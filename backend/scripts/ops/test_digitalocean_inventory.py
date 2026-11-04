@@ -100,6 +100,14 @@ class InventoryTests(unittest.TestCase):
    value=schema();change(value)
    with self.subTest(value=value),self.assertRaises(p.InventoryError):p.public_schema(value)
 
+ def test_batch_capability_extension_preserves_old_receipts_and_rejects_partial_shape(self):
+  old=schema();self.assertEqual(p.public_schema(old)['capabilities'],old['capabilities'])
+  current=schema();current['capabilities'].update({key:False for key in p.BATCH_CAPABILITIES})
+  self.assertEqual(p.public_schema(current)['capabilities'],current['capabilities'])
+  for key in p.BATCH_CAPABILITIES:
+   bad=copy.deepcopy(current);del bad['capabilities'][key]
+   with self.assertRaises(p.InventoryError):p.public_schema(bad)
+
  def test_rejects_foreign_ownership_unpinned_images_and_missing_workloads(self):
   for change in [lambda v:v[0]['metadata']['labels'].update({'app.kubernetes.io/managed-by':'foreign'}),lambda v:v[0]['spec']['template']['spec']['containers'][0].update(image='registry.invalid/customer-private:latest'),lambda v:v.pop()]:
    values,pods=workloads();change(values)

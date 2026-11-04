@@ -32,6 +32,7 @@ SOURCE = re.compile(r'[a-f0-9]{40}')
 IMAGE = re.compile(r'registry\.digitalocean\.com/tenderdesk-a6093a76/(?:runtime|frontend|browser|ocr|https)@sha256:[a-f0-9]{64}')
 UPSTREAM = frozenset((d.renderer.AUTH_IMAGE,d.renderer.REST_IMAGE,d.renderer.STORAGE_IMAGE,d.renderer.NGINX_IMAGE))
 CAPABILITIES = frozenset(('delivery_snapshots','delivery_artifacts','claim_executor_3','delivery_export_context','delivery_package'))
+BATCH_CAPABILITIES = frozenset(('bounded_command_batch','legacy_batch_insert_fence'))
 
 class InventoryError(Exception):
     pass
@@ -101,7 +102,7 @@ def public_schema(value):
         if canonical['latest_version'] is not None and (not isinstance(canonical['latest_version'],str) or not re.fullmatch(r'[0-9]{14}',canonical['latest_version'])):
             raise InventoryError('INVENTORY_SCHEMA_INVALID')
     capabilities=value['capabilities']
-    if not isinstance(capabilities,dict) or set(capabilities)!=CAPABILITIES or any(type(v) is not bool for v in capabilities.values()): raise InventoryError('INVENTORY_SCHEMA_INVALID')
+    if not isinstance(capabilities,dict) or set(capabilities) not in (CAPABILITIES,CAPABILITIES|BATCH_CAPABILITIES) or any(type(v) is not bool for v in capabilities.values()): raise InventoryError('INVENTORY_SCHEMA_INVALID')
     return {'release_history':releases,'canonical_migrations':canonical,'routine_catalog_sha256':digest(value['routine_catalog_sha256']),
             'capabilities':capabilities,'metrics':public_metrics(value['metrics']),'source_tip_basis':'canonical_history_if_present_otherwise_release_receipts_only'}
 

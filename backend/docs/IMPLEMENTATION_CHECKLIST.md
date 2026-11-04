@@ -9805,3 +9805,26 @@ missing runtime-module-graph baseline. No native run or memory/timing pass is
 claimed in this preparation commit. Root schedules the bounded real-container
 measurement separately; all source/receipt/cleanup outcomes remain explicit.
 See `docs/API_BATCH_CAPACITY.md`. No production, provider or customer calls.
+
+### November 4 — qualify cached legacy transactions and bind the24-migration release
+
+Four actual PostgreSQL17.6 cases passed under isolated capped containers. A
+cached old function waiting before receipt-table access resumed after cutover,
+hit the INSERT fence and rolled back every business/audit/command write. An old
+transaction already holding its receipt-write lock committed while the release
+waited; the release's first snapshot then saw that receipt and rejected the
+migration. Existing expired history was likewise preserved on refusal. New
+bounded results and identical no-write replay passed. Source hashes and container
+cleanup were verified in the [race receipt](evidence/command-batch-cutover-postgres-20261104.json).
+
+The release now locks the receipt table before the first repeatable-read query,
+refuses any old BATCH/commands history, freezes all24required migrations and
+checks new RPC ownership, browser/private ACLs, column grants, RLS, chunk bounds
+and the active INSERT trigger. The managed atomic gate passed44injected fault
+rollbacks plus baseline/replay/drift checks (86.979seconds);26pure source/inventory
+checks passed. [Source evidence](evidence/command-batch-release-guards-20261104.json)
+retains exact scope. Inventory accepts the earlier capability receipt shape and
+the complete new batch extension; neither asserts a claim about payloads.
+Gateway v2 source binding, live API upstream verification, durable gateway exit
+proof and bounded old-transaction drain remain separate coordinator work. No
+hosted change or final API/runtime qualification is claimed.

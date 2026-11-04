@@ -41,12 +41,24 @@ REQUIRED = ('20261104121022_partial_document_coverage.sql',
  '20261104160125_proposal_issuance_file_capacity.sql',
  '20261104163406_serialize_local_document_rendering.sql',
  '20261104170442_durable_storage_write_intents.sql',
- '20261104172700_storage_write_retirement_proofs.sql')
+ '20261104172700_storage_write_retirement_proofs.sql',
+ '20261104212300_structured_section_body_bound.sql',
+ '20261104212818_bounded_command_batch_results.sql')
 CAPABILITIES = {'executor_max':4,'renderer_versions':[1,2,3],
  'minimum_worker_executor':4,'ordinary_renderer_version':'ordinary-2',
  'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1,
  'global_renderer_limit':1,'storage_write_intents_version':1,
- 'storage_retirement_version':1,'storage_gateway_guard_version':1,'application_auth_read_version':1}
+ 'storage_retirement_version':1,'storage_gateway_guard_version':1,'application_auth_read_version':1,
+ 'command_batch_transport_version':1,'command_batch_chunk_bytes':262144,'legacy_batch_insert_fence_version':1}
+# These utility locks must precede the first query snapshot of the atomic
+# release. Already-accessed old batches settle first; cached old bodies which
+# have not accessed this table are stopped by the persistent INSERT trigger.
+BATCH_EARLY_LOCK_SQL = 'LOCK TABLE app_private.idempotency_records IN ACCESS EXCLUSIVE MODE;'
+BATCH_ZERO_CHECK_SQL = """DO $legacy_batch_zero$
+BEGIN
+ IF EXISTS(SELECT 1 FROM app_private.idempotency_records WHERE method='BATCH' AND route='commands')
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_LEGACY_BATCH_PRESENT';END IF;
+END $legacy_batch_zero$;"""
 CATALOG = """SELECT encode(sha256(convert_to(coalesce(string_agg(
  p.oid::regprocedure::text||':'||pg_get_functiondef(p.oid)||':'||coalesce(p.proacl::text,''),E'\\n'
  ORDER BY p.oid::regprocedure::text),''),'UTF8')),'hex') INTO catalog_hash
@@ -209,6 +221,8 @@ SET LOCAL statement_timeout='180s';SET LOCAL lock_timeout='15s';
 SET LOCAL ROLE tdp_app_authadmin;
 LOCK TABLE auth.users,auth.identities IN SHARE ROW EXCLUSIVE MODE;
 SET LOCAL ROLE tdp_app_owner;
+__BATCH_EARLY_LOCK__
+__BATCH_ZERO_CHECK__
 SELECT pg_advisory_xact_lock(hashtextextended('tenderdesk.proposal-delivery.release',0));
 DO $delivery_release$
 DECLARE r record; target text; catalog_hash text; saved_catalog text; saved_manifest text;
@@ -433,13 +447,56 @@ BEGIN
    AND attname='delete_receipt' AND atttypid='jsonb'::regtype AND NOT attnotnull AND NOT attisdropped)
   OR EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid IN ('app_private.storage_retirement_batches'::regclass,'app_private.storage_retirement_keys'::regclass) AND contype='f')
   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_STORAGE_CONTRACT_INVALID';END IF;
+ -- The new endpoint returns only a bounded manifest or one transport chunk.
+ -- Direct table/column grants must not bypass current-actor read checks.
+ FOREACH target IN ARRAY ARRAY['public.app_batch_prepare(jsonb,text)',
+  'public.app_batch_result_chunk(uuid,integer,integer)'] LOOP
+  IF to_regprocedure(target) IS NULL THEN RAISE EXCEPTION 'DELIVERY_RELEASE_BATCH_RPC_MISSING';END IF;
+  IF NOT has_function_privilege('tdp_app_authenticated',target,'EXECUTE')
+   OR has_function_privilege('tdp_app_anon',target,'EXECUTE')
+   OR NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure(target) AND prosecdef
+    AND proowner=(SELECT oid FROM pg_roles WHERE rolname='tdp_app_owner') AND proconfig=ARRAY['search_path=""']::text[])
+   OR EXISTS(SELECT 1 FROM pg_proc p CROSS JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
+    LEFT JOIN pg_roles role_row ON role_row.oid=a.grantee WHERE p.oid=to_regprocedure(target)
+     AND (a.grantee=0 OR role_row.rolname IN ('service_role','tdp_app_service')))
+   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_BATCH_RPC_AUTHORITY_INVALID';END IF;
+ END LOOP;
+ FOREACH target IN ARRAY ARRAY['app_private.command_batch_access(uuid)',
+  'app_private.invalidate_command_batches_for_purge(uuid,uuid[])','app_private.reject_legacy_batch_insert()'] LOOP
+  IF to_regprocedure(target) IS NULL THEN RAISE EXCEPTION 'DELIVERY_RELEASE_BATCH_PRIVATE_MISSING';END IF;
+  IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure(target) AND prosecdef
+    AND proowner=(SELECT oid FROM pg_roles WHERE rolname='tdp_app_owner') AND proconfig=ARRAY['search_path=""']::text[])
+   OR EXISTS(SELECT 1 FROM pg_proc p CROSS JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
+    LEFT JOIN pg_roles role_row ON role_row.oid=a.grantee WHERE p.oid=to_regprocedure(target)
+     AND (a.grantee=0 OR role_row.rolname IN ('anon','authenticated','service_role','tdp_app_anon','tdp_app_authenticated','tdp_app_service')))
+   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_BATCH_PRIVATE_AUTHORITY_INVALID';END IF;
+ END LOOP;
+ FOREACH target IN ARRAY ARRAY['app_private.command_batch_receipts','app_private.command_batch_results','app_private.command_batch_chunks'] LOOP
+  IF to_regclass(target) IS NULL THEN RAISE EXCEPTION 'DELIVERY_RELEASE_BATCH_TABLE_MISSING';END IF;
+  IF NOT EXISTS(SELECT 1 FROM pg_class WHERE oid=to_regclass(target) AND relrowsecurity
+    AND relowner=(SELECT oid FROM pg_roles WHERE rolname='tdp_app_owner'))
+   OR EXISTS(SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a
+    LEFT JOIN pg_roles role_row ON role_row.oid=a.grantee WHERE c.oid=to_regclass(target)
+     AND (a.grantee=0 OR role_row.rolname IN ('anon','authenticated','service_role','tdp_app_anon','tdp_app_authenticated','tdp_app_service')))
+   OR EXISTS(SELECT 1 FROM pg_attribute c CROSS JOIN LATERAL aclexplode(CASE WHEN cardinality(c.attacl)>0 THEN c.attacl END) a
+    LEFT JOIN pg_roles role_row ON role_row.oid=a.grantee WHERE c.attrelid=to_regclass(target) AND c.attnum>0 AND NOT c.attisdropped
+     AND (a.grantee=0 OR role_row.rolname IN ('anon','authenticated','service_role','tdp_app_anon','tdp_app_authenticated','tdp_app_service')))
+   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_BATCH_TABLE_AUTHORITY_INVALID';END IF;
+ END LOOP;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='app_private.idempotency_records'::regclass
+   AND tgname='reject_legacy_batch_insert' AND tgenabled='O' AND tgtype=7
+   AND tgfoid='app_private.reject_legacy_batch_insert()'::regprocedure AND tgqual IS NOT NULL)
+  OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='app_private.command_batch_chunks'::regclass
+   AND conname='command_batch_chunks_data_check' AND contype='c' AND convalidated
+   AND position('262144' in pg_get_constraintdef(oid))>0)
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_BATCH_CONTRACT_INVALID';END IF;
  PERFORM set_config('tenderdesk.delivery_release_receipt',jsonb_build_object('release','__RELEASE__',
   'manifest_sha256','__CHECKSUM__','catalog_sha256',catalog_hash,'replayed',saved_manifest IS NOT NULL)::text,true);
 END $delivery_release$;
 __AUTH_READ_POLICY__
 SELECT current_setting('tenderdesk.delivery_release_receipt');
 NOTIFY pgrst,'reload schema';COMMIT;
-""".replace('__AUTH_READ_POLICY__',auth_read.render('tenderdesk_app','tdp_app')).replace('__RENDERERS__','ARRAY['+','.join(map(str,manifest['renderer_versions']))+']::integer[]').replace('__MINIMUM_EXECUTOR__',str(manifest['minimum_worker_executor'])).replace('__EXECUTOR__',str(manifest['executor_max'])).replace('__BASELINE__',literal(canonical(manifest['baseline_releases']))).replace('__BEFORE_HASH__',manifest['baseline_catalog_sha256']).replace('__RELEASE__',RELEASE).replace('__CHECKSUM__',checksum).replace('__ROWS__',ROWS).replace('__AUTHORITY__',AUTHORITY).replace('__CATALOG__',CATALOG).replace('__DELIMITER__',delimiter).replace('__PAYLOAD__',payload)
+""".replace('__BATCH_EARLY_LOCK__',BATCH_EARLY_LOCK_SQL).replace('__BATCH_ZERO_CHECK__',BATCH_ZERO_CHECK_SQL).replace('__AUTH_READ_POLICY__',auth_read.render('tenderdesk_app','tdp_app')).replace('__RENDERERS__','ARRAY['+','.join(map(str,manifest['renderer_versions']))+']::integer[]').replace('__MINIMUM_EXECUTOR__',str(manifest['minimum_worker_executor'])).replace('__EXECUTOR__',str(manifest['executor_max'])).replace('__BASELINE__',literal(canonical(manifest['baseline_releases']))).replace('__BEFORE_HASH__',manifest['baseline_catalog_sha256']).replace('__RELEASE__',RELEASE).replace('__CHECKSUM__',checksum).replace('__ROWS__',ROWS).replace('__AUTHORITY__',AUTHORITY).replace('__CATALOG__',CATALOG).replace('__DELIMITER__',delimiter).replace('__PAYLOAD__',payload)
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)

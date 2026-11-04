@@ -1,0 +1,31 @@
+{
+  "hosted_calls": 0,
+  "logs": {
+    "command-batch-release-guards.log": "e4799a583a3d7c14290e13121e0259013aed60f06bd2176a2222f121945379c0",
+    "command-batch-release-source-checks.log": "27abac7e6eb52062920a6cedafb17eef713b23cefcc3fc041f77e6dc58e9e257"
+  },
+  "managed_atomic_method": {
+    "passed": 1,
+    "rollback_fault_variants": 44,
+    "seconds": 86.979
+  },
+  "passed": true,
+  "pure_source_inventory_tests": {
+    "passed": 26,
+    "seconds": 0.054
+  },
+  "remaining_gates": [
+    "combined gateway v2 proof-chain source binding",
+    "actual process exit and old-transaction drain coordinator",
+    "final integrated runtime/API capacity and hosted acceptance"
+  ],
+  "scope": "24-migration source/authority/rollback guards; no hosted cutover",
+  "source_sha256": {
+    "backend/scripts/ops/digitalocean-inventory.py": "4fc110c3aa72070ef34f74c7a9ebd6ac2417e6f697eed2ebb34362d312f6e44d",
+    "backend/scripts/ops/digitalocean-inventory.sql": "8f59d9dc84fed8fd0becedfe6e39cb0f392b7a6f543331cad9041d872e802efa",
+    "backend/scripts/ops/proposal-delivery-release.py": "2602efbc59142788660a476d75e31eac65675fb033631ff691a3c2778e7bb200",
+    "backend/scripts/ops/test_digitalocean_inventory.py": "6a35db8db600f766e493e7719a3dcc64d91e471c31858ee79c804c8794cba3d8",
+    "backend/scripts/ops/test_proposal_delivery_release.py": "01ec1318e9b90f886c0e5a84ba8e1cb0c213240f45f9c1cc3ffe346ca6879299"
+  },
+  "version": 1
+}

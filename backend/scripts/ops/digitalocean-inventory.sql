@@ -57,7 +57,12 @@ BEGIN
    'delivery_artifacts',to_regclass('public.proposal_delivery_artifacts') IS NOT NULL,
    'claim_executor_3',to_regprocedure('public.claim_backend_job_v3()') IS NOT NULL,
    'delivery_export_context',to_regprocedure('public.delivery_export_context(uuid,uuid)') IS NOT NULL,
-   'delivery_package',to_regprocedure('public.delivery_package(uuid)') IS NOT NULL));
+   'delivery_package',to_regprocedure('public.delivery_package(uuid)') IS NOT NULL,
+   'bounded_command_batch',to_regprocedure('public.app_batch_prepare(jsonb,text)') IS NOT NULL
+    AND to_regprocedure('public.app_batch_result_chunk(uuid,integer,integer)') IS NOT NULL,
+   'legacy_batch_insert_fence',EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid=to_regclass('app_private.idempotency_records')
+    AND tgname='reject_legacy_batch_insert' AND tgenabled='O' AND tgtype=7
+    AND tgfoid=to_regprocedure('app_private.reject_legacy_batch_insert()'))));
  PERFORM set_config('tenderdesk.inventory_receipt',result::text,true);
 END $inventory$;
 SELECT current_setting('tenderdesk.inventory_receipt');

@@ -46,7 +46,7 @@ class DeliveryReleaseTests(unittest.TestCase):
 
     def test_every_final_contract_is_required_before_freezing(self):
         manifest=self.manifest()
-        self.assertEqual(len(p.REQUIRED),22)
+        self.assertEqual(len(p.REQUIRED),24)
         self.assertEqual({key:manifest[key] for key in p.CAPABILITIES},p.CAPABILITIES)
         with self.assertRaises(p.ReleaseError):p.freeze({'receipt':self.inventory()})
         with tempfile.TemporaryDirectory() as directory:
@@ -63,7 +63,8 @@ class DeliveryReleaseTests(unittest.TestCase):
         for key,value in (('executor_max',3),('minimum_worker_executor',0),('renderer_versions',[1,2]),
           ('ordinary_renderer_version','ordinary-1'),('current_proposal_issuance_contract',True),
           ('issuance_file_capacity_version',0),('global_renderer_limit',2),
-          ('storage_write_intents_version',False),('storage_retirement_version',0),('storage_gateway_guard_version',True),('application_auth_read_version',0)):
+          ('storage_write_intents_version',False),('storage_retirement_version',0),('storage_gateway_guard_version',True),('application_auth_read_version',0),
+          ('command_batch_transport_version',0),('command_batch_chunk_bytes',1048576),('legacy_batch_insert_fence_version',True)):
             manifest=self.manifest();manifest[key]=value
             with self.subTest(key=key),self.assertRaisesRegex(p.ReleaseError,'CAPABILITY_SOURCE_MISMATCH'):
                 self.verify(manifest)
@@ -97,6 +98,14 @@ class DeliveryReleaseTests(unittest.TestCase):
         self.assertLess(sql.index('END $delivery_release$;'),sql.index('DO $auth_read_preflight$'))
         self.assertLess(sql.index('END $auth_read_policy$;'),sql.index('NOTIFY pgrst'))
         self.assertEqual(sql.count('COMMIT;'),1)
+
+    def test_legacy_batch_lock_precedes_first_snapshot_and_any_migration(self):
+        manifest=self.manifest();sql=p.migration_script(manifest,sources=self.verify(manifest))
+        self.assertLess(sql.index("SET LOCAL lock_timeout='15s'"),sql.index(p.BATCH_EARLY_LOCK_SQL))
+        self.assertLess(sql.index(p.BATCH_EARLY_LOCK_SQL),sql.index(p.BATCH_ZERO_CHECK_SQL))
+        self.assertLess(sql.index(p.BATCH_ZERO_CHECK_SQL),sql.index('SELECT pg_advisory_xact_lock'))
+        self.assertLess(sql.index(p.BATCH_ZERO_CHECK_SQL),sql.index('EXECUTE $delivery_release_payload$'))
+        self.assertNotIn('expires_at',p.BATCH_ZERO_CHECK_SQL)
 
     def test_gateway_manifest_binds_raw_and_rendered_config_receipt_and_image(self):
         manifest=self.manifest();value=manifest['gateway_configuration']
@@ -197,6 +206,14 @@ class DeliveryReleaseTests(unittest.TestCase):
           ('GRANT SELECT(storage_key) ON public.storage_write_intents TO tdp_app_authenticated;','DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID'),
           ('ALTER TABLE app_private.storage_retirement_keys DISABLE ROW LEVEL SECURITY;','DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID'),
           ('ALTER TABLE public.proposal_delivery_artifacts DISABLE TRIGGER register_delivery_storage_write;','DELIVERY_RELEASE_STORAGE_CONTRACT_INVALID'),
+          ('DROP FUNCTION public.app_batch_result_chunk(uuid,integer,integer);','DELIVERY_RELEASE_BATCH_RPC_MISSING'),
+          ('GRANT EXECUTE ON FUNCTION public.app_batch_prepare(jsonb,text) TO tdp_app_anon;','DELIVERY_RELEASE_BATCH_RPC_AUTHORITY_INVALID'),
+          ('GRANT EXECUTE ON FUNCTION app_private.command_batch_access(uuid) TO tdp_app_service;','DELIVERY_RELEASE_BATCH_PRIVATE_AUTHORITY_INVALID'),
+          ('GRANT SELECT(data) ON app_private.command_batch_chunks TO PUBLIC;','DELIVERY_RELEASE_BATCH_TABLE_AUTHORITY_INVALID'),
+          ('GRANT SELECT ON app_private.command_batch_receipts TO tdp_app_authenticated;','DELIVERY_RELEASE_BATCH_TABLE_AUTHORITY_INVALID'),
+          ('ALTER TABLE app_private.command_batch_results DISABLE ROW LEVEL SECURITY;','DELIVERY_RELEASE_BATCH_TABLE_AUTHORITY_INVALID'),
+          ('ALTER TABLE app_private.idempotency_records DISABLE TRIGGER reject_legacy_batch_insert;','DELIVERY_RELEASE_BATCH_CONTRACT_INVALID'),
+          ('ALTER TABLE app_private.command_batch_chunks DROP CONSTRAINT command_batch_chunks_data_check;','DELIVERY_RELEASE_BATCH_CONTRACT_INVALID'),
 
         ]
         if column_acl_only:
