@@ -100,6 +100,10 @@ create function app_private.assert_issuance_job(job_id uuid) returns void langua
 declare j public.jobs;r public.proposal_issuance_requests;begin
  select * into j from public.jobs where id=job_id;
  if not (j.checkpoint ? 'issuance_request_id') then return;end if;
+ -- Waiting for a workspace lock consumes the SAME accepted request deadline.
+ -- Re-read after the lock: a pre-lock clock check admits late receipts/reserves.
+ perform 1 from public.workspaces where id=j.workspace_id for update;
+ select * into j from public.jobs where id=job_id;
  select * into r from public.proposal_issuance_requests where id=(j.checkpoint->>'issuance_request_id')::uuid and workspace_id=j.workspace_id;
  if r.id is null or not(j.entity_id=r.plan_id or (j.type='render_delivery' and exists(select 1 from public.proposal_delivery_snapshots s where s.id=j.entity_id and s.plan_id=r.plan_id and s.workspace_id=r.workspace_id))) then raise exception 'ISSUANCE_IDENTITY_CHANGED';end if;
  if app_private.issuance_deadline_reached(r.deadline_at,clock_timestamp()) then raise exception 'PROPOSAL_ISSUANCE_TIMEOUT';end if;
@@ -129,6 +133,11 @@ declare p public.generation_plans;s public.proposal_delivery_snapshots;requires_
  select * into p from public.generation_plans where id=new.entity_id and workspace_id=new.workspace_id;
  if p.id is null and new.type='render_delivery' then
   select * into s from public.proposal_delivery_snapshots where id=new.entity_id and workspace_id=new.workspace_id;
+  if tg_op='INSERT' and s.payload->'version'='1'::jsonb
+   and current_setting('app.issuance_independent_snapshot',true)=s.id::text then
+   new.checkpoint:=(new.checkpoint-array['issuance_request_id','issuance_deadline_version'])||jsonb_build_object('independent_delivery_authorization',jsonb_build_object('version',1,'snapshot_id',s.id,'actor_id',auth.uid(),'operation','delivery.snapshot.retry'));
+   return new;
+  end if;
   if s.plan_id is not null then select * into p from public.generation_plans where id=s.plan_id and workspace_id=new.workspace_id;end if;
  end if;
  requires_v4:=p.frozen_context->'source_contract_version'='1'::jsonb or p.frozen_context->'repair_contract_version'='1'::jsonb or p.frozen_context->'proposal_consistency_version'='1'::jsonb or new.checkpoint ? 'issuance_request_id' or (tg_op='INSERT' and p.issuance_request_id is not null);
@@ -475,7 +484,7 @@ alter function app_private.app_command(text,jsonb,text) rename to app_command_be
 create function app_private.app_command(operation text,input jsonb,idempotency_key text) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare result jsonb;p public.generation_plans;s public.proposal_delivery_snapshots;j public.jobs;request_id uuid;
- replay app_private.idempotency_records;digest text;begin
+ replay app_private.idempotency_records;digest text;previous_independent text:=current_setting('app.issuance_independent_snapshot',true);begin
  if operation='generation.retry' then
   select * into p from public.generation_plans where id=(input->>'id')::uuid;
   if p.stage='completed' and p.issuance_request_id is not null and app_private.member_role(p.workspace_id) is not null then raise exception 'PROPOSAL_RENDER_RETRY_REQUIRED';end if;
@@ -505,7 +514,12 @@ declare result jsonb;p public.generation_plans;s public.proposal_delivery_snapsh
    return result;
   end if;
  end if;
+ if operation='delivery.snapshot.retry' then
+  select * into s from public.proposal_delivery_snapshots where id=(input->>'snapshot_id')::uuid;
+  if s.payload->'version'='1'::jsonb then perform set_config('app.issuance_independent_snapshot',s.id::text,true);end if;
+ end if;
  result:=app_private.app_command_before_issuance_retry(operation,input,idempotency_key);
+ perform set_config('app.issuance_independent_snapshot',coalesce(previous_independent,''),true);
  if operation='delivery.snapshot.retry' then
   select * into s from public.proposal_delivery_snapshots where id=(result->>'id')::uuid;
   if s.payload->'version'='3'::jsonb and s.plan_id is not null then

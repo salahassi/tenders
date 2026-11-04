@@ -6943,3 +6943,24 @@ two-volume gate, source/member/current-leaf revocation, stale projection leases,
 request deadline during rendering and explicit fresh-deadline retry. These are
 isolated migrated database and transport-fixture tests, not hosted Auth/Storage
 or provider qualification. Deployment/hosted acceptance remains pending.
+D06 real PostgreSQL follow-up (2026-11-04): a multi-session regression reproduced
+an artifact receipt admitted after waiting past its deadline on the workspace lock.
+The shared issuance guard now locks and re-reads before checking the absolute
+clock. Six isolated PostgreSQL 17.6 cases pass: exact 599.999/600/600.001 boundaries,
+before-deadline full completion versus expiry, expiry versus late completion,
+late final artifact receipt, early terminal failure, and explicit local retry with
+one new authorization, worker1/2/3 exclusion and byte-exact unknown usage retention.
+All contenders were observed blocked on real database locks; ready historical
+artifact records survive expiry unchanged. The portable script uses synthetic
+accepted graph records only and does not claim provider/semantic qualification.
+Receipt: /workspace/output/proposal-issuance-postgres-races.json, including every
+migration hash from the combined source/OCR/renderer schema. No production calls.
+
+An explicitly authorized renderer1 template retry now creates independent local
+render work after a failed automatic issuance. It retains the original failed
+request/deadline, grants no automatic issuance success, and still passes canonical
+role, source, revision and idempotency checks. The workflow agent owns its actual
+API-to-DOCX regression; that test is pending integration of this slice. Previously
+committed standalone backend validation finished green: 135 files / 2,198 tests,
+backend types/build; frontend46 files /299 tests and types/build. Hosted release,
+combined final regression and stopwatch acceptance remain separate gates.
