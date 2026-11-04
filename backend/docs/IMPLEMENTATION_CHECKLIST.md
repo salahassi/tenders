@@ -8377,3 +8377,35 @@ hashes, test/log receipts and limits are in
 The two Storage migrations were borrowed test dependencies and are excluded from
 this guard commit. This is not a full package suite, final retirement coordinator,
 real hosted Storage, cloud restore, production deployment or semantic acceptance.
+## Storage retirement SQL — local proof, operational admission still pending
+
+Migration172700 adds endpoint-local permanent key/family fences and private
+Owner-bound prepare/finish functions. Fences have no workspace/artifact foreign
+keys and are excluded from tenant backup. Known application namespace aliases
+reject before a permanent key is inserted. Preparation and completion recheck
+current Owner authority after the workspace lock, exact nonce/key/revision,
+active references and the installed fence. Exact lost-ACK replay is retained.
+Only a matching single unknown→observed transition can advance once during drain;
+other revision/identity drift rejects. Completion atomically marks existing held
+cleanup rows done, without charging already-done historical census rows.
+
+The isolated real PostgreSQL suite
+`backend/scripts/testing/storage_retirement_postgres.py` passes25 cases against
+the exact migration hash recorded in
+[evidence/storage-retirement-postgres-20261104.json](evidence/storage-retirement-postgres-20261104.json).
+It includes lock-observed Owner demotion, known aliases leaving no fence, future
+key/sidecar/ancestor fences, current fence-definition binding, internally
+contradictory binary/remaining-byte proof, immutable scope/revision checks,
+completion replay, observation during drain, uncertain deletion, no public
+assertion privilege and fence survival after cleanup/intent removal. Process and
+physical receipts in this SQL suite are explicitly synthetic; this is not a
+Kubernetes shutdown or real Storage acceptance result.
+
+No production schema or retirement operation occurred. The trigger is deliberately
+not installed on managed storage.objects by the application migration; a separate
+reviewed runner must verify actual owner authority and install it. The operational
+coordinator, full pinned binary/protocol qualification, resumable-route guard,
+checked cloud release and final combined package suites remain separate pending
+gates. The discovered signed resumable-upload bypass must be blocked and qualified
+before any hosted retirement can release an allowance. Private SQL shape checks
+alone do not prove that remote processes stopped or that physical bytes vanished.
