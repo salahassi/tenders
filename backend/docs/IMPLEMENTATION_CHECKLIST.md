@@ -10047,3 +10047,23 @@ deployment/Pod drift, unknown storage, submounts and redaction. The
 [source receipt](evidence/gateway-inventory-capacity-projection-20261104.json)
 records local checks only. Hosted values and the separate qualified gateway
 preflight/response-streaming acceptance remain pending the reviewed runner run.
+
+### November 4 — managed PostgreSQL visibility and actual gateway envelope verified
+
+Original-CA inventory [run 41926843276](https://github.com/salahassi/tenders/actions/runs/41926843276)
+passed at `da3c4bcde412f17287f7abd3c5c28779abda26d3`, including both cleanup
+stages. The existing exact-role SET authority exposed authenticator transaction
+metadata on the managed database; zero old transactions were observed at its
+database marker. No grants, session termination, admission fence or drain ran.
+The [receipt](evidence/digitalocean-cutover-20261104-41926843276.json) binds the
+exact observer SQL hash and retains the zero legacy BATCH census separately.
+
+The actual gateway Deployment and ready Pod both specify 64 MiB / 200m limits
+and the recognized Nginx entrypoint, with one writable default-medium /tmp
+emptyDir configured at 64 MiB, no subpath or descendant mounts. These observed
+specs bind the isolated qualification envelope; they do not measure cgroups or
+prove hard filesystem enforcement. All ten workloads were ready. The 41 local
+inventory checks passed before dispatch. No application deployment, model call,
+bootstrap, restore or business write occurred. The original frozen release
+baseline is unchanged; final gateway qualification, manifest refreeze, renewed
+restore and actual fenced cutover remain separate gates.

@@ -240,3 +240,12 @@ after the gateway process fence and performs its separate bounded drain, table
 lock and zero-history check. Unknown visibility fails the inventory and still
 requires temporary-client cleanup. Review the complete workflow before running
 `mode=inventory`; this addition never invokes the mutation coordinator.
+
+The combined read-only visibility/resource observation passed in
+[run 41926843276](https://github.com/salahassi/tenders/actions/runs/41926843276)
+at `da3c4bcde412f17287f7abd3c5c28779abda26d3`, with original-CA verification
+and both cleanup stages. Its
+[receipt](evidence/digitalocean-cutover-20261104-41926843276.json) proves existing
+managed-database transaction visibility and actual gateway spec values at that
+observation. It neither fences callers nor drains transactions, changes grants,
+measures runtime capacity or replaces the original release baseline.
