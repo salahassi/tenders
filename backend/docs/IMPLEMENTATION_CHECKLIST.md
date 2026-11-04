@@ -6925,3 +6925,21 @@ pass after this additive campaign change. The preceding complete package results
 remain 2,429 backend / 325 frontend; four new campaign tests are included in the
 86 focused total. No metadata campaign was run live, and no model gained a new
 qualification or availability claim.
+
+### Generated delivery integration fixture correction (2026-11-04)
+
+The combined source-contract/generation pipeline exposed a fixture mismatch:
+`delivery_input` did not include source block hashes or extraction versions, yet
+the fixture manually marked those inputs as source contract v1 and attached a
+separate span catalog. Exact task reconstruction correctly rejected those
+receipts with `SOURCE_SPAN_STALE`. The fixture now obtains the actual migrated
+`draft_generation_snapshot` and its own source evidence, and independently
+validates each receipt against that exact task evidence before persistence.
+No runtime validator, proof eligibility, authority or scope was relaxed.
+
+Local integration evidence: **13/13 generated delivery pipeline cases pass**,
+including actual SQL/worker/DOCX/authenticated API-adapter download, the complete
+two-volume gate, source/member/current-leaf revocation, stale projection leases,
+request deadline during rendering and explicit fresh-deadline retry. These are
+isolated migrated database and transport-fixture tests, not hosted Auth/Storage
+or provider qualification. Deployment/hosted acceptance remains pending.

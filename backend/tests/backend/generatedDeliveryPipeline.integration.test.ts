@@ -36,7 +36,11 @@ import {
   nextStage,
   taskInput,
 } from "../../supabase/functions/_shared/generation";
-import { candidateContent } from "../../supabase/functions/_shared/modelGrounding";
+import {
+  candidateContent,
+  validateGroundingReport,
+  groundingOptions,
+} from "../../supabase/functions/_shared/modelGrounding";
 let f: Awaited<ReturnType<typeof workflowFixture>>, fonts: FontData;
 beforeAll(async () => {
   f = await workflowFixture();
@@ -243,11 +247,12 @@ async function setup(
     ? await separateFixture(body)
     : await generatedDeliveryFixture(body);
   const current = (
-    await row("select app_private.delivery_input($1,$2) value", [f.w, o.id])
+    await row(
+      "select app_private.draft_generation_snapshot($1,$2,$3,null,null) value",
+      [f.w, o.id, base.proposal_id],
+    )
   ).value;
-  const catalog = (
-    await row("select public.source_review_context($1) value", [o.id])
-  ).value.source_evidence;
+  const catalog = current.source_evidence;
   const span = catalog.spans[0];
   const tuple = {
     modality: "required",
@@ -279,6 +284,26 @@ async function setup(
     source_refs: [{ id: span.id, quote: span.quote }],
     source_semantics: semantics,
   };
+  for (const step of fixture.steps) {
+    const scope = taskInput({
+      plan: { ...fixture.plan, stage: step.stage },
+      step,
+      steps: fixture.steps,
+      requirements: fixture.requirements,
+    });
+    const receipt = fixture.accepted_receipts.find(
+      (r) => r.step_id === step.id,
+    )!;
+    validateGroundingReport(
+      receipt.verification,
+      receipt.candidate,
+      receipt.candidate_hash,
+      scope.evidence,
+      scope.requiredIds,
+      undefined,
+      groundingOptions(scope.context, true),
+    );
+  }
   const p = await row(
     "insert into public.generation_plans(id,workspace_id,opportunity_id,proposal_id,kind,stage,status,evidence_revision,input_hash,frozen_context,created_by,workflow_version) values($1,$2,$3,$4,'proposal','completed','completed',1,$5,$6::jsonb,$7,1) returning *",
     [
