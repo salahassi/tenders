@@ -3,12 +3,12 @@ import {
   sourceRequirementIdentity,
   resolveSourceSpan,
   assertSourceBlockHash,
-  validateSourceCandidate,
 } from "./sourceEvidence.ts";
 import {
   hierarchicalPlanning,
   expandStructure,
   validateStructure,
+  validateStructureMetadata,
   savedStructure,
   planningDetailInputs,
   validatePlanningDetails,
@@ -36,10 +36,15 @@ import {
   semanticReviewInputs,
   semanticWorkflow,
   validateBlueprint,
+  validateBlueprintMetadata,
   validateReviewSectionReferences,
 } from "./proposalBlueprint.ts";
 import { normalizedEvidence } from "./sourceModel.ts";
-import { validationDiagnostic } from "./modelValidationDiagnostics.ts";
+import {
+  validationDiagnostic,
+  mergeModelValidationDiagnostics,
+} from "./modelValidationDiagnostics.ts";
+import { runModelValidationChecks } from "./modelContextDiagnostics.ts";
 import {
   COMPANY_CONTEXT_BYTE_LIMIT,
   COMPANY_EVIDENCE_BYTE_LIMIT,
@@ -1305,7 +1310,7 @@ export async function nextStage(ctx: PlanContext): Promise<{
   });
   output.next_stage = "completed";
   output.final_result = {
-    ...(consistency ? {consistency_report: consistency} : {}),
+    ...(consistency ? { consistency_report: consistency } : {}),
     sections,
     section_outline: createSectionOutline(
       plannedSections(ctx),
@@ -1329,6 +1334,154 @@ export async function nextStage(ctx: PlanContext): Promise<{
   };
   return output;
 }
+/** Context checks share a schema-validated result. Each independent check is
+ * collected; expansion and the validation that consumes it stay one dependency.
+ * Base validation already validates the exact frozen source contract. */
+export function validateGenerationResult(
+  ctx: PlanContext,
+  input: ReturnType<typeof taskInput>,
+  result: any,
+  options?: { independentGrounding?: boolean },
+) {
+  runModelValidationChecks([
+    // Revalidate quotations against whole immutable source blocks; excerpt separators cannot become fabricated quotes.
+    () =>
+      validateModelResult(
+        input.task,
+        result,
+        generationValidationEvidence(ctx, input),
+        input.requiredIds,
+        {
+          ...options,
+          ...{ sourceContext: input.context },
+          scopePolicy:
+            input.task === "classify_opportunity"
+              ? ctx.plan.frozen_context.discovery_scope_policy
+              : undefined,
+          draftInputVersion: draftInputPolicyVersion(input.task, input.context),
+        },
+      ),
+    () => {
+      if (
+        input.task === "draft_section" &&
+        result.key !== ctx.step.input.section.key
+      )
+        throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+          validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "invalid_scope", {
+            paths: ["$.key"],
+          }),
+        ]);
+    },
+    () => {
+      if (input.task === "plan_structure") {
+        let expanded: ReturnType<typeof expandStructure> | undefined;
+        const template =
+          ctx.plan.frozen_context.template.required_sections || [];
+        runModelValidationChecks([
+          () => {
+            expanded = expandStructure(result, ctx.requirements);
+          },
+          () =>
+            expanded
+              ? validateStructure(
+                  expanded,
+                  ctx.requirements.map((r) => r.id),
+                  template,
+                  requirementAliases(ctx.requirements),
+                )
+              : validateStructureMetadata(result, template),
+        ]);
+      }
+    },
+    () => {
+      if (ctx.step.input.planning_phase === "details")
+        validatePlanningDetails(
+          result,
+          ctx.step.input,
+          savedStructure(ctx.steps, ctx.requirements)!,
+          ctx.requirements,
+        );
+      else if (input.task === "plan_blueprint") {
+        let expanded: ReturnType<typeof expandBlueprint> | undefined;
+        const template =
+          ctx.plan.frozen_context.template.required_sections || [];
+        runModelValidationChecks([
+          () => {
+            expanded =
+              ctx.step.input.id_aliases_version === 1
+                ? expandBlueprint(result, ctx.requirements)
+                : result;
+          },
+          () =>
+            expanded
+              ? validateBlueprint(
+                  expanded,
+                  ctx.requirements.map((r) => r.id),
+                  template,
+                  {
+                    diagnosticRequirementIds:
+                      ctx.step.input.id_aliases_version === 1
+                        ? requirementAliases(ctx.requirements)
+                        : undefined,
+                  },
+                )
+              : validateBlueprintMetadata(result, template),
+        ]);
+      }
+    },
+    () => {
+      if (input.task === "review_proposal")
+        validateReviewSectionReferences(result, input.context);
+    },
+    () => {
+      if (input.task === "plan_commercial") {
+        const sectionKeys = new Set(
+          (input.context.section_titles || []).map((s: Row) => s.key),
+        );
+        const rateIds = new Set(
+          input.evidence.filter((e) => e.kind === "rate").map((e) => e.id),
+        );
+        const diagnostics = result.lines.flatMap((line: Row, index: number) => {
+          const paths = [
+            ...line.section_ids.flatMap((key: string, i: number) =>
+              sectionKeys.has(key)
+                ? []
+                : [`$.lines[${index}].section_ids[${i}]`],
+            ),
+            ...line.requirement_ids.flatMap((id: string, i: number) =>
+              input.requiredIds.includes(id)
+                ? []
+                : [`$.lines[${index}].requirement_ids[${i}]`],
+            ),
+            ...(line.rate_id && !rateIds.has(line.rate_id)
+              ? [`$.lines[${index}].rate_id`]
+              : []),
+          ];
+          return paths.map((path) =>
+            validationDiagnostic(
+              "EVIDENCE_REFERENCE_INVALID",
+              "invalid_finding_reference",
+              {
+                paths: [path],
+                requirement_ids: input.requiredIds,
+              },
+            ),
+          );
+        });
+        if (diagnostics.length) {
+          const merged = mergeModelValidationDiagnostics({ diagnostics });
+          throw new ModelError(
+            "EVIDENCE_REFERENCE_INVALID",
+            null,
+            merged.diagnostics,
+            merged.omittedCount,
+          );
+        }
+      }
+    },
+  ]);
+}
+
 export async function processGeneration(
   backend: Backend,
   env: BackendEnvironment,
@@ -1419,94 +1572,7 @@ export async function processGeneration(
     const validate = (
       result: any,
       options?: { independentGrounding?: boolean },
-    ) => {
-      // Revalidate quotations against whole immutable source blocks; excerpt separators cannot become fabricated quotes.
-      validateModelResult(
-        input.task,
-        result,
-        generationValidationEvidence(ctx!, input),
-        input.requiredIds,
-        {
-          ...options,
-          ...{ sourceContext: input.context },
-          scopePolicy:
-            input.task === "classify_opportunity"
-              ? ctx!.plan.frozen_context.discovery_scope_policy
-              : undefined,
-          draftInputVersion: draftInputPolicyVersion(input.task, input.context),
-        },
-      );
-      validateSourceCandidate(
-        input.task,
-        result,
-        input.context,
-        input.evidence,
-      );
-      if (
-        input.task === "draft_section" &&
-        result.key !== ctx!.step.input.section.key
-      )
-        throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-          validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "invalid_scope", {
-            paths: ["$.key"],
-          }),
-        ]);
-      if (input.task === "plan_structure")
-        validateStructure(
-          expandStructure(result, ctx!.requirements),
-          ctx!.requirements.map((r) => r.id),
-          ctx!.plan.frozen_context.template.required_sections || [],
-          requirementAliases(ctx!.requirements),
-        );
-      if (ctx!.step.input.planning_phase === "details")
-        validatePlanningDetails(
-          result,
-          ctx!.step.input,
-          savedStructure(ctx!.steps, ctx!.requirements)!,
-          ctx!.requirements,
-        );
-      else if (input.task === "plan_blueprint")
-        validateBlueprint(
-          ctx!.step.input.id_aliases_version === 1
-            ? expandBlueprint(result, ctx!.requirements)
-            : result,
-          ctx!.requirements.map((r) => r.id),
-          ctx!.plan.frozen_context.template.required_sections || [],
-          {
-            diagnosticRequirementIds:
-              ctx!.step.input.id_aliases_version === 1
-                ? requirementAliases(ctx!.requirements)
-                : undefined,
-          },
-        );
-      if (input.task === "review_proposal")
-        validateReviewSectionReferences(result, input.context);
-      if (input.task === "plan_commercial") {
-        const sectionKeys = new Set(
-          (input.context.section_titles || []).map((s: Row) => s.key),
-        );
-        const rateIds = new Set(
-          input.evidence.filter((e) => e.kind === "rate").map((e) => e.id),
-        );
-        if (
-          result.lines.some(
-            (l: Row) =>
-              l.section_ids.some((key: string) => !sectionKeys.has(key)) ||
-              l.requirement_ids.some(
-                (id: string) => !input.requiredIds.includes(id),
-              ) ||
-              (l.rate_id && !rateIds.has(l.rate_id)),
-          )
-        )
-          throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-            validationDiagnostic(
-              "EVIDENCE_REFERENCE_INVALID",
-              "invalid_finding_reference",
-              { paths: ["$.lines"], requirement_ids: input.requiredIds },
-            ),
-          ]);
-      }
-    };
+    ) => validateGenerationResult(ctx!, input, result, options);
     const outcome = await executeGuardedModel({
       backend,
       job: job as any,

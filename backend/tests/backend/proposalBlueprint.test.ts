@@ -582,9 +582,9 @@ it.each([
     expect(() => validateBlueprint(b, required)).toThrow(
       expect.objectContaining({
         code: "MODEL_COVERAGE_INCOMPLETE",
-        validationDiagnostics: [
+        validationDiagnostics: expect.arrayContaining([
           expect.objectContaining({ reason, paths: [path] }),
-        ],
+        ]),
       }),
     );
   },

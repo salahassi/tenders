@@ -1,5 +1,35 @@
 # Implementation status and continuation plan
 
+## November 4 — complete bounded generation-context diagnostics
+
+Generation now runs independent context checks after repairable base validation
+failures, covering section identity, structure/blueprint rules, detail scope,
+review references and commercial section/requirement/rate references. Only the
+three declared validation error codes with typed diagnostics are collected.
+Malformed schemas, unexpected exceptions, missing prerequisites and terminal
+policy/template/approval errors still stop immediately. The first validation
+code and retry metadata are preserved; no workflow or source pin changes.
+
+Unknown aliases are enumerated across every typed field before any canonical
+object is constructed. Failed expansion can still report independent raw
+metadata errors, using explicit metadata-only checks that never return
+ownership or repeat the rejected requirement references. Virtual structure
+paths are projected before deduplication and the 32-diagnostic cap, preserving
+the exact omitted count. Valid ownership, evidence checks and result objects
+remain unchanged; failed candidates are never accepted or saved.
+
+Local evidence: **205 focused tests across eight files**, including **18 new
+context cases**, and backend typecheck/build pass. The cases include 300
+commercial failures (32 retained, 268 omitted), 40 review failures plus one
+independent base failure (32/9), 40 unknown aliases plus a reserved key (32/9),
+and 64 virtual structure paths after deduplication (32/32). Both lockfiles were
+installed. Frontend typecheck and **329 tests across 53 files** pass; its build
+hit shared-workspace `ENOSPC` before artifact creation. The broad backend run
+was stopped for coordinated resource use after known integrated fixture
+failures; it is not recorded as a full pass. The coordinator owns the single
+final combined package run after the pending integrations. No production,
+model, provider, email or workflow-dispatch call was made for this change.
+
 ## November 4 — Owner resolves D06 and the maximum issuance deadline
 
 The Owner requires immediate clear failure when no AI agent is available and a
