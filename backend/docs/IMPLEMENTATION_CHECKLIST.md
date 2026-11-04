@@ -7692,3 +7692,43 @@ runbook links it and records use of direct job evidence when cached CLI metadata
 still reports a completed run as queued. This closes diagnostic wiring and key
 presence verification only; live prompt qualification, provider availability,
 final integrated release and hosted proposal acceptance remain separate gates.
+### 2026-11-04 — independent render admission without spending queued attempts
+
+Migration `20261104163406_serialize_local_document_rendering.sql` replaces the
+existing blanket one-running-job workspace index/claim guard with two explicit
+lanes: one non-render job per workspace, plus one document renderer globally.
+The previous production contract already serialized all running jobs; this change
+allows useful model/poll/projection progress during rendering, without increasing
+model-to-model concurrency. Both partial unique indexes enforce workspace lanes;
+a private transaction advisory mutex makes global render selection and canonical
+lease publication atomic. A contending renderer stays queued without attempts,
+failures, lease or deadline changes. Model reservation limits, fairness, source and
+issuance guards, executor compatibility, lease recovery, and cancellation remain
+in the canonical paths. Wake eligibility mirrors the split lanes.
+
+Eleven new migrated SQL tests cover mixed render types, actual wake+claim progress
+for model/poll/projection, one non-render lane, old executor exclusion, inference
+reservation saturation, expired render recovery, twelve accepted ordinary export
+packages and an expired package still waiting in the queue. All 254 focused
+queue/wake/background/artifact/ordinary tests and backend typecheck pass.
+
+`backend/scripts/testing/document_render_admission_races.py` additionally passes
+six real PostgreSQL multi-session cases. Primary public v4 claim races use the
+unchanged singleton production schema and observe contenders waiting on actual
+workspace locks. The twelve-package simulation preserves each original 600-second
+clock and unclaimed job row while each package receives one lease. Its verified
+storage receipts are synthetic; actual DOCX bytes are exercised by the separate
+pipeline tests. A recovered real export lease rejects the previous worker with
+`STALE_LEASE`. The cross-workspace global-mutex defense explicitly relaxes singleton
+uniqueness only inside the isolated fixture and calls the unchanged production
+selector under canonical workspace locking/lease publication. While the first
+render lease is uncommitted and invisible, the second render cannot start, but a
+model job progresses; a second non-render remains queued. This is not a claim of
+multiworkspace product support. Receipt with exact migration hashes:
+`/workspace/work/ai-resume/due-diligence/document-render-admission-postgres.json`.
+
+This admission proof concerns logical leases. The native process semaphore and
+termination/reap tests separately fence an old physical child after cancellation
+or expiry. Neither the queue simulation nor lease count proves instantaneous CPU
+reap or hosted twelve-document throughput. No production, provider or email calls
+were made, and no request clock was extended by waiting.
