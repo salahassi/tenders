@@ -10228,3 +10228,19 @@ removed. Integrated package gates, the separate HTTPS chain, final release,
 deployment and authenticated hosted acceptance remain separate; this proves
 the declared proxy transport fixture, not Auth/SQL behavior or a universal
 capacity/service-level guarantee.
+
+### November 4 — prepare full HTTPS compression transport qualification
+
+Added an isolated TLS → pinned HTTPS/Caddy → pinned Nginx → bounded synthetic
+JSON stream harness. It retains the exact Caddyfile and explicitly verifies local
+CA/hostname trust. The default image is the exact observed deployed HTTPS digest;
+a separately rebuilt image has a distinct, source-bound mode. No production
+configuration, resource limit, customer row or model request is changed.
+
+The harness covers identity/gzip/zstd, full decoded hash/length, slow reads,
+upstream cancellation, health, cgroup memory/swap/OOM, private open-unlinked spool
+observation and nonce-owned cleanup. Four small reader/cleanup/receipt/file-census
+tests pass. Native execution is a separate scheduled gate; preparation is not a
+memory or hosted-throughput success claim. HTTPS128MiB/300m is repository-declared
+until the separate current deployment inventory confirms it. See
+`HTTPS_STREAMING_QUALIFICATION.md` for exact scope and remaining limits.
