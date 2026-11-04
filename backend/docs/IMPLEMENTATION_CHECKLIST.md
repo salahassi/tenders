@@ -6812,3 +6812,10 @@ is blank does not assert that it contains sufficient proposal information.
 The follow-up passed **44/44** focused cases (34 SQL, seven transport and three
 native resource cases), plus both package typechecks. Hosted acceptance remains
 unclaimed; the root integration gate covers the combined final branch.
+
+W02 interface follow-up labels a pending human page correction as saved human text,
+retains its original page-hash binding, and explicitly explains when current review
+is still required for whole-file confirmation. Pending/retry messages cover both
+OCR and publication processing. The combined OCR editor, verified-page renderer
+and issuance-panel focused run passes38 tests; frontend typecheck passes. No prior
+reviewer is silently replaced by the current user. Hosted acceptance is separate.

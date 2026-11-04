@@ -316,8 +316,8 @@ export default function DocumentExtractionReview({
           {data.ocr.status === "blocked" && (
             <p role="alert">
               {l(
-                "Automatic reading needs attention. This does not mean the original RFP is invalid.",
-                "القراءة الآلية تحتاج إلى معالجة؛ هذا لا يعني أن أصل طلب تقديم العروض غير صالح.",
+                "Extraction processing needs attention. This does not mean the original RFP is invalid.",
+                "معالجة النص المستخرج تحتاج إلى متابعة؛ هذا لا يعني أن أصل طلب تقديم العروض غير صالح.",
               )}
             </p>
           )}
@@ -326,8 +326,8 @@ export default function DocumentExtractionReview({
           ) && (
             <p role="status">
               {l(
-                "Automatic reading is pending. Reload later to see its saved result.",
-                "القراءة الآلية قيد المعالجة. أعد التحميل لاحقًا للاطلاع على نتيجتها المحفوظة.",
+                "Extraction processing is pending. Reload later to see its saved result.",
+                "معالجة النص المستخرج قيد الانتظار. أعد التحميل لاحقًا للاطلاع على نتيجتها المحفوظة.",
               )}
             </p>
           )}
@@ -381,7 +381,10 @@ export default function DocumentExtractionReview({
                 }
               }}
             >
-              {l("Retry automatic reading", "إعادة محاولة القراءة الآلية")}
+              {l(
+                "Retry extraction processing",
+                "إعادة محاولة معالجة النص المستخرج",
+              )}
             </Button>
           )}
           <Field label={l("Page to review", "الصفحة المراد مراجعتها")}>
@@ -434,6 +437,23 @@ export default function DocumentExtractionReview({
             </div>
             {selected && edit && (
               <div>
+                {selected.candidate_origin === "human" && (
+                  <p role="status">
+                    {l(
+                      "This is a saved page correction awaiting publication. Its earlier reviewer is retained; compare it with the original before confirming your own review.",
+                      "هذا تصحيح محفوظ للصفحة بانتظار النشر. تبقى مراجعة صاحبه محفوظة؛ قارنه بالأصل قبل تأكيد مراجعتك أنت.",
+                    )}
+                  </p>
+                )}
+                {selected.candidate_origin === "human" &&
+                  selected.candidate_requires_review && (
+                    <p>
+                      {l(
+                        "The saved text is retained, but this page needs your current review before the whole file can be confirmed.",
+                        "النص المحفوظ باقٍ، لكن هذه الصفحة تحتاج إلى مراجعتك الحالية قبل تأكيد الملف كاملًا.",
+                      )}
+                    </p>
+                  )}
                 <Field
                   label={l(
                     `Full text of page ${page}`,

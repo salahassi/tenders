@@ -427,3 +427,42 @@ it("ends a stalled original fetch without enabling page confirmation", async () 
     vi.useRealTimers();
   }
 });
+
+it("shows retained human corrections and preserves their original page binding", async () => {
+  const value = data();
+  value.pages[0] = {
+    ...value.pages[0],
+    candidate_text: "Previously saved human correction",
+    candidate_origin: "human",
+    candidate_requires_review: true,
+    candidate_reviewed_by: "another-member",
+  };
+  const backend = client(value);
+  render(
+    <DocumentExtractionReview
+      client={asClient(backend)}
+      documentId={documentId}
+      canEdit
+    />,
+  );
+  await loaded();
+  expect(
+    screen.getByText(/saved page correction awaiting publication/),
+  ).toBeInTheDocument();
+  expect(screen.getByText(/needs your current review/)).toBeInTheDocument();
+  expect(confirmation()).not.toBeChecked();
+  expect(screen.getByLabelText("Full text of page 1")).toHaveValue(
+    "Previously saved human correction",
+  );
+  fireEvent.click(confirmation());
+  fireEvent.click(saveButton());
+  await waitFor(() =>
+    expect(backend.correctDocumentExtraction).toHaveBeenCalledTimes(1),
+  );
+  expect(
+    backend.correctDocumentExtraction.mock.calls[0][0].pages[0],
+  ).toMatchObject({
+    expected_page_text_hash: hash(""),
+    text: "Previously saved human correction",
+  });
+});
