@@ -792,3 +792,156 @@ it("reuses the package after an expired command receipt without duplicate record
     ).rows[0].n,
   ).toBe(1);
 });
+
+it.each(["missing", "null"])(
+  "rejects a %s saved ordinary renderer checkpoint before returning render context",
+  async (form) => {
+    const d = await setup();
+    await d.prepare();
+    const job = await fixture.rpc("claim_backend_job_v4");
+    await fixture.f.db.query(
+      form === "missing"
+        ? "update public.jobs set checkpoint=checkpoint-'export_renderer_version' where id=$1"
+        : "update public.jobs set checkpoint=jsonb_set(checkpoint,'{export_renderer_version}','null'::jsonb) where id=$1",
+      [job.id],
+    );
+    await expect(
+      fixture.rpc("export_render_context", {
+        job_id: job.id,
+        lease: job.lease_token,
+      }),
+    ).rejects.toMatchObject({ code: "EXPORT_PACKAGE_INVALID" });
+    expect(d.objects.size).toBe(0);
+    expect(
+      (
+        await fixture.f.db.query<any>(
+          "select count(*) n from public.export_artifacts",
+        )
+      ).rows[0].n,
+    ).toBe(0);
+  },
+);
+it("rejects a null artifact failure reason without invalidating valid bytes or releasing their storage", async () => {
+  const d = await setup();
+  const { artifact, args } = await artifactFailure(
+    d,
+    "EXPORT_ARTIFACT_MISSING",
+  );
+  const before = (
+    await fixture.f.db.query<any>(
+      "select app_private.storage_reserved_bytes($1) bytes",
+      [fixture.f.w],
+    )
+  ).rows[0].bytes;
+  await expect(
+    fixture.rpc("report_export_package_artifact_failure", {
+      ...args,
+      error_code: null,
+    }),
+  ).rejects.toMatchObject({ code: "INVALID_INPUT" });
+  expect(
+    (
+      await fixture.f.db.query<any>(
+        "select status,content_hash from public.export_artifacts where id=$1",
+        [artifact.id],
+      )
+    ).rows[0],
+  ).toEqual({ status: "ready", content_hash: artifact.content_hash });
+  expect(
+    (
+      await fixture.f.db.query<any>(
+        "select app_private.storage_reserved_bytes($1) bytes",
+        [fixture.f.w],
+      )
+    ).rows[0].bytes,
+  ).toBe(before);
+  expect(
+    (
+      await fixture.f.db.query<any>(
+        "select count(*) n from public.audit_events where action='export.package.artifact_invalidated'",
+      )
+    ).rows[0].n,
+  ).toBe(0);
+});
+it("retains the actual completion proof and approved two-volume download through aged maintenance while pruning an unrelated terminal job", async () => {
+  const d = await setup(true);
+  const revision = await approve(d);
+  const pending = await d.command("export.package.prepare", {
+    proposal_version_id: d.version,
+    expected_revision: revision,
+    mode: "final",
+  });
+  const ready = (await d.run()).result;
+  const orphan = (
+    await fixture.f.db.query<any>(
+      "insert into public.jobs(workspace_id,type,entity_id,input_hash,status,created_by,created_at,updated_at) values($1,'render_export',$2,'synthetic-unreferenced-retention','succeeded',$3,now()-interval '366 days',now()-interval '366 days') returning id",
+      [fixture.f.w, crypto.randomUUID(), fixture.f.owner],
+    )
+  ).rows[0];
+  await fixture.f.db.query(
+    "update public.jobs set created_at=now()-interval '366 days',updated_at=now()-interval '366 days' where id=$1",
+    [ready.job.id],
+  );
+  await fixture.f.db.query(
+    "update public.operations set last_maintenance_at=null where workspace_id=$1",
+    [fixture.f.w],
+  );
+  const result = await fixture.rpc("maintenance_tick");
+  expect(result.due).toBe(true);
+  expect(
+    (
+      await fixture.f.db.query<any>(
+        "select status from public.jobs where id=$1",
+        [ready.job.id],
+      )
+    ).rows,
+  ).toEqual([{ status: "succeeded" }]);
+  expect(
+    (
+      await fixture.f.db.query<any>(
+        "select count(*) n from public.jobs where id=$1",
+        [orphan.id],
+      )
+    ).rows[0].n,
+  ).toBe(0);
+  const current = await fixture.rpc(
+    "export_package_context",
+    { package_id: pending.id },
+    "synthetic-owner",
+  );
+  expect(current.status).toBe("ready");
+  expect(current.job.id).toBe(ready.job.id);
+  expect(current.job.status).toBe("succeeded");
+  for (const artifact of ready.artifacts) {
+    const response = await d.request(
+      `export-artifacts/${artifact.id}/download`,
+    );
+    expect(response.status).toBe(200);
+    const request = await fixture.rpc(
+      "export_context",
+      { request_id: artifact.export_id },
+      "synthetic-owner",
+    );
+    verifyExportDocx(
+      new Uint8Array(await response.arrayBuffer()),
+      buildExportModel(request),
+    );
+  }
+  const repeated = await d.command("export.package.prepare", {
+    proposal_version_id: d.version,
+    expected_revision: revision,
+    mode: "final",
+  });
+  expect(repeated.id).toBe(pending.id);
+  expect(repeated.job.id).toBe(ready.job.id);
+  expect(repeated.deadline_at).toBe(pending.deadline_at);
+});
+it("preserves the established queue classifier authority and stable database-dependent volatility", async () => {
+  expect(
+    (
+      await fixture.f.db.query<any>(
+        "select prosecdef,provolatile from pg_proc where oid='app_private.queue_work_class(public.jobs)'::regprocedure",
+      )
+    ).rows[0],
+  ).toEqual({ prosecdef: true, provolatile: "s" });
+});

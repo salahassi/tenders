@@ -42,6 +42,7 @@ create function app_private.guard_packaged_export_request() returns trigger lang
  (to_jsonb(new)-array['expires_at','revision']) is distinct from (to_jsonb(old)-array['expires_at','revision']) then raise exception 'EXPORT_PACKAGE_IMMUTABLE';end if;return new;
 end $$;
 create trigger packaged_export_request_identity before update on public.export_requests for each row execute function app_private.guard_packaged_export_request();
+create index export_packages_current_job on public.export_packages(workspace_id,current_job_id) where current_job_id is not null;
 create index export_packages_deadline on public.export_packages(workspace_id,deadline_at) where status='preparing';
 create index export_packages_opportunity on public.export_packages(workspace_id,opportunity_id);
 create index export_package_volume_package on public.export_package_volumes(workspace_id,package_id);
@@ -190,7 +191,7 @@ declare j public.jobs;p public.export_packages;actor_role text;begin
  select * into j from public.jobs where id=job_id;perform 1 from public.workspaces where id=j.workspace_id for update;select * into j from public.jobs where id=job_id for update;
  if j.id is null or j.type<>'render_export' or j.status<>'running' or lease is null or j.lease_token is distinct from lease or j.lease_until is null or j.lease_until<=clock_timestamp() or j.cancel_requested then raise exception 'STALE_LEASE';end if;
  select * into p from public.export_packages where workspace_id=j.workspace_id and id=j.entity_id;
- if p.id is null or p.current_job_id is distinct from j.id or j.input_hash<>p.binding_hash or j.checkpoint->>'export_renderer_version'<>'ordinary-2' then raise exception 'EXPORT_PACKAGE_INVALID';end if;
+ if p.id is null or p.current_job_id is distinct from j.id or j.input_hash<>p.binding_hash or j.checkpoint->>'export_renderer_version' is distinct from 'ordinary-2' then raise exception 'EXPORT_PACKAGE_INVALID';end if;
  if check_sources then
   if p.deadline_at<=clock_timestamp() or p.status<>'preparing' then raise exception 'EXPORT_ISSUANCE_TIMEOUT';end if;
   perform app_private.delivery_actor(p.workspace_id,j.created_by);perform app_private.check_export_package(p,j.created_by);
@@ -280,7 +281,7 @@ declare p public.export_packages;s public.export_package_volumes;a public.export
  perform app_private.delivery_actor(p.workspace_id,actor_id);perform 1 from public.workspaces where id=p.workspace_id for update;
  select * into p from public.export_packages where id=package_id for update;
  perform app_private.check_export_package(p,actor_id);
- if error_code not in ('EXPORT_ARTIFACT_MISSING','ARTIFACT_MISMATCH') or expected_hash is null or expected_hash!~'^[a-f0-9]{64}$' or expected_storage_key is null or expected_revision is null
+ if error_code is null or error_code not in ('EXPORT_ARTIFACT_MISSING','ARTIFACT_MISMATCH') or expected_hash is null or expected_hash!~'^[a-f0-9]{64}$' or expected_storage_key is null or expected_revision is null
  or (error_code='EXPORT_ARTIFACT_MISSING' and actual_size is not null) or (error_code='ARTIFACT_MISMATCH' and (actual_size is null or actual_size<0)) then raise exception 'INVALID_INPUT';end if;
  select * into s from public.export_package_volumes where export_package_volumes.package_id=p.id and export_package_volumes.artifact_id=$1;
  select * into a from public.export_artifacts where id=artifact_id and workspace_id=p.workspace_id;
@@ -359,9 +360,14 @@ do $$declare definition text;marker text;begin
  definition:=replace(definition,marker,'where workspace_id=w and status=''pending'' and eligible_at<=clock_timestamp() order by created_at');
  marker:='exists(select 1 from public.documents where storage_key=r.storage_key';if position(marker in definition)=0 then raise exception 'EXPORT_PACKAGE_CLEANUP_REFERENCE_CHANGED';end if;
  execute replace(definition,marker,'exists(select 1 from public.export_package_volumes where storage_key=r.storage_key and reserved_bytes>0) or exists(select 1 from public.documents where storage_key=r.storage_key');
- select pg_get_functiondef('public.maintenance_tick()'::regprocedure) into definition;
- -- Existing maintenance may be a deadline wrapper. Expiration is also in claim;
- -- invoke our independent package expiry in the public maintenance entry point.
+ -- The deadline wrapper delegates retention to this existing maintenance
+ -- implementation. A package's current terminal job is its durable completion
+ -- proof; retain it with the business package, as existing delivery artifacts
+ -- retain their referenced jobs. Unreferenced retry/orphan jobs still expire.
+ select pg_get_functiondef('public.maintenance_tick_before_issuance()'::regprocedure) into definition;
+ marker:='and not exists(select 1 from public.proposal_delivery_artifacts a where a.job_id=j.id)';
+ if position(marker in definition)=0 then raise exception 'EXPORT_PACKAGE_RETENTION_CHANGED';end if;
+ execute replace(definition,marker,marker||' and not exists(select 1 from public.export_packages pack where pack.workspace_id=j.workspace_id and pack.current_job_id=j.id)');
 end $$;
 alter function public.maintenance_tick() rename to maintenance_tick_before_export_packages;
 create function public.maintenance_tick() returns jsonb language plpgsql security definer set search_path='' as $$declare expired integer;result jsonb;begin expired:=app_private.expire_export_packages();result:=public.maintenance_tick_before_export_packages();return result||jsonb_build_object('expired_export_packages',expired);end $$;

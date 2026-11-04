@@ -7530,3 +7530,28 @@ the export implementation; its authenticated GET boundary was already recorded.
 The combined actual ordinary SQL/API/DOCX suite passed20/20 after integrating
 definitive missing/corrupt file recovery; later lifecycle fixes require their
 separate focused and final combined evidence.
+### 2026-11-04 — ordinary export retention and null-guard closure
+
+Independent lifecycle/atomic-release review identified three fail-open/retention
+edges and an existing function-authority drift. Missing or JSON-null saved renderer
+markers now fail with `EXPORT_PACKAGE_INVALID`. A null artifact-failure reason is
+rejected before any valid receipt, bytes status, audit, or quota accounting changes.
+The canonical maintenance implementation retains a package's referenced current job
+as its existing completion proof, matching retained delivery-artifact provenance;
+an indexed lookup excludes only those references, so unrelated terminal jobs still
+expire under the configured policy. No completion state is fabricated.
+
+The generated-delivery queue classifier also preserves the established
+`STABLE SECURITY DEFINER` contract: its delegate reads database state, so declaring
+the wrapper immutable and dropping its definer property were incorrect. Its owner,
+ACL and search path remain unchanged. The separate managed atomic-release authority
+gate must be rerun on the composed revision before deployment.
+
+All five new regressions reproduced the prior defects, then passed after these
+changes. The aged-maintenance case renders a genuinely approved technical/financial
+package, ages its job beyond the maximum366-day test boundary, invokes actual public
+maintenance, verifies the unrelated old job is pruned, then downloads/verifies both
+DOCX volumes and re-enters the same package without changing its job or deadline.
+The ordinary suite passes26 cases; related artifact/round-robin/wake/fairness suites
+pass188 cases, and backend typecheck passes. These are local synthetic receipts,
+with no production, provider or email calls.

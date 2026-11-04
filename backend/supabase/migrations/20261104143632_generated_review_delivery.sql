@@ -45,7 +45,7 @@ do $$declare definition text;begin
 end $$;
 create unique index generated_delivery_projection_job on public.jobs(workspace_id,(checkpoint->>'generated_version_id')) where type='prepare_generated_delivery';
 alter function app_private.queue_work_class(public.jobs) rename to queue_work_class_before_generated_delivery;
-create function app_private.queue_work_class(j public.jobs) returns text language sql immutable set search_path='' as $$select case when j.type='prepare_generated_delivery' then 'local' else app_private.queue_work_class_before_generated_delivery(j) end$$;
+create function app_private.queue_work_class(j public.jobs) returns text language sql stable security definer set search_path='' as $$select case when j.type='prepare_generated_delivery' then 'local' else app_private.queue_work_class_before_generated_delivery(j) end$$;
 -- Projection is restartable local work under the original issuance clock. It
 -- never enters model recovery or consumes another inference reservation.
 do $$declare definition text;marker text;begin
