@@ -7938,3 +7938,24 @@ pass. The shared native renderer signal hook and final integrated Deno memory/
 timing qualification belong to their separately recorded renderer evidence; this
 change does not claim hosted acceptance, final integrated full-suite success or
 production deployment. No provider/production calls or unknown-usage changes.
+
+
+### 2026-11-04 — G10 alternating Arabic/Latin paragraph admission
+
+A separate density fixture covers formatting-run expansion rather than table or
+paragraph count. The actual authoring API accepts 69 distinct paragraphs of
+20,000 characters each, alternating Arabic and Latin letters after a unique
+paragraph prefix: 1,380,000 characters and 2,073,032 JSONB input bytes. The next
+paragraph exceeds the existing request/storage contract and is rejected without
+changing the saved revision. All characters and paragraph order remain exact in
+the stored response, immutable delivery snapshot and rendering projection. Unique
+prefixes prevent a repeated-paragraph cache from hiding this workload.
+
+The capacity suite passes **20/20**, and both package typechecks pass.
+[The direction-density receipt](evidence/proposal-capacity-direction-20261104.json)
+records this run and source hashes verified stable before and after execution.
+All earlier receipts are retained. The frozen native input was handed to the
+renderer and verifier owners; this new API case does **not** assert native success
+within 128 MiB/30 seconds or final document-XML verification. Any resulting native
+repair and stricter verifier guards require their own final combined rerun. No
+input ceiling was changed, and no provider or production calls were made.
