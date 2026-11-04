@@ -63,9 +63,14 @@ frontend bundle; none is converted into a passing production acceptance claim.
 Release status: **not deployed; no paid model, production storage or email call**.
 Read-only inventory on November 4 confirmed public frontend/health availability
 and the DigitalOcean cluster/nodes running. Kubernetes workload/version reads
-returned HTTP 503 through the configured proxy, so the deployed image, application
-revision and schema tip remain unverified; shallow health is not worker/database
-acceptance. OCR for uploaded scans, full source authority/span and semantic repair
+returned HTTP 503 through the configured proxy. A fresh read-only diagnostic at
+13:16 UTC found identical authenticated and anonymous `/version` failures with
+`TLS_error: ... CERTIFICATE_VERIFY_FAILED` before upstream response headers.
+This establishes certificate verification failure in the intermediary connection
+path, not a Kubernetes authentication rejection. The exact failing intermediary
+and whether trust, chain, expiry or hostname caused verification to fail remain
+unverified. The deployed image, application revision and schema tip therefore
+remain unverified; shallow health is not worker/database acceptance. OCR for uploaded scans, full source authority/span and semantic repair
 contracts, provider-specific semantic/capacity qualification, whole-proposal
 consistency, substantive completion during total model outage, measured delivery
 latency, storage saturation, cloud restore and hosted upload-to-download acceptance
