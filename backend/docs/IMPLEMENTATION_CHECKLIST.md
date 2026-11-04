@@ -8429,3 +8429,20 @@ host). The pre-fix test failed because the service column grant was accepted.
 [evidence/storage-column-acl-20261104.json](evidence/storage-column-acl-20261104.json).
 No full suite, production operation, deployment, binary/protocol qualification
 or hosted storage acceptance was performed by this slice.
+
+### 2026-11-04 — exact 22-migration local PostgreSQL restore
+
+The root reran `cloud_restore_postgres.py` after integrating the final retirement
+SQL and corrected canonical command ACL. All eight checks pass against all
+22 additive migrations: managed catalog capture/reconstruction, row and role
+isolation, source/artifact backup, reset failure rollback and trigger state,
+fixture identity guards, restored files/history with revoked live assurance,
+and idempotent restoration without model usage. Exact source migration hashes
+and the pinned PostgreSQL image are retained in
+`evidence/cloud-restore-postgres-22-20261104.json`.
+
+This uses real local PostgreSQL with Auth/Storage schema stubs. Actual HTTP
+authentication and physical stored bytes remain the isolated cloud drill's gate.
+No production, model, email or provider calls ran. Backend typecheck and build
+also pass after the 22nd migration integration; the complete backend suite and
+remaining operational/gateway changes are still separate pending checks.
