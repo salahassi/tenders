@@ -10303,3 +10303,27 @@ configuration `c1a25c41…795ba`, routing receipt `8d395eec…e6014`, and HTTPS 
 records exact hashes and the separate native-proof scope; this check itself did
 not rerun containers or contact production. Hosted configuration, filesystem,
 worker-count and process readback remain required during the reviewed rollout.
+
+### November 4 — bind runtime publication to the actually qualified image
+
+The runtime publisher now requires the frozen native image identity rather than
+accepting a revision label and registry digest alone. Read-only inspection found
+all 130 Dockerfile COPY files byte-identical to image `89afc8a31d76`, and recorded
+all 146 `/app` tar entries with exact image permissions/owners, its 17 ordered
+RootFS layers, complete runtime Config, pinned Deno base and three immutable
+native proof receipts. Checkout Git file types/executable modes are checked
+separately from umask-dependent permissions. The original Dockerfile was not
+embedded; its retrospective recipe binding is explicitly limited.
+
+[Qualification provenance](RUNTIME_QUALIFICATION_PROVENANCE.md) and the
+[frozen receipt](evidence/runtime-qualification-89af-20261104.json) explain the
+source closure and evidence chain. All 22 focused Python tests passed, including
+source/path/mode/receipt/config/layer faults, existing-tag counterfeits, pending
+publication and label-only promotion ordering. Actual local image/source checks
+passed; no new native test, build, push or deployment ran. The publication binding
+is deliberately null and blocks execution until the existing qualified image is
+published unchanged and its observed immutable registry reference is recorded.
+Promotion then permits only the revision label to change; ordered layers and
+all other runtime configuration/labels must remain exact before any push.
+Frontend/OCR build policy is unchanged. Final image publication/promotion,
+release refreeze, cloud acceptance and model-quality gates remain separate.
