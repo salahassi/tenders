@@ -87,6 +87,7 @@ async function fixture(separate = false) {
       volume,
       status: "pending",
       storage_key: `private/delivery/${id(index + 2)}`,
+      write_state: "unstarted",
       content_hash: null as string | null,
       expected_size: null as number | null,
     }),
@@ -114,6 +115,14 @@ async function fixture(separate = false) {
           throw new AppError(403, "ROLE_FORBIDDEN", "Revoked");
         return structuredClone(context);
       }
+      if (name === "begin_render_storage_write") {
+        const a = artifacts.find(
+          (item) => item.storage_key === args.storage_key,
+        )!;
+        const send = a.write_state === "unstarted";
+        if (send) a.write_state = "unknown";
+        return { send, state: a.write_state };
+      }
       if (name === "complete_delivery_artifact") {
         if (state.failCompleteOnce) {
           state.failCompleteOnce = false;
@@ -123,6 +132,7 @@ async function fixture(separate = false) {
           artifacts.find((item) => item.id === args.artifact_id)!,
           {
             status: "ready",
+            write_state: "observed",
             content_hash: args.actual_hash,
             expected_size: args.actual_size,
           },

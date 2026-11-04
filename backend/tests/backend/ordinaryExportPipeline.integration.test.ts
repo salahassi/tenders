@@ -558,6 +558,24 @@ it("public backup/restore retains verified package receipts but requires current
     expect(
       (await userRpc(target, "commit_workspace_restore", [begun.id])).state,
     ).toBe("committed");
+    const restoredWriteStates = (
+      await target.db.query<any>(
+        "select state,retirement_receipt from public.storage_write_intents",
+      )
+    ).rows;
+    expect(restoredWriteStates.length).toBeGreaterThan(0);
+    expect(
+      restoredWriteStates.every(
+        (intent) =>
+          intent.state === "legacy_unfenced" &&
+          intent.retirement_receipt === null,
+      ),
+    ).toBe(true);
+    expect(
+      (await target.db.query<any>("select app_private.backup_tables() tables"))
+        .rows[0].tables,
+    ).not.toContain("storage_write_intents");
+
     const restored = (
       await target.db.query<any>(
         "select status,error_code,binding_hash from public.export_packages where id=$1",

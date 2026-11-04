@@ -60,6 +60,13 @@ function fixture(
     if (name === "maintenance_tick") await options.beforeMaintenance?.();
     if (name === "claim_storage_cleanup") return options.cleanup ?? [];
     if (name === "claim_abandoned_model_request") return options.abandoned;
+    if (name === "storage_cleanup_context")
+      return {
+        storage_key: `synthetic/${_args.cleanup_id}`,
+        write_state: "observed",
+        can_delete: true,
+        delete_required: true,
+      };
     return null;
   });
   const claim = vi.fn(async () => {
@@ -75,6 +82,10 @@ function fixture(
   const removeObject = vi.fn(async (_key: string) => {
     events.push("removeObject");
     if (options.fail === "removeObject") throw Error("PRIVATE_DO_NOT_LOG");
+    return {
+      object_id: "00000000-0000-4000-8000-000000000001",
+      object_version: "synthetic-version",
+    };
   });
   const fetcher = vi.fn<typeof fetch>(async () => {
     throw Error("Unexpected external request");

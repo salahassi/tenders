@@ -8119,3 +8119,76 @@ Hashes and check scope are retained in
 `evidence/final-frontend-checks-20261104.json`. These checks do not establish
 backend integration, production deployment, or hosted acceptance; the final
 backend suite follows the remaining storage retirement integration.
+### 2026-11-04 — one-time private upload authorization and measured cleanup settlement
+
+The delayed-object regression reproduced an accounting defect in both ordinary
+export failure and delivery purge: a client upload timeout was followed by a
+successful DELETE of a currently absent key, then the remote PUT completed after
+quota had been released. The pinned Storage server can finish after client abort;
+its empty deletion response is not evidence that every physical version is gone.
+No arbitrary age or timeout is used as a settlement fence.
+
+`20261104170442_durable_storage_write_intents.sql` records one-time send permission
+per private key. The current service lease, actor, source and slot reservation are
+checked before consuming it. A lost authorization reply or pre-send process crash
+remains unknown. Re-entry only reads the same object; it cannot issue another PUT.
+Exact positive byte hash/size settles that unique write. Explicit authorized retry
+uses a fresh key while the previous uncertain allowance remains in the cleanup
+ledger. Ready siblings, immutable content receipts and model unknown usage remain
+unchanged. Historical keys without this provenance remain `legacy_unfenced`.
+
+Cleanup now verifies current lease/token/expiry, workspace/key provenance and
+active references. An unused permission is atomically closed before its key can be
+released, preventing a later begin from reopening it. A completed single write
+requires a positive exact-key/nonmarker object-version deletion acknowledgement;
+its SQL receipt is bound to the current cleanup lease. Empty, lost, failed or
+mismatched deletion evidence retains the existing counted allowance. Unknown
+absent uploads defer reconciliation without spending deletion attempts. Unfenced
+historical writes and uncertain physical deletion require the separately reviewed
+nonce-bound operational quiescence/physical reconciliation, never a boolean or an
+elapsed-time assumption. That operational tool and pinned-server binary acceptance
+are separate gates, still owned by their integration tasks.
+
+Writer census: server delivery and ordinary export use the new one-time protocol;
+`BackendClient.upload` also serves browser document/review/company/manual-export/
+restore uploads, and `copyOriginalForOcr` writes private successors. Every untracked
+cleanup key from those other paths defaults to conservative legacy provenance.
+The single cleanup worker calls the guarded service RPCs; old boolean completion
+alone cannot release unknown bytes. Historical already-done cleanup is exposed as
+an exact-key physical-inventory candidate, not invented current quota or a claim
+that old orphans were repaired. `workspace_status.storage_write_uncertainty` adds
+only integer counts and currently held bytes; it exposes no IDs or private paths.
+
+Operational intent and retirement provenance are endpoint-local like cleanup
+state, excluded from portable artifact backups. Restore creates new-key legacy
+provenance and cannot restore send permission or copy a host's retirement proof.
+Purge retains intent identity while transferring existing allowance to cleanup.
+The missing-ready-artifact CAS similarly preserves its existing counted bytes
+when legacy write settlement is unresolved, without inventing a10MiB charge.
+
+Storage GET/PUT now combine the worker's existing request/lease signal with the
+existing20-second transport cap. Cancellation immediately yields the existing
+terminal request code while keeping any consumed write permission unknown; it is
+not proof the server stopped. Native render/readback verification and all final
+SQL authority checks remain in place.
+
+Evidence: the two original delayed-object cases are red→green using real local
+commands, worker, DOCX bytes and migrated SQL with a deferred synthetic object
+transport. Thirty new scoped cases cover lost PUT/reply, no resend, later positive
+readback, fresh-key retry/accounting, pre-send lost ACK, NULL leases, cross-workspace
+key collision, user denial, metadata census, restore provenance, legacy missing
+artifact accounting, lost DELETE→empty response, unstarted closure, transport
+signals, positive/nonmarker deletion receipts and independent replay/current-clock
+repros. The140-case related focused run and18-case final replay/storage rerun pass;
+backend typecheck/build pass. A broad backend run was stopped at the integration
+owner's request to avoid competing with final qualification; it is not a full-suite
+pass. The root owns the final exact combined full suites and deployment.
+
+`backend/scripts/testing/storage_write_intent_races.py` provides five actual
+PostgreSQL lock-observed cases: one send/audit under duplicate authorization;
+unknown deletion refusal/accounting; source edit and actor revocation while
+waiting; terminal request winning before send. Its sanitized receipt records the
+pinned image, exact migration hashes and scoped runtime source hashes in
+[evidence/storage-write-intent-postgres-20261104.json](evidence/storage-write-intent-postgres-20261104.json); all five pass on the final scoped SQL. Storage
+server I/O and physical retirement are explicitly outside that database proof.
+No production, provider, customer document or email calls were made.

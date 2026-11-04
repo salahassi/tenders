@@ -1,3 +1,5 @@
+import { AppError } from "../_shared/http.ts";
+import { prepareStorageCleanup } from "../_shared/storageWrites.ts";
 import type { Backend, BackendEnvironment } from "../_shared/backend.ts";
 import { FreeModelProvider, ModelError } from "../_shared/model.ts";
 import {
@@ -131,13 +133,36 @@ export async function runWorkerMaintenance(
       // Isolate each item, including its completion RPC. One failed receipt
       // must not abandon the rest of this already leased cleanup batch.
       await attempt("storage_cleanup", async () => {
-        let succeeded = false;
-        try {
-          await backend.removeObject(item.storage_key);
-          succeeded = true;
-        } catch {
+        const disposition = await prepareStorageCleanup(backend, item);
+        if (disposition === "deferred") {
           record("storage_cleanup");
+          return;
         }
+        let succeeded = disposition === "complete";
+        if (disposition === "delete")
+          try {
+            const receipt = await backend.removeObject(item.storage_key);
+            await backend.internal("record_storage_cleanup_deletion", {
+              cleanup_id: item.id,
+              lease: item.lease_token,
+              storage_key: item.storage_key,
+              object_id: receipt.object_id,
+              object_version: receipt.object_version,
+            });
+            succeeded = true;
+          } catch (error) {
+            record("storage_cleanup");
+            if (
+              error instanceof AppError &&
+              error.code === "STORAGE_DELETE_RECEIPT_REQUIRED"
+            ) {
+              await backend.internal("defer_storage_cleanup", {
+                cleanup_id: item.id,
+                lease: item.lease_token,
+              });
+              return;
+            }
+          }
         await backend.internal("complete_storage_cleanup", {
           cleanup_id: item.id,
           lease: item.lease_token,

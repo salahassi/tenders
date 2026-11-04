@@ -1,3 +1,7 @@
+import {
+  assertStorageWriteMayStart,
+  authorizeStorageWrite,
+} from "./storageWrites.ts";
 import type { Backend } from "./backend.ts";
 import { AppError } from "./http.ts";
 import { DOCX_MIME } from "./deliveryExport.ts";
@@ -44,7 +48,7 @@ export async function processOrdinaryExport(
     for (const slot of context.volumes) {
       const model = buildExportModel(slot.request, 2);
       let verified: VerifiedDeliveryBytes | undefined;
-      let blob = await backend.deliveryObject(slot.storage_key);
+      let blob = await backend.deliveryObject(slot.storage_key, budget.signal);
       budget.check();
       if (!blob) {
         if (slot.artifact)
@@ -53,6 +57,7 @@ export async function processOrdinaryExport(
             "EXPORT_PACKAGE_BYTES_UNAVAILABLE",
             "The verified export file is unavailable.",
           );
+        assertStorageWriteMayStart(slot.write_state);
         budget.check();
         const rendered = await deliveryBytes(
           await render(model, budget.signal),
@@ -81,14 +86,22 @@ export async function processOrdinaryExport(
             "EXPORT_PACKAGE_INVALID",
             "The export reservation changed.",
           );
+        await authorizeStorageWrite(
+          backend,
+          identity,
+          slot.storage_key,
+          rendered,
+        );
+        budget.check();
         try {
           await backend.storeDeliveryObject(
             slot.storage_key,
             rendered.bytes,
             DOCX_MIME,
+            budget.signal,
           );
         } catch {
-          blob = await backend.deliveryObject(slot.storage_key);
+          blob = await backend.deliveryObject(slot.storage_key, budget.signal);
           if (!blob)
             throw new AppError(
               503,
@@ -96,7 +109,8 @@ export async function processOrdinaryExport(
               "The export upload is not confirmed.",
             );
         }
-        if (!blob) blob = await backend.deliveryObject(slot.storage_key);
+        if (!blob)
+          blob = await backend.deliveryObject(slot.storage_key, budget.signal);
         if (!blob)
           throw new AppError(
             503,
@@ -125,8 +139,9 @@ export async function processOrdinaryExport(
     }
     return await backend.internal("finish_export_package", identity);
   } catch (error) {
+    const cause = budget.signal.aborted ? budget.signal.reason : error;
     const code =
-      error instanceof AppError ? error.code : "DELIVERY_RENDER_FAILED";
+      cause instanceof AppError ? cause.code : "DELIVERY_RENDER_FAILED";
     await backend.internal("fail_export_package", {
       ...identity,
       error_code: code,

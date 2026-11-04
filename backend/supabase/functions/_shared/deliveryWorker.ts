@@ -1,3 +1,7 @@
+import {
+  assertStorageWriteMayStart,
+  authorizeStorageWrite,
+} from "./storageWrites.ts";
 import type { Backend } from "./backend.ts";
 import { AppError } from "./http.ts";
 import {
@@ -135,7 +139,10 @@ export async function processDeliveryExport(
         artifact.volume as DeliveryVolume,
       );
       let verified: VerifiedDeliveryBytes | undefined;
-      let blob = await backend.deliveryObject(artifact.storage_key);
+      let blob = await backend.deliveryObject(
+        artifact.storage_key,
+        budget.signal,
+      );
       budget.check();
       if (!blob) {
         if (artifact.status === "ready")
@@ -144,6 +151,7 @@ export async function processDeliveryExport(
             "DELIVERY_ARTIFACT_INVALID",
             "The verified draft file is missing.",
           );
+        assertStorageWriteMayStart(artifact.write_state);
         budget.check();
         const rendered = await deliveryBytes(
           await render(model, budget.signal),
@@ -169,16 +177,27 @@ export async function processDeliveryExport(
             "DELIVERY_ARTIFACT_INVALID",
             "The draft reservation changed.",
           );
+        await authorizeStorageWrite(
+          backend,
+          identity,
+          artifact.storage_key,
+          rendered,
+        );
+        budget.check();
         try {
           await backend.storeDeliveryObject(
             artifact.storage_key,
             rendered.bytes,
             DOCX_MIME,
+            budget.signal,
           );
         } catch {
           // Existing-object conflicts and lost upload replies are safe only if
           // independently fetched bytes pass the exact current content checks.
-          blob = await backend.deliveryObject(artifact.storage_key);
+          blob = await backend.deliveryObject(
+            artifact.storage_key,
+            budget.signal,
+          );
           if (!blob)
             throw new AppError(
               503,
@@ -186,7 +205,11 @@ export async function processDeliveryExport(
               "The draft upload is not confirmed.",
             );
         }
-        if (!blob) blob = await backend.deliveryObject(artifact.storage_key);
+        if (!blob)
+          blob = await backend.deliveryObject(
+            artifact.storage_key,
+            budget.signal,
+          );
         if (!blob)
           throw new AppError(
             503,
@@ -215,8 +238,9 @@ export async function processDeliveryExport(
     }
     return await backend.internal("finish_delivery_export", identity);
   } catch (error) {
+    const cause = budget.signal.aborted ? budget.signal.reason : error;
     const code =
-      error instanceof AppError ? error.code : "DELIVERY_RENDER_FAILED";
+      cause instanceof AppError ? cause.code : "DELIVERY_RENDER_FAILED";
     await backend.internal("fail_delivery_export", {
       ...identity,
       error_code: code,

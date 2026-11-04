@@ -319,12 +319,23 @@ export class Backend {
       );
     return data;
   }
-  /** Only a genuine missing object permits a new immutable upload. A network
-   * or authorization failure must never be interpreted as an empty slot. */
-  async deliveryObject(path: string): Promise<Blob | null> {
+  /** A genuine404 is represented as absence, never as write settlement or
+   * permission to upload again. Durable intent authorization is separate. */
+  async deliveryObject(
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<Blob | null> {
     const { data, error } = await this.admin.storage
       .from("tenderdesk-private")
-      .download(path, {}, { signal: AbortSignal.timeout(20000) });
+      .download(
+        path,
+        {},
+        {
+          signal: signal
+            ? AbortSignal.any([signal, AbortSignal.timeout(20000)])
+            : AbortSignal.timeout(20000),
+        },
+      );
     if (error) {
       const status = String(
         (error as { statusCode?: unknown }).statusCode || "",
@@ -362,12 +373,22 @@ export class Backend {
         "The OCR original copy is not confirmed.",
       );
   }
-  async storeDeliveryObject(path: string, bytes: Uint8Array, mime: string) {
+  async storeDeliveryObject(
+    path: string,
+    bytes: Uint8Array,
+    mime: string,
+    signal?: AbortSignal,
+  ) {
     const storage = createClient(this.env.url, this.env.serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
       global: {
         fetch: (input, init) =>
-          fetch(input, { ...init, signal: AbortSignal.timeout(20000) }),
+          fetch(input, {
+            ...init,
+            signal: signal
+              ? AbortSignal.any([signal, AbortSignal.timeout(20000)])
+              : AbortSignal.timeout(20000),
+          }),
       },
     }).storage;
     const { error } = await storage
@@ -503,7 +524,7 @@ export class Backend {
   async removeObject(path: string) {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      const { error } = await Promise.race([
+      const { data, error } = await Promise.race([
         this.admin.storage.from("tenderdesk-private").remove([path]),
         new Promise<never>((_, reject) => {
           timer = setTimeout(
@@ -525,6 +546,24 @@ export class Backend {
           "STORAGE_DELETE_FAILED",
           "Private object cleanup failed.",
         );
+      const deleted = Array.isArray(data)
+        ? (data.find((value) => value.name === path) as
+            Record<string, unknown> | undefined)
+        : undefined;
+      if (
+        !deleted ||
+        typeof deleted.id !== "string" ||
+        !/^[a-f0-9-]{36}$/i.test(deleted.id) ||
+        typeof deleted.version !== "string" ||
+        !deleted.version.length ||
+        deleted.is_delete_marker === true
+      )
+        throw new AppError(
+          503,
+          "STORAGE_DELETE_RECEIPT_REQUIRED",
+          "Storage did not confirm physical deletion of the exact object version. Its allowance remains reserved.",
+        );
+      return { object_id: deleted.id, object_version: deleted.version };
     } finally {
       clearTimeout(timer);
     }
