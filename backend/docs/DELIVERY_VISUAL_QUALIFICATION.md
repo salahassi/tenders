@@ -1,5 +1,43 @@
 # Delivery document visual qualification
 
+The footer correction has now been independently verified on all 91 pages of a
+fresh 18-document run. Footer numbers have their correct values and no yellow
+highlight; every required gap remains visible and yellow. The native TOC page
+number compatibility issue in LibreOffice remains open. This qualification
+does not cover the subsequent dense-renderer capacity work or Microsoft Word.
+
+## Footer correction evidence
+
+The source fingerprint is
+`6f2ce72b30825b7d45d109e5e7baf90f2769cedb6505dddcd7027a30980ae771`
+at integrated revision `b3b1380772c099c157dc3e620f1d6c8813c28801`.
+The actual renderer hash
+`0c6445cf3053b32505b442720bd8a46aeb78130f09b195c2828f81ad3690526a`
+exactly matches committed footer fix `fc69fef` (`90e8090` before integration).
+The [fresh render receipt](evidence/g12-renderer-footer-render-receipt-20261104.json),
+[page receipt](evidence/g12-renderer-footer-page-receipt-20261104.json) and
+[independent visual review](evidence/g12-renderer-footer-review-20261104.json)
+bind the actual outputs to that source. All payload and render-model hashes are
+identical to the initial run, and all page counts remain unchanged. All 20
+contact sheets were inspected again, covering every page. The PDF footer checks
+also find the correct page number and zero yellow drawings in every footer.
+
+The fresh artifacts are retained at
+`/workspace/output/reliability-phase2-g12-final`; the directory name does not
+mean release acceptance. The later capacity investigation changes renderer
+source, so its final source needs fresh output hashes and comparison with this
+reviewed matrix. Any changed page must be inspected. Ordinary-export transport,
+high-density accepted payloads, concurrent renderer memory, live storage and
+the issuance deadline remain separate checks.
+
+The footer correction deliberately preserves native TOC/PAGEREF instructions.
+LibreOffice direct conversion still shows leaders without TOC page numbers.
+No approximation or invented field cache is used, and actual Microsoft Word
+update/save behavior has not been tested here. G12 therefore has an explicit
+compatibility gap rather than an unrestricted visual pass.
+
+## Initial result before the correction
+
 The November 4 initial G12 review requires two field-rendering corrections.
 All 18 synthetic DOCX files passed the actual `verifyExportDocx` check, and all
 91 pages produced by LibreOffice were visually inspected. This is layout

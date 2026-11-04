@@ -100,6 +100,22 @@ are absent. This confirms the new implementation is not deployed yet. API/worker
 use image digest `85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380`;
 image source revisions remain independently unverified. This is a current baseline
 for a guarded release, not hosted proposal/model acceptance or schema-tip proof.
+## November 4 — G12 footer correction independently requalified
+
+A fresh actual-render/verification run on integrated source `b3b1380` produced
+**18 DOCX files and 91 PDF pages** with the exact committed footer renderer
+`fc69fef`. Every page was inspected again. Correct footer page numbers are now
+neutral; zero yellow footer drawings were found. All expected gap labels remain
+visible and yellow, with unchanged payload/model hashes and page counts. The
+source/DOCX/PDF/page hashes and separate visual review are retained in
+[the G12 report](DELIVERY_VISUAL_QUALIFICATION.md).
+
+Native TOC page-number results remain absent in LibreOffice direct conversion;
+Microsoft Word update/save is untested. This is an explicit compatibility gap.
+The later dense-input renderer capacity investigation changes source after this
+run and needs final output comparison or requalification. No production, model,
+hosted-storage, universal input-size or 600-second delivery claim is made.
+
 ## November 4 — G12 initial all-page document qualification
 
 The actual integrated renderers 1/2/3 produced **18 verified DOCX files** from
