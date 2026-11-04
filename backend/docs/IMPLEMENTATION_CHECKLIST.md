@@ -1,5 +1,29 @@
 # Implementation status and continuation plan
 
+## November 4 — actual uploaded OCR quality gate found Arabic recognition loss
+
+Three committed synthetic PDFs and pre-authored English/Arabic obligation oracles
+exercise the actual native OCR image with network disabled, 768 MiB, one CPU and
+64 PIDs. The explicit native suite fails if the engine or Arabic data is absent;
+it is separate from ordinary JavaScript tests that have no native engine.
+English obligations/numbers/dates, exact mixed-PDF page selection/blank handling,
+and original-hash/page-count rejection passed. Arabic recognition **failed**:
+the first obligation was omitted and critical words were damaged. The frozen PDF
+and oracle were not weakened after this outcome.
+
+The same image reported confidence **82** and `numeric_uncertainty=false` for
+that damaged Arabic text. This is concrete evidence that neither signal can
+confirm complete extraction or preserve semantics. The exact sanitized evidence
+is [`evidence/uploaded-ocr-native-20261104.json`](evidence/uploaded-ocr-native-20261104.json).
+An earlier real-image startup failure due to root-owned package COPY permissions
+was fixed in the OCR implementation branch; its new image was used for this run.
+
+W02/T04 remain open for automatic Arabic quality. The implementation agent is
+adding current-source visual review and immutable authorized page corrections;
+an OCR failure must not label a valid original RFP invalid or erase readable
+pages/accepted history. Native image/code integration, human-correction acceptance
+and hosted OCR delivery remain separate pending gates.
+
 ## November 4 — frozen bilingual semantic development campaign
 
 Implementation: two explicit live-evaluation suites now cover eight independent
