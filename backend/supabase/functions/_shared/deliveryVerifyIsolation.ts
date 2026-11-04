@@ -96,7 +96,7 @@ export async function verifyDeliveryIsolated(
     );
   // Preserve call-time input identity even if a caller mutates its objects while
   // waiting. No untrusted or historical receipt can bypass this proof.
-  const modelJson = JSON.stringify(model),
+  let modelJson = JSON.stringify(model),
     bytes = new Uint8Array(document);
   const queueBudget = timeoutMs - (performance.now() - started);
   if (queueBudget <= 0) throw verificationTimeout();
@@ -117,8 +117,9 @@ export async function verifyDeliveryIsolated(
   };
   try {
     signal?.throwIfAborted();
-    const encoded = new TextEncoder().encode(modelJson),
-      header = frameHeader(encoded.length, bytes.length);
+    let encoded = new TextEncoder().encode(modelJson);
+    modelJson = "";
+    const header = frameHeader(encoded.length, bytes.length);
     const expected = {
       model_hash: await docxDigest(encoded),
       document_hash: await docxDigest(bytes),
@@ -149,6 +150,10 @@ export async function verifyDeliveryIsolated(
         await writer.write(encoded);
         await writer.write(bytes);
         await writer.close();
+        // The pipe transfer is complete and the child owns its validated frame.
+        // Retain only the hash/size receipt while the canonical scan runs.
+        encoded = new Uint8Array();
+        bytes = new Uint8Array();
       } finally {
         writer.releaseLock();
       }

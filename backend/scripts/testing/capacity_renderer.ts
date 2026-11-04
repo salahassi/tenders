@@ -127,19 +127,32 @@ async function run(name: string, model: RenderModel, required = true) {
 }
 const folder = runtime.args[0];
 if (!folder) throw Error("Synthetic model directory is required");
-if (["verifier-capacity", "verifier-matrix"].includes(runtime.args[1])) {
+if (
+  ["verifier-capacity", "verifier-matrix", "verifier-boundaries"].includes(
+    runtime.args[1],
+  )
+) {
   const names =
-    runtime.args[1] === "verifier-matrix"
+    runtime.args[1] === "verifier-boundaries"
       ? [
-          "dense-minimal-sparse-body-limit-authored",
-          "dense-direction-runs-authored",
-          "dense-ragged-authored",
-          "dense-empty-body-limit-authored",
-          "dense-paragraph-authored",
-          "dense-short-authored",
-          "dense-body-limit-authored",
+          "small-native-base",
+          "small-native-core4m",
+          "near10m-ascii",
+          "near10m-ascii-core4m",
+          "near10m-mixed100",
+          "empty-rows-storage-shape",
         ]
-      : ["dense-minimal-sparse-body-limit-authored"];
+      : runtime.args[1] === "verifier-matrix"
+        ? [
+            "dense-minimal-sparse-body-limit-authored",
+            "dense-direction-runs-authored",
+            "dense-ragged-authored",
+            "dense-empty-body-limit-authored",
+            "dense-paragraph-authored",
+            "dense-short-authored",
+            "dense-body-limit-authored",
+          ]
+        : ["dense-minimal-sparse-body-limit-authored"];
   let model!: RenderModel, bytes!: Uint8Array;
   const health = createApiHandler(
     environment(() => undefined),
@@ -199,7 +212,11 @@ if (["verifier-capacity", "verifier-matrix"].includes(runtime.args[1])) {
       bytes = await runtime.readFile(
         `${folder}/${names.length === 1 ? "verification.docx" : name + ".docx"}`,
       );
-      for (let index = 0; index < 2; index++) {
+      for (
+        let index = 0;
+        index < (runtime.args[1] === "verifier-boundaries" ? 1 : 2);
+        index++
+      ) {
         phase = `${name}:${index}:verification`;
         await telemetry();
         const start = performance.now();
@@ -209,14 +226,19 @@ if (["verifier-capacity", "verifier-matrix"].includes(runtime.args[1])) {
           outcome: "verified",
           elapsed_ms: Math.round(performance.now() - start),
           parent_memory: runtime.memoryUsage(),
-          input_hash: await hash(
-            new TextEncoder().encode(JSON.stringify(model)),
-          ),
-          artifact_hash: await hash(bytes),
+          input_source: name + ".json",
+          artifact_source:
+            names.length === 1 ? "verification.docx" : name + ".docx",
         });
         phase = `${name}:${index}:completed`;
         await telemetry();
       }
+    }
+    if (runtime.args[1] === "verifier-boundaries") {
+      model = JSON.parse(
+        await runtime.readTextFile(`${folder}/small-native-base.json`),
+      );
+      bytes = await runtime.readFile(`${folder}/small-native-base.docx`);
     }
     const bad = new Uint8Array(bytes);
     bad[0] = 0;
@@ -334,8 +356,7 @@ if (["verifier-capacity", "verifier-matrix"].includes(runtime.args[1])) {
       production_slo_qualified: false,
       runtime: runtime.version,
       application_graph_loaded: applicationGraphLoaded,
-      artifact_hash: await hash(bytes),
-      model_hash: await hash(new TextEncoder().encode(JSON.stringify(model))),
+      input_identity: "immutable staged file SHA256s recorded by the external harness",
       health_requests: healthCount,
       post_cancellation_health_status: 200,
       parent_memory_peaks: memoryPeaks,

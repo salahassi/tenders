@@ -8906,38 +8906,38 @@ content error codes, cancellation/deadline kill-and-reap, private within-run
 readback proofs and existing authority/currentness checks remain intact. Child
 infrastructure failures retain the existing bounded-retry renderer codes; Deno
 has no fallback to parent-process verification. The child budget is selected
-only from deployment-owned `APP_RUNTIME_SERVICE`: worker128 MiB old-space;
-API/other/default64 MiB. A private frame buffer no longer receives a redundant
+only from deployment-owned `APP_RUNTIME_SERVICE`: worker 128 MiB old-space;
+API/other/default 64 MiB. A private frame buffer no longer receives a redundant
 full-size hashing copy; shared backing buffers are copied defensively. Docker
 now includes the native streaming renderer dependency and caches both fixed
 child entrypoints. No storage/model quota, SQL schema, parent resource limit,
 prompt hash or published artifact is changed.
 
-The83-case canonical verifier/worker/process scope passed. After adding trusted
-service selection and exact byte-view/shared-buffer hashing checks, all34
+The 83-case canonical verifier/worker/process scope passed. After adding trusted
+service selection and exact byte-view/shared-buffer hashing checks, all 34
 process/protocol tests and backend typecheck passed. Root owns final combined
 package gates; these checks are not a hosted acceptance claim.
 
-The128 MiB child image completed two consecutive dense two-volume jobs in the
-same worker parent in109.384s/108.943s, with fixed180s leases/600s request clocks,
-no forced GC/restart and concurrent real parsing/validation of exact1 MiB and
-50,000-cell synthetic provider envelopes. Peak cgroup memory was579.58/640 MiB;
+The 128 MiB child image completed two consecutive dense two-volume jobs in the
+same worker parent in 109.384s/108.943s, with fixed 180s leases / 600s request clocks,
+no forced GC/restart and concurrent real parsing/validation of exact 1 MiB and
+50,000-cell synthetic provider envelopes. Peak cgroup memory was 579.58/640 MiB;
 each job completed two PUTs/four GETs and both volumes. The expiry case wrote
-nothing and subsequent health returned200. SQL/Storage were explicitly emulated;
-see `evidence/native-verifier-worker128-steady-20261104.json`. Four default image
+nothing and subsequent health returned 200. SQL/Storage were explicitly emulated;
+see `evidence/native-verifier-worker 128-steady-20261104.json`. Four default image
 service startups passed without the parent heap override.
 
-API384 MiB with128 MiB child hit a cgroup OOM and safely rejected the result;
-`evidence/native-verifier-api128-red-20261104.json` preserves it. The64 MiB child
+API 384 MiB with 128 MiB child hit a cgroup OOM and safely rejected the result;
+`evidence/native-verifier-api128-red-20261104.json` preserves it. The 64 MiB child
 candidate passed seven actual admitted fixture families twice each plus five
 canonical rejection/real CPU cancellation/recovery checks in the same API-sized
-parent. This was1 CPU, not the declarative700m API limit. Peak cgroup memory
+parent. This was 1 CPU, not the declarative 700m API limit. Peak cgroup memory
 383.94/384 MiB does not establish margin or burst safety. The giant verifications
-took71.9s/70.5s, so worker128 is retained. See
+took 71.9s/70.5s, so worker 128 is retained. See
 `evidence/native-verifier-api64-candidate-20261104.json`.
 
-Still pending: final service-specific image proof, API700m/gateway150s timing,
-near10 MiB canonical-model/8 MiB saved-payload shapes and4 MiB reviewed metadata,
+Still pending: final service-specific image proof, API 700m / gateway 150s timing,
+near 10 MiB canonical-model / 8 MiB saved-payload shapes and 4 MiB reviewed metadata,
 anonymous/file memory telemetry, and early heavy-file API admission with slow
 consumer/burst tests. The native permit alone does not bound API inputs allocated
 before admission. The current sequential receipts do not qualify arbitrary
@@ -9122,3 +9122,43 @@ capacity result, production PostgreSQL qualification or hosted acceptance.
 There were no hosted or model calls. No immediate rerun was started during the
 reserved native capacity window. The final committed integration must rerun
 these canonical suites alongside the separately owned package and native gates.
+
+
+### 2026-11-04 — release private verification frames after complete transfer
+
+The verifier drops its private serialized JSON after encoding, and drops its
+private encoded-model/DOCX references only after all stdin writes and close
+complete. Expected SHA256/size values remain unchanged, no backing bytes are
+mutated, and cancellation still kills/reaps before releasing admission. Two
+independent reviews found no proof downgrade. All 34 identity, process, role,
+byte-view, timeout and cancellation tests plus backend typecheck pass. This
+reduces retained input data; it does not itself establish a memory bound for
+caller contexts, Storage Blobs or pending responses.
+
+`evidence/native-verifier-protocol-render-20261104.json` records real bounded
+rendering of three synthetic protocol/storage-shape probes: two models at
+10 MiB minus 1 KiB, and 600,000 empty rows across 12,000 tables. All DOCX files
+were below 10 MiB and rendered within the unchanged 30-second attempt budget.
+These models were not admitted through an application API; the empty-row
+saved-v1 payload has only a conservative JSONB-size argument, not a database
+admission receipt.
+
+An initial API-sized component probe retained redundant measurement-only
+model/byte hash allocations and hit a cgroup OOM; its confounded red receipt is
+retained. Those allocations were removed; immutable staged input hashes remain
+bound externally. The corrected 384 MiB / 700m run accepted the corrected native
+base, exact 4 MiB core.xml, near-10-MiB ASCII model, and combined ASCII/core.xml.
+The near-10-MiB single mixed-script paragraph then returned an infrastructure
+error while the parent survived and Docker reported no cgroup OOM. Child cause
+was not established because runtime stderr is intentionally suppressed. See
+`evidence/native-verifier-protocol-700m-diagnostic-20261104.json`.
+
+That direct protocol-only paragraph is not a demonstrated current producer
+case: document blocks have a 12,000-character SQL bound; notice fields compose
+at most 103,003 characters; current writer paragraphs have a 20,000-character
+bound. The diagnostic remains unresolved robustness evidence, not proof that
+an admitted application proposal fails. No source/input or child-budget policy
+was changed in response. Actual authenticated-handler projection, early file
+admission, streamed command responses, slow consumers and final resource/image
+qualification remain separate pending gates; synthetic Auth/Storage transport
+must be labelled when used. No production or provider call occurred.

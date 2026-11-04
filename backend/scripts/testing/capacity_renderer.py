@@ -15,11 +15,12 @@ import shutil
 import subprocess
 import tempfile
 import time
+import threading
 
 ROOT = Path(__file__).resolve().parents[3]
 IMAGE = "sha256:08eeb4ffa1c2"  # Resolved to the exact full local identity.
 MODES = (
-    "standard", "final-capacity", "worker-capacity", "verifier-capacity", "verifier-matrix", "boundary-render-only", "dense-heap-matrix",
+    "standard", "final-capacity", "worker-capacity", "verifier-capacity", "verifier-matrix", "verifier-boundaries", "boundary-render-only", "dense-heap-matrix",
     "streamed-capacity", "streamed-render-only", "concurrent-capacity",
     "density-edges", "density-render-only", "sparse-capacity",
     "sparse-render-only", "direction-capacity", "direction-render-only",
@@ -38,7 +39,9 @@ def docker(*args, timeout=60):
 
 
 def model_names(mode):
-    if mode == "boundary-render-only":
+    if mode == "verifier-boundaries":
+        names = ("small-native-base", "small-native-core4m", "near10m-ascii", "near10m-ascii-core4m", "near10m-mixed100", "empty-rows-storage-shape")
+    elif mode == "boundary-render-only":
         names = ("near10m-ascii", "near10m-mixed100", "empty-rows-storage-shape")
     elif mode in ("final-capacity", "verifier-matrix"):
         names = ("dense-minimal-sparse-body-limit-authored",
@@ -110,7 +113,7 @@ def run(models, image, mode="standard", artifacts=None,
         for name in names:
             shutil.copyfile(inputs / name, staged_inputs / name)
         if verification_artifact:
-            if mode == "verifier-matrix":
+            if mode in ("verifier-matrix", "verifier-boundaries"):
                 for name in names:
                     shutil.copyfile(verification_artifact / (name.removesuffix(".json") + "-128.docx"), staged_inputs / name.replace(".json", ".docx"))
             else:
@@ -124,6 +127,26 @@ def run(models, image, mode="standard", artifacts=None,
         staged_outputs.chmod(0o777)
         container = "tdp-capacity-" + os.urandom(6).hex()
         started = time.monotonic()
+        sampling_stop = threading.Event()
+        memory_samples = []
+        def sample_memory():
+            while not sampling_stop.wait(1):
+                observed = docker("exec", container, "/bin/cat",
+                                  "/sys/fs/cgroup/memory.stat", "/sys/fs/cgroup/memory.current",
+                                  "/sys/fs/cgroup/memory.events", timeout=5)
+                if observed.returncode:
+                    continue
+                values = {}
+                for line in observed.stdout.splitlines():
+                    fields = line.split()
+                    if len(fields) == 2:
+                        values[fields[0]] = int(fields[1])
+                    elif len(fields) == 1:
+                        values["current"] = int(fields[0])
+                memory_samples.append({"elapsed_ms": round((time.monotonic()-started)*1000),
+                    **{key: values.get(key) for key in ("current", "anon", "file", "kernel", "max", "oom", "oom_kill")}})
+        sampling = threading.Thread(target=sample_memory, daemon=True)
+        sampling.start()
         try:
             base = ["run", "--name", container, "--network", "none", "--memory", f"{memory_mib}m",
                     "--cpus", str(cpu_limit), "--pids-limit", "128", "--read-only", "--tmpfs",
@@ -162,6 +185,8 @@ def run(models, image, mode="standard", artifacts=None,
                     'cat /sys/fs/cgroup/memory.peak > /outputs/cgroup_memory_peak_bytes; '
                     'cat /sys/fs/cgroup/memory.max > /outputs/cgroup_memory_limit_bytes; '
                     'exit "$result"', "capacity", mode, timeout=360)
+            sampling_stop.set()
+            sampling.join(timeout=6)
             state = docker("inspect", "--format", "{{json .State}}", container)
             state_data = json.loads(state.stdout) if state.returncode == 0 else {}
             lines = [json.loads(line) for line in result.stdout.splitlines() if line.startswith("{")]
@@ -199,9 +224,14 @@ def run(models, image, mode="standard", artifacts=None,
                                   "tmpfs_bytes": 64 * 1024 * 1024},
                 elapsed_ms=round((time.monotonic() - started) * 1000),
                 source_and_input_sha256=hashes,
+                cgroup_samples=memory_samples,
+                cgroup_sample_interval_seconds=1,
+                cgroup_sample_peaks={key: max((item[key] or 0 for item in memory_samples), default=0) for key in ("current", "anon", "file", "kernel")},
             )
             return receipt
         finally:
+            sampling_stop.set()
+            sampling.join(timeout=6)
             # Only this exact disposable container; never remove shared services.
             docker("rm", "-f", container)
 
