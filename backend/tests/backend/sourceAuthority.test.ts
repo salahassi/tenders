@@ -6,7 +6,10 @@ import {
 } from "../../supabase/functions/_shared/sourceEvidence";
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
-  f = await workflowFixture();
+  f = await workflowFixture(
+    undefined,
+    "20261104134540_source_evidence_authority.sql",
+  );
 }, 30000);
 afterAll(async () => f?.db.close());
 beforeEach(async () => f.db.exec("begin"));
@@ -511,4 +514,53 @@ it("allows explicit informational or confirmed nonbuyer meaning without inventin
       ).rows[0].valid,
     ).toBe(true);
   }
+});
+it("pins executor4 at initial source-contract activation and never lets model_executor2 lower it", async () => {
+  const { opportunity } = await setup();
+  await upload(
+    opportunity,
+    "Synthetic source clause requiring current source contract.",
+  );
+  const plan = await f.command("proposal.generate", {
+    id: opportunity.id,
+    expected_revision: opportunity.revision,
+  });
+  await f.db.query(
+    'update public.jobs set checkpoint=checkpoint||\'{"model_executor":2,"minimum_worker_executor":1}\'::jsonb where entity_id=$1',
+    [plan.id],
+  );
+  await f.db.query(
+    "update public.jobs set status='canceled' where entity_id<>$1",
+    [plan.id],
+  );
+  const job = (
+    await f.db.query<any>(
+      "select * from public.jobs where entity_id=$1 order by created_at limit 1",
+      [plan.id],
+    )
+  ).rows[0];
+  expect(job.checkpoint).toMatchObject({
+    model_executor: 2,
+    minimum_worker_executor: 4,
+  });
+  for (const worker of [1, 2, 3]) {
+    await f.db.query("select set_config('app.worker_executor',$1,true)", [
+      String(worker),
+    ]);
+    expect(
+      (
+        await f.db.query<any>("select app_private.next_fair_job($1,false) id", [
+          f.w,
+        ])
+      ).rows[0].id,
+    ).toBeNull();
+  }
+  await f.db.query("select set_config('app.worker_executor','4',true)");
+  expect(
+    (
+      await f.db.query<any>("select app_private.next_fair_job($1,false) id", [
+        f.w,
+      ])
+    ).rows[0].id,
+  ).toBe(job.id);
 });

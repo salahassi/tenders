@@ -6301,3 +6301,14 @@ semantic harness tests. Backend typecheck passes against integrated W05/W06/W08/
 foundations. No prompt, corpus, gold labels, provider calls or live outcomes changed.
 The real English/Arabic campaign remains unqualified; independent failure adjudication
 and the remaining implementation checks are recorded separately.
+
+W05 rolling-worker follow-up: source contract activation now installs its
+executor floor in the same migration before admitting new snapshots. New source
+or repair contract jobs retain `minimum_worker_executor: 4` independently of
+older `model_executor` values. Both eligibility predicates in the fair queue
+honor the greater value. A test stopped at the exact `134540` migration boundary
+proves executors 1/2/3 cannot select the v1 job while executor 4 can, and a later
+`model_executor: 2` update cannot lower the floor. Source/module tests pass 27/27.
+This rollout guard intentionally changes current-worker fixtures; combined
+issuance-deadline integration must use executor 4 for new workflows. The earlier
+full-suite totals above preceded this rolling-worker refinement.

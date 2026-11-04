@@ -218,6 +218,28 @@ begin
  return result;
 end$$;
 
+-- Install the claim floor in the same migration BEFORE activating new source
+-- contracts. A rolling old worker must not claim a wire it cannot validate.
+create function app_private.minimum_generation_executor(context jsonb) returns integer
+language sql immutable set search_path='' as $$
+ select case when context->'source_contract_version'='1'::jsonb or context->'repair_contract_version'='1'::jsonb then 4 else 1 end
+$$;
+create function app_private.guard_generation_executor() returns trigger
+language plpgsql security definer set search_path='' as $$declare required integer;begin
+ select app_private.minimum_generation_executor(p.frozen_context) into required from public.generation_plans p where p.workspace_id=new.workspace_id and p.id=new.entity_id;
+ if coalesce(required,1)>=4 then
+  new.checkpoint:=new.checkpoint||jsonb_build_object('minimum_worker_executor',greatest(required,coalesce((new.checkpoint->>'minimum_worker_executor')::integer,1)));
+ end if;return new;
+end$$;
+create trigger generation_source_executor before insert or update on public.jobs for each row execute function app_private.guard_generation_executor();
+do $$declare definition text;marker text;replacement text;begin
+ definition:=pg_get_functiondef('app_private.next_fair_job(uuid,boolean)'::regprocedure);
+ marker:='coalesce((q.checkpoint->>''model_executor'')::int,1)';
+ replacement:='greatest(coalesce((q.checkpoint->>''model_executor'')::int,1),coalesce((q.checkpoint->>''minimum_worker_executor'')::int,1))';
+ if position(marker in definition)=0 then raise exception 'SOURCE_EXECUTOR_QUEUE_GUARD_CHANGED';end if;
+ execute replace(definition,marker,replacement);
+end$$;
+
 -- Pin only genuinely new workflow requests. Refresh an old paid workflow without
 -- the version marker by delegating unchanged, never rewriting its request hash.
 alter function app_private.draft_generation_snapshot(uuid,uuid,uuid,uuid,jsonb) rename to draft_generation_snapshot_before_source_authority;
@@ -266,7 +288,7 @@ do $$declare t text;role_name text;signature text;begin
    end if;
   end loop;
  end loop;
- for signature in select p.oid::regprocedure::text from pg_proc p join pg_namespace n on n.oid=p.pronamespace where (n.nspname='app_private' and (p.proname in ('immutable_source_review','source_authority','source_document_current','source_review_sources','source_span_from_block','resolve_source_span','valid_obligation_tuple','source_semantics_for_review','source_obligation_inventory','check_source_semantics','source_review_evidence','app_command_before_source_authority','app_command','draft_generation_snapshot_before_source_authority','draft_generation_snapshot','backup_tables_before_source_authority','backup_tables'))) or (n.nspname='public' and p.proname='source_review_context') loop
+ for signature in select p.oid::regprocedure::text from pg_proc p join pg_namespace n on n.oid=p.pronamespace where (n.nspname='app_private' and (p.proname in ('immutable_source_review','minimum_generation_executor','guard_generation_executor','source_authority','source_document_current','source_review_sources','source_span_from_block','resolve_source_span','valid_obligation_tuple','source_semantics_for_review','source_obligation_inventory','check_source_semantics','source_review_evidence','app_command_before_source_authority','app_command','draft_generation_snapshot_before_source_authority','draft_generation_snapshot','backup_tables_before_source_authority','backup_tables'))) or (n.nspname='public' and p.proname='source_review_context') loop
   execute 'revoke all on function '||signature||' from public';
   foreach role_name in array array['anon','authenticated','service_role','tdp_app_anon','tdp_app_authenticated','tdp_app_service'] loop
    if exists(select 1 from pg_roles where rolname=role_name) then execute 'revoke all on function '||signature||' from '||quote_ident(role_name);end if;
