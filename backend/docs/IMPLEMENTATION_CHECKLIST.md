@@ -8470,3 +8470,37 @@ Backend typecheck passed. Final actual-image provider-envelope/render qualificat
 source; earlier image timings are not promoted to final evidence. No providers,
 production state or billing policy were changed. The unrelated G09 corpus
 remains frozen and its uncommitted harness is excluded from this fix.
+
+### 2026-11-04 — Pinned Storage retirement and signed-resumable closure
+
+Implemented the bounded physical census/reconciliation helper and qualified it
+against the actual pinned StorageAPI v1.81.0 and Nginx 1.29.5 images, using isolated
+PostgreSQL, synthetic bytes and no external network on the fixture containers.
+The helper binds exact scopes/manifests, includes actual UUID `.json` TUS metadata
+and known `.info` sidecars across both version separators, rejects ambiguous
+names/links/changed bytes, and fsyncs deletion directories before issuing absence
+proof. Fsync failures and already-absent retry barriers are explicit regressions.
+This helper alone never releases quota.
+
+The binary test reproduced a real signed-TUS bypass of the database preflight
+through the old gateway (201 creation, 204 write after the key fence). The gateway
+now denies the unused resumable protocol on both public/internal ports and rejects
+ambiguous first protocol segments. The product caller census confirms ordinary
+Storage object APIs; standard upload/download still preserve exact bytes. The
+underlying Storage binary remains bypassable if reached directly: the reviewed
+ConfigMap, running gateway revision and cluster-only network boundary are mandatory
+retirement prerequisites, owned by the separately reviewed release/coordinator
+changes. The original red condition is retained in the qualification receipt.
+
+Local verification: **12/12 physical tests**, **15/15 deployment-render/caller
+checks**, and **14/14 actual binary lifecycle cases** pass. The latter includes
+**38 normalized route cases**, a real 65,536-byte metadata-free orphan after
+failed compensation, fixed-root CLI removal with durable directory sync, checked
+Storage-owner metadata deletion, normal/signed TUS state cleanup and old-token
+replay denial after fresh Storage/gateway processes. Python compilation and diff
+checks pass. [The receipt](evidence/storage-retirement-binary-20261104.json) binds
+binary/helper/guard/gateway source hashes and contains no credentials/customer data.
+[Proof scope and reproduction](../scripts/ops/storage-retirement/PHYSICAL_PROOF.md)
+distinguish these checks from coordinator authorization, quota CAS and hosted PVC
+or cluster-recovery qualification. Root owns the final integrated package checks.
+No production deployment, retirement, provider call or hosted acceptance is claimed.

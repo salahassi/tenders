@@ -1,0 +1,732 @@
+{
+  "version": 1,
+  "synthetic_only": true,
+  "production_calls": 0,
+  "customer_calls": 0,
+  "storage_image": "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799",
+  "postgres_image": "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+  "cases": [
+    {
+      "name": "actual_binary_successful_upload_matches_exact_locator",
+      "passed": true,
+      "manifest": {
+        "version": 1,
+        "operationNonce": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "scopeSha256": "c0d2a0d6e2d84b7a8396a16bee2eda0c2a23d54bbf58932c5e72841aef9d25da",
+        "files": [
+          {
+            "relativePath": "retirement/retirement/tenderdesk-private/fixture/known.docx/4d050516-48f0-420b-b35e-183f70eabf30",
+            "size": 21,
+            "sha256": "e3718693901a81c54b94843802803924f0460292eaa06c6233eb26ba9b8043ef"
+          }
+        ],
+        "absent": false,
+        "manifestSha256": "cf8f26e4a7a075db24fb582c202b1ad943872057a5f57339f3a24cd95db0baf9"
+      }
+    },
+    {
+      "name": "actual_resumable_creation_and_existing_session_after_fence",
+      "passed": true,
+      "create_status": 201,
+      "fenced_new_status": 500,
+      "existing_session_patch_status": 500,
+      "before_quiescence_manifest": {
+        "version": 1,
+        "operationNonce": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "scopeSha256": "d46de5eff18158d09ae63b77dbf939f96a8d909c797cf028a72e1e8fedcf48ae",
+        "files": [
+          {
+            "relativePath": "retirement/retirement/tenderdesk-private/fixture/resumable.docx/c115dbb9-caf3-428e-bdba-527124b69db6",
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "relativePath": "retirement/retirement/tenderdesk-private/fixture/resumable.docx/c115dbb9-caf3-428e-bdba-527124b69db6.json",
+            "size": 317,
+            "sha256": "af553c944ff70f22f4eb4de3fb1d736fbc4e7c4bbc06f7739c3d43d8e23b0266"
+          }
+        ],
+        "absent": false,
+        "manifestSha256": "cb81578a132498a7f4f967d24620ce274f01d35a4bb2252a3ba86e4f89e4bf7c"
+      }
+    },
+    {
+      "name": "pre_existing_signed_upload_rejected_by_permanent_fence",
+      "passed": true,
+      "status": 500
+    },
+    {
+      "name": "future_physical_namespace_aliases_rejected_by_permanent_fence",
+      "passed": true,
+      "service_alias_cases": 4,
+      "old_signed_alias_status": 500
+    },
+    {
+      "name": "service_put_of_existing_retired_object_preserves_exact_original_bytes",
+      "passed": true,
+      "status": 500
+    },
+    {
+      "name": "red_old_gateway_signed_tus_recreates_retired_physical_bytes",
+      "passed": true,
+      "create_status": 201,
+      "patch_status": 204,
+      "metadata_rows": 0,
+      "physical": {
+        "version": 1,
+        "operationNonce": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "scopeSha256": "f78b4fcbc5b1944c8650cbe4a10951bdee900d17b869bf9184d10525e4ab8810",
+        "files": [
+          {
+            "relativePath": "retirement/retirement/tenderdesk-private/fixture/signed-resumable.docx/74d57fd9-8405-4a95-9428-877f3aef1737",
+            "size": 4096,
+            "sha256": "9ce2519c0561bb0b06617143d723160ce3a095ce9fa2bada3403d84d32045e47"
+          },
+          {
+            "relativePath": "retirement/retirement/tenderdesk-private/fixture/signed-resumable.docx/74d57fd9-8405-4a95-9428-877f3aef1737.json",
+            "size": 331,
+            "sha256": "f14ff2dc6c195c5f8bfb17dacca9dc64bb39c38c7b0d5accbe2793dacae152a1"
+          }
+        ],
+        "absent": false,
+        "manifestSha256": "93fd57a1aa3c32d1812dc32ad2f87a2e278752d3942d34abf2f04086b9327a60"
+      }
+    },
+    {
+      "name": "green_both_gateway_ports_block_resumable_normalizations_preserve_object_io",
+      "passed": true,
+      "normalized_cases": 38,
+      "old_patch_status": 404
+    },
+    {
+      "name": "service_upload_fence_rejects_before_unfinished_body_is_consumed",
+      "passed": true,
+      "status": 500
+    },
+    {
+      "name": "inflight_body_outlives_fence_failed_metadata_cleanup_leaves_orphan",
+      "passed": true,
+      "status": 500,
+      "orphan_bytes": 65536,
+      "metadata_rows": 0
+    },
+    {
+      "name": "terminated_writer_exact_physical_reconciliation_durably_removes_orphan",
+      "passed": true,
+      "before": {
+        "version": 1,
+        "operationNonce": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "scopeSha256": "551cab2194c9f33d8b01f467c64e7a1b6dc59e1014fa7eedb657ea55d35b7b5e",
+        "files": [
+          {
+            "relativePath": "retirement/retirement/tenderdesk-private/fixture/delayed.docx/83c303f7-cf1f-4f84-80a0-0beb96565bfa",
+            "size": 65536,
+            "sha256": "4004aba0db1429623545eb69e92cb12a41a56671c8636d1ba758add592bc9b03"
+          }
+        ],
+        "absent": false,
+        "manifestSha256": "0eec6f176111afefd15067c788124440509f296f7e09f3da783fafc5313982a6"
+      },
+      "after": {
+        "absent": true,
+        "afterManifestSha256": "1a68a98f9c804876f3dd7c7b448e82c425f8f629a46b5d17ff34671eee34b230",
+        "beforeManifestSha256": "0eec6f176111afefd15067c788124440509f296f7e09f3da783fafc5313982a6",
+        "files": [],
+        "manifestSha256": "1a68a98f9c804876f3dd7c7b448e82c425f8f629a46b5d17ff34671eee34b230",
+        "operationNonce": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "remainingCount": 0,
+        "removedBytes": 65536,
+        "removedCount": 1,
+        "scopeSha256": "551cab2194c9f33d8b01f467c64e7a1b6dc59e1014fa7eedb657ea55d35b7b5e",
+        "version": 1
+      }
+    },
+    {
+      "name": "observed_storage_owner_exact_metadata_delete_after_quiescent_physical_removal",
+      "passed": true,
+      "object_rows_remaining": 0
+    },
+    {
+      "name": "fresh_storage_and_gateway_cannot_recreate_retired_signed_tus_bytes",
+      "passed": true,
+      "public_and_internal_denied": true,
+      "removed": {
+        "version": 1,
+        "operationNonce": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "scopeSha256": "f78b4fcbc5b1944c8650cbe4a10951bdee900d17b869bf9184d10525e4ab8810",
+        "files": [],
+        "absent": true,
+        "manifestSha256": "d43e434e881eaf2b881455c00dee4eec0458033383fa83ffd883fbba2b79549d",
+        "beforeManifestSha256": "93fd57a1aa3c32d1812dc32ad2f87a2e278752d3942d34abf2f04086b9327a60",
+        "afterManifestSha256": "d43e434e881eaf2b881455c00dee4eec0458033383fa83ffd883fbba2b79549d",
+        "removedCount": 2,
+        "removedBytes": 4427,
+        "remainingCount": 0
+      }
+    },
+    {
+      "name": "fresh_process_cannot_resume_or_recreate_retired_tus_resource",
+      "passed": true,
+      "old_session_status": 404,
+      "new_session_status": 500,
+      "removed": {
+        "version": 1,
+        "operationNonce": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "scopeSha256": "d46de5eff18158d09ae63b77dbf939f96a8d909c797cf028a72e1e8fedcf48ae",
+        "files": [],
+        "absent": true,
+        "manifestSha256": "2b8ad72a058c4ad865e1b9ca3885845c35b280d572807ee708d57ef7288f478a",
+        "beforeManifestSha256": "cb81578a132498a7f4f967d24620ce274f01d35a4bb2252a3ba86e4f89e4bf7c",
+        "afterManifestSha256": "2b8ad72a058c4ad865e1b9ca3885845c35b280d572807ee708d57ef7288f478a",
+        "removedCount": 2,
+        "removedBytes": 317,
+        "remainingCount": 0
+      }
+    },
+    {
+      "name": "fresh_storage_process_old_keys_stay_retired_new_restore_key_writable",
+      "passed": true,
+      "rejected_status": 500,
+      "signed_status": 500,
+      "new_key_status": 200
+    }
+  ],
+  "limitations": [
+    "Local pinned binary and filesystem evidence; not hosted PVC power-loss qualification.",
+    "Minimal fixture installs the exact retirement table/guard only; canonical actor/intent/quota CAS and Kubernetes quiescence are separate tests.",
+    "No app-quota release is performed by this harness.",
+    "Pinned Storage binary remains directly vulnerable to signed TUS; the exact gateway denial on both ports and cluster-only Storage/network boundary are mandatory, not optional defense in depth."
+  ],
+  "storage_image_id": "sha256:03a737a1b3dd5f4fc97af8a3b07bb1fc8c98c6d589377474fae3b20c9699527e",
+  "binary_files": [
+    {
+      "path": "dist/storage/locator.js",
+      "sha256": "58cc5e4b60bc938677f482d30ef703d0c0a4c0f70bac66fa8f518f9ee3030a6d"
+    },
+    {
+      "path": "dist/storage/backend/adapter.js",
+      "sha256": "f57d2ac4f11a922140462f4861e43e50f59f3296c57fbe426207d613da02acd2"
+    },
+    {
+      "path": "dist/storage/backend/file.js",
+      "sha256": "28ec92b3dfe1f3146916931dbcaa221d5478e06cce18556f7f8c4355964b674d"
+    },
+    {
+      "path": "dist/storage/uploader.js",
+      "sha256": "081c8c73cd9ab87650c658a4872e3f5f8a9e599dcfedb9bf43cf60d5b0cecb2e"
+    },
+    {
+      "path": "dist/storage/events/objects/object-admin-delete.js",
+      "sha256": "60638f3d142a5c5890d2c851c8e3297e1428859e7f9b20134b8cbcc261be3679"
+    },
+    {
+      "path": "dist/test/object-versioning-bucket-status.test.js",
+      "sha256": "d9199d82f78c8c99295bea15588b0ba5b0af738f7b84b6a97e263b10ded3b9f0"
+    },
+    {
+      "path": "dist/test/tus.test.js",
+      "sha256": "4cf979762e8898df94a5734489a94ccf21b6f7b4bdc6d6100e4b44abb2b35ae1"
+    },
+    {
+      "path": "dist/http/routes/tus/index.js",
+      "sha256": "546c8f34388df0b9393b826460737861afd22f8f575bc7ef09f4c4af48f3ce19"
+    },
+    {
+      "path": "dist/http/routes/tus/index.test.js",
+      "sha256": "769d8d681d79428d97649c0c8d16209d482c299482de2212a0c827b648e714ac"
+    },
+    {
+      "path": "dist/http/routes/tus/lifecycle.js",
+      "sha256": "a26927ee7fed1c1157286f2a9e3228922050dbb98dd01ccbf00aaf952e74c392"
+    },
+    {
+      "path": "dist/http/routes/tus/lifecycle.test.js",
+      "sha256": "109e6dcce1258f31e195c4576601eaee206a51004970a1affe3c1d7dbdbcd6ac"
+    },
+    {
+      "path": "dist/storage/protocols/tus/als-memory-kv.js",
+      "sha256": "d4857ea89d49b92e631d35c364d38d158a878ff12bfb15ba7f8a5d1b9b05daeb"
+    },
+    {
+      "path": "dist/storage/protocols/tus/file-store.js",
+      "sha256": "4dbb47ee8c5dc54552fc319d0ef6e938d545183c419403f1c9b00026626c5476"
+    },
+    {
+      "path": "dist/storage/protocols/tus/file-store.test.js",
+      "sha256": "aec57f45e93cc9782b81da5f37ab318d8d17c504d6592382587966c5b9124a71"
+    },
+    {
+      "path": "dist/storage/protocols/tus/index.js",
+      "sha256": "143b07241d25fddcac7be29cc56fd703cb6ef763a09c8dd67011dd5f02fa7e19"
+    },
+    {
+      "path": "dist/storage/protocols/tus/postgres-locker.js",
+      "sha256": "0780052884c19b711e729698440392328a71528020f81391e35e108f40ca89c7"
+    },
+    {
+      "path": "dist/storage/protocols/tus/postgres-locker.test.js",
+      "sha256": "ff018f7a9c35a640f8139380d694e7df72a4e0668b891752cd26b6a75dc577fe"
+    },
+    {
+      "path": "dist/storage/protocols/tus/s3-locker.js",
+      "sha256": "13f755d5881257e5414403e8ca7492c8dcae8f636241bb1206d8114320f26f5f"
+    },
+    {
+      "path": "dist/storage/protocols/tus/s3-store.js",
+      "sha256": "08e22d3d89db317b8addf6b370a2a9f51f2718f86ad57b976d9c75d47f1ac8f7"
+    },
+    {
+      "path": "dist/storage/protocols/tus/s3-store.test.js",
+      "sha256": "3c5401b1b9727d77d97c78b8c795a8d63aa072fc5381fa277898e8a3d7df0c1b"
+    },
+    {
+      "path": "dist/storage/protocols/tus/upload-id.js",
+      "sha256": "d25530e6bd1f1422f3ba5560756914840d81ea63bf6a2b01eb40966ae7b6ae0f"
+    },
+    {
+      "path": "dist/storage/protocols/tus/upload-id.test.js",
+      "sha256": "af48a7cebdc26ec5d43533084791688a7ca4671712c7fd6c4dc3be68653209ad"
+    }
+  ],
+  "physical_module_sha256": "5da1c91c120a0f6e248744433aac7c1816346d4d48c03cefce85dac4f298d8db",
+  "harness_sha256": "aad4c4824fd65a563b1da705105f66ece606c4ed025c152bf7363802fccc9855",
+  "storage_tables": [
+    {
+      "name": "buckets",
+      "owner": "probe_storageadmin"
+    },
+    {
+      "name": "buckets_analytics",
+      "owner": "probe_storageadmin"
+    },
+    {
+      "name": "buckets_vectors",
+      "owner": "probe_storageadmin"
+    },
+    {
+      "name": "iceberg_namespaces",
+      "owner": "probe_storageadmin"
+    },
+    {
+      "name": "iceberg_tables",
+      "owner": "probe_storageadmin"
+    },
+    {
+      "name": "migrations",
+      "owner": "probe_storageadmin"
+    },
+    {
+      "name": "objects",
+      "owner": "probe_storageadmin"
+    },
+    {
+      "name": "s3_multipart_uploads",
+      "owner": "probe_storageadmin"
+    },
+    {
+      "name": "s3_multipart_uploads_parts",
+      "owner": "probe_storageadmin"
+    },
+    {
+      "name": "vector_indexes",
+      "owner": "probe_storageadmin"
+    }
+  ],
+  "object_columns": [
+    {
+      "name": "id",
+      "type": "uuid"
+    },
+    {
+      "name": "bucket_id",
+      "type": "text"
+    },
+    {
+      "name": "name",
+      "type": "text"
+    },
+    {
+      "name": "owner",
+      "type": "uuid"
+    },
+    {
+      "name": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "name": "updated_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "name": "last_accessed_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "name": "metadata",
+      "type": "jsonb"
+    },
+    {
+      "name": "path_tokens",
+      "type": "ARRAY"
+    },
+    {
+      "name": "version",
+      "type": "text"
+    },
+    {
+      "name": "owner_id",
+      "type": "text"
+    },
+    {
+      "name": "user_metadata",
+      "type": "jsonb"
+    },
+    {
+      "name": "archived_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "name": "is_delete_marker",
+      "type": "boolean"
+    },
+    {
+      "name": "is_versioned",
+      "type": "boolean"
+    }
+  ],
+  "multipart_columns": [
+    {
+      "table": "s3_multipart_uploads",
+      "name": "id",
+      "type": "text"
+    },
+    {
+      "table": "s3_multipart_uploads",
+      "name": "in_progress_size",
+      "type": "bigint"
+    },
+    {
+      "table": "s3_multipart_uploads",
+      "name": "upload_signature",
+      "type": "text"
+    },
+    {
+      "table": "s3_multipart_uploads",
+      "name": "bucket_id",
+      "type": "text"
+    },
+    {
+      "table": "s3_multipart_uploads",
+      "name": "key",
+      "type": "text"
+    },
+    {
+      "table": "s3_multipart_uploads",
+      "name": "version",
+      "type": "text"
+    },
+    {
+      "table": "s3_multipart_uploads",
+      "name": "owner_id",
+      "type": "text"
+    },
+    {
+      "table": "s3_multipart_uploads",
+      "name": "created_at",
+      "type": "timestamp with time zone"
+    },
+    {
+      "table": "s3_multipart_uploads",
+      "name": "user_metadata",
+      "type": "jsonb"
+    },
+    {
+      "table": "s3_multipart_uploads",
+      "name": "metadata",
+      "type": "jsonb"
+    },
+    {
+      "table": "s3_multipart_uploads_parts",
+      "name": "id",
+      "type": "uuid"
+    },
+    {
+      "table": "s3_multipart_uploads_parts",
+      "name": "upload_id",
+      "type": "text"
+    },
+    {
+      "table": "s3_multipart_uploads_parts",
+      "name": "size",
+      "type": "bigint"
+    },
+    {
+      "table": "s3_multipart_uploads_parts",
+      "name": "part_number",
+      "type": "integer"
+    },
+    {
+      "table": "s3_multipart_uploads_parts",
+      "name": "bucket_id",
+      "type": "text"
+    },
+    {
+      "table": "s3_multipart_uploads_parts",
+      "name": "key",
+      "type": "text"
+    },
+    {
+      "table": "s3_multipart_uploads_parts",
+      "name": "etag",
+      "type": "text"
+    },
+    {
+      "table": "s3_multipart_uploads_parts",
+      "name": "owner_id",
+      "type": "text"
+    },
+    {
+      "table": "s3_multipart_uploads_parts",
+      "name": "version",
+      "type": "text"
+    },
+    {
+      "table": "s3_multipart_uploads_parts",
+      "name": "created_at",
+      "type": "timestamp with time zone"
+    }
+  ],
+  "object_triggers_before_fence": [
+    "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_c_16564\" AFTER INSERT ON storage.objects FROM storage.buckets NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_ins\"()",
+    "CREATE CONSTRAINT TRIGGER \"RI_ConstraintTrigger_c_16565\" AFTER UPDATE ON storage.objects FROM storage.buckets NOT DEFERRABLE INITIALLY IMMEDIATE FOR EACH ROW EXECUTE FUNCTION \"RI_FKey_check_upd\"()",
+    "CREATE TRIGGER protect_objects_delete BEFORE DELETE ON storage.objects FOR EACH STATEMENT EXECUTE FUNCTION storage.protect_delete()",
+    "CREATE TRIGGER update_objects_updated_at BEFORE UPDATE ON storage.objects FOR EACH ROW EXECUTE FUNCTION storage.update_updated_at_column()"
+  ],
+  "object_delete_protection_source": "CREATE OR REPLACE FUNCTION storage.protect_delete()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    -- Check if storage.allow_delete_query is set to 'true'\n    IF COALESCE(current_setting('storage.allow_delete_query', true), 'false') != 'true' THEN\n        RAISE EXCEPTION 'Direct deletion from storage tables is not allowed. Use the Storage API instead.'\n            USING HINT = 'This prevents accidental data loss from orphaned objects.',\n                  ERRCODE = '42501';\n    END IF;\n    RETURN NULL;\nEND;\n$function$",
+  "retirement_migration_sha256": "5269599b431da34c3f7ee77d06442441e692c9f2b754d2f2050a42e06dbe1634",
+  "executed_guard_ddl_sha256": "d8fbfcf0da031d18359f5b5ae798f8c0563b3b5c26701720dd3d8938fb35c212",
+  "guard_function_source_sha256": "9b352659bcb8ae9175fd610f936baba8d8dd9196cea7696eb1b9d139100ab323",
+  "guard_body_sha256": "a6758903ecce3e4bbd086fc169939bb5ba38a153acea40194e396d055cc682cd",
+  "guard_security": {
+    "owner": "probe_appowner",
+    "security_definer": true,
+    "owner_superuser": false,
+    "owner_bypass_rls": false,
+    "configuration": [
+      "search_path=\"\""
+    ],
+    "storage_owner_execute_after_install": false
+  },
+  "gateway_image": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+  "gateway_image_id": "sha256:87ae58c7c6b521c9a89276ddc8b3365586e0d3fa1df02bbf5d8340a29c2e1bd2",
+  "gateway_before_source_sha256": "4907ecf81e2fa1e97754202906873ccd7c34e3dcbe26dd1e60cf4e276c639d23",
+  "gateway_config_source_sha256": "b87507bfd4253165c1e81d7d5557348f07b079481218e7f6db918a8fcdb731e5",
+  "gateway_fixture_changes": [
+    "namespace tenderdesk",
+    "Storage upstream and DNS loopback in isolated namespace",
+    "one Nginx worker rather than host CPU count; no throughput/SLO claim"
+  ],
+  "gateway_before_executed_sha256": "89c7a2ba2729692e80c25e6cf019515145d38f810f6abdf698c9d38886cdbec0",
+  "signed_tus_bypass_confirmed": true,
+  "gateway_executed_config_sha256": "01e14f68dac3c3ab5390b6bb3b12588338662705d1b6cb7fb422bb21506a894d",
+  "gateway_normalized_route_cases": [
+    {
+      "port": 8080,
+      "path": "/storage/v1/upload/resumable",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/upload/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/upload/resumable/sign/",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage//v1//upload//resumable//sign",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/object/../upload/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/object/%2e%2e/upload/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/%75pload/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/upload/%72esumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage%2fv1%2fupload%2fresumable%2fsign",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/%76%31/upload/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/STORAGE/V1/UPLOAD/RESUMABLE/SIGN",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/%2575pload/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/upload%252fresumable%252fsign",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/upload\\resumable\\sign",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/upload;ignored/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/upload/resumable/sign/extra",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/upload/resumableevil",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/upload/resumable/sign?query=/object/allowed",
+      "status": 404
+    },
+    {
+      "port": 8080,
+      "path": "/storage/v1/up%256coad/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/upload/resumable",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/upload/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/upload/resumable/sign/",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage//v1//upload//resumable//sign",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/object/../upload/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/object/%2e%2e/upload/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/%75pload/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/upload/%72esumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage%2fv1%2fupload%2fresumable%2fsign",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/%76%31/upload/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/STORAGE/V1/UPLOAD/RESUMABLE/SIGN",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/%2575pload/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/upload%252fresumable%252fsign",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/upload\\resumable\\sign",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/upload;ignored/resumable/sign",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/upload/resumable/sign/extra",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/upload/resumableevil",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/upload/resumable/sign?query=/object/allowed",
+      "status": 404
+    },
+    {
+      "port": 8081,
+      "path": "/storage/v1/up%256coad/resumable/sign",
+      "status": 404
+    }
+  ],
+  "ordinary_endpoint_success": {
+    "public_upload": 200,
+    "internal_download": 200,
+    "download_sha256": "9a89b2383191a329f4132642d591377e8719ede10f2dc35fd71edf2eb828742f"
+  },
+  "gateway_resumable_denial_qualified": true,
+  "passed": true,
+  "actual_binary_exercised": true
+}

@@ -29,6 +29,11 @@ def label(value: str) -> str:
     return value
 
 
+def gateway_configuration(namespace: str) -> str:
+    """Exact reviewed gateway text shared by initial render and guarded rollout."""
+    return (HERE / "gateway.conf").read_text().replace("__NAMESPACE__", label(namespace))
+
+
 def image(value: str) -> str:
     if not isinstance(value, str) or not re.fullmatch(r"[a-z0-9][a-z0-9._:/-]*(?::[a-zA-Z0-9._-]+)?@sha256:[a-f0-9]{64}", value):
         raise ValueError("DEPLOYMENT_IMAGE_DIGEST_REQUIRED")
@@ -115,7 +120,7 @@ def build(config):
         "spec": {"accessModes": ["ReadWriteOnce"], "storageClassName": storage_class,
         "resources": {"requests": {"storage": size}}}} for name, size in [("private-objects", "20Gi"), ("https-state", "1Gi")]]
     configmaps = {
-        "gateway-config": {"nginx.conf": (HERE / "gateway.conf").read_text().replace("__NAMESPACE__", namespace)},
+        "gateway-config": {"nginx.conf": gateway_configuration(namespace)},
         "https-config": {"Caddyfile": (HERE / "Caddyfile").read_text()},
         "frontend-config": {"runtime-config.js": "window.__TENDERDESK_CONFIG__ = " + json.dumps({"apiUrl": origin, "publishableKey": public_key, "appOrigin": origin}, separators=(",", ":")) + ";\n"},
     }
