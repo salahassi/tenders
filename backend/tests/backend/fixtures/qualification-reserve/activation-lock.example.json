@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "state": "draft",
+  "frozen_at": null,
+  "corpus_sha256": "9a1fd88f07fc9fc9d9b06ae3b67699976dacf221e0af7ee03fafdd59bfe25d7c",
+  "retrieval_sha256": "cc8f3d70d4847bc1652e3560ff83ad209da5b64e1330d2b8abbf815981046c41",
+  "source_revision": null,
+  "adapter_sha256": null,
+  "validator_sha256": null,
+  "oracle_review_reference": null,
+  "execution_authorization_reference": null,
+  "repetitions": 2,
+  "automatic_retries": 0,
+  "targets": [],
+  "planned_invocations": 0,
+  "execution_note": "This draft cannot run. No provider is assumed, no funds/calls authorized, and no task adapter is yet qualified. Existing authenticated runner policy remains authoritative."
+}

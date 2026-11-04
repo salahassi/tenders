@@ -1,0 +1,915 @@
+{
+  "version": 3,
+  "split": "synthetic_qualification_reserve",
+  "blindness": "not_independently_blinded",
+  "cases": [
+    {
+      "id": "qr1.retrieval.triage.en",
+      "family": "triage",
+      "split_group": "retrieval.triage",
+      "query_language": "en",
+      "source_language": "ar",
+      "query": "Show experience triaging telemetry anomalies.",
+      "source_id": "qr-retrieval-triage-en",
+      "source_text": "نفذنا فرز الحالات غير المعتادة في قياسات مشروع تجريبي لعدادات المياه.\n\nشمل العمل تنبيهات المراقبة فقط؛ واستُبعد التنبؤ بأعطال المعدات المستقبلية.",
+      "source_sha256": "6df565e1a56fdb95346b5fa92bdc9392f2d134dd2890c05503ce395213d98ae1",
+      "gold_fact": "نفذنا فرز الحالات غير المعتادة في قياسات مشروع تجريبي لعدادات المياه.",
+      "gold_qualifier": "شمل العمل تنبيهات المراقبة فقط؛ واستُبعد التنبؤ بأعطال المعدات المستقبلية.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 69,
+          "quote": "نفذنا فرز الحالات غير المعتادة في قياسات مشروع تجريبي لعدادات المياه."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 71,
+          "end": 145,
+          "quote": "شمل العمل تنبيهات المراقبة فقط؛ واستُبعد التنبؤ بأعطال المعدات المستقبلية."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "c43c72d1582df9659fc76e9ffd2437dec03b9484ace5622ce2cb1af819d869f2",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23171,
+          "quote": "نفذنا فرز الحالات غير المعتادة في قياسات مشروع تجريبي لعدادات المياه."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46275,
+          "end": 46349,
+          "quote": "شمل العمل تنبيهات المراقبة فقط؛ واستُبعد التنبؤ بأعطال المعدات المستقبلية."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.triage.ar",
+      "family": "triage",
+      "split_group": "retrieval.triage",
+      "query_language": "ar",
+      "source_language": "en",
+      "query": "أثبت الخبرة في فرز الحالات غير المعتادة في القياسات.",
+      "source_id": "qr-retrieval-triage-ar",
+      "source_text": "Delivered telemetry anomaly triage for a water-meter pilot.\n\nThis covered observation alerts only; future equipment-failure prediction was excluded.",
+      "source_sha256": "6fa9d68f8ecaa0e9e152b4856c4f4587c3e1479a10b2a83eda7a42e1cec17afd",
+      "gold_fact": "Delivered telemetry anomaly triage for a water-meter pilot.",
+      "gold_qualifier": "This covered observation alerts only; future equipment-failure prediction was excluded.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 59,
+          "quote": "Delivered telemetry anomaly triage for a water-meter pilot."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 61,
+          "end": 148,
+          "quote": "This covered observation alerts only; future equipment-failure prediction was excluded."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "1e6abd7c31eae4f9bbee009ee30fbbbd11ab48dc063eaf29cd62566597eb1b36",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23161,
+          "quote": "Delivered telemetry anomaly triage for a water-meter pilot."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46265,
+          "end": 46352,
+          "quote": "This covered observation alerts only; future equipment-failure prediction was excluded."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.catalogue.en",
+      "family": "catalogue",
+      "split_group": "retrieval.catalogue",
+      "query_language": "en",
+      "source_language": "ar",
+      "query": "Show experience matching duplicate catalogue entities.",
+      "source_id": "qr-retrieval-catalogue-en",
+      "source_text": "طابقنا كيانات المعدات المكررة بين أرشيفين.\n\nاقتصر العمل على ربط قيود الفهارس، وليس الهويات القانونية للأفراد.",
+      "source_sha256": "c99faa691c92c00c7f92d7878aece9e20a177e9441e4394fc58bb6965c4dc9c5",
+      "gold_fact": "طابقنا كيانات المعدات المكررة بين أرشيفين.",
+      "gold_qualifier": "اقتصر العمل على ربط قيود الفهارس، وليس الهويات القانونية للأفراد.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 42,
+          "quote": "طابقنا كيانات المعدات المكررة بين أرشيفين."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 44,
+          "end": 109,
+          "quote": "اقتصر العمل على ربط قيود الفهارس، وليس الهويات القانونية للأفراد."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "e1724017b4f7fdd1fec62e9fbb7a9bce9b7b7e4b299eec5244f092191410ce48",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23144,
+          "quote": "طابقنا كيانات المعدات المكررة بين أرشيفين."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46248,
+          "end": 46313,
+          "quote": "اقتصر العمل على ربط قيود الفهارس، وليس الهويات القانونية للأفراد."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.catalogue.ar",
+      "family": "catalogue",
+      "split_group": "retrieval.catalogue",
+      "query_language": "ar",
+      "source_language": "en",
+      "query": "أثبت الخبرة في مطابقة الكيانات المكررة في الفهارس.",
+      "source_id": "qr-retrieval-catalogue-ar",
+      "source_text": "Matched duplicate equipment catalogue entities across two archives.\n\nThe work linked catalogue entries only, not legal identities of individuals.",
+      "source_sha256": "a0725629fba48157de54a3526192452ca1ae7eaae14ef0bf2913283f082c97f2",
+      "gold_fact": "Matched duplicate equipment catalogue entities across two archives.",
+      "gold_qualifier": "The work linked catalogue entries only, not legal identities of individuals.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 67,
+          "quote": "Matched duplicate equipment catalogue entities across two archives."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 69,
+          "end": 145,
+          "quote": "The work linked catalogue entries only, not legal identities of individuals."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "c0624a160feec3dad572441ce8859783ce43374f813d46dd2c67b20cebb182c2",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23169,
+          "quote": "Matched duplicate equipment catalogue entities across two archives."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46273,
+          "end": 46349,
+          "quote": "The work linked catalogue entries only, not legal identities of individuals."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.diagrams.en",
+      "family": "diagrams",
+      "split_group": "retrieval.diagrams",
+      "query_language": "en",
+      "source_language": "ar",
+      "query": "Show experience digitizing engineering diagrams.",
+      "source_id": "qr-retrieval-diagrams-en",
+      "source_text": "حولنا الرسومات الهندسية الورقية ثنائية الأبعاد إلى صيغة رقمية.\n\nشملت الخدمة الرسومات الثابتة فقط؛ واستُبعدت المحاكاة ثلاثية الأبعاد.",
+      "source_sha256": "a14a4ebf717574007adbe77564f1a4f176a2e7bb0a4647d6e9ff2ebd62520245",
+      "gold_fact": "حولنا الرسومات الهندسية الورقية ثنائية الأبعاد إلى صيغة رقمية.",
+      "gold_qualifier": "شملت الخدمة الرسومات الثابتة فقط؛ واستُبعدت المحاكاة ثلاثية الأبعاد.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 62,
+          "quote": "حولنا الرسومات الهندسية الورقية ثنائية الأبعاد إلى صيغة رقمية."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 64,
+          "end": 132,
+          "quote": "شملت الخدمة الرسومات الثابتة فقط؛ واستُبعدت المحاكاة ثلاثية الأبعاد."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "b999c64ed9f91d3262b12343c6e146b58be7bd10a712806d7406dc6ece122bcd",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23164,
+          "quote": "حولنا الرسومات الهندسية الورقية ثنائية الأبعاد إلى صيغة رقمية."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46268,
+          "end": 46336,
+          "quote": "شملت الخدمة الرسومات الثابتة فقط؛ واستُبعدت المحاكاة ثلاثية الأبعاد."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.diagrams.ar",
+      "family": "diagrams",
+      "split_group": "retrieval.diagrams",
+      "query_language": "ar",
+      "source_language": "en",
+      "query": "أثبت الخبرة في تحويل الرسومات الهندسية إلى صيغة رقمية.",
+      "source_id": "qr-retrieval-diagrams-ar",
+      "source_text": "Digitized engineering diagrams from two-dimensional paper drawings.\n\nOnly static drawings were included; three-dimensional simulation was excluded.",
+      "source_sha256": "fbf67addfa51077793d5ac9a7dd6451c1ba568a4d41044886246308b62beecd4",
+      "gold_fact": "Digitized engineering diagrams from two-dimensional paper drawings.",
+      "gold_qualifier": "Only static drawings were included; three-dimensional simulation was excluded.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 67,
+          "quote": "Digitized engineering diagrams from two-dimensional paper drawings."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 69,
+          "end": 147,
+          "quote": "Only static drawings were included; three-dimensional simulation was excluded."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "e5a2a6d01f239208963fa22eb92c83ce07c22148b077f2e4abc45922cb434eb8",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23169,
+          "quote": "Digitized engineering diagrams from two-dimensional paper drawings."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46273,
+          "end": 46351,
+          "quote": "Only static drawings were included; three-dimensional simulation was excluded."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.classification.en",
+      "family": "classification",
+      "split_group": "retrieval.classification",
+      "query_language": "en",
+      "source_language": "ar",
+      "query": "Show experience classifying customs documents.",
+      "source_id": "qr-retrieval-classification-en",
+      "source_text": "نفذنا تصنيف المستندات الجمركية لأرشيف داخلي.\n\nقدم العمل تجميعاً للمستندات فقط، وليس استشارة تنظيمية أو اعتماداً للإيداع.",
+      "source_sha256": "ceff7580a1b6ac66ae2db9dc9c1e592389309605b46ffbf5e20298f3346d2797",
+      "gold_fact": "نفذنا تصنيف المستندات الجمركية لأرشيف داخلي.",
+      "gold_qualifier": "قدم العمل تجميعاً للمستندات فقط، وليس استشارة تنظيمية أو اعتماداً للإيداع.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 44,
+          "quote": "نفذنا تصنيف المستندات الجمركية لأرشيف داخلي."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46,
+          "end": 120,
+          "quote": "قدم العمل تجميعاً للمستندات فقط، وليس استشارة تنظيمية أو اعتماداً للإيداع."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "ae0d72cb6d861f0f1a6b01c91104266a0c6781b3c7287f55a4249c535eee4909",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23146,
+          "quote": "نفذنا تصنيف المستندات الجمركية لأرشيف داخلي."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46250,
+          "end": 46324,
+          "quote": "قدم العمل تجميعاً للمستندات فقط، وليس استشارة تنظيمية أو اعتماداً للإيداع."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.classification.ar",
+      "family": "classification",
+      "split_group": "retrieval.classification",
+      "query_language": "ar",
+      "source_language": "en",
+      "query": "أثبت الخبرة في تصنيف المستندات الجمركية.",
+      "source_id": "qr-retrieval-classification-ar",
+      "source_text": "Delivered customs-document classification for an internal archive.\n\nThis provided document grouping only, not regulatory advice or filing approval.",
+      "source_sha256": "e22e643b7b4f0839da9e8baff96123fa2097f4a002cb990c66ad0c7a16b1d7eb",
+      "gold_fact": "Delivered customs-document classification for an internal archive.",
+      "gold_qualifier": "This provided document grouping only, not regulatory advice or filing approval.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 66,
+          "quote": "Delivered customs-document classification for an internal archive."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 68,
+          "end": 147,
+          "quote": "This provided document grouping only, not regulatory advice or filing approval."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "31ceffc958af729839e2ac817def1b1a04c3f002ac6122de451c63dac295d2d7",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23168,
+          "quote": "Delivered customs-document classification for an internal archive."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46272,
+          "end": 46351,
+          "quote": "This provided document grouping only, not regulatory advice or filing approval."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.forecast.en",
+      "family": "forecast",
+      "split_group": "retrieval.forecast",
+      "query_language": "en",
+      "source_language": "ar",
+      "query": "Show experience forecasting electricity consumption.",
+      "source_id": "qr-retrieval-forecast-en",
+      "source_text": "توقعنا استهلاك الكهرباء لموقع صناعي واحد.\n\nانطبق التوقع على ذلك الموقع فقط؛ واستُبعدت موازنة شبكة الكهرباء.",
+      "source_sha256": "bb4da07767784a1a0c79271670dbf42daec4f4f26fb79369ce00891f86d9864b",
+      "gold_fact": "توقعنا استهلاك الكهرباء لموقع صناعي واحد.",
+      "gold_qualifier": "انطبق التوقع على ذلك الموقع فقط؛ واستُبعدت موازنة شبكة الكهرباء.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 41,
+          "quote": "توقعنا استهلاك الكهرباء لموقع صناعي واحد."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 43,
+          "end": 107,
+          "quote": "انطبق التوقع على ذلك الموقع فقط؛ واستُبعدت موازنة شبكة الكهرباء."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "c461af25145895b5227bb831c952d52ddc8eee4a45960b36b6f411f01058a832",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23143,
+          "quote": "توقعنا استهلاك الكهرباء لموقع صناعي واحد."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46247,
+          "end": 46311,
+          "quote": "انطبق التوقع على ذلك الموقع فقط؛ واستُبعدت موازنة شبكة الكهرباء."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.forecast.ar",
+      "family": "forecast",
+      "split_group": "retrieval.forecast",
+      "query_language": "ar",
+      "source_language": "en",
+      "query": "أثبت الخبرة في توقع استهلاك الكهرباء.",
+      "source_id": "qr-retrieval-forecast-ar",
+      "source_text": "Forecast electricity consumption for one industrial site.\n\nThe forecast applied only to that site; electricity-grid balancing was excluded.",
+      "source_sha256": "5c2a1a4251667990bbfca7957d4f68e4fe777af78521aef5ece09f37df02dbd5",
+      "gold_fact": "Forecast electricity consumption for one industrial site.",
+      "gold_qualifier": "The forecast applied only to that site; electricity-grid balancing was excluded.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 57,
+          "quote": "Forecast electricity consumption for one industrial site."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 59,
+          "end": 139,
+          "quote": "The forecast applied only to that site; electricity-grid balancing was excluded."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "6a46bfe958d0bc83973b84b592002da78ab332d76b68baf9965a9d226a19bd20",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23159,
+          "quote": "Forecast electricity consumption for one industrial site."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46263,
+          "end": 46343,
+          "quote": "The forecast applied only to that site; electricity-grid balancing was excluded."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.accessibility.en",
+      "family": "accessibility",
+      "split_group": "retrieval.accessibility",
+      "query_language": "en",
+      "source_language": "ar",
+      "query": "Show experience auditing web accessibility.",
+      "source_id": "qr-retrieval-accessibility-en",
+      "source_text": "دققنا إتاحة الويب لذوي الإعاقة في بوابة معلومات بلدية.\n\nقدمت الخدمة تقرير تدقيق فقط، ولم تمنح اعتماداً.",
+      "source_sha256": "dad636919c24d4b6ae88b366c9d5764d7f8950cfebc01f9ca236d0b0f8596470",
+      "gold_fact": "دققنا إتاحة الويب لذوي الإعاقة في بوابة معلومات بلدية.",
+      "gold_qualifier": "قدمت الخدمة تقرير تدقيق فقط، ولم تمنح اعتماداً.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 54,
+          "quote": "دققنا إتاحة الويب لذوي الإعاقة في بوابة معلومات بلدية."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 56,
+          "end": 103,
+          "quote": "قدمت الخدمة تقرير تدقيق فقط، ولم تمنح اعتماداً."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "13324ba70ad97ce97310a6429e93fa4cf49b8b3f99cc2ec17a2ab9eabf719a33",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23156,
+          "quote": "دققنا إتاحة الويب لذوي الإعاقة في بوابة معلومات بلدية."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46260,
+          "end": 46307,
+          "quote": "قدمت الخدمة تقرير تدقيق فقط، ولم تمنح اعتماداً."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.accessibility.ar",
+      "family": "accessibility",
+      "split_group": "retrieval.accessibility",
+      "query_language": "ar",
+      "source_language": "en",
+      "query": "أثبت الخبرة في تدقيق إتاحة الويب لذوي الإعاقة.",
+      "source_id": "qr-retrieval-accessibility-ar",
+      "source_text": "Audited web accessibility for a municipal information portal.\n\nThe service delivered an audit report only and did not grant accreditation.",
+      "source_sha256": "fd9b1db0902e017eed72a983c5e09fc51ee9ac4091dcb87a10263a9c9716a83a",
+      "gold_fact": "Audited web accessibility for a municipal information portal.",
+      "gold_qualifier": "The service delivered an audit report only and did not grant accreditation.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 61,
+          "quote": "Audited web accessibility for a municipal information portal."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 63,
+          "end": 138,
+          "quote": "The service delivered an audit report only and did not grant accreditation."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "eaca9eb35e1886ca03238d8301f1375c550eab775990148f2d4ff11bfc6e9c5d",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23163,
+          "quote": "Audited web accessibility for a municipal information portal."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46267,
+          "end": 46342,
+          "quote": "The service delivered an audit report only and did not grant accreditation."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.deduplication.en",
+      "family": "deduplication",
+      "split_group": "retrieval.deduplication",
+      "query_language": "en",
+      "source_language": "ar",
+      "query": "Show experience detecting duplicate pseudonymous records.",
+      "source_id": "qr-retrieval-deduplication-en",
+      "source_text": "كشفنا سجلات حضور مكررة ذات معرفات مستعارة.\n\nأُجريت المطابقة على مستوى السجلات فقط؛ واستُبعد التعرف باستخدام السمات الحيوية.",
+      "source_sha256": "aeef03122c15010814bbf61b7ee3d4e53f7a9a5091e97da73d128cbb97b96819",
+      "gold_fact": "كشفنا سجلات حضور مكررة ذات معرفات مستعارة.",
+      "gold_qualifier": "أُجريت المطابقة على مستوى السجلات فقط؛ واستُبعد التعرف باستخدام السمات الحيوية.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 42,
+          "quote": "كشفنا سجلات حضور مكررة ذات معرفات مستعارة."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 44,
+          "end": 123,
+          "quote": "أُجريت المطابقة على مستوى السجلات فقط؛ واستُبعد التعرف باستخدام السمات الحيوية."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "ecadc0a42e326c56d548b797d89abdc2e7fda3c0dc5ad8b3e15c57658dd3736a",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23144,
+          "quote": "كشفنا سجلات حضور مكررة ذات معرفات مستعارة."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46248,
+          "end": 46327,
+          "quote": "أُجريت المطابقة على مستوى السجلات فقط؛ واستُبعد التعرف باستخدام السمات الحيوية."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.deduplication.ar",
+      "family": "deduplication",
+      "split_group": "retrieval.deduplication",
+      "query_language": "ar",
+      "source_language": "en",
+      "query": "أثبت الخبرة في كشف السجلات المكررة ذات المعرفات المستعارة.",
+      "source_id": "qr-retrieval-deduplication-ar",
+      "source_text": "Detected duplicate pseudonymous attendance records.\n\nOnly record-level matching was performed; biometric identification was excluded.",
+      "source_sha256": "5d58cf6931a6abee391443c8fa0fe37fab0948ae59746caa578ccd41afaf107c",
+      "gold_fact": "Detected duplicate pseudonymous attendance records.",
+      "gold_qualifier": "Only record-level matching was performed; biometric identification was excluded.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 51,
+          "quote": "Detected duplicate pseudonymous attendance records."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 53,
+          "end": 133,
+          "quote": "Only record-level matching was performed; biometric identification was excluded."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "dfa8f2578c049ef7e38cbbd6b3a4c7e7713f8e6a7bb6c993b77b1f5f374b3269",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23153,
+          "quote": "Detected duplicate pseudonymous attendance records."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46257,
+          "end": 46337,
+          "quote": "Only record-level matching was performed; biometric identification was excluded."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.conversion.en",
+      "family": "conversion",
+      "split_group": "retrieval.conversion",
+      "query_language": "en",
+      "source_language": "ar",
+      "query": "Show experience converting archival image formats.",
+      "source_id": "qr-retrieval-conversion-en",
+      "source_text": "حولنا صور TIFF الأرشيفية إلى مستندات PDF/A.\n\nاقتصر العمل على تحويل الصيغة؛ واستُبعد تفريغ الكتابة اليدوية.",
+      "source_sha256": "aafd2da3b9a0bf5a470067dc4fdf7d324b7da2f20f4f91176fc7f88093da333f",
+      "gold_fact": "حولنا صور TIFF الأرشيفية إلى مستندات PDF/A.",
+      "gold_qualifier": "اقتصر العمل على تحويل الصيغة؛ واستُبعد تفريغ الكتابة اليدوية.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 43,
+          "quote": "حولنا صور TIFF الأرشيفية إلى مستندات PDF/A."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 45,
+          "end": 106,
+          "quote": "اقتصر العمل على تحويل الصيغة؛ واستُبعد تفريغ الكتابة اليدوية."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "7272c28889a1c70f210226a3249167ee008015d1de04f55532f6be2f6ad58b4e",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23145,
+          "quote": "حولنا صور TIFF الأرشيفية إلى مستندات PDF/A."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46249,
+          "end": 46310,
+          "quote": "اقتصر العمل على تحويل الصيغة؛ واستُبعد تفريغ الكتابة اليدوية."
+        }
+      ]
+    },
+    {
+      "id": "qr1.retrieval.conversion.ar",
+      "family": "conversion",
+      "split_group": "retrieval.conversion",
+      "query_language": "ar",
+      "source_language": "en",
+      "query": "أثبت الخبرة في تحويل صيغ الصور الأرشيفية.",
+      "source_id": "qr-retrieval-conversion-ar",
+      "source_text": "Converted archival TIFF images to PDF/A documents.\n\nThis was format conversion only; handwriting transcription was excluded.",
+      "source_sha256": "f3774acc81b9d16ec628dbe7ce7185d8ecd876d2b4acb0bafd8a384390547031",
+      "gold_fact": "Converted archival TIFF images to PDF/A documents.",
+      "gold_qualifier": "This was format conversion only; handwriting transcription was excluded.",
+      "gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 0,
+          "end": 50,
+          "quote": "Converted archival TIFF images to PDF/A documents."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 52,
+          "end": 124,
+          "quote": "This was format conversion only; handwriting transcription was excluded."
+        }
+      ],
+      "modes": [
+        "whole_source",
+        "bounded_context",
+        "preflight_excluded"
+      ],
+      "bounded_budget_bytes": 3000,
+      "critical_invariants": [
+        "No missing retrieval may imply absent company capability.",
+        "A fragment is unverified and not eligible for company claims.",
+        "A retrieved qualifying fact must retain its exclusion/condition and parent hash/spans.",
+        "A source excluded before retrieval cannot be reintroduced by a lexical match."
+      ],
+      "recall_threshold": null,
+      "bounded_source_sha256": "8d87079a0a75c907f1ece4d20225411ce313431b93ea225abcef5085f6a8320a",
+      "bounded_gold_spans": [
+        {
+          "coordinate": "unicode_code_point",
+          "start": 23102,
+          "end": 23152,
+          "quote": "Converted archival TIFF images to PDF/A documents."
+        },
+        {
+          "coordinate": "unicode_code_point",
+          "start": 46256,
+          "end": 46328,
+          "quote": "This was format conversion only; handwriting transcription was excluded."
+        }
+      ]
+    }
+  ],
+  "source_assembly": {
+    "distractor_count": 6,
+    "bounded_filler": "Archived office furniture inventory; unrelated contact and stationery notes. ",
+    "filler_repetitions_before_fact": 300,
+    "filler_repetitions_before_qualifier": 300,
+    "filler_applies_only_to": "bounded_context",
+    "input_position": 7,
+    "algorithm_rank_claimed": false,
+    "whole_source_assembly": "Use each case.source_text byte-for-byte (hash source_sha256), plus only the six fixed short distractors. Never add filler in this mode.",
+    "distractor_text_template": "Archived furniture ledger {index}; unrelated desk locations and stationery counts.",
+    "bounded_source_assembly": "filler repeated300 + two newlines + gold_fact + two newlines + filler repeated300 + two newlines + gold_qualifier",
+    "preflight_excluded_assembly": "Use the compact source/hash but exclude its source_id before selection; record synthetic preflight exclusion separately. No database authorization is proven."
+  },
+  "mode_limits": {
+    "whole_source": "Entire eligible verified pool within current24000byte bound.",
+    "bounded_context": "Fixed3000byte test context, not a changed product limit or success threshold.",
+    "preflight_excluded": "Synthetic already-filtered input proves no reinsertion/absence claim, not database authorization itself."
+  },
+  "measurements": [
+    "whole_source_recall",
+    "bounded_fact_and_qualifier_discovery_recall",
+    "explicit_omission_count",
+    "false_claim_eligibility_count",
+    "silent_omission_count"
+  ],
+  "business_recall_threshold": null,
+  "known_regression_set": "Existing g09 retrieval-v1 seven measured misses remain a separate development-regression track; no revised gold or hidden denominator.",
+  "pre_output_review": "Independent review found bilingual fact/qualifier gold and code-point spans coherent; mode boundary clarified before retrieval execution."
+}

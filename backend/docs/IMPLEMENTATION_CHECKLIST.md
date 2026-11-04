@@ -9972,3 +9972,36 @@ qualified by the shared helper's owner; these local mock checks do not prove
 managed PostgreSQL18 authority. A reviewed original-CA runner inventory is still
 required before claiming hosted visibility. The helper dependency is supplied
 by the separate release-coordinator commit; it is not duplicated in this change.
+
+### 2026-11-04 — A05/D07 source reserve frozen before outputs; activation remains closed
+
+Added `QUALIFICATION_RESERVE.md`, 50 bilingual source/oracle cases across all 13
+registered tasks, and 16 separate bilingual retrieval pairs with compact, bounded
+and preflight-excluded source recipes. The proposed schedule is 100 observations
+per model (96 semantic, four connectivity), with two fixed repetitions and no
+automatic retries. The 48 retrieval cells are prospective, not executed. Exact
+source hashes/code-point spans and earlier pre-output versions are preserved.
+Independent source-only reviews corrected scope, duration/effort, source provenance,
+source-page mode and trace paths before outputs. This synthetic reserve was authored
+after known development outcomes; it is not a blind or private holdout.
+
+The offline lock/scorer binds each observed input, prompt, schema, contract, adapter,
+validator and resolved target to frozen identities. Actual provider-reported identity
+is separate: unknown remains unknown; unexpected identities fail. Missing/quota/
+transport/refused/malformed/partial judgments retain denominators and cannot pass.
+One known critical semantic error remains a failure even beside incomplete judgments.
+The draft activation contains no providers, authorization or executable schedule.
+
+71 focused mechanical tests passed in 422ms; backend typecheck passed. The CLI
+integrity check confirms 50 cases, 13 tasks and 48 prospective retrieval cells.
+Synthetic test receipts/verdicts are arithmetic/integrity controls, not actual model
+outputs or business quality. Evidence: `evidence/qualification-reserve-freeze-20261104.json`.
+No provider calls, retrieval executions, deployment or production writes occurred.
+
+A05/D07 remain open for qualified production task adapters and source/authority
+contexts, real authorized targets and full request locks, actual evaluation and
+independent output adjudication, noncritical business acceptance decisions, and an
+authorized private independently reviewed holdout. Prior live critical findings and
+G09's seven measured retrieval misses remain unchanged. Full combined application
+checks belong to the separate integration gate; this scoped tooling check does not
+repeat or replace them.
