@@ -1,4 +1,13 @@
 {
+  "application_auth_read": {
+    "policy": "tenderdesk_application_identity_read",
+    "sources": {
+      "deploy/kubernetes/application-auth-read.sql": "cce0b663368838ad621bf6599ffdb9a33205a481ec6f7b9abcd4df001068fb4d",
+      "scripts/ops/application_auth_read.py": "e6b3d3b7e5370411da5293b358f2fdaa6694359101572a16e265c39268fac943"
+    },
+    "version": 1
+  },
+  "application_auth_read_version": 1,
   "baseline_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
   "baseline_images": {
     "api": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380",

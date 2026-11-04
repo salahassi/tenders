@@ -71,7 +71,7 @@ production release and full hosted issuance remain required.
 
 ### November 4 — frozen schema and gateway contract for the isolated cloud drill
 
-The exact 22-migration manifest is now committed at
+The initial 22-migration manifest was committed at
 `backend/scripts/ops/proposal-delivery-release.json`, canonical SHA-256
 `8de17c4f4a3f625259c8f0318e0d51d5f344e607aecbcd737923f7e3e765a58e`.
 Its baseline is the sanitized inner receipt of successful inventory run
@@ -8973,3 +8973,12 @@ No model/provider or production mutation occurred. All 22 canonical migration
 files remain unchanged. Root must refreeze the manifest for the new platform
 hashes, run a fresh managed cloud drill with this helper, then execute the reviewed
 release and verify actual production Auth policies. Those hosted gates remain open.
+
+The integrated manifest was subsequently refrozen from the same original
+inventory receipt. Canonical manifest SHA-256 is now
+`9e3430d1d01af222e3aad0d4aa8cae5e1f0c14942ae0ff258f0a96f6f953e020`;
+only the shared Auth helper contract and capability were added. All 22 migration
+hashes, gateway qualification and original deployment baseline remain identical.
+Source verification passes. The next isolated cloud drill must use this manifest
+and the shared helper; the preceding thirteen-check success is retained at its
+older source and does not substitute for that drill.
