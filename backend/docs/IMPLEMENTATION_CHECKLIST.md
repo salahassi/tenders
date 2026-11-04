@@ -7173,3 +7173,25 @@ does not reset or extend that server deadline. The reviewed workflow has not
 been dispatched, and there is **no new hosted or actual-browser acceptance
 claim** from these local tests. Pending hosted evidence still includes genuine
 Auth/Storage, tab closure/re-entry and late authorization/currentness behavior.
+
+
+## November 4 — read-only enabled-model binding audit
+
+Added explicit `doks-access.yml mode=models` to diagnose the remaining enabled
+Gemini configuration without guessing from the four-provider-target evaluation.
+It uses the established original-CA runner, scoped read-only SQL and exact
+runtime credential lookup. Its public receipt contains provider/model names and
+key/project presence booleans only; aliases, project values and secret values
+stay private. It makes zero model calls and no business/configuration mutation.
+Conventional aliases preserve the existing legacy-provider fallback; custom
+aliases cannot borrow another account's key. Owned SQL-client cleanup runs on
+failure and in the workflow's unconditional cleanup step.
+
+Validation: seven audit guard/redaction tests and eight isolated-restore workflow
+guard tests pass. Inspected the complete selected access workflow including
+bootstrap/restore conditions; `models` selects neither. Hosted audit is pending;
+key presence alone must not be reported as provider availability or qualification.
+
+The combined integration frontend at4ad3a22 passed **356/356 tests in56files**.
+This is local jsdom evidence, not hosted browser acceptance. Later renderer
+changes still require the final combined package gate.

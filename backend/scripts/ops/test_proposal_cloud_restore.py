@@ -83,7 +83,7 @@ class CloudRestoreTests(unittest.TestCase):
   value=json.loads(output.getvalue());self.assertEqual(value,{'cloud_restore':'blocked','code':'RESTORE_DRILL_FAILED'})
  def test_workflow_restore_is_explicit_and_other_modes_keep_existing_scope(self):
   workflow=(HERE.parents[2]/'.github/workflows/doks-access.yml').read_text()
-  self.assertIn('default: inventory',workflow);self.assertIn('options: [inventory, bootstrap, restore]',workflow)
+  self.assertIn('default: inventory',workflow);self.assertIn('options: [inventory, bootstrap, restore, models]',workflow)
   self.assertIn("always() && github.event_name == 'workflow_dispatch' && inputs.mode == 'restore'",workflow)
   self.assertIn("github.event_name == 'push' || inputs.mode == 'bootstrap'",workflow)
   self.assertIn('proposal-cloud-restore.py --cleanup',workflow)

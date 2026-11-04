@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Inventory reads current state; bootstrap checks compatibility; restore drills the frozen release in an isolated database
+        description: Select read-only inventory or model bindings, isolated bootstrap, or frozen-release restore
         type: choice
         required: true
         default: inventory
-        options: [inventory, bootstrap, restore]
+        options: [inventory, bootstrap, restore, models]
   push:
     branches: [codex/doks-access]
     paths:
@@ -264,6 +264,14 @@ jobs:
           python3 -m unittest discover -s backend/scripts/ops/bootstrap -p 'test_*.py'
           python3 backend/scripts/ops/bootstrap/acceptance.py --self-test
 
+      - name: Check model binding audit redaction
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'models' }}
+        run: python3 -m unittest discover -s backend/scripts/ops -p 'test_model_configuration_audit.py'
+
+      - name: Read enabled model bindings and credential presence without provider calls
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'models' }}
+        run: python3 backend/scripts/ops/model-configuration-audit.py
+
       - name: Check isolated application restore guards
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'restore' }}
         run: python3 -m unittest discover -s backend/scripts/ops -p 'test_proposal_cloud_restore.py'
@@ -321,7 +329,7 @@ jobs:
           fi
 
       - name: Remove only this inventory run's temporary SQL client
-        if: ${{ always() && github.event_name == 'workflow_dispatch' && inputs.mode == 'inventory' }}
+        if: ${{ always() && github.event_name == 'workflow_dispatch' && (inputs.mode == 'inventory' || inputs.mode == 'models') }}
         shell: bash
         run: |
           set -euo pipefail
