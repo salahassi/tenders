@@ -1,3 +1,4 @@
+import DocumentExtractionReview from "../components/DocumentExtractionReview";
 import ProcurementHistory from "../components/ProcurementHistory";
 import AddendumOrder from "../components/AddendumOrder";
 import { useState } from "react";
@@ -314,7 +315,9 @@ export default function OpportunityDetail() {
                     </div>
                     <div className="simple-file-actions">
                       {backend &&
-                        d.status === "ready" &&
+                        (d.status === "ready" ||
+                          d.status === "partial" ||
+                          d.status === "needs_ocr") &&
                         !d.extractionConfirmed && (
                           <Button size="sm" onClick={() => setView(d)}>
                             Review extraction
@@ -626,48 +629,71 @@ export default function OpportunityDetail() {
         title={view?.name || "Extracted text"}
         onClose={() => setView(null)}
       >
-        <p className="muted small">
-          Checking extraction is optional for draft creation. Compare complex
-          tables and scanned pages with the original when reviewing the draft.
-        </p>
-        <pre dir="auto" className="simple-extract">
-          {view?.text ||
-            "No readable text was extracted. Draft creation can continue with the other available text; this file will be identified as unread."}
-        </pre>
         {backend &&
-          view?.status === "ready" &&
-          !view.extractionConfirmed &&
-          editable && (
-            <Button
-              variant="primary"
-              onClick={async () => {
-                if (
-                  await update(
-                    (s) => ({
-                      ...s,
-                      opportunities: s.opportunities.map((x) =>
-                        x.id === o.id
-                          ? {
-                              ...x,
-                              documents: x.documents.map((d) =>
-                                d.id === view.id
-                                  ? { ...d, extractionConfirmed: true }
-                                  : d,
-                              ),
-                            }
-                          : x,
-                      ),
-                    }),
-                    "Confirmed extraction",
-                    view.id,
-                  )
-                )
-                  setView(null);
-              }}
-            >
-              I checked this text against the original; extraction is complete
-            </Button>
-          )}
+        view &&
+        (/\.pdf$/i.test(view.name) ||
+          view.extractionCoverage?.kind === "pdf_pages" ||
+          view.status === "needs_ocr") ? (
+          <DocumentExtractionReview
+            key={view.id}
+            client={backend}
+            documentId={view.id}
+            canEdit={editable}
+            language={o.language}
+            onPublished={(successorId) =>
+              setView((current) =>
+                current ? { ...current, id: successorId } : null,
+              )
+            }
+          />
+        ) : (
+          <>
+            <p className="muted small">
+              Checking extraction is optional for draft creation. Compare
+              complex tables and scanned pages with the original when reviewing
+              the draft.
+            </p>
+            <pre dir="auto" className="simple-extract">
+              {view?.text ||
+                "No readable text was extracted. Draft creation can continue with the other available text; this file will be identified as unread."}
+            </pre>
+            {backend &&
+              view?.status === "ready" &&
+              !view.extractionConfirmed &&
+              editable && (
+                <Button
+                  variant="primary"
+                  onClick={async () => {
+                    if (
+                      await update(
+                        (s) => ({
+                          ...s,
+                          opportunities: s.opportunities.map((x) =>
+                            x.id === o.id
+                              ? {
+                                  ...x,
+                                  documents: x.documents.map((d) =>
+                                    d.id === view.id
+                                      ? { ...d, extractionConfirmed: true }
+                                      : d,
+                                  ),
+                                }
+                              : x,
+                          ),
+                        }),
+                        "Confirmed extraction",
+                        view.id,
+                      )
+                    )
+                      setView(null);
+                  }}
+                >
+                  I checked this text against the original; extraction is
+                  complete
+                </Button>
+              )}
+          </>
+        )}
       </Modal>
       <Modal
         open={editDetails}

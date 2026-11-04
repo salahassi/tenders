@@ -1,6 +1,18 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { deployment } from "./deployment";
 
+export interface DocumentExtractionReviewData {
+  document_id: string; document_revision: number; original_hash: string; extraction_hash: string;
+  original_name: string; pdf_pages: number; original_download_url: string; original_download_expires_at: string;
+  pages: {page: number; status: "readable"|"blank"|"needs_ocr"|"extraction_failed"; text: string; text_hash: string; candidate_text?: string; candidate_text_hash?: string; requires_review: boolean; reviewed_by?: string; reviewed_at?: string}[];
+  ocr: {document_id: string; document_revision: number; status: "queued"|"running"|"retry_wait"|"blocked"|"needs_review"|"published"|null; successor_id: string|null; error_code: string|null; revision: number|null; completed_pages: number; total_pages: number; review_pages: number[]};
+}
+export interface DocumentExtractionCorrection {
+  id: string; expected_revision: number; expected_original_hash: string; expected_extraction_hash: string;
+  pages: {page: number; expected_page_text_hash: string; text: string; blank_confirmed: boolean}[];
+  review_confirmed: true;
+}
+
 export class BackendRequestError extends Error {
   constructor(
     public code: string,
@@ -38,6 +50,13 @@ export class BackendClient {
         autoRefreshToken: true,
       },
     });
+  }
+  async documentExtraction(id: string, signal?: AbortSignal): Promise<DocumentExtractionReviewData> {
+    if (!/^[0-9a-f-]{36}$/.test(id)) throw new Error("Invalid document ID.");
+    return (await this.request<DocumentExtractionReviewData>(`/v1/documents/${id}/extraction`, {signal})).data;
+  }
+  async correctDocumentExtraction(input: DocumentExtractionCorrection, idempotencyKey: string, signal?: AbortSignal) {
+    return (await this.request<Record<string, unknown>>(`/v1/documents/${input.id}/extraction`, {method:"POST",body:input,idempotencyKey,signal})).data;
   }
   async checkInvitation(
     token: string,

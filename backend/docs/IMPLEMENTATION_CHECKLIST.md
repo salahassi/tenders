@@ -6260,3 +6260,21 @@ results are not a claim that the complete integration suite passed.
 **Deployment / hosted acceptance:** not deployed by this change; no production/model/email
 calls. Browser visual acceptance, hosted artifact storage/restore and the separate
 600-second automatic generated-review-draft route remain unclaimed here.
+
+### 2026-11-04 — Original-bound PDF page correction interface
+
+Implemented a shared PDF page review interface for opportunity and Company Knowledge
+files. The browser verifies the private original bytes against their SHA-256 before
+allowing review, displays the original beside editable full-page text, requires
+explicit comparison and separate blank-page confirmation, and submits immutable
+source/revision/page hashes to the W02 correction API. Edits clear their review flag.
+Lost replies reuse the same idempotency key; conflicts retain unsaved text; document
+changes abort stale work and revoke local preview URLs. Reviewers remain read-only.
+Automatic OCR failure is not described as an invalid RFP.
+
+Validation: eight focused jsdom tests passed, covering Arabic correction, blank pages,
+batched edits, source mismatch, bounded previews, stale selections, read-only access,
+CAS conflicts and lost-response replay; frontend typecheck passed. These are not
+real-browser or hosted authorization evidence. W02 backend integration and final
+package/browser acceptance remain separate pending checks. No production data or
+model calls were made by this interface change.
