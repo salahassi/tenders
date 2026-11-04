@@ -7901,3 +7901,40 @@ receipts and the named-header fixture are retained. Native render/verification
 under process/container limits is owned by the separate renderer qualification;
 these API checks do not assert it passed, nor hosted concurrency or production SLO.
 No external providers, customer data, deployment or production writes were used.
+
+### 2026-11-04 — stop local render/verification at the existing request or lease deadline
+
+Generated and ordinary workers now derive a monotonic CPU budget from the current
+DB clock, validated lease and existing accepted request. The full measured RPC
+round trip is subtracted conservatively. Later context reads may shorten that
+budget but never extend it or restart the 600-second authorization. Canonical
+request expiry, lease expiry and the renderer's separate 30-second attempt limit
+retain their distinct existing error codes. Timers are cleared on every exit.
+The renderer's independently committed optional signal hook cancels queued work
+without spawning and kills/reaps active work; the same signal reaches incremental
+verification and hashing boundaries. Final SQL source/actor/approval/lease checks
+remain authoritative before any successful receipt.
+
+Existing service context RPCs add only `server_now`/`lease_until` metadata; the
+issuance job-state RPC also refuses absent, expired or canceled leases. No new
+migration filename, permission surface, admission policy or accepted/deadline
+identity is introduced. Reviewed uploads and downloads of already-issued files
+use only the incoming request signal; they do not create a fresh issuance clock.
+
+Within one worker invocation, independently fetched bytes may reuse the immediately
+preceding verification only when a private receipt proves the same byte SHA-256,
+size and exact current render-model SHA-256. Input bytes and the model used during
+yielded verification are snapshotted. Caller-created receipts, changed models,
+changed bytes and historical/resumed objects receive complete verification. Receipt
+field mutation cannot alter the private proof. The optimization does not skip
+storage readback, hashing or any current authorization check.
+
+Local evidence: 29 focused budget/proof/worker/issuance cases pass, including server
+clock independence, RPC wait, no renewal on refresh, current lease cancellation,
+no file upload after cancellation, null/expired lease refusal, fake proof/model
+mutation and canceled readback. The actual ordinary/generated/early delivery/API
+pipeline regression passes 72 cases in four files. Both package typechecks/builds
+pass. The shared native renderer signal hook and final integrated Deno memory/
+timing qualification belong to their separately recorded renderer evidence; this
+change does not claim hosted acceptance, final integrated full-suite success or
+production deployment. No provider/production calls or unknown-usage changes.

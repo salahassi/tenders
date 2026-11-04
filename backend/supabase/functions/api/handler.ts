@@ -736,6 +736,7 @@ export function createApiHandler(
             context.snapshot,
             artifact.volume as DeliveryVolume,
           ),
+          request.signal,
         );
         if (
           actual.hash !== artifact.content_hash ||
@@ -853,6 +854,7 @@ export function createApiHandler(
             await verifyExportDocxAsync(
               bytes,
               buildExportModel(context.request),
+              request.signal,
             );
           return respond(
             await backend.internal("complete_export_artifact", {

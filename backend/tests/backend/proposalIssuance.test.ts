@@ -455,3 +455,38 @@ it("keeps optional partial-draft render failures independent of viable automatic
   await f.db.exec("select set_config('app.worker_executor','4',true)");
   expect((await f.rpc("claim_backend_job")).id).toBe(x.job.id);
 });
+it("returns the authoritative current lease clock without renewing the accepted issuance", async () => {
+  const x = await setup();
+  const job = await row(
+    "update public.jobs set status='running',lease_token=gen_random_uuid(),lease_until=clock_timestamp()+interval '3 minutes' where id=$1 returning *",
+    [x.job.id],
+  );
+  const state = await f.rpc("proposal_issuance_job_state", [
+    job.id,
+    job.lease_token,
+  ]);
+  expect(state.id).toBe(x.request.id);
+  expect(Date.parse(state.deadline_at) - Date.parse(state.accepted_at)).toBe(
+    600_000,
+  );
+  expect(Date.parse(state.lease_until)).toBeGreaterThan(
+    Date.parse(state.server_now),
+  );
+  const again = await f.rpc("proposal_issuance_job_state", [
+    job.id,
+    job.lease_token,
+  ]);
+  expect(again.accepted_at).toBe(state.accepted_at);
+  expect(again.deadline_at).toBe(state.deadline_at);
+  for (const value of [null, new Date(Date.now() - 60_000).toISOString()]) {
+    await f.db.query("update public.jobs set lease_until=$2 where id=$1", [
+      job.id,
+      value,
+    ]);
+    await expect(
+      attempt(() =>
+        f.rpc("proposal_issuance_job_state", [job.id, job.lease_token]),
+      ),
+    ).rejects.toThrow("STALE_LEASE");
+  }
+});

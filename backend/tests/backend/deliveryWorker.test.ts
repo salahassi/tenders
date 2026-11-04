@@ -91,7 +91,13 @@ async function fixture(separate = false) {
       expected_size: null as number | null,
     }),
   );
-  const context = { snapshot, artifacts, renderer_version: "1" };
+  const context = {
+    snapshot,
+    artifacts,
+    renderer_version: "1",
+    server_now: new Date().toISOString(),
+    lease_until: new Date(Date.now() + 600_000).toISOString(),
+  };
   const objects = new Map<string, Blob>();
   const state = {
     loseUploadReply: false,
@@ -241,4 +247,25 @@ it("records an invalid immutable snapshot as terminal instead of a transient ren
   });
   expect(f.render).not.toHaveBeenCalled();
   expect(f.backend.storeDeliveryObject).not.toHaveBeenCalled();
+});
+it("aborts CPU rendering at the current lease bound and writes no file", async () => {
+  const f = await fixture();
+  f.context.server_now = new Date().toISOString();
+  f.context.lease_until = new Date(Date.now() + 30).toISOString();
+  const render = vi.fn(
+    async (_model, signal?: AbortSignal) =>
+      new Promise<Uint8Array>((_resolve, reject) => {
+        if (signal!.aborted) reject(signal!.reason);
+        else
+          signal!.addEventListener("abort", () => reject(signal!.reason), {
+            once: true,
+          });
+      }),
+  );
+  expect(await processDeliveryExport(f.backend, f.job, render)).toEqual({
+    error_code: "STALE_LEASE",
+  });
+  expect(render).toHaveBeenCalledTimes(1);
+  expect(f.backend.storeDeliveryObject).not.toHaveBeenCalled();
+  expect(f.state.completed).toBe(false);
 });

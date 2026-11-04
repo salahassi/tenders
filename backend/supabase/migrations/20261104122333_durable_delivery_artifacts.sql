@@ -157,7 +157,7 @@ declare j public.jobs;s public.proposal_delivery_snapshots;needed bigint;artifac
  update public.proposal_delivery_artifacts set reserved_bytes=10485760,revision=revision+1,updated_at=now()
  where proposal_delivery_artifacts.job_id=j.id and status='pending' and reserved_bytes=0;
  select jsonb_agg(to_jsonb(a) order by a.volume) into artifacts from public.proposal_delivery_artifacts a where a.job_id=j.id;
- return jsonb_build_object('snapshot',to_jsonb(s),'artifacts',artifacts,'renderer_version','1');
+ return jsonb_build_object('snapshot',to_jsonb(s),'artifacts',artifacts,'renderer_version','1','server_now',clock_timestamp(),'lease_until',j.lease_until);
 end $$;
 create function public.complete_delivery_artifact(job_id uuid,lease uuid,artifact_id uuid,actual_hash text,actual_size bigint) returns jsonb
 language plpgsql security definer set search_path='' as $$

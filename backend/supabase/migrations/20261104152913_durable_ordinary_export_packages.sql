@@ -204,7 +204,7 @@ declare j public.jobs;p public.export_packages;volumes jsonb;begin
  j:=app_private.export_package_job(job_id,lease);select * into p from public.export_packages where id=j.entity_id;
  select jsonb_agg(to_jsonb(s)||jsonb_build_object('request',to_jsonb(r),'artifact',case when a.id is null then null else to_jsonb(a) end) order by s.volume) into volumes
  from public.export_package_volumes s join public.export_requests r on r.workspace_id=s.workspace_id and r.id=s.export_id left join public.export_artifacts a on a.workspace_id=s.workspace_id and a.id=s.artifact_id where s.package_id=p.id;
- return jsonb_build_object('package',to_jsonb(p),'volumes',volumes,'renderer_version',p.renderer_version,'server_now',clock_timestamp());
+ return jsonb_build_object('package',to_jsonb(p),'volumes',volumes,'renderer_version',p.renderer_version,'server_now',clock_timestamp(),'lease_until',j.lease_until);
 end $$;
 create function public.complete_export_package_volume(job_id uuid,lease uuid,slot_id uuid,actual_hash text,actual_size bigint) returns jsonb language plpgsql security definer set search_path='' as $$
 declare j public.jobs;p public.export_packages;s public.export_package_volumes;r public.export_requests;a public.export_artifacts;begin

@@ -115,7 +115,7 @@ create function public.proposal_issuance_job_state(job_id uuid,lease uuid) retur
 language plpgsql security definer set search_path='' as $$
 declare j public.jobs;r public.proposal_issuance_requests;begin
  select * into j from public.jobs where id=job_id;
- if j.id is null or lease is null or j.lease_token is distinct from lease or j.status<>'running' then raise exception 'STALE_LEASE';end if;
+ if j.id is null or lease is null or j.lease_token is distinct from lease or j.status<>'running' or j.lease_until is null or j.lease_until<=clock_timestamp() or j.cancel_requested then raise exception 'STALE_LEASE';end if;
  if not (j.checkpoint ? 'issuance_request_id') then return null;end if;
  select * into r from public.proposal_issuance_requests where id=(j.checkpoint->>'issuance_request_id')::uuid and workspace_id=j.workspace_id;
  if r.id is null then raise exception 'ISSUANCE_IDENTITY_CHANGED';end if;
@@ -123,7 +123,7 @@ declare j public.jobs;r public.proposal_issuance_requests;begin
   perform app_private.fail_proposal_issuance(r.id,'PROPOSAL_ISSUANCE_TIMEOUT');
   select * into r from public.proposal_issuance_requests where id=r.id;
  end if;
- return jsonb_build_object('id',r.id,'deadline_version',r.deadline_version,'accepted_at',r.accepted_at,'deadline_at',r.deadline_at,'outcome',r.outcome,'error_code',r.error_code);
+ return jsonb_build_object('id',r.id,'deadline_version',r.deadline_version,'accepted_at',r.accepted_at,'deadline_at',r.deadline_at,'outcome',r.outcome,'error_code',r.error_code,'server_now',clock_timestamp(),'lease_until',j.lease_until);
 end $$;
 
 -- New source/repair/consistency contracts require runtime 4. Keep the model

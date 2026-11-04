@@ -2,19 +2,30 @@ import type { Backend } from "./backend.ts";
 import { AppError } from "./http.ts";
 import { DOCX_MIME } from "./deliveryExport.ts";
 import { buildExportModel, type RenderModel } from "./export.ts";
-import { deliveryBytes } from "./deliveryWorker.ts";
+import { deliveryBytes, type VerifiedDeliveryBytes } from "./deliveryWorker.ts";
 import { renderDeliveryIsolated } from "./deliveryRenderIsolation.ts";
+import { DeliveryWorkBudget } from "./deliveryWorkBudget.ts";
 
 /** Ordinary approved/draft exports use their original canonical export request.
  * A leased server job owns every volume; ready bytes are reused after a crash. */
 export async function processOrdinaryExport(
   backend: Backend,
   job: Record<string, any>,
-  render: (model: RenderModel) => Promise<Uint8Array> = renderDeliveryIsolated,
+  render: (model: RenderModel, signal?: AbortSignal) => Promise<Uint8Array> = (
+    model,
+    signal,
+  ) => renderDeliveryIsolated(model, undefined, 30_000, signal),
 ) {
   const identity = { job_id: job.id, lease: job.lease_token };
+  const budget = new DeliveryWorkBudget();
   try {
+    let contextStarted = performance.now();
     let context = await backend.internal("export_render_context", identity);
+    budget.observe(
+      { ...context, deadline_at: context.package?.deadline_at },
+      contextStarted,
+      "EXPORT_ISSUANCE_TIMEOUT",
+    );
     const expected = context.package.required_volumes;
     if (
       context.renderer_version !== "ordinary-2" ||
@@ -32,7 +43,9 @@ export async function processOrdinaryExport(
       );
     for (const slot of context.volumes) {
       const model = buildExportModel(slot.request, 2);
+      let verified: VerifiedDeliveryBytes | undefined;
       let blob = await backend.deliveryObject(slot.storage_key);
+      budget.check();
       if (!blob) {
         if (slot.artifact)
           throw new AppError(
@@ -40,8 +53,21 @@ export async function processOrdinaryExport(
             "EXPORT_PACKAGE_BYTES_UNAVAILABLE",
             "The verified export file is unavailable.",
           );
-        const rendered = await deliveryBytes(await render(model), model);
+        budget.check();
+        const rendered = await deliveryBytes(
+          await render(model, budget.signal),
+          model,
+          budget.signal,
+        );
+        verified = rendered;
+        budget.check();
+        contextStarted = performance.now();
         context = await backend.internal("export_render_context", identity);
+        budget.observe(
+          { ...context, deadline_at: context.package?.deadline_at },
+          contextStarted,
+          "EXPORT_ISSUANCE_TIMEOUT",
+        );
         const current = context.volumes.find(
           (item: any) => item.id === slot.id,
         );
@@ -78,7 +104,8 @@ export async function processOrdinaryExport(
             "The export upload is not confirmed.",
           );
       }
-      const actual = await deliveryBytes(blob, model);
+      const actual = await deliveryBytes(blob, model, budget.signal, verified);
+      budget.check();
       if (
         slot.artifact &&
         (slot.artifact.content_hash !== actual.hash ||
@@ -105,5 +132,7 @@ export async function processOrdinaryExport(
       error_code: code,
     });
     return { error_code: code };
+  } finally {
+    budget.dispose();
   }
 }
