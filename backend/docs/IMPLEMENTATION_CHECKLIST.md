@@ -45,8 +45,16 @@ This permits the reviewed `doks-access.yml` **mode=restore** drill on the
 published committed checkout while runtime work continues. That drill copies
 catalog metadata only into a nonce-owned isolated database and exercises actual
 Auth/Storage with synthetic fixtures. It does not deploy application images,
-copy customer rows, invoke models or qualify the application renderer. Its
-hosted result remains pending.
+copy customer rows, invoke models or qualify the application renderer.
+
+The first hosted drill, [run 41902822255](https://github.com/salahassi/tenders/actions/runs/41902822255)
+at `9eca6830915bab05af23e278449609c0d8926ecb`, failed with
+`RESTORE_RPC_CLOUD_RESTORE_FIXTURE_USERS_FAILED` and
+`AUTH_STORAGE_HTTP_ACCEPTANCE_FAILED`. Original cluster TLS and the eight local
+guards passed; isolated resource cleanup and temporary credential cleanup both
+passed. The [sanitized receipt](evidence/cloud-restore-20261104-41902822255.json)
+retains this failure. All 13 HTTP acceptance checks remain unproven; fixture/API
+diagnosis and a fresh successful drill are required.
 
 The actual worker steady-state test remains **failed**: the temporary 256 MiB
 parent-heap cap completed the first two-volume job in about 113 seconds, then
