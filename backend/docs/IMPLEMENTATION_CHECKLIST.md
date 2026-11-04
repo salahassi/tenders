@@ -178,6 +178,20 @@ wrapping preserves every prior pin and its absence. Local focused integration:
 revocation, late overflow evidence, partial-claim rejection and draft assembly.
 Normal proposal review/approval route, complete suites and deployment remain open.
 
+Independent review tightened the core before acceptance: numeric values now bind
+to complete numeral tokens, declared units and currencies must occur in the
+response quote, and unspecified input completeness blocks substantive completion.
+Explicit source-index/quote-hash to response-quote equivalence mappings permit
+reviewed Arabic/English qualifier paraphrases; model or anonymous equivalence
+cannot pass. Numeric assertions outside the primary requirement response need
+reviewed section bindings, and explicit financial bindings compare the current
+Decimal calculation. Targeted discovery now preserves every full source admitted
+by the first pass before using remaining bytes; partial spans cannot evict
+complete priority proof. The latest focused run passed 72 tests across five files.
+These integrity checks and scoped human reviews do not establish exhaustive
+semantic truth or prove cross-language recall; independent qualification and
+production evidence remain separate.
+
 ## November 4 — integrated durable draft rendering and independent review
 
 Stages 3–7: six parallel implementation tracks are integrated on
