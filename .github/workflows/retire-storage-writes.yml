@@ -19,7 +19,7 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: tenderdesk-production-storage-maintenance
+  group: tenderdesk-digitalocean-production
   cancel-in-progress: false
 jobs:
   retire:

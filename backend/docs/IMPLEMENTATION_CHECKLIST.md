@@ -8656,3 +8656,10 @@ and actual-image capacity qualification remain separate; no provider calls,
 production mutations, prompt changes, paid-wire migrations or deployment occurred.
 Actual configured-provider semantic qualification remains pending while those
 providers are unavailable.
+
+The retirement workflow now shares the production deployment concurrency group
+`tenderdesk-digitalocean-production`, with cancellation disabled, so deployment
+and explicit storage maintenance cannot concurrently change the same workloads.
+The physical adapter already writes each scope file once; inspection confirmed
+there is no duplicate scope write in the committed helper. Workflow source checks
+verify the shared group and cancellation setting. No hosted operation occurred.
