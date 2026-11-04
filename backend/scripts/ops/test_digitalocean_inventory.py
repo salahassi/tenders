@@ -27,8 +27,13 @@ def capacity_settings():
   'query_overrides':{'statement_timeout_ms':20000,'lock_timeout_ms':5000},'configured_defaults':[],
   'basis':'observer_login_and_catalog_defaults_not_rest_transaction_effective'}
 
+def legacy_batch():
+ return {'version':1,'scope':'legacy_batch_commands','size_basis':'pg_column_size_stored_datum_bytes_not_logical_or_wire_bytes',
+  'purged_state_not_inspected':True,'logical_or_wire_size_proved':False,'thresholds_bytes':{'small':65536,'large':1048576},
+  'total_rows':0,'active_rows':0,'expired_rows':0,'buckets':[]}
+
 def sql_response(_pod,script):
- return json.dumps(capacity_settings() if 'tenderdesk.capacity_settings' in script else schema())
+ return json.dumps(legacy_batch() if 'legacy_batch_commands' in script else capacity_settings() if 'tenderdesk.capacity_settings' in script else schema())
 
 def workloads():
  values=[];pods=[]

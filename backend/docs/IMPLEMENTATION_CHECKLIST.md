@@ -9475,3 +9475,31 @@ no dependency versions changed. No hosted/model calls occurred. Actual
 PostgreSQL/PostgREST chunked capacity, authoritative legacy normalization,
 guarded cutover, source-bound release capabilities and final integration remain
 open; no deployment or final capacity qualification is claimed here.
+
+### 2026-11-04 — Metadata-only legacy BATCH exposure census preparation
+
+A new additive `legacy_batch_observation` reads only the fixed BATCH/commands
+idempotency namespace. It groups global active/expired counts by fixed compression
+class and reports SQL-null counts and stored-byte sum/max/threshold counts through
+PostgreSQL metadata functions. No result JSON is expanded or emitted; no keys,
+identifiers, actors, workspaces or customer content leave the query. Only the
+at-most-eight aggregate groups are materialized. Existing read-only owner scope,
+20-second statement timeout, 5-second lock timeout and cleanup remain unchanged.
+The original inventory schema and release baseline inputs are untouched.
+
+Compressed stored bytes are explicitly not logical/wire capacity. Purged sentinel
+state remains uninspected, and SQL null is not interpreted as purged. The 64 KiB
+and 1 MiB cumulative metadata buckets add no product quota. Operations reviewed
+the exact query and found no blocker. This is local preparation for a separately
+reviewed read-only runner inventory; it performs no replay, normalization,
+mutation, provider call or hosted dispatch.
+
+Verification: 32 focused tests pass in 2.65 seconds, plus Python compilation and
+diff checks. The actual PostgreSQL-through-PGlite fixture covers empty state,
+compressed 2 MiB synthetic input stored below 64 KiB, uncompressed medium/large
+results, SQL null versus JSON null, an uninspected sentinel, active/expired rows,
+and exclusion of other methods/routes. The fixture proves metadata behavior and
+unchanged row count, not hosted exposure or replay normalization capacity. Strict
+projection tests reject private labels/extra fields and inconsistent counters;
+census failure still verifies cleanup. Existing inventory and capacity tests
+remain green. No native benchmark or hosted service call ran in this change.

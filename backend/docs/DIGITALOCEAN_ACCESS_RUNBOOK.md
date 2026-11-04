@@ -186,3 +186,30 @@ and both cleanup stages. Its
 API/worker/REST manifest limits and safe database configuration metadata. It
 does not replace the earlier frozen release baseline or qualify runtime memory,
 provider availability, or an application release.
+
+## Legacy batch replay exposure census
+
+A subsequent inventory may include the additive `legacy_batch_observation`.
+Its fixed scope is `app_private.idempotency_records` with `method='BATCH'` and
+`route='commands'`. It reports global counts of unexpired (`expires_at > now()`)
+and expired rows, grouped only by the fixed compression labels `none`, `pglz`,
+`lz4` or `other`. Each group includes SQL-null result counts, the sum/maximum of
+`pg_column_size(result)`, and cumulative stored-size counts at 64 KiB and 1 MiB,
+plus a count above 1 MiB. These thresholds organize metadata; they are not new
+business quotas or evidence that a result can be safely expanded.
+
+The query uses `pg_column_compression`, `pg_column_size` and SQL-null detection;
+it never serializes, hashes, parses, expands or emits result JSON. No workspace,
+actor, row, idempotency key or payload is returned. Only the at-most-eight metadata
+groups are materialized. The original read-only transaction, application-owner
+role and 20-second statement/5-second lock bounds remain in force. Failure still
+requires verified temporary-client cleanup and does not produce a success receipt.
+
+Compressed stored size is not uncompressed JSON, response size or replay memory
+capacity. Purged sentinel objects cannot be counted safely by this census without
+inspecting their contents, so `purged_state_not_inspected` stays true and
+`logical_or_wire_size_proved` stays false. SQL-null results are counted separately
+and are not relabeled as purged. The census describes the namespace at observation
+time; it does not alter, normalize, expire or replay any record. Older inventory
+receipts and the frozen release baseline remain unchanged. A reviewed fresh
+Actions inventory supplies actual exposure; synthetic tests do not establish it.

@@ -271,6 +271,37 @@ def capacity_settings(value):
           or row['name'] not in names or not isinstance(row['value'],str) or not re.fullmatch(r'[0-9]{1,15}(?:\.[0-9]{1,6})? *(?:us|ms|s|min|h|d|B|kB|MB|GB|TB)?',row['value'])): raise InventoryError('INVENTORY_CAPACITY_INVALID')
     return value
 
+def legacy_batch_observation(value):
+    fields={'version','scope','size_basis','purged_state_not_inspected','logical_or_wire_size_proved','thresholds_bytes','total_rows','active_rows','expired_rows','buckets'}
+    if (not isinstance(value,dict) or set(value)!=fields or type(value['version']) is not int or value['version']!=1
+      or value['scope']!='legacy_batch_commands' or value['size_basis']!='pg_column_size_stored_datum_bytes_not_logical_or_wire_bytes'
+      or value['purged_state_not_inspected'] is not True or value['logical_or_wire_size_proved'] is not False
+      or value['thresholds_bytes']!={'small':65536,'large':1048576}): raise InventoryError('INVENTORY_LEGACY_BATCH_INVALID')
+    for key in ('total_rows','active_rows','expired_rows'): integer(value[key],10**15)
+    buckets=value['buckets']
+    if not isinstance(buckets,list) or len(buckets)>8: raise InventoryError('INVENTORY_LEGACY_BATCH_INVALID')
+    seen=set();totals={'active':0,'expired':0}
+    fields={'expiry','compression','row_count','null_result_count','stored_bytes_sum','stored_bytes_max','stored_bytes_le_64k_count','stored_bytes_le_1m_count','stored_bytes_gt_1m_count'}
+    for row in buckets:
+        if (not isinstance(row,dict) or set(row)!=fields or row['expiry'] not in totals
+          or row['compression'] not in ('none','pglz','lz4','other')): raise InventoryError('INVENTORY_LEGACY_BATCH_INVALID')
+        key=(row['expiry'],row['compression'])
+        if key in seen: raise InventoryError('INVENTORY_LEGACY_BATCH_INVALID')
+        seen.add(key)
+        for name in fields-{'expiry','compression','stored_bytes_max'}: integer(row[name],10**15)
+        count=row['row_count'];nonnull=count-row['null_result_count'];maximum=row['stored_bytes_max'];stored=row['stored_bytes_sum']
+        if count<1 or nonnull<0 or row['stored_bytes_le_64k_count']>row['stored_bytes_le_1m_count'] or row['stored_bytes_le_1m_count']+row['stored_bytes_gt_1m_count']!=nonnull:
+            raise InventoryError('INVENTORY_LEGACY_BATCH_INVALID')
+        if nonnull==0:
+            if maximum is not None or stored!=0: raise InventoryError('INVENTORY_LEGACY_BATCH_INVALID')
+        else:
+            integer(maximum,10**15)
+            if maximum<1 or not maximum<=stored<=nonnull*maximum: raise InventoryError('INVENTORY_LEGACY_BATCH_INVALID')
+        totals[row['expiry']]+=count
+    if (value['active_rows']!=totals['active'] or value['expired_rows']!=totals['expired']
+      or value['total_rows']!=sum(totals.values())): raise InventoryError('INVENTORY_LEGACY_BATCH_INVALID')
+    return value
+
 def journal_path():
     run,attempt=os.environ.get('GITHUB_RUN_ID',''),os.environ.get('GITHUB_RUN_ATTEMPT','')
     if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt): raise InventoryError('INVENTORY_RUN_SOURCE_INVALID')
@@ -312,11 +343,12 @@ def inventory():
     client=observer.Client(60)
     client.labels['app.kubernetes.io/managed-by']=OWNER
     save_client(client)
-    schema=None;metadata={};settings=None
+    schema=None;metadata={};settings=None;legacy_batch=None
     try:
         client.prepare(capacity_metadata=metadata)
         schema=public_schema(json.loads(d.sql(client.pod,(HERE/'digitalocean-inventory.sql').read_text())))
         settings=capacity_settings(json.loads(d.sql(client.pod,(HERE/'digitalocean-capacity.sql').read_text())))
+        legacy_batch=legacy_batch_observation(json.loads(d.sql(client.pod,(HERE/'digitalocean-legacy-batch.sql').read_text())))
     finally:
         try:
             client.cleanup()
@@ -332,6 +364,7 @@ def inventory():
         raise InventoryError('INVENTORY_WORKLOAD_CHANGED_DURING_READ')
     return {'inventory':'captured','version':1,'namespace':d.NAMESPACE,'runner_source_revision':revision,'observed_at':datetime.now(timezone.utc).isoformat(),
       'workloads':workloads,'native_schedules':schedules,'ready_workloads':sum(w['desired']>0 and w['ready']==w['desired']==w['updated'] and w['unavailable']==0 and w['observed_generation']>=w['generation'] for w in workloads),
+      'legacy_batch_observation':legacy_batch,
       'capacity_observation':{'version':1,'workloads':capacity_workloads(deployments,pods,metadata.get('rest_database_role')),
         'managed_database':metadata.get('managed_database'),'sql_settings':settings,
         'configuration_basis':'observed_manifests_and_current_core_binding_not_process_environment',
@@ -356,7 +389,7 @@ def main(argv=()):
           'INVENTORY_CLEANUP_JOURNAL_INVALID','INVENTORY_MODE_INVALID','INVENTORY_WORKLOAD_CHANGED_DURING_READ',
           'INVENTORY_SCHEDULE_INVALID','INVENTORY_REQUIRED_SCHEDULE_MISSING','INVENTORY_NATIVE_CONTAINER_COUNT',
           'INVENTORY_NATIVE_SCHEDULE_FORMAT','INVENTORY_NATIVE_CONCURRENCY_INVALID','INVENTORY_NATIVE_RESOURCES_FORMAT',
-          'INVENTORY_NATIVE_DEADLINE_INVALID','INVENTORY_NATIVE_BACKOFF_INVALID','INVENTORY_CAPACITY_INVALID'}
+          'INVENTORY_NATIVE_DEADLINE_INVALID','INVENTORY_NATIVE_BACKOFF_INVALID','INVENTORY_CAPACITY_INVALID','INVENTORY_LEGACY_BATCH_INVALID'}
         code=str(error) if isinstance(error,InventoryError) and str(error) in allowed else 'INVENTORY_FAILED'
         print(json.dumps({'inventory':'failed','code':code}),flush=True)
         return 1
