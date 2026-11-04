@@ -55,6 +55,13 @@ it("restores original-inclusive business history into a clean project with no us
     ]);
     const h = commercialHelpers(source),
       s = await h.setup();
+    const originalDelivery = (
+      await source.db.query<any>(
+        "select * from public.proposal_delivery_snapshots where proposal_id=$1",
+        [s.proposal],
+      )
+    ).rows[0];
+    expect(originalDelivery.payload.substantive_complete).toBe(false);
     s.input.lines[0].quantity = "11";
     const estimate = await h.calculate(s),
       delivery = await h.calculate(s, "delivery");
@@ -284,6 +291,34 @@ it("restores original-inclusive business history into a clean project with no us
         )
       ).rows[0],
     ).toEqual({ status: "canceled", cancel_requested: true });
+    const restoredDelivery = (
+      await target.db.query<any>(
+        "select * from public.proposal_delivery_snapshots where id=$1",
+        [originalDelivery.id],
+      )
+    ).rows[0];
+    expect(restoredDelivery.payload).toEqual(originalDelivery.payload);
+    expect(restoredDelivery.content_hash).toBe(originalDelivery.content_hash);
+    expect(restoredDelivery.created_by).toBe(source.owner);
+    expect(restoredDelivery.payload.approval_state).toBe("draft");
+    expect(
+      (
+        await target.db.query<any>(
+          "select active_delivery_snapshot_id,delivery_revision from public.proposals where id=$1",
+          [s.proposal],
+        )
+      ).rows[0],
+    ).toEqual({
+      active_delivery_snapshot_id: originalDelivery.id,
+      delivery_revision: 1,
+    });
+    expect(
+      (
+        await target.db.query(
+          "select id from public.proposal_delivery_snapshots",
+        )
+      ).rows,
+    ).toHaveLength(1);
     const restored = (
       await target.db.query<any>(
         "select * from public.estimate_versions where id=$1",

@@ -8,6 +8,10 @@ import {
 import { serviceScopeShape } from "./discovery.ts";
 import { MODEL_PROVIDER_IDS, ROUND_ROBIN_PROVIDERS } from "./modelProviders.ts";
 import {
+  deliveryPrepareSchema,
+  deliveryRefreshSchema,
+} from "./deliveryContract.ts";
+import {
   estimateInputSchema,
   deliveryInputSchema,
   decimalText,
@@ -71,6 +75,8 @@ const host = z
   .max(253)
   .regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i);
 export const commandSchemas = {
+  "delivery.snapshot.prepare": deliveryPrepareSchema,
+  "delivery.snapshot.refresh": deliveryRefreshSchema,
   "notification.preferences": z
     .object({
       expected_revision: z.number().int().min(0),

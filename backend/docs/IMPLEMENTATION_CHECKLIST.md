@@ -1,5 +1,43 @@
 # Implementation status and continuation plan
 
+## November 4 — early durable delivery foundation (W01/W03)
+
+Stages 3–7: implemented an immutable `proposal_delivery_snapshots` projection
+and a separate proposal delivery pointer/revision. Creating a generation plan
+now persists a safe draft before any paid-model success; accepting a section
+persists a successor retaining accepted siblings and original output, source,
+workflow, prompt/schema/verifier and attempt provenance. The ordinary active
+version and generation base remain unchanged. Historical acceptance is visibly
+`legacy_reviewed`, requires final review, and never asserts new assurance passed.
+`delivery.snapshot.prepare` also works without a generation plan or upload;
+`delivery.snapshot.refresh` uses current proposal and delivery revisions. A
+reported rejected upload is distinguished from server-proven invalid input.
+Readable context survives partial failures; insufficient scope produces typed
+placeholders. All these snapshots remain draft and substantively incomplete.
+
+Implemented controls: current membership and source checks on content reads,
+service-only actor context, RLS with metadata-only direct reads, immutable
+payload hashes, transactionally deduplicated publication and audit, idempotent
+command replay with current authorization, and backup/restore/purge registration.
+No model-processing consent is treated as blanket local-download authorization.
+The existing implementation-plan `delivery.prepare` command is preserved.
+
+Local evidence: **19 new delivery database/contract tests** pass using the full
+migration chain in PGlite, including early snapshot versus running plan base,
+replay/revision conflict, source and membership revocation, exact accepted-unit
+provenance, metadata permissions, and confirmed purge. **43 generation tests**,
+**12 flexible-input tests**, **6 operations tests**, and the full recovery test
+pass; recovery now explicitly checks immutable snapshot/pointer restoration and
+absence of duplicate publication or restored approval. Backend typecheck/build
+pass. These sequential embedded-PostgreSQL tests do not prove simultaneous
+multi-connection races; an isolated real PostgreSQL race harness remains pending.
+
+Deployment/hosted acceptance: **not deployed, no production or provider calls**.
+This is the persisted foundation, not a substantively complete non-model route,
+DOCX renderer or all-workflow closure. Renderer/API/UI integration, real database
+race checks, combined branch regression and actual Word/RTL/visual acceptance
+remain separate gates in the delivery plan.
+
 ## November 4 — complete proposal-delivery remediation and acceptance plan
 
 The Owner requested a complete, evidence-based repair and testing plan for the
