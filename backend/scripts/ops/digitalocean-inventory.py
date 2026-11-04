@@ -181,6 +181,96 @@ def public_schedules(values):
     if set(result)!={'native-browser','native-ocr'}: raise InventoryError('INVENTORY_REQUIRED_SCHEDULE_MISSING')
     return [result[name] for name in sorted(result)]
 
+def capacity_resources(container):
+    value=container.get('resources',{})
+    if not isinstance(value,dict): raise InventoryError('INVENTORY_CAPACITY_INVALID')
+    result={}
+    for mode in ('requests','limits'):
+        group=value.get(mode)
+        if group is None: result[mode]=None;continue
+        if not isinstance(group,dict): raise InventoryError('INVENTORY_CAPACITY_INVALID')
+        result[mode]={}
+        for key in ('cpu','memory','ephemeral-storage'):
+            item=group.get(key)
+            if item is not None and (not isinstance(item,str) or len(item)>32 or not re.fullmatch(r'[0-9]{1,15}(?:\.[0-9]{1,9})?(?:n|u|m|Ki|Mi|Gi|Ti|Pi|Ei|K|M|G|T|P|E)?',item)):
+                raise InventoryError('INVENTORY_CAPACITY_INVALID')
+            result[mode][key]=item
+    return result
+
+def capacity_environment(container,rest_role):
+    values=container.get('env',[])
+    if not isinstance(values,list): raise InventoryError('INVENTORY_CAPACITY_INVALID')
+    def entry(name):
+        found=[x for x in values if isinstance(x,dict) and x.get('name')==name]
+        if len(found)>1: raise InventoryError('INVENTORY_CAPACITY_INVALID')
+        return found[0] if found else {}
+    def literal(name,allowed=None):
+        item=entry(name);value=item.get('value')
+        if allowed is None:
+            value=int(value) if isinstance(value,str) and re.fullmatch(r'[0-9]{1,7}',value) else None
+        elif value not in allowed: value=None
+        return {'explicit':bool(item),'value':value}
+    binding=entry('PGRST_DB_URI').get('valueFrom',{}).get('secretKeyRef',{})
+    recognized=isinstance(binding,dict) and binding.get('name')=='tenderdesk-core' and binding.get('key')=='POSTGREST_DATABASE_URL'
+    return {'runtime_service':literal('APP_RUNTIME_SERVICE',('api','worker','scheduler','source-browser')),
+      'rest_authenticator_role':rest_role if recognized else None,
+      'rest_authenticator_binding_verified':recognized and rest_role=='tdp_app_authenticator',
+      'rest_anon_role':literal('PGRST_DB_ANON_ROLE',('tdp_app_anon',)),
+      'rest_pool':literal('PGRST_DB_POOL'),'rest_max_rows':literal('PGRST_DB_MAX_ROWS')}
+
+def capacity_metadata(value):
+    if not isinstance(value,dict) or set(value)-{'managed_database','rest_database_role'}: raise InventoryError('INVENTORY_CAPACITY_INVALID')
+    role=value.get('rest_database_role');managed=value.get('managed_database')
+    if role not in (None,'tdp_app_authenticator'): raise InventoryError('INVENTORY_CAPACITY_INVALID')
+    if managed is not None:
+        if not isinstance(managed,dict): raise InventoryError('INVENTORY_CAPACITY_INVALID')
+        try: expected=d.probe.public_database_capacity({'size':managed.get('size_slug'),'num_nodes':managed.get('node_count')})
+        except Exception: raise InventoryError('INVENTORY_CAPACITY_INVALID') from None
+        if managed!=expected: raise InventoryError('INVENTORY_CAPACITY_INVALID')
+    return value
+
+def capacity_workloads(deployments,pods,rest_role=None):
+    result=[]
+    for deployment in deployments:
+        name=deployment.get('metadata',{}).get('name')
+        if name not in ('api','worker','rest'): continue
+        spec=deployment['spec'];container=spec['template']['spec']['containers'][0]
+        labels=spec['selector']['matchLabels'];ready=[];matched=0
+        for pod in pods:
+            if pod.get('metadata',{}).get('namespace')!=d.NAMESPACE or not all(pod.get('metadata',{}).get('labels',{}).get(k)==v for k,v in labels.items()): continue
+            matched+=1
+            statuses=pod.get('status',{}).get('containerStatuses',[])
+            if not any(x.get('name')==name and x.get('ready') is True for x in statuses): continue
+            containers=pod.get('spec',{}).get('containers',[]);selected=[x for x in containers if x.get('name')==name]
+            if len(selected)!=1: raise InventoryError('INVENTORY_CAPACITY_INVALID')
+            ready.append({'resources':capacity_resources(selected[0]),'configuration':capacity_environment(selected[0],rest_role),
+              'additional_container_count':len(containers)-1})
+        result.append({'name':name,'desired_replicas':integer(spec.get('replicas',0)),
+          'deployment_resources':capacity_resources(container),'deployment_configuration':capacity_environment(container,rest_role),
+          'matching_pods':matched,'ready_pod_observations':ready})
+    return sorted(result,key=lambda x:x['name'])
+
+def capacity_settings(value):
+    fields={'version','database_identity_verified','observed_login_role','observed_login_settings','query_overrides','configured_defaults','basis'}
+    if not isinstance(value,dict) or set(value)!=fields or type(value['version']) is not int or value['version']!=1 or value['database_identity_verified'] is not True: raise InventoryError('INVENTORY_CAPACITY_INVALID')
+    if value['observed_login_role'] not in ('doadmin','unrecognized') or value['basis']!='observer_login_and_catalog_defaults_not_rest_transaction_effective': raise InventoryError('INVENTORY_CAPACITY_INVALID')
+    if value['query_overrides']!={'statement_timeout_ms':20000,'lock_timeout_ms':5000}: raise InventoryError('INVENTORY_CAPACITY_INVALID')
+    names={'statement_timeout':'ms','work_mem':'kB','max_connections':None};seen=set()
+    rows=value['observed_login_settings']
+    if not isinstance(rows,list) or len(rows)!=3: raise InventoryError('INVENTORY_CAPACITY_INVALID')
+    for row in rows:
+        if not isinstance(row,dict) or set(row)!={'name','setting','unit','source','reset_setting','boot_setting'} or row['name'] not in names or row['name'] in seen or row['unit']!=names[row['name']]: raise InventoryError('INVENTORY_CAPACITY_INVALID')
+        seen.add(row['name'])
+        if row['source'] not in ('default','environment variable','configuration file','command line','global','database','user','database user','client','override','interactive','test','session'): raise InventoryError('INVENTORY_CAPACITY_INVALID')
+        for key in ('setting','reset_setting','boot_setting'): integer(row[key],10**12)
+    defaults=value['configured_defaults']
+    if not isinstance(defaults,list) or len(defaults)>36: raise InventoryError('INVENTORY_CAPACITY_INVALID')
+    for row in defaults:
+        if (not isinstance(row,dict) or set(row)!={'scope','role','name','value'} or row['scope'] not in ('all_databases','current_database')
+          or row['role'] not in (None,'tdp_app_owner','tdp_app_authenticator','tdp_app_anon','tdp_app_authenticated','tdp_app_service')
+          or row['name'] not in names or not isinstance(row['value'],str) or not re.fullmatch(r'[0-9]{1,15}(?:\.[0-9]{1,6})? *(?:us|ms|s|min|h|d|B|kB|MB|GB|TB)?',row['value'])): raise InventoryError('INVENTORY_CAPACITY_INVALID')
+    return value
+
 def journal_path():
     run,attempt=os.environ.get('GITHUB_RUN_ID',''),os.environ.get('GITHUB_RUN_ATTEMPT','')
     if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt): raise InventoryError('INVENTORY_RUN_SOURCE_INVALID')
@@ -222,15 +312,17 @@ def inventory():
     client=observer.Client(60)
     client.labels['app.kubernetes.io/managed-by']=OWNER
     save_client(client)
-    schema=None
+    schema=None;metadata={};settings=None
     try:
-        client.prepare()
+        client.prepare(capacity_metadata=metadata)
         schema=public_schema(json.loads(d.sql(client.pod,(HERE/'digitalocean-inventory.sql').read_text())))
+        settings=capacity_settings(json.loads(d.sql(client.pod,(HERE/'digitalocean-capacity.sql').read_text())))
     finally:
         try:
             client.cleanup()
             clear_client()
         except Exception: raise InventoryError('INVENTORY_TEMPORARY_CLIENT_CLEANUP_NOT_CONFIRMED') from None
+    metadata=capacity_metadata(metadata)
     after=json.loads(d.command(['get','deployments','-n',d.NAMESPACE,'-o','json']))['items']
     final=public_workloads(after,pods)
     final_schedules=public_schedules(json.loads(d.command(['get','cronjobs','-n',d.NAMESPACE,'-o','json']))['items'])
@@ -240,6 +332,11 @@ def inventory():
         raise InventoryError('INVENTORY_WORKLOAD_CHANGED_DURING_READ')
     return {'inventory':'captured','version':1,'namespace':d.NAMESPACE,'runner_source_revision':revision,'observed_at':datetime.now(timezone.utc).isoformat(),
       'workloads':workloads,'native_schedules':schedules,'ready_workloads':sum(w['desired']>0 and w['ready']==w['desired']==w['updated'] and w['unavailable']==0 and w['observed_generation']>=w['generation'] for w in workloads),
+      'capacity_observation':{'version':1,'workloads':capacity_workloads(deployments,pods,metadata.get('rest_database_role')),
+        'managed_database':metadata.get('managed_database'),'sql_settings':settings,
+        'configuration_basis':'observed_manifests_and_current_core_binding_not_process_environment',
+        'pod_resource_basis':'observed_pod_spec_not_cgroup_measurement',
+        'rest_transaction_effective_settings_proved':False},
       'schema':schema,'business_mutations':0,'schema_mutations':0,'models_called':0,'bootstrap_run':False,'temporary_client_cleanup_verified':True}
 
 def main(argv=()):
@@ -259,7 +356,7 @@ def main(argv=()):
           'INVENTORY_CLEANUP_JOURNAL_INVALID','INVENTORY_MODE_INVALID','INVENTORY_WORKLOAD_CHANGED_DURING_READ',
           'INVENTORY_SCHEDULE_INVALID','INVENTORY_REQUIRED_SCHEDULE_MISSING','INVENTORY_NATIVE_CONTAINER_COUNT',
           'INVENTORY_NATIVE_SCHEDULE_FORMAT','INVENTORY_NATIVE_CONCURRENCY_INVALID','INVENTORY_NATIVE_RESOURCES_FORMAT',
-          'INVENTORY_NATIVE_DEADLINE_INVALID','INVENTORY_NATIVE_BACKOFF_INVALID'}
+          'INVENTORY_NATIVE_DEADLINE_INVALID','INVENTORY_NATIVE_BACKOFF_INVALID','INVENTORY_CAPACITY_INVALID'}
         code=str(error) if isinstance(error,InventoryError) and str(error) in allowed else 'INVENTORY_FAILED'
         print(json.dumps({'inventory':'failed','code':code}),flush=True)
         return 1

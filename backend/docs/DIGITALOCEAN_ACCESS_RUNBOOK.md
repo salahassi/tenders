@@ -149,3 +149,31 @@ worker, model, schema or complete user-flow health.
 The original access explanation and migration history remain in
 [`DIGITALOCEAN_KUBERNETES.md`](DIGITALOCEAN_KUBERNETES.md). Use this runbook as the
 entry point and the dated checklist for current deployment facts.
+
+## Additional capacity metadata in a new inventory
+
+The additive `capacity_observation` field separates deployment resource requests
+and limits from each ready API, worker and REST Pod's observed resource spec.
+It reports fixed allowlisted runtime role and REST pool/max-row/anonymous-role
+configuration only. The authenticator role is projected only after validating
+the current core Secret's existing private-database and original-CA URI binding
+and the observed manifest reference; the URI, host and credential values are
+never output. These are manifest/current-configuration observations, not a read
+of the running process environment or cgroup usage. Missing explicit values stay
+unknown; repository-rendered defaults do not fill them in.
+
+The managed database size slug and node count come from the existing validated
+DigitalOcean metadata request. That endpoint's size name does not establish
+measured per-node RAM or CPU. Those fields remain null without an authoritative
+unit-qualified hardware record; no size-name inference qualifies a benchmark.
+
+`sql_settings` captures the fresh observer login's `statement_timeout`, `work_mem`
+and `max_connections`, including units/source/reset/default values, before its
+own 20-second query timeout. It separately lists only these three parameters'
+current-database and fixed application-role catalog defaults. The query rolls
+back and reads no business records. Neither `SET ROLE` nor an administrator
+connection proves the effective settings of an authenticated PostgREST request;
+the receipt explicitly leaves that claim false. The original inventory/schema
+fields and frozen release baseline remain unchanged, and older receipts are
+still valid for their original scope. A reviewed new Actions inventory is needed
+to obtain these observations; adding this code does not supply hosted evidence.

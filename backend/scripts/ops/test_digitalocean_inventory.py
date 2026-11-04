@@ -20,6 +20,16 @@ def schema():
   'canonical_migrations':None,'routine_catalog_sha256':'b'*64,'metrics':{'window_hours':24,'jobs':None,'delivery':None,'capacity':None,'issuance':None},'capabilities':{key:False for key in p.CAPABILITIES}}
 
 
+def capacity_settings():
+ return {'version':1,'database_identity_verified':True,'observed_login_role':'doadmin',
+  'observed_login_settings':[{'name':name,'setting':value,'unit':unit,'source':'configuration file','reset_setting':value,'boot_setting':value}
+   for name,value,unit in [('max_connections',97,None),('statement_timeout',0,'ms'),('work_mem',4096,'kB')]],
+  'query_overrides':{'statement_timeout_ms':20000,'lock_timeout_ms':5000},'configured_defaults':[],
+  'basis':'observer_login_and_catalog_defaults_not_rest_transaction_effective'}
+
+def sql_response(_pod,script):
+ return json.dumps(capacity_settings() if 'tenderdesk.capacity_settings' in script else schema())
+
 def workloads():
  values=[];pods=[]
  for name in p.NAMES:
@@ -113,14 +123,14 @@ class InventoryTests(unittest.TestCase):
  def test_cleanup_attempted_after_sql_failure_and_cleanup_failure_blocks_success(self):
   values,pods=workloads()
   for fail in ('query','cleanup'):
-   with self.subTest(fail=fail),patch.dict(os.environ,{'GITHUB_SHA':'d'*40}),patch.object(p.d,'command',side_effect=responses(values,pods)),patch.object(p.observer,'Client') as client,patch.object(p,'save_client'),patch.object(p,'clear_client'),patch.object(p.d,'sql',side_effect=RuntimeError('private') if fail=='query' else None,return_value=json.dumps(schema())):
+   with self.subTest(fail=fail),patch.dict(os.environ,{'GITHUB_SHA':'d'*40}),patch.object(p.d,'command',side_effect=responses(values,pods)),patch.object(p.observer,'Client') as client,patch.object(p,'save_client'),patch.object(p,'clear_client'),patch.object(p.d,'sql',side_effect=RuntimeError('private') if fail=='query' else sql_response):
     if fail=='cleanup':client.return_value.cleanup.side_effect=RuntimeError('private cleanup credential')
     with self.assertRaises(Exception):p.inventory()
     client.return_value.prepare.assert_called_once();client.return_value.cleanup.assert_called_once()
 
  def test_complete_inventory_does_not_claim_bootstrap_or_mutations(self):
   values,pods=workloads()
-  with patch.dict(os.environ,{'GITHUB_SHA':'d'*40}),patch.object(p.d,'command',side_effect=responses(values,pods)),patch.object(p.observer,'Client') as client,patch.object(p,'save_client'),patch.object(p,'clear_client'),patch.object(p.d,'sql',return_value=json.dumps(schema())):
+  with patch.dict(os.environ,{'GITHUB_SHA':'d'*40}),patch.object(p.d,'command',side_effect=responses(values,pods)),patch.object(p.observer,'Client') as client,patch.object(p,'save_client'),patch.object(p,'clear_client'),patch.object(p.d,'sql',side_effect=sql_response):
    client.return_value.labels={}
    result=p.inventory()
    self.assertEqual(result['ready_workloads'],10)
@@ -129,7 +139,7 @@ class InventoryTests(unittest.TestCase):
 
  def test_image_change_during_database_read_does_not_produce_mixed_inventory_receipt(self):
   values,pods=workloads();after=copy.deepcopy(values);after[0]['metadata']['generation']=3
-  with patch.dict(os.environ,{'GITHUB_SHA':'d'*40}),patch.object(p.d,'command',side_effect=responses(values,pods,after)),patch.object(p.observer,'Client'),patch.object(p,'save_client'),patch.object(p,'clear_client'),patch.object(p.d,'sql',return_value=json.dumps(schema())):
+  with patch.dict(os.environ,{'GITHUB_SHA':'d'*40}),patch.object(p.d,'command',side_effect=responses(values,pods,after)),patch.object(p.observer,'Client'),patch.object(p,'save_client'),patch.object(p,'clear_client'),patch.object(p.d,'sql',side_effect=sql_response):
    with self.assertRaisesRegex(p.InventoryError,'INVENTORY_WORKLOAD_CHANGED_DURING_READ'):p.inventory()
 
  def test_main_suppresses_raw_transport_database_and_cleanup_exception_bodies(self):

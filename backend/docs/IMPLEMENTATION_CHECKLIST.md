@@ -9256,3 +9256,36 @@ follow-up. The focused pure suite now passes 22 tests, and frontend typecheck
 passes. Existing connected-file fixtures explicitly supply their synthetic Auth
 identity. The guard is client-side stale-result prevention, not a replacement for
 server authorization; full integrated and hosted verification remain separate.
+
+### 2026-11-04 — Additive read-only capacity inventory preparation
+
+The inventory now adds `capacity_observation` without changing its existing
+workload/schema fields or frozen release baseline. It separates observed
+API/worker/REST deployment resources from ready Pod specs, preserves missing
+limits as unknown, and projects only fixed runtime roles and REST pool/max-row
+configuration. The optional observer helper reuses the existing managed database
+metadata request and already-read core Secret; private URI/host/password values
+never enter the receipt. Managed size and node count are retained, while RAM/vCPU
+remain unknown because the metadata does not establish them independently.
+
+A separate read-only SQL query preserves the observer login's three capacity
+settings before applying its own bounded query timeout and lists exact
+current-database/application-role catalog defaults. It explicitly does not claim
+these are effective authenticated REST transaction settings. The diagnostic is
+manifest/catalog evidence, not cgroup, throughput, production capacity or load
+qualification. No hosted call, dispatch, production write, migration or provider
+request occurred. Focused local verification and the next reviewed runner
+inventory are recorded separately; the code alone does not fill the missing
+hosted resource evidence.
+
+Local verification passes 35 focused tests in 2.26 seconds, Python compilation
+and diff checks. Two cases execute PostgreSQL through isolated in-memory PGlite:
+the new query retains a 700 ms original timeout separately from its 20-second
+query override, retains a 6 MiB observer work_mem separately from an 8 MiB
+role/database default, and rolls back its settings; the existing observer query
+also remains green. Other cases cover credential-free projection, exact private
+URI/original-CA binding, missing resources, distinct deployment/ready-Pod limits,
+DO metadata-fetch reuse, unchanged old receipt fields and verified cleanup.
+These are local correctness tests, not a hosted SQL/session or capacity result.
+Root source review found no material blocker before integration. Fresh hosted
+inventory remains pending the reviewed Actions dispatch.
