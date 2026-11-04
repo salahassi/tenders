@@ -86,6 +86,16 @@ TLS regression.
 Ten ready workloads prove inventory readiness at that observation, not proposal
 workflow acceptance. The new delivery tables were absent at that time.
 
+The isolated Auth/Storage restore drill subsequently passed all 13 actual HTTP
+checks and both cleanup stages in
+[run 41908346634](https://github.com/salahassi/tenders/actions/runs/41908346634),
+at `fb43a7a3d54518b98cadbfc344d9c1ad4b6766f4`. Its
+[receipt](evidence/cloud-restore-20261104-41908346634.json) records original CA
+verification, exact file restore, access revocation and idempotent replay. This
+run used a fixture Auth policy; it is not evidence for the later shared platform
+policy, application rendering or production deployment. Use the checklist for
+the latest source-specific release gates.
+
 The subsequent read-only model binding audit succeeded at commit
 `bc8e5709183fd228ae1bac207e643e2413e9c9fd` in
 [run 41869042836](https://github.com/salahassi/tenders/actions/runs/41869042836).

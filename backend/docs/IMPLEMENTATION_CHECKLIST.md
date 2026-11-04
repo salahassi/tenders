@@ -15,12 +15,13 @@ the current reliability implementation is still draft PR24.
   retains the red run; the complete final source still needs a green run.
   Combined operational checks pass: 391 tests, plus 11 schema-helper and 15
   Kubernetes-render tests. Final runtime changes still require their own checks.
-- Exact native Deno render and asynchronous content verification pass all seven
-  admitted capacity fixtures at unchanged limits. Container peak is 649,199,616
-  bytes under 640 MiB: modest headroom, not hosted concurrency qualification.
-  The actual continuous-worker test then failed on the second two-volume job,
-  including with a 256 MiB parent-heap cap. Native canonical verification process
-  isolation is under implementation; single-job figures do not close that gate.
+- Native canonical DOCX verification now runs in a bounded subprocess. The
+  actual continuous worker passes two consecutive two-volume jobs at its
+  unchanged 640 MiB / one-CPU limits, with concurrent transport/health checks.
+  Earlier second-job OOM failures remain recorded. The API's 64 MiB verifier
+  child passes the seven-fixture matrix at 384 MiB / one CPU, but its measured
+  container peak leaves no established headroom. Exact 700m CPU, larger admitted
+  bounds and early concurrent-file admission still require qualification.
 - The final representative visual receipt covers **18 DOCX / 91 PDF pages**,
   with exact prior reviewed-page hashes and fresh native field/content checks.
   LibreOffice TOC page numbers and actual Word update/save are separate limits.
@@ -32,11 +33,12 @@ the current reliability implementation is still draft PR24.
   integrated; no production retirement or checked gateway rollout has run.
 - The 600-second request deadline and early no-agent failure are implemented.
   Local exact 22-migration PostgreSQL restore passes eight checks. The first
-  cloud Auth/Storage drill failed at fixture-user setup. The corrected retry
-  passed that stage but failed private-bucket setup; both cleanups passed.
-  Its catalog metadata confirms production Auth RLS blocks application-owner
-  reads despite SELECT grants. A scoped platform policy fix and bucket fixture
-  correction are in progress; neither hosted gate is closed.
+  cloud Auth/Storage drill failed at fixture-user setup; the second failed at
+  private-bucket setup. The third drill passes all 13 actual HTTP acceptance
+  checks and both cleanups after correcting the isolated bucket limit. That
+  run uses a fixture Auth policy; the shared production platform policy still
+  needs a fresh drill and deployment. Production catalog metadata confirms Auth
+  RLS blocks application-owner reads despite SELECT grants.
   Full hosted package timing, deployment and actual user-flow acceptance remain
   unproven. An optional template is not successful issuance.
 - The latest read-only model binding audit is successful run41869042836;
@@ -48,6 +50,24 @@ the current reliability implementation is still draft PR24.
 
 The evidence files referenced by the detailed entries retain their exact scope
 and source hashes. Historical failures are retained rather than relabeled.
+
+### November 4 — actual cloud Auth and Storage restore passes thirteen checks
+
+[Run 41908346634](https://github.com/salahassi/tenders/actions/runs/41908346634)
+at `fb43a7a3d54518b98cadbfc344d9c1ad4b6766f4` passes all 13 actual Auth/Storage
+HTTP acceptance checks, the twelve helper guards, original cluster CA checks,
+isolated resource cleanup and temporary credential cleanup. The
+[sanitized receipt](evidence/cloud-restore-20261104-41908346634.json) binds the
+same frozen 22-migration manifest and source catalog as the previous attempts.
+It proves exact restored file bytes, owner access and former-owner denial,
+revoked review/assurance state and replay without duplicate history or usage.
+The corrected isolated bucket matches the service's actual 1 MiB file limit.
+
+This run uses the earlier fixture-specific Auth policy, so it does not qualify
+the subsequent shared production Auth helper. No customer rows were copied,
+production business records or Auth policies changed, or model calls made.
+The application renderer was not exercised. A fresh shared-helper drill,
+production release and full hosted issuance remain required.
 
 ### November 4 — frozen schema and gateway contract for the isolated cloud drill
 
