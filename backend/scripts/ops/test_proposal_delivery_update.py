@@ -84,6 +84,8 @@ class DeliveryUpdateTests(unittest.TestCase):
    self.assertNotIn(p.MARKER,state['worker']['metadata']['annotations'])
    self.assertFalse(emit.call_args.kwargs['processing_retried']);self.assertFalse(emit.call_args.kwargs['hosted_artifact_acceptance'])
    self.assertEqual(emit.call_args.kwargs['worker_resources']['limits'],{'cpu':'1000m','memory':'640Mi'})
+   self.assertEqual(emit.call_args.kwargs['worker_resources']['requests'],{'cpu':'25m','memory':'192Mi'})
+   self.assertEqual(emit.call_args.kwargs['worker_resources']['desired_replicas'],1)
    self.assertFalse(emit.call_args.kwargs['worker_resources']['hosted_load_qualified'])
 
  def test_worker_resource_limits_are_observed_and_rejected_before_mutation(self):
@@ -107,6 +109,14 @@ class DeliveryUpdateTests(unittest.TestCase):
     self.assertEqual(container['resources'],original)
     self.assertEqual(emit.call_args.kwargs['worker_resources']['limits'],limits)
     self.assertGreaterEqual(emit.call_args.kwargs['worker_resources']['memory_bytes'],671088640)
+
+ def test_worker_receipt_distinguishes_missing_requests_from_zero_without_promising_load(self):
+  with self.fixture() as (state,_,_,emit):
+   state['worker']['spec']['replicas']=2
+   state['worker']['spec']['template']['spec']['containers'][0]['resources']['requests']={'cpu':'0'}
+   p.update();receipt=emit.call_args.kwargs['worker_resources']
+   self.assertEqual(receipt['requests'],{'cpu':'0','memory':None})
+   self.assertEqual(receipt['desired_replicas'],2);self.assertFalse(receipt['hosted_load_qualified'])
 
  def test_each_failure_cleans_and_never_rolls_images_back_or_claims_success(self):
   for failure in ('client','schema','worker-patch','worker-drained','api-patch','source-browser-patch','native-ocr-patch','frontend-patch','public','schema-recheck','cleanup'):

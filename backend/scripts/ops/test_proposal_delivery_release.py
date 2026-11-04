@@ -25,7 +25,7 @@ class DeliveryReleaseTests(unittest.TestCase):
 
     def test_every_final_contract_is_required_before_freezing(self):
         manifest=self.manifest()
-        self.assertEqual(len(p.REQUIRED),19)
+        self.assertEqual(len(p.REQUIRED),20)
         self.assertEqual({key:manifest[key] for key in p.CAPABILITIES},p.CAPABILITIES)
         with self.assertRaises(p.ReleaseError):p.freeze({'receipt':self.inventory()})
         with tempfile.TemporaryDirectory() as directory:
@@ -41,7 +41,7 @@ class DeliveryReleaseTests(unittest.TestCase):
     def test_final_capabilities_cannot_be_downgraded_or_coerced(self):
         for key,value in (('executor_max',3),('minimum_worker_executor',0),('renderer_versions',[1,2]),
           ('ordinary_renderer_version','ordinary-1'),('current_proposal_issuance_contract',True),
-          ('issuance_file_capacity_version',0)):
+          ('issuance_file_capacity_version',0),('global_renderer_limit',2)):
             manifest=self.manifest();manifest[key]=value
             with self.subTest(key=key),self.assertRaisesRegex(p.ReleaseError,'CAPABILITY_SOURCE_MISMATCH'):
                 p.verify_source(manifest)
@@ -75,6 +75,10 @@ class DeliveryReleaseTests(unittest.TestCase):
           ('ALTER TABLE public.export_package_volumes DISABLE ROW LEVEL SECURITY;','DELIVERY_RELEASE_EXPORT_TABLE_AUTHORITY_INVALID'),
           ('ALTER TABLE public.proposal_issuance_requests ALTER COLUMN reserved_file_bytes DROP NOT NULL;','DELIVERY_RELEASE_CAPACITY_CONTRACT_INVALID'),
           ('ALTER TABLE public.proposal_issuance_requests DISABLE TRIGGER issuance_capacity_guard;','DELIVERY_RELEASE_CAPACITY_CONTRACT_INVALID'),
+          ('DROP FUNCTION app_private.document_render_slot_available();','DELIVERY_RELEASE_RENDER_ADMISSION_INVALID'),
+          ('GRANT EXECUTE ON FUNCTION app_private.document_render_slot_available() TO tdp_app_service;','DELIVERY_RELEASE_RENDER_ADMISSION_AUTHORITY_INVALID'),
+          ('DROP INDEX public.jobs_active_document_render;','DELIVERY_RELEASE_RENDER_ADMISSION_INVALID'),
+          ('DROP INDEX public.one_active_non_render_job_per_workspace;','DELIVERY_RELEASE_RENDER_ADMISSION_INVALID'),
         ]
         program="process.on('uncaughtException',e=>{console.error(e.message,e.code,e.position,e.where);process.exit(1)});\nconst release="+json.dumps(script())+';const variants='+json.dumps([(script(sources[:-1]+[sources[-1]+'\n'+s]),code) for s,code in cases])+';\n'
         program+='const baseline='+json.dumps(manifest['baseline_releases'])+';const catalogQuery='+json.dumps(p.CATALOG.replace(' INTO catalog_hash',''))+';\n'

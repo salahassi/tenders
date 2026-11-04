@@ -34,10 +34,12 @@ REQUIRED = ('20261104121022_partial_document_coverage.sql',
  '20261104150228_restored_source_review_assurance.sql',
  '20261104151946_current_proposal_issuance_contract.sql',
  '20261104152913_durable_ordinary_export_packages.sql',
- '20261104160125_proposal_issuance_file_capacity.sql')
+ '20261104160125_proposal_issuance_file_capacity.sql',
+ '20261104163406_serialize_local_document_rendering.sql')
 CAPABILITIES = {'executor_max':4,'renderer_versions':[1,2,3],
  'minimum_worker_executor':4,'ordinary_renderer_version':'ordinary-2',
- 'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1}
+ 'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1,
+ 'global_renderer_limit':1}
 CATALOG = """SELECT encode(sha256(convert_to(coalesce(string_agg(
  p.oid::regprocedure::text||':'||pg_get_functiondef(p.oid)||':'||coalesce(p.proacl::text,''),E'\\n'
  ORDER BY p.oid::regprocedure::text),''),'UTF8')),'hex') INTO catalog_hash
@@ -270,6 +272,25 @@ BEGIN
   OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.jobs'::regclass
    AND tgenabled='O' AND tgfoid='app_private.bind_issuance_job()'::regprocedure)
   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_CAPACITY_CONTRACT_INVALID';END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure('app_private.document_render_slot_available()')
+   AND prorettype='boolean'::regtype AND prosecdef AND provolatile='v' AND proconfig=ARRAY['search_path=""']::text[])
+  OR NOT EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('public.jobs_active_document_render')
+   AND indrelid='public.jobs'::regclass AND indisvalid AND indisready AND indpred IS NOT NULL)
+  OR to_regclass('public.one_active_job_per_workspace') IS NOT NULL
+  OR EXISTS(SELECT 1 FROM (VALUES ('public.one_active_non_render_job_per_workspace'),
+     ('public.one_active_render_job_per_workspace')) lane(name)
+    LEFT JOIN pg_index i ON i.indexrelid=to_regclass(lane.name)
+    WHERE i.indexrelid IS NULL OR i.indrelid<>'public.jobs'::regclass OR NOT i.indisunique OR NOT i.indisvalid OR NOT i.indisready
+     OR i.indpred IS NULL OR i.indnkeyatts<>1 OR i.indkey[0]<>(SELECT attnum FROM pg_attribute
+      WHERE attrelid='public.jobs'::regclass AND attname='workspace_id' AND NOT attisdropped))
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_RENDER_ADMISSION_INVALID';END IF;
+ IF has_function_privilege('tdp_app_authenticated','app_private.document_render_slot_available()','EXECUTE')
+  OR has_function_privilege('tdp_app_anon','app_private.document_render_slot_available()','EXECUTE')
+  OR EXISTS(SELECT 1 FROM pg_proc p CROSS JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) acl
+   JOIN pg_roles role_row ON role_row.oid=acl.grantee
+   WHERE p.oid='app_private.document_render_slot_available()'::regprocedure
+    AND role_row.rolname IN ('service_role','tdp_app_service'))
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_RENDER_ADMISSION_AUTHORITY_INVALID';END IF;
  PERFORM set_config('tenderdesk.delivery_release_receipt',jsonb_build_object('release','__RELEASE__',
   'manifest_sha256','__CHECKSUM__','catalog_sha256',catalog_hash,'replayed',saved_manifest IS NOT NULL)::text,true);
 END $delivery_release$;

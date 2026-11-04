@@ -7837,3 +7837,30 @@ next matrix will therefore bind the streaming-table helper as well as the render
 No new visual pass is claimed while dense rendering and verification are changing;
 existing footer-only evidence and the open native-TOC compatibility limitation
 remain unchanged.
+
+### 2026-11-04 — twenty-migration release guard verification
+
+The required source set now includes global document-render admission migration
+`20261104163406`; the manifest records `global_renderer_limit: 1`. Before rollout,
+the atomic gate checks its private volatile Boolean helper/empty search path,
+active-render index and both valid unique workspace lane indexes, and rejects
+the old blanket index or a direct service-role execute grant on the helper.
+These are catalog prerequisites; the independently retained six-case PostgreSQL
+race receipt proves the actual logical admission behavior. The worker resource
+receipt now additionally reports validated CPU/memory requests and desired replica
+count, preserving missing requests as null and explicit zero as zero.
+
+On the composed source containing lifecycle c3aad92, historical qualification
+d15aa28 and global queue dfac510, all **342 operations Python tests pass** in
+106.5 seconds, including 17 injected SQL rollback faults and the final capability
+and observed-resource negatives. The real PostgreSQL managed reconstruction and
+canonical source-review/delivery backup/restore harness passes **8/8 checks over
+all 20 migrations**. Its source hashes are retained outside the repository in
+`/workspace/work/ai-resume/due-diligence/phase2-operations/release-final/cloud-restore-postgres-20.json`;
+the operations log is `ops-20.log` in the same directory. Local Auth/Storage are
+explicit stubs; this is not hosted file or renderer acceptance.
+
+These receipts precede pending deadline metadata and storage-upload ambiguity
+corrections. The final source manifest, cloud restore and combined application
+gates must use their later exact hashes. No manifest was frozen for deployment,
+no hosted workflow was dispatched, and no production resources were changed.
