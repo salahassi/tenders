@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "reviewed_at": "2026-11-04T17:47:37.804993+00:00",
+  "scope": "Independent read-only source review and two unchanged isolated full-migration SQL regressions; no production/provider/storage calls",
+  "findings": [
+    {
+      "id": "storage-replay-side-effect",
+      "status": "fixed_independently_retested",
+      "red": "Replaying delivery.snapshot.retry key after its successor upload later failed mutated the later artifact to expired and queued cleanup before returning cached original response.",
+      "green": "Current actor/source/body-valid replay delegates before rotation and leaves complete artifact/cleanup JSON unchanged."
+    },
+    {
+      "id": "storage-expired-transaction-lease",
+      "status": "fixed_independently_retested",
+      "red": "A delivery lease expired after transaction start still authorized send:true via inherited now() check.",
+      "green": "Canonical post-lock guard uses clock_timestamp and unchanged case refuses STALE_LEASE."
+    },
+    {
+      "id": "physical-unlink-durability",
+      "status": "source_fix_owner_tested_independent_reread",
+      "finding": "Retirement unlink had no directory sync before returning proof.",
+      "fix": "Awaited parent.sync directly after unlink; errors stop proof. Owner reports10localtests; no actualpowerfailure qualification."
+    }
+  ],
+  "cases": {
+    "before": {
+      "failed": 2
+    },
+    "after": {
+      "passed": 2
+    }
+  },
+  "artifacts": {
+    "tested_migration": {
+      "path": "/workspace/work/reliability-run-budget/backend/supabase/migrations/20261104170442_durable_storage_write_intents.sql",
+      "sha256": "571a239298f4d2f59ed4b3ec7e2c2e30e06a754291ab82fb821965cfcff9ea5b"
+    },
+    "unchanged_repro": {
+      "path": "/workspace/work/reliability-run-budget/backend/tests/backend/reviewStorageReplay.test.ts",
+      "sha256": "ea09f9d9e2d6a1313a70ea831c7505e019a1e953df42ca4b208fa18183b6f42b"
+    },
+    "red_log": {
+      "path": "/workspace/output/storage-fence-independent-red.log",
+      "sha256": "c69820cafce80942bf5361225f6221fc37e06082a032792db17724b6fe7a45bb"
+    },
+    "green_log": {
+      "path": "/workspace/output/storage-fence-independent-green.log",
+      "sha256": "0a2ec63c0679d62273374cd064581f97426b8cdcaf53081efdc89239d08c8bd8"
+    }
+  },
+  "current_migration_matches_tested": true,
+  "remaining": [
+    "Retirement172700 finish/coordinator still under development and not accepted by this review.",
+    "Actual pinned Storage binary physical ordering/quiescence proof pending independent qualification.",
+    "Final integration/managed-role catalog and cloud restore/deployment/hosted acceptance separate."
+  ],
+  "database_engine": "PGlite with complete real migration chain; these two cases are sequential transactions, not PostgreSQL concurrency/race proof",
+  "integrated_migration_sha256": "571a239298f4d2f59ed4b3ec7e2c2e30e06a754291ab82fb821965cfcff9ea5b",
+  "integrated_migration_matches_tested": true,
+  "integrated_commit": "b78ea51",
+  "exact_independent_test_source": "// @vitest-environment node\nimport { beforeAll, afterAll, beforeEach, afterEach, expect, it } from 'vitest';\nimport { workflowFixture } from './workflowFixture';\nlet f: Awaited<ReturnType<typeof workflowFixture>>;\nbeforeAll(async()=> { f=await workflowFixture(); },30000);\nafterAll(async()=>f?.db.close());beforeEach(async()=>f.db.exec('begin'));afterEach(async()=>f.db.exec('rollback'));\nasync function setup(){\n const source=await f.command('source.create',{name:'Synthetic replay review',kind:'manual'});\n const opp=await f.command('opportunity.create',{source_id:source.id,title:'Synthetic replay scope',reference:'S1',description:'Configure the approval workflow and demonstrate acceptance.',decision:'shortlisted'});\n const snapshot=await f.command('delivery.snapshot.prepare',{opportunity_id:opp.id,expected_revision:opp.revision});\n const job=await f.rpc('claim_backend_job_v4');\n const context=await f.rpc('delivery_export_context',[job.id,job.lease_token]);\n return {snapshot,job,key:context.artifacts[0].storage_key};\n}\nasync function consume(d:{job:any,key:string}){\n expect(await f.rpc('begin_render_storage_write',[d.job.id,d.job.lease_token,d.key,'a'.repeat(64),123])).toMatchObject({send:true});\n await f.db.query('update public.jobs set failure_count=5 where id=$1',[d.job.id]);\n await f.rpc('fail_delivery_export',[d.job.id,d.job.lease_token,'DELIVERY_STORAGE_UNAVAILABLE']);\n}\nit('retry replay must leave a later failed upload and cleanup inventory unchanged',async()=>{\n const d=await setup();await consume(d);\n const proposal=(await f.db.query<any>('select delivery_revision from public.proposals where id=$1',[d.snapshot.proposal_id])).rows[0];\n const input={snapshot_id:d.snapshot.id,expected_delivery_revision:proposal.delivery_revision};const key=crypto.randomUUID();\n const first=await f.command('delivery.snapshot.retry',input,key);\n const job=await f.rpc('claim_backend_job_v4');const context=await f.rpc('delivery_export_context',[job.id,job.lease_token]);\n await consume({job,key:context.artifacts[0].storage_key});\n const state=async()=> (await f.db.query<any>(\"select (select jsonb_agg(to_jsonb(a) order by id) from public.proposal_delivery_artifacts a) artifacts,(select jsonb_agg(to_jsonb(q) order by id) from public.storage_cleanup_queue q) cleanup\")).rows[0];\n const before=await state(); expect((await f.command('delivery.snapshot.retry',input,key)).id).toBe(first.id);\n expect(await state()).toEqual(before);\n});\nit('one-time storage begin rejects a lease expired after the transaction began',async()=>{\n const d=await setup();await new Promise(resolve=>setTimeout(resolve,30));\n await f.db.query(\"update public.jobs set lease_until=clock_timestamp()-interval '1 millisecond' where id=$1\",[d.job.id]);\n const clocks=(await f.db.query<any>('select lease_until>now() past_transaction_start,lease_until<clock_timestamp() actually_expired from public.jobs where id=$1',[d.job.id])).rows[0];\n expect(clocks).toEqual({past_transaction_start:true,actually_expired:true});\n await expect(f.rpc('begin_render_storage_write',[d.job.id,d.job.lease_token,d.key,'a'.repeat(64),123])).rejects.toThrow('STALE_LEASE');\n});\n",
+  "canonical_regression_file": "backend/tests/backend/storageWriteReplay.test.ts",
+  "physical_fix_note": "The physical helper is under separate qualification; its fsync correction is recorded as a source-level review finding, not final runtime/retirement acceptance."
+}

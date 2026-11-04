@@ -8233,3 +8233,26 @@ claim, full worker Deno/container proof or hosted service capacity guarantee.
 Exact input/artifact/helper hashes and measurement details are in
 [evidence/docx-direction-run-budget-native-20261104.json](evidence/docx-direction-run-budget-native-20261104.json).
 Final renderer/worker resource and visual qualification remain separate.
+
+### 2026-11-04 — independent storage-intent review retains actual red/green evidence
+
+Independent full-migration PGlite cases found two defects before storage-intent
+integration: replaying a retry key could expire a later failed upload and enqueue
+cleanup, and a lease that expired after transaction start could still grant a
+one-time write because the inherited guard used `now()`. The owner corrected
+replay ordering after current actor/workspace checks and put a current-clock
+lease check in the canonical delivery-job guard for all send/commit consumers.
+The exact two independently authored tests pass unchanged against the corrected
+migration. These are sequential local SQL tests, not PostgreSQL concurrency,
+remote Storage, or production proof. Canonical regressions are retained in
+`storageWriteReplay.test.ts`; the independent source, hashes, red/green logs and
+scoped review limits are retained in
+[evidence/storage-independent-review-20261104.json](evidence/storage-independent-review-20261104.json).
+
+The storage foundation is integrated in `b78ea51`; final private retirement
+coordinator, selected Storage binary/quiescence/physical deletion, release guards,
+cloud restore and hosted acceptance remain separate gates. A physical-helper
+review also found missing directory synchronization after unlink; its author
+added awaited directory sync before the absence receipt, with failures refusing
+proof. That observation is not a power-failure qualification claim. No production,
+provider, payment or external Storage operation ran in this independent review.
