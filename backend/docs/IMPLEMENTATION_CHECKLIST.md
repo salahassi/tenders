@@ -70,6 +70,20 @@ are absent. This confirms the new implementation is not deployed yet. API/worker
 use image digest `85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380`;
 image source revisions remain independently unverified. This is a current baseline
 for a guarded release, not hosted proposal/model acceptance or schema-tip proof.
+## November 4 — final renderer and worker-floor release capabilities
+
+The release manifest now derives its renderer capability set from the exact
+reviewed migration sources and includes the separate minimum worker executor.
+Image publication and deployment require renderer versions **1, 2 and 3**,
+executor **4**, and minimum worker executor **4**. The database transaction probes
+actual immutable renderer/executor dispatch for each supported payload version
+and requires both canonical issuance requests and their status view before
+commit. The final normal-job mixed-claim regression remains mandatory; checking
+the local renderer alone cannot prove it. **12 operations release tests** pass
+with legacy-six-migration SQL replay still covered and the final runtime gates
+exercised by their fault fixtures. Final combined SQL must be rerun after all
+phase-2 migrations are merged; the manifest remains absent until that review.
+
 ## November 4 — guarded delivery release tooling (phase 2 W11)
 
 Implementation: the new manual-only `deploy-proposal-delivery.yml` verifies a

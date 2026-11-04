@@ -30,7 +30,7 @@ class DeliveryUpdateTests(unittest.TestCase):
    deployments[name]={'metadata':{'uid':name+'-uid','name':name,'resourceVersion':'1','annotations':{}},'spec':{'replicas':1,'strategy':copy.deepcopy(p.code.WORKER_STRATEGY),
     'template':{'spec':{'terminationGracePeriodSeconds':240,'containers':[{'name':name,'image':REGISTRY+'frontend@sha256:'+'a'*64 if name=='frontend' else BASE}]}}}}
   natives={name:cron(name.removeprefix('native-')) for name in ('native-browser','native-ocr')}
-  manifest={'executor_max':4,'baseline_images':{name:p.image_of(v) for name,v in deployments.items()},'baseline_native_schedules':p.inventory.public_schedules(list(natives.values()))}
+  manifest={'executor_max':4,'renderer_versions':[1,2,3],'minimum_worker_executor':4,'baseline_images':{name:p.image_of(v) for name,v in deployments.items()},'baseline_native_schedules':p.inventory.public_schedules(list(natives.values()))}
   def stage(name):
    events.append(name)
    if name==fail:raise RuntimeError('PRIVATE_FAILURE_PAYLOAD')

@@ -33,7 +33,7 @@ def inspect(reference,revision,name):
 
 def prepare():
     manifest=json.loads(release.MANIFEST.read_text());release.verify_source(manifest)
-    if manifest['executor_max']!=4:raise ImageError('DELIVERY_FINAL_RUNTIME_CONTRACT_REQUIRED')
+    if manifest['executor_max']!=4 or manifest['renderer_versions']!=[1,2,3] or manifest['minimum_worker_executor']!=4:raise ImageError('DELIVERY_FINAL_RUNTIME_CONTRACT_REQUIRED')
     revision=os.environ.get('GITHUB_SHA','')
     if not re.fullmatch('[a-f0-9]{40}',revision):raise ImageError('DELIVERY_IMAGE_SOURCE_INVALID')
     verify_checkout(revision)

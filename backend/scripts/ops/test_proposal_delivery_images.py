@@ -30,7 +30,7 @@ class DeliveryImageTests(unittest.TestCase):
  def test_retries_reuse_existing_three_images_without_rebuild_and_tls_error_never_means_missing(self):
   for missing,error in ((False,False),(True,False),(False,True)):
    with self.subTest(missing=missing,error=error),tempfile.TemporaryDirectory() as directory:
-    manifest=Path(directory)/'manifest';manifest.write_text('{"executor_max":4}')
+    manifest=Path(directory)/'manifest';manifest.write_text('{"executor_max":4,"renderer_versions":[1,2,3],"minimum_worker_executor":4}')
     envfile=Path(directory)/'env';calls=[]
     def run(args,**kwargs):
      calls.append(args)

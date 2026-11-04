@@ -68,7 +68,7 @@ def freeze(inventory, *, migrations=ROOT/'supabase/migrations'):
     if len(workloads)!=10 or set(images)!={'api','worker','frontend','auth','rest','storage','source-browser','scheduler','gateway','https'} or any(not isinstance(v,str) or not re.fullmatch(r'[a-zA-Z0-9./:_-]+@sha256:[a-f0-9]{64}',v) for v in images.values()): raise ReleaseError('DELIVERY_RELEASE_WORKLOAD_BASELINE_REQUIRED')
     schedules=inventory.get('native_schedules')
     if not isinstance(schedules,list) or {r.get('name') for r in schedules}!={'native-browser','native-ocr'}: raise ReleaseError('DELIVERY_RELEASE_NATIVE_BASELINE_REQUIRED')
-    return {'version':1,'release':RELEASE,'baseline_images':images,'baseline_native_schedules':schedules,'executor_max':4 if any(p.name.endswith('_structured_proposal_authoring.sql') for p in files) else 3,'baseline_catalog_sha256':schema['routine_catalog_sha256'],
+    return {'version':1,'release':RELEASE,'baseline_images':images,'baseline_native_schedules':schedules,'executor_max':4 if any(p.name.endswith('_structured_proposal_authoring.sql') for p in files) else 3,'renderer_versions':[1,2,3] if any(p.name.endswith('_generated_review_delivery.sql') for p in files) else ([1,2] if any(p.name.endswith('_structured_proposal_authoring.sql') for p in files) else [1]),'minimum_worker_executor':4 if any(p.name.endswith('_proposal_issuance_deadline.sql') for p in files) else 0,'baseline_catalog_sha256':schema['routine_catalog_sha256'],
       'baseline_releases':releases,'migrations':[{'name':p.name,'sha256':digest(p.read_bytes())} for p in files]}
 
 def validate_runtime_baseline(manifest):
@@ -95,11 +95,11 @@ def validate_runtime_baseline(manifest):
                 if quantity is not None and (not isinstance(quantity,str) or len(quantity)>24 or not re.fullmatch(r'[0-9]{1,15}(?:\.[0-9]{1,9})?(?:m|Ki|Mi|Gi|Ti|K|M|G|T)?',quantity)):raise ReleaseError('DELIVERY_RELEASE_NATIVE_BASELINE_REQUIRED')
 
 def verify_source(manifest, *, migrations=ROOT/'supabase/migrations'):
-    if not isinstance(manifest,dict) or set(manifest)!={'version','release','baseline_catalog_sha256','baseline_releases','migrations','baseline_images','baseline_native_schedules','executor_max'} or manifest['version']!=1 or manifest['release']!=RELEASE:
+    if not isinstance(manifest,dict) or set(manifest)!={'version','release','baseline_catalog_sha256','baseline_releases','migrations','baseline_images','baseline_native_schedules','executor_max','renderer_versions','minimum_worker_executor'} or manifest['version']!=1 or manifest['release']!=RELEASE:
         raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     if not re.fullmatch('[a-f0-9]{64}',manifest['baseline_catalog_sha256']): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     validate_runtime_baseline(manifest)
-    if manifest['executor_max'] not in (3,4): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
+    if manifest['executor_max'] not in (3,4) or manifest['renderer_versions'] not in ([1],[1,2],[1,2,3]) or manifest['minimum_worker_executor'] not in (0,4): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     receipts=manifest['baseline_releases']
     if not isinstance(receipts,dict) or len(receipts)!=6 or any(not re.fullmatch('[a-z][a-z0-9-]{1,100}',k) or not re.fullmatch('[a-f0-9]{64}',v) for k,v in receipts.items()):
         raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
@@ -113,6 +113,8 @@ def verify_source(manifest, *, migrations=ROOT/'supabase/migrations'):
         names.append(row['name']); sources.append(path.read_text())
     if names!=sorted(set(names)) or not set(REQUIRED)<=set(names) or names!=sorted(p.name for p in migrations.glob('*.sql') if p.name>CUTOFF):
         raise ReleaseError('DELIVERY_RELEASE_MIGRATION_SET_CHANGED')
+    expected_renderers=[1,2,3] if any(n.endswith('_generated_review_delivery.sql') for n in names) else ([1,2] if any(n.endswith('_structured_proposal_authoring.sql') for n in names) else [1])
+    if manifest['renderer_versions']!=expected_renderers or manifest['minimum_worker_executor']!=(4 if any(n.endswith('_proposal_issuance_deadline.sql') for n in names) else 0): raise ReleaseError('DELIVERY_RELEASE_CAPABILITY_SOURCE_MISMATCH')
     return sources
 
 def migration_script(manifest, sources=None):
@@ -130,6 +132,7 @@ SELECT pg_advisory_xact_lock(hashtextextended('tenderdesk.proposal-delivery.rele
 DO $delivery_release$
 DECLARE r record; target text; catalog_hash text; saved_catalog text; saved_manifest text;
  columns_before jsonb; functions_before text[]; relations_before text[];
+ version_number integer; selected_renderer text; selected_executor integer;
  row_count bigint; row_digest text; state jsonb; rows_before jsonb; authority jsonb; authority_before jsonb;
 BEGIN
  IF current_database()<>'tenderdesk_app' THEN RAISE EXCEPTION 'DELIVERY_RELEASE_DATABASE_MISMATCH';END IF;
@@ -183,12 +186,24 @@ BEGIN
   IF has_function_privilege('tdp_app_authenticated',target,'EXECUTE') OR has_function_privilege('tdp_app_anon',target,'EXECUTE')
    OR NOT has_function_privilege('tdp_app_service',target,'EXECUTE') THEN RAISE EXCEPTION 'DELIVERY_RELEASE_SERVICE_AUTHORITY_INVALID';END IF;
  END LOOP;
+ IF __EXECUTOR__=4 THEN
+  IF to_regprocedure('app_private.delivery_renderer(public.proposal_delivery_snapshots)') IS NULL
+   OR to_regprocedure('app_private.delivery_executor(public.proposal_delivery_snapshots)') IS NULL THEN RAISE EXCEPTION 'DELIVERY_RELEASE_RENDERER_CONTRACT_MISSING';END IF;
+  FOREACH version_number IN ARRAY __RENDERERS__ LOOP
+   EXECUTE 'SELECT app_private.delivery_renderer(s),app_private.delivery_executor(s) FROM jsonb_populate_record(null::public.proposal_delivery_snapshots,jsonb_build_object(''payload'',jsonb_build_object(''version'',$1))) s'
+    INTO selected_renderer,selected_executor USING version_number;
+   IF selected_renderer IS DISTINCT FROM version_number::text OR selected_executor IS DISTINCT FROM (case when version_number=1 then 3 else 4 end)
+    THEN RAISE EXCEPTION 'DELIVERY_RELEASE_RENDERER_CONTRACT_MISMATCH';END IF;
+  END LOOP;
+ END IF;
+ IF __MINIMUM_EXECUTOR__=4 AND (to_regclass('public.proposal_issuance_requests') IS NULL OR to_regclass('public.proposal_issuance_status') IS NULL)
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_DEADLINE_CONTRACT_MISSING';END IF;
  PERFORM set_config('tenderdesk.delivery_release_receipt',jsonb_build_object('release','__RELEASE__',
   'manifest_sha256','__CHECKSUM__','catalog_sha256',catalog_hash,'replayed',saved_manifest IS NOT NULL)::text,true);
 END $delivery_release$;
 SELECT current_setting('tenderdesk.delivery_release_receipt');
 NOTIFY pgrst,'reload schema';COMMIT;
-""".replace('__EXECUTOR__',str(manifest['executor_max'])).replace('__BASELINE__',literal(canonical(manifest['baseline_releases']))).replace('__BEFORE_HASH__',manifest['baseline_catalog_sha256']).replace('__RELEASE__',RELEASE).replace('__CHECKSUM__',checksum).replace('__ROWS__',ROWS).replace('__AUTHORITY__',AUTHORITY).replace('__CATALOG__',CATALOG).replace('__DELIMITER__',delimiter).replace('__PAYLOAD__',payload)
+""".replace('__RENDERERS__','ARRAY['+','.join(map(str,manifest['renderer_versions']))+']::integer[]').replace('__MINIMUM_EXECUTOR__',str(manifest['minimum_worker_executor'])).replace('__EXECUTOR__',str(manifest['executor_max'])).replace('__BASELINE__',literal(canonical(manifest['baseline_releases']))).replace('__BEFORE_HASH__',manifest['baseline_catalog_sha256']).replace('__RELEASE__',RELEASE).replace('__CHECKSUM__',checksum).replace('__ROWS__',ROWS).replace('__AUTHORITY__',AUTHORITY).replace('__CATALOG__',CATALOG).replace('__DELIMITER__',delimiter).replace('__PAYLOAD__',payload)
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)

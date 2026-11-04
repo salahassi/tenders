@@ -108,7 +108,7 @@ def update():
     if not re.fullmatch('[a-f0-9]{40}',revision):raise UpdateError('DELIVERY_RUN_SOURCE_INVALID')
     images.verify_checkout(revision)
     manifest=json.loads(release.MANIFEST.read_text());release.verify_source(manifest)
-    if manifest['executor_max']!=4:raise UpdateError('DELIVERY_FINAL_RUNTIME_CONTRACT_REQUIRED')
+    if manifest['executor_max']!=4 or manifest['renderer_versions']!=[1,2,3] or manifest['minimum_worker_executor']!=4:raise UpdateError('DELIVERY_FINAL_RUNTIME_CONTRACT_REQUIRED')
     selected={name:u.image(os.environ.get('TENDERDESK_'+name.upper()+'_IMAGE',''),name) for name in images.IMAGES}
     for name,reference in selected.items():
         if images.inspect(reference,revision,name)!=reference:raise UpdateError('DELIVERY_IMAGE_SOURCE_MISMATCH')
