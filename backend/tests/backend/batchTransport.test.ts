@@ -1,144 +1,137 @@
 // @vitest-environment node
-import { createHash } from "node:crypto";
 import { expect, it, vi } from "vitest";
 import {
   batchEnvelopeResponse,
   postgrestBatchBody,
   type BatchTransportOptions,
 } from "../../supabase/functions/_shared/batchTransport.ts";
+import { HeavyFileAdmission } from "../../supabase/functions/api/heavyFileAdmission.ts";
 import { corsHeaders } from "../../supabase/functions/_shared/http.ts";
+import {
+  batchWire,
+  batchChunkBytes,
+  batchReceipt,
+} from "./fixtures/batchWire.ts";
 
-// Synthetic protocol fixtures only: no Auth, database, Storage, or native
-// renderer runs. The database transaction itself remains app_batch's contract.
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
+const encoder = new TextEncoder(),
+  decoder = new TextDecoder();
 const settings = {
   url: "https://synthetic.invalid/gateway/",
-  publishableKey: "synthetic-publishable-key",
+  publishableKey: "synthetic-key",
   token: "synthetic-caller-jwt",
-  commands: [
-    {
-      operation: "export.renew",
-      input: { id: "synthetic", expected_revision: 1 },
-    },
-    {
-      operation: "export.renew",
-      input: { id: "synthetic", expected_revision: 2 },
-    },
-  ],
-  idempotencyKey: "synthetic-batch-key",
+  idempotencyKey: "same-operation",
 };
-
-function upstream(chunks: Uint8Array[]) {
-  let index = 0;
-  const pull = vi.fn(
-    (controller: ReadableStreamDefaultController<Uint8Array>) => {
-      if (index === chunks.length) controller.close();
-      else controller.enqueue(chunks[index++]);
-    },
-  );
-  const cancel = vi.fn();
-  const body = new ReadableStream({ pull, cancel }, { highWaterMark: 0 });
-  return { body, pull, cancel };
+const unavailable = {
+  code: "DATABASE_RESPONSE_UNAVAILABLE",
+  retryable: false,
+  details: null,
+};
+const json = (value: unknown, status = 200) =>
+  new Response(JSON.stringify(value), {
+    status,
+    headers: { "content-type": "application/json" },
+  });
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
 }
-
-function fetchResponse(
-  body: ReadableStream<Uint8Array>,
-  status = 200,
-  type = "application/json",
-) {
-  return vi.fn<typeof fetch>(
-    async () =>
-      new Response(body, {
-        status,
-        headers: { "content-type": type },
-      }),
-  );
-}
-
-async function transport(
-  fetcher: typeof fetch,
-  overrides: Partial<BatchTransportOptions> = {},
-) {
-  return postgrestBatchBody({
+const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
+function fixture(raw = ['{"revision":2,"text":"عربي"}', "null"]) {
+  const wire = batchWire(raw);
+  const fetcher = vi.fn<typeof fetch>(async (url, init) => {
+    if (String(url).endsWith("/app_batch_prepare")) return json(wire.manifest);
+    const request = JSON.parse(init!.body as string);
+    return json(wire.chunk(request.result_ordinal, request.chunk_index));
+  });
+  const options = {
     ...settings,
+    commands: raw.map((_, index) => ({
+      operation: "synthetic",
+      input: { index },
+    })),
     signal: new AbortController().signal,
     fetch: fetcher,
-    ...overrides,
-  });
+  };
+  return {
+    ...wire,
+    raw,
+    fetcher,
+    options,
+    start: (overrides: Partial<BatchTransportOptions> = {}) =>
+      postgrestBatchBody({ ...options, ...overrides }),
+  };
 }
 
 it.each([
-  [
-    "https://synthetic.invalid",
-    "https://synthetic.invalid/rest/v1/rpc/app_batch",
-  ],
-  [
-    "http://private-gateway:8000/",
-    "http://private-gateway:8000/rest/v1/rpc/app_batch",
-  ],
-  [
-    "https://synthetic.invalid/gateway",
-    "https://synthetic.invalid/gateway/rest/v1/rpc/app_batch",
-  ],
+  "https://synthetic.invalid",
+  "http://private-gateway:8000/",
+  "https://synthetic.invalid/gateway",
 ])(
-  "uses the configured SDK-compatible URL and caller authority: %s",
-  async (url, expected) => {
-    const source = upstream([encoder.encode("[]")]);
-    const fetcher = fetchResponse(source.body);
-    const body = await transport(fetcher, { url });
-    expect(fetcher).toHaveBeenCalledTimes(1);
-    const [endpoint, request] = fetcher.mock.calls[0];
-    expect(String(endpoint)).toBe(expected);
-    expect(request).toMatchObject({ method: "POST", redirect: "error" });
-    const headers = new Headers(request?.headers);
-    expect(Object.fromEntries(headers)).toEqual({
-      accept: "application/json",
-      apikey: settings.publishableKey,
-      authorization: `Bearer ${settings.token}`,
-      "content-profile": "public",
-      "content-type": "application/json",
-    });
-    expect(JSON.parse(request?.body as string)).toEqual({
-      commands: settings.commands,
+  "uses fixed locally configured RPCs and caller authority: %s",
+  async (url) => {
+    const f = fixture();
+    const body = await f.start({ url });
+    expect(f.fetcher).toHaveBeenCalledTimes(1);
+    expect(await new Response(body).json()).toEqual(
+      f.raw.map((value) => JSON.parse(value)),
+    );
+    expect(f.fetcher).toHaveBeenCalledTimes(3);
+    const prefix = url.replace(/\/$/, "");
+    for (const [index, [endpoint, init]] of f.fetcher.mock.calls.entries()) {
+      expect(String(endpoint)).toBe(
+        `${prefix}/rest/v1/rpc/${index === 0 ? "app_batch_prepare" : "app_batch_result_chunk"}`,
+      );
+      expect(init).toMatchObject({ method: "POST", redirect: "error" });
+      expect(Object.fromEntries(new Headers(init!.headers))).toEqual({
+        accept: "application/json",
+        apikey: settings.publishableKey,
+        authorization: `Bearer ${settings.token}`,
+        "content-type": "application/json",
+        "content-profile": "public",
+      });
+    }
+    expect(JSON.parse(f.fetcher.mock.calls[0][1]!.body as string)).toEqual({
+      commands: f.options.commands,
       idempotency_key: settings.idempotencyKey,
     });
-    expect(await new Response(body).json()).toEqual([]);
-    expect(source.body.locked).toBe(false);
   },
 );
-
 it.each([
-  "https://synthetic.invalid/?route=other",
+  "https://synthetic.invalid/?other=1",
   "https://synthetic.invalid/#other",
-  "https://credential:secret@synthetic.invalid/",
+  "https://user:secret@synthetic.invalid",
   "file:///tmp/database",
-  "//unexpected.invalid/",
-])("rejects ambiguous configured URLs without fetching: %s", async (url) => {
-  const fetcher = vi.fn<typeof fetch>();
-  await expect(transport(fetcher, { url })).rejects.toMatchObject({
+  "//other.invalid",
+])("rejects configured URL ambiguity before fetch: %s", async (url) => {
+  const f = fixture();
+  await expect(f.start({ url })).rejects.toMatchObject({
     code: "SETUP_REQUIRED",
     retryable: false,
-    details: null,
   });
-  expect(fetcher).not.toHaveBeenCalled();
+  expect(f.fetcher).not.toHaveBeenCalled();
 });
-
-it("preserves the complete raw JSON, split UTF-8, result order, metadata and CORS", async () => {
-  const raw =
-    '[{"revision":2,"snapshot":{"title":"عربي","text":"quote\\\" slash\\\\"}},null,{"revision":3}]';
-  const bytes = encoder.encode(raw);
-  const source = upstream(Array.from(bytes, (byte) => Uint8Array.of(byte)));
-  const body = await transport(fetchResponse(source.body));
-  const headers = corsHeaders(
-    new Request("https://api.invalid", {
-      headers: { origin: "https://client.invalid" },
-    }),
-    ["https://client.invalid"],
-  );
-  const requestId = 'request"\\معرف';
-  const response = batchEnvelopeResponse(body, requestId, headers);
-  expect(response.status).toBe(200);
+it("preserves exact result bytes, scalar/null/types, escaped text and split UTF-8 with the existing envelope", async () => {
+  // The Arabic character's second UTF-8 byte crosses the fixed chunk boundary.
+  const long = '"' + "Z".repeat(batchChunkBytes - 2) + 'ب\\n\\"\\\\tail"';
+  const raw = [
+    long,
+    '{ "zero":0, "required":false, "nullable":null }',
+    "null",
+    "true",
+    "123.4500",
+    '"آخر"',
+  ];
+  const f = fixture(raw),
+    headers = corsHeaders(
+      new Request("https://api.invalid", {
+        headers: { origin: "https://client.invalid" },
+      }),
+      ["https://client.invalid"],
+    );
+  const response = batchEnvelopeResponse(await f.start(), 'id"عربي', headers);
   expect(response.headers.get("access-control-allow-origin")).toBe(
     "https://client.invalid",
   );
@@ -146,445 +139,474 @@ it("preserves the complete raw JSON, split UTF-8, result order, metadata and COR
   expect(response.headers.has("content-length")).toBe(false);
   const text = await response.text();
   expect(text).toBe(
-    `{"data":${raw},"meta":${JSON.stringify({ request_id: requestId })}}`,
+    `{"data":[${raw.join(",")}],"meta":${JSON.stringify({ request_id: 'id"عربي' })}}`,
   );
-  expect(JSON.parse(text)).toEqual({
-    data: JSON.parse(raw),
-    meta: { request_id: requestId },
-  });
-  expect(source.body.locked).toBe(false);
-  expect(source.cancel).not.toHaveBeenCalled();
+  expect(JSON.parse(text).data).toEqual(raw.map((value) => JSON.parse(value)));
+  expect(f.fetcher).toHaveBeenCalledTimes(
+    1 + f.manifest.results.reduce((n, result) => n + result.chunk_count, 0),
+  );
 });
-
-it("does not read upstream before demand or prefetch while the consumer is paused", async () => {
-  const source = upstream([
-    encoder.encode("["),
-    encoder.encode("1"),
-    encoder.encode("]"),
-  ]);
-  const body = await transport(fetchResponse(source.body));
-  const response = batchEnvelopeResponse(
-    body,
-    "synthetic-request",
-    new Headers(),
-  );
-  await Promise.resolve();
-  expect(source.pull).not.toHaveBeenCalled();
-  const reader = response.body!.getReader();
-  expect(decoder.decode((await reader.read()).value)).toBe('{"data":');
-  expect(source.pull).not.toHaveBeenCalled();
+it("starts no chunk read before demand and never prefetches a paused result", async () => {
+  const f = fixture(['"' + "a".repeat(batchChunkBytes) + '"', "false"]);
+  const body = await f.start(),
+    reader = body.getReader();
+  await tick();
+  expect(f.fetcher).toHaveBeenCalledTimes(1);
   expect(decoder.decode((await reader.read()).value)).toBe("[");
-  await Promise.resolve();
-  await Promise.resolve();
-  expect(source.pull).toHaveBeenCalledTimes(1);
+  await tick();
+  expect(f.fetcher).toHaveBeenCalledTimes(1);
+  expect((await reader.read()).value!.length).toBe(batchChunkBytes);
+  await tick();
+  expect(f.fetcher).toHaveBeenCalledTimes(2);
   await reader.cancel();
-  expect(source.cancel).toHaveBeenCalledTimes(1);
-  expect(source.body.locked).toBe(false);
-  expect(body.locked).toBe(false);
+  expect(f.fetcher).toHaveBeenCalledTimes(2);
 });
-
-it("accepts an array boundary split across chunks with JSON whitespace and empty chunks", async () => {
-  const chunks = [
-    "",
-    " \t",
-    "\r\n",
-    "[",
-    "\t",
-    '["عربي"]',
-    "\n",
-    "]",
-    "",
-    "\t\r\n ",
-  ];
-  const source = upstream(chunks.map((chunk) => encoder.encode(chunk)));
-  const response = batchEnvelopeResponse(
-    await transport(fetchResponse(source.body)),
-    "boundary",
-    new Headers(),
-  );
-  const text = await response.text();
-  expect(text).toBe(
-    `{"data":${chunks.join("")},"meta":{"request_id":"boundary"}}`,
-  );
-  expect(JSON.parse(text)).toEqual({
-    data: [["عربي"]],
-    meta: { request_id: "boundary" },
-  });
-  expect(source.body.locked).toBe(false);
-});
-
 it.each([
-  "null",
-  "42",
-  "true",
-  '"scalar"',
-  "{}",
-  " \t\r\n",
-  "[",
-  "[1",
-  "[1] false",
-  "\f[]",
-  "[]\v",
-  "null]",
+  [
+    "version",
+    (m: any) => {
+      m.version = 2;
+    },
+  ],
+  [
+    "foreign count",
+    (m: any) => {
+      m.result_count = 1;
+    },
+  ],
+  [
+    "missing result",
+    (m: any) => {
+      m.results.pop();
+    },
+  ],
+  [
+    "reversed ordinal",
+    (m: any) => {
+      m.results[0].ordinal = 1;
+    },
+  ],
+  [
+    "negative length",
+    (m: any) => {
+      m.results[0].byte_length = -1;
+    },
+  ],
+  [
+    "unsafe length",
+    (m: any) => {
+      m.results[0].byte_length = Number.MAX_SAFE_INTEGER + 1;
+    },
+  ],
+  [
+    "extra chunk",
+    (m: any) => {
+      m.results[0].chunk_count++;
+    },
+  ],
+  [
+    "zero chunks",
+    (m: any) => {
+      m.results[0].chunk_count = 0;
+    },
+  ],
+  [
+    "invalid hash",
+    (m: any) => {
+      m.results[0].sha256 = "bad";
+    },
+  ],
+  [
+    "foreign URL",
+    (m: any) => {
+      m.url = "https://other.invalid";
+    },
+  ],
+  [
+    "frame size",
+    (m: any) => {
+      m.chunk_bytes = 1;
+    },
+  ],
+  [
+    "invalid receipt",
+    (m: any) => {
+      m.receipt_id = "other/path";
+    },
+  ],
 ])(
-  "fails an invalid app_batch array boundary without success metadata: %j",
-  async (raw) => {
-    const source = upstream(
-      Array.from(encoder.encode(raw), (byte) => Uint8Array.of(byte)),
-    );
-    const fetcher = fetchResponse(source.body);
-    const body = await transport(fetcher);
+  "rejects a malformed manifest before result reads: %s",
+  async (_, mutate) => {
+    const f = fixture();
+    mutate(f.manifest);
+    await expect(f.start()).rejects.toMatchObject(unavailable);
+    expect(f.fetcher).toHaveBeenCalledTimes(1);
+  },
+);
+it.each([
+  [
+    "foreign receipt",
+    (c: any) => {
+      c.receipt_id = "aaebfb9a-5633-48e0-b08a-ce889cb25d1a";
+    },
+  ],
+  [
+    "wrong ordinal",
+    (c: any) => {
+      c.result_ordinal++;
+    },
+  ],
+  [
+    "duplicate index",
+    (c: any) => {
+      c.chunk_index++;
+    },
+  ],
+  [
+    "length",
+    (c: any) => {
+      c.byte_length--;
+    },
+  ],
+  [
+    "digest",
+    (c: any) => {
+      c.sha256 = "0".repeat(64);
+    },
+  ],
+  [
+    "missing bytes",
+    (c: any) => {
+      c.data_base64 = "";
+    },
+  ],
+  [
+    "base64 LF",
+    (c: any) => {
+      c.data_base64 = "\n" + c.data_base64.slice(1);
+    },
+  ],
+  [
+    "base64 alphabet",
+    (c: any) => {
+      c.data_base64 = "!" + c.data_base64.slice(1);
+    },
+  ],
+  [
+    "unknown field",
+    (c: any) => {
+      c.extra = true;
+    },
+  ],
+])(
+  "rejects corrupt chunk framing without closing a success envelope: %s",
+  async (_, mutate) => {
+    const f = fixture();
+    f.fetcher
+      .mockImplementationOnce(async () => json(f.manifest))
+      .mockImplementationOnce(async () => {
+        const c = f.chunk(0, 0);
+        mutate(c);
+        return json(c);
+      });
     const response = batchEnvelopeResponse(
-      body,
-      "invalid-boundary",
+      await f.start(),
+      "id",
       new Headers(),
     );
-    const reader = response.body!.getReader();
-    let received = "";
-    const consume = async () => {
-      for (;;) {
-        const { value, done } = await reader.read();
-        if (done) return;
-        received += decoder.decode(value);
-      }
-    };
-    await expect(consume()).rejects.toMatchObject({
-      code: "DATABASE_RESPONSE_UNAVAILABLE",
-      retryable: false,
-    });
-    expect(received).not.toContain('"meta":');
-    expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(source.body.locked).toBe(false);
-    expect(body.locked).toBe(false);
+    await expect(response.text()).rejects.toMatchObject(unavailable);
+    expect(f.fetcher).toHaveBeenCalledTimes(2);
   },
 );
-
-it("streams an 8 MiB synthetic result without accumulating it or adding an output quota", async () => {
-  const block = encoder.encode("a".repeat(64 * 1024));
-  const count = 128;
-  let index = -1;
-  const source = new ReadableStream<Uint8Array>(
-    {
-      pull(controller) {
-        if (index === -1) controller.enqueue(encoder.encode('[{"snapshot":"'));
-        else if (index < count) controller.enqueue(block);
-        else if (index === count) controller.enqueue(encoder.encode('"}]'));
-        else controller.close();
-        index++;
+it("rejects noncanonical base64 padding bits even when decoded bytes/hash match", async () => {
+  const f = fixture(["0"]);
+  const c = f.chunk(0, 0);
+  expect(c.data_base64).toBe("MA==");
+  c.data_base64 = "MB==";
+  f.fetcher
+    .mockImplementationOnce(async () => json(f.manifest))
+    .mockImplementationOnce(async () => json(c));
+  await expect(new Response(await f.start()).text()).rejects.toMatchObject(
+    unavailable,
+  );
+});
+it("checks the independent whole-result hash before another result/completion", async () => {
+  const f = fixture(['"' + "a".repeat(batchChunkBytes) + '"', "null"]);
+  f.manifest.results[0].sha256 = "0".repeat(64);
+  const reader = (await f.start()).getReader();
+  await reader.read();
+  await reader.read();
+  await expect(reader.read()).rejects.toMatchObject(unavailable);
+  expect(f.fetcher).toHaveBeenCalledTimes(3); // prepare + exactly two chunks, no next result.
+});
+it.each(["manifest", "chunk", "error"])(
+  "bounds %s response bytes before parsing",
+  async (stage) => {
+    const f = fixture();
+    const oversized = new Response(
+      " ".repeat(stage === "chunk" ? 524289 : 65537),
+      {
+        status: stage === "error" ? 400 : 200,
+        headers: { "content-type": "application/json" },
       },
-    },
-    { highWaterMark: 0 },
-  );
-  const response = batchEnvelopeResponse(
-    await transport(fetchResponse(source)),
-    "large",
-    new Headers(),
-  );
-  const expected = createHash("sha256").update('{"data":[{"snapshot":"');
-  for (let i = 0; i < count; i++) expected.update(block);
-  expected.update('"}],"meta":{"request_id":"large"}}');
-  const actual = createHash("sha256");
-  const reader = response.body!.getReader();
-  let total = 0;
-  for (;;) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    expect(value.byteLength).toBeLessThanOrEqual(block.byteLength);
-    actual.update(value);
-    total += value.byteLength;
-  }
-  expect(total).toBeGreaterThan(8 * 1024 * 1024);
-  expect(actual.digest("hex")).toBe(expected.digest("hex"));
-  expect(source.locked).toBe(false);
-});
-
-it("passes bounded PostgREST diagnostics through databaseError", async () => {
-  const source = upstream([
-    encoder.encode(
-      JSON.stringify({
-        message: "STALE_REVISION",
-        details: '{"expected_revision":4}',
-        code: "P0001",
-      }),
-    ),
-  ]);
-  await expect(
-    transport(fetchResponse(source.body, 400)),
-  ).rejects.toMatchObject({
-    status: 409,
-    code: "STALE_REVISION",
-    retryable: false,
-    details: { expected_revision: 4 },
-  });
-  expect(source.body.locked).toBe(false);
-});
-
-it("preserves the existing retry metadata only for a proven database timeout", async () => {
-  const source = upstream([
-    encoder.encode(
-      JSON.stringify({
-        message: "canceling statement due to statement timeout",
-        code: "57014",
-      }),
-    ),
-  ]);
-  const fetcher = fetchResponse(source.body, 500);
-  await expect(transport(fetcher)).rejects.toMatchObject({
-    status: 503,
-    code: "DATABASE_TEMPORARY_FAILURE",
-    retryable: true,
-    details: { sqlstate: "57014" },
-  });
-  expect(fetcher).toHaveBeenCalledTimes(1);
-});
-
-it.each(["upstream secret SQL text", '{"message":42}', '{"message":"bad",'])(
-  "sanitizes invalid error responses without retries: %s",
-  async (message) => {
-    const source = upstream([encoder.encode(message)]);
-    const fetcher = fetchResponse(source.body, 502, "text/html");
-    await expect(transport(fetcher)).rejects.toMatchObject({
-      status: 503,
-      code: "DATABASE_RESPONSE_UNAVAILABLE",
-      retryable: false,
-      details: null,
-      message: "The database response could not be completed.",
-    });
-    expect(fetcher).toHaveBeenCalledTimes(1);
-    expect(source.body.locked).toBe(false);
+    );
+    if (stage === "chunk") {
+      f.fetcher
+        .mockImplementationOnce(async () => json(f.manifest))
+        .mockImplementationOnce(async () => oversized);
+      await expect(new Response(await f.start()).text()).rejects.toMatchObject(
+        unavailable,
+      );
+    } else {
+      f.fetcher.mockImplementationOnce(async () => oversized);
+      await expect(f.start()).rejects.toMatchObject(unavailable);
+    }
   },
 );
-
-it("stops error diagnostics at 64 KiB and cancels the unread remainder", async () => {
-  const block = encoder.encode("x".repeat(1024));
-  const source = upstream(Array.from({ length: 1000 }, () => block));
-  const fetcher = fetchResponse(source.body, 500);
-  await expect(transport(fetcher)).rejects.toMatchObject({
-    code: "DATABASE_RESPONSE_UNAVAILABLE",
-    retryable: false,
-    details: null,
-  });
-  expect(source.pull).toHaveBeenCalledTimes(65);
-  expect(source.cancel).toHaveBeenCalledTimes(1);
-  expect(source.body.locked).toBe(false);
-  expect(fetcher).toHaveBeenCalledTimes(1);
-});
-
-it.each(["text/html", "text/plain", ""])(
-  "rejects a non-JSON successful response before reading it: %s",
+it.each(["text/html", "application/json-bad", ""])(
+  "rejects unexpected upstream content type: %s",
   async (type) => {
-    const source = upstream([encoder.encode("secret non-json response")]);
-    await expect(
-      transport(fetchResponse(source.body, 200, type)),
-    ).rejects.toMatchObject({
-      code: "DATABASE_RESPONSE_UNAVAILABLE",
-      retryable: false,
-    });
-    expect(source.pull).not.toHaveBeenCalled();
-    expect(source.cancel).toHaveBeenCalledTimes(1);
-    expect(source.body.locked).toBe(false);
+    const f = fixture();
+    f.fetcher.mockImplementationOnce(
+      async () => new Response("{}", { headers: { "content-type": type } }),
+    );
+    await expect(f.start()).rejects.toMatchObject(unavailable);
   },
 );
-
-it("rejects missing response bodies and fails an empty body without a success suffix", async () => {
+it("retains known mutation errors, but never retries read-time SQL57014 after commit", async () => {
+  const failed = fixture();
+  failed.fetcher.mockImplementationOnce(async () =>
+    json({ message: "REVISION_CONFLICT", code: "P0001" }, 400),
+  );
+  await expect(failed.start()).rejects.toMatchObject({
+    code: "REVISION_CONFLICT",
+  });
+  expect(failed.fetcher).toHaveBeenCalledOnce();
+  const committed = fixture();
+  committed.fetcher
+    .mockImplementationOnce(async () => json(committed.manifest))
+    .mockImplementationOnce(async () =>
+      json(
+        {
+          message: "canceling statement due to statement timeout",
+          code: "57014",
+        },
+        500,
+      ),
+    );
   await expect(
-    transport(vi.fn<typeof fetch>(async () => new Response(null))),
-  ).rejects.toMatchObject({
-    code: "DATABASE_RESPONSE_UNAVAILABLE",
-    retryable: false,
-  });
-  const source = upstream([]);
-  const response = batchEnvelopeResponse(
-    await transport(fetchResponse(source.body)),
-    "empty",
-    new Headers(),
+    new Response(await committed.start()).text(),
+  ).rejects.toMatchObject(unavailable);
+  expect(committed.fetcher).toHaveBeenCalledTimes(2);
+});
+it.each(["before headers", "during body"])(
+  "treats an ambiguous mutation failure %s as nonretryable",
+  async (stage) => {
+    const f = fixture();
+    f.fetcher.mockImplementationOnce(async () => {
+      if (stage === "before headers")
+        throw new Error("private gateway/token diagnostic");
+      return new Response(
+        new ReadableStream({
+          pull(c) {
+            c.error(new Error("private"));
+          },
+        }),
+        { headers: { "content-type": "application/json" } },
+      );
+    });
+    await expect(f.start()).rejects.toMatchObject(unavailable);
+    expect(f.fetcher).toHaveBeenCalledOnce();
+  },
+);
+it("does not fetch for an already-aborted caller", async () => {
+  const f = fixture(),
+    abort = new AbortController();
+  abort.abort();
+  await expect(f.start({ signal: abort.signal })).rejects.toMatchObject(
+    unavailable,
   );
-  const reader = response.body!.getReader();
-  expect(decoder.decode((await reader.read()).value)).toBe('{"data":');
-  await expect(reader.read()).rejects.toMatchObject({
-    code: "DATABASE_RESPONSE_UNAVAILABLE",
+  expect(f.fetcher).not.toHaveBeenCalled();
+});
+it.each(["request", "consumer"])(
+  "holds admission until %s cancellation settles an active chunk source",
+  async (kind) => {
+    const f = fixture(),
+      abort = new AbortController(),
+      stopped = deferred<void>();
+    const cancel = vi.fn(() => stopped.promise);
+    f.fetcher
+      .mockImplementationOnce(async () => json(f.manifest))
+      .mockImplementationOnce(
+        async () =>
+          new Response(
+            new ReadableStream<Uint8Array>({ cancel }, { highWaterMark: 0 }),
+            { headers: { "content-type": "application/json" } },
+          ),
+      );
+    const admission = new HeavyFileAdmission(),
+      permit = admission.acquire(abort.signal);
+    const response = permit.retainThrough(
+      batchEnvelopeResponse(
+        await f.start({ signal: abort.signal }),
+        "id",
+        new Headers(),
+      ),
+    );
+    permit.finishWork();
+    const reader = response.body!.getReader();
+    await reader.read();
+    await reader.read();
+    const pending = reader.read().catch(() => undefined);
+    await tick();
+    let settled = false;
+    const completion =
+      kind === "request" ? (abort.abort(), pending) : reader.cancel();
+    void completion.then(() => {
+      settled = true;
+    });
+    await tick();
+    expect(cancel).toHaveBeenCalledOnce();
+    // Request abort is visible immediately, but admission still waits.
+    if (kind === "consumer") expect(settled).toBe(false);
+    expect(() => admission.acquire(new AbortController().signal)).toThrow(
+      expect.objectContaining({ code: "FILE_PROCESSING_BUSY" }),
+    );
+    stopped.resolve();
+    await completion;
+    await tick();
+    admission.acquire(new AbortController().signal).finishWork();
+    expect(f.fetcher).toHaveBeenCalledTimes(2);
+  },
+);
+it("waits for a noncooperative fetch and cancels its late body before releasing", async () => {
+  const f = fixture(),
+    response = deferred<Response>(),
+    stopped = deferred<void>();
+  const cancel = vi.fn(() => stopped.promise),
+    pull = vi.fn();
+  f.fetcher
+    .mockImplementationOnce(async () => json(f.manifest))
+    .mockImplementationOnce(() => response.promise);
+  const reader = (await f.start()).getReader();
+  await reader.read();
+  const pending = reader.read();
+  await tick();
+  let complete = false;
+  const cancellation = reader.cancel().then(() => {
+    complete = true;
   });
+  await tick();
+  expect(complete).toBe(false);
+  response.resolve(
+    new Response(
+      new ReadableStream<Uint8Array>({ pull, cancel }, { highWaterMark: 0 }),
+      { headers: { "content-type": "application/json" } },
+    ),
+  );
+  await tick();
+  expect(pull).not.toHaveBeenCalled();
+  expect(cancel).toHaveBeenCalledOnce();
+  expect(complete).toBe(false);
+  stopped.resolve();
+  await cancellation;
+  await pending;
+  expect(complete).toBe(true);
+});
+it("cancels between chunks without requesting the next one", async () => {
+  const f = fixture(['"' + "a".repeat(batchChunkBytes) + '"']);
+  const reader = (await f.start()).getReader();
+  await reader.read();
+  await reader.read();
+  await reader.cancel();
+  expect(f.fetcher).toHaveBeenCalledTimes(2);
 });
 
-it("checks request abort before fetch", async () => {
-  const abort = new AbortController();
-  abort.abort();
-  const fetcher = vi.fn<typeof fetch>();
-  await expect(
-    transport(fetcher, { signal: abort.signal }),
-  ).rejects.toMatchObject({ retryable: false });
-  expect(fetcher).not.toHaveBeenCalled();
-});
-
-it("aborts fetch while awaiting headers without retrying or exposing its exception", async () => {
-  const abort = new AbortController();
-  const fetcher = vi.fn<typeof fetch>(
-    async (_url, init) =>
-      new Promise((_resolve, reject) => {
-        init!.signal!.addEventListener(
-          "abort",
-          () => reject(new Error("private URL and credentials")),
-          { once: true },
-        );
-      }),
+it("returns every result at the existing 100-command boundary without an aggregate result allocation", async () => {
+  const raw = Array.from({ length: 100 }, (_, index) =>
+    JSON.stringify({
+      ordinal: index,
+      value: index === 0 ? null : index,
+      flag: index % 2 === 0,
+    }),
   );
-  const pending = transport(fetcher, { signal: abort.signal });
-  abort.abort();
-  await expect(pending).rejects.toMatchObject({
-    code: "DATABASE_RESPONSE_UNAVAILABLE",
-    retryable: false,
-    message: "The database response could not be completed.",
-  });
-  expect(fetcher).toHaveBeenCalledTimes(1);
+  const f = fixture(raw);
+  expect(await new Response(await f.start()).text()).toBe(`[${raw.join(",")}]`);
+  expect(f.fetcher).toHaveBeenCalledTimes(101);
+  expect(
+    f.fetcher.mock.calls.filter(([url]) =>
+      String(url).endsWith("/app_batch_prepare"),
+    ),
+  ).toHaveLength(1);
 });
-
-it("cancels a body arriving after the request was already aborted", async () => {
-  const abort = new AbortController();
-  const source = upstream([encoder.encode("[]")]);
-  let resolve!: (value: Response) => void;
-  const fetcher = vi.fn<typeof fetch>(
-    async () =>
-      new Promise<Response>((r) => {
-        resolve = r;
-      }),
-  );
-  const pending = transport(fetcher, { signal: abort.signal });
-  abort.abort();
-  resolve(
-    new Response(source.body, {
+it.each(["null", "[]", "false", "broken JSON"])(
+  "rejects invalid manifest root %s without result reads",
+  async (value) => {
+    const f = fixture();
+    f.fetcher.mockResolvedValueOnce(
+      new Response(value, { headers: { "content-type": "application/json" } }),
+    );
+    await expect(f.start()).rejects.toMatchObject(unavailable);
+    expect(f.fetcher).toHaveBeenCalledOnce();
+  },
+);
+it("rejects invalid UTF-8 before JSON parsing", async () => {
+  const f = fixture();
+  f.fetcher.mockResolvedValueOnce(
+    new Response(Uint8Array.of(0xff), {
       headers: { "content-type": "application/json" },
     }),
   );
-  await expect(pending).rejects.toMatchObject({ retryable: false });
-  expect(source.pull).not.toHaveBeenCalled();
-  expect(source.cancel).toHaveBeenCalledTimes(1);
-  expect(source.body.locked).toBe(false);
+  await expect(f.start()).rejects.toMatchObject(unavailable);
+  expect(f.fetcher).toHaveBeenCalledOnce();
 });
-
-it("keeps request abort attached after headers and while the client is paused", async () => {
-  const abort = new AbortController();
-  const source = upstream([encoder.encode("["), encoder.encode("]")]);
-  const fetcher = fetchResponse(source.body);
-  const body = await transport(fetcher, { signal: abort.signal });
-  const response = batchEnvelopeResponse(body, "aborted", new Headers());
-  const reader = response.body!.getReader();
-  await reader.read();
-  await reader.read();
-  abort.abort();
-  await expect(reader.read()).rejects.toMatchObject({
-    code: "DATABASE_RESPONSE_UNAVAILABLE",
-    retryable: false,
-  });
-  expect(source.pull).toHaveBeenCalledTimes(1);
-  expect(source.cancel).toHaveBeenCalledTimes(1);
-  expect(fetcher.mock.calls[0][1]?.signal?.aborted).toBe(true);
-  expect(source.body.locked).toBe(false);
-});
-
-it("cancels a pending upstream read when the downstream reader cancels", async () => {
-  let started!: () => void;
-  const pulling = new Promise<void>((resolve) => {
-    started = resolve;
-  });
-  const pull = vi.fn(() => started());
-  const cancel = vi.fn();
-  const source = new ReadableStream<Uint8Array>(
-    { pull, cancel },
-    { highWaterMark: 0 },
-  );
-  const fetcher = fetchResponse(source);
-  const body = await transport(fetcher);
-  const response = batchEnvelopeResponse(body, "cancelled", new Headers());
-  const reader = response.body!.getReader();
-  await reader.read();
-  const pending = reader.read();
-  await pulling;
-  expect(pull).toHaveBeenCalledTimes(1);
-  await reader.cancel();
-  expect(await pending).toEqual({ value: undefined, done: true });
-  expect(cancel).toHaveBeenCalledTimes(1);
-  expect(fetcher.mock.calls[0][1]?.signal?.aborted).toBe(true);
-  expect(source.locked).toBe(false);
-  expect(body.locked).toBe(false);
-});
-
-it.each(["error", "cancel"] as const)(
-  "keeps downstream %s pending until an aborted source finishes cancelling",
-  async (ending) => {
-    const abort = new AbortController();
-    let finishCancel!: () => void;
-    const cancel = vi.fn(
-      () =>
-        new Promise<void>((resolve) => {
-          finishCancel = resolve;
-        }),
-    );
-    const source = new ReadableStream<Uint8Array>(
-      { cancel },
-      { highWaterMark: 0 },
-    );
-    const body = await transport(fetchResponse(source), {
-      signal: abort.signal,
-    });
-    const response = batchEnvelopeResponse(
-      body,
-      "deferred-cancel",
-      new Headers(),
-    );
-    const reader = response.body!.getReader();
-    await reader.read();
-    abort.abort();
-    expect(cancel).toHaveBeenCalledTimes(1);
-    let settled = false;
-    const pending = (
-      ending === "cancel" ? reader.cancel() : reader.read()
-    ).then(
-      () => {
-        settled = true;
-      },
-      () => {
-        settled = true;
-      },
-    );
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(settled).toBe(false);
-    finishCancel();
-    await pending;
-    expect(settled).toBe(true);
-    expect(source.locked).toBe(false);
-    expect(body.locked).toBe(false);
-  },
-);
-
-it("fails a partial upstream response without metadata, retry or raw diagnostics", async () => {
-  let calls = 0;
-  const source = new ReadableStream<Uint8Array>(
-    {
-      pull(controller) {
-        if (calls++ === 0)
-          controller.enqueue(encoder.encode('[{"snapshot":"partial'));
-        else controller.error(new Error("private upstream body failure"));
-      },
-    },
-    { highWaterMark: 0 },
-  );
-  const fetcher = fetchResponse(source);
-  const response = batchEnvelopeResponse(
-    await transport(fetcher),
-    "failed",
+it("does not finish an envelope when an earlier chunk is repeated in place of the last chunk", async () => {
+  const f = fixture(['"' + "a".repeat(batchChunkBytes) + '"']);
+  f.fetcher
+    .mockResolvedValueOnce(json(f.manifest))
+    .mockResolvedValueOnce(json(f.chunk(0, 0)))
+    .mockResolvedValueOnce(json(f.chunk(0, 0)));
+  const reader = batchEnvelopeResponse(
+    await f.start(),
+    "id",
     new Headers(),
-  );
-  const reader = response.body!.getReader();
-  expect(decoder.decode((await reader.read()).value)).toBe('{"data":');
-  expect(decoder.decode((await reader.read()).value)).toBe(
-    '[{"snapshot":"partial',
-  );
-  await expect(reader.read()).rejects.toMatchObject({
-    code: "DATABASE_RESPONSE_UNAVAILABLE",
-    retryable: false,
-    message: "The database response could not be completed.",
+  ).body!.getReader();
+  const prefix: string[] = [];
+  prefix.push(decoder.decode((await reader.read()).value));
+  prefix.push(decoder.decode((await reader.read()).value));
+  prefix.push(decoder.decode((await reader.read()).value));
+  await expect(reader.read()).rejects.toMatchObject(unavailable);
+  expect(prefix.join("")).not.toContain('"meta"');
+  expect(prefix.join("")).not.toContain("]}");
+  expect(f.fetcher).toHaveBeenCalledTimes(3);
+});
+it("awaits a late mutation response and its cancellation after request abort without retry", async () => {
+  const f = fixture(),
+    response = deferred<Response>(),
+    stopped = deferred<void>(),
+    abort = new AbortController();
+  const cancel = vi.fn(() => stopped.promise),
+    pull = vi.fn();
+  f.fetcher.mockImplementationOnce(() => response.promise);
+  let settled = false;
+  const pending = f.start({ signal: abort.signal }).catch((error) => {
+    settled = true;
+    return error;
   });
-  expect(fetcher).toHaveBeenCalledTimes(1);
-  expect(source.locked).toBe(false);
+  abort.abort();
+  await tick();
+  expect(settled).toBe(false);
+  response.resolve(
+    new Response(
+      new ReadableStream<Uint8Array>({ pull, cancel }, { highWaterMark: 0 }),
+      { headers: { "content-type": "application/json" } },
+    ),
+  );
+  await tick();
+  expect(pull).not.toHaveBeenCalled();
+  expect(cancel).toHaveBeenCalledOnce();
+  expect(settled).toBe(false);
+  stopped.resolve();
+  expect(await pending).toMatchObject(unavailable);
+  expect(f.fetcher).toHaveBeenCalledOnce();
 });

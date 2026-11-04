@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { batchWire } from "./fixtures/batchWire.ts";
 import { expect, it, vi } from "vitest";
 import { createApiHandler } from "../../supabase/functions/api/handler";
 import { AppError } from "../../supabase/functions/_shared/http";
@@ -411,7 +412,11 @@ it.each(["request_abort", "consumer_cancel"] as const)(
         headers: { "content-type": "application/json" },
       },
     );
-    const fetcher = vi.fn(async () => upstream);
+    const wire = batchWire(["null"]);
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json(wire.manifest))
+      .mockResolvedValueOnce(upstream);
     f.backend.batchStream.mockImplementation((token, commands, key, signal) =>
       postgrestBatchBody({
         url: env.url,
@@ -445,13 +450,16 @@ it.each(["request_abort", "consumer_cancel"] as const)(
       },
     );
     const response = await f.handle(input);
+    const reader = response.body!.getReader();
+    await reader.read(); // API envelope.
+    await reader.read(); // Batch array start; no chunk is prefetched.
+    const pendingRead = reader.read().catch(() => undefined);
+    await new Promise<void>((resolve) => setImmediate(resolve));
     let completion: Promise<unknown>;
     if (mode === "request_abort") {
       abort.abort(new Error("client left"));
-      completion = expect(response.arrayBuffer()).rejects.toThrow(
-        "client left",
-      );
-    } else completion = response.body!.cancel("consumer left");
+      completion = pendingRead;
+    } else completion = reader.cancel("consumer left");
     const busy = await f.handle(request());
     expect((await busy.json()).error.code).toBe("FILE_PROCESSING_BUSY");
     expect(f.backend.userRpc).not.toHaveBeenCalled();
@@ -462,6 +470,6 @@ it.each(["request_abort", "consumer_cancel"] as const)(
     const next = await f.handle(request());
     expect(next.status).toBe(200);
     await next.arrayBuffer();
-    expect(fetcher).toHaveBeenCalledOnce();
+    expect(fetcher).toHaveBeenCalledTimes(2);
   },
 );

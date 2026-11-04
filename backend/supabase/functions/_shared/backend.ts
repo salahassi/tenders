@@ -307,14 +307,6 @@ export class Backend {
     if (error) throw databaseError(error);
     return data;
   }
-  async batch(token: string, commands: unknown[], key: string) {
-    const { data, error } = await this.user(token).rpc("app_batch", {
-      commands,
-      idempotency_key: key,
-    });
-    if (error) throw databaseError(error);
-    return data;
-  }
   batchStream(
     token: string,
     commands: unknown[],

@@ -9503,3 +9503,34 @@ unchanged row count, not hosted exposure or replay normalization capacity. Stric
 projection tests reject private labels/extra fields and inconsistent counters;
 census failure still verifies cleanup. Existing inventory and capacity tests
 remain green. No native benchmark or hosted service call ran in this change.
+
+
+### 2026-11-04 — Bounded command-result transport after upstream aggregation failure
+
+Implemented API transport for the separately owned normalized batch SQL
+contract. One mutation RPC returns a small immutable receipt manifest; result
+RPCs return at most 256 KiB of original JSON bytes per chunk. The external
+`data` array and `meta` envelope retain all results, order, nulls, numbers and
+Arabic strings. This framing introduces no total-result quota. The unused
+`Backend.batch` aggregate convenience method was removed.
+
+The consumer validates exact receipt/ordinal/index/length framing, canonical
+base64, each chunk hash and an incremental whole-result SHA-256 before finishing
+a result. It never collects a result into one buffer. Reads occur only on
+downstream demand. Aborted or late uncooperative reads retain admission until
+they settle. Read errors, including SQLSTATE 57014 after committed mutation,
+never advertise or perform a mutation retry. Current SQL authority is checked
+by every chunk RPC; the API uses the original caller JWT and fixed local URLs.
+
+71 focused protocol/actual-handler tests passed in 0.694s. The three adapted
+canonical database/HTTP/delivery fixture files passed all 31 tests in 13.09s;
+backend typecheck passed. Independent source review found no material transport
+blocker. Evidence and source/dependency hashes are in
+`evidence/api-batch-chunk-transport-20261104.json`. Fixtures use actual migrated
+SQL with synthetic PostgREST/Auth/Storage, so they do not prove upstream native
+resource capacity.
+
+Deployment remains gated by the separate SQL migration and exact historical
+receipt normalization/cutover, plus actual PostgREST/API resource qualification.
+The legacy aggregate RPC must not remain an unbounded fallback. No provider
+calls, production writes, model/billing policy changes or deployment ran here.

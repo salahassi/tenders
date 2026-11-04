@@ -1,3 +1,4 @@
+import { batchRpcBody } from "./fixtures/batchRpcTransport.ts";
 import { readFile } from "node:fs/promises";
 import { expect, vi } from "vitest";
 import { workflowFixture } from "./workflowFixture";
@@ -109,8 +110,12 @@ export async function deliveryPipelineFixture() {
         return membership;
       },
       // Canonical SQL fixture; bounded raw HTTP streaming is qualified separately.
-      batchStream: async (token: string, commands: unknown[], key: string) =>
-        new Response(JSON.stringify(await rpc("app_batch", { commands, idempotency_key: key }, token))).body!,
+      batchStream: (
+        token: string,
+        commands: unknown[],
+        key: string,
+        signal: AbortSignal,
+      ) => batchRpcBody(rpc, token, commands, key, signal),
       userRpc: (token: string, name: string, args: Record<string, unknown>) =>
         rpc(name, args, token),
       internal: vi.fn((name: string, args: Record<string, unknown> = {}) =>
