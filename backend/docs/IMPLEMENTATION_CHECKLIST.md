@@ -32,8 +32,11 @@ the current reliability implementation is still draft PR24.
   integrated; no production retirement or checked gateway rollout has run.
 - The 600-second request deadline and early no-agent failure are implemented.
   Local exact 22-migration PostgreSQL restore passes eight checks. The first
-  cloud Auth/Storage drill failed at fixture-user setup, with cleanup verified;
-  its actual Auth RLS mismatch is being corrected in the isolated harness.
+  cloud Auth/Storage drill failed at fixture-user setup. The corrected retry
+  passed that stage but failed private-bucket setup; both cleanups passed.
+  Its catalog metadata confirms production Auth RLS blocks application-owner
+  reads despite SELECT grants. A scoped platform policy fix and bucket fixture
+  correction are in progress; neither hosted gate is closed.
   Full hosted package timing, deployment and actual user-flow acceptance remain
   unproven. An optional template is not successful issuance.
 - The latest read-only model binding audit is successful run41869042836;
@@ -69,6 +72,18 @@ guards passed; isolated resource cleanup and temporary credential cleanup both
 passed. The [sanitized receipt](evidence/cloud-restore-20261104-41902822255.json)
 retains this failure. All 13 HTTP acceptance checks remain unproven; fixture/API
 diagnosis and a fresh successful drill are required.
+
+The corrected [run 41905235686](https://github.com/salahassi/tenders/actions/runs/41905235686)
+at `8b583cb9c3936f7bb004f466ab7908e8362ef4ad` passed fixture-user setup and
+failed at `RESTORE_PRIVATE_BUCKET_CREATE_FAILED`. Original TLS, twelve helper
+checks and both cleanup stages passed. Its
+[sanitized receipt](evidence/cloud-restore-20261104-41905235686.json) also
+records the actual production Auth catalog: the application owner is neither
+superuser nor BYPASSRLS, has SELECT but no effective ownership or applicable
+SELECT policy on RLS-enabled `auth.users` and `auth.identities`. This is a
+confirmed production authority gap, not merely an isolated-test mismatch.
+A narrow source-bound platform policy correction is required; no production
+Auth privilege or policy mutation has yet been made.
 
 The actual worker steady-state test remains **failed**: the temporary 256 MiB
 parent-heap cap completed the first two-volume job in about 113 seconds, then
