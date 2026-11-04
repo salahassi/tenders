@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "observed_at": "2026-11-04",
+  "repository_base": "c9f1c5b",
+  "scope": "Update a stale commercial scope diagnostic assertion to the existing indexed field contract",
+  "product_source_changed": false,
+  "schema_changed": false,
+  "provider_calls": 0,
+  "production_mutations": 0,
+  "combined_red": {
+    "tests_passed": 2889,
+    "tests_failed": 2,
+    "files": 178,
+    "duration_seconds": 441.82,
+    "log_sha256": "01d431f1c9aac85cf432bbf3dc5ddeef9d3efc1adba1c449ea1e77fb543b3294",
+    "owned_failure": "generationContentValidation.test.ts: gives schema-valid plan_commercial scope failures typed correction diagnostics",
+    "expected_obsolete_path": "$.lines",
+    "actual_current_path": "$.lines[0].section_ids[0]",
+    "unchanged_code": "EVIDENCE_REFERENCE_INVALID",
+    "unchanged_reason": "invalid_finding_reference",
+    "other_failure": "database.test.ts unique-constraint name assertion; separately owned"
+  },
+  "focused_green": {
+    "tests_passed": 24,
+    "files": 2,
+    "duration_seconds": 1.04,
+    "files_run": [
+      "generationContentValidation.test.ts",
+      "modelContextDiagnostics.test.ts"
+    ],
+    "log_sha256": "9ef6dfb6a0adedb02da6cf9f0825b558ded23d3ae9743737e05e258c3f336631",
+    "backend_typecheck": "passed",
+    "typecheck_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "source_contract_sha256": "48023c5443a7235c0510090f0b015ce45424c3f3f791158fea59a1e07575b0ea",
+  "test_sha256": "f94fd0a18619fd1376271d76203cfc14e5c9660c1ecb9195647c272fa00e47f4",
+  "limits": [
+    "The full combined suite exposed this obsolete test expectation; its broader outcome is not converted into a full passing run.",
+    "Focused validation includes the existing 300-error collector case with 32 retained and 268 explicitly omitted; validators and evidence gates were not weakened.",
+    "No production deployment or external model call occurred."
+  ]
+}

@@ -8707,3 +8707,21 @@ No provider calls, production changes, paid-wire changes or production budget
 changes occurred. Root's combined gates, rebuilt actual-image resource proof
 and deployment remain separate; a local policy timing pass is not a render
 memory/deadline qualification.
+
+### 2026-11-04 — align the commercial diagnostic assertion with indexed correction paths
+
+The detached c9f1c5b combined backend run passed 2,889 tests and failed two.
+The owned commercial-scope failure was a stale test expectation: it expected
+`$.lines`, while the existing collector returned the exact invalid reference
+`$.lines[0].section_ids[0]`. The candidate remained schema-valid and the rejection
+code/reason remained `EVIDENCE_REFERENCE_INVALID` / `invalid_finding_reference`.
+Only the expected test path changed; schema, runtime validators and evidence
+gates were not modified.
+
+The two focused files passed all 24 tests in 1.04s, including the existing
+300-error commercial collector/explicit-overflow checks. Backend typecheck
+passed. The combined red log and focused green/typecheck hashes are recorded
+in `evidence/commercial-diagnostic-contract-20261104.json`. The other database
+constraint-name expectation and final combined run are separately owned; this
+focused result does not establish a full-suite pass. No provider calls,
+production mutations or deployment occurred.
