@@ -35,11 +35,14 @@ REQUIRED = ('20261104121022_partial_document_coverage.sql',
  '20261104151946_current_proposal_issuance_contract.sql',
  '20261104152913_durable_ordinary_export_packages.sql',
  '20261104160125_proposal_issuance_file_capacity.sql',
- '20261104163406_serialize_local_document_rendering.sql')
+ '20261104163406_serialize_local_document_rendering.sql',
+ '20261104170442_durable_storage_write_intents.sql',
+ '20261104172700_storage_write_retirement_proofs.sql')
 CAPABILITIES = {'executor_max':4,'renderer_versions':[1,2,3],
  'minimum_worker_executor':4,'ordinary_renderer_version':'ordinary-2',
  'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1,
- 'global_renderer_limit':1}
+ 'global_renderer_limit':1,'storage_write_intents_version':1,
+ 'storage_retirement_version':1}
 CATALOG = """SELECT encode(sha256(convert_to(coalesce(string_agg(
  p.oid::regprocedure::text||':'||pg_get_functiondef(p.oid)||':'||coalesce(p.proacl::text,''),E'\\n'
  ORDER BY p.oid::regprocedure::text),''),'UTF8')),'hex') INTO catalog_hash
@@ -152,6 +155,7 @@ DO $delivery_release$
 DECLARE r record; target text; catalog_hash text; saved_catalog text; saved_manifest text;
  columns_before jsonb; functions_before text[]; relations_before text[]; attributes_before text[];
  version_number integer; selected_renderer text; selected_executor integer;
+ storage_seed_before jsonb:='[]'; storage_seed_after jsonb; seed_started timestamptz;
  row_count bigint; row_digest text; state jsonb; rows_before jsonb; authority jsonb; authority_before jsonb;
 BEGIN
  IF current_database()<>'tenderdesk_app' THEN RAISE EXCEPTION 'DELIVERY_RELEASE_DATABASE_MISMATCH';END IF;
@@ -181,10 +185,21 @@ BEGIN
   SELECT array_agg(a.attrelid::regclass::text||':'||a.attnum ORDER BY a.attrelid,a.attnum) INTO attributes_before
    FROM pg_attribute a WHERE a.attrelid IN (SELECT to_regclass(signature) FROM unnest(relations_before)t(signature))
     AND a.attnum>0 AND NOT a.attisdropped;
+  -- Only a census of already-existing keys is authorized by170442. Capture
+  -- it before executing any migration, including keys in completed cleanup.
+  FOREACH target IN ARRAY ARRAY['public.proposal_delivery_artifacts','public.export_package_volumes','public.storage_cleanup_queue'] LOOP
+   IF target=ANY(relations_before) THEN
+    EXECUTE format('SELECT coalesce(jsonb_agg(jsonb_build_object(''workspace_id'',workspace_id,''storage_key'',storage_key)),''[]''::jsonb) FROM %s',target) INTO state;
+    storage_seed_before:=storage_seed_before||state;
+   END IF;
+  END LOOP;
+  SELECT coalesce(jsonb_agg(value ORDER BY value->>'workspace_id',value->>'storage_key'),'[]'::jsonb)
+   INTO storage_seed_before FROM (SELECT DISTINCT value FROM jsonb_array_elements(storage_seed_before)) census;
   __ROWS__
   rows_before:=state;
   __AUTHORITY__
   authority_before:=authority;
+  seed_started:=clock_timestamp();
   EXECUTE __DELIMITER____PAYLOAD____DELIMITER__;
   __ROWS__
   IF rows_before IS DISTINCT FROM state THEN RAISE EXCEPTION 'DELIVERY_RELEASE_EXISTING_ROWS_CHANGED';END IF;
@@ -193,7 +208,20 @@ BEGIN
   FOR target IN SELECT format('%I.%I',schemaname,tablename) FROM pg_tables
     WHERE schemaname IN ('public','app_private') AND format('%I.%I',schemaname,tablename)<>ALL(relations_before) LOOP
    EXECUTE format('SELECT count(*) FROM %s',target) INTO row_count;
-   IF row_count<>0 THEN RAISE EXCEPTION 'DELIVERY_RELEASE_UNREQUESTED_NEW_ROWS';END IF;
+   IF target='public.storage_write_intents' THEN
+    SELECT coalesce(jsonb_agg(jsonb_build_object('workspace_id',i.workspace_id,'storage_key',i.storage_key)
+     ORDER BY i.workspace_id::text,i.storage_key),'[]'::jsonb) INTO storage_seed_after FROM public.storage_write_intents i;
+    IF storage_seed_after IS DISTINCT FROM storage_seed_before
+     OR EXISTS(SELECT 1 FROM public.storage_write_intents i WHERE
+      to_jsonb(i)-ARRAY['id','retirement_nonce','created_at','updated_at']::text[] IS DISTINCT FROM
+       jsonb_build_object('workspace_id',i.workspace_id,'storage_key',i.storage_key,'state','legacy_unfenced',
+        'revision',1,'expected_hash',null,'expected_size',null,'started_at',null,'observed_at',null,
+        'send_closed_at',null,'retirement_receipt',null)
+      OR i.id IS NULL OR i.retirement_nonce IS NULL OR i.created_at IS NULL OR i.updated_at IS NULL
+      OR i.created_at<seed_started OR i.updated_at<seed_started
+      OR i.created_at>clock_timestamp() OR i.updated_at>clock_timestamp())
+     THEN RAISE EXCEPTION 'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID';END IF;
+   ELSIF row_count<>0 THEN RAISE EXCEPTION 'DELIVERY_RELEASE_UNREQUESTED_NEW_ROWS';END IF;
   END LOOP;
   __CATALOG__
   INSERT INTO app_private.application_release_history(release,migration_sha256) VALUES
@@ -291,6 +319,53 @@ BEGIN
    WHERE p.oid='app_private.document_render_slot_available()'::regprocedure
     AND role_row.rolname IN ('service_role','tdp_app_service'))
   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_RENDER_ADMISSION_AUTHORITY_INVALID';END IF;
+ -- Storage fencing is additive operational state. Public workers receive only
+ -- the scoped service RPCs; private retirement proof is never an API grant.
+ FOREACH target IN ARRAY ARRAY['public.begin_render_storage_write(uuid,uuid,text,text,bigint)',
+  'public.storage_cleanup_context(uuid,uuid)','public.observe_cleanup_storage_write(uuid,uuid,text,bigint)',
+  'public.defer_storage_cleanup(uuid,uuid)','public.record_storage_cleanup_deletion(uuid,uuid,text,uuid,text)',
+  'public.complete_storage_cleanup(uuid,uuid,boolean)'] LOOP
+  IF to_regprocedure(target) IS NULL THEN RAISE EXCEPTION 'DELIVERY_RELEASE_STORAGE_RPC_MISSING';END IF;
+  IF has_function_privilege('tdp_app_authenticated',target,'EXECUTE') OR has_function_privilege('tdp_app_anon',target,'EXECUTE')
+   OR NOT has_function_privilege('tdp_app_service',target,'EXECUTE')
+   OR NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure(target) AND prosecdef AND proconfig=ARRAY['search_path=""']::text[])
+   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_STORAGE_RPC_AUTHORITY_INVALID';END IF;
+ END LOOP;
+ FOREACH target IN ARRAY ARRAY['public.guard_retired_storage_write()',
+  'app_private.register_storage_write_intent()','app_private.observe_render_storage_write(text,text,bigint)',
+  'app_private.check_storage_retirement_reference(uuid,text)',
+  'app_private.prepare_storage_write_retirement(uuid,uuid,jsonb)',
+  'app_private.finish_storage_write_retirement(uuid,uuid,jsonb)'] LOOP
+  IF to_regprocedure(target) IS NULL THEN RAISE EXCEPTION 'DELIVERY_RELEASE_STORAGE_PRIVATE_MISSING';END IF;
+  IF has_function_privilege('tdp_app_authenticated',target,'EXECUTE') OR has_function_privilege('tdp_app_anon',target,'EXECUTE')
+   OR NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid=to_regprocedure(target) AND prosecdef AND proconfig=ARRAY['search_path=""']::text[])
+   OR EXISTS(SELECT 1 FROM pg_proc p CROSS JOIN LATERAL aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
+    LEFT JOIN pg_roles role_row ON role_row.oid=a.grantee WHERE p.oid=to_regprocedure(target)
+     AND (a.grantee=0 OR role_row.rolname IN ('service_role','tdp_app_service')))
+   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_STORAGE_PRIVATE_AUTHORITY_INVALID';END IF;
+ END LOOP;
+ FOREACH target IN ARRAY ARRAY['public.storage_write_intents','app_private.storage_retirement_batches','app_private.storage_retirement_keys'] LOOP
+  IF to_regclass(target) IS NULL THEN RAISE EXCEPTION 'DELIVERY_RELEASE_STORAGE_TABLE_MISSING';END IF;
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid=to_regclass(target))
+   OR has_table_privilege('tdp_app_authenticated',target,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+   OR has_table_privilege('tdp_app_anon',target,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+   OR has_any_column_privilege('tdp_app_authenticated',target,'SELECT,INSERT,UPDATE,REFERENCES')
+   OR has_any_column_privilege('tdp_app_anon',target,'SELECT,INSERT,UPDATE,REFERENCES')
+   OR EXISTS(SELECT 1 FROM pg_class c CROSS JOIN LATERAL aclexplode(coalesce(c.relacl,acldefault('r',c.relowner))) a
+    LEFT JOIN pg_roles role_row ON role_row.oid=a.grantee WHERE c.oid=to_regclass(target)
+     AND (a.grantee=0 OR role_row.rolname IN ('service_role','tdp_app_service')))
+   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID';END IF;
+ END LOOP;
+ IF EXISTS(SELECT 1 FROM (VALUES ('public.proposal_delivery_artifacts','register_delivery_storage_write',21),
+   ('public.export_package_volumes','register_export_storage_write',21),
+   ('public.storage_cleanup_queue','register_cleanup_storage_write',5)) expected(relation_name,trigger_name,kind)
+  LEFT JOIN pg_trigger t ON t.tgrelid=to_regclass(expected.relation_name) AND t.tgname=expected.trigger_name
+  WHERE t.oid IS NULL OR t.tgenabled<>'O' OR t.tgtype<>expected.kind
+   OR t.tgfoid<>'app_private.register_storage_write_intent()'::regprocedure)
+  OR NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid='public.storage_cleanup_queue'::regclass
+   AND attname='delete_receipt' AND atttypid='jsonb'::regtype AND NOT attnotnull AND NOT attisdropped)
+  OR EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid IN ('app_private.storage_retirement_batches'::regclass,'app_private.storage_retirement_keys'::regclass) AND contype='f')
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_STORAGE_CONTRACT_INVALID';END IF;
  PERFORM set_config('tenderdesk.delivery_release_receipt',jsonb_build_object('release','__RELEASE__',
   'manifest_sha256','__CHECKSUM__','catalog_sha256',catalog_hash,'replayed',saved_manifest IS NOT NULL)::text,true);
 END $delivery_release$;

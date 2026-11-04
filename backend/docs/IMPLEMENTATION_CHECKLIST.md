@@ -8345,3 +8345,35 @@ grants. Backend TypeScript build/typecheck passes. This is a scoped local
 correction; the integration owner still runs the strict combined managed release
 and hosted gates. Runtime/storage settlement behavior and its prior receipts
 are unchanged; final release receipts must bind the corrected migration hash.
+
+### 2026-11-04 — require the 22-migration Storage release contract
+
+The release guard now requires the Storage write-intent and private retirement
+migrations plus explicit version-1 capabilities. Existing row/column and complete
+authority comparisons remain unchanged. The only nonempty new-table exception is
+an exact distinct census captured before the batch from existing workspace/key
+pairs in delivery artifacts, ordinary slots and cleanup rows, including completed
+cleanup. Every new intent must be `legacy_unfenced`, revision 1, with no expected
+bytes/hash, send, observation, closure or retirement proof. All other new tables,
+including private retirement keys/batches, must initially be empty. Replaying a
+completed release preserves later legitimate operational state and history.
+
+Independent catalog checks require the service RPCs, private proof helpers,
+restricted table/column access, RLS and registration triggers. They deliberately
+do not install or assume authority to install a trigger on managed `storage.objects`.
+The release guide now documents this precise exception rather than claiming that
+all new tables are empty or that a census certifies physical storage.
+
+Local evidence: four Python cases pass, including the actual full managed-role
+PGlite batch/replay and 36 fault variants with complete transaction rollback.
+Missing/extra/forged census, unauthorized state/hash/size/timestamps/settlement,
+other seeded new tables, RPC/table/column exposure and disabled guards are rejected.
+The former all-empty rule was separately reproduced rejecting the valid census.
+The same strict test first exposed a canonical `app_private.app_command` ACL loss;
+its source owner restored the established authenticated grant in `5a0246b`.
+No authority check was relaxed. `py_compile` passes. Exact sources, all 22 migration
+hashes, test/log receipts and limits are in
+[evidence/storage-release-guards-20261104.json](evidence/storage-release-guards-20261104.json).
+The two Storage migrations were borrowed test dependencies and are excluded from
+this guard commit. This is not a full package suite, final retirement coordinator,
+real hosted Storage, cloud restore, production deployment or semantic acceptance.

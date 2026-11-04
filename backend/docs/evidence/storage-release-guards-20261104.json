@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "measured_at": "2026-11-04T18:02:40.418714+00:00",
+  "scope": "Local exact22migration release source and managed-only PGlite atomic/replay/fault guards. No production or hosted operations.",
+  "base_revision": "f8dc01acddbf256b1ba5ce259ec731bebfb2560f",
+  "dependencies": {
+    "170442": "Artifact canonical ACL correction5a0246b; copied source excludes this commit.",
+    "172700": "Operations-owned private retirement migration, copied as test dependency and excluded from this commit; exact source hash below."
+  },
+  "tests": {
+    "python_cases_passed": 4,
+    "fault_variants_rejected_with_complete_rollback": 36,
+    "positive_fixture": "Preexisting pending and done cleanup rows; exact2legacyunfenced seeds; replay retains laterunknown intent and retirement batch instead of resetting them.",
+    "red": "Reinstating only the old all-new-tables-empty guard rejects this legitimate census with DELIVERY_RELEASE_UNREQUESTED_NEW_ROWS.",
+    "earlier_independent_finding": "The full old-authority comparison first exposed canonical app_private.app_command authenticatedEXEC loss; source owner fixed it without relaxing guard.",
+    "typecheck": "python py_compile passed",
+    "full_backend_or_frontend_run": false
+  },
+  "guards": [
+    "Every original row column and original function/table/column/RLS/role authority remains unchanged.",
+    "Only exactdistinct pre-migration workspace/key census may populate storage_write_intents: legacy_unfenced,revision1,null send/hash/size/observation/closure/retirement receipt; generatedids/nonces/currentcreationtimes grant noassurance.",
+    "All other newtables initiallyempty, including retirementkeys/batches.",
+    "22mandatory migrationnames, exactsourcehash/set, immutablecapability1markers, serviceRPC and privateACL/RLS/registrationtrigger presence."
+  ],
+  "source_sha256": {
+    "backend/scripts/ops/proposal-delivery-release.py": "3d2456f54bf183b445dff4ca93ad6132b44ac785d71f34deac9e3c5fd104000c",
+    "backend/scripts/ops/test_proposal_delivery_release.py": "2a7da65dae18a33af6c0133c87f132a11b3a2db8d1b6c866f07961fc006715ca"
+  },
+  "migration_sha256": {
+    "20261104121022_partial_document_coverage.sql": "7a33a9794c32d398d8fa2740c80f9dce0f9eeac93c7af5616947fb24bcdb9663",
+    "20261104121116_proposal_delivery_snapshots.sql": "323ae4275ffd64bf61413f961d9a753674154a63241cfc63230f6e2ccf27e6d2",
+    "20261104121423_provider_failure_scope.sql": "68410a020a500f45587fbf845c947aff491d0f6586a3a1b09be6593b840f715a",
+    "20261104121443_automatic_usage_recovery.sql": "0121ca91d4cdaea64eaacbce44ee790609ae03278a771ce1773a08e97f6170b8",
+    "20261104122015_company_evidence_retrieval.sql": "4cf7302d5a137e33741a1369eb65a9563ea37da5b9428a3222ad0566c48fedee",
+    "20261104122333_durable_delivery_artifacts.sql": "40e413760862579d6caddf79ddbb4c42134f05a4657cef5c15294be5d2aaf128",
+    "20261104133930_durable_uploaded_document_ocr.sql": "1f189df86545aec22f2d4ee8053912b0edad36fd4fa915caf3e5df3d68638f9d",
+    "20261104134540_source_evidence_authority.sql": "fba123633c45282cbf12a2f7907768c647032da673d65a7853433fab615bce0e",
+    "20261104134646_structured_proposal_authoring.sql": "1ee8a3bdc3c5eaa0b698f22565653d8d0a73b4cb4f42d4c36c893cbb4bf46bd5",
+    "20261104135306_proposal_consistency_contract.sql": "1b8401b675194055d69d78e38ffc3f73f9f4d1036b7ce3fc66fe64cff8a6cdfe",
+    "20261104135748_proposal_consistency_review.sql": "b31ae1d9dc08e4dea56cd32af49cb2c430f7a8ef18d1d4104c50fcaec5107097",
+    "20261104140628_authored_response_adoption.sql": "2afe615339f15807baf38ff761df392222de529dac233acaeb81f225506f3404",
+    "20261104142525_proposal_issuance_deadline.sql": "5d81ed380b3c4c0eb2637cf4e9ebea566b6b86e5a4a42adcc476391e475aca51",
+    "20261104143632_generated_review_delivery.sql": "8da4bdcbd534b04f62d157bbd49d2aa2a5e0224cdfd7fdd19f18682653dfeeaa",
+    "20261104144002_requirement_applicability_binding.sql": "dca1898a34571f6ccf88ce57bf24e84f5faed983d81dc5aa348b320155ebfb3b",
+    "20261104150228_restored_source_review_assurance.sql": "d2e9f7b70f4cf2379d1a488b72612cb07afae9636eeed337b27c2225ecf6659a",
+    "20261104151946_current_proposal_issuance_contract.sql": "4413206e83a6a19755d969d70b6ca4dc370c76ba79e57159d7f206d96d0a841e",
+    "20261104152913_durable_ordinary_export_packages.sql": "c697b1117d8a9398cbdb48848c4090870960e9ec7679577207bd9392f7589c52",
+    "20261104160125_proposal_issuance_file_capacity.sql": "46ba7ddc4c1d004557bd35e7c11c99c89f416349554e1411197c2193f9d16723",
+    "20261104163406_serialize_local_document_rendering.sql": "6f1a87cff03d035446cce8e8aefab0e09ce23c2d2c1d4d59377f741e89e2f088",
+    "20261104170442_durable_storage_write_intents.sql": "a89083335e0e61107ab7939f3582fa7dc8e664615bcc6fe8180eb5630df623c9",
+    "20261104172700_storage_write_retirement_proofs.sql": "5269599b431da34c3f7ee77d06442441e692c9f2b754d2f2050a42e06dbe1634"
+  },
+  "logs": {
+    "red": {
+      "path": "/workspace/output/storage-release-seed-red.log",
+      "sha256": "7a1d7446de219a2dff5a2596392520204634bdde445d930b8f17a0a0468b65fa"
+    },
+    "green": {
+      "path": "/workspace/output/storage-release-guards-green.log",
+      "sha256": "efbecce20d279970eb126fe265dc28c36bcb8337c02225538f6bd8c62c6f0aa9"
+    }
+  },
+  "deployed": false,
+  "hosted_accepted": false,
+  "remaining": [
+    "FinalretirementKubernetes/physicalbinary proof and final migrationfreeze.",
+    "Fullintegrated package/native/operations gates and actualmanaged/PostgreSQL/cloudrestore/deployment receipts."
+  ]
+}

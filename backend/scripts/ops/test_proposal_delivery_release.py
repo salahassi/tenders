@@ -25,7 +25,7 @@ class DeliveryReleaseTests(unittest.TestCase):
 
     def test_every_final_contract_is_required_before_freezing(self):
         manifest=self.manifest()
-        self.assertEqual(len(p.REQUIRED),20)
+        self.assertEqual(len(p.REQUIRED),22)
         self.assertEqual({key:manifest[key] for key in p.CAPABILITIES},p.CAPABILITIES)
         with self.assertRaises(p.ReleaseError):p.freeze({'receipt':self.inventory()})
         with tempfile.TemporaryDirectory() as directory:
@@ -41,7 +41,8 @@ class DeliveryReleaseTests(unittest.TestCase):
     def test_final_capabilities_cannot_be_downgraded_or_coerced(self):
         for key,value in (('executor_max',3),('minimum_worker_executor',0),('renderer_versions',[1,2]),
           ('ordinary_renderer_version','ordinary-1'),('current_proposal_issuance_contract',True),
-          ('issuance_file_capacity_version',0),('global_renderer_limit',2)):
+          ('issuance_file_capacity_version',0),('global_renderer_limit',2),
+          ('storage_write_intents_version',False),('storage_retirement_version',0)):
             manifest=self.manifest();manifest[key]=value
             with self.subTest(key=key),self.assertRaisesRegex(p.ReleaseError,'CAPABILITY_SOURCE_MISMATCH'):
                 p.verify_source(manifest)
@@ -79,6 +80,26 @@ class DeliveryReleaseTests(unittest.TestCase):
           ('GRANT EXECUTE ON FUNCTION app_private.document_render_slot_available() TO tdp_app_service;','DELIVERY_RELEASE_RENDER_ADMISSION_AUTHORITY_INVALID'),
           ('DROP INDEX public.jobs_active_document_render;','DELIVERY_RELEASE_RENDER_ADMISSION_INVALID'),
           ('DROP INDEX public.one_active_non_render_job_per_workspace;','DELIVERY_RELEASE_RENDER_ADMISSION_INVALID'),
+          ("DELETE FROM public.storage_write_intents WHERE storage_key='synthetic/census-pending';",'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID'),
+          ("INSERT INTO public.storage_write_intents(workspace_id,storage_key,state) VALUES('00000000-0000-4000-8000-000000000099','synthetic/extra','legacy_unfenced');",'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID'),
+          ("UPDATE public.storage_write_intents SET storage_key='synthetic/forged' WHERE storage_key='synthetic/census-pending';",'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID'),
+          ("UPDATE public.storage_write_intents SET state='unstarted';",'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID'),
+          ("UPDATE public.storage_write_intents SET revision=2;",'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID'),
+          ("UPDATE public.storage_write_intents SET expected_hash=repeat('a',64),expected_size=1;",'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID'),
+          ("UPDATE public.storage_write_intents SET state='unknown',expected_hash=repeat('a',64),expected_size=1,started_at=clock_timestamp();",'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID'),
+          ("UPDATE public.storage_write_intents SET observed_at=clock_timestamp();",'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID'),
+          ("UPDATE public.storage_write_intents SET send_closed_at=clock_timestamp();",'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID'),
+          ("UPDATE public.storage_write_intents SET state='quiesced',retirement_receipt='{}';",'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID'),
+          ("UPDATE public.storage_write_intents SET created_at='2000-01-01';",'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID'),
+          ("CREATE TABLE app_private.forbidden_release_seed(value integer);INSERT INTO app_private.forbidden_release_seed VALUES(1);",'DELIVERY_RELEASE_UNREQUESTED_NEW_ROWS'),
+          ("INSERT INTO app_private.storage_retirement_batches(operation_nonce,workspace_id,actor_id,scope,scope_sha256) VALUES(gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'[]',repeat('a',64));",'DELIVERY_RELEASE_UNREQUESTED_NEW_ROWS'),
+          ('DROP FUNCTION public.begin_render_storage_write(uuid,uuid,text,text,bigint);','DELIVERY_RELEASE_STORAGE_RPC_MISSING'),
+          ('GRANT EXECUTE ON FUNCTION public.begin_render_storage_write(uuid,uuid,text,text,bigint) TO tdp_app_authenticated;','DELIVERY_RELEASE_STORAGE_RPC_AUTHORITY_INVALID'),
+          ('GRANT EXECUTE ON FUNCTION app_private.finish_storage_write_retirement(uuid,uuid,jsonb) TO tdp_app_service;','DELIVERY_RELEASE_STORAGE_PRIVATE_AUTHORITY_INVALID'),
+          ('GRANT SELECT(storage_key) ON public.storage_write_intents TO tdp_app_authenticated;','DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID'),
+          ('ALTER TABLE app_private.storage_retirement_keys DISABLE ROW LEVEL SECURITY;','DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID'),
+          ('ALTER TABLE public.proposal_delivery_artifacts DISABLE TRIGGER register_delivery_storage_write;','DELIVERY_RELEASE_STORAGE_CONTRACT_INVALID'),
+
         ]
         program="process.on('uncaughtException',e=>{console.error(e.message,e.code,e.position,e.where);process.exit(1)});\nconst release="+json.dumps(script())+';const variants='+json.dumps([(script(sources[:-1]+[sources[-1]+'\n'+s]),code) for s,code in cases])+';\n'
         program+='const baseline='+json.dumps(manifest['baseline_releases'])+';const catalogQuery='+json.dumps(p.CATALOG.replace(' INTO catalog_hash',''))+';\n'
@@ -87,7 +108,11 @@ import {databaseWithMigrations} from './tests/backend/databaseFixture.ts';
 const one=async(db,q)=>Object.values((await db.query(q)).rows[0])[0];
 async function fixture(){
  const db=await databaseWithMigrations('20261103032000_model_admission_fairness.sql');
- await db.exec(`create table public.release_preserved_fixture(id int primary key,attempts int,receipt jsonb);
+ await db.exec(`insert into public.workspaces(id,name) values('00000000-0000-4000-8000-000000000099','Synthetic retained storage census');
+ insert into public.storage_cleanup_queue(workspace_id,storage_key,estimated_size,reason,status,attempts)
+ values('00000000-0000-4000-8000-000000000099','synthetic/census-pending',123,'synthetic historical pending','pending',3),
+ ('00000000-0000-4000-8000-000000000099','synthetic/census-done',17,'synthetic historical done','done',2);
+ create table public.release_preserved_fixture(id int primary key,attempts int,receipt jsonb);
  insert into public.release_preserved_fixture values(1,7,'{"usage":null,"frozen":true,"budget":1}');
  create table app_private.release_private_fixture(id int primary key,receipt jsonb);
  insert into app_private.release_private_fixture values(1,'{"accepted_sibling":true}');
@@ -113,9 +138,17 @@ const f=await fixture();
 await f.db.exec(f.sql(release));await f.db.exec(f.sql(release));
 if(await one(f.db,'select count(*)::int from app_private.application_release_history')!==8)throw Error('REPLAY_LEDGER');
 if(await one(f.db,'select attempts from public.release_preserved_fixture')!==7)throw Error('OLD_ROW_CHANGED');
+if(await one(f.db,'select count(*)::int from public.storage_write_intents')!==2)throw Error('LEGACY_CENSUS_MISSING');
+if(await one(f.db,"select count(*)::int from public.storage_write_intents where state='legacy_unfenced' and revision=1 and expected_hash is null and expected_size is null and started_at is null and observed_at is null and send_closed_at is null and retirement_receipt is null")!==2)throw Error('LEGACY_CENSUS_FORGED');
+await f.db.exec("update public.storage_write_intents set state='unknown',revision=2,expected_hash=repeat('a',64),expected_size=123,started_at=clock_timestamp() where storage_key='synthetic/census-pending'");
+await f.db.exec("insert into app_private.storage_retirement_batches(operation_nonce,workspace_id,actor_id,scope,scope_sha256) values(gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'[]',repeat('a',64))");
+
 await f.db.exec("insert into public.release_preserved_fixture values(2,4,'{\"post_release\":true}')");
 await f.db.exec(f.sql(release));
 if(await one(f.db,'select count(*)::int from public.release_preserved_fixture')!==2)throw Error('REPLAY_NEW_ROW_CHANGED');
+if(await one(f.db,"select state from public.storage_write_intents where storage_key='synthetic/census-pending'")!=='unknown')throw Error('REPLAY_OPERATIONAL_STATE_CHANGED');
+if(await one(f.db,'select count(*)::int from app_private.storage_retirement_batches')!==1)throw Error('REPLAY_RETIREMENT_HISTORY_CHANGED');
+
 await f.db.exec("comment on function public.delivery_package(uuid) is 'does not affect function catalog';");
 await f.db.exec(f.sql(release));
 await f.db.exec("grant execute on function public.delivery_export_context(uuid,uuid) to tdp_app_authenticated");

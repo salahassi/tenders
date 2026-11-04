@@ -29,7 +29,8 @@ reviewing the manifest before the release.
 
 The full release requires executor version 4. Historical delivery payloads use
 renderer version 1 and executor version 3; the new authored payload uses renderer
-version 2 and executor version 4. Runtime contracts and source authority,
+version 2 and executor version 4. The final batch requires all 22 migrations, including durable Storage write
+intents and private retirement proofs. Runtime contracts and source authority,
 consistency, optical character recognition (OCR), and deadline migrations must be
 present in the final batch. The final source revision must pass both packages'
 lockfile installs, typechecks, tests and builds, the operations tests, and the
@@ -108,9 +109,18 @@ The database batch runs in one transaction under the existing application owner,
 with bounded lock and statement waits. It compares every original column of every
 existing public/private table before and after the migration, and checks existing
 function, table, row-security, role and membership authority. New tables must
-initially be empty. Adding a column does not falsely count as rewriting saved
-content. The release records both its manifest hash and resulting routine catalog
-hash in the existing private release ledger. A repeated invocation verifies these
+initially be empty, with one exact exception: `storage_write_intents` may contain
+only the distinct pre-migration workspace/key census from existing delivery
+artifacts, ordinary package slots and cleanup rows, including completed cleanup
+rows. Each seed must be `legacy_unfenced`, revision 1, with no send authorization,
+expected hash/size, observation, closure or retirement evidence. Missing, extra
+or forged seeds fail the entire transaction. Generated row/nonce identities and
+creation timestamps do not certify physical bytes or release quota. Both private
+retirement tables remain empty, and their helpers receive no direct API grants.
+The migration does not install a trigger on the managed Storage table; the
+separately reviewed Storage-owner procedure handles that authority. Adding a
+column does not falsely count as rewriting saved content. The release records
+both its manifest hash and resulting routine catalog hash in the existing private release ledger. A repeated invocation verifies these
 receipts; it does not replay data updates, reactivate historical work or reset
 unknown provider usage.
 
