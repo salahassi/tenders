@@ -1,213 +1,11 @@
 // @vitest-environment node
 import { expect, it } from "vitest";
-import {
-  assessGeneratedDelivery,
-  type GeneratedDeliveryInput,
-} from "../../supabase/functions/_shared/generatedProposalConsistency";
-import { candidateContent } from "../../supabase/functions/_shared/modelGrounding";
-import {
-  nextStage,
-  taskInput,
-} from "../../supabase/functions/_shared/generation";
 import { qualifierHash } from "../../supabase/functions/_shared/proposalConsistency";
-async function fixture(
-  body = "Configure the workflow in 30 days. Deliver the tested workflow and manual. Buyer acceptance uses the signed workflow test.",
-) {
-  const req = "00000000-0000-4000-8000-000000000001",
-    buyer = {
-      id: "buyer",
-      text: "Provide a workflow in 30 days.",
-      kind: "rfp",
-      verified: false,
-      reference: {
-        entity_kind: "document",
-        entity_id: "00000000-0000-4000-8000-000000000002",
-        content_hash: "a".repeat(64),
-      },
-    };
-  const section = {
-    key: "approach",
-    title: "Approach",
-    volume: "technical",
-    requirement_ids: [req],
-  };
-  const plan = {
-    id: "plan",
-    kind: "proposal",
-    stage: "completed",
-    status: "completed",
-    workflow_version: 1,
-    input_hash: "b".repeat(64),
-    frozen_context: {
-      proposal_consistency_version: 1,
-      language: "en",
-      title: "Workflow",
-      notice: {
-        ...buyer,
-        id: "notice",
-        kind: "notice",
-        text: "Workflow opportunity.",
-      },
-      blocks: [buyer],
-      knowledge: [],
-      reviews: [],
-      rates: [],
-      template: {
-        required_sections: [],
-        fixed_blocks: [],
-        volume_mode: "combined",
-      },
-      input_materials: {
-        documents: [
-          { used_for_draft: true, extraction_coverage: { complete: true } },
-        ],
-      },
-    },
-  };
-  const requirements = [
-    {
-      id: req,
-      text: buyer.text,
-      mandatory: true,
-      category: "functional",
-      source_refs: [{ id: buyer.id, quote: buyer.text }],
-      source_semantics: {
-        version: 1 as const,
-        source_span_ids: ["span"],
-        authority_role: "unknown",
-        authority_status: "unconfirmed",
-        modality: "required",
-        actor: "supplier",
-        negated: false,
-        conditions: [],
-        exceptions: [],
-        consequences: [],
-        quantities: [{ value: "30", unit: "days" }],
-        review_status: "pending",
-        review_id: null,
-      },
-    },
-  ];
-  const steps = [
-    {
-      id: "plan-step",
-      task: "plan_proposal",
-      stage: "planning",
-      ordinal: 0,
-      status: "completed",
-      input: { requirement_ids: [req] },
-      output: { sections: [section], questions: [] },
-    },
-    {
-      id: "draft-step",
-      task: "draft_section",
-      stage: "drafting",
-      ordinal: 1,
-      depth: 0,
-      status: "completed",
-      input: { section, requirement_ids: [req] },
-      output: {
-        key: section.key,
-        title: section.title,
-        content_blocks: [{ type: "paragraph", text: body }],
-        requirement_ids: [req],
-        evidence_refs: [],
-        company_claims: [],
-        assumptions: [],
-        questions: [],
-      },
-    },
-    {
-      id: "commercial-step",
-      task: "plan_commercial",
-      stage: "commercial",
-      ordinal: 2,
-      status: "completed",
-      input: { requirement_ids: [] },
-      output: { lines: [], tasks: [], questions: [] },
-    },
-    {
-      id: "review-step",
-      task: "review_proposal",
-      stage: "review",
-      ordinal: 3,
-      status: "completed",
-      input: { requirement_ids: [req] },
-      output: {
-        processed_requirement_ids: [req],
-        responses: [
-          {
-            requirement_id: req,
-            status: "answered",
-            section_ids: ["approach"],
-            evidence_refs: [],
-            rationale:
-              "The proposed method, delivery and acceptance respond to this workflow obligation.",
-          },
-        ],
-        findings: [],
-      },
-    },
-  ];
-  const ctx: any = {
-    plan: { ...plan, stage: "review" },
-    step: { task: "advance_plan", input: {} },
-    steps,
-    requirements,
-  };
-  const final = (await nextStage(ctx)).final_result!;
-  const accepted_receipts = [];
-  for (const step of steps) {
-    const candidate = step.output,
-      units = candidateContent(candidate),
-      scope = taskInput({ ...ctx, plan: { ...plan, stage: step.stage }, step });
-    const hash = await qualifierHash(JSON.stringify(candidate));
-    const quote = step.task === "draft_section" ? body : units[0]?.text || "";
-    accepted_receipts.push({
-      step_id: step.id,
-      receipt_id: crypto.randomUUID(),
-      verification_receipt_id: crypto.randomUUID(),
-      candidate_hash: hash,
-      candidate,
-      accepted: true as const,
-      verification: {
-        checked_candidate_hash: hash,
-        reviewed_all_content: true,
-        processed_content_ids: units.map((u) => u.id),
-        claims: units.length
-          ? [
-              {
-                id: "claim",
-                claim: quote,
-                candidate_quote: quote,
-                kind: "proposed_solution",
-                status: "supported",
-                source_refs: [],
-                finding: "Proposed work is represented in the candidate.",
-              },
-            ]
-          : [],
-        processed_requirement_ids: scope.requiredIds,
-        requirement_checks: scope.requiredIds.map((id) => ({
-          requirement_id: id,
-          status: "supported",
-          candidate_quote: quote,
-          source_refs: [],
-          finding: "The proposed response covers this requirement.",
-        })),
-        findings: [],
-      },
-    });
-  }
-  return {
-    plan,
-    steps,
-    requirements,
-    sections: final.sections,
-    section_outline: final.section_outline,
-    accepted_receipts,
-  } as GeneratedDeliveryInput;
-}
+import { nextStage } from "../../supabase/functions/_shared/generation";
+import { candidateContent } from "../../supabase/functions/_shared/modelGrounding";
+import { assessGeneratedDelivery } from "../../supabase/functions/_shared/generatedProposalConsistency";
+import { generatedDeliveryFixture as fixture } from "./generatedDeliveryFixture";
+
 it("issues a model-checked draft without inventing human meaning review or final approval", async () => {
   const report = await assessGeneratedDelivery(await fixture());
   expect(report.blockers).toEqual([]);
@@ -223,7 +21,7 @@ it("issues a model-checked draft without inventing human meaning review or final
 it("does not infer complete proposal from saved bytes when an accepted verifier receipt is absent", async () => {
   const f = await fixture();
   f.accepted_receipts = f.accepted_receipts.filter(
-    (r) => r.step_id !== "draft-step",
+    (r) => r.step_id !== "20000000-0000-4000-8000-000000000002",
   );
   expect(
     (await assessGeneratedDelivery(f)).blockers.some(
@@ -297,4 +95,134 @@ it("requires a final cross-section reconciliation receipt for semantic workflows
       (b) => b.code === "CROSS_SECTION_RECONCILIATION_REQUIRED",
     ),
   ).toBe(true);
+});
+
+async function missingCertificateFixture(
+  options: {
+    method?: boolean;
+    omitted?: boolean;
+    contradiction?: boolean;
+  } = {},
+) {
+  const method =
+    "Configure the workflow in 30 days. Deliver the tested workflow and manual. Buyer acceptance uses the signed workflow test.";
+  const placeholder = "[INPUT REQUIRED: current company certificate evidence]";
+  const actual =
+    options.method === false ? "Provide a workflow in 30 days." : method;
+  const f = await fixture(`${actual} ${placeholder}`);
+  const draft = f.steps.find((s) => s.task === "draft_section")!;
+  draft.output.assumptions = [placeholder];
+  draft.output.questions = [
+    {
+      question:
+        "Supply current company certificate evidence before final approval.",
+      requirement_ids: [f.requirements[0].id],
+      blocking_level: "finalization",
+    },
+  ];
+  if (options.omitted) draft.output.requirement_ids = [];
+  const review = f.steps.find((s) => s.task === "review_proposal")!;
+  review.output.responses[0].status = "clarification_required";
+  for (const receipt of f.accepted_receipts) {
+    receipt.candidate_hash = await qualifierHash(
+      JSON.stringify(receipt.candidate),
+    );
+    receipt.verification.checked_candidate_hash = receipt.candidate_hash;
+    receipt.verification.processed_content_ids = candidateContent(
+      receipt.candidate,
+    ).map((c) => c.id);
+    if (receipt.step_id === draft.id) {
+      receipt.verification.claims = [
+        {
+          id: "method",
+          claim: actual,
+          candidate_quote: actual,
+          kind: "proposed_solution",
+          status: "supported",
+          source_refs: [],
+          finding:
+            "The concrete proposed method and output remain in this response.",
+        },
+        {
+          id: "missing-certificate",
+          claim: placeholder,
+          candidate_quote: placeholder,
+          kind: "assumption",
+          status: options.contradiction ? "contradicted" : "insufficient",
+          source_refs: [],
+          finding:
+            "No current company certificate was supplied; this does not establish absence of company capability.",
+        },
+      ];
+    }
+  }
+  const final = (
+    await nextStage({
+      plan: { ...f.plan, stage: "reconciliation" },
+      step: { task: "advance_plan", input: {} },
+      steps: f.steps,
+      requirements: f.requirements,
+    } as any)
+  ).final_result!;
+  f.sections = final.sections;
+  f.section_outline = final.section_outline;
+  return f;
+}
+it("issues a concrete reviewed response with an exact requirement-bound missing company certificate and visible gap", async () => {
+  const report = await assessGeneratedDelivery(
+    await missingCertificateFixture(),
+  );
+  expect(report.blockers).toEqual([]);
+  expect(report.machine_eligible).toBe(true);
+  expect(report.coverage[0].status).toBe("model_checked_with_gap");
+  expect(report.human_gaps).toContainEqual({
+    code: "COMPANY_EVIDENCE_INPUT_REQUIRED",
+    requirement_id: "00000000-0000-4000-8000-000000000001",
+    detail: "[INPUT REQUIRED: current company certificate evidence]",
+  });
+  expect(report.substantive_complete).toBe(false);
+});
+it.each([{ method: false }, { omitted: true }, { contradiction: true }])(
+  "does not use an input placeholder to hide a missing method, omitted requirement or known contradiction: %j",
+  async (options) => {
+    expect(
+      (await assessGeneratedDelivery(await missingCertificateFixture(options)))
+        .machine_eligible,
+    ).toBe(false);
+  },
+);
+it("rejects a partial review with no exact question/assumption lineage to the requirement", async () => {
+  const f = await missingCertificateFixture();
+  f.steps.find(
+    (s) => s.task === "draft_section",
+  )!.output.questions[0].requirement_ids = [];
+  const receipt = f.accepted_receipts[1];
+  receipt.candidate_hash = await qualifierHash(
+    JSON.stringify(receipt.candidate),
+  );
+  receipt.verification.checked_candidate_hash = receipt.candidate_hash;
+  expect(
+    (await assessGeneratedDelivery(f)).blockers.some(
+      (b) => b.code === "SUBSTANTIVE_RESPONSE_NOT_VERIFIED",
+    ),
+  ).toBe(true);
+});
+it("binds actual service version volume semantics to the reconstructed assembly", async () => {
+  const f = await fixture();
+  f.version = { separate_volumes: true };
+  expect(
+    (await assessGeneratedDelivery(f)).blockers.some(
+      (b) => b.code === "GENERATED_ASSEMBLY_MISMATCH",
+    ),
+  ).toBe(true);
+});
+
+it("does not turn a source echo into a proposed method by attaching an input marker to its verifier quote", async () => {
+  const f = await missingCertificateFixture({ method: false });
+  const receipt = f.accepted_receipts[1];
+  receipt.verification.claims[0].candidate_quote =
+    f.steps[1].output.content_blocks[0].text;
+  receipt.verification.claims[0].claim =
+    receipt.verification.claims[0].candidate_quote;
+  expect((await assessGeneratedDelivery(f)).machine_eligible).toBe(false);
 });

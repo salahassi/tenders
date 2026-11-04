@@ -13,7 +13,7 @@ beforeAll(async () => {
 afterAll(async () => f?.db.close());
 beforeEach(async () => f.db.exec("begin"));
 afterEach(async () => f.db.exec("rollback"));
-async function setup() {
+async function setup(modality = "required") {
   const s = await commercialHelpers(f).setup();
   const { opportunity_id: opp } = (
     await f.db.query<any>(
@@ -56,8 +56,8 @@ async function setup() {
     expected_revision: 0,
     spans: [span],
     semantics: {
-      modality: "required",
-      actor: "supplier",
+      modality,
+      actor: modality === "informational" ? null : "supplier",
       negated: false,
       conditions: [],
       exceptions: [],
@@ -102,12 +102,13 @@ async function setup() {
     [s.plan, JSON.stringify(frozen), f.w],
   );
   await f.db.query(
-    "update public.requirements set text=$2,source_refs=$3::jsonb,source_semantics=$4::jsonb where id=$1",
+    "update public.requirements set text=$2,source_refs=$3::jsonb,source_semantics=$4::jsonb,mandatory=$5 where id=$1",
     [
       s.requirement,
       inventory.text,
       JSON.stringify(inventory.source_refs),
       JSON.stringify(inventory.source_semantics),
+      inventory.mandatory,
     ],
   );
   await f.db.query(
@@ -357,5 +358,51 @@ it("does not replay a superseded response review as if it were the currently sav
   await commit(s, "second");
   await expect(attempt(() => commit(previous))).rejects.toThrow(
     "REVISION_CONFLICT",
+  );
+});
+it("reuses the exact current Owner N/A approval and retains an excluded inventory row in accepted report", async () => {
+  const s = await setup();
+  await f.command("compliance.save", {
+    proposal_version_id: s.version,
+    requirement_id: s.requirement,
+    expected_revision: 0,
+    status: "not_applicable_approved",
+    section_keys: [],
+    evidence_refs: [],
+    rationale:
+      "Owner explicitly declines this optional scope for the current proposal.",
+    expected_applicability_binding:
+      s.ctx.input.requirements[0].applicability_binding,
+  });
+  s.ctx = await f.rpc("proposal_consistency_context", [s.version]);
+  s.input.binding_hash = s.ctx.binding_hash;
+  s.input.fulfillment = [];
+  s.computed = await reviewProposalConsistency(s.ctx, s.input, f.owner);
+  expect(s.computed.report.coverage[0]).toMatchObject({
+    status: "excluded",
+    classification: "approved_not_applicable",
+  });
+  expect((await commit(s)).report.substantive_complete).toBe(true);
+});
+it("accepts a current source-reviewed informational row with no fictional method or deliverable", async () => {
+  const s = await setup("informational");
+  s.input.fulfillment = [];
+  s.computed = await reviewProposalConsistency(s.ctx, s.input, f.owner);
+  expect(s.computed.report.coverage[0]).toMatchObject({
+    status: "excluded",
+    classification: "non_obligation",
+  });
+  expect((await commit(s)).report.substantive_complete).toBe(true);
+});
+it("rejects a forged excluded status when there is no current source classification or Owner N/A record", async () => {
+  const s = await setup();
+  s.computed.report.coverage[0] = {
+    ...s.computed.report.coverage[0],
+    status: "excluded",
+    classification: "approved_not_applicable",
+  };
+  s.computed.report.substantive_complete = true;
+  await expect(attempt(() => commit(s))).rejects.toThrow(
+    "CONSISTENCY_REPORT_INVALID",
   );
 });

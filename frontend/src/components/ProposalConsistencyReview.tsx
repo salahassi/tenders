@@ -230,7 +230,10 @@ export default function ProposalConsistencyReview({
               </strong>
               <ul>
                 {data.report.coverage
-                  ?.filter((c: Row) => c.status !== "answered")
+                  ?.filter(
+                    (c: Row) =>
+                      c.status !== "answered" && c.status !== "excluded",
+                  )
                   .map((c: Row) => (
                     <li key={c.requirement_id}>
                       {
@@ -254,6 +257,22 @@ export default function ProposalConsistencyReview({
               </ul>
             </div>
           )}
+          {data.report?.coverage
+            ?.filter((c: Row) => c.status === "excluded")
+            .map((c: Row) => (
+              <p key={c.requirement_id} dir="auto">
+                {
+                  data.input.requirements.find(
+                    (r: Row) => r.id === c.requirement_id,
+                  )?.text
+                }{" "}
+                —{" "}
+                {c.classification === "approved_not_applicable"
+                  ? "Owner approved not applicable"
+                  : "Reviewed non-obligation"}
+                : {c.exclusion_reason}
+              </p>
+            ))}
           {!data.input.input_complete && (
             <p role="alert">
               Some source material remains unread. Complete its reading and

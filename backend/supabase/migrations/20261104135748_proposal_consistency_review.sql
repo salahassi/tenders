@@ -80,7 +80,25 @@ begin
  if expected_revision is null or (ctx->>'version_revision')::integer is distinct from expected_revision then raise exception 'REVISION_CONFLICT';end if;
  if report->'version' is distinct from '1'::jsonb or report->>'policy' is distinct from 'proposal-consistency-v1' or jsonb_typeof(report->'coverage') is distinct from 'array' or jsonb_typeof(report->'diagnostics') is distinct from 'array' or jsonb_typeof(report->'substantive_complete') is distinct from 'boolean' or report->>'input_hash' is null or report->>'input_hash'!~'^[a-f0-9]{64}$' or pg_column_size(report)>1048576 then raise exception 'CONSISTENCY_REPORT_INVALID';end if;
  if review->>'actor_id' is distinct from actor_id::text or review->'confirmed' is distinct from 'true'::jsonb or review->>'review_id' is null or jsonb_typeof(review->'requirement_ids') is distinct from 'array' or length(trim(coalesce(request_body->>'reason','')))<30 then raise exception 'CONSISTENCY_REVIEW_INVALID';end if;
- if report->'substantive_complete'='true'::jsonb and (jsonb_array_length(report->'coverage')=0 or jsonb_array_length(report->'diagnostics')<>0 or report->'semantic_review_required' is distinct from 'false'::jsonb or exists(select 1 from jsonb_array_elements(report->'coverage') c where c->>'status' is distinct from 'answered') or exists(select 1 from jsonb_array_elements(ctx->'input'->'requirements') r where not exists(select 1 from jsonb_array_elements(report->'coverage') c where c->>'requirement_id'=r->>'id') or not exists(select 1 from jsonb_array_elements_text(review->'requirement_ids') id where id=r->>'id') or r->'source_semantics'->>'review_status' is distinct from 'confirmed' or r->'source_semantics'->>'authority_status' is distinct from 'confirmed' or coalesce(r->'source_semantics'->>'authority_role','') not in ('buyer_rfp','buyer_addendum'))) then raise exception 'CONSISTENCY_REPORT_INVALID';end if;
+ if report->'substantive_complete'='true'::jsonb then
+  if jsonb_array_length(report->'coverage')=0 or jsonb_array_length(report->'coverage')<>jsonb_array_length(ctx->'input'->'requirements')
+   or (select count(distinct c->>'requirement_id') from jsonb_array_elements(report->'coverage') c)<>jsonb_array_length(report->'coverage')
+   or jsonb_array_length(report->'diagnostics')<>0 or report->'semantic_review_required' is distinct from 'false'::jsonb
+   or exists(select 1 from jsonb_array_elements(report->'coverage') c where coalesce(c->>'status','') not in ('answered','excluded'))
+   or exists(select 1 from jsonb_array_elements(ctx->'input'->'requirements') r where
+    not exists(select 1 from jsonb_array_elements(report->'coverage') c where c->>'requirement_id'=r->>'id' and (
+     (c->>'status'='answered' and exists(select 1 from jsonb_array_elements_text(review->'requirement_ids') id where id=r->>'id')
+      and r->'source_semantics'->>'authority_role' in ('buyer_rfp','buyer_addendum') and r->'source_semantics'->'actor'<>'null'::jsonb)
+     or (c->>'status'='excluded' and c->>'classification'='approved_not_applicable' and exists(select 1 from jsonb_array_elements(coalesce(ctx->'input'->'approved_exclusions','[]')) x where x->>'requirement_id'=r->>'id' and x->>'binding_hash'=r->>'applicability_binding'))
+     or (c->>'status'='excluded' and c->>'classification'='non_obligation' and length(trim(coalesce(r->>'source_review_reason','')))>0
+      and (r->'source_semantics'->>'modality'='informational' or r->'source_semantics'->>'authority_role' in ('supplier_proposal','company_evidence','reference')))
+    ))
+    or r->'source_semantics'->>'review_status' is distinct from 'confirmed'
+    or r->'source_semantics'->>'authority_status' is distinct from 'confirmed'
+    or coalesce(r->'source_semantics'->>'modality','unknown')='unknown'
+    or jsonb_typeof(r->'source_semantics'->'negated') is distinct from 'boolean'
+   ) then raise exception 'CONSISTENCY_REPORT_INVALID';end if;
+ end if;
  update public.approvals set invalidated_at=now(),revision=revision+1 where proposal_version_id=version_id and invalidated_at is null;
  update public.proposal_versions set consistency_report=report,consistency_binding_hash=binding_hash,consistency_review=review||jsonb_build_object('reason',request_body->>'reason','fulfillment',request_body->'fulfillment','section_facts',request_body->'section_facts','confirmed_decision_ids',request_body->'confirmed_decision_ids','reviewed_at',now()),status='draft',revision=revision+1,updated_at=now() where id=version_id returning * into v;
  update public.proposals set state='draft',revision=revision+1,updated_at=now() where id=v.proposal_id and state='approved';

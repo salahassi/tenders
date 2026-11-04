@@ -342,6 +342,37 @@ by the existing compliance workflow. Source null actors are allowed only for
 reviewed non-obligations. The updated core/review integration subset passes 57
 tests; the W05 binding migration and UI integration are separate follow-up work.
 
+The applicability integration now accepts explicit excluded inventory rows only
+when the server context supplies the canonical current non-obligation meaning
+review or existing Owner N/A approval binding. A fabricated excluded status does
+not satisfy the service guard. The normal review UI shows pending source meaning
+accurately, sends the exact observed applicability hash through the existing
+compliance command, and requires an explicit reload/review after a stale-source
+rejection. It displays excluded rows and their reasons without losing counts.
+This composes with W05's separately owned applicability-binding migration.
+
+Automatic draft issuance now also permits a tightly scoped missing company or
+commercial input while retaining a real accepted proposed response. The exact
+input marker must appear in the body, an insufficient assumption, and the same
+requirement's finalization question and supported verifier check; an accepted
+proposed-method quote must remain independently in that response. The report
+returns `model_checked_with_gap` and the exact visible missing input. Source echo
+with an appended marker, absent method, silently omitted requirement, known
+contradiction and unrelated question cannot take that path. Service version
+volume semantics are compared with the reconstructed assembly. A shared UUID
+fixture supports W10's actual database/publication tests; those tests remain a
+separate integration responsibility. The bounded marker classifier is not
+semantic proof or an exhaustive language classifier.
+
+Latest local evidence: 69 focused backend tests across the core, generated
+machine gate, actual review database route and API pass (including all 16 machine
+gate cases); all 303 frontend tests in 48 files pass. Both package typechecks and
+builds pass. The first frontend rebuild hit shared-workspace disk exhaustion;
+removing only generated dependencies/output from the completed phase-1 retrieval
+worktree allowed the rerun. Combined backend/source/model/publication acceptance,
+real-browser visual QA, native document qualification and hosted rollout remain
+root integration gates; this follow-up contains no live or paid calls.
+
 ## November 4 — integrated durable draft rendering and independent review
 
 Stages 3–7: six parallel implementation tracks are integrated on

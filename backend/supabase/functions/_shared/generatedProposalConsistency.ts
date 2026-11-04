@@ -29,6 +29,7 @@ export type GeneratedDeliveryReceipt = {
 };
 export type GeneratedDeliveryInput = {
   plan: Row;
+  version?: { separate_volumes: boolean };
   steps: Row[];
   requirements: ConsistencyRequirement[];
   sections: Row[];
@@ -47,7 +48,8 @@ export type GeneratedDeliveryReport = {
   verification_receipt_ids: string[];
   coverage: {
     requirement_id: string;
-    status: "model_checked" | "gap" | "non_obligation";
+    status:
+      "model_checked" | "model_checked_with_gap" | "gap" | "non_obligation";
     section_keys: string[];
   }[];
   blockers: {
@@ -75,6 +77,57 @@ const projection = (s: Row) => ({
   company_claims: s.company_claims || [],
   fixed: s.fixed === true,
 });
+const withoutInputMarkers = (text: string) =>
+  text.replace(/\[INPUT REQUIRED:[^\]\r\n]+\]/giu, "").trim();
+// These labels classify an explicit unresolved input; they never establish
+// that a company possesses or lacks a capability, or replace proposed work.
+function missingInputKind(label: string) {
+  if (
+    /\b(?:certificate|certification|credential|license|licence|accreditation|registration|qualification|company evidence)\b|شهاد|ترخيص|اعتماد|اثبات|إثبات/iu.test(
+      label,
+    )
+  )
+    return "COMPANY_EVIDENCE_INPUT_REQUIRED";
+  if (
+    /\b(?:price|pricing|rate|cost|budget|payment|tax|currency|commercial input)\b|سعر|اسعار|أسعار|تكلف|ميزاني|دفع|ضريب|عمل[ةه]/iu.test(
+      label,
+    )
+  )
+    return "COMMERCIAL_INPUT_REQUIRED";
+  return null;
+}
+function scopedMissingInputs(
+  step: Row,
+  report: Row,
+  requirementId: string,
+  responseQuote: string,
+) {
+  const text = sectionContent(step.output as any);
+  return report.claims.flatMap((claim: Row) => {
+    if (claim.kind !== "assumption" || claim.status !== "insufficient")
+      return [];
+    const quote = String(claim.candidate_quote || "").trim();
+    const marker = /^\[INPUT REQUIRED: ([^\]\r\n]+)\]$/iu.exec(quote);
+    const code = marker && missingInputKind(marker[1]);
+    if (
+      !marker ||
+      !code ||
+      !has(text, quote) ||
+      !has(responseQuote, quote) ||
+      !(step.output.assumptions || []).some(
+        (a: string) => consistencyText(a) === consistencyText(quote),
+      ) ||
+      !(step.output.questions || []).some(
+        (q: Row) =>
+          q.blocking_level === "finalization" &&
+          q.requirement_ids?.includes(requirementId) &&
+          has(q.question, marker[1]),
+      )
+    )
+      return [];
+    return [{ code, requirement_id: requirementId, detail: quote }];
+  });
+}
 const genericResponse = (text: string) =>
   /^(?:we\s+(?:will\s+)?(?:fully\s+)?comply(?:\s+with\s+(?:all\s+)?(?:the\s+)?requirements)?|compliant|نلتزم(?:\s+بجميع\s+المتطلبات)?)[.!\s]*$/iu.test(
     consistencyText(text),
@@ -144,7 +197,9 @@ export async function assessGeneratedDelivery(
       (await consistencyHash(assembled.sections.map(projection))) !==
         (await consistencyHash(input.sections.map(projection))) ||
       (await consistencyHash(assembled.section_outline)) !==
-        (await consistencyHash(input.section_outline))
+        (await consistencyHash(input.section_outline)) ||
+      (input.version !== undefined &&
+        input.version.separate_volumes !== assembled.separate_volumes)
     )
       add("GENERATED_ASSEMBLY_MISMATCH");
   } catch {
@@ -286,17 +341,33 @@ export async function assessGeneratedDelivery(
             claim.kind === "proposed_solution" &&
             claim.status === "supported" &&
             has(text, claim.candidate_quote) &&
-            !genericResponse(claim.candidate_quote) &&
-            !sources.some((source) => has(source.text, claim.candidate_quote)),
+            has(check.candidate_quote, claim.candidate_quote) &&
+            !!withoutInputMarkers(claim.candidate_quote) &&
+            !genericResponse(withoutInputMarkers(claim.candidate_quote)) &&
+            consistencyText(withoutInputMarkers(claim.candidate_quote)) !==
+              consistencyText(step.output.title || "") &&
+            !sources.some((source) =>
+              has(source.text, withoutInputMarkers(claim.candidate_quote)),
+            ),
         );
       });
     const keys = answering.map((s) => s.input.section.key);
+    const scopedGaps = answering.flatMap((step) => {
+      const report = accepted.get(step.id)!.verification;
+      const check = report.requirement_checks.find(
+        (c: Row) => c.requirement_id === r.id && c.status === "supported",
+      );
+      return scopedMissingInputs(step, report, r.id, check.candidate_quote);
+    });
     const reviewed = responses.some(
       (rsp) =>
         rsp.requirement_id === r.id &&
-        rsp.status === "answered" &&
+        (rsp.status === "answered" ||
+          (scopedGaps.length > 0 &&
+            ["partial", "clarification_required"].includes(rsp.status))) &&
         rsp.section_ids.some((key: string) => keys.includes(key)),
     );
+    if (keys.length && reviewed) gaps.push(...scopedGaps);
     if (!keys.length || !reviewed)
       add("SUBSTANTIVE_RESPONSE_NOT_VERIFIED", { requirement_id: r.id });
     for (const quantity of semantics?.quantities || []) {
@@ -328,7 +399,11 @@ export async function assessGeneratedDelivery(
     return {
       requirement_id: r.id,
       status:
-        keys.length && reviewed ? ("model_checked" as const) : ("gap" as const),
+        keys.length && reviewed
+          ? scopedGaps.length
+            ? ("model_checked_with_gap" as const)
+            : ("model_checked" as const)
+          : ("gap" as const),
       section_keys: keys,
     };
   });
@@ -360,7 +435,9 @@ export async function assessGeneratedDelivery(
   };
   for (const gap of gaps)
     gap.detail =
-      descriptions[gap.code] || gap.code.toLowerCase().replaceAll("_", " ");
+      gap.detail ||
+      descriptions[gap.code] ||
+      gap.code.toLowerCase().replaceAll("_", " ");
   for (const blocker of blockers) {
     blocker.detail = blocker.code.toLowerCase().replaceAll("_", " ");
     blocker.paths = blocker.step_id
@@ -375,6 +452,7 @@ export async function assessGeneratedDelivery(
     input_hash: await consistencyHash({
       plan_id: input.plan.id,
       input_hash: input.plan.input_hash,
+      version: input.version,
       sections: input.sections,
       section_outline: input.section_outline,
       requirements: input.requirements,
