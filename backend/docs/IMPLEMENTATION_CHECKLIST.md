@@ -9162,3 +9162,52 @@ was changed in response. Actual authenticated-handler projection, early file
 admission, streamed command responses, slow consumers and final resource/image
 qualification remain separate pending gates; synthetic Auth/Storage transport
 must be labelled when used. No production or provider call occurred.
+
+
+### 2026-11-04 — admit heavy API work before context and file allocation
+
+The actual handler regression reproduced three concurrent artifact-context and
+Storage reads while the first saved export remained pending. A per-handler
+single permit now admits authenticated, current members before large context,
+file, record, request-body and model projections. Excess work receives immediate
+503 `FILE_PROCESSING_BUSY` with `retryable:true`; there is no waiter queue, new
+time allowance or model/billing quota. The runtime creates one API handler;
+this is not a cluster-wide concurrency claim.
+
+The permit survives successful handler return and remains held through actual
+response EOF or cancellation settlement. It does not prefetch the response body.
+Aborted uncooperative work cannot free admission while still running, nor later
+serialize its result or authorize a download. Existing final file-currentness
+RPCs remain immediately before the download response. Caller cancellation now
+reaches Storage reads; legacy object reads use the existing 20-second Storage
+transport bound. Errors release admission without marking a busy artifact lost.
+
+The pure shared classifier covers explicit file/context/authoring/recovery routes
+and 24 full-content record resources. Complete records use one row per page with
+no lookahead; a final empty page ends traversal. No business fields or aggregate
+records are discarded. Internal model-settings/connections metadata readers and
+compact generation-plan/restore-session lists retain their bounds. Shared browser
+sequencing and whole-load identity pinning are separately owned compatibility
+changes that must ship with this API policy. Health/status/bootstrap/issuance and
+notifications remain independent of large downloads.
+
+The handler integrates the separately reviewed raw app_batch transport from
+0e93144 with the 90353bb array-shape follow-up, without materializing the
+potentially large result array. It preserves
+caller authorization, validated command order, idempotency and the existing
+JSON data/meta envelope. Composed cancellation tests hold API admission until
+upstream cancellation settles.
+
+All 114 focused tests across seven files passed in 4.31s after the batch
+shape follow-up; backend typecheck
+passed. An additional 31 tests across the three canonical migrated database,
+HTTP and delivery pipeline files passed in 13.43s. Existing tests that reused a
+handler now drain their successful response before the next heavy request;
+forged-input/currentness/schema rejection checks remain. Source/log hashes,
+red reproduction, lifecycle coverage and limitations are recorded in
+`evidence/api-heavy-file-admission-20261104.json`.
+
+No native OOM/throughput or hosted release claim follows from these local tests.
+Actual-image simultaneous file/large-record/batch response, network backpressure,
+client disconnect and NGINX behavior remain the final resource qualification.
+No provider calls, production mutations, SQL migrations or billing changes ran.

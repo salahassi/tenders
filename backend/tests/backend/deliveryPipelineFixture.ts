@@ -108,8 +108,9 @@ export async function deliveryPipelineFixture() {
           );
         return membership;
       },
-      batch: (token: string, commands: unknown[], key: string) =>
-        rpc("app_batch", { commands, idempotency_key: key }, token),
+      // Canonical SQL fixture; bounded raw HTTP streaming is qualified separately.
+      batchStream: async (token: string, commands: unknown[], key: string) =>
+        new Response(JSON.stringify(await rpc("app_batch", { commands, idempotency_key: key }, token))).body!,
       userRpc: (token: string, name: string, args: Record<string, unknown>) =>
         rpc(name, args, token),
       internal: vi.fn((name: string, args: Record<string, unknown> = {}) =>

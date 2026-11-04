@@ -2,6 +2,8 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { AppError, databaseError } from "./http.ts";
 import { MODEL_PROVIDER_IDS, type ModelProviderId } from "./modelProviders.ts";
 import type { DocumentCoverage } from "./documentCoverage.ts";
+import { isHeavyFileTable } from "./heavyFileProjection.ts";
+import { postgrestBatchBody } from "./batchTransport.ts";
 export type ModelEnvironmentSlot = {
   provider: string;
   model: string;
@@ -243,6 +245,10 @@ export class Backend {
     limit: number,
     cursor?: string,
   ) {
+    // Keep full content and complete cursor traversal, but never materialize a
+    // second max-sized row merely to discover whether another page exists.
+    const heavy = isHeavyFileTable(table);
+    const pageSize = heavy ? 1 : limit;
     const selection: string =
       table === "restore_sessions"
         ? "id,state,created_at,expires_at,committed_at"
@@ -257,7 +263,7 @@ export class Backend {
       .order(table === "model_activity" ? "sequence" : "id", {
         ascending: table !== "model_activity",
       })
-      .limit(limit + 1);
+      .limit(heavy ? pageSize : pageSize + 1);
     for (const [key, value] of Object.entries(filters)) q = q.eq(key, value);
     if (cursor)
       q =
@@ -271,8 +277,10 @@ export class Backend {
       [key: string]: unknown;
     }>;
     return {
-      records: rows.slice(0, limit),
-      next_cursor: rows.length > limit ? rows[limit - 1].id : null,
+      records: rows.slice(0, pageSize),
+      next_cursor: (heavy ? rows.length === pageSize : rows.length > pageSize)
+        ? rows[pageSize - 1].id
+        : null,
     };
   }
   async one(token: string, table: string, id: string) {
@@ -307,10 +315,35 @@ export class Backend {
     if (error) throw databaseError(error);
     return data;
   }
-  async object(path: string) {
+  batchStream(
+    token: string,
+    commands: unknown[],
+    key: string,
+    signal: AbortSignal,
+  ) {
+    return postgrestBatchBody({
+      url: this.env.url,
+      publishableKey: this.env.publishableKey,
+      token,
+      commands,
+      idempotencyKey: key,
+      signal,
+    });
+  }
+  async object(path: string, signal?: AbortSignal) {
+    signal?.throwIfAborted();
     const { data, error } = await this.admin.storage
       .from("tenderdesk-private")
-      .download(path);
+      .download(
+        path,
+        {},
+        {
+          signal: signal
+            ? AbortSignal.any([signal, AbortSignal.timeout(20000)])
+            : AbortSignal.timeout(20000),
+        },
+      );
+    signal?.throwIfAborted();
     if (error || !data)
       throw new AppError(
         422,

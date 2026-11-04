@@ -3,6 +3,12 @@ import {
   reviewProposalConsistency,
 } from "../_shared/proposalConsistencyReview.ts";
 import { recoveryRoute } from "../_shared/recovery.ts";
+import { batchEnvelopeResponse } from "../_shared/batchTransport.ts";
+import {
+  HeavyFileAdmission,
+  isHeavyFileRequest,
+  type HeavyFilePermit,
+} from "./heavyFileAdmission.ts";
 import { buildExportModel, verifyExportDocxAsync } from "../_shared/export.ts";
 import {
   buildDeliveryExport,
@@ -186,8 +192,12 @@ export function createApiHandler(
   env: BackendEnvironment,
   factory = () => new Backend(env),
 ) {
+  const fileAdmission = new HeavyFileAdmission();
   return async (request: Request): Promise<Response> => {
     const requestId = crypto.randomUUID();
+    let filePermit: HeavyFilePermit | undefined;
+    const finishResponse = (response: Response) =>
+      filePermit?.retainThrough(response) ?? response;
     let headers = new Headers({
       "content-type": "application/json",
       "cache-control": "no-store",
@@ -196,11 +206,15 @@ export function createApiHandler(
       data: unknown,
       status = 200,
       meta: Record<string, unknown> = {},
-    ) =>
-      new Response(
-        JSON.stringify({ data, meta: { request_id: requestId, ...meta } }),
-        { status, headers },
+    ) => {
+      request.signal.throwIfAborted();
+      return finishResponse(
+        new Response(
+          JSON.stringify({ data, meta: { request_id: requestId, ...meta } }),
+          { status, headers },
+        ),
       );
+    };
     try {
       headers = corsHeaders(request, env.allowedOrigins);
       if (request.method === "OPTIONS")
@@ -229,6 +243,8 @@ export function createApiHandler(
         return respond(await backend.acceptInvitation(token, input.token));
       }
       const membership = await backend.membership(token);
+      if (isHeavyFileRequest(request.method, path))
+        filePermit = fileAdmission.acquire(request.signal);
       if (path === "/v1/model-catalog-status" && request.method === "GET") {
         if (membership.role !== "Owner")
           throw new AppError(
@@ -292,7 +308,7 @@ export function createApiHandler(
         headers,
         respond,
       );
-      if (recovery) return recovery;
+      if (recovery) return finishResponse(recovery);
       if (path === "/v1/bootstrap" && request.method === "GET")
         return respond({
           mode: "CONNECTED_FREE",
@@ -608,6 +624,7 @@ export function createApiHandler(
             "proposal_authoring_context",
             { session_id, actor_id: user.id },
           )) as AuthoringContext;
+          request.signal.throwIfAborted();
           // Stable across a lost HTTP response; changing input under the same key
           // is rejected by the transactional receipt, never a second approval.
           const digest = [
@@ -629,6 +646,7 @@ export function createApiHandler(
             review,
             reviewId,
           );
+          request.signal.throwIfAborted();
           const snapshot = await backend.internal("publish_authored_delivery", {
             actor_id: user.id,
             session_id,
@@ -665,6 +683,7 @@ export function createApiHandler(
           input: { ...input, ...(session_id ? { session_id } : {}) },
           idempotency_key,
         })) as AuthoringContext;
+        request.signal.throwIfAborted();
         if (action === "save" || action === "refresh") {
           const payload = buildAuthoredPayload(context);
           const snapshot = await backend.internal("publish_authored_delivery", {
@@ -690,7 +709,9 @@ export function createApiHandler(
             await backend.userRpc(token, "delivery_context", args),
           );
         const saved = await backend.userRpc(token, "delivery_package", args);
+        request.signal.throwIfAborted();
         const snapshot = await backend.userRpc(token, "delivery_context", args);
+        request.signal.throwIfAborted();
         const volumes: DeliveryVolume[] = snapshot.payload.separate_volumes
           ? ["technical", "financial"]
           : ["combined"];
@@ -716,6 +737,7 @@ export function createApiHandler(
           artifact_id: id,
           actor_id: user.id,
         });
+        request.signal.throwIfAborted();
         const artifact = context.artifact;
         if (artifact.status !== "ready")
           throw new AppError(
@@ -723,7 +745,11 @@ export function createApiHandler(
             "DELIVERY_NOT_READY",
             "The saved draft file is still being prepared.",
           );
-        const blob = await backend.deliveryObject(artifact.storage_key);
+        const blob = await backend.deliveryObject(
+          artifact.storage_key,
+          request.signal,
+        );
+        request.signal.throwIfAborted();
         if (!blob)
           throw new AppError(
             503,
@@ -738,6 +764,7 @@ export function createApiHandler(
           ),
           request.signal,
         );
+        request.signal.throwIfAborted();
         if (
           actual.hash !== artifact.content_hash ||
           actual.size !== Number(artifact.expected_size)
@@ -752,6 +779,7 @@ export function createApiHandler(
           actor_id: user.id,
           actual_hash: actual.hash,
         });
+        request.signal.throwIfAborted();
         const out = corsHeaders(request, env.allowedOrigins);
         out.set("content-type", artifact.mime_type);
         out.set(
@@ -759,12 +787,15 @@ export function createApiHandler(
           `attachment; filename*=UTF-8''${encodeURIComponent(artifact.original_name)}`,
         );
         out.set("content-length", String(actual.size));
-        return new Response(new Uint8Array(actual.bytes), { headers: out });
+        return finishResponse(
+          new Response(new Uint8Array(actual.bytes), { headers: out }),
+        );
       }
       if (request.method === "GET" && exportPath) {
         const record = await backend.userRpc(token, "export_context", {
           request_id: uuid.parse(exportPath[1]),
         });
+        request.signal.throwIfAborted();
         return respond({ request: record, model: buildExportModel(record) });
       }
       const artifactPath = path.match(
@@ -780,6 +811,7 @@ export function createApiHandler(
             artifact_id: id,
           }),
           artifact = context.artifact;
+        request.signal.throwIfAborted();
         const savedPackage =
           artifactPath[2] === "download" && artifact.kind === "generated"
             ? context.package
@@ -804,8 +836,9 @@ export function createApiHandler(
         // missing object from a temporary dependency failure. A 5xx response
         // must not invalidate a ready file or start a new authorization.
         const blob = savedPackage
-          ? await backend.deliveryObject(artifact.storage_key)
-          : await backend.object(artifact.storage_key);
+          ? await backend.deliveryObject(artifact.storage_key, request.signal)
+          : await backend.object(artifact.storage_key, request.signal);
+        request.signal.throwIfAborted();
         if (!blob) {
           await reportFailure("EXPORT_ARTIFACT_MISSING");
           throw new AppError(
@@ -830,6 +863,7 @@ export function createApiHandler(
             new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
             (b) => b.toString(16).padStart(2, "0"),
           ).join("");
+        request.signal.throwIfAborted();
         if (hash !== artifact.content_hash) {
           await reportFailure("ARTIFACT_MISMATCH", blob.size);
           throw new AppError(
@@ -856,6 +890,7 @@ export function createApiHandler(
               buildExportModel(context.request),
               request.signal,
             );
+          request.signal.throwIfAborted();
           return respond(
             await backend.internal("complete_export_artifact", {
               artifact_id: id,
@@ -876,10 +911,11 @@ export function createApiHandler(
           actor_id: user.id,
           actual_hash: hash,
         });
+        request.signal.throwIfAborted();
         const headers = corsHeaders(request, env.allowedOrigins);
         headers.set("content-type", artifact.mime_type);
         headers.set("content-disposition", "attachment");
-        return new Response(bytes, { headers });
+        return finishResponse(new Response(bytes, { headers }));
       }
       const extractionReview = path.match(
         /^\/v1\/documents\/([^/]+)\/(extraction|ocr)$/,
@@ -897,7 +933,9 @@ export function createApiHandler(
           "uploaded_document_extraction",
           { document_id },
         );
+        request.signal.throwIfAborted();
         const original = await backend.one(token, "documents", document_id);
+        request.signal.throwIfAborted();
         const original_download_url = await backend.download(
           original.storage_key,
         );
@@ -968,11 +1006,13 @@ export function createApiHandler(
           "proposal_consistency_context",
           { version_id: versionId },
         );
+        request.signal.throwIfAborted();
         const { report, review } = await reviewProposalConsistency(
           context,
           input,
           user.id,
         );
+        request.signal.throwIfAborted();
         return respond(
           await backend.internal("complete_proposal_consistency", {
             version_id: versionId,
@@ -1145,7 +1185,14 @@ export function createApiHandler(
           }
           return { operation, input: parsed };
         });
-        return respond(await backend.batch(token, commands, key));
+        request.signal.throwIfAborted();
+        return finishResponse(
+          batchEnvelopeResponse(
+            await backend.batchStream(token, commands, key, request.signal),
+            requestId,
+            headers,
+          ),
+        );
       }
       if (path === "/v1/invitations" && request.method === "POST")
         return respond(
@@ -1186,7 +1233,12 @@ export function createApiHandler(
             "ROLE_FORBIDDEN",
             "Only your review attachments may be uploaded.",
           );
-        const original = await backend.object(document.storage_key);
+        request.signal.throwIfAborted();
+        const original = await backend.object(
+          document.storage_key,
+          request.signal,
+        );
+        request.signal.throwIfAborted();
         if (original.size !== Number(document.expected_size))
           throw new AppError(
             422,
@@ -1326,6 +1378,8 @@ export function createApiHandler(
         }),
         { status: e.status, headers },
       );
+    } finally {
+      filePermit?.finishWork();
     }
   };
 }

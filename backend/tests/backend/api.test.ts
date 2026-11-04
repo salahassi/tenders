@@ -128,10 +128,9 @@ describe("backend HTTP boundaries without a live provider", () => {
   it("batches operational history while keeping bounded authenticated pagination", async () => {
     const f = fixture();
     for (const resource of ["jobs", "audit-events"]) {
-      expect(
-        (await f.handle(request(`${resource}?limit=500&cursor=${source}`)))
-          .status,
-      ).toBe(200);
+      const page = await f.handle(request(`${resource}?limit=500&cursor=${source}`));
+      expect(page.status).toBe(200);
+      await page.json();
       expect(f.backend.list).toHaveBeenLastCalledWith(
         "synthetic-user-token",
         resource.replaceAll("-", "_"),
@@ -341,6 +340,8 @@ describe("backend HTTP boundaries without a live provider", () => {
     );
     expect(response.status).toBe(200);
     expect(f.backend.verifyPages).toHaveBeenCalledWith(source, 2);
+    // The accepted response is drained before starting another heavy flow.
+    await response.json();
     expect(f.backend.accept).toHaveBeenCalledWith(
       source,
       actor,

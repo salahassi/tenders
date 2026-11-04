@@ -560,9 +560,9 @@ describe("connected UI commands through HTTP and PostgreSQL", () => {
           throw new AppError(403, "ACCESS_PENDING", "Not approved");
         return result.rows[0];
       },
-      batch: async (_token: string, input: unknown, batchKey: string) => {
+      batchStream: async (_token: string, input: unknown, batchKey: string) => {
         try {
-          return (
+          const data = (
             (
               await asUser(
                 id,
@@ -571,6 +571,8 @@ describe("connected UI commands through HTTP and PostgreSQL", () => {
               )
             ).rows[0] as { data: unknown }
           ).data;
+          // SQL authority fixture only; transport buffering has separate tests.
+          return new Response(JSON.stringify(data)).body!;
         } catch (error) {
           throw databaseError(error as Error);
         }

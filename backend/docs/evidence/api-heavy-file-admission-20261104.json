@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "observed_at": "2026-11-04",
+  "repository_base": "5e107f67fd92cafab704a8305684199b8ce268a9",
+  "scope": "Early per-API heavy-file admission, complete bounded record pages, response lifecycle and streamed batch integration",
+  "provider_calls": 0,
+  "production_calls": 0,
+  "source_sha256": {
+    "backend/supabase/functions/api/handler.ts": "1ad0865da971cd84ede7a65c03ffe2056b6c0654f7a6ce91bfcb4727715e1958",
+    "backend/supabase/functions/api/heavyFileAdmission.ts": "2bf6ede8423ef2020917ba2eaf393d4250905d99308a64c335d590717b3b363e",
+    "backend/supabase/functions/_shared/heavyFileProjection.ts": "1dd7c82567d01593c6345ae91d000b9670ce77652f298a92feafca36c8aac830",
+    "backend/supabase/functions/_shared/backend.ts": "0a08021e37b2913e1b51135c8edae225bc1be38174739b109022e9df385e8d95",
+    "backend/supabase/functions/_shared/recovery.ts": "812620674e90efc6f89e1957158d637af4961d44dc2f3c00d6dca913af8706ad"
+  },
+  "dependencies": {
+    "batch_transport_commit": "90353bb811f5d91f3ddd36486c76ad38827b527a",
+    "batch_transport_sha256": "24f9f0cb526d2088405f3d06fe433446e03b8181dfdf2ae098edc4e400a0d151",
+    "frontend_compatibility": "Shared exact classifier is consumed by the separately owned BackendClient FIFO and repository identity-pinning follow-up; those commits/gates must be integrated together.",
+    "batch_transport_initial_commit": "0e9314469eb54f8407d35cf398bdb7982e9259be",
+    "batch_transport_initial_sha256": "5dee7e8575567b1d686f3fe55dd5925f981a18d36b905eef81ae2803c6a8afdb"
+  },
+  "red": {
+    "file": "apiHeavyFileAdmission.test.ts",
+    "tests_failed": 1,
+    "expected_context_reads": 1,
+    "actual_context_reads": 3,
+    "log_sha256": "f03205af2d19bd4f2e40051d0a541bf3bb99b855dd99e623e0e5bf28c330ade7",
+    "scope": "Actual createApiHandler path with stubbed Auth/RPC/Storage. Held ordinary saved-export Storage response; this route does not enter native verification."
+  },
+  "focused_green": {
+    "files": 7,
+    "tests_passed": 114,
+    "duration_seconds": 4.31,
+    "files_run": [
+      "apiHeavyFileAdmission.test.ts",
+      "heavyFileAdmission.test.ts",
+      "heavyFileProjection.test.ts",
+      "apiObjectCancellation.test.ts",
+      "api.test.ts",
+      "deliveryDownloadApi.test.ts",
+      "proposalConsistencyReview.api.test.ts"
+    ],
+    "log_sha256": "1962b7a808f7bba8e3d35d7a2b9b2f100123da86d5e8b2ef1cefffd87ecac5fc",
+    "backend_typecheck": "passed",
+    "typecheck_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dependency_scope": "Re-run after refreshing batch transport 90353bb with constant-state array boundary checks; API source unchanged."
+  },
+  "migrated_green": {
+    "files": 3,
+    "tests_passed": 31,
+    "duration_seconds": 13.43,
+    "files_run": [
+      "database.test.ts",
+      "httpDatabase.integration.test.ts",
+      "deliveryPipeline.integration.test.ts"
+    ],
+    "log_sha256": "7b9d8211431fa3eba225f80505bbaac035c2d3e36a66791af38c8d896da8ffa2",
+    "scope": "Canonical migrated local PostgreSQL-compatible fixtures and actual HTTP handlers; test RPC transports encode their small returned fixtures as streams, not a native memory qualification."
+  },
+  "admission": {
+    "scope": "One createApiHandler instance, instantiated once by the API runtime; not a cluster-global lock",
+    "capacity": 1,
+    "waiters": 0,
+    "busy_status": 503,
+    "busy_code": "FILE_PROCESSING_BUSY",
+    "busy_retryable": true,
+    "new_time_budget": false,
+    "model_or_billing_quota_changed": false,
+    "acquired_after": [
+      "authenticate",
+      "membership"
+    ],
+    "acquired_before": [
+      "heavy context RPC",
+      "Storage read",
+      "full-record projection",
+      "large body parsing",
+      "model construction",
+      "hashing",
+      "native verification"
+    ]
+  },
+  "lifecycle_assertions": [
+    "Canceled noncooperative context/Storage work retains its permit until settling, with no late serialization or final authorization.",
+    "Response construction and handler return do not release a successful permit. Zero-prefetch stream retains it until EOF, cancellation settlement or error.",
+    "Slow-consumer, partial-read, error, duplicate cleanup and body/request cancellation cases preserve one permit; next request succeeds afterward.",
+    "Composed raw app_batch envelope/request cancellation retains API admission until deferred upstream cancellation settles.",
+    "Final artifact currentness/authorization RPC stays before download Response; refusal releases admission and exposes no artifact bytes.",
+    "Busy responses occur before artifact failure reporting, context/Storage loads or model verification. Auth and membership refusal precede busy admission."
+  ],
+  "projection_assertions": [
+    "24 explicitly mapped full-content resources retain all fields and types; page size1 uses no lookahead and never imposes an aggregate row ceiling.",
+    "A full final page returns its last ID; one terminal empty page returns null. Two independent large records retain exact text/boolean/zero/null values and order.",
+    "Backend.list has exactly3 runtime callsites; internal model_connections/model_settings metadata and compact generation_plans/restore_sessions lists retain their existing bounds.",
+    "Health/bootstrap/status/issuance/notifications remain outside the heavy projection gate.",
+    "The actual caller token, parsed commands, idempotency key and cancellation signal pass once to raw batch transport; data/meta envelope and result ordering are preserved."
+  ],
+  "compatibility_fixture_corrections": [
+    "Existing API tests now drain successful responses before starting another heavy request; schema/permission/forged-review rejection assertions remain unchanged.",
+    "Three canonical SQL HTTP test transports expose their small expected RPC payload as a stream; no product fallback to whole-result parsing was introduced."
+  ],
+  "limits": [
+    "Actual-image API burst, network slow-consumer/disconnect, NGINX buffering and peak memory are independently owned native qualification gates. JavaScript stream tests are not OOM or hosted throughput proof.",
+    "The raw batch module has its own independent transport tests/source review; this receipt qualifies its API lifecycle composition.",
+    "No production deployment, provider call, SQL migration, user-role grant or billing/model policy change occurred."
+  ],
+  "focused_green_before_shape_guard": {
+    "files": 7,
+    "tests_passed": 114,
+    "duration_seconds": 4.28,
+    "files_run": [
+      "apiHeavyFileAdmission.test.ts",
+      "heavyFileAdmission.test.ts",
+      "heavyFileProjection.test.ts",
+      "apiObjectCancellation.test.ts",
+      "api.test.ts",
+      "deliveryDownloadApi.test.ts",
+      "proposalConsistencyReview.api.test.ts"
+    ],
+    "log_sha256": "f676fb3a1dd3433c4513b8342d4ca6dd980185be182bce0f4093c2acf5091c4d",
+    "backend_typecheck": "passed",
+    "typecheck_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "independent_review": "Adjacent workflow reviewer inspected lifecycle, complete route census, three mutation-route additions, one-row paging and raw batch integration; no material blocker remained in that scoped source review. This is not native or SQL/PostgREST resource proof."
+}

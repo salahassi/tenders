@@ -122,6 +122,7 @@ it("computes report from exact server content and authenticated actor rather tha
   const f = fixture(),
     response = await f.handle(f.request(f.input));
   expect(response.status).toBe(201);
+  await response.json();
   expect(f.backend.internal).toHaveBeenCalledWith(
     "complete_proposal_consistency",
     expect.objectContaining({
