@@ -1807,3 +1807,122 @@ it.each(["cancelled", "stale-lease", "missing-evidence"])(
     expect(await snapshot(s)).toEqual(before);
   },
 );
+
+it.each([
+  ["terminal-proven", true],
+  ["terminal-tag-only", false],
+  ["terminal-null-error", false],
+  ["active-remote", false],
+  ["before-boundary", false],
+  ["at-boundary", true],
+  ["after-boundary", true],
+  ["later-remote-deadline", false],
+  ["at-remote-deadline", true],
+  ["manual-terminal", false],
+  ["exhausted-terminal", true],
+] as const)(
+  "automatic recovery handoff respects %s without rewriting accounting or allowances",
+  async (condition, allowed) => {
+    const s = await setup(
+      "failed",
+      condition === "exhausted-terminal" ? "candidate-2" : "candidate-1",
+    );
+    const terminal = condition.includes("terminal");
+    const remote = terminal || condition.includes("remote");
+    const age =
+      condition === "before-boundary"
+        ? 899999
+        : condition === "at-boundary"
+          ? 900000
+          : condition === "after-boundary"
+            ? 900001
+            : terminal
+              ? 1000
+              : 1200000;
+    const deadline = condition === "at-remote-deadline" ? 0 : 3600000;
+    const previous = (
+      await f.db.query<any>(
+        `insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,
+ application_day,settings_revision,reserved_input,reserved_output,state,error_code,created_by,connection_id,model_config_id,
+ remote_request_id,remote_deadline,remote_project_ref,created_at)
+ values($1,$2,$3,$4,'openai','fixture-model',$5,current_date,1,100,50,'unknown',$6,$7,$8,$9,$10,
+ case when $11::int is null then null else now()+$11::int*interval '1 millisecond' end,'fixture-project',now()-$12::int*interval '1 millisecond') returning *`,
+        [
+          f.w,
+          s.job.id,
+          crypto.randomUUID(),
+          `${s.prefix}:previous-receipt`,
+          s.input,
+          condition === "terminal-null-error"
+            ? null
+            : terminal
+              ? "PROVIDER_BACKGROUND_TERMINATED"
+              : "MODEL_NETWORK_UNCERTAIN",
+          f.owner,
+          s.usage.connection_id,
+          s.usage.model_config_id,
+          remote ? "resp_fixture_previous" : null,
+          remote ? deadline : null,
+          age,
+        ],
+      )
+    ).rows[0];
+    if (terminal && condition !== "terminal-tag-only")
+      await f.db.query(
+        `insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,project_ref,operation,round_number,worker_attempt,status,result_code,usage_id,sent,connection_id,model_config_id,finish_reason,request_phase)
+ values($1,$2,$3,'openai','fixture-model','fixture-project','repair_result',1,1,'failed','PROVIDER_BACKGROUND_TERMINATED',$4,true,$5,$6,'failed','poll')`,
+        [
+          f.w,
+          s.job.id,
+          previous.lease_token,
+          previous.id,
+          previous.connection_id,
+          previous.model_config_id,
+        ],
+      );
+    if (condition === "manual-terminal")
+      await f.db.query(
+        "update public.jobs set checkpoint=jsonb_set(checkpoint,'{model_routing,mode}','\"manual\"') where id=$1",
+        [s.job.id],
+      );
+    const before = await snapshot(s);
+    if (allowed) {
+      expect(await s.store.action("writer_validation_handoff", s.payload)).toBe(
+        true,
+      );
+      expect(await s.store.action("writer_validation_handoff", s.payload)).toBe(
+        true,
+      );
+      const events = (
+        await f.db.query<any>(
+          "select details from public.audit_events where action='model.usage_recovery' and entity_id=$1",
+          [s.job.id],
+        )
+      ).rows;
+      expect(events).toHaveLength(1);
+      expect(events[0].details).toMatchObject({
+        operation: "writer_validation_handoff",
+        usage_unchanged: true,
+        candidate_allowances_unchanged: true,
+        receipts: [{ usage_id: previous.id, state: "unknown" }],
+      });
+    } else
+      await expect(
+        s.store.action("writer_validation_handoff", s.payload),
+      ).rejects.toMatchObject({ code: "USAGE_REVIEW_REQUIRED" });
+    expect(await snapshot(s)).toEqual(before);
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from public.provider_usage where id=$1",
+          [previous.id],
+        )
+      ).rows[0],
+    ).toEqual(previous);
+    expect(await s.store.action("result_get", { key: "accepted" })).toBeNull();
+    if (condition === "exhausted-terminal")
+      await expect(
+        s.store.action("candidate_budget", { unit: "writer" }),
+      ).rejects.toMatchObject({ code: "MODEL_CORRECTION_EXHAUSTED" });
+  },
+);

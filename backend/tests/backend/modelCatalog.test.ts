@@ -1240,9 +1240,13 @@ it.each(["openai", "gemini_free"] as const)(
   },
 );
 
-it.each([true, false])(
-  "catalog failover retains unknown OpenAI usage and completes via QwenCloud (remote identity matches: %s)",
-  async (identityMatches) => {
+it.each([
+  { identityMatches: true, errorCode: "server_error" },
+  { identityMatches: false, errorCode: "server_error" },
+  { identityMatches: true, errorCode: "credit_balance_exhausted" },
+])(
+  "catalog failover retains unknown OpenAI usage and completes via QwenCloud %j",
+  async ({ identityMatches, errorCode }) => {
     const { job, models, route, envs, backend } = await configure("openai");
     const connection = await f.command("model.connection.save", {
       provider: "qwencloud",
@@ -1284,7 +1288,7 @@ it.each([true, false])(
             ...(init?.method === "GET"
               ? {
                   error: {
-                    code: "server_error",
+                    code: errorCode,
                     type: "provider_error",
                     message: "Private diagnostic text must not be stored",
                   },
@@ -1346,9 +1350,48 @@ it.each([true, false])(
       )
     ).rows[0];
     expect(attempt).toEqual({
-      provider_error_code: "server_error",
+      provider_error_code: errorCode,
       provider_error_type: "provider_error",
     });
+    expect(
+      (
+        await f.db.query<any>(
+          "select app_private.model_usage_blocks_recovery(j,u,now()) blocked from public.jobs j join public.provider_usage u on u.job_id=j.id where j.id=$1 and u.provider='openai'",
+          [job.id],
+        )
+      ).rows[0].blocked,
+    ).toBe(!identityMatches);
+    if (errorCode === "credit_balance_exhausted") {
+      const waits = await rpc("task_model_retry_windows", {
+        job_id: job.id,
+        lease: current.lease_token,
+      });
+      expect(waits.map((w: any) => w.model_config_id)).toEqual([models[0].id]);
+      expect(
+        (
+          await f.db.query<any>(
+            "select provider_error_reason,provider_error_scope from public.model_attempts where job_id=$1 and request_phase='poll'",
+            [job.id],
+          )
+        ).rows[0],
+      ).toMatchObject({
+        provider_error_reason: "usage_limit",
+        provider_error_scope: "account",
+      });
+      await f.db.query(
+        "update public.jobs set status='succeeded',lease_token=null,lease_until=null where id=$1",
+        [job.id],
+      );
+      await f.command("model.probe", {});
+      const next = await rpc("claim_backend_job_v2");
+      expect(await run(next)).toEqual({ status: "ready" });
+      expect(methods).toEqual([
+        "openai:POST",
+        "openai:GET",
+        "qwencloud:POST",
+        "qwencloud:POST",
+      ]);
+    }
   },
 );
 it("uses another model on the same connection after a model error, preserving distinct attempts and usage", async () => {
@@ -2513,6 +2556,19 @@ it("requires explicit grants, RLS, Owner commands, revisions and current leases"
       service_read: true,
     });
   }
+  const helpers = (
+    await f.db.query<any>(
+      "select p.proname,p.prosecdef,has_function_privilege('anon',p.oid,'execute') anon,has_function_privilege('authenticated',p.oid,'execute') authenticated,has_function_privilege('service_role',p.oid,'execute') service from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='app_private' and p.proname in ('provider_failure_windows','model_usage_blocks_recovery','record_model_usage_recovery')",
+    )
+  ).rows;
+  expect(helpers).toHaveLength(3);
+  for (const helper of helpers)
+    expect(helper).toMatchObject({
+      prosecdef: false,
+      anon: false,
+      authenticated: false,
+      service: false,
+    });
   await expect(
     f.command("model.configuration.save", {
       id: models[0].id,
@@ -3989,3 +4045,484 @@ it("saves model routes through the same transactional batch RPC used by the brow
     await f.db.exec("reset role");
   }
 });
+
+it.each(["model", "connection", "project", "account", "unknown"])(
+  "persists %s failure scope and applies it to actual catalog cooldowns",
+  async (scope) => {
+    const { job, models, connection, ledger, route } = await configure();
+    const other = await f.command("model.connection.save", {
+      provider: "groq_free",
+      label: "Synthetic other project",
+      credential_alias: "APP_MODEL_GROQ_KEY",
+      project_ref: "other-project",
+      enabled: true,
+      expected_revision: 0,
+    });
+    const third = await f.command("model.configuration.save", {
+      connection_id: other.id,
+      label: "Synthetic other model",
+      model: "fixture-model-c",
+      enabled: true,
+      capabilities: defaultCapabilities("groq_free"),
+      expected_revision: 0,
+    });
+    await f.command("model.task_route.save", {
+      task: "default",
+      model_ids: [...models.map((m) => m.id), third.id],
+      inherit_default: false,
+      strategy: "priority",
+      profile: null,
+      expected_revision: route.revision,
+    });
+    await ledger.preflight([], "connection_probe");
+    const attempt = await rpc("start_task_model_attempt", {
+      job_id: job.id,
+      lease: job.lease_token,
+      target_model: models[0].id,
+      target_connection: connection.id,
+      operation_name: "connection_probe",
+    });
+    await rpc("finish_model_attempt", {
+      attempt_id: attempt,
+      lease: job.lease_token,
+      result_code: "PROVIDER_QUOTA_WAIT",
+      sent: true,
+      usage_id: null,
+      metadata: {
+        http_status: 403,
+        provider_error_code: "insufficient_quota",
+        provider_error_reason: "usage_limit",
+        provider_error_scope: scope,
+        retry_after: new Date(Date.now() + 120000).toISOString(),
+      },
+    });
+    const waits = await rpc("task_model_retry_windows", {
+      job_id: job.id,
+      lease: job.lease_token,
+    });
+    expect(new Set(waits.map((w: any) => w.model_config_id))).toEqual(
+      new Set(
+        scope === "model"
+          ? [models[0].id]
+          : ["unknown", "account"].includes(scope)
+            ? [...models.map((m) => m.id), third.id]
+            : models.map((m) => m.id),
+      ),
+    );
+    expect(
+      (
+        await f.db.query<any>(
+          "select provider_error_scope from public.model_activity where id=$1",
+          [String(attempt)],
+        )
+      ).rows[0].provider_error_scope,
+    ).toBe(scope);
+  },
+);
+
+it.each([-1, 0, 1])(
+  "cooldown respects exact Retry-After boundary offset %i ms",
+  async (offset) => {
+    const { job, models, connection, ledger } = await configure();
+    await ledger.preflight([], "connection_probe");
+    await f.db.query(
+      `insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,project_ref,operation,round_number,worker_attempt,status,result_code,connection_id,model_config_id,http_status,sent,provider_error_scope,started_at,retry_after)
+ values($1,$2,$3,'groq_free','fixture-model-a','fixture-account','connection_probe',1,1,'failed','PROVIDER_QUOTA_WAIT',$4,$5,403,true,'model',now()-interval '2 hours',now()+$6::int*interval '1 millisecond')`,
+      [f.w, job.id, job.lease_token, connection.id, models[0].id, offset],
+    );
+    const waits = await rpc("task_model_retry_windows", {
+      job_id: job.id,
+      lease: job.lease_token,
+    });
+    expect(waits).toHaveLength(offset > 0 ? 1 : 0);
+  },
+);
+
+it.each(["model", "account", "unknown"])(
+  "403 quota routing permits sibling only for proven %s scope",
+  async (scope) => {
+    const { job, ledger, envs } = await configure();
+    const sent: string[] = [];
+    const fetcher: typeof fetch = async (_url, init) => {
+      const model = JSON.parse(String(init?.body)).model;
+      sent.push(model);
+      if (model === "fixture-model-a")
+        return Response.json(
+          {
+            error: {
+              code:
+                scope === "model"
+                  ? "model_quota_exceeded"
+                  : scope === "account"
+                    ? "account_quota_exceeded"
+                    : "insufficient_quota",
+              message: "Synthetic quota exhausted",
+            },
+          },
+          { status: 403, headers: { "retry-after": "90" } },
+        );
+      return Response.json({
+        choices: [
+          { finish_reason: "stop", message: { content: '{"status":"ready"}' } },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 5 },
+      });
+    };
+    const run = executeModel(
+      "connection_probe",
+      {},
+      [],
+      [],
+      [],
+      envs,
+      ledger,
+      "en",
+      false,
+      fetcher,
+    );
+    if (scope === "model") {
+      expect(await run).toEqual({ status: "ready" });
+      expect(sent).toEqual(["fixture-model-a", "fixture-model-b"]);
+    } else {
+      await expect(run).rejects.toMatchObject({
+        code: "MODEL_ROUND_EXHAUSTED",
+      });
+      expect(sent).toEqual(["fixture-model-a"]);
+    }
+    const attempts = (
+      await f.db.query<any>(
+        "select model,result_code,provider_error_scope from public.model_attempts where job_id=$1 and sent order by id",
+        [job.id],
+      )
+    ).rows;
+    expect(attempts[0]).toMatchObject({
+      result_code: "PROVIDER_QUOTA_WAIT",
+      provider_error_scope: scope,
+    });
+  },
+);
+
+it.each([
+  "terminal",
+  "terminal-cross-job",
+  "expired",
+  "before-boundary",
+  "active",
+])(
+  "automatic reservation recovery %s preserves receipt and has a fresh call identity",
+  async (state) => {
+    const terminal = state.startsWith("terminal");
+    const { job, ledger, models, connection } = await configure("gemini_free");
+    await ledger.preflight([], "connection_probe");
+    const hash = "c".repeat(64),
+      prefix = `probe:${job.id}:candidate-0`;
+    const reserve = (number: number) =>
+      rpc("reserve_task_model_call", {
+        job_id: job.id,
+        lease: job.lease_token,
+        call_key: `${prefix}:${hash.slice(0, 16)}:${number}:${models[0].id}`,
+        input_hash: hash,
+        input_tokens: 100,
+        output_tokens: 100,
+        manifest: [],
+        target_model: models[0].id,
+        target_connection: connection.id,
+      });
+    const old = await reserve(1);
+    await rpc("checkpoint_model_request", {
+      job_id: job.id,
+      lease: job.lease_token,
+      reservation: old.id,
+      remote_id: "fixture-recovery-remote",
+    });
+    await rpc("settle_model_call", {
+      reservation: old.id,
+      actual_input: null,
+      actual_output: null,
+      thinking: null,
+      error_code: terminal
+        ? "PROVIDER_BACKGROUND_TERMINATED"
+        : "MODEL_NETWORK_UNCERTAIN",
+    });
+    await f.db.query(
+      "update public.provider_usage set created_at=now()-$2::int*interval '1 millisecond',remote_deadline=now()+$3::int*interval '1 millisecond' where id=$1",
+      [
+        old.id,
+        state === "before-boundary" ? 899999 : terminal ? 1000 : 900000,
+        state === "active" || terminal ? 3600000 : 0,
+      ],
+    );
+    if (terminal)
+      await f.db.query(
+        `insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,project_ref,operation,round_number,worker_attempt,status,result_code,usage_id,sent,finish_reason,connection_id,model_config_id)
+ values($1,$2,$3,'gemini_free','fixture-model-a','fixture-account','connection_probe',1,1,'failed','PROVIDER_BACKGROUND_TERMINATED',$4,true,'failed',$5,$6)`,
+        [f.w, job.id, job.lease_token, old.id, connection.id, models[0].id],
+      );
+    if (state === "terminal-cross-job") {
+      const other = (
+        await f.db.query<any>(
+          "insert into public.jobs(workspace_id,type,entity_id,input_hash,created_by,status) values($1,'model_probe',$1,$2,$3,'succeeded') returning id",
+          [f.w, hash, f.owner],
+        )
+      ).rows[0];
+      await f.db.query(
+        "update public.provider_usage set job_id=$2 where id=$1",
+        [old.id, other.id],
+      );
+      await f.db.query(
+        "update public.model_attempts set job_id=$2 where usage_id=$1",
+        [old.id, other.id],
+      );
+    }
+    const before = (
+      await f.db.query<any>("select * from public.provider_usage where id=$1", [
+        old.id,
+      ])
+    ).rows[0];
+    if (terminal || state === "expired") {
+      const next = await reserve(2);
+      expect(next.id).not.toBe(old.id);
+      expect(next.state).toBe("reserved");
+      await expect(reserve(2)).rejects.toMatchObject({
+        code: "MODEL_CALL_ALREADY_RESERVED",
+      });
+      const events = (
+        await f.db.query<any>(
+          "select details from public.audit_events where action='model.usage_recovery' and entity_id=$1",
+          [job.id],
+        )
+      ).rows;
+      expect(events).toHaveLength(1);
+      expect(events[0].details).toMatchObject({
+        operation: "model_reservation",
+        receipts: [
+          { usage_id: old.id, job_id: before.job_id, state: "unknown" },
+        ],
+      });
+    } else
+      await expect(reserve(2)).rejects.toMatchObject({
+        code: "USAGE_REVIEW_REQUIRED",
+      });
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from public.provider_usage where id=$1",
+          [old.id],
+        )
+      ).rows[0],
+    ).toEqual(before);
+  },
+);
+
+it.each(["model", "project"])(
+  "cooldown follows held %s identity after catalog edits and separates the new route",
+  async (scope) => {
+    const { job, models, connection, ledger, envs, backend, route } =
+      await configure();
+    await ledger.preflight([], "connection_probe");
+    const attempt = await rpc("start_task_model_attempt", {
+      job_id: job.id,
+      lease: job.lease_token,
+      target_model: models[0].id,
+      target_connection: connection.id,
+      operation_name: "connection_probe",
+    });
+    await rpc("finish_model_attempt", {
+      attempt_id: attempt,
+      lease: job.lease_token,
+      result_code: "PROVIDER_QUOTA_WAIT",
+      sent: true,
+      usage_id: null,
+      metadata: {
+        http_status: 403,
+        request_phase: "generation",
+        provider_error_reason: "usage_limit",
+        provider_error_scope: scope,
+        retry_after: new Date(Date.now() + 120000).toISOString(),
+      },
+    });
+    if (scope === "model")
+      await f.command("model.configuration.save", {
+        id: models[0].id,
+        connection_id: connection.id,
+        label: "Synthetic future model",
+        model: "future-model",
+        enabled: true,
+        capabilities: defaultCapabilities("groq_free"),
+        expected_revision: models[0].revision,
+      });
+    else {
+      const change = {
+        id: connection.id,
+        provider: "groq_free",
+        label: "Synthetic future project",
+        credential_alias: "APP_MODEL_GROQ_KEY",
+        project_ref: "future-project",
+        enabled: true,
+        expected_revision: connection.revision,
+      };
+      await expect(f.command("model.connection.save", change)).rejects.toThrow(
+        "MODEL_IDENTITY_CHANGED",
+      );
+      const replacement = await f.command("model.connection.save", {
+        ...change,
+        id: undefined,
+        expected_revision: 0,
+      });
+      const nextModel = await f.command("model.configuration.save", {
+        connection_id: replacement.id,
+        label: "Synthetic replacement model",
+        model: "fixture-model-a",
+        enabled: true,
+        capabilities: defaultCapabilities("groq_free"),
+        expected_revision: 0,
+      });
+      await f.command("model.task_route.save", {
+        task: "default",
+        model_ids: [nextModel.id],
+        inherit_default: false,
+        strategy: "priority",
+        profile: null,
+        expected_revision: route.revision,
+      });
+    }
+    const waits = await rpc("task_model_retry_windows", {
+      job_id: job.id,
+      lease: job.lease_token,
+    });
+    expect(new Set(waits.map((w: any) => w.model_config_id))).toEqual(
+      new Set(scope === "model" ? [models[0].id] : models.map((m) => m.id)),
+    );
+    await f.db.query(
+      "update public.jobs set status='succeeded',lease_token=null,lease_until=null where id=$1",
+      [job.id],
+    );
+    await f.command("model.probe", {});
+    const next = await rpc("claim_backend_job_v2");
+    await modelLedger(backend, next, `probe:${next.id}`, envs).preflight(
+      [],
+      "connection_probe",
+    );
+    expect(
+      await rpc("task_model_retry_windows", {
+        job_id: next.id,
+        lease: next.lease_token,
+      }),
+    ).toEqual([]);
+  },
+);
+
+it("retrieving an old accepted request does not clear generation quota cooldown", async () => {
+  const { job, models, connection, ledger } = await configure();
+  await ledger.preflight([], "connection_probe");
+  for (const [phase, code] of [
+    ["generation", "PROVIDER_QUOTA_WAIT"],
+    ["poll", "SUCCEEDED"],
+    ["generation", "PROVIDER_REQUEST_INVALID"],
+  ]) {
+    job.lease_token = crypto.randomUUID();
+    await f.db.query("update public.jobs set lease_token=$2 where id=$1", [
+      job.id,
+      job.lease_token,
+    ]);
+    const attempt = await rpc("start_task_model_attempt", {
+      job_id: job.id,
+      lease: job.lease_token,
+      target_model: models[0].id,
+      target_connection: connection.id,
+      operation_name: "connection_probe",
+    });
+    await rpc("finish_model_attempt", {
+      attempt_id: attempt,
+      lease: job.lease_token,
+      result_code: code,
+      sent: phase === "generation",
+      usage_id: null,
+      metadata: {
+        http_status:
+          code === "PROVIDER_QUOTA_WAIT" ? 403 : phase === "poll" ? 200 : 400,
+        request_phase: phase,
+        ...(code === "PROVIDER_QUOTA_WAIT"
+          ? {
+              provider_error_reason: "usage_limit",
+              provider_error_scope: "account",
+              retry_after: new Date(Date.now() + 120000).toISOString(),
+            }
+          : {}),
+      },
+    });
+  }
+  expect(
+    (
+      await rpc("task_model_retry_windows", {
+        job_id: job.id,
+        lease: job.lease_token,
+      })
+    )
+      .map((w: any) => w.model_config_id)
+      .sort(),
+  ).toEqual(models.map((m) => m.id).sort());
+});
+
+it.each([
+  "credit_balance_exhausted",
+  "insufficient_quota",
+  "model_quota_exceeded",
+  "project_quota_exceeded",
+])(
+  "historical terminal %s gets a scoped cooldown without rewriting old metadata",
+  async (code) => {
+    const { job, models, connection, ledger } = await configure();
+    await ledger.preflight([], "connection_probe");
+    const attempt = await rpc("start_task_model_attempt", {
+      job_id: job.id,
+      lease: job.lease_token,
+      target_model: models[0].id,
+      target_connection: connection.id,
+      operation_name: "connection_probe",
+    });
+    await rpc("finish_model_attempt", {
+      attempt_id: attempt,
+      lease: job.lease_token,
+      result_code: "PROVIDER_REQUEST_REJECTED",
+      sent: false,
+      usage_id: null,
+      metadata: {
+        http_status: 200,
+        request_phase: "poll",
+        finish_reason: "failed",
+        provider_error_code: code,
+      },
+    });
+    const row = (
+      await f.db.query<any>("select * from public.model_attempts where id=$1", [
+        attempt,
+      ])
+    ).rows[0];
+    expect(row.provider_error_scope).toBeNull();
+    expect(row.provider_error_reason).toBeNull();
+    expect(
+      (
+        await rpc("task_model_retry_windows", {
+          job_id: job.id,
+          lease: job.lease_token,
+        })
+      )
+        .map((w: any) => w.model_config_id)
+        .sort(),
+    ).toEqual(
+      (code === "model_quota_exceeded"
+        ? [models[0].id]
+        : models.map((m) => m.id)
+      ).sort(),
+    );
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from public.model_attempts where id=$1",
+          [attempt],
+        )
+      ).rows[0],
+    ).toEqual(row);
+  },
+);

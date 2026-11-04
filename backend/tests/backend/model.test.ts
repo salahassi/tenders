@@ -752,7 +752,7 @@ it("fails over before reservation when a provider token-count endpoint is unreac
 it.each([
   [400, "PROVIDER_REQUEST_INVALID"],
   [401, "PROVIDER_AUTH_FAILED"],
-  [403, "PROVIDER_AUTH_FAILED"],
+  [403, "PROVIDER_REQUEST_REJECTED"],
   [404, "PROVIDER_MODEL_NOT_FOUND"],
   [429, "PROVIDER_QUOTA_WAIT"],
   [503, "MODEL_NETWORK_UNCERTAIN"],

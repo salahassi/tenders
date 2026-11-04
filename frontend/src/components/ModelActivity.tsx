@@ -73,6 +73,8 @@ const rejectionReasons: Record<string, string> = {
   model_access: "Provider reported no access to this model",
   account_rate_restriction: "Provider restricted this account's request rate",
   key_product_mismatch: "Provider reported a key for a different product",
+  authentication_failed: "Provider rejected the connection credentials",
+  permission_denied: "Provider denied permission for this request",
   unspecified_429:
     "Provider rejected the request (429); specific reason unavailable",
   provider_rejected: "Provider rejected the request",

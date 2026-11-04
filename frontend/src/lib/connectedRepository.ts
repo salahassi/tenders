@@ -685,7 +685,7 @@ export class ConnectedRepository {
             : r.status === "retry_wait" && r.error_code === "MODEL_IN_PROGRESS"
               ? "Gemini is processing this request. Its result will be checked automatically."
               : r.error_code === "PROVIDER_QUOTA_WAIT"
-                ? `Provider rejected the request (429). Automatically retries after ${str(r, "next_attempt_at")}. See Model activity for the provider reason.`
+                ? `Provider quota or rate limit. Automatically retries after ${str(r, "next_attempt_at")}. See Model activity for the provider reason.`
                 : r.status === "quota_wait" &&
                     [
                       "MODEL_RATE_WAIT",
@@ -1343,7 +1343,7 @@ function modelRoutingSummary(checkpoint: unknown): string {
     PROVIDER_AUTH_FAILED: "credentials rejected",
     PROVIDER_REQUEST_INVALID: "request rejected",
     PROVIDER_MODEL_NOT_FOUND: "model not found",
-    PROVIDER_QUOTA_WAIT: "provider rejected request (429)",
+    PROVIDER_QUOTA_WAIT: "provider quota or rate limit; retry scheduled",
     MODEL_NETWORK_UNCERTAIN: "connection failed; usage unknown",
     USAGE_REVIEW_REQUIRED: "previous uncertain request retained",
     SUCCEEDED: "completed",

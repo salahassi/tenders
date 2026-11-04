@@ -738,3 +738,97 @@ it("does not expose the private trigger as an executable application operation",
     ).rows,
   ).toEqual([{ anon: false, authenticated: false, service_role: false }]);
 });
+
+it.each([
+  ["terminal-proven", true],
+  ["terminal-unproven", false],
+  ["active-remote", false],
+  ["before-boundary", false],
+  ["at-boundary", true],
+  ["after-boundary", true],
+  ["later-deadline", false],
+  ["at-deadline", true],
+  ["manual-terminal", false],
+] as const)(
+  "retry recovery enforces %s and retains immutable unknown receipt with idempotent lineage",
+  async (condition, allowed) => {
+    const { blocked } = await startWithSiblings();
+    await f.db.query(
+      "update public.jobs set checkpoint=checkpoint||jsonb_build_object('model_routing',jsonb_build_object('mode',$2::text)) where id=$1",
+      [blocked.id, condition === "manual-terminal" ? "manual" : "round_robin"],
+    );
+    const target = await jobRow(blocked.id);
+    const u = await pendingUsage(target, "unknown");
+    const terminal = condition.includes("terminal");
+    await f.db.query(
+      `update public.provider_usage set error_code=$2,created_at=now()-$3::int*interval '1 millisecond',
+ remote_request_id=case when $4::boolean then remote_request_id else null end,
+ remote_deadline=case when $4::boolean then now()+$5::int*interval '1 millisecond' else null end where id=$1`,
+      [
+        u.id,
+        terminal ? "PROVIDER_BACKGROUND_TERMINATED" : "MODEL_NETWORK_UNCERTAIN",
+        condition === "before-boundary"
+          ? 899999
+          : condition === "at-boundary"
+            ? 900000
+            : condition === "after-boundary"
+              ? 900001
+              : terminal
+                ? 1000
+                : 1200000,
+        terminal ||
+          condition.includes("deadline") ||
+          condition === "active-remote",
+        condition === "at-deadline" ? 0 : 1200000,
+      ],
+    );
+    if (terminal && condition !== "terminal-unproven")
+      await f.db.query(
+        `insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,project_ref,operation,round_number,worker_attempt,status,result_code,usage_id,sent,finish_reason)
+ values($1,$2,$3,'openai','fixture-model','fixture-project','analyze_chunk',1,1,'failed','PROVIDER_BACKGROUND_TERMINATED',$4,true,'failed')`,
+        [f.w, target.id, u.lease_token, u.id],
+      );
+    const receipt = (
+      await f.db.query<any>("select * from public.provider_usage where id=$1", [
+        u.id,
+      ])
+    ).rows[0];
+    const body = {
+        id: target.id,
+        expected_revision: target.revision,
+        action: "retry",
+        reason: "Synthetic policy-bound recovery",
+      },
+      key = crypto.randomUUID();
+    if (allowed) {
+      const result = await f.command("job.action", body, key);
+      expect(result).toMatchObject({ id: target.id, status: "queued" });
+      expect(await f.command("job.action", body, key)).toEqual(result);
+      const events = (
+        await f.db.query<any>(
+          "select details from public.audit_events where entity_id=$1 and action='model.usage_recovery'",
+          [target.id],
+        )
+      ).rows;
+      expect(events).toHaveLength(1);
+      expect(events[0].details).toMatchObject({
+        operation: "job_retry",
+        receipts: [{ usage_id: u.id, state: "unknown" }],
+        candidate_allowances_unchanged: true,
+      });
+    } else {
+      await expect(f.command("job.action", body, key)).rejects.toThrow(
+        "USAGE_REVIEW_REQUIRED",
+      );
+      expect(await jobRow(target.id)).toEqual(target);
+    }
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from public.provider_usage where id=$1",
+          [u.id],
+        )
+      ).rows[0],
+    ).toEqual(receipt);
+  },
+);

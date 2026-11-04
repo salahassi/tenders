@@ -1,3 +1,8 @@
+import {
+  providerFailure,
+  providerFailureAffects,
+  type ProviderFailureScope,
+} from "./modelProviderErrors.ts";
 import { blockedContent, contentPolicyCategories } from "./contentPolicy.ts";
 export { blockedContent } from "./contentPolicy.ts";
 import {
@@ -715,6 +720,7 @@ export type AttemptMetadata = {
   provider_error_code?: string;
   provider_error_type?: string;
   provider_error_reason?: string;
+  provider_error_scope?: ProviderFailureScope;
 };
 export type ModelRoundProgress = {
   input_hash: string;
@@ -1084,7 +1090,11 @@ export class FreeModelProvider {
           zaiReasons[this.telemetry.provider_error_code || ""]) ||
         reasons.find(([, pattern]) =>
           pattern.test(
-            message + " " + (this.telemetry.provider_error_type || ""),
+            message +
+              " " +
+              (this.telemetry.provider_error_type || "") +
+              " " +
+              (this.telemetry.provider_error_code || ""),
           ),
         )?.[0] ||
         (response.status === 429 ? "unspecified_429" : "provider_rejected");
@@ -1130,6 +1140,18 @@ export class FreeModelProvider {
         })
       )
         this.telemetry.provider_error_reason = "reasoning_unsupported";
+      const failure = providerFailure({
+        status: response.status,
+        method: this.telemetry.request_phase === "poll" ? "GET" : "POST",
+        reason: this.telemetry.provider_error_reason,
+        code: this.telemetry.provider_error_code,
+        type: this.telemetry.provider_error_type,
+        error: structuredError,
+        model: this.env.model,
+        project: this.env.projectRef,
+      });
+      this.telemetry.provider_error_reason = failure.reason;
+      this.telemetry.provider_error_scope = failure.scope;
       const labels: Record<string, RegExp> = {
         interactions: /interactions/i,
         background: /background/i,
@@ -1255,21 +1277,15 @@ export class FreeModelProvider {
               ? new Date(raw).toISOString()
               : null;
         throw new ModelError(
-          this.telemetry.provider_error_reason === "background_retrieval_failed"
-            ? "PROVIDER_BACKGROUND_RETRIEVAL_FAILED"
-            : response.status === 429
-              ? "PROVIDER_QUOTA_WAIT"
-              : response.status === 401 || response.status === 403
-                ? "PROVIDER_AUTH_FAILED"
-                : response.status === 404
-                  ? method === "GET"
-                    ? "MODEL_RESULT_EXPIRED"
-                    : "PROVIDER_MODEL_NOT_FOUND"
-                  : response.status === 400 || response.status === 422
-                    ? "PROVIDER_REQUEST_INVALID"
-                    : response.status >= 500
-                      ? "MODEL_NETWORK_UNCERTAIN"
-                      : "PROVIDER_REQUEST_REJECTED",
+          providerFailure({
+            status: response.status,
+            method,
+            reason: this.telemetry.provider_error_reason,
+            code: this.telemetry.provider_error_code,
+            type: this.telemetry.provider_error_type,
+            model: this.env.model,
+            project: this.env.projectRef,
+          }).code,
           after,
         );
       }
@@ -1328,6 +1344,19 @@ export class FreeModelProvider {
         this.telemetry.provider_error_type = this.diagnosticIdentifier(
           result.error.type,
         );
+        const failure = providerFailure({
+          status: response.status,
+          method,
+          code: this.telemetry.provider_error_code,
+          type: this.telemetry.provider_error_type,
+          error: result.error,
+          model: this.env.model,
+          project: this.env.projectRef || "",
+        });
+        if (failure.code === "PROVIDER_QUOTA_WAIT") {
+          this.telemetry.provider_error_reason = failure.reason;
+          this.telemetry.provider_error_scope = failure.scope;
+        }
       }
       return result;
     } catch (error) {
@@ -1644,7 +1673,12 @@ export async function executeModel(
     ? new ModelError(savedRound.output_error)
     : null;
   const retryWindows: (string | null)[] = savedRound?.retry_windows ?? [];
-  const accountWaits = new Map<string, string | null>();
+  const accountWaits: {
+    target: ModelConfiguration;
+    scope: ProviderFailureScope;
+    until: string | null;
+    code: string;
+  }[] = [];
   let roundSaved = Boolean(savedRound),
     deferred = false;
   const checkpointRound = async (index: number, releaseJob: boolean) => {
@@ -1858,12 +1892,11 @@ export async function executeModel(
               pending.execution_metadata.route_revision ?? null;
         }
         await ledger.requestPrepared?.(request);
-        const accountKey = `${config.provider}:${config.project_ref}`;
-        if (!pending && config.connection_id && accountWaits.has(accountKey))
-          throw new ModelError(
-            "PROVIDER_QUOTA_WAIT",
-            accountWaits.get(accountKey),
-          );
+        const scopedWait = accountWaits.find((wait) =>
+          providerFailureAffects(wait.target, config, wait.scope),
+        );
+        if (!pending && scopedWait)
+          throw new ModelError(scopedWait.code, scopedWait.until);
         // A generation cooldown must not prevent polling an already accepted request.
         if (
           !pending &&
@@ -2091,11 +2124,33 @@ export async function executeModel(
             code,
           );
         lastError = error instanceof ModelError ? error : new ModelError(code);
-        if (config.connection_id && provider.telemetry.http_status === 429)
-          accountWaits.set(
-            `${config.provider}:${config.project_ref}`,
-            lastError.retryAfter,
-          );
+        const cooldownCode =
+          code === "PROVIDER_REQUEST_REJECTED" &&
+          ["failed", "cancelled", "canceled"].includes(
+            provider.telemetry.finish_reason || "",
+          )
+            ? providerFailure({
+                status: provider.telemetry.http_status || 200,
+                method: "GET",
+                code: provider.telemetry.provider_error_code,
+                type: provider.telemetry.provider_error_type,
+                reason: provider.telemetry.provider_error_reason,
+                model: config.model,
+                project: config.project_ref,
+              }).code
+            : code;
+        if (
+          ["PROVIDER_QUOTA_WAIT", "PROVIDER_AUTH_FAILED"].includes(
+            cooldownCode,
+          ) &&
+          provider.telemetry.http_status
+        )
+          accountWaits.push({
+            target: config,
+            scope: provider.telemetry.provider_error_scope || "unknown",
+            until: lastError.retryAfter,
+            code: cooldownCode,
+          });
         retryWindows.push(lastError.retryAfter);
         await finishAttempt(code, lastError.retryAfter);
         if (error instanceof ModelCandidateRepair) {

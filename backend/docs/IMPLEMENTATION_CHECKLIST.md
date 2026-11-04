@@ -5521,3 +5521,82 @@ Existing input/context gates still apply, and capacity qualification remains ope
 Local payload visibility and canonical scope gates do not establish that
 a model will always judge a typed field correctly. The full ME-08 acceptance
 matrix, W05/W06 and T01/T02/T09/T19 therefore remain open.
+## November 4 — W07 provider classification and guarded automatic recovery (local)
+
+**Implementation:** F10 classification and the narrow F08 retry/handoff conflict
+are implemented locally in two additive CLI-created migrations and the adapter.
+This is not closure of every W07 historical recovery variant or the proposal
+artifact delivery workstream. Nothing in this change was pushed or deployed.
+The November 3 permanent-reconciliation limitation above describes the old
+runtime; the new canonical automatic path below retains unknown accounting while
+releasing only proven terminal or policy-expired execution.
+
+Provider status, bounded error code and reason now distinguish quota/balance,
+credentials, denied permission, unavailable model, invalid request and uncertain
+transport. HTTP 403 alone no longer means bad credentials. HTTP 200 terminal
+background errors retain their lifecycle marker while recording a separate
+quota reason and scope. No raw provider message is added to telemetry. Scope is
+stored on the attempt and drives both in-round and persisted cooldowns. Proven
+model scope leaves a healthy sibling eligible; connection/project/account and
+unknown scopes are conservatively shared. Frozen route identities survive
+later model edits. Successful GET retrieval and later invalid requests cannot
+clear a generation quota window; a successful generation can. Explicit
+Retry-After and the existing bounded backoff remain effective. No billing,
+credential, free-only setting, or provider limit is changed.
+
+The private automatic recovery predicate replaces only the reviewed permanent
+holds in per-job retry, writer-validation handoff and canonical reservation.
+Reserved calls and active/ambiguous same-target execution remain blocked. A
+terminal exception requires an exact linked failed attempt, matching target
+identity and terminal finish reason; historical generic request rejection also
+requires the exact remote response ID. Otherwise both the 15-minute boundary and
+remote deadline must have elapsed. Null or incomplete evidence fails closed.
+Every permitted recovery records immutable receipt lineage before transition or
+reservation, including the originating job for cross-job input matches. It does
+not settle, delete or zero usage, increase correction allowance, repin old
+requests, or waive current source/provenance/lease/authorization checks.
+
+ME-11 local recovery coverage is explicit:
+
+| Execution state | Local assertion and evidence |
+| --- | --- |
+| Valid automatic candidate with null usage | Existing `roundRobin` canonical completion remains accepted with null usage and no token-count endpoint. |
+| Accepted active remote request | Existing continuation tests keep the remote identity and GET; new handoff/retry/reservation cases reject fresh recovery. |
+| Ambiguous before boundary or later remote deadline | Immediately-before boundary and unexpired deadline cases refuse recovery without changing receipt, candidate or budget. |
+| Ambiguous at/after boundary and deadline | Exact at/after tests allow canonical retry/handoff/reservation, with fresh call identity and unchanged unknown receipt. |
+| Proven terminal unknown plus retained alternate candidate | Handoff and actual adapter failover tests preserve candidate/provenance and unknown ledger; tag-only, null-code and mismatched response fail closed. |
+| Unrelated old unknown receipt | Existing phase isolation permits independent authorized work; cross-job same-input recovery records the actual prior job/receipt. |
+| Exhausted correction allowance | Handoff/retry never replenishes writer budget; candidate-budget RPC still refuses an extra correction. Artifact assembly is a separate workstream. |
+| Manual route | Manual terminal-unknown retry/handoff remains refused; legacy manual reservation policy is unchanged. |
+
+**Tests:** focused policy/provider suites passed 252 tests before the full legacy
+outage compatibility pass. Real PostgreSQL 17.6 multi-session checks passed three
+races: same retry idempotency key, different keys against the same revision, and
+active remote refusal. The harness observed both contenders waiting on the real
+workspace lock before release. Allowed recovery had one job transition, one
+recovery audit and one action audit; stale revision lost; active remote produced
+none. Original unknown receipt and an exhausted writer allowance of three were
+identical afterward. The reusable test is
+`scripts/testing/provider_recovery_races.py`, using the shared
+`scripts/testing/postgres_races.py` harness. Its receipt records image and all
+migration hashes. Handoff replay/guard coverage is local fully migrated PGlite;
+this change does not claim a separate real-PostgreSQL handoff race or live model
+acceptance. Final package gate counts are recorded below after completion.
+
+**Deployment / hosted acceptance:** not deployed; no production/model/billing
+calls. Both account and unknown scope currently cool all same-provider targets
+in the workspace because the catalog has no trustworthy provider-account ID.
+This can conservatively delay genuinely independent accounts; narrowing it
+requires explicit account identity, not an inferred connection boundary.
+Historical rows are not rewritten, and production replay/selected recovery,
+full historical successor coverage, hosted artifacts and model qualification
+remain separate acceptance work.
+
+Final local package gates for this W07 change: backend **1,904/1,904 tests**
+across 111 files, frontend **269/269 tests** across 40 files, and both packages'
+`typecheck` and `build` passed. The final historical quota regression covers
+code-only terminal attempts with null reason/scope; read-time classification
+preserves those old rows. Final real PostgreSQL race rerun passed **3/3** against
+the final migration hashes. Provider transport is mocked in these suites; the
+PostgreSQL container has no network or published ports. Frontend checks are
+jsdom/build evidence, not browser visual or hosted artifact acceptance.
