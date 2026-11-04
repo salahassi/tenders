@@ -19,12 +19,20 @@
   align-content: start;
   gap: 0.75rem;
 }
-.extraction-review iframe {
+.extraction-review canvas {
   display: block;
   width: 100%;
-  height: 30rem;
+  height: auto;
   border: 1px solid var(--border, #ddd);
   border-radius: 0.5rem;
+}
+.extraction-review canvas[hidden] {
+  display: none;
+}
+.extraction-original-scroll {
+  overflow: auto;
+  max-height: 42rem;
+  min-width: 0;
 }
 .extraction-review textarea {
   width: 100%;

@@ -6620,3 +6620,25 @@ The deployment already mounts native `/tmp` as a bounded 1 GiB writable
 `emptyDir`; local native reruns use an explicit tmpfs to avoid the measured
 shared build-host overlay exhaustion. This is a resource failure, not an
 Arabic recognition result. The rebuilt r2 image identity is recorded above.
+
+### 2026-11-04 — Actual browser original-page rendering correction
+
+Real Chromium visual inspection found that the browser's embedded PDF plugin could
+show a blank dark region even though the original bytes were verified. Replaced
+that dependency with the existing PDF.js renderer, bounded page dimensions/time,
+page zoom and keyboard-scroll access. Review confirmation is disabled until the
+selected original page has actually rendered. Failed/stalled rendering and stale
+page completions cannot authorize a confirmation; changing the document destroys
+its worker and revokes preview URLs. Oversized images are not silently omitted by
+a maxImageSize cutoff. The signed original is still hash-verified before rendering.
+
+Twelve focused component tests pass, including pending render, decode failure,
+late prior-page completion and a stalled 30-second render. Frontend typecheck
+passes. The repeatable isolated browser harness is
+`scripts/testing/documentExtractionReview.browser.mjs`; it runs the real component
+and an actual raster PDF without product routes or production data. Four Chromium
+checks passed in Arabic/English at 390/1440px: original pixels painted, no horizontal
+document overflow or browser errors, explicit confirmation and save. Arabic mobile
+and English desktop screenshots were visually inspected. Receipt hashes are in
+`evidence/document-extraction-review-browser-20261104.json`. This is browser fixture
+acceptance, not a live user's upload or hosted authenticated acceptance.

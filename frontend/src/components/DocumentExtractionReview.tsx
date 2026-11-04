@@ -6,6 +6,7 @@ import {
   type DocumentExtractionReviewData,
 } from "../lib/backendClient";
 import { Button, Field } from "./ui";
+import VerifiedPdfPage from "./VerifiedPdfPage";
 import "./DocumentExtractionReview.css";
 
 type PageEdit = { text: string; reviewed: boolean; blank: boolean };
@@ -63,6 +64,8 @@ export default function DocumentExtractionReview({
   const [edits, setEdits] = useState<Record<number, PageEdit>>({});
   const [page, setPage] = useState(1);
   const [preview, setPreview] = useState("");
+  const [pdfBytes, setPdfBytes] = useState<ArrayBuffer | null>(null);
+  const [renderedPage, setRenderedPage] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -79,6 +82,8 @@ export default function DocumentExtractionReview({
     setData(null);
     setEdits({});
     setPreview("");
+    setPdfBytes(null);
+    setRenderedPage(null);
     setError("");
     setNotice("");
     setBusy(false);
@@ -155,6 +160,7 @@ export default function DocumentExtractionReview({
           new Blob([bytes], { type: "application/pdf" }),
         );
         setPreview(objectUrl);
+        setPdfBytes(bytes);
       } catch (failure) {
         if (!controller.signal.aborted)
           setError(
@@ -374,15 +380,17 @@ export default function DocumentExtractionReview({
           </Field>
           <div className="extraction-review-grid">
             <div>
-              {preview ? (
+              {preview && pdfBytes ? (
                 <>
-                  <iframe
+                  <VerifiedPdfPage
                     title={l(
                       `Original PDF page ${page}`,
                       `أصل الملف، الصفحة ${page}`,
                     )}
-                    src={`${preview}#page=${page}`}
-                    referrerPolicy="no-referrer"
+                    bytes={pdfBytes}
+                    page={page}
+                    language={language}
+                    onReady={setRenderedPage}
                   />
                   <a
                     href={`${preview}#page=${page}`}
@@ -431,7 +439,9 @@ export default function DocumentExtractionReview({
                     <input
                       type="checkbox"
                       checked={edit.blank}
-                      disabled={!canEdit || !preview || busy}
+                      disabled={
+                        !canEdit || !preview || renderedPage !== page || busy
+                      }
                       onChange={(e) =>
                         change({ blank: e.target.checked, reviewed: false })
                       }
@@ -449,6 +459,7 @@ export default function DocumentExtractionReview({
                     disabled={
                       !canEdit ||
                       !preview ||
+                      renderedPage !== page ||
                       busy ||
                       (!edit.text.trim() && !edit.blank)
                     }

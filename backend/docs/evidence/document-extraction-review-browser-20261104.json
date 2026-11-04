@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "synthetic_only": true,
+  "hosted_acceptance": false,
+  "browser": "actual system Chromium via Playwright",
+  "original_pdf_sha256": "70cb0b2e615d8c9880ab414a87c7eadc7bc6129268e203010006e74be844331b",
+  "source_hash_verified_before_render": true,
+  "canvas_pixels_checked": true,
+  "screenshots_visually_inspected": [
+    "ar-390",
+    "en-1440"
+  ],
+  "checks": [
+    {
+      "lang": "ar",
+      "width": 390,
+      "overflow": false,
+      "errors": [],
+      "source_hash_verified": true,
+      "explicit_review_save": true,
+      "screenshot_sha256": "c8c1a82d93a18eb714b25bd986f26944e42b1b84cd2f1b4dd2b3c82596e3f031"
+    },
+    {
+      "lang": "ar",
+      "width": 1440,
+      "overflow": false,
+      "errors": [],
+      "source_hash_verified": true,
+      "explicit_review_save": true,
+      "screenshot_sha256": "e3f43b2747e20bc44cbef7e225efeb318ffa2ed511d2c003a058f9c95acb0bf3"
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "overflow": false,
+      "errors": [],
+      "source_hash_verified": true,
+      "explicit_review_save": true,
+      "screenshot_sha256": "ca090830d2b50616166ef07c9268e861722da305141caac3edac6a3f588ea338"
+    },
+    {
+      "lang": "en",
+      "width": 1440,
+      "overflow": false,
+      "errors": [],
+      "source_hash_verified": true,
+      "explicit_review_save": true,
+      "screenshot_sha256": "54893ff7029852a750b0018b1daff9a2345f138a4e6597b05501ddbac2d1f03a"
+    }
+  ]
+}

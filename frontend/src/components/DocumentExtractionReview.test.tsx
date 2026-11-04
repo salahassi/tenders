@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { useEffect } from "react";
 import {
   act,
   cleanup,
@@ -9,6 +10,20 @@ import {
 } from "@testing-library/react";
 import { createHash, webcrypto } from "node:crypto";
 import DocumentExtractionReview from "./DocumentExtractionReview";
+vi.mock("./VerifiedPdfPage", () => ({
+  default: ({
+    page,
+    title,
+    onReady,
+  }: {
+    page: number;
+    title: string;
+    onReady: (page: number) => void;
+  }) => {
+    useEffect(() => onReady(page), [page, onReady]);
+    return <canvas title={title} />;
+  },
+}));
 import {
   BackendRequestError,
   type BackendClient,
