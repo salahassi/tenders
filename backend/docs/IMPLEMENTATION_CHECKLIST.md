@@ -10005,3 +10005,27 @@ authorized private independently reviewed holdout. Prior live critical findings 
 G09's seven measured retrieval misses remain unchanged. Full combined application
 checks belong to the separate integration gate; this scoped tooling check does not
 repeat or replace them.
+
+### November 4 — reconcile remaining actions and R0 evidence at 256c50e
+
+Refreshed [remaining actions](RELIABILITY_REMAINING_GATES.md), their machine
+matrix and the [R0 index](evidence/reliability-r0-index-20261104.json) against
+tracked source 256c50e. Historical receipt hashes remain unchanged. Added the
+frontend 380/59 pass, API/client admission and identity evidence, complete
+structured-body persistence, real REST 100-command chunks, warm-two/fresh-one
+native downloads, same-artifact reviewed DOCX red/green, hosted zero legacy
+census, pinned gateway routing and rejected OCR tuning. Native document results
+retain their synthetic upstream scope and narrow 10.88 MiB minimum margin.
+
+The manifest file still contains 22 migrations while source contains 24; refreeze
+and a renewed exact 24-migration cloud restore remain pending. The final release
+guards/coordinator, queued db52ae9/d15cbe7, actual API batch memory, deployment
+and hosted acceptance are not credited as complete. Current full application
+checks were running at this anchor, with the reported unconsumed-response
+direct-handler test failure awaiting correction; no final full-green claim is
+made. The new pre-output model reserve is in review, not blind qualification.
+
+This change updates documents only. Static validation confirms every indexed
+receipt exists and its SHA256 matches, all historical index rows/hashes remain,
+the nine action IDs are unique and all action evidence references resolve.
+No application, native, provider or production test was run by this refresh.

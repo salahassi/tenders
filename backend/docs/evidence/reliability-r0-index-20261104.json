@@ -1,9 +1,9 @@
 {
-  "version": 2,
+  "version": 3,
   "status": "draft_not_release_acceptance",
-  "generated_at_utc": "2026-11-04T21:00:41.459413+00:00",
+  "generated_at_utc": "2026-11-04T22:16:15.009654+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
-  "observed_root_commit": "a6676866ea3247b85c1bfde7e140655ce126e444",
+  "observed_root_commit": "256c50e0deaba7f38e6985a58259e5a108742c60",
   "scope": "Public receipt discovery index for current remaining actions; no tests or external calls performed by this audit.",
   "r0_reference": "backend/docs/RELIABLE_PROPOSAL_ACCEPTANCE.md:83",
   "r0_completeness": "This index is not a per-case R0 completion certificate. Linked receipts retain their own source/fixture/image/migration/clock/policy bindings. Missing applicable R0 evidence remains unproven.",
@@ -40,6 +40,27 @@
           "level": "L1",
           "observed_result": "Both lockfile installations; frontend 359 tests/57 files, typecheck and build passed.",
           "limits": "Source-specific frontend proof, not hosted behavior or final backend proof."
+        },
+        {
+          "path": "backend/docs/evidence/frontend-admission-checks-20261104.json",
+          "sha256": "021385945ea53a809899dc112c3d12b3c706b8b8e035c07fb3ab02fdc7957529",
+          "level": "L1",
+          "observed_result": "At c5b991e, frontend 380 tests/59 files, types and build passed; recorded sources unchanged during checks. Includes integrated heavy-request FIFO, complete paging and logical list/load identity guards.",
+          "limits": "Later source and the complete current application require new combined checks; no hosted browser or backend final-green claim."
+        },
+        {
+          "path": "backend/docs/evidence/api-heavy-file-admission-20261104.json",
+          "sha256": "0235f0848771701e23a9347b59d53ecd9b6675f7c171ab9a4f126295e5cb4f63",
+          "level": "L1/L2",
+          "observed_result": "Early authenticated heavy admission rejects before full allocation; response EOF/cancel ownership, complete one-record pages and shared routing classifier have114 focused plus31 migrated integration cases.",
+          "limits": "Actual handler with synthetic Auth/RPC/Storage; its initially streamed aggregate dependency was subsequently replaced by the indexed bounded-chunk protocol. Not current complete-suite or native batch-capacity proof."
+        },
+        {
+          "path": "backend/docs/evidence/section-body-persistence-20261104.json",
+          "sha256": "99e4adf05d976db025b017f3a8a559f2d2944c78e53de1c3eb0797193684b7c1",
+          "level": "L1/L2",
+          "observed_result": "Four initial generation/adoption failures reproduced; seven migrated SQL/API/assembly/export cases pass with complete structured bodies and retained late-policy checks.",
+          "limits": "Generation1MiB and authoring2MiB input limits unchanged; compressed stored size is distinct from serialized size. Synthetic review records are not human semantic approval; native projections indexed separately."
         }
       ]
     },
@@ -87,6 +108,55 @@
           "level": "L3 actual image candidate",
           "observed_result": "Seven canonical verifier fixture families repeated twice passed in 384 MiB parent; peak402587648/402653184 bytes.",
           "limits": "Direct asynchronous verifier, not full API route/Storage/context allocations. Minimal measured headroom; broader valid near 10 MiB models, response/burst behavior and final child configuration remain unqualified."
+        },
+        {
+          "path": "backend/docs/evidence/native-api-handler-scope-adjudication-20261104.json",
+          "sha256": "983d477003e204918ea9b31eca2fc724ae2569779b57885013648e7f88d7b4ec",
+          "level": "L3 scoped adjudication",
+          "observed_result": "Preserves early handler success, corrected-probe OOM and later lifetime-fix evidence; current candidate passed two warm downloads and one fresh download at384MiB/700m. Minimum observed margin11411456bytes (10.88 MiB).",
+          "limits": "Actual handler/native verification with emulated Auth/RPC/file-backed Storage. No actual upstream PostgREST/gateway, production SLO or universal admitted-capacity claim."
+        },
+        {
+          "path": "backend/docs/evidence/native-api-owned-snapshot-steady-20261104.json",
+          "sha256": "56592aaa7951d1b2b144a88ed991f93b51745d0338ca19b7b57e53c83c9126be",
+          "level": "L3 actual native handler",
+          "observed_result": "Two consecutive8,166,765-byte downloads preserve exact hash and final authorization; burst/slow-consumer requests reject before context/storage; corrected heavy EOF/cancel reacquisition passes. Peak387506176/402653184bytes.",
+          "limits": "One frozen admitted dense fixture, one long-lived parent, synthetic transport; not the full API batch or arbitrary mixed workload."
+        },
+        {
+          "path": "backend/docs/evidence/native-api-owned-snapshot-fresh-20261104.json",
+          "sha256": "2d944815772dc9c677346a09c958baa7ca8a33517cc25e47e352004693a73154",
+          "level": "L3 actual native handler",
+          "observed_result": "Fresh parent repeats the same admitted8,166,765-byte download successfully with heavy cancel/reacquisition. Peak391241728/402653184bytes leaves10.88 MiB.",
+          "limits": "Same frozen fixture; no general concurrency/capacity or hosted timing guarantee."
+        },
+        {
+          "path": "backend/docs/evidence/native-api-repeat-oom-20261104.json",
+          "sha256": "418c7f6eff453a3cc0f00b77caf779de50d724470f601f2f5f87d7ae74ec77f0",
+          "level": "L3 historical failure",
+          "observed_result": "Corrected cancellation-probe rerun of the earlier immutable image failed with DELIVERY_RENDER_FAILED and cgroup OOM before reaching cancellation.",
+          "limits": "Historical failure retained; the later owned-snapshot lifetime fix has separate source/image receipts."
+        },
+        {
+          "path": "backend/docs/evidence/reviewed-docx-upload-envelope-20261104.json",
+          "sha256": "6125bd9777940f373b205779530d6b812592ba75e498251756598a5af0f87951",
+          "level": "L1 actual handler red and focused correction",
+          "observed_result": "A valid3,177,596-byte ordinary DOCX with298MiB expanded XML hit original-upload FILE_CONTENT_MISMATCH before canonical verification. Narrow DOCX envelope fix passed12 focused tests; original RFP/PDF controls retained.",
+          "limits": "This receipt itself precedes the large native green; its pending statement is resolved only at the separately indexed same-artifact native scope."
+        },
+        {
+          "path": "backend/docs/evidence/native-reviewed-docx-handler-20261104.json",
+          "sha256": "e3b91fc1c4da28ae921908ef64ac2948991fceb3408f3279440a5cb96a2c711f",
+          "level": "L3 actual native reviewed-upload handler",
+          "observed_result": "Same artifact1bee8e23…547d25d passes native canonical verification and one completion RPC with HTTP200 in30.996s; peak367247360/402653184bytes.",
+          "limits": "Synthetic ordinary-2 server pin/Auth/RPC/Storage, no real approval or production completion; no actual upstream/gateway."
+        },
+        {
+          "path": "backend/docs/evidence/native-ordinary-body-20261104.json",
+          "sha256": "75c4fb876bea51150554575f84a7e853b9ae28c9be3b2088d4def49d76cba45e",
+          "level": "L3 actual native projection",
+          "observed_result": "Three actual saved ordinary request projections rendered and canonical-verified under current worker policy2 at640MiB/1CPU.",
+          "limits": "Saved requests are synthetic; legacy projections were matched before reprojection. Not proof of every producer shape or hosted export."
         }
       ]
     },
@@ -161,6 +231,20 @@
           "level": "L3",
           "observed_result": "14 pinned-binary cases and 38 normalized gateway route cases passed.",
           "limits": "Direct signed TUS still bypasses the Storage metadata fence; exact qualified gateway denial and private ingress are necessary. No production rollout or retirement."
+        },
+        {
+          "path": "backend/docs/evidence/legacy-batch-gateway-regex-regression-20261104.json",
+          "sha256": "e0484b75ec3a39d3a2ec4f58506d70234067f142b7b47a5eead9134aec66423a",
+          "level": "L3 actual pinned Nginx failure",
+          "observed_result": "First new guard rejected valid app_batch_prepare because its ambiguous-path character class was over-escaped; the failed native control and cleanup are retained.",
+          "limits": "Synthetic recording upstream; this failed candidate was corrected before qualification and never deployed."
+        },
+        {
+          "path": "backend/docs/evidence/legacy-batch-gateway-20261104.json",
+          "sha256": "089b024a09e3306fe0fe95e7d5ef213469e57eaaff8ca09466723c7b34ca7711",
+          "level": "L3 actual pinned Nginx",
+          "observed_result": "Combined guard passes560 legacy method/path cases,76 existing TUS checks and24 ordinary-route controls on8080/8081; denied requests never reached the recording upstream, and restart retained denial.",
+          "limits": "Routing proof only, no database-drain or business operation. Historical physical/TUS receipt remains bound through exact prior config; same-namespace direct REST requires SQL backstop. Deployment pending."
         }
       ]
     },
@@ -263,6 +347,20 @@
           "level": "Hosted read-only",
           "observed_result": "Read-only model binding audit passed; existing OpenAI/QwenCloud credentials, no Gemini key.",
           "limits": "Credential presence is not provider availability or semantic correctness."
+        },
+        {
+          "path": "backend/docs/evidence/digitalocean-capacity-20261104-41916625820.json",
+          "sha256": "60d3d093751726fc48da6c4575471ca3ff8065b917503b6a3130b37b5b5b6d0f",
+          "level": "Hosted read-only",
+          "observed_result": "Original-CA inventory observes API384MiB/700m, worker640MiB/1CPU and REST128MiB/500m in Deployment/ready-Pod specs; one managed database node and safe SQL defaults retained; cleanup passed.",
+          "limits": "Observed specs are not cgroup measurements. Managed RAM/vCPU remain unknown; size slug is not hardware inference. Observer SQL settings are not REST transaction-effective settings."
+        },
+        {
+          "path": "backend/docs/evidence/digitalocean-legacy-batch-20261104-41919585078.json",
+          "sha256": "8418cad8a6ce05e804c9fd5ba87c4906d29825b9ae30fc6d0b62e0068a662be0",
+          "level": "Hosted read-only",
+          "observed_result": "At21:49:50 UTC, exact legacy BATCH/commands census was total0/active0/expired0 with no result expansion; original CA and both cleanup stages passed.",
+          "limits": "Point-in-time observation only. Does not replace admission fence, DB transaction drain, pre-snapshot lock and fresh zero check at cutover; compressed size is not logical capacity."
         }
       ]
     },
@@ -334,6 +432,27 @@
           "level": "L3",
           "observed_result": "Native Arabic gold text lost/changed obligations despite confidence 82; automatic Arabic semantic acceptance false.",
           "limits": "Human page and blank review remain required. A valid scanned input is not an invalid RFP because extraction failed."
+        },
+        {
+          "path": "backend/docs/evidence/uploaded-ocr-adjudication-20261104.json",
+          "sha256": "2e13e25fff170ea9dee69d22e3c44545dca5748a00540ec602483d100d6d9b3c",
+          "level": "L3 diagnostic plus explicit adjudication",
+          "observed_result": "Eighteen predeclared configurations were measured; the one original-page candidate was rejected after independent Arabic/mixed-identifier and English controls. Recognition defaults unchanged and mandatory page review retained.",
+          "limits": "Post-outcome diagnostic tuning is not independent automatic success. Both baseline and candidate fail independent Arabic whole-page gold; automatic Arabic acceptance remains false."
+        },
+        {
+          "path": "backend/docs/evidence/uploaded-ocr-parameter-matrix-20261104.json",
+          "sha256": "f1425401cb19e26f4435cad4bd860178466922132288496e3bb78a87374aede7",
+          "level": "L3 diagnostic",
+          "observed_result": "Exact frozen Arabic scan measured across18 predeclared language/scale/layout combinations; original raw outcomes retained.",
+          "limits": "Diagnostic selection set, not holdout acceptance. Confidence is not semantic correctness."
+        },
+        {
+          "path": "backend/docs/evidence/uploaded-ocr-independent-holdouts-20261104.json",
+          "sha256": "9ceccf01f52e2d60a3ce1ff8bc968b187e69d564917aa0e098ff3b50d453fa2c",
+          "level": "L3 independent synthetic controls",
+          "observed_result": "Single selected candidate evaluated without further tuning against independently frozen Arabic/mixed identifiers and the unchanged English control.",
+          "limits": "Candidate damages mixed identifiers and the prior English pass; not adopted. Full source-bound adjudication is indexed separately."
         }
       ]
     },
@@ -354,18 +473,80 @@
           "limits": "Synthetic storage receipts; no measured native throughput or hosted600-second service proof; one case relaxes singleton uniqueness only inside its explicit-workspace test fixture."
         }
       ]
+    },
+    {
+      "id": "E13",
+      "subject": "Bounded atomic command transport and legacy cutover",
+      "plan": [
+        "W04",
+        "W09",
+        "W11",
+        "D04"
+      ],
+      "receipts": [
+        {
+          "path": "backend/docs/evidence/upstream-batch-capacity-20261104.json",
+          "sha256": "97a1a305552afc901ef1dd78363520952e24b78c7f55a716e6c4964b66bf7276",
+          "level": "L3 historical actual upstream failure",
+          "observed_result": "Old aggregate response path failed the ten-command fixture at declared PostgREST128MiB/500m with OOM; earlier one-command case completed.",
+          "limits": "Local PostgreSQL/PostgREST fixture, no API streaming or managed hardware qualification; retained failure motivates bounded chunks."
+        },
+        {
+          "path": "backend/docs/evidence/upstream-batch-chunks-capacity-20261104.json",
+          "sha256": "009440e8790772cf081e4dd1661413b781ffdf2aca17f9cb34779362db471141",
+          "level": "L3 actual PostgreSQL/PostgREST",
+          "observed_result": "Sequential1/10/25/100-command batches passed at REST128MiB/500m. Maximum delivered412758838 ordered bytes in1600 validated chunks over84.853s; manifest5.994s, replay48ms without writes, late conflict rolled back all changes.",
+          "limits": "Python digest consumer, not API/browser. PostgreSQL17.6 local1GiB safety fence is not managedDB capacity. Receipt precedes INSERT-backstop amendment; final source binding and actual API batch capacity remain pending."
+        },
+        {
+          "path": "backend/docs/evidence/command-batch-chunks-sql-20261104.json",
+          "sha256": "025f701c40f5028ca86c6f8a74ecbcf387342fe7fa2040048d36669658899b94",
+          "level": "L1/L2",
+          "observed_result": "Canonical atomic receipt/chunk storage and replay/integrity/retention behavior has focused migrated functional evidence.",
+          "limits": "Source-specific pre-cutover evidence, not native API memory, current full-suite or deployment."
+        },
+        {
+          "path": "backend/docs/evidence/api-batch-chunk-transport-20261104.json",
+          "sha256": "b7f9b61149d09dcaa8245076b92207ec3ce3f8d6691f3a03ffc333810ba7adb2",
+          "level": "L1/L2",
+          "observed_result": "Production API preserves exact ordered JSON values by streaming immutable chunks;71 focused and31 migrated integration cases pass without reconstructing the aggregate.",
+          "limits": "Synthetic upstream transport in these tests; current actual API-image memory proof remains pending. No new business-result quota or automatic retry."
+        },
+        {
+          "path": "backend/docs/evidence/command-batch-insert-fence-20261104.json",
+          "sha256": "8cd94e5e4885c8700bb78db7811151f430d335583cb22828840237b5932fabf9",
+          "level": "L1/L2",
+          "observed_result": "Permanent legacy BATCH INSERT guard passes17 local functional cases, preserves existing receipts and purge/retention behavior.",
+          "limits": "Receipt explicitly has actual_postgres_concurrency_exercised=false. Queued guard/race commitsdb52ae9/d15cbe7 are not present at256c50e and cannot be credited here."
+        }
+      ]
     }
   ],
-  "pending_runtime_source_hashes": {
-    "backend/deploy/Dockerfile": "503d4774ce8b42d80d8216371f029d22e3d7bc06e51e12593fbe9eb9db9ce001",
-    "backend/supabase/functions/_shared/deliveryVerifyIsolation.ts": "44271ef4e47799ba5c6be97fcb5896bea47fe04b64e83e9c8420c7f8345041a8",
-    "backend/supabase/functions/_shared/deliveryVerifyProtocol.ts": "39259d53e740fc2bfa4d4c71a832cc46d66beb54e0a398294512abef7a2c30c3",
-    "backend/supabase/functions/_shared/deliveryVerify.process.ts": "d7dd21b71dc7686120a85fcb340f008acc0089dfdf6e5fb5e75bf175f20727e7",
-    "backend/supabase/functions/_shared/deliveryRenderIsolation.ts": "39da5e14f8064a69f2b183a3d50af14276037b185cabd679da126215b92632b3",
-    "backend/supabase/functions/_shared/export.ts": "55eb5daa85eb5bb6ca0a3605efa19aaf116694587151af4f6e5d33251201d4e1"
-  },
-  "pending_runtime_source_note": "Native verifier isolation is integrated in 5e107f6. These current source hashes may include its uncommitted buffer-lifetime follow-up; API admission/client sequencing/batch streaming are separate pending integration. Do not treat this as a qualified final release.",
-  "reported_results_without_ingested_receipt": [],
+  "pending_runtime_source_note": "Current tracked hashes at256c50e: API admission, client identity/paging, structured section persistence, bounded command chunks, owned-snapshot native lifetime and gateway guard are integrated. Final batch API-image capacity, complete current checks, release guards/refreeze and deployment remain separate pending gates.",
+  "reported_results_without_ingested_receipt": [
+    {
+      "subject": "Full current application checks",
+      "source_revision": "256c50e0deaba7f38e6985a58259e5a108742c60",
+      "status": "running_at_document_refresh",
+      "reported_failure": "An old direct-handler test did not consume its successful download response before requesting invalidated approval:503 FILE_PROCESSING_BUSY versus expected409. Test correction and complete rerun remain pending.",
+      "limits": "Parent progress report, not an ingested final result or proof all other cases passed."
+    },
+    {
+      "subject": "Pre-output model reserve",
+      "status": "in_review_not_root_integrated",
+      "reported_scope": "50 bilingual model cells with two planned repetitions per model and16 new retrieval cases; source/oracle corrections are under review before outputs.",
+      "limits": "Not independently blind/private holdout; production adapters, target/prompt pins, activation and outputs remain pending. No qualification credited."
+    },
+    {
+      "subject": "Release guard/concurrency work",
+      "status": "queued_not_integrated_at_anchor",
+      "commits": [
+        "db52ae9",
+        "d15cbe7"
+      ],
+      "limits": "No receipt or root-source presence credited. Final coordinator and release guard integration/review required."
+    }
+  ],
   "checklist_summary_counts": {
     "source": "backend/docs/IMPLEMENTATION_CHECKLIST.md",
     "at_commit": "fa3958e857b37bb05407f4a88594a443aadf66d1",
@@ -380,14 +561,38 @@
   },
   "remaining_static_findings": [
     {
-      "subject": "Early API working-set admission",
-      "finding": "Full contexts/Storage blobs/model snapshots were allocated before native FIFO. Model agent is implementing an early process-local gate, bounded heavy-table pages and response EOF/cancel ownership; frontend sequencing is under integration.",
-      "evidence_kind": "source review; no independent concurrent OOM measurement by this auditor"
+      "subject": "Actual API batch capacity",
+      "finding": "Atomic chunk persistence and streamed API reconstruction are implemented; actual upstream100-command capacity passes. Complete actual API-image delivery of that batch, consumer lifecycle and peak memory remain unmeasured.",
+      "evidence_kind": "Source/receipt reconciliation; do not combine independent layer tests into a nonexistent end-to-end native receipt."
     },
     {
-      "subject": "Large batch response",
-      "finding": "100 export.renew commands can repeat one full snapshot in a single app_batch response. A request gate alone does not bound this aggregate; raw authenticated RPC streaming is under implementation.",
-      "evidence_kind": "composed source review; no production mutation or new data cap"
+      "subject": "Final release manifest and cutover",
+      "finding": "Checked-in manifest still has22 migrations; source has24. New structured-body and chunk migrations, INSERT backstop, gateway v2 proof chain and release capabilities must be refrozen and restored after coordinator/guard integration.",
+      "evidence_kind": "Direct file census at256c50e; no release mutation."
     }
-  ]
+  ],
+  "previous_observed_root_commit": "a6676866ea3247b85c1bfde7e140655ce126e444",
+  "refresh_requested_anchor": "256c50e0deaba7f38e6985a58259e5a108742c60",
+  "historical_runtime_source_hashes": {
+    "backend/deploy/Dockerfile": "503d4774ce8b42d80d8216371f029d22e3d7bc06e51e12593fbe9eb9db9ce001",
+    "backend/supabase/functions/_shared/deliveryVerifyIsolation.ts": "44271ef4e47799ba5c6be97fcb5896bea47fe04b64e83e9c8420c7f8345041a8",
+    "backend/supabase/functions/_shared/deliveryVerifyProtocol.ts": "39259d53e740fc2bfa4d4c71a832cc46d66beb54e0a398294512abef7a2c30c3",
+    "backend/supabase/functions/_shared/deliveryVerify.process.ts": "d7dd21b71dc7686120a85fcb340f008acc0089dfdf6e5fb5e75bf175f20727e7",
+    "backend/supabase/functions/_shared/deliveryRenderIsolation.ts": "39da5e14f8064a69f2b183a3d50af14276037b185cabd679da126215b92632b3",
+    "backend/supabase/functions/_shared/export.ts": "55eb5daa85eb5bb6ca0a3605efa19aaf116694587151af4f6e5d33251201d4e1"
+  },
+  "current_unreleased_runtime_source_hashes": {
+    "backend/deploy/Dockerfile": "503d4774ce8b42d80d8216371f029d22e3d7bc06e51e12593fbe9eb9db9ce001",
+    "backend/supabase/functions/_shared/batchTransport.ts": "7c90ab814d1ad84eaac411042ff8697afc3fac99b23b9254e6fd2d42c270db6c",
+    "backend/supabase/functions/_shared/deliveryRenderIsolation.ts": "39da5e14f8064a69f2b183a3d50af14276037b185cabd679da126215b92632b3",
+    "backend/supabase/functions/_shared/deliveryVerify.process.ts": "e00a77845dc19599a85f38a1901bc245e07d8aa94ca57bf1acb94619189b71e5",
+    "backend/supabase/functions/_shared/deliveryVerifyIsolation.ts": "647571ee5d91449916dd59d97a44b9117e5de983d2f6b75d890a1fdac2a3a001",
+    "backend/supabase/functions/_shared/deliveryVerifyProtocol.ts": "39259d53e740fc2bfa4d4c71a832cc46d66beb54e0a398294512abef7a2c30c3",
+    "backend/supabase/functions/_shared/export.ts": "587e4b13836d4a9087e08726d915b71077e816f575c5f9ae2985bdeac1647282",
+    "backend/supabase/functions/_shared/heavyFileProjection.ts": "1dd7c82567d01593c6345ae91d000b9670ce77652f298a92feafca36c8aac830",
+    "backend/supabase/functions/api/handler.ts": "5ab8fd1e73cfea6e6ee8310eafe24f6bac4f1c8591d3906367c13d127886689d",
+    "backend/supabase/functions/api/heavyFileAdmission.ts": "2bf6ede8423ef2020917ba2eaf393d4250905d99308a64c335d590717b3b363e",
+    "frontend/src/lib/backendClient.ts": "0aa501a0c92a575de9b213a0311a9be7087906782407c71610738bb3c1b3d2b8",
+    "frontend/src/lib/connectedRepository.ts": "e20904d244db3c601a5dfab4e8d9dc3fea597b63daa001dde2f45232f345cb72"
+  }
 }
