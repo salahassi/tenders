@@ -33,6 +33,8 @@ def legacy_batch():
   'total_rows':0,'active_rows':0,'expired_rows':0,'buckets':[]}
 
 def sql_response(_pod,script):
+ if '$batch_visibility$' in script:
+  return json.dumps({'marker':'2026-11-04T22:00:00.000000+00:00','visibility_verified':True,'old_transactions':0})
  return json.dumps(legacy_batch() if 'legacy_batch_commands' in script else capacity_settings() if 'tenderdesk.capacity_settings' in script else schema())
 
 def workloads():

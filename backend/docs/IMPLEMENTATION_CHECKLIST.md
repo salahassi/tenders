@@ -9955,3 +9955,20 @@ the three observer SQL/drain functions are byte-identical to the actual seven-ca
 PostgreSQL-qualified revision; those unrelated probes were not repeated. Actual
 hosted Kubernetes exit proof remains pending. The final gateway source hash is
 also pending the separately assigned slow-consumer streaming qualification.
+
+### November 4 — prepare read-only hosted transaction visibility verification
+
+Inventory now calls the release helper's exact read-only transaction observer
+using the existing temporary SQL client. Only fixed-role metadata, a database
+marker, count and observer-SQL hash are returned. It uses existing SET authority
+to the exact authenticator login; it neither grants global monitoring privileges
+nor installs a gateway fence, waits for sessions, terminates sessions or changes
+customer records. Unknown/hidden/malformed visibility fails closed, and client
+cleanup remains mandatory. The original release baseline is unchanged.
+
+Four focused projection/privacy/failure/cleanup checks and all17 existing
+inventory tests pass. Actual PostgreSQL authority/drain behavior is separately
+qualified by the shared helper's owner; these local mock checks do not prove
+managed PostgreSQL18 authority. A reviewed original-CA runner inventory is still
+required before claiming hosted visibility. The helper dependency is supplied
+by the separate release-coordinator commit; it is not duplicated in this change.

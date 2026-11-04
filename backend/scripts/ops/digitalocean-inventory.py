@@ -9,6 +9,7 @@ from __future__ import annotations
 from contextlib import redirect_stdout, redirect_stderr
 from datetime import datetime, timezone
 import importlib.util
+import hashlib
 import io
 import json
 import os
@@ -21,6 +22,9 @@ SPEC = importlib.util.spec_from_file_location('inventory_observer', HERE / 'obse
 observer = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = observer
 SPEC.loader.exec_module(observer)
+_cutover_spec = importlib.util.spec_from_file_location('inventory_batch_visibility', HERE / 'command-batch-cutover.py')
+cutover = importlib.util.module_from_spec(_cutover_spec)
+_cutover_spec.loader.exec_module(cutover)
 d = observer.d
 OWNER = 'tenderdesk-read-only-inventory'
 NAMES = ('api','worker','frontend','auth','rest','storage','source-browser','scheduler','gateway','https')
@@ -333,6 +337,20 @@ def cleanup_saved_client():
     except Exception: raise InventoryError('INVENTORY_TEMPORARY_CLIENT_CLEANUP_NOT_CONFIRMED') from None
     clear_client()
 
+def batch_visibility_observation(client):
+    # Reuse the release's exact read-only observer. Never install a fence, wait
+    # for transactions, change authority or inspect session/customer payloads.
+    try:
+        value=cutover.observe_transactions(d,client)
+    except Exception:
+        raise InventoryError('INVENTORY_BATCH_VISIBILITY_UNPROVEN') from None
+    integer(value['old_transactions'])
+    return {'version':1,'scope':'fixed_authenticator_transaction_visibility',
+      'authority_basis':'existing_set_authority_to_exact_login_role',
+      'observer_sql_sha256':hashlib.sha256(cutover.transaction_observation_sql().encode()).hexdigest(),
+      **value,'admission_fence_changed':False,'transactions_drained':False,
+      'sessions_terminated':0,'authority_grants_changed':0}
+
 def inventory():
     revision=os.environ.get('GITHUB_SHA','')
     if not SOURCE.fullmatch(revision): raise InventoryError('INVENTORY_RUN_SOURCE_INVALID')
@@ -344,12 +362,13 @@ def inventory():
     client=observer.Client(60)
     client.labels['app.kubernetes.io/managed-by']=OWNER
     save_client(client)
-    schema=None;metadata={};settings=None;legacy_batch=None
+    schema=None;metadata={};settings=None;legacy_batch=None;batch_visibility=None
     try:
         client.prepare(capacity_metadata=metadata)
         schema=public_schema(json.loads(d.sql(client.pod,(HERE/'digitalocean-inventory.sql').read_text())))
         settings=capacity_settings(json.loads(d.sql(client.pod,(HERE/'digitalocean-capacity.sql').read_text())))
         legacy_batch=legacy_batch_observation(json.loads(d.sql(client.pod,(HERE/'digitalocean-legacy-batch.sql').read_text())))
+        batch_visibility=batch_visibility_observation(client)
     finally:
         try:
             client.cleanup()
@@ -366,6 +385,7 @@ def inventory():
     return {'inventory':'captured','version':1,'namespace':d.NAMESPACE,'runner_source_revision':revision,'observed_at':datetime.now(timezone.utc).isoformat(),
       'workloads':workloads,'native_schedules':schedules,'ready_workloads':sum(w['desired']>0 and w['ready']==w['desired']==w['updated'] and w['unavailable']==0 and w['observed_generation']>=w['generation'] for w in workloads),
       'legacy_batch_observation':legacy_batch,
+      'batch_cutover_observation':batch_visibility,
       'capacity_observation':{'version':1,'workloads':capacity_workloads(deployments,pods,metadata.get('rest_database_role')),
         'managed_database':metadata.get('managed_database'),'sql_settings':settings,
         'configuration_basis':'observed_manifests_and_current_core_binding_not_process_environment',
@@ -390,7 +410,8 @@ def main(argv=()):
           'INVENTORY_CLEANUP_JOURNAL_INVALID','INVENTORY_MODE_INVALID','INVENTORY_WORKLOAD_CHANGED_DURING_READ',
           'INVENTORY_SCHEDULE_INVALID','INVENTORY_REQUIRED_SCHEDULE_MISSING','INVENTORY_NATIVE_CONTAINER_COUNT',
           'INVENTORY_NATIVE_SCHEDULE_FORMAT','INVENTORY_NATIVE_CONCURRENCY_INVALID','INVENTORY_NATIVE_RESOURCES_FORMAT',
-          'INVENTORY_NATIVE_DEADLINE_INVALID','INVENTORY_NATIVE_BACKOFF_INVALID','INVENTORY_CAPACITY_INVALID','INVENTORY_LEGACY_BATCH_INVALID'}
+          'INVENTORY_NATIVE_DEADLINE_INVALID','INVENTORY_NATIVE_BACKOFF_INVALID','INVENTORY_CAPACITY_INVALID','INVENTORY_LEGACY_BATCH_INVALID',
+          'INVENTORY_BATCH_VISIBILITY_UNPROVEN'}
         code=str(error) if isinstance(error,InventoryError) and str(error) in allowed else 'INVENTORY_FAILED'
         print(json.dumps({'inventory':'failed','code':code}),flush=True)
         return 1

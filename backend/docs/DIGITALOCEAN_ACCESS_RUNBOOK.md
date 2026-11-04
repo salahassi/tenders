@@ -222,3 +222,21 @@ both cleanup stages. Its
 zero total/active/expired BATCH/commands receipts at observation. A release must
 still fence/drain legacy callers and recheck under locks; this read-only result
 does not establish future absence or replace the frozen release baseline.
+
+## Read-only command cutover visibility observation
+
+Inventory also reuses `command-batch-cutover.py`'s exact read-only transaction
+observer. It verifies the fixed database and existing authority to set the
+authenticator role, sets that role locally, and counts only that login's
+transactions, excluding its own observer backend. It does not need or add
+global monitoring privileges. The public `batch_cutover_observation` contains
+only a UTC database marker, visibility flag, count, fixed authority description
+and SHA-256 of the exact observer SQL. Private session identifiers, query text,
+credentials and customer content are never returned. The transaction rolls back.
+
+An observation does not fence requests or drain transactions; both flags remain
+false. It does not prove future emptiness. Release still observes a fresh marker
+after the gateway process fence and performs its separate bounded drain, table
+lock and zero-history check. Unknown visibility fails the inventory and still
+requires temporary-client cleanup. Review the complete workflow before running
+`mode=inventory`; this addition never invokes the mutation coordinator.
