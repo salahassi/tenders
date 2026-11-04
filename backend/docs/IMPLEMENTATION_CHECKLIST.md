@@ -9011,3 +9011,46 @@ remain separate gates. All 15 release-boundary tests pass, including API size,
 entrypoint/role rejection, stronger equivalent quantities, unchanged resources
 and receipt checks. Python compilation and diff checks pass. No model or hosted
 operation occurred; the frozen manifest and canonical migrations are unchanged.
+
+
+### November 4 — independent remaining-action handoff draft
+
+Prepared a document-only audit anchored to integrated `41930bb`, updated through
+`fa3958e`, with nine current remaining actions and a twelve-group public R0
+evidence index. Every indexed public receipt hash was checked against the
+coordinator checkout. This is an index and scoped status reconciliation, not
+a certificate that every per-case R0 field is complete.
+
+The draft retains the 2,889-pass/two-failure backend run and its focused assertion
+corrections, both failed hosted restore drills, the confirmed production Auth
+row-visibility prerequisite, reported private-bucket/global-size mismatch,
+retirement SET-role preflight investigation, and the latest reported worker-pass/
+API-memory-failure split. Pending agent results are explicitly distinguished from
+ingested public receipts. The 22-migration/gateway manifest is already frozen;
+application deployment and hosted issuance acceptance remain open.
+
+Files: `RELIABILITY_REMAINING_GATES.md`,
+`evidence/reliability-remaining-actions-20261104.json`, and
+`evidence/reliability-r0-index-20261104.json`. No implementation, fixture,
+dependency, database, provider or deployment changes were made. No project tests
+were run during the native qualification window. Final runtime/Auth fixes and
+new actual results must update this draft before the final handoff.
+
+
+### November 4 — remaining-action audit revision 2 after shared cloud restore
+
+Updated the document-only handoff through `a667686` to eight current remaining
+actions. Shared-helper hosted restore 41910306855 passed all 13 Auth/Storage
+checks with original CA, 12 offline guards and cleanup; this closes the isolated
+restore scope, not production policy application, application runtime or hosted
+proposal issuance. The 22-migration manifest now binds the shared Auth helper
+(`9e3430d1…953e020`). Local actual PostgreSQL Auth concurrency and retirement
+SET-role authority receipts are indexed with their independent limits.
+
+Native verifier isolation is integrated. Worker two-job/two-volume proof and
+the nearly full 384 MiB direct-verifier 64 MiB child candidate are retained, alongside
+the earlier failures. API working-set admission, full-content paging/client
+sequencing, valid large-batch streaming and final actual-image proof remain open.
+Every newly indexed receipt hash was checked. No source edits, project tests,
+provider calls or production mutations were performed by this audit. The final
+combined application checks and deployment/hosted acceptance are still required.

@@ -1,0 +1,393 @@
+{
+  "version": 2,
+  "status": "draft_not_release_acceptance",
+  "generated_at_utc": "2026-11-04T21:00:41.459413+00:00",
+  "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
+  "observed_root_commit": "a6676866ea3247b85c1bfde7e140655ce126e444",
+  "scope": "Public receipt discovery index for current remaining actions; no tests or external calls performed by this audit.",
+  "r0_reference": "backend/docs/RELIABLE_PROPOSAL_ACCEPTANCE.md:83",
+  "r0_completeness": "This index is not a per-case R0 completion certificate. Linked receipts retain their own source/fixture/image/migration/clock/policy bindings. Missing applicable R0 evidence remains unproven.",
+  "never_infer": [
+    "Local regression pass implies deployment",
+    "A template/partial draft implies substantive issued package",
+    "Credential presence implies available provider",
+    "A denied/aborted model call implies semantic correctness",
+    "One successful dense render implies steady-state API/worker capacity"
+  ],
+  "entries": [
+    {
+      "id": "E01",
+      "subject": "Local application regression",
+      "plan": [
+        "W01",
+        "W03",
+        "W04",
+        "W06",
+        "W08",
+        "W10"
+      ],
+      "receipts": [
+        {
+          "path": "backend/docs/evidence/combined-backend-diagnostic-20261104.json",
+          "sha256": "d6ec590de9a001f5c2e33664144cdbc9a07b099e82286b1a21d7f643a65ef99d",
+          "level": "L1/L2",
+          "observed_result": "c9f1c5b: 2889 passed, two stale assertions failed; corrections have focused 32/24 passing tests.",
+          "limits": "No full green final-source backend run; later native verifier and Auth harness changes are outside this run."
+        },
+        {
+          "path": "backend/docs/evidence/final-frontend-checks-20261104.json",
+          "sha256": "55117e26c0538090630e03fc0dc37128dff3f860b4b547bee851469520bb990f",
+          "level": "L1",
+          "observed_result": "Both lockfile installations; frontend 359 tests/57 files, typecheck and build passed.",
+          "limits": "Source-specific frontend proof, not hosted behavior or final backend proof."
+        }
+      ]
+    },
+    {
+      "id": "E02",
+      "subject": "Native document capacity and reviewed-content safety",
+      "plan": [
+        "W04",
+        "W09",
+        "D02",
+        "D04"
+      ],
+      "receipts": [
+        {
+          "path": "backend/docs/evidence/native-renderer-capacity-20261104.json",
+          "sha256": "908f7aad07ff917a3b3cdbdf468cabf022a5d71bf2fa6ce8a617b661317c5908",
+          "level": "L3",
+          "observed_result": "Seven admitted native render/verification families passed; container peak 649199616/671088640 bytes.",
+          "limits": "Earlier single-job image. Later continuous-worker OOM failures and pending process-isolation API proof remain separate."
+        },
+        {
+          "path": "backend/docs/evidence/docx-field-qualification-20261104.json",
+          "sha256": "655d3e281028dc7efadd181062132fb587e873eb17f9e41b0d7cd37d1f0a779b",
+          "level": "L1",
+          "observed_result": "Scoped unsafe-field/hidden-text/table-position red-to-green cases retained.",
+          "limits": "Supported-shape/content validation, not universal OOXML/style or actual final image capacity."
+        },
+        {
+          "path": "backend/docs/evidence/native-verifier-worker128-steady-20261104.json",
+          "sha256": "f3e0f9831b3f9965a3ed35ae9aed8fca3566af350b09140335cbb39062355c85",
+          "level": "L3 actual native processes",
+          "observed_result": "Actual-image worker completed two consecutive two-volume dense jobs with concurrent 1 MiB/50,000-cell provider-envelope validation and health requests; peak607731712/671088640 bytes.",
+          "limits": "SQL/Storage transports emulated; actual source/image-bound process proof, not hosted authority, throughput or full API route memory."
+        },
+        {
+          "path": "backend/docs/evidence/native-verifier-api128-red-20261104.json",
+          "sha256": "90026bec847d7821d0c0a0e83a8eda7bab9afc4d193864674b55cb830aab0501",
+          "level": "L3 actual native processes",
+          "observed_result": "Retains failed 384 MiB API-parent canonical-verifier 128 MiB-child experiment.",
+          "limits": "Historical red evidence; not erased by later 64 MiB candidate outcomes."
+        },
+        {
+          "path": "backend/docs/evidence/native-verifier-api64-candidate-20261104.json",
+          "sha256": "b9cfb2e74fc57da8851bed0c2a6bb06846338e8785f4c4ef297206b85fc14f73",
+          "level": "L3 actual image candidate",
+          "observed_result": "Seven canonical verifier fixture families repeated twice passed in 384 MiB parent; peak402587648/402653184 bytes.",
+          "limits": "Direct asynchronous verifier, not full API route/Storage/context allocations. Minimal measured headroom; broader valid near 10 MiB models, response/burst behavior and final child configuration remain unqualified."
+        }
+      ]
+    },
+    {
+      "id": "E03",
+      "subject": "Final representative Word visual review",
+      "plan": [
+        "W04",
+        "D02"
+      ],
+      "receipts": [
+        {
+          "path": "backend/docs/evidence/g12-renderer-qualified-review-20261104.json",
+          "sha256": "6da41b6285f9073f1ca5130e6eafa7f3938f4aab3c9fa3e0325c8c9a4cd46650",
+          "level": "L5",
+          "observed_result": "18 DOCX/91 PDF pages matched prior reviewed-page hashes with fresh field/content checks.",
+          "limits": "All 18 LibreOffice TOC page-number caches absent; no actual Microsoft Word update/save; no universal density/layout claim."
+        }
+      ]
+    },
+    {
+      "id": "E04",
+      "subject": "Storage write and retirement authorization",
+      "plan": [
+        "W04",
+        "W09",
+        "D04"
+      ],
+      "receipts": [
+        {
+          "path": "backend/docs/evidence/storage-write-intent-postgres-20261104.json",
+          "sha256": "e9c9c065627af760614cd852942c7e4373e0d8393a92e3abcdf28335f514cadf",
+          "level": "L2",
+          "observed_result": "Five real PostgreSQL lock-observed cases passed, including one-time send and source/actor revocation.",
+          "limits": "Synthetic local object/operation evidence; no hosted storage retirement."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-postgres-20261104.json",
+          "sha256": "dd8199c8840abf3b7b7c965afe2f65a1f2b99d0e55e11bac8ad5f3f482f59d76",
+          "level": "L2",
+          "observed_result": "25 actual PostgreSQL retirement cases passed.",
+          "limits": "Process evidence synthetic; no actual Kubernetes/storage proof in this receipt."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-gc-review-20261104.json",
+          "sha256": "b031f5f8edaeb4f6dc097345f69089c91fdcddd5d0ad67d12d18cf25c9715403",
+          "level": "L1",
+          "observed_result": "Independent immediate-Pod-GC recovery red-to-green proof retained.",
+          "limits": "Deterministic coordinator fake, not real cluster process-exit proof."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-owner-authority-20261104.json",
+          "sha256": "a1d3fa8d12aa18a36840236c01dea36126fcbca71e4746c3da8f6564838ac334",
+          "level": "L2 actual PostgreSQL adapter SQL",
+          "observed_result": "Actual local adapter SQL reproduced inappropriate inherited-USAGE guard rejection and qualified explicit SET-role authority without extra grants.",
+          "limits": "No Kubernetes/production calls or physical deletion; PostgreSQL 17.6 only, actual PostgreSQL 18 admission remains a release check."
+        }
+      ]
+    },
+    {
+      "id": "E05",
+      "subject": "Pinned Storage and gateway binary boundary",
+      "plan": [
+        "W09",
+        "W11",
+        "D04"
+      ],
+      "receipts": [
+        {
+          "path": "backend/docs/evidence/storage-retirement-binary-20261104.json",
+          "sha256": "1831842de23dc097269b403987d2530bb486f2fc01c4bde0cb491fd5ae369ff3",
+          "level": "L3",
+          "observed_result": "14 pinned-binary cases and 38 normalized gateway route cases passed.",
+          "limits": "Direct signed TUS still bypasses the Storage metadata fence; exact qualified gateway denial and private ingress are necessary. No production rollout or retirement."
+        }
+      ]
+    },
+    {
+      "id": "E06",
+      "subject": "Restore and Auth boundary",
+      "plan": [
+        "W09",
+        "W11",
+        "D05"
+      ],
+      "receipts": [
+        {
+          "path": "backend/docs/evidence/cloud-restore-postgres-22-20261104.json",
+          "sha256": "bd7a07585a67562ed2d465975d4a55682dce6fbc7bf5e34459fa45319a139fc0",
+          "level": "L2",
+          "observed_result": "Exact 22-migration local PostgreSQL restore passed eight checks.",
+          "limits": "Auth/Storage schema stubs; no actual Auth/Storage HTTP."
+        },
+        {
+          "path": "backend/docs/evidence/cloud-restore-20261104-41902822255.json",
+          "sha256": "19cba3854b374447db116bc5b33c6539d1bcc9904876d3ba186047e5b21e9339",
+          "level": "L3",
+          "observed_result": "Hosted drill failed fixture Auth RLS; original CA and isolated/credential cleanup passed.",
+          "limits": "All 13 HTTP acceptance checks unproven; application renderer not exercised."
+        },
+        {
+          "path": "backend/docs/evidence/cloud-restore-auth-rls-postgres-20261104.json",
+          "sha256": "077be9053a33909671546f52a02753fbde744b956b5590ce957777b08142db30",
+          "level": "L2",
+          "observed_result": "Five local PostgreSQL cases reproduce Auth RLS rejection and validate nonce-only SELECT policy correction.",
+          "limits": "No actual Auth HTTP; fixture correction does not establish production permission correction."
+        },
+        {
+          "path": "backend/docs/evidence/cloud-restore-20261104-41905235686.json",
+          "sha256": "e5516c3be9494dacb4b6b0bbf65c8a6f49750d51e5de3b5c41b0a711f7ec598c",
+          "level": "Hosted read-only catalog + isolated Auth/Storage HTTP drill",
+          "observed_result": "Second actual drill failed private-bucket creation; original CA, 12 local guards and both cleanup stages passed. Production application owner has SELECT on Auth users/identities, but RLS enabled/no applicable policy/no effective owner/no BYPASS.",
+          "limits": "Confirmed production authority prerequisite, not repaired permission. All 13 HTTP checks and actual application renderer remain unproven; production deployment false, model calls 0."
+        },
+        {
+          "path": "backend/docs/evidence/application-auth-read-postgres-20261104.json",
+          "sha256": "3314c13283eba5f7c6b8177c9a9cd501501de5a71e716799c2527eb871c9f3ff",
+          "level": "L2 actual PostgreSQL concurrent connections",
+          "observed_result": "Eleven real PostgreSQL checks passed: exact policy replay, rollback, managed SET authority, browser denial, and observed late-snapshot red/early-lock green with row visibility 0→2 retained.",
+          "limits": "No live Auth HTTP in this local receipt; production policy not changed."
+        },
+        {
+          "path": "backend/docs/evidence/cloud-restore-20261104-41908346634.json",
+          "sha256": "ce966a50ac5c6d0a697612b4e09afbc1d47cc1b8990750e674803bed9a4f181d",
+          "level": "L3 actual isolated Auth/Storage HTTP",
+          "observed_result": "Third actual cloud drill passed all 13 Auth/Storage checks, original CA and cleanup on source fb43a7a.",
+          "limits": "Old isolated policy path; shared production-policy helper not exercised; production unchanged and application renderer not tested."
+        },
+        {
+          "path": "backend/docs/evidence/cloud-restore-20261104-41910306855.json",
+          "sha256": "98ecee04d4be9e99fcb65506ae654d94ace85aace13e2656c7f9e5b10c78b212",
+          "level": "L3 actual isolated Auth/Storage HTTP",
+          "observed_result": "Fresh actual shared-helper drill passed all 13 Auth/Storage checks, original CA, 12 offline guards and both cleanup stages on source 28689b9.",
+          "limits": "Shared production Auth helper exercised during isolated schema reconstruction; production Auth policies unchanged. No renderer/API capacity/model availability/hosted full-proposal issuance proof."
+        }
+      ]
+    },
+    {
+      "id": "E07",
+      "subject": "Historical paid-state recovery",
+      "plan": [
+        "W07",
+        "W10"
+      ],
+      "receipts": [
+        {
+          "path": "backend/docs/evidence/historical-recovery-qualification-20261104.json",
+          "sha256": "5990c3b709db98d17d372b52fa67f57400a6b8fec97bf144b28900b2f13def5d",
+          "level": "L1/L2",
+          "observed_result": "Twelve declared transition cases, 328 focused Vitest tests, three Python and two sequential PostgreSQL command cases passed.",
+          "limits": "43 old wire hashes included; not universal historical/provider recovery, hosted proof or concurrency for those two command cases."
+        }
+      ]
+    },
+    {
+      "id": "E08",
+      "subject": "Current configuration observations",
+      "plan": [
+        "W00",
+        "W07",
+        "W11"
+      ],
+      "receipts": [
+        {
+          "path": "backend/docs/evidence/digitalocean-inventory-20261104-41881660683.json",
+          "sha256": "65150d57619e0fd81f9b916ada0bf817b75fde14fe01b1ecaeec7354c32a823d",
+          "level": "Hosted read-only",
+          "observed_result": "Original-CA read-only inventory: six old releases, ten ready services, new delivery schema absent.",
+          "limits": "Configuration observation does not deploy or qualify the new application."
+        },
+        {
+          "path": "backend/docs/evidence/model-binding-audit-20261104-41869042836.json",
+          "sha256": "843dacc0200832cc153f7b0015a0719f4bbc3e7aee87dd9aa18210684a913420",
+          "level": "Hosted read-only",
+          "observed_result": "Read-only model binding audit passed; existing OpenAI/QwenCloud credentials, no Gemini key.",
+          "limits": "Credential presence is not provider availability or semantic correctness."
+        }
+      ]
+    },
+    {
+      "id": "E09",
+      "subject": "Model development campaign",
+      "plan": [
+        "W05",
+        "W06",
+        "W07",
+        "W08",
+        "D07"
+      ],
+      "receipts": [
+        {
+          "path": "backend/docs/evidence/semantic-development-v1-20261104.json",
+          "sha256": "87650a90db3e671af4563b11e0e8430364f3239f92766063750860a367d6765b",
+          "level": "LM development",
+          "observed_result": "Qualification false; critical number-association false acceptance and faithful actor false rejection retained; other targets hit quota/credit failures.",
+          "limits": "No private holdout completion; attempted/completed/scored denominators differ. Do not relabel unavailable targets as semantic passes."
+        }
+      ]
+    },
+    {
+      "id": "E10",
+      "subject": "Offline decision fields and bilingual retrieval",
+      "plan": [
+        "W05",
+        "W06",
+        "W08",
+        "D07"
+      ],
+      "receipts": [
+        {
+          "path": "backend/docs/evidence/g09-offline-qualification-20261104.json",
+          "sha256": "f9ed707defcbd3c6bd3639b6c0bb0756470ac5ea21041dd963adca8bdf6d9472",
+          "level": "L1",
+          "observed_result": "183 tests/five files passed; 76 paired fields and 16 nonrecursive boundaries.",
+          "limits": "Injected verifier outcomes and typed transport do not establish live semantic detection."
+        },
+        {
+          "path": "backend/docs/evidence/g09-typed-decisions-20261104.json",
+          "sha256": "dde0cf5ab7cfc7ab14681b324d11ca3fad75f35b1d4f5c25b5df852c4a76eb65",
+          "level": "L1",
+          "observed_result": "76/76 typed-field pairs across ten semantic tasks plus 16 explicit verifier/repair/probe boundaries.",
+          "limits": "Twenty deterministic rejections, forty semantic-review-visible mutations, sixteen source-tuple transport-only cases; no complete domain-positive authority claim."
+        },
+        {
+          "path": "backend/docs/evidence/g09-retrieval-20261104.json",
+          "sha256": "0b3aeecb0895f00b250a6ca19144f223a91689696fd22a0eb602bb49453d0d9c",
+          "level": "L1",
+          "observed_result": "Whole-source 16/16; bounded discovery 9/16 (Arabic 4/8, English 5/8); zero silent omissions or partial claim-authority grants.",
+          "limits": "Seven explicit misses remain; no post-outcome recall threshold or general semantic-recall guarantee."
+        }
+      ]
+    },
+    {
+      "id": "E11",
+      "subject": "Private uploaded-document OCR",
+      "plan": [
+        "W02",
+        "W05",
+        "D03"
+      ],
+      "receipts": [
+        {
+          "path": "backend/docs/evidence/uploaded-ocr-native-20261104.json",
+          "sha256": "2f141ed3fa7657489818974ac04e11816b14d2492ff29bc1d6c3b7ea3ac48fa3",
+          "level": "L3",
+          "observed_result": "Native Arabic gold text lost/changed obligations despite confidence 82; automatic Arabic semantic acceptance false.",
+          "limits": "Human page and blank review remain required. A valid scanned input is not an invalid RFP because extraction failed."
+        }
+      ]
+    },
+    {
+      "id": "E12",
+      "subject": "Global render admission and queue isolation",
+      "plan": [
+        "W09",
+        "D01",
+        "D04"
+      ],
+      "receipts": [
+        {
+          "path": "backend/docs/evidence/document-render-admission-postgres-20261104.json",
+          "sha256": "046c9162cbf1e5c8e3f6ec91c04615f518b396a94bcab7c220a974ff1173692d",
+          "level": "L2 actual PostgreSQL multiple sessions",
+          "observed_result": "Six cases passed: concurrent single render lease, independent nonrender progress, lease replacement, twelve-package simulated burst, stale renderer rejection, and cross-workspace global mutex.",
+          "limits": "Synthetic storage receipts; no measured native throughput or hosted600-second service proof; one case relaxes singleton uniqueness only inside its explicit-workspace test fixture."
+        }
+      ]
+    }
+  ],
+  "pending_runtime_source_hashes": {
+    "backend/deploy/Dockerfile": "503d4774ce8b42d80d8216371f029d22e3d7bc06e51e12593fbe9eb9db9ce001",
+    "backend/supabase/functions/_shared/deliveryVerifyIsolation.ts": "44271ef4e47799ba5c6be97fcb5896bea47fe04b64e83e9c8420c7f8345041a8",
+    "backend/supabase/functions/_shared/deliveryVerifyProtocol.ts": "39259d53e740fc2bfa4d4c71a832cc46d66beb54e0a398294512abef7a2c30c3",
+    "backend/supabase/functions/_shared/deliveryVerify.process.ts": "d7dd21b71dc7686120a85fcb340f008acc0089dfdf6e5fb5e75bf175f20727e7",
+    "backend/supabase/functions/_shared/deliveryRenderIsolation.ts": "39da5e14f8064a69f2b183a3d50af14276037b185cabd679da126215b92632b3",
+    "backend/supabase/functions/_shared/export.ts": "55eb5daa85eb5bb6ca0a3605efa19aaf116694587151af4f6e5d33251201d4e1"
+  },
+  "pending_runtime_source_note": "Native verifier isolation is integrated in 5e107f6. These current source hashes may include its uncommitted buffer-lifetime follow-up; API admission/client sequencing/batch streaming are separate pending integration. Do not treat this as a qualified final release.",
+  "reported_results_without_ingested_receipt": [],
+  "checklist_summary_counts": {
+    "source": "backend/docs/IMPLEMENTATION_CHECKLIST.md",
+    "at_commit": "fa3958e857b37bb05407f4a88594a443aadf66d1",
+    "sha256": "db6e704681e2ec04c7ad4b2c5272a3f825202b11a02e4a09be07d66ec4535567",
+    "reported": {
+      "operational_tests": 391,
+      "schema_helper_tests": 11,
+      "kubernetes_render_tests": 15,
+      "focused_queue_tests": 32
+    },
+    "scope": "Reported scoped counts only. The six-session queue receipt is indexed separately; none of these counts means the complete final source or hosted workflow passed."
+  },
+  "remaining_static_findings": [
+    {
+      "subject": "Early API working-set admission",
+      "finding": "Full contexts/Storage blobs/model snapshots were allocated before native FIFO. Model agent is implementing an early process-local gate, bounded heavy-table pages and response EOF/cancel ownership; frontend sequencing is under integration.",
+      "evidence_kind": "source review; no independent concurrent OOM measurement by this auditor"
+    },
+    {
+      "subject": "Large batch response",
+      "finding": "100 export.renew commands can repeat one full snapshot in a single app_batch response. A request gate alone does not bound this aggregate; raw authenticated RPC streaming is under implementation.",
+      "evidence_kind": "composed source review; no production mutation or new data cap"
+    }
+  ]
+}

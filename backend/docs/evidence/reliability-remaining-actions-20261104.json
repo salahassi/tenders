@@ -1,0 +1,258 @@
+{
+  "version": 2,
+  "status": "draft_remaining_actions_not_complete",
+  "generated_at_utc": "2026-11-04T21:00:41.459413+00:00",
+  "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
+  "observed_root_commit": "a6676866ea3247b85c1bfde7e140655ce126e444",
+  "evidence_index": "backend/docs/evidence/reliability-r0-index-20261104.json",
+  "application_deployed": false,
+  "final_hosted_acceptance_passed": false,
+  "release_manifest": {
+    "path": "backend/scripts/ops/proposal-delivery-release.json",
+    "canonical_sha256": "9e3430d1d01af222e3aad0d4aa8cae5e1f0c14942ae0ff258f0a96f6f953e020",
+    "migrations": 22,
+    "state": "frozen_schema_gateway_and_shared_Auth_helper; final runtime/image qualification and deployment pending"
+  },
+  "actions": [
+    {
+      "id": "A01",
+      "title": "Finish API working-set admission and native memory qualification",
+      "plan": [
+        "W04",
+        "W09",
+        "D02",
+        "D04"
+      ],
+      "status": "isolation_integrated_api_admission_streaming_and_full_route_proof_pending",
+      "evidence": [
+        "E02"
+      ],
+      "remaining": "Finish the early API gate before context/blob/model allocation, response EOF/cancel retention, one-row full-content pages and compatible client sequencing. Stream the valid large command-result aggregate without parsing the entire response. Qualify the final child configuration against valid large model/metadata shapes and actual handler allocations, repeated/burst/slow-consumer/cancel behavior at unchanged API/worker limits.",
+      "done_when": "Exact final source/image/fixture receipts cover the admitted tested shapes, real process reap, full package hashes, response backpressure and existing 600-second/lease cancellations. Publish the tested limits; no unmeasured universal capacity claim.",
+      "not_proven": "Final full API route memory, bounded large-batch transport and hosted throughput. The 64 MiB-child candidate passed direct-verifier cases with almost no cgroup headroom.",
+      "acceptance_cases": [
+        "EX-01",
+        "EX-02",
+        "EX-05",
+        "OP-02",
+        "BC-01"
+      ],
+      "implementation": "Native verifier isolation integrated; early API gate, shared full-content paging/client sequencing and authenticated batch streaming under implementation.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A02",
+      "title": "Run the complete integrated verification on the final source",
+      "plan": [
+        "W00",
+        "W11"
+      ],
+      "status": "pending_final_combined_run",
+      "evidence": [
+        "E01"
+      ],
+      "remaining": "After runtime/API/client and Auth integration stabilize, run required complete backend and frontend types/build/tests plus affected operations/schema/Kubernetes checks. Keep the c9f red receipt and 32/24 focused corrections; retain the earlier 359-test frontend run as historical source-specific evidence, not the changed client final result.",
+      "done_when": "One exact final commit has required complete green checks and source-bound logs; any remaining failure is explicit.",
+      "not_proven": "Current entire backend green; tests do not establish deployment.",
+      "acceptance_cases": [
+        "R0",
+        "W11 exit evidence"
+      ],
+      "implementation": "Test harnesses implemented; final integrated run pending.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A04",
+      "title": "Establish actual available model routes under the existing policy",
+      "plan": [
+        "W07",
+        "W10",
+        "D06"
+      ],
+      "status": "external_availability_unresolved",
+      "evidence": [
+        "E08",
+        "E09"
+      ],
+      "remaining": "Resolve provider-side quota/credit/credential availability through existing authorized routing and billing policy; confirm enabled task routes without silently buying capacity or changing usage accounting. Separately verify immediate clear error when every route is unavailable.",
+      "done_when": "Current configured-route availability and no-agent behavior have actual receipts; failures and unknown usage retained.",
+      "not_proven": "Keys in configuration do not prove a usable model or a successful proposal.",
+      "acceptance_cases": [
+        "ME-10",
+        "ME-11",
+        "BC-01"
+      ],
+      "implementation": "Routing/error/usage logic implemented; external provider availability unresolved.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A05",
+      "title": "Complete independent semantic and bounded-retrieval qualification",
+      "plan": [
+        "W05",
+        "W06",
+        "W08",
+        "D07"
+      ],
+      "status": "scoped_offline_pass_live_quality_and_holdout_open",
+      "evidence": [
+        "E09",
+        "E10"
+      ],
+      "remaining": "Freeze D07 language/task/model matrix, held-out samples, repeats and noncritical limits before outcomes; test exact current contracts on available routes. Resolve critical number/actor/condition failures; preserve their failed qualification status until corrected. Qualify requirement-specific follow-up against the seven measured bilingual retrieval misses without turning missing evidence into absent capability.",
+      "done_when": "All 13 task boundaries accounted for; independent gold, per-class attempted/completed/scored denominators and critical false-acceptance/rejection/omission outcomes, source bindings and measured retrieval scope retained.",
+      "not_proven": "Whole/batch typed transport is not semantic correctness;9/16 bounded recall is not full recall.",
+      "acceptance_cases": [
+        "ME-01",
+        "ME-02",
+        "ME-04",
+        "ME-08",
+        "ME-09",
+        "ME-14",
+        "RT-01",
+        "RT-02"
+      ],
+      "implementation": "Typed source/diagnostic/repair/retrieval/consistency logic implemented; live semantic and independent holdout qualification incomplete.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A06",
+      "title": "Qualify Arabic scanned-input extraction",
+      "plan": [
+        "W02",
+        "W05",
+        "D03"
+      ],
+      "status": "automatic_arabic_semantic_qualification_failed",
+      "evidence": [
+        "E11"
+      ],
+      "remaining": "Address the actual obligation loss in Arabic native OCR and rerun independent page/blank/number gold cases, or explicitly keep automatic Arabic extraction unqualified with the current required page review. Preserve readable pages and visible pending information; do not classify a valid scan as invalid input to bypass the failure.",
+      "done_when": "Independent gold tests preserve the supported Arabic obligations, numbers and blank/read coverage. Until then, automatic valid-scan correctness remains an explicit unclosed product limitation; mandatory review is a safety control, not automatic success.",
+      "not_proven": "Confidence82 or numeric_uncertainty=false did not preserve meaning.",
+      "acceptance_cases": [
+        "IN-03",
+        "IN-04",
+        "D03"
+      ],
+      "implementation": "Native extraction/manual page review implemented; automatic Arabic semantic qualification failed.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A07",
+      "title": "Verify Word table-of-contents update and target-engine compatibility",
+      "plan": [
+        "W04",
+        "D02"
+      ],
+      "status": "representative_visual_pass_target_word_update_open",
+      "evidence": [
+        "E03"
+      ],
+      "remaining": "Perform real Microsoft Word update/save and verify page numbers, headings, Arabic/English layout and yellow gaps against canonical contents. Investigate the absent page-number cache in the 18 LibreOffice conversions or explicitly retain the engine limitation.",
+      "done_when": "Named actual reviewer/engine versions, updated files and per-page hashes/visual evidence; no invented cache numbers.",
+      "not_proven": "The existing91 reviewed pages do not establish Word update/save or every density/template.",
+      "acceptance_cases": [
+        "EX-02",
+        "EX-06"
+      ],
+      "implementation": "Native renderer/canonical content verification implemented; actual target-engine TOC update unqualified.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A08",
+      "title": "Freeze final images and execute the checked release",
+      "plan": [
+        "W00",
+        "W11"
+      ],
+      "status": "schema_gateway_Auth_manifest_frozen_application_not_deployed",
+      "evidence": [
+        "E04",
+        "E05",
+        "E08"
+      ],
+      "remaining": "Bind final reviewed images/source to the frozen 22-migration/gateway/shared-Auth contract. Recheck baseline drift, actual PostgreSQL 18 role authority, mixed-executor admission, drain/recovery and declared API 384 MiB/700m runtime preconditions, then execute the authorized checked rollout. Apply and observe the source-bound production Auth policy in that atomic release. Preserve exact gateway denial for the demonstrated signed-TUS bypass.",
+      "done_when": "Release workflow and deployed schema/image/gateway readback match the reviewed contract, with protected historical rows/ACLs and a concrete recovery record.",
+      "not_proven": "No reliability application deployment or production storage retirement is established.",
+      "acceptance_cases": [
+        "W11 exit evidence",
+        "OP-02",
+        "OP-04"
+      ],
+      "implementation": "22-migration/gateway/shared platform Auth helper manifest frozen; actual shared-helper isolated restore passed. Final runtime/image qualification and checked deployment pending.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A09",
+      "title": "Complete actual authenticated hosted issuance, export and recovery acceptance",
+      "plan": [
+        "W01",
+        "W03",
+        "W04",
+        "W07",
+        "W09",
+        "W10",
+        "W11",
+        "D01",
+        "D04",
+        "D05",
+        "D06"
+      ],
+      "status": "harness_implemented_hosted_acceptance_pending",
+      "evidence": [
+        "E02",
+        "E04",
+        "E05",
+        "E06",
+        "E07",
+        "E12"
+      ],
+      "remaining": "Use isolated fixtures or explicitly authorized existing records through the real browser/API/worker/storage paths. Cover early template/partial vs substantive issued status, generated and ordinary draft/final exports, one/two-volume atomic readiness, close-tab/reentry/retry, late source/member/approval changes, full/unknown storage and readback. Measure accepted-to-whole-package issuance including queue against 600 seconds; terminal unavailability returns earlier. For retirement acceptance, run the exact fenced process/physical recovery protocol in an authorized isolated setting; local fake process proofs are insufficient. The shared-helper isolated 13-check restore is already proven; separately define service recovery-point/time objectives and compare observed recovery against them before claiming D05.",
+      "done_when": "Independent authenticated download hashes/sizes/complete-set and browser state; full request timestamps including failures; quota/usage/lease/currentness invariants; cleanup and recovery receipts.",
+      "not_proven": "No hosted600s/concurrency promise, real-user complete workflow, or production physical retirement can be inferred from local tests.",
+      "acceptance_cases": [
+        "AR-04",
+        "AR-05",
+        "EX-01",
+        "EX-03",
+        "EX-04",
+        "EX-05",
+        "OP-02",
+        "OP-03",
+        "OP-04",
+        "OP-05",
+        "UX-01",
+        "UX-02",
+        "UX-03",
+        "BC-01"
+      ],
+      "implementation": "Durable generated/ordinary packages and acceptance harness implemented; full real hosted acceptance pending.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    }
+  ],
+  "closed_since_revision1": [
+    {
+      "former_action": "A03",
+      "closed_scope": "Shared-helper isolated cloud Auth/Storage restore: all 13 checks passed in 41910306855 with source-bound helper and cleanup. Earlier two failures and old-harness success retained.",
+      "evidence": "E06",
+      "still_open_under": [
+        "A08:production policy applied/observed only during checked release",
+        "A09:declared service recovery objectives and hosted end-to-end timing"
+      ]
+    },
+    {
+      "scope": "Retirement adapter explicit SET-role authority",
+      "evidence": "E04",
+      "result": "Local PostgreSQL red/green proof integrated; actual production admission and physical retirement remain distinct."
+    }
+  ]
+}
