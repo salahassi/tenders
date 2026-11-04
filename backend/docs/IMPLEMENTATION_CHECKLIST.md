@@ -6975,3 +6975,29 @@ transport and resource tests pass afterward, including fabricated metadata/hash
 and revoked-review negatives. Separate root tests cover the real UI and
 API → SQL lease → DOCX renderer → authorized download journey; hosted acceptance
 remains separate.
+
+### T02 connected empty/invalid input journey (2026-11-04)
+
+The actual OpportunityDetail upload/prepare UI keeps “Save available draft”
+available when no documents were persisted and AI generation is disabled.
+Real empty-file and invalid-PDF-signature extraction errors reach the typed
+`delivery.snapshot.prepare` disposition without creating a document. The saved
+package UI shows insufficient information, yellow-input guidance and download.
+Three focused UI tests pass; their API transport/download is mocked, so they do
+not establish browser or hosted acceptance.
+
+Nine new migrated API → SQL claim → real DOCX renderer → stored-byte hash →
+authorized API download cases pass. They cover English/Arabic no-document
+input, empty/invalid/technical extraction failure, retained OCR-pending scans,
+fully reviewed blank successors, and both source drafts and blank templates
+retried after all model agents fail. Unread scans retain their original hashes
+and OCR status; they are not declared invalid. Generated Word XML contains yellow
+placeholders and the appropriate insufficient-information notice. Explicit v1
+retry remains independent while the original failed issuance and absolute
+deadline stay byte-for-byte unchanged, with zero provider usage. The retry case
+failed before the deadline fix; the reviewed-blank gap assertion failed before
+its disposition fix. The six prior complete delivery pipeline cases also pass
+after extracting their shared SQL/Map-storage fixture. Both package typechecks
+pass. All 15 backend cases use local token and object adapters, not hosted
+Auth/Storage; production deployment and real-browser visual acceptance remain
+separate gates.
