@@ -1,5 +1,37 @@
 # Implementation status and continuation plan
 
+## November 4 — current integration status after storage foundation and final visual checks
+
+This overview supersedes the intermediate status statements in the dated entries
+below. The implementation branch remains **not deployed**. The permanent
+GitHub Actions → DigitalOcean access runbook is merged on `main` through PR25;
+the current reliability implementation is still draft PR24.
+
+- Both lockfile installs pass. Final frontend typecheck, **359 tests / 57 files**,
+  and build pass; the final backend suite waits for retirement integration.
+- Exact native Deno render and asynchronous content verification pass all seven
+  admitted capacity fixtures at unchanged limits. Container peak is 649,199,616
+  bytes under 640 MiB: modest headroom, not hosted concurrency qualification.
+  The actual two-volume worker lifecycle and concurrent-service check is pending.
+- The final representative visual receipt covers **18 DOCX / 91 PDF pages**,
+  with exact prior reviewed-page hashes and fresh native field/content checks.
+  LibreOffice TOC page numbers and actual Word update/save are separate limits.
+- Storage one-time send authorization, unknown-write accounting, deletion
+  receipts, request cancellation and independent replay/current-clock regressions
+  are integrated. Five real PostgreSQL lock-observed cases pass. Permanent key
+  retirement, actual pinned-server physical reconciliation and final release
+  guards remain in progress; no production retirement has run.
+- The 600-second request deadline and early no-agent failure are implemented.
+  Full hosted package timing, cloud restore, deployment and actual user-flow
+  acceptance remain unproven. An optional template is not successful issuance.
+- The latest read-only model binding audit is successful run41869042836;
+  it reports no Gemini key and existing OpenAI/QwenCloud keys. The earlier live
+  campaign's credit/quota failures remain unresolved evidence, not semantic
+  success. Automatic Arabic OCR and private semantic holdout are still open.
+
+The evidence files referenced by the detailed entries retain their exact scope
+and source hashes. Historical failures are retained rather than relabeled.
+
 ## November 4 — historical recovery transitions qualified at current schema
 
 G13 now has twelve additional public-command integration cases combining paid
