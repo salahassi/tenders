@@ -18,9 +18,12 @@ import {
 } from "docx";
 export type ExportBlock =
   | { type: "paragraph" | "bullet" | "heading" | "title"; text: string }
+  | { type: "placeholder"; text: string; gap_id: string }
   | { type: "table"; headers: string[]; rows: string[][] }
   | { type: "toc"; text: string };
 export interface RenderModel {
+  /** New delivery snapshots use typed placeholders; legacy exports keep their pinned behavior. */
+  placeholder_version?: 1;
   id: string;
   version: number;
   mode: string;
@@ -41,7 +44,12 @@ export async function renderDocx(
   const rtl = model.language === "ar",
     font = { ascii: "Carlito", hAnsi: "Carlito", cs: "Amiri" },
     size = rtl ? 29 : 23;
-  function runs(text: string, bold = false, runSize = size) {
+  function runs(
+    text: string,
+    bold = false,
+    runSize = size,
+    placeholder = false,
+  ) {
     return text
       .split(/([A-Za-z0-9](?:[A-Za-z0-9 .,:%_/@()+\-]*[A-Za-z0-9%])?)/g)
       .filter(Boolean)
@@ -56,7 +64,11 @@ export async function renderDocx(
                 ? 23
                 : runSize,
             rightToLeft: /[\u0600-\u06ff]/.test(t),
-            highlight: /\[INPUT REQUIRED/i.test(text) ? "yellow" : undefined,
+            highlight:
+              placeholder ||
+              (!model.placeholder_version && /\[INPUT REQUIRED/i.test(text))
+                ? "yellow"
+                : undefined,
           }),
       );
   }
@@ -64,6 +76,7 @@ export async function renderDocx(
     text: string,
     heading?: typeof HeadingLevel.HEADING_1 | typeof HeadingLevel.TITLE,
     keepNext = false,
+    placeholder = false,
   ) =>
     new Paragraph({
       children: runs(
@@ -78,6 +91,7 @@ export async function renderDocx(
               ? 36
               : 30
             : size,
+        placeholder,
       ),
       bidirectional: rtl,
       heading,
@@ -87,7 +101,7 @@ export async function renderDocx(
     });
   const children: (Paragraph | Table | TableOfContents)[] = [];
   let afterToc = false;
-  for (const [blockIndex,b] of model.blocks.entries()) {
+  for (const [blockIndex, b] of model.blocks.entries()) {
     if (b.type === "toc") {
       children.push(new Paragraph({ children: [], pageBreakBefore: true }));
       children.push(
@@ -192,7 +206,8 @@ export async function renderDocx(
             : b.type === "title"
               ? HeadingLevel.TITLE
               : undefined,
-          model.blocks[blockIndex+1]?.type === "table",
+          model.blocks[blockIndex + 1]?.type === "table",
+          b.type === "placeholder",
         ),
       );
   }

@@ -82,6 +82,26 @@ async function wake(id: string, lease = crypto.randomUUID(), details = false) {
     await f.db.exec("reset role;release savepoint wake_rpc");
   }
 }
+async function runtimeWake(name: string, args: any) {
+  expect([
+    "wake_backend_queue_status_v3",
+    "wake_backend_queue_revision_v3",
+  ]).toContain(name);
+  await f.db.exec("savepoint runtime_wake_rpc;set local role service_role");
+  try {
+    return await f.rpc(
+      name,
+      name === "wake_backend_queue_revision_v3"
+        ? [args.job_id, args.lease, args.expected_revision]
+        : [args.job_id, args.lease],
+    );
+  } catch (error) {
+    await f.db.exec("rollback to savepoint runtime_wake_rpc");
+    throw error;
+  } finally {
+    await f.db.exec("reset role;release savepoint runtime_wake_rpc");
+  }
+}
 async function dispatches() {
   return (
     await f.db.query<any>(
@@ -452,10 +472,9 @@ it("performs one delayed RPC for an accepted request and safely loses a race to 
   const { claimed } = await acceptedPoll();
   let clock = 0;
   const internal = vi.fn(async (name: string, args: any) => {
-    if (name === "wake_backend_queue_status")
-      return wake(args.job_id, args.lease, true);
-    expect(name).toBe("wake_backend_queue_revision");
-    return f.rpc(name, [args.job_id, args.lease, args.expected_revision]);
+    if (name === "wake_backend_queue_status_v3") return runtimeWake(name, args);
+    expect(name).toBe("wake_backend_queue_revision_v3");
+    return runtimeWake(name, args);
   });
   const sleep = vi.fn(async (ms: number) => {
     clock += ms;
@@ -869,8 +888,8 @@ it.each([false, true])(
     expect(await wake(first.id)).toBe(true);
     let clock = 1000;
     const lease = crypto.randomUUID();
-    const internal = vi.fn(async (_name: string, args: any) =>
-      wake(args.job_id, args.lease, true),
+    const internal = vi.fn(async (name: string, args: any) =>
+      runtimeWake(name, args),
     );
     const sleep = vi.fn(async (ms: number) => {
       expect(ms).toBeGreaterThan(0);
@@ -891,7 +910,7 @@ it.each([false, true])(
     expect(internal).toHaveBeenCalledTimes(2);
     expect(
       internal.mock.calls.every(
-        ([name]) => name === "wake_backend_queue_status",
+        ([name]) => name === "wake_backend_queue_status_v3",
       ),
     ).toBe(true);
     expect(await dispatches()).toBe(claimedDuringWait ? 1 : 2);
@@ -1057,8 +1076,8 @@ it.each([false, true])(
       );
     });
     const internal = vi.fn(async (name: string, args: any = {}) => {
-      if (name === "wake_backend_queue_status")
-        return wake(args.job_id, args.lease, true);
+      if (name === "wake_backend_queue_status_v3")
+        return runtimeWake(name, args);
       return name === "claim_storage_cleanup" ? [] : null;
     });
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -1084,7 +1103,7 @@ it.each([false, true])(
     expect(response.status).toBe(200);
     expect(
       internal.mock.calls.filter(
-        ([name]) => name === "wake_backend_queue_status",
+        ([name]) => name === "wake_backend_queue_status_v3",
       ),
     ).toHaveLength(1);
     expect(
@@ -1139,7 +1158,7 @@ it.each(["ready", "future", "capacity"])(
         expect(claimed.id).toBe(target.id);
         expect(claimed.status).toBe("running");
         expect(claimed.lease_token).toBeTruthy();
-        expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+        expect(await f.rpc("claim_backend_job_v3")).toBeNull();
         // This suite exercises queue admission, not the proposal domain handler.
         // Keep its synthetic completion bound to the actual exclusively held lease.
         expect(
@@ -1156,8 +1175,8 @@ it.each(["ready", "future", "capacity"])(
       }
     });
     const internal = vi.fn(async (name: string, args: any = {}) => {
-      if (name === "wake_backend_queue_status")
-        return wake(args.job_id, args.lease, true);
+      if (name === "wake_backend_queue_status_v3")
+        return runtimeWake(name, args);
       throw Error("Synthetic maintenance outage; never expose this body");
     });
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -1175,7 +1194,7 @@ it.each(["ready", "future", "capacity"])(
       () =>
         ({
           internal,
-          claim: () => f.rpc("claim_backend_job_v2"),
+          claim: () => f.rpc("claim_backend_job_v3"),
           invocationStartedAt: Date.now(),
           invocationBudgetMs: 0,
         }) as unknown as Backend,

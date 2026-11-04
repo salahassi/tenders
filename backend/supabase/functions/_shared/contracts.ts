@@ -10,6 +10,7 @@ import { MODEL_PROVIDER_IDS, ROUND_ROBIN_PROVIDERS } from "./modelProviders.ts";
 import {
   deliveryPrepareSchema,
   deliveryRefreshSchema,
+  deliveryRetrySchema,
 } from "./deliveryContract.ts";
 import {
   estimateInputSchema,
@@ -77,6 +78,7 @@ const host = z
 export const commandSchemas = {
   "delivery.snapshot.prepare": deliveryPrepareSchema,
   "delivery.snapshot.refresh": deliveryRefreshSchema,
+  "delivery.snapshot.retry": deliveryRetrySchema,
   "notification.preferences": z
     .object({
       expected_revision: z.number().int().min(0),

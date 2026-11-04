@@ -37,6 +37,7 @@ import { downloadOriginal } from "../lib/remoteFiles";
 import type { DocumentRecord, Opportunity } from "../types";
 import FitAssessment from "../components/FitAssessment";
 import GenerationPanel from "../components/GenerationPanel";
+import PrepareDeliveryDraft from "../components/PrepareDeliveryDraft";
 import "./workspace.css";
 import "./simplified.css";
 export default function OpportunityDetail() {
@@ -45,6 +46,7 @@ export default function OpportunityDetail() {
   const o = state.opportunities.find((item) => item.id === id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [intakeFailure, setIntakeFailure] = useState<string>();
   const [view, setView] = useState<DocumentRecord | null>(null);
   const [editDetails, setEditDetails] = useState(false);
   const [aiInfo, setAiInfo] = useState(false);
@@ -88,6 +90,7 @@ export default function OpportunityDetail() {
     if (!editable || !files.length || busy) return;
     setBusy(true);
     setError("");
+    setIntakeFailure(undefined);
     const added: DocumentRecord[] = [];
     const failures: string[] = [];
     let restored = 0;
@@ -111,6 +114,20 @@ export default function OpportunityDetail() {
         await saveLocalFile(document.id, file);
         added.push(document);
       } catch (err) {
+        const code =
+          err && typeof err === "object" && "code" in err
+            ? String(err.code)
+            : "";
+        if (
+          [
+            "EMPTY_FILE",
+            "INVALID_FILE",
+            "UNSUPPORTED_FORMAT",
+            "EXTRACTION_LIMIT",
+            "EXTRACTION_FAILED",
+          ].includes(code)
+        )
+          setIntakeFailure(code);
         failures.push(
           `${file.name}: ${err instanceof Error ? err.message : "Could not read the file."}`,
         );
@@ -166,6 +183,15 @@ export default function OpportunityDetail() {
         }
       />
       <FitAssessment state={state} opportunity={o} compact={selected} />
+      {selected && backend && (
+        <PrepareDeliveryDraft
+          key={o.id}
+          client={backend}
+          opportunityId={o.id}
+          disabled={!editable || busy}
+          intakeFailure={intakeFailure}
+        />
+      )}
       {!selected && <GenerationPanel opportunity={o} />}
       {!selected ? (
         <section className="panel simple-section">

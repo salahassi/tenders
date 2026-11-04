@@ -1,5 +1,11 @@
 import { recoveryRoute } from "../_shared/recovery.ts";
 import { buildExportModel, verifyExportDocx } from "../_shared/export.ts";
+import {
+  buildDeliveryExport,
+  deliveryRenderingGapSummary,
+  type DeliveryVolume,
+} from "../_shared/deliveryExport.ts";
+import { deliveryBytes } from "../_shared/deliveryWorker.ts";
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
 import {
   commandSchemas,
@@ -500,6 +506,86 @@ export function createApiHandler(
         );
       }
       const exportPath = path.match(/^\/v1\/exports\/([^/]+)\/context$/);
+      const deliveryPath = path.match(
+        /^\/v1\/delivery-snapshots\/([^/]+)\/(context|package)$/,
+      );
+      if (deliveryPath && request.method === "GET") {
+        const args = { snapshot_id: uuid.parse(deliveryPath[1]) };
+        if (deliveryPath[2] === "context")
+          return respond(
+            await backend.userRpc(token, "delivery_context", args),
+          );
+        const saved = await backend.userRpc(token, "delivery_package", args);
+        const snapshot = await backend.userRpc(token, "delivery_context", args);
+        const volumes: DeliveryVolume[] = snapshot.payload.separate_volumes
+          ? ["technical", "financial"]
+          : ["combined"];
+        const gaps = new Map(
+          volumes
+            .flatMap(
+              (volume) => deliveryRenderingGapSummary(snapshot, volume).gaps,
+            )
+            .map((gap) => [gap.id, gap]),
+        );
+        saved.snapshot.gap_count = gaps.size;
+        saved.snapshot.rendering_gap_count = [...gaps.values()].filter(
+          (gap) => gap.origin === "rendering",
+        ).length;
+        return respond(saved);
+      }
+      const deliveryArtifact = path.match(
+        /^\/v1\/delivery-artifacts\/([^/]+)\/download$/,
+      );
+      if (deliveryArtifact && request.method === "GET") {
+        const id = uuid.parse(deliveryArtifact[1]);
+        const context = await backend.internal("delivery_artifact_context", {
+          artifact_id: id,
+          actor_id: user.id,
+        });
+        const artifact = context.artifact;
+        if (artifact.status !== "ready")
+          throw new AppError(
+            409,
+            "DELIVERY_NOT_READY",
+            "The saved draft file is still being prepared.",
+          );
+        const blob = await backend.deliveryObject(artifact.storage_key);
+        if (!blob)
+          throw new AppError(
+            503,
+            "DELIVERY_STORAGE_UNAVAILABLE",
+            "The saved draft file needs recovery.",
+          );
+        const actual = await deliveryBytes(
+          blob,
+          buildDeliveryExport(
+            context.snapshot,
+            artifact.volume as DeliveryVolume,
+          ),
+        );
+        if (
+          actual.hash !== artifact.content_hash ||
+          actual.size !== Number(artifact.expected_size)
+        )
+          throw new AppError(
+            422,
+            "DELIVERY_ARTIFACT_INVALID",
+            "The saved draft bytes have changed.",
+          );
+        await backend.internal("authorize_delivery_artifact_download", {
+          artifact_id: id,
+          actor_id: user.id,
+          actual_hash: actual.hash,
+        });
+        const out = corsHeaders(request, env.allowedOrigins);
+        out.set("content-type", artifact.mime_type);
+        out.set(
+          "content-disposition",
+          `attachment; filename*=UTF-8''${encodeURIComponent(artifact.original_name)}`,
+        );
+        out.set("content-length", String(actual.size));
+        return new Response(new Uint8Array(actual.bytes), { headers: out });
+      }
       if (request.method === "GET" && exportPath) {
         const record = await backend.userRpc(token, "export_context", {
           request_id: uuid.parse(exportPath[1]),

@@ -31,10 +31,22 @@ const paths: Record<string, Record<string, unknown>> = {};
 paths["/v1/sources/{id}/verification"] = {
   get: {
     operationId: "source.verification.read",
-    description: "Owner-only live human verification image and challenge identity, or null when none is active. Browser session state and submitted answers are never returned.",
+    description:
+      "Owner-only live human verification image and challenge identity, or null when none is active. Browser session state and submitted answers are never returned.",
     security: [{ userJWT: [] }],
-    parameters: [{ in: "path", name: "id", required: true, schema: { type: "string", format: "uuid" } }],
-    responses: { "200": { description: "Current expiring challenge or null" }, "401": { description: "Authentication required" }, "403": { description: "Owner role required" } },
+    parameters: [
+      {
+        in: "path",
+        name: "id",
+        required: true,
+        schema: { type: "string", format: "uuid" },
+      },
+    ],
+    responses: {
+      "200": { description: "Current expiring challenge or null" },
+      "401": { description: "Authentication required" },
+      "403": { description: "Owner role required" },
+    },
   },
 };
 const responses = {
@@ -458,6 +470,21 @@ const recoveryPaths: Array<[string, string, string, unknown?]> = [
     "Owner-only original-inclusive backup download with actual hash and membership recheck",
   ],
   ["/v1/exports/{id}/context", "get", "Return a current bound export model"],
+  [
+    "/v1/delivery-snapshots/{id}/context",
+    "get",
+    "Return an authorized immutable incomplete proposal draft",
+  ],
+  [
+    "/v1/delivery-snapshots/{id}/package",
+    "get",
+    "Read current draft package status without private object keys",
+  ],
+  [
+    "/v1/delivery-artifacts/{id}/download",
+    "get",
+    "Verify draft content, yellow placeholders and stored bytes; recheck current authorization before download",
+  ],
   [
     "/v1/export-artifacts/{id}/complete",
     "post",

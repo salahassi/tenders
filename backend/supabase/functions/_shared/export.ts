@@ -8,9 +8,11 @@ import { exportSectionGroups } from "./proposalOutline.ts";
 type Row = Record<string, any>;
 export type ExportBlock =
   | { type: "paragraph" | "bullet" | "heading" | "title"; text: string }
+  | { type: "placeholder"; text: string; gap_id: string }
   | { type: "table"; headers: string[]; rows: string[][] }
   | { type: "toc"; text: string };
 export interface RenderModel {
+  placeholder_version?: 1;
   id: string;
   version: number;
   mode: string;
@@ -551,6 +553,32 @@ export function verifyExportDocx(bytes: Uint8Array, model: RenderModel) {
       .join("");
   }
   const paragraphs: string[] = [];
+  const paragraphHighlights: { all: boolean; any: boolean }[] = [];
+  const highlightState = (nodes: any[]) => {
+    const states: boolean[] = [];
+    const visit = (items: any[]) => {
+      for (const item of items)
+        for (const [tag, children] of Object.entries(item)) {
+          if (!Array.isArray(children)) continue;
+          if (tag === "w:r") {
+            if (!normalize(allText(children))) continue;
+            const properties =
+              children.find((entry: any) => entry["w:rPr"])?.["w:rPr"] || [];
+            states.push(
+              properties.some(
+                (entry: any) =>
+                  entry["w:highlight"] && entry[":@"]?.["@_w:val"] === "yellow",
+              ),
+            );
+          } else visit(children);
+        }
+    };
+    visit(nodes);
+    return {
+      all: states.length > 0 && states.every(Boolean),
+      any: states.some(Boolean),
+    };
+  };
   function walk(nodes: any[]) {
     for (const n of nodes)
       for (const [k, v] of Object.entries(n)) {
@@ -605,7 +633,10 @@ export function verifyExportDocx(bytes: Uint8Array, model: RenderModel) {
             /TOC\s+[^]*?$/,
             "",
           );
-          if (normalize(text)) paragraphs.push(normalize(text));
+          if (normalize(text)) {
+            paragraphs.push(normalize(text));
+            paragraphHighlights.push(highlightState(v));
+          }
         } else walk(v);
       }
   }
@@ -617,6 +648,30 @@ export function verifyExportDocx(bytes: Uint8Array, model: RenderModel) {
       "EXPORT_CONTENT_MISMATCH",
       "Word content does not match the authorized proposal. Generate a new version for content changes.",
     );
+  if (model.placeholder_version === 1) {
+    const expectedGaps = model.blocks.flatMap((block) =>
+      block.type === "table"
+        ? [block.headers, ...block.rows]
+            .flat()
+            .filter((text) => normalize(text))
+            .map(() => false)
+        : normalize(block.text)
+          ? [block.type === "placeholder"]
+          : [],
+    );
+    if (
+      expectedGaps.some((gap, index) =>
+        gap
+          ? !paragraphHighlights[index]?.all
+          : paragraphHighlights[index]?.any,
+      )
+    )
+      throw new AppError(
+        422,
+        "EXPORT_PLACEHOLDER_MISMATCH",
+        "Every missing input must retain its yellow highlight, without marking confirmed content as missing.",
+      );
+  }
   for (const name of Object.keys(files).filter((n) =>
     /^word\/(?:header|footer|footnotes|endnotes)[0-9]*\.xml$/.test(n),
   )) {

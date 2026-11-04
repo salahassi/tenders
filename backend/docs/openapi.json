@@ -7966,6 +7966,124 @@
                           ],
                           "properties": {
                             "operation": {
+                              "const": "delivery.snapshot.prepare"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "opportunity_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "intake_failure": {
+                                  "type": "string",
+                                  "enum": [
+                                    "EMPTY_FILE",
+                                    "INVALID_FILE",
+                                    "UNSUPPORTED_FORMAT",
+                                    "EXTRACTION_LIMIT",
+                                    "EXTRACTION_FAILED"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "opportunity_id",
+                                "expected_revision"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "delivery.snapshot.refresh"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "proposal_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "expected_delivery_revision": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "proposal_id",
+                                "expected_revision",
+                                "expected_delivery_revision"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "delivery.snapshot.retry"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "snapshot_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_delivery_revision": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "snapshot_id",
+                                "expected_delivery_revision"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
                               "const": "notification.preferences"
                             },
                             "input": {
@@ -13422,6 +13540,174 @@
     "/v1/exports/{id}/context": {
       "get": {
         "summary": "Return a current bound export model",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
+    "/v1/delivery-snapshots/{id}/context": {
+      "get": {
+        "summary": "Return an authorized immutable incomplete proposal draft",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
+    "/v1/delivery-snapshots/{id}/package": {
+      "get": {
+        "summary": "Read current draft package status without private object keys",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
+    "/v1/delivery-artifacts/{id}/download": {
+      "get": {
+        "summary": "Verify draft content, yellow placeholders and stored bytes; recheck current authorization before download",
         "security": [
           {
             "userJWT": []

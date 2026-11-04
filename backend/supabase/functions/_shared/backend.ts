@@ -319,6 +319,52 @@ export class Backend {
       );
     return data;
   }
+  /** Only a genuine missing object permits a new immutable upload. A network
+   * or authorization failure must never be interpreted as an empty slot. */
+  async deliveryObject(path: string): Promise<Blob | null> {
+    const { data, error } = await this.admin.storage
+      .from("tenderdesk-private")
+      .download(path, {}, { signal: AbortSignal.timeout(20000) });
+    if (error) {
+      const status = String(
+        (error as { statusCode?: unknown }).statusCode || "",
+      );
+      if (status === "404") return null;
+      throw new AppError(
+        503,
+        "DELIVERY_STORAGE_UNAVAILABLE",
+        "Draft storage could not be read.",
+      );
+    }
+    if (!data)
+      throw new AppError(
+        503,
+        "DELIVERY_STORAGE_UNAVAILABLE",
+        "Draft storage returned no bytes.",
+      );
+    return data;
+  }
+  async storeDeliveryObject(path: string, bytes: Uint8Array, mime: string) {
+    const storage = createClient(this.env.url, this.env.serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        fetch: (input, init) =>
+          fetch(input, { ...init, signal: AbortSignal.timeout(20000) }),
+      },
+    }).storage;
+    const { error } = await storage
+      .from("tenderdesk-private")
+      .upload(path, bytes, {
+        contentType: mime,
+        upsert: false,
+      });
+    if (error)
+      throw new AppError(
+        503,
+        "DELIVERY_STORAGE_UNAVAILABLE",
+        "Draft storage could not confirm the upload.",
+      );
+  }
   async accept(
     id: string,
     actor: string,
@@ -471,7 +517,7 @@ export class Backend {
     return data;
   }
   async claim() {
-    const { data, error } = await this.admin.rpc("claim_backend_job_v2");
+    const { data, error } = await this.admin.rpc("claim_backend_job_v3");
     if (error) throw databaseError(error);
     return data;
   }

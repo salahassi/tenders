@@ -81,7 +81,7 @@ export async function recoveryRoute(
     );
   }
   const file = path.match(
-      /^\/v1\/recovery\/files\/(documents|export_artifacts)\/([^/]+)$/,
+      /^\/v1\/recovery\/files\/(documents|export_artifacts|proposal_delivery_artifacts)\/([^/]+)$/,
     ),
     complete = path.match(/^\/v1\/recovery\/restore-files\/([^/]+)\/complete$/);
   if (

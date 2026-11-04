@@ -103,3 +103,10 @@ export const deliveryRefreshSchema = z
     expected_delivery_revision: z.number().int().nonnegative(),
   })
   .strict();
+
+export const deliveryRetrySchema = z
+  .object({
+    snapshot_id: z.uuid(),
+    expected_delivery_revision: z.number().int().nonnegative(),
+  })
+  .strict();

@@ -1,5 +1,77 @@
 # Implementation status and continuation plan
 
+## November 4 — integrated durable draft rendering and independent review
+
+Stages 3–7: six parallel implementation tracks are integrated on
+`codex/proposal-reliability-implementation`, with cross-review and separate
+regression evidence. The root integration connects immutable delivery snapshots
+to executor-3 local jobs, server-side Word generation, byte verification, private
+download APIs, current snapshot polling and an independent draft-request action.
+A user can explicitly retry a blocked file package with its observed delivery
+revision. Changing an opportunity, snapshot or client cancels stale UI actions;
+late responses cannot replace the current selection or initiate its download.
+Every package remains draft and substantively incomplete. Rendering does not
+mark model generation successful, grant approval or settle unknown usage.
+
+Missing inputs are typed placeholders. The canonical document verifier checks
+actual Open Office XML text and yellow highlighting, rejects missing highlighting
+and yellow confirmed content, and retains the legacy export contract. The new
+render projection preserves allowed source content and inserts explicit yellow
+review gaps wherever policy-restricted or financial technical-volume content is
+withheld. Safe source sentences remain in order; the stored snapshot is unchanged.
+Gap counts reflect the actual projection. Financial markers are conservative
+review rules, not universal semantic detection or proof of a complete response.
+
+The renderer runs in a fixed offline Deno subprocess with bundled fonts and cached
+locked dependencies. It has a 30-second attempt deadline, a 128 MiB old-space heap
+ceiling, a 10 MiB input/output ceiling and a 64 KiB diagnostic stream ceiling.
+The parent kills and reaps a timed-out process before retrying. Child permissions
+allow only font/cache reads; there is no network, environment-reading, file-writing
+or child-process grant. These limits are execution guards, not a measured service
+latency promise or a total resident-memory guarantee. Uploads use stable immutable
+keys and a bounded network deadline; ambiguous upload replies are recovered only
+by fetching and verifying actual bytes. Downloads validate all required volumes
+before the browser starts either file and recheck current authorization after
+reading and verifying stored bytes.
+
+Local evidence: the actual pinned Deno image builds successfully. With network
+disabled and a 640 MiB container limit, the reusable renderer smoke test kills and
+reaps an infinite CPU loop, survives child heap exhaustion, verifies English and
+Arabic files, and verifies a synthetic Arabic document with 1,000 paragraphs and
+400 table rows (444,446 input bytes; about 984 kB Word output). Six rendered pages
+from the two small language fixtures were visually inspected for text direction,
+layout, tables and yellow gaps. These are bounded synthetic samples, not full
+Word-client or customer acceptance. The real local pipeline test covers HTTP
+prepare through authenticated SQL, executor-3 claim, actual Word bytes, a failed
+second volume, canonical retry preserving the first file, full-package download,
+and membership revocation between stored-byte read and final authorization. A
+separate test removes real yellow formatting and confirms the resulting verifier
+failure becomes a blocked SQL receipt without losing saved content.
+
+Final combined validation: **2,151 backend tests in 129 files** and **299
+frontend tests in 46 files** pass (2,450 total); both lockfile installs,
+typechecks and builds pass. All **281 Python operations tests** and both Node
+runtime checks pass. The final integrated PostgreSQL suites pass **17/17**
+checks against the same 146-migration manifest, whose SHA-256 is
+`40f32caa10ba4f974c86402a83ba39ffb07eaeee37cacd051cc45d99ebbd516e`.
+The new artifact migration hash is
+`31d9380be786012ddc7bd44103c354ed99728c01640ee1b1ed6b74783061e6a9`.
+The isolated database container was removed after receipt retention. Existing
+warnings remain for deprecated `whatwg-encoding`, jsdom setup cost and the large
+frontend bundle; none is converted into a passing production acceptance claim.
+
+Release status: **not deployed; no paid model, production storage or email call**.
+Read-only inventory on November 4 confirmed public frontend/health availability
+and the DigitalOcean cluster/nodes running. Kubernetes workload/version reads
+returned HTTP 503 through the configured proxy, so the deployed image, application
+revision and schema tip remain unverified; shallow health is not worker/database
+acceptance. OCR for uploaded scans, full source authority/span and semantic repair
+contracts, provider-specific semantic/capacity qualification, whole-proposal
+consistency, substantive completion during total model outage, measured delivery
+latency, storage saturation, cloud restore and hosted upload-to-download acceptance
+remain open. The updated remediation plan records each package as partial or open;
+this integration does not close all F01–F11 findings.
+
 ## November 4 — independent delivery API and UI regression evidence (W03/W10)
 
 Test-only coverage exercises the actual download HTTP handler with a rendered

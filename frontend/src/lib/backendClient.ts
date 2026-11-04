@@ -147,9 +147,17 @@ export class BackendClient {
     if (!/^[0-9a-f-]{36}$/.test(id)) throw Error("Invalid artifact.");
     return this.downloadBytes(`/v1/export-artifacts/${id}/download`);
   }
-  async downloadBytes(path: string): Promise<Blob> {
+  async downloadDeliveryArtifact(
+    id: string,
+    signal?: AbortSignal,
+  ): Promise<Blob> {
+    if (!/^[0-9a-f-]{36}$/.test(id)) throw Error("Invalid artifact.");
+    return this.downloadBytes(`/v1/delivery-artifacts/${id}/download`, signal);
+  }
+  async downloadBytes(path: string, signal?: AbortSignal): Promise<Blob> {
+    signal?.throwIfAborted();
     if (
-      !/^\/v1\/(?:export-artifacts\/[0-9a-f-]{36}\/download|recovery\/files\/(?:documents|export_artifacts)\/[0-9a-f-]{36})$/.test(
+      !/^\/v1\/(?:(?:export-artifacts|delivery-artifacts)\/[0-9a-f-]{36}\/download|recovery\/files\/(?:documents|export_artifacts|proposal_delivery_artifacts)\/[0-9a-f-]{36})$/.test(
         path,
       )
     )
@@ -158,6 +166,7 @@ export class BackendClient {
       data: { session },
       error,
     } = await this.auth.auth.getSession();
+    signal?.throwIfAborted();
     if (error) throw error;
     if (!session)
       throw new BackendRequestError(
@@ -167,7 +176,9 @@ export class BackendClient {
       );
     const response = await fetch(`${this.projectUrl}/functions/v1/api${path}`, {
       headers: { Authorization: `Bearer ${session.access_token}` },
+      signal,
     });
+    signal?.throwIfAborted();
     if (!response.ok) {
       const value = await response.json();
       throw new BackendRequestError(
@@ -176,7 +187,9 @@ export class BackendClient {
         response.status,
       );
     }
-    return response.blob();
+    const blob = await response.blob();
+    signal?.throwIfAborted();
+    return blob;
   }
   async uploadOriginal(
     reservation: { upload_path: string; bucket: string },

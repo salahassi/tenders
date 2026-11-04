@@ -60,3 +60,32 @@ python3 backend/scripts/testing/delivery_artifact_races.py --output /tmp/artifac
 
 Trusted-worker hash/size receipts in SQL tests are synthetic. Canonical DOCX
 validation and real storage bytes are tested separately by the renderer suite.
+
+## Offline renderer and process-failure checks
+
+Build the application image from the repository Dockerfile, then mount
+`delivery_renderer_smoke.ts` at `/app/backend/scripts/testing/delivery_renderer_smoke.ts`
+and an optional writable output directory at `/out`. Run with Docker networking
+disabled and a 640 MiB container limit:
+
+```sh
+docker --host=unix:///var/run/docker.sock run --rm --network none --memory=640m \
+  --mount type=bind,src="$PWD/backend/scripts/testing/delivery_renderer_smoke.ts",dst=/app/backend/scripts/testing/delivery_renderer_smoke.ts,readonly \
+  --mount type=bind,src=/absolute/empty/output,dst=/out \
+  YOUR_REVIEW_IMAGE run --cached-only --frozen \
+  --config=/app/backend/supabase/functions/deno.json \
+  --allow-read=/app,/deno-dir --allow-run=/bin/deno --allow-write=/out \
+  /app/backend/scripts/testing/delivery_renderer_smoke.ts /out
+```
+
+The image must contain the fixed renderer process and bundled fonts. The child
+has no network, environment-reading, filesystem-writing or process-spawn grant;
+it uses frozen cached modules and can read only fonts/cache. Its old-space heap
+ceiling is 128 MiB, stdout is capped at the existing 10 MiB artifact limit, stderr
+at 64 KiB, and each attempt has a 30-second termination deadline. These are local
+execution guards, not a measured delivery service-level objective or full resident
+memory guarantee. The suite injects a non-yielding CPU loop and a small child heap
+exhaustion, checks that the parent survives and reaps each process, then renders
+English/Arabic fixtures and a larger synthetic Arabic/table fixture. It validates
+actual document text and typed yellow highlighting. Exported samples still need
+visual inspection; this is not hosted Auth/Storage or customer acceptance.
