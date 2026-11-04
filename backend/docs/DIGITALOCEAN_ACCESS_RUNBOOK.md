@@ -86,6 +86,20 @@ regression.
 Ten ready workloads prove inventory readiness at that observation, not proposal
 workflow acceptance. The new delivery tables were absent at that time.
 
+The subsequent read-only model binding audit succeeded at commit
+`bc8e5709183fd228ae1bac207e643e2413e9c9fd` in
+[run 41869042836](https://github.com/salahassi/tenders/actions/runs/41869042836).
+Original cluster CA verification and both cleanup steps passed. The sanitized
+[receipt](evidence/model-binding-audit-20261104-41869042836.json) records enabled
+model key-presence booleans only; it does not establish provider availability or
+credit balance. The earlier audit run 41863551387 passed TLS but failed because
+the new diagnostic step omitted its existing database credential environment
+binding. That workflow wiring was corrected; it was not a certificate failure.
+
+When CLI run metadata is stale, inspect the connected GitHub run jobs and job
+logs, checking the exact head revision and executed steps. A cached `queued`
+response must not supersede a completed job's direct execution evidence.
+
 Prefer the connected GitHub tools for metadata when available. With an already
 configured GitHub CLI, these commands inspect definitions/history only:
 

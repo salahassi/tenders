@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "observed_at": "2026-11-04T16:37:30Z",
+  "repository": "salahassi/tenders",
+  "workflow": "doks-access.yml",
+  "mode": "models",
+  "run_id": 41869042836,
+  "job_id": 126710757497,
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/41869042836",
+  "source_revision": "bc8e5709183fd228ae1bac207e643e2413e9c9fd",
+  "conclusion": "success",
+  "original_cluster_ca_verified": true,
+  "owned_client_cleanup": "success",
+  "temporary_credentials_cleanup": "success",
+  "receipt": {
+    "business_mutations": 0,
+    "configuration_mutations": 0,
+    "model_calls": 0,
+    "model_configuration_audit": "captured",
+    "models": [
+      {
+        "key_configured": false,
+        "model": "gemini-3.8-flash",
+        "project_configured": true,
+        "provider": "gemini_free"
+      },
+      {
+        "key_configured": true,
+        "model": "gpt-6.1-sol",
+        "project_configured": true,
+        "provider": "openai"
+      },
+      {
+        "key_configured": true,
+        "model": "gpt-6-luna",
+        "project_configured": true,
+        "provider": "openai"
+      },
+      {
+        "key_configured": true,
+        "model": "deepseek-v4-pro",
+        "project_configured": true,
+        "provider": "qwencloud"
+      },
+      {
+        "key_configured": true,
+        "model": "qwen3.8-max",
+        "project_configured": true,
+        "provider": "qwencloud"
+      }
+    ],
+    "scope": "enabled_bindings_and_key_presence_only_not_provider_availability",
+    "source_revision": "bc8e5709183fd228ae1bac207e643e2413e9c9fd",
+    "temporary_client_cleanup_verified": true
+  },
+  "credential_sync_observation": {
+    "run_id": 41860893513,
+    "job_id": 126682060566,
+    "discovery": "success",
+    "aliases_discovered": 10,
+    "bind": "skipped",
+    "reload": "skipped",
+    "recover": "skipped",
+    "interpretation": "This run discovered aliases only; it did not refresh credentials or establish new provider availability."
+  },
+  "limits": [
+    "Presence booleans do not establish provider availability, credit balance or semantic quality.",
+    "No provider requests, production business writes, billing changes or deployment occurred.",
+    "Earlier quota/credit failures remain historical observations; they were not reprobed by this audit."
+  ]
+}

@@ -7668,3 +7668,27 @@ image receipts are coordinated with the streaming renderer and bind all helper
 hashes. These are synthetic offline capacity measurements, not hosted Storage/Auth,
 production load qualification, a universal table maximum or a 600-second service SLO.
 No production/provider calls, deployment or billing changes were performed here.
+
+### 2026-11-04 — corrected hosted model binding audit
+
+[Run 41869042836](https://github.com/salahassi/tenders/actions/runs/41869042836)
+at `bc8e5709183fd228ae1bac207e643e2413e9c9fd` completed successfully. Direct
+GitHub job evidence confirms original cluster CA verification, scoped catalog
+read, owned SQL-client cleanup and temporary credential cleanup. Bootstrap,
+restore, business writes and provider calls did not run. The prior diagnostic
+credential-binding failure is resolved by this exact hosted execution.
+
+The enabled OpenAI and QwenCloud model bindings each have their configured key;
+the enabled Gemini binding does not. Key presence proves neither available
+credit nor successful inference. The earlier provider quota/credit failures
+remain historical measurements, not a fresh result from this read-only audit.
+The intervening scheduled credential workflow 41860893513 performed alias
+discovery only; its bind, reload and recover jobs were skipped, so it provides
+no evidence of refreshed keys or repaired provider availability.
+
+The sanitized [receipt](evidence/model-binding-audit-20261104-41869042836.json)
+contains no aliases, keys, project values or customer content. The permanent DO
+runbook links it and records use of direct job evidence when cached CLI metadata
+still reports a completed run as queued. This closes diagnostic wiring and key
+presence verification only; live prompt qualification, provider availability,
+final integrated release and hosted proposal acceptance remain separate gates.
