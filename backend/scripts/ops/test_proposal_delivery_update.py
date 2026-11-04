@@ -104,6 +104,13 @@ class DeliveryUpdateTests(unittest.TestCase):
    with self.assertRaises(p.images.ImageError):p.update()
    self.assertEqual(events,[])
 
+ def test_native_command_override_blocks_before_schema_or_workload_changes(self):
+  for override in ({'command':['node','old-worker.ts']},{'args':['private-argument']},{'name':'unexpected'}):
+   with self.subTest(override=override),self.fixture() as (_,natives,events,emit):
+    natives['native-ocr']['spec']['jobTemplate']['spec']['template']['spec']['containers'][0].update(override)
+    with self.assertRaisesRegex(p.UpdateError,'NATIVE_ENTRYPOINT_OVERRIDE'):p.update()
+    self.assertEqual(events,[]);self.assertFalse(any(c.args[0]=='passed' for c in emit.call_args_list))
+
  def test_owned_journal_cleanup_rejects_foreign_names_timeout_and_permissions(self):
   with tempfile.TemporaryDirectory() as directory,patch.dict(os.environ,{'GITHUB_RUN_ID':'123','GITHUB_RUN_ATTEMPT':'1','RUNNER_TEMP':directory,'DOKS_WORKDIR':directory+'/td-deploy-123-1'}):
    Path(os.environ['DOKS_WORKDIR']).mkdir(mode=0o700)

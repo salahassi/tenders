@@ -122,6 +122,9 @@ def update():
     for name,value in before.items():
         if name not in manifest['baseline_images'] or (name not in TARGETS and image_of(value)!=manifest['baseline_images'][name]):raise UpdateError('DELIVERY_OTHER_WORKLOAD_CHANGED')
     native_original=u.owned('cronjob','native-ocr')
+    native_container=native_original['spec']['jobTemplate']['spec']['template']['spec']['containers'][0]
+    if native_container.get('name')!='ocr' or native_container.get('command') or native_container.get('args'):
+        raise UpdateError('DELIVERY_NATIVE_ENTRYPOINT_OVERRIDE')
     schedules=inventory.public_schedules([u.owned('cronjob','native-browser'),native_original])
     expected=copy.deepcopy(manifest['baseline_native_schedules'])
     # Generation advances on our single image patch; all actual schedule fields

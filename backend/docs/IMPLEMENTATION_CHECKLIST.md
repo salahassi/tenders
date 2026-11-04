@@ -70,6 +70,26 @@ are absent. This confirms the new implementation is not deployed yet. API/worker
 use image digest `85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380`;
 image source revisions remain independently unverified. This is a current baseline
 for a guarded release, not hosted proposal/model acceptance or schema-tip proof.
+## November 4 — managed catalog reconstruction and native entrypoint guard
+
+The schema reconstruction builder accepts an explicitly named managed source
+role family and maps only those reviewed roles to the isolated target family.
+It preserves column-only grants without broadening them to table SELECT; unknown
+roles, grantors or column privilege kinds fail closed. **11 schema tests** pass,
+including capture from an actual managed-role PGlite catalog and reconstruction
+in a second isolated database. Actual queries confirm metadata-only reads,
+protected payload/private tables, outsider/anonymous denials, authorized context
+RPC access and separate service authority; no role gains superuser/BYPASSRLS or
+cluster-level create privileges. This prepares cloud restoration; it does not
+claim that an isolated cloud restore has run.
+
+The release also privately checks that the native OCR container is the expected
+`ocr` identity and has no command/argument override before any SQL or image
+change. Otherwise the new image's fair worker entrypoint might never execute.
+A fixed error blocks that condition without exposing the command or arguments.
+**Eight rollout tests** pass, including each override variant; the actual five-
+minute schedule and resource baseline come from the coordinator's fresh receipt.
+
 ## November 4 — final renderer and worker-floor release capabilities
 
 The release manifest now derives its renderer capability set from the exact
