@@ -9534,3 +9534,34 @@ Deployment remains gated by the separate SQL migration and exact historical
 receipt normalization/cutover, plus actual PostgREST/API resource qualification.
 The legacy aggregate RPC must not remain an unbounded fallback. No provider
 calls, production writes, model/billing policy changes or deployment ran here.
+
+
+### 2026-11-04 — Reviewed DOCX upload uses the canonical export archive budget
+
+Reproduced the original-file policy conflict through the actual completion
+handler: a source-matched ordinary-2 DOCX of 3,177,596 compressed bytes and
+298,012,602 reported expanded bytes returned `FILE_CONTENT_MISMATCH` before
+canonical verification, with zero completion calls. The computed model hash
+exactly matches the renderer's saved model. Auth/Storage/context authority in
+this fixture is synthetic and explicitly supplies the ordinary-2 pin; it is
+not evidence of SQL package admission.
+
+DOCX completion now checks its filename/MIME identity, ZIP signature and 10 MiB
+compressed upload limit, then runs the existing complete canonical async DOCX
+verifier before the final completion RPC. The verifier still checks supported
+ZIP/XML structure, CRC, active entries, exact visible content/placeholders and
+its source-derived expanded budget. This is no document-validation bypass.
+`originals.ts`, original RFP uploads and reviewed PDF validation/200-page policy
+remain unchanged.
+
+12 focused actual-handler/envelope tests passed in 1.23s, including a small
+native canonical positive, foreign-document/malformed-archive rejection,
+filename/MIME/signature errors, unchanged original-RFP bound and both PDF
+controls. Backend typecheck passed; independent source review found no material
+blocker. See `evidence/reviewed-docx-upload-envelope-20261104.json` and the
+reproducible `scripts/testing/reviewed_docx_handler.mjs` harness.
+
+Acceptance of the same large artifact through the corrected handler/native
+image is still pending its separate scheduled resource test. Neither the
+observed old rejection nor small positive controls qualify native peak memory.
+No provider/production calls, deployment or resource-policy increase occurred.

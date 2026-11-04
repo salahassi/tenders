@@ -38,6 +38,7 @@ import {
 } from "../_shared/contracts.ts";
 import { AppError, corsHeaders, readJson } from "../_shared/http.ts";
 import { validateOriginal } from "../_shared/originals.ts";
+import { validateExportDocxEnvelope } from "../_shared/exportUpload.ts";
 import { validateDocumentCoverage } from "../_shared/documentCoverage.ts";
 import { z } from "zod";
 import { taskRegistry } from "../_shared/modelContract.ts";
@@ -873,8 +874,8 @@ export function createApiHandler(
           );
         }
         if (artifactPath[2] === "complete") {
-          validateOriginal(artifact.original_name, artifact.mime_type, bytes);
           if (artifact.mime_type === "application/pdf") {
+            validateOriginal(artifact.original_name, artifact.mime_type, bytes);
             const pdf = await PDFDocument.load(bytes, {
               ignoreEncryption: false,
             });
@@ -884,12 +885,18 @@ export function createApiHandler(
                 "EXPORT_PAGE_CAP_REACHED",
                 "Split the reviewed PDF.",
               );
-          } else
+          } else {
+            validateExportDocxEnvelope(
+              artifact.original_name,
+              artifact.mime_type,
+              bytes,
+            );
             await verifyExportDocxAsync(
               bytes,
               buildExportModel(context.request),
               request.signal,
             );
+          }
           request.signal.throwIfAborted();
           return respond(
             await backend.internal("complete_export_artifact", {
