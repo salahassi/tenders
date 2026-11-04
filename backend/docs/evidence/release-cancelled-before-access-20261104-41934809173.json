@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "source_revision": "2ac061349cb09ca796dc27a30de7450dbf4d5021",
+  "workflow_run_id": 41934809173,
+  "workflow_job_id": 126945737959,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41934809173",
+  "conclusion": "cancelled",
+  "reason": "Stopped during verification after independent automatic main gate41934787660 reported one real-DOCX test timeout.",
+  "verification": "cancelled",
+  "cluster_access": "skipped",
+  "image_publication": "skipped",
+  "schema_and_workload_rollout": "skipped",
+  "owned_database_client_cleanup_step": "success",
+  "private_runner_cleanup_step": "success",
+  "application_deployed": false,
+  "limit": "No deployment or hosted acceptance evidence. No cluster access was attempted by this release."
+}

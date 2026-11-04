@@ -10543,3 +10543,16 @@ corrected, reviewed workflow ref. Isolated hosted Kubernetes/PVC interruption an
 recovery acceptance remains to be implemented and run separately. Whole-cluster
 restore continuity and user-specified recovery-time/recovery-point objectives
 remain unproved and undefined, respectively.
+
+### November 4 — retain cancelled release and corrected follow-up gates
+
+PR24 merged as `2ac061349cb09ca796dc27a30de7450dbf4d5021`. Release
+[41934809173](https://github.com/salahassi/tenders/actions/runs/41934809173)
+was deliberately cancelled during verification after the automatic main check
+reported the retained DOCX test timeout. Cluster credential preparation, image
+publication and schema/workload rollout were skipped; both cleanup steps passed.
+[The receipt](evidence/release-cancelled-before-access-20261104-41934809173.json)
+records this boundary, not a deployment. The action matrix/R0 retain all earlier
+receipts plus the CI correction and strict manual retirement proof fix. Complete
+corrected GitHub verification and actual deployment remain pending. Canonical24
+manifest remains `4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76`.

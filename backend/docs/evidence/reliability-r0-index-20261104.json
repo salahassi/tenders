@@ -92,6 +92,13 @@
           "level": "L1/L2 complete operations/schema/Kubernetes gates",
           "observed_result": "At 865d840 all 537 operations,11 production-schema and 16 Kubernetes tests pass; source and final24 manifest unchanged.",
           "limits": "Concurrent functional suites, not a capacity benchmark or actual production mutation."
+        },
+        {
+          "path": "backend/docs/evidence/delivery-byte-proof-ci-timeout-20261104.json",
+          "sha256": "5ed37e41d06a6f0e15ef25e5c4e4caf9201fc057eabcfcb61d8cb1c3b6a4284d",
+          "level": "CI failure and scoped local correction",
+          "observed_result": "Main2ac0613 CI passed3283 backend tests and failed one real-DOCX test at5239ms/default5000ms. Explicit30s integration budget preserves all callbacks/assertions; three one-CPU repeats pass15 executions plus types/build.",
+          "limits": "Corrected complete GitHub gate remains required; product/native image and issuance deadline unchanged."
         }
       ]
     },
@@ -442,6 +449,13 @@
           "level": "L4 isolated original-CA cloud restore",
           "observed_result": "At 865d840 run41933205779 applies exact 24 migrations under manifest4cb2e712 and passes all 13 genuine Auth/Storage HTTP checks, original CA/hostname verification and both cleanup stages.",
           "limits": "Synthetic isolated customer-free data; application renderer not exercised; no deployment, real proposal completion, RTO/RPO or issuance SLO claim."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-exit-proof-20261104.json",
+          "sha256": "3e09b48aecd879d160b2a1f0b346653d0936cda91b037b2df118095b5685b35c",
+          "level": "L1/L2 manual retirement proof correction",
+          "observed_result": "Four baseline wrong-identity/weak-journal failures reproduced, strict captured-process guards corrected and54 focusedtests pass.",
+          "limits": "No actual hosted Kubernetes/PVC retirement or production adapter execution; runtime/release manifest unchanged."
         }
       ]
     },
@@ -788,6 +802,13 @@
           "level": "Local label-only promotion proof",
           "observed_result": "Local promotion changes only revision label; ordered layers and runtime config identical, source-bound qualification retained.",
           "limits": "Probe was not pushed/deployed and does not claim a later release-head promotion has already occurred."
+        },
+        {
+          "path": "backend/docs/evidence/release-cancelled-before-access-20261104-41934809173.json",
+          "sha256": "f3425b9ef6d8f775513c10fbe2abecdb54993e1fabaa1a9cae2ad4686be93096",
+          "level": "Actual workflow control boundary",
+          "observed_result": "Release41934809173 cancelled during verification; original-CA preparation, images and rollout all skipped; both cleanupsteps passed.",
+          "limits": "No application deployment or hosted acceptance."
         }
       ]
     }
@@ -856,5 +877,10 @@
     "backend/scripts/ops/command-batch-cutover.py": "cbded3595dfc8447c3dfa6e4e9cb4d78b7a98ba98de621c287b0d0fb6e1f81e0"
   },
   "historical_revision4_runtime_source_note": "At a7922ed, actual API100 and final pinned1 gateway disk transport are qualified at their explicit local scopes. Full current application/ops checks, final HTTPS binding, runtime image promotion, manifest refreeze, renewed24-migration restore and deployment remain pending.",
-  "current_runtime_source_note": "At8d970aa the865d840 full application/ops gates, final HTTPS source binding, exact qualified image publication, local label-only promotion proof, final24 manifest and renewed isolated24-migration restore pass at their recorded scopes. Deployment and authenticated hosted acceptance remain pending."
+  "current_runtime_source_note": "At8d970aa the865d840 full application/ops gates, final HTTPS source binding, exact qualified image publication, local label-only promotion proof, final24 manifest and renewed isolated24-migration restore pass at their recorded scopes. Deployment and authenticated hosted acceptance remain pending.",
+  "post_anchor_followup": {
+    "source_revision": "cf3ee05",
+    "generated_at_utc": "2026-11-04T23:53:06.410398+00:00",
+    "scope": "Main merge/CI failure, scoped timeout correction and dormant manual-retirement proof fix. Frozen24 manifest unchanged; complete corrected GitHub gate and deployment remain open."
+  }
 }

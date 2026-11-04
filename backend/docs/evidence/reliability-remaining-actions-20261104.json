@@ -53,11 +53,11 @@
         "W00",
         "W11"
       ],
-      "status": "closed_local_functional_scope_at865d840",
+      "status": "local865d840_pass_retained_corrected_full_github_gate_pending",
       "evidence": [
         "E01"
       ],
-      "remaining": "No pending rerun for the frozen 865d840 application/ops source; repeat affected checks if source changes.",
+      "remaining": "Run corrected complete GitHub release verification after main CI41934787660 exposed one 5000ms real-DOCX harness timeout. Explicit bounded integration timeout and15 focused one-CPU executions pass; no product deadline/verification assertions changed.",
       "done_when": "One exact final commit has required complete green checks and source-bound logs; any remaining failure is explicit.",
       "not_proven": "Functional gates do not prove deployment, provider semantics, native universal capacity or hosted issuance.",
       "acceptance_cases": [
@@ -246,7 +246,7 @@
         "E07",
         "E12"
       ],
-      "remaining": "Use isolated fixtures or explicitly authorized existing records through the real browser/API/worker/storage paths. Cover early template/partial vs substantive issued status, generated and ordinary draft/final exports, one/two-volume atomic readiness, close-tab/reentry/retry, late source/member/approval changes, full/unknown storage and readback. Measure accepted-to-whole-package issuance including queue against 600 seconds; terminal unavailability returns earlier. For retirement acceptance, run the exact fenced process/physical recovery protocol in an authorized isolated setting; local fake process proofs are insufficient. The renewed exact 24-migration shared-helper 13-check restore is proven. Separately define service recovery-point/time objectives and compare observed recovery against them before claiming D05. Independently close the dormant physical-retirement coordinator termination-proof gap before any actual retirement: reject NodeLost/unknown termination and bind original container identity; the current release gateway drain is a separate guarded path.",
+      "remaining": "Use isolated fixtures or explicitly authorized existing records through the real browser/API/worker/storage paths. Cover early template/partial vs substantive issued status, generated and ordinary draft/final exports, one/two-volume atomic readiness, close-tab/reentry/retry, late source/member/approval changes, full/unknown storage and readback. Measure accepted-to-whole-package issuance including queue against 600 seconds; terminal unavailability returns earlier. For retirement acceptance, run the exact fenced process/physical recovery protocol in an authorized isolated setting; local fake process proofs are insufficient. The renewed exact 24-migration shared-helper 13-check restore is proven. Separately define service recovery-point/time objectives and compare observed recovery against them before claiming D05. Use the corrected manual retirement helper with strict original-container identities and validated saved exit proofs (54 focused tests passed); actual isolated Kubernetes/PVC interruption acceptance remains open. The release gateway drain is separately guarded.",
       "done_when": "Independent authenticated download hashes/sizes/complete-set and browser state; full request timestamps including failures; quota/usage/lease/currentness invariants; cleanup and recovery receipts.",
       "not_proven": "No real completed export, hosted 600s/concurrency claim or production physical retirement. Do not use incompatible legacy successor helper or fabricate version/completion.",
       "acceptance_cases": [
@@ -412,5 +412,11 @@
       ],
       "limit": "No completed version;50 unknown usage retained, no activation."
     }
-  ]
+  ],
+  "post_anchor_followup": {
+    "source_revision": "cf3ee05",
+    "release_attempt": 41934809173,
+    "release_attempt_conclusion": "cancelled_before_cluster_access",
+    "manual_retirement_proof_fix": "54 focused tests pass; actual isolated Kubernetes/PVC interruption acceptance remains open."
+  }
 }
