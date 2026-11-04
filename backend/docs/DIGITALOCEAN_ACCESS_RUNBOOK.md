@@ -249,3 +249,10 @@ and both cleanup stages. Its
 managed-database transaction visibility and actual gateway spec values at that
 observation. It neither fences callers nor drains transactions, changes grants,
 measures runtime capacity or replaces the original release baseline.
+
+The subsequent [run 41928176279](https://github.com/salahassi/tenders/actions/runs/41928176279)
+at `f331c28f727f19623715be00f98a001bd04185bb` adds actual HTTPS Deployment/Pod
+resource observations (128 MiB / 300m), with original-CA and both cleanups. Its
+[receipt](evidence/digitalocean-https-capacity-20261104-41928176279.json) remains
+read-only configuration evidence; it does not qualify proxy capacity or replace
+the original frozen release baseline.

@@ -10079,3 +10079,18 @@ including the HTTPS unknown/drift/redaction regression.
 [Projection evidence](evidence/https-inventory-capacity-projection-20261104.json)
 records local checks only. The repository's 128 MiB/300m declaration is not yet
 reported as observed; the next reviewed inventory must establish actual values.
+
+### November 4 — actual HTTPS resource envelope observed on DigitalOcean
+
+Read-only [run 41928176279](https://github.com/salahassi/tenders/actions/runs/41928176279)
+passed at `f331c28f727f19623715be00f98a001bd04185bb`, with original cluster CA
+and both cleanup stages verified. The actual HTTPS Deployment and ready Pod
+both specify 128 MiB / 300m limits and one container; the immutable deployed
+image remains `3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce`.
+The [receipt](evidence/digitalocean-https-capacity-20261104-41928176279.json)
+records observed specs, not measured native capacity, TLS throughput or volume
+filesystem type. Existing-role transaction visibility and zero legacy receipt
+counts were observed again; no fence/drain, grant, provider call or application
+mutation ran. The original release baseline is unchanged. Five focused HTTPS/
+gateway projection tests passed before this dispatch. The separate actual-image
+proxy-chain proof and final release checks remain pending.
