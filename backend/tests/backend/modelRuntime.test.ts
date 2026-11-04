@@ -34,6 +34,7 @@ describe("read-only Edge runtime environment", () => {
 
 it("keeps accepted verification input unchanged and pins compact requests across later polls", async () => {
   const original = {
+    original_task: "draft_section",
     candidate_hash: "a".repeat(64),
     candidate: { text: "All assertions" },
     candidate_text: "All assertions",
@@ -61,10 +62,12 @@ it("keeps accepted verification input unchanged and pins compact requests across
     [],
   );
   expect(compact).toEqual({
+    original_task: "draft_section",
+    candidate: original.candidate,
     candidate_hash: original.candidate_hash,
     content_units: original.content_units,
     original_context: original.original_context,
-    response_style: "compact-verification-v2",
+    response_style: "compact-verification-v4",
   });
   const later = { preflight: vi.fn() } as any;
   expect(

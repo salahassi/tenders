@@ -5,17 +5,19 @@ import { withoutStructuralReferences } from "./modelStructuralReferences.ts";
 
 /** Inspect generated text, including undeclared assertions, without treating
  * verbatim evidence copies or internal IDs as assertions made in the proposal. */
+const candidateMetadataField =
+  /^(?:source_refs|evidence_refs|notice_evidence|company_evidence|quote|source_id|.*_ids|key|rate_id)$/;
+export const isCandidateMetadataField = (key: string) =>
+  candidateMetadataField.test(key);
 export function candidateContent(candidate: unknown) {
   const units: { id: string; text: string }[] = [];
-  const skip =
-    /^(?:source_refs|evidence_refs|notice_evidence|company_evidence|quote|source_id|.*_ids|key|rate_id)$/;
   const visit = (value: unknown) => {
     if (typeof value === "string" && value.trim())
       units.push({ id: `content-${units.length}`, text: value });
     else if (Array.isArray(value)) value.forEach(visit);
     else if (value && typeof value === "object")
       for (const [key, child] of Object.entries(value))
-        if (!skip.test(key)) visit(child);
+        if (!isCandidateMetadataField(key)) visit(child);
   };
   visit(candidate);
   if (units.length > 2048) throw new ModelError("MODEL_CONTEXT_TOO_LARGE");

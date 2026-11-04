@@ -5470,3 +5470,54 @@ validation beyond references/selected coverage; all-task typed verification
 (ME-08) with phase-compatible historical hashes; independent semantic/live model
 qualification and deterministic artifact delivery. No production or external model
 calls were made for this change. Do not mark W05/W06 or T08/T09/T19 complete.
+
+## November 4 — W06 / ME-08 typed verification formats and historical phase compatibility
+
+Implementation: local source change; not deployed or hosted-accepted. Newly
+started verification of every business task now preserves the candidate's field
+hierarchy, booleans, numbers, nulls, ownership and citation metadata. New whole
+requests use format 4; new nonanalysis batches use format 6 with typed structural
+references to the existing canonical content IDs. Their complete/scoped ID
+manifest and explicit scope instruction distinguish text reviewed in another
+batch from genuinely missing information. Narrative text is not duplicated into
+every batch. The additional structure has a per-request 1 MiB ceiling, derived
+from the existing durable graph result envelope; it does not impose a daily
+application model quota. Existing source/retrieval coverage context survives
+unchanged, and missing company proof still cannot establish missing capability.
+
+The format migration applies only to an unstarted phase. Prepared instruction
+pins, reserved/unknown/settled receipts and a same-phase saved legacy round retain
+their original wire input; formats 1/2/3 and batch formats 3/4/5 are immutable.
+Special audit verification has a distinct phase-aware format pin and receives its
+typed audit candidate. Existing private graph pins provide the migration record;
+no database rewrite, paid-request repin, candidate allowance reset, usage rewrite,
+provider permission or billing change is performed. Old results keep their old
+assurance level; this change does not retrospectively certify their typed fields.
+
+Validation: two regression cases failed before the typed-context change and pass
+afterward. The broad local model suite passed 36 files / 809 tests, followed by
+10 additional registry-driven requirements-only/aggregate scenarios; the updated
+registry file passes all 33 tests. Backend typecheck and build pass. Coverage
+was rechecked after the final bounded-context refinements in six focused files /
+180 tests, with backend typecheck and build repeated successfully. Coverage
+includes all 13 registered tasks: ten business tasks exercise typed paired
+mutations, canonical report validation, scoped quotes, required-only coverage,
+aggregate IDs and duplicate/invented-ID rejection; repair and verifier tasks
+receive local target/report validation without recursive verification, and the
+connection probe tests only its ready/transport boundary. Forty-three frozen
+synthetic historical wire hashes match committed baseline d5ddad3. Seven fully
+migrated database cases preserve prepared/paid/unknown/saved-round phase identity
+and accounting. A long draft proves the bounded typed structure does not repeat
+out-of-scope narrative, and its batch manifest covers every original content ID.
+The existing real graph audit and batching regressions also pass. No external
+model/provider calls were made; complete package checks remain integration work.
+
+Remaining ME-08 / W05-W06 acceptance: independently labeled semantic model
+qualification for all task/field/language cases, authority and modality contracts,
+source spans and semantic dependency expansion, and explicit assurance for legacy
+results. Exact citation metadata remains present in each typed batch; the structural
+ceiling is not a provider-specific token-fit guarantee for citation-heavy results.
+Existing input/context gates still apply, and capacity qualification remains open.
+Local payload visibility and canonical scope gates do not establish that
+a model will always judge a typed field correctly. The full ME-08 acceptance
+matrix, W05/W06 and T01/T02/T09/T19 therefore remain open.

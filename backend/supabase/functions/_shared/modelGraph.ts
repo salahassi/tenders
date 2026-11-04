@@ -16,7 +16,11 @@ import {
   type Reference,
   type Ledger,
 } from "./model.ts";
-import type { PrimaryModelTask } from "./modelSchemas.ts";
+import { primaryModelTasks, type PrimaryModelTask } from "./modelSchemas.ts";
+import {
+  verificationPhaseUnstarted,
+  type VerificationPhase,
+} from "./modelVerificationFormat.ts";
 import { modelLedger } from "./modelLedger.ts";
 import { ModelGraphStore } from "./modelGraphStore.ts";
 import {
@@ -133,11 +137,12 @@ export async function verificationContext(
   ledger: Ledger,
   context: any,
   manifest: Reference[],
+  options?: { phase: VerificationPhase; typedCandidate?: unknown },
 ) {
-  // Pin the context format before sending. An in-flight legacy request must
-  // keep its exact input hash; it can opt into the compact format only after
-  // the provider request finishes. Replays retain this immutable marker.
-  const formatKey = `verification-format-${context.candidate_hash}`;
+  // Pin the context format before preparing instructions or sending. A phase
+  // that already started keeps its exact historical input even after settlement;
+  // only an unstarted phase may select the new format.
+  const formatKey = `${context.verification_scope === "whole_audit_report" ? "verification-audit-format" : "verification-format"}-${context.candidate_hash}`;
   let format = await store.action("result_get", { key: formatKey });
   if (!format) {
     const preflight = ledger.preflight;
@@ -150,15 +155,21 @@ export async function verificationContext(
       }
       return preflight(manifest, operation);
     };
-    if (!pool.pending_model_config_id) {
+    if (
+      !pool.pending_model_config_id &&
+      (!options ||
+        (await verificationPhaseUnstarted(store, options.phase, context)))
+    ) {
       format = await store.action("result_put", {
         key: formatKey,
         value: {
-          version: context.original_task === "analyze_chunk" ? 3 : 2,
+          version: context.original_task === "analyze_chunk" ? 3 : 4,
         },
       });
     }
   }
+  if (format && ![1, 2, 3, 4].includes(format.value?.version))
+    throw new ModelError("MODEL_IDENTITY_CHANGED");
   if (format?.value.version === 2) {
     // content_units already contains every reviewed string. Sending the same
     // text twice more wastes context and encourages oversized reports.
@@ -182,6 +193,22 @@ export async function verificationContext(
       throw new ModelError("MODEL_IDENTITY_CHANGED");
     const { candidate_text: _text, ...typed } = context;
     context = { ...typed, response_style: "compact-verification-v3" };
+  } else if (format?.value.version === 4) {
+    const candidate = context.candidate ?? options?.typedCandidate;
+    if (
+      !primaryModelTasks.includes(context.original_task) ||
+      ["analyze_chunk", "connection_probe"].includes(context.original_task) ||
+      !candidate ||
+      typeof candidate !== "object" ||
+      Array.isArray(candidate)
+    )
+      throw new ModelError("MODEL_IDENTITY_CHANGED");
+    const { candidate_text: _text, ...typed } = context;
+    context = {
+      ...typed,
+      candidate,
+      response_style: "compact-verification-v4",
+    };
   }
   return context;
 }
@@ -478,6 +505,7 @@ async function runGuardedModel(o: Options): Promise<{
     validate?: (result: any) => void,
     writerModel?: string,
     requiredIds = o.requiredIds,
+    typedCandidate?: unknown,
   ) => {
     if (recheck) assertVerifierRecheckCall(recheck, task, key, unit);
     const repairScope =
@@ -548,8 +576,23 @@ async function runGuardedModel(o: Options): Promise<{
         return pool;
       };
     }
-    if (task === "verify_grounding" && !context.verification_scope)
-      context = await verificationContext(store, ledger, context, o.manifest);
+    if (
+      task === "verify_grounding" &&
+      (!context.verification_scope ||
+        context.verification_scope === "whole_audit_report")
+    )
+      context = await verificationContext(store, ledger, context, o.manifest, {
+        phase: {
+          backend: o.backend,
+          job: o.job,
+          requestPrefix: `${o.prefix}:${operationKey}`,
+          evidence: o.evidence,
+          requiredIds,
+          language: o.language,
+          repair: o.repair,
+        },
+        typedCandidate,
+      });
     const verificationRevision =
       task === "verify_grounding"
         ? await pinVerificationPrompt({
@@ -727,7 +770,17 @@ async function runGuardedModel(o: Options): Promise<{
     const ledger = ledgerFor(operationKey, unit);
     let context = contextFor(invalid);
     if (!context.verification_scope)
-      context = await verificationContext(store, ledger, context, o.manifest);
+      context = await verificationContext(store, ledger, context, o.manifest, {
+        phase: {
+          backend: o.backend,
+          job: o.job,
+          requestPrefix: `${o.prefix}:${operationKey}`,
+          evidence: o.evidence,
+          requiredIds,
+          language: o.language,
+          repair: o.repair,
+        },
+      });
     const verificationRevision = await pinVerificationPrompt({
       backend: o.backend,
       store,
@@ -990,7 +1043,9 @@ async function runGuardedModel(o: Options): Promise<{
               undefined,
               groundingOptions(o.context),
             ),
-          stored.producer?.model_id,
+          stored.producer?.modelId,
+          o.requiredIds,
+          candidate,
         );
         return { reportRef: checked.id };
       }
@@ -1036,7 +1091,9 @@ async function runGuardedModel(o: Options): Promise<{
         if (
           pinned &&
           ((policy && !sameVerificationPartition(partition, policy)) ||
-            (!policy && batchPin.version === 5 && partition.version !== 3))
+            (!policy &&
+              [5, 6].includes(batchPin.version) &&
+              partition.version !== 3))
         )
           throw new ModelError("MODEL_IDENTITY_CHANGED");
         if (!pinned) {
@@ -1044,8 +1101,55 @@ async function runGuardedModel(o: Options): Promise<{
             o.manifest,
             "verify_grounding",
           );
-          if (pool.pending_model_config_id) batches = [];
+          const wholeContext = {
+            original_task: o.task,
+            original_context: o.context,
+            candidate,
+            candidate_hash: hash,
+            candidate_text: units.map((u) => u.text).join("\n"),
+            content_units: units,
+          };
+          const phase = {
+            backend: o.backend,
+            job: o.job,
+            requestPrefix: `${o.prefix}:${reportKey}`,
+            evidence: o.evidence,
+            requiredIds: o.requiredIds,
+            language: o.language,
+            repair: o.repair,
+          };
+          const wholePinned = await store.action("result_get", {
+            key: `verification-format-${hash}`,
+          });
+          if (
+            pool.pending_model_config_id ||
+            wholePinned ||
+            !(await verificationPhaseUnstarted(store, phase, wholeContext))
+          )
+            batches = [];
           else {
+            // A missing batch pin is not permission to reinterpret an already
+            // started batch. The first scoped phase precedes every later one.
+            const firstKey = `verification-v3-${hash}-content-0`;
+            const firstContext = {
+              original_task: o.task,
+              original_context: o.context,
+              candidate_hash: hash,
+              content_units: batches[0],
+              verification_scope: "content_batch",
+            };
+            if (
+              !(await verificationPhaseUnstarted(
+                store,
+                {
+                  ...phase,
+                  requestPrefix: `${o.prefix}:verification-v3:${await sha256(firstKey)}`,
+                  requiredIds: [],
+                },
+                firstContext,
+              ))
+            )
+              throw new ModelError("MODEL_IDENTITY_CHANGED");
             batchPin = newVerificationBatchPin(o.task, policy);
             await store.action("result_put", {
               key: formatKey,

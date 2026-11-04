@@ -368,12 +368,70 @@ it.each([
   );
 });
 
-it("keeps other tasks on their old batch pins and rejects analysis-pin reuse", () => {
-  expect(newVerificationBatchPin("draft_section")).toEqual({ version: 3 });
+it("uses a distinct typed pin for new non-analysis batches and rejects analysis-pin reuse", () => {
+  expect(newVerificationBatchPin("draft_section")).toEqual({
+    version: 6,
+    context_format: 4,
+    partition: { version: 3 },
+  });
+  const legacy = { version: 3 };
+  expect(verificationBatchPartition(legacy, "draft_section")).toBe(legacy);
   expect(() =>
     verificationBatchPartition(
       newVerificationBatchPin("analyze_chunk"),
       "draft_section",
     ),
   ).toThrow("MODEL_IDENTITY_CHANGED");
+});
+
+it("exposes a commercial boolean and null rate to a new verifier instead of losing their typed ownership", async () => {
+  const candidate = {
+    lines: [
+      {
+        description: "Optional service",
+        included_in_base: false,
+        rate_id: null,
+      },
+    ],
+    questions: [],
+  };
+  const context = {
+    original_task: "plan_commercial",
+    original_context: {},
+    candidate,
+    candidate_hash: await sha256(JSON.stringify(candidate)),
+    content_units: candidateContent(candidate),
+    candidate_text: "Optional service",
+  };
+  const wire = await verificationContext(memory(), ledger(), context, []);
+  expect(wire.candidate.lines[0].included_in_base).toBe(false);
+  expect(wire.candidate.lines[0].rate_id).toBeNull();
+  expect(wire.candidate_text).toBeUndefined();
+});
+
+it("retains typed non-analysis decisions in a new scoped batch", async () => {
+  const candidate = {
+    decisions: [{ statement: "Proposed method", kind: "proposed_decision" }],
+    questions: [{ question: "Confirm scope", blocking_level: "advisory" }],
+  };
+  const context = {
+    original_task: "plan_structure",
+    original_context: {},
+    candidate_hash: await sha256(JSON.stringify(candidate)),
+    content_units: candidateContent(candidate).slice(0, 1),
+    verification_scope: "content_batch",
+  };
+  const wire = verificationBatchContext(
+    context,
+    candidate,
+    newVerificationBatchPin("plan_structure"),
+  );
+  expect(wire.candidate).toBeUndefined();
+  expect(wire.typed_candidate_structure.decisions[0].kind).toBe(
+    "proposed_decision",
+  );
+  expect(wire.typed_candidate_structure.questions[0].blocking_level).toBe(
+    "advisory",
+  );
+  expect(wire.content_units).toEqual(context.content_units);
 });

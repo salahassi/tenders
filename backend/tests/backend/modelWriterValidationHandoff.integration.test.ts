@@ -673,6 +673,9 @@ it.each([false, true])(
         if (task === "verify_grounding") {
           const upgraded = ctx.audit_validation_policy === 3;
           if (upgraded) {
+            expect(ctx.candidate).toEqual(review);
+            expect(ctx.candidate.findings[0].severity).toBe("blocking");
+            expect(ctx.response_style).toBe("compact-verification-v4");
             rechecks++;
             expect(JSON.parse(prompt).verification_policy).toContain(
               "candidate is an AUDIT REPORT",

@@ -1792,18 +1792,23 @@ it.each([
         if (
           name === "model_graph_store" &&
           row?.result_key?.startsWith("verification-batches-") &&
-          row.value?.policy
-        )
+          (row.value?.policy || row.value?.partition?.policy)
+        ) {
+          const partition = row.value.partition ?? row.value;
+          const reordered = {
+            policy: {
+              outputTokens: partition.policy.outputTokens,
+              version: partition.policy.version,
+            },
+            version: partition.version,
+          };
           return {
             ...row,
-            value: {
-              policy: {
-                outputTokens: row.value.policy.outputTokens,
-                version: row.value.policy.version,
-              },
-              version: row.value.version,
-            },
+            value: row.value.partition
+              ? { ...row.value, partition: reordered }
+              : reordered,
           };
+        }
         return row;
       };
     }
@@ -1848,6 +1853,14 @@ it.each([
         result = candidate;
       } else {
         const c = prompt.untrusted_data;
+        expect(c.candidate).toBeUndefined();
+        expect(c.typed_candidate_structure.content_blocks).toHaveLength(
+          candidate.content_blocks.length,
+        );
+        expect(c.typed_candidate_structure.requirement_ids).toEqual(
+          candidate.requirement_ids,
+        );
+        expect(c.response_style).toBe("compact-verification-v4");
         const coverage = c.verification_scope === "requirements_only";
         if (
           coverage ||
@@ -2692,9 +2705,9 @@ it.each(["corrected", "unchanged", "evolving", "unsupported_verifier"])(
         };
       } else {
         const c = prompt.untrusted_data;
-        expect(c.candidate).toBeUndefined();
+        expect(c.candidate).toBeDefined();
         expect(c.candidate_text).toBeUndefined();
-        expect(c.response_style).toBe("compact-verification-v2");
+        expect(c.response_style).toBe("compact-verification-v4");
         const paragraph = c.content_units.find((u: any) =>
           /engineers|team size/.test(u.text),
         ).text;
