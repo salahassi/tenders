@@ -172,3 +172,11 @@ The root integration adds the shared page/image editor in OpportunityDetail and
 Knowledge. Draft delivery remains independent while OCR/review is incomplete.
 The native and hosted acceptance limits are recorded in the implementation
 checklist; these local contracts do not establish deployment.
+
+Pending page saves are additive: later saves carry exact-source unoverridden
+human corrections forward. The page API identifies `candidate_origin` and
+preserves `candidate_reviewed_by`/`candidate_reviewed_at`; label human candidates
+as saved corrections, not OCR guesses. `candidate_requires_review` identifies
+review that the current user must repeat. Whole-file confirmation requires one
+current actor's explicit page review; mixed-reviewer text remains saved with
+its original attribution and a visible review requirement.

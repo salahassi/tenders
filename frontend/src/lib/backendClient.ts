@@ -17,6 +17,10 @@ export interface DocumentExtractionReviewData {
     text_hash: string;
     candidate_text?: string;
     candidate_text_hash?: string;
+    candidate_origin?: "human" | "ocr";
+    candidate_reviewed_by?: string;
+    candidate_reviewed_at?: string;
+    candidate_requires_review?: boolean;
     requires_review: boolean;
     reviewed_by?: string;
     reviewed_at?: string;

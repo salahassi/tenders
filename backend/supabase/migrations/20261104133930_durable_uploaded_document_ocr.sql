@@ -39,20 +39,28 @@ language plpgsql stable security definer set search_path='' as $$
 declare d public.documents;seen uuid[]:='{}';begin
  loop
   select * into d from public.documents where workspace_id=w and id=document_id;
-  if d.id is null or d.id=any(seen) or cardinality(seen)>200 then raise exception 'STALE_INPUT';end if;
+  if d.id is null or d.id=any(seen) then raise exception 'STALE_INPUT';end if;
   seen:=seen||d.id;
   if d.ocr_successor_id is null then return d.id;end if;
-  if not exists(select 1 from public.documents n where n.workspace_id=w and n.id=d.ocr_successor_id and n.ocr_parent_document_id=d.id and n.status in ('ready','partial') and n.uploaded_size=n.expected_size and not n.archived)
+  if not exists(select 1 from public.documents n where n.workspace_id=w and n.id=d.ocr_successor_id and n.ocr_parent_document_id=d.id and n.status not in ('pending','expired') and n.extraction_hash is not null and n.original_hash=d.original_hash and n.uploaded_size=n.expected_size and not n.archived)
    then return d.id;end if;
   document_id:=d.ocr_successor_id;
  end loop;
 end $$;
+create function app_private.document_page_reviewer_current(d public.documents,reviewer text) returns boolean
+language plpgsql stable security definer set search_path='' as $$begin
+ if reviewer is null or reviewer!~'^[0-9a-f-]{36}$' then return false;end if;
+ return exists(select 1 from public.memberships m join public.identity_allowlist a on a.workspace_id=m.workspace_id and a.user_id=m.user_id
+  where m.workspace_id=d.workspace_id and m.user_id=reviewer::uuid and m.active and a.status='active'
+  and (m.role in ('Owner','Editor') or (m.role='Reviewer' and d.kind='review' and exists(select 1 from public.review_inputs x where x.id=d.review_input_id and x.created_by=m.user_id))));
+end $$;
+
 create function app_private.check_uploaded_ocr_source(r public.document_ocr_requests) returns public.documents
 language plpgsql stable security definer set search_path='' as $$
 declare d public.documents;begin
  select * into d from public.documents where id=r.document_id and workspace_id=r.workspace_id;
- if d.id is null or d.archived or d.status in ('pending','expired') or d.original_hash<>r.original_hash or d.extraction_hash<>r.base_extraction_hash
-  or d.mime_type<>'application/pdf' or d.pdf_pages not between 1 and 200 or d.uploaded_size<>d.expected_size
+ if d.id is null or d.archived or d.status in ('pending','expired') or d.original_hash is distinct from r.original_hash or d.extraction_hash is distinct from r.base_extraction_hash
+  or d.mime_type<>'application/pdf' or d.pdf_pages is null or d.pdf_pages not between 1 and 200 or d.uploaded_size is distinct from d.expected_size
   or (d.ocr_successor_id is not null and d.ocr_successor_id is distinct from r.successor_id)
   then raise exception 'STALE_INPUT';end if;
  if not exists(select 1 from public.memberships m join public.identity_allowlist a on a.workspace_id=m.workspace_id and a.user_id=m.user_id
@@ -71,7 +79,7 @@ create function app_private.uploaded_ocr_baseline(d public.documents) returns pu
 language plpgsql immutable set search_path='' as $$
 declare parts text[];page_number integer;page_text text;pages jsonb:='[]';complete boolean:=true;begin
  if d.extraction_coverage is not null then return d;end if;
- if d.pdf_pages not between 1 and 200 then raise exception 'DOCUMENT_PAGE_REVIEW_UNAVAILABLE';end if;
+ if d.pdf_pages is null or d.pdf_pages not between 1 and 200 then raise exception 'DOCUMENT_PAGE_REVIEW_UNAVAILABLE';end if;
  if length(trim(coalesce(d.extracted_text,'')))=0 then
   select string_agg('[Page '||n::text||E']\n',E'\n\n' order by n) into d.extracted_text from generate_series(1,d.pdf_pages) n;
  end if;
@@ -90,7 +98,7 @@ create function app_private.enqueue_uploaded_ocr(target_document_id uuid,actor u
 language plpgsql security definer set search_path='' as $$
 declare d public.documents;r public.document_ocr_requests;p jsonb;begin
  select * into d from public.documents where id=target_document_id;
- if d.id is null or d.mime_type<>'application/pdf' or d.pdf_pages not between 1 and 200 or d.status not in ('partial','needs_ocr','error') or d.archived or d.extraction_hash is null then return null;end if;
+ if d.id is null or d.mime_type<>'application/pdf' or d.pdf_pages is null or d.pdf_pages not between 1 and 200 or d.status not in ('partial','needs_ocr','error') or d.archived or d.extraction_hash is null then return null;end if;
  begin d:=app_private.uploaded_ocr_baseline(d);exception when others then return null;end;
  if not exists(select 1 from jsonb_array_elements(d.extraction_coverage->'pages') v where v->>'status' in ('needs_ocr','extraction_failed')) then return null;end if;
  insert into public.document_ocr_requests(workspace_id,document_id,original_hash,base_extraction_hash,created_by)
@@ -116,11 +124,11 @@ create function public.claim_uploaded_document_ocr() returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare r public.document_ocr_requests;d public.documents;p public.document_ocr_pages;failure text;begin
  for r in select * from public.document_ocr_requests where
-  (status in ('queued','retry_wait') and next_attempt_at<=now()) or (status='running' and lease_until<=now())
+  (status in ('queued','retry_wait') and next_attempt_at<=now()) or (status='running' and (lease_until is null or lease_token is null or lease_until<=now()))
   order by next_attempt_at,created_at,id limit 100 loop
   perform 1 from public.workspaces where id=r.workspace_id for update;
   select * into r from public.document_ocr_requests where id=r.id for update skip locked;
-  if r.id is null or not ((r.status in ('queued','retry_wait') and r.next_attempt_at<=now()) or (r.status='running' and r.lease_until<=now())) then continue;end if;
+  if r.id is null or not ((r.status in ('queued','retry_wait') and r.next_attempt_at<=now()) or (r.status='running' and (r.lease_until is null or r.lease_token is null or r.lease_until<=now()))) then continue;end if;
   begin d:=app_private.check_uploaded_ocr_source(r);
   exception when others then
    failure:=case when sqlerrm in ('ROLE_FORBIDDEN','STALE_INPUT','RESTORE_IN_PROGRESS') then sqlerrm else 'DOCUMENT_OCR_FAILED' end;
@@ -156,7 +164,7 @@ declare r public.document_ocr_requests;d public.documents;begin
  if r.id is null then raise exception 'NOT_FOUND';end if;
  perform 1 from public.workspaces where id=r.workspace_id for update;
  select * into r from public.document_ocr_requests where id=request_id for update;
- if r.status<>'running' or r.lease_token is distinct from lease or r.lease_until<=now() then raise exception 'STALE_LEASE';end if;
+ if lease is null or r.lease_token is null or r.lease_until is null or r.status<>'running' or r.lease_token is distinct from lease or r.lease_until<=now() then raise exception 'STALE_LEASE';end if;
  d:=app_private.check_uploaded_ocr_source(r);
  return jsonb_build_object('request',to_jsonb(r),'document',to_jsonb(d));
 end $$;
@@ -208,14 +216,14 @@ alter table public.document_ocr_requests add column publication jsonb check(publ
 create unique index one_ocr_output_per_parent on public.documents(workspace_id,ocr_parent_document_id,extraction_hash) where ocr_parent_document_id is not null and extraction_hash is not null;
 create function public.prepare_uploaded_document_ocr_publication(request_id uuid,lease uuid) returns jsonb
 language plpgsql security definer set search_path='' as $$
-declare ctx jsonb;r public.document_ocr_requests;d public.documents;child public.documents;child_id uuid;p jsonb;receipt jsonb;parts text[];page_text text;merged text:='';pages jsonb:='[]';provenance jsonb:='[]';coverage jsonb;next_status text;complete boolean:=true;digest text;prior_page jsonb;review_required boolean;begin
+declare ctx jsonb;r public.document_ocr_requests;d public.documents;child public.documents;child_id uuid;p jsonb;receipt jsonb;parts text[];page_text text;merged text:='';pages jsonb:='[]';provenance jsonb:='[]';coverage jsonb;next_status text;complete boolean:=true;digest text;prior_page jsonb;review_required boolean;page_review_required boolean;begin
  select * into r from public.document_ocr_requests where id=request_id;
  if r.id is null then raise exception 'NOT_FOUND';end if;
  perform 1 from public.workspaces where id=r.workspace_id for update;
  select * into r from public.document_ocr_requests where id=request_id for update;
  if r.status='published' and r.published_lease=lease then
   d:=app_private.check_uploaded_ocr_source(r);
-  select * into child from public.documents where id=r.successor_id and workspace_id=r.workspace_id and not archived and status in ('ready','partial');
+  select * into child from public.documents where id=r.successor_id and workspace_id=r.workspace_id and not archived and status not in ('pending','expired');
   if child.id is null then raise exception 'STALE_INPUT';end if;
   return jsonb_build_object('request_id',r.id,'successor_id',child.id,'source_key',d.storage_key,'destination_key',child.storage_key,
    'original_hash',d.original_hash,'expected_size',d.expected_size,'mime_type',d.mime_type,'output_hash',r.output_hash);
@@ -240,9 +248,14 @@ declare ctx jsonb;r public.document_ocr_requests;d public.documents;child public
    select x.receipt into receipt from public.document_ocr_pages x where x.request_id=r.id and x.page=(p->>'page')::integer and x.status='ready';
    if receipt is not null then
     page_text:=trim(receipt->>'text');p:=p||jsonb_build_object('status',case when receipt->>'engine'='human' and receipt->'blank_confirmed'='true'::jsonb then 'blank' else 'readable' end,'characters',length(page_text));
-    provenance:=provenance||jsonb_build_array((receipt-'text')||jsonb_build_object('origin',case when receipt->>'engine'='human' then 'human_correction' else 'ocr' end,'requires_human_review',receipt->>'engine'<>'human'));
+    page_review_required:=receipt->>'engine'<>'human' or coalesce(receipt->'review_requires_reconfirmation'='true'::jsonb,false) or receipt->>'reviewed_by' is distinct from r.created_by::text or not app_private.document_page_reviewer_current(d,receipt->>'reviewed_by');
+    provenance:=provenance||jsonb_build_array((receipt-'text')||jsonb_build_object('origin',case when receipt->>'engine'='human' then 'human_correction' else 'ocr' end,
+     'requires_human_review',coalesce(page_review_required,true),'review_authority_current',app_private.document_page_reviewer_current(d,receipt->>'reviewed_by')));
    else
     select value into prior_page from jsonb_array_elements(coalesce(d.ocr_provenance->'pages','[]')) where value->'page'=p->'page';
+    if prior_page is not null and (prior_page->>'reviewed_by' is distinct from r.created_by::text or not app_private.document_page_reviewer_current(d,prior_page->>'reviewed_by') or prior_page->>'text_hash' is distinct from encode(sha256(convert_to(page_text,'UTF8')),'hex')) then
+     prior_page:=prior_page||jsonb_build_object('requires_human_review',true,'review_authority_current',app_private.document_page_reviewer_current(d,prior_page->>'reviewed_by'));
+    end if;
     provenance:=provenance||jsonb_build_array(coalesce(prior_page,jsonb_build_object('page',p->'page','origin',case when p->>'status'='readable' then 'original_text_layer' else p->>'status' end,
       'text_hash',encode(sha256(convert_to(page_text,'UTF8')),'hex'),'requires_human_review',true)));
    end if;
@@ -254,7 +267,9 @@ declare ctx jsonb;r public.document_ocr_requests;d public.documents;child public
   if merged !~ E'\n$' then merged:=merged||E'\n';end if;
   if length(merged)>1000000 then raise exception 'EXTRACTION_CAP_REACHED';end if;
   coverage:=jsonb_build_object('version',1,'kind','pdf_pages','complete',complete,'pages',pages);
-  next_status:=case when complete then 'ready' else 'partial' end;
+  next_status:=case when exists(select 1 from jsonb_array_elements(pages) x where x->>'status'='readable') then case when complete then 'ready' else 'partial' end
+   when exists(select 1 from jsonb_array_elements(pages) x where x->>'status'='needs_ocr') then 'needs_ocr'
+   when exists(select 1 from jsonb_array_elements(pages) x where x->>'status'='extraction_failed') then 'error' else 'needs_processing' end;
   if not app_private.valid_document_coverage(coverage,merged,next_status,d.pdf_pages) then raise exception 'INVALID_EXTRACTION_COVERAGE';end if;
   digest:=encode(sha256(convert_to(merged,'UTF8')),'hex');
   select exists(select 1 from jsonb_array_elements(provenance) x where x->'requires_human_review' is distinct from 'false'::jsonb) into review_required;
@@ -294,8 +309,8 @@ declare r public.document_ocr_requests;d public.documents;child public.documents
  if encode(sha256(convert_to(r.publication->>'text','UTF8')),'hex')<>r.output_hash then raise exception 'IDEMPOTENCY_CONFLICT';end if;
  update public.documents set status=r.publication->>'status',extracted_text=r.publication->>'text',extraction_hash=r.output_hash,
   extraction_coverage=r.publication->'coverage',uploaded_size=actual_size,
-  extraction_confirmed_at=case when r.engine_policy=2 and r.publication->>'status'='ready' and ocr_provenance->'requires_human_review'='false'::jsonb then now() else null end,
-  extraction_confirmed_by=case when r.engine_policy=2 and r.publication->>'status'='ready' and ocr_provenance->'requires_human_review'='false'::jsonb then r.created_by else null end,revision=revision+1,updated_at=now() where id=child.id returning * into child;
+  extraction_confirmed_at=case when r.engine_policy=2 and r.publication#>'{coverage,complete}'='true'::jsonb and ocr_provenance->'requires_human_review'='false'::jsonb then now() else null end,
+  extraction_confirmed_by=case when r.engine_policy=2 and r.publication#>'{coverage,complete}'='true'::jsonb and ocr_provenance->'requires_human_review'='false'::jsonb then r.created_by else null end,revision=revision+1,updated_at=now() where id=child.id returning * into child;
  while start_at<=length(child.extracted_text) loop
   fragment:=substr(child.extracted_text,start_at,12000);
   insert into public.document_blocks(workspace_id,document_id,ordinal,locator,text,text_hash,created_by)
@@ -321,8 +336,8 @@ declare r public.document_ocr_requests;retryable boolean;begin
  if r.id is null then raise exception 'NOT_FOUND';end if;
  perform 1 from public.workspaces where id=r.workspace_id for update;
  select * into r from public.document_ocr_requests where id=request_id for update;
- if r.status<>'running' or r.active_page is not null or r.lease_token is distinct from lease or r.lease_until<=now() then raise exception 'STALE_LEASE';end if;
- if error_code not in ('DOCUMENT_OCR_STORAGE_UNAVAILABLE','DOCUMENT_OCR_FAILED','STORAGE_CAP_REACHED','EXTRACTION_CAP_REACHED','PACKAGE_CAP_REACHED','DATA_POLICY_BLOCKED','ROLE_FORBIDDEN','STALE_INPUT','RESTORE_IN_PROGRESS','UPLOAD_MISMATCH','INVALID_EXTRACTION_COVERAGE') then raise exception 'INVALID_INPUT';end if;
+ if lease is null or r.lease_token is null or r.lease_until is null or r.status<>'running' or r.active_page is not null or r.lease_token is distinct from lease or r.lease_until<=now() then raise exception 'STALE_LEASE';end if;
+ if error_code is null or error_code not in ('DOCUMENT_OCR_STORAGE_UNAVAILABLE','DOCUMENT_OCR_FAILED','STORAGE_CAP_REACHED','EXTRACTION_CAP_REACHED','PACKAGE_CAP_REACHED','DATA_POLICY_BLOCKED','ROLE_FORBIDDEN','STALE_INPUT','RESTORE_IN_PROGRESS','UPLOAD_MISMATCH','INVALID_EXTRACTION_COVERAGE') then raise exception 'INVALID_INPUT';end if;
  retryable:=error_code in ('DOCUMENT_OCR_STORAGE_UNAVAILABLE','DOCUMENT_OCR_FAILED','STORAGE_CAP_REACHED') and r.publish_attempts<5;
  update public.document_ocr_requests set status=case when retryable then 'retry_wait' else 'blocked' end,error_code=fail_uploaded_document_ocr_publication.error_code,
   next_attempt_at=case when retryable then now()+make_interval(secs=>least(3600,30*power(2,least(r.publish_attempts-1,7)))::int) else 'infinity'::timestamptz end,
@@ -346,7 +361,7 @@ do $$ declare names text[];name text;dependency text;definition text;begin
   definition:=replace(definition,'package uuid)','package uuid, pinned jsonb DEFAULT NULL)');
   definition:=replace(definition,'(w,opp,proposal,package)','(w,opp,proposal,package,pinned)');
   if name='generation_snapshot_core' then
-   definition:=replace(definition,'not d.archived','not d.archived and (pinned is not null or (app_private.current_document_extraction(d.workspace_id,d.id)=d.id and (d.ocr_parent_document_id is null or d.status in (''ready'',''partial''))))');
+   definition:=replace(definition,'not d.archived','not d.archived and (pinned is not null or (app_private.current_document_extraction(d.workspace_id,d.id)=d.id and (d.ocr_parent_document_id is null or d.status not in (''pending'',''expired''))))');
    definition:=replace(definition,'and package is not null','and package is not null and (pinned is null or exists(select 1 from jsonb_array_elements(coalesce(pinned->''blocks'',''[]'')) frozen where frozen#>>''{reference,entity_id}''=d.id::text))');
   end if;
   execute definition;
@@ -387,7 +402,7 @@ declare result jsonb;field text;values jsonb;begin
  'requires_human_review',d.extraction_confirmed_at is null or coalesce((d.ocr_provenance->>'requires_human_review')::boolean,false) or (exists(select 1 from jsonb_array_elements(coalesce(d.extraction_coverage->'pages','[]')) p where p->>'status'='blank') and d.ocr_provenance->'requires_human_review' is distinct from 'false'::jsonb))) order by e.ord),'[]') into values
  from jsonb_array_elements(coalesce(result#>'{input_materials,documents}','[]')) with ordinality e(value,ord)
  join public.documents d on d.workspace_id=w and d.id=(e.value->>'document_id')::uuid
- where app_private.current_document_extraction(w,d.id)=d.id and (d.ocr_parent_document_id is null or d.status in ('ready','partial'));
+ where app_private.current_document_extraction(w,d.id)=d.id and (d.ocr_parent_document_id is null or d.status not in ('pending','expired'));
  result:=jsonb_set(jsonb_set(result,'{input_materials,documents}',values),'{input_materials,extraction_review_version}','1')||jsonb_build_object('uploaded_ocr_version',1);
  if pg_column_size(result)>8388608 then raise exception 'GENERATION_CONTEXT_CAP_REACHED';end if;
  return result;
@@ -405,7 +420,7 @@ declare result jsonb;items jsonb;begin
  'requires_human_review',d.extraction_confirmed_at is null or coalesce((d.ocr_provenance->>'requires_human_review')::boolean,false) or (exists(select 1 from jsonb_array_elements(coalesce(d.extraction_coverage->'pages','[]')) p where p->>'status'='blank') and d.ocr_provenance->'requires_human_review' is distinct from 'false'::jsonb))) order by e.ord),'[]') into items
  from jsonb_array_elements(result#>'{input_materials,documents}') with ordinality e(value,ord)
  join public.documents d on d.workspace_id=w and d.id=(e.value->>'document_id')::uuid
- where app_private.current_document_extraction(w,d.id)=d.id and (d.ocr_parent_document_id is null or d.status in ('ready','partial'));
+ where app_private.current_document_extraction(w,d.id)=d.id and (d.ocr_parent_document_id is null or d.status not in ('pending','expired'));
  return jsonb_set(jsonb_set(result,'{input_materials,documents}',items),'{input_materials,extraction_review_version}','1');
 end $$;
 
@@ -427,7 +442,7 @@ create trigger archive_ocr_family after update of archived on public.documents f
 -- original bytes, previous extraction and previous full-page text hash.
 create function app_private.correct_document_extraction(input jsonb,idempotency_key text) returns jsonb
 language plpgsql security definer set search_path='' as $$
-declare d public.documents;r public.document_ocr_requests;actor uuid:=auth.uid();w uuid;digest text;replay app_private.idempotency_records;result jsonb;item jsonb;parts text[];page_number integer;prior_text text;receipt jsonb;superseded_requests jsonb;begin
+declare d public.documents;r public.document_ocr_requests;actor uuid:=auth.uid();w uuid;digest text;replay app_private.idempotency_records;result jsonb;item jsonb;parts text[];page_number integer;prior_text text;receipt jsonb;corrected_text text;superseded_requests jsonb;carried public.document_ocr_pages;begin
  perform app_private.check_keys(input,array['id','expected_revision','expected_original_hash','expected_extraction_hash','pages','review_confirmed']);
  if input->'review_confirmed' is distinct from 'true'::jsonb or jsonb_typeof(input->'pages') is distinct from 'array' or jsonb_array_length(input->'pages') not between 1 and 200 or pg_column_size(input)>8388608 then raise exception 'INVALID_INPUT';end if;
  select m.workspace_id into w from public.memberships m where m.user_id=actor and app_private.member_role(m.workspace_id) is not null limit 1;
@@ -446,7 +461,7 @@ declare d public.documents;r public.document_ocr_requests;actor uuid:=auth.uid()
  end if;
  if d.revision is distinct from (input->>'expected_revision')::integer then raise exception 'REVISION_CONFLICT';end if;
  if d.ocr_successor_id is not null or d.original_hash is distinct from input->>'expected_original_hash' or d.extraction_hash is distinct from input->>'expected_extraction_hash' then raise exception 'STALE_INPUT';end if;
- if d.mime_type<>'application/pdf' or d.pdf_pages not between 1 and 200 then raise exception 'DOCUMENT_PAGE_REVIEW_UNAVAILABLE';end if;
+ if d.mime_type<>'application/pdf' or d.pdf_pages is null or d.pdf_pages not between 1 and 200 then raise exception 'DOCUMENT_PAGE_REVIEW_UNAVAILABLE';end if;
  -- A new explicit correction can replace unfinished work while preserving
  -- its immutable receipts/reservations and revoking its old publication lease.
  select coalesce(jsonb_agg(id order by created_at),'[]') into superseded_requests from public.document_ocr_requests where workspace_id=w and document_id=d.id and engine_policy=2 and status not in ('published','superseded');
@@ -466,14 +481,30 @@ declare d public.documents;r public.document_ocr_requests;actor uuid:=auth.uid()
   if jsonb_typeof(item->'page') is distinct from 'number' or (item->>'page')!~'^[0-9]+$' or jsonb_typeof(item->'text') is distinct from 'string' or length(item->>'text')>20000
    or jsonb_typeof(item->'blank_confirmed') is distinct from 'boolean' or item->>'text' ~ E'(?n)^\\[Page [0-9]+\\]' then raise exception 'INVALID_INPUT';end if;
   page_number:=(item->>'page')::integer;
-  if page_number not between 1 and d.pdf_pages or (length(trim(item->>'text'))=0) is distinct from ((item->>'blank_confirmed')::boolean) then raise exception 'INVALID_INPUT';end if;
+  corrected_text:=regexp_replace(item->>'text','^\s+|\s+$','','g');
+  if page_number not between 1 and d.pdf_pages or (length(corrected_text)=0) is distinct from ((item->>'blank_confirmed')::boolean) then raise exception 'INVALID_INPUT';end if;
   prior_text:=regexp_replace(parts[page_number+1],'^\s+|\s+$','','g');
   if item->>'expected_page_text_hash' is distinct from encode(sha256(convert_to(prior_text,'UTF8')),'hex') then raise exception 'STALE_INPUT';end if;
-  receipt:=jsonb_build_object('page',page_number,'text',trim(item->>'text'),'text_hash',encode(sha256(convert_to(trim(item->>'text'),'UTF8')),'hex'),
+  receipt:=jsonb_build_object('page',page_number,'text',corrected_text,'text_hash',encode(sha256(convert_to(corrected_text,'UTF8')),'hex'),
    'engine','human','engine_version','1','confidence',null,'blank_confirmed',item->'blank_confirmed','reviewed_by',actor,'reviewed_at',now(),
    'original_hash',d.original_hash,'base_extraction_hash',d.extraction_hash,'previous_page_text_hash',item->>'expected_page_text_hash');
   insert into public.document_ocr_pages(workspace_id,request_id,page,status,receipt,receipt_hash)
   values(w,r.id,page_number,'ready',receipt,encode(sha256(convert_to(receipt::text,'UTF8')),'hex'));
+ end loop;
+ -- A later page save is an additive edit, not permission to discard another
+ -- saved page. Preserve exact same-base unoverridden human text and attribution.
+ for carried in select x.* from public.document_ocr_pages x join public.document_ocr_requests previous on previous.id=x.request_id
+  where previous.id::text in(select jsonb_array_elements_text(superseded_requests)) and previous.original_hash=d.original_hash and previous.base_extraction_hash=d.extraction_hash
+   and x.receipt->>'engine'='human' and x.page between 1 and d.pdf_pages
+   and not exists(select 1 from public.document_ocr_pages fresh where fresh.request_id=r.id and fresh.page=x.page) loop
+  prior_text:=regexp_replace(parts[carried.page+1],'^\s+|\s+$','','g');
+  if carried.receipt->>'original_hash' is distinct from d.original_hash or carried.receipt->>'base_extraction_hash' is distinct from d.extraction_hash
+   or carried.receipt->>'previous_page_text_hash' is distinct from encode(sha256(convert_to(prior_text,'UTF8')),'hex')
+   or carried.receipt->>'text_hash' is distinct from encode(sha256(convert_to(carried.receipt->>'text','UTF8')),'hex') then continue;end if;
+  receipt:=carried.receipt||jsonb_build_object('carried_from_request_id',carried.request_id);
+  if carried.status<>'ready' then receipt:=receipt||jsonb_build_object('review_requires_reconfirmation',true);end if;
+  insert into public.document_ocr_pages(workspace_id,request_id,page,status,receipt,receipt_hash)
+  values(w,r.id,carried.page,'ready',receipt,encode(sha256(convert_to(receipt::text,'UTF8')),'hex'));
  end loop;
  -- Supersede in-flight recognizer authority before allowing a human successor.
  -- Its immutable receipts/reservations survive for history and cleanup.
@@ -534,9 +565,9 @@ create or replace function app_private.seal_package(w uuid,opportunity uuid,acto
 language plpgsql security definer set search_path='' as $$
 declare v_manifest jsonb;digest text;result public.document_packages;begin
  perform 1 from public.workspaces where id=w for update;
- if not exists(select 1 from public.documents d where workspace_id=w and opportunity_id=opportunity and kind='rfp' and not archived and status='ready' and (d.ocr_parent_document_id is null or d.status in ('ready','partial')) and app_private.current_document_extraction(w,d.id)=d.id) then raise exception 'READABLE_RFP_REQUIRED';end if;
- if exists(select 1 from public.documents d where workspace_id=w and opportunity_id=opportunity and kind='rfp' and not archived and (d.ocr_parent_document_id is null or d.status in ('ready','partial')) and app_private.current_document_extraction(w,d.id)=d.id and (status<>'ready' or extraction_confirmed_at is null)) then raise exception 'EXTRACTION_REVIEW_REQUIRED';end if;
- select jsonb_agg(jsonb_build_object('id',id,'original_hash',original_hash,'extraction_hash',extraction_hash,'precedence',precedence,'supersedes_id',supersedes_id) order by id) into v_manifest from public.documents d where workspace_id=w and opportunity_id=opportunity and kind='rfp' and not archived and (d.ocr_parent_document_id is null or d.status in ('ready','partial')) and app_private.current_document_extraction(w,d.id)=d.id;
+ if not exists(select 1 from public.documents d where workspace_id=w and opportunity_id=opportunity and kind='rfp' and not archived and status='ready' and (d.ocr_parent_document_id is null or d.status not in ('pending','expired')) and app_private.current_document_extraction(w,d.id)=d.id) then raise exception 'READABLE_RFP_REQUIRED';end if;
+ if exists(select 1 from public.documents d where workspace_id=w and opportunity_id=opportunity and kind='rfp' and not archived and (d.ocr_parent_document_id is null or d.status not in ('pending','expired')) and app_private.current_document_extraction(w,d.id)=d.id and (status<>'ready' or extraction_confirmed_at is null)) then raise exception 'EXTRACTION_REVIEW_REQUIRED';end if;
+ select jsonb_agg(jsonb_build_object('id',id,'original_hash',original_hash,'extraction_hash',extraction_hash,'precedence',precedence,'supersedes_id',supersedes_id) order by id) into v_manifest from public.documents d where workspace_id=w and opportunity_id=opportunity and kind='rfp' and not archived and (d.ocr_parent_document_id is null or d.status not in ('pending','expired')) and app_private.current_document_extraction(w,d.id)=d.id;
  digest:=encode(sha256(convert_to(v_manifest::text,'UTF8')),'hex');
  select * into result from public.document_packages where workspace_id=w and opportunity_id=opportunity and package_hash=digest;
  if result.id is null then insert into public.document_packages(workspace_id,opportunity_id,ordinal,package_hash,manifest,created_by)
@@ -604,7 +635,7 @@ do $$ declare f record;definition text;begin
  for f in select p.oid from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='app_private' and p.proname like 'app_command%' loop
   definition:=pg_get_functiondef(f.oid);
   if position('when ''document.prepare'' then' in definition)>0 then
-   execute replace(definition,'and status<>''expired'')>=','and status<>''expired'' and (ocr_parent_document_id is null or status in (''ready'',''partial'')) and app_private.current_document_extraction(workspace_id,id)=id)>=');
+   execute replace(definition,'and status<>''expired'')>=','and status<>''expired'' and (ocr_parent_document_id is null or status not in (''pending'',''expired'')) and app_private.current_document_extraction(workspace_id,id)=id)>=');
   end if;
  end loop;
 end $$;
@@ -628,17 +659,21 @@ declare d public.documents;p jsonb;parts text[];page_text text;pages jsonb:='[]'
  select * into d from public.documents where id=document_id and not archived and status not in ('pending','expired');
  if d.id is null then raise exception 'NOT_FOUND';end if;
  perform app_private.delivery_actor(d.workspace_id,auth.uid(),false);
- if d.mime_type<>'application/pdf' then raise exception 'DOCUMENT_PAGE_REVIEW_UNAVAILABLE';end if;
+ if d.mime_type<>'application/pdf' or d.extraction_hash is null or d.pdf_pages is null or d.uploaded_size is distinct from d.expected_size then raise exception 'DOCUMENT_PAGE_REVIEW_UNAVAILABLE';end if;
  d:=app_private.uploaded_ocr_baseline(d);
  parts:=regexp_split_to_array(d.extracted_text,E'(?n)^\\[Page [0-9]+\\]\\n');
  if array_length(parts,1)<>d.pdf_pages+1 then raise exception 'INVALID_EXTRACTION_COVERAGE';end if;
  for p in select value from jsonb_array_elements(d.extraction_coverage->'pages') loop
   page_text:=regexp_replace(parts[(p->>'page')::integer+1],'^\s+|\s+$','','g');
   select x.receipt into candidate from public.document_ocr_pages x join public.document_ocr_requests r on r.id=x.request_id
-   where r.document_id=d.id and r.engine_policy=1 and x.page=(p->>'page')::integer;
+   where r.document_id=d.id and r.status<>'superseded' and x.receipt is not null and x.page=(p->>'page')::integer
+   order by r.engine_policy desc,r.created_at desc limit 1;
   select value into provenance from jsonb_array_elements(coalesce(d.ocr_provenance->'pages','[]')) where value->'page'=p->'page';
   pages:=pages||jsonb_build_array(jsonb_strip_nulls(jsonb_build_object('page',p->'page','status',p->'status','text',page_text,
    'text_hash',encode(sha256(convert_to(page_text,'UTF8')),'hex'),'candidate_text',candidate->'text','candidate_text_hash',candidate->'text_hash',
+   'candidate_origin',case when candidate is null then null when candidate->>'engine'='human' then 'human' else 'ocr' end,
+   'candidate_reviewed_by',candidate->'reviewed_by','candidate_reviewed_at',candidate->'reviewed_at',
+   'candidate_requires_review',case when candidate is null then null else candidate->>'engine'<>'human' or coalesce(candidate->'review_requires_reconfirmation'='true'::jsonb,false) or candidate->>'reviewed_by' is distinct from auth.uid()::text or not app_private.document_page_reviewer_current(d,candidate->>'reviewed_by') end,
    'requires_review',coalesce(provenance->'requires_human_review','true'::jsonb),'reviewed_by',provenance->'reviewed_by','reviewed_at',provenance->'reviewed_at')));
  end loop;
  return jsonb_build_object('document_id',d.id,'document_revision',d.revision,'original_hash',d.original_hash,'extraction_hash',d.extraction_hash,
@@ -664,7 +699,7 @@ do $$ declare name text;role_name text;signature text;begin
   'public.prepare_uploaded_document_ocr_publication(uuid,uuid)',
   'public.complete_uploaded_document_ocr_publication(uuid,uuid,text,bigint)',
   'public.fail_uploaded_document_ocr_publication(uuid,uuid,text)',
-  'app_private.current_document_extraction(uuid,uuid)',
+  'app_private.current_document_extraction(uuid,uuid)','app_private.document_page_reviewer_current(public.documents,text)',
   'app_private.check_uploaded_ocr_source(public.document_ocr_requests)',
   'app_private.uploaded_ocr_baseline(public.documents)','app_private.enqueue_uploaded_ocr(uuid,uuid)','app_private.correct_document_extraction(jsonb,text)',
   'app_private.generation_snapshot_before_uploaded_ocr(uuid,uuid,uuid,uuid)','app_private.generation_snapshot(uuid,uuid,uuid,uuid)',

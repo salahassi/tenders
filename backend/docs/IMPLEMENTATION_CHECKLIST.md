@@ -6795,3 +6795,20 @@ All transports in local tests are controlled fixtures; no live calls or deployme
 occurred. Full combined package checks follow the separate metadata-prompt fix.
 The sanitized adjudication document retains original unqualified counts and raw
 report hashes; this scorer correction does not qualify any model or restore quota.
+
+W02 independent review follow-up: a second page correction before publication
+now carries forward unoverridden saved human pages only when original,
+extraction and previous page hashes match exactly. Reload exposes saved human
+text before an OCR suggestion. Page reviewer IDs/times remain unchanged.
+Mixed or revoked reviewer authority cannot become the new actor's whole-file
+confirmation: the content is retained as requiring review until one current
+actor explicitly reviews every page. Null service/stored leases and missing
+admitted hashes/page counts/sizes fail closed. Current-source traversal retains
+cycle detection and supports more than 200 extraction versions; the PDF page
+limit is not a limit on correction history. The independent rereview found no
+remaining material blocker in this slice. A fully reviewed blank successor stays
+current as `needs_processing`, with no readable blocks; confirming the extraction
+is blank does not assert that it contains sufficient proposal information.
+The follow-up passed **44/44** focused cases (34 SQL, seven transport and three
+native resource cases), plus both package typechecks. Hosted acceptance remains
+unclaimed; the root integration gate covers the combined final branch.

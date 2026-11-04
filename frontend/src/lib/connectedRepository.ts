@@ -298,7 +298,13 @@ export class ConnectedRepository {
             child.id === d.ocr_successor_id &&
             child.ocr_parent_document_id === d.id &&
             !child.archived &&
-            ["ready", "partial"].includes(str(child, "status")) &&
+            [
+              "ready",
+              "partial",
+              "needs_ocr",
+              "needs_processing",
+              "error",
+            ].includes(str(child, "status")) &&
             child.uploaded_size === child.expected_size,
         ),
     );

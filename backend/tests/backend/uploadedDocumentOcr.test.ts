@@ -1206,3 +1206,280 @@ it("a new explicit correction supersedes unfinished work and its lease while pre
     "Corrected complete paragraph after further visual review.",
   );
 });
+it("accumulates pending human corrections across reload/page saves and only overrides an explicitly edited page", async () => {
+  const { document } = await setup();
+  const first = await reviewed(document);
+  first.pages = first.pages.filter((p) => p.page === 1);
+  first.pages[0].text = "First saved corrected page.";
+  const saved = await f.command("document.extraction.correct", first);
+  const view = await f.rpc("uploaded_document_extraction", [document.id]);
+  expect(view.pages[0]).toMatchObject({
+    candidate_text: "First saved corrected page.",
+    candidate_origin: "human",
+    candidate_reviewed_by: f.owner,
+    candidate_requires_review: false,
+  });
+  const next = await reviewed(saved, "Second saved corrected page.");
+  next.pages = next.pages.filter((p) => p.page !== 1);
+  const second = await f.command("document.extraction.correct", next);
+  const override = await reviewed(second);
+  override.pages = override.pages.filter((p) => p.page === 1);
+  override.pages[0].text = "First page corrected again.";
+  await f.command("document.extraction.correct", override);
+  const { child } = await publish();
+  expect(child.extracted_text).toContain("First page corrected again.");
+  expect(child.extracted_text).toContain("Second saved corrected page.");
+  expect(child.extracted_text).not.toContain("First saved corrected page.");
+  expect(child.extraction_confirmed_by).toBe(f.owner);
+  expect(
+    child.ocr_provenance.pages.every((p: any) => p.reviewed_by === f.owner),
+  ).toBe(true);
+});
+async function editorActor() {
+  const editor = "00000000-0000-4000-8000-000000000099";
+  await f.db.query(
+    "insert into auth.users values($1,'editor@example.test',now())",
+    [editor],
+  );
+  await f.db.query("insert into auth.identities values($1,'email',$2::jsonb)", [
+    editor,
+    JSON.stringify({ sub: editor }),
+  ]);
+  await f.db.query(
+    "insert into public.memberships(workspace_id,user_id,role,created_by) values($1,$2,'Editor',$3)",
+    [f.w, editor, f.owner],
+  );
+  await f.db.query(
+    "insert into public.identity_allowlist(workspace_id,provider,provider_user_id,verified_email,user_id,role,created_by) values($1,'email',$2::uuid::text,'editor@example.test',$2::uuid,'Editor',$3)",
+    [f.w, editor, f.owner],
+  );
+  return editor;
+}
+async function commandAs(actor: string, operation: string, input: unknown) {
+  await f.db.query("select set_config('request.jwt.claim.sub',$1,false)", [
+    actor,
+  ]);
+  await f.db.exec("set role authenticated");
+  return attempt(() =>
+    f.rpc("app_command", [
+      operation,
+      JSON.stringify(input),
+      crypto.randomUUID(),
+    ]),
+  );
+}
+it.each([false, true])(
+  "preserves mixed reviewer text/attribution and requires fresh whole confirmation (first reviewer revoked=%s)",
+  async (revoked) => {
+    const { document } = await setup();
+    const editor = await editorActor();
+    const first = await reviewed(document);
+    first.pages = first.pages.filter((p) => p.page === 1);
+    first.pages[0].text = "Saved by first reviewer.";
+    const saved = await f.command("document.extraction.correct", first);
+    const firstView = await f.rpc("uploaded_document_extraction", [
+      document.id,
+    ]);
+    if (revoked)
+      await f.db.query(
+        "update public.memberships set active=false where user_id=$1",
+        [f.owner],
+      );
+    const second = await reviewed(saved, "Saved by second reviewer.");
+    second.pages = second.pages.filter((p) => p.page !== 1);
+    await commandAs(editor, "document.extraction.correct", second);
+    const pending = await f.rpc("uploaded_document_extraction", [document.id]);
+    expect(pending.pages[0]).toMatchObject({
+      candidate_text: "Saved by first reviewer.",
+      candidate_reviewed_by: f.owner,
+      candidate_reviewed_at: firstView.pages[0].candidate_reviewed_at,
+      candidate_requires_review: true,
+    });
+    const { child } = await publish();
+    expect(child.extracted_text).toContain("Saved by first reviewer.");
+    expect(child.extracted_text).toContain("Saved by second reviewer.");
+    expect(child.extraction_confirmed_at).toBeNull();
+    expect(child.extraction_confirmed_by).toBeNull();
+    expect(child.ocr_provenance.pages[0]).toMatchObject({
+      reviewed_by: f.owner,
+      reviewed_at: firstView.pages[0].candidate_reviewed_at,
+      requires_human_review: true,
+      review_authority_current: !revoked,
+    });
+    expect(child.ocr_provenance.pages[1].reviewed_by).toBe(editor);
+    const current = await f.rpc("uploaded_document_extraction", [child.id]);
+    await commandAs(editor, "document.extraction.correct", {
+      id: child.id,
+      expected_revision: child.revision,
+      expected_original_hash: child.original_hash,
+      expected_extraction_hash: child.extraction_hash,
+      review_confirmed: true,
+      pages: current.pages.map((p: any) => ({
+        page: p.page,
+        expected_page_text_hash: p.text_hash,
+        text: p.text,
+        blank_confirmed: p.text.length === 0,
+      })),
+    });
+    const confirmed = (await publish()).child;
+    expect(confirmed.extraction_confirmed_by).toBe(editor);
+    expect(
+      confirmed.ocr_provenance.pages.every(
+        (p: any) => p.reviewed_by === editor && !p.requires_human_review,
+      ),
+    ).toBe(true);
+  },
+);
+it("refuses NULL persisted/service-supplied leases and nullable admitted source fields", async () => {
+  const { document } = await setup();
+  const task = await f.rpc("claim_uploaded_document_ocr");
+  await f.db.query(
+    "update public.document_ocr_requests set lease_token=null,lease_until=null,active_page=null where id=$1",
+    [task.request_id],
+  );
+  await expect(
+    attempt(() =>
+      f.rpc("uploaded_document_ocr_context", [task.request_id, null]),
+    ),
+  ).rejects.toThrow("STALE_LEASE");
+  await expect(
+    attempt(() =>
+      f.rpc("fail_uploaded_document_ocr_publication", [
+        task.request_id,
+        null,
+        "DOCUMENT_OCR_FAILED",
+      ]),
+    ),
+  ).rejects.toThrow("STALE_LEASE");
+  await f.db.query(
+    "update public.document_ocr_requests set lease_token=$2,lease_until=now()+interval '5 minutes' where id=$1",
+    [task.request_id, task.lease],
+  );
+  for (const field of ["pdf_pages", "uploaded_size", "extraction_hash"]) {
+    await f.db.exec("savepoint corrupt_source");
+    await f.db.query(
+      `update public.documents set ${field}=null,extraction_coverage=null,status='needs_ocr' where id=$1`,
+      [document.id],
+    );
+    await expect(
+      attempt(() =>
+        f.rpc("uploaded_document_ocr_context", [task.request_id, task.lease]),
+      ),
+    ).rejects.toThrow("STALE_INPUT");
+    await f.db.exec(
+      "rollback to savepoint corrupt_source;release savepoint corrupt_source",
+    );
+  }
+});
+it("resolves a long retained correction lineage without the unrelated 200-page traversal cutoff", async () => {
+  const { document } = await setup();
+  await f.db
+    .query(`do $test$ declare parent public.documents;child public.documents;begin
+ select * into parent from public.documents where id='${document.id}'::uuid;
+ for n in 1..202 loop
+ child:=jsonb_populate_record(null::public.documents,to_jsonb(parent)||jsonb_build_object('id',gen_random_uuid(),'storage_key','synthetic/history/'||gen_random_uuid()::text,'ocr_parent_document_id',parent.id,'ocr_successor_id',null));
+ insert into public.documents select(child).*;update public.documents set ocr_successor_id=child.id where id=parent.id;parent:=child;
+ end loop;end $test$`);
+  const current = (
+    await f.db.query<any>(
+      "select app_private.current_document_extraction($1,$2) id",
+      [f.w, document.id],
+    )
+  ).rows[0].id;
+  expect(current).not.toBe(document.id);
+  expect(
+    (
+      await f.db.query<any>(
+        "select ocr_successor_id from public.documents where id=$1",
+        [current],
+      )
+    ).rows[0].ocr_successor_id,
+  ).toBeNull();
+}, 30000);
+it.each([true, false])(
+  "publishes explicit blank review without inventing readable source text (all blank=%s)",
+  async (allBlank) => {
+    const source = await f.command("source.create", {
+      name: "Synthetic blank review",
+      kind: "manual",
+    });
+    const opportunity = await f.command("opportunity.create", {
+      source_id: source.id,
+      title: "Synthetic blank source",
+      reference: "SYNTHETIC-BLANK",
+      language: "en",
+    });
+    const prepared = await f.command("document.prepare", {
+      eligibility_attested: true,
+      kind: "rfp",
+      opportunity_id: opportunity.id,
+      original_name: "blank.pdf",
+      mime_type: "application/pdf",
+      size: 100,
+      hash: "a".repeat(64),
+    });
+    await f.rpc("verify_document_pages", [prepared.id, 2]);
+    const text = "[Page 1]\n\n\n[Page 2]\n";
+    const initial = {
+      version: 1,
+      kind: "pdf_pages",
+      complete: false,
+      pages: [
+        { page: 1, status: "needs_ocr", characters: 0 },
+        { page: 2, status: "needs_ocr", characters: 0 },
+      ],
+    };
+    const document = await f.rpc("accept_uploaded_document_with_coverage", [
+      prepared.id,
+      f.owner,
+      "a".repeat(64),
+      100,
+      text,
+      "needs_ocr",
+      "blank-upload",
+      JSON.stringify(initial),
+    ]);
+    await f.command("document.extraction.correct", {
+      id: document.id,
+      expected_revision: document.revision,
+      expected_original_hash: document.original_hash,
+      expected_extraction_hash: document.extraction_hash,
+      review_confirmed: true,
+      pages: await Promise.all(
+        (allBlank ? [1, 2] : [1]).map(async (page) => ({
+          page,
+          expected_page_text_hash: await sha(""),
+          text: "\n\t ",
+          blank_confirmed: true,
+        })),
+      ),
+    });
+    const { child } = await publish();
+    expect(child.status).toBe(allBlank ? "needs_processing" : "needs_ocr");
+    expect(child.extraction_confirmed_by).toBe(allBlank ? f.owner : null);
+    expect(child.extraction_coverage.pages[0]).toEqual({
+      page: 1,
+      status: "blank",
+      characters: 0,
+    });
+    expect(
+      (
+        await f.db.query<any>(
+          "select app_private.current_document_extraction($1,$2) id",
+          [f.w, document.id],
+        )
+      ).rows[0].id,
+    ).toBe(child.id);
+    const context = (
+      await f.db.query<any>("select app_private.delivery_input($1,$2) data", [
+        f.w,
+        opportunity.id,
+      ])
+    ).rows[0].data;
+    expect(context.blocks).toEqual([]);
+    expect(
+      context.input_materials.documents.map((d: any) => d.document_id),
+    ).toEqual([child.id]);
+    expect(context.input_materials.documents[0].used_for_draft).toBe(false);
+  },
+);
