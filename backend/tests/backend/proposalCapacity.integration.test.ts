@@ -29,6 +29,9 @@ async function capacitySourceHashes() {
   const frontendFiles = await readdir(
     new URL("../../../frontend/src/lib/", import.meta.url),
   );
+  const backendFiles = await readdir(
+    new URL("../../supabase/functions/_shared/", import.meta.url),
+  );
   return Object.fromEntries(
     await Promise.all(
       [
@@ -38,6 +41,9 @@ async function capacitySourceHashes() {
         "supabase/functions/_shared/deliveryWorker.ts",
         "supabase/functions/_shared/deliveryExport.ts",
         "supabase/functions/_shared/export.ts",
+        ...["boundedDocx.ts", "boundedDocxArchive.ts", "boundedXml.ts"]
+          .filter((name) => backendFiles.includes(name))
+          .map((name) => `supabase/functions/_shared/${name}`),
         "package-lock.json",
         "../frontend/package-lock.json",
         "../frontend/src/lib/renderDocx.ts",
@@ -554,12 +560,44 @@ it.each([199, 200, 201])(
 
 const capacityMeasurements: Record<string, unknown>[] = [];
 it.each([
-  { name: "dense-authored", tables: 20, short: false },
-  { name: "dense-short-authored", tables: 100, short: true },
-  { name: "dense-body-limit-authored", tables: 0, short: true },
+  {
+    name: "dense-authored",
+    tables: 20,
+    short: false,
+    empty: false,
+    ragged: false,
+  },
+  {
+    name: "dense-short-authored",
+    tables: 100,
+    short: true,
+    empty: false,
+    ragged: false,
+  },
+  {
+    name: "dense-body-limit-authored",
+    tables: 0,
+    short: true,
+    empty: false,
+    ragged: false,
+  },
+  {
+    name: "dense-empty-body-limit-authored",
+    tables: 0,
+    short: true,
+    empty: true,
+    ragged: false,
+  },
+  {
+    name: "dense-ragged-authored",
+    tables: 1,
+    short: false,
+    empty: false,
+    ragged: true,
+  },
 ])(
   "admits and preserves every cell of $name through the actual authorized authoring API and immutable delivery payload",
-  async ({ name, tables: targetTables, short }) => {
+  async ({ name, tables: targetTables, short, empty, ragged }) => {
     const o = await opportunity(),
       t = h.transport();
     await upload(
@@ -586,12 +624,17 @@ it.each([
     const context = (await opened.json()).data;
     const table = (index: number) => ({
       type: "table" as const,
-      headers: Array.from({ length: 10 }, (_, col) => `Column ${col}`),
+      headers: Array.from(
+        { length: ragged ? 1 : 10 },
+        (_, col) => `Column ${col}`,
+      ),
       rows: Array.from({ length: 50 }, (_, row) =>
         Array.from({ length: 10 }, (_, col) =>
-          short
-            ? "S"
-            : `Cell ${index}/${row}/${col}: required acceptance evidence remains pending. مراجعة المصدر مطلوبة.`,
+          empty
+            ? ""
+            : short
+              ? "S"
+              : `Cell ${index}/${row}/${col}: required acceptance evidence remains pending. مراجعة المصدر مطلوبة.`,
         ),
       ),
     });
@@ -705,7 +748,7 @@ it.each([
     );
     expect(t.backend.storeDeliveryObject).not.toHaveBeenCalled();
     const encoded = JSON.stringify(model);
-    capacityMeasurements.push({
+    const measurement = {
       name,
       tables: count,
       http_request_bytes: requestSize(body),
@@ -716,13 +759,15 @@ it.each([
       rows_per_table: 50,
       columns: 10,
       cells: count * 500,
+      cell_text: empty ? "empty" : short ? "one-character" : "mixed-language",
       authored_cells_preserved: true,
       accepted_by_actual_api: true,
       persisted_delivery_version: 2,
       model_input_bytes: Buffer.byteLength(encoded),
       model_input_hash: createHash("sha256").update(encoded).digest("hex"),
-      rendering_proven_by_this_case: false,
-    });
+      rendering_proven_by_this_case: ragged,
+      ragged_input: ragged,
+    };
     const directory = process.env.TENDERDESK_CAPACITY_MODELS;
     if (directory) {
       if (!directory.startsWith("/workspace/output/"))
@@ -730,9 +775,124 @@ it.each([
       await mkdir(directory, { recursive: true });
       await writeFile(`${directory}/${name}.json`, encoded);
     }
+    if (ragged) {
+      const bytes = new Uint8Array(
+        await (await renderDocx(model, h.fonts)).arrayBuffer(),
+      );
+      await deliveryBytes(bytes, model);
+    }
+    capacityMeasurements.push(measurement);
   },
   30000,
 );
+it("admits and preserves the authoring schema's 10,000-paragraph density through the actual API and immutable render projection", async () => {
+  const o = await opportunity(),
+    t = h.transport();
+  await upload(
+    o,
+    "The supplier must preserve every supplied implementation paragraph.",
+  );
+  const prepared = await h.f.command("delivery.snapshot.prepare", {
+    opportunity_id: o.id,
+    expected_revision: o.revision,
+  });
+  const proposal = (
+    await h.f.db.query<any>(
+      "select delivery_revision from public.proposals where id=$1",
+      [prepared.proposal_id],
+    )
+  ).rows[0];
+  const opened = await t.request("proposal-authoring/open", {
+    snapshot_id: prepared.id,
+    expected_delivery_revision: proposal.delivery_revision,
+  });
+  expect(opened.status, JSON.stringify(await opened.clone().json())).toBe(200);
+  const context = (await opened.json()).data;
+  const sections = Array.from({ length: 100 }, (_, section) => ({
+    key: `density-paragraph-${section}`,
+    title: `Synthetic paragraph section ${section}`,
+    volume: "technical",
+    content_blocks: Array.from({ length: 100 }, (_, paragraph) => ({
+      type: "paragraph",
+      text: `Synthetic capacity paragraph ${section}/${paragraph}.`,
+    })),
+    requirement_ids: [],
+    evidence_refs: [],
+    company_claims: [],
+    assumptions: [],
+    questions: [],
+  }));
+  const input = {
+    expected_revision: context.session.revision,
+    body: { ...context.revision.body, sections },
+  };
+  const saved = await t.request(
+    `proposal-authoring/${context.session.id}/save`,
+    input,
+  );
+  expect(saved.status, JSON.stringify(await saved.clone().json())).toBe(200);
+  const value = (await saved.json()).data;
+  expect(value.revision.body.sections).toEqual(sections);
+  const snapshot = value.published_snapshot;
+  expect(snapshot.payload).toMatchObject({
+    version: 2,
+    substantive_complete: false,
+    assurance_state: "unreviewed",
+  });
+  const expected = sections.flatMap((section) => section.content_blocks);
+  const persisted = (
+    await h.f.db.query<any>(
+      "select payload from public.proposal_delivery_snapshots where id=$1",
+      [snapshot.id],
+    )
+  ).rows[0].payload;
+  expect(
+    persisted.sections
+      .filter((section: any) =>
+        section.section_key.startsWith("density-paragraph-"),
+      )
+      .flatMap((section: any) => section.content_blocks),
+  ).toEqual(expected);
+  const model = buildDeliveryExport(snapshot, "combined");
+  const paragraphs = model.blocks.filter(
+    (block) =>
+      block.type === "paragraph" &&
+      block.text.startsWith("Synthetic capacity paragraph "),
+  );
+  expect(paragraphs).toEqual(expected);
+  expect(paragraphs).toHaveLength(10000);
+  expect(t.backend.storeDeliveryObject).not.toHaveBeenCalled();
+  const encoded = JSON.stringify(model);
+  capacityMeasurements.push({
+    name: "dense-paragraph-authored",
+    sections: 100,
+    paragraphs_per_section: 100,
+    paragraphs: 10000,
+    http_request_bytes: Buffer.byteLength(JSON.stringify(input)),
+    http_request_limit_bytes: 2097152,
+    database_input_bytes: Number(
+      (
+        await h.f.db.query<any>("select pg_column_size($1::jsonb) bytes", [
+          JSON.stringify({ ...input, session_id: context.session.id }),
+        ])
+      ).rows[0].bytes,
+    ),
+    database_input_limit_bytes: 2097152,
+    authored_paragraphs_preserved: true,
+    accepted_by_actual_api: true,
+    persisted_delivery_version: 2,
+    model_input_bytes: Buffer.byteLength(encoded),
+    model_input_hash: createHash("sha256").update(encoded).digest("hex"),
+    rendering_proven_by_this_case: false,
+  });
+  const directory = process.env.TENDERDESK_CAPACITY_MODELS;
+  if (directory) {
+    if (!directory.startsWith("/workspace/output/"))
+      throw Error("Synthetic model path must be under /workspace/output");
+    await mkdir(directory, { recursive: true });
+    await writeFile(`${directory}/dense-paragraph-authored.json`, encoded);
+  }
+}, 30000);
 afterAll(async () => {
   const destination = process.env.TENDERDESK_CAPACITY_RECEIPT;
   if (!destination) return;
@@ -761,10 +921,10 @@ afterAll(async () => {
     JSON.stringify(
       {
         fixture: "synthetic-only",
-        intended_cases: 14,
+        intended_cases: 17,
         completed_cases: capacityChecks.length + capacityMeasurements.length,
         all_cases_passed:
-          capacityChecks.length + capacityMeasurements.length === 14,
+          capacityChecks.length + capacityMeasurements.length === 17,
         scope:
           "local migrated PGlite SQL, actual API handlers, real DOCX renderer; synthetic token and Map-storage adapters",
         model_calls: 0,

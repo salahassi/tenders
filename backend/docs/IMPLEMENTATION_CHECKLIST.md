@@ -7584,3 +7584,34 @@ DOCX volumes and re-enters the same package without changing its job or deadline
 The ordinary suite passes26 cases; related artifact/round-robin/wake/fairness suites
 pass188 cases, and backend typecheck passes. These are local synthetic receipts,
 with no production, provider or email calls.
+
+
+### 2026-11-04 — G10 density and uneven-column regression follow-up
+
+The actual authorized authoring API admits 810 full tables containing 405,000
+explicitly empty cells within the existing 2 MiB JSONB input bound; the next full
+table is rejected without changing the saved revision. It also admits the schema's
+100 sections × 100 short paragraphs. Tests preserve every supplied cell/paragraph
+and its order through the saved revision, immutable delivery payload and render
+projection. These are additional concrete fixture families, not proof of a global
+maximum across all admitted shapes; sparse rows with implicit padding are a further
+density axis requiring assessment. Their frozen models were handed to the native
+renderer owner for independent process/memory and full-file verification.
+
+A separate actual API → DOCX regression exposed accepted rows wider than their
+header list. The former renderer built cells from the header count and omitted
+extra values. Existing final verification correctly rejected the resulting file
+with `EXPORT_CONTENT_MISMATCH`; this was an availability failure, not a false claim
+of successful delivery. The renderer owner's column-width repair retains every
+value and supplies empty padding without inventing column labels. The unchanged
+regression now verifies all 500 supplied cells after rendering.
+
+`proposalCapacity.integration.test.ts` passes **17/17**, and both package
+typechecks pass. [The density receipt](evidence/proposal-capacity-density-20261104.json)
+records that run and its stable source/font/lockfile hashes. The original 14-case
+receipt remains intact. This receipt is scoped to the recorded implementation;
+the final merged bounded verifier and native runtime are separate acceptance.
+Receipt capture now also includes `boundedDocx.ts`, `boundedDocxArchive.ts` and
+`boundedXml.ts` when present, for the final integrated rerun. No native large-file
+qualification, hosted timing, provider call or production deployment is claimed
+by these API/persistence density checks.
