@@ -20,8 +20,10 @@ ROOT = Path(__file__).resolve().parents[3]
 GATEWAY = ROOT / 'backend/deploy/kubernetes/gateway.conf'
 BEFORE = ROOT / 'backend/scripts/ops/storage-retirement/gateway-storage-qualified.conf'
 STORAGE_RECEIPT = ROOT / 'backend/docs/evidence/storage-retirement-binary-20261104.json'
+STREAM_RECEIPT = ROOT / 'backend/docs/evidence/api-proxy-streaming-pinned-worker-20261104.json'
 NGINX = 'docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8'
-NODE = 'docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799'
+# Small cached Node-compatible helper; no Storage code executes in this proof.
+NODE = 'docker.io/denoland/deno@sha256:3dc638972caa62978182228a5a575e0498ae45129aa1c3ee8548663652ef7ab6'
 DOCKER = ['docker', '--host=unix:///var/run/docker.sock']
 UPGRADE = {'code': 'TRANSPORT_UPGRADE_REQUIRED', 'message': 'Refresh the application to use the current command transport.', 'retryable': False, 'details': None}
 
@@ -95,7 +97,7 @@ def executed_config(source):
     text = source.replace('__NAMESPACE__', 'synthetic')
     for service, port, target in [('rest', 3000, 3000), ('storage', 5000, 5000), ('auth', 9999, 9999), ('api', 8080, 19080), ('frontend', 8080, 19081), ('worker', 8080, 19082), ('source-browser', 8080, 19083)]:
         text = text.replace(f'http://{service}.synthetic.svc.cluster.local:{port}', f'http://127.0.0.1:{target}')
-    return text.replace('resolver kube-dns.kube-system.svc.cluster.local', 'resolver 127.0.0.1').replace('worker_processes auto;', 'worker_processes 1;')
+    return text.replace('resolver kube-dns.kube-system.svc.cluster.local', 'resolver 127.0.0.1')
 
 
 class Probe:
@@ -114,7 +116,7 @@ class Probe:
             'limitations': ['Synthetic recording upstream; no SQL, Auth/Storage business transaction or database-drain proof.',
                 'Local binary routing qualification, not hosted rollout or throughput/SLO evidence.',
                 'Same-namespace direct REST remains outside this HTTP fence; the release requires its SQL INSERT backstop.',
-                'Executed changes are loopback upstream/DNS coordinates, synthetic namespace and one Nginx worker; routing/location/rewrite rules are unchanged.']}
+                'Executed changes are loopback upstream/DNS coordinates and synthetic namespace; final worker_processes 1 directive and routing/location/rewrite rules are unchanged.']}
 
     def docker(self, *args, data=None, check=True):
         if args[0] == 'run': args = ('run', '--pull', 'never', *args[1:])
@@ -125,11 +127,18 @@ class Probe:
         return result
 
     def node(self, source):
-        return json.loads(self.docker('exec', '-i', self.helper, 'node', '-', data=source).stdout)
+        prefix = "import { createRequire } from 'node:module'; const require = createRequire('file:///fixture.cjs');\n"
+        return json.loads(self.docker('exec', '-i', self.helper, 'deno', 'run', '--no-config', '--no-npm', '--no-remote', '--allow-read', '--allow-net', '-', data=prefix + source).stdout)
 
     def requests(self, cases):
-        return self.node("""const http=require('node:http');const cases=""" + canonical(cases) + """;
-const send=c=>new Promise((resolve,reject)=>{const r=http.request({host:'127.0.0.1',port:c.port,path:c.path,method:c.method,headers:{'content-length':0,'connection':'close'}},res=>{let body='';res.on('data',d=>body+=d);res.on('end',()=>resolve({...c,status:res.statusCode,body,content_type:res.headers['content-type'],cache_control:res.headers['cache-control']}));});r.on('error',reject);r.setTimeout(4000,()=>r.destroy(new Error('TIMEOUT')));r.end();});
+        # Raw TCP preserves every requested path byte; a compatibility HTTP
+        # client must not normalize the route before the pinned Nginx sees it.
+        return self.node("""const net=require('node:net');const cases=""" + canonical(cases) + """;
+const send=c=>new Promise((resolve,reject)=>{let wire='';const socket=net.createConnection({host:'127.0.0.1',port:c.port},()=>socket.write(c.method+' '+c.path+' HTTP/1.1\\r\\nHost: localhost\\r\\nContent-Length: 0\\r\\nConnection: close\\r\\n\\r\\n'));
+socket.setEncoding('utf8');socket.on('data',d=>{wire+=d;if(wire.length>65536)socket.destroy(new Error('OVERSIZED_CONTROL_RESPONSE'));});socket.on('error',reject);socket.setTimeout(4000,()=>socket.destroy(new Error('TIMEOUT')));
+socket.on('end',()=>{try{const split=wire.indexOf('\\r\\n\\r\\n');if(split<0)throw new Error('HTTP_RESPONSE_INVALID');const lines=wire.slice(0,split).split('\\r\\n'),status=Number(lines.shift().split(' ')[1]),headers={};for(const line of lines){const i=line.indexOf(':');headers[line.slice(0,i).toLowerCase()]=line.slice(i+1).trim();}let body=wire.slice(split+4);
+if(c.method!=='HEAD'&&headers['transfer-encoding']==='chunked'){let at=0,decoded='';while(true){const end=body.indexOf('\\r\\n',at);if(end<0)throw new Error('CHUNK_HEADER_INVALID');const size=parseInt(body.slice(at,end).split(';')[0],16);if(!Number.isInteger(size)||size<0)throw new Error('CHUNK_SIZE_INVALID');if(size===0)break;at=end+2;if(at+size+2>body.length)throw new Error('CHUNK_TRUNCATED');decoded+=body.slice(at,at+size);at+=size+2;}body=decoded;}
+resolve({...c,status,body,content_type:headers['content-type'],cache_control:headers['cache-control']});}catch(e){reject(e);}});});
 (async()=>{const result=[];for(const c of cases)result.push(await send(c));console.log(JSON.stringify(result));})().catch(()=>process.exit(1));""")
 
     def stats(self): return self.node("const http=require('node:http');http.get('http://127.0.0.1:19090',r=>{let x='';r.on('data',d=>x+=d);r.on('end',()=>console.log(x));});")
@@ -141,7 +150,7 @@ const send=c=>new Promise((resolve,reject)=>{const r=http.request({host:'127.0.0
             self.receipt[key + '_image_id'] = info['Id']
         source = """const http=require('node:http');const counts={};for(const port of [3000,5000,9999,19080,19081,19082,19083])http.createServer((req,res)=>{counts[port]=(counts[port]||0)+1;req.resume();req.on('end',()=>{res.setHeader('content-type','application/json');res.end(JSON.stringify({port,method:req.method,path:req.url}));});}).listen(port,'127.0.0.1');http.createServer((req,res)=>res.end(JSON.stringify(counts))).listen(19090,'127.0.0.1');"""
         script = self.temp / 'upstream.js'; script.write_text(source); script.chmod(0o644)
-        self.docker('run', '-d', '--name', self.helper, '--network', 'none', '--user', '1000:1000', '--read-only', '--memory', '64m', '--cpus', '0.2', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges', '-v', str(script) + ':/upstream.js:ro', '--entrypoint', 'node', NODE, '/upstream.js')
+        self.docker('run', '-d', '--name', self.helper, '--network', 'none', '--user', '1000:1000', '--read-only', '--memory', '128m', '--cpus', '0.2', '--cap-drop', 'ALL', '--security-opt', 'no-new-privileges', '-v', str(script) + ':/upstream.cjs:ro', '--entrypoint', 'deno', NODE, 'run', '--no-config', '--no-npm', '--no-remote', '--allow-read', '--allow-net', '/upstream.cjs')
         self.owned.append(self.helper)
         for _ in range(60):
             try: self.stats(); return
@@ -167,7 +176,8 @@ const send=c=>new Promise((resolve,reject)=>{const r=http.request({host:'127.0.0
 
     def qualify(self):
         self.start()
-        self.receipt['before_executed_config_sha256'] = self.start_gateway(BEFORE.read_text())
+        self.receipt['historical_routing_control_worker_override'] = 1
+        self.receipt['before_executed_config_sha256'] = self.start_gateway(BEFORE.read_text().replace('worker_processes auto;', 'worker_processes 1;'))
         red = self.requests([{'port': p, 'method': 'POST', 'path': '/rest/v1/rpc/' + n} for p in (8080, 8081) for n in ('app_batch', 'apply_batch')])
         assert all(r['status'] == 200 and json.loads(r['body'])['port'] == 3000 for r in red)
         self.receipt['red_legacy_upstream_dispatches'] = [{k: r[k] for k in ('port', 'method', 'path', 'status')} for r in red]
@@ -199,6 +209,10 @@ const send=c=>new Promise((resolve,reject)=>{const r=http.request({host:'127.0.0
         prior = self.stats()
         restarted = self.requests([{'port': port, 'method': 'POST', 'path': '/rest/v1/rpc/app_batch'} for port in (8080, 8081)])
         assert all(r['status'] == 409 for r in restarted) and self.stats() == prior
+        stream = json.loads(STREAM_RECEIPT.read_bytes())
+        assert all(stream.get(k) is True for k in ('passed', 'actual_binary_exercised', 'cleanup_confirmed', 'exact_delivery_qualified', 'cancellation_qualified', 'temporary_budget_qualified', 'gateway_memory_qualified'))
+        assert stream['gateway_config_source_sha256'] == sha(GATEWAY.read_bytes()) and stream['gateway_image'] == NGINX
+        self.receipt['api_proxy_streaming_receipt_sha256'] = sha(STREAM_RECEIPT.read_bytes())
         self.receipt.update(actual_binary_exercised=True, legacy_rpc_denial_qualified=True, gateway_resumable_denial_qualified=True, ordinary_routing_preserved=True, restart_denial_qualified=True, postgrest_error_envelope_qualified=True)
 
     def cleanup(self):

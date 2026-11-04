@@ -10173,3 +10173,58 @@ No renderer, canonical validation, source text, page numbers or production state
 changed. The reason for the absent caches is not established; the earlier 18-file
 LibreOffice result and the separate Microsoft Word update/save limitation remain
 open. No Word engine, model or hosted operation was invoked.
+
+### November 4 — qualify large API responses through the exact gateway configuration
+
+Both API proxy locations now disable response buffering, and the gateway pins
+one worker under its unchanged 64 MiB/200m limits. Request buffering, the 32 MiB
+API upload limit and other routing are preserved. Pinning the worker count
+removes the test-only `auto` substitution and makes the tested process shape
+the production configuration.
+
+The [final pinned-image transport receipt](evidence/api-proxy-streaming-pinned-worker-20261104.json)
+delivers 412,758,765 deterministic bytes with the exact expected hash through
+both ports. The slower client completes in 32.587/32.518 seconds; peak gateway
+memory is 8,777,728 bytes with no out-of-memory event. The disk-backed workspace
+mount is verified inside the container by filesystem magic `794c7630`. The
+continuous census includes open-unlinked files and stable master/worker process
+identities; final temporary usage is only the PID file, 4 KiB allocated. Early
+client cancellation closes the upstream and its sent-byte count stops.
+
+The buffering-enabled control, also using one worker, crosses the 64 MiB
+temporary budget (67,133,440 allocated bytes) and is deliberately cancelled.
+This is an observed budget failure, not a filesystem `ENOSPC`, an OOM, or a
+measurement of the previous production `auto` worker count.
+
+Earlier attempts mistakenly used host `/tmp`, which is memory-backed in this
+environment. Their disk-medium qualification is explicitly withdrawn by the
+[scope correction](evidence/api-proxy-streaming-scope-correction-20261104.json).
+Those original receipts, including OOM and observer failures, remain unchanged.
+The subsequent disk-backed one-worker-substitution run remains scoped to that
+configuration. The [worker binding](evidence/api-proxy-streaming-worker-binding-20261104.json)
+records equal executed bytes and the separate final-source rerun; no old receipt
+is relabeled as final evidence.
+
+The [final routing receipt](evidence/legacy-batch-gateway-pinned-worker-20261104.json)
+again passes 560 legacy method/path denials, 76 TUS denials, 24 ordinary controls
+and restart. Its raw TCP client preserves path bytes before Nginx normalization.
+The bounded synthetic helper uses an existing pinned small Deno image to avoid
+Storage-image copy overhead in the test workspace. No Storage implementation
+is replaced or exercised by this proxy fixture.
+
+The version 2 release source contract retains the historical physical/TUS
+proof and requires the exact final routing-to-transport hash chain. Preflight
+checks the Deployment and actual Pods for image, command, config mount,
+resource limits and writable whole `/tmp` mount; running Pods receive a
+read-only filesystem check. Final-checksum Pods and final acceptance require
+one actual worker. Old `auto` Pods remain the authorized repair input, with
+their existing process-exit journal/drain preserved. No resources are patched.
+
+The [focused verification receipt](evidence/api-proxy-streaming-pinned-worker-checks-20261104.json)
+records 26 helper, 16 manifest-render and two open-unlinked census tests, plus
+two real-SDK adapter regressions. Python compilation, exact source-contract
+validation and diff checks pass. All owned containers and disk fixtures are
+removed. Integrated package gates, the separate HTTPS chain, final release,
+deployment and authenticated hosted acceptance remain separate; this proves
+the declared proxy transport fixture, not Auth/SQL behavior or a universal
+capacity/service-level guarantee.

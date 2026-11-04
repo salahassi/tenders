@@ -1,0 +1,28 @@
+{
+  "customer_calls": 0,
+  "observed_host_filesystem": {
+    "corrected_fixture_parent": "/workspace/work",
+    "corrected_parent_type": "overlay",
+    "path": "/tmp",
+    "type": "tmpfs"
+  },
+  "prior_receipt_sha256": {
+    "api-proxy-streaming-20261104.json": "9aeac4e40ecc5abb00db9a80110255ee29948c45f67b13d011b229e06368d3d3",
+    "api-proxy-streaming-baseline-exit-race-20261104.json": "d7b2fa59e37c94650a265a5470cd575bdf701eda5df8d54f382484497231720c",
+    "api-proxy-streaming-baseline-observer-failure-20261104.json": "e1a1edc4878bc97acd2b1a99f26f5334f998ff74acd4d583fcb4403fdd06ff0c",
+    "api-proxy-streaming-checks-20261104.json": "30f776377aaa8aee11a0260e16efa8f5876df12564f200b161813718532c1664",
+    "api-proxy-streaming-directory-only-20261104.json": "8cf7338ec80abadb19eb9b259a9c196027741b2b913fc085a976605922442b1c",
+    "api-proxy-streaming-harness-failure-20261104.json": "72f95a773b7973f06ea13047d7a549ddfca2be89c2f7f0951af6e1785a6f4417",
+    "api-proxy-streaming-observer-failure-20261104.json": "1e1eb43cbb3ea2191fb66ab7ee3f112833141984815c44a731102310b0f5df4c"
+  },
+  "production_calls": 0,
+  "qualification_retracted": true,
+  "reason": "The earlier harness used tempfile.mkdtemp under host /tmp, observed subsequently as tmpfs. The tmp_medium=disk label was incorrect; those runs do not qualify the production disk-backed emptyDir envelope.",
+  "required_replacement": "api-proxy-streaming-disk-20261104.json, with actual in-container filesystem check and complete open-unlinked census.",
+  "retained_scope": [
+    "Exact deterministic byte/hash delivery and cancellation on the tested pinned Nginx and tmpfs-backed mount.",
+    "Actual default-buffering OOM/exit137 is a tmpfs fixture observation only, not evidence of disk-backed production failure.",
+    "Original routing/SDK results remain valid for unchanged config bytes; their transport reference does not qualify disk medium."
+  ],
+  "version": 1
+}

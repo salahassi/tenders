@@ -1,0 +1,185 @@
+{
+  "actual_binary_exercised": true,
+  "baseline": {
+    "bytes": 3928406,
+    "elapsed_seconds": 0.335,
+    "gateway_memory": {
+      "events": {},
+      "exit_code": 137,
+      "oom_killed": true,
+      "peak_bytes": null
+    },
+    "id": "baseline-buffered",
+    "outcome": "aborted",
+    "port": 8080,
+    "sha256": "87ae697b5f0f03cfb23db9f00a9c1cea73cab9dcb5d68d3d3979dd9959de4f67",
+    "status": 200,
+    "temporary_budget_crossed": false,
+    "temporary_peak": {
+      "allocated_bytes": 4096,
+      "files": 1,
+      "logical_bytes": 2
+    }
+  },
+  "baseline_budget_failure_reproduced": false,
+  "baseline_config_source_sha256": "6d21e906c270cc4afe406dc28a646b8882e357beb07d34228a0221e03906d9dc",
+  "baseline_executed_config_sha256": "fb76697cee488874f8748ad7ebcb15bd409641872e454ea3d37e96a46f311c74",
+  "cancellation_qualified": true,
+  "cancelled_transfers": [
+    {
+      "bytes": 2124800,
+      "elapsed_seconds": 0.217,
+      "gateway_memory": {
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 9805824
+      },
+      "id": "cancel-8080",
+      "outcome": "cancelled",
+      "port": 8080,
+      "sha256": "3aa5f27af86e0faa2516ba072445b11bd2f9f5ec30f1286444c3a71ba820b685",
+      "status": 200,
+      "temporary_budget_crossed": false,
+      "temporary_peak": {
+        "allocated_bytes": 4096,
+        "files": 1,
+        "logical_bytes": 2
+      },
+      "upstream_after_cancel": {
+        "backpressure": 190,
+        "closed": true,
+        "completed": false,
+        "sent": 12451840
+      }
+    },
+    {
+      "bytes": 2122752,
+      "elapsed_seconds": 0.214,
+      "gateway_memory": {
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 9805824
+      },
+      "id": "cancel-8081",
+      "outcome": "cancelled",
+      "port": 8081,
+      "sha256": "f41c99020cdc7c750c2f9760af8a717f949f57db6f035eb50003ca15d7180af3",
+      "status": 200,
+      "temporary_budget_crossed": false,
+      "temporary_peak": {
+        "allocated_bytes": 4096,
+        "files": 1,
+        "logical_bytes": 2
+      },
+      "upstream_after_cancel": {
+        "backpressure": 154,
+        "closed": true,
+        "completed": false,
+        "sent": 10092544
+      }
+    }
+  ],
+  "cleanup_confirmed": true,
+  "completed_transfers": [
+    {
+      "bytes": 412758765,
+      "elapsed_seconds": 25.961,
+      "gateway_memory": {
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 9805824
+      },
+      "id": "full-8080",
+      "outcome": "complete",
+      "port": 8080,
+      "sha256": "cc0a4307247e4bf2a8a4406b2b07fec1c17e1541081eb57035c777611a2fdfa4",
+      "status": 200,
+      "temporary_budget_crossed": false,
+      "temporary_peak": {
+        "allocated_bytes": 4096,
+        "files": 1,
+        "logical_bytes": 2
+      }
+    },
+    {
+      "bytes": 412758765,
+      "elapsed_seconds": 25.988,
+      "gateway_memory": {
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 9805824
+      },
+      "id": "full-8081",
+      "outcome": "complete",
+      "port": 8081,
+      "sha256": "cc0a4307247e4bf2a8a4406b2b07fec1c17e1541081eb57035c777611a2fdfa4",
+      "status": 200,
+      "temporary_budget_crossed": false,
+      "temporary_peak": {
+        "allocated_bytes": 4096,
+        "files": 1,
+        "logical_bytes": 2
+      }
+    }
+  ],
+  "customer_calls": 0,
+  "envelope": {
+    "census_interval_ms": 5,
+    "client_pause_ms_per_chunk": 4,
+    "gateway_cpu_millicores": 200,
+    "gateway_memory_bytes": 67108864,
+    "helper_cpu_millicores": 1000,
+    "helper_memory_bytes": 134217728,
+    "tmp_budget_bytes": 67108864,
+    "tmp_enforcement": "observed-budget-cancel-on-crossing",
+    "tmp_medium": "disk"
+  },
+  "exact_delivery_qualified": true,
+  "executed_config_sha256": "410414f04c3ad6406fba0edce88c6477354db696e946e296c1d37b8351395718",
+  "gateway_config_source_sha256": "e35ea7416a9699b61e5e66ca1b280e3dbe676005526c82d34232916b655ac260",
+  "gateway_image": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+  "gateway_image_id": "sha256:87ae58c7c6b521c9a89276ddc8b3365586e0d3fa1df02bbf5d8340a29c2e1bd2",
+  "gateway_memory_qualified": true,
+  "harness_sha256": "0afc9631f964d951a91ca7c302191e085336d04f20b17b803fc597aac642dc6d",
+  "helper_image": "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799",
+  "helper_image_id": "sha256:03a737a1b3dd5f4fc97af8a3b07bb1fc8c98c6d589377474fae3b20c9699527e",
+  "limitations": [
+    "Deterministic synthetic octets of the admitted response byte length; no application JSON/SQL/Auth/model execution.",
+    "Disk-backed temporary mount is continuously observed; crossing cancels the baseline, not a claimed filesystem ENOSPC or hosted eviction.",
+    "Nginx transport only; outer Caddy, DigitalOcean LoadBalancer, browser and hosted rollout are outside this proof.",
+    "Loopback upstream, synthetic namespace and one Nginx worker; API request buffering/body limits and other routing are unchanged."
+  ],
+  "passed": true,
+  "payload_bytes": 412758765,
+  "payload_sha256": "cc0a4307247e4bf2a8a4406b2b07fec1c17e1541081eb57035c777611a2fdfa4",
+  "production_calls": 0,
+  "routing_harness_sha256": "0fec1cde3f465f3a62a4b7261350896608c80921948f36354652e2d3fb023c65",
+  "synthetic_only": true,
+  "temporary_budget_qualified": true,
+  "upstream_sha256": "a81d8e60493272530a24bd127ef60f3935d932b5a71dddd2225e54baf996b85e",
+  "version": 1
+}

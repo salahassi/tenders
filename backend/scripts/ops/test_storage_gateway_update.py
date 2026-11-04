@@ -14,7 +14,7 @@ class Fake:
  def __init__(self,before,after):
   self.before=before;self.after=after;self.calls=[];self.lose_ack=None
   def meta(name):return {'name':name,'namespace':self.NAMESPACE,'uid':name+'-synthetic','resourceVersion':'1','labels':{'app.kubernetes.io/managed-by':'tenderdesk-deployment'}}
-  self.values={('configmap','gateway-config'):{'metadata':meta('gateway-config'),'data':before},('deployment','gateway'):{'metadata':meta('gateway'),'spec':{'replicas':1,'selector':{'matchLabels':{'app':'gateway'}},'template':{'metadata':{'annotations':{g.CHECKSUM:g.checksum(before)}},'spec':{'containers':[{'name':'gateway','image':IMAGE,'command':['nginx','-g','daemon off;'],'volumeMounts':[{'name':'config','mountPath':'/etc/nginx/nginx.conf','subPath':'nginx.conf','readOnly':True}]}],'volumes':[{'name':'config','configMap':{'name':'gateway-config'}}]}}}}}
+  self.values={('configmap','gateway-config'):{'metadata':meta('gateway-config'),'data':before},('deployment','gateway'):{'metadata':meta('gateway'),'spec':{'replicas':1,'selector':{'matchLabels':{'app':'gateway'}},'template':{'metadata':{'annotations':{g.CHECKSUM:g.checksum(before)}},'spec':{'containers':[{'name':'gateway','image':IMAGE,'command':['nginx','-g','daemon off;'],'resources':{'limits':{'memory':'64Mi','cpu':'200m'}},'volumeMounts':[{'name':'tmp','mountPath':'/tmp'},{'name':'config','mountPath':'/etc/nginx/nginx.conf','subPath':'nginx.conf','readOnly':True}]}],'volumes':[{'name':'tmp','emptyDir':{'sizeLimit':'64Mi'}},{'name':'config','configMap':{'name':'gateway-config'}}]}}}}}
  def get(self,kind,name):return copy.deepcopy(self.values[kind,name])
  def command(self,args,**_):
   self.calls.append(args)
@@ -30,23 +30,27 @@ class Fake:
    if self.lose_ack==args[1]:self.lose_ack=None;raise RuntimeError('LOST_ACK')
   elif args[0]=='get':
    dep=self.values['deployment','gateway'];return json.dumps({'items':[{'metadata':{'name':'gateway-test','labels':{'app':'gateway'},'annotations':copy.deepcopy(dep['spec']['template']['metadata']['annotations'])},'spec':dep['spec']['template']['spec'],'status':{'containerStatuses':[{'ready':True}]}}]})
-  elif args[0]=='exec':return self.values['configmap','gateway-config']['data']['nginx.conf']
+  elif args[0]=='exec':
+   if args[-1]=='/tmp':return 'UNKNOWN 794c7630\n'
+   if args[-1]=='args':return 'COMMAND\nnginx: master process nginx -g daemon off;\nnginx: worker process\n'
+   return self.values['configmap','gateway-config']['data']['nginx.conf']
   elif args[0]!='rollout':raise AssertionError(args)
   return ''
 
 class GatewayTests(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();root=Path(self.tmp.name)
-  self.before=root/'before';self.after=root/'after';self.receipt=root/'receipt';self.storage=root/'storage';self.batch=root/'batch'
+  self.before=root/'before';self.after=root/'after';self.receipt=root/'receipt';self.storage=root/'storage';self.batch=root/'batch';self.stream=root/'stream'
   # Deliberately synthetic strings. These test binding/rollout only, never claim
   # real Nginx routing qualification or commit a fake production receipt.
-  self.before.write_text('synthetic old __NAMESPACE__');self.after.write_text('synthetic guarded __NAMESPACE__')
+  self.before.write_text('synthetic old __NAMESPACE__');self.after.write_text('worker_processes 1;\nsynthetic guarded __NAMESPACE__')
   self.storage.write_text('synthetic storage guard __NAMESPACE__')
   self.r={'passed':True,'actual_binary_exercised':True,'signed_tus_bypass_confirmed':True,'gateway_resumable_denial_qualified':True,'gateway_image':IMAGE,'gateway_config_source_sha256':g.sha(self.storage.read_bytes())};self.receipt.write_text(json.dumps(self.r))
-  self.b={'passed':True,'actual_binary_exercised':True,'legacy_rpc_denial_qualified':True,'gateway_resumable_denial_qualified':True,'ordinary_routing_preserved':True,'restart_denial_qualified':True,'postgrest_error_envelope_qualified':True,'cleanup_confirmed':True,'gateway_image':IMAGE,'gateway_before_source_sha256':g.sha(self.storage.read_bytes()),'gateway_config_source_sha256':g.sha(self.after.read_bytes()),'storage_qualification_sha256':g.sha(self.receipt.read_bytes()),'production_calls':0,'customer_calls':0};self.batch.write_text(json.dumps(self.b))
-  self.patches=[patch.object(g,'BASELINE',self.before),patch.object(g,'TARGET',self.after),patch.object(g,'QUALIFICATION',self.receipt),patch.object(g,'STORAGE_QUALIFIED',self.storage),patch.object(g,'BATCH_QUALIFICATION',self.batch),patch.object(g,'BASELINE_SHA256',g.sha(self.before.read_bytes()))]
+  self.t={'running_gateway_worker_count':1,'actual_gateway_tmp_filesystem_magic':'794c7630','actual_gateway_tmp_filesystem':'UNKNOWN','passed':True,'actual_binary_exercised':True,'cleanup_confirmed':True,'exact_delivery_qualified':True,'cancellation_qualified':True,'temporary_budget_qualified':True,'gateway_memory_qualified':True,'gateway_image':IMAGE,'gateway_config_source_sha256':g.sha(self.after.read_bytes()),'production_calls':0,'customer_calls':0,'payload_bytes':412758765,'envelope':{'gateway_worker_processes':1,'gateway_memory_bytes':67108864,'gateway_cpu_millicores':200,'tmp_budget_bytes':67108864,'tmp_medium':'disk','census_includes_open_unlinked_files':True}};self.stream.write_text(json.dumps(self.t))
+  self.b={'api_proxy_streaming_receipt_sha256':g.sha(self.stream.read_bytes()),'passed':True,'actual_binary_exercised':True,'legacy_rpc_denial_qualified':True,'gateway_resumable_denial_qualified':True,'ordinary_routing_preserved':True,'restart_denial_qualified':True,'postgrest_error_envelope_qualified':True,'cleanup_confirmed':True,'gateway_image':IMAGE,'gateway_before_source_sha256':g.sha(self.storage.read_bytes()),'gateway_config_source_sha256':g.sha(self.after.read_bytes()),'storage_qualification_sha256':g.sha(self.receipt.read_bytes()),'production_calls':0,'customer_calls':0};self.batch.write_text(json.dumps(self.b))
+  self.patches=[patch.object(g,'BASELINE',self.before),patch.object(g,'TARGET',self.after),patch.object(g,'QUALIFICATION',self.receipt),patch.object(g,'STORAGE_QUALIFIED',self.storage),patch.object(g,'BATCH_QUALIFICATION',self.batch),patch.object(g,'STREAM_QUALIFICATION',self.stream),patch.object(g,'BASELINE_SHA256',g.sha(self.before.read_bytes()))]
   for p in self.patches:p.start()
-  self.d=Fake({'nginx.conf':'synthetic old tenderdesk-dev'},{'nginx.conf':'synthetic guarded tenderdesk-dev'});self.contract,_,_=g.source_contract(self.d)
+  self.d=Fake({'nginx.conf':'synthetic old tenderdesk-dev'},{'nginx.conf':'worker_processes 1;\nsynthetic guarded tenderdesk-dev'});self.contract,_,_=g.source_contract(self.d)
  def tearDown(self):
   for p in reversed(self.patches):p.stop()
   self.tmp.cleanup()
@@ -63,7 +67,7 @@ class GatewayTests(unittest.TestCase):
     with self.assertRaisesRegex(RuntimeError,'LOST_ACK'):g.apply(self.d,state)
     state=g.preflight(self.d,self.contract);g.apply(self.d,state);g.require_installed(self.d)
  def test_exit_proof_callback_runs_after_rollout_before_final_pod_acceptance(self):
-  state=g.preflight(self.d,self.contract);observed=[]
+  state=g.preflight(self.d,self.contract);self.d.calls.clear();observed=[]
   def after_rollout():
    self.assertEqual(self.d.calls[-1][0],'rollout')
    self.assertFalse(any(call[0]=='get' for call in self.d.calls))
@@ -72,7 +76,7 @@ class GatewayTests(unittest.TestCase):
   self.assertEqual(observed,['old process proof persisted'])
   self.assertTrue(any(call[0]=='get' for call in self.d.calls))
  def test_failed_exit_proof_never_reports_gateway_acceptance(self):
-  state=g.preflight(self.d,self.contract)
+  state=g.preflight(self.d,self.contract);self.d.calls.clear()
   def after_rollout():raise RuntimeError('OLD_GATEWAY_PROCESS_EXIT_UNPROVED')
   with self.assertRaisesRegex(RuntimeError,'OLD_GATEWAY_PROCESS_EXIT_UNPROVED'):g.apply(self.d,state,after_rollout=after_rollout)
   self.assertFalse(any(call[0]=='get' for call in self.d.calls))
@@ -82,7 +86,7 @@ class GatewayTests(unittest.TestCase):
   with self.assertRaisesRegex(g.GatewayError,'CONFIG_CHANGED'):g.preflight(self.d,self.contract)
   self.assertEqual(self.d.calls,[])
  def test_source_and_receipt_drift_fail_before_mutation(self):
-  self.after.write_text('different')
+  self.after.write_text('worker_processes 1;\ndifferent')
   with self.assertRaisesRegex(g.GatewayError,'QUALIFICATION_CHANGED'):g.preflight(self.d,self.contract)
   self.assertEqual(self.d.calls,[])
  def test_qualification_flags_must_be_true(self):
@@ -113,7 +117,7 @@ class GatewayTests(unittest.TestCase):
   self.assertEqual(self.d.values['deployment','gateway']['spec']['replicas'],2)
  def test_current_pod_must_read_exact_guarded_bytes(self):
   state=g.preflight(self.d,self.contract);g.apply(self.d,state);original=self.d.command
-  def command(args,**kw):return 'old pod mount' if args[0]=='exec' else original(args,**kw)
+  def command(args,**kw):return 'old pod mount' if args[0]=='exec' and args[-1]=='/etc/nginx/nginx.conf' else original(args,**kw)
   self.d.command=command
   with self.assertRaisesRegex(g.GatewayError,'RUNNING_CONFIG_CHANGED'):g.verify(self.d,state,check_pods=True)
  def test_config_rollback_with_new_checksum_is_rejected(self):
@@ -126,4 +130,88 @@ class GatewayTests(unittest.TestCase):
    self.d=Fake(self.d.before,self.d.after);self.d.values['deployment','gateway']['spec']['template']['spec']['containers'][0].update(change)
    with self.subTest(change=change),self.assertRaises(g.GatewayError):g.preflight(self.d,self.contract)
    self.assertEqual(self.d.calls,[])
+ def test_transport_receipt_flags_hash_and_resource_binding_are_mandatory(self):
+  for key,value in [('passed',1),('cancellation_qualified',False),('gateway_memory_qualified',False),('gateway_config_source_sha256','f'*64),('production_calls',False),('payload_bytes',123),('actual_gateway_tmp_filesystem_magic','1021994')]:
+   t=copy.deepcopy(self.t);t[key]=value;self.stream.write_text(json.dumps(t))
+   with self.subTest(key=key),self.assertRaises(g.GatewayError):g.source_contract(self.d)
+  self.stream.write_text(json.dumps(self.t));self.b['api_proxy_streaming_receipt_sha256']='f'*64;self.batch.write_text(json.dumps(self.b))
+  with self.assertRaisesRegex(g.GatewayError,'API_PROXY_QUALIFICATION_CHANGED'):g.source_contract(self.d)
+ def test_smaller_missing_or_ambiguous_gateway_limits_fail_before_mutation(self):
+  for limits in ({'memory':'63Mi','cpu':'200m'},{'memory':'64Mi','cpu':'199m'},{'memory':'64Mi'}, {'memory':'64Mi','cpu':'unknown'}):
+   self.d=Fake(self.d.before,self.d.after);spec=self.d.values['deployment','gateway']['spec']['template']['spec'];spec['containers'][0]['resources']['limits']=limits
+   with self.subTest(limits=limits),self.assertRaisesRegex(g.GatewayError,'RESOURCE_BELOW_PROOF'):g.preflight(self.d,self.contract)
+   self.assertEqual(self.d.calls,[])
+ def test_unreviewed_tmp_shape_or_smaller_bound_fails_before_mutation(self):
+  for change in ('memory','small','unbounded','readonly','subpath','shadow','pvc'):
+   self.d=Fake(self.d.before,self.d.after);spec=self.d.values['deployment','gateway']['spec']['template']['spec'];tmp=spec['volumes'][0];mount=spec['containers'][0]['volumeMounts'][0]
+   if change=='memory':tmp['emptyDir']['medium']='Memory'
+   elif change=='small':tmp['emptyDir']['sizeLimit']='63Mi'
+   elif change=='unbounded':del tmp['emptyDir']['sizeLimit']
+   elif change=='readonly':mount['readOnly']=True
+   elif change=='subpath':mount['subPath']='nested'
+   elif change=='shadow':spec['containers'][0]['volumeMounts'].append({'name':'another','mountPath':'/tmp/proxy_temp'})
+   elif change=='pvc':spec['volumes'][0]={'name':'tmp','persistentVolumeClaim':{'claimName':'private'}}
+   with self.subTest(change=change),self.assertRaisesRegex(g.GatewayError,'TMP_'):g.preflight(self.d,self.contract)
+   self.assertEqual(self.d.calls,[])
+ def test_current_pod_lower_than_template_is_rejected_before_config_change(self):
+  original=self.d.command
+  def command(args,**kw):
+   output=original(args,**kw)
+   if args[0]=='get':
+    data=json.loads(output);data['items'][0]['spec']['containers'][0]['resources']['limits']['memory']='32Mi';return json.dumps(data)
+   return output
+  self.d.command=command
+  with self.assertRaisesRegex(g.GatewayError,'RESOURCE_BELOW_PROOF'):g.preflight(self.d,self.contract)
+  self.assertFalse(any(c[0]=='patch' for c in self.d.calls))
+ def test_old_auto_workers_allow_repair_but_target_replay_requires_exact_one(self):
+  original=self.d.command;workers=[2]
+  def command(args,**kw):
+   if args[0]=='exec' and args[-1]=='args':return 'COMMAND\n'+'nginx: worker process\n'*workers[0]
+   return original(args,**kw)
+  self.d.command=command
+  state=g.preflight(self.d,self.contract)
+  with self.assertRaisesRegex(g.GatewayError,'WORKER_COUNT_UNQUALIFIED'):g.apply(self.d,state)
+  self.assertEqual(self.d.values['configmap','gateway-config']['data'],self.d.after)
+  with self.assertRaisesRegex(g.GatewayError,'WORKER_COUNT_UNQUALIFIED'):g.preflight(self.d,self.contract)
+  workers[0]=1;g.require_installed(self.d)
+ def test_final_source_worker_count_cannot_drift_to_auto(self):
+  self.after.write_text('worker_processes auto;\nsynthetic guarded __NAMESPACE__')
+  with self.assertRaisesRegex(g.GatewayError,'WORKER_SOURCE_CHANGED'):g.preflight(self.d,self.contract)
+  self.assertEqual(self.d.calls,[])
+ def test_actual_tmpfs_or_unknown_filesystem_fails_before_mutation(self):
+  for value in ('tmpfs 1021994','UNKNOWN deadbeef','overlayfs','overlayfs 794c7630 extra'):
+   self.d=Fake(self.d.before,self.d.after);original=self.d.command
+   def command(args,**kw):return value if args[0]=='exec' and args[-1]=='/tmp' else original(args,**kw)
+   self.d.command=command
+   with self.subTest(value=value),self.assertRaisesRegex(g.GatewayError,'TMP_FILESYSTEM_UNQUALIFIED'):g.preflight(self.d,self.contract)
+   self.assertFalse(any(c[0]=='patch' for c in self.d.calls))
+ def test_terminated_old_pod_is_retained_for_coordinator_without_exec(self):
+  original=self.d.command
+  def command(args,**kw):
+   output=original(args,**kw)
+   if args[0]=='get':
+    data=json.loads(output);data['items'][0]['status']['containerStatuses']=[{'ready':False,'state':{'terminated':{'exitCode':0}}}];return json.dumps(data)
+   return output
+  self.d.command=command;g.preflight(self.d,self.contract)
+  self.assertFalse(any(c[0]=='exec' for c in self.d.calls))
+ def test_actual_pod_entrypoint_and_config_mount_drift_fail_before_mutation(self):
+  for change in ('command','args','config','shadow'):
+   self.d=Fake(self.d.before,self.d.after);original=self.d.command
+   def command(args,**kw):
+    output=original(args,**kw)
+    if args[0]=='get':
+     data=json.loads(output);spec=data['items'][0]['spec'];container=spec['containers'][0]
+     if change=='command':container['command']=['sh','-c','sleep infinity']
+     elif change=='args':container['args']=['-c','/tmp/alternate.conf']
+     elif change=='config':spec['volumes'][1]['configMap']['name']='another-config'
+     elif change=='shadow':container['volumeMounts'].append({'name':'tmp','mountPath':'/etc/nginx'})
+     return json.dumps(data)
+    return output
+   self.d.command=command
+   with self.subTest(change=change),self.assertRaises(g.GatewayError):g.preflight(self.d,self.contract)
+   self.assertFalse(any(c[0]=='patch' for c in self.d.calls))
+ def test_equivalent_quantity_units_and_larger_resources_preserve_spec(self):
+  spec=self.d.values['deployment','gateway']['spec']['template']['spec'];spec['containers'][0]['resources']['limits']={'memory':'67108864','cpu':'0.2'};spec['volumes'][0]['emptyDir']['sizeLimit']='0.0625Gi'
+  before=copy.deepcopy(spec);state=g.preflight(self.d,self.contract);g.apply(self.d,state)
+  self.assertEqual(self.d.values['deployment','gateway']['spec']['template']['spec'],before)
 if __name__=='__main__':unittest.main()

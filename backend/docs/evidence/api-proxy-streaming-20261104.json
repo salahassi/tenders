@@ -1,0 +1,196 @@
+{
+  "actual_binary_exercised": true,
+  "baseline": {
+    "failure_class": "RuntimeError",
+    "gateway_memory": {
+      "events": {},
+      "exit_code": 137,
+      "oom_killed": true,
+      "peak_bytes": null,
+      "running": false
+    },
+    "outcome": "observation_incomplete",
+    "temporary_budget_crossed": false,
+    "temporary_observer_complete": false
+  },
+  "baseline_budget_failure_reproduced": false,
+  "baseline_config_source_sha256": "6d21e906c270cc4afe406dc28a646b8882e357beb07d34228a0221e03906d9dc",
+  "baseline_executed_config_sha256": "fb76697cee488874f8748ad7ebcb15bd409641872e454ea3d37e96a46f311c74",
+  "baseline_oom_reproduced": true,
+  "cancellation_qualified": true,
+  "cancelled_transfers": [
+    {
+      "bytes": 2152448,
+      "elapsed_seconds": 0.265,
+      "gateway_memory": {
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 8949760
+      },
+      "id": "cancel-8080",
+      "observer_error_classes": [],
+      "outcome": "cancelled",
+      "port": 8080,
+      "sha256": "6c5deb8d95e6fea048a76742173149729bb40016d1787c1bdf9277c2ac4e6aac",
+      "status": 200,
+      "temporary_budget_crossed": false,
+      "temporary_observer_complete": true,
+      "temporary_peak": {
+        "allocated_bytes": 4096,
+        "files": 1,
+        "logical_bytes": 2,
+        "observed_processes": 2,
+        "open_unlinked_files": 0
+      },
+      "upstream_after_cancel": {
+        "backpressure": 154,
+        "closed": true,
+        "completed": false,
+        "sent": 10092544
+      }
+    },
+    {
+      "bytes": 2162524,
+      "elapsed_seconds": 0.236,
+      "gateway_memory": {
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 8949760
+      },
+      "id": "cancel-8081",
+      "observer_error_classes": [],
+      "outcome": "cancelled",
+      "port": 8081,
+      "sha256": "73c1e4216829d7a7e52a57f665c74e3b56fccc8784a5b8ff4df58d931e78baf0",
+      "status": 200,
+      "temporary_budget_crossed": false,
+      "temporary_observer_complete": true,
+      "temporary_peak": {
+        "allocated_bytes": 4096,
+        "files": 1,
+        "logical_bytes": 2,
+        "observed_processes": 2,
+        "open_unlinked_files": 0
+      },
+      "upstream_after_cancel": {
+        "backpressure": 161,
+        "closed": true,
+        "completed": false,
+        "sent": 10551296
+      }
+    }
+  ],
+  "cleanup_confirmed": true,
+  "completed_transfers": [
+    {
+      "bytes": 412758765,
+      "elapsed_seconds": 26.021,
+      "gateway_memory": {
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 8949760
+      },
+      "id": "full-8080",
+      "observer_error_classes": [],
+      "outcome": "complete",
+      "port": 8080,
+      "sha256": "cc0a4307247e4bf2a8a4406b2b07fec1c17e1541081eb57035c777611a2fdfa4",
+      "status": 200,
+      "temporary_budget_crossed": false,
+      "temporary_observer_complete": true,
+      "temporary_peak": {
+        "allocated_bytes": 4096,
+        "files": 1,
+        "logical_bytes": 2,
+        "observed_processes": 2,
+        "open_unlinked_files": 0
+      }
+    },
+    {
+      "bytes": 412758765,
+      "elapsed_seconds": 32.266,
+      "gateway_memory": {
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 8949760
+      },
+      "id": "full-8081",
+      "observer_error_classes": [],
+      "outcome": "complete",
+      "port": 8081,
+      "sha256": "cc0a4307247e4bf2a8a4406b2b07fec1c17e1541081eb57035c777611a2fdfa4",
+      "status": 200,
+      "temporary_budget_crossed": false,
+      "temporary_observer_complete": true,
+      "temporary_peak": {
+        "allocated_bytes": 4096,
+        "files": 1,
+        "logical_bytes": 2,
+        "observed_processes": 2,
+        "open_unlinked_files": 0
+      }
+    }
+  ],
+  "customer_calls": 0,
+  "envelope": {
+    "census_includes_open_unlinked_files": true,
+    "census_interval_ms": 5,
+    "client_pause_ms_per_chunk": 4,
+    "gateway_cpu_millicores": 200,
+    "gateway_memory_bytes": 67108864,
+    "helper_cpu_millicores": 1000,
+    "helper_memory_bytes": 134217728,
+    "tmp_budget_bytes": 67108864,
+    "tmp_enforcement": "observed-budget-cancel-on-crossing",
+    "tmp_medium": "disk"
+  },
+  "exact_delivery_qualified": true,
+  "executed_config_sha256": "410414f04c3ad6406fba0edce88c6477354db696e946e296c1d37b8351395718",
+  "gateway_config_source_sha256": "e35ea7416a9699b61e5e66ca1b280e3dbe676005526c82d34232916b655ac260",
+  "gateway_image": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+  "gateway_image_id": "sha256:87ae58c7c6b521c9a89276ddc8b3365586e0d3fa1df02bbf5d8340a29c2e1bd2",
+  "gateway_memory_qualified": true,
+  "harness_sha256": "c62a3d76e3d7f71e7f71187d6b5c65230b50b3dd9fa82fba3294ec516c91f236",
+  "helper_image": "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799",
+  "helper_image_id": "sha256:03a737a1b3dd5f4fc97af8a3b07bb1fc8c98c6d589377474fae3b20c9699527e",
+  "limitations": [
+    "Deterministic synthetic octets of the admitted response byte length; no application JSON/SQL/Auth/model execution.",
+    "Disk-backed temporary mount is continuously observed; crossing cancels the baseline, not a claimed filesystem ENOSPC or hosted eviction.",
+    "A crashed/replaced baseline process can make its FD census incomplete; baseline spill then remains unknown. Target acceptance requires a complete stable-process census.",
+    "Nginx transport only; outer Caddy, DigitalOcean LoadBalancer, browser and hosted rollout are outside this proof.",
+    "Loopback upstream, synthetic namespace and one Nginx worker; API request buffering/body limits and other routing are unchanged."
+  ],
+  "passed": true,
+  "payload_bytes": 412758765,
+  "payload_sha256": "cc0a4307247e4bf2a8a4406b2b07fec1c17e1541081eb57035c777611a2fdfa4",
+  "production_calls": 0,
+  "routing_harness_sha256": "8d79ae799b29769851b96ce16324c5ba9e9a0545002f8fa3e3c807e54ece792e",
+  "synthetic_only": true,
+  "temporary_budget_qualified": true,
+  "upstream_sha256": "a81d8e60493272530a24bd127ef60f3935d932b5a71dddd2225e54baf996b85e",
+  "version": 1
+}

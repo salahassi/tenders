@@ -1,0 +1,18 @@
+{
+  "baseline_scope": "Buffering-enabled control with one worker; observed temporary-budget crossing is not filesystem ENOSPC or proof of old auto-worker production behavior.",
+  "customer_calls": 0,
+  "executed_bytes_identical": true,
+  "final_config_source_sha256": "c1a25c41c24f8bb804ecb0e162c8e0577437fd31b16ef82cefbacebbb20795ba",
+  "final_executed_config_sha256": "410414f04c3ad6406fba0edce88c6477354db696e946e296c1d37b8351395718",
+  "final_observed_workers": 1,
+  "final_production_directive": "worker_processes 1;",
+  "final_routing_receipt_sha256": "8d395eec680876ff4b0155babe99fa904cfa5f7bc4d9955e80f6830f581e6014",
+  "final_transport_receipt_sha256": "c904a8740e7d000f9e40e5fe5ab550be071d64790c1ccd18a765113bca63dd81",
+  "final_worker_substitution": false,
+  "prior_executed_config_sha256": "410414f04c3ad6406fba0edce88c6477354db696e946e296c1d37b8351395718",
+  "prior_one_worker_substitution_receipt_sha256": "181ad9148131ba682f3a10bdc36203924122f171d1681fc1a978bb37e3c9f8ed",
+  "production_calls": 0,
+  "qualification": "Exact final source is independently rerun; earlier hashes remain unchanged.",
+  "scope_correction_receipt_sha256": "3fcc344fa2c2c32c233a50db87779da1c005663e448048432455bc0396e1be75",
+  "version": 1
+}

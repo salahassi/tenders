@@ -1,0 +1,218 @@
+{
+  "actual_binary_exercised": true,
+  "actual_gateway_tmp_filesystem": "UNKNOWN",
+  "actual_gateway_tmp_filesystem_magic": "794c7630",
+  "baseline": {
+    "bytes": 11170006,
+    "elapsed_seconds": 1.314,
+    "gateway_memory": {
+      "events": {
+        "high": 0,
+        "low": 0,
+        "max": 51,
+        "oom": 0,
+        "oom_group_kill": 0,
+        "oom_kill": 0
+      },
+      "peak_bytes": 67145728
+    },
+    "id": "baseline-buffered",
+    "observer_error_classes": [],
+    "outcome": "cancelled",
+    "port": 8080,
+    "sha256": "e6c28e99a07580d4799f7e2721581371d320d308d291cd83abd1622bb71637bc",
+    "status": 200,
+    "temporary_budget_crossed": true,
+    "temporary_observer_complete": true,
+    "temporary_peak": {
+      "allocated_bytes": 67133440,
+      "files": 2,
+      "logical_bytes": 67125250,
+      "observed_processes": 2,
+      "open_unlinked_files": 1
+    }
+  },
+  "baseline_budget_failure_reproduced": true,
+  "baseline_config_source_sha256": "94b3a939badc5446374181e18290a65e2d15100603e070e88e22f1ba2e7392a1",
+  "baseline_executed_config_sha256": "fb76697cee488874f8748ad7ebcb15bd409641872e454ea3d37e96a46f311c74",
+  "baseline_oom_reproduced": false,
+  "cancellation_qualified": true,
+  "cancelled_transfers": [
+    {
+      "bytes": 2108416,
+      "elapsed_seconds": 0.43,
+      "gateway_memory": {
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 8597504
+      },
+      "id": "cancel-8080",
+      "observer_error_classes": [],
+      "outcome": "cancelled",
+      "port": 8080,
+      "sha256": "4c3dfced9e6bfafeeff7461b56b106544311ac8518e46a23b7171c0436e3b27c",
+      "status": 200,
+      "temporary_budget_crossed": false,
+      "temporary_observer_complete": true,
+      "temporary_peak": {
+        "allocated_bytes": 4096,
+        "files": 1,
+        "logical_bytes": 2,
+        "observed_processes": 2,
+        "open_unlinked_files": 0
+      },
+      "upstream_after_cancel": {
+        "backpressure": 155,
+        "closed": true,
+        "completed": false,
+        "sent": 10158080
+      }
+    },
+    {
+      "bytes": 2112512,
+      "elapsed_seconds": 0.444,
+      "gateway_memory": {
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 8777728
+      },
+      "id": "cancel-8081",
+      "observer_error_classes": [],
+      "outcome": "cancelled",
+      "port": 8081,
+      "sha256": "d00b2c68fc00ef952991828033b7d7720bb94308dbe5d7335934747f44ddd984",
+      "status": 200,
+      "temporary_budget_crossed": false,
+      "temporary_observer_complete": true,
+      "temporary_peak": {
+        "allocated_bytes": 4096,
+        "files": 1,
+        "logical_bytes": 2,
+        "observed_processes": 2,
+        "open_unlinked_files": 0
+      },
+      "upstream_after_cancel": {
+        "backpressure": 156,
+        "closed": true,
+        "completed": false,
+        "sent": 10223616
+      }
+    }
+  ],
+  "cleanup_confirmed": true,
+  "completed_transfers": [
+    {
+      "bytes": 412758765,
+      "elapsed_seconds": 32.587,
+      "gateway_memory": {
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 8597504
+      },
+      "id": "full-8080",
+      "observer_error_classes": [],
+      "outcome": "complete",
+      "port": 8080,
+      "sha256": "cc0a4307247e4bf2a8a4406b2b07fec1c17e1541081eb57035c777611a2fdfa4",
+      "status": 200,
+      "temporary_budget_crossed": false,
+      "temporary_observer_complete": true,
+      "temporary_peak": {
+        "allocated_bytes": 4096,
+        "files": 1,
+        "logical_bytes": 2,
+        "observed_processes": 2,
+        "open_unlinked_files": 0
+      }
+    },
+    {
+      "bytes": 412758765,
+      "elapsed_seconds": 32.518,
+      "gateway_memory": {
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 8777728
+      },
+      "id": "full-8081",
+      "observer_error_classes": [],
+      "outcome": "complete",
+      "port": 8081,
+      "sha256": "cc0a4307247e4bf2a8a4406b2b07fec1c17e1541081eb57035c777611a2fdfa4",
+      "status": 200,
+      "temporary_budget_crossed": false,
+      "temporary_observer_complete": true,
+      "temporary_peak": {
+        "allocated_bytes": 4096,
+        "files": 1,
+        "logical_bytes": 2,
+        "observed_processes": 2,
+        "open_unlinked_files": 0
+      }
+    }
+  ],
+  "customer_calls": 0,
+  "envelope": {
+    "census_includes_open_unlinked_files": true,
+    "census_interval_ms": 5,
+    "client_pause_ms_per_chunk": 4,
+    "gateway_cpu_millicores": 200,
+    "gateway_memory_bytes": 67108864,
+    "gateway_worker_processes": 1,
+    "helper_cpu_millicores": 1000,
+    "helper_memory_bytes": 134217728,
+    "tmp_budget_bytes": 67108864,
+    "tmp_enforcement": "observed-budget-cancel-on-crossing",
+    "tmp_medium": "disk"
+  },
+  "exact_delivery_qualified": true,
+  "executed_config_sha256": "410414f04c3ad6406fba0edce88c6477354db696e946e296c1d37b8351395718",
+  "gateway_config_source_sha256": "c1a25c41c24f8bb804ecb0e162c8e0577437fd31b16ef82cefbacebbb20795ba",
+  "gateway_image": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+  "gateway_image_id": "sha256:87ae58c7c6b521c9a89276ddc8b3365586e0d3fa1df02bbf5d8340a29c2e1bd2",
+  "gateway_memory_qualified": true,
+  "harness_sha256": "d21d51c6f7bef1fe32dcb4b5befc3f7285e59c2a02ce2e2dbf0fece1c7c877bd",
+  "helper_image": "docker.io/denoland/deno@sha256:3dc638972caa62978182228a5a575e0498ae45129aa1c3ee8548663652ef7ab6",
+  "helper_image_id": "sha256:7d481683f84e9fcd9f2779229992d8cbca618438083ddd3fe78240f67f452039",
+  "limitations": [
+    "Deterministic synthetic octets of the admitted response byte length; no application JSON/SQL/Auth/model execution.",
+    "Disk-backed temporary mount is continuously observed; crossing cancels the baseline, not a claimed filesystem ENOSPC or hosted eviction.",
+    "A crashed/replaced baseline process can make its FD census incomplete; baseline spill then remains unknown. Target acceptance requires a complete stable-process census.",
+    "Nginx transport only; outer Caddy, DigitalOcean LoadBalancer, browser and hosted rollout are outside this proof.",
+    "Loopback upstream and synthetic namespace; final one-worker directive is unchanged. API request buffering/body limits and other routing are unchanged.",
+    "Buffering-enabled control also uses one worker; it is not proof of the previous auto-worker production deployment."
+  ],
+  "passed": true,
+  "payload_bytes": 412758765,
+  "payload_sha256": "cc0a4307247e4bf2a8a4406b2b07fec1c17e1541081eb57035c777611a2fdfa4",
+  "production_calls": 0,
+  "routing_harness_sha256": "5df05d7b6aa04dba698396f50f821fd60b2e32fd6a682945d4291603324f9ce7",
+  "running_gateway_worker_count": 1,
+  "synthetic_only": true,
+  "temporary_budget_qualified": true,
+  "upstream_sha256": "a81d8e60493272530a24bd127ef60f3935d932b5a71dddd2225e54baf996b85e",
+  "version": 1
+}

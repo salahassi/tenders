@@ -96,6 +96,11 @@ class RuntimeManifestTest(unittest.TestCase):
         self.assertNotIn("__NAMESPACE__", gateway)
         self.assertNotIn("access_log /", gateway)
         self.assertEqual(gateway.count("location /functions/v1/api/ { client_max_body_size 32m;"), 2)
+        self.assertEqual(gateway.count("worker_processes 1;"), 1)
+        self.assertNotIn("worker_processes auto;", gateway)
+        self.assertEqual(gateway.count("proxy_buffering off;"), 2)
+        self.assertEqual(gateway.count("location /functions/v1/api/ { client_max_body_size 32m; proxy_buffering off;"), 2)
+        self.assertNotIn("proxy_request_buffering off", gateway)
 
     def test_product_upload_callers_use_standard_object_api(self):
         root = Path(__file__).resolve().parents[3]
