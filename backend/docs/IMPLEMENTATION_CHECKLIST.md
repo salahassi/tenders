@@ -6383,3 +6383,29 @@ Validation: 18 API boundary tests and 24 generation-panel tests pass. The integr
 frontend currently passes 49 files / 317 tests, typecheck and production build; backend
 typecheck passes. The new RPC depends on the coordinated deadline migration, which
 is not deployed yet. Real hosted timing/package issuance remains a separate gate.
+
+### 2026-11-04 — Actual bilingual semantic development results
+
+Both bounded live campaigns completed against source `ea420a00082f23b7b540f099dd76515378142652`:
+English [41844431244](https://github.com/salahassi/tenders/actions/runs/41844431244)
+and Arabic [41844440530](https://github.com/salahassi/tenders/actions/runs/41844440530).
+Sanitized per-target/case outcomes and private-receipt hashes are retained in
+`evidence/semantic-development-v1-20261104.json`; raw private diagnostic bundles
+are excluded from the repository. Each campaign attempted 64 cases, one attempt
+per case, with zero production business records created. Frozen v1 labels and
+original scores are retained unchanged pending independent adjudication.
+
+OpenAI gpt-6-luna and gpt-6.1-sol rejected every request for unavailable credits;
+QwenCloud qwen3.8-max rejected every request for exhausted free quota. DeepSeek
+v4-pro through QwenCloud passed 11/16 English cases and 9/16 Arabic cases under
+v1 scoring. Its final five Arabic cases also returned provider 403 free-quota
+exhaustion, so those cases are unscored availability failures, not demonstrated
+semantic misses. All four tested targets were unavailable by the end. No billing
+or free-only account setting was changed. English measured 77,330 input / 8,241
+output tokens with 48 unknown-usage cases; Arabic measured 53,961 / 6,589 with
+53 unknown-usage cases. Unknown accounting is retained, not silently set to zero.
+
+Neither campaign qualifies a provider. Validity/semantic failures and a suspected
+oracle containment false negative require independent offline adjudication before
+any versioned evaluation correction; private holdout D07 and live complete-proposal
+acceptance remain open. Further live success requires an available provider.
