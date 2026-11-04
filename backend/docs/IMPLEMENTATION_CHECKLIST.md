@@ -8107,3 +8107,15 @@ running and observes at most one child. Peak container usage is 649,199,616 byte
 only about 21.9 MB below the limit; this is measured offline evidence with modest
 headroom, not a production concurrency or latency guarantee. A separate actual
 worker two-volume/readback/deadline qualification remains outstanding.
+
+### 2026-11-04 — clean installs and combined frontend verification
+
+Both package lockfiles installed successfully with `npm ci`. On source
+`35c62c4` plus the count-label wording corrections committed with this entry,
+frontend typecheck, all 359 tests across 57 files (`--maxWorkers=1`), and the
+production build pass. The Vite large-chunk advisory remains. The panel uses
+count-neutral wording for unsettled uploads and administrator storage checks.
+Hashes and check scope are retained in
+`evidence/final-frontend-checks-20261104.json`. These checks do not establish
+backend integration, production deployment, or hosted acceptance; the final
+backend suite follows the remaining storage retirement integration.

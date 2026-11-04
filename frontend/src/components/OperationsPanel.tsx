@@ -247,9 +247,9 @@ export default function OperationsPanel({
             <div className="small" aria-label="File storage verification">
               {status.storage_write_uncertainty.unsettled_keys > 0 && (
                 <p>
-                  {status.storage_write_uncertainty.unsettled_keys} uploads
-                  await confirmation. Space remains reserved while their result
-                  is checked.
+                  Uploads awaiting confirmation:{" "}
+                  {status.storage_write_uncertainty.unsettled_keys}. Space
+                  remains reserved while their result is checked.
                 </p>
               )}
               {status.storage_write_uncertainty.held_bytes > 0 && (
@@ -262,8 +262,8 @@ export default function OperationsPanel({
               {status.storage_write_uncertainty.quiescence_required_keys >
                 0 && (
                 <p>
-                  {status.storage_write_uncertainty.quiescence_required_keys}{" "}
-                  files require administrator storage checks before deletion.
+                  Files requiring administrator storage checks before deletion:{" "}
+                  {status.storage_write_uncertainty.quiescence_required_keys}.
                   Retrying cleanup alone cannot resolve these checks.
                 </p>
               )}
@@ -271,9 +271,9 @@ export default function OperationsPanel({
                 status.storage_write_uncertainty.historical_inventory_keys >
                   0 && (
                   <p>
-                    {status.storage_write_uncertainty.historical_inventory_keys}{" "}
-                    older file records need a storage audit. Their current
-                    physical usage has not been established.
+                    Older file records requiring a storage audit:{" "}
+                    {status.storage_write_uncertainty.historical_inventory_keys}
+                    . Their current physical usage has not been established.
                   </p>
                 )}
             </div>

@@ -59,10 +59,12 @@ it("explains retained bytes without claiming historical file usage", async () =>
     quiescence_required_keys: 0,
     historical_inventory_keys: 3,
   });
-  expect(await screen.findByText(/1 uploads await confirmation/)).toBeVisible();
+  expect(
+    await screen.findByText(/Uploads awaiting confirmation: 1/),
+  ).toBeVisible();
   expect(screen.getByText(/10.0 MiB of the reserved total/)).toBeVisible();
   expect(
-    screen.getByText(/3 older file records need a storage audit/),
+    screen.getByText(/Older file records requiring a storage audit: 3/),
   ).toHaveTextContent("Their current physical usage has not been established.");
   expect(screen.queryByRole("button", { name: "Retry cleanup" })).toBeNull();
 });
@@ -73,7 +75,7 @@ it("keeps older status responses usable without inventing uncertainty", async ()
     await screen.findByText(/Background processing is responding/),
   ).toBeVisible();
   expect(screen.queryByLabelText("File storage verification")).toBeNull();
-  expect(screen.queryByText(/uploads await confirmation/)).toBeNull();
+  expect(screen.queryByText(/Uploads awaiting confirmation/)).toBeNull();
 });
 
 it("offers retry only for cleanup that does not require administrator reconciliation", async () => {
