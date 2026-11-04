@@ -7333,3 +7333,23 @@ so later private command wrapper renames cannot invalidate it. The actual two
 PostgreSQL successor cases pass again, now including the targeted job.action
 route. The actual migrated retry/capacity suites also pass52 tests against the
 new local-variable definition. No paid request identity or command behavior changed.
+
+
+## November 4 — definitive ordinary-package download failure recovery
+
+The package-aware download boundary now distinguishes an authoritative missing
+Storage object from a temporary dependency error. Only a genuine404 or observed
+size/hash mismatch reports an exact artifact/package/revision/hash/key failure
+receipt to the service-only recovery RPC. Measured size is retained for cleanup
+accounting. A503 does not expire a ready artifact, restart rendering or extend
+its authorization. Existing legacy/manual artifact behavior is unchanged.
+The SQL recovery implementation and its actual package tests are integrated
+separately; this interface change itself does not claim hosted recovery.
+
+Validation: **35/35 combined API and flexible-input runtime cases** plus backend
+typecheck passed. The model-only flexible-input fixture now stops when its model
+plan completes, before claiming the separately queued local v3 projection job;
+it does not fabricate a projection/issued receipt. The dedicated generated
+delivery pipeline continues to prove real projection/render/whole-package
+issuance separately. This resolves six fixture failures exposed after the real
+advance_generation renamed-parameter defect was fixed.

@@ -41,6 +41,8 @@ function fixture() {
     one: vi.fn(),
     download: vi.fn(),
     object: vi.fn(),
+    deliveryObject: vi.fn(async (): Promise<Blob | null> => null),
+    internal: vi.fn(async () => ({ invalidated: true })),
     verifyPages: vi.fn(),
     extraction: vi.fn(),
     accept: vi.fn(async () => ({ id: source, revision: 2 })),
@@ -70,6 +72,33 @@ function request(
   });
 }
 describe("backend HTTP boundaries without a live provider", () => {
+  it.each(["missing", "size", "hash", "transient"] as const)(
+    "records only an authoritative package file failure (%s) and never retries on a download",
+    async (failure) => {
+      const f = fixture();
+      const original = new TextEncoder().encode("original");
+      const hash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", original))]
+        .map((b) => b.toString(16).padStart(2, "0")).join("");
+      f.backend.userRpc.mockResolvedValueOnce({
+        artifact: { id: source, kind: "generated", storage_key: "synthetic/private-file", expected_size: 8, content_hash: hash },
+        package: { id: actor, revision: 7 },
+      } as any);
+      if (failure === "transient")
+        f.backend.deliveryObject.mockRejectedValueOnce(new AppError(503, "DELIVERY_STORAGE_UNAVAILABLE", "Temporarily unavailable"));
+      else f.backend.deliveryObject.mockResolvedValueOnce(failure === "missing" ? null : new Blob([failure === "size" ? "too large" : "tampered"]));
+      const response = await f.handle(request(`export-artifacts/${source}/download`));
+      expect(response.status).toBe(failure === "transient" ? 503 : 422);
+      if (failure === "transient") expect(f.backend.internal).not.toHaveBeenCalled();
+      else expect(f.backend.internal).toHaveBeenCalledExactlyOnceWith("report_export_package_artifact_failure", {
+        artifact_id: source, actor_id: actor, package_id: actor, expected_revision: 7,
+        expected_hash: hash, expected_storage_key: "synthetic/private-file",
+        error_code: failure === "missing" ? "EXPORT_ARTIFACT_MISSING" : "ARTIFACT_MISMATCH",
+        actual_size: failure === "missing" ? null : failure === "size" ? 9 : 8,
+      });
+      expect(f.backend.command).not.toHaveBeenCalled();
+      expect(f.backend.object).not.toHaveBeenCalled();
+    },
+  );
   it("reads a saved export package through caller authority and rejects malformed identity", async () => {
     const f = fixture();
     expect((await f.handle(request(`export-packages/${source}`))).status).toBe(200);

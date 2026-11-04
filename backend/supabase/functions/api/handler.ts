@@ -779,27 +779,54 @@ export function createApiHandler(
             artifact_id: id,
           }),
           artifact = context.artifact;
-        const blob = await backend.object(artifact.storage_key);
+        const savedPackage = artifactPath[2] === "download" &&
+            artifact.kind === "generated" ? context.package : undefined;
+        const reportFailure = async (error_code: "EXPORT_ARTIFACT_MISSING" | "ARTIFACT_MISMATCH", actual_size: number | null = null) => {
+          if (savedPackage)
+            await backend.internal("report_export_package_artifact_failure", {
+              artifact_id: id, actor_id: user.id,
+              package_id: savedPackage.id,
+              expected_revision: savedPackage.revision,
+              expected_hash: artifact.content_hash,
+              expected_storage_key: artifact.storage_key,
+              error_code,
+              actual_size,
+            });
+        };
+        // Only the package-aware storage reader distinguishes an authoritative
+        // missing object from a temporary dependency failure. A 5xx response
+        // must not invalidate a ready file or start a new authorization.
+        const blob = savedPackage
+          ? await backend.deliveryObject(artifact.storage_key)
+          : await backend.object(artifact.storage_key);
+        if (!blob) {
+          await reportFailure("EXPORT_ARTIFACT_MISSING");
+          throw new AppError(422, "EXPORT_ARTIFACT_MISSING", "The saved export file is unavailable. Explicitly retry the package to restore it.");
+        }
         if (
           blob.size !== Number(artifact.expected_size) ||
           blob.size > 10485760
-        )
+        ) {
+          await reportFailure("ARTIFACT_MISMATCH", blob.size);
           throw new AppError(
             422,
             "ARTIFACT_MISMATCH",
             "Uploaded bytes differ from the reserved artifact.",
           );
+        }
         const bytes = new Uint8Array(await blob.arrayBuffer()),
           hash = Array.from(
             new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
             (b) => b.toString(16).padStart(2, "0"),
           ).join("");
-        if (hash !== artifact.content_hash)
+        if (hash !== artifact.content_hash) {
+          await reportFailure("ARTIFACT_MISMATCH", blob.size);
           throw new AppError(
             422,
             "ARTIFACT_MISMATCH",
             "Artifact hash verification failed.",
           );
+        }
         if (artifactPath[2] === "complete") {
           validateOriginal(artifact.original_name, artifact.mime_type, bytes);
           if (artifact.mime_type === "application/pdf") {

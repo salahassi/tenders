@@ -533,6 +533,12 @@ it.each([
     let creations = 0,
       verifications = 0;
     for (let index = 0; index < 120; index++) {
+      // This fixture proves model drafting and its legacy export projection.
+      // The completed plan now queues a distinct local v3 delivery projection;
+      // its actual execution/issuance is covered by generatedDeliveryPipeline.
+      if ((await f.db.query<{ status: string }>(
+        "select status from public.generation_plans where id=$1", [plan.id],
+      )).rows[0].status === "completed") break;
       const job = await claimModelWorker4(f, internal);
       if (!job) break;
       const ctx = await internal("generation_context", {
