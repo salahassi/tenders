@@ -1,14 +1,15 @@
 # ملحق القبول الهندسي: صحة المحتوى واستمرارية تسليم العرض
 
 التاريخ: 4 نوفمبر 2026. هذا الملحق جزء من [خطة التنفيذ](RELIABLE_PROPOSAL_DELIVERY_PLAN.md).
-**جميع الحالات المقترحة هنا: NOT IMPLEMENTED / NOT RUN.** أسماء الملفات الموجودة نقاط إعادة استخدام،
-وليست دليلًا على أنها تختبر السلوك الجديد. نجاح **2,110 اختبارات موجودة** في فحص خط الأساس الأخير
-دليل رجوع للنسخة الحالية فقط؛ لا يُحسب تنفيذًا أو قبولًا لأي حالة جديدة في هذا الملحق.
+**حالة التنفيذ متغيرة بحسب الحالة الفرعية.** نُفذت أجزاء واختبارات محلية، وما زال النشر والقبول المتصل مفتوحين.
+يعرض [سجل التنفيذ](IMPLEMENTATION_CHECKLIST.md) الأدلة المرتبطة بالمراجعات الفعلية، وتعرض
+[مراجعة الإغلاق المستقلة](evidence/reliability-closure-audit-20261104.json) الفجوات عند المراجعة المثبتة فيها.
+أعداد اختبارات خط الأساس لا تُحسب قبولًا تلقائيًا للحالات الجديدة، ولا تُجمع نتائج فروع مختلفة بوصفها نتيجة إصدار واحد.
 
 المطلوب إثباته: طلب تقديم عروض (Request for Proposal — RFP) صالح ينتج استجابة مفيدة خاصة بالمناقصة؛
 المدخل الفارغ أو غير القابل للاستخدام تمامًا ينتج قالبًا محفوظًا مع مواضع تعبئة (Placeholders) صفراء وتنبيه صحيح.
 وجود ملف، أو استجابة HTTP ناجحة، أو قائمة معرفات «تمت معالجتها»، لا يثبت صحة المعنى أو اكتمال العرض.
-مخرج مؤقت أثناء تعطل النماذج مفيد، لكنه لا يغلق التزام استكمال عرض جوهري للمدخل الصالح.
+مخرج مؤقت أثناء تعطل النماذج لا يُعرض بوصفه عرضًا مكتملًا. وفق قرار المالك اللاحق D06، غياب جميع الوكلاء يعيد خطأ واضحًا فورًا؛ ولا يُشترط مسار إكمال بشري بديل.
 
 ## 1. حدود الإثبات وسياسة التنفيذ
 
@@ -310,12 +311,12 @@ verify the actual migrated predicate, then test immediately before/at/after it a
 - **Receipt:** R0 plus transaction/replay IDs, row counts, base/active-version invariants and zero provider POSTs before durable snapshot.
 
 ### AR-02 — Every model unavailable at every stage
-- **Parent / level:** T06/T07; L2/L3/L4. Extend flexible runtime fixture with no-model composer and per-stage faults.
-- **Fixture / oracle:** valid RFP with explicit known-scope substantive oracle; inject configuration/quota/timeout/transport/usage-recovery conditions at analysis/planning/drafting/commercial/review/reconciliation.
-- **Fault / action:** block all authorized model routes, run delivery separately and retain exact AI status; invoke the proven non-model completion route in BC-01.
-- **Require:** initial source-grounded draft within measured target, known facts and accepted sections preserved, explicit gaps and operational cause, eventual substantive completion independently evaluated.
-- **Forbid:** all-empty template accepted for valid RFP, copied source/headings counted full response, bad candidate promoted, unknown usage erased, false insufficient-RFP message, extra allowance or fabricated values.
-- **Receipt:** R0 plus stage/content conservation, ledger diff, minimum-content and final substantive oracle; if completion route unproved, T06 fails/open.
+- **Parent / level:** T06/T07; L2/L3/L4. User-resolved D06 and BC-01 govern this case; optional manual authoring is separate.
+- **Fixture / oracle:** valid RFP and exact accepted history; configuration, quota, timeout, transport and unknown-accounting failures at analysis/planning/drafting/commercial/review/reconciliation.
+- **Fault / action:** remove or reject every eligible model route; inject known terminal errors early and a late provider/file callback. Exercise queue wait and worker restart.
+- **Require:** immediate clear `AI_AGENTS_UNAVAILABLE` once no agent is available; any earlier terminal error returns when known. One immutable 600-second deadline includes queueing, all model stages and complete required files. Preserve accepted content, existing ready drafts and unknown usage without claiming successful issuance.
+- **Forbid:** wait until the deadline to reveal known unavailability, require a human fallback, reset the deadline per stage, treat a valid RFP as invalid, promote a bad candidate, count a template/source copy as a complete response, erase usage or duplicate ambiguous paid requests.
+- **Receipt:** R0 plus accepted/deadline/error timestamps, per-stage content and ledger conservation, callback disposition and actual full-package or terminal-error identity. Optional manual completion has its own evidence and is not automatic-request success.
 
 ### AR-03 — Reject one unit without erasing accepted siblings
 - **Parent / level:** T01/T02/T04/T07; L1/L2/L3. Extend generation-content/evidence/export-draft tests.
@@ -547,7 +548,7 @@ npm --prefix frontend run build
 | delivery capacity/restore/fairness | جداول جديدة ضمن backup/retention، حمل معزول وإحصاءات دقيقة | OP-01–05 |
 | early-draft acceptance | selector مستقل، genuine session، browser/download equality وprivate cleanup | UX-03 |
 | semantic qualification | corpus مجمد، split integrity، canonical prompts، evaluator خاص بالعروض | ME-09/14، RT-01/02 |
-| completion without models | قدرة تشغيلية فعلية ومقياس استجابة جوهرية وقناة إدخال صحيحة | BC-01 |
+| no-agent failure and issuance deadline | خطأ مبكر مثبت، مهلة شاملة 600 ثانية، حفظ التاريخ ومنع نجاح الملفات المتأخر؛ التحرير اليدوي اختياري | BC-01 |
 
 كل PR يضيف أوامر هذه المجموعة بأسمائها الحقيقية إلى سجل التنفيذ. أداة catalog restore تحتاج مدخل catalog خاصًا؛
 لا يطبع أو يُثبت مساره أو محتواه هنا. أدوات live-model/actual-export لا تشغّل تلقائيًا كجزء من قراءة الوثيقة؛
@@ -560,11 +561,10 @@ npm --prefix frontend run build
 3. **التزامن والأعطال:** نفذ L3 وPostgreSQL races وB0–B9؛ كل عطل له إيصال منفصل، ولا يترك نجاح الاستعادة خلفه محاسبة أو صلاحية خاطئة.
 4. **التقييم الدلالي:** غط كل task ومسار مؤهل ولغة؛ corpus لا يتغير بعد رؤية النتيجة؛ غياب مزود يبقى غير مقيم، ولا يختفي من المقام.
 5. **الملف:** L4/L5 يثبت تنزيلًا فعليًا مطابقًا وقراءة كل صفحة وجميع الأجزاء؛ gap count وyellow coverage ومحتوى جوهري حقائق مستقلة.
-6. **دون نماذج:** BC-01 يستمر حتى استجابة مقيمة، لا ينتهي عند الهيكل؛ نقص القدرة البديلة يبقي الوعد مفتوحًا ويمنع الادعاء باكتماله.
+6. **دون نماذج:** يثبت BC-01 خطأ عدم الإتاحة فورًا، وحفظ العمل المقبول، وعدم تجاوز 600 ثانية أو إظهار قالب مؤقت بوصفه إصدارًا مكتملًا. لا يُشترط محرر بديل؛ التحرير اليدوي مسار اختياري مستقل وفق D06.
 7. **النشر والتراجع:** اختبر صور/ترحيلات وعقود متوافقة وطلبًا قديمًا جاريًا؛ تراجع تجريبي يحفظ الملفات والإيصالات والتاريخ ويمنع إعادة الطلبات الملتبسة.
 8. **القبول المتصل:** أعد MAIN-01–14 وE2E-01–10 المنطبقة حسب الخطط القائمة؛ E2E النهائي يحتاج حقائق وأسعارًا واعتمادًا حقيقيًا، فلا يُصطنع لإغلاقه.
 9. **القرار:** كل assertion حرج في العينات يجب أن ينجح؛ ذلك لا يعني دقة عالمية 100%. تنشر الأعداد وفئات الإخفاق وفواصل الثقة وحدود الدليل.
 10. **التتبع:** كل F وبند فرعي يحتاج code PR → receipt → deployment → hosted acceptance؛ الحالة `not_run` لا تصبح passed، وإعادة فشل تفتح الفجوة.
 
-حالة هذا الملحق عند إنشائه: توثيق خطة فقط. تنفيذ الحالات الجديدة ونشرها وقبولها التشغيلي كلها مفتوحة؛
-اختبارات خط الأساس البالغ عددها 2,110 لا تغير تلك الحالة.
+كانت الحالة عند إنشاء الملحق توثيقًا فقط. تُحدَّث حالات التنفيذ والاختبار والنشر والقبول بأدلتها المنفصلة في سجل التنفيذ؛ تبقى أي حالة غير مثبتة مفتوحة، ولا يحولها عدد اختبارات خط الأساس إلى نجاح.

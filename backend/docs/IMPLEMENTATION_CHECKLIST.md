@@ -6711,3 +6711,19 @@ still failed with the same omitted first obligation. The evidence retains that
 failure. An earlier local container temporary-filesystem capacity error was
 separated from recognition quality; the deployed CronJob already has a bounded
 writable temporary volume. These are native local results, not hosted OCR acceptance.
+
+### 2026-11-04 — Independent closure audit and acceptance-policy reconciliation
+
+An independent point-in-time audit of `a9ae357` identified three remaining code
+paths: early/partial hosted acceptance tooling, ordinary browser-dependent export,
+and all-domain diagnostic enumeration. Those are assigned for implementation;
+renderer-3 integration and the separate quality/capacity/recovery/deployment gates
+remain explicit. The immutable audit snapshot is
+`evidence/reliability-closure-audit-20261104.json`; it is not final release acceptance.
+
+The main workstream ledger now reflects implemented source/repair/consistency/OCR
+and deadline controls without claiming deployment. The acceptance header no longer
+incorrectly says all cases are unimplemented. AR-02 and execution step 6 now match
+the owner's already-resolved D06: immediate no-agent error, request-wide600s guard,
+no mandatory human fallback and no template-as-full-success. This reconciles
+superseded wording; it does not change the owner's policy or erase failed evidence.

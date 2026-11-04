@@ -1,0 +1,817 @@
+{
+  "schema_version": 1,
+  "audit_kind": "independent_closure_audit",
+  "generated_at": "2026-11-04T15:21:41.954938+00:00",
+  "repository": "salahassi/tenders",
+  "audited_head": "a9ae3579739b90fbec09d418a796d7467e03a506",
+  "working_tree_changes": [],
+  "overall": "NOT_COMPLETE",
+  "production_calls_by_auditor": 0,
+  "scope_note": "Point-in-time audit; pending worktree implementations are not counted as root-integrated or deployed. D06 latest user decision overrides old mandatory human completion text. Tests inspected are meaningful but do not establish universal semantic correctness.",
+  "status_dimensions": {
+    "implemented": "source path exists and behavior inspected",
+    "tested": "specific tests/receipts, never inferred from file existence or unrelated total",
+    "deployed": "actual immutable rollout/catalog receipt",
+    "hosted": "real authenticated current-protocol journey and byte/timing proof",
+    "external_availability": "provider outcome kept separate from semantic score"
+  },
+  "workstreams": [
+    {
+      "id": "W00",
+      "implementation": "implemented_partial",
+      "summary": "actual inventory and task census; final source/evidence ledger incomplete",
+      "local_testing": "specific_subsets_exist_final_combined_open",
+      "deployed": "not_deployed_at_latest_inventory",
+      "hosted": "not_accepted",
+      "remaining_gates": [
+        "G07",
+        "G08",
+        "G14",
+        "G15",
+        "G16"
+      ]
+    },
+    {
+      "id": "W01",
+      "implementation": "implemented",
+      "summary": "versioned snapshot/gap/authority/issuance contracts and independent pointer present",
+      "local_testing": "specific_subsets_exist_final_combined_open",
+      "deployed": "not_deployed_at_latest_inventory",
+      "hosted": "not_accepted",
+      "remaining_gates": [
+        "G04",
+        "G14",
+        "G15"
+      ]
+    },
+    {
+      "id": "W02",
+      "implementation": "implemented_with_known_quality_limit",
+      "summary": "durable private OCR and current-source human corrections; Arabic native oracle failed",
+      "local_testing": "specific_subsets_exist_final_combined_open",
+      "deployed": "not_deployed_at_latest_inventory",
+      "hosted": "not_accepted",
+      "remaining_gates": [
+        "G05",
+        "G06",
+        "G10",
+        "G15"
+      ]
+    },
+    {
+      "id": "W03",
+      "implementation": "implemented_partial_integration",
+      "summary": "early/progress/rescue snapshots and optional authoring; generated issuance merge pending",
+      "local_testing": "specific_subsets_exist_final_combined_open",
+      "deployed": "not_deployed_at_latest_inventory",
+      "hosted": "not_accepted",
+      "remaining_gates": [
+        "G04",
+        "G14",
+        "G15"
+      ]
+    },
+    {
+      "id": "W04",
+      "implementation": "implemented_partial",
+      "summary": "durable draft renderer exists; legacy ordinary export and early acceptance harness remain",
+      "local_testing": "specific_subsets_exist_final_combined_open",
+      "deployed": "not_deployed_at_latest_inventory",
+      "hosted": "not_accepted",
+      "remaining_gates": [
+        "G01",
+        "G02",
+        "G04",
+        "G10",
+        "G12",
+        "G15"
+      ]
+    },
+    {
+      "id": "W05",
+      "implementation": "implemented_with_qualification_open",
+      "summary": "canonical spans/authority/current human semantics; live semantic completeness not established",
+      "local_testing": "specific_subsets_exist_final_combined_open",
+      "deployed": "not_deployed_at_latest_inventory",
+      "hosted": "not_accepted",
+      "remaining_gates": [
+        "G05",
+        "G07",
+        "G09",
+        "G15"
+      ]
+    },
+    {
+      "id": "W06",
+      "implementation": "implemented_partial",
+      "summary": "typed13-task context and scoped patches exist; all-domain diagnostics incomplete",
+      "local_testing": "specific_subsets_exist_final_combined_open",
+      "deployed": "not_deployed_at_latest_inventory",
+      "hosted": "not_accepted",
+      "remaining_gates": [
+        "G03",
+        "G07",
+        "G09",
+        "G13",
+        "G14",
+        "G15"
+      ]
+    },
+    {
+      "id": "W07",
+      "implementation": "implemented_with_acceptance_open",
+      "summary": "scoped quota/recovery/unknown accounting; full historical variants and availability open",
+      "local_testing": "specific_subsets_exist_final_combined_open",
+      "deployed": "not_deployed_at_latest_inventory",
+      "hosted": "not_accepted",
+      "remaining_gates": [
+        "G08",
+        "G13",
+        "G14",
+        "G15"
+      ]
+    },
+    {
+      "id": "W08",
+      "implementation": "implemented_with_qualification_open",
+      "summary": "targeted retrieval/coverage/consistency/Owner applicability and machine draft gate exist",
+      "local_testing": "specific_subsets_exist_final_combined_open",
+      "deployed": "not_deployed_at_latest_inventory",
+      "hosted": "not_accepted",
+      "remaining_gates": [
+        "G04",
+        "G07",
+        "G09",
+        "G15"
+      ]
+    },
+    {
+      "id": "W09",
+      "implementation": "implemented_with_capacity_recovery_open",
+      "summary": "maintenance isolation/reservation/retry/metrics; actual load/RPO/RTO not proven",
+      "local_testing": "specific_subsets_exist_final_combined_open",
+      "deployed": "not_deployed_at_latest_inventory",
+      "hosted": "not_accepted",
+      "remaining_gates": [
+        "G10",
+        "G11",
+        "G15"
+      ]
+    },
+    {
+      "id": "W10",
+      "implementation": "implemented_partial_integration",
+      "summary": "absolute600s/fail-fast implemented; actual generated package path and hosted clock acceptance incomplete",
+      "local_testing": "specific_subsets_exist_final_combined_open",
+      "deployed": "not_deployed_at_latest_inventory",
+      "hosted": "not_accepted",
+      "remaining_gates": [
+        "G04",
+        "G08",
+        "G10",
+        "G14",
+        "G15"
+      ]
+    },
+    {
+      "id": "W11",
+      "implementation": "implemented_tooling_not_released",
+      "summary": "guarded forward release helpers; final manifest/combined/release/hosted gates open",
+      "local_testing": "specific_subsets_exist_final_combined_open",
+      "deployed": "not_deployed_at_latest_inventory",
+      "hosted": "not_accepted",
+      "remaining_gates": [
+        "G01",
+        "G07",
+        "G11",
+        "G12",
+        "G14",
+        "G15",
+        "G16"
+      ]
+    }
+  ],
+  "decisions": {
+    "D01": {
+      "decision": "resolved_600_seconds_including_queue",
+      "proof": "local boundary tests; hosted/load evidence open",
+      "gates": [
+        "G04",
+        "G10",
+        "G15"
+      ]
+    },
+    "D02": {
+      "decision": "server fixed subprocess with bundled fonts implemented",
+      "proof": "limited actual image/renderer proof; final document corpus open",
+      "gates": [
+        "G12"
+      ]
+    },
+    "D03": {
+      "decision": "existing offline native OCR reused; Arabic remains reviewed-only",
+      "proof": "actual Arabic oracle failed; human correction locally implemented",
+      "gates": [
+        "G05",
+        "G06",
+        "G15"
+      ]
+    },
+    "D04": {
+      "decision": "existing250MiB workspace/10MiB per-volume reservation preserved",
+      "proof": "measured capacity/headroom/retention envelope open",
+      "gates": [
+        "G10"
+      ]
+    },
+    "D05": {
+      "decision": "RPO/RTO not fixed by observed restore result",
+      "proof": "isolated cloud exercise absent",
+      "gates": [
+        "G11"
+      ]
+    },
+    "D06": {
+      "decision": "resolved immediate clear no-agent error; human route optional",
+      "proof": "local fail-fast/clock tests; hosted complete package/error timing open",
+      "gates": [
+        "G04",
+        "G08",
+        "G10",
+        "G15"
+      ]
+    },
+    "D07": {
+      "decision": "development corpus frozen; private holdout/sample stability/noncritical limits incomplete",
+      "proof": "retained failures and unavailable targets prevent qualification claim",
+      "gates": [
+        "G07",
+        "G09"
+      ]
+    }
+  },
+  "registered_model_tasks": {
+    "count": 13,
+    "tasks": [
+      "analyze_chunk",
+      "classify_opportunity",
+      "summarize_review",
+      "plan_structure",
+      "plan_blueprint",
+      "plan_proposal",
+      "draft_section",
+      "plan_commercial",
+      "review_proposal",
+      "inspect_source_page",
+      "verify_grounding",
+      "repair_result",
+      "connection_probe"
+    ],
+    "structural_census": "covered_by_registry_test_with_explicit_nonrecursive_probe_exemptions",
+    "semantic_full_matrix": "not_complete",
+    "all_domain_diagnostics": "not_complete",
+    "live_all_task_provider_qualification": "not_complete",
+    "evidence": [
+      {
+        "path": "backend/tests/backend/modelTypedVerificationRegistry.test.ts"
+      },
+      {
+        "path": "backend/tests/backend/typedVerificationFixtures.ts"
+      },
+      {
+        "path": "backend/supabase/functions/_shared/modelReferenceDiagnostics.ts"
+      }
+    ]
+  },
+  "remaining_gates": [
+    {
+      "id": "G01",
+      "workstreams": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": [
+        "UX-03",
+        "UX-01",
+        "T11",
+        "T13"
+      ],
+      "gate_kind": "implementation",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "No separate versioned authenticated early/partial-delivery acceptance harness exists in the integrated tree; the existing selector still requires completed plan and packages legacy browser exports.",
+      "evidence": [
+        {
+          "path": "backend/scripts/ops/proposal-export-acceptance.mjs",
+          "line": 343
+        },
+        {
+          "path": "backend/docs/RELIABLE_PROPOSAL_DELIVERY_PLAN.md",
+          "line": 231
+        }
+      ],
+      "required_to_close": "Implement/test a separate scoped template/partial/generated-issued acceptance contract; keep the strict completed-proposal path unchanged. Newly assigned to this audit agent; not complete at this snapshot."
+    },
+    {
+      "id": "G02",
+      "workstreams": [
+        "W04"
+      ],
+      "acceptance": [
+        "F07",
+        "EX-01",
+        "EX-04",
+        "EX-05",
+        "T11",
+        "T14",
+        "T20"
+      ],
+      "gate_kind": "implementation",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "Ordinary proposal list/editor draft export and final export still call the legacy browser packaging path. Durable DeliveryDraft exists separately; global removal of tab dependence and fresh transport-key render multiplication is not implemented.",
+      "evidence": [
+        {
+          "path": "frontend/src/pages/Proposals.tsx",
+          "line": 42
+        },
+        {
+          "path": "frontend/src/pages/ProposalEditor.tsx",
+          "line": 441
+        },
+        {
+          "path": "frontend/src/components/ExportPanel.tsx",
+          "line": 92
+        },
+        {
+          "path": "frontend/src/lib/connectedExport.ts",
+          "line": 36
+        },
+        {
+          "path": "frontend/src/lib/connectedExport.ts",
+          "line": 151
+        }
+      ],
+      "required_to_close": "Route applicable ordinary draft actions to current durable packages; define and implement/qualify durable final export without weakening Owner approval, or explicitly retain the legacy limitation as an unclosed scope item."
+    },
+    {
+      "id": "G03",
+      "workstreams": [
+        "W06"
+      ],
+      "acceptance": [
+        "ME-05",
+        "ME-06",
+        "T08"
+      ],
+      "gate_kind": "implementation",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "Bounded aggregation covers citations, source tuples and selected coverage errors. Candidate quote/numeric/content/finding checks in modelGrounding and source-page/domain checks still throw the first error; combined independent diagnostics across the complete validator are not enumerated.",
+      "evidence": [
+        {
+          "path": "backend/supabase/functions/_shared/modelReferenceDiagnostics.ts",
+          "line": 38
+        },
+        {
+          "path": "backend/supabase/functions/_shared/model.ts",
+          "line": 422
+        },
+        {
+          "path": "backend/supabase/functions/_shared/model.ts",
+          "line": 533
+        },
+        {
+          "path": "backend/supabase/functions/_shared/modelGrounding.ts",
+          "line": 273
+        },
+        {
+          "path": "backend/tests/backend/modelSourcePatch.test.ts",
+          "line": 177
+        }
+      ],
+      "required_to_close": "Add actual-validator mixed-defect and B/P-boundary regressions and aggregate remaining independent domains with exact counts/paths and safe overflow; keep invalid reports unaccepted."
+    },
+    {
+      "id": "G04",
+      "workstreams": [
+        "W03",
+        "W04",
+        "W10"
+      ],
+      "acceptance": [
+        "T01",
+        "T06",
+        "T20",
+        "BC-01",
+        "EX-05"
+      ],
+      "gate_kind": "integration",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "Automatic renderer-3 accepted-graph-to-issued pipeline is not present in this integrated snapshot. A separate completion worktree has implementation and eleven focused pipeline cases, but that is not root integration evidence; actual v3 two-volume completion acceptance was still being added.",
+      "evidence": [
+        {
+          "path": "backend/supabase/functions/worker/handler.ts"
+        },
+        {
+          "path": "/workspace/work/reliability-v2-completion/backend/tests/backend/generatedDeliveryPipeline.integration.test.ts"
+        },
+        {
+          "path": "backend/docs/IMPLEMENTATION_CHECKLIST.md",
+          "line": 6521
+        }
+      ],
+      "required_to_close": "Integrate final generated-delivery SQL/worker/renderer and prove actual two-volume first-ready-not-issued/not-downloadable then both-ready-issued, current source/role, deadline-crossing retry, and full combined checks."
+    },
+    {
+      "id": "G05",
+      "workstreams": [
+        "W02"
+      ],
+      "acceptance": [
+        "IN-03",
+        "IN-04",
+        "T04",
+        "T05",
+        "D03"
+      ],
+      "gate_kind": "quality",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "Actual offline native Arabic OCR failed the frozen oracle: first obligation omitted and critical words changed despite confidence82 and numeric_uncertainty=false. Current code correctly retains review-required state and offers human correction; this does not establish automatic Arabic extraction correctness.",
+      "evidence": [
+        {
+          "path": "backend/docs/evidence/uploaded-ocr-native-20261104.json"
+        },
+        {
+          "path": "backend/scripts/backend/uploaded-document-ocr-worker.ts"
+        }
+      ],
+      "required_to_close": "Either qualify a permitted improved extraction path against the unchanged Arabic oracle, or retain explicit supported-language/required-review limits. Do not count a template or provisional unread draft as complete valid-RFP success."
+    },
+    {
+      "id": "G06",
+      "workstreams": [
+        "W02",
+        "W05"
+      ],
+      "acceptance": [
+        "T12",
+        "IN-04",
+        "AR-05",
+        "OP-04"
+      ],
+      "gate_kind": "integration",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "Independent OCR review found nullable lease guard and pending page-correction accumulation defects. Narrow fixes are implemented in the OCR worktree but absent from audited root HEAD. Root original-stream timeout fix is integrated as3939e3c; its final combined check remains separate.",
+      "evidence": [
+        {
+          "path": "backend/supabase/migrations/20261104133930_durable_uploaded_document_ocr.sql",
+          "line": 156
+        },
+        {
+          "path": "/workspace/work/reliability-v2-ocr/backend/supabase/migrations/20261104133930_durable_uploaded_document_ocr.sql"
+        },
+        {
+          "path": "frontend/src/components/DocumentExtractionReview.tsx"
+        }
+      ],
+      "required_to_close": "Integrate reviewed follow-up; rerun null lease, separate page-save accumulation, changed/revoked reviewer and restored-review tests plus UI timeout regression. Preserve per-page reviewer provenance."
+    },
+    {
+      "id": "G07",
+      "workstreams": [
+        "W05",
+        "W06",
+        "W08",
+        "W11"
+      ],
+      "acceptance": [
+        "ME-02",
+        "ME-04",
+        "ME-09",
+        "ME-14",
+        "T01",
+        "T09",
+        "T19",
+        "D07"
+      ],
+      "gate_kind": "qualification",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "Frozen development evaluation is explicitly qualification_passed=false/private_holdout_complete=false. English measured target retained a critical number-association false acceptance and faithful actor false rejection; multiple cases/models were not scored. No independent private holdout or full per-task semantic qualification is established.",
+      "evidence": [
+        {
+          "path": "backend/docs/evidence/semantic-development-v1-20261104.json"
+        },
+        {
+          "path": "backend/docs/SEMANTIC_QUALIFICATION_CAMPAIGN.md",
+          "line": 59
+        }
+      ],
+      "required_to_close": "Independently adjudicate retained failures without rewriting the original result, fix genuine critical failures, freeze D07 size/repeats/thresholds/splits before fresh runs, and qualify required task/language/route combinations with full denominators."
+    },
+    {
+      "id": "G08",
+      "workstreams": [
+        "W00",
+        "W07",
+        "W10",
+        "W11"
+      ],
+      "acceptance": [
+        "ME-10",
+        "ME-14",
+        "BC-01"
+      ],
+      "gate_kind": "external_availability",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "Recorded live campaigns show all16 cases returning429 for each OpenAI target and all16 returning403 for qwencloud/qwen3.8-max; these are availability outcomes, not semantic passes. Another QwenCloud model produced outputs with retained quality failures.",
+      "evidence": [
+        {
+          "path": "backend/docs/evidence/semantic-development-v1-20261104.json"
+        }
+      ],
+      "required_to_close": "Verify authorized provider availability under existing account policy; preserve immediate no-agent error. Do not change billing/free-only or label an unavailable model qualified."
+    },
+    {
+      "id": "G09",
+      "workstreams": [
+        "W06",
+        "W08"
+      ],
+      "acceptance": [
+        "ME-08",
+        "RT-01",
+        "RT-02",
+        "T14",
+        "T16"
+      ],
+      "gate_kind": "qualification",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "All13 tasks are structurally accounted for, but the registry fixture mutates one selected typed path per task; it is not the full required paired-field matrix or per-provider context-capacity qualification. Retrieval has bounded bilingual aliases and explicit gaps, not measured semantic recall across an independent corpus.",
+      "evidence": [
+        {
+          "path": "backend/tests/backend/modelTypedVerificationRegistry.test.ts",
+          "line": 92
+        },
+        {
+          "path": "backend/tests/backend/typedVerificationFixtures.ts"
+        },
+        {
+          "path": "backend/supabase/functions/_shared/modelTypedCandidate.ts"
+        },
+        {
+          "path": "backend/supabase/functions/_shared/companyEvidenceFollowup.ts"
+        },
+        {
+          "path": "backend/supabase/functions/_shared/proposalConsistency.ts"
+        }
+      ],
+      "required_to_close": "Complete untested decision-bearing field families, near-limit typed metadata/provider fits, and independent Arabic/English retrieval/qualification/omission scores. Preserve explicit unreviewed semantic and capacity gaps."
+    },
+    {
+      "id": "G10",
+      "workstreams": [
+        "W09",
+        "W10"
+      ],
+      "acceptance": [
+        "D01",
+        "D04",
+        "OP-02",
+        "OP-05",
+        "IN-06",
+        "T14",
+        "T17",
+        "BC-01"
+      ],
+      "gate_kind": "capacity_and_timing",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "600s absolute deadline and local reservations exist; there is no measured admitted-load/service capacity envelope proving request-to-package timing. Snapshot acceptance reserves zero bytes; full volume reservation occurs in worker. Current inventory is low storage occupancy, not saturation/reserve-headroom proof.",
+      "evidence": [
+        {
+          "path": "backend/supabase/migrations/20261104122333_durable_delivery_artifacts.sql",
+          "line": 2
+        },
+        {
+          "path": "backend/supabase/migrations/20261104122333_durable_delivery_artifacts.sql",
+          "line": 155
+        },
+        {
+          "path": "backend/tests/backend/proposalIssuance.test.ts"
+        },
+        {
+          "path": "backend/docs/evidence/digitalocean-inventory-20261104-41849412810.json"
+        }
+      ],
+      "required_to_close": "Measure queue/model/render/storage stages and latency including all failures under stated load; prove saturation/cleanup/admission behavior and all-volume reserve headroom, first-file availability, and fairness across owners/classes. Record actual accepted/issued/error timestamps."
+    },
+    {
+      "id": "G11",
+      "workstreams": [
+        "W09",
+        "W11"
+      ],
+      "acceptance": [
+        "D05",
+        "OP-04",
+        "T18"
+      ],
+      "gate_kind": "recovery",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "Local migrated restore and actual PostgreSQL races exist; managed catalog reconstruction is implemented. No receipt proves an isolated cloud restore of current originals, snapshots, artifact bytes and permissions, or measured RPO/RTO.",
+      "evidence": [
+        {
+          "path": "backend/docs/IMPLEMENTATION_CHECKLIST.md",
+          "line": 80
+        },
+        {
+          "path": "backend/scripts/ops/production-schema/build_schema.py"
+        },
+        {
+          "path": "backend/tests/backend/deliveryArtifacts.test.ts"
+        }
+      ],
+      "required_to_close": "Run authorized isolated cloud restore after final schema/artifact integration; verify exact bytes, FK/ACL graph, disabled approvals/old leases, no unintended model/email replay, missing-volume-only recovery and RPO/RTO."
+    },
+    {
+      "id": "G12",
+      "workstreams": [
+        "W04",
+        "W11"
+      ],
+      "acceptance": [
+        "D02",
+        "EX-02",
+        "EX-06",
+        "T13"
+      ],
+      "gate_kind": "document_qualification",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "Actual renderer subprocess/CPU/heap and limited English/Arabic DOCX samples have evidence. No final renderer3 corpus every-page QA/long tables/TOC/field update acceptance is established for the integrated release.",
+      "evidence": [
+        {
+          "path": "backend/docs/IMPLEMENTATION_CHECKLIST.md",
+          "line": 419
+        },
+        {
+          "path": "backend/supabase/functions/_shared/deliveryRenderIsolation.ts"
+        },
+        {
+          "path": "local-artifact:reliability-implementation/rendered"
+        },
+        {
+          "path": "backend/docs/evidence/document-extraction-review-browser-20261104.json"
+        }
+      ],
+      "required_to_close": "Inspect every page of representative final payload1/2/3 English/Arabic, long-table and separate-volume outputs; bind document/PDF/page hashes and gap-to-yellow coverage, record actual Word/LibreOffice field-update behavior. OCR canvas screenshots do not substitute for proposal-page QA."
+    },
+    {
+      "id": "G13",
+      "workstreams": [
+        "W07"
+      ],
+      "acceptance": [
+        "ME-11",
+        "ME-12",
+        "T10",
+        "T12",
+        "T15",
+        "T18"
+      ],
+      "gate_kind": "acceptance",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "Identity-preserving scoped recovery and historical wire regressions exist, but complete historical successor/recheck/handoff variants under real PostgreSQL and service/current-permission changes are not all evidenced; checklist explicitly leaves broader historical successor coverage open.",
+      "evidence": [
+        {
+          "path": "backend/docs/IMPLEMENTATION_CHECKLIST.md",
+          "line": 6192
+        },
+        {
+          "path": "backend/tests/backend/analysisVerifierRecheck.integration.test.ts"
+        },
+        {
+          "path": "backend/supabase/migrations/20261104121443_automatic_usage_recovery.sql"
+        }
+      ],
+      "required_to_close": "Map every recovery-table row to actual fixture/receipt; prove remaining candidate1/refusal/successor/changed-producer/revoked cache/unknown-usage variants without allowance resets or historical wire mutation."
+    },
+    {
+      "id": "G14",
+      "workstreams": [
+        "W00",
+        "W11"
+      ],
+      "acceptance": [
+        "T01-T20",
+        "R0"
+      ],
+      "gate_kind": "combined_verification",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "Latest inspected root full backend log has2301 passed/17 failed across2318; follow-up fixes were integrated but no final combined full-green log for current HEAD was found. Many workstream green counts refer to different revisions.",
+      "evidence": [
+        {
+          "path": "local-test-log:reliability-root-backend-integrated.log"
+        },
+        {
+          "path": "backend/docs/IMPLEMENTATION_CHECKLIST.md",
+          "line": 6521
+        }
+      ],
+      "required_to_close": "After final merges run both exact lockfiles, typecheck/test/build, operations/SQL compatibility and actual concurrency/native checks once; bind final commit/migration/image hashes. Do not sum separate branch totals as current integrated pass."
+    },
+    {
+      "id": "G15",
+      "workstreams": [
+        "W11"
+      ],
+      "acceptance": [
+        "T01-T20",
+        "UX-01",
+        "UX-02",
+        "UX-03",
+        "D01"
+      ],
+      "gate_kind": "deployment_and_hosted",
+      "closure_blocking": true,
+      "status": "open",
+      "finding": "Latest actual inventory confirms delivery tables and executor3 absent; therefore all new reliability changes are undeployed at that observation. No final release manifest file, rollout receipt or authenticated current-protocol hosted proposal package acceptance exists in audited tree.",
+      "evidence": [
+        {
+          "path": "backend/docs/evidence/digitalocean-inventory-20261104-41849412810.json"
+        },
+        {
+          "path": "backend/docs/PROPOSAL_DELIVERY_RELEASE.md",
+          "line": 11
+        },
+        {
+          "path": "backend/scripts/ops/proposal-delivery-update.py"
+        }
+      ],
+      "required_to_close": "Freeze reviewed final source manifest against current baseline, run guarded rollout, verify immutable images/catalog/ACL and old-worker drain, observe new native job, execute scoped authenticated actual existing-record acceptance and real600s timing; no synthetic production records."
+    },
+    {
+      "id": "G16",
+      "workstreams": [
+        "W00",
+        "W11"
+      ],
+      "acceptance": [
+        "R0",
+        "D06",
+        "AR-02",
+        "BC-01"
+      ],
+      "gate_kind": "documentation_and_traceability",
+      "closure_blocking": false,
+      "status": "open",
+      "finding": "Acceptance header still says every case NOT IMPLEMENTED/NOT RUN; plan workstream ledger describes now-implemented code as absent. AR-02 and acceptance execution step6 retain mandatory no-model completion wording contradicted by explicit updated D06 immediate-error policy. No full case/variant R0 evidence index is maintained.",
+      "evidence": [
+        {
+          "path": "backend/docs/RELIABLE_PROPOSAL_ACCEPTANCE.md",
+          "line": 4
+        },
+        {
+          "path": "backend/docs/RELIABLE_PROPOSAL_ACCEPTANCE.md",
+          "line": 313
+        },
+        {
+          "path": "backend/docs/RELIABLE_PROPOSAL_ACCEPTANCE.md",
+          "line": 562
+        },
+        {
+          "path": "backend/docs/RELIABLE_PROPOSAL_DELIVERY_PLAN.md",
+          "line": 468
+        }
+      ],
+      "required_to_close": "Reconcile superseded text to D06 without changing that approved decision; publish per-variant implemented/local-tested/deployed/hosted/not-applicable states and receipts. Keep remaining failures explicit."
+    }
+  ],
+  "do_not_claim": [
+    "All promised workflows are fully implemented.",
+    "All13 tasks have complete semantic/diagnostic acceptance.",
+    "Arabic OCR is automatically correct.",
+    "A saved partial/template artifact equals issued full generated response.",
+    "All providers are available or semantically qualified.",
+    "600-second service capacity is proven by unit clocks.",
+    "New reliability code is deployed or hosted accepted.",
+    "Current integrated full suite is green before its final rerun."
+  ],
+  "audit_limitations": [
+    "No production query or provider call in this audit.",
+    "Private original campaign outputs were not read; public retained failures are pending independent adjudication.",
+    "Final generator worktree tests/claims require integration and actual final logs.",
+    "Final root source may advance after audited_head; re-evaluate changed gate IDs rather than treating this snapshot as permanent."
+  ],
+  "publication_note": "Point-in-time independent audit at audited_head; later fixes do not retroactively rewrite this observation. See the current checklist for subsequent closure evidence."
+}
