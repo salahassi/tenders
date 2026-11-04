@@ -216,13 +216,16 @@ describe("connected repository", () => {
     expect(state.jobs.map((j) => j.id)).toEqual([first, second]);
     expect(f.request).toHaveBeenCalledWith(
       `/v1/jobs?limit=500&cursor=${first}`,
+      { expectedIdentity: session.user.id },
     );
     expect(
       f.request.mock.calls.some(([path]) =>
         path.startsWith("/v1/audit-events"),
       ),
     ).toBe(false);
-    expect(f.request).toHaveBeenCalledWith("/v1/documents?limit=100");
+    expect(f.request).toHaveBeenCalledWith("/v1/documents?limit=100", {
+      expectedIdentity: session.user.id,
+    });
   });
   it("opens a workspace without downloading an audit history exceeding ten thousand events", async () => {
     const f = fixture();

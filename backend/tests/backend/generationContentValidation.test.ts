@@ -125,7 +125,7 @@ it.each(["review_proposal", "plan_commercial", "draft_section"] as const)(
               task === "draft_section"
                 ? ["$.key"]
                 : task === "plan_commercial"
-                  ? ["$.lines"]
+                  ? ["$.lines[0].section_ids[0]"]
                   : ["$.findings[0].section_ids"],
           }),
         ],

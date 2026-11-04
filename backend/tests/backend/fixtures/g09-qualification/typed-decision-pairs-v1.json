@@ -1,0 +1,1473 @@
+{
+  "version": 1,
+  "purpose": "Frozen independent decision-field pairs for deterministic transport/coverage and server-domain gates, not a model-quality claim. Authored before this harness was run; mutation oracles never enter provider context.",
+  "evidence": [
+    {
+      "id": "rfp",
+      "kind": "rfp",
+      "verified": false,
+      "text": "The supplier may offer an optional workshop."
+    },
+    {
+      "id": "notice",
+      "kind": "notice",
+      "verified": false,
+      "text": "Optional workshop procurement."
+    },
+    {
+      "id": "review-1",
+      "kind": "review",
+      "verified": false,
+      "text": "Clarify the workshop schedule."
+    },
+    {
+      "id": "company",
+      "kind": "company",
+      "verified": true,
+      "text": "We have delivered workshop training."
+    },
+    {
+      "id": "style",
+      "kind": "style",
+      "verified": true,
+      "text": "We have delivered workshop training."
+    },
+    {
+      "id": "page",
+      "kind": "notice",
+      "verified": false,
+      "text": "Public tender listing. Workshop procurement notice published in the public tender listing."
+    },
+    {
+      "id": "L1",
+      "kind": "notice",
+      "verified": false,
+      "text": "Workshop procurement"
+    }
+  ],
+  "required_ids": {
+    "analyze_chunk": [
+      "rfp"
+    ],
+    "classify_opportunity": [],
+    "summarize_review": [
+      "review-1"
+    ],
+    "plan_structure": [
+      "R1"
+    ],
+    "plan_blueprint": [
+      "R1"
+    ],
+    "plan_proposal": [
+      "R1"
+    ],
+    "draft_section": [
+      "R1"
+    ],
+    "plan_commercial": [],
+    "review_proposal": [
+      "R1"
+    ],
+    "inspect_source_page": [],
+    "connection_probe": []
+  },
+  "bases": {
+    "analyze_chunk": {
+      "processed_block_ids": [
+        "rfp"
+      ],
+      "requirements": [
+        {
+          "text": "The supplier may offer an optional workshop.",
+          "category": "deliverables",
+          "mandatory": false,
+          "source_refs": [
+            {
+              "id": "rfp",
+              "quote": "The supplier may offer an optional workshop."
+            }
+          ],
+          "interpretation": "A workshop is permitted.",
+          "acceptance_evidence": "Workshop attendance record.",
+          "owner_question": null
+        }
+      ],
+      "questions": [
+        {
+          "question": "Confirm the workshop schedule.",
+          "blocking_level": "advisory",
+          "requirement_ids": []
+        }
+      ],
+      "separate_volumes": false,
+      "summary": "The buyer permits a workshop."
+    },
+    "classify_opportunity": {
+      "factors": {
+        "capability": {
+          "rating": null,
+          "reason": "Verified company proof has not been supplied.",
+          "notice_evidence": [],
+          "company_evidence": []
+        },
+        "scope": {
+          "rating": null,
+          "reason": "Verified company proof has not been supplied.",
+          "notice_evidence": [],
+          "company_evidence": []
+        },
+        "sector": {
+          "rating": null,
+          "reason": "Verified company proof has not been supplied.",
+          "notice_evidence": [],
+          "company_evidence": []
+        },
+        "prerequisite": {
+          "rating": null,
+          "reason": "Verified company proof has not been supplied.",
+          "notice_evidence": [],
+          "company_evidence": []
+        }
+      },
+      "critical_unknown": true,
+      "reason_summary": "Company fit remains unknown.",
+      "missing_information": [
+        "Relevant company proof"
+      ],
+      "risk_flags": [],
+      "suggested_tags": [],
+      "scope_decision": {
+        "status": "uncertain",
+        "reason": "Notice alone does not establish company scope.",
+        "notice_evidence": [
+          {
+            "id": "notice",
+            "quote": "Optional workshop procurement."
+          }
+        ],
+        "company_evidence": [],
+        "keyword_evidence": []
+      }
+    },
+    "summarize_review": {
+      "processed_review_ids": [
+        "review-1"
+      ],
+      "directives": [
+        {
+          "instruction": "Clarify the workshop schedule.",
+          "source_refs": [
+            {
+              "id": "review-1",
+              "quote": "Clarify the workshop schedule."
+            }
+          ]
+        }
+      ],
+      "questions": [
+        {
+          "question": "Confirm the workshop schedule.",
+          "blocking_level": "advisory",
+          "requirement_ids": []
+        }
+      ]
+    },
+    "plan_structure": {
+      "version": 3,
+      "sections": [
+        {
+          "key": "approach",
+          "title": "Delivery approach",
+          "purpose": "Describe the proposed workshop.",
+          "volume": "technical",
+          "mode": "narrative",
+          "requirement_ids": [
+            "R1"
+          ]
+        }
+      ],
+      "decisions": [
+        {
+          "key": "method",
+          "statement": "Use a phased delivery method.",
+          "kind": "proposed_decision",
+          "requirement_ids": [
+            "R1"
+          ],
+          "evidence_refs": []
+        }
+      ],
+      "questions": [
+        {
+          "question": "Confirm the workshop schedule.",
+          "blocking_level": "advisory",
+          "requirement_ids": []
+        }
+      ]
+    },
+    "plan_blueprint": {
+      "version": 2,
+      "processed_requirement_ids": [
+        "R1"
+      ],
+      "sections": [
+        {
+          "key": "approach",
+          "title": "Delivery approach",
+          "purpose": "Describe the proposed workshop.",
+          "volume": "technical",
+          "mode": "narrative",
+          "units": [
+            {
+              "key": "workshop",
+              "title": "Workshop response",
+              "purpose": "Describe the proposed workshop.",
+              "requirement_ids": [
+                "R1"
+              ],
+              "secondary_links": [
+                {
+                  "requirement_id": "R1",
+                  "reason": "The buyer also requests a summary cross-reference."
+                }
+              ],
+              "target_words": 200,
+              "decision_ids": [
+                "method"
+              ]
+            }
+          ]
+        }
+      ],
+      "decisions": [
+        {
+          "key": "method",
+          "statement": "Use a phased delivery method.",
+          "kind": "proposed_decision",
+          "requirement_ids": [
+            "R1"
+          ],
+          "evidence_refs": []
+        }
+      ],
+      "questions": [
+        {
+          "question": "Confirm the workshop schedule.",
+          "blocking_level": "advisory",
+          "requirement_ids": []
+        }
+      ]
+    },
+    "plan_proposal": {
+      "processed_requirement_ids": [
+        "R1"
+      ],
+      "sections": [
+        {
+          "key": "approach",
+          "title": "Delivery approach",
+          "purpose": "Describe the proposed workshop.",
+          "volume": "technical",
+          "requirement_ids": [
+            "R1"
+          ]
+        }
+      ],
+      "questions": [
+        {
+          "question": "Confirm the workshop schedule.",
+          "blocking_level": "advisory",
+          "requirement_ids": []
+        }
+      ]
+    },
+    "draft_section": {
+      "key": "approach",
+      "title": "Delivery approach",
+      "content_blocks": [
+        {
+          "type": "table",
+          "headers": [
+            "Deliverable",
+            "Status"
+          ],
+          "rows": [
+            [
+              "Workshop",
+              "Proposed"
+            ],
+            [
+              "Schedule",
+              "To be confirmed"
+            ]
+          ]
+        },
+        {
+          "type": "paragraph",
+          "text": "We have delivered workshop training."
+        }
+      ],
+      "requirement_ids": [
+        "R1"
+      ],
+      "evidence_refs": [
+        {
+          "id": "company",
+          "quote": "We have delivered workshop training."
+        }
+      ],
+      "company_claims": [
+        {
+          "claim": "We have delivered workshop training.",
+          "source_id": "company",
+          "quote": "We have delivered workshop training."
+        }
+      ],
+      "assumptions": [
+        "The schedule remains subject to confirmation."
+      ],
+      "questions": [
+        {
+          "question": "Confirm the workshop schedule.",
+          "blocking_level": "advisory",
+          "requirement_ids": []
+        }
+      ]
+    },
+    "plan_commercial": {
+      "lines": [
+        {
+          "description": "Optional workshop",
+          "quantity": null,
+          "unit": "workshop",
+          "rate_id": null,
+          "period_count": null,
+          "included_in_base": false,
+          "charge_group": "optional",
+          "tax_category": "Unconfirmed",
+          "requirement_ids": [
+            "R1"
+          ],
+          "section_ids": [
+            "approach"
+          ],
+          "deliverable": "Workshop record",
+          "basis": "Subject to written confirmation."
+        }
+      ],
+      "tasks": [
+        {
+          "key": "deliver",
+          "title": "Deliver workshop",
+          "predecessors": [],
+          "role": "Trainer",
+          "effort_days": null,
+          "allocation": null,
+          "duration_days": null,
+          "basis": "Subject to written confirmation."
+        }
+      ],
+      "questions": [
+        {
+          "question": "Confirm the workshop schedule.",
+          "blocking_level": "advisory",
+          "requirement_ids": []
+        }
+      ]
+    },
+    "review_proposal": {
+      "processed_requirement_ids": [
+        "R1"
+      ],
+      "responses": [
+        {
+          "requirement_id": "R1",
+          "status": "partial",
+          "section_ids": [
+            "approach"
+          ],
+          "evidence_refs": [],
+          "rationale": "The workshop schedule still needs confirmation."
+        }
+      ],
+      "findings": [
+        {
+          "severity": "advisory",
+          "category": "Clarification",
+          "detail": "Confirm the workshop schedule.",
+          "section_ids": [
+            "approach"
+          ],
+          "requirement_ids": [
+            "R1"
+          ]
+        }
+      ]
+    },
+    "inspect_source_page": {
+      "page_kind": "listing",
+      "reason_quote": "Public tender listing",
+      "notices": [
+        {
+          "title": "Workshop procurement",
+          "link_id": "L1",
+          "reference": null,
+          "buyer": null,
+          "deadline_raw": null,
+          "evidence_quote": "Workshop procurement notice published in the public tender listing."
+        }
+      ],
+      "follow_link_id": null,
+      "candidate_link_ids": []
+    },
+    "connection_probe": {
+      "status": "ready"
+    },
+    "analyze_semantics": {
+      "processed_block_ids": [
+        "rfp"
+      ],
+      "requirements": [
+        {
+          "text": "The supplier may offer an optional workshop.",
+          "category": "deliverables",
+          "mandatory": false,
+          "source_refs": [
+            {
+              "id": "rfp",
+              "quote": "The supplier may offer an optional workshop."
+            }
+          ],
+          "interpretation": "A workshop is permitted.",
+          "acceptance_evidence": "Workshop attendance record.",
+          "owner_question": null,
+          "source_semantics": {
+            "version": 1,
+            "source_span_ids": [
+              "span-1"
+            ],
+            "authority_role": "buyer_rfp",
+            "authority_status": "confirmed",
+            "modality": "permitted",
+            "actor": "supplier",
+            "negated": false,
+            "conditions": [],
+            "exceptions": [],
+            "consequences": [],
+            "quantities": [],
+            "dates": [],
+            "review_status": "pending",
+            "review_id": null
+          }
+        }
+      ],
+      "questions": [
+        {
+          "question": "Confirm the workshop schedule.",
+          "blocking_level": "advisory",
+          "requirement_ids": []
+        }
+      ],
+      "separate_volumes": false,
+      "summary": "The buyer permits a workshop."
+    }
+  },
+  "pairs": [
+    {
+      "id": "analyze_chunk.mandatory",
+      "task": "analyze_chunk",
+      "family": "mandatory",
+      "path": [
+        "requirements",
+        0,
+        "mandatory"
+      ],
+      "before": false,
+      "after": true,
+      "independent_oracle": "Permitted workshop becomes a mandatory buyer obligation.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "analyze_chunk.owner_question",
+      "task": "analyze_chunk",
+      "family": "owner_question",
+      "path": [
+        "requirements",
+        0,
+        "owner_question"
+      ],
+      "before": null,
+      "after": "Confirm whether the workshop is required.",
+      "independent_oracle": "An absent owner question differs from an unresolved question.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "analyze_chunk.blocking_level",
+      "task": "analyze_chunk",
+      "family": "blocking_level",
+      "path": [
+        "questions",
+        0,
+        "blocking_level"
+      ],
+      "before": "advisory",
+      "after": "finalization",
+      "independent_oracle": "An advisory question cannot silently become a finalization blocker.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "analyze_chunk.separate_volumes",
+      "task": "analyze_chunk",
+      "family": "separate_volumes",
+      "path": [
+        "separate_volumes"
+      ],
+      "before": false,
+      "after": true,
+      "independent_oracle": "Technical/financial packaging decisions must remain visible independently of prose.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "classify_opportunity.null_zero_capability",
+      "task": "classify_opportunity",
+      "family": "null_zero_capability",
+      "path": [
+        "factors",
+        "capability",
+        "rating"
+      ],
+      "before": null,
+      "after": 0,
+      "independent_oracle": "Absent proof is unknown, not a measured zero score.",
+      "domain": "reject",
+      "error_code": "EVIDENCE_REFERENCE_INVALID"
+    },
+    {
+      "id": "classify_opportunity.null_zero_scope",
+      "task": "classify_opportunity",
+      "family": "null_zero_scope",
+      "path": [
+        "factors",
+        "scope",
+        "rating"
+      ],
+      "before": null,
+      "after": 0,
+      "independent_oracle": "Absent proof is unknown, not a measured zero score.",
+      "domain": "reject",
+      "error_code": "EVIDENCE_REFERENCE_INVALID"
+    },
+    {
+      "id": "classify_opportunity.null_zero_sector",
+      "task": "classify_opportunity",
+      "family": "null_zero_sector",
+      "path": [
+        "factors",
+        "sector",
+        "rating"
+      ],
+      "before": null,
+      "after": 0,
+      "independent_oracle": "Absent proof is unknown, not a measured zero score.",
+      "domain": "reject",
+      "error_code": "EVIDENCE_REFERENCE_INVALID"
+    },
+    {
+      "id": "classify_opportunity.null_zero_prerequisite",
+      "task": "classify_opportunity",
+      "family": "null_zero_prerequisite",
+      "path": [
+        "factors",
+        "prerequisite",
+        "rating"
+      ],
+      "before": null,
+      "after": 0,
+      "independent_oracle": "Absent proof is unknown, not a measured zero score.",
+      "domain": "reject",
+      "error_code": "EVIDENCE_REFERENCE_INVALID"
+    },
+    {
+      "id": "classify_opportunity.critical_unknown",
+      "task": "classify_opportunity",
+      "family": "critical_unknown",
+      "path": [
+        "critical_unknown"
+      ],
+      "before": true,
+      "after": false,
+      "independent_oracle": "A critical missing-proof flag cannot disappear behind unchanged prose.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "classify_opportunity.scope_decision",
+      "task": "classify_opportunity",
+      "family": "scope_decision",
+      "path": [
+        "scope_decision",
+        "status"
+      ],
+      "before": "uncertain",
+      "after": "out_of_scope",
+      "independent_oracle": "Unknown company scope cannot be declared out of scope without supplied proof.",
+      "domain": "reject",
+      "error_code": "EVIDENCE_REFERENCE_INVALID"
+    },
+    {
+      "id": "summarize_review.review_identity",
+      "task": "summarize_review",
+      "family": "review_identity",
+      "path": [
+        "directives",
+        0,
+        "source_refs",
+        0,
+        "id"
+      ],
+      "before": "review-1",
+      "after": "rfp",
+      "independent_oracle": "A reviewer suggestion must remain attributed to its actual review, not buyer authority.",
+      "domain": "reject",
+      "error_code": "EVIDENCE_REFERENCE_INVALID"
+    },
+    {
+      "id": "summarize_review.review_coverage",
+      "task": "summarize_review",
+      "family": "review_coverage",
+      "path": [
+        "processed_review_ids",
+        0
+      ],
+      "before": "review-1",
+      "after": "review-2",
+      "independent_oracle": "An unseen review cannot replace the supplied review.",
+      "domain": "reject",
+      "error_code": "MODEL_COVERAGE_INCOMPLETE"
+    },
+    {
+      "id": "summarize_review.blocking_level",
+      "task": "summarize_review",
+      "family": "blocking_level",
+      "path": [
+        "questions",
+        0,
+        "blocking_level"
+      ],
+      "before": "advisory",
+      "after": "finalization",
+      "independent_oracle": "Reviewer suggestion severity remains a distinct decision.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_structure.volume",
+      "task": "plan_structure",
+      "family": "volume",
+      "path": [
+        "sections",
+        0,
+        "volume"
+      ],
+      "before": "technical",
+      "after": "financial",
+      "independent_oracle": "The same section prose cannot hide a change of submission volume.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_structure.mode",
+      "task": "plan_structure",
+      "family": "mode",
+      "path": [
+        "sections",
+        0,
+        "mode"
+      ],
+      "before": "narrative",
+      "after": "compliance_matrix",
+      "independent_oracle": "Narrative ownership differs from a compliance summary mode.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_structure.buyer_fact",
+      "task": "plan_structure",
+      "family": "buyer_fact",
+      "path": [
+        "decisions",
+        0,
+        "kind"
+      ],
+      "before": "proposed_decision",
+      "after": "buyer_fact",
+      "independent_oracle": "A proposed method must not be relabeled as a buyer fact.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_structure.primary_ownership",
+      "task": "plan_structure",
+      "family": "primary_ownership",
+      "path": [
+        "sections",
+        0,
+        "requirement_ids",
+        0
+      ],
+      "before": "R1",
+      "after": "R2",
+      "independent_oracle": "A response owner cannot silently move from the workshop requirement to another requirement.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_blueprint.volume",
+      "task": "plan_blueprint",
+      "family": "volume",
+      "path": [
+        "sections",
+        0,
+        "volume"
+      ],
+      "before": "technical",
+      "after": "financial",
+      "independent_oracle": "The same section prose cannot hide a change of submission volume.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_blueprint.mode",
+      "task": "plan_blueprint",
+      "family": "mode",
+      "path": [
+        "sections",
+        0,
+        "mode"
+      ],
+      "before": "narrative",
+      "after": "compliance_matrix",
+      "independent_oracle": "Narrative ownership differs from a compliance summary mode.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_blueprint.buyer_fact",
+      "task": "plan_blueprint",
+      "family": "buyer_fact",
+      "path": [
+        "decisions",
+        0,
+        "kind"
+      ],
+      "before": "proposed_decision",
+      "after": "buyer_fact",
+      "independent_oracle": "A proposed method must not be relabeled as a buyer fact.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_blueprint.primary_ownership",
+      "task": "plan_blueprint",
+      "family": "primary_ownership",
+      "path": [
+        "sections",
+        0,
+        "units",
+        0,
+        "requirement_ids",
+        0
+      ],
+      "before": "R1",
+      "after": "R2",
+      "independent_oracle": "A response owner cannot silently move from the workshop requirement to another requirement.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_blueprint.target_words",
+      "task": "plan_blueprint",
+      "family": "target_words",
+      "path": [
+        "sections",
+        0,
+        "units",
+        0,
+        "target_words"
+      ],
+      "before": 200,
+      "after": 400,
+      "independent_oracle": "Planning length is a number, not a buyer mandate.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_blueprint.secondary_requirement",
+      "task": "plan_blueprint",
+      "family": "secondary_requirement",
+      "path": [
+        "sections",
+        0,
+        "units",
+        0,
+        "secondary_links",
+        0,
+        "requirement_id"
+      ],
+      "before": "R1",
+      "after": "R2",
+      "independent_oracle": "Secondary reference identity must not replace primary ownership.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_blueprint.secondary_reason",
+      "task": "plan_blueprint",
+      "family": "secondary_reason",
+      "path": [
+        "sections",
+        0,
+        "units",
+        0,
+        "secondary_links",
+        0,
+        "reason"
+      ],
+      "before": "The buyer also requests a summary cross-reference.",
+      "after": "Internal presentation preference only.",
+      "independent_oracle": "A buyer-requested repeated location differs from an internal preference.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_blueprint.decision_link",
+      "task": "plan_blueprint",
+      "family": "decision_link",
+      "path": [
+        "sections",
+        0,
+        "units",
+        0,
+        "decision_ids",
+        0
+      ],
+      "before": "method",
+      "after": "different-method",
+      "independent_oracle": "The response must retain the exact shared decision it follows.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_proposal.volume",
+      "task": "plan_proposal",
+      "family": "volume",
+      "path": [
+        "sections",
+        0,
+        "volume"
+      ],
+      "before": "technical",
+      "after": "financial",
+      "independent_oracle": "Packaging differs even with identical section text.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_proposal.primary_ownership",
+      "task": "plan_proposal",
+      "family": "primary_ownership",
+      "path": [
+        "sections",
+        0,
+        "requirement_ids",
+        0
+      ],
+      "before": "R1",
+      "after": "R2",
+      "independent_oracle": "Required workshop coverage cannot move to an unrelated requirement.",
+      "domain": "reject",
+      "error_code": "MODEL_COVERAGE_INCOMPLETE"
+    },
+    {
+      "id": "plan_proposal.blocking_level",
+      "task": "plan_proposal",
+      "family": "blocking_level",
+      "path": [
+        "questions",
+        0,
+        "blocking_level"
+      ],
+      "before": "advisory",
+      "after": "generation",
+      "independent_oracle": "A nonblocking clarification cannot silently become a generation blocker.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "draft_section.table_cell_boundary",
+      "task": "draft_section",
+      "family": "table_cell_boundary",
+      "path": [
+        "content_blocks",
+        0,
+        "rows"
+      ],
+      "before": [
+        [
+          "Workshop",
+          "Proposed"
+        ],
+        [
+          "Schedule",
+          "To be confirmed"
+        ]
+      ],
+      "after": [
+        [
+          "Workshop",
+          "Proposed",
+          "Schedule",
+          "To be confirmed"
+        ]
+      ],
+      "independent_oracle": "Two table rows cannot be flattened into a differently associated single row.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "draft_section.company_claim_ownership",
+      "task": "draft_section",
+      "family": "company_claim_ownership",
+      "path": [
+        "company_claims"
+      ],
+      "before": [
+        {
+          "claim": "We have delivered workshop training.",
+          "source_id": "company",
+          "quote": "We have delivered workshop training."
+        }
+      ],
+      "after": [],
+      "independent_oracle": "A company fact cannot lose its declaration while the factual paragraph remains.",
+      "domain": "reject",
+      "error_code": "UNSUPPORTED_COMPANY_CLAIM"
+    },
+    {
+      "id": "draft_section.source_provenance",
+      "task": "draft_section",
+      "family": "source_provenance",
+      "path": [
+        "company_claims",
+        0,
+        "source_id"
+      ],
+      "before": "company",
+      "after": "style",
+      "independent_oracle": "Stylistic precedent cannot establish a company fact.",
+      "domain": "reject",
+      "error_code": "UNSUPPORTED_COMPANY_CLAIM"
+    },
+    {
+      "id": "draft_section.required_ids",
+      "task": "draft_section",
+      "family": "required_ids",
+      "path": [
+        "requirement_ids",
+        0
+      ],
+      "before": "R1",
+      "after": "R2",
+      "independent_oracle": "A prose-identical section cannot claim a different requirement.",
+      "domain": "reject",
+      "error_code": "MODEL_COVERAGE_INCOMPLETE"
+    },
+    {
+      "id": "draft_section.assumption_presence",
+      "task": "draft_section",
+      "family": "assumption_presence",
+      "path": [
+        "assumptions"
+      ],
+      "before": [
+        "The schedule remains subject to confirmation."
+      ],
+      "after": [],
+      "independent_oracle": "An explicit schedule assumption cannot disappear from structured context.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "draft_section.blocking_level",
+      "task": "draft_section",
+      "family": "blocking_level",
+      "path": [
+        "questions",
+        0,
+        "blocking_level"
+      ],
+      "before": "advisory",
+      "after": "finalization",
+      "independent_oracle": "Question severity remains visible alongside identical table text.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_commercial.included_in_base",
+      "task": "plan_commercial",
+      "family": "included_in_base",
+      "path": [
+        "lines",
+        0,
+        "included_in_base"
+      ],
+      "before": false,
+      "after": true,
+      "independent_oracle": "Optional scope must not silently become included in base price.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_commercial.quantity_null_zero",
+      "task": "plan_commercial",
+      "family": "quantity_null_zero",
+      "path": [
+        "lines",
+        0,
+        "quantity"
+      ],
+      "before": null,
+      "after": "0",
+      "independent_oracle": "An unknown quantity differs from an actual zero.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_commercial.quantity_null_positive",
+      "task": "plan_commercial",
+      "family": "quantity_null_positive",
+      "path": [
+        "lines",
+        0,
+        "quantity"
+      ],
+      "before": null,
+      "after": "12",
+      "independent_oracle": "An unknown quantity cannot silently become twelve.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_commercial.rate_identity",
+      "task": "plan_commercial",
+      "family": "rate_identity",
+      "path": [
+        "lines",
+        0,
+        "rate_id"
+      ],
+      "before": null,
+      "after": "rate-1",
+      "independent_oracle": "An unknown price basis differs from an exact rate identity.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_commercial.period_count",
+      "task": "plan_commercial",
+      "family": "period_count",
+      "path": [
+        "lines",
+        0,
+        "period_count"
+      ],
+      "before": null,
+      "after": "12",
+      "independent_oracle": "An unknown period count differs from a twelve-period commitment.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_commercial.charge_type",
+      "task": "plan_commercial",
+      "family": "charge_type",
+      "path": [
+        "lines",
+        0,
+        "charge_group"
+      ],
+      "before": "optional",
+      "after": "recurring",
+      "independent_oracle": "Optional one-off scope differs from recurring billing.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_commercial.unit",
+      "task": "plan_commercial",
+      "family": "unit",
+      "path": [
+        "lines",
+        0,
+        "unit"
+      ],
+      "before": "workshop",
+      "after": "month",
+      "independent_oracle": "Twelve workshops and twelve months are different commitments.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_commercial.requirement_identity",
+      "task": "plan_commercial",
+      "family": "requirement_identity",
+      "path": [
+        "lines",
+        0,
+        "requirement_ids",
+        0
+      ],
+      "before": "R1",
+      "after": "R2",
+      "independent_oracle": "Commercial scope must retain its exact requirement identity.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_commercial.section_identity",
+      "task": "plan_commercial",
+      "family": "section_identity",
+      "path": [
+        "lines",
+        0,
+        "section_ids",
+        0
+      ],
+      "before": "approach",
+      "after": "financial",
+      "independent_oracle": "Commercial linkage must retain its exact response section.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_commercial.dependency",
+      "task": "plan_commercial",
+      "family": "dependency",
+      "path": [
+        "tasks",
+        0,
+        "predecessors"
+      ],
+      "before": [],
+      "after": [
+        "approve"
+      ],
+      "independent_oracle": "An omitted predecessor differs from an approval dependency.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_commercial.effort",
+      "task": "plan_commercial",
+      "family": "effort",
+      "path": [
+        "tasks",
+        0,
+        "effort_days"
+      ],
+      "before": null,
+      "after": "12",
+      "independent_oracle": "Unknown effort differs from twelve person-days.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_commercial.allocation",
+      "task": "plan_commercial",
+      "family": "allocation",
+      "path": [
+        "tasks",
+        0,
+        "allocation"
+      ],
+      "before": null,
+      "after": "0.5",
+      "independent_oracle": "Unknown staffing allocation differs from half allocation.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "plan_commercial.duration",
+      "task": "plan_commercial",
+      "family": "duration",
+      "path": [
+        "tasks",
+        0,
+        "duration_days"
+      ],
+      "before": null,
+      "after": "24",
+      "independent_oracle": "Unknown duration differs from a twenty-four-day commitment.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "review_proposal.status_answered",
+      "task": "review_proposal",
+      "family": "status_answered",
+      "path": [
+        "responses",
+        0,
+        "status"
+      ],
+      "before": "partial",
+      "after": "answered",
+      "independent_oracle": "Partial coverage is distinct from answered regardless of unchanged rationale.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "review_proposal.status_missing",
+      "task": "review_proposal",
+      "family": "status_missing",
+      "path": [
+        "responses",
+        0,
+        "status"
+      ],
+      "before": "partial",
+      "after": "missing",
+      "independent_oracle": "Partial coverage is distinct from missing regardless of unchanged rationale.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "review_proposal.status_clarification_required",
+      "task": "review_proposal",
+      "family": "status_clarification_required",
+      "path": [
+        "responses",
+        0,
+        "status"
+      ],
+      "before": "partial",
+      "after": "clarification_required",
+      "independent_oracle": "Partial coverage is distinct from clarification_required regardless of unchanged rationale.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "review_proposal.owner_approval",
+      "task": "review_proposal",
+      "family": "owner_approval",
+      "path": [
+        "responses",
+        0,
+        "status"
+      ],
+      "before": "partial",
+      "after": "not_applicable_approved",
+      "independent_oracle": "Model output cannot create Owner-approved inapplicability.",
+      "domain": "reject",
+      "error_code": "MODEL_CANNOT_APPROVE"
+    },
+    {
+      "id": "review_proposal.severity",
+      "task": "review_proposal",
+      "family": "severity",
+      "path": [
+        "findings",
+        0,
+        "severity"
+      ],
+      "before": "advisory",
+      "after": "blocking",
+      "independent_oracle": "Advisory findings and blockers must remain distinct.",
+      "domain": "semantic_review_required"
+    },
+    {
+      "id": "review_proposal.requirement_identity",
+      "task": "review_proposal",
+      "family": "requirement_identity",
+      "path": [
+        "responses",
+        0,
+        "requirement_id"
+      ],
+      "before": "R1",
+      "after": "R2",
+      "independent_oracle": "A reviewer cannot claim coverage for an unseen requirement.",
+      "domain": "reject",
+      "error_code": "MODEL_COVERAGE_INCOMPLETE"
+    },
+    {
+      "id": "inspect_source_page.buyer_absent",
+      "task": "inspect_source_page",
+      "family": "buyer_absent",
+      "path": [
+        "notices",
+        0,
+        "buyer"
+      ],
+      "before": null,
+      "after": "Imagined Buyer",
+      "independent_oracle": "Absent buyer must remain null.",
+      "domain": "reject",
+      "error_code": "EVIDENCE_REFERENCE_INVALID"
+    },
+    {
+      "id": "inspect_source_page.deadline_absent",
+      "task": "inspect_source_page",
+      "family": "deadline_absent",
+      "path": [
+        "notices",
+        0,
+        "deadline_raw"
+      ],
+      "before": null,
+      "after": "2026-12-31",
+      "independent_oracle": "Absent deadline must remain null.",
+      "domain": "reject",
+      "error_code": "EVIDENCE_REFERENCE_INVALID"
+    },
+    {
+      "id": "inspect_source_page.link_absent",
+      "task": "inspect_source_page",
+      "family": "link_absent",
+      "path": [
+        "notices",
+        0,
+        "link_id"
+      ],
+      "before": "L1",
+      "after": null,
+      "independent_oracle": "A listing notice requires its observed link; only a single-notice page may omit it.",
+      "domain": "reject",
+      "error_code": "EVIDENCE_REFERENCE_INVALID"
+    },
+    {
+      "id": "inspect_source_page.link_identity",
+      "task": "inspect_source_page",
+      "family": "link_identity",
+      "path": [
+        "notices",
+        0,
+        "link_id"
+      ],
+      "before": "L1",
+      "after": "L9",
+      "independent_oracle": "Only exact observed link IDs are permitted.",
+      "domain": "reject",
+      "error_code": "EVIDENCE_REFERENCE_INVALID"
+    },
+    {
+      "id": "inspect_source_page.page_kind",
+      "task": "inspect_source_page",
+      "family": "page_kind",
+      "path": [
+        "page_kind"
+      ],
+      "before": "listing",
+      "after": "no_open_notices",
+      "independent_oracle": "A populated listing cannot also declare that there are no open notices.",
+      "domain": "reject",
+      "error_code": "EVIDENCE_REFERENCE_INVALID"
+    },
+    {
+      "id": "inspect_source_page.follow_link",
+      "task": "inspect_source_page",
+      "family": "follow_link",
+      "path": [
+        "follow_link_id"
+      ],
+      "before": null,
+      "after": "L9",
+      "independent_oracle": "Navigation cannot invent a supplied link.",
+      "domain": "reject",
+      "error_code": "EVIDENCE_REFERENCE_INVALID"
+    },
+    {
+      "id": "inspect_source_page.candidate_links",
+      "task": "inspect_source_page",
+      "family": "candidate_links",
+      "path": [
+        "candidate_link_ids"
+      ],
+      "before": [],
+      "after": [
+        "L9"
+      ],
+      "independent_oracle": "Discovery cannot invent a supplied link.",
+      "domain": "reject",
+      "error_code": "EVIDENCE_REFERENCE_INVALID"
+    },
+    {
+      "id": "analyze_chunk.source_authority",
+      "task": "analyze_chunk",
+      "base": "analyze_semantics",
+      "family": "source_authority",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "authority_role"
+      ],
+      "before": "buyer_rfp",
+      "after": "supplier_proposal",
+      "independent_oracle": "Supplier proposal text cannot become buyer authority.",
+      "domain": "source_contract_transport_only",
+      "context": {
+        "source_contract_version": 1
+      }
+    },
+    {
+      "id": "analyze_chunk.source_modality",
+      "task": "analyze_chunk",
+      "base": "analyze_semantics",
+      "family": "source_modality",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "modality"
+      ],
+      "before": "permitted",
+      "after": "required",
+      "independent_oracle": "Permitted scope differs from an obligation.",
+      "domain": "source_contract_transport_only",
+      "context": {
+        "source_contract_version": 1
+      }
+    },
+    {
+      "id": "analyze_chunk.source_negation",
+      "task": "analyze_chunk",
+      "base": "analyze_semantics",
+      "family": "source_negation",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "negated"
+      ],
+      "before": false,
+      "after": true,
+      "independent_oracle": "Negation is a separate semantic decision.",
+      "domain": "source_contract_transport_only",
+      "context": {
+        "source_contract_version": 1
+      }
+    },
+    {
+      "id": "analyze_chunk.source_conditions",
+      "task": "analyze_chunk",
+      "base": "analyze_semantics",
+      "family": "source_conditions",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "conditions"
+      ],
+      "before": [],
+      "after": [
+        "Only after buyer acceptance."
+      ],
+      "independent_oracle": "An unconditional permission differs from a conditional one.",
+      "domain": "source_contract_transport_only",
+      "context": {
+        "source_contract_version": 1
+      }
+    },
+    {
+      "id": "analyze_chunk.source_review",
+      "task": "analyze_chunk",
+      "base": "analyze_semantics",
+      "family": "source_review",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "review_status"
+      ],
+      "before": "pending",
+      "after": "confirmed",
+      "independent_oracle": "Pending interpretation cannot become human-confirmed from model output.",
+      "domain": "source_contract_transport_only",
+      "context": {
+        "source_contract_version": 1
+      }
+    }
+  ],
+  "nonrecursive_boundaries": [
+    "verify_grounding",
+    "repair_result",
+    "connection_probe"
+  ]
+}

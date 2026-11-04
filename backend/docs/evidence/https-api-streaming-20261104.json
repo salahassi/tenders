@@ -1,0 +1,665 @@
+{
+  "actual_binary_exercised": true,
+  "cancellation_qualified": true,
+  "cleanup_confirmed": true,
+  "client_library_versions": {
+    "cryptography": "50.0.0",
+    "zstandard": "0.25.0"
+  },
+  "customer_calls": 0,
+  "exact_delivery_qualified": true,
+  "final_container_states": {
+    "gateway": {
+      "Dead": false,
+      "Error": "",
+      "ExitCode": 0,
+      "OOMKilled": false,
+      "Running": true
+    },
+    "https": {
+      "Dead": false,
+      "Error": "",
+      "ExitCode": 0,
+      "OOMKilled": false,
+      "Running": true
+    },
+    "upstream": {
+      "Dead": false,
+      "Error": "",
+      "ExitCode": 0,
+      "OOMKilled": false,
+      "Running": true
+    }
+  },
+  "gateway_executed_config_sha256": "410414f04c3ad6406fba0edce88c6477354db696e946e296c1d37b8351395718",
+  "hosted_resource_observation": {
+    "receipt": "digitalocean-https-capacity-20261104-41928176279.json",
+    "scope": "read-only observed image/resources only; no hosted transport qualification",
+    "sha256": "92298f14f069856591be81a07baff9807b85d7a181ac83e167b3cb0ec1692c4a",
+    "source_revision": "f331c28f727f19623715be00f98a001bd04185bb"
+  },
+  "https_binary_sha256": "78ce36f1bee55a4c0a99c49842d89cebef4b4007f0fb30ad2078e1d3120e130f",
+  "https_binary_version": "v2.11.2 h1:iOlpsSiSKqEW+SIXrcZsZ/NO74SzB/ycqqvAIEfIm64=",
+  "https_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+  "https_image_user": "1000:1000",
+  "https_is_deployed_registry_image": true,
+  "image_binding": {
+    "kind": "exact_deployed_registry_digest",
+    "local_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+    "repo_digest": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce"
+  },
+  "images": {
+    "gateway": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+    "helper": "docker.io/denoland/deno@sha256:3dc638972caa62978182228a5a575e0498ae45129aa1c3ee8548663652ef7ab6",
+    "https": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce",
+    "https_declared_source_base": "docker.io/library/caddy:2.11.2-alpine@sha256:6d125e80883be8a2bef5f088c7535945b42cdbb8a0f5471bf36eaf18dc0638f1"
+  },
+  "last_transfer": {
+    "decoded_bytes": 2097152,
+    "decoded_sha256": "fbd317b700a78c4ed7bda4921bd4dbc17c221477d6093126c8efe3598ae9d118",
+    "elapsed_seconds": 0.204,
+    "encoding": "zstd",
+    "headers_ms": 74,
+    "health_checks": 1,
+    "health_failed": 0,
+    "memory": {
+      "gateway": {
+        "current_bytes": 5812224,
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 13045760,
+        "swap_bytes": 0
+      },
+      "helper": {
+        "current_bytes": 83419136,
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 96387072,
+        "swap_bytes": 0
+      },
+      "https": {
+        "current_bytes": 20086784,
+        "events": {
+          "high": 0,
+          "low": 0,
+          "max": 0,
+          "oom": 0,
+          "oom_group_kill": 0,
+          "oom_kill": 0
+        },
+        "peak_bytes": 25833472,
+        "swap_bytes": 0
+      }
+    },
+    "outcome": "cancelled",
+    "temporary_peak": {
+      "gateway": {
+        "allocated_bytes": 4096,
+        "files": 1,
+        "logical_bytes": 2,
+        "observed_processes": 2,
+        "open_unlinked_files": 0
+      },
+      "https": {
+        "allocated_bytes": 36864,
+        "files": 9,
+        "logical_bytes": 3523,
+        "observed_processes": 1,
+        "open_unlinked_files": 0
+      }
+    },
+    "upstream_after_completion_or_cancel": {
+      "backpressure": 198,
+      "closed": true,
+      "completed": false,
+      "sent": 12976137
+    },
+    "wire_body_bytes": 2162688
+  },
+  "limitations": [
+    "Exact selected image is tested locally; no inference that local execution proves production rollout/configuration.",
+    "Synthetic varying ASCII JSON has the prior measured batch response byte length, not actual application/Auth/SQL data.",
+    "Local certificate-state storage is an overlay bind mount; production PVC durability/latency is not qualified.",
+    "HTTP/1.1 TLS and each encoding are measured; HTTP/2, HTTP/3, public CA/ACME, cloud LoadBalancer and hosted traffic are not qualified.",
+    "One full response and one early cancellation per encoding, not concurrent load, universal output size or issuance SLO.",
+    "Only Nginx loopback service/DNS coordinates are fixture substitutions; exact production worker_processes1, Caddyfile, compression and TLS remain."
+  ],
+  "model_calls": 0,
+  "mount_filesystems": {
+    "gateway": {
+      "meaning": "Linux overlayfs (0x794c7630); tmpfs magic is rejected",
+      "statfs_magic": {
+        "/tmp": "794c7630"
+      }
+    },
+    "https": {
+      "meaning": "Linux overlayfs (0x794c7630); tmpfs magic is rejected",
+      "statfs_magic": {
+        "/config": "794c7630",
+        "/data": "794c7630",
+        "/tmp": "794c7630"
+      }
+    }
+  },
+  "passed": true,
+  "payload": {
+    "aggregate_materialized": false,
+    "algorithm": "AES-256-CTR fixed synthetic key/IV, zero input, per-49152-byte base64 blocks, exact JSON wrapper",
+    "bytes": 412758765,
+    "content_type": "application/json",
+    "sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab"
+  },
+  "production_calls": 0,
+  "qualified_encodings": [
+    "identity",
+    "gzip",
+    "zstd"
+  ],
+  "resource_envelope_qualified": true,
+  "resources": {
+    "client": "external bounded Python stream reader; memory outside service cgroups",
+    "decoded_read_bytes": 65536,
+    "docker_injected_proxy_variables_removed_for_fixture_only": true,
+    "gateway_cpu_millicores": 200,
+    "gateway_memory_bytes": 67108864,
+    "gateway_worker_count_basis": "exact production directive, no worker-count transform",
+    "gateway_workers": 1,
+    "helper_cpu_millicores": 1000,
+    "helper_memory_bytes": 134217728,
+    "https_cpu_millicores": 300,
+    "https_limit_provenance": "repository render.py and separate read-only hosted Deployment/ready-Pod observation41928176279; local execution remains separate",
+    "https_memory_bytes": 134217728,
+    "network": "nonce-owned internal bridge; gateway shares upstream namespace",
+    "pause_ms_per_read": 4,
+    "per_transfer_wall_limit_seconds": 180,
+    "published_ports": [],
+    "swap": false,
+    "tmp_budget_per_service_bytes": 67108864,
+    "tmp_enforcement": "workspace-overlay bind mount, directory plus owned-process open-unlinked inode census; observed budget, not filesystem ENOSPC"
+  },
+  "source_hashes": {
+    "backend/deploy/Dockerfile.https": "95af1b5ca755a4b7e6d75b1250b47cbf8415d1d3a9de3b0e9bcb2a549c149922",
+    "backend/deploy/kubernetes/Caddyfile": "f1739441ed4e26ff1806d06a8953bfa7bc8e50e5fb93fab80956ee759cf1bbc0",
+    "backend/deploy/kubernetes/gateway.conf": "c1a25c41c24f8bb804ecb0e162c8e0577437fd31b16ef82cefbacebbb20795ba",
+    "backend/deploy/kubernetes/render.py": "89e7b0a0f6cf712c9a5f853eda172592bbdae37aec41d114eeaa348e1099144d",
+    "backend/scripts/testing/https_api_streaming.py": "c149472f13990122e559471173bfa173fd39e65f6fb399e9ecdc4038f5693564",
+    "backend/scripts/testing/legacy_batch_gateway.py": "5df05d7b6aa04dba698396f50f821fd60b2e32fd6a682945d4291603324f9ce7"
+  },
+  "source_revision": "5787071b98eebce01aeae5fbb0f4b52ec53973da",
+  "source_unchanged": true,
+  "synthetic_only": true,
+  "temporary_budget_qualified": true,
+  "tls": {
+    "actual_handshake_verified": true,
+    "health_body_sha256": "dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22",
+    "health_status": 200,
+    "hostname": "localhost",
+    "issuer": "offline local CA",
+    "root_ca_sha256": "4ee9032ff1768c2a1db71ec05e41ae775caedda5ba239471d8d413a3ef63407a",
+    "verification_enabled": true
+  },
+  "tls_streaming_qualified": true,
+  "transfers": [
+    {
+      "decoded_bytes": 412758765,
+      "decoded_sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab",
+      "elapsed_seconds": 26.355,
+      "encoding": "identity",
+      "headers_ms": 84,
+      "health_checks": 53,
+      "health_failed": 0,
+      "memory": {
+        "gateway": {
+          "current_bytes": 5492736,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 13045760,
+          "swap_bytes": 0
+        },
+        "helper": {
+          "current_bytes": 66756608,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 96387072,
+          "swap_bytes": 0
+        },
+        "https": {
+          "current_bytes": 15720448,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 23040000,
+          "swap_bytes": 0
+        }
+      },
+      "outcome": "complete",
+      "temporary_peak": {
+        "gateway": {
+          "allocated_bytes": 4096,
+          "files": 1,
+          "logical_bytes": 2,
+          "observed_processes": 2,
+          "open_unlinked_files": 0
+        },
+        "https": {
+          "allocated_bytes": 36864,
+          "files": 9,
+          "logical_bytes": 3523,
+          "observed_processes": 1,
+          "open_unlinked_files": 0
+        }
+      },
+      "upstream_after_completion_or_cancel": {
+        "backpressure": 6298,
+        "closed": true,
+        "completed": true,
+        "sent": 412758765,
+        "sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab"
+      },
+      "wire_body_bytes": 412758765
+    },
+    {
+      "decoded_bytes": 2097152,
+      "decoded_sha256": "fbd317b700a78c4ed7bda4921bd4dbc17c221477d6093126c8efe3598ae9d118",
+      "elapsed_seconds": 0.206,
+      "encoding": "identity",
+      "headers_ms": 76,
+      "health_checks": 1,
+      "health_failed": 0,
+      "memory": {
+        "gateway": {
+          "current_bytes": 5754880,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 13045760,
+          "swap_bytes": 0
+        },
+        "helper": {
+          "current_bytes": 76951552,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 96387072,
+          "swap_bytes": 0
+        },
+        "https": {
+          "current_bytes": 17805312,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 23040000,
+          "swap_bytes": 0
+        }
+      },
+      "outcome": "cancelled",
+      "temporary_peak": {
+        "gateway": {
+          "allocated_bytes": 4096,
+          "files": 1,
+          "logical_bytes": 2,
+          "observed_processes": 2,
+          "open_unlinked_files": 0
+        },
+        "https": {
+          "allocated_bytes": 36864,
+          "files": 9,
+          "logical_bytes": 3523,
+          "observed_processes": 1,
+          "open_unlinked_files": 0
+        }
+      },
+      "upstream_after_completion_or_cancel": {
+        "backpressure": 277,
+        "closed": true,
+        "completed": false,
+        "sent": 18153481
+      },
+      "wire_body_bytes": 2097152
+    },
+    {
+      "decoded_bytes": 412758765,
+      "decoded_sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab",
+      "elapsed_seconds": 26.573,
+      "encoding": "gzip",
+      "headers_ms": 86,
+      "health_checks": 53,
+      "health_failed": 0,
+      "memory": {
+        "gateway": {
+          "current_bytes": 6090752,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 13045760,
+          "swap_bytes": 0
+        },
+        "helper": {
+          "current_bytes": 67350528,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 96387072,
+          "swap_bytes": 0
+        },
+        "https": {
+          "current_bytes": 18141184,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 23040000,
+          "swap_bytes": 0
+        }
+      },
+      "outcome": "complete",
+      "temporary_peak": {
+        "gateway": {
+          "allocated_bytes": 4096,
+          "files": 1,
+          "logical_bytes": 2,
+          "observed_processes": 2,
+          "open_unlinked_files": 0
+        },
+        "https": {
+          "allocated_bytes": 36864,
+          "files": 9,
+          "logical_bytes": 3523,
+          "observed_processes": 1,
+          "open_unlinked_files": 0
+        }
+      },
+      "upstream_after_completion_or_cancel": {
+        "backpressure": 6298,
+        "closed": true,
+        "completed": true,
+        "sent": 412758765,
+        "sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab"
+      },
+      "wire_body_bytes": 412091605
+    },
+    {
+      "decoded_bytes": 2097152,
+      "decoded_sha256": "fbd317b700a78c4ed7bda4921bd4dbc17c221477d6093126c8efe3598ae9d118",
+      "elapsed_seconds": 0.214,
+      "encoding": "gzip",
+      "headers_ms": 83,
+      "health_checks": 1,
+      "health_failed": 0,
+      "memory": {
+        "gateway": {
+          "current_bytes": 3952640,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 13045760,
+          "swap_bytes": 0
+        },
+        "helper": {
+          "current_bytes": 76075008,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 96387072,
+          "swap_bytes": 0
+        },
+        "https": {
+          "current_bytes": 17891328,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 25833472,
+          "swap_bytes": 0
+        }
+      },
+      "outcome": "cancelled",
+      "temporary_peak": {
+        "gateway": {
+          "allocated_bytes": 4096,
+          "files": 1,
+          "logical_bytes": 2,
+          "observed_processes": 2,
+          "open_unlinked_files": 0
+        },
+        "https": {
+          "allocated_bytes": 36864,
+          "files": 9,
+          "logical_bytes": 3523,
+          "observed_processes": 1,
+          "open_unlinked_files": 0
+        }
+      },
+      "upstream_after_completion_or_cancel": {
+        "backpressure": 306,
+        "closed": true,
+        "completed": false,
+        "sent": 20054025
+      },
+      "wire_body_bytes": 2162698
+    },
+    {
+      "decoded_bytes": 412758765,
+      "decoded_sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab",
+      "elapsed_seconds": 26.365,
+      "encoding": "zstd",
+      "headers_ms": 76,
+      "health_checks": 53,
+      "health_failed": 0,
+      "memory": {
+        "gateway": {
+          "current_bytes": 5844992,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 13045760,
+          "swap_bytes": 0
+        },
+        "helper": {
+          "current_bytes": 67203072,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 96387072,
+          "swap_bytes": 0
+        },
+        "https": {
+          "current_bytes": 20164608,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 25833472,
+          "swap_bytes": 0
+        }
+      },
+      "outcome": "complete",
+      "temporary_peak": {
+        "gateway": {
+          "allocated_bytes": 4096,
+          "files": 1,
+          "logical_bytes": 2,
+          "observed_processes": 2,
+          "open_unlinked_files": 0
+        },
+        "https": {
+          "allocated_bytes": 36864,
+          "files": 9,
+          "logical_bytes": 3523,
+          "observed_processes": 1,
+          "open_unlinked_files": 0
+        }
+      },
+      "upstream_after_completion_or_cancel": {
+        "backpressure": 6298,
+        "closed": true,
+        "completed": true,
+        "sent": 412758765,
+        "sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab"
+      },
+      "wire_body_bytes": 412768225
+    },
+    {
+      "decoded_bytes": 2097152,
+      "decoded_sha256": "fbd317b700a78c4ed7bda4921bd4dbc17c221477d6093126c8efe3598ae9d118",
+      "elapsed_seconds": 0.204,
+      "encoding": "zstd",
+      "headers_ms": 74,
+      "health_checks": 1,
+      "health_failed": 0,
+      "memory": {
+        "gateway": {
+          "current_bytes": 5812224,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 13045760,
+          "swap_bytes": 0
+        },
+        "helper": {
+          "current_bytes": 83419136,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 96387072,
+          "swap_bytes": 0
+        },
+        "https": {
+          "current_bytes": 20086784,
+          "events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0
+          },
+          "peak_bytes": 25833472,
+          "swap_bytes": 0
+        }
+      },
+      "outcome": "cancelled",
+      "temporary_peak": {
+        "gateway": {
+          "allocated_bytes": 4096,
+          "files": 1,
+          "logical_bytes": 2,
+          "observed_processes": 2,
+          "open_unlinked_files": 0
+        },
+        "https": {
+          "allocated_bytes": 36864,
+          "files": 9,
+          "logical_bytes": 3523,
+          "observed_processes": 1,
+          "open_unlinked_files": 0
+        }
+      },
+      "upstream_after_completion_or_cancel": {
+        "backpressure": 198,
+        "closed": true,
+        "completed": false,
+        "sent": 12976137
+      },
+      "wire_body_bytes": 2162688
+    }
+  ],
+  "upstream_sha256": "10d743d70b193e82f7397f11e230d91daced014c0828d572fd4e6cbe8ec23e13",
+  "version": 1
+}

@@ -1,0 +1,40 @@
+{
+  "baseline_config_source_sha256": "6d21e906c270cc4afe406dc28a646b8882e357beb07d34228a0221e03906d9dc",
+  "baseline_executed_config_sha256": "fb76697cee488874f8748ad7ebcb15bd409641872e454ea3d37e96a46f311c74",
+  "cleanup_confirmed": true,
+  "customer_calls": 0,
+  "envelope": {
+    "census_includes_open_unlinked_files": true,
+    "census_interval_ms": 5,
+    "client_pause_ms_per_chunk": 4,
+    "gateway_cpu_millicores": 200,
+    "gateway_memory_bytes": 67108864,
+    "helper_cpu_millicores": 1000,
+    "helper_memory_bytes": 134217728,
+    "tmp_budget_bytes": 67108864,
+    "tmp_enforcement": "observed-budget-cancel-on-crossing",
+    "tmp_medium": "disk"
+  },
+  "failure_class": "AssertionError",
+  "failure_detail": "TEMP_OBSERVER_INCOMPLETE",
+  "gateway_config_source_sha256": "e35ea7416a9699b61e5e66ca1b280e3dbe676005526c82d34232916b655ac260",
+  "gateway_image": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+  "gateway_image_id": "sha256:87ae58c7c6b521c9a89276ddc8b3365586e0d3fa1df02bbf5d8340a29c2e1bd2",
+  "harness_sha256": "a0c4b472cde3a98a07908c7ac5e96adf09d940f3dc96cc2afb07d257e58530f8",
+  "helper_image": "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799",
+  "helper_image_id": "sha256:03a737a1b3dd5f4fc97af8a3b07bb1fc8c98c6d589377474fae3b20c9699527e",
+  "limitations": [
+    "Deterministic synthetic octets of the admitted response byte length; no application JSON/SQL/Auth/model execution.",
+    "Disk-backed temporary mount is continuously observed; crossing cancels the baseline, not a claimed filesystem ENOSPC or hosted eviction.",
+    "Nginx transport only; outer Caddy, DigitalOcean LoadBalancer, browser and hosted rollout are outside this proof.",
+    "Loopback upstream, synthetic namespace and one Nginx worker; API request buffering/body limits and other routing are unchanged."
+  ],
+  "passed": false,
+  "payload_bytes": 412758765,
+  "payload_sha256": "cc0a4307247e4bf2a8a4406b2b07fec1c17e1541081eb57035c777611a2fdfa4",
+  "production_calls": 0,
+  "routing_harness_sha256": "8d79ae799b29769851b96ce16324c5ba9e9a0545002f8fa3e3c807e54ece792e",
+  "synthetic_only": true,
+  "upstream_sha256": "a81d8e60493272530a24bd127ef60f3935d932b5a71dddd2225e54baf996b85e",
+  "version": 1
+}

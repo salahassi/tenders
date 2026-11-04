@@ -17,17 +17,41 @@ export interface Gap {
 }
 export interface DocumentRecord {
   id: string;
+  revision?: number;
+  extractionHash?: string;
+  extractionVersion?: string;
+  ocrStatus?:
+    | "queued"
+    | "running"
+    | "retry_wait"
+    | "blocked"
+    | "needs_review"
+    | "published"
+    | null;
+  ocrParentDocumentId?: string | null;
+  ocrSuccessorId?: string | null;
   name: string;
   size: number;
   uploadedAt: string;
   text: string;
-  status: "ready" | "needs_ocr" | "needs_processing" | "error";
+  status: "ready" | "partial" | "needs_ocr" | "needs_processing" | "error";
+  extractionCoverage?: DocumentExtractionCoverage;
   classification: "synthetic" | "public" | "sanitized" | "unspecified";
   hash: string;
   persisted?: boolean;
   extractionConfirmed?: boolean;
   precedence?: number;
   supersedesId?: string | null;
+}
+export interface DocumentExtractionCoverage {
+  version: 1;
+  kind: "pdf_pages";
+  complete: boolean;
+  pages: {
+    page: number;
+    status: "readable" | "blank" | "needs_ocr" | "extraction_failed";
+    characters: number;
+  }[];
 }
 export interface KnowledgeDocument extends DocumentRecord {
   verified?: boolean;

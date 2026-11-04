@@ -1,0 +1,997 @@
+{
+  "version": 1,
+  "purpose": "Frozen development campaign; original v1 scores retained pending independent adjudication",
+  "synthetic": true,
+  "production_business_rows_created": 0,
+  "source_sha": "ea420a00082f23b7b540f099dd76515378142652",
+  "corpus_sha256": "698127390ac44cd1e1ba7c0591af7bc3668c0be2fed0cff22079dc4bdba7847b",
+  "qualification_passed": false,
+  "private_holdout_complete": false,
+  "billing_settings_changed": false,
+  "campaigns": [
+    {
+      "language": "en",
+      "run_url": "https://github.com/salahassi/tenders/actions/runs/41844431244",
+      "private_receipt_sha256": "cff35684dae39fa98cb5f09ade67b5372e3730efa51802b3d257142e742cb003",
+      "generations": 64,
+      "measured_input_tokens": 77330,
+      "measured_output_tokens": 8241,
+      "unknown_usage_cases": 48,
+      "completed": true,
+      "targets": [
+        {
+          "provider": "qwencloud",
+          "model": "deepseek-v4-pro",
+          "cases": 16,
+          "v1_passed_cases": 11,
+          "codes": {
+            "SUCCEEDED": 11,
+            "MODEL_ROUND_EXHAUSTED": 3,
+            "EVAL_SEMANTIC_FALSE_REJECTION": 1,
+            "EVAL_SEMANTIC_FALSE_ACCEPTANCE": 1
+          },
+          "cases_with_provider_403": 0,
+          "cases_with_provider_429": 0,
+          "failures": [
+            {
+              "case": "semantic_en_prohibition_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": []
+            },
+            {
+              "case": "semantic_en_actor_faithful_v1",
+              "code": "EVAL_SEMANTIC_FALSE_REJECTION",
+              "semantic_outcome": "faithful_control_rejected",
+              "provider_http_statuses": []
+            },
+            {
+              "case": "semantic_en_exception_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": []
+            },
+            {
+              "case": "semantic_en_unit_translation_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": []
+            },
+            {
+              "case": "semantic_en_number_association_mutated_v1",
+              "code": "EVAL_SEMANTIC_FALSE_ACCEPTANCE",
+              "semantic_outcome": "critical_mutation_not_detected",
+              "provider_http_statuses": []
+            }
+          ]
+        },
+        {
+          "provider": "openai",
+          "model": "gpt-6-luna",
+          "cases": 16,
+          "v1_passed_cases": 0,
+          "codes": {
+            "MODEL_ROUND_EXHAUSTED": 16
+          },
+          "cases_with_provider_403": 0,
+          "cases_with_provider_429": 16,
+          "failures": [
+            {
+              "case": "semantic_en_modality_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_modality_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_prohibition_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_prohibition_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_actor_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_actor_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_trigger_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_trigger_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_exception_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_exception_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_unit_translation_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_unit_translation_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_number_association_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_number_association_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_consequence_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_consequence_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            }
+          ]
+        },
+        {
+          "provider": "openai",
+          "model": "gpt-6.1-sol",
+          "cases": 16,
+          "v1_passed_cases": 0,
+          "codes": {
+            "MODEL_ROUND_EXHAUSTED": 16
+          },
+          "cases_with_provider_403": 0,
+          "cases_with_provider_429": 16,
+          "failures": [
+            {
+              "case": "semantic_en_modality_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_modality_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_prohibition_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_prohibition_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_actor_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_actor_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_trigger_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_trigger_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_exception_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_exception_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_unit_translation_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_unit_translation_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_number_association_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_number_association_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_consequence_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_en_consequence_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            }
+          ]
+        },
+        {
+          "provider": "qwencloud",
+          "model": "qwen3.8-max",
+          "cases": 16,
+          "v1_passed_cases": 0,
+          "codes": {
+            "MODEL_ROUND_EXHAUSTED": 16
+          },
+          "cases_with_provider_403": 16,
+          "cases_with_provider_429": 0,
+          "failures": [
+            {
+              "case": "semantic_en_modality_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_modality_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_prohibition_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_prohibition_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_actor_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_actor_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_trigger_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_trigger_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_exception_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_exception_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_unit_translation_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_unit_translation_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_number_association_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_number_association_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_consequence_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_en_consequence_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "language": "ar",
+      "run_url": "https://github.com/salahassi/tenders/actions/runs/41844440530",
+      "private_receipt_sha256": "3281a3ee0831b35def261dd6281062a2de6b63ed30fc34d5e0ba6cb0ce72cd9a",
+      "generations": 64,
+      "measured_input_tokens": 53961,
+      "measured_output_tokens": 6589,
+      "unknown_usage_cases": 53,
+      "completed": true,
+      "targets": [
+        {
+          "provider": "qwencloud",
+          "model": "deepseek-v4-pro",
+          "cases": 16,
+          "v1_passed_cases": 9,
+          "codes": {
+            "SUCCEEDED": 9,
+            "EVAL_SEMANTIC_FALSE_ACCEPTANCE": 1,
+            "EVAL_SEMANTIC_FALSE_REJECTION": 1,
+            "MODEL_ROUND_EXHAUSTED": 5
+          },
+          "cases_with_provider_403": 5,
+          "cases_with_provider_429": 0,
+          "failures": [
+            {
+              "case": "semantic_ar_trigger_mutated_v1",
+              "code": "EVAL_SEMANTIC_FALSE_ACCEPTANCE",
+              "semantic_outcome": "critical_mutation_not_detected",
+              "provider_http_statuses": []
+            },
+            {
+              "case": "semantic_ar_unit_translation_faithful_v1",
+              "code": "EVAL_SEMANTIC_FALSE_REJECTION",
+              "semantic_outcome": "faithful_control_rejected",
+              "provider_http_statuses": []
+            },
+            {
+              "case": "semantic_ar_unit_translation_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_number_association_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_number_association_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_consequence_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_consequence_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            }
+          ]
+        },
+        {
+          "provider": "openai",
+          "model": "gpt-6-luna",
+          "cases": 16,
+          "v1_passed_cases": 0,
+          "codes": {
+            "MODEL_ROUND_EXHAUSTED": 16
+          },
+          "cases_with_provider_403": 0,
+          "cases_with_provider_429": 16,
+          "failures": [
+            {
+              "case": "semantic_ar_modality_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_modality_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_prohibition_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_prohibition_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_actor_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_actor_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_trigger_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_trigger_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_exception_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_exception_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_unit_translation_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_unit_translation_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_number_association_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_number_association_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_consequence_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_consequence_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            }
+          ]
+        },
+        {
+          "provider": "openai",
+          "model": "gpt-6.1-sol",
+          "cases": 16,
+          "v1_passed_cases": 0,
+          "codes": {
+            "MODEL_ROUND_EXHAUSTED": 16
+          },
+          "cases_with_provider_403": 0,
+          "cases_with_provider_429": 16,
+          "failures": [
+            {
+              "case": "semantic_ar_modality_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_modality_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_prohibition_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_prohibition_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_actor_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_actor_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_trigger_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_trigger_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_exception_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_exception_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_unit_translation_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_unit_translation_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_number_association_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_number_association_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_consequence_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            },
+            {
+              "case": "semantic_ar_consequence_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                429
+              ]
+            }
+          ]
+        },
+        {
+          "provider": "qwencloud",
+          "model": "qwen3.8-max",
+          "cases": 16,
+          "v1_passed_cases": 0,
+          "codes": {
+            "MODEL_ROUND_EXHAUSTED": 16
+          },
+          "cases_with_provider_403": 16,
+          "cases_with_provider_429": 0,
+          "failures": [
+            {
+              "case": "semantic_ar_modality_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_modality_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_prohibition_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_prohibition_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_actor_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_actor_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_trigger_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_trigger_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_exception_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_exception_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_unit_translation_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_unit_translation_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_number_association_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_number_association_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_consequence_faithful_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            },
+            {
+              "case": "semantic_ar_consequence_mutated_v1",
+              "code": "MODEL_ROUND_EXHAUSTED",
+              "semantic_outcome": "not_scored",
+              "provider_http_statuses": [
+                403
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

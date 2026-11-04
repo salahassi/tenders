@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "source_revision": "c9f1c5b27a06c171a3bbb5fdfbd52c87d49fb91f",
+  "command": "npm --prefix backend test -- --maxWorkers=1",
+  "test_files": 178,
+  "passed_files": 176,
+  "failed_files": 2,
+  "tests": 2891,
+  "passed_tests": 2889,
+  "failed_tests": 2,
+  "duration_seconds": 441.82,
+  "log_sha256": "01d431f1c9aac85cf432bbf3dc5ddeef9d3efc1adba1c449ea1e77fb543b3294",
+  "failures": [
+    {
+      "file": "backend/tests/backend/database.test.ts",
+      "cause": "Stale constraint name after separating non-render and render admission; observed rejection still used SQLSTATE 23505.",
+      "correction_commit": "bc48350",
+      "focused_tests_passed": 32,
+      "production_code_changed": false
+    },
+    {
+      "file": "backend/tests/backend/generationContentValidation.test.ts",
+      "cause": "Stale broad diagnostic path; current validation reports the exact section_ids element with the same error code and reason.",
+      "correction_commit": "75b947b",
+      "focused_tests_passed": 24,
+      "production_code_changed": false
+    }
+  ],
+  "full_current_source_suite_passed": false,
+  "scope": "Committed integration diagnostic before verifier subprocess and credential scanning changes; focused corrections are not a combined green run.",
+  "model_calls": 0,
+  "production_calls": 0
+}

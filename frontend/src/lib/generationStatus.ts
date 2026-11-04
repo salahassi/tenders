@@ -1,13 +1,33 @@
+export type ProposalIssuanceStatus = {
+  id: string;
+  plan_id: string;
+  accepted_at: string;
+  deadline_at: string;
+  server_now: string;
+  effective_outcome: "active" | "issued" | "failed";
+  effective_error_code: string | null;
+  effective_completed_at: string | null;
+  issued_snapshot_id: string | null;
+};
 export type GenerationProgress = {
   kind: string;
   status: string;
   error_code?: string | null;
+  issuance_request_id?: string | null;
+  issuance?: ProposalIssuanceStatus | null;
 };
 
 export const generationNeedsAttention = (plan: GenerationProgress) =>
-  ["blocked", "failed"].includes(plan.status);
+  ["blocked", "failed"].includes(plan.status) ||
+  plan.issuance?.effective_outcome === "failed";
 
 const errorMessages: Record<string, string> = {
+  PROPOSAL_CURRENT_CONTRACT_REQUIRED:
+    "This saved request uses an earlier processing version. Its work is retained. Start a new request with the current checks to prepare the complete file package.",
+  AI_AGENTS_UNAVAILABLE:
+    "No AI agents are available for this request. Processing stopped; your saved work is retained. Check Models & providers before trying again.",
+  PROPOSAL_ISSUANCE_TIMEOUT:
+    "This request reached its 10-minute limit before the complete file package was ready. Processing stopped; your saved work is retained.",
   DATA_AUTHORIZATION_REQUIRED:
     "Processing stopped while checking which inputs can be used. Select Resume saved work here to continue with your configured models.",
   DATA_POLICY_BLOCKED:
@@ -29,6 +49,21 @@ const errorMessages: Record<string, string> = {
 };
 
 export function generationStatusMessage(plan: GenerationProgress): string {
+  if (plan.kind === "proposal" && plan.issuance_request_id) {
+    if (!plan.issuance || plan.issuance.id !== plan.issuance_request_id)
+      return "Checking the current request and file-package status…";
+    const issuance = plan.issuance;
+    if (issuance.effective_outcome === "failed")
+      return (
+        errorMessages[issuance.effective_error_code || ""] ||
+        "This request stopped before its complete file package was issued. Your saved work is retained; review the error and recovery options."
+      );
+    if (issuance.effective_outcome === "issued")
+      return "The complete draft file package is ready to download. Review its content and outstanding items before final approval.";
+    return plan.status === "completed"
+      ? "Writing is complete. The full draft file package is still being checked and prepared within this request's 10-minute limit."
+      : "Your proposal and complete file package are being prepared. This request has a 10-minute limit; an earlier failure is reported as soon as it is known.";
+  }
   if (plan.status === "completed")
     return plan.kind === "proposal"
       ? "Your proposal is ready. Open it to review and download."

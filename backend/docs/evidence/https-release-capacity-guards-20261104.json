@@ -1,0 +1,42 @@
+{
+  "canonical_sql_changed": false,
+  "checks": {
+    "cloud_restore": {
+      "log_sha256": "9566d3dc8c1530ceb6814da988f7ad7f8fe3dce2d0a4f43eb50f34b061261faf",
+      "passed": 13
+    },
+    "https_capacity": {
+      "log_sha256": "5bcc4d1aa6645ac5468c4480433643cddce5e407275e33c6b9bfb9f6aa01cc52",
+      "passed": 30
+    },
+    "release_source": {
+      "log_sha256": "fabde159750e072ebea1cee4ac48bf65e137f4b156fa5529bd5f671b39f3aceb",
+      "passed": 11
+    },
+    "update": {
+      "log_sha256": "eccee89dc70f4a5c830d5e462a0f4a78824614b538fce8ab0d4c8a6ec30df16f",
+      "passed": 15
+    }
+  },
+  "customer_calls": 0,
+  "limitations": [
+    "Unit fixtures are synthetic and do not qualify native images or hosted resources.",
+    "Corrected disk gateway proof and final HTTPS native receipt were pending at this source check.",
+    "No manifest frozen, cloud restore dispatched or hosted preflight/deployment performed by these tests.",
+    "Managed schema SQL and full application suites are separate integration gates."
+  ],
+  "native_runs": 0,
+  "passed": true,
+  "production_calls": 0,
+  "scope": "local_pure_source_and_read_only_proxy_release_guards",
+  "source_hashes": {
+    "backend/scripts/ops/https-capacity.py": "7296dc1ae0ee78acbdf18b1779f2350acb24e5e55f4371a007c110d4727741e9",
+    "backend/scripts/ops/proposal-delivery-release.py": "01cae0e911edfde4f917f5889e4cf547bed5a624d3a7b3e56d743b764b40c98b",
+    "backend/scripts/ops/proposal-delivery-update.py": "f328dee6cbb84e42d810e5e02f6c16dd0eba4baa4a3bcccc59c945d1d8a4a861",
+    "backend/scripts/ops/test_https_capacity.py": "222dc537d6d5e4cabd7183bed119e940823862d6d22db67b83b4d95c8c53e9b5",
+    "backend/scripts/ops/test_proposal_cloud_restore.py": "11c20d4cf6141a26f0fbcb973ec355acbbf4b677769c624456e0646b4979e6db",
+    "backend/scripts/ops/test_proposal_delivery_release.py": "48ce49c86aa3991c31518859d637639f63344079e119778838083ea99b6a68bb",
+    "backend/scripts/ops/test_proposal_delivery_update.py": "da68230c4847a1088966f09df4c0b9585d07fd917e67acb8d166776b87cc2ab4"
+  },
+  "version": 1
+}

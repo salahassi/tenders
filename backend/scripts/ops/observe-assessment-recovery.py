@@ -13,6 +13,7 @@ import secrets
 import shutil
 import sys
 import time
+import urllib.parse
 
 SPEC = importlib.util.spec_from_file_location("assessment_observer_access", Path(__file__).with_name("transfer-sources.py"))
 access = importlib.util.module_from_spec(SPEC)
@@ -107,6 +108,21 @@ def public_snapshot(snapshot, minimum_completed):
     return {**{key: snapshot[key] for key in fields}, "terminal": terminal(snapshot, minimum_completed)}
 
 
+def rest_database_role(core, credentials):
+    """Validate the existing private binding; only a fixed role name may escape."""
+    try:
+        parsed = urllib.parse.urlsplit(core["POSTGREST_DATABASE_URL"])
+        valid = (parsed.scheme == "postgresql" and parsed.hostname == credentials["PGHOST"]
+          and parsed.port == int(credentials["PGPORT"]) and parsed.path == "/tenderdesk_app"
+          and not parsed.fragment and urllib.parse.unquote(parsed.username or "") == "tdp_app_authenticator"
+          and bool(parsed.password)
+          and urllib.parse.parse_qs(parsed.query, keep_blank_values=True, strict_parsing=True)
+            == {"sslmode": ["verify-full"], "sslrootcert": ["/run/db-ca/ca.crt"]})
+    except (KeyError, TypeError, ValueError): valid = False
+    if not valid: raise ObserverError("ASSESSMENT_OBSERVER_REST_BINDING_INVALID")
+    return "tdp_app_authenticator"
+
+
 class Client:
     def __init__(self, timeout):
         run, attempt = os.environ.get("GITHUB_RUN_ID", ""), os.environ.get("GITHUB_RUN_ATTEMPT", "")
@@ -121,13 +137,17 @@ class Client:
     def metadata(self, name):
         return {"name": name, "namespace": d.NAMESPACE, "labels": self.labels}
 
-    def prepare(self):
+    def prepare(self, *, capacity_metadata=None):
         namespace = d.get("namespace", d.NAMESPACE)
         if (namespace or {}).get("metadata", {}).get("labels", {}).get("app.kubernetes.io/managed-by") != "tenderdesk-deployment":
             raise ObserverError("ASSESSMENT_OBSERVER_NAMESPACE_OWNERSHIP_REQUIRED")
-        credentials, ca = d.probe.target_credentials(os.environ["DIGITALOCEAN_ACCESS_TOKEN"])
-        if not hmac.compare_digest(d.decode_secret(d.get("secret", "tenderdesk-core")).get("PGSSLCA", ""), ca):
+        arguments = {} if capacity_metadata is None else {"capacity_metadata": capacity_metadata}
+        credentials, ca = d.probe.target_credentials(os.environ["DIGITALOCEAN_ACCESS_TOKEN"], **arguments)
+        core = d.decode_secret(d.get("secret", "tenderdesk-core"))
+        if not hmac.compare_digest(core.get("PGSSLCA", ""), ca):
             raise ObserverError("ASSESSMENT_OBSERVER_CA_MISMATCH")
+        if capacity_metadata is not None:
+            capacity_metadata["rest_database_role"] = rest_database_role(core, credentials)
         if d.get("secret", self.secret) is not None or d.get("pod", self.pod) is not None:
             raise ObserverError("ASSESSMENT_OBSERVER_RESOURCE_ALREADY_EXISTS")
         secret = {"apiVersion": "v1", "kind": "Secret", "metadata": self.metadata(self.secret), "type": "Opaque",

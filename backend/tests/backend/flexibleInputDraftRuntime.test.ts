@@ -1,6 +1,7 @@
+import { sourceContractFixture } from "./sourceContractFixture";
 // @vitest-environment node
 import { beforeAll, afterAll, beforeEach, afterEach, expect, it } from "vitest";
-import { workflowFixture } from "./workflowFixture";
+import { workflowFixture, claimModelWorker4 } from "./workflowFixture";
 import {
   taskInput,
   processGeneration,
@@ -278,7 +279,7 @@ function proposedResult(ctx: any, extractInventory: boolean): any {
     const source = input.evidence.find((item) =>
       input.requiredIds.includes(item.id),
     )!;
-    return {
+    return sourceContractFixture(input, {
       processed_block_ids: input.requiredIds,
       requirements: extractInventory
         ? [
@@ -305,7 +306,7 @@ function proposedResult(ctx: any, extractInventory: boolean): any {
       summary: extractInventory
         ? "Draft scope from the supplied evidence."
         : "Reference-only draft input; no formal requirement inventory is asserted.",
-    };
+    });
   }
   if (input.task === "plan_proposal") {
     const required = input.context.template.required_sections.filter(
@@ -532,7 +533,13 @@ it.each([
     let creations = 0,
       verifications = 0;
     for (let index = 0; index < 120; index++) {
-      const job = await internal("claim_backend_job_v2");
+      // This fixture proves model drafting and its legacy export projection.
+      // The completed plan now queues a distinct local v3 delivery projection;
+      // its actual execution/issuance is covered by generatedDeliveryPipeline.
+      if ((await f.db.query<{ status: string }>(
+        "select status from public.generation_plans where id=$1", [plan.id],
+      )).rows[0].status === "completed") break;
+      const job = await claimModelWorker4(f, internal);
       if (!job) break;
       const ctx = await internal("generation_context", {
         job_id: job.id,

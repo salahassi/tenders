@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generated_at": "2026-11-04T17:30:17.509398+00:00",
+  "baseline_verifier": "faf1f33d243fa19c704902c3946a744c0f9f7cc3",
+  "renderer_test_dependency": "178eb04",
+  "dependency_files_excluded_from_commit": [
+    "frontend/src/lib/renderDocx.ts",
+    "frontend/src/lib/docxTableStream.ts"
+  ],
+  "dependency_sha256": {
+    "frontend/src/lib/renderDocx.ts": "279ea67ea178f589e697886b3d96a7a9fd1d8c9897421f3f9dd0dee23956644b",
+    "frontend/src/lib/docxTableStream.ts": "49a10bdc311b0781fb93cfb005ad4da88398abc63396d391a71605116f083fe1"
+  },
+  "changed_source_sha256": {
+    "backend/supabase/functions/_shared/boundedDocx.ts": "4553127517eed3183e755bf8ddc7773fe2b164b8403e71c0603145f868218407",
+    "backend/tests/backend/boundedDocx.test.ts": "d0fd2b59f72148899b96d8cc980feadf71f26ef96187bb41ff5e38207bba71ec"
+  },
+  "baseline": {
+    "selected_failed": 22,
+    "unsafe_acceptance_failures": 20,
+    "valid_compatibility_failures": 2,
+    "unselected_skipped": 25,
+    "method": "Temporary copy of exact faf1f33 verifier imported into the new regression suite; no implementation file replaced; temporary files removed."
+  },
+  "final": {
+    "passed": 105,
+    "files": 6,
+    "bounded_verifier_cases": 47,
+    "typecheck": "passed",
+    "build": "passed",
+    "full_suite_run": false
+  },
+  "commands": [
+    "npx vitest run tests/backend/boundedDocx.test.ts tests/backend/proposalExportAcceptance.test.ts tests/backend/deliveryExport.test.ts tests/backend/deliveryWorker.test.ts tests/backend/exportDraft.test.ts tests/backend/proposalExportStructure.test.ts --maxWorkers=1",
+    "npm run typecheck (backend)",
+    "npm run build (backend)"
+  ],
+  "log_receipts": {
+    "baseline_red": {
+      "path": "/tmp/verifier-fields-red-final.log",
+      "sha256": "db97c579b2ed715806a1021989aa346af564f85a370c8592222630a7e1887474"
+    },
+    "final_green": {
+      "path": "/tmp/verifier-fields-green-final.log",
+      "sha256": "131e18ae73dafd326ca16deaefc16c4c7c8e791a78e5dcc04df8d840d2ac221e"
+    },
+    "backend_typecheck": {
+      "path": "/tmp/verifier-fields-typecheck.log",
+      "sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220"
+    },
+    "backend_build": {
+      "path": "/tmp/verifier-fields-build.log",
+      "sha256": "8652d82be3115ea6597ae3b7dcf42d83bc898c68ec15888bbf53917a98ebac84"
+    }
+  },
+  "external_calls": 0,
+  "deployed": false,
+  "hosted_accepted": false,
+  "limits": [
+    "Explicit supported shapes; not full OOXML XSD validation",
+    "Explicit hidden-property controls; not every possible visual styling effect",
+    "Final native Word/LibreOffice output remains a separate G12 qualification",
+    "No final dense capacity or alternating-direction expansion acceptance claimed",
+    "Deadlines/cancellation wiring owned by separate runtime change; verifier signal signature unchanged"
+  ]
+}

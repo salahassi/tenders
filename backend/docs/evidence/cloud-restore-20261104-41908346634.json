@@ -1,0 +1,181 @@
+{
+  "version": 1,
+  "workflow_run_id": 41908346634,
+  "workflow_job_id": 126848957076,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41908346634",
+  "source_revision": "fb43a7a3d54518b98cadbfc344d9c1ad4b6766f4",
+  "mode": "restore",
+  "workflow_conclusion": "success",
+  "original_cluster_ca_and_hostname_verified": true,
+  "temporary_runner_credentials_cleanup_verified": true,
+  "local_guard_tests_passed": 12,
+  "receipt": {
+    "actual_application_renderer_exercised": false,
+    "checks": {
+      "admin_invitation_password_signin_and_distinct_users": true,
+      "authorized_source_reviews_and_dormant_requirement": true,
+      "backup_rows_and_bytes_verified_before_fixture_reset": true,
+      "exact_fixture_reset_and_trigger_restoration": true,
+      "private_draft_bytes_and_service_boundaries": true,
+      "real_restore_preserves_file_hashes_and_changes_storage_keys": true,
+      "restore_replay_has_no_duplicate_history_or_model_usage": true,
+      "restored_package_owner_access_and_old_owner_denial": true,
+      "restored_requirement_assurance_not_reactivated": true,
+      "restored_review_history_retained_with_current_revocation": true,
+      "services_migrated_and_application_schema_ready": true,
+      "signup_disabled_and_admin_requires_service_identity": true,
+      "synthetic_owner_workspaces_and_disabled_external_processing": true
+    },
+    "cleanup_verified": true,
+    "cloud_restore": "passed",
+    "isolated_additive_migrations_applied": 22,
+    "isolated_migration_receipts": [
+      {
+        "isolated_role_mapping_sha256": "963cd09dd658e53f7f40fdfd110b4849235db5aac7e5eedfa01654bf99e75d0d",
+        "name": "20261104121022_partial_document_coverage.sql",
+        "source_sha256": "7a33a9794c32d398d8fa2740c80f9dce0f9eeac93c7af5616947fb24bcdb9663"
+      },
+      {
+        "isolated_role_mapping_sha256": "856158079b5fb05bbc0ce6c90d519b77482824ff2b4878f3026e04cb0962e1f3",
+        "name": "20261104121116_proposal_delivery_snapshots.sql",
+        "source_sha256": "323ae4275ffd64bf61413f961d9a753674154a63241cfc63230f6e2ccf27e6d2"
+      },
+      {
+        "isolated_role_mapping_sha256": "39029ade6d49f9aa36b6185db671cc4152883735963b9e635c6a3a70ba3d5013",
+        "name": "20261104121423_provider_failure_scope.sql",
+        "source_sha256": "68410a020a500f45587fbf845c947aff491d0f6586a3a1b09be6593b840f715a"
+      },
+      {
+        "isolated_role_mapping_sha256": "0fae6539b29dabf314562d18642468b6b8d08e4bd799681767901b0b3b2d2f1a",
+        "name": "20261104121443_automatic_usage_recovery.sql",
+        "source_sha256": "0121ca91d4cdaea64eaacbce44ee790609ae03278a771ce1773a08e97f6170b8"
+      },
+      {
+        "isolated_role_mapping_sha256": "6101137fd1ec1f0c262467dcab0fc529463234d4e4e290018393c4fc8a36c7c9",
+        "name": "20261104122015_company_evidence_retrieval.sql",
+        "source_sha256": "4cf7302d5a137e33741a1369eb65a9563ea37da5b9428a3222ad0566c48fedee"
+      },
+      {
+        "isolated_role_mapping_sha256": "3c31057bc52189adf57bfe915e3592159c8471a2c80ddd7f9e25fec77b39e765",
+        "name": "20261104122333_durable_delivery_artifacts.sql",
+        "source_sha256": "40e413760862579d6caddf79ddbb4c42134f05a4657cef5c15294be5d2aaf128"
+      },
+      {
+        "isolated_role_mapping_sha256": "b1e79e69a7cbe6803703419b80055bd6663096442b713b1175f959b262a8e5ce",
+        "name": "20261104133930_durable_uploaded_document_ocr.sql",
+        "source_sha256": "1f189df86545aec22f2d4ee8053912b0edad36fd4fa915caf3e5df3d68638f9d"
+      },
+      {
+        "isolated_role_mapping_sha256": "860a7b76f6b7cef1ba54d19c2dafc13d4745bb19c3e2fa649bd8bdf06628d400",
+        "name": "20261104134540_source_evidence_authority.sql",
+        "source_sha256": "fba123633c45282cbf12a2f7907768c647032da673d65a7853433fab615bce0e"
+      },
+      {
+        "isolated_role_mapping_sha256": "b75c597a4b0ec0bf3ef0e5e4761f6da2f63ab65fd0c6ddae5f6a7dabee1b4e96",
+        "name": "20261104134646_structured_proposal_authoring.sql",
+        "source_sha256": "1ee8a3bdc3c5eaa0b698f22565653d8d0a73b4cb4f42d4c36c893cbb4bf46bd5"
+      },
+      {
+        "isolated_role_mapping_sha256": "e12dd78733890710bc35e07ccd774a584701c79332988c9ec9fe6dc768cb1ff4",
+        "name": "20261104135306_proposal_consistency_contract.sql",
+        "source_sha256": "1b8401b675194055d69d78e38ffc3f73f9f4d1036b7ce3fc66fe64cff8a6cdfe"
+      },
+      {
+        "isolated_role_mapping_sha256": "0cf523c16d8b17f9112aea508f77e71df4884a725df8dc10bfed598fffefe138",
+        "name": "20261104135748_proposal_consistency_review.sql",
+        "source_sha256": "b31ae1d9dc08e4dea56cd32af49cb2c430f7a8ef18d1d4104c50fcaec5107097"
+      },
+      {
+        "isolated_role_mapping_sha256": "ed2b9fd3c8e5b476e48098de7c92706385ac2dccf9218b06880f27829b3dab61",
+        "name": "20261104140628_authored_response_adoption.sql",
+        "source_sha256": "2afe615339f15807baf38ff761df392222de529dac233acaeb81f225506f3404"
+      },
+      {
+        "isolated_role_mapping_sha256": "c544d4ee9e03fd680a761cc3bb3799afcab14fb26cac9e07294320da79959b16",
+        "name": "20261104142525_proposal_issuance_deadline.sql",
+        "source_sha256": "5d81ed380b3c4c0eb2637cf4e9ebea566b6b86e5a4a42adcc476391e475aca51"
+      },
+      {
+        "isolated_role_mapping_sha256": "d2d1e8b3751e1b143e256f71d6285b0044e6c726b055ba71cfa84eac17d9813c",
+        "name": "20261104143632_generated_review_delivery.sql",
+        "source_sha256": "8da4bdcbd534b04f62d157bbd49d2aa2a5e0224cdfd7fdd19f18682653dfeeaa"
+      },
+      {
+        "isolated_role_mapping_sha256": "b066e63deaad69733390eea05c15f813be6352ee203fa413313331d2e981a95b",
+        "name": "20261104144002_requirement_applicability_binding.sql",
+        "source_sha256": "dca1898a34571f6ccf88ce57bf24e84f5faed983d81dc5aa348b320155ebfb3b"
+      },
+      {
+        "isolated_role_mapping_sha256": "d1fea1396b63a07e282cbb0fa47ddec844893a686dc653c41e4052ee6b6d720f",
+        "name": "20261104150228_restored_source_review_assurance.sql",
+        "source_sha256": "d2e9f7b70f4cf2379d1a488b72612cb07afae9636eeed337b27c2225ecf6659a"
+      },
+      {
+        "isolated_role_mapping_sha256": "9330d00ea3a1e7fdc26b9956f6689f04dcc22389da8fbed03c73aa9422e0f2e4",
+        "name": "20261104151946_current_proposal_issuance_contract.sql",
+        "source_sha256": "4413206e83a6a19755d969d70b6ca4dc370c76ba79e57159d7f206d96d0a841e"
+      },
+      {
+        "isolated_role_mapping_sha256": "b3929fda7ab2f19d3e8ea1c32dd4a22f20efab356512d0629f95a1a35eb35f53",
+        "name": "20261104152913_durable_ordinary_export_packages.sql",
+        "source_sha256": "c697b1117d8a9398cbdb48848c4090870960e9ec7679577207bd9392f7589c52"
+      },
+      {
+        "isolated_role_mapping_sha256": "dcc110892258d1e99583b4cb4ea8d10302ded05860b45f220a3871f75cb00f81",
+        "name": "20261104160125_proposal_issuance_file_capacity.sql",
+        "source_sha256": "46ba7ddc4c1d004557bd35e7c11c99c89f416349554e1411197c2193f9d16723"
+      },
+      {
+        "isolated_role_mapping_sha256": "1a73a008ae849353e9698c2d6368474b461aefa7e40792fad980f9d395dbb8ef",
+        "name": "20261104163406_serialize_local_document_rendering.sql",
+        "source_sha256": "6f1a87cff03d035446cce8e8aefab0e09ce23c2d2c1d4d59377f741e89e2f088"
+      },
+      {
+        "isolated_role_mapping_sha256": "28019981d49c5e5affffdb39c969f4fb84d4bb57e213c6378f3fb2f7ed028906",
+        "name": "20261104170442_durable_storage_write_intents.sql",
+        "source_sha256": "a89083335e0e61107ab7939f3582fa7dc8e664615bcc6fe8180eb5630df623c9"
+      },
+      {
+        "isolated_role_mapping_sha256": "0b72c0ea097cbc0b8dad136c357523108faa5718531467c211ffe91d16385b53",
+        "name": "20261104172700_storage_write_retirement_proofs.sql",
+        "source_sha256": "5269599b431da34c3f7ee77d06442441e692c9f2b754d2f2050a42e06dbe1634"
+      }
+    ],
+    "model_calls": 0,
+    "production_business_mutations": 0,
+    "scope": "isolated_current_catalog_auth_storage_synthetic_restore_only",
+    "source_auth_read_authority": {
+      "application_owner": "tdp_app_owner",
+      "application_owner_bypassrls": false,
+      "application_owner_superuser": false,
+      "bootstrap_function_owner": "tdp_app_owner",
+      "tables": [
+        {
+          "app_owner_effective_owner": false,
+          "app_owner_select": true,
+          "applicable_policies": [],
+          "force_rls": false,
+          "owner": "tdp_app_authadmin",
+          "rls_enabled": true,
+          "table": "identities"
+        },
+        {
+          "app_owner_effective_owner": false,
+          "app_owner_select": true,
+          "applicable_policies": [],
+          "force_rls": false,
+          "owner": "tdp_app_authadmin",
+          "rls_enabled": true,
+          "table": "users"
+        }
+      ]
+    },
+    "source_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+    "source_manifest_sha256": "8de17c4f4a3f625259c8f0318e0d51d5f344e607aecbcd737923f7e3e765a58e",
+    "source_revision": "fb43a7a3d54518b98cadbfc344d9c1ad4b6766f4",
+    "source_rows_copied": 0,
+    "source_stage": "baseline"
+  },
+  "shared_production_auth_policy_helper_exercised": false,
+  "production_deployment_performed": false
+}

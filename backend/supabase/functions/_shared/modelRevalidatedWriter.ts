@@ -30,6 +30,7 @@ export function revalidateWriter(candidate: any, options: Validation) {
       options.requiredIds,
       {
         independentGrounding: true,
+      sourceContext: options.context,
         scopePolicy: classificationScopePolicy(options.task, options.context),
         draftInputVersion: draftInputPolicyVersion(
           options.task,

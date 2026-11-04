@@ -1,5 +1,6 @@
 import ExportPanel from "../components/ExportPanel";
-import { createConnectedExport } from "../lib/connectedExport";
+import { useConnectedExport } from "../lib/useConnectedExport";
+import ConnectedExportStatus from "../components/ConnectedExportStatus";
 import ReviewHistory from "../components/ReviewHistory";
 import GenerationPanel from "../components/GenerationPanel";
 import PendingProposal from "../components/PendingProposal";
@@ -16,7 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useApp } from "../lib/store";
-import { exportProposal, proposalFileName } from "../lib/export";
+import { proposalFileName } from "../lib/export";
 import { downloadAgentInput } from "../lib/agentInput";
 import {
   getProposalReviewQuestions,
@@ -91,7 +92,7 @@ function restoredDraft(cached: unknown): ReviewDraft | null {
         typeof file.hash === "string" &&
         typeof file.size === "number" &&
         typeof file.uploadedAt === "string" &&
-        ["ready", "needs_ocr", "needs_processing", "error"].includes(
+        ["ready", "partial", "needs_ocr", "needs_processing", "error"].includes(
           file.status,
         ) &&
         ["synthetic", "public", "sanitized", "unspecified"].includes(
@@ -239,7 +240,16 @@ function ProposalReviewPage({
   const [legacyCache, setLegacyCache] = useState(initialReview.legacyCache);
   const [recovered] = useState(() => recoverPreviousEdits(proposal));
   const [storageError, setStorageError] = useState("");
-  const [exporting, setExporting] = useState(false);
+  const exportFlow = useConnectedExport(
+    backend,
+    () => {
+      notify(
+        "Current Word content downloaded. Review inputs are not included. In Word, update all fields and the entire table of contents, then review the pages.",
+      );
+    },
+    (message) => notify(message, "error"),
+    proposal.versionId,
+  );
   const [regenerateOpen, setRegenerateOpen] = useState(false);
   const [busyInputs, setBusyInputs] = useState<Record<string, boolean>>({});
   const uploading = Object.values(busyInputs).some(Boolean);
@@ -435,24 +445,14 @@ function ProposalReviewPage({
     return { ...proposal, review };
   }
   async function download() {
-    setExporting(true);
-    try {
-      if (backend && proposal.versionId)
-        await createConnectedExport(backend, proposal.versionId, "draft");
-      else
-        await exportProposal(proposal, opportunity, state.settings.companyName);
+    if (!proposal.versionId) {
       notify(
-        "Current Word content downloaded. Review inputs are not included. In Word, update all fields and the entire table of contents, then review the pages.",
+        "The saved proposal version is unavailable. Refresh and try again.",
+        "error",
       );
-    } catch (error) {
-      notify(
-        error instanceof Error
-          ? error.message
-          : "The Word file could not be downloaded.",
-      );
-    } finally {
-      setExporting(false);
+      return;
     }
+    await exportFlow.start(proposal.versionId, "draft");
   }
   function downloadAgent() {
     try {
@@ -515,14 +515,16 @@ function ProposalReviewPage({
         </div>
         <Button
           disabled={
-            exporting || (!proposal.sections.length && !proposal.includePricing)
+            exportFlow.busy ||
+            (!proposal.sections.length && !proposal.includePricing)
           }
           onClick={() => void download()}
         >
           <Download size={16} />
-          {exporting ? "Preparing Word…" : "Download complete draft Word"}
+          {exportFlow.busy ? "Preparing Word…" : "Download complete draft Word"}
         </Button>
       </section>
+      <ConnectedExportStatus flow={exportFlow} />
       {backend && (
         <GenerationPanel opportunity={opportunity} showOpenLink={false} />
       )}

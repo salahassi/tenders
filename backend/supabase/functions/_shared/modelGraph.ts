@@ -16,7 +16,20 @@ import {
   type Reference,
   type Ledger,
 } from "./model.ts";
-import type { PrimaryModelTask } from "./modelSchemas.ts";
+import { primaryModelTasks, type PrimaryModelTask } from "./modelSchemas.ts";
+import { modelSchemas } from "./modelSchemas.ts";
+import { sourceTaskOutputSchema } from "./sourceEvidence.ts";
+import { pinRepairFormat } from "./modelRepairFormat.ts";
+import {
+  applySemanticPatch,
+  semanticPatchOutputSchema,
+  SEMANTIC_PATCH_INSTRUCTIONS,
+  canonicalPatchValue,
+} from "./modelSemanticPatch.ts";
+import {
+  verificationPhaseUnstarted,
+  type VerificationPhase,
+} from "./modelVerificationFormat.ts";
 import { modelLedger } from "./modelLedger.ts";
 import { ModelGraphStore } from "./modelGraphStore.ts";
 import {
@@ -38,6 +51,10 @@ import {
 } from "./modelGrounding.ts";
 import { pinVerificationPrompt } from "./modelVerificationPrompt.ts";
 import { pinSemanticPrompt } from "./modelSemanticPrompt.ts";
+import {
+  pinQuoteRepairScope,
+  applyQuoteRepairScope,
+} from "./modelQuoteRepairScope.ts";
 import { recoverUnstartedRepair } from "./modelRepairRecovery.ts";
 import {
   recoverRevalidatedWriter,
@@ -129,11 +146,12 @@ export async function verificationContext(
   ledger: Ledger,
   context: any,
   manifest: Reference[],
+  options?: { phase: VerificationPhase; typedCandidate?: unknown },
 ) {
-  // Pin the context format before sending. An in-flight legacy request must
-  // keep its exact input hash; it can opt into the compact format only after
-  // the provider request finishes. Replays retain this immutable marker.
-  const formatKey = `verification-format-${context.candidate_hash}`;
+  // Pin the context format before preparing instructions or sending. A phase
+  // that already started keeps its exact historical input even after settlement;
+  // only an unstarted phase may select the new format.
+  const formatKey = `${context.verification_scope === "whole_audit_report" ? "verification-audit-format" : "verification-format"}-${context.candidate_hash}`;
   let format = await store.action("result_get", { key: formatKey });
   if (!format) {
     const preflight = ledger.preflight;
@@ -146,15 +164,21 @@ export async function verificationContext(
       }
       return preflight(manifest, operation);
     };
-    if (!pool.pending_model_config_id) {
+    if (
+      !pool.pending_model_config_id &&
+      (!options ||
+        (await verificationPhaseUnstarted(store, options.phase, context)))
+    ) {
       format = await store.action("result_put", {
         key: formatKey,
         value: {
-          version: context.original_task === "analyze_chunk" ? 3 : 2,
+          version: context.original_task === "analyze_chunk" ? 3 : 4,
         },
       });
     }
   }
+  if (format && ![1, 2, 3, 4].includes(format.value?.version))
+    throw new ModelError("MODEL_IDENTITY_CHANGED");
   if (format?.value.version === 2) {
     // content_units already contains every reviewed string. Sending the same
     // text twice more wastes context and encourages oversized reports.
@@ -178,6 +202,22 @@ export async function verificationContext(
       throw new ModelError("MODEL_IDENTITY_CHANGED");
     const { candidate_text: _text, ...typed } = context;
     context = { ...typed, response_style: "compact-verification-v3" };
+  } else if (format?.value.version === 4) {
+    const candidate = context.candidate ?? options?.typedCandidate;
+    if (
+      !primaryModelTasks.includes(context.original_task) ||
+      ["analyze_chunk", "connection_probe"].includes(context.original_task) ||
+      !candidate ||
+      typeof candidate !== "object" ||
+      Array.isArray(candidate)
+    )
+      throw new ModelError("MODEL_IDENTITY_CHANGED");
+    const { candidate_text: _text, ...typed } = context;
+    context = {
+      ...typed,
+      candidate,
+      response_style: "compact-verification-v4",
+    };
   }
   return context;
 }
@@ -189,12 +229,16 @@ export async function retainInvalidVerification(
   code: string,
   producer?: Record<string, unknown>,
   diagnostics: ModelValidationDiagnostic[] = [],
+  omittedDiagnosticCount = 0,
 ) {
   const value = {
     result,
     code,
     producer: producer ?? null,
     ...(diagnostics.length ? { validation_diagnostics: diagnostics } : {}),
+    ...(omittedDiagnosticCount
+      ? { omitted_diagnostic_count: omittedDiagnosticCount }
+      : {}),
   };
   // Keep each distinct rejection privately for diagnostics, including later
   // providers in the same round. Fixed-length keys and result_put's immutable
@@ -411,6 +455,11 @@ async function runGuardedModel(o: Options): Promise<{
               findings: groundingDefects(artifact.result),
               validation_diagnostics: artifact.validation_diagnostics,
               candidate_hash: artifact.result.checked_candidate_hash,
+              ...(artifact.omitted_diagnostic_count
+                ? {
+                    omitted_diagnostic_count: artifact.omitted_diagnostic_count,
+                  }
+                : {}),
             }
           : groundingDefects(artifact.result),
       ),
@@ -465,9 +514,77 @@ async function runGuardedModel(o: Options): Promise<{
     validate?: (result: any) => void,
     writerModel?: string,
     requiredIds = o.requiredIds,
+    typedCandidate?: unknown,
   ) => {
     if (recheck) assertVerifierRecheckCall(recheck, task, key, unit);
+    const patchScope =
+      task === "repair_result"
+        ? await pinRepairFormat({
+            backend: o.backend,
+            store,
+            job: o.job,
+            requestPrefix: `${o.prefix}:${key}`,
+            context,
+            evidence: o.evidence,
+            requiredIds,
+            language: o.language,
+          })
+        : null;
+    const patchTargetSchema = patchScope
+      ? sourceTaskOutputSchema(
+          patchScope.target_task,
+          context,
+          modelSchemas[patchScope.target_task],
+        )
+      : null;
+    let patchReceipt:
+      Awaited<ReturnType<typeof applySemanticPatch>>["receipt"] | undefined;
+    const repairScope =
+      task === "repair_result" && !patchScope
+        ? await pinQuoteRepairScope({
+            backend: o.backend,
+            store,
+            job: o.job,
+            requestPrefix: `${o.prefix}:${key}`,
+            context,
+            evidence: o.evidence,
+            requiredIds,
+            language: o.language,
+          })
+        : null;
+    const applyScope = (value: any) => {
+      if (!repairScope) return;
+      value.result = applyQuoteRepairScope(
+        context.candidate,
+        value.result,
+        repairScope,
+      );
+    };
+    if (repairScope)
+      context = {
+        ...context,
+        quote_repair_scope: repairScope,
+        quote_repair_instruction:
+          "Correct only the listed quote values against their unchanged source IDs. Return the complete original target schema with every other value and array position unchanged. The application rejects any out-of-scope edit. Unlisted defects remain unresolved for later bounded correction; never change an obligation, quantity, source ID or remove a requirement to pass validation.",
+      };
+    if (patchScope)
+      context = {
+        ...context,
+        repair_patch_scope: patchScope,
+        repair_patch_instruction: SEMANTIC_PATCH_INSTRUCTIONS,
+      };
     const cached = await store.action("result_get", { key });
+    if (cached) applyScope(cached.value.result);
+    if (
+      cached &&
+      patchScope &&
+      (cached.value.patch_receipt?.scope_hash !== patchScope.scope_hash ||
+        cached.value.patch_receipt?.base_candidate_hash !==
+          patchScope.candidate_hash ||
+        cached.value.patch_receipt?.candidate_hash !==
+          (await sha256(canonicalPatchValue(cached.value.result.result))))
+    )
+      throw new ModelError("MODEL_IDENTITY_CHANGED");
     const finishWriterHandoff = async (retained: any) => {
       if (retained?.value.local_validation) {
         const ready = await store.action("writer_validation_handoff", {
@@ -492,6 +609,36 @@ async function runGuardedModel(o: Options): Promise<{
       };
     }
     ledger.validateCandidate = validate;
+    ledger.validateCandidateScope = applyScope;
+    if (patchScope && patchTargetSchema) {
+      ledger.wireOutputSchema = semanticPatchOutputSchema(
+        patchScope,
+        context.candidate,
+        patchTargetSchema,
+      );
+      ledger.transformCandidate = async (wire) => {
+        const applied = await applySemanticPatch(
+          context.candidate,
+          wire,
+          patchScope,
+          patchTargetSchema,
+        );
+        patchReceipt = applied.receipt;
+        return {
+          target_task: patchScope.target_task,
+          result: applied.result,
+          changes: applied.receipt.applied
+            .map((operation) => `${operation.operation}:${operation.path}`)
+            .slice(0, 30),
+        };
+      };
+      ledger.validateCandidateScope = async (candidate: any) => {
+        if (!patchReceipt) throw new ModelError("MODEL_IDENTITY_CHANGED");
+        patchReceipt.candidate_hash = await sha256(
+          canonicalPatchValue(candidate.result),
+        );
+      };
+    }
     if (writerModel) {
       const preflight = ledger.preflight;
       ledger.preflight = async (manifest, task) => {
@@ -505,8 +652,23 @@ async function runGuardedModel(o: Options): Promise<{
         return pool;
       };
     }
-    if (task === "verify_grounding" && !context.verification_scope)
-      context = await verificationContext(store, ledger, context, o.manifest);
+    if (
+      task === "verify_grounding" &&
+      (!context.verification_scope ||
+        context.verification_scope === "whole_audit_report")
+    )
+      context = await verificationContext(store, ledger, context, o.manifest, {
+        phase: {
+          backend: o.backend,
+          job: o.job,
+          requestPrefix: `${o.prefix}:${operationKey}`,
+          evidence: o.evidence,
+          requiredIds,
+          language: o.language,
+          repair: o.repair,
+        },
+        typedCandidate,
+      });
     const verificationRevision =
       task === "verify_grounding"
         ? await pinVerificationPrompt({
@@ -559,7 +721,7 @@ async function runGuardedModel(o: Options): Promise<{
       await prepared?.(request);
     };
     if (task === "verify_grounding") {
-      ledger.invalidCandidate = (result, code, diagnostics) =>
+      ledger.invalidCandidate = (result, code, diagnostics, omittedCount) =>
         retainInvalidVerification(
           store,
           key,
@@ -567,9 +729,15 @@ async function runGuardedModel(o: Options): Promise<{
           code,
           producer,
           diagnostics,
+          omittedCount,
         );
     } else {
-      ledger.invalidCandidate = async (result, code, diagnostics = []) => {
+      ledger.invalidCandidate = async (
+        result,
+        code,
+        diagnostics = [],
+        omittedCount = 0,
+      ) => {
         if (!receivedUsage || !preparedRequest) return;
         await retainInvalidWriter(store, {
           usage_id: receivedUsage,
@@ -592,11 +760,15 @@ async function runGuardedModel(o: Options): Promise<{
             value: {
               result,
               producer: producer ?? null,
+              ...(patchReceipt ? { patch_receipt: patchReceipt } : {}),
               local_validation: {
                 version: 1,
                 task,
                 code,
                 diagnostics,
+                ...(omittedCount
+                  ? { omitted_diagnostic_count: omittedCount }
+                  : {}),
                 usage_id: receivedUsage,
                 attempt_id: attemptId,
                 request_prefix: `${o.prefix}:${operationKey}`,
@@ -641,7 +813,11 @@ async function runGuardedModel(o: Options): Promise<{
     // after this write never submits the same completed candidate again.
     const saved = await store.action("result_put", {
       key,
-      value: { result, producer: producer ?? null },
+      value: {
+        result,
+        producer: producer ?? null,
+        ...(patchReceipt ? { patch_receipt: patchReceipt } : {}),
+      },
     });
     await ledger
       .cleanup?.()
@@ -675,7 +851,17 @@ async function runGuardedModel(o: Options): Promise<{
     const ledger = ledgerFor(operationKey, unit);
     let context = contextFor(invalid);
     if (!context.verification_scope)
-      context = await verificationContext(store, ledger, context, o.manifest);
+      context = await verificationContext(store, ledger, context, o.manifest, {
+        phase: {
+          backend: o.backend,
+          job: o.job,
+          requestPrefix: `${o.prefix}:${operationKey}`,
+          evidence: o.evidence,
+          requiredIds,
+          language: o.language,
+          repair: o.repair,
+        },
+      });
     const verificationRevision = await pinVerificationPrompt({
       backend: o.backend,
       store,
@@ -855,6 +1041,12 @@ async function runGuardedModel(o: Options): Promise<{
           artifact.validation_diagnostics
             ? {
                 validation_diagnostics: artifact.validation_diagnostics,
+                ...(artifact.omitted_diagnostic_count
+                  ? {
+                      omitted_validation_diagnostic_count:
+                        artifact.omitted_diagnostic_count,
+                    }
+                  : {}),
                 ...(artifact.untrusted_report
                   ? { untrusted_verification_report: artifact.untrusted_report }
                   : {}),
@@ -890,6 +1082,8 @@ async function runGuardedModel(o: Options): Promise<{
           value: repairOnlyValidationArtifact({
             candidateHash: hash,
             diagnostics: stored.local_validation.diagnostics,
+            omittedDiagnosticCount:
+              stored.local_validation.omitted_diagnostic_count,
           }),
         });
         return { reportRef: saved.id };
@@ -930,7 +1124,9 @@ async function runGuardedModel(o: Options): Promise<{
               undefined,
               groundingOptions(o.context),
             ),
-          stored.producer?.model_id,
+          stored.producer?.modelId,
+          o.requiredIds,
+          candidate,
         );
         return { reportRef: checked.id };
       }
@@ -976,7 +1172,9 @@ async function runGuardedModel(o: Options): Promise<{
         if (
           pinned &&
           ((policy && !sameVerificationPartition(partition, policy)) ||
-            (!policy && batchPin.version === 5 && partition.version !== 3))
+            (!policy &&
+              [5, 6].includes(batchPin.version) &&
+              partition.version !== 3))
         )
           throw new ModelError("MODEL_IDENTITY_CHANGED");
         if (!pinned) {
@@ -984,8 +1182,55 @@ async function runGuardedModel(o: Options): Promise<{
             o.manifest,
             "verify_grounding",
           );
-          if (pool.pending_model_config_id) batches = [];
+          const wholeContext = {
+            original_task: o.task,
+            original_context: o.context,
+            candidate,
+            candidate_hash: hash,
+            candidate_text: units.map((u) => u.text).join("\n"),
+            content_units: units,
+          };
+          const phase = {
+            backend: o.backend,
+            job: o.job,
+            requestPrefix: `${o.prefix}:${reportKey}`,
+            evidence: o.evidence,
+            requiredIds: o.requiredIds,
+            language: o.language,
+            repair: o.repair,
+          };
+          const wholePinned = await store.action("result_get", {
+            key: `verification-format-${hash}`,
+          });
+          if (
+            pool.pending_model_config_id ||
+            wholePinned ||
+            !(await verificationPhaseUnstarted(store, phase, wholeContext))
+          )
+            batches = [];
           else {
+            // A missing batch pin is not permission to reinterpret an already
+            // started batch. The first scoped phase precedes every later one.
+            const firstKey = `verification-v3-${hash}-content-0`;
+            const firstContext = {
+              original_task: o.task,
+              original_context: o.context,
+              candidate_hash: hash,
+              content_units: batches[0],
+              verification_scope: "content_batch",
+            };
+            if (
+              !(await verificationPhaseUnstarted(
+                store,
+                {
+                  ...phase,
+                  requestPrefix: `${o.prefix}:verification-v3:${await sha256(firstKey)}`,
+                  requiredIds: [],
+                },
+                firstContext,
+              ))
+            )
+              throw new ModelError("MODEL_IDENTITY_CHANGED");
             batchPin = newVerificationBatchPin(o.task, policy);
             await store.action("result_put", {
               key: formatKey,
@@ -1048,6 +1293,12 @@ async function runGuardedModel(o: Options): Promise<{
                           ? {
                               validation_diagnostics:
                                 invalid.value.validation_diagnostics,
+                              ...(invalid.value.omitted_diagnostic_count
+                                ? {
+                                    omitted_validation_diagnostic_count:
+                                      invalid.value.omitted_diagnostic_count,
+                                  }
+                                : {}),
                             }
                           : {}),
                         correction_instruction:
@@ -1175,6 +1426,12 @@ async function runGuardedModel(o: Options): Promise<{
                 ? {
                     validation_diagnostics:
                       invalid.value.validation_diagnostics,
+                    ...(invalid.value.omitted_diagnostic_count
+                      ? {
+                          omitted_validation_diagnostic_count:
+                            invalid.value.omitted_diagnostic_count,
+                        }
+                      : {}),
                   }
                 : {}),
               correction_instruction:
@@ -1249,6 +1506,7 @@ async function runGuardedModel(o: Options): Promise<{
         independentGrounding: true,
         scopePolicy: classificationScopePolicy(o.task, o.context),
         draftInputVersion: draftInputPolicyVersion(o.task, o.context),
+        sourceContext: o.context,
       });
       if (o.task !== "connection_probe") {
         const report = state.reportRef

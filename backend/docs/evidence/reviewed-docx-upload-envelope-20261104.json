@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "date": "2026-11-04",
+  "base": "fe3fc937c569ed04a1cc587338e7a13e47f9ae4f",
+  "scope": "Reviewed/generated DOCX completion uses canonical export budget, with original RFP and PDF policies unchanged",
+  "source_sha256": {
+    "backend/supabase/functions/api/handler.ts": "5ab8fd1e73cfea6e6ee8310eafe24f6bac4f1c8591d3906367c13d127886689d",
+    "backend/supabase/functions/_shared/exportUpload.ts": "0efaf56bcdf99dbbca708f6fee4df9132a491b287bda25fc4d2f42b72e949aba",
+    "backend/supabase/functions/_shared/originals.ts": "ebbe282f784dc42bfce27f1b0c6355c2702a98b8f2925b8ce2278e6458052b61",
+    "backend/scripts/testing/reviewed_docx_handler.mjs": "568e7182c89118188376c967335acb667ce8f56715e26e85b50f3b8c70220b8e"
+  },
+  "large_artifact_red": {
+    "version": 1,
+    "scope": "Actual handler and verifier; synthetic Auth/Storage/server-owned ordinary-2 pin; no SQL admission/hosted/native-memory claim",
+    "node": "v24.19.0",
+    "artifact_sha256": "1bee8e23cf2198c637555d448aad64fd8e57b64f8f1d902274b8ef55c547d25d",
+    "artifact_bytes": 3177596,
+    "request_sha256": "796287a795036cc0b061e535dd23791e436d0f52d4245ad3166b4a1a617d8877",
+    "model_sha256": "04bcaf3d4dbd911af42f933a855b433b81eaac2a02eeae6f2627a67670bb8fda",
+    "source_sha256": {
+      "backend/supabase/functions/api/handler.ts": "1ad0865da971cd84ede7a65c03ffe2056b6c0654f7a6ce91bfcb4727715e1958",
+      "backend/supabase/functions/_shared/originals.ts": "ebbe282f784dc42bfce27f1b0c6355c2702a98b8f2925b8ce2278e6458052b61",
+      "backend/supabase/functions/_shared/exportUpload.ts": "0c7f31417381994570bd76d4c4bf9dd9cbf213bc85cc5594b82ac491148e3cb4",
+      "backend/supabase/functions/_shared/export.ts": "55eb5daa85eb5bb6ca0a3605efa19aaf116694587151af4f6e5d33251201d4e1",
+      "backend/supabase/functions/_shared/boundedDocx.ts": "fd5b564b321de31ef0ef96a10c4291558050c6408d65b20a27ab623374d2e2d3",
+      "backend/supabase/functions/_shared/boundedDocxArchive.ts": "44ad839d85a01f2baf778e234ec8a873d6f9cdb07affa25c72bf8e9ab079b599"
+    },
+    "status": 422,
+    "error_code": "FILE_CONTENT_MISMATCH",
+    "completion_calls": 0,
+    "duration_ms": 29.448815999999965,
+    "expected_error": "FILE_CONTENT_MISMATCH",
+    "passed": true
+  },
+  "red_interpretation": "Before handler change, actual ordinary-2 DOCX was rejected by original-file40MiB expanded limit before strict canonical verification; no completion RPC. This is an observed rejection, not a native capacity test or verifier execution.",
+  "artifact_binding": {
+    "compressed_bytes": 3177596,
+    "expanded_bytes_reported_by_native_renderer_receipt": 298012602,
+    "model_sha256_matches_native_model_file": true,
+    "native_model_sha256": "04bcaf3d4dbd911af42f933a855b433b81eaac2a02eeae6f2627a67670bb8fda",
+    "artifact_sha256": "1bee8e23cf2198c637555d448aad64fd8e57b64f8f1d902274b8ef55c547d25d",
+    "authority_scope": "Test Auth/Storage RPCs and ordinary-2 pin are synthetic; no claim of SQL package admission."
+  },
+  "focused_green": {
+    "passed": 12,
+    "files": 1,
+    "duration_seconds": 1.23,
+    "log_sha256": "7026b4592123b8d6f82e54389777dfc37e69983883ee335c526a1612a7ee75c7",
+    "backend_types": "passed",
+    "typecheck_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "checks": [
+    "Actual small native canonical DOCX completes with exact reviewed_docx verification after strict canonical check.",
+    "Wrong extension/MIME/signature and malformed ZIP cannot complete.",
+    "A valid foreign DOCX against a different canonical title cannot complete.",
+    "The envelope helper alone is deliberately insufficient: PK-only bytes pass envelope but fail strict canonical archive verifier.",
+    "Original RFP40MiB expanded policy remains unchanged.",
+    "Reviewed PDF signature/format and200-page maximum remain, with owner_reviewed_pdf verification kind.",
+    "Compressed upload1byte..10MiB and final artifact hash/currentness/completion remain enforced."
+  ],
+  "independent_review": "Source-only reviewer found no material bypass/compatibility blocker; no tests were independently rerun.",
+  "remaining": [
+    "Same large298MiB-expanded file acceptance through corrected actual handler/native image remains a separate pending gate. The red fixture and small positive controls are not that proof.",
+    "Native peak memory/cancellation under concurrent workloads remains design agent qualification; no resource-limit increase or canonical-verifier bypass is introduced."
+  ],
+  "provider_calls": 0,
+  "production_calls": 0
+}

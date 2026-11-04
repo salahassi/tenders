@@ -1,0 +1,102 @@
+{
+  "scope": "Synthetic actual createApiHandler delivery-download working set; migrated API-admitted v2 snapshot; emulated Auth, RPC and file-backed Storage",
+  "source_revision": "fe3fc937c569ed04a1cc587338e7a13e47f9ae4f",
+  "image_id": "sha256:a3b88b89b6a4afe5861f04d36fcae748c7e104355c3d37fab7a26e45e49c2a2e",
+  "hosted_acceptance": false,
+  "actual_upstream_postgrest": false,
+  "actual_gateway": false,
+  "production_slo_qualified": false,
+  "snapshot_selected_test": {
+    "selected_passed": 1,
+    "unselected_skipped": 19,
+    "receipt_all_cases_passed_false_is_expected_for_filtered_run": true,
+    "log_sha256": "81d49cacc3e9d07d10c70a73e92ab8aaee1d61d0b87f7b63795a72f613785315"
+  },
+  "receipts": {
+    "native-api-admitted-snapshot-20261104.json": "d727e207d410d995ff726904b85376ee407cf80201538a29c9b95dc6f1358ff6",
+    "native-api-admitted-render-20261104.json": "74e817dc1458087bb07f62b252e0a33531e6d8960792988bad7758a51bc5e54c",
+    "native-api-actual-handler-700m-20261104.json": "2ea85b5bf07a377c10914e425d5376745979fbe3580a22b63aab2aa493468521",
+    "native-api-handler-swap-20261104.json": "37c0803a4304422861c27d7c738514cd55ca6a7d09bf3f7f9495b1cc7d49f55b"
+  },
+  "frozen_fixture": {
+    "dense-minimal-sparse-body-limit-authored.snapshot.json": {
+      "bytes": 924950,
+      "sha256": "5d2946d1a7ec501243fc9a94e0f800f57fed017a307912b47c568ed80b861f9d"
+    },
+    "dense-minimal-sparse-body-limit-authored.json": {
+      "bytes": 905489,
+      "sha256": "be01408981e198986337904025cf73a0b7073bcf250cf8ab8ea33cd5ffebd7ad"
+    }
+  },
+  "qualified": [
+    "Two exact full largest-table delivery responses in one long-lived parent with no forced GC or restart",
+    "Each request calls final authenticated actor/hash authorization after native verification",
+    "Busy responses skip full context and Storage, including before body consumption",
+    "Second giant request proves heavy admission after first response EOF",
+    "437 health requests complete during work",
+    "API384MiB/700m envelope; response headers109518ms and107791ms; cgroup no max/oom/oom_kill events; swap current/peak observed0"
+  ],
+  "limits": [
+    "Peak memory400809984/402653184bytes leaves1843200bytes (1.7578125MiB); this is narrow measured margin, not universal capacity or concurrency headroom",
+    "Auth/RPC/Storage and gateway timer are synthetic adapters; actual upstream/NGINX behavior is separately qualified",
+    "The original harness mistakenly used lightweight /v1/proposals as post-consumption control, labelled subsequent_heavy_read_status. Neither that field nor the final cancel establishes heavy permit reacquisition; exclude that claim from this receipt. Current source uses /v1/documents and will receive a separate actual native cancellation proof."
+  ],
+  "historical_harness_sha256": "278455cd24535361505a97f0cb6388dc3e61e184279c2042dc70f14d0a71186d",
+  "historical_harness_reconstruction": "Current capacity_api_handler.ts control path /v1/documents replaces /v1/proposals; original full staged source retained privately at output/proposal-api-handler-first-run.ts. Later optional pass-count support is also not in the historical run.",
+  "remaining": [
+    "Final integrated package checks and hosted release/authorization/real network acceptance remain separate"
+  ],
+  "followup": {
+    "repeat_outcome": "The corrected cancellation probe failed before reaching response/cancel: same immutable image/input/resources, DELIVERY_RENDER_FAILED at103s and Docker OOMKilled true. The earlier two-pass result is historical scoped evidence, not stable release capacity.",
+    "repeat_receipt": "native-api-repeat-oom-20261104.json",
+    "ordinary_projections": "All3 actual saved ordinary requests reprojected under current worker policy2 rendered and canonical-verified at640MiB/1CPU; legacy projections were matched to their saved requests before reprojection.",
+    "ordinary_receipt": "native-ordinary-body-20261104.json",
+    "release_gate": "open until lifetime fix passes actual native repeats; no heap/resource increase"
+  },
+  "current_candidate": {
+    "image_id": "sha256:89afc8a31d76e1616ad17e5896e0fc54f0acdc41cd7da389af456386f3e998fe",
+    "source_fix_commit": "6c2feb4",
+    "limits": {
+      "memory_bytes": 402653184,
+      "cpu": 0.7
+    },
+    "large_requests": 3,
+    "sequence": "two requests in one parent, then one separately launched fresh parent; no forced GC or heap/resource changes",
+    "headers_ms": [
+      112208,
+      107866,
+      104811
+    ],
+    "completed_ms": [
+      113216,
+      108872,
+      105818
+    ],
+    "peak_bytes": [
+      387506176,
+      391241728
+    ],
+    "minimum_observed_margin_bytes": 11411456,
+    "oom_events": 0,
+    "swap_peak": 0,
+    "corrected_cancel_heavy_reacquisition": true,
+    "reviewed_same_artifact": {
+      "status": 200,
+      "completion_calls": 1,
+      "elapsed_ms": 30996,
+      "peak_bytes": 367247360,
+      "artifact_hash": "1bee8e23cf2198c637555d448aad64fd8e57b64f8f1d902274b8ef55c547d25d"
+    },
+    "receipts": {
+      "native-api-owned-snapshot-steady-20261104.json": "56592aaa7951d1b2b144a88ed991f93b51745d0338ca19b7b57e53c83c9126be",
+      "native-api-owned-snapshot-fresh-20261104.json": "2d944815772dc9c677346a09c958baa7ca8a33517cc25e47e352004693a73154",
+      "native-reviewed-docx-handler-20261104.json": "e3b91fc1c4da28ae921908ef64ac2948991fceb3408f3279440a5cb96a2c711f"
+    },
+    "scope_limitations": [
+      "Auth/RPC and file-backed Storage are synthetic adapters; no actual hosted authorization, upstream PostgREST or NGINX qualification",
+      "The reviewed ordinary request has an explicitly synthetic server-owned ordinary-2 renderer pin; this test creates no real approval",
+      "Minimum measured headroom10.88MiB remains narrow; these admitted fixture repeats do not establish arbitrary workload/concurrency headroom or universal SLO",
+      "Previously retained protocol-only near10MiB single-field failure is not silently treated as producer-admitted or qualified"
+    ]
+  }
+}

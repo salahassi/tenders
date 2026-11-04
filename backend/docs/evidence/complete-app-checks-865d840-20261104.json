@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "source_revision": "865d8406fcaf148299184bcbe67522fb0b256258",
+  "scope": "complete_backend_and_frontend_typecheck_tests_build",
+  "started_at": "2026-11-04T23:21:30.126774+00:00",
+  "finished_at": "2026-11-04T23:29:32.137812+00:00",
+  "checks": [
+    {
+      "package": "backend",
+      "name": "typecheck",
+      "command": [
+        "npm",
+        "--prefix",
+        "backend",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 0,
+      "seconds": 2.089,
+      "log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220"
+    },
+    {
+      "package": "backend",
+      "name": "tests",
+      "command": [
+        "npm",
+        "--prefix",
+        "backend",
+        "test",
+        "--",
+        "--maxWorkers=1"
+      ],
+      "exit_code": 0,
+      "seconds": 478.513,
+      "log_sha256": "55bd2b20806fbac906e79776be78cf2b352e94f4d17b98d4f457848814f63f12"
+    },
+    {
+      "package": "backend",
+      "name": "build",
+      "command": [
+        "npm",
+        "--prefix",
+        "backend",
+        "run",
+        "build"
+      ],
+      "exit_code": 0,
+      "seconds": 1.37,
+      "log_sha256": "8652d82be3115ea6597ae3b7dcf42d83bc898c68ec15888bbf53917a98ebac84"
+    },
+    {
+      "package": "frontend",
+      "name": "typecheck",
+      "command": [
+        "npm",
+        "--prefix",
+        "frontend",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 0,
+      "seconds": 1.878,
+      "log_sha256": "fcb5cdebec3bda0095f0e9251f60fcc4fc98a10fb4e6f77ef494c1c5e3f0efec"
+    },
+    {
+      "package": "frontend",
+      "name": "tests",
+      "command": [
+        "npm",
+        "--prefix",
+        "frontend",
+        "test",
+        "--",
+        "--maxWorkers=1"
+      ],
+      "exit_code": 0,
+      "seconds": 46.982,
+      "log_sha256": "4e778d7f4bcea9c1e9c30c0dcf02a532c2f040602770801f71a169cf20c90eec"
+    },
+    {
+      "package": "frontend",
+      "name": "build",
+      "command": [
+        "npm",
+        "--prefix",
+        "frontend",
+        "run",
+        "build"
+      ],
+      "exit_code": 0,
+      "seconds": 3.002,
+      "log_sha256": "425c230d51d1387edfd55773173827c82b7d38bfcce16fe799d8be65d334d8bb"
+    }
+  ],
+  "changed_sources": [],
+  "passed": true,
+  "test_counts": {
+    "backend": {
+      "files_passed": 193,
+      "tests_passed": 3284
+    },
+    "frontend": {
+      "files_passed": 59,
+      "tests_passed": 380
+    }
+  },
+  "source_file_count": 933,
+  "source_before_sha256": "0a96d6e0d752180b43cf3b381ed535b043e9fe7a67d5e0f8cdee93139f32db9f",
+  "source_after_comparison": "Harness recomputed the same complete source map after all six checks and retained an empty changed_sources list; raw after map was not retained.",
+  "raw_receipt_sha256": "f0b8364b966e11f2794e622a895b5f8c9543bb5f48f62243e78b8ce8909b19f5",
+  "harness_sha256": "0d25f0f8809d372ee991dfc7dc68d77ed2a79465c1830afd3372484a6acfb448",
+  "limits": [
+    "Functional package checks only; concurrent with operations tests, not a capacity measurement.",
+    "No real-browser hosted acceptance, provider qualification, production deployment or end-to-end issuance SLO is established."
+  ]
+}

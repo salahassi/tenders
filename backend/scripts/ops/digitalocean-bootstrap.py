@@ -358,7 +358,7 @@ def cleanup_from_state() -> int:
         return 1
 
 
-def run() -> int:
+def run(*, assets_factory=None) -> int:
     state = None
     failed = False
     try:
@@ -390,10 +390,19 @@ def run() -> int:
                              "labels": state["labels"], "ownerReferences": owner},
                 "data": {k: base64.b64encode(v.encode()).decode() for k, v in values.items()}})
         filenames = ("setup.sql", "post-migrations.sql", "cleanup.sql", "acceptance.py")
+        assets = {name: (ASSETS / name).read_text() for name in filenames}
+        # A reviewed in-process restore harness may supply its own fixture and
+        # privately mounted catalog assets. No CLI or workflow input is SQL.
+        if assets_factory is not None:
+            assets = assets_factory(state, owner, assets)
+        if (not isinstance(assets, dict) or set(assets) != set(filenames)
+                or any(not isinstance(value, str) for value in assets.values())
+                or sum(len(value.encode()) for value in assets.values()) > 900000):
+            raise BootstrapError("BOOTSTRAP_ASSET_SET_INVALID")
         create({"apiVersion": "v1", "kind": "ConfigMap",
                 "metadata": {"name": "bootstrap-code", "namespace": state["namespace"],
                              "labels": state["labels"], "ownerReferences": owner},
-                "data": {name: (ASSETS / name).read_text() for name in filenames}})
+                "data": assets})
         create({"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy",
                 "metadata": {"name": "private-bootstrap-only", "namespace": state["namespace"], "labels": state["labels"]},
                 "spec": {"podSelector": {}, "policyTypes": ["Ingress", "Egress"], "ingress": [], "egress": [

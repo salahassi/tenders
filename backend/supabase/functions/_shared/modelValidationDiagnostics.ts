@@ -50,8 +50,10 @@ type DiagnosticDetails = {
 
 const codeSet = new Set<string>(modelValidationCodes);
 const reasonSet = new Set<string>(modelValidationReasons);
-const maxEntries = 16;
-const maxDiagnostics = 32;
+export const MAX_MODEL_VALIDATION_PATHS = 16;
+export const MAX_MODEL_VALIDATION_DIAGNOSTICS = 32;
+const maxEntries = MAX_MODEL_VALIDATION_PATHS;
+const maxDiagnostics = MAX_MODEL_VALIDATION_DIAGNOSTICS;
 const idPattern = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,119}$/;
 const pathPattern = /^\$(?:\.[a-z][a-z0-9_]*|\[(?:0|[1-9][0-9]{0,5})\])*$/;
 const numericPattern = /^-?[0-9]+(?:\.[0-9]+)?$/;
@@ -101,6 +103,44 @@ export function validationDiagnostic(
   return result;
 }
 
+/** Merge independent, schema-bounded checks without losing overflow accounting.
+ * Do not submit overlapping pre-truncated traversals: omitted entries have no
+ * observable identity and cannot safely be guessed or deduplicated.
+ */
+export function mergeModelValidationDiagnostics(
+  ...groups: {
+    diagnostics: readonly ModelValidationDiagnostic[];
+    omittedCount?: number;
+  }[]
+) {
+  const unique = new Map<string, ModelValidationDiagnostic>();
+  let omitted = 0;
+  for (const group of groups) {
+    if (
+      !Number.isSafeInteger(group.omittedCount ?? 0) ||
+      (group.omittedCount ?? 0) < 0
+    )
+      throw new TypeError("INVALID_OMITTED_DIAGNOSTIC_COUNT");
+    omitted += group.omittedCount ?? 0;
+    for (const item of group.diagnostics) {
+      const normalized = validationDiagnostic(item.code, item.reason, item);
+      unique.set(JSON.stringify(normalized), normalized);
+    }
+  }
+  const all = [...unique.values()].sort(
+    (a, b) =>
+      (a.paths[0] ?? "").localeCompare(b.paths[0] ?? "") ||
+      a.reason.localeCompare(b.reason) ||
+      a.code.localeCompare(b.code) ||
+      JSON.stringify(a).localeCompare(JSON.stringify(b)),
+  );
+  return {
+    diagnostics: all.slice(0, MAX_MODEL_VALIDATION_DIAGNOSTICS),
+    omittedCount:
+      omitted + Math.max(0, all.length - MAX_MODEL_VALIDATION_DIAGNOSTICS),
+  };
+}
+
 type UntrustedVerificationReport = ReturnType<
   typeof modelSchemas.verify_grounding.parse
 >;
@@ -135,6 +175,7 @@ export type RepairOnlyValidationArtifact = {
 export function repairOnlyValidationArtifact(options: {
   candidateHash: string;
   diagnostics: readonly ModelValidationDiagnostic[];
+  omittedDiagnosticCount?: number;
   untrustedReport?: unknown;
   isReportPolicySafe?: (serializedReport: string) => boolean;
 }): RepairOnlyValidationArtifact {
@@ -142,6 +183,9 @@ export function repairOnlyValidationArtifact(options: {
     throw new TypeError("INVALID_REPAIR_ONLY_CANDIDATE_HASH");
   if (!Array.isArray(options.diagnostics) || !options.diagnostics.length)
     throw new TypeError("REPAIR_ONLY_DIAGNOSTIC_REQUIRED");
+  const omitted = options.omittedDiagnosticCount ?? 0;
+  if (!Number.isSafeInteger(omitted) || omitted < 0)
+    throw new TypeError("INVALID_OMITTED_DIAGNOSTIC_COUNT");
   // Rebuild even already typed input so unknown free-text properties cannot be
   // copied into the diagnostic envelope by a wider runtime object.
   const diagnostics = options.diagnostics
@@ -152,7 +196,7 @@ export function repairOnlyValidationArtifact(options: {
     validation_diagnostics: diagnostics,
     omitted_diagnostic_count: Math.max(
       0,
-      options.diagnostics.length - diagnostics.length,
+      options.diagnostics.length - diagnostics.length + omitted,
     ),
     result: {
       checked_candidate_hash: options.candidateHash,

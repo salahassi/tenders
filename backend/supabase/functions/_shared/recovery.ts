@@ -81,7 +81,7 @@ export async function recoveryRoute(
     );
   }
   const file = path.match(
-      /^\/v1\/recovery\/files\/(documents|export_artifacts)\/([^/]+)$/,
+      /^\/v1\/recovery\/files\/(documents|export_artifacts|proposal_delivery_artifacts)\/([^/]+)$/,
     ),
     complete = path.match(/^\/v1\/recovery\/restore-files\/([^/]+)\/complete$/);
   if (
@@ -95,9 +95,11 @@ export async function recoveryRoute(
             file_kind: file![1],
             file_id: id,
           });
-    const blob = await backend.object(context.storage_key),
+    request.signal.throwIfAborted();
+    const blob = await backend.object(context.storage_key, request.signal),
       size = Number(context.size ?? context.expected_size),
       expectedHash = context.hash ?? context.content_hash;
+    request.signal.throwIfAborted();
     if (blob.size !== size || blob.size > 10485760)
       throw new AppError(
         422,
@@ -109,6 +111,7 @@ export async function recoveryRoute(
         new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
         (b) => b.toString(16).padStart(2, "0"),
       ).join("");
+    request.signal.throwIfAborted();
     if (hash !== expectedHash)
       throw new AppError(
         422,
@@ -130,6 +133,7 @@ export async function recoveryRoute(
       file_kind: file![1],
       file_id: id,
     });
+    request.signal.throwIfAborted();
     if (latest.hash !== hash || latest.storage_key !== context.storage_key)
       throw new AppError(
         409,

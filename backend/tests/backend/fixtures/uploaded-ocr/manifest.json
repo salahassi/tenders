@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "synthetic": true,
+  "generator": "PyMuPDF 1.26.6; bundled Amiri and Carlito fonts",
+  "recognition_oracle": {
+    "en": [
+      "The supplier must deliver 12 reports within 30 days.",
+      "Payment is SAR 12500 after acceptance.",
+      "The submission deadline is 2026-12-15.",
+      "Subcontracting is prohibited without written approval."
+    ],
+    "ar": [
+      "يجب على المورد تسليم 12 تقريرا خلال 30 يوما.",
+      "الدفع بقيمة 12500 ريال بعد القبول.",
+      "الموعد النهائي للتقديم هو 15 ديسمبر 2026.",
+      "يمنع التعاقد من الباطن دون موافقة خطية."
+    ]
+  },
+  "mixed": {
+    "native_pages": [
+      1,
+      2,
+      4
+    ],
+    "scan_page": 3,
+    "blank_page": 5
+  },
+  "files": {
+    "mixed-five-pages.pdf": "a8a11d021b8f503dcd98b5ec2654ba25610c1077bf171ddbc4405304988989a9",
+    "scanned-ar.pdf": "70cb0b2e615d8c9880ab414a87c7eadc7bc6129268e203010006e74be844331b",
+    "scanned-en.pdf": "019eb10cff310db890866ad993704ed4cc05f7583ddab36a1b3e1b3634b7b826"
+  }
+}

@@ -24,3 +24,17 @@ export function verifyServerRoundtrip(
   model: any,
   download: (id: string) => Promise<Response>,
 ): Promise<any>;
+
+export function durableBrowserWriteAllowed(
+  path: string,
+  method: string,
+  raw: string | null,
+  state: any,
+  input: any,
+): boolean;
+export function observeDurablePackage(
+  value: any,
+  state: any,
+  input: any,
+  volumes: string[],
+): any;

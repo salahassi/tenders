@@ -1,0 +1,14 @@
+{
+  "container": "tdp-capacity-5b755432e2f6",
+  "exit_code": 0,
+  "fields": [
+    "memory.swap.current",
+    "memory.swap.max",
+    "memory.swap.peak"
+  ],
+  "values": [
+    "0",
+    "402653184",
+    "0"
+  ]
+}

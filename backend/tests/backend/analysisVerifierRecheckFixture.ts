@@ -1,4 +1,8 @@
-import { workflowFixture } from "./workflowFixture";
+import {
+  workflowFixture,
+  claimModelWorker4,
+  historicalGenerationCommand,
+} from "./workflowFixture";
 import {
   defaultCapabilities,
   taskRegistry,
@@ -98,7 +102,10 @@ export function recheckHelpers(f: Fixture) {
 }
 
 /** All state is synthetic and local to the fully migrated PGlite database. */
-export async function createRecheckFixture(f: Fixture) {
+export async function createRecheckFixture(
+  f: Fixture,
+  options: { historicalDeliveryContract?: boolean } = {},
+) {
   const h = recheckHelpers(f);
   await f.command("model.routing", { enabled: true, expected_revision: 0 });
   const connection = await f.command("model.connection.save", {
@@ -165,15 +172,36 @@ export async function createRecheckFixture(f: Fixture) {
     id: document.id,
     expected_revision: document.revision,
   });
-  const originalPlan = await f.command("proposal.generate", {
-    id: opportunity.id,
-    expected_revision: opportunity.revision,
-  });
+  const originalPlan = await historicalGenerationCommand(
+    f,
+    "proposal.generate",
+    {
+      id: opportunity.id,
+      expected_revision: opportunity.revision,
+    },
+  );
+  if (options.historicalDeliveryContract) {
+    // Synthetic historical setup happens BEFORE any model receipt, graph result,
+    // or accepted sibling. It represents the source-aware contract before the
+    // consistency/generated-delivery additions, never a rewrite of paid history.
+    await f.db.query(
+      `update public.generation_plans set frozen_context=frozen_context-array['generated_delivery_version','proposal_consistency_version'] where id=$1`,
+      [originalPlan.id],
+    );
+    await f.db.query(
+      `update public.generation_plans set input_hash=encode(sha256(convert_to(frozen_context::text,'UTF8')),'hex') where id=$1`,
+      [originalPlan.id],
+    );
+    await f.db.query(
+      `update public.jobs j set input_hash=p.input_hash from public.generation_plans p where p.id=$1 and j.entity_id=p.id`,
+      [originalPlan.id],
+    );
+  }
   await f.db.query(
     "select app_private.enqueue_generation(p,s.task,s.input) from public.generation_plans p join public.generation_steps s on s.plan_id=p.id where p.id=$1 order by s.ordinal limit 1",
     [originalPlan.id],
   );
-  const sibling = await h.rpc("claim_backend_job_v2");
+  const sibling = await claimModelWorker4(f, h.rpc);
   const siblingContext = await h.rpc("generation_context", {
     job_id: sibling.id,
     lease: sibling.lease_token,
@@ -192,7 +220,7 @@ export async function createRecheckFixture(f: Fixture) {
     lease: sibling.lease_token,
     result: candidate,
   });
-  const parent = await h.rpc("claim_backend_job_v2");
+  const parent = await claimModelWorker4(f, h.rpc);
   const context = await h.rpc("generation_context", {
     job_id: parent.id,
     lease: parent.lease_token,
@@ -479,7 +507,7 @@ export async function createRecheckFixture(f: Fixture) {
     return h.recheck(payload, key);
   }
   async function claimChild(child: any) {
-    const job = await h.rpc("claim_backend_job_v2");
+    const job = await claimModelWorker4(f, h.rpc);
     if (job.id !== child.id) throw new Error("Unexpected claimed job");
     await h.rpc("prepare_task_model_route", {
       job_id: job.id,

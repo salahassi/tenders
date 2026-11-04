@@ -1,0 +1,103 @@
+{
+  "version": 1,
+  "recorded_at": "2026-11-04T22:31:50.175924+00:00",
+  "authoring_base_revision": "5efbc992ec2690041661510c6ab7ff239ba76a98",
+  "scope": "Frozen synthetic source/oracle reserve and offline mechanical integrity/scoring; no production adapters or outputs",
+  "node_version": "v24.19.0",
+  "current_corpus": "backend/tests/backend/fixtures/qualification-reserve/corpus-v4.json",
+  "current_retrieval": "backend/tests/backend/fixtures/qualification-reserve/retrieval-v3.json",
+  "file_sha256": {
+    "backend/tests/backend/fixtures/qualification-reserve/activation-lock.example.json": "442d5fbea26d3b7692bc9e7b4a79ead7b1c42123c12927b1882c230d9690a174",
+    "backend/tests/backend/fixtures/qualification-reserve/corpus-v1.json": "71284f11f26a77224293bb9603145de1c4f9ddfe1a6d4cea642bb3c756a75225",
+    "backend/tests/backend/fixtures/qualification-reserve/corpus-v2.json": "e0e670aa9251b1ae6f6f788e80cea43455c248e505ac5b20fef7e4dc9641e023",
+    "backend/tests/backend/fixtures/qualification-reserve/corpus-v3.json": "95a84caa01439a32d3b2b7803fb21f3413bac94dd5620433d89c200001d1c191",
+    "backend/tests/backend/fixtures/qualification-reserve/corpus-v4.json": "9a1fd88f07fc9fc9d9b06ae3b67699976dacf221e0af7ee03fafdd59bfe25d7c",
+    "backend/tests/backend/fixtures/qualification-reserve/retrieval-v1.json": "171d5e5a975cd2fd942e76e2c9834d4c2459c9a7f1dd2b7765892726b14d6678",
+    "backend/tests/backend/fixtures/qualification-reserve/retrieval-v2.json": "f7ba64b966a7f2883c22c6854c4c02c5143768e4c8deb3c392d05416f782e53e",
+    "backend/tests/backend/fixtures/qualification-reserve/retrieval-v3.json": "cc8f3d70d4847bc1652e3560ff83ad209da5b64e1330d2b8abbf815981046c41",
+    "backend/scripts/qualification/reserve.mjs": "7da0f07ae3379e3ce219d7a4d413b306d5b9b4268cbad1aca74cf5555caa2a23",
+    "backend/scripts/qualification/reserve.d.mts": "d3393b39c271a573bad5d5e066d014a34fba67528381521b244cb5199fc42af1",
+    "backend/scripts/qualification/reserve-cli.mjs": "40be6732ee8498b54c95608d31aa41ed25879a7253cb88d52228a68894b567df",
+    "backend/tests/backend/qualificationReserve.test.ts": "fe385a018c098aab8d9b3545a98ad2f484eb7ba9d402b0cfdaf787eed83d76cf",
+    "backend/docs/QUALIFICATION_RESERVE.md": "66021f6177e6438d8960fd90e2b3f00deb21d4243c2b6f2286c639a348cabaa4"
+  },
+  "matrix": {
+    "tasks": 13,
+    "languages": [
+      "en",
+      "ar"
+    ],
+    "source_cases": 50,
+    "scenario_families": 25,
+    "invariant_records": 108,
+    "declared_classes_including_transport": 45,
+    "repetitions": 2,
+    "scheduled_per_model": 100,
+    "semantic_per_model": 96,
+    "probe_per_model": 4,
+    "automatic_retries": 0,
+    "actual_targets": [],
+    "retrieval_pairs": 16,
+    "retrieval_modes": 3,
+    "prospective_retrieval_cells": 48
+  },
+  "pre_output_review": {
+    "source_oracle_reviewers": [
+      "design_challenge",
+      "workflow_assessment"
+    ],
+    "review_type": "independent source-only peer review before this bundle has provider outputs; authors knew prior development outcomes",
+    "corrected_before_outputs": [
+      "buyer-required internal defect scope",
+      "duration distinguished from effort",
+      "buyer/draft/opinion provenance separated",
+      "conditional total13 allowed while mandatory base stays8",
+      "signed integrity response disambiguated",
+      "mandatory excluded scope explicitly out_of_scope",
+      "collect_notices/page/link/reason_quote schema paths",
+      "compact versus bounded retrieval source assembly and hashes"
+    ],
+    "scorer_review": "Final independent source-only reread by design_challenge found no material issue in corpus-v4/scorer/test delta: exact request/adapter/provider identity binding, complete-repeat denominator, per-class invariant exposure counts and activation/source/adapter/validator hashes. Reviewer read test source, did not run tests or generate outputs."
+  },
+  "verification": {
+    "focused_command": "npx vitest run tests/backend/qualificationReserve.test.ts --maxWorkers=1",
+    "focused_tests": 71,
+    "focused_passed": 71,
+    "focused_failed": 0,
+    "focused_duration_ms": 422,
+    "focused_log_sha256": "5fc7f618c0111b686c5be71e40cce8d14a6439ab5b1d2d6066c6ad8a09687126",
+    "typecheck_command": "npm run typecheck",
+    "typecheck_exit": 0,
+    "typecheck_log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220",
+    "cli_check": "passed; source hashes,50 cases/13 tasks/48 prospective cells",
+    "full_suite": "not rerun; separate root integration gate"
+  },
+  "actual_activity": {
+    "provider_calls": 0,
+    "provider_outputs": 0,
+    "actual_semantic_adjudications": 0,
+    "production_retrieval_executions": 0,
+    "production_mutations": 0,
+    "deployments": 0
+  },
+  "not_claimed": [
+    "independent blindness",
+    "private holdout supplied",
+    "production task adapters qualified",
+    "all semantic families exhaustively paired",
+    "model quality or provider availability",
+    "retrieval recall",
+    "noncritical business thresholds approved",
+    "population confidence interval",
+    "hosted acceptance",
+    "universal accuracy"
+  ],
+  "remaining": [
+    "qualified canonical task adapters and real source/authority contexts",
+    "real authorized provider targets/configuration/full request locks",
+    "actual provider and retrieval execution plus independent output adjudication",
+    "pre-outcome noncritical business acceptance decisions",
+    "authorized independent private holdout",
+    "previous live critical findings and seven G09 retrieval misses remain unresolved by this reserve"
+  ]
+}

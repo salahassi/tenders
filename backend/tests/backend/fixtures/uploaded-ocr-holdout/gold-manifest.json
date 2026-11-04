@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "scope": "independently_authored_synthetic_arabic_ocr_holdout_preparation",
+  "synthetic": true,
+  "authored_before_rendering_and_recognition": true,
+  "recognition_run": false,
+  "recognition_qualification": false,
+  "language": "ar",
+  "gold_policy": "Exact logical text in visual reading order; not derived from OCR. Freeze this file before rendering and retain its SHA-256 in the generation receipt.",
+  "cases": [
+    {
+      "id": "maintenance-obligation",
+      "filename": "scanned-maintenance-obligation.pdf",
+      "font": "Amiri-Regular.ttf",
+      "font_size_pt": 23,
+      "line_height": 1.65,
+      "layout": "right-aligned memorandum with a heading and separated paragraphs",
+      "scan_dpi": 180,
+      "heading": "ملحق الصيانة",
+      "lines": [
+        "يلتزم المتعهد بفحص 7 أجهزة في كل زيارة شهرية.",
+        "لا يجوز إيقاف الخدمة أثناء ساعات العمل.",
+        "إذا ظهر عطل حرج، تبدأ المعالجة خلال 6 ساعات.",
+        "تبلغ قيمة الزيارة 3750 ريالا، ويبدأ العقد في 2027-02-18.",
+        "مرجع الطلب: MX-2047-B."
+      ],
+      "critical_literals": ["يلتزم", "7", "لا يجوز", "إذا", "6", "3750", "2027-02-18", "MX-2047-B"]
+    },
+    {
+      "id": "records-retention",
+      "filename": "scanned-records-retention.pdf",
+      "font": "NotoNaskhArabic-Regular.ttf",
+      "font_size_pt": 22,
+      "line_height": 1.7,
+      "layout": "right-aligned notice with a heading and horizontal paragraph rules",
+      "scan_dpi": 156,
+      "heading": "شروط حفظ السجلات",
+      "lines": [
+        "يجب حفظ النسخ الاحتياطية لمدة 90 يوما بعد انتهاء العقد.",
+        "لا يسمح بنقل الملفات إلى جهة خارجية.",
+        "عند تعذر استعادة سجل واحد، يقدم تقرير خلال يومي عمل.",
+        "تستحق الدفعة البالغة 6400 ريال في 3 أبريل 2027.",
+        "رمز الحزمة: ARCHIVE-Q9."
+      ],
+      "critical_literals": ["يجب", "90", "لا يسمح", "عند تعذر", "يومي عمل", "6400", "3 أبريل 2027", "ARCHIVE-Q9"]
+    },
+    {
+      "id": "sensor-acceptance",
+      "filename": "scanned-sensor-acceptance.pdf",
+      "font": "NotoSansArabic-Regular.ttf",
+      "font_size_pt": 20,
+      "line_height": 1.65,
+      "layout": "right-aligned boxed notice with a heading and separated paragraphs",
+      "scan_dpi": 144,
+      "heading": "إشعار تسليم المعدات",
+      "lines": [
+        "على المقاول تركيب 24 حساسا قبل بدء التشغيل.",
+        "لا تعد التجربة ناجحة ما لم تعمل جميع الحساسات.",
+        "إذا تأخر التسليم أكثر من 5 أيام، تخصم غرامة قدرها 850 ريالا.",
+        "آخر موعد للفحص هو 2027/06/09، والمرجع هو SENSOR-K3."
+      ],
+      "critical_literals": ["على المقاول", "24", "لا تعد", "ما لم", "إذا", "5", "850", "2027/06/09", "SENSOR-K3"]
+    }
+  ]
+}

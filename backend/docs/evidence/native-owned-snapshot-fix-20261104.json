@@ -1,0 +1,70 @@
+{
+  "scope": "Private snapshot/lifetime source fix with scoped actual native API repeat evidence",
+  "changes": [
+    "deliveryBytes snapshots model before asynchronous Blob read and returns directly into an owned-byte helper, eliminating the retained parse/stringify object clone",
+    "Private bytes are hashed without an extra explicit document copy; generic verifier still snapshots caller-owned bytes/model",
+    "Internal immutable JSON bridge uses the same child/canonical verdict and never exposes owned bytes before settlement",
+    "Child hashes exact private frames before inflation, releases raw model frame, and still requires full canonical scan plus exact successful verdict"
+  ],
+  "heap_or_resource_policy_changed": false,
+  "canonical_verifier_changed": false,
+  "focused_tests": {
+    "passed": 47,
+    "files": 4,
+    "log_sha256": "774d36dbfdea64347166de4d04d50c6e8527d5be0ff26864d79a17fd091fdf79"
+  },
+  "typecheck": {
+    "passed": true,
+    "log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220"
+  },
+  "independent_source_review": "Adjacent agent found no material ownership/hash/abort regression; no native claim follows from source review",
+  "native_repeat_pending": false,
+  "red_receipt_sha256": "418c7f6eff453a3cc0f00b77caf779de50d724470f601f2f5f87d7ae74ec77f0",
+  "ordinary_receipt_sha256": "75c4fb876bea51150554575f84a7e853b9ae28c9be3b2088d4def49d76cba45e",
+  "native_qualification": {
+    "image_id": "sha256:89afc8a31d76e1616ad17e5896e0fc54f0acdc41cd7da389af456386f3e998fe",
+    "source_fix_commit": "6c2feb4",
+    "limits": {
+      "memory_bytes": 402653184,
+      "cpu": 0.7
+    },
+    "large_requests": 3,
+    "sequence": "two requests in one parent, then one separately launched fresh parent; no forced GC or heap/resource changes",
+    "headers_ms": [
+      112208,
+      107866,
+      104811
+    ],
+    "completed_ms": [
+      113216,
+      108872,
+      105818
+    ],
+    "peak_bytes": [
+      387506176,
+      391241728
+    ],
+    "minimum_observed_margin_bytes": 11411456,
+    "oom_events": 0,
+    "swap_peak": 0,
+    "corrected_cancel_heavy_reacquisition": true,
+    "reviewed_same_artifact": {
+      "status": 200,
+      "completion_calls": 1,
+      "elapsed_ms": 30996,
+      "peak_bytes": 367247360,
+      "artifact_hash": "1bee8e23cf2198c637555d448aad64fd8e57b64f8f1d902274b8ef55c547d25d"
+    },
+    "receipts": {
+      "native-api-owned-snapshot-steady-20261104.json": "56592aaa7951d1b2b144a88ed991f93b51745d0338ca19b7b57e53c83c9126be",
+      "native-api-owned-snapshot-fresh-20261104.json": "2d944815772dc9c677346a09c958baa7ca8a33517cc25e47e352004693a73154",
+      "native-reviewed-docx-handler-20261104.json": "e3b91fc1c4da28ae921908ef64ac2948991fceb3408f3279440a5cb96a2c711f"
+    },
+    "scope_limitations": [
+      "Auth/RPC and file-backed Storage are synthetic adapters; no actual hosted authorization, upstream PostgREST or NGINX qualification",
+      "The reviewed ordinary request has an explicitly synthetic server-owned ordinary-2 renderer pin; this test creates no real approval",
+      "Minimum measured headroom10.88MiB remains narrow; these admitted fixture repeats do not establish arbitrary workload/concurrency headroom or universal SLO",
+      "Previously retained protocol-only near10MiB single-field failure is not silently treated as producer-admitted or qualified"
+    ]
+  }
+}

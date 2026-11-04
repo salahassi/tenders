@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { batchRpcBody } from "./fixtures/batchRpcTransport.ts";
 import {
   afterAll,
   afterEach,
@@ -101,8 +102,13 @@ const transport = {
   },
   command: (token: string, operation: string, input: unknown, key: string) =>
     rpc("app_command", { operation, input, idempotency_key: key }, token),
-  batch: (token: string, commands: unknown[], key: string) =>
-    rpc("app_batch", { commands, idempotency_key: key }, token),
+  // This canonical DB fixture is not a transport memory qualification.
+  batchStream: (
+    token: string,
+    commands: unknown[],
+    key: string,
+    signal: AbortSignal,
+  ) => batchRpcBody(rpc, token, commands, key, signal),
   one: async (token: string, table: string, id: string) => {
     const rows = await sql(
       "authenticated",

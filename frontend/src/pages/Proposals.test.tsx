@@ -8,7 +8,10 @@ import { exportProposal } from "../lib/export";
 import { createSeedState } from "../test/fixtures/workspace";
 import Proposals from "./Proposals";
 
-vi.mock("../lib/connectedExport", () => ({ createConnectedExport: vi.fn() }));
+vi.mock("../lib/connectedExport", async (original) => ({
+  ...(await original<typeof import("../lib/connectedExport")>()),
+  createConnectedExport: vi.fn(),
+}));
 vi.mock("../lib/export", async (original) => ({
   ...(await original<typeof import("../lib/export")>()),
   exportProposal: vi.fn(),
@@ -74,6 +77,10 @@ it("exports the clicked saved version as a server-authorized draft and reports s
     f.context.backend,
     "selected-version",
     "draft",
+    expect.objectContaining({
+      signal: expect.any(AbortSignal),
+      onProgress: expect.any(Function),
+    }),
   );
   expect(selected).toBeDisabled();
   expect(first).toBeDisabled();

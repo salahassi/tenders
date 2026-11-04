@@ -26,9 +26,26 @@ const opportunity = () =>
       },
     ],
   }) as any;
+const recoveryId = (n: number) =>
+  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const recoveryDetails = () => ({
+  plan_id: recoveryId(1),
+  expected_plan_revision: 2,
+  preserved_input_hash: "a".repeat(64),
+  cancel_required: true,
+  opportunity_id: recoveryId(2),
+  expected_opportunity_revision: 4,
+  proposal_id: recoveryId(3),
+  expected_proposal_revision: 5,
+  base_version_id: null,
+  next_operation: "proposal.generate",
+});
 function context(records: any[] = []) {
   const value = {
-    backend: { list: vi.fn(async () => records) },
+    backend: {
+      list: vi.fn(async () => records),
+      request: vi.fn(async (_path: string) => ({ data: null as any })),
+    },
     state: {
       settings: { role: "Owner" },
       proposals: [],
@@ -43,6 +60,53 @@ function context(records: any[] = []) {
   vi.mocked(useApp).mockReturnValue(value as any);
   return value;
 }
+it("requires an explicit current successor and replays the same atomic batch after a lost response", async () => {
+  const c = context([
+    {
+      id: recoveryId(1),
+      kind: "proposal",
+      stage: "analysis",
+      status: "blocked",
+      revision: 2,
+      error_code: "MODEL_CORRECTION_EXHAUSTED",
+      created_at: "2026-10-22T10:00:00Z",
+    },
+  ]);
+  c.runCommand.mockRejectedValue(
+    new BackendRequestError(
+      "PROPOSAL_CURRENT_CONTRACT_REQUIRED",
+      "legacy",
+      422,
+      recoveryDetails(),
+    ),
+  );
+  const o = { ...opportunity(), id: recoveryId(2) };
+  render(
+    <MemoryRouter>
+      <GenerationPanel opportunity={o} />
+    </MemoryRouter>,
+  );
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Resume saved work" }),
+  );
+  const start = await screen.findByRole("button", {
+    name: "Start new request with current checks",
+  });
+  expect(c.backend.request).not.toHaveBeenCalled();
+  c.backend.request.mockRejectedValueOnce(new Error("Connection interrupted"));
+  await userEvent.click(start);
+  expect(await screen.findByText("Connection interrupted")).toBeInTheDocument();
+  await userEvent.click(start);
+  const calls = c.backend.request.mock.calls as any[];
+  expect(calls).toHaveLength(2);
+  expect(calls[1]).toEqual(calls[0]);
+  expect(calls[0][0]).toBe("/v1/commands");
+  expect(calls[0][1].body.commands.map((x: any) => x.operation)).toEqual([
+    "generation.cancel",
+    "proposal.generate",
+  ]);
+  expect(c.refresh).toHaveBeenCalled();
+});
 it("offers resume for the latest blocked plan and hides it on an older canceled plan", async () => {
   const c = context([
     {
@@ -243,7 +307,7 @@ it("does not start more progress requests while a slow completion refresh is out
     finish();
   });
   await act(async () => {
-    await vi.advanceTimersByTimeAsync(10000);
+    await vi.advanceTimersByTimeAsync(5000);
   });
   expect(c.backend.list).toHaveBeenCalledTimes(2);
   expect(c.refresh).toHaveBeenCalledTimes(1);
@@ -508,3 +572,101 @@ it.each([
     expect(c.notify).not.toHaveBeenCalled();
   },
 );
+
+it.each(["active", "failed", "issued"])(
+  "uses complete-package issuance %s instead of treating finished writing as delivery",
+  async (outcome) => {
+    const c = context([
+      {
+        id: "plan",
+        kind: "proposal",
+        stage: "completed",
+        status: "completed",
+        revision: 4,
+        error_code: null,
+        created_at: "2026-11-04T10:00:00Z",
+        issuance_request_id: "request",
+      },
+    ]);
+    c.backend.request.mockResolvedValue({
+      data: {
+        id: "request",
+        plan_id: "plan",
+        effective_outcome: outcome,
+        effective_error_code:
+          outcome === "failed" ? "PROPOSAL_ISSUANCE_TIMEOUT" : null,
+      },
+    });
+    render(
+      <MemoryRouter>
+        <GenerationPanel opportunity={opportunity()} />
+      </MemoryRouter>,
+    );
+    const text =
+      outcome === "active"
+        ? /Writing is complete. The full draft file package is still/
+        : outcome === "failed"
+          ? /reached its 10-minute limit/
+          : /complete draft file package is ready to download/;
+    expect(await screen.findByText(text)).toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "Your proposal is ready. Open it to review and download.",
+      ),
+    ).not.toBeInTheDocument();
+    if (outcome === "failed")
+      expect(c.notify).toHaveBeenCalledWith(
+        expect.stringMatching(/10-minute limit/),
+        "error",
+      );
+  },
+);
+it("rejects stale request status and never claims completed writing is an issued package", async () => {
+  const c = context([
+    {
+      id: "plan",
+      kind: "proposal",
+      stage: "completed",
+      status: "completed",
+      revision: 4,
+      error_code: null,
+      created_at: "2026-11-04T10:00:00Z",
+      issuance_request_id: "current",
+    },
+  ]);
+  c.backend.request.mockResolvedValue({
+    data: { id: "older", plan_id: "plan", effective_outcome: "issued" },
+  });
+  render(
+    <MemoryRouter>
+      <GenerationPanel opportunity={opportunity()} />
+    </MemoryRouter>,
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "current request changed",
+  );
+  expect(
+    screen.queryByText(/file package is ready to download/),
+  ).not.toBeInTheDocument();
+});
+it("shows all agents unavailable immediately when admission rejects", async () => {
+  const c = context();
+  c.runCommand.mockRejectedValue(
+    new BackendRequestError("AI_AGENTS_UNAVAILABLE", "Internal reason", 503),
+  );
+  render(
+    <MemoryRouter>
+      <GenerationPanel opportunity={opportunity()} />
+    </MemoryRouter>,
+  );
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Generate proposal draft" }),
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "No AI agents are available",
+  );
+  expect(c.notify).toHaveBeenCalledWith(
+    expect.stringMatching(/No AI agents are available/),
+    "error",
+  );
+});

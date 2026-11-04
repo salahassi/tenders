@@ -1,4 +1,10 @@
+import {
+  sourceAuthoritySchema,
+  sourceSpanSchema,
+  obligationTupleSchema,
+} from "./sourceEvidence.ts";
 import { z } from "zod";
+import { documentCoverageSchema } from "./documentCoverage.ts";
 import {
   capabilitySchema,
   executionProfileSchema,
@@ -6,6 +12,11 @@ import {
 } from "./modelContract.ts";
 import { serviceScopeShape } from "./discovery.ts";
 import { MODEL_PROVIDER_IDS, ROUND_ROBIN_PROVIDERS } from "./modelProviders.ts";
+import {
+  deliveryPrepareSchema,
+  deliveryRefreshSchema,
+  deliveryRetrySchema,
+} from "./deliveryContract.ts";
 import {
   estimateInputSchema,
   deliveryInputSchema,
@@ -70,6 +81,9 @@ const host = z
   .max(253)
   .regex(/^(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$/i);
 export const commandSchemas = {
+  "delivery.snapshot.prepare": deliveryPrepareSchema,
+  "delivery.snapshot.refresh": deliveryRefreshSchema,
+  "delivery.snapshot.retry": deliveryRetrySchema,
   "notification.preferences": z
     .object({
       expected_revision: z.number().int().min(0),
@@ -167,6 +181,16 @@ export const commandSchemas = {
       related_opportunity_id: uuid,
       reason: z.string().min(10).max(3000),
     })
+    .strict(),
+  "export.package.prepare": z
+    .object({
+      proposal_version_id: uuid,
+      expected_revision: revision,
+      mode: z.enum(["draft", "final"]),
+    })
+    .strict(),
+  "export.package.retry": z
+    .object({ id: uuid, expected_revision: revision })
     .strict(),
   "export.prepare": z
     .object({
@@ -294,6 +318,10 @@ export const commandSchemas = {
       proposal_version_id: uuid,
       requirement_id: uuid,
       expected_revision: z.number().int().min(0),
+      expected_applicability_binding: z
+        .string()
+        .regex(/^[a-f0-9]{64}$/)
+        .optional(),
       status: z.enum([
         "answered",
         "partial",
@@ -683,6 +711,57 @@ export const commandSchemas = {
           message: "Supply exactly the file's target record.",
         });
     }),
+  "source.authority.review": z
+    .object({
+      opportunity_id: uuid,
+      entity_kind: z.enum(["document", "notice"]),
+      entity_id: uuid,
+      content_hash: z.string().regex(/^[a-f0-9]{64}$/),
+      expected_revision: z.number().int().nonnegative(),
+      role: sourceAuthoritySchema.shape.role,
+      status: z.enum(["confirmed", "revoked"]),
+      supersedes: sourceAuthoritySchema.shape.supersedes,
+      precedence: sourceAuthoritySchema.shape.precedence,
+      reason: z.string().min(1).max(3000),
+    })
+    .strict(),
+  "source.obligation.review": z
+    .object({
+      opportunity_id: uuid,
+      review_id: uuid.nullable(),
+      expected_revision: z.number().int().nonnegative(),
+      spans: z.array(sourceSpanSchema).min(1).max(8),
+      semantics: obligationTupleSchema,
+      status: z.enum(["confirmed", "revoked"]),
+      reason: z.string().min(1).max(3000),
+      supersedes_review_id: uuid.nullable().optional(),
+    })
+    .strict(),
+  "document.extraction.correct": z
+    .object({
+      id: uuid,
+      expected_revision: revision,
+      expected_original_hash: z.string().regex(/^[a-f0-9]{64}$/),
+      expected_extraction_hash: z.string().regex(/^[a-f0-9]{64}$/),
+      pages: z
+        .array(
+          z
+            .object({
+              page: z.number().int().min(1).max(200),
+              expected_page_text_hash: z.string().regex(/^[a-f0-9]{64}$/),
+              text: z.string().max(20000),
+              blank_confirmed: z.boolean(),
+            })
+            .strict(),
+        )
+        .min(1)
+        .max(200),
+      review_confirmed: z.literal(true),
+    })
+    .strict(),
+  "document.ocr.retry": z
+    .object({ id: uuid, expected_revision: revision })
+    .strict(),
   "document.confirm": z
     .object({ id: uuid, expected_revision: revision })
     .strict(),
@@ -782,14 +861,19 @@ export const completeUploadSchema = z
   .object({
     extracted_text: z.string().max(200000).default(""),
     from_parts: z.boolean().optional(),
+    extraction_coverage: documentCoverageSchema.optional(),
     status: z
-      .enum(["ready", "needs_ocr", "needs_processing", "error"])
+      .enum(["ready", "partial", "needs_ocr", "needs_processing", "error"])
       .default("needs_processing"),
   })
   .strict()
   .refine(
     (v) => v.status !== "ready" || v.from_parts || !!v.extracted_text.trim(),
     "Readable extraction text is required for ready status.",
+  )
+  .refine(
+    (v) => v.status !== "partial" || !!v.extraction_coverage,
+    "Partial extraction requires page coverage.",
   );
 export const applicationLimits = {
   maxRequestBytes: 1048576,

@@ -31,10 +31,49 @@ const paths: Record<string, Record<string, unknown>> = {};
 paths["/v1/sources/{id}/verification"] = {
   get: {
     operationId: "source.verification.read",
-    description: "Owner-only live human verification image and challenge identity, or null when none is active. Browser session state and submitted answers are never returned.",
+    description:
+      "Owner-only live human verification image and challenge identity, or null when none is active. Browser session state and submitted answers are never returned.",
+    security: [{ userJWT: [] }],
+    parameters: [
+      {
+        in: "path",
+        name: "id",
+        required: true,
+        schema: { type: "string", format: "uuid" },
+      },
+    ],
+    responses: {
+      "200": { description: "Current expiring challenge or null" },
+      "401": { description: "Authentication required" },
+      "403": { description: "Owner role required" },
+    },
+  },
+};
+paths["/v1/opportunities/{id}/source-review"] = {
+  get: {
+    operationId: "source.review.context",
+    description: "Current authorized source blocks, exact versioned spans and usable source-bound reviews. Historical, revoked and superseded decisions cannot confer current authority.",
+    security: [{ userJWT: [] }],
+    parameters: [{in:"path",name:"id",required:true,schema:{type:"string",format:"uuid"}}],
+    responses: {"200":{description:"Source evidence contract v1 and current authorized source blocks"},"401":{description:"Authentication required"},"404":{description:"Opportunity unavailable to this member"}},
+  },
+};
+paths["/v1/proposal-issuance/{id}"] = {
+  get: {
+    operationId: "proposal.issuance.status",
+    description: "Current member-authorized issuance request for the selected plan, or null for historical unpinned plans. Effective deadline state is computed by the database independently of worker maintenance. Issued means the complete verified draft package, not final approval.",
     security: [{ userJWT: [] }],
     parameters: [{ in: "path", name: "id", required: true, schema: { type: "string", format: "uuid" } }],
-    responses: { "200": { description: "Current expiring challenge or null" }, "401": { description: "Authentication required" }, "403": { description: "Owner role required" } },
+    responses: { "200": { description: "Current request, effective outcome, accepted/deadline/completion timestamps, issued snapshot and database server_now" }, "401": { description: "Authentication required" }, "404": { description: "Plan unavailable to this member" } },
+  },
+};
+paths["/v1/export-packages/{id}"] = {
+  get: {
+    operationId: "export.package.read",
+    description: "Current member-authorized durable draft or final export package for an exact proposal version. A package is ready only after every required volume is verified; final exports also require current approval. Browser departure does not cancel the server job.",
+    security: [{ userJWT: [] }],
+    parameters: [{ in: "path", name: "id", required: true, schema: { type: "string", format: "uuid" } }],
+    responses: { "200": { description: "Package identity, revision, mode, status, bounded request timestamps, complete volume set and job state" }, "401": { description: "Authentication required" }, "404": { description: "Package unavailable to this member" } },
   },
 };
 const responses = {
@@ -372,6 +411,63 @@ paths["/v1/documents/{id}/complete-upload"] = {
   },
 };
 
+for (const suffix of ["extraction", "ocr"]) {
+  paths[`/v1/documents/{id}/${suffix}`] = {
+    get: {
+      operationId: `document.${suffix}.read`,
+      security: [{ userJWT: [] }],
+      description:
+        suffix === "extraction"
+          ? "Authorized page text, exact original/extraction/page hashes, pending recognition candidates and explicit review state; includes the existing 300-second private original URL after a second authorization check. OCR confidence never confirms source meaning."
+          : "Authorized OCR progress, retry/review state and published successor ID; no source bytes or storage key.",
+      parameters: [
+        {
+          in: "path",
+          name: "id",
+          required: true,
+          schema: { type: "string", format: "uuid" },
+        },
+      ],
+      responses,
+    },
+  };
+}
+paths["/v1/documents/{id}/extraction"].post = {
+  operationId: "document.extraction.correct",
+  security: [{ userJWT: [] }],
+  description:
+    "Up to 200 explicitly reviewed full pages, bounded to 8MiB JSON. Binds document revision, original bytes, extraction and previous page hashes. Empty text requires explicit visual blank confirmation. Returns202 after persisting an immutable correction request; verified original-copy publication is asynchronous. Reuse the same idempotency key and payload after a lost response.",
+  parameters: [
+    {
+      in: "path",
+      name: "id",
+      required: true,
+      schema: { type: "string", format: "uuid" },
+    },
+    {
+      in: "header",
+      name: "Idempotency-Key",
+      required: true,
+      schema: { type: "string", minLength: 1, maxLength: 200 },
+    },
+  ],
+  requestBody: {
+    required: true,
+    content: {
+      "application/json": {
+        schema: z.toJSONSchema(commandSchemas["document.extraction.correct"]),
+      },
+    },
+  },
+  responses: {
+    ...responses,
+    "202": {
+      description:
+        "Correction persisted; source successor awaits verified copy publication",
+    },
+  },
+};
+
 const recoveryPaths: Array<[string, string, string, unknown?]> = [
   [
     "/v1/opportunities/{id}/archive",
@@ -458,6 +554,21 @@ const recoveryPaths: Array<[string, string, string, unknown?]> = [
     "Owner-only original-inclusive backup download with actual hash and membership recheck",
   ],
   ["/v1/exports/{id}/context", "get", "Return a current bound export model"],
+  [
+    "/v1/delivery-snapshots/{id}/context",
+    "get",
+    "Return an authorized immutable incomplete proposal draft",
+  ],
+  [
+    "/v1/delivery-snapshots/{id}/package",
+    "get",
+    "Read current draft package status without private object keys",
+  ],
+  [
+    "/v1/delivery-artifacts/{id}/download",
+    "get",
+    "Verify draft content, yellow placeholders and stored bytes; recheck current authorization before download",
+  ],
   [
     "/v1/export-artifacts/{id}/complete",
     "post",

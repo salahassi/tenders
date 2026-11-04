@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "workflow_run_id": 41902822255,
+  "workflow_job_id": 126829488547,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41902822255",
+  "source_revision": "9eca6830915bab05af23e278449609c0d8926ecb",
+  "mode": "restore",
+  "workflow_conclusion": "failure",
+  "original_cluster_ca_and_hostname_verified": true,
+  "local_guard_tests_passed": 8,
+  "restore_result": {
+    "cloud_restore": "blocked",
+    "code": "RESTORE_ACCEPTANCE_OR_CLEANUP_FAILED",
+    "diagnostics": [
+      "RESTORE_RPC_CLOUD_RESTORE_FIXTURE_USERS_FAILED",
+      "AUTH_STORAGE_HTTP_ACCEPTANCE_FAILED"
+    ]
+  },
+  "isolated_cleanup_verified": true,
+  "temporary_runner_credentials_cleanup_verified": true,
+  "actual_application_renderer_exercised": false,
+  "all_13_acceptance_checks_passed": false,
+  "production_deployment_performed": false,
+  "model_calls": 0
+}

@@ -1,0 +1,380 @@
+{
+  "version": 4,
+  "status": "draft_remaining_actions_not_complete",
+  "generated_at_utc": "2026-11-04T23:14:31.629845+00:00",
+  "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
+  "observed_root_commit": "a7922ed717bdc6f8d4973fb9aa72979a5549d675",
+  "evidence_index": "backend/docs/evidence/reliability-r0-index-20261104.json",
+  "application_deployed": false,
+  "final_hosted_acceptance_passed": false,
+  "release_manifest": {
+    "path": "backend/scripts/ops/proposal-delivery-release.json",
+    "canonical_sha256": "9e3430d1d01af222e3aad0d4aa8cae5e1f0c14942ae0ff258f0a96f6f953e020",
+    "migrations": 22,
+    "state": "stale_22_migration_file_final24_source_proxy_runtime_refreeze_pending",
+    "source_migrations": 24,
+    "missing_migrations": [
+      "20261104212300_structured_section_body_bound.sql",
+      "20261104212818_bounded_command_batch_results.sql"
+    ],
+    "gateway_contract": "v1_in_frozen_manifest_final_v2_pinned_worker_source_integrated_binding_refreeze_pending"
+  },
+  "actions": [
+    {
+      "id": "A01",
+      "title": "Close final proxy/runtime binding and hosted capacity acceptance",
+      "plan": [
+        "W04",
+        "W09",
+        "D02",
+        "D04"
+      ],
+      "status": "actual_api100_and_final_nginx_measured_final_https_binding_and_hosted_scope_pending",
+      "evidence": [
+        "E01",
+        "E02",
+        "E13"
+      ],
+      "remaining": "Bind the final HTTPS identity/gzip/zstd chain and promoted runtime image to reviewed source and actual observed resources. Preserve full hashes/order, slow-consumer/cancel behavior and explicit capacity margins. Complete hosted whole-path acceptance without adding a product quota.",
+      "done_when": "Exact final image/source/fixture receipts prove the selected full API batch and document paths under observed limits, with actual process cleanup, bounded response lifecycle and existing 600-second/lease cancellation. State tested shapes and measured margin; no universal capacity claim.",
+      "not_proven": "No combined hosted Auth/API/LoadBalancer service-level or universal admitted-capacity claim. DOCX minimum measured margin remains10.88 MiB; final HTTPS receipt not yet ingested at this anchor.",
+      "acceptance_cases": [
+        "EX-01",
+        "EX-02",
+        "EX-05",
+        "OP-02",
+        "BC-01"
+      ],
+      "implementation": "Actual API100/REST/PostgreSQL and final one-worker Nginx transport passed at their separate declared scopes; document warm-two/fresh-one receipts remain current fixture evidence.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A02",
+      "title": "Run the complete integrated verification on the final source",
+      "plan": [
+        "W00",
+        "W11"
+      ],
+      "status": "3135_pass_two_stale_fixture_failures_corrected_final_full_rerun_pending",
+      "evidence": [
+        "E01"
+      ],
+      "remaining": "Run backend/frontend types, builds and full tests on final integrated source, then required ops/schema/Kubernetes checks. Retain the 3,135-pass/two-failure diagnostic and 33-test response-consumption correction; no production admission relaxation.",
+      "done_when": "One exact final commit has required complete green checks and source-bound logs; any remaining failure is explicit.",
+      "not_proven": "No final full-green backend/application run. Focused correction and historical frontend pass do not replace the required final full rerun.",
+      "acceptance_cases": [
+        "R0",
+        "W11 exit evidence"
+      ],
+      "implementation": "Both source 256c50e types/builds and frontend 380/59 pass;33 affected backend tests pass after correcting unread-response fixtures.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A03",
+      "title": "Renew the isolated cloud restore for the final 24-migration release",
+      "plan": [
+        "W09",
+        "W11",
+        "D05"
+      ],
+      "status": "reopened_for_changed_schema_and_cutover_contract",
+      "evidence": [
+        "E06",
+        "E13"
+      ],
+      "remaining": "After final coordinator/guard integration and manifest refreeze, rerun the original-CA isolated cloud restore using the exact 24 migrations, gateway/source contracts and shared Auth helper. Preserve old 13-check, 22-migration success as historical evidence.",
+      "done_when": "The renewed exact-source isolated schema/Auth/Storage drill passes required checks and both cleanup stages; its receipt names the final manifest and source hashes.",
+      "not_proven": "The prior 22-migration shared-helper success does not exercise the new structured-body or chunk/cutover changes; restore is not full proposal issuance.",
+      "acceptance_cases": [
+        "OP-03",
+        "OP-04",
+        "D05"
+      ],
+      "implementation": "Restore harness exists; renewed final 24-migration drill not run.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A04",
+      "title": "Establish actual available model routes under the existing policy",
+      "plan": [
+        "W07",
+        "W10",
+        "D06"
+      ],
+      "status": "external_availability_unresolved",
+      "evidence": [
+        "E08",
+        "E09"
+      ],
+      "remaining": "Resolve provider-side quota/credit/credential availability through existing authorized routing and billing policy; confirm enabled task routes without silently buying capacity or changing usage accounting. Separately verify immediate clear error when every route is unavailable.",
+      "done_when": "Current configured-route availability and no-agent behavior have actual receipts; failures and unknown usage retained.",
+      "not_proven": "Keys in configuration do not prove a usable model or a successful proposal.",
+      "acceptance_cases": [
+        "ME-10",
+        "ME-11",
+        "BC-01"
+      ],
+      "implementation": "Routing/error/usage logic implemented; external provider availability unresolved.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A05",
+      "title": "Complete independent semantic and bounded-retrieval qualification",
+      "plan": [
+        "W05",
+        "W06",
+        "W08",
+        "D07"
+      ],
+      "status": "reserve_frozen_ten_single_requests_constructible_forty_unsupported_no_outputs",
+      "evidence": [
+        "E09",
+        "E10"
+      ],
+      "remaining": "Complete and review the 40 unsupported reserve cases with faithful workflow prerequisites/composite schedules. Freeze actual targets, source/prompt/schema/adapter/validator locks and noncritical acceptance decisions before authorized execution. Retain 100 scheduled cells/model and separately qualify 48 prospective retrieval cells plus independent outcome adjudication.",
+      "done_when": "All 13 task boundaries accounted for; independent gold, per-class attempted/completed/scored denominators and critical false-acceptance/rejection/omission outcomes, source bindings and measured retrieval scope retained.",
+      "not_proven": "Synthetic reserve is not independently blind/private holdout. Request construction and authored control responses do not qualify model semantics; prior critical findings and7/16 bounded retrieval misses remain.",
+      "acceptance_cases": [
+        "ME-01",
+        "ME-02",
+        "ME-04",
+        "ME-08",
+        "ME-09",
+        "ME-14",
+        "RT-01",
+        "RT-02"
+      ],
+      "implementation": "50-case reserve and scoring/activation boundaries frozen;140 offline tests pass. Ten single-request cases across4families construct canonical requests;40 remain explicitly unsupported. No provider/retrieval outputs.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A06",
+      "title": "Qualify Arabic scanned-input extraction",
+      "plan": [
+        "W02",
+        "W05",
+        "D03"
+      ],
+      "status": "automatic_arabic_semantic_qualification_failed",
+      "evidence": [
+        "E11"
+      ],
+      "remaining": "Keep the rejected Arabic-only single-page tuning unadopted. Qualify a different maintainable recognizer/configuration against independently frozen whole-page Arabic, mixed identifiers, English controls, blank pages and numeric/negation gold before changing defaults. Preserve readable pages and mandatory source-bound visual correction; never relabel a valid scan invalid.",
+      "done_when": "Independent gold tests preserve the supported Arabic obligations, numbers and blank/read coverage. Until then, automatic valid-scan correctness remains an explicit unclosed product limitation; mandatory review is a safety control, not automatic success.",
+      "not_proven": "Confidence 82/numeric_uncertainty=false did not preserve meaning. The one original-page tuning candidate damages independent mixed identifiers and the previously passing English control; automatic Arabic acceptance remains failed.",
+      "acceptance_cases": [
+        "IN-03",
+        "IN-04",
+        "D03"
+      ],
+      "implementation": "Native extraction/manual page review implemented; automatic Arabic semantic qualification failed.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A07",
+      "title": "Verify Word table-of-contents update and target-engine compatibility",
+      "plan": [
+        "W04",
+        "D02"
+      ],
+      "status": "representative_visual_pass_target_word_update_open",
+      "evidence": [
+        "E03"
+      ],
+      "remaining": "Perform actual Microsoft Word update/save and verify page numbers, headings, Arabic/English layout and yellow gaps. Preserve the two failed explicit LibreOffice invocation attempts; they produced no refreshed artifact and do not identify the absent-cache cause.",
+      "done_when": "Named actual reviewer/engine versions, updated files and per-page hashes/visual evidence; no invented cache numbers.",
+      "not_proven": "No successful actual target-engine field update/save, no invented page numbers, and no proof every density/template renders correctly.",
+      "acceptance_cases": [
+        "EX-02",
+        "EX-06"
+      ],
+      "implementation": "Native renderer/content validation and91-page representative visual review exist. Two bounded explicit refresh invocations failed to prove execution; no new Word/TOC qualification.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A08",
+      "title": "Freeze final images and execute the checked release",
+      "plan": [
+        "W00",
+        "W11"
+      ],
+      "status": "guards_integrated_final_proxy_runtime_binding_refreeze_and_deployment_pending",
+      "evidence": [
+        "E04",
+        "E05",
+        "E08",
+        "E13"
+      ],
+      "remaining": "Finish final proxy/runtime proof binding and image provenance/promotion; refreeze the actual 22-entry manifest to all 24 source migrations and final pinned-worker gateway contract. Renew A03, then execute the checked release: validate actual old gateway bindings, retain permanent legacy-RPC fence, prove old process exit, visible transaction drain and pre-snapshot locked fresh zero census. Preserve forward recovery after timeout/unknown commit.",
+      "done_when": "Release workflow and deployed schema/image/gateway readback match the reviewed contract, with protected historical rows/ACLs and a concrete recovery record.",
+      "not_proven": "No final refrozen manifest, reliability application deployment or authenticated hosted acceptance. Point-in-time zero census is not a cutover fence/drain.",
+      "acceptance_cases": [
+        "W11 exit evidence",
+        "OP-02",
+        "OP-04"
+      ],
+      "implementation": "Release/coordinator/catalog guards and actual PostgreSQL cached-old-body races are integrated. Final source pins1 worker and streaming; managed own-login activity visibility and gateway/HTTPS resource specs were observed read-only.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    },
+    {
+      "id": "A09",
+      "title": "Complete actual authenticated hosted issuance, export and recovery acceptance",
+      "plan": [
+        "W01",
+        "W03",
+        "W04",
+        "W07",
+        "W09",
+        "W10",
+        "W11",
+        "D01",
+        "D04",
+        "D05",
+        "D06"
+      ],
+      "status": "harness_implemented_hosted_acceptance_pending",
+      "evidence": [
+        "E02",
+        "E04",
+        "E05",
+        "E06",
+        "E07",
+        "E12"
+      ],
+      "remaining": "Use isolated fixtures or explicitly authorized existing records through the real browser/API/worker/storage paths. Cover early template/partial vs substantive issued status, generated and ordinary draft/final exports, one/two-volume atomic readiness, close-tab/reentry/retry, late source/member/approval changes, full/unknown storage and readback. Measure accepted-to-whole-package issuance including queue against 600 seconds; terminal unavailability returns earlier. For retirement acceptance, run the exact fenced process/physical recovery protocol in an authorized isolated setting; local fake process proofs are insufficient. The historical 22-migration shared-helper 13-check restore is proven; A03 separately requires the renewed final 24-migration drill; separately define service recovery-point/time objectives and compare observed recovery against them before claiming D05.",
+      "done_when": "Independent authenticated download hashes/sizes/complete-set and browser state; full request timestamps including failures; quota/usage/lease/currentness invariants; cleanup and recovery receipts.",
+      "not_proven": "No hosted600s/concurrency promise, real-user complete workflow, or production physical retirement can be inferred from local tests.",
+      "acceptance_cases": [
+        "AR-04",
+        "AR-05",
+        "EX-01",
+        "EX-03",
+        "EX-04",
+        "EX-05",
+        "OP-02",
+        "OP-03",
+        "OP-04",
+        "OP-05",
+        "UX-01",
+        "UX-02",
+        "UX-03",
+        "BC-01"
+      ],
+      "implementation": "Durable generated/ordinary packages and acceptance harness implemented; full real hosted acceptance pending.",
+      "deployed": false,
+      "hosted_acceptance": "not_complete"
+    }
+  ],
+  "closed_since_revision1": [
+    {
+      "former_action": "A03",
+      "closed_scope": "Shared-helper isolated cloud Auth/Storage restore: all 13 checks passed in 41910306855 with source-bound helper and cleanup. Earlier two failures and old-harness success retained.",
+      "evidence": "E06",
+      "still_open_under": [
+        "A03:reopened only for final 24-migration/source contract; historical 22-migration closed scope retained",
+        "A08:production policy applied/observed only during checked release",
+        "A09:declared service recovery objectives and hosted end-to-end timing"
+      ]
+    },
+    {
+      "scope": "Retirement adapter explicit SET-role authority",
+      "evidence": "E04",
+      "result": "Local PostgreSQL red/green proof integrated; actual production admission and physical retirement remain distinct."
+    }
+  ],
+  "previous_observed_root_commit": "256c50e0deaba7f38e6985a58259e5a108742c60",
+  "refresh_requested_anchor": "a7922ed717bdc6f8d4973fb9aa72979a5549d675",
+  "completed_scopes_since_revision2": [
+    {
+      "scope": "API admission/client identity and complete paging implemented",
+      "evidence": [
+        "E01"
+      ],
+      "limit": "At revision2/3 full application and actual API batch capacity were pending; later scoped closures are recorded separately."
+    },
+    {
+      "scope": "Structured-body persistence corrected with seven migrated regressions",
+      "evidence": [
+        "E01",
+        "E02"
+      ],
+      "limit": "Native receipts remain fixture-specific"
+    },
+    {
+      "scope": "Actual REST100-command bounded transport passed",
+      "evidence": [
+        "E13"
+      ],
+      "limit": "Not actual API-image or managedDB capacity"
+    },
+    {
+      "scope": "Warm-two plus fresh-one actual DOCX downloads and same-artifact reviewed-upload native green",
+      "evidence": [
+        "E02"
+      ],
+      "limit": "10.88 MiB minimum measured margin; synthetic upstream/authority; no universal capacity"
+    },
+    {
+      "scope": "Hosted legacy census zero and actual gateway legacy/TUS denial",
+      "evidence": [
+        "E05",
+        "E08"
+      ],
+      "limit": "Point-in-time census plus isolated routing; final DB drain/cutover pending"
+    }
+  ],
+  "pending_at_anchor": {
+    "full_checks": "final_integrated_rerun_pending_after_retained_diagnostic_and33_focused_corrections",
+    "final_https_receipt": "not_yet_ingested_at_anchor",
+    "final_gateway_release_binding": "pinned_worker_source_integrated_ops_final_parity_pending",
+    "runtime_image_promotion": "implementation_in_progress",
+    "renewed24_migration_restore": "pending",
+    "model_reserve": "10_constructible40_unsupported_no_provider_outputs_not_blind",
+    "application_deployed": false
+  },
+  "completed_scopes_since_revision3": [
+    {
+      "scope": "Actual API100 with real isolated PostgreSQL/REST, exact streamed results and lifecycle",
+      "evidence": [
+        "E13"
+      ],
+      "limit": "Synthetic Auth lookup; no gateway/hosted SLO in that receipt."
+    },
+    {
+      "scope": "Final worker 1 Nginx disk-backed transport, exact route/SDK matrix and guarded resources",
+      "evidence": [
+        "E05"
+      ],
+      "limit": "Earlier tmpfs disk claim withdrawn; actual HTTPS/hosted path separate."
+    },
+    {
+      "scope": "Managed own-login visibility and actual gateway/HTTPS resource specs observed",
+      "evidence": [
+        "E08"
+      ],
+      "limit": "Read-only point-in-time observations; no fence/drain/deployment."
+    },
+    {
+      "scope": "24-migration release/cached-old-body/definition guards integrated",
+      "evidence": [
+        "E13"
+      ],
+      "limit": "Actual manifest still22; refreeze/renewedrestore/deployment pending."
+    },
+    {
+      "scope": "Reserve/scorer frozen and10 canonical single requests constructible",
+      "evidence": [
+        "E09"
+      ],
+      "limit": "40 unsupported, actual outputs0; no semantic/retrieval qualification."
+    }
+  ]
+}

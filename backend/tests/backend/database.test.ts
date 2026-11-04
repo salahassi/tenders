@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { batchRpcBody } from "./fixtures/batchRpcTransport.ts";
 import type { PGlite } from "@electric-sql/pglite";
 import { databaseWithMigrations } from "./databaseFixture";
 import { beforeAll, afterAll, afterEach, describe, it, expect } from "vitest";
@@ -434,7 +435,7 @@ describe("queue integration through migrated PostgreSQL functions", () => {
     }
   });
 
-  it("allows one active job across repeated dispatches and records a heartbeat", async () => {
+  it("allows one active non-render job across repeated dispatches and records a heartbeat", async () => {
     await queueJob();
     await queueJob();
     const first = await claim();
@@ -447,7 +448,12 @@ describe("queue integration through migrated PostgreSQL functions", () => {
       db.query("update public.jobs set status='running' where id=$1", [
         pending,
       ]),
-    ).rejects.toThrow(/one_active_job_per_workspace/);
+    ).rejects.toMatchObject({
+      code: "23505",
+      // Draft-section work retains its hard single-job lane. Local rendering
+      // has a separate lane under the globally serialized render admission.
+      constraint: "one_active_non_render_job_per_workspace",
+    });
     expect((await readJob(pending)).attempts).toBe(0);
     const heartbeat = await db.query<{ last_heartbeat_at: string | null }>(
       "select last_heartbeat_at from public.operations where workspace_id=$1",
@@ -555,21 +561,33 @@ describe("connected UI commands through HTTP and PostgreSQL", () => {
           throw new AppError(403, "ACCESS_PENDING", "Not approved");
         return result.rows[0];
       },
-      batch: async (_token: string, input: unknown, batchKey: string) => {
-        try {
-          return (
-            (
-              await asUser(
-                id,
-                "select public.app_batch($1::jsonb,$2) as data",
-                [JSON.stringify(input), batchKey],
-              )
-            ).rows[0] as { data: unknown }
-          ).data;
-        } catch (error) {
-          throw databaseError(error as Error);
-        }
-      },
+      batchStream: (
+        _token: string,
+        input: unknown[],
+        batchKey: string,
+        signal: AbortSignal,
+      ) =>
+        batchRpcBody(
+          async (name, args) => {
+            const result =
+              name === "app_batch_prepare"
+                ? await asUser(
+                    id,
+                    "select public.app_batch_prepare($1::jsonb,$2) as data",
+                    [JSON.stringify(args.commands), args.idempotency_key],
+                  )
+                : await asUser(
+                    id,
+                    "select public.app_batch_result_chunk($1::uuid,$2::integer,$3::integer) as data",
+                    [args.receipt_id, args.result_ordinal, args.chunk_index],
+                  );
+            return (result.rows[0] as { data: unknown }).data;
+          },
+          _token,
+          input,
+          batchKey,
+          signal,
+        ),
     };
     const { modelEnvironments } =
       await import("../../supabase/functions/_shared/backend.ts");
@@ -734,7 +752,7 @@ describe("connected UI commands through HTTP and PostgreSQL", () => {
     ).toBe(400);
     expect((await api(owner, [])).status).toBe(400);
     await expect(
-      asUser(owner, "select public.app_batch(null,'null-batch')"),
+      asUser(owner, "select public.app_batch_prepare(null,'null-batch')"),
     ).rejects.toThrow("INVALID_INPUT");
     expect(
       (

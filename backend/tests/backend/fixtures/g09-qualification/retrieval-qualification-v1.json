@@ -1,0 +1,198 @@
+{
+  "version": 1,
+  "purpose": "Independent bilingual retrieval and omission measurement. Semantic support is independently labeled but lexical retrieval must never claim it was proven. No outcome-derived recall threshold.",
+  "acceptance": [
+    "All bounded whole-source controls retain the decisive record and its exact qualification.",
+    "Every admitted partial source retains exact parent identity, is unverified and is not claim-eligible.",
+    "Every known omission stays explicit; no result proves capability absence or semantic support.",
+    "Missing/style/unverified controls never become claim-eligible."
+  ],
+  "scoring": {
+    "full_source_recall": "decisive source present unchanged / labeled whole-source controls",
+    "bounded_discovery_recall": "both decisive fact and qualification present / all bilingual bounded cases",
+    "silent_omission_count": "gold missing while selection_complete or capability_absence_proven is true",
+    "false_claim_eligibility_count": "partial/style/unverified source admitted as claim-eligible"
+  },
+  "filler": {
+    "paragraph": "Historical office stationery and unrelated archived contact details. ",
+    "repetitions": 450
+  },
+  "cases": [
+    {
+      "id": "approval-ar",
+      "query_language": "ar",
+      "query": "إثبات تنفيذ مسار اعتماد الطلبات",
+      "gold_source_id": "decisive",
+      "decisive_fact": "Delivered purchase approval workflows for a municipal service desk.",
+      "decisive_qualifier": "Only purchase requests were covered; financial authorization was excluded.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "approval-en",
+      "query_language": "en",
+      "query": "Demonstrate delivery of approval workflows.",
+      "gold_source_id": "decisive",
+      "decisive_fact": "نفذنا سير العمل والموافقات لطلبات الشراء.",
+      "decisive_qualifier": "فقط طلبات الشراء؛ لا يشمل ذلك تفويض الدفع.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "security-ar",
+      "query_language": "ar",
+      "query": "تقديم خبرة في الأمن السيبراني",
+      "gold_source_id": "decisive",
+      "decisive_fact": "Delivered cybersecurity assessments for internal applications.",
+      "decisive_qualifier": "Only internal systems were covered; no government certification is claimed.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "security-en",
+      "query_language": "en",
+      "query": "Demonstrate cybersecurity assessment experience.",
+      "gold_source_id": "decisive",
+      "decisive_fact": "نفذنا تقييمات الأمن السيبراني للتطبيقات الداخلية.",
+      "decisive_qualifier": "فقط للأنظمة الداخلية؛ لا ندعي اعتماداً حكومياً.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "integration-ar",
+      "query_language": "ar",
+      "query": "إثبات تكامل وربط الأنظمة",
+      "gold_source_id": "decisive",
+      "decisive_fact": "Implemented API interfaces connecting the procurement and finance systems.",
+      "decisive_qualifier": "Only read access was enabled; posting payments was excluded.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "integration-en",
+      "query_language": "en",
+      "query": "Demonstrate system integration using APIs.",
+      "gold_source_id": "decisive",
+      "decisive_fact": "نفذنا تكامل وواجهات ربط نظام المشتريات والنظام المالي.",
+      "decisive_qualifier": "فقط للقراءة؛ لا يشمل ذلك إصدار الدفعات.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "recovery-ar",
+      "query_language": "ar",
+      "query": "إثبات خبرة النسخ الاحتياطي والتعافي",
+      "gold_source_id": "decisive",
+      "decisive_fact": "Delivered backup restoration and recovery drills.",
+      "decisive_qualifier": "Recovery applied only to the test environment; production recovery was not included.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "recovery-en",
+      "query_language": "en",
+      "query": "Demonstrate backup recovery delivery.",
+      "gold_source_id": "decisive",
+      "decisive_fact": "نفذنا النسخ الاحتياطي وتمارين الاستعادة والتعافي.",
+      "decisive_qualifier": "فقط للبيئة التجريبية؛ لا يشمل ذلك استعادة بيئة الإنتاج.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "training-ar",
+      "query_language": "ar",
+      "query": "تقديم دليل على التدريب وورش العمل",
+      "gold_source_id": "decisive",
+      "decisive_fact": "Delivered training workshops for service desk operators.",
+      "decisive_qualifier": "Only the listed operators attended; this is not an accredited certificate.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "training-en",
+      "query_language": "en",
+      "query": "Demonstrate training workshop delivery.",
+      "gold_source_id": "decisive",
+      "decisive_fact": "قدمنا التدريب وورش العمل لموظفي مركز الخدمة.",
+      "decisive_qualifier": "فقط للمشاركين المسجلين؛ لا تعد هذه شهادة اعتماد.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "cloud-ar",
+      "query_language": "ar",
+      "query": "إثبات خبرة الاستضافة السحابية",
+      "gold_source_id": "decisive",
+      "decisive_fact": "Delivered cloud hosting operations for a private customer.",
+      "decisive_qualifier": "Only the private tenant was covered; regulated hosting approval was not granted.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "cloud-en",
+      "query_language": "en",
+      "query": "Demonstrate cloud hosting operations.",
+      "gold_source_id": "decisive",
+      "decisive_fact": "نفذنا الاستضافة السحابية لعميل خاص.",
+      "decisive_qualifier": "فقط لبيئة العميل الخاص؛ لا يوجد اعتماد للاستضافة المنظمة.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "migration-ar",
+      "query_language": "ar",
+      "query": "إثبات ترحيل ونقل البيانات",
+      "gold_source_id": "decisive",
+      "decisive_fact": "Completed a data migration from the legacy register.",
+      "decisive_qualifier": "Only validated active records were transferred; archival records were excluded.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "migration-en",
+      "query_language": "en",
+      "query": "Demonstrate data migration delivery.",
+      "gold_source_id": "decisive",
+      "decisive_fact": "أنجزنا ترحيل ونقل البيانات من السجل القديم.",
+      "decisive_qualifier": "فقط السجلات النشطة المتحقق منها؛ لا يشمل الأرشيف.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "accessibility-ar",
+      "query_language": "ar",
+      "query": "إثبات توافق الخدمات مع احتياجات ذوي الإعاقة",
+      "gold_source_id": "decisive",
+      "decisive_fact": "Audited screen-reader navigation and keyboard operation.",
+      "decisive_qualifier": "The assessment was advisory only; no conformity certificate was issued.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    },
+    {
+      "id": "accessibility-en",
+      "query_language": "en",
+      "query": "Demonstrate accessible services for disabled users.",
+      "gold_source_id": "decisive",
+      "decisive_fact": "فحصنا عمل قارئ الشاشة والتنقل باستخدام لوحة المفاتيح.",
+      "decisive_qualifier": "كان الفحص استشارياً فقط؛ لم تصدر شهادة مطابقة.",
+      "fact_status": "qualified_experience_not_unconditional_certification",
+      "wrong_positive": "This proves unrestricted certified company capability.",
+      "bounded_budget_bytes": 3000
+    }
+  ]
+}

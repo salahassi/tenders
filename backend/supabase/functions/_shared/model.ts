@@ -1,4 +1,9 @@
-import { blockedContent, contentPolicyCategories } from "./contentPolicy.ts";
+import {
+  providerFailure,
+  providerFailureAffects,
+  type ProviderFailureScope,
+} from "./modelProviderErrors.ts";
+import { blockedContent } from "./contentPolicy.ts";
 export { blockedContent } from "./contentPolicy.ts";
 import {
   DEFAULT_OUTPUT_CEILING,
@@ -55,9 +60,15 @@ import {
   sourceReadingPrompt,
   sourceSystemInstructions,
   normalizedEvidence,
-  validateSourcePageResult,
 } from "./sourceModel.ts";
 import { z } from "zod";
+import {
+  sourceTaskOutputSchema,
+  materializeSourceCandidate,
+  validateSourceCandidate,
+  collectSourceCandidateDiagnostics,
+} from "./sourceEvidence.ts";
+import { SEMANTIC_PATCH_INSTRUCTIONS } from "./modelSemanticPatch.ts";
 import { readModelStream, ModelStreamError } from "./modelStream.ts";
 import { serviceScopeSchema, type ServiceScope } from "./discovery.ts";
 import {
@@ -74,15 +85,55 @@ export {
 import {
   validationDiagnostic,
   type ModelValidationDiagnostic,
+  MAX_MODEL_VALIDATION_DIAGNOSTICS,
 } from "./modelValidationDiagnostics.ts";
+import { collectReferenceDiagnostics } from "./modelReferenceDiagnostics.ts";
+import { collectDomainDiagnostics } from "./modelDomainDiagnostics.ts";
+import { mergeModelValidationDiagnostics } from "./modelValidationDiagnostics.ts";
 export class ModelError extends Error {
   constructor(
     public code: string,
     public retryAfter: string | null = null,
     public validationDiagnostics: ModelValidationDiagnostic[] = [],
+    public omittedValidationDiagnosticCount = 0,
   ) {
     super(code);
   }
+}
+function sourceValidationError(error: unknown): unknown {
+  const source = error as {
+    code?: unknown;
+    source_path?: unknown;
+    source_diagnostics?: { code: string; source_path: string }[];
+  } | null;
+  if (source?.code === "SOURCE_MATERIALIZATION_CAPACITY")
+    return new ModelError("MODEL_CONTEXT_TOO_LARGE");
+  return typeof source?.code === "string" &&
+    /^SOURCE_[A-Z_]+$/.test(source.code) &&
+    typeof source.source_path === "string"
+    ? new ModelError(
+        "EVIDENCE_REFERENCE_INVALID",
+        null,
+        (
+          source.source_diagnostics ?? [
+            { code: source.code, source_path: source.source_path },
+          ]
+        )
+          .slice(0, MAX_MODEL_VALIDATION_DIAGNOSTICS)
+          .map((item) =>
+            validationDiagnostic(
+              "EVIDENCE_REFERENCE_INVALID",
+              "invalid_scope",
+              { paths: [item.source_path] },
+            ),
+          ),
+        Math.max(
+          0,
+          (source.source_diagnostics?.length ?? 1) -
+            MAX_MODEL_VALIDATION_DIAGNOSTICS,
+        ),
+      )
+    : error;
 }
 /** A retained safe candidate needs a bounded content correction, not another
  * provider request with the same unchanged writer prompt. No private body is
@@ -138,6 +189,12 @@ export type ModelPool = {
   routing_mode?: "round_robin";
   executor_version?: number;
   pending_model_config_id?: string | null;
+  issuance_request?: {
+    id: string;
+    deadline_at: string;
+    outcome: string;
+    error_code: string | null;
+  };
 };
 export type ModelEnvironment = {
   provider: string;
@@ -203,8 +260,12 @@ export function taskSystemInstructions(
   task: ModelTask,
   verificationRevision: VerificationRevision = 1,
   semanticRevision: SemanticRevision = 0,
+  patchWire = false,
 ) {
-  const original = legacyTaskSystemInstructions(task, verificationRevision);
+  const original =
+    task === "repair_result" && patchWire
+      ? `${systemInstructions}\n${SEMANTIC_PATCH_INSTRUCTIONS}`
+      : legacyTaskSystemInstructions(task, verificationRevision);
   return semanticRevision > 0 && task !== "connection_probe"
     ? `${original}\n${semanticPolicyText(semanticRevision)}`
     : original;
@@ -256,64 +317,6 @@ export function available(
   )
     throw new ModelError("PROVIDER_WORKSPACE_REQUIRED");
 }
-function validateQuotes(
-  refs: { id: string; quote: string }[],
-  evidence: Evidence[],
-  kind?: Evidence["kind"],
-  path = "$",
-) {
-  const canonicalText = (value: string) => normalizedEvidence(value);
-  for (const [index, ref] of refs.entries()) {
-    const source = evidence.find((e) => e.id === ref.id);
-    if (
-      !source ||
-      !canonicalText(ref.quote) ||
-      !canonicalText(source.text).includes(canonicalText(ref.quote)) ||
-      (kind && source.kind !== kind) ||
-      (source.kind === "company" && !source.verified)
-    ) {
-      const reason = !source
-        ? "source_missing"
-        : !canonicalText(ref.quote)
-          ? "quote_empty"
-          : !canonicalText(source.text).includes(canonicalText(ref.quote))
-            ? "source_quote_mismatch"
-            : kind && source.kind !== kind
-              ? "source_kind_mismatch"
-              : "company_not_verified";
-      console.warn(
-        "model_evidence_diagnostic",
-        JSON.stringify({
-          reason,
-        }),
-      );
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-        validationDiagnostic("EVIDENCE_REFERENCE_INVALID", reason, {
-          paths: [`${path}[${index}].quote`],
-          evidence_ids: [ref.id],
-        }),
-      ]);
-    }
-  }
-}
-const sameIds = (actual: string[], expected: string[]) =>
-  new Set(actual).size === actual.length &&
-  actual.length === expected.length &&
-  expected.every((x) => actual.includes(x));
-function coverageError(
-  paths: string[],
-  requiredIds: string[] = [],
-  reason:
-    | "required_ids_mismatch"
-    | "required_content_missing" = "required_ids_mismatch",
-) {
-  return new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
-    validationDiagnostic("MODEL_COVERAGE_INCOMPLETE", reason, {
-      paths,
-      requirement_ids: requiredIds,
-    }),
-  ]);
-}
 /** Application-owned scope criteria, including the original task on repairs. */
 export function classificationScopePolicy(
   task: ModelTask,
@@ -351,12 +354,24 @@ export function validateModelResult(
     independentGrounding?: boolean;
     scopePolicy?: ServiceScope;
     draftInputVersion?: 1;
+    sourceContext?: unknown;
   },
 ): any {
-  const schema =
+  const legacySchema =
     task === "verify_grounding" && options?.aggregateVerification
       ? aggregateVerificationSchema
-      : modelSchemas[task];
+      : task === "repair_result" &&
+          value &&
+          typeof value === "object" &&
+          "target_task" in value &&
+          primaryModelTasks.includes(value.target_task as PrimaryModelTask)
+        ? taskOutputSchema(task, value.target_task as PrimaryModelTask)
+        : modelSchemas[task];
+  const schema = sourceTaskOutputSchema(
+    task,
+    options?.sourceContext,
+    legacySchema,
+  );
   const result = schema.parse(value) as any;
   if (task === "repair_result") {
     validateModelResult(
@@ -367,316 +382,48 @@ export function validateModelResult(
       options,
     );
   }
-  if (task === "verify_grounding") {
-    if (
-      !sameIds(result.processed_requirement_ids, requiredIds) ||
-      !sameIds(
-        result.requirement_checks.map((r: any) => r.requirement_id),
-        requiredIds,
-      ) ||
-      new Set(result.claims.map((claim: any) => claim.id)).size !==
-        result.claims.length
-    ) {
-      console.warn(
-        "model_coverage_diagnostic",
-        JSON.stringify({
-          phase: "requirements",
-          expected: requiredIds.length,
-          processed: result.processed_requirement_ids.length,
-          checks: result.requirement_checks.length,
-          matched: requiredIds.filter((id) =>
-            result.processed_requirement_ids.includes(id),
-          ).length,
-          unique_claims:
-            new Set(result.claims.map((claim: any) => claim.id)).size ===
-            result.claims.length,
-        }),
-      );
-      throw coverageError(
-        ["$.processed_requirement_ids", "$.requirement_checks", "$.claims"],
-        requiredIds,
-      );
-    }
-    for (const [index, claim] of result.claims.entries()) {
-      validateQuotes(
-        claim.source_refs,
-        evidence,
-        claim.kind === "company_fact" && claim.status === "supported"
-          ? "company"
-          : undefined,
-        `$.claims[${index}].source_refs`,
-      );
-      // Missing support is a semantic defect for candidate repair, rather
-      // than malformed verifier output. groundingDefects independently blocks
-      // these claims even when the verifier incorrectly labels them supported.
-    }
-    for (const [index, requirement] of result.requirement_checks.entries())
-      validateQuotes(
-        requirement.source_refs,
-        evidence,
-        undefined,
-        `$.requirement_checks[${index}].source_refs`,
-      );
-    if (
-      result.findings.some(
-        (f: any) =>
-          f.claim_ids.some(
-            (id: string) => !result.claims.some((c: any) => c.id === id),
-          ) ||
-          f.requirement_ids.some((id: string) => !requiredIds.includes(id)),
-      )
-    )
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-        validationDiagnostic(
-          "EVIDENCE_REFERENCE_INVALID",
-          "invalid_finding_reference",
-          { paths: ["$.findings"] },
-        ),
-      ]);
-  }
-  if (task === "inspect_source_page") {
-    try {
-      validateSourcePageResult(result, evidence);
-    } catch {
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-        validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "invalid_scope", {
-          paths: ["$"],
-        }),
-      ]);
-    }
-  }
-  if (blockedContent(JSON.stringify(result))) {
-    // Report categories only; never include a model result or matched text.
-    console.warn(
-      "model_content_policy",
-      JSON.stringify({
-        task,
-        categories: contentPolicyCategories(JSON.stringify(result)),
-      }),
+  const referenceErrors = collectReferenceDiagnostics(
+    task,
+    result,
+    evidence,
+    requiredIds,
+    options,
+  );
+  const sourceErrors = collectSourceCandidateDiagnostics(
+    task,
+    result,
+    options?.sourceContext,
+    evidence,
+  ).map((error) =>
+    validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "invalid_scope", {
+      paths: [error.source_path],
+    }),
+  );
+  const domain = collectDomainDiagnostics(
+    task,
+    result,
+    evidence,
+    requiredIds,
+    options,
+  );
+  const merged = mergeModelValidationDiagnostics(
+    referenceErrors,
+    { diagnostics: sourceErrors },
+    domain,
+  );
+  if (merged.diagnostics.length || referenceErrors.code || domain.terminalCode)
+    throw new ModelError(
+      domain.terminalCode ??
+        merged.diagnostics[0]?.code ??
+        referenceErrors.code!,
+      null,
+      merged.diagnostics,
+      merged.omittedCount,
     );
-    throw new ModelError("MODEL_OUTPUT_POLICY_BLOCKED");
-  }
-  if (task === "summarize_review") {
-    if (!sameIds(result.processed_review_ids, requiredIds))
-      throw coverageError(["$.processed_review_ids"], requiredIds);
-    for (const [index, directive] of result.directives.entries())
-      validateQuotes(
-        directive.source_refs,
-        evidence,
-        "review",
-        `$.directives[${index}].source_refs`,
-      );
-    if (result.questions.some((q: any) => q.requirement_ids.length))
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-        validationDiagnostic(
-          "EVIDENCE_REFERENCE_INVALID",
-          "invalid_finding_reference",
-          { paths: ["$.questions"] },
-        ),
-      ]);
-    if (!result.directives.length && !result.questions.length)
-      throw coverageError(
-        ["$.directives", "$.questions"],
-        requiredIds,
-        "required_content_missing",
-      );
-  }
-  if (task === "classify_opportunity" && result.scope_decision) {
-    validateQuotes(
-      result.scope_decision.notice_evidence,
-      evidence,
-      "notice",
-      "$.scope_decision.notice_evidence",
-    );
-    validateQuotes(
-      result.scope_decision.company_evidence || [],
-      evidence,
-      "company",
-      "$.scope_decision.company_evidence",
-    );
-  }
-  if (task === "classify_opportunity")
-    for (const [key, factor] of Object.entries(result.factors) as [
-      string,
-      any,
-    ][]) {
-      validateQuotes(
-        factor.notice_evidence,
-        evidence,
-        "notice",
-        `$.factors.${key}.notice_evidence`,
-      );
-      validateQuotes(
-        factor.company_evidence,
-        evidence,
-        "company",
-        `$.factors.${key}.company_evidence`,
-      );
-      let selectedKeywordScope = false;
-      if (
-        key === "scope" &&
-        factor.rating !== null &&
-        factor.notice_evidence.length &&
-        !factor.company_evidence.length &&
-        result.scope_decision?.status !== "uncertain" &&
-        result.scope_decision?.keyword_evidence?.length
-      ) {
-        const policy = serviceScopeSchema.safeParse(options?.scopePolicy);
-        if (policy.success && policy.data.scope !== "company_knowledge") {
-          // Interests can establish service relevance, never company capacity,
-          // experience or eligibility. Both notice quote arrays were checked
-          // above; every selected term must belong to the frozen policy.
-          validateScopeDecision(result, policy.data);
-          selectedKeywordScope = true;
-        }
-      }
-      if (
-        factor.rating !== null &&
-        (!factor.notice_evidence.length ||
-          (!factor.company_evidence.length && !selectedKeywordScope))
-      )
-        throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-          validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "source_missing", {
-            paths: [
-              `$.factors.${key}.notice_evidence`,
-              `$.factors.${key}.company_evidence`,
-            ],
-          }),
-        ]);
-    }
-  if (task === "analyze_chunk") {
-    if (!sameIds(result.processed_block_ids, requiredIds))
-      throw coverageError(["$.processed_block_ids"], requiredIds);
-    for (const [index, req] of result.requirements.entries())
-      validateQuotes(
-        req.source_refs,
-        options?.draftInputVersion === 1
-          ? evidence.filter((source) => ["rfp", "notice"].includes(source.kind))
-          : evidence,
-        options?.draftInputVersion === 1 ? undefined : "rfp",
-        `$.requirements[${index}].source_refs`,
-      );
-  }
-  if (
-    ["plan_proposal", "review_proposal"].includes(task) &&
-    !sameIds(result.processed_requirement_ids, requiredIds)
-  )
-    throw coverageError(["$.processed_requirement_ids"], requiredIds);
-  if (task === "plan_blueprint" || task === "plan_structure") {
-    for (const [index, decision] of result.decisions.entries())
-      validateQuotes(
-        decision.evidence_refs,
-        evidence,
-        decision.kind === "company_fact" ? "company" : undefined,
-        `$.decisions[${index}].evidence_refs`,
-      );
-  }
-  if (task === "plan_proposal") {
-    if (result.sections.some((s: any) => s.key.startsWith("fixed-")))
-      throw new ModelError("TEMPLATE_BLOCK_OVERRIDE");
-    const addressed = [
-      ...result.sections.flatMap((s: any) => s.requirement_ids),
-      ...result.questions.flatMap((q: any) => q.requirement_ids),
-    ];
-    if (
-      requiredIds.some((x) => !addressed.includes(x)) ||
-      addressed.some((x) => !requiredIds.includes(x))
-    )
-      throw coverageError(
-        ["$.sections", "$.questions"],
-        requiredIds,
-        "required_content_missing",
-      );
-  }
-  if (task === "draft_section") {
-    if (
-      result.requirement_ids.some((x: string) => !requiredIds.includes(x)) ||
-      requiredIds.some(
-        (x) =>
-          !result.requirement_ids.includes(x) &&
-          !result.questions.some((q: any) => q.requirement_ids.includes(x)),
-      )
-    )
-      throw coverageError(
-        ["$.requirement_ids", "$.questions"],
-        requiredIds,
-        "required_content_missing",
-      );
-    validateQuotes(
-      result.evidence_refs,
-      evidence,
-      undefined,
-      "$.evidence_refs",
-    );
-    for (const [index, claim] of result.company_claims.entries()) {
-      const fact = evidence.find(
-        (e) => e.id === claim.source_id && e.kind === "company" && e.verified,
-      );
-      if (
-        !fact ||
-        (options?.independentGrounding
-          ? !normalizedEvidence(claim.quote) ||
-            !normalizedEvidence(fact.text).includes(
-              normalizedEvidence(claim.quote),
-            )
-          : !fact.text.includes(claim.quote) ||
-            !claim.quote.includes(claim.claim))
-      )
-        throw new ModelError("UNSUPPORTED_COMPANY_CLAIM", null, [
-          validationDiagnostic(
-            "UNSUPPORTED_COMPANY_CLAIM",
-            "unsupported_company_claim",
-            {
-              paths: [
-                `$.company_claims[${index}].source_id`,
-                `$.company_claims[${index}].quote`,
-              ],
-              evidence_ids: [claim.source_id],
-            },
-          ),
-        ]);
-      // This guard checks citation provenance, not semantic equivalence. A
-      // paraphrase, translation or claim summary need not be a substring of its
-      // verbatim source quote (or the section body). The mandatory V2 grounding
-      // graph independently checks all candidate text and declared claims
-      // before accepting the section. Legacy execution retains its old guards.
-    }
-    const text = result.content_blocks
-      .map((b: any) =>
-        b.type === "table" ? [b.headers, ...b.rows].flat().join(" ") : b.text,
-      )
-      .join("\n");
-    for (const sentence of text.split(/[.!?\n]/))
-      if (
-        !options?.independentGrounding &&
-        /we (?:hold|are certified|have delivered|are licensed)|our (?:certifications|customers)|لدينا شهاد|نمتلك شهاد|نحن معتمد|عملاؤنا/i.test(
-          sentence,
-        ) &&
-        !sentence.includes("[INPUT REQUIRED") &&
-        !result.company_claims.some((c: any) =>
-          c.quote.includes(sentence.trim()),
-        )
-      )
-        throw new ModelError("UNSUPPORTED_COMPANY_CLAIM");
-  }
-  if (task === "review_proposal") {
-    if (
-      !sameIds(
-        result.responses.map((r: any) => r.requirement_id),
-        requiredIds,
-      )
-    )
-      throw coverageError(["$.responses"], requiredIds);
-    for (const [index, response] of result.responses.entries()) {
-      validateQuotes(
-        response.evidence_refs,
-        evidence,
-        undefined,
-        `$.responses[${index}].evidence_refs`,
-      );
-      if (response.status === "not_applicable_approved")
-        throw new ModelError("MODEL_CANNOT_APPROVE");
-    }
+  try {
+    validateSourceCandidate(task, result, options?.sourceContext, evidence);
+  } catch (error) {
+    throw sourceValidationError(error);
   }
   return result;
 }
@@ -719,6 +466,7 @@ export type AttemptMetadata = {
   provider_error_code?: string;
   provider_error_type?: string;
   provider_error_reason?: string;
+  provider_error_scope?: ProviderFailureScope;
 };
 export type ModelRoundProgress = {
   input_hash: string;
@@ -742,11 +490,15 @@ export interface Ledger {
     transport: string,
     level: ExecutionProfile["reasoning"],
   ): Promise<boolean>;
+  validateCandidateScope?(result: unknown): void | Promise<void>;
+  wireOutputSchema?: z.ZodType;
+  transformCandidate?(result: unknown): Promise<unknown>;
   validateCandidate?(result: unknown): void;
   invalidCandidate?(
     result: unknown,
     code: string,
     diagnostics?: ModelValidationDiagnostic[],
+    omittedDiagnosticCount?: number,
   ): Promise<void | "repair">;
   loadRound?(inputHash: string): Promise<ModelRoundProgress | null>;
   saveRound?(
@@ -1001,6 +753,8 @@ export class FreeModelProvider {
     private configuration?: ModelConfiguration,
     private verificationRevision: VerificationRevision = 1,
     private semanticRevision: SemanticRevision = 0,
+    private patchWire = false,
+    private issuanceDeadline?: number,
   ) {}
   private async diagnoseRejectedRequest(
     response: Response,
@@ -1086,7 +840,11 @@ export class FreeModelProvider {
           zaiReasons[this.telemetry.provider_error_code || ""]) ||
         reasons.find(([, pattern]) =>
           pattern.test(
-            message + " " + (this.telemetry.provider_error_type || ""),
+            message +
+              " " +
+              (this.telemetry.provider_error_type || "") +
+              " " +
+              (this.telemetry.provider_error_code || ""),
           ),
         )?.[0] ||
         (response.status === 429 ? "unspecified_429" : "provider_rejected");
@@ -1132,6 +890,18 @@ export class FreeModelProvider {
         })
       )
         this.telemetry.provider_error_reason = "reasoning_unsupported";
+      const failure = providerFailure({
+        status: response.status,
+        method: this.telemetry.request_phase === "poll" ? "GET" : "POST",
+        reason: this.telemetry.provider_error_reason,
+        code: this.telemetry.provider_error_code,
+        type: this.telemetry.provider_error_type,
+        error: structuredError,
+        model: this.env.model,
+        project: this.env.projectRef,
+      });
+      this.telemetry.provider_error_reason = failure.reason;
+      this.telemetry.provider_error_scope = failure.scope;
       const labels: Record<string, RegExp> = {
         interactions: /interactions/i,
         background: /background/i,
@@ -1187,6 +957,11 @@ export class FreeModelProvider {
     method: "POST" | "GET" | "DELETE" = "POST",
     diagnosticTask?: ModelTask,
   ): Promise<any> {
+    if (this.issuanceDeadline !== undefined) {
+      const remaining = this.issuanceDeadline - Date.now();
+      if (remaining <= 0) throw new ModelError("PROPOSAL_ISSUANCE_TIMEOUT");
+      timeout = Math.min(timeout, remaining);
+    }
     const controller = new AbortController();
     let wireDiagnostic: Promise<Record<string, unknown> | null> | null = null;
     let idleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -1257,21 +1032,15 @@ export class FreeModelProvider {
               ? new Date(raw).toISOString()
               : null;
         throw new ModelError(
-          this.telemetry.provider_error_reason === "background_retrieval_failed"
-            ? "PROVIDER_BACKGROUND_RETRIEVAL_FAILED"
-            : response.status === 429
-              ? "PROVIDER_QUOTA_WAIT"
-              : response.status === 401 || response.status === 403
-                ? "PROVIDER_AUTH_FAILED"
-                : response.status === 404
-                  ? method === "GET"
-                    ? "MODEL_RESULT_EXPIRED"
-                    : "PROVIDER_MODEL_NOT_FOUND"
-                  : response.status === 400 || response.status === 422
-                    ? "PROVIDER_REQUEST_INVALID"
-                    : response.status >= 500
-                      ? "MODEL_NETWORK_UNCERTAIN"
-                      : "PROVIDER_REQUEST_REJECTED",
+          providerFailure({
+            status: response.status,
+            method,
+            reason: this.telemetry.provider_error_reason,
+            code: this.telemetry.provider_error_code,
+            type: this.telemetry.provider_error_type,
+            model: this.env.model,
+            project: this.env.projectRef,
+          }).code,
           after,
         );
       }
@@ -1330,6 +1099,19 @@ export class FreeModelProvider {
         this.telemetry.provider_error_type = this.diagnosticIdentifier(
           result.error.type,
         );
+        const failure = providerFailure({
+          status: response.status,
+          method,
+          code: this.telemetry.provider_error_code,
+          type: this.telemetry.provider_error_type,
+          error: result.error,
+          model: this.env.model,
+          project: this.env.projectRef || "",
+        });
+        if (failure.code === "PROVIDER_QUOTA_WAIT") {
+          this.telemetry.provider_error_reason = failure.reason;
+          this.telemetry.provider_error_scope = failure.scope;
+        }
       }
       return result;
     } catch (error) {
@@ -1338,7 +1120,12 @@ export class FreeModelProvider {
       this.telemetry.provider_error_reason = controller.signal.aborted
         ? timeoutReason
         : "network_error";
-      throw new ModelError("MODEL_NETWORK_UNCERTAIN");
+      throw new ModelError(
+        this.issuanceDeadline !== undefined &&
+          Date.now() >= this.issuanceDeadline
+          ? "PROPOSAL_ISSUANCE_TIMEOUT"
+          : "MODEL_NETWORK_UNCERTAIN",
+      );
     } finally {
       clearTimeout(timer);
       clearTimeout(idleTimer);
@@ -1392,6 +1179,7 @@ export class FreeModelProvider {
         task,
         this.verificationRevision,
         this.semanticRevision,
+        this.patchWire,
       ),
       capabilities,
       profile,
@@ -1513,7 +1301,7 @@ export function modelPrompt(
   semanticRevision: SemanticRevision = 0,
 ) {
   const coverageContract =
-    task === "verify_grounding" && verificationRevision === 4
+    task === "verify_grounding" && verificationRevision >= 4
       ? analysisVerificationCoverage(context, requiredIds)
       : undefined;
   const original =
@@ -1524,7 +1312,10 @@ export function modelPrompt(
           prompt_version:
             task === "verify_grounding" && verificationRevision >= 2
               ? verificationPolicyVersion(verificationRevision)
-              : taskRegistry[task].promptVersion,
+              : task === "repair_result" &&
+                  (context as any)?.repair_patch_scope?.version === 1
+                ? "tenderdesk-repair-patch-v1"
+                : taskRegistry[task].promptVersion,
           ...(task === "verify_grounding" && verificationRevision >= 2
             ? {
                 verification_policy:
@@ -1536,7 +1327,10 @@ export function modelPrompt(
             : {}),
           writing_guide: writingGuide[language],
           repair_instruction: repair
-            ? "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
+            ? task === "repair_result" &&
+              (context as any)?.repair_patch_scope?.version === 1
+              ? SEMANTIC_PATCH_INSTRUCTIONS
+              : "The previous response failed validation. Rebuild the JSON from the original evidence; do not omit any required ID."
             : null,
           required_ids: requiredIds,
           untrusted_data: context,
@@ -1603,6 +1397,23 @@ export async function executeModel(
     throw new ModelError("MODEL_REQUEST_INVALID");
   const pool = await ledger.preflight(manifest, task);
   const automatic = pool.routing_mode === "round_robin";
+  const issuanceDeadline = pool.issuance_request
+    ? Date.parse(pool.issuance_request.deadline_at)
+    : null;
+  const remainingIssuanceMs = () =>
+    issuanceDeadline === null ? Infinity : issuanceDeadline - Date.now();
+  const assertIssuanceOpen = () => {
+    if (
+      issuanceDeadline !== null &&
+      (!Number.isFinite(issuanceDeadline) || remainingIssuanceMs() <= 0)
+    )
+      throw new ModelError("PROPOSAL_ISSUANCE_TIMEOUT");
+    if (pool.issuance_request && pool.issuance_request.outcome !== "active")
+      throw new ModelError(
+        pool.issuance_request.error_code || "PROPOSAL_ISSUANCE_CLOSED",
+      );
+  };
+  assertIssuanceOpen();
   const prompt = modelPrompt(
     task,
     context,
@@ -1614,7 +1425,17 @@ export async function executeModel(
     options.semanticRevision ?? 0,
   );
   if (blockedContent(prompt)) throw new ModelError("DATA_POLICY_BLOCKED");
-  const schema = taskJsonSchema(task, targetTask);
+  const outputSchema =
+    ledger.wireOutputSchema ??
+    sourceTaskOutputSchema(task, context, taskOutputSchema(task, targetTask));
+  const schema = z.toJSONSchema(outputSchema);
+  const patchWire =
+    task === "repair_result" &&
+    (context as any)?.repair_patch_scope?.version === 1;
+  if (
+    patchWire !== Boolean(ledger.wireOutputSchema && ledger.transformCandidate)
+  )
+    throw new ModelError("MODEL_IDENTITY_CHANGED");
   const inputHash = await sha256(prompt);
   const evidenceManifest = await Promise.all(
     evidence.map(async (item) => ({
@@ -1641,12 +1462,32 @@ export async function executeModel(
         ),
       )
     : pool.providers;
+  if (
+    pool.issuance_request &&
+    !providers.some((config) => {
+      const environment =
+        ledger.environment?.(config) ?? environments[config.provider];
+      return (
+        environment &&
+        tryAvailable(config, environment) &&
+        ((pool.pending_model_config_id &&
+          config.model_config_id === pool.pending_model_config_id) ||
+          !(config.retry_after && Date.parse(config.retry_after) > Date.now()))
+      );
+    })
+  )
+    throw new ModelError("AI_AGENTS_UNAVAILABLE");
   let lastError: ModelError = new ModelError("MODEL_NOT_CONFIGURED");
   let outputError: ModelError | null = savedRound?.output_error
     ? new ModelError(savedRound.output_error)
     : null;
   const retryWindows: (string | null)[] = savedRound?.retry_windows ?? [];
-  const accountWaits = new Map<string, string | null>();
+  const accountWaits: {
+    target: ModelConfiguration;
+    scope: ProviderFailureScope;
+    until: string | null;
+    code: string;
+  }[] = [];
   let roundSaved = Boolean(savedRound),
     deferred = false;
   const checkpointRound = async (index: number, releaseJob: boolean) => {
@@ -1679,6 +1520,7 @@ export async function executeModel(
   };
   try {
     for (const [index, config] of providers.entries()) {
+      assertIssuanceOpen();
       const env = ledger.environment?.(config) ?? environments[config.provider];
       if (
         automatic &&
@@ -1717,6 +1559,7 @@ export async function executeModel(
         env,
         fetcher,
         Math.min(
+          remainingIssuanceMs(),
           (ledger.invocationBudgetMs ?? 110000) > 110000 ? 120000 : 90000,
           Math.max(
             90000,
@@ -1728,6 +1571,8 @@ export async function executeModel(
         config,
         verificationRevision,
         options.semanticRevision ?? 0,
+        patchWire,
+        issuanceDeadline ?? undefined,
       );
       let reservation: string | null = null;
       let settled = false;
@@ -1847,10 +1692,22 @@ export async function executeModel(
           capabilities: { ...capabilities, background },
           ...(reasoningControl ? { reasoningControl } : {}),
         });
+        request.schema = schema;
+        // The durable execution contract uses numeric schema versions.
+        // 1 = legacy, 2 = source contract, 3 = scoped repair patch.
+        if (patchWire) request.schemaVersion = "3";
+        else if (
+          (context as any)?.source_contract_version === 1 ||
+          (context as any)?.original_context?.source_contract_version === 1
+        )
+          request.schemaVersion = "2";
         if (task === "verify_grounding" && verificationRevision >= 2)
           request.promptVersion =
             verificationPolicyVersion(verificationRevision);
-        if ((options.semanticRevision ?? 0) >= 1 && task !== "connection_probe")
+        if (
+          patchWire ||
+          ((options.semanticRevision ?? 0) >= 1 && task !== "connection_probe")
+        )
           request.promptVersion = JSON.parse(prompt).prompt_version;
         if (pending?.execution_metadata) {
           request.promptVersion =
@@ -1860,12 +1717,11 @@ export async function executeModel(
               pending.execution_metadata.route_revision ?? null;
         }
         await ledger.requestPrepared?.(request);
-        const accountKey = `${config.provider}:${config.project_ref}`;
-        if (!pending && config.connection_id && accountWaits.has(accountKey))
-          throw new ModelError(
-            "PROVIDER_QUOTA_WAIT",
-            accountWaits.get(accountKey),
-          );
+        const scopedWait = accountWaits.find((wait) =>
+          providerFailureAffects(wait.target, config, wait.scope),
+        );
+        if (!pending && scopedWait)
+          throw new ModelError(scopedWait.code, scopedWait.until);
         // A generation cooldown must not prevent polling an already accepted request.
         if (
           !pending &&
@@ -1880,6 +1736,7 @@ export async function executeModel(
           remoteId = pending.remote_request_id;
           settled = pending.state === "settled";
         } else {
+          assertIssuanceOpen();
           await ledger.beforeSend?.();
           // Automatic routing does not call a token-count endpoint or enforce a
           // daily token budget. This bounded local estimate is ledger metadata;
@@ -1989,9 +1846,25 @@ export async function executeModel(
         if (!result.complete) throw new ModelError("MODEL_OUTPUT_TRUNCATED");
         let parsedCandidate: unknown;
         try {
-          parsedCandidate = taskOutputSchema(task, targetTask).parse(
+          parsedCandidate = outputSchema.parse(
             normalizeOptionalNulls(JSON.parse(result.text), schema),
           );
+          if (ledger.transformCandidate)
+            parsedCandidate = await ledger.transformCandidate(parsedCandidate);
+          try {
+            parsedCandidate = materializeSourceCandidate(
+              task,
+              parsedCandidate,
+              context,
+              evidence,
+              false,
+            );
+          } catch (error) {
+            throw sourceValidationError(error);
+          }
+          // Scope integrity must run before a rejected candidate can enter
+          // the paid-writer repair cache through its local quote diagnostics.
+          await ledger.validateCandidateScope?.(parsedCandidate);
           const validated = validateModelResult(
             task,
             parsedCandidate,
@@ -2001,6 +1874,7 @@ export async function executeModel(
               ...options,
               scopePolicy: classificationScopePolicy(task, context),
               draftInputVersion: draftInputPolicyVersion(task, context),
+              sourceContext: context,
             },
           );
           if (task === "inspect_source_page") {
@@ -2022,6 +1896,7 @@ export async function executeModel(
             const completedId = remoteId;
             ledger.cleanup = () => provider.deleteBackground(completedId);
           }
+          assertIssuanceOpen();
           await finishAttempt("SUCCEEDED");
           if (automatic)
             await ledger.attempt?.(config.provider, "SUCCEEDED", true, config);
@@ -2041,6 +1916,9 @@ export async function executeModel(
               parsedCandidate,
               error.code,
               error.validationDiagnostics,
+              ...(error.omittedValidationDiagnosticCount
+                ? [error.omittedValidationDiagnosticCount]
+                : []),
             );
             if (
               retained === "repair" &&
@@ -2055,6 +1933,7 @@ export async function executeModel(
                 error.code,
                 null,
                 error.validationDiagnostics,
+                error.omittedValidationDiagnosticCount,
               );
             }
           }
@@ -2086,11 +1965,33 @@ export async function executeModel(
             code,
           );
         lastError = error instanceof ModelError ? error : new ModelError(code);
-        if (config.connection_id && provider.telemetry.http_status === 429)
-          accountWaits.set(
-            `${config.provider}:${config.project_ref}`,
-            lastError.retryAfter,
-          );
+        const cooldownCode =
+          code === "PROVIDER_REQUEST_REJECTED" &&
+          ["failed", "cancelled", "canceled"].includes(
+            provider.telemetry.finish_reason || "",
+          )
+            ? providerFailure({
+                status: provider.telemetry.http_status || 200,
+                method: "GET",
+                code: provider.telemetry.provider_error_code,
+                type: provider.telemetry.provider_error_type,
+                reason: provider.telemetry.provider_error_reason,
+                model: config.model,
+                project: config.project_ref,
+              }).code
+            : code;
+        if (
+          ["PROVIDER_QUOTA_WAIT", "PROVIDER_AUTH_FAILED"].includes(
+            cooldownCode,
+          ) &&
+          provider.telemetry.http_status
+        )
+          accountWaits.push({
+            target: config,
+            scope: provider.telemetry.provider_error_scope || "unknown",
+            until: lastError.retryAfter,
+            code: cooldownCode,
+          });
         retryWindows.push(lastError.retryAfter);
         await finishAttempt(code, lastError.retryAfter);
         if (error instanceof ModelCandidateRepair) {
@@ -2177,6 +2078,7 @@ export async function executeModel(
     if (
       outputError &&
       (!automatic ||
+        pool.issuance_request ||
         [
           "analyze_chunk",
           "summarize_review",
@@ -2192,6 +2094,22 @@ export async function executeModel(
     // A local occupied request slot should not inherit the escalating outage
     // backoff (which can reach an hour after harmless background polls).
     if (automatic && lastError.code === "MODEL_RATE_WAIT") throw lastError;
+    assertIssuanceOpen();
+    if (pool.issuance_request) {
+      if (
+        [
+          "MODEL_CONTEXT_TOO_LARGE",
+          "MODEL_OUTPUT_TOO_LARGE",
+          "MODEL_OUTPUT_TRUNCATED",
+          "MODEL_IDENTITY_CHANGED",
+          "USAGE_REVIEW_REQUIRED",
+          "USAGE_UNKNOWN",
+          "MODEL_NETWORK_UNCERTAIN",
+        ].includes(lastError.code)
+      )
+        throw lastError;
+      throw new ModelError("AI_AGENTS_UNAVAILABLE");
+    }
     throw automatic
       ? new ModelError(
           "MODEL_ROUND_EXHAUSTED",

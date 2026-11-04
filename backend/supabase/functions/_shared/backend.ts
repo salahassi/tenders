@@ -1,6 +1,9 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { AppError, databaseError } from "./http.ts";
 import { MODEL_PROVIDER_IDS, type ModelProviderId } from "./modelProviders.ts";
+import type { DocumentCoverage } from "./documentCoverage.ts";
+import { isHeavyFileTable } from "./heavyFileProjection.ts";
+import { postgrestBatchBody } from "./batchTransport.ts";
 export type ModelEnvironmentSlot = {
   provider: string;
   model: string;
@@ -242,6 +245,10 @@ export class Backend {
     limit: number,
     cursor?: string,
   ) {
+    // Keep full content and complete cursor traversal, but never materialize a
+    // second max-sized row merely to discover whether another page exists.
+    const heavy = isHeavyFileTable(table);
+    const pageSize = heavy ? 1 : limit;
     const selection: string =
       table === "restore_sessions"
         ? "id,state,created_at,expires_at,committed_at"
@@ -256,7 +263,7 @@ export class Backend {
       .order(table === "model_activity" ? "sequence" : "id", {
         ascending: table !== "model_activity",
       })
-      .limit(limit + 1);
+      .limit(heavy ? pageSize : pageSize + 1);
     for (const [key, value] of Object.entries(filters)) q = q.eq(key, value);
     if (cursor)
       q =
@@ -270,8 +277,10 @@ export class Backend {
       [key: string]: unknown;
     }>;
     return {
-      records: rows.slice(0, limit),
-      next_cursor: rows.length > limit ? rows[limit - 1].id : null,
+      records: rows.slice(0, pageSize),
+      next_cursor: (heavy ? rows.length === pageSize : rows.length > pageSize)
+        ? rows[pageSize - 1].id
+        : null,
     };
   }
   async one(token: string, table: string, id: string) {
@@ -298,18 +307,35 @@ export class Backend {
     if (error) throw databaseError(error);
     return data;
   }
-  async batch(token: string, commands: unknown[], key: string) {
-    const { data, error } = await this.user(token).rpc("app_batch", {
+  batchStream(
+    token: string,
+    commands: unknown[],
+    key: string,
+    signal: AbortSignal,
+  ) {
+    return postgrestBatchBody({
+      url: this.env.url,
+      publishableKey: this.env.publishableKey,
+      token,
       commands,
-      idempotency_key: key,
+      idempotencyKey: key,
+      signal,
     });
-    if (error) throw databaseError(error);
-    return data;
   }
-  async object(path: string) {
+  async object(path: string, signal?: AbortSignal) {
+    signal?.throwIfAborted();
     const { data, error } = await this.admin.storage
       .from("tenderdesk-private")
-      .download(path);
+      .download(
+        path,
+        {},
+        {
+          signal: signal
+            ? AbortSignal.any([signal, AbortSignal.timeout(20000)])
+            : AbortSignal.timeout(20000),
+        },
+      );
+    signal?.throwIfAborted();
     if (error || !data)
       throw new AppError(
         422,
@@ -317,6 +343,91 @@ export class Backend {
         "The original has not been uploaded.",
       );
     return data;
+  }
+  /** A genuine404 is represented as absence, never as write settlement or
+   * permission to upload again. Durable intent authorization is separate. */
+  async deliveryObject(
+    path: string,
+    signal?: AbortSignal,
+  ): Promise<Blob | null> {
+    const { data, error } = await this.admin.storage
+      .from("tenderdesk-private")
+      .download(
+        path,
+        {},
+        {
+          signal: signal
+            ? AbortSignal.any([signal, AbortSignal.timeout(20000)])
+            : AbortSignal.timeout(20000),
+        },
+      );
+    if (error) {
+      const status = String(
+        (error as { statusCode?: unknown }).statusCode || "",
+      );
+      if (status === "404") return null;
+      throw new AppError(
+        503,
+        "DELIVERY_STORAGE_UNAVAILABLE",
+        "Draft storage could not be read.",
+      );
+    }
+    if (!data)
+      throw new AppError(
+        503,
+        "DELIVERY_STORAGE_UNAVAILABLE",
+        "Draft storage returned no bytes.",
+      );
+    return data;
+  }
+  async copyOriginalForOcr(source: string, destination: string) {
+    const storage = createClient(this.env.url, this.env.serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        fetch: (input, init) =>
+          fetch(input, { ...init, signal: AbortSignal.timeout(20000) }),
+      },
+    }).storage;
+    const { error } = await storage
+      .from("tenderdesk-private")
+      .copy(source, destination);
+    if (error)
+      throw new AppError(
+        503,
+        "DOCUMENT_OCR_STORAGE_UNAVAILABLE",
+        "The OCR original copy is not confirmed.",
+      );
+  }
+  async storeDeliveryObject(
+    path: string,
+    bytes: Uint8Array,
+    mime: string,
+    signal?: AbortSignal,
+  ) {
+    const storage = createClient(this.env.url, this.env.serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        fetch: (input, init) =>
+          fetch(input, {
+            ...init,
+            signal: signal
+              ? AbortSignal.any([signal, AbortSignal.timeout(20000)])
+              : AbortSignal.timeout(20000),
+          }),
+      },
+    }).storage;
+    const { error } = await storage
+      .from("tenderdesk-private")
+      .upload(path, bytes, {
+        contentType: mime,
+        upsert: false,
+      });
+    if (error)
+      throw new AppError(
+        503,
+        "DELIVERY_STORAGE_UNAVAILABLE",
+        "Draft storage could not confirm the upload.",
+      );
   }
   async accept(
     id: string,
@@ -326,16 +437,23 @@ export class Backend {
     text: string,
     status: string,
     key: string,
+    coverage?: DocumentCoverage,
   ) {
-    const { data, error } = await this.admin.rpc("accept_uploaded_document", {
-      document_id: id,
-      actor_id: actor,
-      actual_hash: hash,
-      actual_size: size,
-      extraction_text: text,
-      extraction_status: status,
-      command_key: key,
-    });
+    const { data, error } = await this.admin.rpc(
+      coverage
+        ? "accept_uploaded_document_with_coverage"
+        : "accept_uploaded_document",
+      {
+        document_id: id,
+        actor_id: actor,
+        actual_hash: hash,
+        actual_size: size,
+        extraction_text: text,
+        extraction_status: status,
+        command_key: key,
+        ...(coverage ? { coverage } : {}),
+      },
+    );
     if (error) throw databaseError(error);
     return data;
   }
@@ -431,7 +549,7 @@ export class Backend {
   async removeObject(path: string) {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      const { error } = await Promise.race([
+      const { data, error } = await Promise.race([
         this.admin.storage.from("tenderdesk-private").remove([path]),
         new Promise<never>((_, reject) => {
           timer = setTimeout(
@@ -453,6 +571,24 @@ export class Backend {
           "STORAGE_DELETE_FAILED",
           "Private object cleanup failed.",
         );
+      const deleted = Array.isArray(data)
+        ? (data.find((value) => value.name === path) as
+            Record<string, unknown> | undefined)
+        : undefined;
+      if (
+        !deleted ||
+        typeof deleted.id !== "string" ||
+        !/^[a-f0-9-]{36}$/i.test(deleted.id) ||
+        typeof deleted.version !== "string" ||
+        !deleted.version.length ||
+        deleted.is_delete_marker === true
+      )
+        throw new AppError(
+          503,
+          "STORAGE_DELETE_RECEIPT_REQUIRED",
+          "Storage did not confirm physical deletion of the exact object version. Its allowance remains reserved.",
+        );
+      return { object_id: deleted.id, object_version: deleted.version };
     } finally {
       clearTimeout(timer);
     }
@@ -463,7 +599,7 @@ export class Backend {
     return data;
   }
   async claim() {
-    const { data, error } = await this.admin.rpc("claim_backend_job_v2");
+    const { data, error } = await this.admin.rpc("claim_backend_job_v4");
     if (error) throw databaseError(error);
     return data;
   }

@@ -1,21 +1,28 @@
 import { ModelError, validateModelResult, type Evidence } from "./model.ts";
 import { normalizedEvidence } from "./sourceModel.ts";
-import { validationDiagnostic } from "./modelValidationDiagnostics.ts";
+import {
+  validationDiagnostic,
+  mergeModelValidationDiagnostics,
+  type ModelValidationDiagnostic,
+} from "./modelValidationDiagnostics.ts";
+import { quoteReferenceDiagnostic } from "./modelReferenceDiagnostics.ts";
 import { withoutStructuralReferences } from "./modelStructuralReferences.ts";
 
 /** Inspect generated text, including undeclared assertions, without treating
  * verbatim evidence copies or internal IDs as assertions made in the proposal. */
+const candidateMetadataField =
+  /^(?:source_refs|evidence_refs|notice_evidence|company_evidence|quote|source_id|.*_ids|key|rate_id)$/;
+export const isCandidateMetadataField = (key: string) =>
+  candidateMetadataField.test(key);
 export function candidateContent(candidate: unknown) {
   const units: { id: string; text: string }[] = [];
-  const skip =
-    /^(?:source_refs|evidence_refs|notice_evidence|company_evidence|quote|source_id|.*_ids|key|rate_id)$/;
   const visit = (value: unknown) => {
     if (typeof value === "string" && value.trim())
       units.push({ id: `content-${units.length}`, text: value });
     else if (Array.isArray(value)) value.forEach(visit);
     else if (value && typeof value === "object")
       for (const [key, child] of Object.entries(value))
-        if (!skip.test(key)) visit(child);
+        if (!isCandidateMetadataField(key)) visit(child);
   };
   visit(candidate);
   if (units.length > 2048) throw new ModelError("MODEL_CONTEXT_TOO_LARGE");
@@ -272,13 +279,35 @@ export function validateGroundingReport(
     proposalReferenceKeys?: string[];
   },
 ) {
-  validateModelResult(
-    "verify_grounding",
-    report,
-    evidence,
-    requiredIds,
-    options,
-  );
+  let collected = {
+    diagnostics: [] as ModelValidationDiagnostic[],
+    omittedCount: 0,
+  };
+  const record = (error: ModelError) => {
+    collected = mergeModelValidationDiagnostics(collected, {
+      diagnostics: error.validationDiagnostics,
+      omittedCount: error.omittedValidationDiagnosticCount,
+    });
+  };
+  try {
+    validateModelResult(
+      "verify_grounding",
+      report,
+      evidence,
+      requiredIds,
+      options,
+    );
+  } catch (error) {
+    // A malformed schema is not safe to traverse. Only typed domain failures
+    // may be accumulated; unrelated runtime or policy errors stay terminal.
+    if (
+      !(error instanceof ModelError) ||
+      !error.validationDiagnostics.length ||
+      error.code === "MODEL_OUTPUT_POLICY_BLOCKED"
+    )
+      throw error;
+    record(error);
+  }
   const units = scope?.units ?? candidateContent(candidate),
     ids = units.map((u) => u.id);
   if (
@@ -299,56 +328,95 @@ export function validateGroundingReport(
         candidate_hash_matches: report.checked_candidate_hash === candidateHash,
       }),
     );
-    throw new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
-      validationDiagnostic(
-        "MODEL_COVERAGE_INCOMPLETE",
-        report.checked_candidate_hash !== candidateHash
-          ? "candidate_hash_mismatch"
-          : "content_ids_mismatch",
-        {
-          paths: ["$.checked_candidate_hash", "$.processed_content_ids"],
-          content_ids: ids,
-        },
-      ),
-    ]);
+    record(
+      new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+        validationDiagnostic(
+          "MODEL_COVERAGE_INCOMPLETE",
+          report.checked_candidate_hash !== candidateHash
+            ? "candidate_hash_mismatch"
+            : "content_ids_mismatch",
+          {
+            paths: [
+              report.checked_candidate_hash !== candidateHash
+                ? "$.checked_candidate_hash"
+                : "$.processed_content_ids",
+            ],
+            content_ids: ids,
+          },
+        ),
+      ]),
+    );
+  }
+  const finish = () => {
+    const merged = collected;
+    if (merged.diagnostics.length)
+      throw new ModelError(
+        merged.diagnostics[0].code,
+        null,
+        merged.diagnostics,
+        merged.omittedCount,
+      );
+  };
+  if (report.checked_candidate_hash !== candidateHash) {
+    finish();
+    return;
   }
   const text = normalizedEvidence(units.map((u) => u.text).join("\n"));
   if (units.length && !report.claims.length && !scope?.requirementsOnly)
-    throw new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
-      validationDiagnostic(
-        "MODEL_COVERAGE_INCOMPLETE",
-        "missing_content_claims",
-        { paths: ["$.claims"], content_ids: ids },
-      ),
-    ]);
+    record(
+      new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+        validationDiagnostic(
+          "MODEL_COVERAGE_INCOMPLETE",
+          "missing_content_claims",
+          { paths: ["$.claims"], content_ids: ids },
+        ),
+      ]),
+    );
   if (scope?.requirementsOnly && report.claims.length)
-    throw new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
-      validationDiagnostic(
-        "MODEL_COVERAGE_INCOMPLETE",
-        "unexpected_content_claims",
-        { paths: ["$.claims"] },
-      ),
-    ]);
+    record(
+      new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+        validationDiagnostic(
+          "MODEL_COVERAGE_INCOMPLETE",
+          "unexpected_content_claims",
+          { paths: ["$.claims"] },
+        ),
+      ]),
+    );
   const referenceIds = new Set([
     ...evidence.map((source) => source.id),
     ...requiredIds,
   ]);
   const proposalReferences = new Set(options?.proposalReferenceKeys ?? []);
   for (const [index, claim] of report.claims.entries()) {
-    if (!text.includes(normalizedEvidence(claim.candidate_quote))) {
+    const candidateQuoteValid =
+      Boolean(normalizedEvidence(claim.candidate_quote)) &&
+      text.includes(normalizedEvidence(claim.candidate_quote));
+    if (!candidateQuoteValid) {
       console.warn(
         "model_evidence_diagnostic",
         JSON.stringify({ reason: "candidate_quote_mismatch" }),
       );
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-        validationDiagnostic(
-          "EVIDENCE_REFERENCE_INVALID",
-          "candidate_quote_mismatch",
-          { paths: [`$.claims[${index}].candidate_quote`] },
-        ),
-      ]);
+      record(
+        new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+          validationDiagnostic(
+            "EVIDENCE_REFERENCE_INVALID",
+            "candidate_quote_mismatch",
+            { paths: [`$.claims[${index}].candidate_quote`] },
+          ),
+        ]),
+      );
     }
     if (
+      candidateQuoteValid &&
+      claim.source_refs.every(
+        (ref: any) =>
+          !quoteReferenceDiagnostic(
+            ref,
+            evidence.find((source) => source.id === ref.id),
+            claim.kind === "company_fact" ? "company" : undefined,
+            "$",
+          ),
+      ) &&
       claim.status === "supported" &&
       claim.source_refs.length > 0 &&
       ["company_fact", "tender_fact", "commercial_commitment"].includes(
@@ -404,20 +472,22 @@ export function validateGroundingReport(
           "model_evidence_diagnostic",
           JSON.stringify({ reason: "numeric_evidence_mismatch" }),
         );
-        throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-          validationDiagnostic(
-            "EVIDENCE_REFERENCE_INVALID",
-            "numeric_evidence_mismatch",
-            {
-              paths: [
-                `$.claims[${index}].candidate_quote`,
-                `$.claims[${index}].source_refs`,
-              ],
-              evidence_ids: claim.source_refs.map((ref: any) => ref.id),
-              numeric_literals: [...new Set(unsupportedNumbers)],
-            },
-          ),
-        ]);
+        record(
+          new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+            validationDiagnostic(
+              "EVIDENCE_REFERENCE_INVALID",
+              "numeric_evidence_mismatch",
+              {
+                paths: [
+                  `$.claims[${index}].candidate_quote`,
+                  `$.claims[${index}].source_refs`,
+                ],
+                evidence_ids: claim.source_refs.map((ref: any) => ref.id),
+                numeric_literals: [...new Set(unsupportedNumbers)],
+              },
+            ),
+          ]),
+        );
       }
     }
   }
@@ -430,30 +500,36 @@ export function validateGroundingReport(
         "model_evidence_diagnostic",
         JSON.stringify({ reason: "requirement_quote_mismatch" }),
       );
-      throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-        validationDiagnostic(
-          "EVIDENCE_REFERENCE_INVALID",
-          "requirement_quote_mismatch",
-          {
-            paths: [`$.requirement_checks[${index}].candidate_quote`],
-            requirement_ids: [check.requirement_id],
-          },
-        ),
-      ]);
+      record(
+        new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+          validationDiagnostic(
+            "EVIDENCE_REFERENCE_INVALID",
+            "requirement_quote_mismatch",
+            {
+              paths: [`$.requirement_checks[${index}].candidate_quote`],
+              requirement_ids: [check.requirement_id],
+            },
+          ),
+        ]),
+      );
     }
   for (const [index, declared] of (scope
     ? []
     : (candidate.company_claims ?? [])
   ).entries())
     if (!declaredClaimCovered(declared.claim, report.claims))
-      throw new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
-        validationDiagnostic(
-          "MODEL_COVERAGE_INCOMPLETE",
-          "declared_claim_uncovered",
-          { paths: [`$.company_claims[${index}].claim`, "$.claims"] },
-        ),
-      ]);
+      record(
+        new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+          validationDiagnostic(
+            "MODEL_COVERAGE_INCOMPLETE",
+            "declared_claim_uncovered",
+            { paths: [`$.company_claims[${index}].claim`, "$.claims"] },
+          ),
+        ]),
+      );
+  finish();
 }
+
 export function groundingDefects(report: any) {
   const missingSupport = (claim: any) =>
     claim.status === "supported" &&

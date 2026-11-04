@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "kind": "storage_release_direct_column_acl_regression",
+  "captured_at": "2026-11-04T19:34:40.994349+00:00",
+  "base_commit": "077ae87700b78f1f9e415916d98e55dfc424ffb9",
+  "production_calls": 0,
+  "provider_calls": 0,
+  "scope": "Isolated managed-role PGlite release batch; direct column ACLs on the three new storage tables only. Existing owner inheritance is retained. No full suite or hosted qualification.",
+  "cases": [
+    {
+      "table": "public.storage_write_intents",
+      "column": "storage_key",
+      "grantee": "tdp_app_service",
+      "expected": "DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID"
+    },
+    {
+      "table": "public.storage_write_intents",
+      "column": "storage_key",
+      "grantee": "PUBLIC",
+      "expected": "DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID"
+    },
+    {
+      "table": "app_private.storage_retirement_batches",
+      "column": "operation_nonce",
+      "grantee": "tdp_app_service",
+      "expected": "DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID"
+    },
+    {
+      "table": "app_private.storage_retirement_batches",
+      "column": "operation_nonce",
+      "grantee": "PUBLIC",
+      "expected": "DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID"
+    },
+    {
+      "table": "app_private.storage_retirement_keys",
+      "column": "storage_key",
+      "grantee": "tdp_app_service",
+      "expected": "DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID"
+    },
+    {
+      "table": "app_private.storage_retirement_keys",
+      "column": "storage_key",
+      "grantee": "PUBLIC",
+      "expected": "DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID"
+    }
+  ],
+  "red": {
+    "result": "failed_as_expected",
+    "message": "FAULT_ACCEPTED DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID",
+    "case": "GRANT SELECT(storage_key) ON public.storage_write_intents TO tdp_app_service",
+    "duration_seconds": 5.718
+  },
+  "green": {
+    "result": "passed",
+    "test_methods": 1,
+    "new_fault_variants": 6,
+    "duration_seconds": 19.558,
+    "controls": "Unmodified managed owner inheritance, atomic batch, replay, later operational history, prior catalog/ledger/database rejection and complete rollback remain exercised by the reused harness."
+  },
+  "command": "python3 -m unittest backend.scripts.ops.test_proposal_delivery_release.DeliveryReleaseTests.test_storage_columns_reject_direct_service_and_public_grants -v",
+  "source_sha256": {
+    "backend/scripts/ops/proposal-delivery-release.py": "f9b7ef51b26ddb52069da4418ad35f06cb6a2228f87a401ea5bcaac18130d49b",
+    "backend/scripts/ops/test_proposal_delivery_release.py": "119100066c72b5d912dfa7f94b5e40d537b0846e2808481f44639215c971e2cc"
+  },
+  "logs": [
+    {
+      "path": "/workspace/output/storage-column-acl-red.log",
+      "sha256": "2db2ce3331f1d160a7d797255a699ce1924208a97245e1b5c6afb2f7fd0ab323",
+      "text": "test_storage_columns_reject_direct_service_and_public_grants (backend.scripts.ops.test_proposal_delivery_release.DeliveryReleaseTests.test_storage_columns_reject_direct_service_and_public_grants) ... FAIL\n\n======================================================================\nFAIL: test_storage_columns_reject_direct_service_and_public_grants (backend.scripts.ops.test_proposal_delivery_release.DeliveryReleaseTests.test_storage_columns_reject_direct_service_and_public_grants)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/work/reliability-storage-release-guards/backend/scripts/ops/test_proposal_delivery_release.py\", line 66, in test_storage_columns_reject_direct_service_and_public_grants\n    self.managed_atomic_batch_cases(column_acl_only=True)\n  File \"/workspace/work/reliability-storage-release-guards/backend/scripts/ops/test_proposal_delivery_release.py\", line 190, in managed_atomic_batch_cases\n    self.assertEqual(result.returncode,0,result.stderr[-8000:])\nAssertionError: 1 != 0 : FAULT_ACCEPTED DELIVERY_RELEASE_STORAGE_TABLE_AUTHORITY_INVALID undefined undefined undefined\n\n\n----------------------------------------------------------------------\nRan 1 test in 5.718s\n\nFAILED (failures=1)\n"
+    },
+    {
+      "path": "/workspace/output/storage-column-acl-green.log",
+      "sha256": "cf5b261b1949f1c56293e4343f6b846fc8f4e9e96cfccc7d2dcf4fff6b7e3b02",
+      "text": "test_storage_columns_reject_direct_service_and_public_grants (backend.scripts.ops.test_proposal_delivery_release.DeliveryReleaseTests.test_storage_columns_reject_direct_service_and_public_grants) ... ok\n\n----------------------------------------------------------------------\nRan 1 test in 19.558s\n\nOK\n"
+    }
+  ]
+}

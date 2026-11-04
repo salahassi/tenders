@@ -1,0 +1,263 @@
+{
+  "version": 1,
+  "corpus_sha256": "64413933d81a5f9d66fb5671eb4472874b5441228b9e74eaee393e944f312272",
+  "provider_calls": 0,
+  "label_scope": "Independent source retrieval/omission controls; no model semantic qualification",
+  "expected_cases": 16,
+  "evaluated_cases": 16,
+  "metrics": {
+    "complete_source_recall": {
+      "numerator": 16,
+      "denominator": 16
+    },
+    "bounded_discovery_recall": {
+      "numerator": 9,
+      "denominator": 16
+    },
+    "silent_omissions": 0,
+    "false_partial_claim_eligibility": 0
+  },
+  "by_query_language": [
+    {
+      "language": "ar",
+      "bounded_discovery_recall": {
+        "numerator": 4,
+        "denominator": 8
+      }
+    },
+    {
+      "language": "en",
+      "bounded_discovery_recall": {
+        "numerator": 5,
+        "denominator": 8
+      }
+    }
+  ],
+  "cases": [
+    {
+      "id": "accessibility-ar",
+      "query_language": "ar",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": false,
+      "bounded_qualifier_retrieved": false,
+      "bounded_source_omitted": true,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 0
+    },
+    {
+      "id": "accessibility-en",
+      "query_language": "en",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": false,
+      "bounded_qualifier_retrieved": false,
+      "bounded_source_omitted": true,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 0
+    },
+    {
+      "id": "approval-ar",
+      "query_language": "ar",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": true,
+      "bounded_qualifier_retrieved": true,
+      "bounded_source_omitted": false,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 4
+    },
+    {
+      "id": "approval-en",
+      "query_language": "en",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": true,
+      "bounded_qualifier_retrieved": true,
+      "bounded_source_omitted": false,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 4
+    },
+    {
+      "id": "cloud-ar",
+      "query_language": "ar",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": false,
+      "bounded_qualifier_retrieved": false,
+      "bounded_source_omitted": true,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 0
+    },
+    {
+      "id": "cloud-en",
+      "query_language": "en",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": false,
+      "bounded_qualifier_retrieved": false,
+      "bounded_source_omitted": true,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 0
+    },
+    {
+      "id": "integration-ar",
+      "query_language": "ar",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": true,
+      "bounded_qualifier_retrieved": true,
+      "bounded_source_omitted": false,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 4
+    },
+    {
+      "id": "integration-en",
+      "query_language": "en",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": true,
+      "bounded_qualifier_retrieved": true,
+      "bounded_source_omitted": false,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 4
+    },
+    {
+      "id": "migration-ar",
+      "query_language": "ar",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": false,
+      "bounded_qualifier_retrieved": false,
+      "bounded_source_omitted": true,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 0
+    },
+    {
+      "id": "migration-en",
+      "query_language": "en",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": true,
+      "bounded_qualifier_retrieved": true,
+      "bounded_source_omitted": false,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 4
+    },
+    {
+      "id": "recovery-ar",
+      "query_language": "ar",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": false,
+      "bounded_qualifier_retrieved": false,
+      "bounded_source_omitted": true,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 0
+    },
+    {
+      "id": "recovery-en",
+      "query_language": "en",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": false,
+      "bounded_qualifier_retrieved": false,
+      "bounded_source_omitted": true,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 0
+    },
+    {
+      "id": "security-ar",
+      "query_language": "ar",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": true,
+      "bounded_qualifier_retrieved": true,
+      "bounded_source_omitted": false,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 4
+    },
+    {
+      "id": "security-en",
+      "query_language": "en",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": true,
+      "bounded_qualifier_retrieved": true,
+      "bounded_source_omitted": false,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 4
+    },
+    {
+      "id": "training-ar",
+      "query_language": "ar",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": true,
+      "bounded_qualifier_retrieved": true,
+      "bounded_source_omitted": false,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 4
+    },
+    {
+      "id": "training-en",
+      "query_language": "en",
+      "complete_source_retrieved": true,
+      "bounded_fact_retrieved": true,
+      "bounded_qualifier_retrieved": true,
+      "bounded_source_omitted": false,
+      "partial_claim_eligible": false,
+      "selection_complete": false,
+      "capability_absence_proven": false,
+      "retrieval_gap": true,
+      "semantic_support": "not_evaluated",
+      "partial_spans": 4
+    }
+  ],
+  "acceptance": "Full-source controls must retain gold; omitted/partial evidence must remain explicit and cannot grant claim authority. Bounded semantic recall is measured, with no post-outcome minimum introduced."
+}

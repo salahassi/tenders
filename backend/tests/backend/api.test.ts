@@ -16,6 +16,7 @@ import {
 } from "../../supabase/functions/_shared/http";
 import { validateOriginal } from "../../supabase/functions/_shared/originals";
 import { commandSchemas } from "../../supabase/functions/_shared/contracts";
+import { PDFDocument } from "pdf-lib";
 const actor = "00000000-0000-4000-8000-000000000001",
   source = "00000000-0000-4000-8000-000000000002";
 const env: BackendEnvironment = {
@@ -31,11 +32,17 @@ function fixture() {
     authenticate: vi.fn(async () => ({ id: actor })),
     membership: vi.fn(async () => ({ workspace_id: source, role: "Owner" })),
     operations: vi.fn(async () => ({ last_heartbeat_at: null })),
+    userRpc: vi.fn(async (_token: string, _name: string, _args: unknown) => ({
+      effective_outcome: "failed",
+      effective_error_code: "PROPOSAL_ISSUANCE_TIMEOUT",
+    })),
     command: vi.fn(async () => ({ id: source, revision: 1 })),
     list: vi.fn(async () => ({ records: [], next_cursor: null })),
     one: vi.fn(),
     download: vi.fn(),
     object: vi.fn(),
+    deliveryObject: vi.fn(async (): Promise<Blob | null> => null),
+    internal: vi.fn(async () => ({ invalidated: true })),
     verifyPages: vi.fn(),
     extraction: vi.fn(),
     accept: vi.fn(async () => ({ id: source, revision: 2 })),
@@ -65,13 +72,65 @@ function request(
   });
 }
 describe("backend HTTP boundaries without a live provider", () => {
+  it.each(["missing", "size", "hash", "transient"] as const)(
+    "records only an authoritative package file failure (%s) and never retries on a download",
+    async (failure) => {
+      const f = fixture();
+      const original = new TextEncoder().encode("original");
+      const hash = [...new Uint8Array(await crypto.subtle.digest("SHA-256", original))]
+        .map((b) => b.toString(16).padStart(2, "0")).join("");
+      f.backend.userRpc.mockResolvedValueOnce({
+        artifact: { id: source, kind: "generated", storage_key: "synthetic/private-file", expected_size: 8, content_hash: hash },
+        package: { id: actor, revision: 7 },
+      } as any);
+      if (failure === "transient")
+        f.backend.deliveryObject.mockRejectedValueOnce(new AppError(503, "DELIVERY_STORAGE_UNAVAILABLE", "Temporarily unavailable"));
+      else f.backend.deliveryObject.mockResolvedValueOnce(failure === "missing" ? null : new Blob([failure === "size" ? "too large" : "tampered"]));
+      const response = await f.handle(request(`export-artifacts/${source}/download`));
+      expect(response.status).toBe(failure === "transient" ? 503 : 422);
+      if (failure === "transient") expect(f.backend.internal).not.toHaveBeenCalled();
+      else expect(f.backend.internal).toHaveBeenCalledExactlyOnceWith("report_export_package_artifact_failure", {
+        artifact_id: source, actor_id: actor, package_id: actor, expected_revision: 7,
+        expected_hash: hash, expected_storage_key: "synthetic/private-file",
+        error_code: failure === "missing" ? "EXPORT_ARTIFACT_MISSING" : "ARTIFACT_MISMATCH",
+        actual_size: failure === "missing" ? null : failure === "size" ? 9 : 8,
+      });
+      expect(f.backend.command).not.toHaveBeenCalled();
+      expect(f.backend.object).not.toHaveBeenCalled();
+    },
+  );
+  it("reads a saved export package through caller authority and rejects malformed identity", async () => {
+    const f = fixture();
+    expect((await f.handle(request(`export-packages/${source}`))).status).toBe(200);
+    expect(f.backend.userRpc).toHaveBeenCalledWith(
+      "synthetic-user-token", "export_package_context", { package_id: source },
+    );
+    expect((await f.handle(request("export-packages/not-a-uuid"))).status).toBe(400);
+    expect(f.backend.userRpc).toHaveBeenCalledTimes(1);
+  });
+  it("reads issuance through the caller-authorized RPC and validates plan identity", async () => {
+    const f = fixture();
+    const response = await f.handle(request(`proposal-issuance/${source}`));
+    expect(response.status).toBe(200);
+    expect(f.backend.userRpc).toHaveBeenCalledWith(
+      "synthetic-user-token",
+      "proposal_issuance_status_for_plan",
+      { plan_id: source },
+    );
+    expect(await response.json()).toMatchObject({
+      data: { effective_error_code: "PROPOSAL_ISSUANCE_TIMEOUT" },
+    });
+    expect(
+      (await f.handle(request("proposal-issuance/not-a-uuid"))).status,
+    ).toBe(400);
+    expect(f.backend.userRpc).toHaveBeenCalledTimes(1);
+  });
   it("batches operational history while keeping bounded authenticated pagination", async () => {
     const f = fixture();
     for (const resource of ["jobs", "audit-events"]) {
-      expect(
-        (await f.handle(request(`${resource}?limit=500&cursor=${source}`)))
-          .status,
-      ).toBe(200);
+      const page = await f.handle(request(`${resource}?limit=500&cursor=${source}`));
+      expect(page.status).toBe(200);
+      await page.json();
       expect(f.backend.list).toHaveBeenLastCalledWith(
         "synthetic-user-token",
         resource.replaceAll("-", "_"),
@@ -247,6 +306,62 @@ describe("backend HTTP boundaries without a live provider", () => {
     expect(response.status).toBe(200);
     expect(factory).not.toHaveBeenCalled();
     expect((await response.json()).data).toEqual({ status: "available" });
+  });
+  it("binds supplied page coverage to the actual uploaded PDF before accepting partial text", async () => {
+    const f = fixture(),
+      pdf = await PDFDocument.create();
+    pdf.addPage();
+    pdf.addPage();
+    const original = new Blob([new Uint8Array(await pdf.save())]);
+    f.backend.one.mockResolvedValue({
+      id: source,
+      created_by: actor,
+      expected_size: original.size,
+      storage_key: "synthetic/partial",
+      original_name: "synthetic.pdf",
+      mime_type: "application/pdf",
+    });
+    f.backend.object.mockResolvedValue(original);
+    const coverage = {
+      version: 1,
+      kind: "pdf_pages",
+      complete: false,
+      pages: [
+        { page: 1, status: "readable", characters: 12 },
+        { page: 2, status: "needs_ocr", characters: 0 },
+      ],
+    };
+    const response = await f.handle(
+      request(`documents/${source}/complete-upload`, {
+        status: "partial",
+        extracted_text: "[Page 1]\nKnown scope.\n\n[Page 2]\n",
+        extraction_coverage: coverage,
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(f.backend.verifyPages).toHaveBeenCalledWith(source, 2);
+    // The accepted response is drained before starting another heavy flow.
+    await response.json();
+    expect(f.backend.accept).toHaveBeenCalledWith(
+      source,
+      actor,
+      expect.stringMatching(/^[a-f0-9]{64}$/),
+      original.size,
+      "[Page 1]\nKnown scope.\n\n[Page 2]\n",
+      "partial",
+      "synthetic-request-1",
+      coverage,
+    );
+    f.backend.accept.mockClear();
+    const mismatch = await f.handle(
+      request(`documents/${source}/complete-upload`, {
+        status: "partial",
+        extracted_text: "[Page 1]\nInvented extra source text.\n\n[Page 2]\n",
+        extraction_coverage: coverage,
+      }),
+    );
+    expect(mismatch.status).toBe(422);
+    expect(f.backend.accept).not.toHaveBeenCalled();
   });
   it("rejects absent or invalid user authentication before membership commands", async () => {
     const f = fixture();

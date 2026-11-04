@@ -58,6 +58,105 @@
         }
       }
     },
+    "/v1/opportunities/{id}/source-review": {
+      "get": {
+        "operationId": "source.review.context",
+        "description": "Current authorized source blocks, exact versioned spans and usable source-bound reviews. Historical, revoked and superseded decisions cannot confer current authority.",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Source evidence contract v1 and current authorized source blocks"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Opportunity unavailable to this member"
+          }
+        }
+      }
+    },
+    "/v1/proposal-issuance/{id}": {
+      "get": {
+        "operationId": "proposal.issuance.status",
+        "description": "Current member-authorized issuance request for the selected plan, or null for historical unpinned plans. Effective deadline state is computed by the database independently of worker maintenance. Issued means the complete verified draft package, not final approval.",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current request, effective outcome, accepted/deadline/completion timestamps, issued snapshot and database server_now"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Plan unavailable to this member"
+          }
+        }
+      }
+    },
+    "/v1/export-packages/{id}": {
+      "get": {
+        "operationId": "export.package.read",
+        "description": "Current member-authorized durable draft or final export package for an exact proposal version. A package is ready only after every required volume is verified; final exports also require current approval. Browser departure does not cancel the server job.",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Package identity, revision, mode, status, bounded request timestamps, complete volume set and job state"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "404": {
+            "description": "Package unavailable to this member"
+          }
+        }
+      }
+    },
     "/v1/estimates": {
       "post": {
         "operationId": "estimate.prepare",
@@ -7966,6 +8065,124 @@
                           ],
                           "properties": {
                             "operation": {
+                              "const": "delivery.snapshot.prepare"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "opportunity_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "intake_failure": {
+                                  "type": "string",
+                                  "enum": [
+                                    "EMPTY_FILE",
+                                    "INVALID_FILE",
+                                    "UNSUPPORTED_FORMAT",
+                                    "EXTRACTION_LIMIT",
+                                    "EXTRACTION_FAILED"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "opportunity_id",
+                                "expected_revision"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "delivery.snapshot.refresh"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "proposal_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "expected_delivery_revision": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "proposal_id",
+                                "expected_revision",
+                                "expected_delivery_revision"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "delivery.snapshot.retry"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "snapshot_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_delivery_revision": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "snapshot_id",
+                                "expected_delivery_revision"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
                               "const": "notification.preferences"
                             },
                             "input": {
@@ -8460,6 +8677,82 @@
                                 "opportunity_id",
                                 "related_opportunity_id",
                                 "reason"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "export.package.prepare"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "proposal_version_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "mode": {
+                                  "type": "string",
+                                  "enum": [
+                                    "draft",
+                                    "final"
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "proposal_version_id",
+                                "expected_revision",
+                                "mode"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "export.package.retry"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "expected_revision"
                               ],
                               "additionalProperties": false
                             }
@@ -9532,6 +9825,10 @@
                                   "type": "integer",
                                   "minimum": 0,
                                   "maximum": 9007199254740991
+                                },
+                                "expected_applicability_binding": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
                                 },
                                 "status": {
                                   "type": "string",
@@ -11513,6 +11810,623 @@
                           ],
                           "properties": {
                             "operation": {
+                              "const": "source.authority.review"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "opportunity_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "entity_kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "document",
+                                    "notice"
+                                  ]
+                                },
+                                "entity_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "content_hash": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "role": {
+                                  "type": "string",
+                                  "enum": [
+                                    "buyer_rfp",
+                                    "buyer_addendum",
+                                    "supplier_proposal",
+                                    "company_evidence",
+                                    "reference",
+                                    "unknown"
+                                  ]
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "confirmed",
+                                    "revoked"
+                                  ]
+                                },
+                                "supersedes": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "entity_id": {
+                                          "type": "string",
+                                          "format": "uuid",
+                                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                        },
+                                        "content_hash": {
+                                          "type": "string",
+                                          "pattern": "^[a-f0-9]{64}$"
+                                        }
+                                      },
+                                      "required": [
+                                        "entity_id",
+                                        "content_hash"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "precedence": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 1000
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 3000
+                                }
+                              },
+                              "required": [
+                                "opportunity_id",
+                                "entity_kind",
+                                "entity_id",
+                                "content_hash",
+                                "expected_revision",
+                                "role",
+                                "status",
+                                "supersedes",
+                                "precedence",
+                                "reason"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "source.obligation.review"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "opportunity_id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "review_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "spans": {
+                                  "minItems": 1,
+                                  "maxItems": 8,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "version": {
+                                        "type": "number",
+                                        "const": 1
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 200
+                                      },
+                                      "entity_kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "document",
+                                          "notice",
+                                          "knowledge",
+                                          "review",
+                                          "rate"
+                                        ]
+                                      },
+                                      "entity_id": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                      },
+                                      "content_hash": {
+                                        "type": "string",
+                                        "pattern": "^[a-f0-9]{64}$"
+                                      },
+                                      "extraction_version": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 40
+                                      },
+                                      "block_id": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 200
+                                      },
+                                      "block_hash": {
+                                        "type": "string",
+                                        "pattern": "^[a-f0-9]{64}$"
+                                      },
+                                      "coordinate": {
+                                        "type": "string",
+                                        "const": "unicode_code_point"
+                                      },
+                                      "start": {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "end": {
+                                        "type": "integer",
+                                        "exclusiveMinimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      "quote": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 24000
+                                      },
+                                      "locator": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                          "type": "string"
+                                        },
+                                        "additionalProperties": {}
+                                      },
+                                      "authority": {
+                                        "type": "object",
+                                        "properties": {
+                                          "version": {
+                                            "type": "number",
+                                            "const": 1
+                                          },
+                                          "decision_id": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "format": "uuid",
+                                                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "revision": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "role": {
+                                            "type": "string",
+                                            "enum": [
+                                              "buyer_rfp",
+                                              "buyer_addendum",
+                                              "supplier_proposal",
+                                              "company_evidence",
+                                              "reference",
+                                              "unknown"
+                                            ]
+                                          },
+                                          "status": {
+                                            "type": "string",
+                                            "enum": [
+                                              "confirmed",
+                                              "unconfirmed",
+                                              "revoked"
+                                            ]
+                                          },
+                                          "supersedes": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "entity_id": {
+                                                    "type": "string",
+                                                    "format": "uuid",
+                                                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                                  },
+                                                  "content_hash": {
+                                                    "type": "string",
+                                                    "pattern": "^[a-f0-9]{64}$"
+                                                  }
+                                                },
+                                                "required": [
+                                                  "entity_id",
+                                                  "content_hash"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "precedence": {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 1000
+                                          }
+                                        },
+                                        "required": [
+                                          "version",
+                                          "decision_id",
+                                          "revision",
+                                          "role",
+                                          "status",
+                                          "supersedes",
+                                          "precedence"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "required": [
+                                      "version",
+                                      "id",
+                                      "entity_kind",
+                                      "entity_id",
+                                      "content_hash",
+                                      "extraction_version",
+                                      "block_id",
+                                      "block_hash",
+                                      "coordinate",
+                                      "start",
+                                      "end",
+                                      "quote",
+                                      "locator",
+                                      "authority"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "semantics": {
+                                  "type": "object",
+                                  "properties": {
+                                    "modality": {
+                                      "type": "string",
+                                      "enum": [
+                                        "required",
+                                        "permitted",
+                                        "prohibited",
+                                        "informational",
+                                        "unknown"
+                                      ]
+                                    },
+                                    "actor": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 1000
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "negated": {
+                                      "type": [
+                                        "boolean",
+                                        "null"
+                                      ]
+                                    },
+                                    "conditions": {
+                                      "maxItems": 32,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 3000
+                                      }
+                                    },
+                                    "exceptions": {
+                                      "maxItems": 32,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 3000
+                                      }
+                                    },
+                                    "consequences": {
+                                      "maxItems": 32,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "minLength": 1,
+                                        "maxLength": 3000
+                                      }
+                                    },
+                                    "quantities": {
+                                      "maxItems": 32,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 200
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 200
+                                          },
+                                          "currency": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 100
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit",
+                                          "currency"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "dates": {
+                                      "maxItems": 32,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 200
+                                          },
+                                          "event": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                            "maxLength": 1000
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "event"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "modality",
+                                    "actor",
+                                    "negated",
+                                    "conditions",
+                                    "exceptions",
+                                    "consequences",
+                                    "quantities",
+                                    "dates"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "enum": [
+                                    "confirmed",
+                                    "revoked"
+                                  ]
+                                },
+                                "reason": {
+                                  "type": "string",
+                                  "minLength": 1,
+                                  "maxLength": 3000
+                                },
+                                "supersedes_review_id": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "uuid",
+                                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "opportunity_id",
+                                "review_id",
+                                "expected_revision",
+                                "spans",
+                                "semantics",
+                                "status",
+                                "reason"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "document.extraction.correct"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "expected_original_hash": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "expected_extraction_hash": {
+                                  "type": "string",
+                                  "pattern": "^[a-f0-9]{64}$"
+                                },
+                                "pages": {
+                                  "minItems": 1,
+                                  "maxItems": 200,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "page": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 200
+                                      },
+                                      "expected_page_text_hash": {
+                                        "type": "string",
+                                        "pattern": "^[a-f0-9]{64}$"
+                                      },
+                                      "text": {
+                                        "type": "string",
+                                        "maxLength": 20000
+                                      },
+                                      "blank_confirmed": {
+                                        "type": "boolean"
+                                      }
+                                    },
+                                    "required": [
+                                      "page",
+                                      "expected_page_text_hash",
+                                      "text",
+                                      "blank_confirmed"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "review_confirmed": {
+                                  "type": "boolean",
+                                  "const": true
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "expected_revision",
+                                "expected_original_hash",
+                                "expected_extraction_hash",
+                                "pages",
+                                "review_confirmed"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
+                              "const": "document.ocr.retry"
+                            },
+                            "input": {
+                              "$schema": "https://json-schema.org/draft/2020-12/schema",
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string",
+                                  "format": "uuid",
+                                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                                },
+                                "expected_revision": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                }
+                              },
+                              "required": [
+                                "id",
+                                "expected_revision"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "operation",
+                            "input"
+                          ],
+                          "properties": {
+                            "operation": {
                               "const": "document.confirm"
                             },
                             "input": {
@@ -12484,11 +13398,70 @@
                   "from_parts": {
                     "type": "boolean"
                   },
+                  "extraction_coverage": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "kind": {
+                        "type": "string",
+                        "const": "pdf_pages"
+                      },
+                      "complete": {
+                        "type": "boolean"
+                      },
+                      "pages": {
+                        "minItems": 1,
+                        "maxItems": 200,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 200
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "readable",
+                                "blank",
+                                "needs_ocr",
+                                "extraction_failed"
+                              ]
+                            },
+                            "characters": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1000000
+                            }
+                          },
+                          "required": [
+                            "page",
+                            "status",
+                            "characters"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "kind",
+                      "complete",
+                      "pages"
+                    ],
+                    "additionalProperties": false
+                  },
                   "status": {
                     "default": "needs_processing",
                     "type": "string",
                     "enum": [
                       "ready",
+                      "partial",
                       "needs_ocr",
                       "needs_processing",
                       "error"
@@ -12504,6 +13477,262 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/extraction": {
+      "get": {
+        "operationId": "document.extraction.read",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "description": "Authorized page text, exact original/extraction/page hashes, pending recognition candidates and explicit review state; includes the existing 300-second private original URL after a second authorization check. OCR confidence never confirms source meaning.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      },
+      "post": {
+        "operationId": "document.extraction.correct",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "description": "Up to 200 explicitly reviewed full pages, bounded to 8MiB JSON. Binds document revision, original bytes, extraction and previous page hashes. Empty text requires explicit visual blank confirmation. Returns202 after persisting an immutable correction request; verified original-copy publication is asynchronous. Reuse the same idempotency key and payload after a lost response.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "expected_revision": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "expected_original_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "expected_extraction_hash": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "pages": {
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "page": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 200
+                        },
+                        "expected_page_text_hash": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "text": {
+                          "type": "string",
+                          "maxLength": 20000
+                        },
+                        "blank_confirmed": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "page",
+                        "expected_page_text_hash",
+                        "text",
+                        "blank_confirmed"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "review_confirmed": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "expected_revision",
+                  "expected_original_hash",
+                  "expected_extraction_hash",
+                  "pages",
+                  "review_confirmed"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Correction persisted; source successor awaits verified copy publication"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
+    "/v1/documents/{id}/ocr": {
+      "get": {
+        "operationId": "document.ocr.read",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "description": "Authorized OCR progress, retry/review state and published successor ID; no source bytes or storage key.",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful command result"
@@ -13363,6 +14592,174 @@
     "/v1/exports/{id}/context": {
       "get": {
         "summary": "Return a current bound export model",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
+    "/v1/delivery-snapshots/{id}/context": {
+      "get": {
+        "summary": "Return an authorized immutable incomplete proposal draft",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
+    "/v1/delivery-snapshots/{id}/package": {
+      "get": {
+        "summary": "Read current draft package status without private object keys",
+        "security": [
+          {
+            "userJWT": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful command result"
+          },
+          "201": {
+            "description": "Record or reservation created"
+          },
+          "202": {
+            "description": "Recorded job; inspect its actual status and blocker"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Authentication required"
+          },
+          "403": {
+            "description": "Membership or role denied"
+          },
+          "409": {
+            "description": "Revision/idempotency conflict"
+          },
+          "413": {
+            "description": "Request too large"
+          },
+          "422": {
+            "description": "Business validation blocker"
+          },
+          "429": {
+            "description": "Application quota reached"
+          },
+          "503": {
+            "description": "Dependency or capability unavailable"
+          }
+        }
+      }
+    },
+    "/v1/delivery-artifacts/{id}/download": {
+      "get": {
+        "summary": "Verify draft content, yellow placeholders and stored bytes; recheck current authorization before download",
         "security": [
           {
             "userJWT": []

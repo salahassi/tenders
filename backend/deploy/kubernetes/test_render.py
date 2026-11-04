@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -95,6 +96,27 @@ class RuntimeManifestTest(unittest.TestCase):
         self.assertNotIn("__NAMESPACE__", gateway)
         self.assertNotIn("access_log /", gateway)
         self.assertEqual(gateway.count("location /functions/v1/api/ { client_max_body_size 32m;"), 2)
+        self.assertEqual(gateway.count("worker_processes 1;"), 1)
+        self.assertNotIn("worker_processes auto;", gateway)
+        self.assertEqual(gateway.count("proxy_buffering off;"), 2)
+        self.assertEqual(gateway.count("location /functions/v1/api/ { client_max_body_size 32m; proxy_buffering off;"), 2)
+        self.assertNotIn("proxy_request_buffering off", gateway)
+
+    def test_product_upload_callers_use_standard_object_api(self):
+        root = Path(__file__).resolve().parents[3]
+        client = (root / 'frontend/src/lib/backendClient.ts').read_text()
+        backend = (root / 'backend/supabase/functions/_shared/backend.ts').read_text()
+        self.assertIn('.upload(reservation.upload_path, file, {', client)
+        self.assertIn('.upload(path, bytes, {', backend)
+        for tree in ['frontend/src', 'backend/supabase/functions', 'backend/scripts/backend', 'backend/scripts/runtime']:
+            for source in (root / tree).rglob('*.ts*'):
+                if '.test.' in source.name or '/test/' in source.as_posix():
+                    continue
+                text = source.read_text()
+                self.assertNotIn('upload/resumable', text, str(source))
+                self.assertNotIn('tus-js-client', text, str(source))
+        for package in ['frontend/package.json', 'backend/package.json']:
+            self.assertNotIn('tus-js-client', (root / package).read_text())
 
     def test_public_configuration_contains_only_public_anon_key(self):
         config = next(o["data"]["runtime-config.js"] for o in self.objects if o["kind"] == "ConfigMap" and o["metadata"]["name"] == "frontend-config")
@@ -102,6 +124,27 @@ class RuntimeManifestTest(unittest.TestCase):
         self.assertEqual(payload, {"apiUrl": "https://app.example.test", "publishableKey": self.config["publishable_key"], "appOrigin": "https://app.example.test"})
         with self.assertRaisesRegex(ValueError, "PRIVILEGED"):
             build({**self.config, "publishable_key": jwt("tdp_app_service")})
+
+    def test_both_gateway_ports_refuse_unused_resumable_protocol_without_changing_object_routes(self):
+        gateway = next(o['data']['nginx.conf'] for o in self.objects if o['kind'] == 'ConfigMap' and o['metadata']['name'] == 'gateway-config')
+        self.assertEqual(gateway.count('location ~* ^/storage/v1/upload { return 404; }'), 2)
+        self.assertEqual(gateway.count('standard-object-v1:'), 2)
+        self.assertEqual(gateway.count('location /storage/v1/ {'), 2)
+        self.assertIn('merge_slashes on;', gateway)
+        expected = hashlib.sha256(json.dumps({'nginx.conf': gateway}, sort_keys=True).encode()).hexdigest()
+        self.assertEqual(self.deployments['gateway']['spec']['template']['metadata']['annotations']['checksum/public-config'], expected)
+
+    def test_both_gateway_ports_fence_only_legacy_command_transport(self):
+        gateway = next(o['data']['nginx.conf'] for o in self.objects if o['kind'] == 'ConfigMap' and o['metadata']['name'] == 'gateway-config')
+        self.assertEqual(gateway.count('location ~* ^/rest/v1/rpc/(app_batch|apply_batch)($|[^a-z0-9_])'), 2)
+        self.assertEqual(gateway.count('"code":"TRANSPORT_UPGRADE_REQUIRED"'), 4)
+        self.assertEqual(gateway.count('location /rest/v1/ {'), 2)
+        self.assertNotIn('app_batch_prepare', gateway)
+        self.assertNotIn('app_batch_result_chunk', gateway)
+        # Nginx unquotes once before PCRE sees the escape. Four source slashes
+        # accidentally admit x/5/c as class members and block new RPC names.
+        self.assertEqual(gateway.count('^/rest/v1/([^/]*[%'+chr(92)*2+'x5c]|rpc/[^/]*[%'+chr(92)*2+'x5c])'), 2)
+        self.assertNotIn('^/rest/v1/([^/]*[%'+chr(92)*4+'x5c]', gateway)
 
     def test_mutable_images_insecure_urls_and_string_activation_fail(self):
         for update in [{"runtime_image": "repo/runtime:latest"}, {"https_image": "repo/https:latest"}, {"https_image": ""}, {"public_origin": "http://app.example.test"},

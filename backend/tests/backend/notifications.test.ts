@@ -450,7 +450,11 @@ it("keeps the processing queue running if notification infrastructure fails", as
       }),
     );
     expect(response.status).toBe(200);
-    expect(claim).toHaveBeenCalledTimes(1);
+    expect(claim).toHaveBeenCalledTimes(2);
+    expect(await response.json()).toEqual({
+      data: { claimed: false },
+      maintenance_pending: ["notification_delivery"],
+    });
   } finally {
     warn.mockRestore();
   }

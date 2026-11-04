@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import DocumentExtractionReview from "../components/DocumentExtractionReview";
 import {
   BookOpen,
   Plus,
@@ -437,9 +438,11 @@ export default function Knowledge() {
                     </div>
                     {item.status !== "ready" && (
                       <p className="knowledge-extraction-note">
-                        {item.status === "needs_ocr"
-                          ? "Some content could not be read. Add a text-based version before using this file as proposal context."
-                          : "The extracted content is unavailable. Remove this entry and upload a readable version."}
+                        {backend &&
+                        (/\.pdf$/i.test(item.name) ||
+                          item.extractionCoverage?.kind === "pdf_pages")
+                          ? "Open the file preview to review the original pages and correct missing or incorrectly recognized text."
+                          : "Some content could not be read. Check the original and upload a readable version if needed."}
                       </p>
                     )}
                   </div>
@@ -725,14 +728,33 @@ export default function Knowledge() {
         title={preview?.name ?? "Extracted text"}
         onClose={() => setPreview(null)}
       >
-        <p className="admin-help">
-          This is the text available for proposal preparation. Check that tables
-          and important details were extracted correctly.
-        </p>
-        <div className="knowledge-text-preview" dir="auto">
-          {preview?.text.trim() ||
-            "No readable text was extracted from this file."}
-        </div>
+        {backend &&
+        preview &&
+        (/\.pdf$/i.test(preview.name) ||
+          preview.extractionCoverage?.kind === "pdf_pages") ? (
+          <DocumentExtractionReview
+            key={preview.id}
+            client={backend}
+            documentId={preview.id}
+            canEdit={canEdit}
+            onPublished={(successorId) =>
+              setPreview((current) =>
+                current ? { ...current, id: successorId } : null,
+              )
+            }
+          />
+        ) : (
+          <>
+            <p className="admin-help">
+              This is the text available for proposal preparation. Check that
+              tables and important details were extracted correctly.
+            </p>
+            <div className="knowledge-text-preview" dir="auto">
+              {preview?.text.trim() ||
+                "No readable text was extracted from this file."}
+            </div>
+          </>
+        )}
         <div className="admin-form-actions">
           {backend &&
             preview &&

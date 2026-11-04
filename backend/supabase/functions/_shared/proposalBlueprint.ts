@@ -2,6 +2,8 @@ import type { ProposalBlueprint } from "./proposalBlueprintSchema.ts";
 import { ModelError } from "./model.ts";
 import {
   validationDiagnostic,
+  mergeModelValidationDiagnostics,
+  type ModelValidationDiagnostic,
   type ModelValidationReason,
 } from "./modelValidationDiagnostics.ts";
 
@@ -37,16 +39,25 @@ export function validateReviewSectionReferences(result: Row, context: Row) {
       ? [`$.findings[${i}].section_ids`]
       : [],
   );
-  if (badResponses.length || badFindings.length)
-    throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-      validationDiagnostic(
-        "EVIDENCE_REFERENCE_INVALID",
-        "invalid_finding_reference",
-        {
-          paths: [...badResponses, ...badFindings],
-        },
+  if (badResponses.length || badFindings.length) {
+    const merged = mergeModelValidationDiagnostics({
+      diagnostics: [...badResponses, ...badFindings].map((path) =>
+        validationDiagnostic(
+          "EVIDENCE_REFERENCE_INVALID",
+          "invalid_finding_reference",
+          {
+            paths: [path],
+          },
+        ),
       ),
-    ]);
+    });
+    throw new ModelError(
+      "EVIDENCE_REFERENCE_INVALID",
+      null,
+      merged.diagnostics,
+      merged.omittedCount,
+    );
+  }
 }
 
 // Compact, deterministic references reduce repeated UUID tokens in planning.
@@ -63,6 +74,33 @@ export function requirementAliases(requirements: Row[]): Map<string, string> {
       .map((r, i) => [r.id, `req_${name(i)}`]),
   );
 }
+
+/** Enumerate all unknown references before constructing any expanded object.
+ * Unknown aliases must never become canonical IDs or partially saved output. */
+export function assertRequirementAliases(
+  references: readonly { alias: string; path: string }[],
+  aliases: ReadonlyMap<string, string>,
+) {
+  const diagnostics = references
+    .filter((reference) => !aliases.has(reference.alias))
+    .map((reference) =>
+      validationDiagnostic(
+        "EVIDENCE_REFERENCE_INVALID",
+        "invalid_finding_reference",
+        { paths: [reference.path], requirement_ids: [...aliases.keys()] },
+      ),
+    );
+  if (diagnostics.length) {
+    const merged = mergeModelValidationDiagnostics({ diagnostics });
+    throw new ModelError(
+      "EVIDENCE_REFERENCE_INVALID",
+      null,
+      merged.diagnostics,
+      merged.omittedCount,
+    );
+  }
+}
+
 export function expandBlueprint(
   blueprint: ProposalBlueprint,
   requirements: Row[],
@@ -70,6 +108,43 @@ export function expandBlueprint(
   const aliases = new Map(
     [...requirementAliases(requirements)].map(([id, alias]) => [alias, id]),
   );
+  const references: { alias: string; path: string }[] = [];
+  blueprint.processed_requirement_ids.forEach((alias, i) =>
+    references.push({ alias, path: `$.processed_requirement_ids[${i}]` }),
+  );
+  blueprint.sections.forEach((section, si) =>
+    section.units.forEach((unit, ui) => {
+      unit.requirement_ids.forEach((alias, i) =>
+        references.push({
+          alias,
+          path: `$.sections[${si}].units[${ui}].requirement_ids[${i}]`,
+        }),
+      );
+      unit.secondary_links.forEach((link, li) =>
+        references.push({
+          alias: link.requirement_id,
+          path: `$.sections[${si}].units[${ui}].secondary_links[${li}].requirement_id`,
+        }),
+      );
+    }),
+  );
+  blueprint.decisions.forEach((decision, di) =>
+    decision.requirement_ids.forEach((alias, i) =>
+      references.push({
+        alias,
+        path: `$.decisions[${di}].requirement_ids[${i}]`,
+      }),
+    ),
+  );
+  blueprint.questions.forEach((question, qi) =>
+    question.requirement_ids.forEach((alias, i) =>
+      references.push({
+        alias,
+        path: `$.questions[${qi}].requirement_ids[${i}]`,
+      }),
+    ),
+  );
+  assertRequirementAliases(references, aliases);
   const id = (alias: string, path: string) => {
     const value = aliases.get(alias);
     if (!value)
@@ -121,7 +196,7 @@ export function expandBlueprint(
   };
 }
 
-export function validateBlueprint(
+function validateBlueprintRules(
   blueprint: ProposalBlueprint,
   requiredIds: string[],
   template: Row[] = [],
@@ -129,7 +204,9 @@ export function validateBlueprint(
     decisions?: ProposalBlueprint["decisions"];
     referenceIds?: string[];
     diagnosticRequirementIds?: ReadonlyMap<string, string>;
+    diagnosticPath?: (path: string) => string;
   } = {},
+  checkRequirementReferences = true,
 ) {
   // Canonical validation still uses immutable IDs; only diagnostic metadata is
   // projected back to the aliases actually supplied to this model phase.
@@ -138,21 +215,28 @@ export function validateBlueprint(
     paths: string[],
     requirementIds: string[] = [],
     contentIds: string[] = [],
-  ): never => {
-    throw new ModelError("MODEL_COVERAGE_INCOMPLETE", null, [
+  ): void => {
+    diagnostics.push(
       validationDiagnostic("MODEL_COVERAGE_INCOMPLETE", reason, {
-        paths,
+        // Project virtual planning scaffolding before deduplication/capping;
+        // otherwise two paths can collapse after their omitted count is frozen.
+        paths: shared.diagnosticPath ? paths.map(shared.diagnosticPath) : paths,
         requirement_ids: requirementIds.map(
           (id) => shared.diagnosticRequirementIds?.get(id) ?? id,
         ),
         content_ids: contentIds,
       }),
-    ]);
+    );
   };
+  const diagnostics: ModelValidationDiagnostic[] = [];
   if (
-    blueprint.processed_requirement_ids.length !== requiredIds.length ||
-    new Set(blueprint.processed_requirement_ids).size !== requiredIds.length ||
-    requiredIds.some((id) => !blueprint.processed_requirement_ids.includes(id))
+    checkRequirementReferences &&
+    (blueprint.processed_requirement_ids.length !== requiredIds.length ||
+      new Set(blueprint.processed_requirement_ids).size !==
+        requiredIds.length ||
+      requiredIds.some(
+        (id) => !blueprint.processed_requirement_ids.includes(id),
+      ))
   )
     fail("required_ids_mismatch", ["$.processed_requirement_ids"], requiredIds);
   const sectionKeys = new Set<string>(),
@@ -191,6 +275,7 @@ export function validateBlueprint(
           [...decisionKeys],
         );
       if (
+        checkRequirementReferences &&
         unit.secondary_links.some(
           (link) => !referenceIds.includes(link.requirement_id),
         )
@@ -202,34 +287,35 @@ export function validateBlueprint(
         );
       if (section.mode === "executive_summary" && unit.requirement_ids.length)
         fail("invalid_scope", [`${unitPath}.requirement_ids`]);
-      for (const id of unit.requirement_ids) {
-        if (!requiredIds.includes(id) || owners.has(id))
-          fail(
-            "required_ids_mismatch",
-            [`${unitPath}.requirement_ids`],
-            requiredIds,
-          );
-        owners.set(id, unit.key);
-      }
+      if (checkRequirementReferences)
+        for (const id of unit.requirement_ids) {
+          if (!requiredIds.includes(id) || owners.has(id))
+            fail(
+              "required_ids_mismatch",
+              [`${unitPath}.requirement_ids`],
+              requiredIds,
+            );
+          owners.set(id, unit.key);
+        }
     }
   }
   const missingOwners = requiredIds.filter((id) => !owners.has(id));
-  if (missingOwners.length)
+  if (checkRequirementReferences && missingOwners.length)
     fail("required_content_missing", ["$.sections"], missingOwners);
   for (const section of template) {
+    const present = blueprint.sections.find((s) => s.key === section.key);
     if (section.applicable && !sectionKeys.has(section.key))
       fail("required_content_missing", ["$.sections"], [], [section.key]);
     if (!section.applicable && sectionKeys.has(section.key))
       fail("invalid_scope", ["$.sections"], [], [section.key]);
-    if (
-      section.applicable &&
-      blueprint.sections.find((s) => s.key === section.key)?.volume !==
-        section.volume
-    )
+    if (section.applicable && present && present.volume !== section.volume)
       fail("invalid_scope", ["$.sections"], [], [section.key]);
   }
   for (const [di, decision] of blueprint.decisions.entries()) {
-    if (decision.requirement_ids.some((id) => !referenceIds.includes(id)))
+    if (
+      checkRequirementReferences &&
+      decision.requirement_ids.some((id) => !referenceIds.includes(id))
+    )
       fail(
         "invalid_finding_reference",
         [`$.decisions[${di}].requirement_ids`],
@@ -241,7 +327,37 @@ export function validateBlueprint(
     )
       fail("source_missing", [`$.decisions[${di}].evidence_refs`]);
   }
+  if (diagnostics.length) {
+    const merged = mergeModelValidationDiagnostics({ diagnostics });
+    throw new ModelError(
+      "MODEL_COVERAGE_INCOMPLETE",
+      null,
+      merged.diagnostics,
+      merged.omittedCount,
+    );
+  }
   return owners;
+}
+
+/** Full validation remains the only function that returns canonical ownership. */
+export function validateBlueprint(
+  blueprint: ProposalBlueprint,
+  requiredIds: string[],
+  template: Row[] = [],
+  shared: NonNullable<Parameters<typeof validateBlueprintRules>[3]> = {},
+) {
+  return validateBlueprintRules(blueprint, requiredIds, template, shared);
+}
+
+/** Independent metadata only, for an already rejected alias candidate.
+ * Does not check/return ownership or repeat unknown requirement-reference
+ * diagnostics already enumerated by alias preflight. Never an acceptance gate. */
+export function validateBlueprintMetadata(
+  blueprint: ProposalBlueprint,
+  template: Row[] = [],
+  shared: NonNullable<Parameters<typeof validateBlueprintRules>[3]> = {},
+): void {
+  validateBlueprintRules(blueprint, [], template, shared, false);
 }
 
 export function savedBlueprint(

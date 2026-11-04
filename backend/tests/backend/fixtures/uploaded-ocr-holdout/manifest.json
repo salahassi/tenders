@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "scope": "independently_authored_synthetic_arabic_ocr_holdout_preparation",
+  "synthetic": true,
+  "gold_manifest": "/workspace/output/ocr-holdout-prepared/gold-manifest.json",
+  "gold_manifest_sha256": "9f855604b3df5dc26f4d10f72a9b57f6fc8d1e071381480bef72951211c48b99",
+  "gold_frozen_before_rendering": true,
+  "generator_sha256": "897b0b29aa2005cd8d83a6934b8d2d0600c0e1659b07e4c2ec3fd98736239fd8",
+  "pymupdf_version": "1.26.6",
+  "reference_generator_path": "/workspace/work/reliability-arabic-ocr/backend/tests/backend/fixtures/uploaded-ocr/generate.py",
+  "reference_generator_sha256": "24965ae88f06cd754f8daa856ee075135665ef1efac34708a3658eafcf22a3b8",
+  "fonts": {
+    "Amiri-Regular.ttf": {
+      "source": "/workspace/work/reliability-arabic-ocr/frontend/public/fonts/Amiri-Regular.ttf",
+      "sha256": "ab391c4147d054c48976e98322ad0eefe1427aa0e0502a12a4c75d80a70cfcd7"
+    },
+    "Carlito-Regular.ttf": {
+      "source": "/workspace/work/reliability-arabic-ocr/frontend/public/fonts/Carlito-Regular.ttf",
+      "sha256": "f6418f708baede9789daef5d458c0f53d2a888af9820e8062934e504fedc6595"
+    },
+    "NotoNaskhArabic-Regular.ttf": {
+      "source": "/usr/share/fonts/truetype/noto/NotoNaskhArabic-Regular.ttf",
+      "sha256": "8c67eaa2f0086872628fc3f7f760386f83c8be5c5e9a1ba3a38891237b2ac7cb"
+    },
+    "NotoSansArabic-Regular.ttf": {
+      "source": "/usr/share/fonts/truetype/noto/NotoSansArabic-Regular.ttf",
+      "sha256": "504d7407d86875acf7d04dfaa0fd7524d0b8797723bc4aa18022f29db25b0b6e"
+    }
+  },
+  "files": [
+    {
+      "id": "maintenance-obligation",
+      "path": "/workspace/output/ocr-holdout-prepared/scanned-maintenance-obligation.pdf",
+      "filename": "scanned-maintenance-obligation.pdf",
+      "sha256": "865400db7e101086faf30311b81239c52cfa71074d1b51c80354b4acab959003",
+      "bytes": 51517,
+      "pages": 1,
+      "raster_size_pixels": [
+        1488,
+        2105
+      ],
+      "scan_dpi": 180,
+      "raster_sha256": "82dc232b653deac91e79f206f929b3a24062f6d2b5bca1d871de629dba855d96",
+      "hidden_text_characters": 0,
+      "texttrace_entries": 0,
+      "font_resources": 0,
+      "image_objects": 1,
+      "embedded_files": 0,
+      "annotations": 0
+    },
+    {
+      "id": "records-retention",
+      "path": "/workspace/output/ocr-holdout-prepared/scanned-records-retention.pdf",
+      "filename": "scanned-records-retention.pdf",
+      "sha256": "8df77416bbfe305d1e964f72afa9a643cb6208902820b54ee233c2830768cf96",
+      "bytes": 45180,
+      "pages": 1,
+      "raster_size_pixels": [
+        1290,
+        1825
+      ],
+      "scan_dpi": 156,
+      "raster_sha256": "a4f501532f66a3154419c90022a97b6a86b3ac46c83c4a9aa54b735f5d4f2020",
+      "hidden_text_characters": 0,
+      "texttrace_entries": 0,
+      "font_resources": 0,
+      "image_objects": 1,
+      "embedded_files": 0,
+      "annotations": 0
+    },
+    {
+      "id": "sensor-acceptance",
+      "path": "/workspace/output/ocr-holdout-prepared/scanned-sensor-acceptance.pdf",
+      "filename": "scanned-sensor-acceptance.pdf",
+      "sha256": "2954ab85ab810c853659aed7f7c95fd07785653fb588172da8076b37d9bb02e9",
+      "bytes": 41024,
+      "pages": 1,
+      "raster_size_pixels": [
+        1190,
+        1684
+      ],
+      "scan_dpi": 144,
+      "raster_sha256": "a363b89bf271ad3189f7a09f2d347d14b4fea865a23f009df4545cbc08cd6c34",
+      "hidden_text_characters": 0,
+      "texttrace_entries": 0,
+      "font_resources": 0,
+      "image_objects": 1,
+      "embedded_files": 0,
+      "annotations": 0
+    }
+  ],
+  "recognition_run": false,
+  "recognition_qualification": false,
+  "external_calls": 0,
+  "tracked_source_edits": 0,
+  "limits": "Preparation and image-only structure checks only; no OCR, recognition accuracy, native extraction or hosted acceptance evidence."
+}

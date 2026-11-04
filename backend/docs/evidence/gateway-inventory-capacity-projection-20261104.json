@@ -1,0 +1,18 @@
+{
+  "duration_seconds": 0.012,
+  "hard_filesystem_cap_proved": false,
+  "hosted_calls": 0,
+  "log_sha256": "c238517ee3c738f9b87f4cbe18fea2fc2c3e4ec1fbb1162fe80837f29c9e92d8",
+  "new_tests": 4,
+  "observed_hosted_values": false,
+  "old_workload_schema_unchanged": true,
+  "passed": true,
+  "resource_changes": 0,
+  "scope": "additive gateway resource and temporary-storage metadata projection",
+  "source_sha256": {
+    "backend/scripts/ops/digitalocean-inventory.py": "9b8f942342b5ff722868544ab37d60dde96bf3433c46236200a4116a026e1fab",
+    "backend/scripts/ops/test_gateway_inventory_capacity.py": "4d1580cf73a0644e211e411d1a03b988e8d60c1838939aea21895837c6182e32"
+  },
+  "tests_passed": 22,
+  "version": 1
+}

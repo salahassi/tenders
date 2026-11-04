@@ -1,0 +1,71 @@
+name: Release reviewed proposal delivery reliability
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+      - name: Verify exact reviewed source and both application packages
+        run: |
+          set -euo pipefail
+          python3 backend/scripts/ops/proposal-delivery-release.py
+          npm ci --prefix frontend
+          npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          npm --prefix frontend run typecheck
+          npm --prefix frontend test -- --maxWorkers=1
+          npm --prefix frontend run build
+          npm --prefix backend run typecheck
+          npm --prefix backend test -- --maxWorkers=1
+          npm --prefix backend run build
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
+          python3 -m unittest discover -s backend/scripts/ops/production-schema -p 'test_*.py'
+          python3 -m unittest discover -s backend/deploy/kubernetes -p 'test_*.py'
+      - name: Prepare original-CA cluster access and expiring image credentials
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/digitalocean-runner.py
+      - name: Publish or reuse exact source runtime, frontend and native OCR images
+        run: python3 backend/scripts/ops/proposal-delivery-images.py
+      - name: Apply atomic schema and complete compatible workload rollout
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/proposal-delivery-update.py
+      - name: Remove only this release attempt's owned temporary database client
+        if: ${{ always() }}
+        run: |
+          if [ -n "${DOKS_WORKDIR:-}" ] && [ -x "${KUBECTL:-}" ]; then
+            python3 backend/scripts/ops/proposal-delivery-update.py --cleanup
+          fi
+      - name: Remove private runner credentials and build logs
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil
+          run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+          if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):
+              raise SystemExit('Runner cleanup identity invalid.')
+          directory=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-deploy-'+run+'-'+attempt)
+          if directory.exists():shutil.rmtree(directory)
+          print('Temporary proposal release credentials and logs removed.')
+          PY

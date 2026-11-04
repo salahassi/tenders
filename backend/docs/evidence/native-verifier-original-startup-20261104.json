@@ -1,0 +1,92 @@
+{
+  "scope": "actual immutable image original default startup without parent heap override",
+  "hosted_acceptance": false,
+  "provider_calls": 0,
+  "image_id": "sha256:fc8990d495e1e63702aa1377b1b29cb2a719386733ac512f2a96ff408a298e09",
+  "entrypoint": [
+    "/tini",
+    "--",
+    "docker-entrypoint.sh"
+  ],
+  "cmd": [
+    "run",
+    "--cached-only",
+    "--frozen",
+    "--config=supabase/functions/deno.json",
+    "--allow-env",
+    "--allow-net",
+    "--allow-sys",
+    "--allow-run=/bin/deno",
+    "--allow-read=/app,/deno-dir,/tmp",
+    "--allow-write=/tmp",
+    "scripts/runtime/main.ts"
+  ],
+  "user": "deno",
+  "probe_sha256": "2f19fc725adbd80586460c2765668be24bbaf9fb34859c317d0324b491970e48",
+  "roles": [
+    {
+      "service": "worker",
+      "heap_size_limit": 360710144,
+      "renderer_import": true,
+      "runtime": {
+        "deno": "2.9.8",
+        "v8": "15.0.245.2-rusty",
+        "typescript": "6.0.3"
+      },
+      "memory_limit_mebibytes": 640,
+      "default_main_health": {
+        "status": "ready",
+        "component": "worker"
+      },
+      "worker_flag_present": false
+    },
+    {
+      "service": "api",
+      "heap_size_limit": 281018368,
+      "renderer_import": true,
+      "runtime": {
+        "deno": "2.9.8",
+        "v8": "15.0.245.2-rusty",
+        "typescript": "6.0.3"
+      },
+      "memory_limit_mebibytes": 384,
+      "default_main_health": {
+        "status": "ready",
+        "component": "api"
+      },
+      "worker_flag_present": false
+    },
+    {
+      "service": "source-browser",
+      "heap_size_limit": 274726912,
+      "renderer_import": true,
+      "runtime": {
+        "deno": "2.9.8",
+        "v8": "15.0.245.2-rusty",
+        "typescript": "6.0.3"
+      },
+      "memory_limit_mebibytes": 256,
+      "default_main_health": {
+        "status": "ready",
+        "component": "source-browser"
+      },
+      "worker_flag_present": false
+    },
+    {
+      "service": "scheduler",
+      "heap_size_limit": 274726912,
+      "renderer_import": true,
+      "runtime": {
+        "deno": "2.9.8",
+        "v8": "15.0.245.2-rusty",
+        "typescript": "6.0.3"
+      },
+      "memory_limit_mebibytes": 192,
+      "default_main_health": {
+        "status": "ready",
+        "component": "scheduler"
+      },
+      "worker_flag_present": false
+    }
+  ]
+}

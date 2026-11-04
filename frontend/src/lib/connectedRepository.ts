@@ -9,7 +9,11 @@ import type {
   DocumentRecord,
   ProposalReview,
 } from "../types";
-import { BackendClient, BackendRequestError } from "./backendClient";
+import {
+  BackendClient,
+  BackendRequestError,
+  currentBackendIdentity,
+} from "./backendClient";
 
 import { getLocalFile } from "./knowledgeFiles";
 import { getReviewDocuments } from "./proposalReview";
@@ -117,6 +121,7 @@ export class ConnectedRepository {
   private rows: Record<string, Row[]> = {};
   private workspace!: Row;
   private loadGeneration = 0;
+  private loadTail: Promise<void> = Promise.resolve();
   private actorId = "";
   private steps = new Map<string, unknown>();
   private pending: {
@@ -131,7 +136,16 @@ export class ConnectedRepository {
   };
   constructor(readonly client: BackendClient) {}
 
-  private async list(path: string): Promise<Row[]> {
+  private assertCurrentLoad(generation: number) {
+    if (generation !== this.loadGeneration)
+      throw new Error("A newer workspace request replaced this response.");
+  }
+
+  private async list(
+    path: string,
+    generation: number,
+    identity: string,
+  ): Promise<Row[]> {
     const rows: Row[] = [];
     // Required workspace records stay complete as the workspace grows.
     // Audit history is read separately by the decision-history panel.
@@ -140,9 +154,12 @@ export class ConnectedRepository {
     const seen = new Set<string>();
     const recordIds = new Set<string>();
     do {
+      this.assertCurrentLoad(generation);
       const { data } = await this.client.request<unknown>(
         `/v1/${path}?limit=${pageSize}${cursor ? `&cursor=${cursor}` : ""}`,
+        { expectedIdentity: identity },
       );
+      this.assertCurrentLoad(generation);
       const schema = ["audit-events", "regeneration-requests"].includes(path)
         ? rowSchema.extend({ revision: z.number().int().positive().default(1) })
         : rowSchema;
@@ -177,7 +194,35 @@ export class ConnectedRepository {
 
   async load(): Promise<AppState> {
     const generation = ++this.loadGeneration;
-    const { data } = await this.client.request<unknown>("/v1/bootstrap");
+    const captured = currentBackendIdentity(this.client).then(
+      (identity) => ({ identity }),
+      (error: unknown) => ({ error }),
+    );
+    const previous = this.loadTail;
+    let release!: () => void;
+    this.loadTail = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    try {
+      this.assertCurrentLoad(generation);
+      const result = await captured;
+      if ("error" in result) throw result.error;
+      this.assertCurrentLoad(generation);
+      return await this.loadCurrent(generation, result.identity);
+    } finally {
+      release();
+    }
+  }
+
+  private async loadCurrent(
+    generation: number,
+    identity: string,
+  ): Promise<AppState> {
+    const { data } = await this.client.request<unknown>("/v1/bootstrap", {
+      expectedIdentity: identity,
+    });
+    this.assertCurrentLoad(generation);
     const boot = z
       .object({
         membership: z.object({
@@ -219,11 +264,13 @@ export class ConnectedRepository {
       "fit-assessments",
       "opportunity-discovery",
     ];
-    const tables = await Promise.all(
-      paths.map(async (path) => [path, await this.list(path)] as const),
-    );
-    if (generation !== this.loadGeneration)
-      throw new Error("A newer workspace request replaced this response.");
+    // Consume every continuation page before opening the next full-content
+    // table. Parallel lists would compete for the server's heavy-file lane.
+    const tables: (readonly [string, Row[]])[] = [];
+    for (const path of paths)
+      tables.push([path, await this.list(path, generation, identity)]);
+    await currentBackendIdentity(this.client, identity);
+    this.assertCurrentLoad(generation);
     this.rows = Object.fromEntries(tables);
     this.workspace = boot.workspace;
     this.actorId = boot.membership.user_id || "";
@@ -290,17 +337,45 @@ export class ConnectedRepository {
       tags: strings(r.tags),
     }));
     const documents = this.rows.documents.filter(
-      (d) => !d.archived && !["pending", "expired"].includes(str(d, "status")),
+      (d) =>
+        !d.archived &&
+        !["pending", "expired"].includes(str(d, "status")) &&
+        !this.rows.documents.some(
+          (child) =>
+            child.id === d.ocr_successor_id &&
+            child.ocr_parent_document_id === d.id &&
+            !child.archived &&
+            [
+              "ready",
+              "partial",
+              "needs_ocr",
+              "needs_processing",
+              "error",
+            ].includes(str(child, "status")) &&
+            child.uploaded_size === child.expected_size,
+        ),
     );
     const document = (d: Row) => ({
       id: d.id,
+      revision: Number(d.revision),
+      extractionHash: str(d, "extraction_hash"),
+      extractionVersion: str(d, "extraction_version") || undefined,
+      ocrStatus: (d.ocr_status ?? null) as DocumentRecord["ocrStatus"],
+      ocrParentDocumentId: str(d, "ocr_parent_document_id") || null,
+      ocrSuccessorId: str(d, "ocr_successor_id") || null,
       name: str(d, "original_name"),
       size: Number(d.uploaded_size ?? d.expected_size),
       uploadedAt: str(d, "created_at"),
       text: str(d, "extracted_text"),
       status: z
-        .enum(["ready", "needs_ocr", "needs_processing", "error"])
+        .enum(["ready", "partial", "needs_ocr", "needs_processing", "error"])
         .parse(d.status),
+      ...(d.extraction_coverage
+        ? {
+            extractionCoverage:
+              d.extraction_coverage as DocumentRecord["extractionCoverage"],
+          }
+        : {}),
       classification: "unspecified" as const,
       hash: str(d, "original_hash"),
       persisted: true,
@@ -679,7 +754,7 @@ export class ConnectedRepository {
             : r.status === "retry_wait" && r.error_code === "MODEL_IN_PROGRESS"
               ? "Gemini is processing this request. Its result will be checked automatically."
               : r.error_code === "PROVIDER_QUOTA_WAIT"
-                ? `Provider rejected the request (429). Automatically retries after ${str(r, "next_attempt_at")}. See Model activity for the provider reason.`
+                ? `Provider quota or rate limit. Automatically retries after ${str(r, "next_attempt_at")}. See Model activity for the provider reason.`
                 : r.status === "quota_wait" &&
                     [
                       "MODEL_RATE_WAIT",
@@ -1124,7 +1199,13 @@ export class ConnectedRepository {
       );
     await this.client.request(`/v1/documents/${document.id}/complete-upload`, {
       method: "POST",
-      body: { from_parts: true, status: document.status },
+      body: {
+        from_parts: true,
+        status: document.status,
+        ...(document.extractionCoverage
+          ? { extraction_coverage: document.extractionCoverage }
+          : {}),
+      },
       idempotencyKey: `complete:${document.id}`,
     });
   }
@@ -1331,7 +1412,7 @@ function modelRoutingSummary(checkpoint: unknown): string {
     PROVIDER_AUTH_FAILED: "credentials rejected",
     PROVIDER_REQUEST_INVALID: "request rejected",
     PROVIDER_MODEL_NOT_FOUND: "model not found",
-    PROVIDER_QUOTA_WAIT: "provider rejected request (429)",
+    PROVIDER_QUOTA_WAIT: "provider quota or rate limit; retry scheduled",
     MODEL_NETWORK_UNCERTAIN: "connection failed; usage unknown",
     USAGE_REVIEW_REQUIRED: "previous uncertain request retained",
     SUCCEEDED: "completed",

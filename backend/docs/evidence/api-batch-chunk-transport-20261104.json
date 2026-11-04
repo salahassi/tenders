@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "date": "2026-11-04",
+  "base": "fe3fc937c569ed04a1cc587338e7a13e47f9ae4f",
+  "scope": "Bounded API batch result transport; exact external result values/order and existing data/meta envelope",
+  "source_sha256": {
+    "backend/supabase/functions/_shared/batchTransport.ts": "7c90ab814d1ad84eaac411042ff8697afc3fac99b23b9254e6fd2d42c270db6c",
+    "backend/supabase/functions/_shared/backend.ts": "28dcec8f43107cc026c178d11816fe8d97d338c51c7ae371bc3b5fad63d795e2",
+    "backend/tests/backend/fixtures/batchRpcTransport.ts": "a510cc3d9ab2a47aac1348a4e1bbc52c42dcf92e240ee4fb0926b506014262ca",
+    "backend/tests/backend/fixtures/batchWire.ts": "a2cd6a3171990906a25e5d04574bd0f5112022aeb027d8ab21a055b990c907ab"
+  },
+  "dependency": {
+    "migration": "20261104212818_bounded_command_batch_results.sql",
+    "sha256": "ce77978cce4a0c09ea93ca3939b1d90029bd9987da303346752ccb2ac96796b6",
+    "ownership": "Operations agent; copied for focused integration only, excluded from this commit."
+  },
+  "protocol": {
+    "version": 1,
+    "mutation_rpc": "app_batch_prepare",
+    "read_rpc": "app_batch_result_chunk",
+    "decoded_chunk_bytes": 262144,
+    "manifest_response_bound": 65536,
+    "chunk_response_bound": 524288,
+    "diagnostic_response_bound": 65536,
+    "business_result_size_quota_added": false,
+    "commands_executed_in": "One canonical database transaction; no automatic mutation or read retry",
+    "result_handling": "Original immutable UTF-8 JSON bytes are streamed; only array punctuation is emitted by API. Exact result JSON is never parsed or reconstructed.",
+    "integrity": "Receipt, result ordinal, chunk index, fixed lengths, canonical base64, per-chunk SHA256 and incremental whole-result SHA256; missing or corrupt output never closes a success envelope."
+  },
+  "verification": {
+    "focused": {
+      "passed": 71,
+      "files": 2,
+      "duration_seconds": 0.694,
+      "log_sha256": "4a3477f099112bb66081fe52236b22a41784fe17239d415a8beac6a6695e8901"
+    },
+    "migrated": {
+      "passed": 31,
+      "files": [
+        "database.test.ts",
+        "httpDatabase.integration.test.ts",
+        "deliveryPipeline.integration.test.ts"
+      ],
+      "duration_seconds": 13.09,
+      "log_sha256": "b8683f2501132420d3454fa015511f74514ec2149703b92ccd5a20e58ee84e50",
+      "scope": "Real migrated local SQL plus actual API and production chunk consumer, synthetic PostgREST/Auth/Storage transport. Not real PostgREST resource qualification."
+    },
+    "backend_types": "passed",
+    "typecheck_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "independent_review": "Source-only framing/cancellation/base64/hash/paging review found no material blocker; reviewer did not rerun tests."
+  },
+  "coverage": [
+    "Existing100-command boundary preserves all results and one mutation call.",
+    "Exact Arabic UTF-8 split across fixed chunks, escaped text, null/boolean/numeric values and raw numeric lexical representation.",
+    "Malformed manifest, invalid UTF-8/JSON, response frame overflow, wrong receipt/index/order/length/hash and repeated final chunk reject.",
+    "Caller and consumer cancellation retain API admission until active or late noncooperative fetch/source settles.",
+    "No chunk prefetch before downstream demand or while consumer paused.",
+    "Known mutation errors retain existing mapping; read-time SQL57014 and network ambiguity are nonretryable and never resubmit committed commands.",
+    "Existing migrated atomicity/revision/idempotency/access checks continue through new manifest/chunk adapters."
+  ],
+  "qualification_limits": [
+    "SQL remains responsible for immutable canonical valid JSON bytes, current authority, retention and legacy compatibility.",
+    "The separate normalized SQL migration, actual PostgREST128MiB10/100-result proof and historical aggregate normalization/cutover must be qualified before deployment.",
+    "Existing admission is per API handler; local tests are not native peak-memory, NGINX backpressure, network disconnect or cluster-wide proof.",
+    "No provider call, production mutation, new billing/model quota or deployment occurred."
+  ]
+}

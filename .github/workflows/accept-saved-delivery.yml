@@ -1,0 +1,73 @@
+name: Verify selected saved delivery state and stored Word files
+on:
+  workflow_dispatch:
+    inputs:
+      run_acceptance:
+        description: Read only the reviewed current delivery snapshot and its stored artifacts
+        type: boolean
+        default: false
+        required: true
+      selection_object:
+        description: Encrypted version 2 snapshot and expected-state selection
+        type: string
+        required: true
+      selection_sha256:
+        description: Reviewed selection plaintext SHA-256
+        type: string
+        required: true
+      expected_runtime_image:
+        description: Exact deployed immutable runtime image
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  accept:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - name: Install locked dependencies and verify offline acceptance boundaries
+        run: |
+          npm ci --prefix backend
+          npm ci --prefix frontend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_delivery_snapshot_acceptance.py'
+          cd backend
+          npx vitest run tests/backend/deliverySnapshotAcceptance.test.ts tests/backend/deliverySnapshotSelection.integration.test.ts
+      - name: Verify the selected saved delivery without business writes
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_acceptance }}
+        env:
+          RUN_SAVED_DELIVERY_ACCEPTANCE: "true"
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          EXPORT_SELECTION_OBJECT: ${{ inputs.selection_object }}
+          EXPORT_SELECTION_SHA256: ${{ inputs.selection_sha256 }}
+          EXPORT_RUNTIME_IMAGE: ${{ inputs.expected_runtime_image }}
+        run: |
+          python3 backend/scripts/ops/delivery-snapshot-acceptance.py \
+            --selection-object "$EXPORT_SELECTION_OBJECT" \
+            --selection-sha256 "$EXPORT_SELECTION_SHA256" \
+            --expected-runtime-image "$EXPORT_RUNTIME_IMAGE"
+      - name: Remove temporary credentials and private export plaintext
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil
+          run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+          if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):raise SystemExit(1)
+          directory=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+run+'-'+attempt)
+          if directory.exists():shutil.rmtree(directory)
+          print('Private draft export acceptance temporary files removed.')
+          PY

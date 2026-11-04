@@ -7,6 +7,7 @@ in memory and are never placed in logs, artifacts, files, or command arguments.
 """
 from __future__ import annotations
 from contextlib import redirect_stdout, redirect_stderr
+import hashlib
 import importlib.util
 import io
 import json
@@ -50,8 +51,9 @@ class EvaluationError(Exception):
 
 def suite_limits(suite):
     limits = {'core':(4,32),'extended':(2,16),'extended_recheck':(2,4),
-              'planning_repair':(1,2),'analysis_verification':(2,4),'analysis_authority':(2,4)}
+              'planning_repair':(1,2),'analysis_verification':(2,4),'analysis_authority':(2,4),'semantic_en':(4,64),'semantic_ar':(4,64),'semantic_v2_en':(4,64),'semantic_v2_ar':(4,64),'semantic_v2_metadata_en':(4,64),'semantic_v2_metadata_ar':(4,64)}
     if suite not in limits: raise EvaluationError('EVAL_SUITE_INVALID')
+    if suite in {'semantic_en','semantic_ar','semantic_v2_en','semantic_v2_ar','semantic_v2_metadata_en','semantic_v2_metadata_ar'}: frozen_semantic_corpus(2 if suite.startswith('semantic_v2_') else 1)
     return limits[suite]
 
 RECHECK_PAIRS = {
@@ -73,12 +75,34 @@ ANALYSIS_AUTHORITY_PAIRS = {
     for case in ('analysis_optional_authority_supported_v3','analysis_optional_authority_strengthened_v3')
 }
 
+SEMANTIC_CORPUS_PATH = HERE.parents[1] / 'tests/backend/fixtures/semantic-qualification/corpus-v1.json'
+
+SEMANTIC_CORPUS_SHA256 = '698127390ac44cd1e1ba7c0591af7bc3668c0be2fed0cff22079dc4bdba7847b'
+
+SEMANTIC_V2_CORPUS_PATH = HERE.parents[1] / 'tests/backend/fixtures/semantic-qualification/corpus-v2.json'
+SEMANTIC_V2_CORPUS_SHA256 = 'b53d46395d713d85e3beb2ac8341cf34bc12b429cd2844a0af033288c0527d9c'
+
+def frozen_semantic_corpus(version=1):
+    path, expected_hash = (SEMANTIC_CORPUS_PATH,SEMANTIC_CORPUS_SHA256) if version==1 else (SEMANTIC_V2_CORPUS_PATH,SEMANTIC_V2_CORPUS_SHA256)
+    raw = path.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != expected_hash: raise EvaluationError('EVAL_CORPUS_CHANGED')
+    return json.loads(raw)
+
+def semantic_cases(suite):
+    version = 2 if suite.startswith('semantic_v2_') else 1
+    language = suite[-2:]
+    corpus = frozen_semantic_corpus(version)
+    prefix = 'semantic_v2_metadata' if suite.startswith('semantic_v2_metadata_') else 'semantic_v2' if version==2 else 'semantic'
+    return {f"{prefix}_{language}_{r['family']}_{variant}_v{version}" for r in corpus['cases'] if r['language']==language
+            for variant in ('faithful','mutated')}
+
 def expected_case_count(count, suite):
+    if suite in {'semantic_en','semantic_ar','semantic_v2_en','semantic_v2_ar','semantic_v2_metadata_en','semantic_v2_metadata_ar'}: return count * len(semantic_cases(suite))
     return 2 if suite == 'planning_repair' else 4 if suite in {'extended_recheck','analysis_verification','analysis_authority'} else count * 8
 
 def catalog_sql(suite):
     max_models,_ = suite_limits(suite)
-    if suite == 'core': return CATALOG_SQL
+    if suite in {'core','semantic_en','semantic_ar','semantic_v2_en','semantic_v2_ar','semantic_v2_metadata_en','semantic_v2_metadata_ar'}: return CATALOG_SQL
     condition = "c.provider='qwencloud'"
     if suite in {'extended_recheck','analysis_verification','analysis_authority'}: condition += " AND m.model IN ('deepseek-v4-pro','qwen3.8-max')"
     if suite == 'planning_repair': condition += " AND m.model='qwen3.8-max'"
@@ -86,7 +110,7 @@ def catalog_sql(suite):
 
 def targets(catalog, bindings, suite='core'):
     max_models,_ = suite_limits(suite)
-    allowed = {'openai','qwencloud'} if suite == 'core' else {'qwencloud'}
+    allowed = {'openai','qwencloud'} if suite in {'core','semantic_en','semantic_ar','semantic_v2_en','semantic_v2_ar','semantic_v2_metadata_en','semantic_v2_metadata_ar'} else {'qwencloud'}
     if not isinstance(catalog, list) or not 1 <= len(catalog) <= max_models:
         raise EvaluationError('EVAL_CATALOG_LIMIT')
     result = []
@@ -124,13 +148,29 @@ def validate_report(report, count, suite='core'):
         raise EvaluationError('EVAL_REPORT_INVALID')
     if any(type(r.get('passed')) is not bool for r in report['results']):
         raise EvaluationError('EVAL_REPORT_INVALID')
-    if suite != 'core' and any(r.get('provider') != 'qwencloud' for r in report['results']):
+    if suite not in {'core','semantic_en','semantic_ar','semantic_v2_en','semantic_v2_ar','semantic_v2_metadata_en','semantic_v2_metadata_ar'} and any(r.get('provider') != 'qwencloud' for r in report['results']):
         raise EvaluationError('EVAL_REPORT_INVALID')
     if suite in {'extended_recheck','planning_repair','analysis_verification','analysis_authority'}:
         pairs = [(r.get('model'),r.get('case')) for r in report['results']]
         allowed_pairs = {'planning_repair':PLANNING_PAIRS,'extended_recheck':RECHECK_PAIRS,
                          'analysis_verification':ANALYSIS_VERIFICATION_PAIRS,'analysis_authority':ANALYSIS_AUTHORITY_PAIRS}[suite]
         if count != max_models or len(set(pairs)) != len(pairs) or any(p not in allowed_pairs for p in pairs):
+            raise EvaluationError('EVAL_REPORT_INVALID')
+    if suite in {'semantic_en','semantic_ar','semantic_v2_en','semantic_v2_ar','semantic_v2_metadata_en','semantic_v2_metadata_ar'}:
+        expected = semantic_cases(suite)
+        version = 2 if suite.startswith('semantic_v2_') else 1
+        corpus_hash = SEMANTIC_V2_CORPUS_SHA256 if version==2 else SEMANTIC_CORPUS_SHA256
+        pairs = [(r.get('provider'),r.get('model'),r.get('case')) for r in report['results']]
+        if len(pairs)!=len(set(pairs)) or any(p not in {'openai','qwencloud'} or not isinstance(m,str) or not m or c not in expected for p,m,c in pairs):
+            raise EvaluationError('EVAL_REPORT_INVALID')
+        observed = {(p,m) for p,m,_ in pairs}
+        if len(observed)>count or (report['complete'] and (len(observed)!=count or {p for p,m in observed}!={'openai','qwencloud'})):
+            raise EvaluationError('EVAL_REPORT_INVALID')
+        if any(r.get('qualification',{}).get('corpus_sha256')!=corpus_hash or r.get('qualification',{}).get('split')!='development' or (version==2 and r.get('qualification',{}).get('oracle_version')!=2) for r in report['results']):
+            raise EvaluationError('EVAL_REPORT_INVALID')
+        if version==2 and any(r.get('qualification',{}).get('verification_policy_version') != (5 if suite.startswith('semantic_v2_metadata_') else None) for r in report['results']):
+            raise EvaluationError('EVAL_REPORT_INVALID')
+        if report['passed'] != (report['complete'] and all(r['passed'] for r in report['results'])):
             raise EvaluationError('EVAL_REPORT_INVALID')
     return report
 

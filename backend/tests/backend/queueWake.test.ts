@@ -82,6 +82,26 @@ async function wake(id: string, lease = crypto.randomUUID(), details = false) {
     await f.db.exec("reset role;release savepoint wake_rpc");
   }
 }
+async function runtimeWake(name: string, args: any) {
+  expect([
+    "wake_backend_queue_status_v4",
+    "wake_backend_queue_revision_v4",
+  ]).toContain(name);
+  await f.db.exec("savepoint runtime_wake_rpc;set local role service_role");
+  try {
+    return await f.rpc(
+      name,
+      name === "wake_backend_queue_revision_v4"
+        ? [args.job_id, args.lease, args.expected_revision]
+        : [args.job_id, args.lease],
+    );
+  } catch (error) {
+    await f.db.exec("rollback to savepoint runtime_wake_rpc");
+    throw error;
+  } finally {
+    await f.db.exec("reset role;release savepoint runtime_wake_rpc");
+  }
+}
 async function dispatches() {
   return (
     await f.db.query<any>(
@@ -452,10 +472,9 @@ it("performs one delayed RPC for an accepted request and safely loses a race to 
   const { claimed } = await acceptedPoll();
   let clock = 0;
   const internal = vi.fn(async (name: string, args: any) => {
-    if (name === "wake_backend_queue_status")
-      return wake(args.job_id, args.lease, true);
-    expect(name).toBe("wake_backend_queue_revision");
-    return f.rpc(name, [args.job_id, args.lease, args.expected_revision]);
+    if (name === "wake_backend_queue_status_v4") return runtimeWake(name, args);
+    expect(name).toBe("wake_backend_queue_revision_v4");
+    return runtimeWake(name, args);
   });
   const sleep = vi.fn(async (ms: number) => {
     clock += ms;
@@ -869,8 +888,8 @@ it.each([false, true])(
     expect(await wake(first.id)).toBe(true);
     let clock = 1000;
     const lease = crypto.randomUUID();
-    const internal = vi.fn(async (_name: string, args: any) =>
-      wake(args.job_id, args.lease, true),
+    const internal = vi.fn(async (name: string, args: any) =>
+      runtimeWake(name, args),
     );
     const sleep = vi.fn(async (ms: number) => {
       expect(ms).toBeGreaterThan(0);
@@ -891,7 +910,7 @@ it.each([false, true])(
     expect(internal).toHaveBeenCalledTimes(2);
     expect(
       internal.mock.calls.every(
-        ([name]) => name === "wake_backend_queue_status",
+        ([name]) => name === "wake_backend_queue_status_v4",
       ),
     ).toBe(true);
     expect(await dispatches()).toBe(claimedDuringWait ? 1 : 2);
@@ -1057,8 +1076,8 @@ it.each([false, true])(
       );
     });
     const internal = vi.fn(async (name: string, args: any = {}) => {
-      if (name === "wake_backend_queue_status")
-        return wake(args.job_id, args.lease, true);
+      if (name === "wake_backend_queue_status_v4")
+        return runtimeWake(name, args);
       return name === "claim_storage_cleanup" ? [] : null;
     });
     const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
@@ -1084,7 +1103,7 @@ it.each([false, true])(
     expect(response.status).toBe(200);
     expect(
       internal.mock.calls.filter(
-        ([name]) => name === "wake_backend_queue_status",
+        ([name]) => name === "wake_backend_queue_status_v4",
       ),
     ).toHaveLength(1);
     expect(
@@ -1115,5 +1134,106 @@ it.each([false, true])(
         ([message]) => message === "queue_wakeup_pending",
       ),
     ).toBe(failWake);
+  },
+);
+
+it.each(["ready", "future", "capacity"])(
+  "worker housekeeping failure preserves real queue admission and lease guards (%s)",
+  async (mode) => {
+    if (mode === "capacity") await acceptedPoll();
+    const target = await job();
+    if (mode === "future")
+      await f.db.query(
+        "update public.jobs set next_attempt_at=now()+interval '1 hour' where id=$1",
+        [target.id],
+      );
+    const before = (
+      await f.db.query<any>("select * from public.jobs where id=$1", [
+        target.id,
+      ])
+    ).rows[0];
+    let processingFailure: unknown;
+    processGeneration.mockImplementation(async (_backend, _env, claimed) => {
+      try {
+        expect(claimed.id).toBe(target.id);
+        expect(claimed.status).toBe("running");
+        expect(claimed.lease_token).toBeTruthy();
+        expect(await f.rpc("claim_backend_job_v3")).toBeNull();
+        // This suite exercises queue admission, not the proposal domain handler.
+        // Keep its synthetic completion bound to the actual exclusively held lease.
+        expect(
+          (
+            await f.db.query<any>(
+              "update public.jobs set status='succeeded',lease_token=null,lease_until=null,revision=revision+1 where id=$1 and lease_token=$2 and status='running' returning id",
+              [claimed.id, claimed.lease_token],
+            )
+          ).rows,
+        ).toEqual([{ id: target.id }]);
+      } catch (error) {
+        processingFailure = error;
+        throw error;
+      }
+    });
+    const internal = vi.fn(async (name: string, args: any = {}) => {
+      if (name === "wake_backend_queue_status_v4")
+        return runtimeWake(name, args);
+      throw Error("Synthetic maintenance outage; never expose this body");
+    });
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const env: BackendEnvironment = {
+      url: "https://synthetic.supabase.co",
+      publishableKey: "fixture",
+      serviceKey: "fixture",
+      allowedOrigins: [],
+      workerSecret: "fixture-worker",
+      models: modelEnvironments(() => undefined),
+    };
+    const handler = createWorkerHandler(
+      env,
+      async () => [],
+      () =>
+        ({
+          internal,
+          claim: () => f.rpc("claim_backend_job_v3"),
+          invocationStartedAt: Date.now(),
+          invocationBudgetMs: 0,
+        }) as unknown as Backend,
+    );
+    const response = await handler(
+      new Request("https://synthetic.test/worker", {
+        method: "POST",
+        headers: { "x-worker-secret": env.workerSecret },
+      }),
+    );
+    expect(processingFailure).toBeUndefined();
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.maintenance_pending).toEqual([
+      "maintenance_tick",
+      "assessment_scheduling",
+      "notification_delivery",
+      "usage_reconciliation",
+      "storage_cleanup",
+    ]);
+    expect(
+      warning.mock.calls.some(
+        ([code]) => code === "worker_maintenance_pending",
+      ),
+    ).toBe(true);
+    const after = (
+      await f.db.query<any>("select * from public.jobs where id=$1", [
+        target.id,
+      ])
+    ).rows[0];
+    if (mode === "ready") {
+      expect(processGeneration).toHaveBeenCalledTimes(1);
+      expect(body.data).toEqual({ job_id: target.id, processed: true });
+      expect(after.status).toBe("succeeded");
+      expect(after.lease_token).toBeNull();
+    } else {
+      expect(processGeneration).not.toHaveBeenCalled();
+      expect(body.data).toEqual({ claimed: false });
+      expect(after).toEqual(before);
+    }
   },
 );

@@ -1,0 +1,47 @@
+.extraction-review {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.extraction-review p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.extraction-review-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+.extraction-review-grid > div {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 0.75rem;
+}
+.extraction-review canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 0.5rem;
+}
+.extraction-review canvas[hidden] {
+  display: none;
+}
+.extraction-original-scroll {
+  overflow: auto;
+  max-height: 42rem;
+  min-width: 0;
+}
+.extraction-review textarea {
+  width: 100%;
+  min-height: 22rem;
+  resize: vertical;
+}
+.extraction-review label {
+  overflow-wrap: anywhere;
+}
+.extraction-review input[type="checkbox"] {
+  margin-inline-end: 0.5rem;
+}

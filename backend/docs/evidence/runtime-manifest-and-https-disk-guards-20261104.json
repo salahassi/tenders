@@ -1,0 +1,44 @@
+{
+  "actual_provenance_check": {
+    "helper_commit": "57883fe",
+    "helper_sha256": "3875fad3c29892dfee4f01dfdb20747fd3d5d703b7ca297f7c8e7740ea0301fe",
+    "null_publication_refusal": "DELIVERY_RELEASE_RUNTIME_PUBLICATION_REQUIRED",
+    "qualification_sha256": "6e031a746917c8183f59264e6482df0b97e4b2515f9b45f2cfd9378cce80b0ac"
+  },
+  "canonical_sql_changed": false,
+  "checks": {
+    "cloud_restore": {
+      "log_sha256": "7619adf08deb962c380f8c328bca4f84c77b1a3a62146d2972b15d167c7b18d7",
+      "passed": 14
+    },
+    "https_boundary": {
+      "log_sha256": "085f501ae070e02abf5deb19f235b0c2c0715c2070a8401c975f3a011e089eeb",
+      "passed": 33
+    },
+    "release_source": {
+      "log_sha256": "4c2014f544dd409467915605b0e547d0a1fa84477253c30e4ebf2310b20bacf0",
+      "passed": 15
+    },
+    "updater": {
+      "log_sha256": "12a14648ab3a818f3c2580d7648d33e1325c76841e11f831d7b3184136d07471",
+      "passed": 15
+    }
+  },
+  "customer_calls": 0,
+  "limitations": [
+    "All test publication/image/Pod fixtures are synthetic; no image was built or pushed by this check.",
+    "Actual native qualification, publication and managed runtime observation remain separate retained receipts.",
+    "No complete schema/application integration suite or hosted rollout is claimed."
+  ],
+  "native_runs": 0,
+  "passed": true,
+  "production_calls": 0,
+  "source_hashes": {
+    "backend/scripts/ops/https-capacity.py": "92939c4fb938c4fe9420d0339c5b5fe332d95a130c0909e3bc7b7a00201bc5fa",
+    "backend/scripts/ops/proposal-delivery-release.py": "ba8c085317639fde74845aa03d0ae1f97da24e30724374b708d68b0d1782cd6e",
+    "backend/scripts/ops/test_https_capacity.py": "bd1a794665a8828f5a387574051e7f0c874d73ddaa4fc431c8a1264c90d01e40",
+    "backend/scripts/ops/test_proposal_cloud_restore.py": "10ace9d9995cac5d4bbff0e6cc6a21386cbc522d723f8dcdd4e7aaa9e1312901",
+    "backend/scripts/ops/test_proposal_delivery_release.py": "ea8cbd520a9192c87b5bb484232e1317b65962be6f1d90f0bc80972859eec4de"
+  },
+  "version": 1
+}

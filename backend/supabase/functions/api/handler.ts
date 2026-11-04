@@ -1,5 +1,31 @@
+import {
+  proposalConsistencyReviewSchema,
+  reviewProposalConsistency,
+} from "../_shared/proposalConsistencyReview.ts";
 import { recoveryRoute } from "../_shared/recovery.ts";
-import { buildExportModel, verifyExportDocx } from "../_shared/export.ts";
+import { batchEnvelopeResponse } from "../_shared/batchTransport.ts";
+import {
+  HeavyFileAdmission,
+  isHeavyFileRequest,
+  type HeavyFilePermit,
+} from "./heavyFileAdmission.ts";
+import { buildExportModel, verifyExportDocxAsync } from "../_shared/export.ts";
+import {
+  buildDeliveryExport,
+  deliveryRenderingGapSummary,
+  type DeliveryVolume,
+} from "../_shared/deliveryExport.ts";
+import { deliveryBytes } from "../_shared/deliveryWorker.ts";
+import {
+  authoringOpenSchema,
+  authoringSaveSchema,
+  authoringClaimSchema,
+  authoringReviewSchema,
+  assertAuthoringClaims,
+  buildAuthoredPayload,
+  reviewAuthoredResponse,
+  type AuthoringContext,
+} from "../_shared/proposalAuthoring.ts";
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
 import {
   commandSchemas,
@@ -12,6 +38,8 @@ import {
 } from "../_shared/contracts.ts";
 import { AppError, corsHeaders, readJson } from "../_shared/http.ts";
 import { validateOriginal } from "../_shared/originals.ts";
+import { validateExportDocxEnvelope } from "../_shared/exportUpload.ts";
+import { validateDocumentCoverage } from "../_shared/documentCoverage.ts";
 import { z } from "zod";
 import { taskRegistry } from "../_shared/modelContract.ts";
 import type { ModelProviderId } from "../_shared/modelProviders.ts";
@@ -165,8 +193,12 @@ export function createApiHandler(
   env: BackendEnvironment,
   factory = () => new Backend(env),
 ) {
+  const fileAdmission = new HeavyFileAdmission();
   return async (request: Request): Promise<Response> => {
     const requestId = crypto.randomUUID();
+    let filePermit: HeavyFilePermit | undefined;
+    const finishResponse = (response: Response) =>
+      filePermit?.retainThrough(response) ?? response;
     let headers = new Headers({
       "content-type": "application/json",
       "cache-control": "no-store",
@@ -175,11 +207,15 @@ export function createApiHandler(
       data: unknown,
       status = 200,
       meta: Record<string, unknown> = {},
-    ) =>
-      new Response(
-        JSON.stringify({ data, meta: { request_id: requestId, ...meta } }),
-        { status, headers },
+    ) => {
+      request.signal.throwIfAborted();
+      return finishResponse(
+        new Response(
+          JSON.stringify({ data, meta: { request_id: requestId, ...meta } }),
+          { status, headers },
+        ),
       );
+    };
     try {
       headers = corsHeaders(request, env.allowedOrigins);
       if (request.method === "OPTIONS")
@@ -208,6 +244,8 @@ export function createApiHandler(
         return respond(await backend.acceptInvitation(token, input.token));
       }
       const membership = await backend.membership(token);
+      if (isHeavyFileRequest(request.method, path))
+        filePermit = fileAdmission.acquire(request.signal);
       if (path === "/v1/model-catalog-status" && request.method === "GET") {
         if (membership.role !== "Owner")
           throw new AppError(
@@ -271,7 +309,7 @@ export function createApiHandler(
         headers,
         respond,
       );
-      if (recovery) return recovery;
+      if (recovery) return finishResponse(recovery);
       if (path === "/v1/bootstrap" && request.method === "GET")
         return respond({
           mode: "CONNECTED_FREE",
@@ -364,6 +402,29 @@ export function createApiHandler(
             language: z
               .enum(["en", "ar"])
               .parse(url.searchParams.get("language") || "en"),
+          }),
+        );
+      const sourceReview = path.match(
+        /^\/v1\/opportunities\/([^/]+)\/source-review$/,
+      );
+      if (sourceReview && request.method === "GET")
+        return respond(
+          await backend.userRpc(token, "source_review_context", {
+            opportunity_id: uuid.parse(sourceReview[1]),
+          }),
+        );
+      const issuance = path.match(/^\/v1\/proposal-issuance\/([^/]+)$/);
+      if (issuance && request.method === "GET")
+        return respond(
+          await backend.userRpc(token, "proposal_issuance_status_for_plan", {
+            plan_id: uuid.parse(issuance[1]),
+          }),
+        );
+      const exportPackage = path.match(/^\/v1\/export-packages\/([^/]+)$/);
+      if (exportPackage && request.method === "GET")
+        return respond(
+          await backend.userRpc(token, "export_package_context", {
+            package_id: uuid.parse(exportPackage[1]),
           }),
         );
       const readiness = path.match(
@@ -499,10 +560,243 @@ export function createApiHandler(
         );
       }
       const exportPath = path.match(/^\/v1\/exports\/([^/]+)\/context$/);
+      const authoringStatus = path.match(
+        /^\/v1\/delivery-snapshots\/([^/]+)\/authoring-status$/,
+      );
+      if (authoringStatus && request.method === "GET")
+        return respond(
+          await backend.internal("proposal_authoring_status", {
+            snapshot_id: uuid.parse(authoringStatus[1]),
+            actor_id: user.id,
+          }),
+        );
+      const authoringPath = path.match(
+        /^\/v1\/proposal-authoring\/(open|[0-9a-f-]+)(?:\/(context|save|claim|review|refresh|adopt))?$/,
+      );
+      if (authoringPath) {
+        const action = authoringPath[1] === "open" ? "open" : authoringPath[2];
+        const session_id =
+          action === "open" ? undefined : uuid.parse(authoringPath[1]);
+        if (request.method === "GET" && action === "context")
+          return respond(
+            await backend.internal("proposal_authoring_context", {
+              session_id,
+              actor_id: user.id,
+            }),
+          );
+        if (
+          request.method !== "POST" ||
+          !["open", "save", "claim", "review", "refresh", "adopt"].includes(
+            action || "",
+          )
+        )
+          throw new AppError(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "Unsupported authoring action.",
+          );
+        const idempotency_key = z
+          .string()
+          .min(1)
+          .max(200)
+          .parse(request.headers.get("idempotency-key"));
+        const raw = await readJson(request, 2097152);
+        if (action === "adopt") {
+          const input = z
+            .object({
+              expected_revision: z.number().int().positive(),
+              expected_proposal_revision: z.number().int().positive(),
+              review_id: z.uuid(),
+            })
+            .strict()
+            .parse(raw);
+          return respond(
+            await backend.internal("adopt_authored_response", {
+              actor_id: user.id,
+              session_id,
+              ...input,
+              idempotency_key,
+            }),
+          );
+        }
+        if (action === "review") {
+          const review = authoringReviewSchema.parse(raw);
+          const context = (await backend.internal(
+            "proposal_authoring_context",
+            { session_id, actor_id: user.id },
+          )) as AuthoringContext;
+          request.signal.throwIfAborted();
+          // Stable across a lost HTTP response; changing input under the same key
+          // is rejected by the transactional receipt, never a second approval.
+          const digest = [
+            ...new Uint8Array(
+              await crypto.subtle.digest(
+                "SHA-256",
+                new TextEncoder().encode(
+                  `${user.id}:${session_id}:${idempotency_key}`,
+                ),
+              ),
+            ),
+          ]
+            .map((v) => v.toString(16).padStart(2, "0"))
+            .join("");
+          const reviewId = `${digest.slice(0, 8)}-${digest.slice(8, 12)}-4${digest.slice(13, 16)}-8${digest.slice(17, 20)}-${digest.slice(20, 32)}`;
+          const evaluated = await reviewAuthoredResponse(
+            context,
+            user.id,
+            review,
+            reviewId,
+          );
+          request.signal.throwIfAborted();
+          const snapshot = await backend.internal("publish_authored_delivery", {
+            actor_id: user.id,
+            session_id,
+            expected_revision: review.expected_revision,
+            expected_context_hash: context.context_hash,
+            payload: evaluated.payload,
+            review,
+            idempotency_key,
+          });
+          return respond({ snapshot, report: evaluated.report });
+        }
+        const input =
+          action === "open"
+            ? authoringOpenSchema.parse(raw)
+            : action === "save"
+              ? authoringSaveSchema.parse(raw)
+              : action === "claim"
+                ? authoringClaimSchema.parse(raw)
+                : z
+                    .object({
+                      expected_revision: z.number().int().positive(),
+                      expected_delivery_revision: z
+                        .number()
+                        .int()
+                        .nonnegative(),
+                    })
+                    .strict()
+                    .parse(raw);
+        if (action === "save" && "body" in input)
+          assertAuthoringClaims(input.body);
+        const context = (await backend.internal("proposal_authoring_command", {
+          actor_id: user.id,
+          operation: action,
+          input: { ...input, ...(session_id ? { session_id } : {}) },
+          idempotency_key,
+        })) as AuthoringContext;
+        request.signal.throwIfAborted();
+        if (action === "save" || action === "refresh") {
+          const payload = buildAuthoredPayload(context);
+          const snapshot = await backend.internal("publish_authored_delivery", {
+            actor_id: user.id,
+            session_id: context.session.id,
+            expected_revision: context.session.revision,
+            expected_context_hash: context.context_hash,
+            payload,
+            review: null,
+            idempotency_key,
+          });
+          return respond({ ...context, published_snapshot: snapshot });
+        }
+        return respond(context);
+      }
+      const deliveryPath = path.match(
+        /^\/v1\/delivery-snapshots\/([^/]+)\/(context|package)$/,
+      );
+      if (deliveryPath && request.method === "GET") {
+        const args = { snapshot_id: uuid.parse(deliveryPath[1]) };
+        if (deliveryPath[2] === "context")
+          return respond(
+            await backend.userRpc(token, "delivery_context", args),
+          );
+        const saved = await backend.userRpc(token, "delivery_package", args);
+        request.signal.throwIfAborted();
+        const snapshot = await backend.userRpc(token, "delivery_context", args);
+        request.signal.throwIfAborted();
+        const volumes: DeliveryVolume[] = snapshot.payload.separate_volumes
+          ? ["technical", "financial"]
+          : ["combined"];
+        const gaps = new Map(
+          volumes
+            .flatMap(
+              (volume) => deliveryRenderingGapSummary(snapshot, volume).gaps,
+            )
+            .map((gap) => [gap.id, gap]),
+        );
+        saved.snapshot.gap_count = gaps.size;
+        saved.snapshot.rendering_gap_count = [...gaps.values()].filter(
+          (gap) => gap.origin === "rendering",
+        ).length;
+        return respond(saved);
+      }
+      const deliveryArtifact = path.match(
+        /^\/v1\/delivery-artifacts\/([^/]+)\/download$/,
+      );
+      if (deliveryArtifact && request.method === "GET") {
+        const id = uuid.parse(deliveryArtifact[1]);
+        const context = await backend.internal("delivery_artifact_context", {
+          artifact_id: id,
+          actor_id: user.id,
+        });
+        request.signal.throwIfAborted();
+        const artifact = context.artifact;
+        if (artifact.status !== "ready")
+          throw new AppError(
+            409,
+            "DELIVERY_NOT_READY",
+            "The saved draft file is still being prepared.",
+          );
+        const blob = await backend.deliveryObject(
+          artifact.storage_key,
+          request.signal,
+        );
+        request.signal.throwIfAborted();
+        if (!blob)
+          throw new AppError(
+            503,
+            "DELIVERY_STORAGE_UNAVAILABLE",
+            "The saved draft file needs recovery.",
+          );
+        const actual = await deliveryBytes(
+          blob,
+          buildDeliveryExport(
+            context.snapshot,
+            artifact.volume as DeliveryVolume,
+          ),
+          request.signal,
+        );
+        request.signal.throwIfAborted();
+        if (
+          actual.hash !== artifact.content_hash ||
+          actual.size !== Number(artifact.expected_size)
+        )
+          throw new AppError(
+            422,
+            "DELIVERY_ARTIFACT_INVALID",
+            "The saved draft bytes have changed.",
+          );
+        await backend.internal("authorize_delivery_artifact_download", {
+          artifact_id: id,
+          actor_id: user.id,
+          actual_hash: actual.hash,
+        });
+        request.signal.throwIfAborted();
+        const out = corsHeaders(request, env.allowedOrigins);
+        out.set("content-type", artifact.mime_type);
+        out.set(
+          "content-disposition",
+          `attachment; filename*=UTF-8''${encodeURIComponent(artifact.original_name)}`,
+        );
+        out.set("content-length", String(actual.size));
+        return finishResponse(
+          new Response(new Uint8Array(actual.bytes), { headers: out }),
+        );
+      }
       if (request.method === "GET" && exportPath) {
         const record = await backend.userRpc(token, "export_context", {
           request_id: uuid.parse(exportPath[1]),
         });
+        request.signal.throwIfAborted();
         return respond({ request: record, model: buildExportModel(record) });
       }
       const artifactPath = path.match(
@@ -518,30 +812,70 @@ export function createApiHandler(
             artifact_id: id,
           }),
           artifact = context.artifact;
-        const blob = await backend.object(artifact.storage_key);
+        request.signal.throwIfAborted();
+        const savedPackage =
+          artifactPath[2] === "download" && artifact.kind === "generated"
+            ? context.package
+            : undefined;
+        const reportFailure = async (
+          error_code: "EXPORT_ARTIFACT_MISSING" | "ARTIFACT_MISMATCH",
+          actual_size: number | null = null,
+        ) => {
+          if (savedPackage)
+            await backend.internal("report_export_package_artifact_failure", {
+              artifact_id: id,
+              actor_id: user.id,
+              package_id: savedPackage.id,
+              expected_revision: savedPackage.revision,
+              expected_hash: artifact.content_hash,
+              expected_storage_key: artifact.storage_key,
+              error_code,
+              actual_size,
+            });
+        };
+        // Only the package-aware storage reader distinguishes an authoritative
+        // missing object from a temporary dependency failure. A 5xx response
+        // must not invalidate a ready file or start a new authorization.
+        const blob = savedPackage
+          ? await backend.deliveryObject(artifact.storage_key, request.signal)
+          : await backend.object(artifact.storage_key, request.signal);
+        request.signal.throwIfAborted();
+        if (!blob) {
+          await reportFailure("EXPORT_ARTIFACT_MISSING");
+          throw new AppError(
+            422,
+            "EXPORT_ARTIFACT_MISSING",
+            "The saved export file is unavailable. Explicitly retry the package to restore it.",
+          );
+        }
         if (
           blob.size !== Number(artifact.expected_size) ||
           blob.size > 10485760
-        )
+        ) {
+          await reportFailure("ARTIFACT_MISMATCH", blob.size);
           throw new AppError(
             422,
             "ARTIFACT_MISMATCH",
             "Uploaded bytes differ from the reserved artifact.",
           );
+        }
         const bytes = new Uint8Array(await blob.arrayBuffer()),
           hash = Array.from(
             new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
             (b) => b.toString(16).padStart(2, "0"),
           ).join("");
-        if (hash !== artifact.content_hash)
+        request.signal.throwIfAborted();
+        if (hash !== artifact.content_hash) {
+          await reportFailure("ARTIFACT_MISMATCH", blob.size);
           throw new AppError(
             422,
             "ARTIFACT_MISMATCH",
             "Artifact hash verification failed.",
           );
+        }
         if (artifactPath[2] === "complete") {
-          validateOriginal(artifact.original_name, artifact.mime_type, bytes);
           if (artifact.mime_type === "application/pdf") {
+            validateOriginal(artifact.original_name, artifact.mime_type, bytes);
             const pdf = await PDFDocument.load(bytes, {
               ignoreEncryption: false,
             });
@@ -551,7 +885,19 @@ export function createApiHandler(
                 "EXPORT_PAGE_CAP_REACHED",
                 "Split the reviewed PDF.",
               );
-          } else verifyExportDocx(bytes, buildExportModel(context.request));
+          } else {
+            validateExportDocxEnvelope(
+              artifact.original_name,
+              artifact.mime_type,
+              bytes,
+            );
+            await verifyExportDocxAsync(
+              bytes,
+              buildExportModel(context.request),
+              request.signal,
+            );
+          }
+          request.signal.throwIfAborted();
           return respond(
             await backend.internal("complete_export_artifact", {
               artifact_id: id,
@@ -572,10 +918,46 @@ export function createApiHandler(
           actor_id: user.id,
           actual_hash: hash,
         });
+        request.signal.throwIfAborted();
         const headers = corsHeaders(request, env.allowedOrigins);
         headers.set("content-type", artifact.mime_type);
         headers.set("content-disposition", "attachment");
-        return new Response(bytes, { headers });
+        return finishResponse(new Response(bytes, { headers }));
+      }
+      const extractionReview = path.match(
+        /^\/v1\/documents\/([^/]+)\/(extraction|ocr)$/,
+      );
+      if (request.method === "GET" && extractionReview) {
+        const document_id = uuid.parse(extractionReview[1]);
+        if (extractionReview[2] === "ocr")
+          return respond(
+            await backend.userRpc(token, "uploaded_document_ocr_status", {
+              document_id,
+            }),
+          );
+        const review = await backend.userRpc(
+          token,
+          "uploaded_document_extraction",
+          { document_id },
+        );
+        request.signal.throwIfAborted();
+        const original = await backend.one(token, "documents", document_id);
+        request.signal.throwIfAborted();
+        const original_download_url = await backend.download(
+          original.storage_key,
+        );
+        // A revocation while issuing the short-lived URL cannot return a new
+        // review response. The existing private-original URL expires in 300s.
+        await backend.userRpc(token, "uploaded_document_extraction", {
+          document_id,
+        });
+        return respond({
+          ...review,
+          original_download_url,
+          original_download_expires_at: new Date(
+            Date.now() + 300000,
+          ).toISOString(),
+        });
       }
       const downloads = path.match(/^\/v1\/documents\/([^/]+)\/download$/);
       if (request.method === "GET" && downloads) {
@@ -602,6 +984,15 @@ export function createApiHandler(
             source_id: uuid.parse(verification[1]),
           }),
         );
+      const consistencyPath = path.match(
+        /^\/v1\/proposal-versions\/([^/]+)\/consistency$/,
+      );
+      if (request.method === "GET" && consistencyPath)
+        return respond(
+          await backend.userRpc(token, "proposal_consistency_context", {
+            version_id: uuid.parse(consistencyPath[1]),
+          }),
+        );
       const complete = path.match(
         /^\/v1\/documents\/([^/]+)\/complete-upload$/,
       );
@@ -612,6 +1003,55 @@ export function createApiHandler(
           "IDEMPOTENCY_KEY_REQUIRED",
           "Supply an Idempotency-Key of at most 200 characters.",
         );
+      if (request.method === "POST" && consistencyPath) {
+        const input = proposalConsistencyReviewSchema.parse(
+          await readJson(request),
+        );
+        const versionId = uuid.parse(consistencyPath[1]);
+        const context = await backend.userRpc(
+          token,
+          "proposal_consistency_context",
+          { version_id: versionId },
+        );
+        request.signal.throwIfAborted();
+        const { report, review } = await reviewProposalConsistency(
+          context,
+          input,
+          user.id,
+        );
+        request.signal.throwIfAborted();
+        return respond(
+          await backend.internal("complete_proposal_consistency", {
+            version_id: versionId,
+            actor_id: user.id,
+            expected_revision: input.expected_revision,
+            binding_hash: input.binding_hash,
+            request_body: input,
+            idempotency_key: key,
+            report,
+            review,
+          }),
+          201,
+        );
+      }
+      if (request.method === "POST" && extractionReview?.[2] === "extraction") {
+        const input = commandSchemas["document.extraction.correct"].parse(
+          await readJson(request, 8388608),
+        );
+        if (input.id !== uuid.parse(extractionReview[1]))
+          throw new AppError(
+            400,
+            "INVALID_INPUT",
+            "The document ID differs from the route.",
+          );
+        const corrected = await backend.command(
+          token,
+          "document.extraction.correct",
+          input,
+          key,
+        );
+        return respond(corrected, 202, { revision: corrected.revision });
+      }
       if (
         request.method === "POST" &&
         ["/v1/estimates", "/v1/deliveries"].includes(path)
@@ -752,7 +1192,14 @@ export function createApiHandler(
           }
           return { operation, input: parsed };
         });
-        return respond(await backend.batch(token, commands, key));
+        request.signal.throwIfAborted();
+        return finishResponse(
+          batchEnvelopeResponse(
+            await backend.batchStream(token, commands, key, request.signal),
+            requestId,
+            headers,
+          ),
+        );
       }
       if (path === "/v1/invitations" && request.method === "POST")
         return respond(
@@ -793,7 +1240,12 @@ export function createApiHandler(
             "ROLE_FORBIDDEN",
             "Only your review attachments may be uploaded.",
           );
-        const original = await backend.object(document.storage_key);
+        request.signal.throwIfAborted();
+        const original = await backend.object(
+          document.storage_key,
+          request.signal,
+        );
+        request.signal.throwIfAborted();
         if (original.size !== Number(document.expected_size))
           throw new AppError(
             422,
@@ -822,17 +1274,36 @@ export function createApiHandler(
         )
           .map((x) => x.toString(16).padStart(2, "0"))
           .join("");
-        const data = await backend.accept(
+        const extractionText = input.from_parts
+          ? await backend.extraction(token, id)
+          : input.extracted_text;
+        if (
+          input.extraction_coverage &&
+          (document.mime_type !== "application/pdf" ||
+            !validateDocumentCoverage(
+              input.extraction_coverage,
+              extractionText,
+              input.status,
+              pages,
+            ))
+        )
+          throw new AppError(
+            422,
+            "INVALID_EXTRACTION_COVERAGE",
+            "Page coverage does not match the original and extracted text.",
+          );
+        const acceptArgs = [
           id,
           user.id,
           hash,
           bytes.length,
-          input.from_parts
-            ? await backend.extraction(token, id)
-            : input.extracted_text,
+          extractionText,
           input.status,
           key,
-        );
+        ] as const;
+        const data = input.extraction_coverage
+          ? await backend.accept(...acceptArgs, input.extraction_coverage)
+          : await backend.accept(...acceptArgs);
         return respond(data, 200, { revision: data.revision });
       }
       for (const route of routeCommands) {
@@ -914,6 +1385,8 @@ export function createApiHandler(
         }),
         { status: e.status, headers },
       );
+    } finally {
+      filePermit?.finishWork();
     }
   };
 }

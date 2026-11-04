@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "date": "2026-11-04",
+  "base_commit": "35c62c4",
+  "scope": "Clean lockfile installs and local final frontend checks; OperationsPanel count-label wording was uncommitted during checks and is hashed below. Backend integration and hosted acceptance remain separate.",
+  "source_hashes": {
+    "frontend/package-lock.json": "ff30d1f8c24a2584966c498e971c741c73175000c09d87de5427e02236840d6c",
+    "backend/package-lock.json": "8b7b79f42970cf43e5f873bcd6d59eec07c342a0f620b43f6c5618d770343dea",
+    "frontend/src/components/OperationsPanel.tsx": "f58eeb7df9dd9c7fd024726e557066846a7fd927acb07093cd5571589dc20e20",
+    "frontend/src/components/OperationsPanel.test.tsx": "3294308e35bc1180607908bd2ded521e500565caaaca9d05c200eda7e0041061"
+  },
+  "log_hashes": {
+    "frontend_install": "cca54e4b94e7b48c8a66c0f7048f15be221478caa65a9f17d283fc21b729f733",
+    "backend_install": "833ae1c6476b1d1bb8624517b2fb1f2034e72e31132c67388c6c74673784988b",
+    "frontend_typecheck": "fcb5cdebec3bda0095f0e9251f60fcc4fc98a10fb4e6f77ef494c1c5e3f0efec",
+    "frontend_tests": "6479b06ae7c3bfd2c5181746c7d7aecf7d36e7b4ef501e566c722eadc51d9b52",
+    "frontend_build": "87a57dbf3361ac2423154307fa8c9dfc473cd4591a61ec13e572ec7cb8ac204c"
+  },
+  "results": {
+    "frontend_npm_ci": "passed; 204 packages",
+    "backend_npm_ci": "passed; 146 packages",
+    "frontend_typecheck": "passed",
+    "frontend_tests": {
+      "status": "passed",
+      "files": 57,
+      "tests": 359,
+      "max_workers": 1,
+      "duration_seconds": 45.89
+    },
+    "frontend_build": "passed; Vite chunk-size advisory remains"
+  },
+  "deployment_proven": false,
+  "backend_final_suite_proven": false
+}

@@ -1,0 +1,745 @@
+{
+  "version": 1,
+  "workflow_run_id": 41926843276,
+  "workflow_job_id": 126913344618,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41926843276",
+  "source_revision": "da3c4bcde412f17287f7abd3c5c28779abda26d3",
+  "workflow_conclusion": "success",
+  "mode": "inventory",
+  "original_cluster_ca_and_hostname_verified": true,
+  "temporary_sql_client_cleanup_verified": true,
+  "temporary_runner_credentials_cleanup_verified": true,
+  "bootstrap_restore_models_steps": "skipped",
+  "release_baseline_replaced": false,
+  "receipt": {
+    "batch_cutover_observation": {
+      "admission_fence_changed": false,
+      "authority_basis": "existing_set_authority_to_exact_login_role",
+      "authority_grants_changed": 0,
+      "marker": "2026-11-04T22:37:25.197163+00:00",
+      "observer_sql_sha256": "db64969ed54caa2354bf72832548b3423d503c32f9ba374313f57026bb8a3a8a",
+      "old_transactions": 0,
+      "scope": "fixed_authenticator_transaction_visibility",
+      "sessions_terminated": 0,
+      "transactions_drained": false,
+      "version": 1,
+      "visibility_verified": true
+    },
+    "bootstrap_run": false,
+    "business_mutations": 0,
+    "capacity_observation": {
+      "configuration_basis": "observed_manifests_and_current_core_binding_not_process_environment",
+      "managed_database": {
+        "hardware_basis": "not_reported_by_database_metadata",
+        "node_count": 1,
+        "ram_mib_per_node": null,
+        "size_basis": "database_api_metadata",
+        "size_slug": "db-s-1vcpu-1gb",
+        "vcpus_per_node": null
+      },
+      "pod_resource_basis": "observed_pod_spec_not_cgroup_measurement",
+      "rest_transaction_effective_settings_proved": false,
+      "sql_settings": {
+        "basis": "observer_login_and_catalog_defaults_not_rest_transaction_effective",
+        "configured_defaults": [],
+        "database_identity_verified": true,
+        "observed_login_role": "doadmin",
+        "observed_login_settings": [
+          {
+            "boot_setting": 100,
+            "name": "max_connections",
+            "reset_setting": 25,
+            "setting": 25,
+            "source": "configuration file",
+            "unit": null
+          },
+          {
+            "boot_setting": 0,
+            "name": "statement_timeout",
+            "reset_setting": 0,
+            "setting": 0,
+            "source": "default",
+            "unit": "ms"
+          },
+          {
+            "boot_setting": 4096,
+            "name": "work_mem",
+            "reset_setting": 2048,
+            "setting": 2048,
+            "source": "configuration file",
+            "unit": "kB"
+          }
+        ],
+        "query_overrides": {
+          "lock_timeout_ms": 5000,
+          "statement_timeout_ms": 20000
+        },
+        "version": 1
+      },
+      "version": 1,
+      "workloads": [
+        {
+          "deployment_configuration": {
+            "rest_anon_role": {
+              "explicit": false,
+              "value": null
+            },
+            "rest_authenticator_binding_verified": false,
+            "rest_authenticator_role": null,
+            "rest_max_rows": {
+              "explicit": false,
+              "value": null
+            },
+            "rest_pool": {
+              "explicit": false,
+              "value": null
+            },
+            "runtime_service": {
+              "explicit": true,
+              "value": "api"
+            }
+          },
+          "deployment_resources": {
+            "limits": {
+              "cpu": "700m",
+              "ephemeral-storage": null,
+              "memory": "384Mi"
+            },
+            "requests": {
+              "cpu": "25m",
+              "ephemeral-storage": null,
+              "memory": "128Mi"
+            }
+          },
+          "desired_replicas": 1,
+          "matching_pods": 1,
+          "name": "api",
+          "ready_pod_observations": [
+            {
+              "additional_container_count": 0,
+              "configuration": {
+                "rest_anon_role": {
+                  "explicit": false,
+                  "value": null
+                },
+                "rest_authenticator_binding_verified": false,
+                "rest_authenticator_role": null,
+                "rest_max_rows": {
+                  "explicit": false,
+                  "value": null
+                },
+                "rest_pool": {
+                  "explicit": false,
+                  "value": null
+                },
+                "runtime_service": {
+                  "explicit": true,
+                  "value": "api"
+                }
+              },
+              "resources": {
+                "limits": {
+                  "cpu": "700m",
+                  "ephemeral-storage": null,
+                  "memory": "384Mi"
+                },
+                "requests": {
+                  "cpu": "25m",
+                  "ephemeral-storage": null,
+                  "memory": "128Mi"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "deployment_configuration": {
+            "rest_anon_role": {
+              "explicit": false,
+              "value": null
+            },
+            "rest_authenticator_binding_verified": false,
+            "rest_authenticator_role": null,
+            "rest_max_rows": {
+              "explicit": false,
+              "value": null
+            },
+            "rest_pool": {
+              "explicit": false,
+              "value": null
+            },
+            "runtime_service": {
+              "explicit": false,
+              "value": null
+            }
+          },
+          "deployment_gateway_runtime": {
+            "entrypoint_recognized": true,
+            "temporary_storage": {
+              "basis": "observed_kubernetes_spec",
+              "descendant_mount_count": 0,
+              "hard_filesystem_cap_proved": false,
+              "medium": "default",
+              "mount_count": 1,
+              "read_only": false,
+              "size_limit": "64Mi",
+              "source_kind": "emptyDir",
+              "subpath_present": false
+            }
+          },
+          "deployment_resources": {
+            "limits": {
+              "cpu": "200m",
+              "ephemeral-storage": null,
+              "memory": "64Mi"
+            },
+            "requests": {
+              "cpu": "25m",
+              "ephemeral-storage": null,
+              "memory": "16Mi"
+            }
+          },
+          "desired_replicas": 1,
+          "matching_pods": 1,
+          "name": "gateway",
+          "ready_pod_observations": [
+            {
+              "additional_container_count": 0,
+              "configuration": {
+                "rest_anon_role": {
+                  "explicit": false,
+                  "value": null
+                },
+                "rest_authenticator_binding_verified": false,
+                "rest_authenticator_role": null,
+                "rest_max_rows": {
+                  "explicit": false,
+                  "value": null
+                },
+                "rest_pool": {
+                  "explicit": false,
+                  "value": null
+                },
+                "runtime_service": {
+                  "explicit": false,
+                  "value": null
+                }
+              },
+              "gateway_runtime": {
+                "entrypoint_recognized": true,
+                "temporary_storage": {
+                  "basis": "observed_kubernetes_spec",
+                  "descendant_mount_count": 0,
+                  "hard_filesystem_cap_proved": false,
+                  "medium": "default",
+                  "mount_count": 1,
+                  "read_only": false,
+                  "size_limit": "64Mi",
+                  "source_kind": "emptyDir",
+                  "subpath_present": false
+                }
+              },
+              "resources": {
+                "limits": {
+                  "cpu": "200m",
+                  "ephemeral-storage": null,
+                  "memory": "64Mi"
+                },
+                "requests": {
+                  "cpu": "25m",
+                  "ephemeral-storage": null,
+                  "memory": "16Mi"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "deployment_configuration": {
+            "rest_anon_role": {
+              "explicit": true,
+              "value": "tdp_app_anon"
+            },
+            "rest_authenticator_binding_verified": true,
+            "rest_authenticator_role": "tdp_app_authenticator",
+            "rest_max_rows": {
+              "explicit": true,
+              "value": 1000
+            },
+            "rest_pool": {
+              "explicit": true,
+              "value": 5
+            },
+            "runtime_service": {
+              "explicit": false,
+              "value": null
+            }
+          },
+          "deployment_resources": {
+            "limits": {
+              "cpu": "500m",
+              "ephemeral-storage": null,
+              "memory": "128Mi"
+            },
+            "requests": {
+              "cpu": "25m",
+              "ephemeral-storage": null,
+              "memory": "32Mi"
+            }
+          },
+          "desired_replicas": 1,
+          "matching_pods": 1,
+          "name": "rest",
+          "ready_pod_observations": [
+            {
+              "additional_container_count": 0,
+              "configuration": {
+                "rest_anon_role": {
+                  "explicit": true,
+                  "value": "tdp_app_anon"
+                },
+                "rest_authenticator_binding_verified": true,
+                "rest_authenticator_role": "tdp_app_authenticator",
+                "rest_max_rows": {
+                  "explicit": true,
+                  "value": 1000
+                },
+                "rest_pool": {
+                  "explicit": true,
+                  "value": 5
+                },
+                "runtime_service": {
+                  "explicit": false,
+                  "value": null
+                }
+              },
+              "resources": {
+                "limits": {
+                  "cpu": "500m",
+                  "ephemeral-storage": null,
+                  "memory": "128Mi"
+                },
+                "requests": {
+                  "cpu": "25m",
+                  "ephemeral-storage": null,
+                  "memory": "32Mi"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "deployment_configuration": {
+            "rest_anon_role": {
+              "explicit": false,
+              "value": null
+            },
+            "rest_authenticator_binding_verified": false,
+            "rest_authenticator_role": null,
+            "rest_max_rows": {
+              "explicit": false,
+              "value": null
+            },
+            "rest_pool": {
+              "explicit": false,
+              "value": null
+            },
+            "runtime_service": {
+              "explicit": true,
+              "value": "worker"
+            }
+          },
+          "deployment_resources": {
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": null,
+              "memory": "640Mi"
+            },
+            "requests": {
+              "cpu": "25m",
+              "ephemeral-storage": null,
+              "memory": "192Mi"
+            }
+          },
+          "desired_replicas": 1,
+          "matching_pods": 1,
+          "name": "worker",
+          "ready_pod_observations": [
+            {
+              "additional_container_count": 0,
+              "configuration": {
+                "rest_anon_role": {
+                  "explicit": false,
+                  "value": null
+                },
+                "rest_authenticator_binding_verified": false,
+                "rest_authenticator_role": null,
+                "rest_max_rows": {
+                  "explicit": false,
+                  "value": null
+                },
+                "rest_pool": {
+                  "explicit": false,
+                  "value": null
+                },
+                "runtime_service": {
+                  "explicit": true,
+                  "value": "worker"
+                }
+              },
+              "resources": {
+                "limits": {
+                  "cpu": "1",
+                  "ephemeral-storage": null,
+                  "memory": "640Mi"
+                },
+                "requests": {
+                  "cpu": "25m",
+                  "ephemeral-storage": null,
+                  "memory": "192Mi"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "inventory": "captured",
+    "legacy_batch_observation": {
+      "active_rows": 0,
+      "buckets": [],
+      "expired_rows": 0,
+      "logical_or_wire_size_proved": false,
+      "purged_state_not_inspected": true,
+      "scope": "legacy_batch_commands",
+      "size_basis": "pg_column_size_stored_datum_bytes_not_logical_or_wire_bytes",
+      "thresholds_bytes": {
+        "large": 1048576,
+        "small": 65536
+      },
+      "total_rows": 0,
+      "version": 1
+    },
+    "models_called": 0,
+    "namespace": "tenderdesk-dev",
+    "native_schedules": [
+      {
+        "active_deadline_seconds": 600,
+        "backoff_limit": 0,
+        "concurrency_policy": "Forbid",
+        "concurrency_policy_explicit": true,
+        "container_identity_recognized": true,
+        "effective_backoff_limit": 0,
+        "generation": 2,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/browser@sha256:fbb755a5bc80ebabc472dbde571ad296849f3db39b90b7d0c6e964a27dc4353b",
+        "name": "native-browser",
+        "resources": {
+          "limits": {
+            "cpu": "1",
+            "ephemeral-storage": null,
+            "memory": "768Mi"
+          },
+          "requests": {
+            "cpu": "100m",
+            "ephemeral-storage": null,
+            "memory": "256Mi"
+          }
+        },
+        "schedule": "*/5 * * * *",
+        "suspend_explicit": true,
+        "suspended": false
+      },
+      {
+        "active_deadline_seconds": 600,
+        "backoff_limit": 0,
+        "concurrency_policy": "Forbid",
+        "concurrency_policy_explicit": true,
+        "container_identity_recognized": true,
+        "effective_backoff_limit": 0,
+        "generation": 2,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/ocr@sha256:a13d4de2579b00ba0ef963320f199310b1c1fdc86c75d8ca06004e7b2fcf0a88",
+        "name": "native-ocr",
+        "resources": {
+          "limits": {
+            "cpu": "1",
+            "ephemeral-storage": null,
+            "memory": "768Mi"
+          },
+          "requests": {
+            "cpu": "100m",
+            "ephemeral-storage": null,
+            "memory": "256Mi"
+          }
+        },
+        "schedule": "*/5 * * * *",
+        "suspend_explicit": true,
+        "suspended": false
+      }
+    ],
+    "observed_at": "2026-11-04T22:37:56.785317+00:00",
+    "ready_workloads": 10,
+    "runner_source_revision": "da3c4bcde412f17287f7abd3c5c28779abda26d3",
+    "schema": {
+      "canonical_migrations": null,
+      "capabilities": {
+        "bounded_command_batch": false,
+        "claim_executor_3": false,
+        "delivery_artifacts": false,
+        "delivery_export_context": false,
+        "delivery_package": false,
+        "delivery_snapshots": false,
+        "legacy_batch_insert_fence": false
+      },
+      "metrics": {
+        "capacity": {
+          "largest_workspace_reserved_bytes": 147357,
+          "total_reserved_bytes": 147357,
+          "workspace_count": 1,
+          "workspace_limit_bytes": 262144000,
+          "workspaces_at_or_above_limit": 0
+        },
+        "delivery": null,
+        "issuance": null,
+        "jobs": [
+          {
+            "blocked": 10,
+            "class": "background",
+            "due": 95,
+            "expired_leases": 0,
+            "oldest_due_age_seconds": 477175.742131,
+            "pending": 97,
+            "running": 0,
+            "succeeded_in_window": 4,
+            "terminal_row_elapsed_p95_seconds": 298.88710425
+          },
+          {
+            "blocked": 11,
+            "class": "proposal",
+            "due": 0,
+            "expired_leases": 0,
+            "oldest_due_age_seconds": 0,
+            "pending": 0,
+            "running": 0,
+            "succeeded_in_window": 0,
+            "terminal_row_elapsed_p95_seconds": null
+          }
+        ],
+        "window_hours": 24
+      },
+      "release_history": [
+        {
+          "applied_at": "2026-10-31T13:15:37.228740+00:00",
+          "migration_sha256": "3eedc737b3b813e30f802b1ea39d42f8d017e4d06e7f9dada535a23bcb2ed3ac",
+          "release": "requested-model-processing-v1"
+        },
+        {
+          "applied_at": "2026-11-01T08:10:21.139153+00:00",
+          "migration_sha256": "5bac8ff0a8e070688873b2e6c020a3c7ddb51c7dc8e0ad8005735e4e653ccf6c",
+          "release": "flexible-proposal-inputs-v1"
+        },
+        {
+          "applied_at": "2026-11-03T00:22:37.837487+00:00",
+          "migration_sha256": "0353c429634df4f9ed3429074e8ff027ef7151b66edffdc467dae08ecb2f8f4b",
+          "release": "ai-execution-reliability-v1"
+        },
+        {
+          "applied_at": "2026-11-03T02:41:33.982071+00:00",
+          "migration_sha256": "cead30c43776e35822e4fa63476223a5ff4abe8de35218286d66dd5bd8c22382",
+          "release": "analysis-verifier-recheck-v1"
+        },
+        {
+          "applied_at": "2026-11-03T03:11:26.883134+00:00",
+          "migration_sha256": "30f79868deaa94daab1554584aede2545a1611a29f7b19d26503e75f57720f14",
+          "release": "analysis-recheck-prompt-identity-v1"
+        },
+        {
+          "applied_at": "2026-11-03T03:11:26.883134+00:00",
+          "migration_sha256": "3bb13dd60fb4322ac3ba70c534ec6165a668da547318d1ea49232ae1d401c927",
+          "release": "model-admission-fairness-v1"
+        }
+      ],
+      "routine_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+      "source_tip_basis": "canonical_history_if_present_otherwise_release_receipts_only"
+    },
+    "schema_mutations": 0,
+    "temporary_client_cleanup_verified": true,
+    "version": 1,
+    "workloads": [
+      {
+        "desired": 1,
+        "generation": 15,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "15",
+        "matching_pods": 1,
+        "name": "api",
+        "observed_generation": 15,
+        "observed_image_digests": [
+          "85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 21,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "15",
+        "matching_pods": 1,
+        "name": "worker",
+        "observed_generation": 21,
+        "observed_image_digests": [
+          "85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 11,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:b90ee4cea47e8208dd785aba618caaf89aadf3c8fd15e4c8172633b2883b88af",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "11",
+        "matching_pods": 1,
+        "name": "frontend",
+        "observed_generation": 11,
+        "observed_image_digests": [
+          "b90ee4cea47e8208dd785aba618caaf89aadf3c8fd15e4c8172633b2883b88af"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 1,
+        "image": "docker.io/supabase/gotrue:v2.197.0@sha256:839f529492d116b4e8b7777c953a27c381d34c15a744b1bcefde5eefaa1f9f9f",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "1",
+        "matching_pods": 1,
+        "name": "auth",
+        "observed_generation": 1,
+        "observed_image_digests": [
+          "839f529492d116b4e8b7777c953a27c381d34c15a744b1bcefde5eefaa1f9f9f"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 1,
+        "image": "docker.io/postgrest/postgrest:v14.18@sha256:c847127074bd26e1b8d3f7c0e6e01e5346f4b85dd34f5d699fd230af960827c0",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "1",
+        "matching_pods": 1,
+        "name": "rest",
+        "observed_generation": 1,
+        "observed_image_digests": [
+          "c847127074bd26e1b8d3f7c0e6e01e5346f4b85dd34f5d699fd230af960827c0"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 3,
+        "image": "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "3",
+        "matching_pods": 1,
+        "name": "storage",
+        "observed_generation": 3,
+        "observed_image_digests": [
+          "92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 9,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:c5a1d4d3bc108333a34233d5488c820130ee462c1940e74b17c4dcbbb33f9cde",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "9",
+        "matching_pods": 1,
+        "name": "source-browser",
+        "observed_generation": 9,
+        "observed_image_digests": [
+          "c5a1d4d3bc108333a34233d5488c820130ee462c1940e74b17c4dcbbb33f9cde"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 10,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:c5a1d4d3bc108333a34233d5488c820130ee462c1940e74b17c4dcbbb33f9cde",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "10",
+        "matching_pods": 1,
+        "name": "scheduler",
+        "observed_generation": 10,
+        "observed_image_digests": [
+          "c5a1d4d3bc108333a34233d5488c820130ee462c1940e74b17c4dcbbb33f9cde"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 2,
+        "image": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "2",
+        "matching_pods": 1,
+        "name": "gateway",
+        "observed_generation": 2,
+        "observed_image_digests": [
+          "99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 3,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "3",
+        "matching_pods": 1,
+        "name": "https",
+        "observed_generation": 3,
+        "observed_image_digests": [
+          "3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      }
+    ]
+  },
+  "limits": [
+    "Read-only existing-role visibility at observation; not an installed admission fence or completed transaction drain.",
+    "Resource and temporary-volume configuration are observed specs, not cgroup measurements or proof of a hard emptyDir filesystem quota.",
+    "No deployment, provider call or customer mutation. Historical baseline remains unchanged."
+  ]
+}

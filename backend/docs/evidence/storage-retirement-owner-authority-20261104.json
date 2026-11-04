@@ -1,0 +1,69 @@
+{
+  "version": 1,
+  "observed_at": "2026-11-04",
+  "repository_base": "8b583cb9c3936f7bb004f466ab7908e8362ef4ad",
+  "scope": "Retirement adapter explicit owner-role authority under non-inheriting managed administrative sessions",
+  "production_calls": 0,
+  "external_calls": 0,
+  "schema_or_membership_grants_added": false,
+  "postgres": {
+    "version": "PostgreSQL 17.6 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit",
+    "image": "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+    "network": "none",
+    "published_ports": 0,
+    "pull_policy": "never",
+    "memory_bytes": 134217728,
+    "cpu_limit": 1,
+    "disposable_container_removed": true
+  },
+  "original_adapter_sha256": "97db20e8f45ad7a1f34c8c1581a20b60fb421a93ed129969e133c3e23f6efbc3",
+  "corrected_adapter_sha256": "fa57710ce6450e5d0e3475e259ae5483f7cceba769730350f95da6ffd4bb9efb",
+  "test_sha256": "cd80b0c6a0c9bb3b24c27f5b420445cf96342ca26c3537489e80c1d2abefba3a",
+  "red": {
+    "tests_run": 5,
+    "reported_subtest_failures": 5,
+    "reported_errors": 2,
+    "log_sha256": "cbee12fe6bea9635c970d28fc1841b1fca339760dc437ef8905f6578979229cd",
+    "causes": [
+      "USAGE is false with explicit SET=true, and true for inherited-only SET=false; real SET ROLE control verifies both.",
+      "Managed non-inheriting administrators cannot resolve schema-qualified regprocedure/regclass casts before changing role; schema USAGE is intentionally absent.",
+      "Inherited-only callers reached forbidden SET ROLE rather than the intended explicit authority rejection."
+    ]
+  },
+  "first_green": {
+    "actual_postgres_tests_passed": 5,
+    "duration_seconds": 5.3,
+    "log_sha256": "3b72fde2a161a9919005daa7a1a31d0340281c836fb61c6a0a812aec1c8a7059"
+  },
+  "interrupted_expanded_run": {
+    "infrastructure_precondition": "Docker create failed: no space left on device; no authority cases executed in this attempt.",
+    "pure_existing_tests_passed": 33,
+    "log_sha256": "44defbf8feedbf05550e7ac10462d62df6c67c8a89383a22967bd8dc399d35be"
+  },
+  "final_green": {
+    "tests_passed": 41,
+    "actual_postgres_tests": 8,
+    "existing_adapter_and_coordinator_tests": 33,
+    "duration_seconds": 9.74,
+    "log_sha256": "f17efed702fd75cfe4b6af6d23fb9a401aa0d324b17c3baaf56a99101f1171cd",
+    "test_files": [
+      "test_storage_retirement_authority.py",
+      "test_storage_retirement_kubernetes.py",
+      "test_storage_retirement.py"
+    ]
+  },
+  "assertions": [
+    "Actual session_user/current_user is non-superuser; SET=true/USAGE=false executes SET ROLE, inverse and unrelated callers cannot.",
+    "Fence install/replay uses both exact owners; temporary function execution privilege is revoked, owner/membership/schema ACL/rows remain unchanged.",
+    "Metadata DELETE is restricted to exact bucket and key, including a quoted key; unrelated rows and ownership survive.",
+    "All storage and application collision sources are read under their explicit owners in one repeatable-read transaction; no inherited schema usage or new grants are required.",
+    "Multipart metadata blocks retirement; exact selected metadata readback changes1\u21920 after deletion and unrelated row remains1.",
+    "SET=false read/install/delete paths reject without row, ACL, membership or trigger changes."
+  ],
+  "limits": [
+    "This executes the actual adapter SQL through a local psql transport; it does not call Kubernetes or production.",
+    "The synthetic guard/delete-setting fixtures qualify role authority, not the separately qualified pinned Storage binary or full migration schema.",
+    "Actual production PostgreSQL18 admission remains a guarded release check; only PostgreSQL17.6 was executed here.",
+    "No file deletion, quota release, provider call or production role change occurred."
+  ]
+}

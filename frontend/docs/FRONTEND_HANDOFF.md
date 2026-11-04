@@ -133,3 +133,74 @@ Notification preferences belong to the signed-in user. Failure alerts follow rep
 Source configuration now defaults to automatic public website reading for unconfigured URLs. URL and schedule are the primary inputs; RSS, JSON and saved extraction remain available as explicit collection methods. Discovery of additional sources is a separate Owner action on Sources, with a proposed-suggestions list. Suggestions do not become active collectors until reviewed and enabled. This supersedes the combined discovery/collection selector; old backend configurations remain compatible. Successful activation starts an attempt and schedule, and does not certify that the remote page can be read. The backend currently supports HTML/text PDFs; JavaScript/authentication/OCR requirements are reported as blockers.
 
 Failure notifications now have a per-user interval (hourly by default, optionally 6/12/24 hours). The server groups new unresolved job failures and rechecks their status at dispatch; disabling or slowing mail does not pause collection or model retries. The Sources header contains Discover sources alongside Add source, with discovered suggestions remaining below the header. Chromium fixture acceptance covers both actions, independent dialogs, saved interval/reload and 1440/390px layouts; it is not an authenticated hosted test.
+
+### Versioned extraction coverage (November 4 implementation)
+
+PDF upload processing can return `partial` alongside readable text and
+`extractionCoverage` version 1. Each actual page is readable, blank, needs OCR,
+or failed extraction. Readable pages remain draft evidence; unresolved page
+numbers remain visible. The upload API validates the coverage against the
+verified PDF page count and extracted text, and new generation snapshots freeze
+that coverage. Historical paid snapshots retain their original selection.
+A textless page is called blank only when the parser reports no drawing
+operators; image-only/unknown pages are not claimed read. Private uploaded OCR
+execution remains separate unfinished work. Worker extraction errors expose
+`EMPTY_FILE`, `INVALID_FILE`, `UNSUPPORTED_FORMAT`, `EXTRACTION_LIMIT`, or
+`EXTRACTION_FAILED` for a truthful independent template/disposition flow;
+processing limits and parser failures are not proof of a business-invalid RFP.
+See the implementation checklist for deployment and hosted acceptance status.
+
+### Durable uploaded OCR and explicit page correction (November 4 local implementation)
+
+Accepted unresolved PDF pages now have durable server OCR status. The connected
+repository selects only the current published extraction; pending copy
+reservations and retained ancestors do not duplicate document cards. Document
+records expose revision, extraction hash/version and OCR lineage/status.
+`BackendClient.documentExtraction(id, signal)` supplies page text and exact
+source/page hashes for visual review. `correctDocumentExtraction(input, key,
+signal)` submits a reviewed full-page batch, with explicit blank confirmation,
+and preserves cancellation and idempotency through the dedicated API route.
+The returned parent is queued; the worker must verify the original copy before
+the successor becomes current. Reload/current-status polling must retain the
+entered correction on failure and navigate to the published child explicitly.
+
+Confidence never confirms meaning. The frozen native Arabic test failed despite
+confidence82 and no numeric uncertainty, so Arabic candidates require correction
+and review. All OCR pages and known blank pages require explicit page-bound
+review before confirmation; Company Knowledge verification respects that guard.
+The root integration adds the shared page/image editor in OpportunityDetail and
+Knowledge. Draft delivery remains independent while OCR/review is incomplete.
+The native and hosted acceptance limits are recorded in the implementation
+checklist; these local contracts do not establish deployment.
+
+Pending page saves are additive: later saves carry exact-source unoverridden
+human corrections forward. The page API identifies `candidate_origin` and
+preserves `candidate_reviewed_by`/`candidate_reviewed_at`; label human candidates
+as saved corrections, not OCR guesses. `candidate_requires_review` identifies
+review that the current user must repeat. Whole-file confirmation requires one
+current actor's explicit page review; mixed-reviewer text remains saved with
+its original attribution and a visible review requirement.
+
+### Durable ordinary Word preparation (November 4, 2026)
+
+Proposal-list, editor and draft/final export actions now use the saved server
+export package. The worker prepares and verifies all required volumes even if
+the browser closes. Download again reconnects to the same current package and
+original deadline. The status panel distinguishes preparation, failure and
+explicit retry; Stop waiting affects this page only. Every volume is fetched
+and hash-checked before any browser file download, with a final authenticated
+package check. Final export still requires current approval and source
+currentness. Human-reviewed file uploads remain a separate supported path.
+This replaces browser-worker preparation for ordinary draft/final actions;
+local checks do not establish deployment or hosted acceptance.
+
+### Storage confirmation and deletion (November 4, 2026)
+
+Operations displays optional server-reported counts for unfinished uploads,
+currently held storage bytes, files requiring administrator checks before
+deletion, and older cleanup records whose physical usage needs an audit. Held
+bytes are part of the existing reserved total; historical unknown files are not
+assigned invented sizes. Older status responses without this metadata remain
+supported. Cleanup marked `STORAGE_QUIESCENCE_REQUIRED` has no ineffective retry
+button: an administrator must complete the verified storage reconciliation.
+The panel exposes no private file path or control that releases uncertain quota.

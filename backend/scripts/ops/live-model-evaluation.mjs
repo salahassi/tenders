@@ -13,6 +13,9 @@ import { extendedFixtures } from "./live-model-evaluation-extended.mjs";
 import { planningFixtures } from "./live-model-evaluation-planning.mjs";
 import { verificationFixtures } from "./live-model-evaluation-verification.mjs";
 import { authorityFixtures } from "./live-model-evaluation-authority.mjs";
+import { semanticFixtures } from "./live-model-evaluation-semantics.mjs";
+import { semanticV2Fixtures } from "./live-model-evaluation-semantics-v2.mjs";
+import { semanticMetadataFixtures } from "./live-model-evaluation-semantics-metadata.mjs";
 import {
   candidateContent,
   validateGroundingReport,
@@ -24,6 +27,7 @@ export const LIMITS = Object.freeze({
   outputTokens: 4096,
   pollsPerCase: 12,
 });
+export const SEMANTIC_LIMITS = Object.freeze({ ...LIMITS, generations: 64 });
 export const EXTENDED_LIMITS = Object.freeze({
   ...LIMITS,
   models: 2,
@@ -59,9 +63,16 @@ export function limitsForSuite(suite = "core") {
       "planning_repair",
       "analysis_verification",
       "analysis_authority",
+      "semantic_en",
+      "semantic_ar",
+      "semantic_v2_en",
+      "semantic_v2_ar",
+      "semantic_v2_metadata_en",
+      "semantic_v2_metadata_ar",
     ].includes(suite),
     "EVAL_SUITE_INVALID",
   );
+  if (["semantic_en", "semantic_ar", "semantic_v2_en", "semantic_v2_ar", "semantic_v2_metadata_en", "semantic_v2_metadata_ar"].includes(suite)) return SEMANTIC_LIMITS;
   return ["analysis_verification", "analysis_authority"].includes(suite)
     ? VERIFICATION_LIMITS
     : suite === "planning_repair"
@@ -134,6 +145,9 @@ export async function fixtures(suite = "core") {
   if (suite === "planning_repair") return planningFixtures();
   if (suite === "analysis_verification") return verificationFixtures();
   if (suite === "analysis_authority") return authorityFixtures();
+  if (["semantic_v2_metadata_en", "semantic_v2_metadata_ar"].includes(suite)) return semanticMetadataFixtures(suite.slice(-2));
+  if (["semantic_v2_en", "semantic_v2_ar"].includes(suite)) return semanticV2Fixtures(suite.slice(-2));
+  if (["semantic_en", "semantic_ar"].includes(suite)) return semanticFixtures(suite.slice(-2));
   if (suite !== "core") return extendedFixtures();
   const analyzeCase = (id, evidence, language = "en") => ({
     id,
@@ -308,7 +322,7 @@ export function validateTargets(targets, suite = "core") {
   const ids = new Set();
   for (const t of targets) {
     check(
-      (suite !== "core" ? ["qwencloud"] : ["openai", "qwencloud"]).includes(
+      (!["core", "semantic_en", "semantic_ar", "semantic_v2_en", "semantic_v2_ar", "semantic_v2_metadata_en", "semantic_v2_metadata_ar"].includes(suite) ? ["qwencloud"] : ["openai", "qwencloud"]).includes(
         t.provider,
       ) &&
         typeof t.model === "string" &&
@@ -325,6 +339,8 @@ export function validateTargets(targets, suite = "core") {
     ids.add(t.provider + ":" + t.model);
     capabilitySchema.parse(t.capabilities);
   }
+  if (["semantic_en", "semantic_ar", "semantic_v2_en", "semantic_v2_ar", "semantic_v2_metadata_en", "semantic_v2_metadata_ar"].includes(suite))
+    check(new Set(targets.map((t) => t.provider)).size === 2, "EVAL_BOTH_PROVIDERS_REQUIRED");
   if (suite === "extended_recheck")
     check(
       targets.length === 2 &&
@@ -361,6 +377,12 @@ export async function evaluate(
     "planning_repair",
     "analysis_verification",
     "analysis_authority",
+    "semantic_en",
+    "semantic_ar",
+    "semantic_v2_en",
+    "semantic_v2_ar",
+    "semantic_v2_metadata_en",
+    "semantic_v2_metadata_ar",
   ].includes(suite);
   let generations = 0,
     requests = 0;
@@ -578,6 +600,10 @@ export async function evaluate(
           (fixture.task === "draft_section"
             ? "canonical_structure_and_declared_claims_only"
             : "canonical_contract_and_fixture_semantics"),
+        ...(fixture.qualification ? { qualification: fixture.qualification,
+          semantic_outcome: passed ? "correct" : code === "EVAL_SEMANTIC_FALSE_ACCEPTANCE" ? "critical_mutation_not_detected"
+            : code === "EVAL_SEMANTIC_FALSE_REJECTION" ? "faithful_control_rejected" : "not_scored",
+        } : {}),
         passed,
         code,
         settlement_code: settlementCode,

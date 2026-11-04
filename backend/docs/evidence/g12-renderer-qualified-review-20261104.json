@@ -1,0 +1,113 @@
+{
+  "version": 3,
+  "reviewed_at_utc": "2026-11-04",
+  "stage": "G12",
+  "disposition": "representative_layout_preserved_native_footer_valid_toc_compatibility_open",
+  "repository_revision": "ddd35b6e721215a891a4f06f2ef0e03798d91e50",
+  "source_hash": "0cd6b465933fafe95d8e8901e538778783cb0e37aabfc38f916d390b4d75e23c",
+  "render_receipt_sha256": "13c4ca7a04c9ee60fd8e5aca5164d61e67808930265df8364b507b1fd5d13a9a",
+  "page_receipt_sha256": "a1eeffc7abdaaedc6db4cae0f9aa21e160b3bde0748ee3a5af8b27d812d2966d",
+  "qualification_audit_sha256": "cf3b463d2e9cd73191aeb456309ad72c6339e543a05cd8bcfe6d0edd5a1d56c5",
+  "artifact_directory": "/workspace/output/reliability-phase2-g12-qualified",
+  "synthetic_layout_only": true,
+  "model_calls": 0,
+  "database_calls": 0,
+  "production_calls": 0,
+  "execution": {
+    "render": "node --experimental-transform-types backend/scripts/testing/delivery_visual_fixtures.ts /workspace/work/reliability-final-visual /workspace/output/reliability-phase2-g12-qualified",
+    "pages": "python3 backend/scripts/testing/delivery_visual_pages.py /workspace/work/reliability-final-visual /workspace/output/reliability-phase2-g12-qualified",
+    "render_exit_code": 0,
+    "pages_exit_code": 0,
+    "source_manifest_checked_before_after_render_and_during_audit": true
+  },
+  "method": {
+    "inherited_visual_inspection": "All 91 current PNG files have exactly the same SHA-256 hashes as the previously inspected 91 pages. Both old and current files were hashed from disk. The previous render/page receipts were checked against the committed prior review, and all 20 previous contact-sheet files were checked against their receipt. This reuses that visual inspection; it does not claim 91 new manual page inspections.",
+    "previous_review": "g12-renderer-footer-review-20261104.json",
+    "previous_review_sha256": "bfe2b9751460228be3cc63174ebffa24ea09b84660ec4f8b0704f51dd6f9f863",
+    "previous_render_receipt_sha256": "ef4af22b2d764fd157318a7745a1c99def1fb28f1a91209f1cc493a91fa30e9e",
+    "previous_page_receipt_sha256": "396df281bcfccea71ab1a9f5f811c77fa327a7b8915dae02a2ca3784ed434ab8",
+    "current_manual_inspection": [
+      {
+        "file": "pages/v1-en-combined-combined-002.png",
+        "sha256": "ed763ca5797c0a5ee645f0af25efe5e4744f3450375882d5e75b75c4b96ed631",
+        "observed": "Native TOC labels and dot leaders remain legible with absent page-number results; current footer page 2 is neutral and visible."
+      },
+      {
+        "file": "pages/v1-ar-combined-combined-002.png",
+        "sha256": "29638c3502be58ee0587babffea60dd2c92ee4ca66bf940013d59ec5fa6ad1f0",
+        "observed": "Native TOC labels and dot leaders remain legible with absent page-number results; current footer page 2 is neutral and visible."
+      }
+    ],
+    "changed_page_policy": "Inspect every changed current page. Zero pages changed in this run.",
+    "footer_pdf_audit": "For each page, locate exactly one text block matching the canonical model footer within the bottom 90 points; normalize whitespace and direction-control characters, assert canonical footer plus the exact page number, and count yellow fill rectangles intersecting that actual footer block. Do not classify a broad bottom strip containing legitimate body gaps as footer.",
+    "xml_audit": "Parse every XML part and reject undefined elements. For each footer, require PAGE begin/instruction/separate/end tokens to be direct children of native runs under native paragraphs and explicitly neutral-highlighted. Check empty PAGE/PAGEREF result caches, native TOC/PAGEREF instructions and enabled updateFields. The actual selected-source strict verifier ran separately on all 18 DOCX files.",
+    "pdf_geometry": "The page harness found zero text spans outside page bounds; this alone does not prove absence of every overlap or layout defect."
+  },
+  "counts": {
+    "documents": 18,
+    "pages": 91,
+    "exact_prior_image_matches": 91,
+    "changed_pages": 0,
+    "footer_pages_checked": 91,
+    "incorrect_footer_numbers": 0,
+    "yellow_footer_intersections": 0,
+    "undefined_xml_elements": 0,
+    "out_of_page_spans": 0
+  },
+  "payload_and_render_model_hashes_unchanged_for_all_18": true,
+  "principal_source_hashes": {
+    "backend/supabase/functions/_shared/boundedDocx.ts": "fd5b564b321de31ef0ef96a10c4291558050c6408d65b20a27ab623374d2e2d3",
+    "backend/supabase/functions/_shared/boundedDocxArchive.ts": "44ad839d85a01f2baf778e234ec8a873d6f9cdb07affa25c72bf8e9ab079b599",
+    "backend/supabase/functions/_shared/boundedXml.ts": "3f3898e0b36e60b3121da07111572d0e4dc1870429b2420b869449737fabe99c",
+    "backend/supabase/functions/_shared/docxRunSegments.ts": "8e5b474932d20ef792909c5a831dd9dd86fb9080c1e7ba384a49dfc2f1650597",
+    "frontend/public/fonts/Amiri-Bold.ttf": "cfccb794268e7d573d857e6d6a67f89cf8a053e8ffd85dfa0c8ec1bb36fc4827",
+    "frontend/public/fonts/Amiri-OFL.txt": "72de68e5954f4fdd24702292ef5a32f003ca960ec9330dc86e5eefb5dffb9b22",
+    "frontend/public/fonts/Amiri-Regular.ttf": "ab391c4147d054c48976e98322ad0eefe1427aa0e0502a12a4c75d80a70cfcd7",
+    "frontend/public/fonts/Carlito-Bold.ttf": "bb5d20f79b82599ec72983597437373a80f2d2085fa91fc144fd74e876a594db",
+    "frontend/public/fonts/Carlito-OFL.txt": "58402f82a7c332a700294988fe7554fbb0a63a8d27ccc1ee3bbc640311990a00",
+    "frontend/public/fonts/Carlito-Regular.ttf": "f6418f708baede9789daef5d458c0f53d2a888af9820e8062934e504fedc6595",
+    "frontend/public/fonts/NOTICE.md": "49f27447c4310d57dff363256e0ca6d778f9222087e632596e5aa557ddcc7a39",
+    "frontend/public/fonts/manifest.json": "aa9b915194b2ecf25249ce1182e969c6c51c9fa0a98044fe14253e3731ddb942",
+    "frontend/src/lib/docxTableStream.ts": "f17a9a22cd1c5f85008ae44e0b97754a8bebcc4bd4c3fa0d93d33e69dd2ff545",
+    "frontend/src/lib/renderDocx.ts": "c00351e975b5684f1aed9493d2ee4a7d8fe913b5545046daee46d0ddbfaabb94"
+  },
+  "engine": {
+    "libreoffice": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5",
+    "node": "v24.19.0",
+    "python": "3.12.14",
+    "pymupdf": "1.26.6",
+    "pillow": "12.3.0",
+    "executables_and_core": {
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/bin/override/soffice": "35c5a2736f68e6370a7b9fe5082e66bc438c1a8de11261d6c4bc847073ced45b",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/soffice": "d14c5c8aa975640aafc8a62474a23a67fb46cd5fa95fae3771f76b7399a04c50",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/soffice.libreoffice": "3d585422d7cdddf9bcc954e7064da24c7e44d43508a5abaeb11de9d918d24f13",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/soffice.bin": "d905a74dc92eaccb22481ba2de1345666a074a5f0d48322aaad1b6dc8a9e1e40",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/libsofficeapp.so": "1a26a77a054c57e2fef3db9b22d16a328563fe0e37f8d2127d57bb1513a540e5",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/libswlo.so": "1fa7e359551d7c402eae707d632f88f427b721a5a3988ba5d42869be49b68cf0",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/libvcllo.so": "b6a2f1836bd0ce0bc1cee1fee10c5e587c8d0852e51ae8a480d47d44ebbd271d",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/libpdffilterlo.so": "9b969422430c389afa8e0864ee0654732b99a16e5f2c053396ddccd216a9c9ee",
+      "/opt/codex/runtimes/codex-primary-runtime/dependencies/native/libreoffice-headless/libreoffice/program/versionrc": "2372c1c0631b0c78e206d15cd6d4e4a4f480030fe017ca70c5fb15ef17334c0c",
+      "/usr/bin/pdffonts": "98044d6f76642d38a99067ac6da41b25a293dd26f05973ba557a9bcae34b877c"
+    }
+  },
+  "harness_sha256": {
+    "backend/scripts/testing/delivery_visual_fixtures.ts": "f44c007e525720d457acf1cc2c7d457bbd9433c3ed5ad6cd0b75f86fd0cb0723",
+    "backend/scripts/testing/delivery_visual_pages.py": "443331fe36dd8bebc5d2ec8287486d24daf34aa2dcc0c56b7810d17ec454f9ee"
+  },
+  "confirmed": [
+    "All 18 current DOCX files passed actual strict content/field/table verification.",
+    "All 91 current pages preserve the previously reviewed Arabic/English shaping, table direction, wrapped text, gap highlighting, repeated headers and volume separation by exact image identity.",
+    "All 91 footer page numbers are correct and have zero intersecting yellow highlights.",
+    "Correct typed native PAGE fields are present and no undefined XML elements remain. Prior visually matching footer output had an inherited undefined-wrapper defect; its visual proof is not reused as final XML validation.",
+    "All payload hashes, render-model hashes and document page counts match the prior matrix. The full source manifest includes streaming and run-segmentation helpers, verifier helpers, package manifests/lockfiles and bundled font files."
+  ],
+  "open_limits": [
+    "Native TOC page-number results remain absent in all 18 LibreOffice conversions. Heading labels and dot leaders remain. No fabricated cache values were inserted.",
+    "Microsoft Word desktop/web update/save was not available and was not tested. Prior independent stable Writer 7.4 UNO examination found zero DocumentIndexes; this run uses the exact recorded LibreOfficeDev engine and does not repeat that separate experiment.",
+    "Some inherited sparse final pages contain only one or two gap paragraphs; the recorded minor pagination issue is unchanged.",
+    "These 18 representative synthetic documents do not establish layout correctness at every admitted density, every customer template or every font/layout engine. Dense renderer capacity and worker lifecycle have separate receipts.",
+    "Supported-shape strict DOCX checks are not full OOXML XSD validation or proof against every possible style visibility mechanism.",
+    "This run provides no model semantic qualification, source-truth assurance, final proposal approval, hosted storage acceptance, deployment evidence or hosted 600-second issuance proof."
+  ],
+  "deployment": "Not performed by this qualification; root release evidence is separate."
+}

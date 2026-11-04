@@ -1,0 +1,157 @@
+{
+  "capacity_or_slo_qualification": false,
+  "cases": [
+    {
+      "case": "canonical-database-and-login-role-required",
+      "passed": true
+    },
+    {
+      "admin_metadata": [
+        {
+          "application": "synthetic_authenticated_active",
+          "started": true,
+          "state": "active",
+          "wait": "advisory"
+        },
+        {
+          "application": "synthetic_authenticated_idle",
+          "started": true,
+          "state": "idle in transaction",
+          "wait": "ClientRead"
+        },
+        {
+          "application": "synthetic_tdp_app_owner_active",
+          "started": true,
+          "state": "active",
+          "wait": "advisory"
+        },
+        {
+          "application": "synthetic_tdp_app_owner_idle",
+          "started": true,
+          "state": "idle in transaction",
+          "wait": "ClientRead"
+        }
+      ],
+      "case": "own-login-visibility-covers-active-and-idle-local-role-switches",
+      "global_monitoring_grants": 0,
+      "helper_old_transactions": 4,
+      "passed": true,
+      "sessions_terminated": 0,
+      "without_set_role_fields_masked": true
+    },
+    {
+      "case": "direct-authenticator-observer-excludes-own-transaction",
+      "old_transactions": 0,
+      "passed": true,
+      "sessions_terminated": 0
+    },
+    {
+      "actual_started_transactions": 1,
+      "allowed_observer_authority": {
+        "global_stats": false,
+        "set": true,
+        "usage": false
+      },
+      "case": "hidden-and-usage-only-monitoring-fail-closed",
+      "masked_transaction_count": 0,
+      "passed": true,
+      "sessions_terminated": 0,
+      "unknown_visibility_keeps_drain_blocked": true,
+      "usage_authority_without_set_rejected": true
+    },
+    {
+      "case": "fixed-marker-excludes-later-transaction-and-observes-old-commit",
+      "initial_old_transactions": 1,
+      "later_transaction_excluded": true,
+      "later_transaction_still_open": true,
+      "old_transactions_after_commit": 0,
+      "passed": true,
+      "sessions_terminated": 0
+    },
+    {
+      "case": "actual-drain-keeps-one-marker-until-natural-settlement",
+      "marker_unchanged": true,
+      "observations": 2,
+      "passed": true,
+      "sessions_terminated": 0
+    },
+    {
+      "case": "timeout-and-unknown-visibility-retain-blocked-state",
+      "passed": true,
+      "pending_transaction_preserved": true,
+      "sessions_terminated": 0,
+      "timeout_error": "DELIVERY_BATCH_TRANSACTION_DRAIN_TIMEOUT",
+      "unknown_error": "DELIVERY_BATCH_TRANSACTION_VISIBILITY_REQUIRED"
+    }
+  ],
+  "cleanup_verified": true,
+  "earlier_attempts": [
+    {
+      "path": "/workspace/output/command-batch-activity-r1/receipt.json",
+      "scope": "harness-only bare PostgreSQL boolean decoded as JSON; cleanup preserved",
+      "sha256": "aedf48862f4da054d0965a2ca26d677801fd2bc6ba211c108f176d778c1a177e"
+    },
+    {
+      "path": "/workspace/output/command-batch-activity-r2/receipt.json",
+      "scope": "7/7 passed before independent journal expected-value CAS follow-up; observation SQL unchanged",
+      "sha256": "a20a685bb205a4428a5c184728758a86bc0bd7f0f0bcad56f7c6dde1b7aada5f"
+    }
+  ],
+  "external_receipt_sha256": "7ec51c76b58136c3581f5354080168b7d251d74b53ccf5540a60fb380af89cf2",
+  "final_state": {
+    "ExitCode": 0,
+    "FinishedAt": "0001-01-01T00:00:00Z",
+    "OOMKilled": false,
+    "Running": true,
+    "StartedAt": "2026-11-04T22:26:49.63660345Z"
+  },
+  "image": "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+  "limits": {
+    "cpus": 1,
+    "memory_bytes": 402653184,
+    "network": "none",
+    "pids": 64,
+    "published_ports": [],
+    "swap": false,
+    "tmpfs_bytes": 134217728
+  },
+  "memory": {
+    "cpu.stat": {
+      "burst_usec": 0,
+      "nice_usec": 0,
+      "nr_bursts": 0,
+      "nr_periods": 31,
+      "nr_throttled": 4,
+      "system_usec": 406368,
+      "throttled_usec": 44605,
+      "usage_usec": 1346257,
+      "user_usec": 939888
+    },
+    "memory.current": 69193728,
+    "memory.events": {
+      "high": 0,
+      "low": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_group_kill": 0,
+      "oom_kill": 0
+    },
+    "memory.max": 402653184,
+    "memory.peak": 86900736
+  },
+  "passed": true,
+  "production_calls": 0,
+  "provider_calls": 0,
+  "scope": "isolated actual PostgreSQL activity visibility and fixed-marker drain",
+  "sessions_terminated_by_drain": 0,
+  "source_hashes": {
+    "backend/scripts/ops/command-batch-cutover.py": "06fac5663893a1adace369a0d5d3ea3637eeecb9c4274e5a3b4470c2cdf64d40",
+    "backend/scripts/testing/command_batch_activity_postgres.py": "f585049afcbb8b7a8969fcafb1100bfad42c68c67c86575716f3d39b863bd374",
+    "backend/scripts/testing/command_batch_cutover_races.py": "6c252c6ed4e3d7a03ab2cd4ff2710f49d59fd40c2ecf84c759d6a59fcd38c18b",
+    "backend/scripts/testing/postgres_races.py": "75b6595d59ef17eb01ca392400270fa4453f3cc76126f72706a82695b1cd5071",
+    "backend/scripts/testing/upstream_batch_capacity.py": "1758f09b1d7cb3d2ae24808669a1ff0546571b27b32399ee77d58f63286e621e"
+  },
+  "source_revision": "d835d18dbee2c8df5710c823cea223862a3967b2",
+  "source_unchanged": true,
+  "version": 1
+}

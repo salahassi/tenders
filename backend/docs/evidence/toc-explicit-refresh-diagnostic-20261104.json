@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "scope": "bounded investigation of explicit LibreOffice document-index refresh; no qualified refreshed artifact",
+  "source_revision": "3766e62",
+  "original_docx_sha256": "448e75f1d1a0dc9fa98425b46007ffc3fb3dbf05ce49c5ac53a3af8096f1d2d3",
+  "original_docx_unchanged": true,
+  "existing_conversion_harness_sha256": "443331fe36dd8bebc5d2ec8287486d24daf34aa2dcc0c56b7810d17ec454f9ee",
+  "existing_conversion_behavior": "headless --convert-to pdf; no explicit DocumentIndexes.update call",
+  "attempts": [
+    {
+      "run": "toc-explicit-refresh-r1",
+      "raw_receipt_sha256": "35dc91f2c56b5687b508681b75eb844328a3c44ecdb81fa8b15d51291e26d001",
+      "raw_receipt_local_path": "/workspace/output/toc-explicit-refresh-r1/launch-receipt.json",
+      "exit_code": 0,
+      "seconds": 0.164,
+      "timed_out": false,
+      "result_marker_present": false,
+      "error_marker_present": false,
+      "outputs": {},
+      "refresh_execution_proven": false
+    },
+    {
+      "run": "toc-explicit-refresh-r2",
+      "raw_receipt_sha256": "0c9833a2d966b0d8b14fde7f5b4e3861e11712b1d97e441428143f34658dde18",
+      "raw_receipt_local_path": "/workspace/output/toc-explicit-refresh-r2/launch-receipt.json",
+      "exit_code": 0,
+      "seconds": 0.164,
+      "timed_out": false,
+      "result_marker_present": false,
+      "error_marker_present": false,
+      "outputs": {},
+      "refresh_execution_proven": false
+    }
+  ],
+  "first_attempt_observation": "Initial profile startup replaced the module registry with default Module1; no requested refresh ran.",
+  "second_attempt_observation": "Initialized private profile retained Refresh registration but generated no result/error markers or artifacts; zero exit is not execution evidence.",
+  "owned_processes_remaining": 0,
+  "microsoft_word_tested": false,
+  "toc_refresh_qualified": false,
+  "production_calls": 0,
+  "model_calls": 0,
+  "source_content_changed": false,
+  "limits": [
+    "Existing18 LibreOffice conversion outcomes remain unchanged.",
+    "The absent cache cause is not established by these unsuccessful invocations.",
+    "No page numbers were estimated or inserted; no renderer or verifier gate changed.",
+    "Actual Microsoft Word field update/save and layout validation remain open."
+  ]
+}

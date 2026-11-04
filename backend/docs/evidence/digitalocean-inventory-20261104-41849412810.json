@@ -1,0 +1,336 @@
+{
+  "workflow_run": "https://github.com/salahassi/tenders/actions/runs/41849412810",
+  "workflow_job": 126641377876,
+  "result": "success",
+  "original_cluster_ca_verified": true,
+  "receipt": {
+    "bootstrap_run": false,
+    "business_mutations": 0,
+    "inventory": "captured",
+    "models_called": 0,
+    "namespace": "tenderdesk-dev",
+    "native_schedules": [
+      {
+        "active_deadline_seconds": 600,
+        "backoff_limit": 0,
+        "concurrency_policy": "Forbid",
+        "concurrency_policy_explicit": true,
+        "container_identity_recognized": true,
+        "effective_backoff_limit": 0,
+        "generation": 2,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/browser@sha256:fbb755a5bc80ebabc472dbde571ad296849f3db39b90b7d0c6e964a27dc4353b",
+        "name": "native-browser",
+        "resources": {
+          "limits": {
+            "cpu": "1",
+            "ephemeral-storage": null,
+            "memory": "768Mi"
+          },
+          "requests": {
+            "cpu": "100m",
+            "ephemeral-storage": null,
+            "memory": "256Mi"
+          }
+        },
+        "schedule": "*/5 * * * *",
+        "suspend_explicit": true,
+        "suspended": false
+      },
+      {
+        "active_deadline_seconds": 600,
+        "backoff_limit": 0,
+        "concurrency_policy": "Forbid",
+        "concurrency_policy_explicit": true,
+        "container_identity_recognized": true,
+        "effective_backoff_limit": 0,
+        "generation": 2,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/ocr@sha256:a13d4de2579b00ba0ef963320f199310b1c1fdc86c75d8ca06004e7b2fcf0a88",
+        "name": "native-ocr",
+        "resources": {
+          "limits": {
+            "cpu": "1",
+            "ephemeral-storage": null,
+            "memory": "768Mi"
+          },
+          "requests": {
+            "cpu": "100m",
+            "ephemeral-storage": null,
+            "memory": "256Mi"
+          }
+        },
+        "schedule": "*/5 * * * *",
+        "suspend_explicit": true,
+        "suspended": false
+      }
+    ],
+    "observed_at": "2026-11-04T14:38:13.612202+00:00",
+    "ready_workloads": 10,
+    "runner_source_revision": "59c6b309470cacf4dd605325e9a76cb132b88449",
+    "schema": {
+      "canonical_migrations": null,
+      "capabilities": {
+        "claim_executor_3": false,
+        "delivery_artifacts": false,
+        "delivery_export_context": false,
+        "delivery_package": false,
+        "delivery_snapshots": false
+      },
+      "metrics": {
+        "capacity": {
+          "largest_workspace_reserved_bytes": 147357,
+          "total_reserved_bytes": 147357,
+          "workspace_count": 1,
+          "workspace_limit_bytes": 262144000,
+          "workspaces_at_or_above_limit": 0
+        },
+        "delivery": null,
+        "issuance": null,
+        "jobs": [
+          {
+            "blocked": 10,
+            "class": "background",
+            "due": 88,
+            "expired_leases": 0,
+            "oldest_due_age_seconds": 448394.271481,
+            "pending": 90,
+            "running": 0,
+            "succeeded_in_window": 4,
+            "terminal_row_elapsed_p95_seconds": 284.6240993
+          },
+          {
+            "blocked": 0,
+            "class": "poll",
+            "due": 0,
+            "expired_leases": 0,
+            "oldest_due_age_seconds": 0,
+            "pending": 1,
+            "running": 0,
+            "succeeded_in_window": 0,
+            "terminal_row_elapsed_p95_seconds": null
+          },
+          {
+            "blocked": 11,
+            "class": "proposal",
+            "due": 0,
+            "expired_leases": 0,
+            "oldest_due_age_seconds": 0,
+            "pending": 0,
+            "running": 0,
+            "succeeded_in_window": 0,
+            "terminal_row_elapsed_p95_seconds": null
+          }
+        ],
+        "window_hours": 24
+      },
+      "release_history": [
+        {
+          "applied_at": "2026-10-31T13:15:37.228740+00:00",
+          "migration_sha256": "3eedc737b3b813e30f802b1ea39d42f8d017e4d06e7f9dada535a23bcb2ed3ac",
+          "release": "requested-model-processing-v1"
+        },
+        {
+          "applied_at": "2026-11-01T08:10:21.139153+00:00",
+          "migration_sha256": "5bac8ff0a8e070688873b2e6c020a3c7ddb51c7dc8e0ad8005735e4e653ccf6c",
+          "release": "flexible-proposal-inputs-v1"
+        },
+        {
+          "applied_at": "2026-11-03T00:22:37.837487+00:00",
+          "migration_sha256": "0353c429634df4f9ed3429074e8ff027ef7151b66edffdc467dae08ecb2f8f4b",
+          "release": "ai-execution-reliability-v1"
+        },
+        {
+          "applied_at": "2026-11-03T02:41:33.982071+00:00",
+          "migration_sha256": "cead30c43776e35822e4fa63476223a5ff4abe8de35218286d66dd5bd8c22382",
+          "release": "analysis-verifier-recheck-v1"
+        },
+        {
+          "applied_at": "2026-11-03T03:11:26.883134+00:00",
+          "migration_sha256": "30f79868deaa94daab1554584aede2545a1611a29f7b19d26503e75f57720f14",
+          "release": "analysis-recheck-prompt-identity-v1"
+        },
+        {
+          "applied_at": "2026-11-03T03:11:26.883134+00:00",
+          "migration_sha256": "3bb13dd60fb4322ac3ba70c534ec6165a668da547318d1ea49232ae1d401c927",
+          "release": "model-admission-fairness-v1"
+        }
+      ],
+      "routine_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+      "source_tip_basis": "canonical_history_if_present_otherwise_release_receipts_only"
+    },
+    "schema_mutations": 0,
+    "temporary_client_cleanup_verified": true,
+    "version": 1,
+    "workloads": [
+      {
+        "desired": 1,
+        "generation": 15,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "15",
+        "matching_pods": 1,
+        "name": "api",
+        "observed_generation": 15,
+        "observed_image_digests": [
+          "85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 21,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "15",
+        "matching_pods": 1,
+        "name": "worker",
+        "observed_generation": 21,
+        "observed_image_digests": [
+          "85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 11,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:b90ee4cea47e8208dd785aba618caaf89aadf3c8fd15e4c8172633b2883b88af",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "11",
+        "matching_pods": 1,
+        "name": "frontend",
+        "observed_generation": 11,
+        "observed_image_digests": [
+          "b90ee4cea47e8208dd785aba618caaf89aadf3c8fd15e4c8172633b2883b88af"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 1,
+        "image": "docker.io/supabase/gotrue:v2.197.0@sha256:839f529492d116b4e8b7777c953a27c381d34c15a744b1bcefde5eefaa1f9f9f",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "1",
+        "matching_pods": 1,
+        "name": "auth",
+        "observed_generation": 1,
+        "observed_image_digests": [
+          "839f529492d116b4e8b7777c953a27c381d34c15a744b1bcefde5eefaa1f9f9f"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 1,
+        "image": "docker.io/postgrest/postgrest:v14.18@sha256:c847127074bd26e1b8d3f7c0e6e01e5346f4b85dd34f5d699fd230af960827c0",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "1",
+        "matching_pods": 1,
+        "name": "rest",
+        "observed_generation": 1,
+        "observed_image_digests": [
+          "c847127074bd26e1b8d3f7c0e6e01e5346f4b85dd34f5d699fd230af960827c0"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 3,
+        "image": "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "3",
+        "matching_pods": 1,
+        "name": "storage",
+        "observed_generation": 3,
+        "observed_image_digests": [
+          "92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 9,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:c5a1d4d3bc108333a34233d5488c820130ee462c1940e74b17c4dcbbb33f9cde",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "9",
+        "matching_pods": 1,
+        "name": "source-browser",
+        "observed_generation": 9,
+        "observed_image_digests": [
+          "c5a1d4d3bc108333a34233d5488c820130ee462c1940e74b17c4dcbbb33f9cde"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 10,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:c5a1d4d3bc108333a34233d5488c820130ee462c1940e74b17c4dcbbb33f9cde",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "10",
+        "matching_pods": 1,
+        "name": "scheduler",
+        "observed_generation": 10,
+        "observed_image_digests": [
+          "c5a1d4d3bc108333a34233d5488c820130ee462c1940e74b17c4dcbbb33f9cde"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 2,
+        "image": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "2",
+        "matching_pods": 1,
+        "name": "gateway",
+        "observed_generation": 2,
+        "observed_image_digests": [
+          "99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      },
+      {
+        "desired": 1,
+        "generation": 3,
+        "image": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce",
+        "image_source_revision": null,
+        "image_source_revision_status": "not_independently_inspected",
+        "kubernetes_revision": "3",
+        "matching_pods": 1,
+        "name": "https",
+        "observed_generation": 3,
+        "observed_image_digests": [
+          "3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce"
+        ],
+        "ready": 1,
+        "unavailable": 0,
+        "updated": 1
+      }
+    ]
+  }
+}

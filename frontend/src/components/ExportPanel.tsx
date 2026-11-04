@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { useApp } from "../lib/store";
 import { Button, Field } from "./ui";
-import {
-  createConnectedExport,
-  downloadExport,
-  saveReviewedExport,
-} from "../lib/connectedExport";
+import { downloadExport, saveReviewedExport } from "../lib/connectedExport";
+import { useConnectedExport } from "../lib/useConnectedExport";
+import ConnectedExportStatus from "./ConnectedExportStatus";
 import type { Proposal } from "../types";
 type Row = Record<string, any>;
 export default function ExportPanel({ proposal }: { proposal: Proposal }) {
@@ -18,6 +16,15 @@ export default function ExportPanel({ proposal }: { proposal: Proposal }) {
     [selected, setSelected] = useState(""),
     [file, setFile] = useState<File | null>(null),
     [result, setResult] = useState("");
+  const exportFlow = useConnectedExport(
+    backend,
+    async () => {
+      setResult("The complete verified Word package was downloaded.");
+      await load();
+    },
+    undefined,
+    proposal.versionId,
+  );
   const owner = state.settings.role === "Owner";
   async function load() {
     if (!backend || !proposal.versionId) return;
@@ -73,25 +80,20 @@ export default function ExportPanel({ proposal }: { proposal: Proposal }) {
         </p>
       )}
       {result && <p role="status">{result}</p>}
+      <ConnectedExportStatus flow={exportFlow} />
       <Button
-        disabled={busy}
-        onClick={() =>
-          run(() =>
-            createConnectedExport(backend, proposal.versionId!, "draft"),
-          )
-        }
+        disabled={busy || exportFlow.busy}
+        onClick={() => void exportFlow.start(proposal.versionId!, "draft")}
       >
-        {busy ? "Preparing or verifying…" : "Download draft Word"}
+        {busy || exportFlow.busy
+          ? "Preparing or verifying…"
+          : "Download draft Word"}
       </Button>
       {owner && (
         <Button
           variant="primary"
-          disabled={busy}
-          onClick={() =>
-            run(() =>
-              createConnectedExport(backend, proposal.versionId!, "final"),
-            )
-          }
+          disabled={busy || exportFlow.busy}
+          onClick={() => void exportFlow.start(proposal.versionId!, "final")}
         >
           Authorize and download final Word
         </Button>
@@ -108,7 +110,7 @@ export default function ExportPanel({ proposal }: { proposal: Proposal }) {
           <small>SHA-256: {a.content_hash}</small>
           {a.status === "ready" && (
             <Button
-              disabled={busy}
+              disabled={busy || exportFlow.busy}
               onClick={() =>
                 run(async () => {
                   const r = requests.find((r) => r.id === a.export_id);

@@ -1,3 +1,4 @@
+import DocumentExtractionReview from "../components/DocumentExtractionReview";
 import ProcurementHistory from "../components/ProcurementHistory";
 import AddendumOrder from "../components/AddendumOrder";
 import { useState } from "react";
@@ -37,6 +38,7 @@ import { downloadOriginal } from "../lib/remoteFiles";
 import type { DocumentRecord, Opportunity } from "../types";
 import FitAssessment from "../components/FitAssessment";
 import GenerationPanel from "../components/GenerationPanel";
+import PrepareDeliveryDraft from "../components/PrepareDeliveryDraft";
 import "./workspace.css";
 import "./simplified.css";
 export default function OpportunityDetail() {
@@ -45,6 +47,7 @@ export default function OpportunityDetail() {
   const o = state.opportunities.find((item) => item.id === id);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [intakeFailure, setIntakeFailure] = useState<string>();
   const [view, setView] = useState<DocumentRecord | null>(null);
   const [editDetails, setEditDetails] = useState(false);
   const [aiInfo, setAiInfo] = useState(false);
@@ -88,6 +91,7 @@ export default function OpportunityDetail() {
     if (!editable || !files.length || busy) return;
     setBusy(true);
     setError("");
+    setIntakeFailure(undefined);
     const added: DocumentRecord[] = [];
     const failures: string[] = [];
     let restored = 0;
@@ -111,6 +115,20 @@ export default function OpportunityDetail() {
         await saveLocalFile(document.id, file);
         added.push(document);
       } catch (err) {
+        const code =
+          err && typeof err === "object" && "code" in err
+            ? String(err.code)
+            : "";
+        if (
+          [
+            "EMPTY_FILE",
+            "INVALID_FILE",
+            "UNSUPPORTED_FORMAT",
+            "EXTRACTION_LIMIT",
+            "EXTRACTION_FAILED",
+          ].includes(code)
+        )
+          setIntakeFailure(code);
         failures.push(
           `${file.name}: ${err instanceof Error ? err.message : "Could not read the file."}`,
         );
@@ -166,6 +184,15 @@ export default function OpportunityDetail() {
         }
       />
       <FitAssessment state={state} opportunity={o} compact={selected} />
+      {selected && backend && (
+        <PrepareDeliveryDraft
+          key={o.id}
+          client={backend}
+          opportunityId={o.id}
+          disabled={!editable || busy}
+          intakeFailure={intakeFailure}
+        />
+      )}
       {!selected && <GenerationPanel opportunity={o} />}
       {!selected ? (
         <section className="panel simple-section">
@@ -253,14 +280,44 @@ export default function OpportunityDetail() {
                       <Badge tone={d.status === "ready" ? "green" : "amber"}>
                         {d.status === "ready"
                           ? "Text extracted"
-                          : d.status === "needs_ocr"
-                            ? "Image or scan · no text extracted"
-                            : "Text unavailable"}
+                          : d.status === "partial"
+                            ? "Partial text extracted · unread pages retained"
+                            : d.status === "needs_ocr"
+                              ? "Image or scan · no text extracted"
+                              : "Text unavailable"}
                       </Badge>
+                      {d.extractionCoverage && (
+                        <p className="muted small">
+                          {
+                            d.extractionCoverage.pages.filter(
+                              (page) => page.status === "readable",
+                            ).length
+                          }{" "}
+                          of {d.extractionCoverage.pages.length} pages contain
+                          extracted text.
+                          {d.extractionCoverage.pages.some(
+                            (page) =>
+                              page.status === "needs_ocr" ||
+                              page.status === "extraction_failed",
+                          ) &&
+                            ` Pages needing processing: ${d.extractionCoverage.pages
+                              .filter(
+                                (page) =>
+                                  page.status === "needs_ocr" ||
+                                  page.status === "extraction_failed",
+                              )
+                              .map((page) => page.page)
+                              .join(
+                                ", ",
+                              )}. Readable pages remain available for the draft.`}
+                        </p>
+                      )}
                     </div>
                     <div className="simple-file-actions">
                       {backend &&
-                        d.status === "ready" &&
+                        (d.status === "ready" ||
+                          d.status === "partial" ||
+                          d.status === "needs_ocr") &&
                         !d.extractionConfirmed && (
                           <Button size="sm" onClick={() => setView(d)}>
                             Review extraction
@@ -572,48 +629,71 @@ export default function OpportunityDetail() {
         title={view?.name || "Extracted text"}
         onClose={() => setView(null)}
       >
-        <p className="muted small">
-          Checking extraction is optional for draft creation. Compare complex
-          tables and scanned pages with the original when reviewing the draft.
-        </p>
-        <pre dir="auto" className="simple-extract">
-          {view?.text ||
-            "No readable text was extracted. Draft creation can continue with the other available text; this file will be identified as unread."}
-        </pre>
         {backend &&
-          view?.status === "ready" &&
-          !view.extractionConfirmed &&
-          editable && (
-            <Button
-              variant="primary"
-              onClick={async () => {
-                if (
-                  await update(
-                    (s) => ({
-                      ...s,
-                      opportunities: s.opportunities.map((x) =>
-                        x.id === o.id
-                          ? {
-                              ...x,
-                              documents: x.documents.map((d) =>
-                                d.id === view.id
-                                  ? { ...d, extractionConfirmed: true }
-                                  : d,
-                              ),
-                            }
-                          : x,
-                      ),
-                    }),
-                    "Confirmed extraction",
-                    view.id,
-                  )
-                )
-                  setView(null);
-              }}
-            >
-              I checked this text against the original; extraction is complete
-            </Button>
-          )}
+        view &&
+        (/\.pdf$/i.test(view.name) ||
+          view.extractionCoverage?.kind === "pdf_pages" ||
+          view.status === "needs_ocr") ? (
+          <DocumentExtractionReview
+            key={view.id}
+            client={backend}
+            documentId={view.id}
+            canEdit={editable}
+            language={o.language}
+            onPublished={(successorId) =>
+              setView((current) =>
+                current ? { ...current, id: successorId } : null,
+              )
+            }
+          />
+        ) : (
+          <>
+            <p className="muted small">
+              Checking extraction is optional for draft creation. Compare
+              complex tables and scanned pages with the original when reviewing
+              the draft.
+            </p>
+            <pre dir="auto" className="simple-extract">
+              {view?.text ||
+                "No readable text was extracted. Draft creation can continue with the other available text; this file will be identified as unread."}
+            </pre>
+            {backend &&
+              view?.status === "ready" &&
+              !view.extractionConfirmed &&
+              editable && (
+                <Button
+                  variant="primary"
+                  onClick={async () => {
+                    if (
+                      await update(
+                        (s) => ({
+                          ...s,
+                          opportunities: s.opportunities.map((x) =>
+                            x.id === o.id
+                              ? {
+                                  ...x,
+                                  documents: x.documents.map((d) =>
+                                    d.id === view.id
+                                      ? { ...d, extractionConfirmed: true }
+                                      : d,
+                                  ),
+                                }
+                              : x,
+                          ),
+                        }),
+                        "Confirmed extraction",
+                        view.id,
+                      )
+                    )
+                      setView(null);
+                  }}
+                >
+                  I checked this text against the original; extraction is
+                  complete
+                </Button>
+              )}
+          </>
+        )}
       </Modal>
       <Modal
         open={editDetails}

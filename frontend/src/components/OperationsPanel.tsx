@@ -31,6 +31,12 @@ type Status = {
   }[];
   cleanup_pending: number;
   cleanup_blocked: number;
+  storage_write_uncertainty?: {
+    unsettled_keys: number;
+    held_bytes: number;
+    quiescence_required_keys: number;
+    historical_inventory_keys: number;
+  };
   calls_today: number;
   input_tokens_today: string;
   automatic_usage_reporting_only?: boolean;
@@ -237,6 +243,41 @@ export default function OperationsPanel({
               </dd>
             </div>
           </dl>
+          {status.storage_write_uncertainty && (
+            <div className="small" aria-label="File storage verification">
+              {status.storage_write_uncertainty.unsettled_keys > 0 && (
+                <p>
+                  Uploads awaiting confirmation:{" "}
+                  {status.storage_write_uncertainty.unsettled_keys}. Space
+                  remains reserved while their result is checked.
+                </p>
+              )}
+              {status.storage_write_uncertainty.held_bytes > 0 && (
+                <p>
+                  {mib(status.storage_write_uncertainty.held_bytes)} of the
+                  reserved total is held for file writes or deletion that have
+                  not been verified.
+                </p>
+              )}
+              {status.storage_write_uncertainty.quiescence_required_keys >
+                0 && (
+                <p>
+                  Files requiring administrator storage checks before deletion:{" "}
+                  {status.storage_write_uncertainty.quiescence_required_keys}.
+                  Retrying cleanup alone cannot resolve these checks.
+                </p>
+              )}
+              {owner &&
+                status.storage_write_uncertainty.historical_inventory_keys >
+                  0 && (
+                  <p>
+                    Older file records requiring a storage audit:{" "}
+                    {status.storage_write_uncertainty.historical_inventory_keys}
+                    . Their current physical usage has not been established.
+                  </p>
+                )}
+            </div>
+          )}
           {!!status.job_wait_reasons?.length && (
             <details>
               <summary>Why jobs are waiting or stopped</summary>
@@ -277,10 +318,9 @@ export default function OperationsPanel({
           )}
           {delayed && (
             <p>
-              Check whether the Supabase project is paused, then review the
-              scheduler and worker logs. This signal reports a missing
-              heartbeat; it does not identify the cause. Retry normal work after
-              the heartbeat returns.
+              Ask your administrator to check the scheduler and processing
+              services. This signal reports a missing heartbeat; it does not
+              identify the cause. Retry normal work after the heartbeat returns.
             </p>
           )}
         </>
@@ -463,23 +503,33 @@ export default function OperationsPanel({
               <h3>Blocked file cleanup</h3>
               {cleanup.map((c) => (
                 <p key={c.id}>
-                  {c.error_code} · {mib(c.estimated_size)}{" "}
-                  <Button
-                    disabled={busy}
-                    onClick={() =>
-                      run(async () => {
-                        await backend.request(
-                          `/v1/storage-cleanup/${c.id}/retry`,
-                          { method: "POST", body: {} },
-                        );
-                        setMessage(
-                          "Cleanup queued for another checked attempt.",
-                        );
-                      })
-                    }
-                  >
-                    Retry cleanup
-                  </Button>
+                  {c.error_code === "STORAGE_QUIESCENCE_REQUIRED"
+                    ? "Administrator storage checks required"
+                    : c.error_code}{" "}
+                  · {mib(c.estimated_size)}{" "}
+                  {c.error_code === "STORAGE_QUIESCENCE_REQUIRED" ? (
+                    <span>
+                      Keep this space reserved until the upload result and file
+                      deletion have been verified by an administrator.
+                    </span>
+                  ) : (
+                    <Button
+                      disabled={busy}
+                      onClick={() =>
+                        run(async () => {
+                          await backend.request(
+                            `/v1/storage-cleanup/${c.id}/retry`,
+                            { method: "POST", body: {} },
+                          );
+                          setMessage(
+                            "Cleanup queued for another checked attempt.",
+                          );
+                        })
+                      }
+                    >
+                      Retry cleanup
+                    </Button>
+                  )}
                 </p>
               ))}
             </>

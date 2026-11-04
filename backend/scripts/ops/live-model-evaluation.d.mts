@@ -5,6 +5,7 @@ export const LIMITS: {
   pollsPerCase: number;
 };
 export const EXTENDED_LIMITS: typeof LIMITS;
+export const SEMANTIC_LIMITS: typeof LIMITS;
 export const RECHECK_LIMITS: typeof LIMITS;
 export const PLANNING_LIMITS: typeof LIMITS;
 export const VERIFICATION_LIMITS: typeof LIMITS;
@@ -15,7 +16,13 @@ export type EvaluationSuite =
   | "extended_recheck"
   | "planning_repair"
   | "analysis_verification"
-  | "analysis_authority";
+  | "analysis_authority"
+  | "semantic_en"
+  | "semantic_ar"
+  | "semantic_v2_en"
+  | "semantic_v2_ar"
+  | "semantic_v2_metadata_en"
+  | "semantic_v2_metadata_ar";
 export function limitsForSuite(suite?: EvaluationSuite): typeof LIMITS;
 export function fixtures(suite?: EvaluationSuite): Promise<any[]>;
 export function validateTargets(

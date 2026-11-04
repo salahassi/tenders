@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "scope": "Single official model substitution on frozen synthetic controls; not automatic Arabic semantic acceptance",
+  "state": "completed",
+  "plan_sha256": "547e043b392d36fb87b6f3ca74135925e880016f29850b2382eb1bfe091032e4",
+  "engine": "tesseract 5.3.0",
+  "candidate": {
+    "repository": "https://github.com/tesseract-ocr/tessdata_best",
+    "commit": "e12c65a915945e4c28e237a9b52bc4a8f39a0cec",
+    "commit_date": "2024-03-09T10:04:42Z",
+    "license": "Apache-2.0",
+    "files": {
+      "README.md": {
+        "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/e12c65a915945e4c28e237a9b52bc4a8f39a0cec/README.md",
+        "bytes": 470,
+        "sha256": "08c87523fb799c5bae6380f6ffa1a823494ab78f63906d7255dddd7671f94a5f"
+      },
+      "eng.traineddata": {
+        "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/e12c65a915945e4c28e237a9b52bc4a8f39a0cec/eng.traineddata",
+        "bytes": 15400601,
+        "sha256": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba"
+      },
+      "LICENSE": {
+        "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/e12c65a915945e4c28e237a9b52bc4a8f39a0cec/LICENSE",
+        "bytes": 10173,
+        "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+      },
+      "ara.traineddata": {
+        "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/e12c65a915945e4c28e237a9b52bc4a8f39a0cec/ara.traineddata",
+        "bytes": 12603724,
+        "sha256": "ab9d157d8e38ca00e7e39c7d5363a5239e053f5b0dbdb3167dde9d8124335896"
+      }
+    }
+  },
+  "configuration": {
+    "scale": 2000,
+    "languages": "ara+eng",
+    "segmentation": 3
+  },
+  "oracle": "full_normalized_page_v2",
+  "expected_cases": 7,
+  "recognized_cases": 7,
+  "candidate_frozen_case_gate_passed": false,
+  "automatic_arabic_qualified": false,
+  "mandatory_review_changed": false,
+  "runtime_recognition_changed": false,
+  "provider_calls": 0,
+  "results": [
+    {
+      "case": "known-arabic-failure",
+      "page": 1,
+      "fixture_sha256": "70cb0b2e615d8c9880ab414a87c7eadc7bc6129268e203010006e74be844331b",
+      "outcome": "recognized",
+      "image_sha256": "5437e0b1d2d12add56532b302294ec696f8aeee0e91b0c21fbdab21b08585482",
+      "tsv_sha256": "d7f83d40946c9437b6a4f6d015366a03441ddfae79843fc4d2b652371e472550",
+      "text_sha256": "2ce01681fd377e875fbe84fda6bbfc3d487950e7f364f9416c152daa573d5b56",
+      "text": "Je ee‏ | لمورد Leo 1 2 hd‏ خلال 0 3 يوما\nwll.‏ بقيمة 12500 ريال بعد القبول\n«الموعد النهائي للتقديم هو 15 ديسمبر 2026\ni.‏ التعاقد من الباطن دون موافقة خطية",
+      "confidence": 80,
+      "elapsed_ms": 396,
+      "full_normalized_page_exact": false,
+      "blank_control_valid": null
+    },
+    {
+      "case": "maintenance-obligation",
+      "page": 1,
+      "fixture_sha256": "865400db7e101086faf30311b81239c52cfa71074d1b51c80354b4acab959003",
+      "outcome": "recognized",
+      "image_sha256": "cfba5504d4791f0cc9692c233a77e2c1bf6865246d2bfe2e72e2f422262ecfc9",
+      "tsv_sha256": "a4e41fd0925623c8340a2358c1bd45121519e5ca20ee1589aa2aef2644f6c2c0",
+      "text_sha256": "4d22901ef7451e259ed68f9ecd9b19e0ae5e74ed02180082393a0902c40b7f3f",
+      "text": "ملحق الصيانة\nيلتزم المتعهد بفحص 7 اجهزة في كل زيارة شهرية.\nلا يجوز إيقاف الخدمة ole‏ ساعات العمل.\nإذا ظهر عطل حرجء Tus‏ المعالجة خلال 6 ساعات.\nتبلغ قيمة الزيارة 3750 ريالاء 5 lu‏ العقد في 2027-02-18.\nمرجع الطاب: MX-2047-B‏",
+      "confidence": 80,
+      "elapsed_ms": 510,
+      "full_normalized_page_exact": false,
+      "blank_control_valid": null
+    },
+    {
+      "case": "records-retention",
+      "page": 1,
+      "fixture_sha256": "8df77416bbfe305d1e964f72afa9a643cb6208902820b54ee233c2830768cf96",
+      "outcome": "recognized",
+      "image_sha256": "b02240d3e2412b8b75bb4960b4e9a83d3b4aafa252b169d95b3043c5d1b4b8bd",
+      "tsv_sha256": "54290baa1f7f36a1daa9fbb5488092946f7fdba10b66685e900e1dcb1eb1149d",
+      "text_sha256": "0ce525281fd8a2b71fa19572024961d58f2aaf9b030660a13ffc149656a0b611",
+      "text": "شروط حفظ السجلات\nيجب حفظ النسخ الاحتياطية لمدة 90 يوما بعد انتهاء العقد.\nلاايسمح بنقل الملفات إلى جهة خارجية.\nعند تعذر استعادة سجل واحد, يقدم تقرير خلال يومي عمل.\nتستحق الدفعة البالغة 6400 ريال في 3 أبريل 2027.\nرمز الحزمة: ARCHIVE-Q9‏",
+      "confidence": 89,
+      "elapsed_ms": 419,
+      "full_normalized_page_exact": false,
+      "blank_control_valid": null
+    },
+    {
+      "case": "sensor-acceptance",
+      "page": 1,
+      "fixture_sha256": "2954ab85ab810c853659aed7f7c95fd07785653fb588172da8076b37d9bb02e9",
+      "outcome": "recognized",
+      "image_sha256": "24c2dfbae41a25d8ed39ab7ed6522bff715f87f1dcc16979ebf0720c0f5d365c",
+      "tsv_sha256": "a98d4ec18c07c9380cc490f81d1d1c75af761fda9638d2270f44911a8b0af1e5",
+      "text_sha256": "577b41da15d870113ec7e66bfaede10c2e87d9ab8c770db588be86b09b883062",
+      "text": "إشعار تسليم المعدات\nعلى المقاول تركيب 24 حساسا قبل بدء التشغيل.\nلا تعد التجربة ناجحة ما لم تعمل جميع الحساسات.\nإذا تأخر التسليم أكثر من 5 quai abi‏ غرامة قدرها 850 ريالا.\nآخر موعد للفحص هو 2027/06/09. والمرجع هو .SENSOR-K3‏",
+      "confidence": 86,
+      "elapsed_ms": 456,
+      "full_normalized_page_exact": false,
+      "blank_control_valid": null
+    },
+    {
+      "case": "english-existing-control",
+      "page": 1,
+      "fixture_sha256": "019eb10cff310db890866ad993704ed4cc05f7583ddab36a1b3e1b3634b7b826",
+      "outcome": "recognized",
+      "image_sha256": "c54b3a3c65138ea5c5e28d704376ac9c921147dc92dd5a71a8ba367a836c16f7",
+      "tsv_sha256": "3f6aace9a71ed47ff2d84ba17d63ae1a9d934c81d59e155747e3ad1dd76e18ed",
+      "text_sha256": "363e5b3980a9eeb704b3b18a3bc352b6aac1e5055f79062c506a4147e9990653",
+      "text": "The supplier must deliver 12 reports within 30 days.\nPayment is SAR 12500 after acceptance.\nThe submission deadline is 2026-12-15.\nSubcontracting is prohibited without written approval.",
+      "confidence": 96,
+      "elapsed_ms": 369,
+      "full_normalized_page_exact": true,
+      "blank_control_valid": null
+    },
+    {
+      "case": "mixed-exact-scan-page",
+      "page": 3,
+      "fixture_sha256": "a8a11d021b8f503dcd98b5ec2654ba25610c1077bf171ddbc4405304988989a9",
+      "outcome": "recognized",
+      "image_sha256": "c54b3a3c65138ea5c5e28d704376ac9c921147dc92dd5a71a8ba367a836c16f7",
+      "tsv_sha256": "3f6aace9a71ed47ff2d84ba17d63ae1a9d934c81d59e155747e3ad1dd76e18ed",
+      "text_sha256": "363e5b3980a9eeb704b3b18a3bc352b6aac1e5055f79062c506a4147e9990653",
+      "text": "The supplier must deliver 12 reports within 30 days.\nPayment is SAR 12500 after acceptance.\nThe submission deadline is 2026-12-15.\nSubcontracting is prohibited without written approval.",
+      "confidence": 96,
+      "elapsed_ms": 353,
+      "full_normalized_page_exact": true,
+      "blank_control_valid": null
+    },
+    {
+      "case": "mixed-blank-page",
+      "page": 5,
+      "fixture_sha256": "a8a11d021b8f503dcd98b5ec2654ba25610c1077bf171ddbc4405304988989a9",
+      "outcome": "recognized",
+      "image_sha256": "a426d8769b1b3abadee1e5a4f4ea244ab7faf7d135051eed731fd5734a729c06",
+      "tsv_sha256": "b5caf5b3624fec48d7a4f185d1c55db3d201f832650ae210bcf3bfff5b93dc97",
+      "text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "text": "",
+      "confidence": 0,
+      "elapsed_ms": 153,
+      "full_normalized_page_exact": true,
+      "blank_control_valid": true
+    }
+  ]
+}

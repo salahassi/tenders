@@ -300,3 +300,19 @@ The Owner requests an actual upload-to-download trial and a simpler process that
 Processing failure email is tied to an ongoing failure cause, not each affected job. More tasks or attempts do not reopen the same cause. After the cause disappears from active failures, a recurrence may notify again within the selected maximum frequency. New preferences default to at most daily, and the Owner's inherited hourly setting was changed to daily following the email-noise complaint. Existing sent/ambiguous deliveries are retained and seed suppression; the application rechecks recovery and frequency immediately before SMTP. Review digests remain independent.
 
 When a provider omits Retry-After, consecutive 429/server/uncertain-network failures share bounded exponential backoff across jobs for that exact provider, model and account. Other providers remain eligible; successful responses clear the outage backoff. This does not infer a provider's free-tier quota or fabricate a successful assessment.
+
+
+## November 4, 2026 — no-agent failure and maximum proposal issuance time
+
+The Owner explicitly resolves the reliability plan's D06: if every AI agent/provider
+is unavailable, return a clear no-agents-available error when that condition is
+known. Mandatory human completion is no longer the outage acceptance requirement.
+Optional authorized editing and historical drafts remain separate user actions.
+
+A proposal request has a maximum ten-minute (600-second) issuance deadline from
+acceptance, including queue wait, model phases, repair and artifact creation. This
+is the last guard: a known terminal error must be returned earlier, not delayed
+until the deadline. Expiry cannot manufacture success, reset on each stage, zero
+unknown usage, duplicate an ambiguous paid call or overwrite accepted history.
+The implementation and hosted acceptance must prove these decisions; they are not
+assumed complete merely because this decision is recorded.

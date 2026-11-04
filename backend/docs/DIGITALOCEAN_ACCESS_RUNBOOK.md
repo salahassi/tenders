@@ -54,16 +54,71 @@ conditional steps and the called helper. A name containing "check", "inspect" or
 
 | Need | Existing workflow and boundary |
 | --- | --- |
-| Inspect the established access implementation | [`doks-access.yml`](../../.github/workflows/doks-access.yml). Its existing full path also runs migration compatibility/isolated service bootstrap; do not start that full path just to read current workload metadata. |
+| Inspect current workloads and schema | [`doks-access.yml`](../../.github/workflows/doks-access.yml), explicit `mode=inventory` on a revision containing `7b8808174fbf62d53364e56084102a901bc1338d`. It reads metadata through a temporary owned SQL client and verifies cleanup. `mode=bootstrap` still creates isolated compatibility resources and must be selected separately. |
+| Exercise backup and restore before release | The same workflow with explicit `mode=restore` on a revision containing the reviewed cloud restore helper and a frozen release manifest. It reads production schema metadata, reconstructs that exact schema in a nonce-bound isolated database, applies the frozen migrations, and exercises genuine Auth/Storage with synthetic fixtures only. It does not copy customer rows or invoke models. Review [`proposal-cloud-restore.py`](../scripts/ops/proposal-cloud-restore.py), its fixture guards and cleanup before dispatch; a successful drill does not prove proposal rendering or production acceptance. |
 | Read one proposal's recovery state | [`inspect-proposal-recovery.yml`](../../.github/workflows/inspect-proposal-recovery.yml). Requires the reviewed encrypted selection object and plaintext hash; does not authorize or retry model processing. |
+| Check enabled model credential bindings | `doks-access.yml` with explicit `mode=models`. The reviewed [`model-configuration-audit.py`](../scripts/ops/model-configuration-audit.py) reads enabled catalog bindings and only reports provider/model and key/project presence booleans. It never prints aliases, credentials or project values, calls a provider, or changes configuration. Credential presence is not a provider availability or semantic qualification result. |
 | Read retained proposal graph evidence | [`diagnose-proposal-graph.yml`](../../.github/workflows/diagnose-proposal-graph.yml). Follow its exact scoped input and private evidence handling. |
 | Diagnose HTTPS startup | [`diagnose-https.yml`](../../.github/workflows/diagnose-https.yml). Contains conditional repair steps and private diagnostic upload; inspect trigger/conditions before using it. |
 | Release application changes | Select the specific reviewed `deploy-*.yml` and its helper. Check the exact migration set, immutable image, target namespace, rollout and acceptance. Historical release workflows do not automatically include newly added migrations. |
 | Evaluate models | [`evaluate-ai-models.yml`](../../.github/workflows/evaluate-ai-models.yml). Live activation is separate from inventory and may make paid provider requests; use only the authorized campaign and its limits. |
 
-A dedicated inventory-only mode is being implemented separately. Until its code
-and workflow revision are published and verified, do not invent a `mode` input
-or describe that mode as available. Update this reference when the mode lands.
+The release-baseline inventory was verified on the published branch
+`codex/proposal-reliability-implementation`, commit
+`17ba94ba3e6ee13c1227f60b8849c8fe40873564`, in
+[run 41881660683](https://github.com/salahassi/tenders/actions/runs/41881660683).
+Use a reviewed ref that contains that commit; older `main` revisions do not have
+this input. For that published branch, the exact dispatch is:
+
+```sh
+gh workflow run doks-access.yml --repo salahassi/tenders \
+  --ref codex/proposal-reliability-implementation -f mode=inventory
+```
+
+Check the run head SHA and executed steps after dispatch. The observed schema,
+image digests and cleanup receipt are saved in
+[`evidence/digitalocean-inventory-20261104-41881660683.json`](evidence/digitalocean-inventory-20261104-41881660683.json).
+This evidence file wraps the inventory under `receipt`; release-manifest freezing
+requires that exact inner receipt, not the outer evidence wrapper. The earlier successful run41849412810 remains historical evidence. Its predecessor
+41845129587 failed an observer scheduling assumption; both subsequent successful
+inventories verified the original certificate authority. That failure was not a
+TLS regression.
+Ten ready workloads prove inventory readiness at that observation, not proposal
+workflow acceptance. The new delivery tables were absent at that time.
+
+The isolated Auth/Storage restore drill subsequently passed all 13 actual HTTP
+checks and both cleanup stages in
+[run 41908346634](https://github.com/salahassi/tenders/actions/runs/41908346634),
+at `fb43a7a3d54518b98cadbfc344d9c1ad4b6766f4`. Its
+[receipt](evidence/cloud-restore-20261104-41908346634.json) records original CA
+verification, exact file restore, access revocation and idempotent replay. This
+run used a fixture Auth policy; it is not evidence for the later shared platform
+policy, application rendering or production deployment. The later
+[run 41910306855](https://github.com/salahassi/tenders/actions/runs/41910306855)
+at `28689b97503b1fe23f0999909c91427867131c91` repeats all thirteen checks using
+the shared platform helper and its frozen source contract. Its
+[receipt](evidence/cloud-restore-20261104-41910306855.json) retains successful
+original-CA verification and both cleanups. Production was not changed. The final 24-migration shared-policy drill also
+passed all thirteen checks, original CA verification and both cleanup stages in
+[run41933205779](https://github.com/salahassi/tenders/actions/runs/41933205779)
+at `865d8406fcaf148299184bcbe67522fb0b256258`; its
+[receipt](evidence/cloud-restore-20261104-41933205779.json) binds the complete frozen
+release manifest. This is isolated restore evidence, not application deployment
+or proposal acceptance. Use the checklist for the latest source-specific gates.
+
+The subsequent read-only model binding audit succeeded at commit
+`bc8e5709183fd228ae1bac207e643e2413e9c9fd` in
+[run 41869042836](https://github.com/salahassi/tenders/actions/runs/41869042836).
+Original cluster CA verification and both cleanup steps passed. The sanitized
+[receipt](evidence/model-binding-audit-20261104-41869042836.json) records enabled
+model key-presence booleans only; it does not establish provider availability or
+credit balance. The earlier audit run 41863551387 passed TLS but failed because
+the new diagnostic step omitted its existing database credential environment
+binding. That workflow wiring was corrected; it was not a certificate failure.
+
+When CLI run metadata is stale, inspect the connected GitHub run jobs and job
+logs, checking the exact head revision and executed steps. A cached `queued`
+response must not supersede a completed job's direct execution evidence.
 
 Prefer the connected GitHub tools for metadata when available. With an already
 configured GitHub CLI, these commands inspect definitions/history only:
@@ -99,3 +154,110 @@ worker, model, schema or complete user-flow health.
 The original access explanation and migration history remain in
 [`DIGITALOCEAN_KUBERNETES.md`](DIGITALOCEAN_KUBERNETES.md). Use this runbook as the
 entry point and the dated checklist for current deployment facts.
+
+## Additional capacity metadata in a new inventory
+
+The additive `capacity_observation` field separates deployment resource requests
+and limits from each ready API, worker and REST Pod's observed resource spec.
+It reports fixed allowlisted runtime role and REST pool/max-row/anonymous-role
+configuration only. The authenticator role is projected only after validating
+the current core Secret's existing private-database and original-CA URI binding
+and the observed manifest reference; the URI, host and credential values are
+never output. These are manifest/current-configuration observations, not a read
+of the running process environment or cgroup usage. Missing explicit values stay
+unknown; repository-rendered defaults do not fill them in.
+
+The managed database size slug and node count come from the existing validated
+DigitalOcean metadata request. That endpoint's size name does not establish
+measured per-node RAM or CPU. Those fields remain null without an authoritative
+unit-qualified hardware record; no size-name inference qualifies a benchmark.
+
+`sql_settings` captures the fresh observer login's `statement_timeout`, `work_mem`
+and `max_connections`, including units/source/reset/default values, before its
+own 20-second query timeout. It separately lists only these three parameters'
+current-database and fixed application-role catalog defaults. The query rolls
+back and reads no business records. Neither `SET ROLE` nor an administrator
+connection proves the effective settings of an authenticated PostgREST request;
+the receipt explicitly leaves that claim false. The original inventory/schema
+fields and frozen release baseline remain unchanged, and older receipts are
+still valid for their original scope. A reviewed new Actions inventory is needed
+to obtain these observations; adding this code does not supply hosted evidence.
+
+The additive capacity inventory subsequently passed in
+[run 41916625820](https://github.com/salahassi/tenders/actions/runs/41916625820)
+at `84003906146c9b2970641348cfe67d84bb17e210`, including original-CA verification
+and both cleanup stages. Its
+[receipt](evidence/digitalocean-capacity-20261104-41916625820.json) records actual
+API/worker/REST manifest limits and safe database configuration metadata. It
+does not replace the earlier frozen release baseline or qualify runtime memory,
+provider availability, or an application release.
+
+## Legacy batch replay exposure census
+
+A subsequent inventory may include the additive `legacy_batch_observation`.
+Its fixed scope is `app_private.idempotency_records` with `method='BATCH'` and
+`route='commands'`. It reports global counts of unexpired (`expires_at > now()`)
+and expired rows, grouped only by the fixed compression labels `none`, `pglz`,
+`lz4` or `other`. Each group includes SQL-null result counts, the sum/maximum of
+`pg_column_size(result)`, and cumulative stored-size counts at 64 KiB and 1 MiB,
+plus a count above 1 MiB. These thresholds organize metadata; they are not new
+business quotas or evidence that a result can be safely expanded.
+
+The query uses `pg_column_compression`, `pg_column_size` and SQL-null detection;
+it never serializes, hashes, parses, expands or emits result JSON. No workspace,
+actor, row, idempotency key or payload is returned. Only the at-most-eight metadata
+groups are materialized. The original read-only transaction, application-owner
+role and 20-second statement/5-second lock bounds remain in force. Failure still
+requires verified temporary-client cleanup and does not produce a success receipt.
+
+Compressed stored size is not uncompressed JSON, response size or replay memory
+capacity. Purged sentinel objects cannot be counted safely by this census without
+inspecting their contents, so `purged_state_not_inspected` stays true and
+`logical_or_wire_size_proved` stays false. SQL-null results are counted separately
+and are not relabeled as purged. The census describes the namespace at observation
+time; it does not alter, normalize, expire or replay any record. Older inventory
+receipts and the frozen release baseline remain unchanged. A reviewed fresh
+Actions inventory supplies actual exposure; synthetic tests do not establish it.
+
+The first actual legacy census passed in
+[run 41919585078](https://github.com/salahassi/tenders/actions/runs/41919585078),
+at `e0ce84d2cb770fd09d5192a398833b88f0c2628b`, with original-CA verification and
+both cleanup stages. Its
+[receipt](evidence/digitalocean-legacy-batch-20261104-41919585078.json) reports
+zero total/active/expired BATCH/commands receipts at observation. A release must
+still fence/drain legacy callers and recheck under locks; this read-only result
+does not establish future absence or replace the frozen release baseline.
+
+## Read-only command cutover visibility observation
+
+Inventory also reuses `command-batch-cutover.py`'s exact read-only transaction
+observer. It verifies the fixed database and existing authority to set the
+authenticator role, sets that role locally, and counts only that login's
+transactions, excluding its own observer backend. It does not need or add
+global monitoring privileges. The public `batch_cutover_observation` contains
+only a UTC database marker, visibility flag, count, fixed authority description
+and SHA-256 of the exact observer SQL. Private session identifiers, query text,
+credentials and customer content are never returned. The transaction rolls back.
+
+An observation does not fence requests or drain transactions; both flags remain
+false. It does not prove future emptiness. Release still observes a fresh marker
+after the gateway process fence and performs its separate bounded drain, table
+lock and zero-history check. Unknown visibility fails the inventory and still
+requires temporary-client cleanup. Review the complete workflow before running
+`mode=inventory`; this addition never invokes the mutation coordinator.
+
+The combined read-only visibility/resource observation passed in
+[run 41926843276](https://github.com/salahassi/tenders/actions/runs/41926843276)
+at `da3c4bcde412f17287f7abd3c5c28779abda26d3`, with original-CA verification
+and both cleanup stages. Its
+[receipt](evidence/digitalocean-cutover-20261104-41926843276.json) proves existing
+managed-database transaction visibility and actual gateway spec values at that
+observation. It neither fences callers nor drains transactions, changes grants,
+measures runtime capacity or replaces the original release baseline.
+
+The subsequent [run 41928176279](https://github.com/salahassi/tenders/actions/runs/41928176279)
+at `f331c28f727f19623715be00f98a001bd04185bb` adds actual HTTPS Deployment/Pod
+resource observations (128 MiB / 300m), with original-CA and both cleanups. Its
+[receipt](evidence/digitalocean-https-capacity-20261104-41928176279.json) remains
+read-only configuration evidence; it does not qualify proxy capacity or replace
+the original frozen release baseline.

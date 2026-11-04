@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "frozen_at_utc": "2026-11-04T22:42:00.689207+00:00",
+  "recognition_started": false,
+  "source_revision": "e9cc1821a716cf4b54e2ac892d41cd2a8c586d06",
+  "scope": "Single official alternative model pair on unchanged synthetic controls; no production selection or automatic semantic qualification",
+  "image_id": "sha256:42bda8349d80507c1b7d5fd299d1c9be59ece8f559256bfc8b8bf90f6d8b40af",
+  "engine": "tesseract 5.3.0",
+  "baseline": {
+    "provenance": "Debian tesseract-lang1:4.1.0-2; installed copyright declares Upstream-Name tessdata_fast",
+    "copyright_sha256": "33fb8161898e34fcf5c6b8585d6be97642d7e8f34a922e783c6c5c970d0b09ad",
+    "files": {
+      "ara.traineddata": {
+        "bytes": 1432056,
+        "sha256": "e3206d3dc87fd50c24a0fb9f01838615911d25168f4e64415244b67d2bb3e729"
+      },
+      "eng.traineddata": {
+        "bytes": 4113088,
+        "sha256": "7d4322bd2a7749724879683fc3912cb542f19906c83bcc1a52132556427170b2"
+      }
+    }
+  },
+  "candidate": {
+    "repository": "https://github.com/tesseract-ocr/tessdata_best",
+    "commit": "e12c65a915945e4c28e237a9b52bc4a8f39a0cec",
+    "commit_date": "2024-03-09T10:04:42Z",
+    "license": "Apache-2.0",
+    "files": {
+      "README.md": {
+        "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/e12c65a915945e4c28e237a9b52bc4a8f39a0cec/README.md",
+        "bytes": 470,
+        "sha256": "08c87523fb799c5bae6380f6ffa1a823494ab78f63906d7255dddd7671f94a5f"
+      },
+      "eng.traineddata": {
+        "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/e12c65a915945e4c28e237a9b52bc4a8f39a0cec/eng.traineddata",
+        "bytes": 15400601,
+        "sha256": "8280aed0782fe27257a68ea10fe7ef324ca0f8d85bd2fd145d1c2b560bcb66ba"
+      },
+      "LICENSE": {
+        "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/e12c65a915945e4c28e237a9b52bc4a8f39a0cec/LICENSE",
+        "bytes": 10173,
+        "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
+      },
+      "ara.traineddata": {
+        "url": "https://raw.githubusercontent.com/tesseract-ocr/tessdata_best/e12c65a915945e4c28e237a9b52bc4a8f39a0cec/ara.traineddata",
+        "bytes": 12603724,
+        "sha256": "ab9d157d8e38ca00e7e39c7d5363a5239e053f5b0dbdb3167dde9d8124335896"
+      }
+    }
+  },
+  "configuration": {
+    "scale": 2000,
+    "languages": "ara+eng",
+    "segmentation": 3
+  },
+  "parameter_search": false,
+  "gold_changed": false,
+  "mandatory_review_changed": false,
+  "expected_cases": 7,
+  "case_ids": [
+    "known-arabic-failure",
+    "maintenance-obligation",
+    "records-retention",
+    "sensor-acceptance",
+    "english-existing-control",
+    "mixed-exact-scan-page",
+    "mixed-blank-page"
+  ],
+  "original_manifest_sha256": "b2828aab7a4d07a32ddb74836b5abd2fa5a86afd5b68b86675deb7100e6632de",
+  "holdout_freeze_sha256": "3e7e6a5812b1d29cbc26a0058765f93a8af77ccfdd4a4b5444fbefbf66cb0706",
+  "holdout_gold_sha256": "9f855604b3df5dc26f4d10f72a9b57f6fc8d1e071381480bef72951211c48b99",
+  "harness_sha256": {
+    "uploadedOcrAlternative.ts": "e018b4548621ba483cb869982a58658463efa78fad86e06dd20d168aa49227ac",
+    "ocrQualityOracle.ts": "b996605b86078c627c9db00dfd1bb8f0b04e22d0a99269052ebe0d34655f5698",
+    "../backend/public-notice-ocr-worker.ts": "861d005084d371fa9372dc6c8e80340db50a4cf7dbd00020326e27335670a9ae"
+  },
+  "oracle": "full_normalized_page_v2; whole exact normalized text including headings, no omitted/additional words or identifier/numeric changes",
+  "candidate_gate": "All7 cases must preserve exact frozen normalized page; blank must also retain confidence0. Missing/failed/timed-out case cannot pass. Even all7 passes do not establish universal Arabic correctness or authorize removing review.",
+  "limits": {
+    "network": "none",
+    "memory_mib": 768,
+    "cpus": 1,
+    "pids": 64,
+    "tmpfs_mib": 256,
+    "wall_deadline_ms": 120000,
+    "process_deadline_ms": 30000
+  },
+  "no_further_output_driven_search": true,
+  "provider_calls": 0,
+  "customer_data": false
+}

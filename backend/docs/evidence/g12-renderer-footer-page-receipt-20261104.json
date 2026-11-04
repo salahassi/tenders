@@ -1,0 +1,1802 @@
+{
+  "version": 1,
+  "source_hash": "6f2ce72b30825b7d45d109e5e7baf90f2769cedb6505dddcd7027a30980ae771",
+  "render_receipt_sha256": "ef4af22b2d764fd157318a7745a1c99def1fb28f1a91209f1cc493a91fa30e9e",
+  "libreoffice_version": "LibreOfficeDev 26.8.0.0.alpha0 2c87e51eeaa2b413ff4ae097b2705eea1995d8e5",
+  "font_matches": {
+    "Amiri": "Amiri-Regular.ttf: \"Amiri\" \"Regular\"",
+    "Carlito": "Carlito-Regular.ttf: \"Carlito\" \"Regular\""
+  },
+  "synthetic_layout_only": true,
+  "visual_review_performed": false,
+  "microsoft_word_tested": false,
+  "documents": [
+    {
+      "file": "v1-en-combined-combined",
+      "version": 1,
+      "language": "en",
+      "volume": "combined",
+      "renderer_version": "1",
+      "payload_file": "v1-en-combined.payload.json",
+      "payload_sha256": "28c97a892952b4c21190618b43b0e979128c2c9aa0970343fbb9f530293eeb77",
+      "render_model_sha256": "d159a203336c91fec4b465bea34619718b3cc30f03d84c261447306d90a6725e",
+      "docx_sha256": "34197131753f6c95be2e8f8a694c94abbdc348e1c417847e7b1ad946c3f66bc7",
+      "docx_bytes": 970709,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v1-en-combined:gap:1",
+        "v1-en-combined:gap:2",
+        "v1-en-combined:gap:3",
+        "v1-en-combined:gap:4",
+        "v1-en-combined:gap:5",
+        "v1-en-combined:gap:6",
+        "v1-en-combined:gap:7"
+      ],
+      "typed_yellow_gap_count": 7,
+      "inline_table_placeholder_policy": 1,
+      "long_table": false,
+      "pdf": "pdf/v1-en-combined-combined.pdf",
+      "pdf_sha256": "30478b3d5d05d2bf9b0d4108dd3f9ed4c22eae9d089705326274b38be62ef395",
+      "page_count": 4,
+      "ooxml_heading_count": 3,
+      "ooxml_yellow_run_count": 28,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "5c726b487186c642374f6eef19de55a6015a059e920c2a852a3a839fb8c80db9",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v1-en-combined-combined-001.png",
+          "sha256": "ecd61c28c16195526405b854b9ee205606af4edf852729e8411e41865f8f14c8",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 330,
+          "text_sha256": "8d13cc3eeb7bb113086adf752adf5e82c353ed66f51bc18db4452e8b4dfcfbfb",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v1-en-combined-combined-002.png",
+          "sha256": "ed763ca5797c0a5ee645f0af25efe5e4744f3450375882d5e75b75c4b96ed631",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 463,
+          "text_sha256": "d076d01f600681b8b3d2d13b3362b7ac94688547539bade12aae0d28a9d56c8f",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v1-en-combined-combined-003.png",
+          "sha256": "903e4cc005399bf99593a0c76014156ccf24b87398c5cf775010cf05e8f98298",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1557,
+          "text_sha256": "4ec7c0f8ac0b2e0653e8b2d1f3ff482ae4cee2fe631381d2b2c9fe12412199aa",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v1-en-combined-combined-004.png",
+          "sha256": "eb54ab7c071c884599346e6c1fb8e4987b24d2caa3dbd97def377313d8ae13a1",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1067,
+          "text_sha256": "11d414978fa02f9e7ca877d32f63a5df3d83f3d66215c5ccf9f41bb49980db5d",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v1-en-combined-combined-01.png",
+          "sha256": "7beff338f7ca4f8e80ecba62fd30d6f596e8821cce902d1c4f9a695393e3cbc1",
+          "pages": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v1-en-separate-technical",
+      "version": 1,
+      "language": "en",
+      "volume": "technical",
+      "renderer_version": "1",
+      "payload_file": "v1-en-separate.payload.json",
+      "payload_sha256": "96447f11f59aae7fd8cb7cd668a031db9ea48a6748f0c00fac98dfc8f8d0f0fe",
+      "render_model_sha256": "6662ef3a866359c981285a63db7082a88f1e72baf62fe7bd375d0b6056706d7e",
+      "docx_sha256": "ec8fd929b3f5ca9ae936652ab1ab16314ae70dfa7b92f1dc1e0df251d7076da6",
+      "docx_bytes": 970197,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v1-en-separate:gap:1",
+        "v1-en-separate:gap:2",
+        "v1-en-separate:gap:3",
+        "v1-en-separate:gap:4",
+        "v1-en-separate:gap:6",
+        "v1-en-separate:gap:7"
+      ],
+      "typed_yellow_gap_count": 6,
+      "inline_table_placeholder_policy": 1,
+      "long_table": false,
+      "pdf": "pdf/v1-en-separate-technical.pdf",
+      "pdf_sha256": "354410cba72dc19350c08beaebb0656e39c9067dddd3d0bff1c0da5f3edb0d36",
+      "page_count": 4,
+      "ooxml_heading_count": 2,
+      "ooxml_yellow_run_count": 24,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "339a3375d65248e6aa820c778e7a76607cf8ca5be9aacdc166abb5a519025ca6",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v1-en-separate-technical-001.png",
+          "sha256": "223d1cabb97d08fee4c68f02d4c9a8985c3797c4a8fbfba73e452811739f83bf",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 316,
+          "text_sha256": "f146bcd4ad86865c3f01eedd6f3f55e32669b19ca839ad6c138c6113e6de777c",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v1-en-separate-technical-002.png",
+          "sha256": "6b72f4946241fa6360f2e5eaf48551eef9f732a19c5650a6f30b7f0db8ac1d62",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 317,
+          "text_sha256": "69c4440ab3cff7970097bacaa0bba62260f137800cc3c832354390eae98b5a2a",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v1-en-separate-technical-003.png",
+          "sha256": "903e4cc005399bf99593a0c76014156ccf24b87398c5cf775010cf05e8f98298",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1557,
+          "text_sha256": "4ec7c0f8ac0b2e0653e8b2d1f3ff482ae4cee2fe631381d2b2c9fe12412199aa",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v1-en-separate-technical-004.png",
+          "sha256": "221911a80e9dba7ca8bc6c7b11df95cbbe311bc67f4894dd295eba622ca8470f",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 359,
+          "text_sha256": "4ee58a9886626d421c5bc18644128cfc83bc314e7826f66af99cb4e0c904f1d3",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v1-en-separate-technical-01.png",
+          "sha256": "d514b8a2d8dba614e8564ae2591b8171f05bcae16da04509d9d864034f7a3133",
+          "pages": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v1-en-separate-financial",
+      "version": 1,
+      "language": "en",
+      "volume": "financial",
+      "renderer_version": "1",
+      "payload_file": "v1-en-separate.payload.json",
+      "payload_sha256": "96447f11f59aae7fd8cb7cd668a031db9ea48a6748f0c00fac98dfc8f8d0f0fe",
+      "render_model_sha256": "0c399f37add54acf4022e29eacd7674958fd5a322a99e75dd5986683e0053cd4",
+      "docx_sha256": "cc5c753c34d51eb9e919135ce79fd88682fe21b401748038bfe38cb9d37e96dd",
+      "docx_bytes": 970135,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v1-en-separate:gap:2",
+        "v1-en-separate:gap:3",
+        "v1-en-separate:gap:4",
+        "v1-en-separate:gap:5",
+        "v1-en-separate:gap:6"
+      ],
+      "typed_yellow_gap_count": 5,
+      "inline_table_placeholder_policy": 1,
+      "long_table": false,
+      "pdf": "pdf/v1-en-separate-financial.pdf",
+      "pdf_sha256": "76ad24bc5352216fecf18cb0ba502abc1cb86659a9cfcc534c9bdc5ff56688ac",
+      "page_count": 3,
+      "ooxml_heading_count": 2,
+      "ooxml_yellow_run_count": 20,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "f56273d4ac7e2bb7b4968f91423b7d7650c35bdcc2f681fb98963f7aec7d4868",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v1-en-separate-financial-001.png",
+          "sha256": "5741438c84919587d23828125f2ed788abf67116ffff6a4a9b2a5d6d8e694238",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 316,
+          "text_sha256": "6246e0a96e6768a54990583210a663294282cf3d0b3a53cc57d35d05c55e8660",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v1-en-separate-financial-002.png",
+          "sha256": "af5ea7d28e981812237fb836f65c48d86f6d3404e536cc752839e6da0c202f93",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 323,
+          "text_sha256": "80655f267fb5e931a32ccab171056aae1f984c69e743e70e2f4cd894414690af",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v1-en-separate-financial-003.png",
+          "sha256": "aac3b994525bb6ce9b8805438836fca74566e2733f778acf6478b24302d175e6",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1467,
+          "text_sha256": "27dbcd511fffa723bb10e34cbd78d79b9ac1997687a73996d3d169361b2d57eb",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v1-en-separate-financial-01.png",
+          "sha256": "29ccebf856ac0bdb155769077f1fbb7fe14ba6d43ab0aeb1d90e9641e66869ef",
+          "pages": [
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v1-ar-combined-combined",
+      "version": 1,
+      "language": "ar",
+      "volume": "combined",
+      "renderer_version": "1",
+      "payload_file": "v1-ar-combined.payload.json",
+      "payload_sha256": "cac2ca1bc3bfee244477a67ce5a4f207787656c401c278e49fd3ac96299ba9f7",
+      "render_model_sha256": "6b167b41587cd030e4e8bf49f6ad6565eb97fc605413b9b70b3b6d3e9821eeb2",
+      "docx_sha256": "9888150e0c3b54ab38926c4c19ede2f892d620542e4b467cf1587b99b064ba92",
+      "docx_bytes": 971016,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v1-ar-combined:gap:1",
+        "v1-ar-combined:gap:2",
+        "v1-ar-combined:gap:3",
+        "v1-ar-combined:gap:4",
+        "v1-ar-combined:gap:5",
+        "v1-ar-combined:gap:6",
+        "v1-ar-combined:gap:7"
+      ],
+      "typed_yellow_gap_count": 7,
+      "inline_table_placeholder_policy": 1,
+      "long_table": false,
+      "pdf": "pdf/v1-ar-combined-combined.pdf",
+      "pdf_sha256": "16ec83ad0501f2b2b2fb2c9882573f04d6e8b1eb0a5c559871c6e4f920f90890",
+      "page_count": 6,
+      "ooxml_heading_count": 3,
+      "ooxml_yellow_run_count": 14,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "3d6e74a70ebff0330fedddc30fb77ee67573d54b85e38c390b5787c95475eb2b",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v1-ar-combined-combined-001.png",
+          "sha256": "099d600e54d22bea6fff083a01c0e8f5384fe265d8a45e5bb67e6321e52bdd99",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 325,
+          "text_sha256": "86538827575a10392eabcaf981cddc356988f9b35d63f4cbf731b533fdd6d20a",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v1-ar-combined-combined-002.png",
+          "sha256": "29638c3502be58ee0587babffea60dd2c92ee4ca66bf940013d59ec5fa6ad1f0",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 348,
+          "text_sha256": "f7c1d4ed4c1827cd18a669c954eb9dd63e4b7ef33fcede41a0ae4e485a98a343",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v1-ar-combined-combined-003.png",
+          "sha256": "112c02a2ca1c2d64d59bd721c02ee60054b1f9c22eb8e1c5b12c97286696cb5c",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 635,
+          "text_sha256": "d44810e0b5d62984cf44b962a1514b20b3c06507bd19558da5c77793d4885441",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v1-ar-combined-combined-004.png",
+          "sha256": "17f56768b21e00e0f8e0669799f9df17d9d5646e6354231a1d1bdbfcd5c62676",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 719,
+          "text_sha256": "e936fc81028c61835d6565ee2faea74476b7736828159d3cd7844dbdc5d5e529",
+          "text_outside_page": []
+        },
+        {
+          "page": 5,
+          "png": "pages/v1-ar-combined-combined-005.png",
+          "sha256": "305b2be881ac4f68bcc5091100b9fc36100973ca578dcc6ad2fa3e1a212cee44",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 566,
+          "text_sha256": "9582ea480338f73f6827d6cc84d74a439bb4db1ba23916f9a3b1a2b23e3d72f3",
+          "text_outside_page": []
+        },
+        {
+          "page": 6,
+          "png": "pages/v1-ar-combined-combined-006.png",
+          "sha256": "61882fa6b948b6eb3fbd5cb4865fead93742fee663b23c0df2f7f5d510dfc7ae",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 402,
+          "text_sha256": "b431395cdff1f1029e51658133cc59f650128f95ea23c322669d41ee1ca89ee7",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v1-ar-combined-combined-01.png",
+          "sha256": "fa808bf8490b720ab8e7a4e8cfad9935be0651dbb06bea9c5c3eb3e577df8a1e",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v1-ar-separate-technical",
+      "version": 1,
+      "language": "ar",
+      "volume": "technical",
+      "renderer_version": "1",
+      "payload_file": "v1-ar-separate.payload.json",
+      "payload_sha256": "a1534476566fa083aee70c0baa8884253d93246f04c28dc95843421ed5b7b303",
+      "render_model_sha256": "20fd5005a7e5f4265de9c0c7cfafeb0844c47be285b228e5bad7cd7e56e1cedf",
+      "docx_sha256": "690f4def3cd786562a293f72a9c9432817dc993488420b1fa19f2a1bed4059d8",
+      "docx_bytes": 970535,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v1-ar-separate:gap:1",
+        "v1-ar-separate:gap:2",
+        "v1-ar-separate:gap:3",
+        "v1-ar-separate:gap:4",
+        "v1-ar-separate:gap:6",
+        "v1-ar-separate:gap:7"
+      ],
+      "typed_yellow_gap_count": 6,
+      "inline_table_placeholder_policy": 1,
+      "long_table": false,
+      "pdf": "pdf/v1-ar-separate-technical.pdf",
+      "pdf_sha256": "256cacdc9d68b981977de71d0ebe8be9b61505bdf6ece872af37de8066ca292d",
+      "page_count": 5,
+      "ooxml_heading_count": 2,
+      "ooxml_yellow_run_count": 12,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "0eea2748e4dddc8cf61a57329e694be0e5b7838bed1877fa12273a1cce782365",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v1-ar-separate-technical-001.png",
+          "sha256": "6741fe27622f2d6ac40bc0ce2f356c5b05103f95586dce4eff4c1759eb9dac7d",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 311,
+          "text_sha256": "f2b416493f14258433fb80c3d69b3e1577ba9da36171df7257b7e2acb13c4d65",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v1-ar-separate-technical-002.png",
+          "sha256": "eeba48baabe26a0e00736caad40b53bb4077ddf1b0cb8f15650998381c3c19c4",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 245,
+          "text_sha256": "4be59409f8320f2987cc195b1f5288ebb81ca180c7d33529755af6a246ee8983",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v1-ar-separate-technical-003.png",
+          "sha256": "112c02a2ca1c2d64d59bd721c02ee60054b1f9c22eb8e1c5b12c97286696cb5c",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 635,
+          "text_sha256": "d44810e0b5d62984cf44b962a1514b20b3c06507bd19558da5c77793d4885441",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v1-ar-separate-technical-004.png",
+          "sha256": "17f56768b21e00e0f8e0669799f9df17d9d5646e6354231a1d1bdbfcd5c62676",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 719,
+          "text_sha256": "e936fc81028c61835d6565ee2faea74476b7736828159d3cd7844dbdc5d5e529",
+          "text_outside_page": []
+        },
+        {
+          "page": 5,
+          "png": "pages/v1-ar-separate-technical-005.png",
+          "sha256": "9f43aa93d35dd7e5c812a7a6ae5738454bd7a4ce0e6961db9ad4f69c7590a448",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 318,
+          "text_sha256": "89d07be22be040b08b273802a22f8bbdbd5141684bdc89931195a728cbf7c5bd",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v1-ar-separate-technical-01.png",
+          "sha256": "c9b99d18eff27214e72540de6c3777005c3f9da45bbd28213ba775d6ee2b4892",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v1-ar-separate-financial",
+      "version": 1,
+      "language": "ar",
+      "volume": "financial",
+      "renderer_version": "1",
+      "payload_file": "v1-ar-separate.payload.json",
+      "payload_sha256": "a1534476566fa083aee70c0baa8884253d93246f04c28dc95843421ed5b7b303",
+      "render_model_sha256": "f34f02f4ac77d271b0461db2857e36bf62d2c7a1d893bb592061f8e1c4e0e7a9",
+      "docx_sha256": "0b6dae8f9c838320a8c5e462a3ef8f2f2713f81ce31e7c5a478919238ae137ba",
+      "docx_bytes": 970397,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v1-ar-separate:gap:2",
+        "v1-ar-separate:gap:3",
+        "v1-ar-separate:gap:4",
+        "v1-ar-separate:gap:5",
+        "v1-ar-separate:gap:6"
+      ],
+      "typed_yellow_gap_count": 5,
+      "inline_table_placeholder_policy": 1,
+      "long_table": false,
+      "pdf": "pdf/v1-ar-separate-financial.pdf",
+      "pdf_sha256": "74175f5045c0cce47dc3f4afa8f4c1d9aaf7d0ddcaa1bab0ecdb19d3ecfd3a3f",
+      "page_count": 5,
+      "ooxml_heading_count": 2,
+      "ooxml_yellow_run_count": 10,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "72a6966ff7cd07dc9858fb6717f9456f1782d4cc3987e4837245d609b67b4c7f",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v1-ar-separate-financial-001.png",
+          "sha256": "566d260dbb0087cb49ebae3876d24f1c9bff865997fdc20ff8f3406dd88ed415",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 312,
+          "text_sha256": "b4a97d9242c032945f0115187b0373a0d50c585f8cacff4cf8b0162b4666c9e6",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v1-ar-separate-financial-002.png",
+          "sha256": "a601dc5db2a7094b082c819b5f68f2f65a1e146f10224afcd73aa5d9b59187e9",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 245,
+          "text_sha256": "e8b1e67e006befb32fd6b5b856f17167f1174087e30248720d2915ddd3043b47",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v1-ar-separate-financial-003.png",
+          "sha256": "112c02a2ca1c2d64d59bd721c02ee60054b1f9c22eb8e1c5b12c97286696cb5c",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 635,
+          "text_sha256": "d44810e0b5d62984cf44b962a1514b20b3c06507bd19558da5c77793d4885441",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v1-ar-separate-financial-004.png",
+          "sha256": "dd7d163e0c0e928d5c721792efda6df76c989133e9c710d078fa65fe16b29568",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 569,
+          "text_sha256": "3529857df031d34d644446bdf7918f9f5b1176c3d2546a45519b469c02c28625",
+          "text_outside_page": []
+        },
+        {
+          "page": 5,
+          "png": "pages/v1-ar-separate-financial-005.png",
+          "sha256": "ee6e5da7e6afee323d36e774044f616d06c41ece1568e658440c52be8f29dc8d",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 80,
+          "text_sha256": "32be0e92ce1070148e4770287ebb758cc57572b89f23b86e012b07e8619151ff",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v1-ar-separate-financial-01.png",
+          "sha256": "0cd3a0d0fd09a44b9630d112a6aab0bf1e68976bfc751b277338e871672fdd68",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v2-en-combined-combined",
+      "version": 2,
+      "language": "en",
+      "volume": "combined",
+      "renderer_version": "2",
+      "payload_file": "v2-en-combined.payload.json",
+      "payload_sha256": "1356585f3ad5029916f9b1753e0eb14873cead67613a1345f8b9369e688533f6",
+      "render_model_sha256": "105f808c22f0d8288cd83f623752a95a177fd0c54042c9453550db6f815142e1",
+      "docx_sha256": "ab287898477cbea1505419b07b230220cb01751f61ae359f34b5af35b9b21ccf",
+      "docx_bytes": 970637,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v2-en-combined:gap:1",
+        "v2-en-combined:gap:2",
+        "v2-en-combined:gap:3",
+        "v2-en-combined:gap:4",
+        "v2-en-combined:gap:5",
+        "v2-en-combined:gap:6",
+        "v2-en-combined:gap:7"
+      ],
+      "typed_yellow_gap_count": 7,
+      "inline_table_placeholder_policy": 1,
+      "long_table": false,
+      "pdf": "pdf/v2-en-combined-combined.pdf",
+      "pdf_sha256": "2fce261737aa67026fec22460212194db89ed2c71b7fdc3259fc077979e539ba",
+      "page_count": 4,
+      "ooxml_heading_count": 3,
+      "ooxml_yellow_run_count": 28,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "616a109373ef94029ca7b0f978c72df4800ae212317cdbaad0d00a3f14920835",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v2-en-combined-combined-001.png",
+          "sha256": "a9477d245bc2ff37c68bbe9c133e85be9372832870f9a506c4de134ace6845fd",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 338,
+          "text_sha256": "0a19211517d77e950c676da932beaeed7163d82171be90a6643ce67f39032bde",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v2-en-combined-combined-002.png",
+          "sha256": "ed763ca5797c0a5ee645f0af25efe5e4744f3450375882d5e75b75c4b96ed631",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 463,
+          "text_sha256": "d076d01f600681b8b3d2d13b3362b7ac94688547539bade12aae0d28a9d56c8f",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v2-en-combined-combined-003.png",
+          "sha256": "91dc1d4fe5a795addb30385df960581436789a612b2f31fb3b57f9201b79bcfe",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1619,
+          "text_sha256": "a332439a0a5e00f941badb7a2904de89553508917dbf99c0d5c8449b76850436",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v2-en-combined-combined-004.png",
+          "sha256": "3222fc176946ac00ac7cb471982485afe563a8560186c698ca526d0f2e8ea12d",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 830,
+          "text_sha256": "b5fcf920686a49f9182f9e07b490e066a57929de30e2604f21064ea9acd6c876",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v2-en-combined-combined-01.png",
+          "sha256": "d6ff6b9f13a954be8c841a3f75263c68959a66936bb1fa3989369ff75fd8d93c",
+          "pages": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v2-en-separate-technical",
+      "version": 2,
+      "language": "en",
+      "volume": "technical",
+      "renderer_version": "2",
+      "payload_file": "v2-en-separate.payload.json",
+      "payload_sha256": "52b5367b52f255cbd5c4edfa21e35b2997b5f0b71324d3ec76b87154a6fcdeb8",
+      "render_model_sha256": "d58cd2439d100e4cb080d6c30c96a36fff5736f7e47654b9c54afa08761039e9",
+      "docx_sha256": "375377e635a235d584cbf7883817b7387187d7576550f8a90d288a4b36c4d0f9",
+      "docx_bytes": 970125,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v2-en-separate:gap:1",
+        "v2-en-separate:gap:2",
+        "v2-en-separate:gap:3",
+        "v2-en-separate:gap:4",
+        "v2-en-separate:gap:6",
+        "v2-en-separate:gap:7"
+      ],
+      "typed_yellow_gap_count": 6,
+      "inline_table_placeholder_policy": 1,
+      "long_table": false,
+      "pdf": "pdf/v2-en-separate-technical.pdf",
+      "pdf_sha256": "4358d81240e683b6d4449bddd5c85f218453d952996af6c351b9d15cc67e8d30",
+      "page_count": 4,
+      "ooxml_heading_count": 2,
+      "ooxml_yellow_run_count": 24,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "03c2e61b35dfe379d0a0fcf044709bc6323af39a98617227fc0c140c3f14d948",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v2-en-separate-technical-001.png",
+          "sha256": "dc9563cc09194fe17aa7ac87f661df5a1353d98ad3a3030ecac1ecaf079507f7",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 316,
+          "text_sha256": "46f6cecf9e273799a86169af214be5132f958bf156a920ad718e9db2a917363e",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v2-en-separate-technical-002.png",
+          "sha256": "6b72f4946241fa6360f2e5eaf48551eef9f732a19c5650a6f30b7f0db8ac1d62",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 317,
+          "text_sha256": "69c4440ab3cff7970097bacaa0bba62260f137800cc3c832354390eae98b5a2a",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v2-en-separate-technical-003.png",
+          "sha256": "91dc1d4fe5a795addb30385df960581436789a612b2f31fb3b57f9201b79bcfe",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1619,
+          "text_sha256": "a332439a0a5e00f941badb7a2904de89553508917dbf99c0d5c8449b76850436",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v2-en-separate-technical-004.png",
+          "sha256": "7746e0ca61c80589fda580d08d4207076ed8e20461a45ef32518568c5230cb6a",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 122,
+          "text_sha256": "71fa4032b0214755a99d24b75b21e0fdff4fdd110b61879f059314c5f7983f21",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v2-en-separate-technical-01.png",
+          "sha256": "1dcda684415993cb9f40b9d8f8b5e0167dd1ee042f61794812b2f107fb0a41c5",
+          "pages": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v2-en-separate-financial",
+      "version": 2,
+      "language": "en",
+      "volume": "financial",
+      "renderer_version": "2",
+      "payload_file": "v2-en-separate.payload.json",
+      "payload_sha256": "52b5367b52f255cbd5c4edfa21e35b2997b5f0b71324d3ec76b87154a6fcdeb8",
+      "render_model_sha256": "50259cc0410921f989695df8667aa695d7cb797afcb19ca2d0fd2951554d98f8",
+      "docx_sha256": "6f84652821d05da81954f6c7a504c0a2da72fca2fed95523cd81e83cb2d11e31",
+      "docx_bytes": 970053,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v2-en-separate:gap:2",
+        "v2-en-separate:gap:3",
+        "v2-en-separate:gap:4",
+        "v2-en-separate:gap:5",
+        "v2-en-separate:gap:6"
+      ],
+      "typed_yellow_gap_count": 5,
+      "inline_table_placeholder_policy": 1,
+      "long_table": false,
+      "pdf": "pdf/v2-en-separate-financial.pdf",
+      "pdf_sha256": "fa5c8afd28bcc40b192faf4bb98a9d09d43fb78b05f1bd17ade456a8279cab62",
+      "page_count": 3,
+      "ooxml_heading_count": 2,
+      "ooxml_yellow_run_count": 20,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "abcf40d21177ddf2b1789003511cf66cc337cda20f8c5486c1bc18781812eea8",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v2-en-separate-financial-001.png",
+          "sha256": "72f6e694c82ba167d43cd0e89d9e03424ae8b9a70be43028bd0eea950f977222",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 316,
+          "text_sha256": "245c53db1c2e7550d9a56ce57978ad91ae6d93165930288eaded253de087e252",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v2-en-separate-financial-002.png",
+          "sha256": "af5ea7d28e981812237fb836f65c48d86f6d3404e536cc752839e6da0c202f93",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 323,
+          "text_sha256": "80655f267fb5e931a32ccab171056aae1f984c69e743e70e2f4cd894414690af",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v2-en-separate-financial-003.png",
+          "sha256": "71d3178d191e04f849bf6f5d24f4c08a481f4e673f0dd7539eb9e8ddb5e17d2d",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1352,
+          "text_sha256": "42e37d4f4bdcbcbd9d2b61ecd9b43199ef97cd43ccb722eda7325e0ab9e809ff",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v2-en-separate-financial-01.png",
+          "sha256": "2efcde907f1b744f62f0d1f2bb563db5e19485aac2aa8479ee385740f497e0c4",
+          "pages": [
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v2-ar-combined-combined",
+      "version": 2,
+      "language": "ar",
+      "volume": "combined",
+      "renderer_version": "2",
+      "payload_file": "v2-ar-combined.payload.json",
+      "payload_sha256": "ced5c155ad7dc3842276491e4bdff7785d50ad5869177fd52697e9b610bebaa1",
+      "render_model_sha256": "22190a8cc8a8674bc7c53b807a5ceb47891c7e27d9fd95d5a89fd1e753316762",
+      "docx_sha256": "85683a148510af3533eacb7bb64634d4c76fe9e42df69bc5538752d244350c64",
+      "docx_bytes": 970937,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v2-ar-combined:gap:1",
+        "v2-ar-combined:gap:2",
+        "v2-ar-combined:gap:3",
+        "v2-ar-combined:gap:4",
+        "v2-ar-combined:gap:5",
+        "v2-ar-combined:gap:6",
+        "v2-ar-combined:gap:7"
+      ],
+      "typed_yellow_gap_count": 7,
+      "inline_table_placeholder_policy": 1,
+      "long_table": false,
+      "pdf": "pdf/v2-ar-combined-combined.pdf",
+      "pdf_sha256": "5cee6d1abbe35d676e897260837e594a55cb52f0391aa1bc31a70e1692ad91a3",
+      "page_count": 6,
+      "ooxml_heading_count": 3,
+      "ooxml_yellow_run_count": 14,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "b148e700bb6c62596ed8aa529a7a297544fc91b418e33c76ee2b3e737e4685b1",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v2-ar-combined-combined-001.png",
+          "sha256": "f26c9824e82eb2f5c774e915c84772cce4b3c1702ebffda0b6b982c748fab528",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 325,
+          "text_sha256": "254a1851e8dcf42d9a54228e302943788b57fd5f98ef650b3f2e6d7651bf9097",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v2-ar-combined-combined-002.png",
+          "sha256": "29638c3502be58ee0587babffea60dd2c92ee4ca66bf940013d59ec5fa6ad1f0",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 348,
+          "text_sha256": "f7c1d4ed4c1827cd18a669c954eb9dd63e4b7ef33fcede41a0ae4e485a98a343",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v2-ar-combined-combined-003.png",
+          "sha256": "6ea6c05aea77e5b721750708fb422995320cbcf55696778397d54b67ece24434",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 552,
+          "text_sha256": "8e4830c68f558a017f0471072c041de95a4b1a0f28a6b17ad7a6f82451d3d97f",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v2-ar-combined-combined-004.png",
+          "sha256": "17f56768b21e00e0f8e0669799f9df17d9d5646e6354231a1d1bdbfcd5c62676",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 719,
+          "text_sha256": "b50b01d2e10e3cbe79df37ede02edff0e7f24818f75af502351cafae075fb304",
+          "text_outside_page": []
+        },
+        {
+          "page": 5,
+          "png": "pages/v2-ar-combined-combined-005.png",
+          "sha256": "c845aa27105a2df38743aa8773e5cfd3460068864e9776f12c8ab0d4bbdc7a7a",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 566,
+          "text_sha256": "483a109400c034dde6e2d885659cab4fca64983a343bde7749ea7c9e88777b9d",
+          "text_outside_page": []
+        },
+        {
+          "page": 6,
+          "png": "pages/v2-ar-combined-combined-006.png",
+          "sha256": "723404e579b0c41869d06a47f396ad9c465df95373bd7e7cad649fe7fc4f6764",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 402,
+          "text_sha256": "b431395cdff1f1029e51658133cc59f650128f95ea23c322669d41ee1ca89ee7",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v2-ar-combined-combined-01.png",
+          "sha256": "7b02876ba8504ca01aee9eae6ab449aa48975d0a22efb05396a0fc4aadb44195",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v2-ar-separate-technical",
+      "version": 2,
+      "language": "ar",
+      "volume": "technical",
+      "renderer_version": "2",
+      "payload_file": "v2-ar-separate.payload.json",
+      "payload_sha256": "40298a6ca88114599073067d7bffb42378189fea6e592540b39cbdaea89989ff",
+      "render_model_sha256": "cbd9770bc71d4abe98294fd8447da061a932c14b08fc7d2ec00ca67f4bff9fa7",
+      "docx_sha256": "51af2cf4cd2129def7a927ce0612ac3f95076b7ccd0294ca918a766bd2e10848",
+      "docx_bytes": 970462,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v2-ar-separate:gap:1",
+        "v2-ar-separate:gap:2",
+        "v2-ar-separate:gap:3",
+        "v2-ar-separate:gap:4",
+        "v2-ar-separate:gap:6",
+        "v2-ar-separate:gap:7"
+      ],
+      "typed_yellow_gap_count": 6,
+      "inline_table_placeholder_policy": 1,
+      "long_table": false,
+      "pdf": "pdf/v2-ar-separate-technical.pdf",
+      "pdf_sha256": "80b5b1a8be10b4df138b32626294e1bef722aea65001178d60a0ee0fc4072c90",
+      "page_count": 5,
+      "ooxml_heading_count": 2,
+      "ooxml_yellow_run_count": 12,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "6426b28d0e874acec510f89ab0e33ef98fed391ccc69a8f262a5e6ae581cad48",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v2-ar-separate-technical-001.png",
+          "sha256": "d0cf7fb8d581b55be0e438f98747e7fbbf080ba9aeadc184e0cda6649db3dbb6",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 311,
+          "text_sha256": "b3f2dfedf92bbdce34b2860521e7dafd59c42eaed34454ebb0a0eaa508642948",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v2-ar-separate-technical-002.png",
+          "sha256": "eeba48baabe26a0e00736caad40b53bb4077ddf1b0cb8f15650998381c3c19c4",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 245,
+          "text_sha256": "4be59409f8320f2987cc195b1f5288ebb81ca180c7d33529755af6a246ee8983",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v2-ar-separate-technical-003.png",
+          "sha256": "6ea6c05aea77e5b721750708fb422995320cbcf55696778397d54b67ece24434",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 552,
+          "text_sha256": "8e4830c68f558a017f0471072c041de95a4b1a0f28a6b17ad7a6f82451d3d97f",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v2-ar-separate-technical-004.png",
+          "sha256": "17f56768b21e00e0f8e0669799f9df17d9d5646e6354231a1d1bdbfcd5c62676",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 719,
+          "text_sha256": "b50b01d2e10e3cbe79df37ede02edff0e7f24818f75af502351cafae075fb304",
+          "text_outside_page": []
+        },
+        {
+          "page": 5,
+          "png": "pages/v2-ar-separate-technical-005.png",
+          "sha256": "9f43aa93d35dd7e5c812a7a6ae5738454bd7a4ce0e6961db9ad4f69c7590a448",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 318,
+          "text_sha256": "6698b47cc3c109406a9a1b97afb1e4a2966ef12eada9f3d190462c84d17b1dbd",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v2-ar-separate-technical-01.png",
+          "sha256": "33875175147d01227a0649a2886751c9300ec760ea19a164872e405cd07d741a",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v2-ar-separate-financial",
+      "version": 2,
+      "language": "ar",
+      "volume": "financial",
+      "renderer_version": "2",
+      "payload_file": "v2-ar-separate.payload.json",
+      "payload_sha256": "40298a6ca88114599073067d7bffb42378189fea6e592540b39cbdaea89989ff",
+      "render_model_sha256": "0fd57b1576c5b0151e8049247f4a36acd400f2f71e5aec972977caf28bb85f68",
+      "docx_sha256": "9f19c18cbe66764facf689462d6e76346ba2de479c0ee6372e767d72945c98a1",
+      "docx_bytes": 970313,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v2-ar-separate:gap:2",
+        "v2-ar-separate:gap:3",
+        "v2-ar-separate:gap:4",
+        "v2-ar-separate:gap:5",
+        "v2-ar-separate:gap:6"
+      ],
+      "typed_yellow_gap_count": 5,
+      "inline_table_placeholder_policy": 1,
+      "long_table": false,
+      "pdf": "pdf/v2-ar-separate-financial.pdf",
+      "pdf_sha256": "b09cbaa56431e53cb07f2f92c5bf0bbd72ac846c327cd523e7b0d4dc801ac40f",
+      "page_count": 5,
+      "ooxml_heading_count": 2,
+      "ooxml_yellow_run_count": 10,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "ef158db8da32a726010248ccea3aa3b2f02d3e0fc491db7069d8170d27f8d56c",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v2-ar-separate-financial-001.png",
+          "sha256": "fc2eb7327e48a07671e30b744dc161871f624554381d4792f010b364063a3f9c",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 312,
+          "text_sha256": "db4338ccb3bde69cceb616587f08c1139dc7741b1f36b06b4054b75e9b827258",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v2-ar-separate-financial-002.png",
+          "sha256": "a601dc5db2a7094b082c819b5f68f2f65a1e146f10224afcd73aa5d9b59187e9",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 245,
+          "text_sha256": "e8b1e67e006befb32fd6b5b856f17167f1174087e30248720d2915ddd3043b47",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v2-ar-separate-financial-003.png",
+          "sha256": "6ea6c05aea77e5b721750708fb422995320cbcf55696778397d54b67ece24434",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 552,
+          "text_sha256": "4ca46952c428127da26142459bab2280e138853f079b392594166c0cec09ee4b",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v2-ar-separate-financial-004.png",
+          "sha256": "608021217d4de0230e3ed1fa550d029cadf0e6c226418c3221150f7f5615331b",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 569,
+          "text_sha256": "3529857df031d34d644446bdf7918f9f5b1176c3d2546a45519b469c02c28625",
+          "text_outside_page": []
+        },
+        {
+          "page": 5,
+          "png": "pages/v2-ar-separate-financial-005.png",
+          "sha256": "ee6e5da7e6afee323d36e774044f616d06c41ece1568e658440c52be8f29dc8d",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 80,
+          "text_sha256": "32be0e92ce1070148e4770287ebb758cc57572b89f23b86e012b07e8619151ff",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v2-ar-separate-financial-01.png",
+          "sha256": "c295d61b95845c51dd0236fe0db4fefafa2546185e8305824668825f35877cb4",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v3-en-combined-combined",
+      "version": 3,
+      "language": "en",
+      "volume": "combined",
+      "renderer_version": "3",
+      "payload_file": "v3-en-combined.payload.json",
+      "payload_sha256": "34d3dd2743399afb88d1d4ea5b175b9d5a7aa09123589d995c36f793ad264672",
+      "render_model_sha256": "acddfad6ca2f4b5ce2fd7b0fa02a3ebec197d9a7f5e1f027213d5b34585abca3",
+      "docx_sha256": "e0fcb263c263fc401ea9e324cd3aca951def4bf8ea7f00ef612e12a6da77a4e9",
+      "docx_bytes": 972324,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v3-en-combined:gap:1",
+        "v3-en-combined:gap:2",
+        "v3-en-combined:gap:3",
+        "v3-en-combined:gap:4",
+        "v3-en-combined:gap:5",
+        "v3-en-combined:gap:6",
+        "v3-en-combined:gap:7"
+      ],
+      "typed_yellow_gap_count": 7,
+      "inline_table_placeholder_policy": 2,
+      "long_table": true,
+      "pdf": "pdf/v3-en-combined-combined.pdf",
+      "pdf_sha256": "96698e3a2430f5da7c9425dd19e7bfaa969de29bc62c081e9e1ebfde7a5acb81",
+      "page_count": 9,
+      "ooxml_heading_count": 3,
+      "ooxml_yellow_run_count": 40,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "13514932d8093223a496783aaa4da3f18da43055e0ba6e302f7098206fd291f3",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v3-en-combined-combined-001.png",
+          "sha256": "6568d07a3b34606d59bc9d734269ee7c6abff42ea058b899bebe02bf86dd42e4",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 366,
+          "text_sha256": "083457241c35d10818d26edbdd0af4711988ff02788a62c403d0fea6bd9ca09d",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v3-en-combined-combined-002.png",
+          "sha256": "ed763ca5797c0a5ee645f0af25efe5e4744f3450375882d5e75b75c4b96ed631",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 463,
+          "text_sha256": "d076d01f600681b8b3d2d13b3362b7ac94688547539bade12aae0d28a9d56c8f",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v3-en-combined-combined-003.png",
+          "sha256": "ad046db36c4f859b39007fedf016da6cb6e8d26c379c7db16cd7cb003e176151",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1749,
+          "text_sha256": "57c184d23b34f789a5c046a395f10db6db2257a2f7cfbf4e74a2924386a8e568",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v3-en-combined-combined-004.png",
+          "sha256": "adf4330f0b1a8ae9173b6277b1e6c41fbd4059b0e2d6c0d7ecff47bebea290d0",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1511,
+          "text_sha256": "1c4c2a4e732215cdc3459f709c69ccd1ed0622c7f4f42b6232bcf8a73eff6bee",
+          "text_outside_page": []
+        },
+        {
+          "page": 5,
+          "png": "pages/v3-en-combined-combined-005.png",
+          "sha256": "48b6f99ee718782cdb1d0b18cba6c4a292cb3f7189b2798dbc8f3e42a7c9642c",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1511,
+          "text_sha256": "f2d33f4fb4da2a7ca0d6e50ba86953ad5d4821291bb4f86a8c30e1efd9f1e1bd",
+          "text_outside_page": []
+        },
+        {
+          "page": 6,
+          "png": "pages/v3-en-combined-combined-006.png",
+          "sha256": "0029f90146052c73b3edccfbe230837c0b8bca49ff36bd1b0441f6a439bb0e34",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1511,
+          "text_sha256": "7e13b3e487fb2f91fab5ece374e67096456ffeffffbff69a8f5bf5bf81add7e7",
+          "text_outside_page": []
+        },
+        {
+          "page": 7,
+          "png": "pages/v3-en-combined-combined-007.png",
+          "sha256": "ba30ee0779cfd6fe327d17605a6cda4049b8151f43b011c151aa39889e501ffc",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1511,
+          "text_sha256": "c53d1106aed41096391dfd70c22edcdd3d15c85c14382765252d9a8ae378cd79",
+          "text_outside_page": []
+        },
+        {
+          "page": 8,
+          "png": "pages/v3-en-combined-combined-008.png",
+          "sha256": "8173c748cc0c421421d510fb98b4ff9d75e89d4ed613aa9797f3531559bcb2a3",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1307,
+          "text_sha256": "e4adc927c5b99c47d68652edbe98a778cb2efc3d29f918058693a465e6bf63c4",
+          "text_outside_page": []
+        },
+        {
+          "page": 9,
+          "png": "pages/v3-en-combined-combined-009.png",
+          "sha256": "0ce43f242ce01daca98868b21ae8755f826b0271b421294544c2942ff9ed5663",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 392,
+          "text_sha256": "6bd437535bb353f6293c7557b34ca9f5144fdfe544a052f249d4c505a467b88a",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v3-en-combined-combined-01.png",
+          "sha256": "9b11fff92b4782b3fbd5e8bde85ae54cec392c9483c2d8ca42dde3a3758c5786",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "file": "contact-sheets/v3-en-combined-combined-02.png",
+          "sha256": "cd20693da5c8dbcc43e02e5c8f7f7f4fca452d2f2fb28b384e06cc2076149741",
+          "pages": [
+            7,
+            8,
+            9
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v3-en-separate-technical",
+      "version": 3,
+      "language": "en",
+      "volume": "technical",
+      "renderer_version": "3",
+      "payload_file": "v3-en-separate.payload.json",
+      "payload_sha256": "1744cd1c7867aaffaa15539d2ffa5246801d55c6a047676f12d6cf312694418d",
+      "render_model_sha256": "cd5ef79cfa6f2a57a60bd2626a2b63a7d07fcbef8caff0d3c5e13819db04f5c7",
+      "docx_sha256": "ebe4614a74ad11c61bb0b10c29ea43529b6f12a043c8b48acdf19e9c983948d6",
+      "docx_bytes": 970263,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v3-en-separate:gap:1",
+        "v3-en-separate:gap:2",
+        "v3-en-separate:gap:3",
+        "v3-en-separate:gap:4",
+        "v3-en-separate:gap:6",
+        "v3-en-separate:gap:7"
+      ],
+      "typed_yellow_gap_count": 6,
+      "inline_table_placeholder_policy": 2,
+      "long_table": false,
+      "pdf": "pdf/v3-en-separate-technical.pdf",
+      "pdf_sha256": "497b874abc1d67a102201a2696e8d19e46b5e49cb2ea2d245dcf04c6a760b3c4",
+      "page_count": 4,
+      "ooxml_heading_count": 2,
+      "ooxml_yellow_run_count": 33,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "339a3375d65248e6aa820c778e7a76607cf8ca5be9aacdc166abb5a519025ca6",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v3-en-separate-technical-001.png",
+          "sha256": "7acce28bf7f889c72c1d3af20cacb3da54694799b01e1b86aeed0492f3f6b96b",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 352,
+          "text_sha256": "e0c252086f8aa817dd5244c8e1c1f0206f338182080ebb6189bdb929d9f05b23",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v3-en-separate-technical-002.png",
+          "sha256": "6b72f4946241fa6360f2e5eaf48551eef9f732a19c5650a6f30b7f0db8ac1d62",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 317,
+          "text_sha256": "69c4440ab3cff7970097bacaa0bba62260f137800cc3c832354390eae98b5a2a",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v3-en-separate-technical-003.png",
+          "sha256": "ad046db36c4f859b39007fedf016da6cb6e8d26c379c7db16cd7cb003e176151",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1749,
+          "text_sha256": "57c184d23b34f789a5c046a395f10db6db2257a2f7cfbf4e74a2924386a8e568",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v3-en-separate-technical-004.png",
+          "sha256": "8d0755522e993c82b980b8e3a9f79fd27143491cc241c482c0fc3a80ee96f64f",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 122,
+          "text_sha256": "71fa4032b0214755a99d24b75b21e0fdff4fdd110b61879f059314c5f7983f21",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v3-en-separate-technical-01.png",
+          "sha256": "0d4f970f02f2d870610e5a5a4e84a160e4b02a6544a0542da3a24e3b3504a96a",
+          "pages": [
+            1,
+            2,
+            3,
+            4
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v3-en-separate-financial",
+      "version": 3,
+      "language": "en",
+      "volume": "financial",
+      "renderer_version": "3",
+      "payload_file": "v3-en-separate.payload.json",
+      "payload_sha256": "1744cd1c7867aaffaa15539d2ffa5246801d55c6a047676f12d6cf312694418d",
+      "render_model_sha256": "26e340cea425650edc3dd4ef56288df1f2c8dafdd083133251857ef0f79fb5a5",
+      "docx_sha256": "781d057859dbc784c48faa8a9c95a6866fd27ae769ed3789e2f36fa322949eaf",
+      "docx_bytes": 970100,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v3-en-separate:gap:2",
+        "v3-en-separate:gap:3",
+        "v3-en-separate:gap:4",
+        "v3-en-separate:gap:5",
+        "v3-en-separate:gap:6"
+      ],
+      "typed_yellow_gap_count": 5,
+      "inline_table_placeholder_policy": 2,
+      "long_table": false,
+      "pdf": "pdf/v3-en-separate-financial.pdf",
+      "pdf_sha256": "8a670311638bcef8e222e5b1c314f1e729f20e32105fea037e54e1b0250b9391",
+      "page_count": 3,
+      "ooxml_heading_count": 2,
+      "ooxml_yellow_run_count": 23,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "5bb0c53e97199a42b2ae87cca85cb8c047e2d33c760e89ab93e582473238bb0f",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v3-en-separate-financial-001.png",
+          "sha256": "bff4ae3d0bd4cedad14568fed818fee1918823e8920a437a8d980ab8daa322ee",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 352,
+          "text_sha256": "ef62c2d7c486398e6525745cd5e4cd6f198ef33d9d59d2632d98430c04f1fa64",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v3-en-separate-financial-002.png",
+          "sha256": "af5ea7d28e981812237fb836f65c48d86f6d3404e536cc752839e6da0c202f93",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 323,
+          "text_sha256": "80655f267fb5e931a32ccab171056aae1f984c69e743e70e2f4cd894414690af",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v3-en-separate-financial-003.png",
+          "sha256": "e8f6c552aaec7e8faa22377dca32afed4f76c8e066ded5c182d364529294ef6a",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 1381,
+          "text_sha256": "bdda6d71026a023a0af57561c296868b0ca6461a6ec59d3b024ae56228e1d29f",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v3-en-separate-financial-01.png",
+          "sha256": "2970b2b4199c74fdcd6f1228a69a5a4905bf986a6c5a4b084c6a4e13270c73da",
+          "pages": [
+            1,
+            2,
+            3
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v3-ar-combined-combined",
+      "version": 3,
+      "language": "ar",
+      "volume": "combined",
+      "renderer_version": "3",
+      "payload_file": "v3-ar-combined.payload.json",
+      "payload_sha256": "1cec8cf40f520a79cd59be4ec880eee7f6c119029b493b5a342bcb06eaba732c",
+      "render_model_sha256": "cbcb797081b34854fd41dd859b8583e27321d5d5ee1c8d4776ea715dbd0c76fb",
+      "docx_sha256": "6836bf34efac2797ab5dc5249e861e297d2873248e98cf182d43308d303cb489",
+      "docx_bytes": 971024,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v3-ar-combined:gap:1",
+        "v3-ar-combined:gap:2",
+        "v3-ar-combined:gap:3",
+        "v3-ar-combined:gap:4",
+        "v3-ar-combined:gap:5",
+        "v3-ar-combined:gap:6",
+        "v3-ar-combined:gap:7"
+      ],
+      "typed_yellow_gap_count": 7,
+      "inline_table_placeholder_policy": 2,
+      "long_table": false,
+      "pdf": "pdf/v3-ar-combined-combined.pdf",
+      "pdf_sha256": "e40e343289415bae0ccdbdabab24f543276e2c8eafb6d5cad5ca4334841d58d0",
+      "page_count": 6,
+      "ooxml_heading_count": 3,
+      "ooxml_yellow_run_count": 17,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "e88e3966bdda22c2ac141ff07f9f472460325a4cd287cd2927a30c9361820bd1",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v3-ar-combined-combined-001.png",
+          "sha256": "dc5f19e0b3b25426dfda5071ed439a7c3e33920e6d1cd66ca2271186742b3f3f",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 353,
+          "text_sha256": "216a431ebf704afa6f207b1bd9790ed7239e261935702649d5cfa6139a194b43",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v3-ar-combined-combined-002.png",
+          "sha256": "29638c3502be58ee0587babffea60dd2c92ee4ca66bf940013d59ec5fa6ad1f0",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 348,
+          "text_sha256": "f7c1d4ed4c1827cd18a669c954eb9dd63e4b7ef33fcede41a0ae4e485a98a343",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v3-ar-combined-combined-003.png",
+          "sha256": "b133e7d0efdd36b7e68f4bb08502fd1efd676586a5fdb2a6db1ef10cd29a2b42",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 719,
+          "text_sha256": "d62d3133860ad578293b1f7286ba53468231a738758b035472255479b49a8090",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v3-ar-combined-combined-004.png",
+          "sha256": "cdd8adc00c5a25e732252bda8740eea9607bff32adcc25712609dcaf4d0ae2d7",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 799,
+          "text_sha256": "dfa9b3a45b971c9d0738e7df431c39fd1f9f6bc0dd42586f9e987b4eb7bfe466",
+          "text_outside_page": []
+        },
+        {
+          "page": 5,
+          "png": "pages/v3-ar-combined-combined-005.png",
+          "sha256": "4736fb9d90c4e9f543bfc04e03310d825d25b2d6da21517cc1c48accbf68fdef",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 570,
+          "text_sha256": "b80e2199721a2ef736a83f30998899f5e209c02a01c916c02d5307f1e35d7083",
+          "text_outside_page": []
+        },
+        {
+          "page": 6,
+          "png": "pages/v3-ar-combined-combined-006.png",
+          "sha256": "1c7a8da43fbd514aad5d0e5aad3bad6446053ccda22a71969b8ee6e49367384c",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 208,
+          "text_sha256": "3670bf6399a701ca6522aa83ee35923417156acb2381dccefd905db4dc66ec51",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v3-ar-combined-combined-01.png",
+          "sha256": "0adbf9094b51af600d6e536c2741b3b3a3483288f7195081c36449e8ae71b134",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v3-ar-separate-technical",
+      "version": 3,
+      "language": "ar",
+      "volume": "technical",
+      "renderer_version": "3",
+      "payload_file": "v3-ar-separate.payload.json",
+      "payload_sha256": "e04816f090d22fd4eea803daf774037446a8bbe786c28002d5d5185f403f6117",
+      "render_model_sha256": "4a86cd48775c018fd8ac9732b225a2330becfc09563ffd00af8b254dca736ee3",
+      "docx_sha256": "afce68aaabdf87fe10b2e3069b0e7decef4c8b767d940b25c4ff6ce4c2826d26",
+      "docx_bytes": 970538,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v3-ar-separate:gap:1",
+        "v3-ar-separate:gap:2",
+        "v3-ar-separate:gap:3",
+        "v3-ar-separate:gap:4",
+        "v3-ar-separate:gap:6",
+        "v3-ar-separate:gap:7"
+      ],
+      "typed_yellow_gap_count": 6,
+      "inline_table_placeholder_policy": 2,
+      "long_table": false,
+      "pdf": "pdf/v3-ar-separate-technical.pdf",
+      "pdf_sha256": "cca0539f096f3595a65c46dee0b9c1b76c6d5dae3c020886c5073fd4b7a007d7",
+      "page_count": 5,
+      "ooxml_heading_count": 2,
+      "ooxml_yellow_run_count": 14,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "404a9156419358933be06d8a6d19eb3c4d7b056adfcbd360597ab27afe57ce4a",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v3-ar-separate-technical-001.png",
+          "sha256": "d371964e6349c2c38f93f4f61a827d42b40a3f4ec858644cfe213ad4b9336509",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 339,
+          "text_sha256": "88be9ec8e059cec40c6dc38a0be6e5ddd4c60ed3ac5d9c8097777949a6d0c4a9",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v3-ar-separate-technical-002.png",
+          "sha256": "eeba48baabe26a0e00736caad40b53bb4077ddf1b0cb8f15650998381c3c19c4",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 245,
+          "text_sha256": "4be59409f8320f2987cc195b1f5288ebb81ca180c7d33529755af6a246ee8983",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v3-ar-separate-technical-003.png",
+          "sha256": "b133e7d0efdd36b7e68f4bb08502fd1efd676586a5fdb2a6db1ef10cd29a2b42",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 720,
+          "text_sha256": "47ac0fbaad1ed1ac52610b73db9d0e1e9dc681ade15bf1f61e78d1b553ba9a8c",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v3-ar-separate-technical-004.png",
+          "sha256": "cdd8adc00c5a25e732252bda8740eea9607bff32adcc25712609dcaf4d0ae2d7",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 799,
+          "text_sha256": "2f8118806b34dcd79d072fd6ede25d2f39fb265d4e4309fea8ceb7c9393583a7",
+          "text_outside_page": []
+        },
+        {
+          "page": 5,
+          "png": "pages/v3-ar-separate-technical-005.png",
+          "sha256": "37ec5100f32516a0b43bdcb0c4bf5302c980b15ae8f2dc5db4280439159793d1",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 113,
+          "text_sha256": "1d0a682459ee16c042976a45bc2b413d2d3ce989a0feb36579e6f051583b4784",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v3-ar-separate-technical-01.png",
+          "sha256": "8af29cfaad834f839f963f29e4863f128d6c04f827e7ec44176c4a732e7c5630",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "file": "v3-ar-separate-financial",
+      "version": 3,
+      "language": "ar",
+      "volume": "financial",
+      "renderer_version": "3",
+      "payload_file": "v3-ar-separate.payload.json",
+      "payload_sha256": "e04816f090d22fd4eea803daf774037446a8bbe786c28002d5d5185f403f6117",
+      "render_model_sha256": "6096195a5181184187b0e2f4c4073abdd54adfc4bef54cea5610c4a49b8d9b3a",
+      "docx_sha256": "a71ad6a9789ee5bee65ee766f2eac1928669d07f2af85079d8f40b2eb4c11cda",
+      "docx_bytes": 971249,
+      "verify_export_docx": true,
+      "expected_gap_ids": [
+        "v3-ar-separate:gap:2",
+        "v3-ar-separate:gap:3",
+        "v3-ar-separate:gap:4",
+        "v3-ar-separate:gap:5",
+        "v3-ar-separate:gap:6"
+      ],
+      "typed_yellow_gap_count": 5,
+      "inline_table_placeholder_policy": 2,
+      "long_table": true,
+      "pdf": "pdf/v3-ar-separate-financial.pdf",
+      "pdf_sha256": "4bb240ab27c13fd18d8e7346959eae12418fcaf7083efd1d0c409cd48ce883e8",
+      "page_count": 10,
+      "ooxml_heading_count": 2,
+      "ooxml_yellow_run_count": 11,
+      "toc_field_present": true,
+      "page_field_present": true,
+      "update_fields_enabled": true,
+      "pdf_font_report_sha256": "fae9d7fdd2da0b423526a3ea2b2a60912a7d49a9b4217d4b3063b9ef3b5b4d4e",
+      "pages": [
+        {
+          "page": 1,
+          "png": "pages/v3-ar-separate-financial-001.png",
+          "sha256": "e2901ca8b4e190c0bfec0a2bf851c7ce9b7675f19d8842cba91142e07f9ddc31",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 340,
+          "text_sha256": "dee5acb1ad4ec07eff908b84f002f15883e6c2dad3a785bfaf2a99298b0efac8",
+          "text_outside_page": []
+        },
+        {
+          "page": 2,
+          "png": "pages/v3-ar-separate-financial-002.png",
+          "sha256": "a601dc5db2a7094b082c819b5f68f2f65a1e146f10224afcd73aa5d9b59187e9",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 245,
+          "text_sha256": "e8b1e67e006befb32fd6b5b856f17167f1174087e30248720d2915ddd3043b47",
+          "text_outside_page": []
+        },
+        {
+          "page": 3,
+          "png": "pages/v3-ar-separate-financial-003.png",
+          "sha256": "6ea6c05aea77e5b721750708fb422995320cbcf55696778397d54b67ece24434",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 552,
+          "text_sha256": "8292f3d94ea809dfdec9f473054b092ecb7fd372726937d4c3e340474c0e8a4c",
+          "text_outside_page": []
+        },
+        {
+          "page": 4,
+          "png": "pages/v3-ar-separate-financial-004.png",
+          "sha256": "8ae08da7bc66005b124784bab5b7c31dbf6d2a54c18babe6af0f55267a6fbd59",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 584,
+          "text_sha256": "ffe268e741dda2c9c3492ddf2a9bc754280279060e7597d0ba4bf797779f02e9",
+          "text_outside_page": []
+        },
+        {
+          "page": 5,
+          "png": "pages/v3-ar-separate-financial-005.png",
+          "sha256": "d7b20a3da9f1eb9ab4035cd8b1a661d7f147ff28af438eafa9e8946419d15474",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 546,
+          "text_sha256": "6c79e1779f876a706730bc8dbb4387ed5c6c296ddb0f7e19b0cca9a79a0662ca",
+          "text_outside_page": []
+        },
+        {
+          "page": 6,
+          "png": "pages/v3-ar-separate-financial-006.png",
+          "sha256": "11584108f24f8e98dc027ee38cfc82f80df4f2f4df1eaf111a2c40354c0a2d66",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 556,
+          "text_sha256": "12888e9c74b06adf2c1ba1e65b9c5b508be4155474cf22008ffc4b9f3768ff13",
+          "text_outside_page": []
+        },
+        {
+          "page": 7,
+          "png": "pages/v3-ar-separate-financial-007.png",
+          "sha256": "9e6246e3d11e2a6ce1b71076092153122d16f6de0cb76469ec314b405797fa67",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 556,
+          "text_sha256": "cc68c3fd7d94224ef53263e175cae3ff6b1c22039b71b596e4bcee3cb59d9ff2",
+          "text_outside_page": []
+        },
+        {
+          "page": 8,
+          "png": "pages/v3-ar-separate-financial-008.png",
+          "sha256": "105c3baf8518a268c1c98bc22baf99f79064e33d4ca71e288524b3ef774a2d8e",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 556,
+          "text_sha256": "d68b20fa9ceba74faef4fe1a7363b5b6f1825090deb26c66408cb31385c05741",
+          "text_outside_page": []
+        },
+        {
+          "page": 9,
+          "png": "pages/v3-ar-separate-financial-009.png",
+          "sha256": "c450171e3cdf2279a3775e70b2136782df8021de010403ba19fba6351bf9f872",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 556,
+          "text_sha256": "d4052436db5f6a6de6f58b54e9a82dfb6a72affe5b4ce14f44db514c1273ee75",
+          "text_outside_page": []
+        },
+        {
+          "page": 10,
+          "png": "pages/v3-ar-separate-financial-010.png",
+          "sha256": "c6f274e2c58a26b8aaf0da9568dbc2d12f6c122d2fa3ce6bc40c60c89fda6de8",
+          "width_pt": 595.303955078125,
+          "height_pt": 841.8897705078125,
+          "text_characters": 409,
+          "text_sha256": "bf69b48df812114a90a7d3b8c24e010eb5f8c3affff757ec86f301a886c25606",
+          "text_outside_page": []
+        }
+      ],
+      "contact_sheets": [
+        {
+          "file": "contact-sheets/v3-ar-separate-financial-01.png",
+          "sha256": "00b3927c6c8db85cb72a05c3e6dbcdda334a6edbffa9fff6d47627d3f4c02071",
+          "pages": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
+        },
+        {
+          "file": "contact-sheets/v3-ar-separate-financial-02.png",
+          "sha256": "bfaef7ad2fa1f2ce7500b2e47e6d8f87f47a1e1187e027a214227289ddf811db",
+          "pages": [
+            7,
+            8,
+            9,
+            10
+          ]
+        }
+      ]
+    }
+  ]
+}

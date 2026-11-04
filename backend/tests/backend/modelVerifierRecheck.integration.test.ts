@@ -8,7 +8,7 @@ import {
   it,
   vi,
 } from "vitest";
-import { workflowFixture } from "./workflowFixture";
+import { workflowFixture, claimModelWorker4 } from "./workflowFixture";
 import { createRecheckFixture } from "./analysisVerifierRecheckFixture";
 import { executeGuardedModel } from "../../supabase/functions/_shared/modelGraph";
 import {
@@ -36,7 +36,7 @@ type Mode = "valid" | "semantic_defect" | "malformed" | "correct_report";
 async function setup(mode: Mode = "valid") {
   const s = await createRecheckFixture(f);
   const child = await s.createChild();
-  let job = await s.rpc("claim_backend_job_v2");
+  let job = await claimModelWorker4(f, s.rpc);
   expect(job.id).toBe(child.id);
   const phases: string[] = [],
     prompts: any[] = [],
@@ -151,7 +151,7 @@ async function setup(mode: Mode = "valid") {
     return executeGuardedModel({ ...options, job });
   }
   async function resume() {
-    job = await s.rpc("claim_backend_job_v2");
+    job = await claimModelWorker4(f, s.rpc);
     expect(job.id).toBe(child.id);
   }
   async function run() {

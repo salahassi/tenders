@@ -1,11 +1,20 @@
 // @vitest-environment node
 import { readFile } from "node:fs/promises";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from "vitest";
-import { workflowFixture } from "./workflowFixture";
+import {
+  workflowFixture,
+  claimModelWorker4,
+  historicalGenerationCommand,
+} from "./workflowFixture";
 
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
-  f = await workflowFixture();
+  // Frozen legacy retry/accounting behavior is exercised at its deployed
+  // migration boundary. New current-contract admission has its own tests.
+  f = await workflowFixture(
+    undefined,
+    "20261104142525_proposal_issuance_deadline.sql",
+  );
 }, 30000);
 afterAll(async () => f?.db.close());
 beforeEach(async () => f.db.exec("begin"));
@@ -57,7 +66,7 @@ async function startWithSiblings() {
     id: document.id,
     expected_revision: document.revision,
   });
-  const plan = await f.command("proposal.generate", {
+  const plan = await historicalGenerationCommand(f, "proposal.generate", {
     id: opportunity.id,
     expected_revision: opportunity.revision,
   });
@@ -67,7 +76,7 @@ async function startWithSiblings() {
     "select app_private.enqueue_generation(p,s.task,s.input) from public.generation_plans p join public.generation_steps s on s.plan_id=p.id where p.id=$1 order by s.ordinal limit 1",
     [plan.id],
   );
-  const blocked = await f.rpc("claim_backend_job");
+  const blocked = await claimModelWorker4(f, f.rpc);
   await f.rpc("fail_generation", [
     blocked.id,
     blocked.lease_token,
@@ -79,7 +88,7 @@ async function startWithSiblings() {
     status: "blocked",
     error_code: "MODEL_CORRECTION_EXHAUSTED",
   });
-  const sibling = await f.rpc("claim_backend_job");
+  const sibling = await claimModelWorker4(f, f.rpc);
   expect(sibling.id).not.toBe(blocked.id);
   expect(sibling.entity_id).toBe(plan.id);
   return { plan, blocked, sibling };
@@ -589,10 +598,15 @@ it("ordinary generation retry clears the blocked aggregate and preserves complet
     input_hash: before.input_hash,
   });
   expect(await jobRow(sibling.id)).toEqual(completed);
-  const lease = await f.rpc("claim_backend_job");
+  const lease = await claimModelWorker4(f, f.rpc);
   expect(lease.id).toBe(blocked.id);
   expect(lease.attempts).toBe(before.attempts + 1);
-  expect(lease.checkpoint).toEqual(before.checkpoint);
+  expect(lease.checkpoint).toEqual({
+    ...before.checkpoint,
+    issuance_request_id: expect.any(String),
+    issuance_deadline_version: 1,
+    minimum_worker_executor: 4,
+  });
 });
 
 it("ordinary cancellation remains canceled even with a blocked child", async () => {
@@ -738,3 +752,97 @@ it("does not expose the private trigger as an executable application operation",
     ).rows,
   ).toEqual([{ anon: false, authenticated: false, service_role: false }]);
 });
+
+it.each([
+  ["terminal-proven", true],
+  ["terminal-unproven", false],
+  ["active-remote", false],
+  ["before-boundary", false],
+  ["at-boundary", true],
+  ["after-boundary", true],
+  ["later-deadline", false],
+  ["at-deadline", true],
+  ["manual-terminal", false],
+] as const)(
+  "retry recovery enforces %s and retains immutable unknown receipt with idempotent lineage",
+  async (condition, allowed) => {
+    const { blocked } = await startWithSiblings();
+    await f.db.query(
+      "update public.jobs set checkpoint=checkpoint||jsonb_build_object('model_routing',jsonb_build_object('mode',$2::text)) where id=$1",
+      [blocked.id, condition === "manual-terminal" ? "manual" : "round_robin"],
+    );
+    const target = await jobRow(blocked.id);
+    const u = await pendingUsage(target, "unknown");
+    const terminal = condition.includes("terminal");
+    await f.db.query(
+      `update public.provider_usage set error_code=$2,created_at=now()-$3::int*interval '1 millisecond',
+ remote_request_id=case when $4::boolean then remote_request_id else null end,
+ remote_deadline=case when $4::boolean then now()+$5::int*interval '1 millisecond' else null end where id=$1`,
+      [
+        u.id,
+        terminal ? "PROVIDER_BACKGROUND_TERMINATED" : "MODEL_NETWORK_UNCERTAIN",
+        condition === "before-boundary"
+          ? 899999
+          : condition === "at-boundary"
+            ? 900000
+            : condition === "after-boundary"
+              ? 900001
+              : terminal
+                ? 1000
+                : 1200000,
+        terminal ||
+          condition.includes("deadline") ||
+          condition === "active-remote",
+        condition === "at-deadline" ? 0 : 1200000,
+      ],
+    );
+    if (terminal && condition !== "terminal-unproven")
+      await f.db.query(
+        `insert into public.model_attempts(workspace_id,job_id,lease_token,provider,model,project_ref,operation,round_number,worker_attempt,status,result_code,usage_id,sent,finish_reason)
+ values($1,$2,$3,'openai','fixture-model','fixture-project','analyze_chunk',1,1,'failed','PROVIDER_BACKGROUND_TERMINATED',$4,true,'failed')`,
+        [f.w, target.id, u.lease_token, u.id],
+      );
+    const receipt = (
+      await f.db.query<any>("select * from public.provider_usage where id=$1", [
+        u.id,
+      ])
+    ).rows[0];
+    const body = {
+        id: target.id,
+        expected_revision: target.revision,
+        action: "retry",
+        reason: "Synthetic policy-bound recovery",
+      },
+      key = crypto.randomUUID();
+    if (allowed) {
+      const result = await f.command("job.action", body, key);
+      expect(result).toMatchObject({ id: target.id, status: "queued" });
+      expect(await f.command("job.action", body, key)).toEqual(result);
+      const events = (
+        await f.db.query<any>(
+          "select details from public.audit_events where entity_id=$1 and action='model.usage_recovery'",
+          [target.id],
+        )
+      ).rows;
+      expect(events).toHaveLength(1);
+      expect(events[0].details).toMatchObject({
+        operation: "job_retry",
+        receipts: [{ usage_id: u.id, state: "unknown" }],
+        candidate_allowances_unchanged: true,
+      });
+    } else {
+      await expect(f.command("job.action", body, key)).rejects.toThrow(
+        "USAGE_REVIEW_REQUIRED",
+      );
+      expect(await jobRow(target.id)).toEqual(target);
+    }
+    expect(
+      (
+        await f.db.query<any>(
+          "select * from public.provider_usage where id=$1",
+          [u.id],
+        )
+      ).rows[0],
+    ).toEqual(receipt);
+  },
+);

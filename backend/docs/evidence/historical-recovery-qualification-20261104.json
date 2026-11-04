@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-04T16:41:45.412028+00:00",
+  "runtime_baseline": "c3f3693af01071a5587ca7f2e70fb716ba3194a4",
+  "scope": "G13 declared local historical-recovery transitions; tests/evidence only",
+  "migration_tip": "20261104160125_proposal_issuance_file_capacity.sql",
+  "fixture": "synthetic_only",
+  "provider_transport": "controlled local fixtures; no external HTTP",
+  "runtime_changes": false,
+  "external_model_calls": 0,
+  "production_mutations": 0,
+  "vitest_passed": 328,
+  "python_tests_passed": 3,
+  "postgres_command_cases_passed": 2,
+  "full_suite_run": false,
+  "deployed": false,
+  "hosted_accepted": false,
+  "results": [
+    {
+      "name": "paid_and_historical",
+      "passed": 237,
+      "files": 11,
+      "status": "passed",
+      "log_sha256": "cf369ebb1f842aea9ba0e683ece325eaeab98636d10df9a5d8895524a5dded98",
+      "local_log": "/tmp/historical-recovery-focused.log"
+    },
+    {
+      "name": "wire_and_prompt_pins",
+      "passed": 60,
+      "files": 2,
+      "status": "passed",
+      "log_sha256": "9cc3800cd87007e315f0c7dbd4cadcadd965564d1f352ad9129f753c5507ef72",
+      "local_log": "/tmp/historical-wire-pins.log"
+    },
+    {
+      "name": "usage_boundaries",
+      "passed": 14,
+      "files": 2,
+      "status": "passed",
+      "log_sha256": "6ab7c24ae52bb17cf81748a09042b4d817250579e1fa19e63bd372b8656e20a9",
+      "local_log": "/tmp/historical-usage-boundaries.log"
+    },
+    {
+      "name": "provider_state",
+      "passed": 17,
+      "files": 3,
+      "status": "passed",
+      "log_sha256": "bf58a3e8561fadcfa2495b75a1bad4568f506a12c0f546e2a5815e28617a1f5d",
+      "local_log": "/tmp/historical-provider-state.log"
+    },
+    {
+      "name": "operational_historical_and_current_boundary",
+      "passed": 3,
+      "files": null,
+      "status": "passed",
+      "log_sha256": "04f2eb16e911354dd2784b9b0ce8758581b23f8c6c9fd5500ec867d1d91829fb",
+      "local_log": "/tmp/historical-ops-qualification.log"
+    },
+    {
+      "name": "backend_typecheck",
+      "passed": null,
+      "files": null,
+      "status": "passed",
+      "log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220",
+      "local_log": "/tmp/historical-typecheck.log"
+    },
+    {
+      "name": "final_complete_row_retention_assertions",
+      "passed": 12,
+      "files": 1,
+      "status": "passed",
+      "already_in_vitest_total": true,
+      "log_sha256": "f811b1c64978896cbbe7e0cf0e1c9c6ac4802fea5e7e56c44e1c012f8b66b018",
+      "local_log": "/tmp/historical-final-retention.log"
+    }
+  ],
+  "commands": [
+    "npx vitest run tests/backend/historicalRecoveryQualification.integration.test.ts tests/backend/analysisVerifierRecheck.integration.test.ts tests/backend/analysisVerifierRecheckPromptIdentity.integration.test.ts tests/backend/modelTypedVerificationPhase.integration.test.ts tests/backend/modelVerifierRecheck.integration.test.ts tests/backend/modelWriterValidationHandoff.integration.test.ts tests/backend/modelWriterRecovery.test.ts tests/backend/modelInvalidVerificationRecovery.integration.test.ts tests/backend/modelAlternateWriterRecovery.integration.test.ts tests/backend/modelBlockedRecovery.test.ts tests/backend/modelRepairRecovery.test.ts --maxWorkers=1",
+    "npx vitest run tests/backend/modelTypedVerificationRegistry.test.ts tests/backend/modelVerificationPrompt.test.ts --maxWorkers=1",
+    "npx vitest run tests/backend/modelCatalog.test.ts tests/backend/generationPlanStatus.test.ts --maxWorkers=1 -t 'automatic reservation recovery|retry recovery enforces'",
+    "npx vitest run tests/backend/roundRobin.test.ts tests/backend/continuousModel.test.ts tests/backend/modelCatalog.test.ts --maxWorkers=1 -t 'accepts validated automatic output with unknown usage|tries every automatic provider despite old daily ceilings|stops polling an OpenAI|reconciles canceled background usage by GET only|keeps usage unknown after a rejected poll|stops abandoned-request reconciliation|catalog failover retains unknown OpenAI usage|stops retrieving a confirmed terminal|allows a distinct phase past unknown Gemini usage|preserves a historical draft request through the semantic-policy rollout'",
+    "python3 -m unittest backend/scripts/ops/test_resume_requested_processing.py",
+    "python3 backend/scripts/testing/current_issuance_contract.py --repository /workspace/work/reliability-historical-qualification --container tdp-races-d09b3ab62155 --output /workspace/output/historical-current-issuance-contract-postgres.json",
+    "npm run typecheck (backend)"
+  ],
+  "changed_test_source_hashes": {
+    "backend/tests/backend/historicalRecoveryQualification.integration.test.ts": "e69f0ed875c504bf98b252eaa1df5b2c2aa84e3d2a44ab5d67e6ec8ff6530e77",
+    "backend/tests/backend/analysisVerifierRecheckFixture.ts": "783c3d907dedd73af4caa881044e2bd2c24a583814d3bb6a7500a77a3d913501",
+    "backend/scripts/ops/test_resume_requested_processing.mjs": "8ab06ce439478665148ba8716a1849954070449c1431fc6672a8f3a0c74e424d",
+    "backend/scripts/testing/current_issuance_contract.py": "fa408d4843e6228679154cb489b2eed52856fd0d213b08d90252b5afe2ec3bcd"
+  },
+  "postgres_receipt": "historical-current-issuance-contract-postgres-20261104.json",
+  "limits": [
+    "No hosted/provider-specific live recovery",
+    "No universal historical-data or semantic-correctness claim",
+    "PostgreSQL successor receipt is sequential command integration, not a concurrency race",
+    "Artifact issuance and other task qualification are separate evidence"
+  ],
+  "review": {
+    "reviewer": "independent operations agent",
+    "scope": "historical ops fixture boundary and managed-owner migration/current refusal assertions",
+    "result": "no acceptance/security blocker; date wording corrected"
+  }
+}

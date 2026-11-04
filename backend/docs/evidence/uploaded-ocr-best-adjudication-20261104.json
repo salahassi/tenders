@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "scope": "Independent single-model-pair Arabic OCR qualification; existing controls were frozen before this candidate, but known prior-model outcomes make this a diagnostic comparison, not a blinded corpus",
+  "decision": "reject_candidate",
+  "automatic_arabic_qualified": false,
+  "runtime_recognition_changed": false,
+  "mandatory_page_review_retained": true,
+  "gold_or_oracle_changed": false,
+  "parameter_search": false,
+  "additional_recognition_runs": 0,
+  "image_id": "sha256:42bda8349d80507c1b7d5fd299d1c9be59ece8f559256bfc8b8bf90f6d8b40af",
+  "plan_sha256": "547e043b392d36fb87b6f3ca74135925e880016f29850b2382eb1bfe091032e4",
+  "candidate_repository": "https://github.com/tesseract-ocr/tessdata_best",
+  "candidate_commit": "e12c65a915945e4c28e237a9b52bc4a8f39a0cec",
+  "baseline_provenance": "Debian installed copyright names tessdata_fast; model hashes captured from the same pinned image",
+  "counts": {
+    "scheduled": 7,
+    "recognized": 7,
+    "full_page_passes": 3,
+    "arabic_pages_scheduled": 4,
+    "arabic_pages_passed": 0,
+    "english_controls_passed": 2,
+    "blank_controls_passed": 1,
+    "infrastructure_failures": 0
+  },
+  "defects": [
+    {
+      "case": "known-arabic-failure",
+      "finding": "The delivery obligation and prohibition wording are garbled;12 and30 are emitted as separated/reordered digit tokens, so exact source meaning is not preserved."
+    },
+    {
+      "case": "maintenance-obligation",
+      "finding": "The during-working-hours qualifier and start wording are corrupted; the identifier MX-2047-B is retained."
+    },
+    {
+      "case": "records-retention",
+      "finding": "Most text is retained, but the prohibition becomes the malformed token لاايسمح. This fails the unchanged exact-page oracle; no claim is made that its intended meaning necessarily reverses."
+    },
+    {
+      "case": "sensor-acceptance",
+      "finding": "The delay-days/penalty clause is corrupted, although the acceptance prohibition is preserved."
+    }
+  ],
+  "resource_observations": {
+    "memory.peak": 164823040,
+    "memory.max": 805306368,
+    "memory.swap.peak": 0,
+    "memory.events": {
+      "low": 0,
+      "high": 0,
+      "max": 0,
+      "oom": 0,
+      "oom_kill": 0,
+      "oom_group_kill": 0
+    }
+  },
+  "execution": {
+    "image_id": "sha256:42bda8349d80507c1b7d5fd299d1c9be59ece8f559256bfc8b8bf90f6d8b40af",
+    "plan_sha256": "547e043b392d36fb87b6f3ca74135925e880016f29850b2382eb1bfe091032e4",
+    "command": [
+      "docker",
+      "create",
+      "--name",
+      "tdp-ocr-best-qualification",
+      "--network",
+      "none",
+      "--read-only",
+      "--memory",
+      "768m",
+      "--memory-swap",
+      "768m",
+      "--cpus",
+      "1",
+      "--pids-limit",
+      "64",
+      "--cap-drop",
+      "ALL",
+      "--security-opt",
+      "no-new-privileges",
+      "--user",
+      "1000:1000",
+      "--tmpfs",
+      "/tmp:rw,nosuid,nodev,noexec,size=268435456,uid=1000,gid=1000",
+      "--mount",
+      "type=bind,src=/workspace/work/reliability-ocr-best/backend/scripts/testing,dst=/app/backend/scripts/testing,readonly",
+      "--mount",
+      "type=bind,src=/workspace/work/reliability-ocr-best/backend/scripts/backend,dst=/app/backend/scripts/backend,readonly",
+      "--mount",
+      "type=bind,src=/workspace/work/reliability-ocr-best/backend/tests/backend/fixtures,dst=/app/backend/tests/backend/fixtures,readonly",
+      "--mount",
+      "type=bind,src=/workspace/work/reliability-ocr-best/backend/docs/evidence/uploaded-ocr-best-plan-v2-20261104.json,dst=/plan.json,readonly",
+      "--mount",
+      "type=bind,src=/workspace/output/ocr-best-provenance/candidate,dst=/models,readonly",
+      "--mount",
+      "type=bind,src=/workspace/output/ocr-best-qualification-20261104,dst=/outputs",
+      "--entrypoint",
+      "/bin/sh",
+      "sha256:42bda8349d80507c1b7d5fd299d1c9be59ece8f559256bfc8b8bf90f6d8b40af",
+      "-c",
+      "node --experimental-transform-types scripts/testing/uploadedOcrAlternative.ts /plan.json /models /outputs; ocr_status=$?; cat /sys/fs/cgroup/memory.peak > /outputs/memory.peak; cat /sys/fs/cgroup/memory.max > /outputs/memory.max; cat /sys/fs/cgroup/memory.events > /outputs/memory.events; cat /sys/fs/cgroup/memory.swap.peak > /outputs/memory.swap.peak; exit \"$ocr_status\""
+    ],
+    "source_before": {
+      "uploadedOcrAlternative.ts": "3a4805e2c9a709f673d9a7088c51e5008f6d0725d30925e687f5ac892989c047",
+      "ocrQualityOracle.ts": "b996605b86078c627c9db00dfd1bb8f0b04e22d0a99269052ebe0d34655f5698",
+      "../backend/public-notice-ocr-worker.ts": "861d005084d371fa9372dc6c8e80340db50a4cf7dbd00020326e27335670a9ae"
+    },
+    "observed_host_config": {
+      "Memory": 805306368,
+      "MemorySwap": 805306368,
+      "NanoCpus": 1000000000,
+      "PidsLimit": 64,
+      "NetworkMode": "none",
+      "ReadonlyRootfs": true,
+      "Tmpfs": {
+        "/tmp": "rw,nosuid,nodev,noexec,size=268435456,uid=1000,gid=1000"
+      },
+      "CapDrop": [
+        "ALL"
+      ],
+      "SecurityOpt": [
+        "no-new-privileges"
+      ]
+    },
+    "exit_code": 1,
+    "container_state": {
+      "Status": "exited",
+      "Running": false,
+      "OOMKilled": false,
+      "ExitCode": 1,
+      "Error": "",
+      "StartedAt": "2026-11-04T23:13:01.282273059Z",
+      "FinishedAt": "2026-11-04T23:13:05.649087261Z"
+    },
+    "container_removed": true,
+    "elapsed_ms": 4880,
+    "source_after": {
+      "uploadedOcrAlternative.ts": "3a4805e2c9a709f673d9a7088c51e5008f6d0725d30925e687f5ac892989c047",
+      "ocrQualityOracle.ts": "b996605b86078c627c9db00dfd1bb8f0b04e22d0a99269052ebe0d34655f5698",
+      "../backend/public-notice-ocr-worker.ts": "861d005084d371fa9372dc6c8e80340db50a4cf7dbd00020326e27335670a9ae"
+    },
+    "source_unchanged": true
+  },
+  "raw_receipts": {
+    "alternative.json": "4140e005f57b7e01abfe3d6f78e90e7914b3d7df28c8bb2a8f06fc9f0603545b",
+    "execution.json": "1cfac47714c3b67b5ea313e2b90377089da4290043f46fe9ea52babbbe4a3e6f",
+    "native.log": "61a5a9b2833091abc71137c71a8c533713756ee94931b712f6b0a3f24b945bfe",
+    "memory.peak": "b233cd8a3679535f82dcf728384a185a8cb24df090cc842e3c975836c6302c48",
+    "memory.max": "aff0496dc2891561052e7b010c7258eab7f0aaa780136d6c9132fa8ae5cf96e5",
+    "memory.events": "28fe05a1d7b8467a03fb54454f7b6a130fab752864d0454f5f6c4a4b6ce307f2",
+    "memory.swap.peak": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+  },
+  "tsv_sha256": {
+    "english-existing-control.tsv": "3f6aace9a71ed47ff2d84ba17d63ae1a9d934c81d59e155747e3ad1dd76e18ed",
+    "known-arabic-failure.tsv": "d7f83d40946c9437b6a4f6d015366a03441ddfae79843fc4d2b652371e472550",
+    "maintenance-obligation.tsv": "a4e41fd0925623c8340a2358c1bd45121519e5ca20ee1589aa2aef2644f6c2c0",
+    "mixed-blank-page.tsv": "b5caf5b3624fec48d7a4f185d1c55db3d201f832650ae210bcf3bfff5b93dc97",
+    "mixed-exact-scan-page.tsv": "3f6aace9a71ed47ff2d84ba17d63ae1a9d934c81d59e155747e3ad1dd76e18ed",
+    "records-retention.tsv": "54290baa1f7f36a1daa9fbb5488092946f7fdba10b66685e900e1dcb1eb1149d",
+    "sensor-acceptance.tsv": "a98d4ec18c07c9380cc490f81d1d1c75af761fda9638d2270f44911a8b0af1e5"
+  },
+  "source_unchanged": true,
+  "container_removed": true,
+  "provider_calls": 0,
+  "production_calls": 0,
+  "customer_data": false,
+  "deployment": false,
+  "limitations": [
+    "Seven synthetic controls cannot establish universal OCR or source-semantic accuracy.",
+    "No output-driven parameter or oracle changes followed this rejected candidate.",
+    "The production fast model and source-bound visual correction workflow remain unchanged.",
+    "No hosted extraction, model-provider qualification or Microsoft Word behavior is proved."
+  ]
+}

@@ -1,5 +1,71 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { deployment } from "./deployment";
+import { isHeavyFileRequest } from "../../../backend/supabase/functions/_shared/heavyFileProjection";
+
+type RequestOptions = {
+  method?: string;
+  body?: unknown;
+  idempotencyKey?: string;
+  signal?: AbortSignal;
+  expectedIdentity?: string;
+};
+
+export interface DocumentExtractionReviewData {
+  document_id: string;
+  document_revision: number;
+  original_hash: string;
+  extraction_hash: string;
+  original_name: string;
+  pdf_pages: number;
+  original_download_url: string;
+  original_download_expires_at: string;
+  pages: {
+    page: number;
+    status: "readable" | "blank" | "needs_ocr" | "extraction_failed";
+    text: string;
+    text_hash: string;
+    candidate_text?: string;
+    candidate_text_hash?: string;
+    candidate_origin?: "human" | "ocr";
+    candidate_reviewed_by?: string;
+    candidate_reviewed_at?: string;
+    candidate_requires_review?: boolean;
+    requires_review: boolean;
+    reviewed_by?: string;
+    reviewed_at?: string;
+  }[];
+  ocr: {
+    document_id: string;
+    document_revision: number;
+    status:
+      | "queued"
+      | "running"
+      | "retry_wait"
+      | "blocked"
+      | "needs_review"
+      | "published"
+      | null;
+    successor_id: string | null;
+    error_code: string | null;
+    revision: number | null;
+    completed_pages: number;
+    total_pages: number;
+    review_pages: number[];
+  };
+}
+export interface DocumentExtractionCorrection {
+  id: string;
+  expected_revision: number;
+  expected_original_hash: string;
+  expected_extraction_hash: string;
+  pages: {
+    page: number;
+    expected_page_text_hash: string;
+    text: string;
+    blank_confirmed: boolean;
+  }[];
+  review_confirmed: true;
+}
 
 export class BackendRequestError extends Error {
   constructor(
@@ -11,8 +77,33 @@ export class BackendRequestError extends Error {
     super(message);
   }
 }
+/** Browser stale-result guard only; server Auth and membership remain authoritative. */
+export async function currentBackendIdentity(
+  client: BackendClient,
+  expected?: string,
+): Promise<string> {
+  const {
+    data: { session },
+    error,
+  } = await client.auth.auth.getSession();
+  if (error) throw error;
+  const identity = session?.user?.id || session?.access_token;
+  if (
+    !session?.access_token ||
+    !identity ||
+    (expected && identity !== expected)
+  )
+    throw new BackendRequestError(
+      "UNAUTHENTICATED",
+      "Sign in to continue.",
+      401,
+    );
+  return identity;
+}
+
 export class BackendClient {
   readonly auth: SupabaseClient;
+  private heavyTail: Promise<void> = Promise.resolve();
   constructor(
     readonly projectUrl: string,
     private readonly publishableKey: string,
@@ -39,6 +130,30 @@ export class BackendClient {
       },
     });
   }
+  async documentExtraction(
+    id: string,
+    signal?: AbortSignal,
+  ): Promise<DocumentExtractionReviewData> {
+    if (!/^[0-9a-f-]{36}$/.test(id)) throw new Error("Invalid document ID.");
+    return (
+      await this.request<DocumentExtractionReviewData>(
+        `/v1/documents/${id}/extraction`,
+        { signal },
+      )
+    ).data;
+  }
+  async correctDocumentExtraction(
+    input: DocumentExtractionCorrection,
+    idempotencyKey: string,
+    signal?: AbortSignal,
+  ) {
+    return (
+      await this.request<Record<string, unknown>>(
+        `/v1/documents/${input.id}/extraction`,
+        { method: "POST", body: input, idempotencyKey, signal },
+      )
+    ).data;
+  }
   async checkInvitation(
     token: string,
   ): Promise<{ email: string; role: string; expires_at: string }> {
@@ -61,21 +176,83 @@ export class BackendClient {
   }
   async request<T>(
     path: string,
-    options: {
-      method?: string;
-      body?: unknown;
-      idempotencyKey?: string;
-      signal?: AbortSignal;
-    } = {},
+    options: RequestOptions = {},
   ): Promise<{ data: T; meta: { request_id: string; revision?: number } }> {
     if (!/^\/v1\/[a-z0-9/_-]+(?:\?[a-z0-9_=&-]*)?$/i.test(path))
       throw new Error("Use an application API path.");
+    return this.admitHeavy(
+      options.method || "GET",
+      path,
+      options.signal,
+      (identity) => this.sendRequest<T>(path, options, identity),
+      options.expectedIdentity,
+    );
+  }
+
+  private async admitHeavy<T>(
+    method: string,
+    path: string,
+    signal: AbortSignal | undefined,
+    send: (identity?: string) => Promise<T>,
+    expectedIdentity?: string,
+  ): Promise<T> {
+    signal?.throwIfAborted();
+    if (!isHeavyFileRequest(method, path.split("?")[0]))
+      return send(expectedIdentity);
+    // One browser client shares the API's heavy-file lane, including full
+    // JSON reads and all artifact bytes. This queues sends, never retries them.
+    // Capture identity now: queued work must not inherit a later sign-in.
+    const captured = this.auth.auth.getSession().then(
+      (value) => ({ value }),
+      (error: unknown) => ({ error }),
+    );
+    const previous = this.heavyTail;
+    let release!: () => void;
+    this.heavyTail = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await previous;
+    try {
+      signal?.throwIfAborted();
+      const result = await captured;
+      signal?.throwIfAborted();
+      if ("error" in result) throw result.error;
+      if (result.value.error) throw result.value.error;
+      const session = result.value.data.session;
+      if (!session?.access_token)
+        throw new BackendRequestError(
+          "UNAUTHENTICATED",
+          "Sign in to continue.",
+          401,
+        );
+      const identity = session.user?.id || session.access_token;
+      if (expectedIdentity && identity !== expectedIdentity)
+        throw new BackendRequestError(
+          "UNAUTHENTICATED",
+          "Sign in to continue.",
+          401,
+        );
+      return await send(identity);
+    } finally {
+      release();
+    }
+  }
+
+  private async sendRequest<T>(
+    path: string,
+    options: RequestOptions,
+    identity?: string,
+  ): Promise<{ data: T; meta: { request_id: string; revision?: number } }> {
     const {
       data: { session },
       error,
     } = await this.auth.auth.getSession();
+    options.signal?.throwIfAborted();
     if (error) throw error;
-    if (!session?.access_token)
+    if (
+      !session?.access_token ||
+      (identity && identity !== (session.user?.id || session.access_token))
+    )
       throw new BackendRequestError(
         "UNAUTHENTICATED",
         "Sign in to continue.",
@@ -97,7 +274,9 @@ export class BackendClient {
     let payload;
     try {
       payload = await response.json();
+      options.signal?.throwIfAborted();
     } catch {
+      options.signal?.throwIfAborted();
       throw new BackendRequestError(
         "INVALID_RESPONSE",
         "The backend did not return a valid response.",
@@ -117,9 +296,16 @@ export class BackendClient {
     resource: string,
     filters: Record<string, string> = {},
   ): Promise<T[]> {
+    const identity = await currentBackendIdentity(this);
     const rows: T[] = [];
+    // Activity uses lossless decimal sequence IDs in descending order;
+    // the remaining generic resources use ascending UUID IDs.
+    const sequenceDescending = resource === "model-activity";
+    const doesNotAdvance = (next: string, prior: string) =>
+      sequenceDescending ? BigInt(next) >= BigInt(prior) : next <= prior;
     let cursor: string | null = null;
     const seen = new Set<string>();
+    const recordIds = new Set<string>();
     do {
       const query = new URLSearchParams({
         ...filters,
@@ -129,37 +315,80 @@ export class BackendClient {
       const { data } = await this.request<{
         records: T[];
         next_cursor: string | null;
-      }>(`/v1/${resource}?${query}`);
+      }>(`/v1/${resource}?${query}`, { expectedIdentity: identity });
       if (
         !Array.isArray(data.records) ||
         (data.next_cursor !== null && typeof data.next_cursor !== "string")
       )
         throw new Error("Invalid list response.");
+      const ids = data.records.map((row) =>
+        row && typeof row === "object" && "id" in row ? row.id : undefined,
+      );
+      if (
+        ids.some((id) => {
+          if (
+            typeof id !== "string" ||
+            (sequenceDescending && !/^[1-9][0-9]{0,18}$/.test(id)) ||
+            recordIds.has(id) ||
+            (cursor && doesNotAdvance(id, cursor))
+          )
+            return true;
+          recordIds.add(id);
+          return false;
+        }) ||
+        (data.next_cursor &&
+          (seen.has(data.next_cursor) ||
+            !ids.length ||
+            ids.at(-1) !== data.next_cursor ||
+            (cursor && doesNotAdvance(data.next_cursor, cursor))))
+      )
+        throw new Error("The list pagination did not advance.");
       rows.push(...data.records);
       cursor = data.next_cursor;
-      if (cursor && (seen.has(cursor) || rows.length >= 10000))
-        throw new Error("The list exceeded its supported boundary.");
       if (cursor) seen.add(cursor);
     } while (cursor);
+    await currentBackendIdentity(this, identity);
     return rows;
   }
-  async downloadArtifact(id: string): Promise<Blob> {
+  async downloadArtifact(id: string, signal?: AbortSignal): Promise<Blob> {
     if (!/^[0-9a-f-]{36}$/.test(id)) throw Error("Invalid artifact.");
-    return this.downloadBytes(`/v1/export-artifacts/${id}/download`);
+    return this.downloadBytes(`/v1/export-artifacts/${id}/download`, signal);
   }
-  async downloadBytes(path: string): Promise<Blob> {
+  async downloadDeliveryArtifact(
+    id: string,
+    signal?: AbortSignal,
+  ): Promise<Blob> {
+    if (!/^[0-9a-f-]{36}$/.test(id)) throw Error("Invalid artifact.");
+    return this.downloadBytes(`/v1/delivery-artifacts/${id}/download`, signal);
+  }
+  async downloadBytes(path: string, signal?: AbortSignal): Promise<Blob> {
+    signal?.throwIfAborted();
     if (
-      !/^\/v1\/(?:export-artifacts\/[0-9a-f-]{36}\/download|recovery\/files\/(?:documents|export_artifacts)\/[0-9a-f-]{36})$/.test(
+      !/^\/v1\/(?:(?:export-artifacts|delivery-artifacts)\/[0-9a-f-]{36}\/download|recovery\/files\/(?:documents|export_artifacts|proposal_delivery_artifacts)\/[0-9a-f-]{36})$/.test(
         path,
       )
     )
       throw Error("Invalid file path.");
+    return this.admitHeavy("GET", path, signal, (identity) =>
+      this.readDownload(path, signal, identity),
+    );
+  }
+
+  private async readDownload(
+    path: string,
+    signal?: AbortSignal,
+    identity?: string,
+  ): Promise<Blob> {
     const {
       data: { session },
       error,
     } = await this.auth.auth.getSession();
+    signal?.throwIfAborted();
     if (error) throw error;
-    if (!session)
+    if (
+      !session?.access_token ||
+      (identity && identity !== (session.user?.id || session.access_token))
+    )
       throw new BackendRequestError(
         "UNAUTHENTICATED",
         "Sign in to download.",
@@ -167,7 +396,9 @@ export class BackendClient {
       );
     const response = await fetch(`${this.projectUrl}/functions/v1/api${path}`, {
       headers: { Authorization: `Bearer ${session.access_token}` },
+      signal,
     });
+    signal?.throwIfAborted();
     if (!response.ok) {
       const value = await response.json();
       throw new BackendRequestError(
@@ -176,7 +407,9 @@ export class BackendClient {
         response.status,
       );
     }
-    return response.blob();
+    const blob = await response.blob();
+    signal?.throwIfAborted();
+    return blob;
   }
   async uploadOriginal(
     reservation: { upload_path: string; bucket: string },

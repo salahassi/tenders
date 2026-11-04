@@ -1,0 +1,314 @@
+{
+  "scope": "Unchanged frozen synthetic Arabic scan diagnostic matrix; no production change or semantic qualification",
+  "fixture_sha256": "70cb0b2e615d8c9880ab414a87c7eadc7bc6129268e203010006e74be844331b",
+  "manifest_sha256": "b2828aab7a4d07a32ddb74836b5abd2fa5a86afd5b68b86675deb7100e6632de",
+  "engine": "tesseract 5.3.0",
+  "cases": [
+    {
+      "scale": 1000,
+      "lang": "ara+eng",
+      "psm": 3,
+      "elapsed_ms": 179,
+      "image_sha256": "a831c2eed73108e0e549c5e6324411afa19d59fdceea1653a31f64d66c30e9a5",
+      "tsv_sha256": "7479d49e164d07e2ab6d3f079659ce3b1ce88ef934a7a46d52a6c52fd6bc129d",
+      "text": ".يجب على المورد pled‏ 12 تقريرا خلال 30 يوما\n«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد النهائي للتقديم هو 15 ديسمبر 2026\nwes‏ التعاقد من الباطن دون موافقة خطية",
+      "confidence": 88,
+      "matches": [
+        false,
+        true,
+        true,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 1000,
+      "lang": "ara+eng",
+      "psm": 6,
+      "elapsed_ms": 175,
+      "image_sha256": "a831c2eed73108e0e549c5e6324411afa19d59fdceea1653a31f64d66c30e9a5",
+      "tsv_sha256": "5a4b28035e3ad9b6f9b2a178e4d1c51a3588871e093d8ae335dbc860326d978c",
+      "text": ".يجب على المورد pled‏ 12 تقريرا خلال 30 يوما\n«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد النهائي للتقديم هو 15 ديسمبر 2026\nee,‏ التعاقد من الباطن دون موافقة خطية",
+      "confidence": 87,
+      "matches": [
+        false,
+        true,
+        true,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 1000,
+      "lang": "ara+eng",
+      "psm": 11,
+      "elapsed_ms": 171,
+      "image_sha256": "a831c2eed73108e0e549c5e6324411afa19d59fdceea1653a31f64d66c30e9a5",
+      "tsv_sha256": "da2a47c59659d7f0e31b427896124e3abb0573cb4752e63d74482655da436c4a",
+      "text": ".يجب على المورد glad‏ 12 تقريرا خلال 30 يوما\nell‏ بقيمة 12500 ريال بعد القبول\nالموعد lll‏ للتقديم هو 15 ديسمبر 2026\nد\nبمنع التعاقد من الباطن دون موافقة خطية",
+      "confidence": 85,
+      "matches": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 3,
+      "elapsed_ms": 84,
+      "image_sha256": "a831c2eed73108e0e549c5e6324411afa19d59fdceea1653a31f64d66c30e9a5",
+      "tsv_sha256": "4f1406f833cccea9f4d0161d4a41d95499868502b305aa6df16bb64a35fc83f0",
+      "text": ".يجب على المورد تسليم 12 تقريرا خلال 30 يوما\n«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد النهائي للتقديم هو 15 ديسمبر 2026\n«منع التعاقد من الباطن دون موافقة خطية",
+      "confidence": 89,
+      "matches": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 6,
+      "elapsed_ms": 75,
+      "image_sha256": "a831c2eed73108e0e549c5e6324411afa19d59fdceea1653a31f64d66c30e9a5",
+      "tsv_sha256": "c7f2510e443945bbb3b3c7ffe78ec2c2aa6d4612068ba06014ec1cc8f82585d2",
+      "text": ".يجب على المورد تسليم 12 تقريرا خلال 30 يوما\n«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد النهائي للتقديم هو 15 ديسمبر 2026\n.«يمنع التعاقد من الباطن دون موافقة خطية",
+      "confidence": 88,
+      "matches": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "exact_gold": true
+    },
+    {
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 11,
+      "elapsed_ms": 81,
+      "image_sha256": "a831c2eed73108e0e549c5e6324411afa19d59fdceea1653a31f64d66c30e9a5",
+      "tsv_sha256": "d7b7a7b451831f266f4445708198736229cbc11d221c2977c9fe60e88dfd7207",
+      "text": ".يجب على المورد تَسليم 12 تقريرا خلال 30 يوما\nالدفع بقيمة 12500 ريال بعد القبول\nالموعد النهائي للتقديم هو 15 ديسمبر 2026\nد\nبمنع التعاقد من الباطن دون موافقة خطية",
+      "confidence": 85,
+      "matches": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 1500,
+      "lang": "ara+eng",
+      "psm": 3,
+      "elapsed_ms": 160,
+      "image_sha256": "1dd0275769d8dfff481032d46dd3e943857d7ae7b49349b7cfcef5595699f474",
+      "tsv_sha256": "2b86e1fb7975730e71c19321cfea8f96ec58805a3e13ef6a0698c59ec87f82da",
+      "text": "«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد Gl!‏ للتقديم هو 15 ديسمبر 2026",
+      "confidence": 87,
+      "matches": [
+        false,
+        true,
+        false,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 1500,
+      "lang": "ara+eng",
+      "psm": 6,
+      "elapsed_ms": 191,
+      "image_sha256": "1dd0275769d8dfff481032d46dd3e943857d7ae7b49349b7cfcef5595699f474",
+      "tsv_sha256": "12fbaeaea1552610f43e6139d254e9e6d8182287082beb9a4a6b89b68b0b1fdb",
+      "text": ".يجب على المورد pled‏ 12 تقريرا خلال 30 ley‏\n«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد Gl!‏ للتقديم هو 15 ديسمبر 2026\nae,‏ التعاقد من الباطن دون موافقة خطية",
+      "confidence": 85,
+      "matches": [
+        false,
+        true,
+        false,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 1500,
+      "lang": "ara+eng",
+      "psm": 11,
+      "elapsed_ms": 176,
+      "image_sha256": "1dd0275769d8dfff481032d46dd3e943857d7ae7b49349b7cfcef5595699f474",
+      "tsv_sha256": "e50ce098709a2e5d764da81a99571acdfc3cc70229257dec05aa7d7e9f29fe45",
+      "text": ".يجب على المورد تسليم 12 تقريرا خلال 30 يوما\nالدفع بقيمة 12500 ريال بعد القبول\nالموعد النهائي للتقديم هو 15 ديسمبر 2026",
+      "confidence": 87,
+      "matches": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 1500,
+      "lang": "ara",
+      "psm": 3,
+      "elapsed_ms": 83,
+      "image_sha256": "1dd0275769d8dfff481032d46dd3e943857d7ae7b49349b7cfcef5595699f474",
+      "tsv_sha256": "5a72b0a0d50289eee8385bd81b92ff7dbe187dad06fcc1c363fe210a90ec4d67",
+      "text": "«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد النهائي للتقديم هو 15 ديسمبر 2026",
+      "confidence": 85,
+      "matches": [
+        false,
+        true,
+        true,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 1500,
+      "lang": "ara",
+      "psm": 6,
+      "elapsed_ms": 99,
+      "image_sha256": "1dd0275769d8dfff481032d46dd3e943857d7ae7b49349b7cfcef5595699f474",
+      "tsv_sha256": "97f9d342b65f7aa35faa5b82f91fdf27621e34195daedddcec4c7d0e4dbe267e",
+      "text": ".يجب على المورد آسليم 12 تقريرا خلال 30 يوما\n«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد النهائي للتقديم هو 15 ديسمبر 2026\n«يمنع التعاقد من الباطن دون موافقة خطية",
+      "confidence": 87,
+      "matches": [
+        false,
+        true,
+        true,
+        true
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 1500,
+      "lang": "ara",
+      "psm": 11,
+      "elapsed_ms": 91,
+      "image_sha256": "1dd0275769d8dfff481032d46dd3e943857d7ae7b49349b7cfcef5595699f474",
+      "tsv_sha256": "ef972e228fc1bd0d1acb7bf1474be8b8aeba74a24afabe3b34ca5b2d71e9fe78",
+      "text": ".يجب على المورد تسليم 12 تقريرا خلال 30 يوما\nالدفع بقيمة 12500 ريال بعد القبول\nالموعد النهائي للتقديم هو 15 ديسمبر 2026",
+      "confidence": 87,
+      "matches": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 3,
+      "elapsed_ms": 208,
+      "image_sha256": "5437e0b1d2d12add56532b302294ec696f8aeee0e91b0c21fbdab21b08585482",
+      "tsv_sha256": "296db6bb3e7b85f8974e2342beea595928fba900b790269d5fcb2bd4e95f7a0e",
+      "text": "«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد «tall Gli!‏ هو 15 دسمبر 2026\nwe.‏ التعاقد من الباطن دون موافقة خطية",
+      "confidence": 82,
+      "matches": [
+        false,
+        true,
+        false,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 6,
+      "elapsed_ms": 220,
+      "image_sha256": "5437e0b1d2d12add56532b302294ec696f8aeee0e91b0c21fbdab21b08585482",
+      "tsv_sha256": "fcfee511304e9719669cec201980614c37fe369c76a53a1233a1192332bb186c",
+      "text": ".يجب على المورد glad‏ 12 تقريرا خلال 30 ley,‏\n«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد «tall Gli!‏ هو 15 دسمبر 2026\nwc.‏ التعاقد من الباطن دون موافقة خطية",
+      "confidence": 83,
+      "matches": [
+        false,
+        true,
+        false,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 11,
+      "elapsed_ms": 202,
+      "image_sha256": "5437e0b1d2d12add56532b302294ec696f8aeee0e91b0c21fbdab21b08585482",
+      "tsv_sha256": "d8cfc7b6bc5105b72e5388178fcd73612c828cceeb36a99783f915b4a2c86d93",
+      "text": "«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد «tall Gli!‏ هو 15 دسمبر 2026\nes‏ التعاقد من الباطن دون موافقة خطية",
+      "confidence": 82,
+      "matches": [
+        false,
+        true,
+        false,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 2000,
+      "lang": "ara",
+      "psm": 3,
+      "elapsed_ms": 123,
+      "image_sha256": "5437e0b1d2d12add56532b302294ec696f8aeee0e91b0c21fbdab21b08585482",
+      "tsv_sha256": "b35a940a20a6069d58ee3abc02d9da9ca2eb88304ec4f544512cc36bd65c719d",
+      "text": "«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد النهاف للتقديم هو 15 دسمبر 2026\n«بمنع التعاقد من الباطن دون موافقة خطية",
+      "confidence": 81,
+      "matches": [
+        false,
+        true,
+        false,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 2000,
+      "lang": "ara",
+      "psm": 6,
+      "elapsed_ms": 125,
+      "image_sha256": "5437e0b1d2d12add56532b302294ec696f8aeee0e91b0c21fbdab21b08585482",
+      "tsv_sha256": "b7adcc8d4355690c24b1a7b6f6dcedbd248579afb5e4dd254904d5bab64d3ab7",
+      "text": ".يجب على المورد أسليم 12 تقريرا خلال 30 يوما\n«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد النهاف للتقديم هو 15 دسمبر 2026\n«بمنع التعاقد من الباطن دون موافقة خطية",
+      "confidence": 84,
+      "matches": [
+        false,
+        true,
+        false,
+        false
+      ],
+      "exact_gold": false
+    },
+    {
+      "scale": 2000,
+      "lang": "ara",
+      "psm": 11,
+      "elapsed_ms": 133,
+      "image_sha256": "5437e0b1d2d12add56532b302294ec696f8aeee0e91b0c21fbdab21b08585482",
+      "tsv_sha256": "9c37f8a56382dfcab22d2523e7b55b6773bd6ab8c68247728a047f1b04305055",
+      "text": "«الدفع بقيمة 12500 ريال بعد القبول\n«الموعد النهاف للتقديم هو 15 دسمبر 2026\n« مع التعاقد من الباطن دون موافقة خطية",
+      "confidence": 82,
+      "matches": [
+        false,
+        true,
+        false,
+        false
+      ],
+      "exact_gold": false
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "passed": true,
+  "actual_pinned_storage_http_exercised": true,
+  "synthetic_only": true,
+  "production_calls": 0,
+  "customer_calls": 0,
+  "storage_image": "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799",
+  "storage_image_id": "sha256:03a737a1b3dd5f4fc97af8a3b07bb1fc8c98c6d589377474fae3b20c9699527e",
+  "postgres_image": "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+  "global_file_size_limit_bytes": 1048576,
+  "fixture_bucket_file_size_limit_bytes": 1048576,
+  "original_failure": {
+    "http_status": 400,
+    "code": "EntityTooLarge",
+    "requested_bucket_file_size_limit_bytes": 10485760,
+    "bucket_rows_after_failure": 0
+  },
+  "checks": {
+    "matching_limit_bucket_creation_and_exact_private_readback": true,
+    "tiny_synthetic_upload_download_exact_bytes": true,
+    "public_object_read_denied": true,
+    "duplicate_bucket_rejected_without_update": true
+  },
+  "public_denial_status": 400,
+  "duplicate_rejection_status": 400,
+  "compiled_binary_files": [
+    {
+      "path": "dist/storage/storage.js",
+      "sha256": "32a160f025e2fb3c58ae35d9d422f2d5d4ac23b72d0a68a03e583e916b80c285"
+    },
+    {
+      "path": "dist/storage/limits.js",
+      "sha256": "8bd0c87a039fecbca697a2f28be02bd807d21fccc611785148a0dee287298cfb"
+    },
+    {
+      "path": "dist/http/routes/bucket/createBucket.js",
+      "sha256": "c7047d4c2c1405a7bf49fea1bab12bd8c21917865afdfeb42d50669c9933090c"
+    }
+  ],
+  "source_sha256": {
+    "backend/scripts/ops/cloud-restore/acceptance.py": "68ba45690e92898ed5e5efeea4a39ad9d7827ef61b76ab587cbf5a38f84331b8",
+    "backend/scripts/ops/bootstrap/buildcontainers.py": "f37d2d6b72b90e3f72c36f707bc4550bbdfffce3f470cee34b14e0a77daa957a",
+    "backend/scripts/testing/cloud_restore_bucket_container.py": "307bcf60ff628a159844d9db620be7599e54e2e98d2ef5b8140fdc66f4534cbc",
+    "backend/scripts/testing/storage_retirement_container.py": "aad4c4824fd65a563b1da705105f66ece606c4ed025c152bf7363802fccc9855"
+  },
+  "limitations": [
+    "Local pinned HTTP and isolated PostgreSQL only; hosted restore retry remains separate.",
+    "Tiny synthetic fixture proves neither the product 10 MiB object limit nor full application DOCX rendering.",
+    "Service token is synthetic and used only inside an isolated network namespace; no hosted credentials."
+  ]
+}

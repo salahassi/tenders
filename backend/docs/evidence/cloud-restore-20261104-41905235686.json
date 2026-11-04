@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "workflow_run_id": 41905235686,
+  "workflow_job_id": 126838009253,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41905235686",
+  "source_revision": "8b583cb9c3936f7bb004f466ab7908e8362ef4ad",
+  "mode": "restore",
+  "workflow_conclusion": "failure",
+  "original_cluster_ca_and_hostname_verified": true,
+  "local_guard_tests_passed": 12,
+  "restore_result": {
+    "cloud_restore": "blocked",
+    "code": "RESTORE_ACCEPTANCE_OR_CLEANUP_FAILED",
+    "diagnostics": [
+      "RESTORE_PRIVATE_BUCKET_CREATE_FAILED",
+      "AUTH_STORAGE_HTTP_ACCEPTANCE_FAILED"
+    ],
+    "source_auth_read_authority": {
+      "application_owner": "tdp_app_owner",
+      "application_owner_bypassrls": false,
+      "application_owner_superuser": false,
+      "bootstrap_function_owner": "tdp_app_owner",
+      "tables": [
+        {
+          "app_owner_effective_owner": false,
+          "app_owner_select": true,
+          "applicable_policies": [],
+          "force_rls": false,
+          "owner": "tdp_app_authadmin",
+          "rls_enabled": true,
+          "table": "identities"
+        },
+        {
+          "app_owner_effective_owner": false,
+          "app_owner_select": true,
+          "applicable_policies": [],
+          "force_rls": false,
+          "owner": "tdp_app_authadmin",
+          "rls_enabled": true,
+          "table": "users"
+        }
+      ]
+    }
+  },
+  "isolated_cleanup_verified": true,
+  "temporary_runner_credentials_cleanup_verified": true,
+  "actual_application_renderer_exercised": false,
+  "all_13_acceptance_checks_passed": false,
+  "production_deployment_performed": false,
+  "model_calls": 0
+}

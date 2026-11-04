@@ -1,7 +1,14 @@
 import {
+  sourceContractContext,
+  sourceRequirementIdentity,
+  resolveSourceSpan,
+  assertSourceBlockHash,
+} from "./sourceEvidence.ts";
+import {
   hierarchicalPlanning,
   expandStructure,
   validateStructure,
+  validateStructureMetadata,
   savedStructure,
   planningDetailInputs,
   validatePlanningDetails,
@@ -29,10 +36,24 @@ import {
   semanticReviewInputs,
   semanticWorkflow,
   validateBlueprint,
+  validateBlueprintMetadata,
   validateReviewSectionReferences,
 } from "./proposalBlueprint.ts";
 import { normalizedEvidence } from "./sourceModel.ts";
-import { validationDiagnostic } from "./modelValidationDiagnostics.ts";
+import {
+  validationDiagnostic,
+  mergeModelValidationDiagnostics,
+} from "./modelValidationDiagnostics.ts";
+import { runModelValidationChecks } from "./modelContextDiagnostics.ts";
+import {
+  COMPANY_CONTEXT_BYTE_LIMIT,
+  COMPANY_EVIDENCE_BYTE_LIMIT,
+  COMPANY_RETRIEVAL_INSTRUCTION,
+  encodedSize,
+  retrieveCompanyEvidence,
+} from "./companyEvidenceRetrieval.ts";
+import { followupCompanyEvidence, COMPANY_FOLLOWUP_INSTRUCTION } from "./companyEvidenceFollowup.ts";
+import { assessProposalConsistency, type ConsistencyRequirement, type ConsistencySection } from "./proposalConsistency.ts";
 import {
   batchGenerationRequirements,
   requirementModelContext,
@@ -93,7 +114,23 @@ function relevant(sources: Row[], query: string, max = 6) {
 }
 const allEvidence = (ctx: PlanContext): Row[] => {
   const frozen = ctx.plan.frozen_context;
+  const contract = sourceContractContext(frozen);
+  const aliases = contract
+    ? contract.spans.map((span) => ({
+        id: span.id,
+        text: span.quote,
+        kind: span.entity_kind === "notice" ? "notice" : "rfp",
+        verified: false,
+        reference: {
+          entity_kind: span.entity_kind,
+          entity_id: span.entity_id,
+          content_hash: span.content_hash,
+        },
+        source_span: span,
+      }))
+    : [];
   return [
+    ...aliases,
     frozen.notice,
     ...frozen.blocks,
     ...frozen.knowledge,
@@ -227,9 +264,10 @@ export function taskInput(ctx: PlanContext) {
     const query = requirements.map((r) => r.text).join("\n");
     evidence = refsFor(all, [], requirements);
     if (
-      task === "draft_section" ||
-      task === "plan_commercial" ||
-      task === "review_proposal"
+      frozen.company_retrieval_version !== 1 &&
+      (task === "draft_section" ||
+        task === "plan_commercial" ||
+        task === "review_proposal")
     )
       evidence.push(
         ...relevant(
@@ -609,8 +647,117 @@ export function taskInput(ctx: PlanContext) {
       context.instruction +=
         " When the extracted inventory is empty, keep all requirement ID arrays empty and create a coherent narrative proposal structure from the known opportunity context. Write substantive proposed approach where the scope supports it; otherwise make assumptions explicit. Do not substitute a refusal or a request to upload a formal RFP for the draft.";
   }
+  if (frozen.extraction_coverage_version === 1) {
+    context.input_extraction_coverage = {
+      version: 1,
+      documents: (frozen.input_materials?.documents || [])
+        .filter((document: Row) => document.extraction_coverage)
+        .map((document: Row) => ({
+          document_id: document.document_id,
+          used_for_draft: document.used_for_draft,
+          coverage: document.extraction_coverage,
+        })),
+      instruction:
+        "Only readable supplied page text is evidence. Blank pages and pages awaiting OCR or failed extraction are distinct. Preserve readable content, and never claim all pages or all buyer obligations were reviewed when coverage is incomplete.",
+    };
+  }
+  if (
+    frozen.company_retrieval_version === 1 &&
+    ["draft_section", "plan_commercial", "review_proposal"].includes(task)
+  ) {
+    const baseline = evidence.filter((e) => e.kind !== "company");
+    const citedCompanyIds = evidence
+      .filter((e) => e.kind === "company")
+      .map((e) => e.id);
+    const retrievalRequirements = requirements.map((r) => ({
+      id: String(r.id),
+      text: String(r.text),
+      source_refs: r.source_refs,
+    }));
+    const remaining = Math.max(
+      0,
+      COMPANY_CONTEXT_BYTE_LIMIT - encodedSize({ context, evidence: baseline }),
+    );
+    let limit = Math.min(COMPANY_EVIDENCE_BYTE_LIMIT, remaining);
+    const followup = frozen.company_followup_version === 1;
+    const instruction = followup ? COMPANY_FOLLOWUP_INSTRUCTION : COMPANY_RETRIEVAL_INSTRUCTION;
+    const select = (budget: number) => followup
+      ? followupCompanyEvidence(frozen.knowledge, retrievalRequirements, budget, citedCompanyIds)
+      : retrieveCompanyEvidence(frozen.knowledge, retrievalRequirements, budget, citedCompanyIds);
+    let selected = select(limit);
+    // Coverage metadata and the instruction are context too. Reduce only the
+    // added company budget; never truncate buyer requirements or source blocks.
+    while (
+      limit > 0 &&
+      encodedSize({
+        evidence: selected.evidence,
+        coverage: selected.coverage,
+        instruction,
+      }) > remaining
+    ) {
+      const excess =
+        encodedSize({
+          evidence: selected.evidence,
+          coverage: selected.coverage,
+          instruction,
+        }) - remaining;
+      // Jump below the bytes actually admitted; reducing unused budget one byte
+      // at a time can otherwise repeat the same selection thousands of times.
+      limit = Math.max(
+        0,
+        Math.min(limit, selected.coverage.supplied_bytes) - Math.max(1, excess),
+      );
+      selected = select(limit);
+    }
+    evidence = [...baseline, ...selected.evidence];
+    context.company_evidence_coverage = selected.coverage;
+    context.company_retrieval_version = 1;
+    if (followup) {
+      context.company_followup_version = 1;
+      context.company_claim_eligible_source_ids = "claimEligibleIds" in selected ? selected.claimEligibleIds : [];
+    }
+    context.instruction += " " + instruction;
+  }
   evidence = Array.from(new Map(evidence.map((e) => [e.id, e])).values());
   // All evidence actually in the prompt and provenance of generated paragraphs stay gated.
+  if (frozen.source_contract_version === 1) {
+    const catalog = sourceContractContext(frozen)!;
+    const spanIds = new Set(
+      requirements.flatMap((r) => r.source_semantics?.source_span_ids || []),
+    );
+    const spans = catalog.spans.filter((span) =>
+      task === "analyze_chunk"
+        ? span.block_id === input.block_id &&
+          span.start < input.end &&
+          span.end > input.start
+        : spanIds.has(span.id),
+    );
+    const sources = [frozen.notice, ...frozen.blocks];
+    for (const span of spans) {
+      const source = sources.find((s) => s.id === span.block_id);
+      if (!source) throw new ModelError("STALE_INPUT");
+      resolveSourceSpan(span, source as any);
+    }
+    const selected = new Set(spans.map((span) => span.id));
+    const reviews = catalog.reviews.filter((review) =>
+      review.spans.every((span) => selected.has(span.id)),
+    );
+    context.source_contract_version = 1;
+    context.repair_contract_version = 1;
+    context.source_evidence = { version: 1, spans, reviews };
+    context.source_requirements = requirements.map((r) => ({
+      id: r.id,
+      text: r.text,
+      mandatory: r.mandatory,
+      source_refs: r.source_refs,
+      source_semantics: r.source_semantics,
+    }));
+    if (task === "analyze_chunk")
+      evidence.push(...all.filter((source) => selected.has(source.id)));
+    context.instruction =
+      (context.instruction || "") +
+      " Source evidence contract v1: cite only supplied exact span IDs for requirement source_refs and source_semantics.source_span_ids. The application preserves original clause wording separately from your interpretation. Preserve actor, modality, negation, conditions, exceptions, consequences, numeric units, currency and date roles. Source authority comes only from the supplied authority record; never infer it from filename, chronology, document kind or numeric precedence. Only copy review_id/review_status confirmed and its exact tuple when an identical current supplied human review covers all selected spans. Otherwise review_id=null and review_status=pending. Preserve buyer obligations even when company evidence is missing. A pending interpretation is not a reviewed commitment. A proposed approach is distinct from buyer instructions.";
+  }
   const manifest = Array.from(
     new Map(
       evidence.map((e) => [
@@ -636,6 +783,19 @@ export function taskInput(ctx: PlanContext) {
     requiredIds,
     manifest,
   };
+}
+/** Revalidate against immutable whole text without upgrading discovery spans or
+ * omitted sources into company proof. The model/verification graph receives
+ * the same verified=false restriction for partial company context. */
+export function generationValidationEvidence(ctx: PlanContext, input: ReturnType<typeof taskInput>): Evidence[] {
+  const eligible = input.context.company_followup_version === 1
+    ? new Set<string>(input.context.company_claim_eligible_source_ids || []) : null;
+  const supplied = new Set(input.evidence.map(e => e.id));
+  return [
+    ...allEvidence(ctx).filter(e => !eligible || e.kind !== "company" || supplied.has(e.id))
+      .map(e => eligible && e.kind === "company" ? {...e, verified: e.verified && eligible.has(e.id)} : e),
+    ...input.evidence.filter(e => e.id === `proposal-review:${ctx.step.id}` && e.kind === "review"),
+  ] as Evidence[];
 }
 async function stableId(planId: string, value: string) {
   const hash = await sha256(planId + "\n" + value);
@@ -805,7 +965,14 @@ export async function nextStage(ctx: PlanContext): Promise<{
               (a, b) =>
                 a.id.localeCompare(b.id) || a.quote.localeCompare(b.quote),
             ),
-          );
+          ) +
+          (frozen.source_contract_version === 1
+            ? "\n" +
+              sourceRequirementIdentity({
+                source_semantics: r.source_semantics,
+                interpretation: r.interpretation,
+              })
+            : "");
         if (!byIdentity.has(identity))
           byIdentity.set(identity, {
             ...r,
@@ -1002,6 +1169,27 @@ export async function nextStage(ctx: PlanContext): Promise<{
       blocking_level: "finalization",
     });
   if (frozen.draft_input_version === 1) {
+    const partial = (frozen.input_materials?.documents || []).filter(
+      (document: Row) =>
+        document.used_for_draft &&
+        document.extraction_coverage?.complete === false,
+    );
+    for (const document of partial) {
+      const pages = document.extraction_coverage.pages
+        .filter((page: Row) =>
+          ["needs_ocr", "extraction_failed"].includes(page.status),
+        )
+        .map((page: Row) => page.page)
+        .join(", ");
+      questions.push({
+        question:
+          frozen.language === "ar"
+            ? `استُخدم النص المقروء من ${document.name} فقط. الصفحات التي لا تزال بحاجة إلى معالجة: ${pages}. راجع أثرها على النطاق والمتطلبات قبل الاعتماد النهائي.`
+            : `Only readable text from ${document.name} was used. Pages still requiring processing: ${pages}. Review their effect on scope and requirements before final approval.`,
+        blocking_level: "finalization",
+        reason: "INPUT_EXTRACTION_PARTIAL",
+      });
+    }
     const unread = (frozen.input_materials?.documents || []).filter(
       (document: Row) => document.used_for_draft === false,
     );
@@ -1102,8 +1290,27 @@ export async function nextStage(ctx: PlanContext): Promise<{
       blocking_level: "finalization",
       section_key: finding.section_ids?.[0] || null,
     });
+  const consistency = frozen.proposal_consistency_version === 1
+    ? await assessProposalConsistency({
+      requirements: ctx.requirements as ConsistencyRequirement[],
+      sections: sections as ConsistencySection[],
+      sources: allEvidence(ctx) as Evidence[],
+      // Model review answers are evidence of model review, not an authorized
+      // human's source/content-bound substantive fulfillment attestation.
+      fulfillment: [], human_review: null, separate_volumes: separate,
+      input_complete: Array.isArray(frozen.input_materials?.documents) && !frozen.input_materials.documents.some((d: Row) =>
+        d.used_for_draft === false || d.extraction_coverage?.complete === false),
+    }) : null;
+  if (consistency) for (const gap of consistency.diagnostics) questions.push({
+    question: gap.detail,
+    blocking_level: "finalization",
+    reason: gap.code,
+    requirement_ids: gap.requirement_ids,
+    section_key: gap.section_keys[0] || null,
+  });
   output.next_stage = "completed";
   output.final_result = {
+    ...(consistency ? { consistency_report: consistency } : {}),
     sections,
     section_outline: createSectionOutline(
       plannedSections(ctx),
@@ -1127,6 +1334,154 @@ export async function nextStage(ctx: PlanContext): Promise<{
   };
   return output;
 }
+/** Context checks share a schema-validated result. Each independent check is
+ * collected; expansion and the validation that consumes it stay one dependency.
+ * Base validation already validates the exact frozen source contract. */
+export function validateGenerationResult(
+  ctx: PlanContext,
+  input: ReturnType<typeof taskInput>,
+  result: any,
+  options?: { independentGrounding?: boolean },
+) {
+  runModelValidationChecks([
+    // Revalidate quotations against whole immutable source blocks; excerpt separators cannot become fabricated quotes.
+    () =>
+      validateModelResult(
+        input.task,
+        result,
+        generationValidationEvidence(ctx, input),
+        input.requiredIds,
+        {
+          ...options,
+          ...{ sourceContext: input.context },
+          scopePolicy:
+            input.task === "classify_opportunity"
+              ? ctx.plan.frozen_context.discovery_scope_policy
+              : undefined,
+          draftInputVersion: draftInputPolicyVersion(input.task, input.context),
+        },
+      ),
+    () => {
+      if (
+        input.task === "draft_section" &&
+        result.key !== ctx.step.input.section.key
+      )
+        throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
+          validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "invalid_scope", {
+            paths: ["$.key"],
+          }),
+        ]);
+    },
+    () => {
+      if (input.task === "plan_structure") {
+        let expanded: ReturnType<typeof expandStructure> | undefined;
+        const template =
+          ctx.plan.frozen_context.template.required_sections || [];
+        runModelValidationChecks([
+          () => {
+            expanded = expandStructure(result, ctx.requirements);
+          },
+          () =>
+            expanded
+              ? validateStructure(
+                  expanded,
+                  ctx.requirements.map((r) => r.id),
+                  template,
+                  requirementAliases(ctx.requirements),
+                )
+              : validateStructureMetadata(result, template),
+        ]);
+      }
+    },
+    () => {
+      if (ctx.step.input.planning_phase === "details")
+        validatePlanningDetails(
+          result,
+          ctx.step.input,
+          savedStructure(ctx.steps, ctx.requirements)!,
+          ctx.requirements,
+        );
+      else if (input.task === "plan_blueprint") {
+        let expanded: ReturnType<typeof expandBlueprint> | undefined;
+        const template =
+          ctx.plan.frozen_context.template.required_sections || [];
+        runModelValidationChecks([
+          () => {
+            expanded =
+              ctx.step.input.id_aliases_version === 1
+                ? expandBlueprint(result, ctx.requirements)
+                : result;
+          },
+          () =>
+            expanded
+              ? validateBlueprint(
+                  expanded,
+                  ctx.requirements.map((r) => r.id),
+                  template,
+                  {
+                    diagnosticRequirementIds:
+                      ctx.step.input.id_aliases_version === 1
+                        ? requirementAliases(ctx.requirements)
+                        : undefined,
+                  },
+                )
+              : validateBlueprintMetadata(result, template),
+        ]);
+      }
+    },
+    () => {
+      if (input.task === "review_proposal")
+        validateReviewSectionReferences(result, input.context);
+    },
+    () => {
+      if (input.task === "plan_commercial") {
+        const sectionKeys = new Set(
+          (input.context.section_titles || []).map((s: Row) => s.key),
+        );
+        const rateIds = new Set(
+          input.evidence.filter((e) => e.kind === "rate").map((e) => e.id),
+        );
+        const diagnostics = result.lines.flatMap((line: Row, index: number) => {
+          const paths = [
+            ...line.section_ids.flatMap((key: string, i: number) =>
+              sectionKeys.has(key)
+                ? []
+                : [`$.lines[${index}].section_ids[${i}]`],
+            ),
+            ...line.requirement_ids.flatMap((id: string, i: number) =>
+              input.requiredIds.includes(id)
+                ? []
+                : [`$.lines[${index}].requirement_ids[${i}]`],
+            ),
+            ...(line.rate_id && !rateIds.has(line.rate_id)
+              ? [`$.lines[${index}].rate_id`]
+              : []),
+          ];
+          return paths.map((path) =>
+            validationDiagnostic(
+              "EVIDENCE_REFERENCE_INVALID",
+              "invalid_finding_reference",
+              {
+                paths: [path],
+                requirement_ids: input.requiredIds,
+              },
+            ),
+          );
+        });
+        if (diagnostics.length) {
+          const merged = mergeModelValidationDiagnostics({ diagnostics });
+          throw new ModelError(
+            "EVIDENCE_REFERENCE_INVALID",
+            null,
+            merged.diagnostics,
+            merged.omittedCount,
+          );
+        }
+      }
+    },
+  ]);
+}
+
 export async function processGeneration(
   backend: Backend,
   env: BackendEnvironment,
@@ -1206,97 +1561,18 @@ export async function processGeneration(
       });
       return;
     }
+    if (ctx.plan.frozen_context.source_contract_version === 1) {
+      for (const source of [
+        ctx.plan.frozen_context.notice,
+        ...ctx.plan.frozen_context.blocks,
+      ])
+        await assertSourceBlockHash(source);
+    }
     const input = taskInput(ctx);
     const validate = (
       result: any,
       options?: { independentGrounding?: boolean },
-    ) => {
-      // Revalidate quotations against whole immutable source blocks; excerpt separators cannot become fabricated quotes.
-      validateModelResult(
-        input.task,
-        result,
-        [
-          ...allEvidence(ctx!),
-          ...input.evidence.filter(
-            (e) =>
-              e.id === `proposal-review:${ctx!.step.id}` && e.kind === "review",
-          ),
-        ] as Evidence[],
-        input.requiredIds,
-        {
-          ...options,
-          scopePolicy:
-            input.task === "classify_opportunity"
-              ? ctx!.plan.frozen_context.discovery_scope_policy
-              : undefined,
-          draftInputVersion: draftInputPolicyVersion(input.task, input.context),
-        },
-      );
-      if (
-        input.task === "draft_section" &&
-        result.key !== ctx!.step.input.section.key
-      )
-        throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-          validationDiagnostic("EVIDENCE_REFERENCE_INVALID", "invalid_scope", {
-            paths: ["$.key"],
-          }),
-        ]);
-      if (input.task === "plan_structure")
-        validateStructure(
-          expandStructure(result, ctx!.requirements),
-          ctx!.requirements.map((r) => r.id),
-          ctx!.plan.frozen_context.template.required_sections || [],
-          requirementAliases(ctx!.requirements),
-        );
-      if (ctx!.step.input.planning_phase === "details")
-        validatePlanningDetails(
-          result,
-          ctx!.step.input,
-          savedStructure(ctx!.steps, ctx!.requirements)!,
-          ctx!.requirements,
-        );
-      else if (input.task === "plan_blueprint")
-        validateBlueprint(
-          ctx!.step.input.id_aliases_version === 1
-            ? expandBlueprint(result, ctx!.requirements)
-            : result,
-          ctx!.requirements.map((r) => r.id),
-          ctx!.plan.frozen_context.template.required_sections || [],
-          {
-            diagnosticRequirementIds:
-              ctx!.step.input.id_aliases_version === 1
-                ? requirementAliases(ctx!.requirements)
-                : undefined,
-          },
-        );
-      if (input.task === "review_proposal")
-        validateReviewSectionReferences(result, input.context);
-      if (input.task === "plan_commercial") {
-        const sectionKeys = new Set(
-          (input.context.section_titles || []).map((s: Row) => s.key),
-        );
-        const rateIds = new Set(
-          input.evidence.filter((e) => e.kind === "rate").map((e) => e.id),
-        );
-        if (
-          result.lines.some(
-            (l: Row) =>
-              l.section_ids.some((key: string) => !sectionKeys.has(key)) ||
-              l.requirement_ids.some(
-                (id: string) => !input.requiredIds.includes(id),
-              ) ||
-              (l.rate_id && !rateIds.has(l.rate_id)),
-          )
-        )
-          throw new ModelError("EVIDENCE_REFERENCE_INVALID", null, [
-            validationDiagnostic(
-              "EVIDENCE_REFERENCE_INVALID",
-              "invalid_finding_reference",
-              { paths: ["$.lines"], requirement_ids: input.requiredIds },
-            ),
-          ]);
-      }
-    };
+    ) => validateGenerationResult(ctx!, input, result, options);
     const outcome = await executeGuardedModel({
       backend,
       job: job as any,

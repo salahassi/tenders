@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "date_utc": "2026-11-04",
+  "root_schema_commit": "bbe3742",
+  "scope": "Local actual PostgreSQL reconstruction and public backup/restore over all 22 migrations; Auth/Storage schema stubs, no actual HTTP, no model or production calls.",
+  "command": "python3 backend/scripts/testing/cloud_restore_postgres.py --repository /workspace/work/proposal-reliability-implementation",
+  "log_sha256": "6413be80c2a0c0ff5725744467fa2dc7de0bd0d79a6a13b66cf7559f407f2cd0",
+  "receipt": {
+    "actual_http_storage_exercised": false,
+    "checks": {
+      "actual_managed_baseline_catalog_captured_read_only": true,
+      "canonical_confirmed_source_and_ready_artifact_backed_up": true,
+      "exact_fixture_reset_guards_and_trigger_fingerprint": true,
+      "managed_owner_reconstruction_and_entire_additive_batch": true,
+      "no_source_rows_or_production_role_grants_copied": true,
+      "public_restore_retains_files_and_history_revokes_live_assurance": true,
+      "reset_failure_rolls_back_rows_and_trigger_enablement": true,
+      "restore_replay_is_idempotent_without_model_usage": true
+    },
+    "migration_receipts": [
+      {
+        "isolated_role_mapping_sha256": "712a732c2e71d36aa0599f7d3f85f74f85f85c81065319d92ae83b817f3c7e6c",
+        "name": "20261104121022_partial_document_coverage.sql",
+        "source_sha256": "7a33a9794c32d398d8fa2740c80f9dce0f9eeac93c7af5616947fb24bcdb9663"
+      },
+      {
+        "isolated_role_mapping_sha256": "ae5f357cd1c833cf45a4dd69f65c46b80be2cf453061b045b7a4b628f76ae05f",
+        "name": "20261104121116_proposal_delivery_snapshots.sql",
+        "source_sha256": "323ae4275ffd64bf61413f961d9a753674154a63241cfc63230f6e2ccf27e6d2"
+      },
+      {
+        "isolated_role_mapping_sha256": "51833a2d9028361022db79cc0dc65bd8bc68b96932a870930286ee26303f48ea",
+        "name": "20261104121423_provider_failure_scope.sql",
+        "source_sha256": "68410a020a500f45587fbf845c947aff491d0f6586a3a1b09be6593b840f715a"
+      },
+      {
+        "isolated_role_mapping_sha256": "75d3002106f395830d398a87bbd7618303dc196db4a6f13a24b08138c3e9f002",
+        "name": "20261104121443_automatic_usage_recovery.sql",
+        "source_sha256": "0121ca91d4cdaea64eaacbce44ee790609ae03278a771ce1773a08e97f6170b8"
+      },
+      {
+        "isolated_role_mapping_sha256": "809130ba91f62f5db6f9ed9d1fd74d48e46b702a5dce131dd495469160173246",
+        "name": "20261104122015_company_evidence_retrieval.sql",
+        "source_sha256": "4cf7302d5a137e33741a1369eb65a9563ea37da5b9428a3222ad0566c48fedee"
+      },
+      {
+        "isolated_role_mapping_sha256": "fb649468fa5d4bf4d526369da2fc8fc79789dcc11c62eec9e62d6a2be746b406",
+        "name": "20261104122333_durable_delivery_artifacts.sql",
+        "source_sha256": "40e413760862579d6caddf79ddbb4c42134f05a4657cef5c15294be5d2aaf128"
+      },
+      {
+        "isolated_role_mapping_sha256": "3137e1c5dc207b26f0462108ec546b687af40a973bf93bed091d5732eedbfa6d",
+        "name": "20261104133930_durable_uploaded_document_ocr.sql",
+        "source_sha256": "1f189df86545aec22f2d4ee8053912b0edad36fd4fa915caf3e5df3d68638f9d"
+      },
+      {
+        "isolated_role_mapping_sha256": "a72132a63e14f032ec1505e30ad35af46c2ecba43113555c4249d2b79c6a8e17",
+        "name": "20261104134540_source_evidence_authority.sql",
+        "source_sha256": "fba123633c45282cbf12a2f7907768c647032da673d65a7853433fab615bce0e"
+      },
+      {
+        "isolated_role_mapping_sha256": "71cf21382f379ea60e70552123bd5c6f5fd1b5ae4d5ac3999877eaa0a80a0339",
+        "name": "20261104134646_structured_proposal_authoring.sql",
+        "source_sha256": "1ee8a3bdc3c5eaa0b698f22565653d8d0a73b4cb4f42d4c36c893cbb4bf46bd5"
+      },
+      {
+        "isolated_role_mapping_sha256": "43c1e5cea27b66b7d206c9dc31348bc3f20ba308688fb2fa988cc429815b70e4",
+        "name": "20261104135306_proposal_consistency_contract.sql",
+        "source_sha256": "1b8401b675194055d69d78e38ffc3f73f9f4d1036b7ce3fc66fe64cff8a6cdfe"
+      },
+      {
+        "isolated_role_mapping_sha256": "a01ea909a7a6e79c49e32fcf1b814e23b4a463909c1c61499d2a8ae4453d3aa5",
+        "name": "20261104135748_proposal_consistency_review.sql",
+        "source_sha256": "b31ae1d9dc08e4dea56cd32af49cb2c430f7a8ef18d1d4104c50fcaec5107097"
+      },
+      {
+        "isolated_role_mapping_sha256": "d3cd5e1da05611f6d8252b23fe6ec5883770aeee98e4ae410e4e7153d39c6ad6",
+        "name": "20261104140628_authored_response_adoption.sql",
+        "source_sha256": "2afe615339f15807baf38ff761df392222de529dac233acaeb81f225506f3404"
+      },
+      {
+        "isolated_role_mapping_sha256": "3f501020617232e4653852c62c19882573a713994db6dc731ea7c0044e0b3b1a",
+        "name": "20261104142525_proposal_issuance_deadline.sql",
+        "source_sha256": "5d81ed380b3c4c0eb2637cf4e9ebea566b6b86e5a4a42adcc476391e475aca51"
+      },
+      {
+        "isolated_role_mapping_sha256": "033a02674131801aac5323580ef7f80231fe4cd62f6b3182c372010048aceee1",
+        "name": "20261104143632_generated_review_delivery.sql",
+        "source_sha256": "8da4bdcbd534b04f62d157bbd49d2aa2a5e0224cdfd7fdd19f18682653dfeeaa"
+      },
+      {
+        "isolated_role_mapping_sha256": "42de0bccd1da6960e4bcb7c63bf1a3af65c540471ba1902215afc809925b93b3",
+        "name": "20261104144002_requirement_applicability_binding.sql",
+        "source_sha256": "dca1898a34571f6ccf88ce57bf24e84f5faed983d81dc5aa348b320155ebfb3b"
+      },
+      {
+        "isolated_role_mapping_sha256": "c11d567d048781733e9fce421c47d65c7413334645c89df2b4659e8ce5fcf8f9",
+        "name": "20261104150228_restored_source_review_assurance.sql",
+        "source_sha256": "d2e9f7b70f4cf2379d1a488b72612cb07afae9636eeed337b27c2225ecf6659a"
+      },
+      {
+        "isolated_role_mapping_sha256": "6eebb01f56ab3fac72f494a6b457de5343ef6659a70643f4b33d7c71263a1b29",
+        "name": "20261104151946_current_proposal_issuance_contract.sql",
+        "source_sha256": "4413206e83a6a19755d969d70b6ca4dc370c76ba79e57159d7f206d96d0a841e"
+      },
+      {
+        "isolated_role_mapping_sha256": "6ec68642d519bfbace9179bbbf4f5f635abb89aa011e40b22f2e401122fb39e3",
+        "name": "20261104152913_durable_ordinary_export_packages.sql",
+        "source_sha256": "c697b1117d8a9398cbdb48848c4090870960e9ec7679577207bd9392f7589c52"
+      },
+      {
+        "isolated_role_mapping_sha256": "6182e9e7e7740aaefba492ca425c3321d61d96969cc0a5f2afb7fe05dada1856",
+        "name": "20261104160125_proposal_issuance_file_capacity.sql",
+        "source_sha256": "46ba7ddc4c1d004557bd35e7c11c99c89f416349554e1411197c2193f9d16723"
+      },
+      {
+        "isolated_role_mapping_sha256": "41ec562b7d543599768964b1d087c95bdf89d7da6ea002867f4b33e17a4d5441",
+        "name": "20261104163406_serialize_local_document_rendering.sql",
+        "source_sha256": "6f1a87cff03d035446cce8e8aefab0e09ce23c2d2c1d4d59377f741e89e2f088"
+      },
+      {
+        "isolated_role_mapping_sha256": "46469e11506b6bd5f24b13d8e50c0b2c2b97981f2e41434986c7487aada5e28b",
+        "name": "20261104170442_durable_storage_write_intents.sql",
+        "source_sha256": "a89083335e0e61107ab7939f3582fa7dc8e664615bcc6fe8180eb5630df623c9"
+      },
+      {
+        "isolated_role_mapping_sha256": "d71b817627fc5a4977acd73190888b4c068c4dcc56209b461cdc3769610e765e",
+        "name": "20261104172700_storage_write_retirement_proofs.sql",
+        "source_sha256": "5269599b431da34c3f7ee77d06442441e692c9f2b754d2f2050a42e06dbe1634"
+      }
+    ],
+    "postgres_image": "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+    "schema_service_stubs": true
+  }
+}

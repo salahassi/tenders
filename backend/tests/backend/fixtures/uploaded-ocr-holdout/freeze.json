@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "frozen_at_utc": "2026-11-04T21:49:04.320476+00:00",
+  "recognition_run": false,
+  "recognition_qualification": false,
+  "diagnostic_matrix_inspected": false,
+  "gold_unchanged_since_initial_authoring": true,
+  "visual_preflight_correction": "An initial hyphenated-date bidi rendering error was corrected with invisible LTR markers before any OCR. Gold content and gold-manifest hash did not change. Historical invalid PDFs remain under render-attempt-1-invalid-bidi and are excluded from this freeze.",
+  "layout_note": "The gold layout labels record intended CSS. Visible paragraphs are left anchored by MuPDF while Arabic reading direction is preserved; this does not change the exact textual oracle.",
+  "files": {
+    "gold-manifest.json": {
+      "sha256": "9f855604b3df5dc26f4d10f72a9b57f6fc8d1e071381480bef72951211c48b99",
+      "bytes": 3191
+    },
+    "manifest.json": {
+      "sha256": "87efe37c61becfe3c696b60c96107c9a98739690c12508c13b7b1d9085134a99",
+      "bytes": 3799
+    },
+    "generate.py": {
+      "sha256": "897b0b29aa2005cd8d83a6934b8d2d0600c0e1659b07e4c2ec3fd98736239fd8",
+      "bytes": 6368
+    },
+    "scanned-maintenance-obligation.pdf": {
+      "sha256": "865400db7e101086faf30311b81239c52cfa71074d1b51c80354b4acab959003",
+      "bytes": 51517
+    },
+    "scanned-records-retention.pdf": {
+      "sha256": "8df77416bbfe305d1e964f72afa9a643cb6208902820b54ee233c2830768cf96",
+      "bytes": 45180
+    },
+    "scanned-sensor-acceptance.pdf": {
+      "sha256": "2954ab85ab810c853659aed7f7c95fd07785653fb588172da8076b37d9bb02e9",
+      "bytes": 41024
+    }
+  }
+}

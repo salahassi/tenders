@@ -478,3 +478,114 @@ it.each([false, true])(
     expect(system(bodies[3])).toContain("SOURCE-SEGMENT EXTRACTION");
   },
 );
+
+it.each(["normal", "correction"])(
+  "pins metadata-aware instructions only for a new typed source-contract %s analysis phase",
+  async (phase) => {
+    const s = await setup();
+    const ctx = {
+      ...context,
+      original_task: "analyze_chunk",
+      original_context: { draft_input_version: 1, source_contract_version: 1 },
+      candidate: {
+        requirements: [{ text: evidence[0].text, category: "deliverables" }],
+      },
+    };
+    const opts = {
+      ...s.options,
+      requestPrefix: `${s.requestPrefix}-${phase}`,
+      context: ctx,
+    };
+    expect(await pinVerificationPrompt(opts)).toBe(5);
+    expect(await pinVerificationPrompt(opts)).toBe(5);
+    const envelope = JSON.parse(
+      modelPrompt(
+        "verify_grounding",
+        ctx,
+        evidence,
+        ["source-1"],
+        "en",
+        false,
+        5,
+        4,
+      ),
+    );
+    expect(envelope.prompt_version).toContain(
+      "tenderdesk-grounding-v5-analysis-metadata",
+    );
+    expect(envelope.prompt_version.length).toBeLessThanOrEqual(100);
+    expect(envelope.verification_coverage_contract.kind).toBe(
+      "source_block_extraction",
+    );
+    expect(envelope.verification_policy).toContain("requirements[*].category");
+    expect(envelope.untrusted_data).toEqual(ctx);
+  },
+);
+it("keeps an existing source-contract v4 phase and the explicitly v4 recheck path immutable", async () => {
+  const s = await setup();
+  const ctx = {
+    ...context,
+    original_task: "analyze_chunk",
+    original_context: { source_contract_version: 1 },
+    candidate: { requirements: [] },
+  };
+  await s.store.action("result_put", {
+    key: `verification-instructions-${await sha256(s.requestPrefix)}`,
+    value: {
+      version: 4,
+      instructions: VERIFICATION_INSTRUCTIONS_V4,
+      legacy_input_hash: await sha256(
+        modelPrompt("verify_grounding", ctx, evidence, [], "en"),
+      ),
+    },
+  });
+  expect(await pinVerificationPrompt({ ...s.options, context: ctx })).toBe(4);
+  expect(
+    await pinVerificationPrompt({
+      ...s.options,
+      requestPrefix: s.requestPrefix + "-recheck",
+      context: ctx,
+      job: {
+        ...s.job,
+        checkpoint: { ...s.job.checkpoint, verifier_recheck: { version: 1 } },
+      },
+    }),
+  ).toBe(4);
+});
+it("does not add metadata policy to an analysis context without its typed candidate", async () => {
+  const s = await setup();
+  const ctx = {
+    ...context,
+    original_task: "analyze_chunk",
+    original_context: { source_contract_version: 1 },
+  };
+  expect(await pinVerificationPrompt({ ...s.options, context: ctx })).toBe(4);
+});
+it.each([
+  ["reserved", true],
+  ["unknown", true],
+  ["unknown", false],
+  ["settled", true],
+  ["settled", false],
+] as const)(
+  "does not upgrade an already paid typed source-contract %s phase (remote=%s)",
+  async (state, remote) => {
+    const s = await setup();
+    const ctx = {
+      ...context,
+      original_task: "analyze_chunk",
+      original_context: { source_contract_version: 1 },
+      candidate: { requirements: [] },
+    };
+    const legacyHash = await sha256(
+      modelPrompt("verify_grounding", ctx, evidence, [], "en"),
+    );
+    await addUsage(s.job, s.requestPrefix, legacyHash, state, remote);
+    expect(await pinVerificationPrompt({ ...s.options, context: ctx })).toBe(1);
+    expect(
+      await sha256(
+        modelPrompt("verify_grounding", ctx, evidence, [], "en", false, 1),
+      ),
+    ).toBe(legacyHash);
+  },
+);

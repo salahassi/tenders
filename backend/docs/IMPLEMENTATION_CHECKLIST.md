@@ -1,5 +1,984 @@
 # Implementation status and continuation plan
 
+## November 4 — current integration status and remaining release gates
+
+This overview supersedes the intermediate status statements in the dated entries
+below. The implementation branch remains **not deployed**. The permanent
+GitHub Actions → DigitalOcean access runbook is merged on `main` through PR25;
+the current reliability implementation is still draft PR24.
+
+- Both lockfile installs pass. Final frontend typecheck, **359 tests / 57 files**,
+  and build pass. The combined backend suite on committed source `c9f1c5b`
+  completed with 2,889 passing tests and two stale assertions. Both assertions
+  are corrected; their focused suites pass 32 and 24 tests respectively.
+  The [combined diagnostic receipt](evidence/combined-backend-diagnostic-20261104.json)
+  retains the red run; the complete final source still needs a green run.
+  Combined operational checks pass: 391 tests, plus 11 schema-helper and 15
+  Kubernetes-render tests. Final runtime changes still require their own checks.
+- Native canonical DOCX verification now runs in a bounded subprocess. The
+  actual continuous worker passes two consecutive two-volume jobs at its
+  unchanged 640 MiB / one-CPU limits, with concurrent transport/health checks.
+  Earlier second-job OOM failures remain recorded. The API's 64 MiB verifier
+  child passes the seven-fixture matrix at 384 MiB / one CPU, but its measured
+  container peak leaves no established headroom. Exact 700m CPU, larger admitted
+  bounds and early concurrent-file admission still require qualification.
+- The final representative visual receipt covers **18 DOCX / 91 PDF pages**,
+  with exact prior reviewed-page hashes and fresh native field/content checks.
+  LibreOffice TOC page numbers and actual Word update/save are separate limits.
+- Storage one-time send authorization, unknown-write accounting, deletion
+  receipts, request cancellation and independent replay/current-clock regressions
+  are integrated. Five real PostgreSQL lock-observed cases and 25 retirement SQL
+  cases pass. The pinned Storage/Nginx binary qualification passes 14 cases and
+  38 routing variants. Retirement/recovery and exact gateway release guards are
+  integrated; no production retirement or checked gateway rollout has run.
+- The 600-second request deadline and early no-agent failure are implemented.
+  Local exact 22-migration PostgreSQL restore passes eight checks. The first
+  cloud Auth/Storage drill failed at fixture-user setup; the second failed at
+  private-bucket setup. The third drill passes all 13 actual HTTP acceptance
+  checks and both cleanups after correcting the isolated bucket limit. The
+  fourth drill repeats all thirteen checks successfully using the source-bound
+  shared platform Auth helper. Production catalog metadata still confirms Auth
+  RLS blocks application-owner reads despite SELECT grants; deploying that
+  qualified helper remains required to repair production.
+  Full hosted package timing, deployment and actual user-flow acceptance remain
+  unproven. An optional template is not successful issuance.
+- The latest read-only model binding audit is successful run41869042836;
+  it reports no Gemini key and existing OpenAI/QwenCloud keys. The earlier live
+  campaign's credit/quota failures remain unresolved evidence, not semantic
+  success. G09 offline paired-field tests pass with explicit scope and seven
+  bounded-retrieval misses retained. Automatic Arabic OCR and private semantic
+  holdout are still open.
+
+The evidence files referenced by the detailed entries retain their exact scope
+and source hashes. Historical failures are retained rather than relabeled.
+
+### November 4 — actual cloud Auth and Storage restore passes thirteen checks
+
+[Run 41908346634](https://github.com/salahassi/tenders/actions/runs/41908346634)
+at `fb43a7a3d54518b98cadbfc344d9c1ad4b6766f4` passes all 13 actual Auth/Storage
+HTTP acceptance checks, the twelve helper guards, original cluster CA checks,
+isolated resource cleanup and temporary credential cleanup. The
+[sanitized receipt](evidence/cloud-restore-20261104-41908346634.json) binds the
+same frozen 22-migration manifest and source catalog as the previous attempts.
+It proves exact restored file bytes, owner access and former-owner denial,
+revoked review/assurance state and replay without duplicate history or usage.
+The corrected isolated bucket matches the service's actual 1 MiB file limit.
+
+This run uses the earlier fixture-specific Auth policy, so it does not qualify
+the subsequent shared production Auth helper. No customer rows were copied,
+production business records or Auth policies changed, or model calls made.
+The application renderer was not exercised. A fresh shared-helper drill,
+production release and full hosted issuance remain required.
+
+The subsequent [run 41910306855](https://github.com/salahassi/tenders/actions/runs/41910306855)
+at `28689b97503b1fe23f0999909c91427867131c91` repeats all thirteen checks
+successfully with the **shared source-bound platform Auth helper** and refrozen
+manifest `9e3430d1d01af222e3aad0d4aa8cae5e1f0c14942ae0ff258f0a96f6f953e020`.
+Original cluster CA verification, twelve local guards and both cleanup stages
+pass. Its [receipt](evidence/cloud-restore-20261104-41910306855.json) establishes
+the shared helper's isolated Auth/Storage behavior, without copying customer
+rows or changing production Auth policies. Renderer capacity, actual production
+policy repair and hosted full proposal issuance remain separate release gates.
+
+### November 4 — frozen schema and gateway contract for the isolated cloud drill
+
+The initial 22-migration manifest was committed at
+`backend/scripts/ops/proposal-delivery-release.json`, canonical SHA-256
+`8de17c4f4a3f625259c8f0318e0d51d5f344e607aecbcd737923f7e3e765a58e`.
+Its baseline is the sanitized inner receipt of successful inventory run
+41881660683; it binds the qualified gateway before/after configuration and
+pinned-binary receipt. Local freeze and source verification pass.
+
+This permits the reviewed `doks-access.yml` **mode=restore** drill on the
+published committed checkout while runtime work continues. That drill copies
+catalog metadata only into a nonce-owned isolated database and exercises actual
+Auth/Storage with synthetic fixtures. It does not deploy application images,
+copy customer rows, invoke models or qualify the application renderer.
+
+The first hosted drill, [run 41902822255](https://github.com/salahassi/tenders/actions/runs/41902822255)
+at `9eca6830915bab05af23e278449609c0d8926ecb`, failed with
+`RESTORE_RPC_CLOUD_RESTORE_FIXTURE_USERS_FAILED` and
+`AUTH_STORAGE_HTTP_ACCEPTANCE_FAILED`. Original cluster TLS and the eight local
+guards passed; isolated resource cleanup and temporary credential cleanup both
+passed. The [sanitized receipt](evidence/cloud-restore-20261104-41902822255.json)
+retains this failure. All 13 HTTP acceptance checks remain unproven; fixture/API
+diagnosis and a fresh successful drill are required.
+
+The corrected [run 41905235686](https://github.com/salahassi/tenders/actions/runs/41905235686)
+at `8b583cb9c3936f7bb004f466ab7908e8362ef4ad` passed fixture-user setup and
+failed at `RESTORE_PRIVATE_BUCKET_CREATE_FAILED`. Original TLS, twelve helper
+checks and both cleanup stages passed. Its
+[sanitized receipt](evidence/cloud-restore-20261104-41905235686.json) also
+records the actual production Auth catalog: the application owner is neither
+superuser nor BYPASSRLS, has SELECT but no effective ownership or applicable
+SELECT policy on RLS-enabled `auth.users` and `auth.identities`. This is a
+confirmed production authority gap, not merely an isolated-test mismatch.
+A narrow source-bound platform policy correction is required; no production
+Auth privilege or policy mutation has yet been made.
+
+The actual worker steady-state test remains **failed**: the temporary 256 MiB
+parent-heap cap completed the first two-volume job in about 113 seconds, then
+the unchanged 640 MiB container was OOM-killed when starting the second job.
+Native verification process isolation is being implemented and independently
+reviewed. The earlier single-job capacity results do not close this gate; final
+combined checks, image qualification, rollout and hosted issuance are pending.
+
+## November 4 — historical recovery transitions qualified at current schema
+
+G13 now has twelve additional public-command integration cases combining paid
+candidate/report/prompt state, exhausted verification budgets, accepted sibling
+work and the current issuance contract. Eligible terminal/expired unknown usage
+can be retried with a new explicit 600-second authorization while old request,
+usage, graph and source rows remain unchanged. Active ambiguity, manual policy,
+forged terminal provenance, stale source and revoked membership are denied with
+no hidden authorization or allowance change. A historical delivery contract
+requires explicit cancel/successor creation; its paid history stays immutable.
+
+The operational resume test now distinguishes its deployed November 3 boundary
+from the fully migrated refusal policy. It applies the later migrations as the
+managed owner and proves both current retry routes refuse the old contract.
+No production implementation, prompt, routing, billing policy or recovery budget
+changed. The helper's historical fixture setup precedes every paid receipt.
+
+Fresh local evidence on runtime baseline `c3f3693`: **328 focused Vitest cases**,
+**three operational Python tests**, **two real PostgreSQL command cases**, and
+backend typecheck pass. The focused count includes **43 historical wire hashes**;
+it is not a full-suite result. The complete migration hashes and scenario-level
+coverage are in [the historical recovery qualification](HISTORICAL_RECOVERY_QUALIFICATION.md).
+The two PostgreSQL cases are sequential command integration, not race evidence.
+Both dependency trees reuse the coordinator's exact lockfile installation;
+no broad package or frontend rerun was requested for this test-only change.
+Deployment, hosted/provider-specific recovery, the coordinator's final combined
+suite and other workstreams' semantic/artifact acceptance remain separate gates.
+No external model, storage, payment or production operation ran.
+## November 4 — reviewed Word fields and supported content shapes hardened
+
+The bounded verifier now checks complete complex-field instruction sequences
+(begin/instruction/separate/end) and equivalent simple fields. It permits native
+TOC switches, footer PAGE, and local TOC page/hyperlink references bound to actual
+canonical heading bookmarks. Split instructions are combined before checking.
+Dynamic/external fields and imported content containers are rejected, including
+empty cached results that could introduce content after Word refresh. A PAGE
+field cannot replace authorized footer text; a TOC field must close inside its
+own content control and cannot absorb a canonical table.
+
+Explicit active `vanish`, `webHidden` and `specVanish` properties are rejected,
+including styles. Disabled values remain accepted. Supported body/footer parent
+relationships prevent foreign/undefined wrappers from contributing text, yellow
+highlight, fields, tabs, breaks or native hyphen characters that Word could
+ignore. These are explicit supported-shape checks, **not full OOXML schema
+validation or a guarantee against every possible visual styling effect**.
+Tables and TOC controls are anchored to their canonical preceding nonempty body
+paragraph count, preserving the position of blank tables as well as existing
+row/cell/grid/ragged-table checks. The added large-model anchor pass yields to
+existing asynchronous cancellation; no deadline or caller interface changed.
+
+Local red/green evidence: **22 newly specified cases fail against verifier
+`faf1f33`** (20 unsafe acceptance cases and two valid Word compatibility cases).
+The final source passes **105 focused cases across six files**, including all
+47 bounded-verifier cases, plus backend typecheck/build. Native and Word-style
+TOC/PAGEREF/HYPERLINK, split instructions, simple PAGE, zero/Arabic/yellow gaps,
+namespace aliases and disabled hidden properties retain positive controls.
+Tests use the exact corrected renderer from **178eb04**; its two frontend files
+were copied only as local test dependencies and are excluded from this commit.
+
+Evidence and source/log hashes are in
+[`evidence/docx-field-qualification-20261104.json`](evidence/docx-field-qualification-20261104.json).
+The pre-correction sparse capacity artifact still contains an `undefined` footer
+wrapper and is not relabeled as final-source capacity acceptance. Final dense
+capacity, alternating-direction expansion, native Word/LibreOffice visual review,
+combined package checks and hosted acceptance remain separate coordinator gates.
+No provider, production, payment or external storage call ran.
+
+## November 4 — complete bounded generation-context diagnostics
+
+Generation now runs independent context checks after repairable base validation
+failures, covering section identity, structure/blueprint rules, detail scope,
+review references and commercial section/requirement/rate references. Only the
+three declared validation error codes with typed diagnostics are collected.
+Malformed schemas, unexpected exceptions, missing prerequisites and terminal
+policy/template/approval errors still stop immediately. The first validation
+code and retry metadata are preserved; no workflow or source pin changes.
+
+Unknown aliases are enumerated across every typed field before any canonical
+object is constructed. Failed expansion can still report independent raw
+metadata errors, using explicit metadata-only checks that never return
+ownership or repeat the rejected requirement references. Virtual structure
+paths are projected before deduplication and the 32-diagnostic cap, preserving
+the exact omitted count. Valid ownership, evidence checks and result objects
+remain unchanged; failed candidates are never accepted or saved.
+
+Local evidence: **205 focused tests across eight files**, including **18 new
+context cases**, and backend typecheck/build pass. The cases include 300
+commercial failures (32 retained, 268 omitted), 40 review failures plus one
+independent base failure (32/9), 40 unknown aliases plus a reserved key (32/9),
+and 64 virtual structure paths after deduplication (32/32). Both lockfiles were
+installed. Frontend typecheck and **329 tests across 53 files** pass; its build
+hit shared-workspace `ENOSPC` before artifact creation. The broad backend run
+was stopped for coordinated resource use after known integrated fixture
+failures; it is not recorded as a full pass. The coordinator owns the single
+final combined package run after the pending integrations. No production,
+model, provider, email or workflow-dispatch call was made for this change.
+
+## November 4 — Owner resolves D06 and the maximum issuance deadline
+
+The Owner requires immediate clear failure when no AI agent is available and a
+600-second maximum from request acceptance to issuance, including queue/stages/
+repair/render. Earlier terminal failures return when known. This supersedes the
+mandatory staffed no-model completion acceptance; optional manual authoring remains
+independent. The plan, BC-01/T06 and decisions now reflect that instruction. The
+model/executor agent is implementing the shared deadline/fail-fast contract with
+artifact and release coordination. No deadline deployment or timing acceptance is
+claimed yet. Historical/unknown accounting and accepted source/content remain intact.
+
+## November 4 — actual uploaded OCR quality gate found Arabic recognition loss
+
+Three committed synthetic PDFs and pre-authored English/Arabic obligation oracles
+exercise the actual native OCR image with network disabled, 768 MiB, one CPU and
+64 PIDs. The explicit native suite fails if the engine or Arabic data is absent;
+it is separate from ordinary JavaScript tests that have no native engine.
+English obligations/numbers/dates, exact mixed-PDF page selection/blank handling,
+and original-hash/page-count rejection passed. Arabic recognition **failed**:
+the first obligation was omitted and critical words were damaged. The frozen PDF
+and oracle were not weakened after this outcome.
+
+The same image reported confidence **82** and `numeric_uncertainty=false` for
+that damaged Arabic text. This is concrete evidence that neither signal can
+confirm complete extraction or preserve semantics. The exact sanitized evidence
+is [`evidence/uploaded-ocr-native-20261104.json`](evidence/uploaded-ocr-native-20261104.json).
+An earlier real-image startup failure due to root-owned package COPY permissions
+was fixed in the OCR implementation branch; its new image was used for this run.
+
+W02/T04 remain open for automatic Arabic quality. The implementation agent is
+adding current-source visual review and immutable authorized page corrections;
+an OCR failure must not label a valid original RFP invalid or erase readable
+pages/accepted history. Native image/code integration, human-correction acceptance
+and hosted OCR delivery remain separate pending gates.
+
+## November 4 — frozen bilingual semantic development campaign
+
+Implementation: two explicit live-evaluation suites now cover eight independent
+faithful/mutated semantic families in English and Arabic (32 cases total).
+Gold is excluded from provider input, corpus bytes are pinned in both entrypoints,
+and the canonical format pin, prompt and grounding validator run before scoring.
+Exact targets come from the enabled catalog. Each language is bounded to four
+targets/64 generation calls and one attempt per case; failures and unknown usage
+are retained. This changes evaluation tooling, not product call/billing policy.
+
+Local evidence: **21 Python evaluation guard tests** pass and **30 tests across
+five evaluation suites** passed before the final additional short-span oracle
+case; the updated semantic suite passes **5/5**. Provider transport is mocked.
+The independent oracle review and exact frozen scope/thresholds are recorded in
+[`SEMANTIC_QUALIFICATION_CAMPAIGN.md`](SEMANTIC_QUALIFICATION_CAMPAIGN.md).
+No live evaluation has run for this corpus yet. This is development qualification,
+not closure of private holdout D07, all-task ME-08/14, or production acceptance.
+
+## November 4 — hosted inventory and original-CA access verified
+
+[Run 41841720671](https://github.com/salahassi/tenders/actions/runs/41841720671)
+completed successfully on `7b8808174fbf62d53364e56084102a901bc1338d`.
+The original cluster CA/hostname checks, inventory read and temporary client/credential
+cleanup all executed successfully; every bootstrap step was skipped. All ten owned
+application Deployments had one desired/ready/updated replica and observed current
+generation. No business/schema/model operation ran. The exact sanitized receipt is
+[`evidence/digitalocean-inventory-20261104.json`](evidence/digitalocean-inventory-20261104.json).
+
+There is no canonical migration ledger on this database; six named application
+release receipts are present, ending with the November 3 prompt-identity and
+model-admission-fairness releases. Delivery snapshot/artifact tables and executor3
+are absent. This confirms the new implementation is not deployed yet. API/worker
+use image digest `85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380`;
+image source revisions remain independently unverified. This is a current baseline
+for a guarded release, not hosted proposal/model acceptance or schema-tip proof.
+## November 4 — G12 footer correction independently requalified
+
+A fresh actual-render/verification run on integrated source `b3b1380` produced
+**18 DOCX files and 91 PDF pages** with the exact committed footer renderer
+`fc69fef`. Every page was inspected again. Correct footer page numbers are now
+neutral; zero yellow footer drawings were found. All expected gap labels remain
+visible and yellow, with unchanged payload/model hashes and page counts. The
+source/DOCX/PDF/page hashes and separate visual review are retained in
+[the G12 report](DELIVERY_VISUAL_QUALIFICATION.md).
+
+Native TOC page-number results remain absent in LibreOffice direct conversion;
+Microsoft Word update/save is untested. This is an explicit compatibility gap.
+The later dense-input renderer capacity investigation changes source after this
+run and needs final output comparison or requalification. No production, model,
+hosted-storage, universal input-size or 600-second delivery claim is made.
+
+## November 4 — G12 initial all-page document qualification
+
+The actual integrated renderers 1/2/3 produced **18 verified DOCX files** from
+12 synthetic Arabic/English, combined/separate-volume snapshots. All **91 PDF
+pages** were inspected across 20 labelled contact sheets, with full-page checks
+for field defects. Long tables (40 technical and 32 financial rows), all seven
+typed gap reasons, renderer-3 inline/table placeholders, zero values, Arabic
+direction and repeated headers remained visible without observed clipping or
+overlap. Payload/source/DOCX/PDF/page/contact hashes and explicit visual review
+are recorded in [the G12 qualification report](DELIVERY_VISUAL_QUALIFICATION.md).
+
+**Initial result: corrections required.** LibreOffice does not display TOC page
+number results and renders footer PAGE results yellow across every fixture.
+The shared renderer correction and a fresh all-page rerun remain pending;
+some sparse gap-only final pages are a minor observation. Backend typecheck and
+Python compilation pass for the reproducible fixture/page tools. Existing full
+package gates remain the prior operations evidence below; the coordinator owns
+the final integrated checks. This is synthetic layout evidence only: no model,
+production, hosted download, Microsoft Word or 600-second issuance claim is
+made. Initial artifacts are preserved before any field correction.
+
+## November 4 — isolated release reconstruction and recovery gate
+
+The explicit `doks-access.yml` **restore** mode uses the established original-CA
+runner route. It reads only the actual managed application catalog and verifies
+either the frozen six-release baseline or the exact final release/catalog pair.
+The baseline is reconstructed under nonce roles in a disposable database, then
+the complete hash-verified additive batch is applied there with only managed
+role names rebound. Unexpected legacy roles fail closed. The production source
+supplies no customer rows. Raw definitions stay private in bounded Secret chunks
+with a concatenated SHA-256 check; setup, schema, HTTP acceptance and cleanup
+remain separate failure boundaries.
+
+The drill uses real isolated Auth/Storage and ordinary public backup/restore
+functions. Synthetic source rows and file bytes are backed up before a guarded
+fixture reset. Exact database/comment/source identity, a frozen table allowlist,
+and trigger fingerprints constrain that reset. An injected FK failure proves
+transactional rollback restores rows and trigger state. The application singleton
+workspace constraint is retained: only after removing the synthetic source does
+canonical bootstrap create the second verified Owner's new target workspace.
+Restoration retains original file hashes and historical source confirmations,
+adds current-Owner revocations, clears live requirement assurance, denies the old
+Owner, preserves idempotent replay and invokes no model. Storage fixture bytes
+are explicitly separate from actual application renderer acceptance.
+
+Local evidence: **319 operations tests**, **11 schema tests** and **eight real
+PostgreSQL reconstruction/recovery checks** pass. The PostgreSQL receipt records
+all **16 currently integrated additive migrations**, including renderer version
+3 and restored-source assurance, under a non-superuser managed owner. Its Auth
+and Storage schemas are stubs; actual cloud HTTP/bytes remain pending. The
+PostgreSQL harness now waits for the final PID-1 postmaster, avoiding the official
+image's temporary initialization-server readiness race. The release workflow
+explicitly discovers the schema tests in their hyphenated directory.
+
+Deployment, cloud restore and 600-second hosted issuance remain **unverified**.
+No production dispatch/mutation, external model or email call was made here.
+The final reconstruction must be rerun after the remaining ordinary-export
+migration joins the release. Existing package gates from this operations slice
+(backend 2,156/131 files; frontend 299/46; both typechecks/builds) are unchanged;
+the coordinator owns the final integrated package and hosted gates.
+
+## November 4 — managed catalog reconstruction and native entrypoint guard
+
+The schema reconstruction builder accepts an explicitly named managed source
+role family and maps only those reviewed roles to the isolated target family.
+It preserves column-only grants without broadening them to table SELECT; unknown
+roles, grantors or column privilege kinds fail closed. **11 schema tests** pass,
+including capture from an actual managed-role PGlite catalog and reconstruction
+in a second isolated database. Actual queries confirm metadata-only reads,
+protected payload/private tables, outsider/anonymous denials, authorized context
+RPC access and separate service authority; no role gains superuser/BYPASSRLS or
+cluster-level create privileges. This prepares cloud restoration; it does not
+claim that an isolated cloud restore has run.
+
+The release also privately checks that the native OCR container is the expected
+`ocr` identity and has no command/argument override before any SQL or image
+change. Otherwise the new image's fair worker entrypoint might never execute.
+A fixed error blocks that condition without exposing the command or arguments.
+**Eight rollout tests** pass, including each override variant; the actual five-
+minute schedule and resource baseline come from the coordinator's fresh receipt.
+
+## November 4 — final renderer and worker-floor release capabilities
+
+The release manifest now derives its renderer capability set from the exact
+reviewed migration sources and includes the separate minimum worker executor.
+Image publication and deployment require renderer versions **1, 2 and 3**,
+executor **4**, and minimum worker executor **4**. The database transaction probes
+actual immutable renderer/executor dispatch for each supported payload version
+and requires both canonical issuance requests and their status view before
+commit. The final normal-job mixed-claim regression remains mandatory; checking
+the local renderer alone cannot prove it. **12 operations release tests** pass
+with legacy-six-migration SQL replay still covered and the final runtime gates
+exercised by their fault fixtures. Final combined SQL must be rerun after all
+phase-2 migrations are merged; the manifest remains absent until that review.
+
+## November 4 — guarded delivery release tooling (phase 2 W11)
+
+Implementation: the new manual-only `deploy-proposal-delivery.yml` verifies a
+reviewed frozen migration manifest before credentials or publication, builds or
+reuses immutable source-bound runtime/frontend/native OCR images, applies the
+entire additive schema batch atomically, drains the previous worker through
+`Recreate`, and updates API/source gateway/scheduler/native OCR/frontend in order.
+Current non-image specifications, configurations, secrets and native schedules
+are retained. The existing application owner executes the SQL without new roles
+or elevated permissions. Every original table column/row and existing authority
+is compared inside the migration transaction; new tables start empty. Exact
+manifest and post-catalog receipts make lost-acknowledgement retry verifiable.
+An ambiguous rollout retains compatible code for forward completion and never
+automatically rolls back new durable version pins. Temporary client cleanup is
+restricted to the exact current run/nonce/owner, including unconditional cleanup.
+
+Local evidence: **12 operations tests** pass, including actual managed-role SQL
+batch application/replay and transaction rollback on row or authority faults;
+wrong database, ledger drift, partial receipt and post-catalog changes fail closed.
+Fault injection covers 11 rollout boundaries, source-image mismatch, concurrent
+configuration change, private error suppression, immutable image reuse and exact
+cleanup ownership. The final manifest is intentionally not generated until all
+phase-2 changes, including the new 600-second deadline policy, are integrated.
+The workflow refuses to deploy without that reviewed file and executor-4 source.
+See `PROPOSAL_DELIVERY_RELEASE.md` for the concrete coordinator sequence.
+
+Deployment and hosted acceptance remain pending. Neither these tests nor the
+aggregate queue timings certify the 600-second request-to-file/error requirement.
+Cloud restore, first new native OCR job, real authenticated file download and
+actual accepted-request/ready/error timestamps still require their own evidence.
+No workflow dispatch, production mutation, model or email call was made by this
+implementation. Final package rerun: backend **2,156 tests/131 files**, frontend **299/46**, and
+both typechecks/builds pass. Operations **310 tests** and Kubernetes manifest
+**13 tests** pass. The last metric extension separately passes its **17 Python**
+and **four SQL** cases. Existing frontend bundle/runtime-config warnings remain.
+The new global minimum-worker-executor-4 propagation and actual mixed-version
+claim regression are mandatory before schema-first release; local render-job
+exclusion alone does not close that deployment window. Renderer/payload-3
+automatic review-draft capability is also a final integration prerequisite.
+
+## November 4 — canonical issuance timing observations (phase 2 W09)
+
+The optional issuance measurements use the new immutable request contract's
+`accepted_at`, `deadline_at`, `completed_at` and outcome, rather than job row
+update times. They report accepted-to-issued p95/max, issued-after-deadline,
+expired-but-unsettled and invalid 600-second binding counts without identities or
+content. The field is null until the issuance migration exists. Isolated SQL
+fixtures demonstrate both an ordinary 180-second issuance and a deliberately
+late 650-second issuance; the late result is counted as a violation and never
+reported as meeting the bound. This is instrumentation for subsequent hosted
+measurements, not evidence that the live application has met the requirement.
+
+## November 4 — native inventory defaults correction
+
+The coordinator's extended inventory run `41845129587` passed TLS/readiness but
+stopped at `INVENTORY_SCHEDULE_INVALID` before database setup. The first attempt
+incorrectly required renderer defaults during observation. Inventory now accepts
+bounded actual five-field cron and Kubernetes concurrency values, reports absent
+deadline/resources as null and absent backoff as null with effective default six,
+and distinguishes explicit from defaulted suspension/concurrency. Field-specific
+fixed diagnostic codes replace the combined schedule check. Strict reviewed
+baseline matching remains a release responsibility. **17 Python inventory tests**
+pass, including alternate cadence and omitted optional fields. Fresh hosted
+native evidence is still pending the coordinator's rerun; bootstrap stays gated.
+
+## November 4 — native schedule and queue/capacity observations (phase 2 W00/W09)
+
+Implementation: scoped inventory additionally reads the two owned native
+CronJobs, returning only immutable image, bounded schedule/concurrency/deadline,
+resources and generation. It rejects a schedule changing during the database
+read. Credentials, environment variables and arbitrary metadata remain private.
+The same read-only transaction now returns anonymous queue-class counts, oldest
+due age, expired leases, delivery artifact reservations and aggregate workspace
+storage use. Absent pre-release tables produce null measurements.
+
+Local evidence: **16 Python inventory tests** and **four actual PGlite query
+cases** pass. Seeded isolated SQL proves due/future queue separation, retained
+expired leases, artifact byte accounting and unchanged rows. The 24-hour
+`terminal_row_elapsed_p95_seconds` statistic is explicitly elapsed creation to
+last terminal-row update, not a measured first-file or end-to-end delivery SLO.
+Counts/ages alone neither certify throughput nor close the capacity gate. No
+live inventory, native worker, model or database mutation was run for this
+follow-up; the coordinator must capture native baseline images before rollout.
+
+## November 4 — managed-role migration compatibility (phase 2 W11)
+
+Implementation: the six not-yet-deployed delivery/recovery migrations now apply
+with either the Supabase role names or the existing DigitalOcean `tdp_app_*`
+roles. Five files required conditional ACL/policy corrections; the company
+retrieval migration already handled both families. The policy expression and
+service-only RPC boundaries are unchanged. No role is created or promoted, and
+no live database has been modified. Their final release hashes must be generated
+after integration, rather than retaining the earlier local source hashes.
+
+Local evidence: **74 tests across four files** pass, including a full migration
+batch under a non-superuser, non-BYPASSRLS `tdp_app_owner` with all three legacy
+roles absent. A historical blocked job is byte-for-byte unchanged, current
+members can prepare/read the draft package, browser-role reads of private
+payloads and service RPC execution remain denied, and the managed service role
+can claim/reserve the local artifact. Existing delivery, snapshot and document
+coverage tests pass with the legacy role family. Backend typecheck passes.
+The earlier full package checks remain applicable to runtime code;
+production migration and hosted acceptance remain pending coordinator rollout.
+
+## November 4 — scoped runner inventory mode (phase 2 W00)
+
+Implementation: manual `doks-access.yml` runs now default to `mode=inventory`.
+The established one-hour kubeconfig, original cluster CA and hostname checks
+remain in place. `mode=bootstrap` explicitly retains the prior isolated
+compatibility workflow, as does its existing dedicated branch push trigger.
+Both bootstrap cleanup paths are mode-gated; inventory cannot accidentally invoke
+them. Checkout includes the helper's reviewed dependencies and workflow tests.
+
+The inventory reads only owned application deployments, observed image digests,
+Kubernetes revisions/readiness and read-only application catalog/release receipts.
+It rejects workload image/generation changes across the catalog read. Missing
+canonical migration history remains unknown rather than being inferred from a
+historical receipt. Image source commits are explicitly uninspected, separate
+from the runner source revision. Raw manifests, credentials, database exception
+bodies, function source and customer content are withheld from public output.
+Only validated fields and allowlisted release names are emitted.
+
+The database read uses the existing nonce-owned temporary client with full
+managed-database TLS verification; it creates no bootstrap database/roles and
+executes no business, migration, model or notification command. A private
+current-run cleanup journal permits the unconditional workflow cleanup to retry
+the exact client/Secret cleanup after a failed or interrupted helper. Foreign
+run names, altered ownership or permissive journal files fail closed.
+
+Local evidence: **14 Python inventory guard/redaction/lifecycle tests** and
+**three actual PGlite catalog-query cases** pass. The latter verify target-database
+rejection, optional historical ledgers and absence of routine source in receipts.
+Both lockfile installs, typechecks and builds pass; the existing **2,151 backend
+cases/129 files** and **299 frontend cases/46 files** pass, with the three new
+catalog cases separately verified. Existing frontend bundle/runtime-config and
+`whatwg-encoding` warnings remain. No external workflow, Kubernetes call, model,
+production database or email operation was performed by this implementation.
+
+Run only after the reviewed branch is published:
+`gh workflow run doks-access.yml --repo salahassi/tenders --ref codex/reliability-v2-operations -f mode=inventory`.
+The release coordinator may use the reviewed integration ref containing this
+change. Hosted current-state evidence remains pending that actual run; W09/W11
+capacity, measured latency, isolated cloud restore and rollout gates remain open.
+
+## November 4 — W08 phase 2 consistency and targeted evidence core
+
+Core implementation in progress: a versioned proposal consistency report binds
+actual response excerpts, method, deliverable and acceptance evidence to each
+requirement; source semantics and current authorized human review remain separate
+from deterministic text identity. Explicit shared quantity/currency/date/decision
+bindings are compared using Decimal strings; unknown is distinct from zero.
+Source restatement and repeated headings/forms cannot establish completion.
+Targeted company follow-up scans omitted frozen verified sources, retains exact
+paragraph coordinates and distant detected qualifiers, and exposes unresolved
+coverage. Partial sources are discovery context and cannot establish company claims.
+
+Local core evidence: 29 focused tests pass; backend typecheck passes. Actual
+generation/approval integration, authorization/currentness integration tests,
+full suites and deployment are not yet complete in this core commit. Bilingual
+retrieval aliases are bounded hints, not semantic authority or an exhaustive
+recall guarantee; unbounded source paragraphs retain an explicit capacity gap.
+
+Generation integration now applies the targeted pass only under a new frozen
+`company_followup_version:1`; both graph input and independent whole-source
+validation retain partial company evidence as unverified discovery context.
+The full parent reference remains in the authorization manifest. New assembly
+persists a versioned substantive report and finalization gaps without discarding
+draft sections; model `answered` labels cannot certify the human review. Snapshot
+wrapping preserves every prior pin and its absence. Local focused integration:
+59 tests across four files pass, including exact parent authorization, source
+revocation, late overflow evidence, partial-claim rejection and draft assembly.
+Normal proposal review/approval route, complete suites and deployment remain open.
+
+Independent review tightened the core before acceptance: numeric values now bind
+to complete numeral tokens, declared units and currencies must occur in the
+response quote, and unspecified input completeness blocks substantive completion.
+Explicit source-index/quote-hash to response-quote equivalence mappings permit
+reviewed Arabic/English qualifier paraphrases; model or anonymous equivalence
+cannot pass. Numeric assertions outside the primary requirement response need
+reviewed section bindings, and explicit financial bindings compare the current
+Decimal calculation. Targeted discovery now preserves every full source admitted
+by the first pass before using remaining bytes; partial spans cannot evict
+complete priority proof. The latest focused run passed 72 tests across five files.
+These integrity checks and scoped human reviews do not establish exhaustive
+semantic truth or prove cross-language recall; independent qualification and
+production evidence remain separate.
+
+Normal proposal review and approval integration is implemented locally. A usable
+scoped review panel records actual response excerpts, implementation method,
+deliverable, acceptance evidence, preserved/equivalent qualifiers and explicit
+shared numeric/date/decision bindings. The API computes the report from server
+content and authenticated identity; client pass flags are rejected. The service
+commit rechecks workspace role after locking, source/authority/material currentness,
+actual section rows, current Decimal calculation/delivery records, expected
+revision and actor-specific idempotency. A superseded review cannot replay as
+current. The approval wrapper retains every prior blocker and binds its review
+hash to the accepted current report. Initial draft assembly remains deliverable.
+New report/review columns use the existing version backup/retention contract;
+restored history cannot bypass current role/source checks. ACL handling supports
+both Supabase and managed DigitalOcean role families.
+
+Local evidence: 83 focused tests in six files pass, including a real migrated
+source-authority inventory through service review and actual final approval,
+source/body/member/revision/calculation change rejection, full-proof retention,
+partial-claim rejection and API trusted-report denial. A 64-test assessment/review
+regression passed after correcting function-qualified parameter labels in the
+renamed generation delegate. Both package typechecks and builds pass; all 301
+frontend tests in 47 files pass. The standalone full backend run with W05's
+copied migration but without its runtime/test integration reported 2,168 passing
+and 36 failing tests: source-contract fixture/runtime mismatches, the subsequently
+fixed generation-wrapper label regression, and one historical migration timeout.
+Combined W05/W06/W08/W10 full backend validation remains a root integration gate;
+this entry does not claim that gate passed. No production or paid model call was
+made. Ordinary final approval still requires explicit current human review;
+that does not wait inside generation or mask provider-unavailability errors.
+
+Automatic generated-delivery validation now has a separate pure machine gate.
+It reconstructs the canonical final assembly (including planned parts, fixed
+blocks and generated matrix), compares actual saved rows/outline, and requires
+matching accepted candidate and complete verifier receipts for every completed
+model step. Existing grounding and numeric evidence checks are reused; source
+restatement, generic compliance, empty/title-only content, missing response
+coverage, known quantity/unit mismatch, blocking review findings and absent
+cross-section reconciliation block issuance. Human authority/meaning/finalization
+review gaps remain explicit and do not masquerade as machine failure or human
+approval. The returned payload always remains draft and substantively incomplete.
+Nine isolated machine fixtures pass; actual publication/lease/deadline/renderer
+integration is owned by W10 and remains a combined gate.
+
+Core applicability handling now retains every inventory row with explicit
+`excluded/non_obligation` or `excluded/approved_not_applicable` classification and
+reason. Informational or confirmed nonbuyer sources require the current canonical
+source/meaning review reason. Optional buyer offers are never silently exempted;
+Owner N/A exclusions must carry the exact current source/content binding supplied
+by the existing compliance workflow. Source null actors are allowed only for
+reviewed non-obligations. The updated core/review integration subset passes 57
+tests; the W05 binding migration and UI integration are separate follow-up work.
+
+The applicability integration now accepts explicit excluded inventory rows only
+when the server context supplies the canonical current non-obligation meaning
+review or existing Owner N/A approval binding. A fabricated excluded status does
+not satisfy the service guard. The normal review UI shows pending source meaning
+accurately, sends the exact observed applicability hash through the existing
+compliance command, and requires an explicit reload/review after a stale-source
+rejection. It displays excluded rows and their reasons without losing counts.
+This composes with W05's separately owned applicability-binding migration.
+
+Automatic draft issuance now also permits a tightly scoped missing company or
+commercial input while retaining a real accepted proposed response. The exact
+input marker must appear in the body, an insufficient assumption, and the same
+requirement's finalization question and supported verifier check; an accepted
+proposed-method quote must remain independently in that response. The report
+returns `model_checked_with_gap` and the exact visible missing input. Source echo
+with an appended marker, absent method, silently omitted requirement, known
+contradiction and unrelated question cannot take that path. Service version
+volume semantics are compared with the reconstructed assembly. A shared UUID
+fixture supports W10's actual database/publication tests; those tests remain a
+separate integration responsibility. The bounded marker classifier is not
+semantic proof or an exhaustive language classifier.
+
+Latest local evidence: 69 focused backend tests across the core, generated
+machine gate, actual review database route and API pass (including all 16 machine
+gate cases); all 303 frontend tests in 48 files pass. Both package typechecks and
+builds pass. The first frontend rebuild hit shared-workspace disk exhaustion;
+removing only generated dependencies/output from the completed phase-1 retrieval
+worktree allowed the rerun. Combined backend/source/model/publication acceptance,
+real-browser visual QA, native document qualification and hosted rollout remain
+root integration gates; this follow-up contains no live or paid calls.
+
+A subsequent issuance-boundary regression reproduced a verifier accepting a
+company claim when its original prompt had only partial/unverified discovery
+context but the full parent remained in frozen storage. The gate now reuses the
+reconstructed task's exact evidence eligibility, including its generated review
+source, and never broadens it to all retained parents. Full frozen sources are
+used only to check the original requirement citation. The new fixture failed
+before the fix; all 17 machine-gate tests, backend typecheck and build pass after
+it. Frontend is unchanged from the 303-test/build gate above.
+
+## November 4 — integrated durable draft rendering and independent review
+
+Stages 3–7: six parallel implementation tracks are integrated on
+`codex/proposal-reliability-implementation`, with cross-review and separate
+regression evidence. The root integration connects immutable delivery snapshots
+to executor-3 local jobs, server-side Word generation, byte verification, private
+download APIs, current snapshot polling and an independent draft-request action.
+A user can explicitly retry a blocked file package with its observed delivery
+revision. Changing an opportunity, snapshot or client cancels stale UI actions;
+late responses cannot replace the current selection or initiate its download.
+Every package remains draft and substantively incomplete. Rendering does not
+mark model generation successful, grant approval or settle unknown usage.
+
+Missing inputs are typed placeholders. The canonical document verifier checks
+actual Open Office XML text and yellow highlighting, rejects missing highlighting
+and yellow confirmed content, and retains the legacy export contract. The new
+render projection preserves allowed source content and inserts explicit yellow
+review gaps wherever policy-restricted or financial technical-volume content is
+withheld. Safe source sentences remain in order; the stored snapshot is unchanged.
+Gap counts reflect the actual projection. Financial markers are conservative
+review rules, not universal semantic detection or proof of a complete response.
+
+The renderer runs in a fixed offline Deno subprocess with bundled fonts and cached
+locked dependencies. It has a 30-second attempt deadline, a 128 MiB old-space heap
+ceiling, a 10 MiB input/output ceiling and a 64 KiB diagnostic stream ceiling.
+The parent kills and reaps a timed-out process before retrying. Child permissions
+allow only font/cache reads; there is no network, environment-reading, file-writing
+or child-process grant. These limits are execution guards, not a measured service
+latency promise or a total resident-memory guarantee. Uploads use stable immutable
+keys and a bounded network deadline; ambiguous upload replies are recovered only
+by fetching and verifying actual bytes. Downloads validate all required volumes
+before the browser starts either file and recheck current authorization after
+reading and verifying stored bytes.
+
+Local evidence: the actual pinned Deno image builds successfully. With network
+disabled and a 640 MiB container limit, the reusable renderer smoke test kills and
+reaps an infinite CPU loop, survives child heap exhaustion, verifies English and
+Arabic files, and verifies a synthetic Arabic document with 1,000 paragraphs and
+400 table rows (444,446 input bytes; about 984 kB Word output). Six rendered pages
+from the two small language fixtures were visually inspected for text direction,
+layout, tables and yellow gaps. These are bounded synthetic samples, not full
+Word-client or customer acceptance. The real local pipeline test covers HTTP
+prepare through authenticated SQL, executor-3 claim, actual Word bytes, a failed
+second volume, canonical retry preserving the first file, full-package download,
+and membership revocation between stored-byte read and final authorization. A
+separate test removes real yellow formatting and confirms the resulting verifier
+failure becomes a blocked SQL receipt without losing saved content.
+
+Final combined validation: **2,151 backend tests in 129 files** and **299
+frontend tests in 46 files** pass (2,450 total); both lockfile installs,
+typechecks and builds pass. All **281 Python operations tests** and both Node
+runtime checks pass. The final integrated PostgreSQL suites pass **17/17**
+checks against the same 146-migration manifest, whose SHA-256 is
+`40f32caa10ba4f974c86402a83ba39ffb07eaeee37cacd051cc45d99ebbd516e`.
+The new artifact migration hash is
+`31d9380be786012ddc7bd44103c354ed99728c01640ee1b1ed6b74783061e6a9`.
+The isolated database container was removed after receipt retention. Existing
+warnings remain for deprecated `whatwg-encoding`, jsdom setup cost and the large
+frontend bundle; none is converted into a passing production acceptance claim.
+
+Release status: **not deployed; no paid model, production storage or email call**.
+Read-only inventory on November 4 confirmed public frontend/health availability
+and the DigitalOcean cluster/nodes running. Kubernetes workload/version reads
+returned HTTP 503 through the configured proxy. A fresh read-only diagnostic at
+13:16 UTC found identical authenticated and anonymous `/version` failures with
+`TLS_error: ... CERTIFICATE_VERIFY_FAILED` before upstream response headers.
+This reproduces the cloud container's previously documented direct-access
+limitation. **Correction:** the investigation initially missed the established
+GitHub Actions runner path in [DigitalOcean Kubernetes access](DIGITALOCEAN_KUBERNETES.md).
+Access was already verified on October 25 in
+[run 40230328689, attempt 2](https://github.com/salahassi/tenders/actions/runs/40230328689/attempts/2).
+The same route subsequently succeeded for
+[the November 3 runtime release](https://github.com/salahassi/tenders/actions/runs/41571450550)
+and [the following graph diagnostic](https://github.com/salahassi/tenders/actions/runs/41572919737).
+The local 503 is not evidence that this solution regressed or that cluster access
+requires a new certificate. The current deployed image, application revision and
+schema tip were not freshly inventoried through the runner in this implementation;
+they remain unverified here because that check was not performed. Historical
+success is not current workload acceptance. `AGENTS.md` now requires reading the
+established access documentation and selecting a scoped runner workflow before
+Kubernetes diagnosis, while retaining original CA/hostname verification. This
+correction changes documentation only; no workflow was dispatched, no certificate,
+proxy, firewall or production configuration was changed. Local application tests
+remain as recorded above; no runtime test rerun is needed for this correction.
+
+OCR for uploaded scans, full source authority/span and semantic repair
+contracts, provider-specific semantic/capacity qualification, whole-proposal
+consistency, substantive completion during total model outage, measured delivery
+latency, storage saturation, cloud restore and hosted upload-to-download acceptance
+remain open. The updated remediation plan records each package as partial or open;
+this integration does not close all F01–F11 findings.
+
+## November 4 — independent delivery API and UI regression evidence (W03/W10)
+
+Test-only coverage exercises the actual download HTTP handler with a rendered
+DOCX and real placeholder, byte-size and hash validation. Six API tests cover
+JWT-derived actors despite supplied actor fields, membership/source revocation
+after the storage read with no document bytes returned, unready and changed-file
+rejection, and package gap totals including policy/volume omissions without
+returning source content or storage keys.
+
+Fourteen new frontend tests cover preparing/ready/blocked states, the observed
+retry revision, stale package/save/download/retry responses after navigation,
+insufficient-input wording, automatic delivery-pointer successors, poll cleanup,
+whole-package cancellation, authenticated recovery paths and AbortSignal
+transport. Together with eight existing pending-proposal tests, the focused
+frontend run passes 22 tests. These tests use synthetic fixtures and controlled
+service boundaries; they do not prove live storage/RLS, visual Word acceptance,
+provider completion or substantive proposal completeness. The API tests exercise
+real application routing and DOCX validation with mocked backend authorization
+responses; migrated-database authorization evidence is recorded separately.
+
+Local typecheck/build pass in both packages against the integrated delivery
+source copies. Full integrated suite/deployment evidence remains the owning
+integration change's gate; no production or provider calls were made here.
+
+## November 4 — early durable delivery foundation (W01/W03)
+
+Stages 3–7: implemented an immutable `proposal_delivery_snapshots` projection
+and a separate proposal delivery pointer/revision. Creating a generation plan
+now persists a safe draft before any paid-model success; accepting a section
+persists a successor retaining accepted siblings and original output, source,
+workflow, prompt/schema/verifier and attempt provenance. The ordinary active
+version and generation base remain unchanged. Historical acceptance is visibly
+`legacy_reviewed`, requires final review, and never asserts new assurance passed.
+`delivery.snapshot.prepare` also works without a generation plan or upload;
+`delivery.snapshot.refresh` uses current proposal and delivery revisions. A
+reported rejected upload is distinguished from server-proven invalid input.
+Readable context survives partial failures; insufficient scope produces typed
+placeholders. All these snapshots remain draft and substantively incomplete.
+
+Implemented controls: current membership and source checks on content reads,
+including unread attachment metadata, service-only actor context, RLS with
+metadata-only direct reads, immutable
+payload hashes, transactionally deduplicated publication and audit, idempotent
+command replay with current authorization, and backup/restore/purge registration.
+Historical plan identifiers remain immutable provenance, not live foreign keys
+to deletable generation metadata; canonical plan cleanup preserves the snapshot
+and its accepted-unit pins. The existing requested-processing deletion test and
+an accepted-unit retention regression cover this lifecycle boundary. Automatic
+publication is pinned by `delivery_projection_version:1` on new canonical
+freezes, preserving absence/version during old-context refresh. It is limited
+to active pinned plan inserts; historical/unversioned or canceled/failed/completed
+inserts cannot move the pointer, while explicit completed-plan rescue remains
+available. Terminal insertion and the canonical verifier-recheck regression are
+also covered. The focused integrated regressions pass: **100 backend tests in
+5 files**, including requested-processing cleanup and analysis-verifier recheck,
+and **19 Python operations tests** across graph diagnostic, recovery and successor
+suites. Their historical fixtures remain unmodified; current pinned bad-source
+publication still fails closed.
+No model-processing consent is treated as blanket local-download authorization.
+The existing implementation-plan `delivery.prepare` command is preserved.
+
+Local evidence: **26 new delivery database/contract tests** pass using the full
+migration chain in PGlite, including early snapshot versus running plan base,
+replay/revision conflict, source and membership revocation, exact accepted-unit
+provenance, metadata permissions, and confirmed purge. **43 generation tests**,
+**12 flexible-input tests**, **6 operations tests**, and the full recovery test
+pass; recovery now explicitly checks immutable snapshot/pointer restoration and
+absence of duplicate publication or restored approval. Backend typecheck/build
+pass. The isolated `scripts/testing/postgres_races.py` harness also passes
+**6 boundary checks on PostgreSQL 17.6**, including 5 contested-write/replay
+scenarios with sessions observed waiting on actual workspace locks: duplicate
+prepare, accepted siblings, concurrent human edits, source change and membership
+revocation. The separate check proves an early snapshot leaves the running
+plan's base valid. Repeated prepare retains accepted progress. The image digest
+is pinned, networking is disabled, no host port or data volume is published,
+and the private receipt records migration hashes rather than customer content.
+The harness is reusable against the integrated migration tree; it is not hosted
+Supabase Auth/Storage or renderer acceptance.
+
+Deployment/hosted acceptance: **not deployed, no production or provider calls**.
+This is the persisted foundation, not a substantively complete non-model route,
+DOCX renderer or all-workflow closure. Renderer/API/UI integration, combined branch regression and actual Word/RTL/visual acceptance
+remain separate gates in the delivery plan.
+## November 4 — explicit recovery for snapshots predating the artifact queue
+
+Implementation: a source-authorized snapshot with neither artifact rows nor
+renderer jobs reports a blocked `DELIVERY_NOT_QUEUED` package with no files and
+its current delivery revision. This read does not enqueue work. An explicit
+`delivery.snapshot.retry` initializes the exact immutable volume set only when
+both counts are zero under the existing workspace/proposal lock, current write
+role/source checks and revision/idempotency guards. It creates attempt 1 under
+the current requester, reserves no storage and records a distinct initialization
+audit. Existing partial or inconsistent bundles still fail closed. Historical
+snapshots, hashes and payloads are unchanged; no automatic history backfill occurs.
+
+Local evidence: all **45 artifact database cases** pass. Two cases create
+snapshots using the foundation migration, then apply the actual artifact migration
+and initialize combined or separate packages; repeated reads stay unchanged,
+idempotent requests reuse the single bundle, and stale revisions/partial states
+are rejected. All **eight real PostgreSQL concurrency cases** pass, including
+two simultaneous explicit initializations producing exactly one job/artifact/audit
+and one revision conflict, and write-role demotion while waiting preventing any
+initialization. Write authority is rechecked after acquiring the workspace lock. Backend typecheck passes. Deployment, integrated full
+suites and hosted acceptance remain separate release gates.
+
+## November 4 — delivery verifier failure receipt compatibility
+
+Implementation: `EXPORT_PLACEHOLDER_MISMATCH`, `BUYER_VOLUME_RULE` and
+`TECHNICAL_VOLUME_CONTAINS_PRICE` are terminal delivery failure codes. A canonical
+verifier rejection now records a blocked package, releases the worker lease and
+retains pending storage accountability instead of rejecting the failure receipt
+as `INVALID_INPUT`. The immutable draft and its valid-input classification remain
+preserved; no ready artifact or model usage is fabricated.
+
+Local evidence: all **41 artifact database cases** pass, including each newly
+accepted terminal code; backend typecheck passes. The integration owner also has
+a renderer-to-database test using a genuine rendered DOCX with yellow highlighting
+removed, then passing the verifier's actual error code to the failure RPC.
+Deployment and hosted acceptance remain pending; this adds no production call.
+
+## November 4 — durable local delivery artifacts (W03/W09, EX-01/OP-04)
+
+Implementation: each immutable delivery snapshot creates a deduplicated local
+`render_delivery` job and its required combined or technical/financial artifact
+set. Executor-3 claim, local-drain and wake RPCs preserve old-worker exclusion,
+fair scheduling, model-slot accounting, restore, revision and lease guards.
+Snapshot/content commits reserve no storage. The first worker context atomically
+reserves the whole volume set against the existing combined 250 MiB ceiling;
+unknown upload bytes retain their 10 MiB reservation and stable path until a
+verified receipt or confirmed purge cleanup. Burst updates coalesce only older
+unattempted, unleased, entirely unreserved pending work; ready and uncertain files
+remain retained.
+
+The SQL service contract rechecks current actor/source access and immutable pins
+before reads or ready commits. Individual downloads require the complete volume
+set and successful package, followed by current actor/source/hash authorization.
+Authenticated metadata excludes storage paths. Receipts bind actual worker
+verification to artifact identity, lease, hash and size; SQL alone does not claim
+to inspect DOCX bytes. Rendering never changes proposal approval, accepts model
+content, calls a model or settles unknown usage.
+
+Retry policy 1 permits at most six transient failures, including expired worker
+leases, with bounded exponential delays for reported failures. Exhaustion leaves
+an explicit blocked package and retained bytes. `delivery.snapshot.retry` is an
+explicit current Editor/Owner action with delivery revision and idempotency checks;
+it creates a new local job under the current actor, preserves ready/uncertain
+bytes, and gives only restored missing volumes a fresh path. It never revives a
+historical actor or paid model job. Backup manifests include ready artifact bytes;
+restore retains completed packages and permits explicit completion of partial
+packages. Archive, purge, storage cleanup and maintenance retention now cover the
+new artifact/job references.
+
+Local evidence: **201 focused tests across seven files** pass, covering 38 new
+artifact cases plus snapshot, generation, fair queue, wake, retention and recovery
+regressions. The final corrupt-pin failure-recording adjustment was rechecked in
+all 38 artifact cases. Completed and partial two-volume backup/restore roundtrips
+pass. Six additional real PostgreSQL 17.6 cases observe independent sessions
+waiting on database locks before checking duplicate/conflicting receipts,
+source/membership/cancellation changes and competing document/artifact capacity.
+Both lockfile installs, both typechecks and both builds pass; the frontend retains
+the existing large-chunk build warning. Independent SQL review found no remaining
+blocking issue. The integration owner runs full combined suites and the actual
+renderer/API/UI checks before release.
+
+Deployment/hosted acceptance: **not deployed**; only local synthetic databases
+were used. No production, model, storage service or email call was made. Queue
+and delivery latency SLOs, actual storage saturation behavior, real DOCX/layout
+acceptance, the isolated cloud restore drill and hosted user download acceptance
+remain open. Finite retries and a local capacity guard do not establish guaranteed
+wall-clock availability under infrastructure outage or exhausted storage.
+
+
+## November 4 — worker maintenance isolation (F11 / part of W09)
+
+Implementation: eligible business work is claimed and processed before unrelated
+maintenance, reminder scheduling, notification delivery, abandoned-request usage
+reconciliation and storage cleanup. An empty first claim runs housekeeping and
+then reclaims once through the unchanged canonical queue, preserving same-tick
+scheduling without a drain loop. Each housekeeping boundary reports only a fixed
+operation name through `worker_maintenance_pending` and the worker response's
+`maintenance_pending`; no provider, credential or customer exception text is
+emitted. Failed cleanup items retain their existing failure/lease accounting and
+do not abandon the rest of an already leased batch. Confirmed remote usage can
+now be reconciled after business work in the same invocation; it remains GET-only,
+retains the exact accepted request, and never infers missing usage as zero.
+
+Authorization, source eligibility, model capacity, due times and exclusive job
+leases remain in the canonical claim/processing paths. Their failures are not
+converted into housekeeping-only success. This change adds no queue class,
+schema, storage capacity, provider permission or billing policy.
+
+Local regression evidence: six new focused cases fail against source `b1a9793`
+and pass with this implementation. The new handler cases cover healthy execution,
+each housekeeping fault, stalled maintenance after business commit, malformed
+cleanup receipts, partial cleanup, unreconcilable usage, authentication and critical
+business/source failures. Queue database cases verify real admission, exclusive
+leases, future due times and occupied model capacity under housekeeping outages.
+Both lockfile installs and both package typechecks/builds pass. **258 focused
+tests across 11 files** pass for worker, queue, provider lifecycle, collection,
+notification and operations behavior. The integration owner runs the complete
+combined repository suites before release.
+
+Deployment and hosted acceptance: **not deployed**; no production, provider or
+email request was made for this change. W09 remains open for artifact queue
+integration, measured delivery/queue SLOs, storage saturation and isolated restore
+exercises (D01/D04/D05). In-flight housekeeping can still consume the remaining
+worker invocation after business commit; this change does not claim a measured
+latency bound, independent maintenance service or completed cloud restore.
 ## November 4 — permanent DigitalOcean access reference
 
 The Owner requested an immediately discoverable, persistent reference for the
@@ -5251,3 +6230,4252 @@ failure while its recorded reason correctly says provider usage limit; this
 display/classification follow-up does not disable the shared connection or block
 DeepSeek failover. No billing, credential, quota-mode or content-permission
 settings were changed to bypass these limits.
+
+## November 4 — W02 readable-page retention and typed upload disposition (implementation slice)
+
+Scope: F03's whole-document omission and F02's typed rejected-input handoff.
+The PDF extractor now records versioned per-page coverage, retains readable
+pages around blank/scanned/failed pages, and distinguishes confirmed blank
+pages from textless pages requiring processing. A single failed page no longer
+throws away later readable text. Partial documents retain `status=partial`;
+short readable plain text remains readable, and whitespace-only input is not
+misreported as a scan. Worker failures retain a bounded input-disposition code
+for the separately implemented `delivery.snapshot.prepare` flow; a rejected
+original is not inserted as fabricated source evidence.
+
+CLI-generated migration `20261104121022_partial_document_coverage.sql` adds
+immutable extraction coverage, checks page identity/count/text lengths/status,
+and a service-only acceptance wrapper retaining the original membership,
+integrity, idempotency and source hashing checks. Browser completion also binds
+coverage to the server-read PDF page count. New draft snapshots include readable
+partial RFP and scoped review text, freeze coverage and warn about unresolved
+pages. Existing paid snapshots without `extraction_coverage_version` retain
+exact prior selection and shape; no prompt/input/receipt is rewritten. Company
+Knowledge's existing ready/verified admission is unchanged. Final approval does
+not treat partial extraction as complete or confirmed. Expired/restored source
+metadata remains historical and cannot authorize current content.
+
+Implementation and focused validation are present; deployment and hosted
+acceptance are **not performed** by this slice. Focused tests cover mixed pages,
+page-read failures, a real synthetic PDF through the pinned PDF.js Node-compatible
+parser/worker, completion transport, metadata round-trip, fully migrated SQL
+admission/replay/legacy input preservation, revocation rollback and private RPC
+permissions. Final package checks are recorded after completion below.
+
+Remaining W02: actual durable OCR execution for private uploaded originals,
+source-linked OCR successor ingestion, hosted upload/download acceptance and
+full page-coverage quality measurement. No OCR provider calls, fake OCR text,
+production changes or customer document fixtures were used. Empty/corrupt
+input's persisted independent template belongs to the delivery implementation;
+typed errors alone do not close F02 or the complete W02 package.
+
+Final local package checks for this slice: backend typecheck/build and **1,853
+passed tests across 112 files**; frontend typecheck/build and **282 passed tests
+across 42 files**. Earlier runs exposed one old HTTP mock's extra undefined
+argument and Node compatibility requirements in the new real-PDF test; both
+were corrected and the complete package suites rerun successfully. The real-PDF
+fixture uses the pinned PDF.js legacy distribution solely for Node's missing
+modern runtime APIs; production continues to use the existing browser build.
+Page coverage describes extracted text and unresolved pages, not independent
+proof that a page's text layer captures every image, table or buyer obligation.
+Original-to-extraction fidelity and durable OCR remain separate W02 acceptance.
+## November 4 — W08/F09 bounded company-evidence retrieval (local implementation)
+
+The Owner authorized implementation of the reliable proposal delivery plan.
+This slice implements RT-01's bounded retrieval behavior for **newly requested**
+`draft_section`, `plan_commercial` and `review_proposal` work. It does not mark
+all of W08 or RT-02 complete.
+
+`companyEvidenceRetrieval.ts` supplies every verified frozen company source when
+it fits the added-context budget, instead of taking only six literal matches and
+cropping each to 2,000 characters. All blocks with the same immutable source
+identity/hash are admitted together, in their frozen sequence; a later block's
+qualification cannot be silently dropped by this selector. When the bounded
+payload cannot hold everything, already-cited sources take priority and remaining
+whole sources are selected across requirements. Literal matches only prioritize
+selection; they never establish semantic support. Source count/byte coverage,
+capacity omissions, cited-source coverage and per-requirement retrieval gaps
+are explicit. Empty or incomplete retrieval never establishes company capability
+absence. Historical style remains separate from verified company facts.
+
+The 24,000-byte company allowance and 48,000-byte context envelope are conservative
+application bounds, **not** exact provider token counts or universal context
+capacity claims. Existing provider/context checks remain. Oversized sources are
+omitted intact with an explicit gap; no automatic secondary model retrieval,
+vector platform or arbitrary document truncation was introduced.
+
+CLI-created migration `20261104122015_company_evidence_retrieval.sql` wraps the
+existing private draft snapshot function and pins `company_retrieval_version:1`
+only for new requests. Historical absent pins and explicit prior pins survive
+currentness checks unchanged. The wrapper preserves all delegated snapshot fields,
+old rows, jobs, input hashes, source/currentness checks and private ACLs. Existing
+paid requests retain their old six-source/snippet behavior and exact prompt input.
+
+Verification: both package lockfiles were installed using `npm ci`. New synthetic
+retrieval cases exercise source seven, late evidence, Arabic/English in both
+directions, synonyms without literal overlap, equal ranks, requirement-fair
+selection, whole-document qualifiers, cited-source priority, capacity exhaustion,
+unverified/style controls and unchanged historical task inputs. Seven fully
+migrated database cases cover new/old pins, migration-boundary row/job preservation,
+source expiry, revoked verification, exact provider-permission revocation for a
+newly selected seventh source, and private function privileges. Final checks pass **1,868 backend tests across 112 files** and **269 frontend
+tests across 40 files**, plus both packages’ typecheck/build. A final narrow
+capacity-loop improvement was rechecked with **66 focused tests across 5 files**
+and backend typecheck/build. The new retrieval-specific cases total 27 tests
+(20 selector/task-input cases and 7 database cases).
+
+Supabase function security guidance and the relevant database changelog were
+reviewed. The migration creates no public table/API or new permissions. Local
+`supabase db advisors --local --type security --level warn` could not connect
+because no local Supabase server listens on 127.0.0.1:54322; no hosted or retired
+project was queried. Private ACL and actual migration queries passed in PGlite;
+this is not a hosted advisor/authorization acceptance claim.
+
+Deployment and hosted acceptance: **not deployed; not exercised with live models**.
+Company Knowledge permission remains enforced at canonical per-provider preflight;
+this change does not silently grant permission or create a provider-specific
+filtered candidate pool. Permission failure can still stop AI enrichment and must
+remain distinct from invalid RFP input in the delivery workflow. RT-01's broad
+semantic recall/precision calibration, automated targeted follow-up for oversized
+sources, and RT-02's whole-proposal obligation/annex reconciliation remain open.
+## November 4 — W06 bounded reference diagnostics and quote-only correction scope
+
+Implementation: local source change; not deployed or hosted-accepted. The actual
+schema-valid task validator now collects independent quote/source-provenance
+failures across requirements, verifier claims/checks, reviews, classifications,
+planning decisions and draft citations. Analysis/review coverage errors no longer
+hide independent quote failures. The retained diagnostic set is bounded to 32,
+ordered by field path, with an explicit omitted count carried through candidate
+retention, repair-only artifacts and corrective requests. Full validation still
+rejects any unresolved reference; overflow is never represented as complete review.
+
+Newly started quote-only correction phases pin a versioned candidate hash and
+allowed quote paths. The application composes replacements from the original
+candidate and rejects every other change before an invalid response can enter the
+paid-writer repair cache. Source IDs, obligations, quantities, array structure and
+unrelated text cannot change through this path. Historical paid, prepared and
+same-phase saved-round requests keep their exact old context; no prompt, usage,
+allowance, permission or provider setting is reset. The existing full-result wire
+schema is retained as a proposed patch for compatibility, with strict server-side
+scope enforcement. Semantic/source-identity corrections do not silently acquire
+quote-only scope or an expanded edit permission.
+
+Validation: both lockfiles installed with `npm ci`; four real-validator regression
+cases failed before the change (four defects collapsed into one, coverage hid
+quotes, overflow missing) and pass afterward. A pre-validation scope guard test
+also failed before implementation. Eleven focused files / 326 tests pass, including
+fully migrated graph/SQL handoff, crash replay, pinned semantic requests, canonical
+verifier recheck, overflow boundaries, three-of-four correction, wrong source role,
+unknown provenance, and out-of-scope obligation/text/source/deletion mutations.
+The real graph rejects a scope-violating repair without retaining candidate-1,
+accepting it or invoking its verifier. Backend typecheck passes. Broader package
+checks remain part of integration; this local evidence is not production success.
+
+Remaining W05/W06 gates: stable source spans and authority semantics; a dedicated
+patch wire schema and justified semantic dependency expansion; exhaustive local
+validation beyond references/selected coverage; all-task typed verification
+(ME-08) with phase-compatible historical hashes; independent semantic/live model
+qualification and deterministic artifact delivery. No production or external model
+calls were made for this change. Do not mark W05/W06 or T08/T09/T19 complete.
+
+## November 4 — W06 / ME-08 typed verification formats and historical phase compatibility
+
+Implementation: local source change; not deployed or hosted-accepted. Newly
+started verification of every business task now preserves the candidate's field
+hierarchy, booleans, numbers, nulls, ownership and citation metadata. New whole
+requests use format 4; new nonanalysis batches use format 6 with typed structural
+references to the existing canonical content IDs. Their complete/scoped ID
+manifest and explicit scope instruction distinguish text reviewed in another
+batch from genuinely missing information. Narrative text is not duplicated into
+every batch. The additional structure has a per-request 1 MiB ceiling, derived
+from the existing durable graph result envelope; it does not impose a daily
+application model quota. Existing source/retrieval coverage context survives
+unchanged, and missing company proof still cannot establish missing capability.
+
+The format migration applies only to an unstarted phase. Prepared instruction
+pins, reserved/unknown/settled receipts and a same-phase saved legacy round retain
+their original wire input; formats 1/2/3 and batch formats 3/4/5 are immutable.
+Special audit verification has a distinct phase-aware format pin and receives its
+typed audit candidate. Existing private graph pins provide the migration record;
+no database rewrite, paid-request repin, candidate allowance reset, usage rewrite,
+provider permission or billing change is performed. Old results keep their old
+assurance level; this change does not retrospectively certify their typed fields.
+
+Validation: two regression cases failed before the typed-context change and pass
+afterward. The broad local model suite passed 36 files / 809 tests, followed by
+10 additional registry-driven requirements-only/aggregate scenarios; the updated
+registry file passes all 33 tests. Backend typecheck and build pass. Coverage
+was rechecked after the final bounded-context refinements in six focused files /
+180 tests, with backend typecheck and build repeated successfully. Coverage
+includes all 13 registered tasks: ten business tasks exercise typed paired
+mutations, canonical report validation, scoped quotes, required-only coverage,
+aggregate IDs and duplicate/invented-ID rejection; repair and verifier tasks
+receive local target/report validation without recursive verification, and the
+connection probe tests only its ready/transport boundary. Forty-three frozen
+synthetic historical wire hashes match committed baseline d5ddad3. Seven fully
+migrated database cases preserve prepared/paid/unknown/saved-round phase identity
+and accounting. A long draft proves the bounded typed structure does not repeat
+out-of-scope narrative, and its batch manifest covers every original content ID.
+The existing real graph audit and batching regressions also pass. No external
+model/provider calls were made; complete package checks remain integration work.
+
+Remaining ME-08 / W05-W06 acceptance: independently labeled semantic model
+qualification for all task/field/language cases, authority and modality contracts,
+source spans and semantic dependency expansion, and explicit assurance for legacy
+results. Exact citation metadata remains present in each typed batch; the structural
+ceiling is not a provider-specific token-fit guarantee for citation-heavy results.
+Existing input/context gates still apply, and capacity qualification remains open.
+Local payload visibility and canonical scope gates do not establish that
+a model will always judge a typed field correctly. The full ME-08 acceptance
+matrix, W05/W06 and T01/T02/T09/T19 therefore remain open.
+## November 4 — W07 provider classification and guarded automatic recovery (local)
+
+**Implementation:** F10 classification and the narrow F08 retry/handoff conflict
+are implemented locally in two additive CLI-created migrations and the adapter.
+This is not closure of every W07 historical recovery variant or the proposal
+artifact delivery workstream. Nothing in this change was pushed or deployed.
+The November 3 permanent-reconciliation limitation above describes the old
+runtime; the new canonical automatic path below retains unknown accounting while
+releasing only proven terminal or policy-expired execution.
+
+Provider status, bounded error code and reason now distinguish quota/balance,
+credentials, denied permission, unavailable model, invalid request and uncertain
+transport. HTTP 403 alone no longer means bad credentials. HTTP 200 terminal
+background errors retain their lifecycle marker while recording a separate
+quota reason and scope. No raw provider message is added to telemetry. Scope is
+stored on the attempt and drives both in-round and persisted cooldowns. Proven
+model scope leaves a healthy sibling eligible; connection/project/account and
+unknown scopes are conservatively shared. Frozen route identities survive
+later model edits. Successful GET retrieval and later invalid requests cannot
+clear a generation quota window; a successful generation can. Explicit
+Retry-After and the existing bounded backoff remain effective. No billing,
+credential, free-only setting, or provider limit is changed.
+
+The private automatic recovery predicate replaces only the reviewed permanent
+holds in per-job retry, writer-validation handoff and canonical reservation.
+Reserved calls and active/ambiguous same-target execution remain blocked. A
+terminal exception requires an exact linked failed attempt, matching target
+identity and terminal finish reason; historical generic request rejection also
+requires the exact remote response ID. Otherwise both the 15-minute boundary and
+remote deadline must have elapsed. Null or incomplete evidence fails closed.
+Every permitted recovery records immutable receipt lineage before transition or
+reservation, including the originating job for cross-job input matches. It does
+not settle, delete or zero usage, increase correction allowance, repin old
+requests, or waive current source/provenance/lease/authorization checks.
+
+ME-11 local recovery coverage is explicit:
+
+| Execution state | Local assertion and evidence |
+| --- | --- |
+| Valid automatic candidate with null usage | Existing `roundRobin` canonical completion remains accepted with null usage and no token-count endpoint. |
+| Accepted active remote request | Existing continuation tests keep the remote identity and GET; new handoff/retry/reservation cases reject fresh recovery. |
+| Ambiguous before boundary or later remote deadline | Immediately-before boundary and unexpired deadline cases refuse recovery without changing receipt, candidate or budget. |
+| Ambiguous at/after boundary and deadline | Exact at/after tests allow canonical retry/handoff/reservation, with fresh call identity and unchanged unknown receipt. |
+| Proven terminal unknown plus retained alternate candidate | Handoff and actual adapter failover tests preserve candidate/provenance and unknown ledger; tag-only, null-code and mismatched response fail closed. |
+| Unrelated old unknown receipt | Existing phase isolation permits independent authorized work; cross-job same-input recovery records the actual prior job/receipt. |
+| Exhausted correction allowance | Handoff/retry never replenishes writer budget; candidate-budget RPC still refuses an extra correction. Artifact assembly is a separate workstream. |
+| Manual route | Manual terminal-unknown retry/handoff remains refused; legacy manual reservation policy is unchanged. |
+
+**Tests:** focused policy/provider suites passed 252 tests before the full legacy
+outage compatibility pass. Real PostgreSQL 17.6 multi-session checks passed three
+races: same retry idempotency key, different keys against the same revision, and
+active remote refusal. The harness observed both contenders waiting on the real
+workspace lock before release. Allowed recovery had one job transition, one
+recovery audit and one action audit; stale revision lost; active remote produced
+none. Original unknown receipt and an exhausted writer allowance of three were
+identical afterward. The reusable test is
+`scripts/testing/provider_recovery_races.py`, using the shared
+`scripts/testing/postgres_races.py` harness. Its receipt records image and all
+migration hashes. Handoff replay/guard coverage is local fully migrated PGlite;
+this change does not claim a separate real-PostgreSQL handoff race or live model
+acceptance. Final package gate counts are recorded below after completion.
+
+**Deployment / hosted acceptance:** not deployed; no production/model/billing
+calls. Both account and unknown scope currently cool all same-provider targets
+in the workspace because the catalog has no trustworthy provider-account ID.
+This can conservatively delay genuinely independent accounts; narrowing it
+requires explicit account identity, not an inferred connection boundary.
+Historical rows are not rewritten, and production replay/selected recovery,
+full historical successor coverage, hosted artifacts and model qualification
+remain separate acceptance work.
+
+Final local package gates for this W07 change: backend **1,904/1,904 tests**
+across 111 files, frontend **269/269 tests** across 40 files, and both packages'
+`typecheck` and `build` passed. The final historical quota regression covers
+code-only terminal attempts with null reason/scope; read-time classification
+preserves those old rows. Final real PostgreSQL race rerun passed **3/3** against
+the final migration hashes. Provider transport is mocked in these suites; the
+PostgreSQL container has no network or published ports. Frontend checks are
+jsdom/build evidence, not browser visual or hosted artifact acceptance.
+
+## November 4 — W05 source identity, authority and obligation semantics v1
+
+Implemented `sourceEvidence.ts` and CLI migration
+`20261104134540_source_evidence_authority.sql`. New proposal requests pin source
+contract 1 and repair contract 1; an existing snapshot without those pins keeps
+its original schema and input identity. Original Unicode code-point ranges,
+exact quotations, entity/hash/block/extraction identities and current authority
+records are resolved before use. The application materializes requirement text
+from original passages and keeps interpretation separate. Distinct interpreted
+obligations sharing a passage retain distinct identities. Source normalization
+has a reversible mapping; normalization never replaces the original citation.
+
+Owner/Editor authority and obligation review commands append versioned records
+with workspace locking, current membership, expected revision, idempotency and
+audit. Source kind, filename, chronology and numeric precedence never confer
+buyer authority. A clause replacement requires an explicitly confirmed addendum
+relation to the exact older source hash plus an explicit replaced review ID;
+other clauses and original sources remain available. Missing company evidence
+does not remove a buyer obligation. Unknown modality or negation cannot be confirmed. Obligations require a known
+actor; confirmed informational/nonbuyer material can explicitly have no actor. The canonical inventory and final-assurance checker reject stale,
+revoked, superseded or unresolved evidence. Source reviews use the OCR publication
+resolver when installed; an old immutable parent stays historical, not current.
+
+The service-side requirement insertion guard independently checks original
+text, references, source meaning and authority, so bypassing a model parser does
+not persist an unbound v1 requirement. Reviewer reasons remain in append-only
+history and are replaced by a fixed label in model context. Review history joins
+backup manifests and the existing preview-bound Owner purge. RLS and function
+privileges handle both Supabase and managed DigitalOcean role families.
+
+Verification: source tests initially exposed eleven failures, including hidden
+semantic mutations and overlong span IDs; corrected tests cover exact Unicode
+ranges, hash/version/offset changes, negative and conditional meaning, exceptions,
+consequences, actor, quantity/currency/date mutations, independent sibling
+findings, forged confirmation, unresolved meaning, addendum replacement,
+source-bound persistence, legacy pin preservation, revocation and extraction
+successor currentness. Materialized candidates over 768 KiB fail explicitly
+without trimming original passages; W06 maps this condition into the existing
+bounded split path. Exact source metadata does not certify universal semantics.
+Meaning/authority pending review remains explicit and cannot pass the W08 final
+assurance gate. Deterministic tests do not constitute live model qualification.
+
+Local integrated validation includes W06 model/graph hooks from `65fb166`; these
+hooks are a release dependency, not duplicated in the W05 commit. The source and
+runtime suites pass, including all 55 generation/flexible-input cases; historical
+recovery fixtures explicitly freeze the pre-v1 contract before any paid work.
+The final full package and real PostgreSQL counts are recorded below. Frontend
+`typecheck`, all 299 tests and `build` passed. PostgreSQL races observe both
+contenders waiting on the workspace lock: same-key replay appends once,
+different keys against one revision admit one, and a source edit before release
+rejects both stale reviews. Synthetic database only; no provider, production or
+billing call, deployment or hosted acceptance was performed.
+
+Final W05 local integrated package gates: backend **2,176/2,176** in 131 files
+with `npm test -- --testTimeout=15000`, backend `typecheck`/`build`, generated
+OpenAPI, and frontend **299/299** with `typecheck`/`build`. The default five-second
+test allowance had one migration-fixture startup timeout; its isolated rerun
+passed 6/6, and the complete suite passed with the explicit 15-second test
+allowance. This changes no application deadline. Real PostgreSQL races passed
+**3/3** against the final source guard migration; subsequent applicability-only
+projection changes have focused coverage. Hosted/deployed/live-model acceptance
+remains separate.
+## November 4 — W06 phase 2 scoped patch executor and source-contract hooks
+
+Implementation: local source only, not deployed or hosted-accepted. New workflows
+with `repair_contract_version=1` use a phase-pinned patch response instead of a
+complete replacement candidate. The server binds the base candidate, scope,
+unit and previous-value hashes; supplies exact typed path schemas; and composes
+authorized replacements, additions or appends. Existing array units cannot be
+deleted or reordered. The one removal operation is confined to an unsupported
+company-claim declaration and requires its associated narrative correction and
+an appended question for the missing proof. Optional missing fields and missing
+planning units are added without replacing their existing siblings.
+
+Application-owned task-field dependency groups expose linked requirement text,
+modality, source semantics and commercial assumptions with recorded reasons.
+Ambiguous/unlocated findings do not authorize a document-wide rewrite. Model
+requests cannot widen the supplied scope or edit review approval identities.
+Known effort/allocation changes recalculate the minimum dependent duration using
+decimal arithmetic, retaining longer explicit durations and unrelated tasks.
+The complete composed target still passes canonical domain validation and an
+independent grounding pass. Applied-path receipts retain the original candidate,
+canonical new hash, dependency reasons, derived arithmetic and unresolved/overflow
+counts; receipt hashes remain stable across PostgreSQL JSONB key ordering.
+
+Prepared semantic/quote-scope pins, accepted or settled/unknown phases and saved
+legacy rounds retain their existing request/schema identities. Numeric durable
+schema versions remain compatible with SQL: legacy 1, source contract 2, scoped
+patch 3. No candidate allowance, retry budget, unknown usage, provider permission,
+billing/free-only setting or automatic daily quota policy changes. Both source
+contract hooks and patch application run before invalid-candidate retention;
+source authority/review fields are materialized from the immutable application
+contract, and source diagnostics join reference diagnostics with explicit overflow.
+
+Validation: both lockfiles installed. Full local backend suite passed 132 files /
+2,173 tests; frontend passed 46 files / 299 tests; both typechecks and builds pass.
+This includes the actual migrated graph's legacy/new patch positive, crash and
+out-of-scope rejection cases, immutable accounting/allowances, source tuple
+correction, 33 independent source defects producing 32 diagnostics plus one
+omitted, forged approval materialization, required append/no deletion, dependency
+arithmetic, stale base/unit/path rejection, and the 43 historical wire hashes.
+The sourceEvidence module is the coordinated W05 agent dependency and is not
+duplicated in this component commit. The full suite used that local dependency;
+integration must include its final reviewed revision and repeat combined checks.
+
+Remaining phase-2 work is tracked separately: wider same-requirement semantic
+diagnostic enumeration, additional typed-field/provider-context qualification,
+fresh connected frozen-corpus evaluation and independent semantic holdout/domain
+review. These local controls do not establish universal semantic correctness or
+provider capacity for every possible document. No external model calls occurred.
+### 2026-11-04 — W10 optional structured authoring and immutable adoption
+
+**Implemented locally:** source-cited authoring sessions, immutable response revisions,
+explicit responsibility claims, current source/authority checks, human review scoped to
+actual response excerpts, canonical consistency checks, and separate renderer-2 saved
+files. A current Owner/Editor may adopt reviewed content into a new ordinary proposal
+version with immutable requirement mappings; normal compliance, commercial, consistency
+and final-approval gates still apply. Later human edits invalidate prior approval and
+require a new adoption. Source successors retain prior text and provenance, clear stale
+requirement bindings, and require explicit review. Background accepted units remain
+saved without replacing a selected authored delivery. Version-1 payload semantics and
+renderer output remain pinned. New renderer-2 jobs require executor 4; old claims remain
+restricted. New schema privileges support both installed role families.
+
+**Policy update:** manual authoring is an optional authorized workflow, not a mandatory
+staff fallback and not success for an automatic request. The user's later D06 decision
+requires an immediate clear error when all AI agents are unavailable and a request-wide
+600-second automatic issuance limit. Deadline/admission and automatic complete-file
+projection are separate implementation work; this entry does not claim their completion.
+
+**Evidence:** migrated SQL/API/real Word pipeline verifies actual supplied synthetic
+responses without model calls, no automatic approval, renderer-2 download, explicit
+ordinary-version adoption, replay, revision conflicts, current membership, source-change
+successor retention and direct-RPC ACL denial. Focused snapshots/pipeline: 33 tests passed;
+runtime wake/pipeline: 109 passed; authoring/delivery UI: 12 passed. Five real PostgreSQL
+multi-session races passed using the synthetic, network-isolated PostgreSQL 17.6 harness:
+`python3 backend/scripts/testing/authoring_races.py --container <synthetic-container> --output <private-receipt>`.
+Both contenders were observed waiting on the workspace lock. Receipts contain migration
+hashes, identities and counts, not customer content or secrets. Full package validation is
+being reconciled against the integrated phase-2 source/consistency changes; these focused
+results are not a claim that the complete integration suite passed.
+
+**Deployment / hosted acceptance:** not deployed by this change; no production/model/email
+calls. Browser visual acceptance, hosted artifact storage/restore and the separate
+600-second automatic generated-review-draft route remain unclaimed here.
+
+### 2026-11-04 — Original-bound PDF page correction interface
+
+Implemented a shared PDF page review interface for opportunity and Company Knowledge
+files. The browser verifies the private original bytes against their SHA-256 before
+allowing review, displays the original beside editable full-page text, requires
+explicit comparison and separate blank-page confirmation, and submits immutable
+source/revision/page hashes to the W02 correction API. Edits clear their review flag.
+Lost replies reuse the same idempotency key; conflicts retain unsaved text; document
+changes abort stale work and revoke local preview URLs. Reviewers remain read-only.
+Automatic OCR failure is not described as an invalid RFP.
+
+Validation: eight focused jsdom tests passed, covering Arabic correction, blank pages,
+batched edits, source mismatch, bounded previews, stale selections, read-only access,
+CAS conflicts and lost-response replay; frontend typecheck passed. These are not
+real-browser or hosted authorization evidence. W02 backend integration and final
+package/browser acceptance remain separate pending checks. No production data or
+model calls were made by this interface change.
+
+### 2026-11-04 — Extended production inventory receipt
+
+GitHub Actions run [41849412810](https://github.com/salahassi/tenders/actions/runs/41849412810)
+at source `59c6b309470cacf4dd605325e9a76cb132b88449` succeeded with original cluster
+CA verification, ten ready workloads and verified temporary-client cleanup. The
+read-only receipt is `evidence/digitalocean-inventory-20261104-41849412810.json`.
+It captures actual native browser/OCR schedules, immutable images, resource limits,
+queue counts and capacity without business/schema mutation, model calls or bootstrap.
+The six production release receipts and routine catalog hash match the first inventory.
+New delivery/issuance schema is still absent: this is baseline evidence, not deployment
+or proof of the new 600-second SLO. Earlier run 41845129587 failed because the observer
+incorrectly assumed renderer schedule defaults; TLS access passed. The observer now
+records bounded actual settings and explicit/default fields instead.
+
+### 2026-11-04 — Semantic harness declaration integration
+
+Added TypeScript declarations for the frozen bilingual semantic qualification helper
+and its suite names/limits, and narrowed fixture-language/nullability in the existing
+semantic harness tests. Backend typecheck passes against integrated W05/W06/W08/W10
+foundations. No prompt, corpus, gold labels, provider calls or live outcomes changed.
+The real English/Arabic campaign remains unqualified; independent failure adjudication
+and the remaining implementation checks are recorded separately.
+
+W05 rolling-worker follow-up: source contract activation now installs its
+executor floor in the same migration before admitting new snapshots. New source
+or repair contract jobs retain `minimum_worker_executor: 4` independently of
+older `model_executor` values. Both eligibility predicates in the fair queue
+honor the greater value. A test stopped at the exact `134540` migration boundary
+proves executors 1/2/3 cannot select the v1 job while executor 4 can, and a later
+`model_executor: 2` update cannot lower the floor. Source/module tests pass 27/27.
+This rollout guard intentionally changes current-worker fixtures; combined
+issuance-deadline integration must use executor 4 for new workflows. The earlier
+full-suite totals above preceded this rolling-worker refinement.
+
+### 2026-11-04 — Request-wide issuance status in the interface
+
+The authenticated issuance-status route delegates to the membership-checked RPC;
+its response drives the proposal preparation panel separately from generation-stage
+completion. Finished writing cannot show complete-package success for a new request.
+Unavailable agents and the 600-second terminal state have explicit messages, failed
+issuance alerts use the exact current request identity, and stale request responses
+cannot claim success. Progress polls remain serialized, including slow workspace
+refreshes, with a five-second display refresh; the server deadline is authoritative.
+
+Validation: 18 API boundary tests and 24 generation-panel tests pass. The integrated
+frontend currently passes 49 files / 317 tests, typecheck and production build; backend
+typecheck passes. The new RPC depends on the coordinated deadline migration, which
+is not deployed yet. Real hosted timing/package issuance remains a separate gate.
+
+### 2026-11-04 — Actual bilingual semantic development results
+
+Both bounded live campaigns completed against source `ea420a00082f23b7b540f099dd76515378142652`:
+English [41844431244](https://github.com/salahassi/tenders/actions/runs/41844431244)
+and Arabic [41844440530](https://github.com/salahassi/tenders/actions/runs/41844440530).
+Sanitized per-target/case outcomes and private-receipt hashes are retained in
+`evidence/semantic-development-v1-20261104.json`; raw private diagnostic bundles
+are excluded from the repository. Each campaign attempted 64 cases, one attempt
+per case, with zero production business records created. Frozen v1 labels and
+original scores are retained unchanged pending independent adjudication.
+
+OpenAI gpt-6-luna and gpt-6.1-sol rejected every request for unavailable credits;
+QwenCloud qwen3.8-max rejected every request for exhausted free quota. DeepSeek
+v4-pro through QwenCloud passed 11/16 English cases and 9/16 Arabic cases under
+v1 scoring. Its final five Arabic cases also returned provider 403 free-quota
+exhaustion, so those cases are unscored availability failures, not demonstrated
+semantic misses. All four tested targets were unavailable by the end. No billing
+or free-only account setting was changed. English measured 77,330 input / 8,241
+output tokens with 48 unknown-usage cases; Arabic measured 53,961 / 6,589 with
+53 unknown-usage cases. Unknown accounting is retained, not silently set to zero.
+
+Neither campaign qualifies a provider. Validity/semantic failures and a suspected
+oracle containment false negative require independent offline adjudication before
+any versioned evaluation correction; private holdout D07 and live complete-proposal
+acceptance remain open. Further live success requires an available provider.
+## November 4 — current content binding for Owner applicability decisions (W08)
+
+Migration `20261104144002_requirement_applicability_binding.sql` extends the
+existing Owner-only `compliance.save` / `not_applicable_approved` action. New
+pinned workflows require `expected_applicability_binding` from the Owner's current
+view. The existing workspace-locked command checks it against the exact current
+source-reviewed requirement, version content/package/evidence and every actual
+section row; a fresh hash is never silently attached to a stale approval. Version
+revision-only changes do not invalidate otherwise identical content. Source
+meaning or authority still pending cannot be waived through this route, and the
+existing mandatory-eligibility prohibition remains intact.
+
+The current consistency context exposes server-derived requirement bindings,
+review reasons and approved exclusions only while the confirming Owner and
+allowlist remain active and all hashes/current sources still match. Legacy and
+restored unconfirmed N/A records acquire no new authority. Restore clears the
+new binding together with existing confirmer fields. There is no parallel role
+or approval mechanism. W08 owns the corresponding UI and coverage classification.
+
+Focused SQL tests pass **8/8**, plus **5/5** existing commercial regressions;
+backend typecheck/build and generated OpenAPI pass. Four real PostgreSQL races
+observed both sessions waiting on the workspace lock: same-key replay appends
+one decision/audit, different keys with one revision admit one, a late section
+edit rejects both old-view requests, and revoking the Owner while waiting rejects
+both requests. Source workflow executor-4 and W08 context migrations are explicit
+integration dependencies. No live model, production, deployment or hosted
+acceptance call was made by this change.
+
+### 2026-11-04 D06: request-wide issuance deadline and terminal availability
+
+Implemented locally; deployment and hosted acceptance remain pending. New explicit
+proposal authorizations receive an immutable request row with acceptance time,
+600-second deadline and terminal outcome. The request ID lives outside frozen
+model input and follows generation children, repair/resume work and local rendering.
+An idempotent replay retains the original deadline. New reservations, successful
+generation commits and artifact completion are deadline-gated. Canonical queue
+claims and maintenance persist expiry; the member-scoped status RPC also reports
+the effective deadline outcome immediately, with database `server_now`. Unknown
+or reserved provider usage is preserved exactly and remains separately reconcilable.
+All initially unavailable targets, or an exhausted round of known rejections,
+return `AI_AGENTS_UNAVAILABLE` for a new issuance without waiting for another round.
+An accepted remote request may still perform GET-only reconciliation during its
+original remaining deadline. POST and GET transport timers share that absolute
+request deadline. Historical unpinned routes keep their prior behavior.
+
+New contracts require `minimum_worker_executor=4`, independently of immutable
+`model_executor=2` routing pins. The canonical claim predicate excludes older
+workers. The earlier W05 migration installs the first contract activation guard;
+this migration accepts that already-installed predicate. A single-job retry binds
+only its authorized target; unrelated historical running/waiting siblings and
+paid prompts remain unchanged. Explicit local projection/render retry starts a
+new authorization against the same accepted canonical version without another
+model call or changes to its candidate budgets. A completed plan cannot silently
+restart with no queued work. Automatic issuance requires the full immutable
+renderer-3 generated review-draft package, canonical version/hash pins, machine
+validation and all verified volumes. Partial templates never count as issuance;
+issued draft status does not grant final approval or human semantic confirmation.
+
+Validation so far: both dependency lockfiles had been installed; backend typecheck
+and build pass; frontend full 46 files / 299 tests, typecheck and build pass. Focused
+actual-SQL deadline/retry/managed-role checks and historical plan-state tests pass
+52 cases; provider deadline/availability tests cover missing/disabled/cooling
+routes, all-target 403 quota rejection, absolute POST/GET timeout and accepted
+GET-only continuation. Full routing/catalog regression group passed 152 cases.
+The previous broad run exposed a renamed PL/pgSQL parameter-qualification defect;
+that was corrected and routing/catalog rerun green. Historical model fixtures now
+explicitly seed legacy admissions only during synthetic setup, re-enable the new
+admission guard before execution, and use current worker capability for model-only
+claims. Dedicated renderer tests retain responsibility for real local job ordering.
+The combined full backend rerun is pending at this commit; earlier runs are not
+claimed green. The coordinated renderer-3 agent must complete positive full-package
+issuance and explicit projection/render retry tests against this migration before
+release. Managed-only role migration, exact SQL 599.999/600/600.001 boundaries,
+queue dwell, unknown receipt retention and old-worker exclusion are already tested.
+
+Remaining gates: combined source/consistency/renderer integration, full backend
+regression completion, actual connected stopwatch/queue-stall acceptance and fresh
+semantic qualification under the approved campaign. No provider calls, payment
+changes, daily application caps, or billing/free-only policy changes were made by
+this component. Public Supabase database-function guidance was consulted for the
+migration; local PGlite checks are not hosted PostgreSQL/cron acceptance.
+
+## November 4 — W02 durable uploaded OCR and reviewed extraction successors
+
+**Implementation:** local code/migration implemented; integration and hosted
+acceptance remain separate. Migration `20261104133930_durable_uploaded_document_ocr.sql`
+adds service-only, workspace-bound OCR requests/pages, leases, fixed retry
+receipts and private original-copy publication. Accepted mixed PDFs queue only
+unresolved pages. Existing readable text, page order, source hashes, historical
+blocks and paid request pins remain retained. A verified physical copy is
+reserved against combined storage capacity before upload; only its verified
+hash/size and current actor/source permit atomic successor publication. Ordinary
+upload completion cannot publish an OCR reservation. Restart, duplicate replies,
+copy-response loss, capacity failure and expired reservations have explicit
+recovery paths. Pending-copy expiry cannot archive the readable parent.
+
+The existing native OCR CronJob now drains uploaded and public queues fairly
+through `scripts/backend/native-ocr-worker.ts`. The run remains bounded to nine
+minutes and ten rounds; each family receives a turn. A whole attempt must fit
+inside the remaining budget, including native execution, gateway timeouts and
+possible identity renewal. Uploaded processing uses the existing 10 MiB original
+and 200-page admission limits, one selected page, a 2,000-pixel raster, one native
+thread and a 90-second native deadline. It never labels a scan, timeout, parser
+failure or resource limit as a business-invalid RFP. The single CronJob is
+retained; no new schedule or vendor was added.
+
+**Recognition and review:** the frozen real offline synthetic Arabic test failed
+with confidence **82** and `numeric_uncertainty=false`: an obligation was omitted
+and prohibition/deadline words changed. Its exact text/hash is a SQL regression
+fixture; the independent native receipt is
+`docs/evidence/uploaded-ocr-native-20261104.json` in the integration branch.
+The Arabic oracle was not weakened. This Tesseract policy does not qualify
+Arabic output as readable evidence solely from confidence; candidates stay
+available for visual correction. English recognition and mixed-page extraction
+passed the frozen native cases, but all OCR text remains unconfirmed. Known
+blank pages also require explicit page review before confirmation.
+
+`GET /v1/documents/{id}/extraction` returns authorized page text, previous page
+hashes, review state and the existing 300-second private-original URL, with a
+second authorization check before responding. The bounded correction command
+accepts complete reviewed page text, original/extraction/page hashes, expected
+revision and explicit blank confirmation. It persists a new human extraction
+successor; it never rewrites old text under an old hash. Supplied actors cannot
+replace the authenticated actor. A new explicit correction may supersede
+unfinished work while preserving its receipts and ambiguous-byte reservations.
+Company Knowledge verification cannot bypass unreviewed OCR. Restored receipts
+retain historical provenance; restored human review requires fresh current-user
+review. Legacy image-only PDFs and legacy text with intact page anchors can
+recover coverage without rewriting the old record. Nonempty historical text
+without trustworthy page anchors requires a new correctly extracted upload;
+its page positions are not guessed.
+
+**Source selection and storage:** fresh snapshots select only current published
+extractions before the existing context-size guard. Historical proposal
+resumptions select their pinned RFP sources before that guard. With the W05
+source contract, a superseded source refuses continuation as stale while the
+saved paid context remains unchanged. The independent source-review context
+selects the child and does not inherit buyer authority. The optional
+`document_ocr_published(child, actor)` hook lets authored-review sessions record
+source change without replacing accepted prose. One successor stores one
+additional complete original: physical storage amplification is measured as
+100 → 200 bytes in synthetic reservation tests and still counts historical
+originals/cleanup bytes. Group reviewed pages into one correction to avoid one
+physical copy per page; no logical deduplication is represented as free storage.
+
+**Local verification:** dedicated SQL/gateway/API suites cover mixed-page
+retention, exact Arabic failure classification, full paragraph/blank review,
+revision/hash mismatch, current membership revocation after stored-byte read,
+late leases, idempotency, immutable copy reuse, family archive/history guards,
+capacity/expiry, legacy image-only recovery and native/ human restore. A
+900,000-character source with eleven retained extraction versions proves early
+source selection stays bounded without replacing prior paid pins. Combined OCR
+plus W05 migration testing passed 26 cases, including current-source exclusion
+and stale paid-contract refusal. Both package typechecks/builds passed; frontend
+300 tests passed (includes the new real client transport/cancellation contract).
+The core backend suite passed **2,185/2,185** tests across 131 files. The final
+review-metadata/disk-capacity delta passed **37/37** focused tests; its combined
+full-suite repeat remains separate integration evidence. Root-owned
+visual page-review UI and its tests are integrated separately in commit
+`6de550e`; this entry does not claim browser visual acceptance for those controls.
+
+**Native image / deployment:** local image
+`tenderdesk-uploaded-ocr:v2-final-r2` is
+`sha256:42bda8349d80507c1b7d5fd299d1c9be59ece8f559256bfc8b8bf90f6d8b40af`.
+Offline imports under runtime UID 1000 passed with 768 MiB, one CPU and no
+network. COPY ownership fixes the measured unreadable-package failure. The
+final image uses the same recognition algorithm as the failed Arabic oracle;
+automatic Arabic semantic qualification remains **failed**. No image push,
+production migration, deployment, customer data, provider call or hosted
+upload-to-file result is claimed. OCR is independent source improvement and
+cannot promise 200 scans or human review within an issuance deadline; the
+issuance contract must retain current coverage/gaps and report a truthful
+terminal result rather than silently treat unresolved pages as empty input.
+
+Final native capacity handling maps temporary-disk `ENOSPC`/`EDQUOT` to
+`DOCUMENT_OCR_CAPACITY`, with source hash rejection before temporary allocation.
+The deployment already mounts native `/tmp` as a bounded 1 GiB writable
+`emptyDir`; local native reruns use an explicit tmpfs to avoid the measured
+shared build-host overlay exhaustion. This is a resource failure, not an
+Arabic recognition result. The rebuilt r2 image identity is recorded above.
+
+### 2026-11-04 — Actual browser original-page rendering correction
+
+Real Chromium visual inspection found that the browser's embedded PDF plugin could
+show a blank dark region even though the original bytes were verified. Replaced
+that dependency with the existing PDF.js renderer, bounded page dimensions/time,
+page zoom and keyboard-scroll access. Review confirmation is disabled until the
+selected original page has actually rendered. Failed/stalled rendering and stale
+page completions cannot authorize a confirmation; changing the document destroys
+its worker and revokes preview URLs. Oversized images are not silently omitted by
+a maxImageSize cutoff. The signed original is still hash-verified before rendering.
+
+Twelve focused component tests pass, including pending render, decode failure,
+late prior-page completion and a stalled 30-second render. Frontend typecheck
+passes. The repeatable isolated browser harness is
+`scripts/testing/documentExtractionReview.browser.mjs`; it runs the real component
+and an actual raster PDF without product routes or production data. Four Chromium
+checks passed in Arabic/English at 390/1440px: original pixels painted, no horizontal
+document overflow or browser errors, explicit confirmation and save. Arabic mobile
+and English desktop screenshots were visually inspected. Receipt hashes are in
+`evidence/document-extraction-review-browser-20261104.json`. This is browser fixture
+acceptance, not a live user's upload or hosted authenticated acceptance.
+
+The issuance status read route is also documented in the generated OpenAPI contract,
+including current membership, database time, effective timeout, and complete draft
+package semantics. Regenerated the contract from the canonical command schemas;
+no runtime or deployment behavior changed by this documentation follow-up.
+D06 follow-up: required final renderer-3 failure closes the issuance; an optional
+initial/partial renderer-1 preview failure retains independent model progress.
+A verified issued package cancels leftover optional work without deleting ready
+bytes. Closed-request late failure recording is idempotent. Explicit local retry
+now checks the exact accepted active version and hash, and avoids a PL/pgSQL
+parameter/ON CONFLICT ambiguity found by the renderer agent's real SQL retry.
+Historical migration fixtures also handle the genuine pre-deadline schema where
+there is no admission trigger yet. Verifier-child tests preserve the entire
+immutable pin object and separately assert the required runtime floor.
+
+Follow-up validation: 110 delivery/routing/managed/deadline cases passed, followed
+by 71 deadline/managed-role and historical prompt/recheck cases. The broad backend
+run before these final fixture corrections passed 2,182 of 2,197; its 15 failures
+were all the absent-trigger setup at the deliberate historical migration boundary,
+now corrected and rerun. Root's combined run additionally exposed two runtime-floor
+fixture assertions; the follow-up preserves exact verifier pin assertions and uses
+the current worker for that sibling. A final combined full run and renderer-3
+issuance/retry acceptance remain required; no full-green or deployment claim is
+made from these focused runs.
+
+## November 4 — source-review assurance after backup restore (W05)
+
+Migration `20261104150228_restored_source_review_assurance.sql` restores original
+source authority and obligation review history without reactivating imported
+confirmations. A narrow requirement-import exception requires the actual current
+Owner, an unexpired committing restore session created by that Owner, and the
+canonical restored plan markers. A session setting alone grants no exception.
+Restored requirement tuples and citations remain intact, with live review and
+authority fields reset to pending/unknown. New current-Owner revocation revisions
+retain the imported historical rows unchanged. The transaction restores its prior
+scope setting; an idempotent restore replay does not revoke later explicit reviews.
+
+The real public backup/stage/file-completion/commit roundtrip passes in the local
+migrated database, including incomplete-restore rollback, forged scope denial,
+private-helper ACL denial, original-history preservation, restored assurance
+reset, ordinary-write guard retention and replay after reauthorization. Combined
+source restore, existing recovery and applicability tests pass **10/10**; backend
+typecheck/build pass. Independent SQL review found no blocking issue. This is
+local validation, not deployed or hosted restore acceptance; the isolated cloud
+restore acceptance will separately exercise the actual managed catalog and files.
+
+Independent browser review follow-up: the signed-original fetch and byte stream now
+share a 30-second abort deadline, scoped separately from the editor so a stall shows
+an explicit retryable error. Selection/unmount still cancels immediately and leaves
+confirmation disabled. Thirteen component tests and frontend typecheck pass,
+including an actual pending fetch aborted at the deadline. No provider or hosted
+request ran for this check.
+
+The final integrated native OCR image `42bda8349d80507c1b7d5fd299d1c9be59ece8f559256bfc8b8bf90f6d8b40af`
+was rerun offline with the unchanged frozen corpus, 768MiB/one CPU and a bounded
+256MiB temporary filesystem. Three cases passed; the Arabic exact-obligation case
+still failed with the same omitted first obligation. The evidence retains that
+failure. An earlier local container temporary-filesystem capacity error was
+separated from recognition quality; the deployed CronJob already has a bounded
+writable temporary volume. These are native local results, not hosted OCR acceptance.
+
+### 2026-11-04 — Independent closure audit and acceptance-policy reconciliation
+
+An independent point-in-time audit of `a9ae357` identified three remaining code
+paths: early/partial hosted acceptance tooling, ordinary browser-dependent export,
+and all-domain diagnostic enumeration. Those are assigned for implementation;
+renderer-3 integration and the separate quality/capacity/recovery/deployment gates
+remain explicit. The immutable audit snapshot is
+`evidence/reliability-closure-audit-20261104.json`; it is not final release acceptance.
+
+The main workstream ledger now reflects implemented source/repair/consistency/OCR
+and deadline controls without claiming deployment. The acceptance header no longer
+incorrectly says all cases are unimplemented. AR-02 and execution step 6 now match
+the owner's already-resolved D06: immediate no-agent error, request-wide600s guard,
+no mandatory human fallback and no template-as-full-success. This reconciles
+superseded wording; it does not change the owner's policy or erase failed evidence.
+### 2026-11-04 — Automatic generated review draft and durable complete-package issuance
+
+**Implemented locally:** a completed, explicitly admitted generation request atomically
+queues `prepare_generated_delivery`; a separately leased local worker reconstructs the
+actual accepted assembly and checks its chosen whole-candidate verifier receipts without
+another model call. Immutable payload/renderer 3 preserves every accepted section and
+required volume, original version/input hashes and receipt identities. It is a
+`generated_review_draft`, `substantive_complete=false`, and `source_review_required`;
+it never invents human assurance or final approval. Historical renderer 1 and manual
+renderer 2 retain their own contracts. New projection/render jobs require executor 4.
+Known machine defects, source restatement, generic responses, missing verifier receipts
+and render-policy omissions fail explicitly. Missing company/commercial facts remain
+specific yellow review inputs when a substantive verified response exists.
+
+**Currentness and lifecycle:** both projection publication and in-progress render
+boundaries recheck current source documents/OCR leaves and confirmed source-obligation
+reviews. Changed sources or revoked actors cannot publish after waiting for the workspace
+lock. Optional authored content remains selected when background generation completes.
+Unconfirmed OCR/page coverage cannot become a substantively complete human-reviewed
+authoring result; the server-derived qualification joins its context hash and adoption
+gates. Historical immutable files remain governed by their original read authorization.
+Only a complete, verified required-volume package can finish the original 600-second
+issuance request. Explicit authorized local retry creates a new deadline and reuses the
+accepted version; historical unknown usage remains unchanged. Unadmitted/historical
+plans are not silently opted into the new issuance protocol.
+
+**Evidence:** `generatedDeliveryPipeline.integration.test.ts` has 13 passing migrated
+SQL/worker/actual DOCX/API cases, including genuine technical + financial volumes,
+no first-volume success/download, deadline expiry before upload, exact-version retry,
+same-key replay, unchanged unknown usage, revoked membership, changed source meaning,
+actual corrected extraction successor, exclusive-lease recovery and Arabic/English
+paragraph/table yellow OOXML checks. The focused projection, runtime, renderer and old delivery regression run
+passed 52 tests across five files. Backend typecheck/build and frontend typecheck/build passed; the full
+frontend suite passed 302 tests. These are local synthetic receipts, not hosted model
+qualification or real-browser visual acceptance.
+
+Three real PostgreSQL multi-session publication races passed with both contenders
+observed waiting on the workspace lock: duplicate publication has one snapshot/audit/job;
+source edit and actor revocation reject publication. Reproduce with
+`python3 backend/scripts/testing/generated_delivery_races.py --container <synthetic-container> --output <private-receipt>`.
+The portable `generated_delivery_fixture.py` contains synthetic structural receipt data;
+it does not establish live model semantic quality. The private receipt records the exact
+migration hashes and PostgreSQL image digest. No customer data, secrets, paid model calls,
+production writes, or email were used.
+
+**Integration / deployment limits:** complete backend regression and final release
+capability checks belong to the composed phase-2 tree. Hosted storage/restore, native
+Word visual QA and live request timing are separate acceptance evidence. Ordinary
+approved-version export still requires the subsequent durable `render_export` package
+path; this generated-review-draft change does not close that separate browser-dependent
+workflow or claim a production deployment.
+## November 4 — separately versioned semantic scorer correction
+
+Added explicit `semantic_v2_en` and `semantic_v2_ar` evaluation suites with an
+independently frozen version 2 corpus. Version 1 corpus/scorer bytes and original
+live results remain unchanged. Version 2 accepts correctly bound full-summary
+quotations, requires quantity-plus-object gold spans and the affected source
+quantity, and recognizes the observed Arabic condition-removal forms. It does
+not relax canonical verifier coverage, source references or candidate hashes.
+
+Local focused tests: both semantic suites **49/49**, including 44 version 2 cases
+and the five original version 1 tests; Python activation/report gates **21/21**.
+The 44 include 32 controls, two sanitized saved reports, six specified negatives,
+source-object binding, immutable version pins and both unavailable-provider suites.
+All transports in local tests are controlled fixtures; no live calls or deployment
+occurred. Full combined package checks follow the separate metadata-prompt fix.
+The sanitized adjudication document retains original unqualified counts and raw
+report hashes; this scorer correction does not qualify any model or restore quota.
+
+W02 independent review follow-up: a second page correction before publication
+now carries forward unoverridden saved human pages only when original,
+extraction and previous page hashes match exactly. Reload exposes saved human
+text before an OCR suggestion. Page reviewer IDs/times remain unchanged.
+Mixed or revoked reviewer authority cannot become the new actor's whole-file
+confirmation: the content is retained as requiring review until one current
+actor explicitly reviews every page. Null service/stored leases and missing
+admitted hashes/page counts/sizes fail closed. Current-source traversal retains
+cycle detection and supports more than 200 extraction versions; the PDF page
+limit is not a limit on correction history. The independent rereview found no
+remaining material blocker in this slice. A fully reviewed blank successor stays
+current as `needs_processing`, with no readable blocks; confirming the extraction
+is blank does not assert that it contains sufficient proposal information.
+The follow-up passed **44/44** focused cases (34 SQL, seven transport and three
+native resource cases), plus both package typechecks. Hosted acceptance remains
+unclaimed; the root integration gate covers the combined final branch.
+
+W02 interface follow-up labels a pending human page correction as saved human text,
+retains its original page-hash binding, and explicitly explains when current review
+is still required for whole-file confirmation. Pending/retry messages cover both
+OCR and publication processing. The combined OCR editor, verified-page renderer
+and issuance-panel focused run passes38 tests; frontend typecheck passes. No prior
+reviewer is silently replaced by the current user. Hosted acceptance is separate.
+## W04 — version 2 early/partial saved-delivery acceptance (2026-11-04)
+
+Implemented a separate, explicitly activated `accept-saved-delivery.yml` and
+`delivery-snapshot-acceptance` harness. The old completed-plan export harness and
+its selection remain unchanged. The new read-only selection binds exact current
+snapshot/revision/hash and current allowlisted Owner/source checks. It reuses
+genuine isolated Auth, verifies actual authenticated stored DOCX hashes and
+canonical content/highlights, requires the complete volume set and succeeded
+job, and rechecks source/member/package currentness after download. Pending and
+blocked observations explicitly report no verified deliverable. Template,
+partial, human-reviewed substantive draft and generated issued draft are
+separate expectations. Issuance requires the exact original 600-second request
+receipt; terminal failure cannot be reported as issued. The harness renders no
+new file and performs no business mutation/provider call. Sensitive selections,
+reports and files retain encrypted private transport and logout/cleanup guards.
+
+Local validation: **39 tests passed across 4 backend files**, including **19
+new** transport/canonical DOCX and fully migrated selection cases plus the
+preserved completed-proposal acceptance tests; **8 Python guard tests passed**.
+Backend typecheck/build passed. The modified behavior is tooling only; no
+frontend source changed in this commit. Existing package lockfiles/dependencies
+are unchanged. See `DELIVERY_SNAPSHOT_ACCEPTANCE.md` for exact versioned selection
+and report semantics.
+
+Deployment and hosted acceptance: **not deployed or dispatched**. Local test
+transport uses synthetic fixtures only, never production records; it does not
+prove hosted Auth/Storage, browser tab-close/re-entry, all-page layout, capacity,
+latency or production recovery. Version 2/3 classification is covered locally;
+the canonical generated v3 pipeline tests are a separate integration evidence
+set. Real selected early/partial/generated issuance and authenticated download
+runs remain release gates. This closes the missing harness implementation,
+not those hosted acceptance gates.
+## November 4 — phase-pinned analysis classification instructions
+
+Verifier instruction revision 5 distinguishes the typed
+`requirements[*].category` enum from narrative assertions. It retains every
+content ID and source ID and asks the verifier not to invent a factual claim
+solely for a classification label. The same words in narrative, and all modality,
+authority, actor, quantity, date and condition fields, retain ordinary verification.
+No validator strips reported defects, repairs IDs or relaxes factual evidence.
+
+Only a genuinely unstarted typed analysis verification phase with frozen
+`source_contract_version: 1` selects revision 5. Existing instruction pins,
+prepared/settled/unknown usage and the explicitly version 4 recheck route preserve
+their previous identity. Candidate content, schemas and batch partitioning remain
+unchanged. Both semantic scorer suites still use explicit revision 4; their
+results do not qualify this new prompt. This is an instruction improvement, not a
+guarantee that a live model will obey it; no fresh provider call was made.
+
+Full local backend checks pass **2,429/2,429** in 152 files; frontend passes
+**325/325** in 52 files. Both package typechecks and builds pass. The complete
+backend run includes the expanded 83 instruction/metadata/typed-registry/recheck
+cases, all historical wire hashes, and real migrated reserved/unknown/settled
+source-contract phase preservation. These are local deterministic checks, not
+live prompt qualification, deployment or hosted acceptance.
+
+Explicit future prompt-5 campaign: `semantic_v2_metadata_en/ar` now selects the
+same frozen version 2 corpus with verifier policy 5 and distinct case/receipt
+identities. Plain `semantic_v2_en/ar` remains policy 4. JavaScript, Python and the
+workflow choice list all require explicit selection; the live default is still
+false. Python rejects mixed baseline/metadata policy receipts. All eight related
+evaluation test files pass **86/86**, Python gates **21/21**, and backend types/build
+pass after this additive campaign change. The preceding complete package results
+remain 2,429 backend / 325 frontend; four new campaign tests are included in the
+86 focused total. No metadata campaign was run live, and no model gained a new
+qualification or availability claim.
+
+### Generated delivery integration fixture correction (2026-11-04)
+
+The combined source-contract/generation pipeline exposed a fixture mismatch:
+`delivery_input` did not include source block hashes or extraction versions, yet
+the fixture manually marked those inputs as source contract v1 and attached a
+separate span catalog. Exact task reconstruction correctly rejected those
+receipts with `SOURCE_SPAN_STALE`. The fixture now obtains the actual migrated
+`draft_generation_snapshot` and its own source evidence, and independently
+validates each receipt against that exact task evidence before persistence.
+No runtime validator, proof eligibility, authority or scope was relaxed.
+
+Local integration evidence: **13/13 generated delivery pipeline cases pass**,
+including actual SQL/worker/DOCX/authenticated API-adapter download, the complete
+two-volume gate, source/member/current-leaf revocation, stale projection leases,
+request deadline during rendering and explicit fresh-deadline retry. These are
+isolated migrated database and transport-fixture tests, not hosted Auth/Storage
+or provider qualification. Deployment/hosted acceptance remains pending.
+D06 real PostgreSQL follow-up (2026-11-04): a multi-session regression reproduced
+an artifact receipt admitted after waiting past its deadline on the workspace lock.
+The shared issuance guard now locks and re-reads before checking the absolute
+clock. Six isolated PostgreSQL 17.6 cases pass: exact 599.999/600/600.001 boundaries,
+before-deadline full completion versus expiry, expiry versus late completion,
+late final artifact receipt, early terminal failure, and explicit local retry with
+one new authorization, worker1/2/3 exclusion and byte-exact unknown usage retention.
+All contenders were observed blocked on real database locks; ready historical
+artifact records survive expiry unchanged. The portable script uses synthetic
+accepted graph records only and does not claim provider/semantic qualification.
+Receipt: /workspace/output/proposal-issuance-postgres-races.json, including every
+migration hash from the combined source/OCR/renderer schema. No production calls.
+
+An explicitly authorized renderer1 template retry now creates independent local
+render work after a failed automatic issuance. It retains the original failed
+request/deadline, grants no automatic issuance success, and still passes canonical
+role, source, revision and idempotency checks. The workflow agent owns its actual
+API-to-DOCX regression; that test is pending integration of this slice. Previously
+committed standalone backend validation finished green: 135 files / 2,198 tests,
+backend types/build; frontend46 files /299 tests and types/build. Hosted release,
+combined final regression and stopwatch acceptance remain separate gates.
+T02 reviewed-blank follow-up: a current, fully page-reviewed blank PDF now gets
+`INSUFFICIENT_INPUT` with an explicit reviewed-blank description in new v1
+snapshots. Unresolved scans and failed pages keep `UNREAD_INPUT`. The private
+predicate checks persisted original/page hashes, exact frozen review metadata,
+complete all-blank coverage and current reviewer authority; a client confirmation
+flag or filename cannot establish the disposition. Existing immutable payloads
+are not rewritten. The new assertion failed before the fix; **44/44** OCR SQL,
+transport and resource tests pass afterward, including fabricated metadata/hash
+and revoked-review negatives. Separate root tests cover the real UI and
+API → SQL lease → DOCX renderer → authorized download journey; hosted acceptance
+remains separate.
+
+### T02 connected empty/invalid input journey (2026-11-04)
+
+The actual OpportunityDetail upload/prepare UI keeps “Save available draft”
+available when no documents were persisted and AI generation is disabled.
+Real empty-file and invalid-PDF-signature extraction errors reach the typed
+`delivery.snapshot.prepare` disposition without creating a document. The saved
+package UI shows insufficient information, yellow-input guidance and download.
+Three focused UI tests pass; their API transport/download is mocked, so they do
+not establish browser or hosted acceptance.
+
+Nine new migrated API → SQL claim → real DOCX renderer → stored-byte hash →
+authorized API download cases pass. They cover English/Arabic no-document
+input, empty/invalid/technical extraction failure, retained OCR-pending scans,
+fully reviewed blank successors, and both source drafts and blank templates
+retried after all model agents fail. Unread scans retain their original hashes
+and OCR status; they are not declared invalid. Generated Word XML contains yellow
+placeholders and the appropriate insufficient-information notice. Explicit v1
+retry remains independent while the original failed issuance and absolute
+deadline stay byte-for-byte unchanged, with zero provider usage. The retry case
+failed before the deadline fix; the reviewed-blank gap assertion failed before
+its disposition fix. The six prior complete delivery pipeline cases also pass
+after extracting their shared SQL/Map-storage fixture. Both package typechecks
+pass. All 15 backend cases use local token and object adapters, not hosted
+Auth/Storage; production deployment and real-browser visual acceptance remain
+separate gates.
+
+
+## November 4 — permanent access reference and durable export read boundary
+
+Updated the permanent DO runbook with the latest successful original-CA inventory
+(run41849412810, head59c6b309), the private receipt-wrapper distinction, and the
+explicit isolated restore mode. Reviewed the whole selected access workflow and
+its catalog-only capture and guarded fixture restore path. No cloud operation was
+dispatched by this documentation change; freeze and hosted restore remain pending.
+
+Added the caller-authorized GET `/v1/export-packages/:id` wrapper and OpenAPI
+entry for the durable ordinary-export implementation being integrated separately.
+It delegates membership/version/package authority to `export_package_context`;
+invalid UUIDs never reach the RPC. The API, canonical generated pipeline, metadata
+policy and explicit metadata campaign tests pass **44/44** together. Complete
+ordinary-export backend/UI, final combined gates and hosted acceptance remain open.
+
+The existing OCR browser harness now also closes Vite and removes its temporary
+fixture on browser-launch failure. Its successful screenshot receipt is retained;
+this lifecycle cleanup is not a new hosted or visual acceptance claim.
+
+D06 legacy-contract admission: new retries/resumes of frozen plans without the
+current generated-delivery and consistency contracts fail immediately with
+PROPOSAL_CURRENT_CONTRACT_REQUIRED. The response details identify the exact
+revision and existing explicit successor route: cancel an open legacy plan then
+proposal.generate when no active version exists, or proposal.regenerate against
+the accepted active version. Existing idempotency replays retain the original
+response and deadline. A user cancellation now terminalizes its active issuance
+rather than leaving a knowingly canceled request waiting for the time limit.
+Historical frozen input/hash, accepted versions and model accounting are retained.
+Two real PostgreSQL successor cases pass against the combined schema, including
+no-active-version cancellation/new generation and completed-version regeneration;
+receipt /workspace/output/current-issuance-contract-postgres.json. The old retry
+accounting suites explicitly retain their historical142525 migration boundary.
+No silent promotion, automatic new request, model call, or deployment occurred.
+
+
+## November 4 — explicit current-contract recovery in the proposal interface
+
+A rejected legacy resume now explains that its saved processing contract cannot
+issue the current complete package. The recovery control validates the server's
+plan/opportunity/proposal/version IDs and revisions, then requires an explicit
+click before a current successor request. Cancellation, when required, and
+generate/regenerate execute in one transactional command batch. Existing paid
+work and the accepted version remain retained. An interrupted response reuses
+the exact batch and idempotency key; a revision conflict requires fresh recovery
+metadata. The interface never silently resubmits models or changes billing.
+
+Validation: **36/36 frontend cases** (metadata rejection, accepted-version
+regeneration, stable hash/batch and lost response, existing panel behavior) plus
+frontend typecheck pass. The associated migration's two real PostgreSQL successor
+cases are separate evidence recorded above. Hosted recovery and the final
+integrated package gates remain pending.
+
+## W10/F07 — ordinary draft and final export client durability (2026-11-04)
+
+The proposal list, proposal editor and final export panel now request one durable
+server export package through `export.package.prepare`. The server contract
+reuses the current version/mode/binding package on re-entry without changing its
+accepted time or deadline. The client polls authenticated metadata using server
+time, fetches and hashes every required stored volume before triggering any
+browser download, then rechecks current package authorization. It does not
+render ordinary exports in a browser worker, upload generated bytes, or fall
+back to local proposal rendering. Final requests remain `mode=final` and retain
+the server's approval/source checks; generated review drafts are never treated
+as approved final exports. The separate reviewed-file upload/history flow is
+preserved.
+
+All entrypoints show persistent preparation/error/recovery state. Leaving the
+page or choosing Stop waiting cancels only local observation and suppresses
+late download/success callbacks; the accepted server job continues. Only an
+explicit Retry export preparation action sends `export.package.retry` with the
+observed package revision. Polling, ordinary refresh and failures cannot
+silently authorize a new deadline. Each request/read has a 30-second client
+transport timeout in addition to the server's canonical 600-second preparation
+clock. Backend currentness errors prevent all file-release clicks.
+
+Local tests cover real helper control flow, all-volume hashing, failed second
+volume, late currentness, browser clock skew, immutable clock during polling,
+abort/re-entry, expected-revision explicit retry, final/draft separation and
+component unmount/no automatic retry. The complete frontend suite passed
+**339 tests in 54 files**, including the additional clock/observation guards.
+Both packages' typecheck/build passed. These are local
+fixtures and jsdom tests, not proof of hosted browser tab closure, actual server
+lease recovery, final approval or storage transport. The corresponding durable
+backend migration/worker/API and combined acceptance are separate integration
+gates; no deployment or production call was performed for this frontend slice.
+The historical full completed-proposal browser acceptance harness is being
+adapted separately to this durable path; its explicit legacy HTTP path stays
+separate.
+
+Independent frontend review found a stale display-scope issue in the first
+ordinary-client slice. The shared hook now aborts observation and clears visible
+busy/package/error state on connection or explicit version changes. Editor and
+ExportPanel supply the current version scope; the list keeps its explicit
+clicked-version operation. Cleanup runs at commit before the new version is
+painted, so an old response cannot release files or report success as the newly
+displayed content. Added delayed-completion regressions for both client and
+version replacement; no server cancellation or automatic retry is introduced.
+Final scope-fix validation: **341/341 frontend tests in 54 files**, frontend
+build/typecheck passed. The independent review finding is fixed locally; hosted
+browser re-entry and ordinary backend combined acceptance remain pending.
+ME05 base-validator closure (2026-11-04): schema-valid reference, source tuple,
+source-page field/link, classification, review authority, draft ownership and
+proposal-template diagnostics are now collected together. Grounding collects
+independent candidate quotes, numeric mismatches, requirement quotes, finding
+references, declared company-claim coverage and verifier identity coverage.
+Reports retain at most32 deterministic diagnostics and count every independent
+omitted check; source text and arbitrary error messages are never copied into
+that envelope. A wrong candidate identity stops candidate-dependent judgments;
+an invalid citation cannot itself justify a derived numeric mismatch. Malformed
+schemas remain prerequisites. Forbidden model approval/template/policy codes
+remain terminal and evidence/semantic gates are not weakened. The source-page
+public validator retains its established error codes while the model boundary
+receives exact field paths. No model schema, candidate adapter, paid phase pin,
+wire format, prompt or correction allowance changed.
+
+Validation: the new regression corpus initially failed15 of29 cases against the
+original validators (14 valid/prerequisite controls passed). The final suite adds
+an explicit duplicate-identity/coverage case; all30 new cases pass, including all
+13 task registry valid controls and31/32/33/60 diagnostic boundaries. Focused14
+files /345 tests pass, including historical paid verification phase hashes,
+repair format, writer handoff, source-scoped repair and numeric structural
+references. Backend typecheck/build pass. Context-specific blueprint/planning/
+commercial/reference collection in generation.ts is assigned separately to the
+operations agent; do not infer that this base slice closes those checks. Full
+combined backend/frontend regression, independent code review and hosted release
+remain separate gates; no provider calls or deployed correctness claim was made.
+
+### Completed-proposal browser acceptance follows durable exports (2026-11-04)
+
+The existing completed-plan/current-version selection and genuine Auth/private
+report transport are preserved. Its browser mode now clicks the actual editor
+and permits only one exact `export.package.prepare` for the selected draft;
+legacy prepare/reserve/upload/complete, approval and retry mutations are denied
+in that browser run. It observes the original 600-second package clock, bounded
+pending reads and whole-volume readiness, then validates actual browser bytes
+against independent authenticated stored downloads and each canonical export
+context. The report records `durable_server_package`. The explicitly selected
+historical HTTP render/upload path remains separate and records
+`legacy_explicit_http_render_upload`; it is not presented as evidence of the new
+browser/server preparation flow.
+
+Local validation: **26 backend acceptance/selection tests passed**, including
+6 new durable write-boundary/clock/whole-volume tests; **8 Python guards passed**;
+backend typecheck/build passed. Browser-mode report duration permits observing
+the original server deadline plus UI startup and independent file checks; it
+does not reset or extend that server deadline. The reviewed workflow has not
+been dispatched, and there is **no new hosted or actual-browser acceptance
+claim** from these local tests. Pending hosted evidence still includes genuine
+Auth/Storage, tab closure/re-entry and late authorization/currentness behavior.
+
+
+## November 4 — read-only enabled-model binding audit
+
+Added explicit `doks-access.yml mode=models` to diagnose the remaining enabled
+Gemini configuration without guessing from the four-provider-target evaluation.
+It uses the established original-CA runner, scoped read-only SQL and exact
+runtime credential lookup. Its public receipt contains provider/model names and
+key/project presence booleans only; aliases, project values and secret values
+stay private. It makes zero model calls and no business/configuration mutation.
+Conventional aliases preserve the existing legacy-provider fallback; custom
+aliases cannot borrow another account's key. Owned SQL-client cleanup runs on
+failure and in the workflow's unconditional cleanup step.
+
+Validation: seven audit guard/redaction tests and eight isolated-restore workflow
+guard tests pass. Inspected the complete selected access workflow including
+bootstrap/restore conditions; `models` selects neither. Hosted audit is pending;
+key presence alone must not be reported as provider availability or qualification.
+
+The combined integration frontend at4ad3a22 passed **356/356 tests in56files**.
+This is local jsdom evidence, not hosted browser acceptance. Later renderer
+changes still require the final combined package gate.
+ME05 independent review correction: W08 identified a legacy table guard regression
+where checking cells separately could allow an invented certification below a
+correctly cited company header. Restored the established joined-table sentence
+semantics while retaining exact block diagnostics. The new certification test
+fails against aaf3014 and passes with the correction; its valid table control also
+passes. Focused106 tests and backend typecheck pass. Independent model review found
+no additional schema-prerequisite, source-evidence or paid-pin blocker. A full
+qualification against root4ad3a22 plus the collector ran: backend2,499 passed/13
+failed and frontend355 passed/1 failed. Two SQL failures belong to the new legacy
+retry guard's parameter ambiguity; ten require renderer-wrapper parameter
+qualification; one historical migration test timed out; the frontend external
+submission journey needs export-transition reconciliation. Those failures remain
+open at this narrow correction and must not be reported as a full-green run.
+
+
+### 2026-11-04 — generated-delivery migration preserves predecessor SQL scope
+
+The generated-delivery wrapper now rebinds the renamed PL/pgSQL predecessor's
+function-qualified parameter label. Without this, the preceding consistency
+wrapper still referenced `advance_generation.job_id` after its implicit label
+had become `advance_generation_before_generated_delivery`, causing a missing
+FROM-clause error at real finalization. The narrow migration repair preserves
+all acceptance/currentness guards. The actual `noticeDetails.test.ts` suite
+passes all 51 cases against the latest consistency migration. Full composed
+flexible-input runtime validation is performed in the integration tree, whose
+fixture uses executor4; this isolated branch's older fixture still claims v2.
+Legacy guard integration follow-up: qualified app_command.input in the job/step
+join to avoid collision with generation_steps.input. The original full-run two
+failures (independent discovery retry and targeted model retry) now pass in their
+actual migrated suites:42 tests. The portable current-contract script now also
+checks the model-job retry successor error. The isolated frontend app journey
+rerun passes19/19, including external submission; its earlier full-run failure
+was not reproduced, and no product behavior was changed for that timing failure.
+
+## November 4 — native Word PAGE field interoperability
+
+The footer PAGE field now writes begin, instruction, separator and end in separate
+runs with explicit neutral formatting. The earlier single-run construction caused
+LibreOffice to apply the last yellow body placeholder's highlight to the calculated
+page number. This change preserves the native dynamic PAGE field and supplies no
+cached or estimated number. Native TOC/PAGEREF fields, update-on-open settings,
+source text, placeholder policy and immutable previously stored files are unchanged.
+
+Six actual DOCX field/verification cases (English/Arabic, payload versions 1/2/3)
+and six existing delivery pipeline cases pass **12/12**; both package typechecks
+and builds pass. A separate actual render/conversion matrix passes **18 DOCX / 91
+PDF pages** with zero yellow footer fields and zero outside-page text spans; page
+counts match the original matrix. The base checkout's generated-delivery fixture
+fails before rendering; root has separately corrected that fixture in `f22be8d`.
+No unrelated fixture changes are included here, and root owns the final full-suite
+run after integration.
+
+The native TOC remains a distinct compatibility limitation: plain LibreOffice
+conversion preserves the docx library's empty page-reference cache instead of
+updating its index. Eleven OOXML construction variants did not solve that behavior.
+Explicit index/field refresh and exported DOCX cache verification are being
+qualified separately; no page estimator, static number or production layout-engine
+stage is introduced by this footer fix. Microsoft Word desktop acceptance remains
+separate from local LibreOffice evidence.
+
+### 2026-11-04 — W04 ordinary draft/final export runs durably on the server
+
+**Implemented locally:** `export.package.prepare` freezes the exact canonical
+ordinary export request and required volume set, reserves the existing 10 MiB
+per-file bound under the workspace lock, and queues executor-4 `render_export`.
+Fresh page/re-entry keys reuse the same package/job/deadline; the immutable renderer
+marker `ordinary-2` selects explicit yellow missing-input runs. Historical unmarked
+requests retain their existing renderer policy. Draft and final labels/approval
+rules remain distinct from generated review drafts. The old calendar-based export
+count limit is removed; actual database/storage capacity checks remain.
+
+The leased worker renders, uploads immutably, independently reads/verifies actual
+DOCX bytes, and publishes existing `export_artifacts` only from verified receipts.
+All required volumes must be ready before any package download. Lost upload replies
+and finalization crashes reuse verified bytes. Current actor, source/OCR leaf,
+reviewed source meaning, version revision and final approval are checked before
+render/upload/commit and again after download reads. Request acceptance through
+whole-package completion is bounded to 600 seconds; known terminal failures close
+earlier. Explicit revision-checked retry is the only operation that grants a new
+600-second authorization. Ready siblings and historical artifacts remain intact.
+
+**Lifecycle:** package metadata joins the canonical backup/restore/purge contract.
+Restore retains verified historical file receipts but blocks prior package issuance
+and final approval; current authorization is required for a fresh draft. Unconfirmed
+uploads transfer their full reservation to delayed cleanup and retries use new
+private keys. Pending/ready package storage participates in the existing workspace
+ledger. Frozen package/request identity has database mutation guards. Both configured
+role families receive conditional privileges; user reads use current-authority RPCs.
+
+**Evidence:** `ordinaryExportPipeline.integration.test.ts` passes 17 local migrated
+SQL/API/worker/actual-DOCX cases, including two volumes, explicit final approval,
+late invalidation, public backup/restore, confirmed purge, expired-byte retry,
+post-read membership revocation, missing-input highlighting and exact deadline replay.
+The ordinary export/structure/acceptance, prior artifact and recovery regression run
+passes 86 tests across six files, with another 41 worker/API regression cases passing. Both packages' typecheck/build and all 302 frontend tests pass. Five real
+PostgreSQL lock-observed races pass: fresh-key re-entry, same-key replay, source edit,
+membership revocation, and competing two-volume capacity reservations. Reproduce with
+`backend/scripts/testing/ordinary_export_races.py`; private receipts record exact
+migration hashes and the pinned PostgreSQL image digest. These are synthetic local
+checks; they do not claim production deployment, hosted-storage qualification or
+native Word visual acceptance. API metadata and browser re-entry integration are
+composed with the parent/W08 changes before release.
+Legacy retry qualifier robustness: the joined step lookup now uses a stable local
+request_input variable rather than the function-name-qualified input parameter,
+so later private command wrapper renames cannot invalidate it. The actual two
+PostgreSQL successor cases pass again, now including the targeted job.action
+route. The actual migrated retry/capacity suites also pass52 tests against the
+new local-variable definition. No paid request identity or command behavior changed.
+
+
+## November 4 — definitive ordinary-package download failure recovery
+
+The package-aware download boundary now distinguishes an authoritative missing
+Storage object from a temporary dependency error. Only a genuine404 or observed
+size/hash mismatch reports an exact artifact/package/revision/hash/key failure
+receipt to the service-only recovery RPC. Measured size is retained for cleanup
+accounting. A503 does not expire a ready artifact, restart rendering or extend
+its authorization. Existing legacy/manual artifact behavior is unchanged.
+The SQL recovery implementation and its actual package tests are integrated
+separately; this interface change itself does not claim hosted recovery.
+
+Validation: **35/35 combined API and flexible-input runtime cases** plus backend
+typecheck passed. The model-only flexible-input fixture now stops when its model
+plan completes, before claiming the separately queued local v3 projection job;
+it does not fabricate a projection/issued receipt. The dedicated generated
+delivery pipeline continues to prove real projection/render/whole-package
+issuance separately. This resolves six fixture failures exposed after the real
+advance_generation renamed-parameter defect was fixed.
+
+### 2026-11-04 — ordinary package definitive byte-failure recovery
+
+A service-only `report_export_package_artifact_failure` receipt accepts only a
+known storage404 or a measured byte mismatch. It checks current actor/source/final
+approval and exact package revision, artifact ID, original hash and private key.
+Stale receipts make no change. The prior immutable hash/receipt remains in history;
+the package becomes blocked and an explicit authorized retry creates a new key and
+artifact. Corrupt bytes enter canonical cleanup with measured storage accounting;
+a definitive absence releases only the known missing artifact. Transient storage
+errors must never invoke this receipt. No read automatically retries or renews a
+request. `artifact_context` supplies the package ID/revision for API-side CAS.
+
+Twenty ordinary pipeline cases now pass, including actual rendering before missing/
+corrupt receipt, stale CAS, denied user execution, current-source rejection and explicit
+repair. Backend typecheck passes. The root API integration owns invoking this receipt
+on authoritative404/hash/size failure and preserving transient503 behavior. The
+predecessor job-action wrapper uses its separately fixed stable request alias; the
+redundant ordinary-export rename rebinding is removed accordingly.
+G10 prebillable file capacity (2026-11-04): automatic issuance now acquires one
+request-bound20MiB allowance before its first new model reservation, under the
+workspace lock. This is exactly the existing maximum two delivery volumes times
+10MiB per artifact, within the existing250MiB storage policy. The canonical ledger
+includes the allowance, so concurrent input/export writers cannot steal it.
+Required renderer3 artifacts receive that allowance atomically when their exact
+pending slots reserve storage. Repeated context/reservation attempts do not add
+allowances; existing duplicate model reservations retain their rejection policy.
+Terminal requests release only unspent future capacity, preserving ready/pending
+artifact bytes and every provider usage row, including unknown receipts. Historical
+requests retain null capacity-version pins; no prompt, paid hash, token/daily cap,
+free-only/billing policy or provider configuration changes were made.
+
+Validation: both lockfiles reinstalled successfully after removing only obsolete
+worktree dependencies to recover disk space. Backend/frontend types and builds
+pass. Focused deadline/capacity regression32 tests passed; the added capacity
+managed-only-role test subsequently passed with all6 capacity lifecycle cases.
+Workflow agent independently proved the original unchanged full-storage reservation
+red now rejects before provider_usage, held20MiB excludes a competing10MiB upload,
+a1MiB remaining upload fits the exact250MiB boundary, and duplicate model-call
+rejection leaves usage/allowance unchanged. Four real PostgreSQL multi-session
+cases pass with canonical migrations plus the ordinary152913 storage wrapper:
+concurrent allowance idempotence, competing upload versus allowance serialization,
+required-artifact transfer and unused allowance release, and source rejection
+without reservation mutation. Receipt:/workspace/output/proposal-capacity-postgres-races.json
+contains exact migration hashes, synthetic-only fixture identity and lock evidence.
+Source/snapshot retention, early storage-error terminalization and unknown provider
+usage preservation are explicit tests. No provider calls or production mutations.
+
+Remaining: root's independent SQL review, final combined sequential regression,
+actual dense renderer capacity/OOM qualification (separate component), release,
+and hosted stopwatch/download acceptance. Structural SQL races do not establish
+semantic correctness or real DOCX rendering. The workflow-owned capacity tests
+remain in their separate root commit; this component adds the lifecycle/managed
+role tests and portable PostgreSQL script only.
+
+### 2026-11-04 — ordinary download lock boundary and expired replay correction
+
+Independent review reproduced a source-change race in final download authorization:
+the package source check preceded the legacy delegate's workspace-lock wait. The
+wrapper now acquires that lock before checking package/source/approval currentness,
+then keeps it through the existing final authorization. A real PostgreSQL contender
+observed waiting is denied with `STALE_INPUT` after a source edit; the former wrapper
+returned authorization in the same race. The portable ordinary race suite now passes
+six cases, including this final-read boundary (synthetic database artifact receipts;
+actual DOCX bytes remain covered separately by the pipeline suite).
+
+Expired idempotency rows are deleted only for the exact authenticated actor/operation/
+key after the workspace lock, before inserting their successor receipt. Re-entry still
+reuses the same package, job and original deadline. The ordinary pipeline suite passes
+21 cases including expired API receipt replay, with no duplicate job or clock renewal.
+No customer data or external calls were used.
+
+### 2026-11-04 — G10 actual generated-package capacity transfer
+
+Four additional cases in `generatedDeliveryPipeline.integration.test.ts` exercise
+migration160125 against the actual projection, leased renderer, DOCX verification,
+whole-package completion and issuance receipt. For both combined and separate
+technical/financial outputs, the existing20 MiB complete-file allowance transfers
+into exact10 MiB artifact slots without double counting; independently verified
+actual bytes replace those reservations, the request becomes issued, and any unused
+allowance is released. The original accepted time/deadline remain unchanged.
+
+A changed source prevents capacity transfer and rendering; its terminal failure
+receipt releases only unused allowance and retains the accepted proposal version.
+A deliberately injected delegated-capacity failure rolls back the allowance decrease
+and all artifact reservations atomically. The full generated-delivery suite passes
+17 cases and backend typecheck passes. These new cases prime the canonical
+pre-billable capacity helper directly with synthetic accepted/verifier records;
+actual model-reservation admission and concurrent storage writers are covered by
+the separate capacity RPC/PostgreSQL suites. No paid model, external storage or
+production action occurred in these checks.
+
+
+### 2026-11-04 — G10 measured input bounds and pre-billable output capacity
+
+The independent capacity regression reproduced a model reservation being admitted
+while the canonical 250 MiB storage ledger was full. After integration of migration
+`20261104160125`, the unchanged regression rejects before any provider reservation,
+renderer invocation or object write, preserving the accepted source and saved draft.
+A second case proves that the existing two-file 20 MiB output allowance is acquired
+once, appears in the shared ledger, excludes a competing 10 MiB upload when only
+1 MiB remains, and retains the original request deadline. Repeated reservation
+commands keep the existing duplicate-call rejection and create no extra usage or
+allowance. Unknown deletion bytes remain accounted for.
+
+`proposalCapacity.integration.test.ts` passes **14/14** on the integrated root.
+Both package typechecks pass. The suite exercises the actual migrated SQL admission
+boundaries at 999,999/1,000,000/1,000,001 extracted characters and 199/200/201 PDF
+pages; the page-count tests deliberately do not claim actual PDF parsing or OCR.
+Three sequential actual API → SQL → DOCX → immutable Map-storage receipt →
+authorized download cases preserve complete source-block coverage and verified
+hashes at 4,000 English, 100,000 mixed and 1,000,000 Arabic characters. Their local
+measured totals were 266 ms, 617 ms and 2,812 ms respectively. These repetitive
+synthetic inputs produced 970,302, 977,062 and 981,948-byte files; compression and
+local adapters make these measurements unsuitable as hosted latency guarantees.
+
+The same suite proves that dense authored table content is genuinely admitted and
+persisted by the authorized API before projecting it into a render model: 10,000
+mixed-language cells, 50,000 short cells, and 329,000 short cells across 658 tables.
+The last is the largest complete-table instance of this specific fixture family
+within the existing HTTP and JSONB input limits, not a global maximum across every
+valid encoding. One additional table is rejected by the existing 2 MiB JSONB bound
+without changing the saved revision. Every admitted cell survives the immutable
+payload and rendering projection. These three admission checks do not themselves
+prove successful native rendering of those tables. The separate native renderer
+work retains its original failure receipts and must complete render **and** verify
+acceptance before that gap can close.
+
+Receipt: [proposal-capacity-local-20261104.json](evidence/proposal-capacity-local-20261104.json).
+It records the complete 14-case denominator, migration hashes, source/font/lockfile
+hashes verified stable before and after the run, input bounds and actual timings.
+Synthetic local tokens and Map storage are explicit; no provider, customer data or
+production calls were used. The request-wide 600-second deadline races are covered
+by the separate real-PostgreSQL suite, not inferred from these local timings.
+Release, hosted storage/authentication, admitted concurrency, network/provider
+latency and the production issuance SLO remain separate acceptance gates.
+
+
+## November 4 — hosted model-audit credential binding correction
+
+Run41863551387 at6ee38ac passed original cluster CA/hostname verification and
+read-only readiness. The new model-audit step then failed before its catalog
+read because its workflow step omitted DIGITALOCEAN_ACCESS_TOKEN, which the
+scoped observer requires to obtain short-lived database credentials. Both
+owned-client and credential cleanup succeeded; bootstrap/restore/model calls
+were skipped. This is a diagnostic wiring defect, not a TLS regression or a
+provider availability result. Direct GitHub job logs supersede stale CLI status
+responses that still reported the job queued.
+
+The selected step now receives the existing repository credential through the
+normal environment binding. A missing binding fails explicitly before any
+cluster operation. Eight redaction/binding/cleanup tests pass, including exact
+workflow-step wiring. No secret value was printed and no provider configuration
+was changed. The corrected hosted audit is pending; use connected GitHub job
+steps/logs for fresh execution evidence.
+
+Regenerated OpenAPI for the two canonical ordinary package commands added by
+the export implementation; its authenticated GET boundary was already recorded.
+The combined actual ordinary SQL/API/DOCX suite passed20/20 after integrating
+definitive missing/corrupt file recovery; later lifecycle fixes require their
+separate focused and final combined evidence.
+### 2026-11-04 — ordinary export retention and null-guard closure
+
+Independent lifecycle/atomic-release review identified three fail-open/retention
+edges and an existing function-authority drift. Missing or JSON-null saved renderer
+markers now fail with `EXPORT_PACKAGE_INVALID`. A null artifact-failure reason is
+rejected before any valid receipt, bytes status, audit, or quota accounting changes.
+The canonical maintenance implementation retains a package's referenced current job
+as its existing completion proof, matching retained delivery-artifact provenance;
+an indexed lookup excludes only those references, so unrelated terminal jobs still
+expire under the configured policy. No completion state is fabricated.
+
+The generated-delivery queue classifier also preserves the established
+`STABLE SECURITY DEFINER` contract: its delegate reads database state, so declaring
+the wrapper immutable and dropping its definer property were incorrect. Its owner,
+ACL and search path remain unchanged. The separate managed atomic-release authority
+gate must be rerun on the composed revision before deployment.
+
+All five new regressions reproduced the prior defects, then passed after these
+changes. The aged-maintenance case renders a genuinely approved technical/financial
+package, ages its job beyond the maximum366-day test boundary, invokes actual public
+maintenance, verifies the unrelated old job is pruned, then downloads/verifies both
+DOCX volumes and re-enters the same package without changing its job or deadline.
+The ordinary suite passes26 cases; related artifact/round-robin/wake/fairness suites
+pass188 cases, and backend typecheck passes. These are local synthetic receipts,
+with no production, provider or email calls.
+
+## November 4 — bounded native document construction and renderer admission
+
+Actual authenticated authoring inputs exposed V8 heap exhaustion at 128/256 MiB
+for 10,000 cells, and at 128 MiB for 10,000 short paragraphs. The renderer now
+keeps native headings, TOC, styles, fonts and footer in a small skeleton, prepares
+ordinary paragraph/bullet XML with native numbering, and streams native table
+rows into ZIP compression. Repeated rows reuse their exact XML while still
+emitting every row and cell. Ragged rows now retain values beyond the supplied
+header count, with empty padding only; the prior renderer lost those values and
+the canonical content verifier correctly refused the file.
+
+Six frozen rectangular `word/document.xml` goldens remain byte-identical to
+renderer `90e8090`. Six paragraph/bullet goldens normalize only docx's global
+bookmark allocation IDs and independently check TOC, bookmark and numbering
+references. Ragged content, repeated-row keep-next, escaping, missing/duplicate
+slots, PAGE fields and admission/cancellation tests pass **34/34** after the final
+footer correction; the preceding combined pipeline/worker selection passed
+46 cases. The final footer uses explicit native XML components: independent
+review found that the earlier `fromXmlString` API inserted an invalid `undefined`
+wrapper despite LibreOffice's visually successful conversion. New tests reject
+that wrapper. Earlier visual receipts remain historical, and final visual QA
+must bind this corrected source.
+
+The process admits one renderer at a time, includes FIFO waiting in its existing
+30-second attempt deadline, removes expired/canceled waiters before spawn, and
+kills/reaps active children on cancellation while preserving the server's typed
+request/lease reason. This is process protection; the separate database renderer
+lane keeps ordinary queued jobs unclaimed without consuming attempts. The child
+heap remains 128 MiB and no source/input/output cap has been reduced.
+
+Measured offline native evidence includes 329,000 cells and 1,787,000 normalized
+sparse cell positions. Exact row reuse reduced the latter from a 30-second
+render timeout to 10.74 seconds; combined rendering and the staged asynchronous
+verifier then completed in 49.35 seconds under a 640 MiB/one-CPU, network-disabled
+container with the full application import graph loaded. These measurements
+precede the final footer and later verifier/deadline changes; final exact-source
+native qualification, the stronger minimal sparse fixture, storage readback and
+request-wide/hosted acceptance remain separate pending evidence.
+
+The original specification still requires a live TOC plus update-on-open and
+instructs users to update all fields/the entire TOC in Word and save before
+submission. Stable LibreOffice 7.4.7.2 exposes zero document indexes when importing
+the original native fixture; plain conversion preserves empty page-reference
+caches. No refreshed-cache or Microsoft Word desktop qualification is claimed,
+and no estimated page number or production office conversion stage was added.
+
+
+### 2026-11-04 — G10 density and uneven-column regression follow-up
+
+The actual authorized authoring API admits 810 full tables containing 405,000
+explicitly empty cells within the existing 2 MiB JSONB input bound; the next full
+table is rejected without changing the saved revision. It also admits the schema's
+100 sections × 100 short paragraphs. Tests preserve every supplied cell/paragraph
+and its order through the saved revision, immutable delivery payload and render
+projection. These are additional concrete fixture families, not proof of a global
+maximum across all admitted shapes; sparse rows with implicit padding are a further
+density axis requiring assessment. Their frozen models were handed to the native
+renderer owner for independent process/memory and full-file verification.
+
+A separate actual API → DOCX regression exposed accepted rows wider than their
+header list. The former renderer built cells from the header count and omitted
+extra values. Existing final verification correctly rejected the resulting file
+with `EXPORT_CONTENT_MISMATCH`; this was an availability failure, not a false claim
+of successful delivery. The renderer owner's column-width repair retains every
+value and supplies empty padding without inventing column labels. The unchanged
+regression now verifies all 500 supplied cells after rendering.
+
+`proposalCapacity.integration.test.ts` passes **17/17**, and both package
+typechecks pass. [The density receipt](evidence/proposal-capacity-density-20261104.json)
+records that run and its stable source/font/lockfile hashes. The original 14-case
+receipt remains intact. This receipt is scoped to the recorded implementation;
+the final merged bounded verifier and native runtime are separate acceptance.
+Receipt capture now also includes `boundedDocx.ts`, `boundedDocxArchive.ts` and
+`boundedXml.ts` when present, for the final integrated rerun. No native large-file
+qualification, hosted timing, provider call or production deployment is claimed
+by these API/persistence density checks.
+
+### 2026-11-04 — bounded verification of large authorized DOCX content
+
+**Implemented locally:** Word verification now validates the ZIP central and local
+indexes, exact entry boundaries, duplicate paths, descriptors, actual expanded
+sizes and CRCs before accepting the file. Raw DEFLATE is fed 512 compressed bytes
+at a time; a 1 MiB callback limit is enforced. UTF-8/XML is parsed incrementally with
+bounded tags, depth and namespace state. No complete document XML, parsed tree or
+actual-paragraph list is retained. The existing 10 MiB archive limit stays; the
+export-only expanded-document allowance derives from authorized text and native
+paragraph/cell structure, including blank cells. Original-upload limits remain
+unchanged. This admits highly compressible valid tables while refusing expansion
+unrelated to the authorized model.
+
+The same verifier compares ordered paragraphs, exact table/grid/row/cell content
+and blank padding, yellow gap runs, native TOC text, enabled field updates,
+headers/footers, metadata and internal relationship targets including embedded
+fonts. Ragged model tables use the maximum header/row width with blank padding;
+no supplied overflow cell is discarded. DTDs, unsafe relationships, tracked
+changes, malformed XML/ZIP and missing referenced parts remain rejected. Independent
+review also exposed two inherited visible-content bypasses: a visible TOC suffix
+was stripped, and alternate Word namespace prefixes could evade text collection.
+Both now have actual DOCX mutation regressions; expanded names are canonicalized
+and visible text is never discarded as a field instruction.
+
+**Responsiveness:** synchronous compatibility and asynchronous runtime entrypoints
+consume the identical validation generator. The runtime version yields to the event
+loop during scans and supports cancellation without returning a partial pass.
+Both direct runtime callers (deliveryBytes, reused by ordinary/generated delivery,
+and the API reviewed-DOCX completion path) await it. Current source/lease/approval
+checks after verification remain the caller's authority boundary.
+
+**Evidence:** 54 verifier/delivery/field cases pass, covering malformed/truncated/
+duplicate ZIP/XML, real CRC mismatch, namespace aliases, dangerous metadata,
+field settings, text/gap changes, blank/shifted/ragged cells, a high-compression
+callback bound, concurrent heartbeat and cancellation. The 6-file composed API/
+DOCX/acceptance run passed 93/96 with 3 unchanged 5-second generated-pipeline test
+timeouts under concurrent local load; isolated rerun passed 13/13 at the original
+threshold. Full frontend passed 355/356 with an unrelated successor-button timing
+assertion; its unchanged isolated file passed 25/25. Both package typechecks and
+builds pass. These observations do not substitute for the parent's final combined
+full-suite run.
+
+Actual API-admitted 405,000-empty-cell native DOCX verifies asynchronously under a
+128MiB Node heap in 8.36 seconds, with the largest inflation callback 67,320 bytes;
+810 timer callbacks ran and the measured longest timer gap was 31 ms. Its 159 MB
+expanded package is checked without raising original-upload limits. The 329,000-cell 200 MB XML sample also passes the final asynchronous verifier in
+10.18 seconds at a 128 MiB heap, with a 68,546-byte maximum inflation callback
+and a measured 15 ms timer gap. Final Deno full-runtime
+image receipts are coordinated with the streaming renderer and bind all helper
+hashes. These are synthetic offline capacity measurements, not hosted Storage/Auth,
+production load qualification, a universal table maximum or a 600-second service SLO.
+No production/provider calls, deployment or billing changes were performed here.
+
+### 2026-11-04 — corrected hosted model binding audit
+
+[Run 41869042836](https://github.com/salahassi/tenders/actions/runs/41869042836)
+at `bc8e5709183fd228ae1bac207e643e2413e9c9fd` completed successfully. Direct
+GitHub job evidence confirms original cluster CA verification, scoped catalog
+read, owned SQL-client cleanup and temporary credential cleanup. Bootstrap,
+restore, business writes and provider calls did not run. The prior diagnostic
+credential-binding failure is resolved by this exact hosted execution.
+
+The enabled OpenAI and QwenCloud model bindings each have their configured key;
+the enabled Gemini binding does not. Key presence proves neither available
+credit nor successful inference. The earlier provider quota/credit failures
+remain historical measurements, not a fresh result from this read-only audit.
+The intervening scheduled credential workflow 41860893513 performed alias
+discovery only; its bind, reload and recover jobs were skipped, so it provides
+no evidence of refreshed keys or repaired provider availability.
+
+The sanitized [receipt](evidence/model-binding-audit-20261104-41869042836.json)
+contains no aliases, keys, project values or customer content. The permanent DO
+runbook links it and records use of direct job evidence when cached CLI metadata
+still reports a completed run as queued. This closes diagnostic wiring and key
+presence verification only; live prompt qualification, provider availability,
+final integrated release and hosted proposal acceptance remain separate gates.
+### 2026-11-04 — independent render admission without spending queued attempts
+
+Migration `20261104163406_serialize_local_document_rendering.sql` replaces the
+existing blanket one-running-job workspace index/claim guard with two explicit
+lanes: one non-render job per workspace, plus one document renderer globally.
+The previous production contract already serialized all running jobs; this change
+allows useful model/poll/projection progress during rendering, without increasing
+model-to-model concurrency. Both partial unique indexes enforce workspace lanes;
+a private transaction advisory mutex makes global render selection and canonical
+lease publication atomic. A contending renderer stays queued without attempts,
+failures, lease or deadline changes. Model reservation limits, fairness, source and
+issuance guards, executor compatibility, lease recovery, and cancellation remain
+in the canonical paths. Wake eligibility mirrors the split lanes.
+
+Eleven new migrated SQL tests cover mixed render types, actual wake+claim progress
+for model/poll/projection, one non-render lane, old executor exclusion, inference
+reservation saturation, expired render recovery, twelve accepted ordinary export
+packages and an expired package still waiting in the queue. All 254 focused
+queue/wake/background/artifact/ordinary tests and backend typecheck pass.
+
+`backend/scripts/testing/document_render_admission_races.py` additionally passes
+six real PostgreSQL multi-session cases. Primary public v4 claim races use the
+unchanged singleton production schema and observe contenders waiting on actual
+workspace locks. The twelve-package simulation preserves each original 600-second
+clock and unclaimed job row while each package receives one lease. Its verified
+storage receipts are synthetic; actual DOCX bytes are exercised by the separate
+pipeline tests. A recovered real export lease rejects the previous worker with
+`STALE_LEASE`. The cross-workspace global-mutex defense explicitly relaxes singleton
+uniqueness only inside the isolated fixture and calls the unchanged production
+selector under canonical workspace locking/lease publication. While the first
+render lease is uncommitted and invisible, the second render cannot start, but a
+model job progresses; a second non-render remains queued. This is not a claim of
+multiworkspace product support. Receipt with exact migration hashes:
+[document-render-admission-postgres-20261104.json](evidence/document-render-admission-postgres-20261104.json).
+
+This admission proof concerns logical leases. The native process semaphore and
+termination/reap tests separately fence an old physical child after cancellation
+or expiry. Neither the queue simulation nor lease count proves instantaneous CPU
+reap or hosted twelve-document throughput. No production, provider or email calls
+were made, and no request clock was extended by waiting.
+
+
+### 2026-11-04 — reconcile the plan with integrated work and retained failures
+
+The plan ledger now distinguishes completed local integration of ordinary exports,
+full diagnostic collection, historical recovery and render queue admission from
+the remaining dense-document, reviewed-Word and ambiguous-upload corrections.
+Earlier full-run failures are correctly recorded as a mixture of real renamed
+function defects and fixture assumptions, not all dismissed as test-only issues.
+No deployment, final combined pass, provider availability or hosted acceptance is
+implied by these documentation updates. The draft PR records the same boundaries.
+### 2026-11-04 — explicit final release contracts and observed worker limits
+
+The release source gate now requires all 19 currently integrated additive
+migrations, including the current issuance contract, ordinary export packages and
+pre-billable file capacity. The manifest explicitly binds ordinary renderer
+`ordinary-2`, issuance contract 1 and file-capacity version 1 alongside worker 4
+and delivery renderers 1/2/3. Removing a required migration before re-freezing,
+downgrading a capability or substituting a JSON boolean for its version fails.
+A forthcoming global renderer-admission migration must be added before the final
+manifest is frozen; this entry is not approval to freeze or deploy this revision.
+
+The atomic transaction additionally checks the actual new RPC and private-helper
+permissions, ordinary metadata RPC, table and column privileges, row security,
+capacity column types/defaults/nullability, validated capacity constraint and
+enabled issuance triggers. Existing row/owner/ACL/security-definer invariants
+remain strict, and now include the original columns' individual ACLs. Tests inject
+missing RPCs, inappropriate grants, disabled row security and disabled capacity
+checks, verifying that the entire schema/receipt transaction rolls back. Catalog
+checks remain distinct from the actual mixed old/new worker claim and competing
+capacity-writer behavior suites.
+
+Before any SQL-client creation, schema application or workload patch, the rollout
+reads the target worker's actual limits and requires at least 640 MiB memory and
+one CPU, the measured container envelope. Exact decimal quantity parsing accepts
+stronger supported limits and rejects missing, malformed or lower limits. It
+never changes resources, requests, replicas or billing. The sanitized successful
+receipt retains the observed limits and normalized quantities while explicitly
+reporting hosted load as unqualified. Node contention and provider/network latency
+remain hosted acceptance requirements.
+
+Local focused validation passes 4 release tests (including real migrated PGlite
+rollback/replay fault cases) and 10 rollout fault-injection tests. Before these
+guard additions, the 19-migration real PostgreSQL reconstruction/public restore
+check passed all 8 assertions with explicit Auth/Storage stubs, managed-schema
+checks passed 11, Kubernetes helper checks 13, and model-audit redaction checks 7.
+The initial broader operations run had 335/337 pass: it exposed the queue classifier
+security-definer drift (fixed separately by c3aad92 and verified by the now-passing
+atomic gate) and a historical recovery fixture expecting a legacy guard before
+the new current-contract rejection (owned by the separate recovery qualification).
+A final scoped operations/reconstruction rerun is pending the remaining integrated
+SQL changes. No hosted operation, provider call or production mutation occurred.
+
+G12 hashing now includes every local frontend renderer helper, package manifests
+and lockfiles, including newly added untracked source during qualification. The
+next matrix will therefore bind the streaming-table helper as well as the renderer.
+No new visual pass is claimed while dense rendering and verification are changing;
+existing footer-only evidence and the open native-TOC compatibility limitation
+remain unchanged.
+
+### 2026-11-04 — twenty-migration release guard verification
+
+The required source set now includes global document-render admission migration
+`20261104163406`; the manifest records `global_renderer_limit: 1`. Before rollout,
+the atomic gate checks its private volatile Boolean helper/empty search path,
+active-render index and both valid unique workspace lane indexes, and rejects
+the old blanket index or a direct service-role execute grant on the helper.
+These are catalog prerequisites; the independently retained six-case PostgreSQL
+race receipt proves the actual logical admission behavior. The worker resource
+receipt now additionally reports validated CPU/memory requests and desired replica
+count, preserving missing requests as null and explicit zero as zero.
+
+On the composed source containing lifecycle c3aad92, historical qualification
+d15aa28 and global queue dfac510, all **342 operations Python tests pass** in
+106.5 seconds, including 17 injected SQL rollback faults and the final capability
+and observed-resource negatives. The real PostgreSQL managed reconstruction and
+canonical source-review/delivery backup/restore harness passes **8/8 checks over
+all 20 migrations**. Its source hashes are retained outside the repository in
+`/workspace/work/ai-resume/due-diligence/phase2-operations/release-final/cloud-restore-postgres-20.json`;
+the operations log is `ops-20.log` in the same directory. Local Auth/Storage are
+explicit stubs; this is not hosted file or renderer acceptance.
+
+These receipts precede pending deadline metadata and storage-upload ambiguity
+corrections. The final source manifest, cloud restore and combined application
+gates must use their later exact hashes. No manifest was frozen for deployment,
+no hosted workflow was dispatched, and no production resources were changed.
+
+
+### 2026-11-04 — G10 sparse-table extremes and derived shape bound
+
+Two further actual API admission cases retain their separate frozen inputs. With
+ten named headers and fifty empty row arrays per table, the current JSONB ceiling
+admits 3,574 full tables: 178,700 explicitly supplied rows and 1,787,000 implicit
+data-cell positions after rectangular rendering. With empty headers and the
+shortest section metadata (unique one-character keys/title, shared volume), it
+admits 4,143 full tables: 207,150 rows, 2,071,500 data-cell positions and 41,430
+header cells. The next full table is rejected in both families without changing
+the saved revision. Every header and original row array survives persistence and
+projection; no input cap or schema restriction was added.
+
+The test derives a conservative normalized-table-cell bound instead of treating a
+convenient sample as the entire admitted range. It measures JSONB cost for all
+2,760 cheapest legal width/row/header-count shapes, including establishing a wider
+ragged row beneath fewer headers. Ten empty headers and fifty empty rows maximize
+cells per byte: 510 normalized cells cost 504 bytes. Nonempty strings and further
+supplied cells add storage without increasing this shape's width. Actual SQL
+confirms array-element additivity and the minimum required wrappers: 284 fixed
+input bytes and 204 bytes per section. Each section holds at most 100 tables, each
+table at most 510 normalized cells. These facts give a conservative ceiling of
+**2,113,160 normalized table cells** within the current authoring JSONB/schema
+contract. The accepted full-table fixture contains **2,112,930**, only 230 below
+that bound; a partial final table may occupy some remainder. This is a table-cell
+count bound, not a universal document-memory or latency guarantee.
+
+The integrated suite passes **19/19**, and both package typechecks pass on the
+current renderer (`178eb04`) and bounded verifier (`116fc55`).
+[The sparse density receipt](evidence/proposal-capacity-sparse-20261104.json)
+records all 19 cases, the derivation, actual admission sizes and stable hashes for
+source files including all three delegated verifier helpers. Earlier 14/17-case
+receipts and the named-header fixture are retained. Native render/verification
+under process/container limits is owned by the separate renderer qualification;
+these API checks do not assert it passed, nor hosted concurrency or production SLO.
+No external providers, customer data, deployment or production writes were used.
+
+### 2026-11-04 — stop local render/verification at the existing request or lease deadline
+
+Generated and ordinary workers now derive a monotonic CPU budget from the current
+DB clock, validated lease and existing accepted request. The full measured RPC
+round trip is subtracted conservatively. Later context reads may shorten that
+budget but never extend it or restart the 600-second authorization. Canonical
+request expiry, lease expiry and the renderer's separate 30-second attempt limit
+retain their distinct existing error codes. Timers are cleared on every exit.
+The renderer's independently committed optional signal hook cancels queued work
+without spawning and kills/reaps active work; the same signal reaches incremental
+verification and hashing boundaries. Final SQL source/actor/approval/lease checks
+remain authoritative before any successful receipt.
+
+Existing service context RPCs add only `server_now`/`lease_until` metadata; the
+issuance job-state RPC also refuses absent, expired or canceled leases. No new
+migration filename, permission surface, admission policy or accepted/deadline
+identity is introduced. Reviewed uploads and downloads of already-issued files
+use only the incoming request signal; they do not create a fresh issuance clock.
+
+Within one worker invocation, independently fetched bytes may reuse the immediately
+preceding verification only when a private receipt proves the same byte SHA-256,
+size and exact current render-model SHA-256. Input bytes and the model used during
+yielded verification are snapshotted. Caller-created receipts, changed models,
+changed bytes and historical/resumed objects receive complete verification. Receipt
+field mutation cannot alter the private proof. The optimization does not skip
+storage readback, hashing or any current authorization check.
+
+Local evidence: 29 focused budget/proof/worker/issuance cases pass, including server
+clock independence, RPC wait, no renewal on refresh, current lease cancellation,
+no file upload after cancellation, null/expired lease refusal, fake proof/model
+mutation and canceled readback. The actual ordinary/generated/early delivery/API
+pipeline regression passes 72 cases in four files. Both package typechecks/builds
+pass. The shared native renderer signal hook and final integrated Deno memory/
+timing qualification belong to their separately recorded renderer evidence; this
+change does not claim hosted acceptance, final integrated full-suite success or
+production deployment. No provider/production calls or unknown-usage changes.
+
+
+### 2026-11-04 — G10 alternating Arabic/Latin paragraph admission
+
+A separate density fixture covers formatting-run expansion rather than table or
+paragraph count. The actual authoring API accepts 69 distinct paragraphs of
+20,000 characters each, alternating Arabic and Latin letters after a unique
+paragraph prefix: 1,380,000 characters and 2,073,032 JSONB input bytes. The next
+paragraph exceeds the existing request/storage contract and is rejected without
+changing the saved revision. All characters and paragraph order remain exact in
+the stored response, immutable delivery snapshot and rendering projection. Unique
+prefixes prevent a repeated-paragraph cache from hiding this workload.
+
+The capacity suite passes **20/20**, and both package typechecks pass.
+[The direction-density receipt](evidence/proposal-capacity-direction-20261104.json)
+records this run and source hashes verified stable before and after execution.
+All earlier receipts are retained. The frozen native input was handed to the
+renderer and verifier owners; this new API case does **not** assert native success
+within 128 MiB/30 seconds or final document-XML verification. Any resulting native
+repair and stricter verifier guards require their own final combined rerun. No
+input ceiling was changed, and no provider or production calls were made.
+### 2026-11-04 — preserve ordinary export cells wider than the header row
+
+`buildExportModel` now copies every authorized source cell instead of projecting
+rows through the header count. Source rows and literal zero values survive; the
+native renderer alone pads the widest table with empty cells and empty headings.
+This changes new render projections, not immutable historical artifact bytes.
+
+The new local integration test failed before the fix because a unique source
+cell and `0` disappeared. It now passes through actual authenticated fixture API
+prepare, migrated SQL immutable request snapshot, ordinary background worker,
+object readback and authorized download. An independent native XML assertion
+checks all three columns, zero, blank header padding and short-row padding; the
+stored source remains byte-for-byte equivalent as JSON. This uses only synthetic
+local session/object transport, not hosted Auth or cloud Storage.
+
+Local validation: 27 ordinary pipeline/ragged cases, eight projection/structure
+cases and two native renderer cases pass; both package typechecks/builds pass.
+The renderer dependency is the separately committed native streaming/ragged
+implementation `178eb04`. Final composed suites, hosted acceptance and deployment
+remain separate release evidence. No production or provider calls.
+
+### 2026-11-04 — explain unresolved file storage without unsafe retry
+
+Operations now displays optional aggregate storage-write uncertainty from the
+server: unfinished uploads, the already-counted retained bytes, files requiring
+administrator checks before deletion, and historical records whose physical
+usage remains unmeasured. These categories do not invent usage or add the held
+bytes to the total again. Private paths and identifiers are not exposed. Older
+status responses without the new field remain usable.
+
+A cleanup blocked by STORAGE_QUIESCENCE_REQUIRED no longer offers a retry that
+cannot satisfy the missing reconciliation; other checked cleanup retries remain
+available. The missing-heartbeat explanation also no longer assumes a paused
+Supabase project for this DigitalOcean deployment. Three focused UI tests and
+frontend typecheck pass, including the absence of an unsafe/ineffective retry and
+compatibility with the old response shape. Backend metadata, storage fencing,
+operational retirement, final combined checks and deployment retain separate
+implementation and acceptance evidence.
+
+### 2026-11-04 — bound native mixed-script run expansion from authorized content
+
+The incremental DOCX verifier now counts the exact historical ASCII/non-ASCII
+run segmentation lazily from the trusted render model and adds conservative
+native run-property overhead to its existing text/paragraph/table allowance.
+It does not infer an allowance from ZIP metadata or allocate all run objects.
+Preflight yields every 4,096 runs, including within one paragraph, so request
+cancellation remains effective. The 10 MiB compressed file cap, 512-byte inflater
+input chunks, 1 MiB output-chunk guard, CRC/local/central agreement, strict XML,
+field/table/content rules and original-document 40 MiB upload guard are unchanged.
+
+A new native-XML fixture repeated actual two-script Word run fragments into twelve
+20,000-character paragraphs. It failed the old expanded-content budget and now
+passes full asynchronous validation above 40 MiB. The same text-length model with
+contiguous script cannot borrow that allowance and still fails the budget; timer
+heartbeat and cancellation assertions pass. Exact segmentation is checked against
+the historical capturing split over 9,331 short strings plus punctuation/Unicode
+cases. The native fragment's formatting overhead is checked against the allowance.
+
+Local validation: 49 bounded-verifier/run-budget cases pass; both package types
+and builds pass. No claim is made that this synthetic XML fixture proves the
+native renderer's full admitted 69-paragraph direction-density case: final Deno
+render/verify, process/container memory and timing evidence remain with that
+separate qualification. No hosted or production/provider calls were performed.
+
+### 2026-11-04 — lazy native text runs for admitted direction-density input
+
+The actual authenticated authoring fixture containing 69 distinct 20,000-character
+Arabic/Latin alternating paragraphs exhausted the original 128 MiB child V8 heap
+in 2.2 seconds. Paragraph grouping alone did not remove this failure. Body and
+cell text now serialize one native run at a time into the compressed archive;
+empty native paragraph/row wrappers retain properties and relationships. The
+renderer and verifier share the exact historical segmentation iterator. A bounded
+64-entry cache reuses short native runs, and repeated small rows retain their
+exact positional properties. Content is neither truncated nor capped by these
+optimization bounds. Native headings, TOC, numbering, footer and fonts remain.
+
+At unchanged child heap and attempt deadline, the same frozen admitted fixture
+rendered in 4.77 seconds with 397,221,888-byte full-application container peak,
+producing 295,825,209 bytes of document XML. This render-only receipt is preserved
+separately from final combined asynchronous verification. The original failed
+receipt is retained. The shared final verifier separately accepted those bytes;
+final exact-source Deno and worker lifecycle qualification remains pending.
+
+All 36 scoped renderer, footer and process-isolation cases pass, including frozen
+native XML goldens, ragged rows, repeated-row keep-next, long legacy paragraphs,
+20,000-character alternating paragraphs and 2,000-character alternating cells.
+Frontend typecheck passes. Modern model paragraph/cell bounds are 20,000/2,000,
+but delivery envelopes do not impose those bounds universally: source chunks
+allow 12,000 and legacy section bodies allow 100,000 characters. The fix therefore
+streams body/cell runs independently of the modern authoring bounds. No provider,
+production or billing calls were made.
+
+### 2026-11-04 — actual final native renderer and asynchronous content validation
+
+The frozen synthetic admitted matrix passes all seven cases through the actual
+Deno child and final asynchronous DOCX verifier, with the API/worker application
+imports loaded. Sources, inputs, immutable runtime image and output hashes are
+recorded in `evidence/native-renderer-capacity-20261104.json`; raw DOCX files remain
+in the local output evidence directory. No provider or hosted requests occur.
+
+At the unchanged 128 MiB child heap, 30-second render attempt, 1 CPU and 640 MiB
+container limit, the 4,143-table fixture preserves 2,112,930 normalized cells:
+11.62 seconds rendering and 56.13 seconds including full content verification.
+The 1.38-million-character alternating-script fixture takes 3.44 / 22.91 seconds.
+The 405,000 explicit empty cells, 329,000 nonempty cells, 50,000 cells, 10,000
+paragraphs and ragged-row fixture also verify exactly. The matrix leaves no child
+running and observes at most one child. Peak container usage is 649,199,616 bytes,
+only about 21.9 MB below the limit; this is measured offline evidence with modest
+headroom, not a production concurrency or latency guarantee. A separate actual
+worker two-volume/readback/deadline qualification remains outstanding.
+
+### 2026-11-04 — clean installs and combined frontend verification
+
+Both package lockfiles installed successfully with `npm ci`. On source
+`35c62c4` plus the count-label wording corrections committed with this entry,
+frontend typecheck, all 359 tests across 57 files (`--maxWorkers=1`), and the
+production build pass. The Vite large-chunk advisory remains. The panel uses
+count-neutral wording for unsettled uploads and administrator storage checks.
+Hashes and check scope are retained in
+`evidence/final-frontend-checks-20261104.json`. These checks do not establish
+backend integration, production deployment, or hosted acceptance; the final
+backend suite follows the remaining storage retirement integration.
+### 2026-11-04 — one-time private upload authorization and measured cleanup settlement
+
+The delayed-object regression reproduced an accounting defect in both ordinary
+export failure and delivery purge: a client upload timeout was followed by a
+successful DELETE of a currently absent key, then the remote PUT completed after
+quota had been released. The pinned Storage server can finish after client abort;
+its empty deletion response is not evidence that every physical version is gone.
+No arbitrary age or timeout is used as a settlement fence.
+
+`20261104170442_durable_storage_write_intents.sql` records one-time send permission
+per private key. The current service lease, actor, source and slot reservation are
+checked before consuming it. A lost authorization reply or pre-send process crash
+remains unknown. Re-entry only reads the same object; it cannot issue another PUT.
+Exact positive byte hash/size settles that unique write. Explicit authorized retry
+uses a fresh key while the previous uncertain allowance remains in the cleanup
+ledger. Ready siblings, immutable content receipts and model unknown usage remain
+unchanged. Historical keys without this provenance remain `legacy_unfenced`.
+
+Cleanup now verifies current lease/token/expiry, workspace/key provenance and
+active references. An unused permission is atomically closed before its key can be
+released, preventing a later begin from reopening it. A completed single write
+requires a positive exact-key/nonmarker object-version deletion acknowledgement;
+its SQL receipt is bound to the current cleanup lease. Empty, lost, failed or
+mismatched deletion evidence retains the existing counted allowance. Unknown
+absent uploads defer reconciliation without spending deletion attempts. Unfenced
+historical writes and uncertain physical deletion require the separately reviewed
+nonce-bound operational quiescence/physical reconciliation, never a boolean or an
+elapsed-time assumption. That operational tool and pinned-server binary acceptance
+are separate gates, still owned by their integration tasks.
+
+Writer census: server delivery and ordinary export use the new one-time protocol;
+`BackendClient.upload` also serves browser document/review/company/manual-export/
+restore uploads, and `copyOriginalForOcr` writes private successors. Every untracked
+cleanup key from those other paths defaults to conservative legacy provenance.
+The single cleanup worker calls the guarded service RPCs; old boolean completion
+alone cannot release unknown bytes. Historical already-done cleanup is exposed as
+an exact-key physical-inventory candidate, not invented current quota or a claim
+that old orphans were repaired. `workspace_status.storage_write_uncertainty` adds
+only integer counts and currently held bytes; it exposes no IDs or private paths.
+
+Operational intent and retirement provenance are endpoint-local like cleanup
+state, excluded from portable artifact backups. Restore creates new-key legacy
+provenance and cannot restore send permission or copy a host's retirement proof.
+Purge retains intent identity while transferring existing allowance to cleanup.
+The missing-ready-artifact CAS similarly preserves its existing counted bytes
+when legacy write settlement is unresolved, without inventing a10MiB charge.
+
+Storage GET/PUT now combine the worker's existing request/lease signal with the
+existing20-second transport cap. Cancellation immediately yields the existing
+terminal request code while keeping any consumed write permission unknown; it is
+not proof the server stopped. Native render/readback verification and all final
+SQL authority checks remain in place.
+
+Evidence: the two original delayed-object cases are red→green using real local
+commands, worker, DOCX bytes and migrated SQL with a deferred synthetic object
+transport. Thirty new scoped cases cover lost PUT/reply, no resend, later positive
+readback, fresh-key retry/accounting, pre-send lost ACK, NULL leases, cross-workspace
+key collision, user denial, metadata census, restore provenance, legacy missing
+artifact accounting, lost DELETE→empty response, unstarted closure, transport
+signals, positive/nonmarker deletion receipts and independent replay/current-clock
+repros. The140-case related focused run and18-case final replay/storage rerun pass;
+backend typecheck/build pass. A broad backend run was stopped at the integration
+owner's request to avoid competing with final qualification; it is not a full-suite
+pass. The root owns the final exact combined full suites and deployment.
+
+`backend/scripts/testing/storage_write_intent_races.py` provides five actual
+PostgreSQL lock-observed cases: one send/audit under duplicate authorization;
+unknown deletion refusal/accounting; source edit and actor revocation while
+waiting; terminal request winning before send. Its sanitized receipt records the
+pinned image, exact migration hashes and scoped runtime source hashes in
+[evidence/storage-write-intent-postgres-20261104.json](evidence/storage-write-intent-postgres-20261104.json); all five pass on the final scoped SQL. Storage
+server I/O and physical retirement are explicitly outside that database proof.
+No production, provider, customer document or email calls were made.
+### 2026-11-04 — final renderer representative visual qualification
+
+A frozen checkout at `ddd35b6e721215a891a4f06f2ef0e03798d91e50` generated 18
+actual DOCX files from 12 synthetic snapshots with the corrected typed PAGE
+footer, streamed tables, lazy native runs and final strict verifier/run budget.
+All 18 passed actual strict verification. LibreOffice converted them to 91
+pages with zero out-of-page text spans. Every current page PNG hash exactly
+matches a previously inspected page: 91 inherited visual inspections, zero
+changed pages. The current English and Arabic TOC pages were additionally
+inspected at full size. This is exact-image reuse, not 91 new manual inspections.
+
+Fresh XML checks across all documents find no `undefined` elements, proper
+direct-run PAGE tokens with neutral highlight, native TOC/PAGEREF instructions,
+enabled UpdateFields and empty page-number caches. Every actual PDF footer
+contains the correct page number and zero intersecting yellow drawings. The
+previous visually matching footer revision had invalid wrappers; its images
+are not used as proof of final XML correctness. Immutable source, helper,
+engine, font, payload, model, DOCX, PDF and page hashes are recorded in
+`evidence/g12-renderer-qualified-{render-receipt,page-receipt,audit,review}-20261104.json`
+and summarized in `DELIVERY_VISUAL_QUALIFICATION.md`.
+
+The representative matrix preserves reviewed Arabic/English shaping, tables,
+yellow information gaps and volume separation. LibreOffice still omits TOC
+page-number results in all 18 conversions; actual Word desktop/web update/save
+remains untested. Sparse final pages remain a minor inherited issue. This
+qualification neither changes product code nor establishes every dense-layout,
+model-semantic, hosted-storage or 600-second issuance outcome. Dense capacity
+and worker lifecycle have separate receipts. No full suites, provider calls,
+production mutations or deployment were performed in this QA-only change;
+root's final combined and deployment gates remain separate.
+Follow-up native-byte evidence: the actual API-admitted 69-paragraph alternating
+Arabic/Latin model (1.38 million source characters, model SHA-256 `69a027e8…dcd9d`)
+now passes this exact strict verifier against the native lazy-run renderer's
+actual DOCX. Offline Node with a 128 MiB heap verified 298,013,151 expanded bytes
+in 31.763 seconds; the largest inflater callback was 72,809 bytes and measured
+maximum RSS was 251,756 KiB. The event loop serviced 1,940 heartbeat ticks, with
+maximum observed gap 61 ms. This is verifier-only evidence, not a 128 MiB RSS
+claim, full worker Deno/container proof or hosted service capacity guarantee.
+Exact input/artifact/helper hashes and measurement details are in
+[evidence/docx-direction-run-budget-native-20261104.json](evidence/docx-direction-run-budget-native-20261104.json).
+Final renderer/worker resource and visual qualification remain separate.
+
+### 2026-11-04 — independent storage-intent review retains actual red/green evidence
+
+Independent full-migration PGlite cases found two defects before storage-intent
+integration: replaying a retry key could expire a later failed upload and enqueue
+cleanup, and a lease that expired after transaction start could still grant a
+one-time write because the inherited guard used `now()`. The owner corrected
+replay ordering after current actor/workspace checks and put a current-clock
+lease check in the canonical delivery-job guard for all send/commit consumers.
+The exact two independently authored tests pass unchanged against the corrected
+migration. These are sequential local SQL tests, not PostgreSQL concurrency,
+remote Storage, or production proof. Canonical regressions are retained in
+`storageWriteReplay.test.ts`; the independent source, hashes, red/green logs and
+scoped review limits are retained in
+[evidence/storage-independent-review-20261104.json](evidence/storage-independent-review-20261104.json).
+
+The storage foundation is integrated in `b78ea51`; final private retirement
+coordinator, selected Storage binary/quiescence/physical deletion, release guards,
+cloud restore and hosted acceptance remain separate gates. A physical-helper
+review also found missing directory synchronization after unlink; its author
+added awaited directory sync before the absence receipt, with failures refusing
+proof. That observation is not a power-failure qualification claim. No production,
+provider, payment or external Storage operation ran in this independent review.
+
+### 2026-11-04 — scope G12 against the preexisting Word output contract
+
+The qualification disposition is representative editable draft delivery with
+native Word field-refresh acceptance pending. This follows the October 15
+`EXPORT_QA.md` instruction to update Word's TOC before external use, the model
+execution plan's section 9 and E2E-03 allowance for a recorded TOC limitation,
+and W04's explicit target-engine proof or documented remaining review. Exact
+references and the unchanged EX-06 integrity/visual obligations are now in
+`DELIVERY_VISUAL_QUALIFICATION.md`. Missing LibreOffice TOC page results remain
+a measured interoperability limitation; they neither prove Word refresh nor
+independently require a new runtime draft-delivery block under that contract.
+
+A fresh read-only tools check found no connected Word session. The Linux
+environment had LibreOffice but no Word, Wine or PowerShell executable on PATH.
+Actual Word refresh/save acceptance therefore remains unexecuted. Its concrete
+next test uses the existing English/Arabic source-bound fixtures, records the
+Word version, updates all fields/TOC, checks heading-page correspondence,
+inspects pages, saves/reopens and retains content-validation and artifact
+evidence. No native Word pass or universal G12 closure is claimed.
+
+This is documentation only. Prior 18-DOCX/91-page evidence is unchanged; no
+product code, tests, runtime gates, field caches, deployment or production state
+changed. Documentation references and whitespace checks passed. Root's final
+combined validation, hosted acceptance and other recorded limits remain
+separate.
+
+### 2026-11-04 — fresh original-CA inventory before final release freeze
+
+Read-only [run41881660683](https://github.com/salahassi/tenders/actions/runs/41881660683)
+succeeded on `17ba94ba3e6ee13c1227f60b8849c8fe40873564`. Original cluster
+certificate/hostname verification and owned temporary SQL-client/credential
+cleanup executed successfully; bootstrap, restore and model steps were skipped.
+The sanitized receipt is `evidence/digitalocean-inventory-20261104-41881660683.json`;
+manifest freezing consumes its inner `receipt` object.
+
+At17:55:32UTC, all ten owned workloads were ready, images and the six release
+receipts remained unchanged, and the routine catalog hash remained
+`6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287`.
+The delivery tables were still absent: this branch is not deployed. Aggregate
+observation included11blocked proposal jobs,91pending background jobs (84due),
+and no running or expired-leased jobs in those classes. These counts do not
+establish a cause or successful recovery. No business/schema/model changes ran.
+Native schedules remained unchanged. This fresh baseline is separate from the
+open worker memory, storage-retirement, cloud-restore and hosted acceptance gates.
+
+The managed release authority comparison independently exposed a migration
+regression: the new canonical `app_private.app_command` wrapper lost its existing
+authenticated EXECUTE grant. Migration170442 now preserves that grant for each
+installed role family while its renamed predecessor remains private. Two new
+migration-boundary regressions first reproduced the exact ACL loss and then pass
+for Supabase and managed `tdp_app_*` roles, comparing the entire canonical ACL,
+owner, definer flag and search path before/after, plus no nonowner predecessor
+grants. Backend TypeScript build/typecheck passes. This is a scoped local
+correction; the integration owner still runs the strict combined managed release
+and hosted gates. Runtime/storage settlement behavior and its prior receipts
+are unchanged; final release receipts must bind the corrected migration hash.
+
+### 2026-11-04 — require the 22-migration Storage release contract
+
+The release guard now requires the Storage write-intent and private retirement
+migrations plus explicit version-1 capabilities. Existing row/column and complete
+authority comparisons remain unchanged. The only nonempty new-table exception is
+an exact distinct census captured before the batch from existing workspace/key
+pairs in delivery artifacts, ordinary slots and cleanup rows, including completed
+cleanup. Every new intent must be `legacy_unfenced`, revision 1, with no expected
+bytes/hash, send, observation, closure or retirement proof. All other new tables,
+including private retirement keys/batches, must initially be empty. Replaying a
+completed release preserves later legitimate operational state and history.
+
+Independent catalog checks require the service RPCs, private proof helpers,
+restricted table/column access, RLS and registration triggers. They deliberately
+do not install or assume authority to install a trigger on managed `storage.objects`.
+The release guide now documents this precise exception rather than claiming that
+all new tables are empty or that a census certifies physical storage.
+
+Local evidence: four Python cases pass, including the actual full managed-role
+PGlite batch/replay and 36 fault variants with complete transaction rollback.
+Missing/extra/forged census, unauthorized state/hash/size/timestamps/settlement,
+other seeded new tables, RPC/table/column exposure and disabled guards are rejected.
+The former all-empty rule was separately reproduced rejecting the valid census.
+The same strict test first exposed a canonical `app_private.app_command` ACL loss;
+its source owner restored the established authenticated grant in `5a0246b`.
+No authority check was relaxed. `py_compile` passes. Exact sources, all 22 migration
+hashes, test/log receipts and limits are in
+[evidence/storage-release-guards-20261104.json](evidence/storage-release-guards-20261104.json).
+The two Storage migrations were borrowed test dependencies and are excluded from
+this guard commit. This is not a full package suite, final retirement coordinator,
+real hosted Storage, cloud restore, production deployment or semantic acceptance.
+## Storage retirement SQL — local proof, operational admission still pending
+
+Migration172700 adds endpoint-local permanent key/family fences and private
+Owner-bound prepare/finish functions. Fences have no workspace/artifact foreign
+keys and are excluded from tenant backup. Known application namespace aliases
+reject before a permanent key is inserted. Preparation and completion recheck
+current Owner authority after the workspace lock, exact nonce/key/revision,
+active references and the installed fence. Exact lost-ACK replay is retained.
+Only a matching single unknown→observed transition can advance once during drain;
+other revision/identity drift rejects. Completion atomically marks existing held
+cleanup rows done, without charging already-done historical census rows.
+
+The isolated real PostgreSQL suite
+`backend/scripts/testing/storage_retirement_postgres.py` passes25 cases against
+the exact migration hash recorded in
+[evidence/storage-retirement-postgres-20261104.json](evidence/storage-retirement-postgres-20261104.json).
+It includes lock-observed Owner demotion, known aliases leaving no fence, future
+key/sidecar/ancestor fences, current fence-definition binding, internally
+contradictory binary/remaining-byte proof, immutable scope/revision checks,
+completion replay, observation during drain, uncertain deletion, no public
+assertion privilege and fence survival after cleanup/intent removal. Process and
+physical receipts in this SQL suite are explicitly synthetic; this is not a
+Kubernetes shutdown or real Storage acceptance result.
+
+No production schema or retirement operation occurred. The trigger is deliberately
+not installed on managed storage.objects by the application migration; a separate
+reviewed runner must verify actual owner authority and install it. The operational
+coordinator, full pinned binary/protocol qualification, resumable-route guard,
+checked cloud release and final combined package suites remain separate pending
+gates. The discovered signed resumable-upload bypass must be blocked and qualified
+before any hosted retirement can release an allowance. Private SQL shape checks
+alone do not prove that remote processes stopped or that physical bytes vanished.
+
+### 2026-11-04 — reject direct service column grants in the storage release guard
+
+Independent review found that the new-table guard inspected direct table ACLs
+but missed a direct service-role column grant. An isolated managed-role release
+accepted `SELECT(storage_key)` granted to `tdp_app_service` on the new intent
+table. The same regression now rejects it through `pg_attribute.attacl`, plus
+PUBLIC and direct service grants across all three new storage tables. The check
+uses only explicit ACL entries; established service inheritance of the application
+owner remains valid, and NULL/empty column ACLs are handled without fabricating
+owner grants. Original row/authority comparisons and the exact census exception
+are unchanged.
+
+One focused Python test passes with six new fault variants and the reused
+positive managed release/replay and rollback controls (19.558s on the shared local
+host). The pre-fix test failed because the service column grant was accepted.
+`py_compile` passes. Exact source/log hashes and retained red/green output are in
+[evidence/storage-column-acl-20261104.json](evidence/storage-column-acl-20261104.json).
+No full suite, production operation, deployment, binary/protocol qualification
+or hosted storage acceptance was performed by this slice.
+
+### 2026-11-04 — exact 22-migration local PostgreSQL restore
+
+The root reran `cloud_restore_postgres.py` after integrating the final retirement
+SQL and corrected canonical command ACL. All eight checks pass against all
+22 additive migrations: managed catalog capture/reconstruction, row and role
+isolation, source/artifact backup, reset failure rollback and trigger state,
+fixture identity guards, restored files/history with revoked live assurance,
+and idempotent restoration without model usage. Exact source migration hashes
+and the pinned PostgreSQL image are retained in
+`evidence/cloud-restore-postgres-22-20261104.json`.
+
+This uses real local PostgreSQL with Auth/Storage schema stubs. Actual HTTP
+authentication and physical stored bytes remain the isolated cloud drill's gate.
+No production, model, email or provider calls ran. Backend typecheck and build
+also pass after the 22nd migration integration; the complete backend suite and
+remaining operational/gateway changes are still separate pending checks.
+
+### 2026-11-04 — remove quadratic email scanning from content validation
+
+The content-policy email detector now starts only at the beginning of a maximal
+local-part character run. Any previously detected address can extend left across
+that same character class, so boolean detection is preserved while a long ASCII
+word without an at-sign is scanned once instead of at every suffix. The domain
+pattern, confidentiality/credential rules, categories and all callers are
+unchanged. This adds no product quota or response-size reduction.
+
+A predeclared regression used exactly 1,048,576 bytes of draft-shaped JSON with
+100 paragraphs and ASCII runs up to 20,000 characters. The old blockedContent
+call used 5,830.970ms process CPU and failed the one-second local test bound. The
+new blockedContent and contentPolicyCategories calls used 3.674ms and 3.274ms.
+All 89 focused tests passed, including 335,923 exhaustive short boundary strings,
+18 explicit Unicode/punctuation controls, permissive legacy email cases, long
+prefixes/malformed domains and independent policy-category combinations. The
+source and red/green log hashes are in
+`evidence/content-policy-email-complexity-20261104.json`.
+
+Backend typecheck passed. Final actual-image provider-envelope/render qualification, combined gates and deployment require the new
+source; earlier image timings are not promoted to final evidence. No providers,
+production state or billing policy were changed. The unrelated G09 corpus
+remains frozen and its uncommitted harness is excluded from this fix.
+
+### 2026-11-04 — Pinned Storage retirement and signed-resumable closure
+
+Implemented the bounded physical census/reconciliation helper and qualified it
+against the actual pinned StorageAPI v1.81.0 and Nginx 1.29.5 images, using isolated
+PostgreSQL, synthetic bytes and no external network on the fixture containers.
+The helper binds exact scopes/manifests, includes actual UUID `.json` TUS metadata
+and known `.info` sidecars across both version separators, rejects ambiguous
+names/links/changed bytes, and fsyncs deletion directories before issuing absence
+proof. Fsync failures and already-absent retry barriers are explicit regressions.
+This helper alone never releases quota.
+
+The binary test reproduced a real signed-TUS bypass of the database preflight
+through the old gateway (201 creation, 204 write after the key fence). The gateway
+now denies the unused resumable protocol on both public/internal ports and rejects
+ambiguous first protocol segments. The product caller census confirms ordinary
+Storage object APIs; standard upload/download still preserve exact bytes. The
+underlying Storage binary remains bypassable if reached directly: the reviewed
+ConfigMap, running gateway revision and cluster-only network boundary are mandatory
+retirement prerequisites, owned by the separately reviewed release/coordinator
+changes. The original red condition is retained in the qualification receipt.
+
+Local verification: **12/12 physical tests**, **15/15 deployment-render/caller
+checks**, and **14/14 actual binary lifecycle cases** pass. The latter includes
+**38 normalized route cases**, a real 65,536-byte metadata-free orphan after
+failed compensation, fixed-root CLI removal with durable directory sync, checked
+Storage-owner metadata deletion, normal/signed TUS state cleanup and old-token
+replay denial after fresh Storage/gateway processes. Python compilation and diff
+checks pass. [The receipt](evidence/storage-retirement-binary-20261104.json) binds
+binary/helper/guard/gateway source hashes and contains no credentials/customer data.
+[Proof scope and reproduction](../scripts/ops/storage-retirement/PHYSICAL_PROOF.md)
+distinguish these checks from coordinator authorization, quota CAS and hosted PVC
+or cluster-recovery qualification. Root owns the final integrated package checks.
+No production deployment, retirement, provider call or hosted acceptance is claimed.
+### 2026-11-04 — bind the qualified storage gateway source to the release
+
+The manifest now requires `storage_gateway_guard_version: 1` and exact
+`gateway_configuration` bindings: reviewed baseline and target raw source hashes,
+namespace-expanded ConfigMap data hashes, qualification receipt SHA-256, and the
+pinned Nginx image from the deployment renderer. Freezing requires that image in
+the fresh hosted inventory and strict actual-binary/denial qualification flags
+against the target source. Missing or changed source, receipt, image, capability
+or manifest fields fail closed. This checker has no gateway or database mutation.
+
+Six lightweight Python methods pass with explicitly synthetic temporary
+source-binding fixtures, including absent/symlinked input, unqualified flags,
+changed receipts, image mismatch, raw-versus-rendered hashes and manifest drift.
+An independent read-only review found no current blocker. The actual independently
+produced binary receipt `1831842d…69ff3` and target `b87507bf…731e5` also pass the
+source checker with the fresh inner inventory from run 41881660683; all 22
+migrations verify in that in-memory candidate. No final manifest was written.
+`py_compile` passes. Evidence is retained in
+[evidence/gateway-release-binding-20261104.json](evidence/gateway-release-binding-20261104.json).
+
+The baseline source, target source and binary qualification receipt are borrowed
+integration dependencies owned by the gateway/retirement changes and are excluded
+from this guard commit. No PG/PGlite suite was run after this gateway-only change
+during the reserved native qualification window. Final composed operations/SQL
+checks, actual checked rollout, physical retirement and hosted acceptance remain
+separate gates; unit fixtures do not establish the binary result.
+
+The reviewed gateway baseline is retained in
+`backend/scripts/ops/storage-retirement/gateway-before.conf`, SHA-256
+`4907ecf81e2fa1e97754202906873ccd7c34e3dcbe26dd1e60cf4e276c639d23`.
+This is the expected pre-change configuration, not a claim that the recent
+inventory captured live ConfigMap contents. The release must compare actual
+ConfigMap bytes and workload identity before its exact guarded update.
+
+### Scoped retirement runner, gateway rollout and recovery controls
+
+The explicit `retire-storage-writes.yml` workflow defaults to service restoration;
+retirement and old-process reconciliation require explicit modes and an exact
+private encrypted selection. The runner preserves the original cluster CA,
+checks actual Storage/function owner authority, pinned binary/helper/guard hashes,
+qualified running gateway bytes and cluster-only Storage service/ingress policy.
+It refuses known physical namespace collisions before preparing a permanent
+fence, then rechecks after all old writers stop. Exact file hashes, inode checks,
+directory fsync and checked-owner metadata deletion precede private quota release.
+
+Original Pod identities and real exit receipts are durably retained in Kubernetes.
+Unknown live/deleting/missing Pods keep their records; replica restoration does
+not manufacture termination. Every workload's exit map is committed before any
+of its finalizers is removed, allowing recovery after immediate garbage collection
+or lost finalizer ACK. Explicit `reconcile-processes` uses exact UID/resourceVersion
+preconditions and normal grace, never force-deletion, and does not release quota.
+Independent source review reproduced the prior GC liveness failure and verified
+the unchanged reproduction green after this correction. That is synthetic API
+control-flow evidence, separately from actual hosted kubelet behavior.
+
+The release now binds and compare-and-set updates only the reviewed gateway
+ConfigMap and template checksum, verifies the running file and immutable image,
+and preserves the guard after later release ambiguity. The retained baseline is
+an expected source value until actual preflight checks it. The same release
+preflight rejects Kubernetes worker command/argument overrides and requires an
+explicit `APP_RUNTIME_SERVICE=worker`, so an image's measured heap entrypoint
+cannot silently be bypassed. It does not change requests, limits or cluster cost.
+
+Local scoped tests pass: 33 retirement/coordinator/adapter cases, 10 exact gateway
+rollout cases and 12 release boundary cases. Actual source binding matches the
+root's eight-field gateway manifest and binary qualification receipt
+`1831842de23dc097269b403987d2530bb486f2fc01c4bde0cb491fd5ae369ff3`.
+Python compilation and diff checks pass. The separate physical/binary and 25-case
+SQL receipts retain their own limits. No production mutation, maintenance,
+provider call or hosted retirement acceptance occurred. Root owns final package
+checks, manifest freeze, isolated cloud restore, release and hosted acceptance.
+The procedure and recovery/whole-cluster boundaries are documented in
+[STORAGE_WRITE_RETIREMENT_RUNBOOK.md](STORAGE_WRITE_RETIREMENT_RUNBOOK.md).
+
+### 2026-11-04 — independently verify retirement recovery after immediate Pod deletion
+
+A separate synthetic Kubernetes API reproduction exposed a recovery dead end:
+with two original Pods, cleanup removed the terminal Pod's finalizer before
+durable per-UID proof was retained. Immediate garbage collection erased that
+identity, and fresh recovery remained blocked even after the other Pod exited.
+The corrected coordinator saves exact observed termination receipts in its
+Deployment journal before removing finalizers and retains mixed terminal/live
+groups. The unchanged independent script then passes: the first record remains
+while its peer runs, and fresh recovery completes after the peer exits.
+
+The independent red and green output, unchanged script and reviewed green-source
+hashes are retained in
+[evidence/storage-retirement-gc-review-20261104.json](evidence/storage-retirement-gc-review-20261104.json).
+The pre-fix coordinator source hash was not separately recorded; that limit is
+explicit in the receipt. This is a small pure-Python API-state regression, not a
+real kubelet termination, PostgreSQL, native-container or hosted retirement test.
+No production/provider calls or CPU-heavy suites were run by this review. The
+final scoped source review found no additional material blocker after the fix;
+checked rollout and hosted physical/process observations remain separate gates.
+
+### 2026-11-04 — expand G09 offline decision-field and retrieval qualification
+
+Frozen, independently reviewed fixture versions now exercise 76 typed-field
+pairs across all ten semantic primary tasks plus sixteen explicit nonrecursive
+verifier/repair/probe boundary cases. They preserve whole/batch field types,
+identity, ownership, disjoint quote scope and unchanged source candidates. Twenty
+mutations are deterministically rejected; forty remain visible for later semantic
+review; sixteen source-tuple cases are explicitly transport-only. Source tuples
+cover actor/negation/conditions/exceptions/consequences, authority/review identity,
+and distinct supplier-report versus buyer-account quantities and dates. Existing
+exact-source gates and all 43 historical wire hashes are mapped separately.
+
+The independent sixteen-case bilingual retrieval corpus retained every decisive
+whole source, and nine bounded fact-plus-qualification excerpts (Arabic queries
+4/8, English queries 5/8). All seven missed records remained explicit gaps; no partial
+source became claim-eligible and no result asserted capability absence. These
+measured misses are preserved without a new outcome-derived recall threshold.
+No live model correctness or complete semantic recall is claimed.
+
+The first run's sixteen failures were a missing source_evidence envelope in the
+transport harness. Adding an explicit empty catalog corrected that precondition;
+it does not fabricate source authority or turn those cases into domain-positive
+controls. All frozen fixture versions and first/final outcome hashes are retained.
+The focused final run passed 183 tests across five files in 1.47s, including actual
+modelPrompt JSON round-trips, source-tuple mutation rejection, scoped repairs and
+historical verification pins. Backend typecheck passed.
+See G09_OFFLINE_QUALIFICATION.md and evidence/g09-*-20261104.json for the exact
+coverage, observed limitations and independently owned provider-capacity gate.
+
+This slice adds tests, synthetic fixtures and evidence only. Root combined gates
+and actual-image capacity qualification remain separate; no provider calls,
+production mutations, prompt changes, paid-wire migrations or deployment occurred.
+Actual configured-provider semantic qualification remains pending while those
+providers are unavailable.
+
+The retirement workflow now shares the production deployment concurrency group
+`tenderdesk-digitalocean-production`, with cancellation disabled, so deployment
+and explicit storage maintenance cannot concurrently change the same workloads.
+The physical adapter already writes each scope file once; inspection confirmed
+there is no duplicate scope write in the committed helper. Workflow source checks
+verify the shared group and cancellation setting. No hosted operation occurred.
+
+
+### 2026-11-04 — bound repeated private-key marker policy scans
+
+Confirmed a second policy CPU defect in the actual shared content-policy path:
+a synthetic 1 MiB line containing repeated `-----BEGIN ` markers without a
+`PRIVATE KEY` suffix exceeded a strict three-second isolated Node timeout. The
+fresh old-code regression passed 29 controls and failed the bounded subprocess
+case. Replaced only that greedy private-key branch with a single-pass literal
+marker scan. The same case-insensitive BEGIN-before-PRIVATE-KEY rule and exact
+JavaScript dot-excluded line terminators are retained; credential assignment,
+email and confidentiality categories retain their existing behavior and order.
+
+All 119 focused tests across three files passed in 1.96s, including 41,371
+exhaustive marker/terminator sequences, 27 explicit policy/case/Unicode controls,
+the earlier email parity corpus and synthetic provider-policy tests. Actual
+1 MiB missing/matching-suffix scans used 2.934–8.361ms of process CPU across all
+three policy entrypoints, within the predeclared local one-second CPU bound.
+Backend typecheck passed. Source, test, red/green logs and CPU observations are
+bound in `evidence/content-policy-credential-complexity-20261104.json`.
+
+No provider calls, production changes, paid-wire changes or production budget
+changes occurred. Root's combined gates, rebuilt actual-image resource proof
+and deployment remain separate; a local policy timing pass is not a render
+memory/deadline qualification.
+
+### 2026-11-04 — align the commercial diagnostic assertion with indexed correction paths
+
+The detached c9f1c5b combined backend run passed 2,889 tests and failed two.
+The owned commercial-scope failure was a stale test expectation: it expected
+`$.lines`, while the existing collector returned the exact invalid reference
+`$.lines[0].section_ids[0]`. The candidate remained schema-valid and the rejection
+code/reason remained `EVIDENCE_REFERENCE_INVALID` / `invalid_finding_reference`.
+Only the expected test path changed; schema, runtime validators and evidence
+gates were not modified.
+
+The two focused files passed all 24 tests in 1.04s, including the existing
+300-error commercial collector/explicit-overflow checks. Backend typecheck
+passed. The combined red log and focused green/typecheck hashes are recorded
+in `evidence/commercial-diagnostic-contract-20261104.json`. The other database
+constraint-name expectation and final combined run are separately owned; this
+focused result does not establish a full-suite pass. No provider calls,
+production mutations or deployment occurred.
+
+### 2026-11-04 — Combined-suite queue constraint regression
+
+The combined backend run at `c9f1c5b` exposed a stale test expectation:
+`database.test.ts` still named the former blanket one-active-job index. Migration
+`20261104163406_serialize_local_document_rendering.sql` deliberately retains the
+hard non-render lane for `draft_section` under
+`one_active_non_render_job_per_workspace` and adds a separate globally serialized
+render lane. The test now identifies its non-render scope and requires both
+SQLSTATE `23505` and that exact constraint. Duplicate active work must still fail,
+leave attempts at zero, record the heartbeat and allow the pending claim only
+after the first lease finishes. No production SQL or scheduling guard changed.
+
+Local verification: `database.test.ts` and `documentRenderAdmission.test.ts` pass
+**32/32 across two files** with `--maxWorkers=1` (6.43 seconds). The latter retains
+positive coverage for independent render/non-render admission and unchanged model
+reservation capacity. This resolves the confirmed index-name assertion only;
+root owns the remaining combined-suite failure and final integrated rerun. No
+provider calls, deployment or production mutations occurred.
+
+### November 4 — isolate the cloud restore Auth RLS prerequisite
+
+Cloud drill `41902822255` failed at `cloud_restore_fixture_users`; original TLS,
+offline guards and both cleanup steps passed. The pinned Auth v2.197.0 migration
+[`20240612123726_enable_rls_update_grants.up.sql`](https://github.com/supabase/auth/blob/v2.197.0/migrations/20240612123726_enable_rls_update_grants.up.sql)
+enables row-level security on `auth.users` and `auth.identities`. The disposable
+application owner had SELECT grants but no applicable read policy. Previous local
+Auth stubs did not enable that RLS and therefore missed this integration boundary.
+
+A tiny real PostgreSQL regression now reproduces the exact fixture rejection,
+then passes the unchanged fixture and canonical workspace bootstrap after adding
+SELECT-only policies for the nonce-bound application owner. Policy creation runs
+as the actual Auth table owner, checks both RLS flags and ownership, and requires
+the exact disposable database/comment. Browser denial, Auth write denial, other
+Auth table denial and NOBYPASS roles remain verified. This is an explicit isolated
+harness prerequisite; it is not a claim that production has the same read policy.
+The production catalog capture excludes Auth policies, and repository setup alone
+does not establish current production Auth visibility. The next read-only capture
+reports only owner/RLS flags, effective application-owner SELECT/inheritance and
+applicable SELECT-policy counts/commands; conditional predicates remain unproved.
+No user rows, predicate text, SQL, secrets or production permissions are changed.
+
+RPC errors now retain HTTP status and a fixed allowlist of SQLSTATE/PostgREST
+classes while discarding response messages/details/hints. The synthetic artifact
+also obtains its one-time send permission before PUT, verifies readback before
+completion, and refuses a replayed send; this is not whole-worker qualification.
+Twelve offline helper
+tests and five real PostgreSQL checks pass; the latter use Auth table stubs with
+the actual pinned RLS behavior, not live Auth HTTP. The narrow regression cleans
+its exact temporary database and roles. The 22 frozen application migrations are
+unchanged. Hosted restore retry and actual production Auth metadata verification
+remain separate pending gates; no hosted call occurred in this correction.
+
+### 2026-11-04 — Isolated cloud restore bucket contract correction
+
+Cloud restore run `41905235686` advanced past synthetic Auth identities and source
+reviews, then stopped at private bucket creation. The disposable bootstrap Storage
+has a 1 MiB global object limit, while the restore fixture requested a 10 MiB
+bucket. Actual pinned Storage v1.81.0 with isolated PostgreSQL reproduced HTTP 400
+`EntityTooLarge` and confirmed that no bucket was created; this was not an
+already-existing bucket condition. The restore fixture now requests 1 MiB for its
+tiny synthetic DOCX. It requires successful creation and a separate exact
+id/name/private/size-limit metadata readback, rejects existing buckets, and emits
+only HTTP status plus an allowlisted error class. It never prints private Storage
+messages, details or identifiers.
+
+Six new focused tests and the existing twelve restore helper tests pass. The
+opt-in pinned binary probe executes the actual composed acceptance class: matching
+limit creation, metadata readback, exact upload/download bytes, unauthenticated
+public-path denial and duplicate rejection pass, and its own containers are
+removed. The sanitized receipt is
+`backend/docs/evidence/cloud-restore-bucket-20261104.json`; the reproducible command
+is `python3 backend/scripts/testing/cloud_restore_bucket_container.py --output /tmp/cloud-restore-bucket-proof`.
+This is isolated local HTTP evidence for a tiny fixture, not qualification of the
+product's 10 MiB file limit, whole application rendering, production Auth policy,
+or a successful hosted restore. No application migration, production configuration
+or hosted service was changed. The next reviewed hosted restore retry remains a
+separate gate.
+
+
+### 2026-11-04 — respect explicit managed SET ROLE authority in retirement
+
+Real non-superuser PostgreSQL qualification reproduced the retirement adapter's
+incorrect inherited-privilege assumption. Managed setup grants INHERIT FALSE,
+SET TRUE: `pg_has_role(..., 'USAGE')` rejects that legitimate administrator,
+while an inherited-only caller can pass USAGE without permission to SET ROLE.
+The adapter now checks SET authority. Exact object owners and the installed
+function fingerprint are resolved through catalogs before role changes, avoiding
+schema-qualified casts that themselves require the deliberately absent inherited
+schema USAGE. Fence installation retains its exact owner/function/trigger checks
+and revokes only the temporary execution grant it added.
+
+The same authority correction covers census, multipart and metadata readbacks.
+Storage reads/deletion run as the actual authorized Storage owner; the complete
+collision census switches to the application owner in the same repeatable-read
+transaction. It does not grant schemas to the administrator or broaden roles.
+
+All 41 focused tests passed in 9.740s: eight actual PostgreSQL 17.6 authority cases
+and 33 existing adapter/coordinator controls. Tests cover SET versus inheritance,
+real role transitions, fence replay, unchanged schema/function ACL and membership,
+complete cross-owner census, missing SET refusal, multipart detection and exact
+quoted-key deletion with unrelated rows preserved. A prior expanded attempt
+stopped before PostgreSQL execution because Docker had no disk space; its log is
+retained separately. The final disposable network-none container was removed.
+Evidence and red/green hashes are in
+`evidence/storage-retirement-owner-authority-20261104.json`.
+
+No production, external service, file deletion or quota-release operation ran.
+PostgreSQL 18 on the managed deployment remains an explicit guarded-release
+check; this local execution is PostgreSQL 17.6. Pinned Storage binary behavior,
+Kubernetes quiescence and hosted retirement acceptance retain their separate
+qualification requirements.
+
+
+### 2026-11-04 — isolate canonical DOCX verification; final resource gates pending
+
+Real steady-worker testing reproduced a cgroup OOM on the second large
+two-volume job despite a successful first job and a temporary worker-only
+256 MiB parent old-space experiment. The failed receipts are retained in
+`evidence/native-verifier-parent-default-red-20261104.json` and
+`evidence/native-verifier-parent256-steady-red-20261104.json`. The temporary
+parent entrypoint/heap override is removed; original pinned image startup and
+parent resources remain unchanged.
+
+Every runtime asynchronous canonical verifier now uses a fixed offline Deno
+child and the same physical FIFO permit as native rendering. The bounded binary
+input requires exact lengths and EOF; a successful child exit must return the
+exact model SHA256, DOCX SHA256 and size. Strict bounded verdicts, canonical
+content error codes, cancellation/deadline kill-and-reap, private within-run
+readback proofs and existing authority/currentness checks remain intact. Child
+infrastructure failures retain the existing bounded-retry renderer codes; Deno
+has no fallback to parent-process verification. The child budget is selected
+only from deployment-owned `APP_RUNTIME_SERVICE`: worker 128 MiB old-space;
+API/other/default 64 MiB. A private frame buffer no longer receives a redundant
+full-size hashing copy; shared backing buffers are copied defensively. Docker
+now includes the native streaming renderer dependency and caches both fixed
+child entrypoints. No storage/model quota, SQL schema, parent resource limit,
+prompt hash or published artifact is changed.
+
+The 83-case canonical verifier/worker/process scope passed. After adding trusted
+service selection and exact byte-view/shared-buffer hashing checks, all 34
+process/protocol tests and backend typecheck passed. Root owns final combined
+package gates; these checks are not a hosted acceptance claim.
+
+The 128 MiB child image completed two consecutive dense two-volume jobs in the
+same worker parent in 109.384s/108.943s, with fixed 180s leases / 600s request clocks,
+no forced GC/restart and concurrent real parsing/validation of exact 1 MiB and
+50,000-cell synthetic provider envelopes. Peak cgroup memory was 579.58/640 MiB;
+each job completed two PUTs/four GETs and both volumes. The expiry case wrote
+nothing and subsequent health returned 200. SQL/Storage were explicitly emulated;
+see `evidence/native-verifier-worker 128-steady-20261104.json`. Four default image
+service startups passed without the parent heap override.
+
+API 384 MiB with 128 MiB child hit a cgroup OOM and safely rejected the result;
+`evidence/native-verifier-api128-red-20261104.json` preserves it. The 64 MiB child
+candidate passed seven actual admitted fixture families twice each plus five
+canonical rejection/real CPU cancellation/recovery checks in the same API-sized
+parent. This was 1 CPU, not the declarative 700m API limit. Peak cgroup memory
+383.94/384 MiB does not establish margin or burst safety. The giant verifications
+took 71.9s/70.5s, so worker 128 is retained. See
+`evidence/native-verifier-api64-candidate-20261104.json`.
+
+Still pending: final service-specific image proof, API 700m / gateway 150s timing,
+near 10 MiB canonical-model / 8 MiB saved-payload shapes and 4 MiB reviewed metadata,
+anonymous/file memory telemetry, and early heavy-file API admission with slow
+consumer/burst tests. The native permit alone does not bound API inputs allocated
+before admission. The current sequential receipts do not qualify arbitrary
+concurrency, real authenticated HTTP/hosted Storage, or production SLOs. No
+provider, billing or production mutation occurred in this slice.
+
+### November 4 — repair the observed production Auth read boundary
+
+Hosted restore run `41905235686` observed `tdp_app_owner` with SELECT on both Auth
+identity tables, no superuser/BYPASS privilege, no inherited Auth ownership, RLS
+enabled, and no applicable read policy. This confirms a production permission
+gap, distinct from the isolated fixture failure. Later drill `41908346634` passed
+13/13 real Auth/Storage restore checks with cleanup using the temporary harness
+policy; it does not qualify the shared platform repair below.
+
+The reviewed `application-auth-read.sql` platform helper creates only the two
+SELECT policies for the existing application owner. It assumes the actual Auth
+owner through explicit SET authority; verifies exact database marker, ownership,
+RLS, intended SELECT, browser denial and safe role attributes; rejects unknown
+applicable policies and drifted canonical policies; and preserves table/column
+ACLs, ownership, roles, memberships and unrelated policies. It performs no Auth
+row writes or grants and does not disable RLS or add BYPASS privileges.
+
+The release manifest now binds the helper and renderer hashes with capability
+`application_auth_read_version:1`. The policy work shares the same transaction
+as the 22 application migrations and release ledger, before the receipt/COMMIT.
+Auth relation locks have bounded waits and precede the first repeatable-read
+query snapshot. A real two-session PostgreSQL regression reproduced the late-lock
+failure (a hidden concurrent policy changed owner visibility from zero to two
+synthetic rows) and verified early-lock rejection after an observed lock wait.
+No extra advisory lock introduces an inverted lock order. Exact replay preserves
+policy OIDs; an Auth-policy conflict after all application DDL rolls back new
+schema, ledger and policies while preserving old rows and the conflicting policy.
+
+Future managed schema provisioning and isolated restore use the same helper; the
+independent harness policy was removed. Local evidence: 11 real PostgreSQL cases,
+12 helper tests, 9 release tests plus one targeted complete-batch rollback case,
+and two managed schema reconstruction tests pass. The release suite retained
+the existing row, authority, column-ACL and legacy-seed fault cases. Tests used
+the root's already-installed dependency tree through a temporary local symlink;
+the symlink was removed after verification. The legacy full-catalog fixture was
+updated for actual Auth RLS/marker prerequisites but was not separately rerun.
+No model/provider or production mutation occurred. All 22 canonical migration
+files remain unchanged. Root must refreeze the manifest for the new platform
+hashes, run a fresh managed cloud drill with this helper, then execute the reviewed
+release and verify actual production Auth policies. Those hosted gates remain open.
+
+The integrated manifest was subsequently refrozen from the same original
+inventory receipt. Canonical manifest SHA-256 is now
+`9e3430d1d01af222e3aad0d4aa8cae5e1f0c14942ae0ff258f0a96f6f953e020`;
+only the shared Auth helper contract and capability were added. All 22 migration
+hashes, gateway qualification and original deployment baseline remain identical.
+Source verification passes. The next isolated cloud drill must use this manifest
+and the shared helper; the preceding thirteen-check success is retained at its
+older source and does not substitute for that drill.
+
+### November 4 — verify the API runtime envelope before release
+
+The release preflight now checks the actual API container as well as the worker:
+at least 384 MiB memory and 700 millicores, no Kubernetes command/argument override,
+and exactly one explicit `APP_RUNTIME_SERVICE=api` environment entry. Missing,
+malformed or smaller limits and ambiguous roles fail before the SQL client,
+gateway patch or any workload mutation. The quantity parser is shared with the
+existing worker guard; its 640 MiB/one-core requirements and error codes remain
+unchanged. No resource requests, limits, replicas or billing settings are changed.
+
+The sanitized release receipt includes observed API limits, requests, replicas
+and minimum requirements, with `hosted_load_qualified:false`. This records the
+deployment boundary; actual image/native-capacity and hosted-load qualification
+remain separate gates. All 15 release-boundary tests pass, including API size,
+entrypoint/role rejection, stronger equivalent quantities, unchanged resources
+and receipt checks. Python compilation and diff checks pass. No model or hosted
+operation occurred; the frozen manifest and canonical migrations are unchanged.
+
+
+### November 4 — independent remaining-action handoff draft
+
+Prepared a document-only audit anchored to integrated `41930bb`, updated through
+`fa3958e`, with nine current remaining actions and a twelve-group public R0
+evidence index. Every indexed public receipt hash was checked against the
+coordinator checkout. This is an index and scoped status reconciliation, not
+a certificate that every per-case R0 field is complete.
+
+The draft retains the 2,889-pass/two-failure backend run and its focused assertion
+corrections, both failed hosted restore drills, the confirmed production Auth
+row-visibility prerequisite, reported private-bucket/global-size mismatch,
+retirement SET-role preflight investigation, and the latest reported worker-pass/
+API-memory-failure split. Pending agent results are explicitly distinguished from
+ingested public receipts. The 22-migration/gateway manifest is already frozen;
+application deployment and hosted issuance acceptance remain open.
+
+Files: `RELIABILITY_REMAINING_GATES.md`,
+`evidence/reliability-remaining-actions-20261104.json`, and
+`evidence/reliability-r0-index-20261104.json`. No implementation, fixture,
+dependency, database, provider or deployment changes were made. No project tests
+were run during the native qualification window. Final runtime/Auth fixes and
+new actual results must update this draft before the final handoff.
+
+
+### November 4 — remaining-action audit revision 2 after shared cloud restore
+
+Updated the document-only handoff through `a667686` to eight current remaining
+actions. Shared-helper hosted restore 41910306855 passed all 13 Auth/Storage
+checks with original CA, 12 offline guards and cleanup; this closes the isolated
+restore scope, not production policy application, application runtime or hosted
+proposal issuance. The 22-migration manifest now binds the shared Auth helper
+(`9e3430d1…953e020`). Local actual PostgreSQL Auth concurrency and retirement
+SET-role authority receipts are indexed with their independent limits.
+
+Native verifier isolation is integrated. Worker two-job/two-volume proof and
+the nearly full 384 MiB direct-verifier 64 MiB child candidate are retained, alongside
+the earlier failures. API working-set admission, full-content paging/client
+sequencing, valid large-batch streaming and final actual-image proof remain open.
+Every newly indexed receipt hash was checked. No source edits, project tests,
+provider calls or production mutations were performed by this audit. The final
+combined application checks and deployment/hosted acceptance are still required.
+
+### November 4 — stream complete command batch results through the API
+
+Implementation: the dedicated `batchTransport.ts` module sends the same single
+authenticated PostgREST `app_batch` request with the caller JWT, publishable key,
+public schema and unchanged ordered commands/idempotency key. Successful JSON
+bytes stream into the existing `{data,meta:{request_id}}` envelope without a
+result parse/stringify copy, command splitting, response quota or SQL change.
+Both stream layers use zero-prefetch backpressure. Request abort and downstream
+cancellation stop the upstream fetch; terminal errors wait for source cancellation
+to settle so a surrounding admission permit can retain ownership through cleanup.
+Redirects and ambiguous configured URLs are rejected. Existing database and
+platform timeouts remain; the previous batch SDK call set no client timeout.
+
+Only error diagnostics are bounded to 64 KiB. Valid PostgREST errors retain the
+existing `databaseError` mapping, including proven transaction-aborting SQLSTATEs.
+Transport/protocol failures have sanitized, non-retryable errors because commit
+state may be unknown. A partial response fails without appending success metadata.
+The transport does not automatically replay any request.
+
+Local evidence: 29 focused synthetic transport tests pass, including exact JSON
+and split UTF-8, CORS/request metadata, caller authority and URL construction,
+observed upstream pull counts during a paused consumer, an 8 MiB streamed hash,
+bounded diagnostics, abort before/after headers, delayed source cancellation and
+partial body failure. A targeted strict TypeScript check of the module/tests passes.
+These fixtures exercise API transport only; they do not qualify database response
+buffering, native renderer capacity, a real authenticated HTTP connection or hosted
+load. Backend/handler and admission integration is a separate owned change; full
+repository checks and final integrated native/runtime qualification remain open.
+No external, provider, accounting, SQL or production operation occurred.
+
+The follow-up transport guard now requires the first and last non-whitespace
+bytes to be `[` and `]`, accepting only JSON's four whitespace bytes at those
+boundaries. Scalars, objects, blank bodies and visibly truncated arrays fail the
+stream before success metadata is appended. This uses constant state, preserves
+raw UTF-8 and adds no size limit; it does not validate internal JSON syntax, which
+remains the configured PostgREST JSONB serializer's contract. All 42 focused tests
+and the targeted strict TypeScript check pass, including chunk-boundary and
+negative controls plus the previous backpressure/cancellation regression cases.
+Upstream SQL/PostgREST memory qualification and integrated native/hosted evidence
+remain open.
+
+### November 4 — preserve the scoped operational suite results and source drift
+
+At root revision `a6676866ea3247b85c1bfde7e140655ce126e444`, the canonical
+Python suites ran sequentially: 414 operational tests, 11 managed-schema tests,
+and 15 Kubernetes tests passed (440 total). The run started at 20:56:22 UTC and
+finished at 20:59:10 UTC. The public scoped receipt is
+[`ops-schema-kubernetes-scoped-20261104.json`](evidence/ops-schema-kubernetes-scoped-20261104.json);
+it binds the commands, counts, log hashes, observed revision and source hashes.
+Raw logs and the original receipt remain outside the repository.
+
+The 702-file before/after check detected a change to
+`deliveryVerifyIsolation.ts` during the run. The operational, schema and
+Kubernetes inputs in the recorded scopes remained unchanged, but the broad
+source identity gate failed as intended. The original receipt retains
+`passed:false`; the public receipt records passing suites separately from
+`combined_final_source_qualified:false`. The two acceptance scripts indirectly
+import this verifier through `export.ts`; their discovered Python tests mock
+the child process and external transports and therefore do not qualify the
+changed verifier. Existing native capacity harness edits are also disclosed.
+
+This is scoped local evidence, including PostgreSQL 17.6 fixture execution;
+it is not a final combined integration pass, package-suite result, native
+capacity result, production PostgreSQL qualification or hosted acceptance.
+There were no hosted or model calls. No immediate rerun was started during the
+reserved native capacity window. The final committed integration must rerun
+these canonical suites alongside the separately owned package and native gates.
+
+
+### 2026-11-04 — release private verification frames after complete transfer
+
+The verifier drops its private serialized JSON after encoding, and drops its
+private encoded-model/DOCX references only after all stdin writes and close
+complete. Expected SHA256/size values remain unchanged, no backing bytes are
+mutated, and cancellation still kills/reaps before releasing admission. Two
+independent reviews found no proof downgrade. All 34 identity, process, role,
+byte-view, timeout and cancellation tests plus backend typecheck pass. This
+reduces retained input data; it does not itself establish a memory bound for
+caller contexts, Storage Blobs or pending responses.
+
+`evidence/native-verifier-protocol-render-20261104.json` records real bounded
+rendering of three synthetic protocol/storage-shape probes: two models at
+10 MiB minus 1 KiB, and 600,000 empty rows across 12,000 tables. All DOCX files
+were below 10 MiB and rendered within the unchanged 30-second attempt budget.
+These models were not admitted through an application API; the empty-row
+saved-v1 payload has only a conservative JSONB-size argument, not a database
+admission receipt.
+
+An initial API-sized component probe retained redundant measurement-only
+model/byte hash allocations and hit a cgroup OOM; its confounded red receipt is
+retained. Those allocations were removed; immutable staged input hashes remain
+bound externally. The corrected 384 MiB / 700m run accepted the corrected native
+base, exact 4 MiB core.xml, near-10-MiB ASCII model, and combined ASCII/core.xml.
+The near-10-MiB single mixed-script paragraph then returned an infrastructure
+error while the parent survived and Docker reported no cgroup OOM. Child cause
+was not established because runtime stderr is intentionally suppressed. See
+`evidence/native-verifier-protocol-700m-diagnostic-20261104.json`.
+
+That direct protocol-only paragraph is not a demonstrated current producer
+case: document blocks have a 12,000-character SQL bound; notice fields compose
+at most 103,003 characters; current writer paragraphs have a 20,000-character
+bound. The diagnostic remains unresolved robustness evidence, not proof that
+an admitted application proposal fails. No source/input or child-budget policy
+was changed in response. Actual authenticated-handler projection, early file
+admission, streamed command responses, slow consumers and final resource/image
+qualification remain separate pending gates; synthetic Auth/Storage transport
+must be labelled when used. No production or provider call occurred.
+
+
+### 2026-11-04 — admit heavy API work before context and file allocation
+
+The actual handler regression reproduced three concurrent artifact-context and
+Storage reads while the first saved export remained pending. A per-handler
+single permit now admits authenticated, current members before large context,
+file, record, request-body and model projections. Excess work receives immediate
+503 `FILE_PROCESSING_BUSY` with `retryable:true`; there is no waiter queue, new
+time allowance or model/billing quota. The runtime creates one API handler;
+this is not a cluster-wide concurrency claim.
+
+The permit survives successful handler return and remains held through actual
+response EOF or cancellation settlement. It does not prefetch the response body.
+Aborted uncooperative work cannot free admission while still running, nor later
+serialize its result or authorize a download. Existing final file-currentness
+RPCs remain immediately before the download response. Caller cancellation now
+reaches Storage reads; legacy object reads use the existing 20-second Storage
+transport bound. Errors release admission without marking a busy artifact lost.
+
+The pure shared classifier covers explicit file/context/authoring/recovery routes
+and 24 full-content record resources. Complete records use one row per page with
+no lookahead; a final empty page ends traversal. No business fields or aggregate
+records are discarded. Internal model-settings/connections metadata readers and
+compact generation-plan/restore-session lists retain their bounds. Shared browser
+sequencing and whole-load identity pinning are separately owned compatibility
+changes that must ship with this API policy. Health/status/bootstrap/issuance and
+notifications remain independent of large downloads.
+
+The handler integrates the separately reviewed raw app_batch transport from
+0e93144 with the 90353bb array-shape follow-up, without materializing the
+potentially large result array. It preserves
+caller authorization, validated command order, idempotency and the existing
+JSON data/meta envelope. Composed cancellation tests hold API admission until
+upstream cancellation settles.
+
+All 114 focused tests across seven files passed in 4.31s after the batch
+shape follow-up; backend typecheck
+passed. An additional 31 tests across the three canonical migrated database,
+HTTP and delivery pipeline files passed in 13.43s. Existing tests that reused a
+handler now drain their successful response before the next heavy request;
+forged-input/currentness/schema rejection checks remain. Source/log hashes,
+red reproduction, lifecycle coverage and limitations are recorded in
+`evidence/api-heavy-file-admission-20261104.json`.
+
+No native OOM/throughput or hosted release claim follows from these local tests.
+Actual-image simultaneous file/large-record/batch response, network backpressure,
+client disconnect and NGINX behavior remain the final resource qualification.
+No provider calls, production mutations, SQL migrations or billing changes ran.
+
+### 2026-11-04 — Browser sequencing for heavy API content admission
+
+The connected browser now uses the same pure heavy-request classifier as the API
+and holds one FIFO lane per `BackendClient` through complete JSON or Blob
+consumption. Existing concurrent panel reads and technical/financial downloads
+therefore serialize their own heavy sends; lightweight bootstrap/status remain
+available. Commands keep their body and idempotency key, are never automatically
+retried, and bind the identity observed before queueing. A queued request refuses
+a different signed-in identity before sending; a refreshed token for the same
+user remains supported. Abort, HTTP error and malformed JSON release the lane.
+An external `FILE_PROCESSING_BUSY` remains the server's visible error and requires
+an explicit user retry; this browser queue is not server authorization or a
+cross-browser lock.
+
+Repository loads now serialize all sixteen required table/page chains, suppress
+superseded queued loads, and stop superseded pagination before another page.
+Every full-content record and continuation is retained, including the server's
+new final empty page. The separate generic client list's undocumented aggregate
+10,000-row guard was removed: with no lookahead it rejected even exactly 10,000
+records before the final empty page. This changes no server/product capacity
+limit, and matches the already-tested unlimited required-record startup policy.
+Duplicate records, repeated/backward cursors and nonempty continuations without
+records still fail closed. Model activity retains its separate descending decimal
+sequence contract, compared losslessly with BigInt rather than UUID ordering.
+
+Against base `28689b9`, the focused regression reproduced sixteen overlapping
+load requests and failure at the old aggregate guard. Eighteen focused pure tests
+now pass, including 10,001 full one-record pages, stale-load suppression, queued
+identity switch, token refresh, abort/error release, preserved command key/body,
+and artifact-byte sequencing. Frontend typecheck passes. The shared classifier
+is supplied by the companion API commit; it is not duplicated in this browser
+commit. Full integrated frontend/backend/native and hosted checks remain
+separate; no provider calls, production writes or dependency changes occurred.
+
+A subsequent independent review found that per-send identity binding alone could
+still mix users across a multi-page logical read. The follow-up captures identity
+at the start of the complete list/load, carries it across every page and table,
+and rechecks before publishing the result. An account switch rejects continuation
+before another user's fetch; it also rejects a changed identity after the final
+page. Four actual-client regressions fail against `d4fb950` and pass with the
+follow-up. The focused pure suite now passes 22 tests, and frontend typecheck
+passes. Existing connected-file fixtures explicitly supply their synthetic Auth
+identity. The guard is client-side stale-result prevention, not a replacement for
+server authorization; full integrated and hosted verification remain separate.
+
+### 2026-11-04 — Actual API download working-set qualification
+
+The capacity fixture now optionally exports its actual persisted v2 snapshot
+beside the exact render projection. The selected migrated authoring API case
+passed with 4,143 tables / 2,112,930 normalized cells; the next full table still
+fails the existing JSONB bound before mutation. The selected run passed one test
+and intentionally skipped nineteen; its full-suite receipt flag is therefore
+false, not evidence that twenty tests ran.
+
+The immutable application image `a3b88b89b6a4afe5861f04d36fcae748c7e104355c3d37fab7a26e45e49c2a2e`
+rendered that exact snapshot projection and served two actual `createApiHandler`
+delivery downloads in the same parent at 384 MiB / 700m CPU. Auth/RPC authority
+and Storage transport were synthetic adapters; the handler, model projection,
+Blob lifetime, canonical verifier subprocess, final actor/hash check, response
+copy and admission wrapper were actual application code. Both 8,166,765-byte
+responses matched the immutable DOCX SHA256. Headers arrived in 109.518s and
+107.791s, and full local consumption took 110.525s and 108.798s. No forced GC or
+parent restart occurred. Concurrent heavy requests failed with retryable busy
+before context/Storage allocation, and 437 health requests completed.
+
+Peak cgroup usage was 400,809,984 / 402,653,184 bytes (1.76 MiB remaining), with no
+max/oom/oom_kill events and separately observed zero swap current/peak. This is a
+narrow measured margin, not proof of arbitrary workload headroom. Native request
+timing is not an actual NGINX or upstream PostgREST qualification.
+
+Independent harness review caught a mislabeled post-consumption control: the
+historical run used lightweight `/v1/proposals`, so its
+`subsequent_heavy_read_status` does not prove final cancellation releases the
+heavy permit. That claim is explicitly excluded in
+`evidence/native-api-handler-scope-adjudication-20261104.json`. Second-request
+admission does prove release after the first EOF. The harness now uses the
+classified heavy `/v1/documents` route; its separate cancellation proof, three
+current-policy ordinary export projections from the body-bound fixtures, and
+final integrated image/release acceptance remain pending. Original raw receipts
+are retained unchanged. Backend typecheck passed; no provider or production
+calls, resource changes, or payload-cap changes occurred.
+
+The next native repeat failed before the corrected cancellation control: the
+same image/input at 384 MiB / 700m returned `DELIVERY_RENDER_FAILED` after about
+103s, and Docker recorded OOMKilled. The prior 1.76 MiB margin was therefore not
+stable capacity; the API release gate remains open. This red receipt is retained
+as `evidence/native-api-repeat-oom-20261104.json`. No heap or resource increase
+has been applied.
+
+The resulting lifetime fix eliminates the delivery byte path's duplicated
+model-object parse/stringify, snapshots model JSON before an asynchronous Blob
+read, and hashes already-private bytes without an additional explicit copy.
+Only the internal owned-snapshot bridge avoids the copy; the generic verifier
+still snapshots caller bytes/model before yielding. Child frame hashes are now
+computed before inflater allocation churn, and the raw model frame is released
+after parsing. Full canonical validation, exact hashes/size, successful child
+exit, abort/deadline/reap and private within-run proof binding remain required.
+All 47 focused tests across four files and backend typecheck pass, including
+model mutation during delayed Blob reading, byte mutation, forged/stale proof,
+generic call-time snapshots, abort/timeout and shared native-process admission.
+Independent source review found no material ownership/hash regression. Actual
+native repeat measurements of this fix are still pending.
+
+Separately, all three ordinary projections from the persisted section-body
+fixtures now render and verify with the current worker's placeholder policy2:
+generated100 tables (3.064s), authored100 tables (2.903s), and69 mixed-script
+paragraphs (21.008s). Source requests and frozen legacy projections are both
+hash-bound; the current policy is applied explicitly. At 640 MiB /1CPU the peak
+was406,900,736 bytes, no OOM events, swap0. The large ordinary DOCX is3,177,596
+compressed bytes and298,012,602 expanded bytes. This proves content/renderability
+of those saved projections, not approval or semantic completeness. It also
+provides the exact file for the separately owned reviewed-upload40MiB original
+archive-limit red/green test. Receipt:
+`evidence/native-ordinary-body-20261104.json`.
+
+The lifetime fix now has actual native repeat evidence on immutable image
+`89afc8a31d76e1616ad17e5896e0fc54f0acdc41cd7da389af456386f3e998fe`:
+two largest admitted downloads in one parent, followed by one separately launched
+fresh-parent repeat matching the prior failing sequence. At unchanged 384 MiB /
+700m, headers arrived in112.208s,107.866s and104.811s; exact complete responses
+took113.216s,108.872s and105.818s. Final actor/hash authorization, slow-consumer
+busy rejection before full context/Storage, and genuinely heavy `/v1/documents`
+reacquisition after EOF and cancellation passed. No forced GC, heap override or
+resource increase occurred. Cgroup peaks were387,506,176 and391,241,728 bytes,
+with no max/oom/oom_kill events and swap peak0. Minimum observed headroom is
+10.88 MiB: the local fixture gate passes, but arbitrary workload headroom or a
+universal SLO is not claimed. Original red receipts remain unchanged.
+
+The same image also passes the actual reviewed-DOCX completion handler using
+the exact ordinary artifact from the earlier rejection, its saved request and
+an explicitly synthetic server-owned `ordinary-2` pin. Canonical verification
+completed before the single actor/hash/size-bound completion call: HTTP200 in
+30.996s, peak367,247,360 bytes at384 MiB /700m, no OOM or swap. This closes the
+same-file native content/working-set gate for the separately implemented upload
+envelope fix; it does not create or qualify a real workspace approval. Receipts:
+`evidence/native-api-owned-snapshot-steady-20261104.json`,
+`evidence/native-api-owned-snapshot-fresh-20261104.json` and
+`evidence/native-reviewed-docx-handler-20261104.json`. Auth/RPC/Storage remain
+labelled synthetic adapters, and actual upstream, gateway, hosted authorization,
+full integrated package checks and deployment acceptance remain separate.
+
+### 2026-11-04 — Additive read-only capacity inventory preparation
+
+The inventory now adds `capacity_observation` without changing its existing
+workload/schema fields or frozen release baseline. It separates observed
+API/worker/REST deployment resources from ready Pod specs, preserves missing
+limits as unknown, and projects only fixed runtime roles and REST pool/max-row
+configuration. The optional observer helper reuses the existing managed database
+metadata request and already-read core Secret; private URI/host/password values
+never enter the receipt. Managed size and node count are retained, while RAM/vCPU
+remain unknown because the metadata does not establish them independently.
+
+A separate read-only SQL query preserves the observer login's three capacity
+settings before applying its own bounded query timeout and lists exact
+current-database/application-role catalog defaults. It explicitly does not claim
+these are effective authenticated REST transaction settings. The diagnostic is
+manifest/catalog evidence, not cgroup, throughput, production capacity or load
+qualification. No hosted call, dispatch, production write, migration or provider
+request occurred. Focused local verification and the next reviewed runner
+inventory are recorded separately; the code alone does not fill the missing
+hosted resource evidence.
+
+Local verification passes 35 focused tests in 2.26 seconds, Python compilation
+and diff checks. Two cases execute PostgreSQL through isolated in-memory PGlite:
+the new query retains a 700 ms original timeout separately from its 20-second
+query override, retains a 6 MiB observer work_mem separately from an 8 MiB
+role/database default, and rolls back its settings; the existing observer query
+also remains green. Other cases cover credential-free projection, exact private
+URI/original-CA binding, missing resources, distinct deployment/ready-Pod limits,
+DO metadata-fetch reuse, unchanged old receipt fields and verified cleanup.
+These are local correctness tests, not a hosted SQL/session or capacity result.
+Root source review found no material blocker before integration. Fresh hosted
+inventory remains pending the reviewed Actions dispatch.
+
+### November 4 — preserve accepted structured sections beyond the legacy text ceiling
+
+Independent SQL reproduction at `f80858f` confirmed that actual `nextStage` →
+`advance_generation` rejects a schema-accepted 100-table/50,000-cell section at
+`proposal_sections_body_check`. A 69 × 20,000-character mixed Arabic/Latin
+response was accepted by the actual authoring save and substantive-review API,
+then adoption failed at persistence. No live model or customer content was used.
+
+New CLI-created migration `20261104212300_structured_section_body_bound.sql`
+changes only that CHECK: free text retains the 100,000-character ceiling; larger
+bodies must be bounded by their own complete array `content_blocks::text`
+character length. Existing source/model/authoring/snapshot/export limits remain.
+There is no truncation, replacement prose, new fixed larger allowance, row rewrite,
+procedure replacement, permission change, or relaxation of content/approval scans.
+
+Seven focused migrated SQL/API tests pass. They cover generated text/tables,
+authored text and JSON-table projections, a derived compliance matrix, full
+body/source hashes and ordinary export projection, legacy/undersized/scalar-source
+negative controls, and actual old-row/owner/ACL/RLS/policy/column preservation
+across the migration boundary. A missing-input marker and monetary price after
+character 100,000 still trigger approval blockers; technical rendering still
+rejects the late price. The adopted mixed-script body retains 1,380,472 characters;
+its actual ordinary snapshot is 4,146,977 UTF-8 bytes and RenderModel 2,073,219
+bytes. These measurements distinguish serialization from PostgreSQL compressed
+storage size. See `evidence/section-body-persistence-20261104.json` for fixture,
+source/migration hashes and retained red/green log hashes.
+
+Backend typecheck and build pass. Final combined suites, exact native rendering
+of the three saved ordinary projections, release manifest/schema refreeze and
+hosted acceptance remain separate pending gates. Frontend source/dependencies
+were not changed; the parent owns final complete package checks. No deployment,
+external provider call, hosted Auth/Storage action or production write occurred.
+
+### November 4 — reproduce the upstream batch capacity failure
+
+The new isolated `upstream_batch_capacity.py` harness uses the real migration
+set at `f80858fedeb831ccc754123ab621f24d92978f89`, the existing ordinary-export
+fixture, valid proposal sections and authenticated `export.prepare` followed by
+real HTTP `app_batch` calls. It does not disable application constraints or
+triggers, overwrite an export snapshot, call models or access hosted services.
+Its Auth stub and synthetic JWT are explicit fixture boundaries. The accepted
+snapshot contains 42 sections and 4,126,748 JSON text bytes; its compressible
+content occupies 68,697 stored bytes.
+
+With the exact pinned PostgREST 14.18 image at the repository's declared
+128 MiB/500m envelope, one renewal passed: 4,127,587 response bytes in 154 ms,
+with the complete response SHA matching the saved batch result and exact
+snapshot, revision, order and command receipt checks. A batch of ten renewals
+then killed PostgREST: `OOMKilled:true`, exit 137, zero response bytes and no
+HTTP headers after 895 ms. PostgreSQL remained alive under the separate local
+1 GiB/one-core safety limit, with a 534,106,112-byte kernel peak. That number
+includes process memory, cache and the 512 MiB data tmpfs, not only query heap.
+The 50 ms REST sampler missed the transient allocation before cgroup removal;
+its last sampled peak must not be used as the failed process's peak memory.
+
+The PostgreSQL log records EOF with an open transaction. The subsequent check
+found the previous export revision and zero batch/command receipts for the
+failed key. The probe stopped at this first application capacity failure;
+25/100-command cases, replay and broader concurrency were not attempted.
+Both owned containers were removed and cleanup/source hashes verified. Three
+earlier fixture-readiness attempts are retained separately and are not capacity
+evidence. The public [receipt](evidence/upstream-batch-capacity-20261104.json)
+binds all migration/harness hashes, response hashes, cgroup observations and
+external log hashes.
+
+This is a reproduced release blocker upstream of the API transport. Streaming
+the API response cannot fix the scalar JSONB aggregation or PostgREST memory
+failure. PostgreSQL 17.6/local safety limits are not production PostgreSQL 18
+or managed database capacity qualification; the live REST resources and managed
+database sizing remain separate read-only inventory evidence. No product SQL,
+result cardinality, quota or accounting behavior was changed. A reviewed repair
+and the same real upstream regression remain open before release acceptance.
+
+### November 4 — complete frontend checks after admission and identity fixes
+
+At `c5b991eeac22e832ec9e2f3ce0018865db3ad449`, frontend typecheck, all
+380 tests in 59 files (`--maxWorkers=1`), and production build pass. The test
+runner reports 45.67 seconds. Before/after SHA-256 inventories of frontend and
+shared TypeScript sources were identical. The
+[receipt](evidence/frontend-admission-checks-20261104.json) preserves the exact
+commands, source hashes, timings and log hashes. This supersedes the earlier
+359-test result only for this newer frontend source. It is not hosted browser
+acceptance, a complete backend result, or deployment evidence. Subsequent shared
+backend edits still require affected checks and the final release suite.
+
+### November 4 — observe actual hosted capacity configuration
+
+Read-only [inventory run 41916625820](https://github.com/salahassi/tenders/actions/runs/41916625820)
+at `84003906146c9b2970641348cfe67d84bb17e210` passed original cluster
+CA/hostname verification and both temporary-client/credential cleanup stages.
+All ten workloads were ready at observation. The
+[receipt](evidence/digitalocean-capacity-20261104-41916625820.json) records
+matching deployment and ready-Pod resource limits: API 384 MiB/700m, worker
+640 MiB/one core, and REST 128 MiB/500m. REST's configured pool is 5 and maximum
+rows 1,000; its fixed authenticator binding was verified without exposing its URI.
+These are observed configuration values, not measured process consumption.
+
+The database metadata reports one node and size slug `db-s-1vcpu-1gb`; measured
+RAM and CPU remain unknown. The fresh observer login reports `work_mem=2048 kB`,
+`max_connections=25`, and `statement_timeout=0`, with no selected application
+role/database catalog overrides. These do not prove an authenticated REST
+transaction's effective settings. No business mutation, customer-row copy,
+model call, application deployment or release-baseline replacement occurred.
+The original inventory remains the frozen release baseline. The REST memory
+limit now matches the independently reproduced local upstream OOM's envelope;
+the repair and exact regression remain pending.
+
+### November 4 — implement atomic batch results with bounded transport framing
+
+CLI-created migration `20261104212818_bounded_command_batch_results.sql` keeps
+the existing 100-command/1 MiB input contract and calls the current public
+dispatcher within one workspace-locked transaction. It stores each actual
+returned result as canonical UTF-8 bytes in fixed 256 KiB private chunks and
+returns a small ordered manifest. It does not build a growing JSONB batch array
+or infer results from child command receipts. Descriptor/chunk hashes and exact
+lengths bind every result. Authenticated reads recheck the original actor,
+current membership, expiry and purge state; private tables/helpers have no new
+browser or service grants. Canonical base64 has no inserted line breaks.
+
+Both old aggregate RPC entry points now fail with
+`TRANSPORT_UPGRADE_REQUIRED` before effects. Existing legacy receipt rows and
+function authority remain unchanged. An existing legacy batch key currently
+fails with `BATCH_LEGACY_NORMALIZATION_REQUIRED` before any command is repeated.
+This is an explicitly unfinished compatibility gate, not a release-ready
+fallback. The rollout must fence old API/direct-RPC admission and settle
+already-running legacy transactions; changing a function body alone does not
+stop an in-flight old invocation.
+
+The new completed cache has the existing 24-hour retention boundary. While an
+expired receipt remains present, a retry returns `BATCH_RESULT_EXPIRED` instead
+of silently executing commands again. Existing workspace-locked maintenance
+then removes expired cache rows. Purge preserves the original UUID-match scope:
+each chunk plus the next same-result chunk's first 35 bytes is checked without
+rebuilding the result. Only matching receipts are invalidated; unrelated cached
+results remain readable. Purge and late failures remain transactional.
+
+Local PGlite evidence: all 16 new functional cases pass, including historical
+row/ACL preservation, full UTF-8 reconstruction, replay, late-command rollback,
+current ownership, expiry, exact cross-boundary purge, unrelated-result survival
+and late-purge rollback. The public-dispatch model-route regression passes
+(one selected test, 89 skipped), and backend typecheck passes. A first-run SQL
+variable-qualification failure and the subsequent test-only type annotation
+are recorded in the [scoped receipt](evidence/command-batch-chunks-sql-20261104.json).
+Dependencies were reused through temporary links to both root installations;
+no dependency versions changed. No hosted/model calls occurred. Actual
+PostgreSQL/PostgREST chunked capacity, authoritative legacy normalization,
+guarded cutover, source-bound release capabilities and final integration remain
+open; no deployment or final capacity qualification is claimed here.
+
+### 2026-11-04 — Metadata-only legacy BATCH exposure census preparation
+
+A new additive `legacy_batch_observation` reads only the fixed BATCH/commands
+idempotency namespace. It groups global active/expired counts by fixed compression
+class and reports SQL-null counts and stored-byte sum/max/threshold counts through
+PostgreSQL metadata functions. No result JSON is expanded or emitted; no keys,
+identifiers, actors, workspaces or customer content leave the query. Only the
+at-most-eight aggregate groups are materialized. Existing read-only owner scope,
+20-second statement timeout, 5-second lock timeout and cleanup remain unchanged.
+The original inventory schema and release baseline inputs are untouched.
+
+Compressed stored bytes are explicitly not logical/wire capacity. Purged sentinel
+state remains uninspected, and SQL null is not interpreted as purged. The 64 KiB
+and 1 MiB cumulative metadata buckets add no product quota. Operations reviewed
+the exact query and found no blocker. This is local preparation for a separately
+reviewed read-only runner inventory; it performs no replay, normalization,
+mutation, provider call or hosted dispatch.
+
+Verification: 32 focused tests pass in 2.65 seconds, plus Python compilation and
+diff checks. The actual PostgreSQL-through-PGlite fixture covers empty state,
+compressed 2 MiB synthetic input stored below 64 KiB, uncompressed medium/large
+results, SQL null versus JSON null, an uninspected sentinel, active/expired rows,
+and exclusion of other methods/routes. The fixture proves metadata behavior and
+unchanged row count, not hosted exposure or replay normalization capacity. Strict
+projection tests reject private labels/extra fields and inconsistent counters;
+census failure still verifies cleanup. Existing inventory and capacity tests
+remain green. No native benchmark or hosted service call ran in this change.
+
+
+### 2026-11-04 — Bounded command-result transport after upstream aggregation failure
+
+Implemented API transport for the separately owned normalized batch SQL
+contract. One mutation RPC returns a small immutable receipt manifest; result
+RPCs return at most 256 KiB of original JSON bytes per chunk. The external
+`data` array and `meta` envelope retain all results, order, nulls, numbers and
+Arabic strings. This framing introduces no total-result quota. The unused
+`Backend.batch` aggregate convenience method was removed.
+
+The consumer validates exact receipt/ordinal/index/length framing, canonical
+base64, each chunk hash and an incremental whole-result SHA-256 before finishing
+a result. It never collects a result into one buffer. Reads occur only on
+downstream demand. Aborted or late uncooperative reads retain admission until
+they settle. Read errors, including SQLSTATE 57014 after committed mutation,
+never advertise or perform a mutation retry. Current SQL authority is checked
+by every chunk RPC; the API uses the original caller JWT and fixed local URLs.
+
+71 focused protocol/actual-handler tests passed in 0.694s. The three adapted
+canonical database/HTTP/delivery fixture files passed all 31 tests in 13.09s;
+backend typecheck passed. Independent source review found no material transport
+blocker. Evidence and source/dependency hashes are in
+`evidence/api-batch-chunk-transport-20261104.json`. Fixtures use actual migrated
+SQL with synthetic PostgREST/Auth/Storage, so they do not prove upstream native
+resource capacity.
+
+Deployment remains gated by the separate SQL migration and exact historical
+receipt normalization/cutover, plus actual PostgREST/API resource qualification.
+The legacy aggregate RPC must not remain an unbounded fallback. No provider
+calls, production writes, model/billing policy changes or deployment ran here.
+
+
+### 2026-11-04 — Reviewed DOCX upload uses the canonical export archive budget
+
+Reproduced the original-file policy conflict through the actual completion
+handler: a source-matched ordinary-2 DOCX of 3,177,596 compressed bytes and
+298,012,602 reported expanded bytes returned `FILE_CONTENT_MISMATCH` before
+canonical verification, with zero completion calls. The computed model hash
+exactly matches the renderer's saved model. Auth/Storage/context authority in
+this fixture is synthetic and explicitly supplies the ordinary-2 pin; it is
+not evidence of SQL package admission.
+
+DOCX completion now checks its filename/MIME identity, ZIP signature and 10 MiB
+compressed upload limit, then runs the existing complete canonical async DOCX
+verifier before the final completion RPC. The verifier still checks supported
+ZIP/XML structure, CRC, active entries, exact visible content/placeholders and
+its source-derived expanded budget. This is no document-validation bypass.
+`originals.ts`, original RFP uploads and reviewed PDF validation/200-page policy
+remain unchanged.
+
+12 focused actual-handler/envelope tests passed in 1.23s, including a small
+native canonical positive, foreign-document/malformed-archive rejection,
+filename/MIME/signature errors, unchanged original-RFP bound and both PDF
+controls. Backend typecheck passed; independent source review found no material
+blocker. See `evidence/reviewed-docx-upload-envelope-20261104.json` and the
+reproducible `scripts/testing/reviewed_docx_handler.mjs` harness.
+
+Acceptance of the same large artifact through the corrected handler/native
+image is still pending its separate scheduled resource test. Neither the
+observed old rejection nor small positive controls qualify native peak memory.
+No provider/production calls, deployment or resource-policy increase occurred.
+
+### November 4 — actual legacy batch exposure is zero at observation
+
+Read-only [run 41919585078](https://github.com/salahassi/tenders/actions/runs/41919585078)
+at `e0ce84d2cb770fd09d5192a398833b88f0c2628b` passed original-CA/hostname
+verification, the inventory guards and both temporary-client/credential cleanup
+stages. At 21:49:50 UTC, the authoritative BATCH/commands namespace contained
+zero total, active and expired receipts. No result payload was expanded, copied
+or exposed. The [receipt](evidence/digitalocean-legacy-batch-20261104-41919585078.json)
+retains the exact metadata census and observed workload configuration. Bootstrap,
+restore and model modes were skipped; production business mutations were zero.
+
+This closes uncertainty about historical batch exposure only at that observation.
+Release still must fence old API/direct-RPC admission, settle in-flight legacy
+transactions and recheck zero under the migration's locking protocol. Any new
+legacy receipt must stop that cutover before effects; this observation must not
+be treated as a durable zero-state guarantee or permission to discard history.
+The existing typed legacy gate remains, and the original release baseline is
+unchanged. No application rollout or hosted proposal acceptance occurred.
+
+### November 4 — qualify the complete upstream chunked batch at100 commands
+
+The actual pinned PostgREST 14.18 process passed sequential batches of 1, 10,
+25 and the existing maximum 100 renewals at unchanged 128 MiB/500m. Each result
+contained the valid 4.13 MB serialized synthetic export snapshot used for the
+earlier ten-result OOM reproduction. The 100-result case delivered all
+412,758,838 array bytes through 1,600 independently authenticated chunks in
+84.853 seconds; its mutation/manifest response took 5.994 seconds. Every chunk
+identity, decoded length, SHA, complete result SHA, result order and expected
+revision matched. No legacy aggregate receipt was created.
+
+At100 results the kernel peaks were 46,141,440 bytes for PostgREST and
+193,982,464 bytes for local PostgreSQL. The latter includes processes/cache and
+the bounded data tmpfs under the separate 1 GiB/one-core fixture limit. Both
+processes remained alive with no OOM. Replaying the maximum request returned
+the identical small manifest in48 ms without new business/audit/receipt/chunk
+writes. A later real revision conflict after ten successful large commands
+rolled all of them back. Source hashes and removal of both owned containers
+were verified. The [receipt](evidence/upstream-batch-chunks-capacity-20261104.json)
+binds the exact SQL/harness, per-case measurements and external log hashes;
+the earlier aggregate-path OOM evidence remains retained.
+
+This qualifies the recorded upstream protocol and compressible structural
+fixture, not actual Auth HTTP, full writer/generation reachability, an API image,
+a browser, managed PostgreSQL 18 sizing or production SLOs. It precedes the
+approved legacy INSERT-backstop amendment, which needs separate concurrency
+proof and final source binding. Admission fencing/drain, a locked zero legacy
+census, final API memory qualification, release capabilities and hosted
+acceptance remain open. No model, customer-data or production operation occurred.
+
+### November 4 — fence late legacy BATCH inserts atomically
+
+The unreleased bounded-batch migration now installs an INSERT-only trigger that
+raises `TRANSPORT_UPGRADE_REQUIRED` for the old BATCH/commands receipt. A cached
+old function cannot commit its earlier business writes after that final insert
+is rejected. Existing historical rows, purge UPDATEs and retention DELETEs are
+unchanged. All 17 scoped functional tests pass (2.84 seconds); the
+[receipt](evidence/command-batch-insert-fence-20261104.json) binds exact sources.
+The already-written transaction and pre-table cached-function races still need
+actual PostgreSQL proof. The release's early exclusive lock, locked zero census,
+gateway admission fence, old-transaction drain and final capacity gates remain
+separate prerequisites. No hosted action or deployment occurred.
+
+## November 4 — A06 independent Arabic OCR diagnosis and rejected tuning
+
+**Implementation:** added an explicit bounded native diagnostic tool and a stricter
+whole-page oracle for fixed synthetic gold. No runtime recognizer, handler,
+migration, source-eligibility rule or page-review requirement changed. The oracle
+rejects extra negation, reordered conditions and altered numeric punctuation;
+ordered substring presence alone no longer counts as complete recognition.
+
+**Actual native evidence:** the pinned existing OCR image reproduced the historical
+Arabic failure, including its exact image/text hashes and confidence 82. A fixed
+18-setting matrix found one complete original-case match (1000px, Arabic-only,
+PSM 6). Independent pre-authored/frozen holdouts then rejected that candidate:
+all three Arabic/mixed pages failed complete gold and lost their English IDs;
+the unchanged English control regressed from exact/confidence96 to unreadable/24.
+The existing default also failed all three independent Arabic whole-page cases.
+Raw historical scores remain intact; the stronger independent adjudication is
+separate. Isolated containers used network-none/768MiB/oneCPU/64PIDs and were
+removed after completion. No further parameter search or external calls occurred.
+
+**Validation:** all 16 focused pure oracle regressions passed (124ms), including
+independent-review negatives for leading decimals and punctuation inside IDs.
+Backend `npm run typecheck` and `npm run build` both passed. Full combined
+package checks remain root-owned; no frontend/runtime code changed. Native Arabic qualification remains failed; the
+ordinary native gold suite is deliberately not relabeled green. The new diagnostic
+runner packages the measured procedure but has not itself been rerun as a rebuilt
+image. Original frozen gold/PDFs and independently prepared holdout gold are not
+changed to accommodate engine output.
+
+**Deployment / remaining:** no deployment or hosted claim. A06 remains open for
+automatic Arabic extraction. Qualify a different recognizer/policy against an
+independent Arabic/mixed corpus, or retain current source-bound visual correction
+and explicit coverage gaps. Opportunity language is not a verified page-language
+classifier. No genuine Microsoft Word engine was available; the separate Word
+update/save gate remains open. See `docs/ARABIC_OCR_DIAGNOSTIC.md` and
+`docs/evidence/uploaded-ocr-adjudication-20261104.json`.
+
+## November 4 — A06 official best-model comparison rejected
+
+**Implementation:** inspected the existing pinned OCR image and established that
+Debian's Arabic and English language packages use `tessdata_fast`. Added one
+explicit offline qualification harness and a pre-output plan for official
+`tessdata_best` Arabic and English files, pinned to upstream commit
+`e12c65a915945e4c28e237a9b52bc4a8f39a0cec`. Runtime recognition, source eligibility
+and mandatory visual page review were not changed. Independent source review
+verified all asset, source, gold, oracle and page-selection hashes. A preserved
+successor plan fixed incomplete-result recording before any recognition output;
+the candidate and all test inputs remained unchanged.
+
+**Actual native evidence:** the exact seven planned cases ran at 768 MiB/one CPU,
+with network disabled and read-only inputs. Three controls passed: English,
+the selected English scan within a mixed PDF, and its blank page. All four Arabic
+pages failed the unchanged complete-page oracle. The candidate is rejected;
+no output-driven parameter search followed. The records-retention defect is
+reported as a malformed prohibition token without asserting that its intended
+meaning necessarily reverses. The run completed in 4.88 seconds including cleanup;
+peak memory was 164,823,040 bytes, with no out-of-memory or swap events. All source
+hashes stayed unchanged and the container was removed. The explicit quality gate
+was false, exit 1; infrastructure failures and skipped cases were zero.
+
+**Validation:** backend typecheck and build passed; all 16 existing pure OCR oracle
+regressions passed in 111 ms. The actual seven-case candidate run is deliberately
+reported as a quality failure, not a green accuracy suite. Full combined package
+checks remain root-owned. The earlier frozen controls have known prior-model
+outcomes; this comparison does not establish a blinded or universal accuracy rate.
+
+**Deployment / remaining:** no deployment, provider inference, customer data or
+hosted acceptance. Automatic Arabic OCR remains unqualified; preserve the current
+source-bound visual correction workflow. Official best-model branding did not
+resolve the observed obligation and qualifier failures. See the updated
+`docs/ARABIC_OCR_DIAGNOSTIC.md`, frozen plan
+`docs/evidence/uploaded-ocr-best-plan-v2-20261104.json`, raw results and separate
+`docs/evidence/uploaded-ocr-best-adjudication-20261104.json`.
+
+### November 4 — qualify the permanent legacy command RPC gateway fence
+
+Both gateway ports now reject the retired `app_batch` and `apply_batch` RPCs
+with a typed HTTP409 `TRANSPORT_UPGRADE_REQUIRED` response, `retryable:false`
+and `Cache-Control:no-store`. New command preparation/chunk RPCs, ordinary REST
+reads, Auth and standard Storage routing remain available. Ambiguous encoded
+protocol/function segments are rejected before a downstream second decode;
+query values do not affect the path guard. The existing TUS denial is unchanged.
+
+The [actual pinned Nginx receipt](evidence/legacy-batch-gateway-20261104.json)
+records560 method/path cases,76 TUS cases and24 positive routing controls across
+8080/8081. A synthetic recording upstream received none of the denied requests;
+both new batch RPCs reached the expected upstream. Restart preserved the fence.
+The first native run caught an over-escaped character class that also denied
+the new preparation RPC; its [failure receipt](evidence/legacy-batch-gateway-regex-regression-20261104.json)
+is retained and the identical matrix passed after the narrow correction. These
+are isolated routing tests, not successful business operations or load tests.
+Both owned containers were removed; no host ports, credentials, customer data,
+models, production calls or database changes were involved.
+
+The gateway source contract is version2: it binds the unchanged physical/TUS
+receipt and its exact prior config, then the new actual combined-config routing
+receipt. Historical evidence is not relabeled to match changed source. The CAS
+helper also supports a coordinator callback after rollout and before accepting
+current Pods, so durable old-process exit evidence can precede final acceptance.
+The focused helper/render suite passes32 tests; Python compilation and diff
+checks pass. Full package gates belong to the combined root integration.
+
+Deployment remains pending. The gateway fences supported callers, while the
+current NetworkPolicy still permits direct REST from the namespace. Release
+must verify actual runtime gateway bindings, drain observable old transactions,
+acquire the legacy-table lock before the repeatable-read snapshot, then recheck
+zero and install the permanent SQL INSERT backstop. The routing receipt does not
+claim those database or hosted cutover guarantees; the coordinator owns them.
+
+### November 4 — integrated package diagnostic and complete-response test corrections
+
+At `256c50e`, both packages passed typecheck/build; frontend passed all380 tests
+in59 files. The full backend run completed with3,135 passes and two failures
+across189 files in468.51 seconds. All899 captured source hashes were unchanged.
+The [diagnostic receipt](evidence/combined-app-diagnostic-20261104-256c50e.json)
+preserves the exact commands, hashes, durations and failures; this is not a full
+green backend result.
+
+Both failures were direct-handler tests that read only the successful response
+status before making another request. The new heavy-file permit correctly
+remains held until response EOF/cancellation, so the subsequent approval/actor
+assertions saw busy503 rather than reaching their intended checks. The ordinary
+final-export test now consumes and checks the complete byte count before
+invalidating approval; the OCR correction test consumes and checks the accepted
+response before attempting a forged actor. No product gate, permission or
+approval rule was weakened.
+
+All33 tests in the two affected files and backend typecheck pass after these
+corrections; [scoped receipt](evidence/completed-response-regressions-20261104.json).
+A complete final backend rerun remains required after the remaining source
+integration. No deployment, provider call or hosted acceptance occurred.
+
+## November 4 — actual API batch capacity harness preparation
+
+**Implementation:** added an isolated actual-image API -> real PostgreSQL/
+PostgREST harness for the existing 100-command/near-4.13MB serialized export
+fixture. It hashes each complete result incrementally, retaining only bounded
+metadata and hashes. It checks slow-consumer busy, EOF release, same-key replay,
+cancellation after the first chunk settles, and exact revision/audit/command/
+batch deltas. No application runtime, SQL, admission cap or resource limit changed.
+
+**Scope:** Auth user lookup is explicitly synthetic; membership and SQL authority
+use the real caller JWT. A loopback HTTP prefix adapter forwards real REST bytes.
+The actual immutable image entrypoint/heap settings are retained, but the command
+replaces runtime/main.ts with the harness and loads the same inactive module graph.
+Source hashes include actual image functions/runtime/frontend library files.
+The fixture directly seeds permitted structural rows before authorized export;
+it does not establish generator reachability or managed database sizing. Partial
+cancel control is after a settled chunk, not in-flight SQL cancellation.
+
+**Checks:** five pure stream-oracle tests passed, backend typecheck/build passed,
+and Python syntax passed. Independent source review identified and closed the
+missing runtime-module-graph baseline. No native run or memory/timing pass is
+claimed in this preparation commit. Root schedules the bounded real-container
+measurement separately; all source/receipt/cleanup outcomes remain explicit.
+See `docs/API_BATCH_CAPACITY.md`. No production, provider or customer calls.
+
+### November 4 — qualify cached legacy transactions and bind the24-migration release
+
+Four actual PostgreSQL17.6 cases passed under isolated capped containers. A
+cached old function waiting before receipt-table access resumed after cutover,
+hit the INSERT fence and rolled back every business/audit/command write. An old
+transaction already holding its receipt-write lock committed while the release
+waited; the release's first snapshot then saw that receipt and rejected the
+migration. Existing expired history was likewise preserved on refusal. New
+bounded results and identical no-write replay passed. Source hashes and container
+cleanup were verified in the [race receipt](evidence/command-batch-cutover-postgres-20261104.json).
+
+The release now locks the receipt table before the first repeatable-read query,
+refuses any old BATCH/commands history, freezes all24required migrations and
+checks new RPC ownership, browser/private ACLs, column grants, RLS, chunk bounds
+and the active INSERT trigger. The managed atomic gate passed44injected fault
+rollbacks plus baseline/replay/drift checks (86.979seconds);26pure source/inventory
+checks passed. [Source evidence](evidence/command-batch-release-guards-20261104.json)
+retains exact scope. Inventory accepts the earlier capability receipt shape and
+the complete new batch extension; neither asserts a claim about payloads.
+Gateway v2 source binding, live API upstream verification, durable gateway exit
+proof and bounded old-transaction drain remain separate coordinator work. No
+hosted change or final API/runtime qualification is claimed.
+
+### November 4 — bind combined gateway qualification without rewriting old proof
+
+The release manifest uses gateway contract version2: its current combined route
+receipt binds both legacy RPC denial and retained resumable-upload denial, while
+the unchanged historical Storage physical proof stays bound to the prior config
+that it actually exercised. Retirement validates this exact chain before its
+existing installed-gateway/current-process checks. The source-freeze helper and
+rollout helper produce identical contracts from the committed actual receipts.
+Nine pure release-binding checks and22retirement control-flow tests passed; the
+[receipt](evidence/command-batch-gateway-binding-20261104.json) records exact scope.
+This slice runs no new native/hosted test. The bounded transaction-drain and
+actual old gateway-process exit coordinator remain pending before deployment.
+
+### November 4 — reject semantically disabled batch catalog guards
+
+Release verification now binds the exact normalized legacy INSERT trigger
+definition and the exact normalized chunk-size CHECK. A non-null `WHEN(false)`
+or an enlarged `CHECK(original_bound OR true)` no longer passes a superficial
+presence/substring check. The actual managed atomic fixture rejected both new
+faults, as well as the disabled-trigger/missing-constraint controls, with full
+rollback; normal release/replay and four baseline guards passed. The
+[receipt](evidence/command-batch-exact-catalog-guards-20261104.json) binds this
+source-only guard correction. Canonical migration bytes did not change; hosted
+cutover and final integrated checks remain separate gates.
+
+### November 4 — preserve legacy SDK error handling during the gateway cutover
+
+The old `Backend.batch` passes the Supabase RPC error directly to
+`databaseError`, which reads `error.message`. The first gateway response used
+only the nested application envelope; the actual pinned Supabase SDK regression
+reproduced a `TypeError` instead of the intended upgrade error. The corrected
+response retains that nested envelope and adds fixed PostgREST-compatible
+`code`, `message`, `details` and `hint` fields. Both direct gateway and old
+adapter outcomes remain nonretryable; the unchanged old mapper reports 422 for
+the named upgrade error, while direct gateway HTTP status remains 409.
+
+The [SDK boundary receipt](evidence/legacy-batch-sdk-error-20261104.json)
+records two passing regressions using Supabase 2.117.3, the retained old batch
+method and the identical historical/current HTTP mapper. Each call sends once;
+no command is executed. Fetch transport is synthetic, and this does not claim
+the complete deployed old API image or real Auth was tested.
+
+The [new pinned Nginx receipt](evidence/legacy-batch-gateway-compatible-20261104.json)
+again passes 560 legacy method/path cases, 76 TUS checks, 24 ordinary-route
+controls and restart, now checking both response envelopes. Denied requests
+never reach the recording upstream. Both owned containers were removed.
+The earlier 089b024a routing receipt and historical physical/TUS receipt remain
+unchanged. The version 2 source contract now requires the new exact response
+configuration/receipt and `postgrest_error_envelope_qualified:true`; an old
+receipt cannot qualify the changed bytes. The 32 focused Python helper/render
+checks and backend typecheck pass. No production, model or customer-data
+operation occurred.
+
+## November 4 — actual native API100 batch capacity passed
+
+**Actual run:** root `6a73cafc0933723f6441a9b448d49443200d37ad`, final batch SQL
+SHA `7bb805fefa6584e02ae8ef65fc6117fb86a9c48b2a8fcf4502e1e7783fe2dc22`, and
+immutable API image `89afc8a31d76e1616ad17e5896e0fc54f0acdc41cd7da389af456386f3e998fe`.
+The full API/worker/browser/scheduler module graph was loaded. The actual API
+handler/Backend.batchStream used real JWT membership and migrated PostgreSQL/
+PostgREST; only Auth lookup and loopback path-prefix routing were fixture adapters.
+No product source or parent heap/resource override was mounted.
+
+All100 result hashes and canonical SQL snapshots matched across1,600 chunks.
+412,758,765 full-envelope bytes streamed in58.024s, headers6.140s, with no aggregate
+response parsing. API cgroup peak163,995,648/402,653,184 bytes; no max/OOM/kill events.
+Sampled process RSS208,576,512 is separately recorded. Slow consumer busy503 skipped
+heavy upstream work; EOF and cancellation after one settled real chunk both
+allowed a subsequent heavy read. Same-key replay/cancel added no mutations:
+revision1→101, audits4→104, COMMAND receipts3→103, one batch,1,600 stored chunks.
+Health114; all three owned containers removed; source hashes unchanged.
+
+**Limits:** one synthetic, directly seeded structural fixture followed by actual
+authorized export.prepare; near4.13MB serialized snapshot is not near4MiB physical
+storage or proof of generator reachability. This is not hosted Auth/NGINX, cold
+start, browser aggregate parsing, arbitrary-size/concurrent-load or issuance-SLO
+acceptance. No provider, production or customer calls. Evidence:
+`docs/evidence/native-api-batch-capacity-20261104.json`; raw local receipt remains
+under `/workspace/output/api-batch-capacity-r1/receipt.json`. Deployment and final
+combined checks remain separate root-owned gates.
+
+### November 4 — retain actual gateway identities and drain only pre-fence transactions
+
+The release coordinator now checks the API's literal gateway upstream and actual
+inherited environment using fixed shell builtins that output only true/false.
+Before changing the gateway it persists the complete original Pod UID/container
+set and protects those identities with a dedicated finalizer. Every termination
+proof is durable before finalizer removal. Lost ACKs, immediate garbage
+collection, partial exit, missing identities and concurrent journal changes
+remain fail-closed. An absent original journal cannot adopt an already changed
+or partially changed gateway. The permanent route fence is never rolled back.
+
+After actual old gateway exits, a database clock marker bounds a metadata-only
+drain of the fixed authenticator login's old transactions. The existing SET
+authority is sufficient: the observer assumes that exact login role in a read-only
+transaction and excludes its own backend. It grants no global monitoring rights,
+terminates no sessions, and preserves pending sessions on timeout or unknown
+visibility. Seven actual PostgreSQL 17.6 cases passed for active and idle sessions
+that changed local JWT roles, direct observer self-exclusion, hidden/USAGE-only
+refusal, a fixed cutoff, natural commit and failure handling. The final helper
+hash and cleanup are bound in the [activity receipt](evidence/command-batch-activity-postgres-20261104.json);
+the initial harness decoding failure and earlier successful source are retained.
+
+Thirty coordinator/updater tests and nine pure release-binding checks passed.
+Independent source review found no further blocker. The compatible gateway
+receipt is now mandatory, including its actual old-SDK typed-error proof; old
+native receipts remain unchanged. [Coordinator evidence](evidence/command-batch-cutover-coordinator-20261104.json)
+separates these local checks from actual Kubernetes termination, managed PG18
+visibility, final image capacity and hosted acceptance. The early locked zero
+census and permanent INSERT trigger remain necessary for queued/direct REST
+callers. No hosted mutation or deployment occurred in this slice.
+
+### November 4 — refuse unknown Kubernetes terminal states as exit proof
+
+Gateway drain now binds the terminated state's own container ID to the captured
+ID and accepts only known runtime terminal reasons with valid nonzero ordered
+start/finish timestamps and a concrete exit code. `ContainerStatusUnknown`,
+`NodeLost`, missing or conflicting IDs, invalid timestamps and negative/missing
+exit codes retain the Pod identity and refuse settlement. Saved proof replay
+uses the same validation; a known OOM/error exit proves process termination,
+without claiming a clean shutdown. All 34 focused control-flow tests passed.
+The [receipt](evidence/command-batch-process-exit-fence-20261104.json) records that
+the three observer SQL/drain functions are byte-identical to the actual seven-case
+PostgreSQL-qualified revision; those unrelated probes were not repeated. Actual
+hosted Kubernetes exit proof remains pending. The final gateway source hash is
+also pending the separately assigned slow-consumer streaming qualification.
+
+### November 4 — prepare read-only hosted transaction visibility verification
+
+Inventory now calls the release helper's exact read-only transaction observer
+using the existing temporary SQL client. Only fixed-role metadata, a database
+marker, count and observer-SQL hash are returned. It uses existing SET authority
+to the exact authenticator login; it neither grants global monitoring privileges
+nor installs a gateway fence, waits for sessions, terminates sessions or changes
+customer records. Unknown/hidden/malformed visibility fails closed, and client
+cleanup remains mandatory. The original release baseline is unchanged.
+
+Four focused projection/privacy/failure/cleanup checks and all17 existing
+inventory tests pass. Actual PostgreSQL authority/drain behavior is separately
+qualified by the shared helper's owner; these local mock checks do not prove
+managed PostgreSQL18 authority. A reviewed original-CA runner inventory is still
+required before claiming hosted visibility. The helper dependency is supplied
+by the separate release-coordinator commit; it is not duplicated in this change.
+
+### 2026-11-04 — A05/D07 source reserve frozen before outputs; activation remains closed
+
+Added `QUALIFICATION_RESERVE.md`, 50 bilingual source/oracle cases across all 13
+registered tasks, and 16 separate bilingual retrieval pairs with compact, bounded
+and preflight-excluded source recipes. The proposed schedule is 100 observations
+per model (96 semantic, four connectivity), with two fixed repetitions and no
+automatic retries. The 48 retrieval cells are prospective, not executed. Exact
+source hashes/code-point spans and earlier pre-output versions are preserved.
+Independent source-only reviews corrected scope, duration/effort, source provenance,
+source-page mode and trace paths before outputs. This synthetic reserve was authored
+after known development outcomes; it is not a blind or private holdout.
+
+The offline lock/scorer binds each observed input, prompt, schema, contract, adapter,
+validator and resolved target to frozen identities. Actual provider-reported identity
+is separate: unknown remains unknown; unexpected identities fail. Missing/quota/
+transport/refused/malformed/partial judgments retain denominators and cannot pass.
+One known critical semantic error remains a failure even beside incomplete judgments.
+The draft activation contains no providers, authorization or executable schedule.
+
+71 focused mechanical tests passed in 422ms; backend typecheck passed. The CLI
+integrity check confirms 50 cases, 13 tasks and 48 prospective retrieval cells.
+Synthetic test receipts/verdicts are arithmetic/integrity controls, not actual model
+outputs or business quality. Evidence: `evidence/qualification-reserve-freeze-20261104.json`.
+No provider calls, retrieval executions, deployment or production writes occurred.
+
+A05/D07 remain open for qualified production task adapters and source/authority
+contexts, real authorized targets and full request locks, actual evaluation and
+independent output adjudication, noncritical business acceptance decisions, and an
+authorized private independently reviewed holdout. Prior live critical findings and
+G09's seven measured retrieval misses remain unchanged. Full combined application
+checks belong to the separate integration gate; this scoped tooling check does not
+repeat or replace them.
+
+### November 4 — reconcile remaining actions and R0 evidence at 256c50e
+
+Refreshed [remaining actions](RELIABILITY_REMAINING_GATES.md), their machine
+matrix and the [R0 index](evidence/reliability-r0-index-20261104.json) against
+tracked source 256c50e. Historical receipt hashes remain unchanged. Added the
+frontend 380/59 pass, API/client admission and identity evidence, complete
+structured-body persistence, real REST 100-command chunks, warm-two/fresh-one
+native downloads, same-artifact reviewed DOCX red/green, hosted zero legacy
+census, pinned gateway routing and rejected OCR tuning. Native document results
+retain their synthetic upstream scope and narrow 10.88 MiB minimum margin.
+
+The manifest file still contains 22 migrations while source contains 24; refreeze
+and a renewed exact 24-migration cloud restore remain pending. The final release
+guards/coordinator, queued db52ae9/d15cbe7, actual API batch memory, deployment
+and hosted acceptance are not credited as complete. Current full application
+checks were running at this anchor, with the reported unconsumed-response
+direct-handler test failure awaiting correction; no final full-green claim is
+made. The new pre-output model reserve is in review, not blind qualification.
+
+This change updates documents only. Static validation confirms every indexed
+receipt exists and its SHA256 matches, all historical index rows/hashes remain,
+the nine action IDs are unique and all action evidence references resolve.
+No application, native, provider or production test was run by this refresh.
+
+### November 4 — observe gateway resources and temporary-storage configuration
+
+The existing read-only inventory now includes gateway deployment and ready-Pod
+resource requests/limits in its additive capacity observation. It separately
+projects fixed entrypoint recognition and sanitized temporary-volume facts:
+exact/descendant mount counts, source kind, configured medium/size limit,
+read-only status and subpath presence. Unknown/missing values stay unknown; no
+repository default substitutes for actual observations. Secret values, arbitrary
+paths and volume names are omitted. A Kubernetes sizeLimit is explicitly not
+reported as a proven hard filesystem cap. The original workload/schema receipt
+shape is unchanged, and no resource, credential or permission is modified.
+
+All 22 focused projection/inventory tests passed, including four new controls for
+deployment/Pod drift, unknown storage, submounts and redaction. The
+[source receipt](evidence/gateway-inventory-capacity-projection-20261104.json)
+records local checks only. Hosted values and the separate qualified gateway
+preflight/response-streaming acceptance remain pending the reviewed runner run.
+
+### November 4 — managed PostgreSQL visibility and actual gateway envelope verified
+
+Original-CA inventory [run 41926843276](https://github.com/salahassi/tenders/actions/runs/41926843276)
+passed at `da3c4bcde412f17287f7abd3c5c28779abda26d3`, including both cleanup
+stages. The existing exact-role SET authority exposed authenticator transaction
+metadata on the managed database; zero old transactions were observed at its
+database marker. No grants, session termination, admission fence or drain ran.
+The [receipt](evidence/digitalocean-cutover-20261104-41926843276.json) binds the
+exact observer SQL hash and retains the zero legacy BATCH census separately.
+
+The actual gateway Deployment and ready Pod both specify 64 MiB / 200m limits
+and the recognized Nginx entrypoint, with one writable default-medium /tmp
+emptyDir configured at 64 MiB, no subpath or descendant mounts. These observed
+specs bind the isolated qualification envelope; they do not measure cgroups or
+prove hard filesystem enforcement. All ten workloads were ready. The 41 local
+inventory checks passed before dispatch. No application deployment, model call,
+bootstrap, restore or business write occurred. The original frozen release
+baseline is unchanged; final gateway qualification, manifest refreeze, renewed
+restore and actual fenced cutover remain separate gates.
+
+### November 4 — distinguish declared HTTPS capacity from observed limits
+
+The additive capacity inventory now also projects HTTPS deployment and ready-Pod
+resource requests/limits through the existing allowlist. Missing values remain
+unknown, Pod/deployment differences remain visible, and no TLS/environment
+secrets or configuration text are emitted. The existing resource reads are
+reused; no new calls or mutations are added. All 23 focused tests passed,
+including the HTTPS unknown/drift/redaction regression.
+[Projection evidence](evidence/https-inventory-capacity-projection-20261104.json)
+records local checks only. The repository's 128 MiB/300m declaration is not yet
+reported as observed; the next reviewed inventory must establish actual values.
+
+### November 4 — actual HTTPS resource envelope observed on DigitalOcean
+
+Read-only [run 41928176279](https://github.com/salahassi/tenders/actions/runs/41928176279)
+passed at `f331c28f727f19623715be00f98a001bd04185bb`, with original cluster CA
+and both cleanup stages verified. The actual HTTPS Deployment and ready Pod
+both specify 128 MiB / 300m limits and one container; the immutable deployed
+image remains `3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce`.
+The [receipt](evidence/digitalocean-https-capacity-20261104-41928176279.json)
+records observed specs, not measured native capacity, TLS throughput or volume
+filesystem type. Existing-role transaction visibility and zero legacy receipt
+counts were observed again; no fence/drain, grant, provider call or application
+mutation ran. The original release baseline is unchanged. Five focused HTTPS/
+gateway projection tests passed before this dispatch. The separate actual-image
+proxy-chain proof and final release checks remain pending.
+
+### 2026-11-04 — Initial reserve adapters use production helpers; ten cases constructible
+
+Added offline `reserve-adapters.ts` for ten of the 50 frozen reserve cases: bilingual
+retention analysis, advisory review, four source-page cases and two protocol probes.
+The other 40 remain explicitly unsupported; the 100/model denominator is unchanged.
+No source identities are concatenated, no prior model results are fabricated, and
+no live campaign suite is exposed. The exact prerequisites and existing campaign
+integration limits are in `QUALIFICATION_RESERVE_ADAPTERS.md`.
+
+Construction uses actual `generation.taskInput`, current exact span/source contract,
+`pinSemanticPrompt`, source-page prompt projection and `executeModel` preparation,
+stopping before send/reservation/fetch. Original source aliases map explicitly to
+canonical UUID/span/page IDs. Empty administrative fixture context adds no buyer
+facts and is not authenticated SQL admission. Separate actual system and user prompt
+hashes feed the full prompt pin, while durable input identity remains unchanged.
+
+140 focused tests passed in 2.41s (69 adapter/control plus 71 reserve-integrity); backend
+typecheck passed. Controlled in-process responses exercise actual source materialization,
+model-forged review neutralization, source/coverage rejection and dispatch-only source
+mode restrictions. These are not provider outputs or semantic qualification. Independent
+source review found an invalid synthetic review target; a real command-schema regression
+failed before the existing `general/general` convention fixed it. Final core reread
+found no material blocker. The receipt preserves that red and a later test-harness
+wire assertion correction for the existing appended JSON schema.
+
+Evidence: `evidence/qualification-reserve-adapters-20261104.json`. No provider calls,
+production retrieval execution, database writes, deployment, billing or model-policy
+changes occurred. Remaining: reviewed composite schedules; frozen typed requirement/
+blueprint/draft/candidate/repair prerequisites; complete actual target/request locks;
+authorized live evaluation and independent adjudication; private holdout and noncritical
+business decisions. Full combined checks remain the separate root integration gate.
+
+### November 4 — bind HTTPS runtime and both proxy capacity proofs before release
+
+The release contract now requires a separately qualified HTTPS image and public
+Caddyfile, the actual deployed image digest and its image ID, the exact gateway
+source, and the retained TLS/compression receipt. The read-only preflight and
+readback check the Deployment and every ready Pod: minimum 128 MiB/300m limits,
+actual running image identity, exact command, four permitted mount locations,
+three literal environment entries, loaded public Caddyfile, and stable process
+identity. These checks neither read TLS private files nor alter resources or
+configuration. A changed spec while an old binary still runs is rejected.
+
+The gateway proof chain additionally requires the corrected disk-backed streaming
+receipt, its exact hash in the routing receipt, the 64 MiB/200m measured envelope,
+the 412,758,765-byte synthetic payload, complete open-unlinked-file accounting,
+and an allowlisted actual filesystem magic. A tmpfs run cannot qualify the disk
+case. Earlier receipts remain historical evidence; this change does not freeze
+or accept the superseded disk claim. The cloud-restore source gate now refuses a
+manifest missing the HTTPS binding before any capture or fixture creation.
+
+Local validation: 30 pure HTTPS boundary tests, 11 pure release/source tests,
+15 updater fault tests, and 13 cloud-restore helper tests passed. Temporary test
+receipts are explicitly synthetic; they are not native qualification evidence.
+[Guard evidence](evidence/https-release-capacity-guards-20261104.json) binds the
+source and logs. Canonical SQL is unchanged. Corrected gateway native proof,
+final HTTPS six-case native proof, final manifest freeze, renewed isolated cloud
+restore, and hosted preflight/deployment/readback remain separate required gates.
+Root's read-only runs observed gateway 64 MiB/200m and HTTPS 128 MiB/300m in both
+Deployment and ready Pod specs; those observations alone do not prove cgroup
+headroom, storage enforcement, concurrent load, or issuance latency.
+
+### November 4 — preserve unsuccessful explicit TOC-refresh diagnostics
+
+The existing LibreOffice visual harness converts DOCX to PDF without an explicit
+document-index refresh call. Two bounded attempts used an isolated personal
+macro profile to request that refresh on one existing synthetic English fixture.
+Both exited zero without producing the required markers or new PDF/DOCX; neither
+is accepted as refresh execution. The first startup replaced the module registry
+with its default; the second retained the requested module but still supplied no
+execution evidence. Both owned processes exited, and the original DOCX hash is
+unchanged. The [diagnostic](evidence/toc-explicit-refresh-diagnostic-20261104.json)
+preserves these failures rather than treating process exit zero as success.
+
+No renderer, canonical validation, source text, page numbers or production state
+changed. The reason for the absent caches is not established; the earlier 18-file
+LibreOffice result and the separate Microsoft Word update/save limitation remain
+open. No Word engine, model or hosted operation was invoked.
+
+### November 4 — qualify large API responses through the exact gateway configuration
+
+Both API proxy locations now disable response buffering, and the gateway pins
+one worker under its unchanged 64 MiB/200m limits. Request buffering, the 32 MiB
+API upload limit and other routing are preserved. Pinning the worker count
+removes the test-only `auto` substitution and makes the tested process shape
+the production configuration.
+
+The [final pinned-image transport receipt](evidence/api-proxy-streaming-pinned-worker-20261104.json)
+delivers 412,758,765 deterministic bytes with the exact expected hash through
+both ports. The slower client completes in 32.587/32.518 seconds; peak gateway
+memory is 8,777,728 bytes with no out-of-memory event. The disk-backed workspace
+mount is verified inside the container by filesystem magic `794c7630`. The
+continuous census includes open-unlinked files and stable master/worker process
+identities; final temporary usage is only the PID file, 4 KiB allocated. Early
+client cancellation closes the upstream and its sent-byte count stops.
+
+The buffering-enabled control, also using one worker, crosses the 64 MiB
+temporary budget (67,133,440 allocated bytes) and is deliberately cancelled.
+This is an observed budget failure, not a filesystem `ENOSPC`, an OOM, or a
+measurement of the previous production `auto` worker count.
+
+Earlier attempts mistakenly used host `/tmp`, which is memory-backed in this
+environment. Their disk-medium qualification is explicitly withdrawn by the
+[scope correction](evidence/api-proxy-streaming-scope-correction-20261104.json).
+Those original receipts, including OOM and observer failures, remain unchanged.
+The subsequent disk-backed one-worker-substitution run remains scoped to that
+configuration. The [worker binding](evidence/api-proxy-streaming-worker-binding-20261104.json)
+records equal executed bytes and the separate final-source rerun; no old receipt
+is relabeled as final evidence.
+
+The [final routing receipt](evidence/legacy-batch-gateway-pinned-worker-20261104.json)
+again passes 560 legacy method/path denials, 76 TUS denials, 24 ordinary controls
+and restart. Its raw TCP client preserves path bytes before Nginx normalization.
+The bounded synthetic helper uses an existing pinned small Deno image to avoid
+Storage-image copy overhead in the test workspace. No Storage implementation
+is replaced or exercised by this proxy fixture.
+
+The version 2 release source contract retains the historical physical/TUS
+proof and requires the exact final routing-to-transport hash chain. Preflight
+checks the Deployment and actual Pods for image, command, config mount,
+resource limits and writable whole `/tmp` mount; running Pods receive a
+read-only filesystem check. Final-checksum Pods and final acceptance require
+one actual worker. Old `auto` Pods remain the authorized repair input, with
+their existing process-exit journal/drain preserved. No resources are patched.
+
+The [focused verification receipt](evidence/api-proxy-streaming-pinned-worker-checks-20261104.json)
+records 26 helper, 16 manifest-render and two open-unlinked census tests, plus
+two real-SDK adapter regressions. Python compilation, exact source-contract
+validation and diff checks pass. All owned containers and disk fixtures are
+removed. Integrated package gates, the separate HTTPS chain, final release,
+deployment and authenticated hosted acceptance remain separate; this proves
+the declared proxy transport fixture, not Auth/SQL behavior or a universal
+capacity/service-level guarantee.
+
+### November 4 — prepare full HTTPS compression transport qualification
+
+Added an isolated TLS → pinned HTTPS/Caddy → pinned Nginx → bounded synthetic
+JSON stream harness. It retains the exact Caddyfile and explicitly verifies local
+CA/hostname trust. The default image is the exact observed deployed HTTPS digest;
+a separately rebuilt image has a distinct, source-bound mode. No production
+configuration, resource limit, customer row or model request is changed.
+
+The harness covers identity/gzip/zstd, full decoded hash/length, slow reads,
+upstream cancellation, health, cgroup memory/swap/OOM, private open-unlinked spool
+observation and nonce-owned cleanup. Four small reader/cleanup/receipt/file-census
+tests pass. Native execution is a separate scheduled gate; preparation is not a
+memory or hosted-throughput success claim. HTTPS128MiB/300m is repository-declared
+until the separate current deployment inventory confirms it. See
+`HTTPS_STREAMING_QUALIFICATION.md` for exact scope and remaining limits.
+
+### November 4 — correct HTTPS fixture provenance and encoding oracle
+
+The exact deployed HTTPS registry image was acquired with a temporary read-only
+registry credential; private credentials were removed without logging values.
+The fixture now uses explicit local-only proxy settings, a lightweight pinned
+Deno synthetic upstream, and `/workspace/work` overlay mounts with numeric
+in-container statfs verification. It observes open-unlinked files and requires
+the final production `worker_processes 1` directive and actual process count.
+The separate hosted inventory41928176279 confirms HTTPS128MiB/300m; that read-only
+observation is distinct from local capacity execution.
+
+All unsuccessful attempts remain in the diagnostics receipt. In r6, identity,
+gzip and zstd each delivered412,758,765 exact decoded bytes under the limits;
+the harness then incorrectly rejected zstd's valid9,460-byte expansion. That
+result remains failed, with zstd cancellation unexecuted. Independent source
+review confirmed the correction retains exact encoding negotiation, real
+bounded decoding, independent/source hashes, length, health, resource and
+cancellation gates. Four tiny tests pass. The final unified six-case native
+repeat remains pending; no hosted transport or broad-load success is claimed.
+
+### November 4 — final exact-image HTTPS streaming qualification passed
+
+The final six-case local run passed at source5787071 using observed HTTPS
+registry image3a539c44, final gateway targetc1a25c41 with its exact one-worker
+directive, and actual workspace-overlay mounts verified inside both containers.
+Identity/gzip/zstd each delivered412,758,765 decoded bytes with independent and
+upstream hashes, followed by successful2MiB cancellation and upstream quiescence.
+All162 health checks passed. Peak cgroup memory: HTTPS25,833,472/134,217,728 bytes;
+Nginx13,045,760/67,108,864; synthetic helper96,387,072/134,217,728. No OOM or swap.
+Complete PID/FD/inode observation found36KiB HTTPS and4KiB Nginx allocated files.
+All owned containers/network/private files were removed, source hashes unchanged.
+
+Evidence: `https-api-streaming-20261104.json`, SHA
+`a10f52cf769a39d1204354796039e0bb6147a7a3dfdee5bae63a1a4621aace72`.
+The earlier failures remain preserved and adjudicated separately. Four focused
+harness tests passed. This closes the selected local full-proxy streaming proof;
+HTTP/2/3, concurrent/hosted load, public certificate renewal, production PVC
+behavior and proposal600s acceptance remain separate gates. Transfer timings
+include intentional slow-client pacing. The new gateway target is not claimed
+already deployed; no product configuration or production records were changed.
+
+### November 4 — final proxy proof uses the production worker count
+
+The source binding now requires the final pinned-worker Gateway receipts and
+exactly one declared and observed Nginx worker. The HTTPS qualification must also
+record that same production directive without a worker-count transformation.
+Prior disk receipts remain unchanged and retain their narrower fixture scope.
+The release and runtime Gateway helper produce identical proof contracts; fault
+checks reject automatic/multiple workers, boolean/string count coercion, and a
+tmpfs filesystem presented as the qualified disk case.
+
+All 13 pure release tests and 31 HTTPS guard tests passed. The source validators
+also accepted the retained final Gateway and HTTPS native receipts: Gateway
+configuration `c1a25c41…795ba`, routing receipt `8d395eec…e6014`, and HTTPS receipt
+`a10f52cf…ace72`. [Binding evidence](evidence/final-proxy-proof-binding-20261104.json)
+records exact hashes and the separate native-proof scope; this check itself did
+not rerun containers or contact production. Hosted configuration, filesystem,
+worker-count and process readback remain required during the reviewed rollout.
+
+### November 4 — bind runtime publication to the actually qualified image
+
+The runtime publisher now requires the frozen native image identity rather than
+accepting a revision label and registry digest alone. Read-only inspection found
+all 130 Dockerfile COPY files byte-identical to image `89afc8a31d76`, and recorded
+all 146 `/app` tar entries with exact image permissions/owners, its 17 ordered
+RootFS layers, complete runtime Config, pinned Deno base and three immutable
+native proof receipts. Checkout Git file types/executable modes are checked
+separately from umask-dependent permissions. The original Dockerfile was not
+embedded; its retrospective recipe binding is explicitly limited.
+
+[Qualification provenance](RUNTIME_QUALIFICATION_PROVENANCE.md) and the
+[frozen receipt](evidence/runtime-qualification-89af-20261104.json) explain the
+source closure and evidence chain. All 22 focused Python tests passed, including
+source/path/mode/receipt/config/layer faults, existing-tag counterfeits, pending
+publication and label-only promotion ordering. Actual local image/source checks
+passed; no new native test, build, push or deployment ran. The publication binding
+is deliberately null and blocks execution until the existing qualified image is
+published unchanged and its observed immutable registry reference is recorded.
+Promotion then permits only the revision label to change; ordered layers and
+all other runtime configuration/labels must remain exact before any push.
+Frontend/OCR build policy is unchanged. Final image publication/promotion,
+release refreeze, cloud acceptance and model-quality gates remain separate.
+
+### November 4 — refresh remaining actions and R0 at a7922ed
+
+The remaining-action matrix and R0 index now retain all 51 earlier receipt
+hashes and link 74 receipts. This documentation-only refresh records the actual
+API 100-command capacity pass, retained 3,135-pass/two-failure full diagnostic
+and 33-test correction, final pinned-worker gateway transport/routing proof,
+explicit withdrawal of the earlier tmpfs fixture's disk claim, managed
+read-only visibility/resource observations, integrated cutover race/guard
+proofs, frozen reserve with ten constructible and 40 unsupported cases, and
+unsuccessful LibreOffice refresh invocation.
+
+No final full-green application, runtime promotion, refrozen release,
+24-migration cloud restore, deployment or hosted acceptance is inferred.
+The final HTTPS receipt and new OCR/promotion work were not ingested at this
+anchor. Static verification checks every linked receipt hash and all nine
+action/evidence mappings; no tests, provider calls or production operations
+were performed by this refresh. Native document minimum margin remains
+10.88 MiB; the index preserves each measurement's exact fixture/source limits.
+
+### November 4 — freeze runtime promotion provenance and verify HTTPS temporary storage
+
+The release manifest now binds the runtime qualification helper, immutable
+89af image qualification receipt, and actual publication receipt/reference.
+Missing or null publication blocks freezing; byte drift in any bound input
+invalidates the manifest. This preserves the reviewed label-only promotion path
+and does not equate a source revision label with a native-qualified filesystem.
+The image helper separately verifies the full ordered layers and image
+configuration at preparation and final selected-digest inspection. Canonical
+migrations and existing receipt history are unchanged.
+
+HTTPS now also checks that `/tmp` is a whole writable default-medium emptyDir
+with at least the qualified configured size, then reads its actual filesystem
+magic through a fixed `stat` command in each ready Pod before and after rollout.
+Memory-backed, unknown, changed or partial mounts fail closed. The declaration is
+not presented as a hard filesystem cap; no TLS-state content is read.
+
+Local checks passed: 33 HTTPS boundary tests, 15 release/source tests, 15 updater
+fault tests and 14 cloud-restore helper tests. The actual frozen runtime helper
+and qualification artifact were read and its still-null publication correctly
+refused at this check. [Evidence](evidence/runtime-manifest-and-https-disk-guards-20261104.json)
+binds the local source/logs. Actual publication, final manifest, the renewed
+isolated cloud drill, complete integration suites and hosted deployment remain
+separate root-owned gates; no hosted operation was performed by these checks.
+
+### November 4 — publish the unchanged qualified runtime and prove label-only promotion
+
+The existing native-qualified image89af was published under immutable registry
+reference `runtime@sha256:67fc1be0f574ea9b65e40408da436c3173fb4f332bb7729fe8da75e1ccaa4d28`,
+pulled back by that digest, and verified against all qualified layers, platform,
+Config and labels. The 130-file checkout/native evidence closure still matches.
+The [publication binding](evidence/runtime-qualified-publication-20261104.json)
+records the 29.186-second operation and removal of its temporary credentials.
+No application workload, source filesystem or customer record was changed.
+
+An actual local two-instruction FROM/LABEL promotion also passed with network and
+pull disabled, retaining every ordered RootFS layer and runtime Config field and
+changing only the source revision label. Its [receipt](evidence/runtime-label-promotion-20261104.json)
+records the distinct resulting image ID and exact recipe; that local probe was
+not pushed. This closes image identity/publication preparation without pretending
+a metadata digest change is a new native capacity test. The 22 focused tests
+remain source evidence; final source freeze, combined checks, isolated restore,
+release promotion/rollout and hosted acceptance remain separate gates.
+
+### November 4 — refreeze the complete 24-migration release from the original baseline
+
+The manifest now contains all 24 reviewed migrations, the final one-worker
+Gateway transport/routing chain, exact deployed HTTPS proof, shared Auth helper,
+and the runtime qualification/publication binding. Canonical manifest SHA256:
+`4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76`.
+Source verification passed. Freeze used only the unchanged inner inventory
+receipt from run41881660683; later capacity/visibility observations did not
+replace that release baseline. Historical 22-migration restore results remain
+limited to their original contract. The renewed exact 24-migration isolated
+cloud restore and complete integrated package/ops checks are the next gates.
+No schema or application deployment occurred during this local freeze.
+
+### November 4 — complete operations gates on frozen 865d840
+
+The complete required Python unittest discovery passed on exact source
+`865d8406fcaf148299184bcbe67522fb0b256258`: 537 operations tests, 11
+production-schema tests and 16 Kubernetes tests (564 total). Each suite exited
+zero and reported `OK`; no failure or skip was reported. All tracked file hashes,
+HEAD and the clean working-tree state matched before and after. The tested
+canonical release manifest SHA-256 is
+`4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76`.
+
+[The retained receipt](evidence/final-operations-gates-865d840-20261104.json)
+records exact commands, counts, source/manifest hashes and private-log hashes.
+Tests ran alongside the separately owned application package suite, so elapsed
+times are functional-test evidence rather than capacity measurements. This does
+not claim completion of that package suite, the renewed hosted restore drill,
+or deployment acceptance. No standalone native benchmark, provider request,
+hosted mutation or workflow dispatch was performed by this check.
+
+### November 4 — full application checks and exact 24-migration cloud restore pass
+
+Both complete application packages passed at unchanged source
+`865d8406fcaf148299184bcbe67522fb0b256258`: backend 3,284 tests across 193 files,
+frontend 380 tests across 59 files, and typecheck/build for both. The
+[package receipt](evidence/complete-app-checks-865d840-20261104.json) binds all six
+commands, log hashes and the empty before/after source-map difference. Combined
+with the separately recorded 564 Python gates, this is 4,228 passing tests.
+Concurrent functional runs do not replace the retained native capacity proofs.
+
+[Cloud restore run41933205779](https://github.com/salahassi/tenders/actions/runs/41933205779)
+at the same exact source applied all 24 frozen migrations and passed all 13 actual
+Auth/Storage HTTP checks using the shared application Auth policy. The
+[receipt](evidence/cloud-restore-20261104-41933205779.json) binds canonical manifest
+`4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76`,
+original cluster CA/hostname verification and both successful cleanup stages.
+No customer rows were copied, no providers called and no production business
+records changed. Older 22-migration and fixture-policy receipts remain historical.
+Application deployment, real saved-proposal/browser acceptance, provider semantic
+qualification, Arabic OCR quality and Word field-update acceptance remain open.

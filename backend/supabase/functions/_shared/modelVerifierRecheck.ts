@@ -142,6 +142,7 @@ export async function seedVerifierRecheck(
     o.requiredIds,
     {
       independentGrounding: true,
+      sourceContext: o.context,
       draftInputVersion: draftInputPolicyVersion("analyze_chunk", o.context),
     },
   );

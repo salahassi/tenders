@@ -259,3 +259,22 @@ it("rebuilds diagnostics to exclude widened runtime fields and returns determini
   expect(JSON.stringify(first)).not.toContain("private body");
   expect(first.validation_diagnostics[0]).not.toBe(widened);
 });
+
+it("preserves upstream validator overflow when a bounded repair artifact is constructed", () => {
+  const artifact = repairOnlyValidationArtifact({
+    candidateHash: hash,
+    diagnostics: Array.from({ length: 32 }, () => diagnostic()),
+    omittedDiagnosticCount: 2,
+  });
+  expect(artifact.validation_diagnostics).toHaveLength(32);
+  expect(artifact.omitted_diagnostic_count).toBe(2);
+  expect(artifact.result.reviewed_all_content).toBe(false);
+  for (const count of [-1, 0.5, Infinity])
+    expect(() =>
+      repairOnlyValidationArtifact({
+        candidateHash: hash,
+        diagnostics: [diagnostic()],
+        omittedDiagnosticCount: count,
+      }),
+    ).toThrow("INVALID_OMITTED_DIAGNOSTIC_COUNT");
+});

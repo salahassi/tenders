@@ -1,3 +1,4 @@
+import ProposalConsistencyReview from "./ProposalConsistencyReview";
 import { useEffect, useState } from "react";
 import { useApp } from "../lib/store";
 import { Button, Field } from "./ui";
@@ -47,6 +48,22 @@ export default function ApprovalPanel({ proposal }: { proposal: Proposal }) {
         ),
         backend.request<Row>(`/v1/generation-plans/${v.data.plan_id}`),
       ]);
+      let applicability: Row[] = [];
+      let applicabilityError = "";
+      if (plan.data.frozen_context.proposal_consistency_version === 1) {
+        try {
+          applicability = (
+            await backend.request<Row>(
+              `/v1/proposal-versions/${proposal.versionId}/consistency`,
+            )
+          ).data.input.requirements;
+        } catch (e) {
+          applicabilityError =
+            e instanceof Error
+              ? e.message
+              : "Reload the exact current requirement and source before approving an exclusion.";
+        }
+      }
       setData({
         version: v.data,
         rates,
@@ -56,11 +73,19 @@ export default function ApprovalPanel({ proposal }: { proposal: Proposal }) {
         compliance,
         reviews,
         sections: sections.sort((a, b) => a.ordinal - b.ordinal),
-        requirements: requirements.filter((r) => r.plan_id === v.data.plan_id),
+        requirements: requirements
+          .filter((r) => r.plan_id === v.data.plan_id)
+          .map((r) => ({
+            ...r,
+            applicability_required:
+              plan.data.frozen_context.proposal_consistency_version === 1,
+            applicability_binding: applicability.find((a) => a.id === r.id)
+              ?.applicability_binding,
+          })),
         readiness: readiness.data,
         plan: plan.data,
       });
-      setError("");
+      setError(applicabilityError);
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Unable to load approval records.",
@@ -80,7 +105,31 @@ export default function ApprovalPanel({ proposal }: { proposal: Proposal }) {
       notify("The server saved this review decision.");
       return true;
     } catch (e) {
-      setError(e instanceof Error ? e.message : "The review decision failed.");
+      if (
+        e &&
+        typeof e === "object" &&
+        "code" in e &&
+        e.code === "STALE_SOURCE_APPLICABILITY"
+      ) {
+        setData((current) =>
+          current
+            ? {
+                ...current,
+                requirements: current.requirements.map((r: Row) =>
+                  r.id === input.requirement_id
+                    ? { ...r, applicability_binding: undefined }
+                    : r,
+                ),
+              }
+            : current,
+        );
+        setError(
+          "The requirement, source or proposal changed after you reviewed it. Reload the review records and inspect the current content before approving this exclusion.",
+        );
+      } else
+        setError(
+          e instanceof Error ? e.message : "The review decision failed.",
+        );
       return false;
     } finally {
       setBusy(false);
@@ -112,6 +161,14 @@ export default function ApprovalPanel({ proposal }: { proposal: Proposal }) {
               await refresh?.();
             }}
           />
+          {data.plan.frozen_context.proposal_consistency_version === 1 && (
+            <ProposalConsistencyReview
+              key={proposal.versionId}
+              client={backend}
+              versionId={proposal.versionId}
+              onSaved={load}
+            />
+          )}
           <section className="panel commercial-panel">
             <h2>Requirement coverage and final review</h2>
             <p>
@@ -310,7 +367,23 @@ function ComplianceItem({
   return (
     <details className="commercial-card">
       <summary>
-        {r.mandatory ? "Mandatory" : "Optional"} · {r.text} ·{" "}
+        {r.source_semantics?.version === 1
+          ? r.source_semantics.review_status !== "confirmed" ||
+            r.source_semantics.authority_status !== "confirmed" ||
+            r.source_semantics.modality === "unknown"
+            ? "Obligation meaning/authority needs review"
+            : (
+                {
+                  required: "Required",
+                  permitted: "Permitted",
+                  prohibited: "Prohibited",
+                  informational: "Informational",
+                } as Record<string, string>
+              )[r.source_semantics.modality] || "Meaning needs review"
+          : r.mandatory
+            ? "Mandatory"
+            : "Optional"}{" "}
+        · {r.text} ·{" "}
         {current?.confirmed_by ? "Owner confirmed" : "Needs review"}
       </summary>
       <p>{r.interpretation}</p>
@@ -406,13 +479,22 @@ function ComplianceItem({
         </Button>
         <Button
           variant="primary"
-          disabled={rationale.trim().length < 10}
+          disabled={
+            rationale.trim().length < 10 ||
+            (status === "not_applicable_approved" &&
+              r.applicability_required &&
+              !r.applicability_binding)
+          }
           onClick={() =>
             action("compliance.save", {
               proposal_version_id: versionId,
               requirement_id: r.id,
               expected_revision: current?.revision || 0,
               status,
+              ...(status === "not_applicable_approved" &&
+              r.applicability_required
+                ? { expected_applicability_binding: r.applicability_binding }
+                : {}),
               section_keys: keys,
               evidence_refs: evidence,
               rationale,

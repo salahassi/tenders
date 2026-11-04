@@ -3,12 +3,14 @@ import { Link } from "react-router-dom";
 import { BackendRequestError } from "../lib/backendClient";
 import { useApp } from "../lib/store";
 import GenerationPanel from "./GenerationPanel";
+import DeliveryDraft from "./DeliveryDraft";
 import { Button, EmptyState, PageHeader } from "./ui";
 
 type ProposalRecord = {
   id: string;
   opportunity_id: string;
   active_version_id: string | null;
+  active_delivery_snapshot_id?: string | null;
 };
 
 /** A proposal exists before its first version. Check the authorized record
@@ -27,9 +29,10 @@ export default function PendingProposal({ id }: { id: string }) {
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
     setStatus("loading");
     setRecord(null);
-    void (async () => {
+    const load = async () => {
       try {
         const response = await backend!.request<ProposalRecord>(
           `/v1/proposals/${id}`,
@@ -51,7 +54,11 @@ export default function PendingProposal({ id }: { id: string }) {
           )
         )
           await refreshRef.current?.();
-        if (!controller.signal.aborted) setStatus("found");
+        if (!controller.signal.aborted) {
+          setStatus("found");
+          if (!response.data.active_version_id)
+            timer = setTimeout(() => void load(), 5000);
+        }
       } catch (failure) {
         if (controller.signal.aborted) return;
         if (
@@ -68,8 +75,12 @@ export default function PendingProposal({ id }: { id: string }) {
           setStatus("error");
         }
       }
-    })();
-    return () => controller.abort();
+    };
+    void load();
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
   }, [backend, id, attempt]);
 
   if (status === "loading") return <p role="status">Loading proposal…</p>;
@@ -109,7 +120,7 @@ export default function PendingProposal({ id }: { id: string }) {
       <PageHeader
         eyebrow="PROPOSAL"
         title="Proposal preparation"
-        description="A complete proposal file has not been saved yet. View preparation progress and any steps that need attention below."
+        description="Review the saved draft and preparation progress below. A saved draft does not mean the proposal is complete or approved."
         actions={
           <Link
             className="btn btn-secondary"
@@ -119,6 +130,12 @@ export default function PendingProposal({ id }: { id: string }) {
           </Link>
         }
       />
+      {backend && record?.active_delivery_snapshot_id && (
+        <DeliveryDraft
+          client={backend}
+          snapshotId={record.active_delivery_snapshot_id}
+        />
+      )}
       <GenerationPanel opportunity={opportunity} showOpenLink={false} />
     </div>
   );

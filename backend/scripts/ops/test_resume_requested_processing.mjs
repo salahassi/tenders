@@ -15,7 +15,13 @@ await db.exec(`create role anon;create role authenticated;create role service_ro
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
  create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text,name text);
  alter table storage.objects enable row level security;grant usage on schema storage to authenticated;grant insert,select on storage.objects to authenticated;`);
-for(const name of (await readdir(new URL('supabase/migrations/',root))).filter(n=>/^\d+_.+\.sql$/.test(n)).sort())
+const migrations=(await readdir(new URL('supabase/migrations/',root))).filter(n=>/^\d+_.+\.sql$/.test(n)).sort();
+// The reviewed historical resume ran before current issuance admission existed.
+// Qualify that exact deployed policy first, then separately load every successor
+// migration and prove the same old frozen plan cannot silently opt into it.
+const historicalBoundary='20261103032000_model_admission_fairness.sql';
+assert.ok(migrations.includes(historicalBoundary));
+for(const name of migrations.filter(name=>name<=historicalBoundary))
  await db.exec(await readFile(new URL('supabase/migrations/'+name,root),'utf8'));
 const owner='00000000-0000-4000-8000-000000000001',job='00000000-0000-4000-8000-000000000103';
 await db.query("insert into auth.users values($1,'fixture@example.test',now())",[owner]);
@@ -169,4 +175,36 @@ assert.equal((await db.query("select count(*)::int n from app_private.idempotenc
 assert.equal((await db.query('select operation from app_private.generation_processing_requests where plan_id=$1',[selection.plan_id])).rows[0].operation,'job.action');
 result=await execute('valid');assert.equal(result.status,'already_active');assert.equal(result.count,0);
 assert.equal((await db.query("select count(*)::int n from public.audit_events where action='job.action'")).rows[0].n,12,'replay must not restart the twelve jobs');
-await db.close();console.log('guarded canonical requested-processing resume passed');
+// The managed release executes additive migrations as the existing owner.
+await db.exec('set role tdp_app_owner');
+for(const name of migrations.filter(name=>name>historicalBoundary))
+ await db.exec(await readFile(new URL('supabase/migrations/'+name,root),'utf8'));
+await db.exec('reset role');
+const finalSnapshot=async()=>{
+ const snapshot={};
+ for(const {schemaname,tablename} of (await db.query(`select schemaname,tablename from pg_tables where schemaname='public'
+  or (schemaname='app_private' and tablename in ('idempotency_records','model_graph_threads','model_graph_results','model_graph_budgets',
+  'model_graph_checkpoints','model_graph_writes','generation_processing_requests')) order by schemaname,tablename`)).rows){
+  const qualified=`"${schemaname}"."${tablename}"`;
+  snapshot[qualified]=(await db.query(`select to_jsonb(t)::text value from ${qualified} t order by to_jsonb(t)::text`)).rows;
+ }
+ return snapshot;
+};
+const finalBefore=await finalSnapshot();
+for(const [operation,input] of [
+ ['generation.retry',{id:selection.plan_id,expected_revision:1,reason:'Explicit historical retry'}],
+ ['job.action',{id:job,expected_revision:2,action:'retry',reason:'Explicit historical retry'}],
+]){
+ await db.exec('begin;set local role authenticated;');
+ await db.query("select set_config('request.jwt.claim.sub',$1,true)",[owner]);
+ let refusal;
+ try{await db.query('select public.app_command($1,$2::jsonb,$3)',[operation,JSON.stringify(input),'synthetic-current-contract-'+operation]);}
+ catch(error){refusal=error;}
+ await db.exec('rollback');
+ assert.equal(refusal?.message,'PROPOSAL_CURRENT_CONTRACT_REQUIRED','current schema must require an explicit successor for old frozen plans');
+ const detail=JSON.parse(refusal.detail);
+ assert.equal(detail.preserved_input_hash,'a'.repeat(64));assert.equal(detail.next_operation,'proposal.generate');
+ assert.deepEqual(await finalSnapshot(),finalBefore,'refusal must not mutate historical rows, authorize time, or reset allowances');
+}
+assert.equal((await db.query('select count(*)::int n from public.proposal_issuance_requests')).rows[0].n,0);
+await db.close();console.log('historical guarded resume and fully migrated current-contract refusal passed');

@@ -763,13 +763,34 @@ it.each(["failed", "cancelled", "canceled"])(
     expect((await job(q.id)).status).toBe("retry_wait");
     await age();
     await tick();
+    // A proven terminal request is eligible for a fresh, audited attempt in
+    // the next round. It is never polled again or rewritten as zero usage.
+    expect((await job(q.id)).status).toBe("retry_wait");
+    await age();
+    await tick();
     expect((await job(q.id)).status).toBe("succeeded");
     expect(methods).toEqual([
       "openai:POST",
       "openai:GET",
       "qwencloud:POST",
+      "openai:POST",
+      "openai:GET",
       "qwencloud:POST",
     ]);
+    const recovered = (
+      await f.db.query<any>(
+        "select details from public.audit_events where entity_id=$1 and action='model.usage_recovery'",
+        [q.id],
+      )
+    ).rows;
+    expect(recovered).toHaveLength(1);
+    expect(recovered[0].details).toMatchObject({
+      operation: "model_reservation",
+      usage_unchanged: true,
+    });
+    expect(
+      (await usage(q.id)).filter((u) => u.provider === "openai"),
+    ).toHaveLength(2);
     expect(
       (await usage(q.id)).find((u) => u.provider === "openai"),
     ).toMatchObject({

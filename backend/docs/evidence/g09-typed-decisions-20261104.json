@@ -1,0 +1,1271 @@
+{
+  "version": 1,
+  "corpus_sha256": "390c74f3b314902eb8462be972fc6f680c59d8bc50093a3b20a0ec709fb0f99b",
+  "provider_calls": 0,
+  "label_scope": "Typed transport/coverage and deterministic domain gates; not model semantic qualification",
+  "expected_pairs": 76,
+  "evaluated_pairs": 76,
+  "nonrecursive_boundary_cases": 16,
+  "pairs": [
+    {
+      "id": "analyze_chunk.blocking_level",
+      "task": "analyze_chunk",
+      "path": [
+        "questions",
+        0,
+        "blocking_level"
+      ],
+      "hashes": [
+        "930cd75c1e7b0424cb44b33207169f91664453d7cf47f0e3e9d6883941b6547a",
+        "f61cd05ee599bea4b1f7437ba6762641d5b68fc1dd77f43fe649d8bdb978eb93"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "analyze_chunk.mandatory",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "mandatory"
+      ],
+      "hashes": [
+        "930cd75c1e7b0424cb44b33207169f91664453d7cf47f0e3e9d6883941b6547a",
+        "04ddd8f0f4c2c2be22162a2132997c2499433bfe497182fba7400f3ec4debcf0"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "analyze_chunk.owner_question",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "owner_question"
+      ],
+      "hashes": [
+        "930cd75c1e7b0424cb44b33207169f91664453d7cf47f0e3e9d6883941b6547a",
+        "b782c1f3e3853b0f16d3c7ada0c9bbfc94625009ff47f1f6cd25c2639a845958"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "analyze_chunk.separate_volumes",
+      "task": "analyze_chunk",
+      "path": [
+        "separate_volumes"
+      ],
+      "hashes": [
+        "930cd75c1e7b0424cb44b33207169f91664453d7cf47f0e3e9d6883941b6547a",
+        "a01e04054aef82d6144bdbd4562e048862c0db8ab221ef84f55c5355183cd844"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "analyze_chunk.source_actor",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "actor"
+      ],
+      "hashes": [
+        "350d85ae4fc680aa38f59794c4fefa03cffb11ff8462167d290bb8d10f65b908",
+        "62baaf7a690bd86939f06546c4ac8869dab4ac66389feb126a92834cbac14eaa"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_authority",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "authority_role"
+      ],
+      "hashes": [
+        "aeb5e0119ec18886ce4c03139161a57b965dc520b89a9fef590b06bf98ddc092",
+        "ff8143876640c3b7325132ea468d03aa761e7c3aecfc6bab4848233dd0562f40"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_authority_status",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "authority_status"
+      ],
+      "hashes": [
+        "350d85ae4fc680aa38f59794c4fefa03cffb11ff8462167d290bb8d10f65b908",
+        "3b115eead1291d4116c7b4b1b5a54a334cc005235d8b4ea337109b696198be4d"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_conditions",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "conditions"
+      ],
+      "hashes": [
+        "aeb5e0119ec18886ce4c03139161a57b965dc520b89a9fef590b06bf98ddc092",
+        "d048df89cac771154704b3d896301f2a383d6dc9d8f08c29a42d248764a9cbb8"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_consequences",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "consequences"
+      ],
+      "hashes": [
+        "350d85ae4fc680aa38f59794c4fefa03cffb11ff8462167d290bb8d10f65b908",
+        "69f6173fee4895b1c8f6e362fb7dd20bd0fd410651e913364c553835505cb143"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_date_event",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "dates",
+        0,
+        "event"
+      ],
+      "hashes": [
+        "350d85ae4fc680aa38f59794c4fefa03cffb11ff8462167d290bb8d10f65b908",
+        "4a60b7c5efd864a704f34b7f7944a404df5ca94cc13d8172495758243f2cc618"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_date_value",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "dates",
+        0,
+        "value"
+      ],
+      "hashes": [
+        "350d85ae4fc680aa38f59794c4fefa03cffb11ff8462167d290bb8d10f65b908",
+        "788d290669af0930f60c897c42107f6cd2e0a5027c1fce4d4b19b6e370d0b875"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_exceptions",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "exceptions"
+      ],
+      "hashes": [
+        "350d85ae4fc680aa38f59794c4fefa03cffb11ff8462167d290bb8d10f65b908",
+        "f11c153853d173bddaff69f8f5a382c10ddea942d29ef087f869da7b92b74eae"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_modality",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "modality"
+      ],
+      "hashes": [
+        "aeb5e0119ec18886ce4c03139161a57b965dc520b89a9fef590b06bf98ddc092",
+        "a399f875cea4cd501732ad1037d89867a6dfa071ef2deae5c32ca5b7bb0e76ed"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_negation",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "negated"
+      ],
+      "hashes": [
+        "aeb5e0119ec18886ce4c03139161a57b965dc520b89a9fef590b06bf98ddc092",
+        "2156b2c0127be616493317592d6d5d8187966f2d68c7e899c36f35a263349886"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_quantity_currency",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "quantities",
+        0,
+        "currency"
+      ],
+      "hashes": [
+        "350d85ae4fc680aa38f59794c4fefa03cffb11ff8462167d290bb8d10f65b908",
+        "5b8896c24883025fccc7f19db7cd6cea29eabb69b352ca09c5934d8e4bfa9da1"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_quantity_unit",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "quantities",
+        0,
+        "unit"
+      ],
+      "hashes": [
+        "350d85ae4fc680aa38f59794c4fefa03cffb11ff8462167d290bb8d10f65b908",
+        "efeadde4846f2169b7b3db4912e991a2dc546a0fe1c4beffd82bdeb17a1af2e0"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_quantity_value",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "quantities",
+        0,
+        "value"
+      ],
+      "hashes": [
+        "350d85ae4fc680aa38f59794c4fefa03cffb11ff8462167d290bb8d10f65b908",
+        "94a294f0b257c3235fe3ea0769aca78af5ab16a4a33700d00f0f8759f9d5d07f"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_review",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "review_status"
+      ],
+      "hashes": [
+        "aeb5e0119ec18886ce4c03139161a57b965dc520b89a9fef590b06bf98ddc092",
+        "e6b12632fc29fe0d037e5a4417f5dc7bf62bff67154fe3d0dcee6c795933f5b7"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_review_id",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "review_id"
+      ],
+      "hashes": [
+        "350d85ae4fc680aa38f59794c4fefa03cffb11ff8462167d290bb8d10f65b908",
+        "db1d1622a8a51223bc1ce6bb3a3e977f9baded9c53d54ecda2900b068a08354c"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "analyze_chunk.source_span_identity",
+      "task": "analyze_chunk",
+      "path": [
+        "requirements",
+        0,
+        "source_semantics",
+        "source_span_ids",
+        0
+      ],
+      "hashes": [
+        "350d85ae4fc680aa38f59794c4fefa03cffb11ff8462167d290bb8d10f65b908",
+        "50d85c48358629c09a5afddc3edae794f9b2c9f44054b4c220002502a9df0526"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "not_executed_transport_only"
+    },
+    {
+      "id": "classify_opportunity.critical_unknown",
+      "task": "classify_opportunity",
+      "path": [
+        "critical_unknown"
+      ],
+      "hashes": [
+        "172a85ae3eff93f844ec832cf3720685d70789d7004b8006c92af32682e5a250",
+        "1add057da1e8aa634df0f4d1d837e0dc4b314f4a13bd30e85e192c10754d48d0"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "classify_opportunity.null_zero_capability",
+      "task": "classify_opportunity",
+      "path": [
+        "factors",
+        "capability",
+        "rating"
+      ],
+      "hashes": [
+        "172a85ae3eff93f844ec832cf3720685d70789d7004b8006c92af32682e5a250",
+        "341a06787f2d5b7529055fda13009157a2f2dfc8a89ffa2791c13cb57800fc00"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "EVIDENCE_REFERENCE_INVALID",
+      "paths": [
+        "$.factors.capability.notice_evidence",
+        "$.factors.capability.company_evidence"
+      ]
+    },
+    {
+      "id": "classify_opportunity.null_zero_prerequisite",
+      "task": "classify_opportunity",
+      "path": [
+        "factors",
+        "prerequisite",
+        "rating"
+      ],
+      "hashes": [
+        "172a85ae3eff93f844ec832cf3720685d70789d7004b8006c92af32682e5a250",
+        "6077d8307ef6382929c3916b40cc5902ffeabe39abeabfc1c50dec39b7fc8fc1"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "EVIDENCE_REFERENCE_INVALID",
+      "paths": [
+        "$.factors.prerequisite.notice_evidence",
+        "$.factors.prerequisite.company_evidence"
+      ]
+    },
+    {
+      "id": "classify_opportunity.null_zero_scope",
+      "task": "classify_opportunity",
+      "path": [
+        "factors",
+        "scope",
+        "rating"
+      ],
+      "hashes": [
+        "172a85ae3eff93f844ec832cf3720685d70789d7004b8006c92af32682e5a250",
+        "91525657a81a21c6c86d210681ccaaa15892616b31c6cf756cb4b021f29fa4a1"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "EVIDENCE_REFERENCE_INVALID",
+      "paths": [
+        "$.factors.scope.notice_evidence",
+        "$.factors.scope.company_evidence"
+      ]
+    },
+    {
+      "id": "classify_opportunity.null_zero_sector",
+      "task": "classify_opportunity",
+      "path": [
+        "factors",
+        "sector",
+        "rating"
+      ],
+      "hashes": [
+        "172a85ae3eff93f844ec832cf3720685d70789d7004b8006c92af32682e5a250",
+        "ca7103d5ae88594528d6837970478d5f168256990819d04b7068471745a7e0f9"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "EVIDENCE_REFERENCE_INVALID",
+      "paths": [
+        "$.factors.sector.notice_evidence",
+        "$.factors.sector.company_evidence"
+      ]
+    },
+    {
+      "id": "classify_opportunity.scope_decision",
+      "task": "classify_opportunity",
+      "path": [
+        "scope_decision",
+        "status"
+      ],
+      "hashes": [
+        "172a85ae3eff93f844ec832cf3720685d70789d7004b8006c92af32682e5a250",
+        "d31e05b827d8674e55e71003245f3d4c4abb645af9766a931a3a10967b33c80b"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "EVIDENCE_REFERENCE_INVALID",
+      "paths": [
+        "$.scope_decision.company_evidence",
+        "$.scope_decision.keyword_evidence"
+      ]
+    },
+    {
+      "id": "draft_section.assumption_presence",
+      "task": "draft_section",
+      "path": [
+        "assumptions"
+      ],
+      "hashes": [
+        "6006bf3a8c30e3d00336af1b1284575b6c894510c7e2aee41bdcb6c9c6385bd2",
+        "62e1345f4166adce3601da981012baf6cb61f03c2e81dcd56e6cb0f79f819bf3"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "draft_section.blocking_level",
+      "task": "draft_section",
+      "path": [
+        "questions",
+        0,
+        "blocking_level"
+      ],
+      "hashes": [
+        "6006bf3a8c30e3d00336af1b1284575b6c894510c7e2aee41bdcb6c9c6385bd2",
+        "09996d2529d481b4ad4cc49555859a32359c1019d701e37dd5b902e6b96f96be"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "draft_section.company_claim_ownership",
+      "task": "draft_section",
+      "path": [
+        "company_claims"
+      ],
+      "hashes": [
+        "6006bf3a8c30e3d00336af1b1284575b6c894510c7e2aee41bdcb6c9c6385bd2",
+        "2f0b3b6612a9aa5c53bd5a98ba7a28483b4309e3deb57fa19e5f53e1163b716f"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "UNSUPPORTED_COMPANY_CLAIM",
+      "paths": [
+        "$.content_blocks[1]"
+      ]
+    },
+    {
+      "id": "draft_section.required_ids",
+      "task": "draft_section",
+      "path": [
+        "requirement_ids",
+        0
+      ],
+      "hashes": [
+        "6006bf3a8c30e3d00336af1b1284575b6c894510c7e2aee41bdcb6c9c6385bd2",
+        "6b0a3590e46cdb04b30e8ab19fa880a6640ad3d1e01d0b6c5b59990ef74ad068"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "MODEL_COVERAGE_INCOMPLETE",
+      "paths": [
+        "$.requirement_ids",
+        "$.questions"
+      ]
+    },
+    {
+      "id": "draft_section.source_provenance",
+      "task": "draft_section",
+      "path": [
+        "company_claims",
+        0,
+        "source_id"
+      ],
+      "hashes": [
+        "6006bf3a8c30e3d00336af1b1284575b6c894510c7e2aee41bdcb6c9c6385bd2",
+        "7a3a17dea6c8099e48b34f3565d0f9838b849115f6f2a1de03e50c3dc8427f46"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "UNSUPPORTED_COMPANY_CLAIM",
+      "paths": [
+        "$.company_claims[0].source_id",
+        "$.company_claims[0].quote"
+      ]
+    },
+    {
+      "id": "draft_section.table_cell_boundary",
+      "task": "draft_section",
+      "path": [
+        "content_blocks",
+        0,
+        "rows"
+      ],
+      "hashes": [
+        "6006bf3a8c30e3d00336af1b1284575b6c894510c7e2aee41bdcb6c9c6385bd2",
+        "6f7e182362437027f9eee24c19df7ba502379804e5de5e1164b6a6d1dca0df4a"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "inspect_source_page.buyer_absent",
+      "task": "inspect_source_page",
+      "path": [
+        "notices",
+        0,
+        "buyer"
+      ],
+      "hashes": [
+        "e3203b05da883e9e9dd5e710432212c88502cbb760162c984d25c5b83d83d277",
+        "e22af01cf010a90a59e5b9af056024ccccc28d85e14569cd5d760e06971db1eb"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "EVIDENCE_REFERENCE_INVALID",
+      "paths": [
+        "$.notices[0].buyer"
+      ]
+    },
+    {
+      "id": "inspect_source_page.candidate_links",
+      "task": "inspect_source_page",
+      "path": [
+        "candidate_link_ids"
+      ],
+      "hashes": [
+        "e3203b05da883e9e9dd5e710432212c88502cbb760162c984d25c5b83d83d277",
+        "b240c9a94bd2d2aab0224631dc2522fbad6e6bebb3886eae4fc929c515c8c87b"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "EVIDENCE_REFERENCE_INVALID",
+      "paths": [
+        "$.candidate_link_ids[0]"
+      ]
+    },
+    {
+      "id": "inspect_source_page.deadline_absent",
+      "task": "inspect_source_page",
+      "path": [
+        "notices",
+        0,
+        "deadline_raw"
+      ],
+      "hashes": [
+        "e3203b05da883e9e9dd5e710432212c88502cbb760162c984d25c5b83d83d277",
+        "12031e21785c2fe8ce7c16aa70b8055a363ab71bad5ba72428fda47f07897927"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "EVIDENCE_REFERENCE_INVALID",
+      "paths": [
+        "$.notices[0].deadline_raw"
+      ]
+    },
+    {
+      "id": "inspect_source_page.follow_link",
+      "task": "inspect_source_page",
+      "path": [
+        "follow_link_id"
+      ],
+      "hashes": [
+        "e3203b05da883e9e9dd5e710432212c88502cbb760162c984d25c5b83d83d277",
+        "37904306030113188ace403f4f4c8da868f55b8a76aa564baeb10007b71275aa"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "EVIDENCE_REFERENCE_INVALID",
+      "paths": [
+        "$.follow_link_id"
+      ]
+    },
+    {
+      "id": "inspect_source_page.link_absent",
+      "task": "inspect_source_page",
+      "path": [
+        "notices",
+        0,
+        "link_id"
+      ],
+      "hashes": [
+        "e3203b05da883e9e9dd5e710432212c88502cbb760162c984d25c5b83d83d277",
+        "551e1631708dadef85f42d85881619c6826582674a4680bb6dd4e78b5fe2d0ee"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "EVIDENCE_REFERENCE_INVALID",
+      "paths": [
+        "$.notices[0].link_id"
+      ]
+    },
+    {
+      "id": "inspect_source_page.link_identity",
+      "task": "inspect_source_page",
+      "path": [
+        "notices",
+        0,
+        "link_id"
+      ],
+      "hashes": [
+        "e3203b05da883e9e9dd5e710432212c88502cbb760162c984d25c5b83d83d277",
+        "9776407f23b1f94edc754ed335e54aeab6727f941ea933dfdb9e97dd49b924b3"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "EVIDENCE_REFERENCE_INVALID",
+      "paths": [
+        "$.notices[0].link_id"
+      ]
+    },
+    {
+      "id": "inspect_source_page.page_kind",
+      "task": "inspect_source_page",
+      "path": [
+        "page_kind"
+      ],
+      "hashes": [
+        "e3203b05da883e9e9dd5e710432212c88502cbb760162c984d25c5b83d83d277",
+        "dd579d948a0b14a13c566538ccf5bbdfd34d8f86e8dc9b0522848135bc1e7093"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "EVIDENCE_REFERENCE_INVALID",
+      "paths": [
+        "$.notices"
+      ]
+    },
+    {
+      "id": "plan_blueprint.buyer_fact",
+      "task": "plan_blueprint",
+      "path": [
+        "decisions",
+        0,
+        "kind"
+      ],
+      "hashes": [
+        "f474add9b7bce58dcbc74d2959f84b766a40734a4eb29aa9f2c3cfab8dedfdff",
+        "7e650715d0214a9426127eab168b496b17e0a457a7f7c6448ece6e58908cff23"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_blueprint.decision_link",
+      "task": "plan_blueprint",
+      "path": [
+        "sections",
+        0,
+        "units",
+        0,
+        "decision_ids",
+        0
+      ],
+      "hashes": [
+        "f474add9b7bce58dcbc74d2959f84b766a40734a4eb29aa9f2c3cfab8dedfdff",
+        "e36f5e16a221ecddc071f756d6501ff873c072d77d520b92db0255d7cfaa669f"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_blueprint.mode",
+      "task": "plan_blueprint",
+      "path": [
+        "sections",
+        0,
+        "mode"
+      ],
+      "hashes": [
+        "f474add9b7bce58dcbc74d2959f84b766a40734a4eb29aa9f2c3cfab8dedfdff",
+        "e9460bb8c00fb0b60371befdaee3c85ddc78ee15def10fec7d693b9596b2d104"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_blueprint.primary_ownership",
+      "task": "plan_blueprint",
+      "path": [
+        "sections",
+        0,
+        "units",
+        0,
+        "requirement_ids",
+        0
+      ],
+      "hashes": [
+        "f474add9b7bce58dcbc74d2959f84b766a40734a4eb29aa9f2c3cfab8dedfdff",
+        "d9739fca97a23f0d65fe071d79864654cf368632b14536c9da854aa4a89cb704"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_blueprint.secondary_reason",
+      "task": "plan_blueprint",
+      "path": [
+        "sections",
+        0,
+        "units",
+        0,
+        "secondary_links",
+        0,
+        "reason"
+      ],
+      "hashes": [
+        "f474add9b7bce58dcbc74d2959f84b766a40734a4eb29aa9f2c3cfab8dedfdff",
+        "8ab5f017ac9f7157ca62c367d1e177020aae8c1a4c74fb8b28c4884dc3980030"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_blueprint.secondary_requirement",
+      "task": "plan_blueprint",
+      "path": [
+        "sections",
+        0,
+        "units",
+        0,
+        "secondary_links",
+        0,
+        "requirement_id"
+      ],
+      "hashes": [
+        "f474add9b7bce58dcbc74d2959f84b766a40734a4eb29aa9f2c3cfab8dedfdff",
+        "112d8a4da3d6b2ffb25581c17150c7a506b0d15e3d616b2e0c510029d3f8a801"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_blueprint.target_words",
+      "task": "plan_blueprint",
+      "path": [
+        "sections",
+        0,
+        "units",
+        0,
+        "target_words"
+      ],
+      "hashes": [
+        "f474add9b7bce58dcbc74d2959f84b766a40734a4eb29aa9f2c3cfab8dedfdff",
+        "33d534d8437861dababfc91f001a33489ca8094e1080099368b752594063c9c3"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_blueprint.volume",
+      "task": "plan_blueprint",
+      "path": [
+        "sections",
+        0,
+        "volume"
+      ],
+      "hashes": [
+        "f474add9b7bce58dcbc74d2959f84b766a40734a4eb29aa9f2c3cfab8dedfdff",
+        "6be42da85610a8c47608d6326955cda525130b04e99b7b1c303d3dbc674ec3db"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_commercial.allocation",
+      "task": "plan_commercial",
+      "path": [
+        "tasks",
+        0,
+        "allocation"
+      ],
+      "hashes": [
+        "0962dbf452bd1a6e8d75ba49bc2d5f5cacac78823fac97e411749c3b2cef5a02",
+        "75724c3dcf12671773f06ce8b6e9986d325e089f5161bd7e775ff6b41274472b"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_commercial.charge_type",
+      "task": "plan_commercial",
+      "path": [
+        "lines",
+        0,
+        "charge_group"
+      ],
+      "hashes": [
+        "0962dbf452bd1a6e8d75ba49bc2d5f5cacac78823fac97e411749c3b2cef5a02",
+        "696a9d88bc7d95741e300090aec9244701c550abfec61d9aaf86eea95b262f4d"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_commercial.dependency",
+      "task": "plan_commercial",
+      "path": [
+        "tasks",
+        0,
+        "predecessors"
+      ],
+      "hashes": [
+        "0962dbf452bd1a6e8d75ba49bc2d5f5cacac78823fac97e411749c3b2cef5a02",
+        "b94f2680f3d6bb779674dfa9f372655aa8714b0ffd0654400097711f62710429"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_commercial.duration",
+      "task": "plan_commercial",
+      "path": [
+        "tasks",
+        0,
+        "duration_days"
+      ],
+      "hashes": [
+        "0962dbf452bd1a6e8d75ba49bc2d5f5cacac78823fac97e411749c3b2cef5a02",
+        "ebf19783a541962a81b93797d002d61caa64f27af30e94334d09d6d2ba391fc3"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_commercial.effort",
+      "task": "plan_commercial",
+      "path": [
+        "tasks",
+        0,
+        "effort_days"
+      ],
+      "hashes": [
+        "0962dbf452bd1a6e8d75ba49bc2d5f5cacac78823fac97e411749c3b2cef5a02",
+        "ac876cf2c6fc642f7525e577ffc24a81eeeca217617a23e01c272b2e2b67a940"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_commercial.included_in_base",
+      "task": "plan_commercial",
+      "path": [
+        "lines",
+        0,
+        "included_in_base"
+      ],
+      "hashes": [
+        "0962dbf452bd1a6e8d75ba49bc2d5f5cacac78823fac97e411749c3b2cef5a02",
+        "8ba920641c92f4a8e6b9fed0de2da5465ac9af22e6fb5af3192af49864b4bea0"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_commercial.period_count",
+      "task": "plan_commercial",
+      "path": [
+        "lines",
+        0,
+        "period_count"
+      ],
+      "hashes": [
+        "0962dbf452bd1a6e8d75ba49bc2d5f5cacac78823fac97e411749c3b2cef5a02",
+        "6913684eab1e48f178e17bead98e430d005712a007490ca147cb5068e80bf28c"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_commercial.quantity_null_positive",
+      "task": "plan_commercial",
+      "path": [
+        "lines",
+        0,
+        "quantity"
+      ],
+      "hashes": [
+        "0962dbf452bd1a6e8d75ba49bc2d5f5cacac78823fac97e411749c3b2cef5a02",
+        "b5f56117c8d01f82f20149ef16fa2bdc7a29deaa047027d1a86a839e116362de"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_commercial.quantity_null_zero",
+      "task": "plan_commercial",
+      "path": [
+        "lines",
+        0,
+        "quantity"
+      ],
+      "hashes": [
+        "0962dbf452bd1a6e8d75ba49bc2d5f5cacac78823fac97e411749c3b2cef5a02",
+        "69a259c84791f2d30bb62c60386b42ca75fb56d9b198646b4d42ea23a340f3ac"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_commercial.rate_identity",
+      "task": "plan_commercial",
+      "path": [
+        "lines",
+        0,
+        "rate_id"
+      ],
+      "hashes": [
+        "0962dbf452bd1a6e8d75ba49bc2d5f5cacac78823fac97e411749c3b2cef5a02",
+        "9fc4aa5783d8b4c086d015fc04e94a095dcfc037a88f31ddc6148a3cc1b380e9"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_commercial.requirement_identity",
+      "task": "plan_commercial",
+      "path": [
+        "lines",
+        0,
+        "requirement_ids",
+        0
+      ],
+      "hashes": [
+        "0962dbf452bd1a6e8d75ba49bc2d5f5cacac78823fac97e411749c3b2cef5a02",
+        "01c8644b4e66151859be01dc862d7fcd9dedfc98c547ba1f53b9c46a20c36e97"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_commercial.section_identity",
+      "task": "plan_commercial",
+      "path": [
+        "lines",
+        0,
+        "section_ids",
+        0
+      ],
+      "hashes": [
+        "0962dbf452bd1a6e8d75ba49bc2d5f5cacac78823fac97e411749c3b2cef5a02",
+        "b9adfc3c7141808c574344a293504ac209cb63181cf0b2441aa3ca7ed16c3b93"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_commercial.unit",
+      "task": "plan_commercial",
+      "path": [
+        "lines",
+        0,
+        "unit"
+      ],
+      "hashes": [
+        "0962dbf452bd1a6e8d75ba49bc2d5f5cacac78823fac97e411749c3b2cef5a02",
+        "19ad9cb5be9b8cb1b3c3aea655207bb38901c54907ce213fe44bfe1542beea89"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_proposal.blocking_level",
+      "task": "plan_proposal",
+      "path": [
+        "questions",
+        0,
+        "blocking_level"
+      ],
+      "hashes": [
+        "e717a5363c7b851ba5fd296d83056e13bd4e385bf4a193201ed9a6aab0023ee6",
+        "4f595739f991674593cf9b2a1e310d3eb4a882fcc3ac4057a82fbeb038d2ae3e"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_proposal.primary_ownership",
+      "task": "plan_proposal",
+      "path": [
+        "sections",
+        0,
+        "requirement_ids",
+        0
+      ],
+      "hashes": [
+        "e717a5363c7b851ba5fd296d83056e13bd4e385bf4a193201ed9a6aab0023ee6",
+        "5d6cc722a477a7563f5863d008b678a518f0860a3cfa6416f57099bd9095a442"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "MODEL_COVERAGE_INCOMPLETE",
+      "paths": [
+        "$.sections",
+        "$.questions"
+      ]
+    },
+    {
+      "id": "plan_proposal.volume",
+      "task": "plan_proposal",
+      "path": [
+        "sections",
+        0,
+        "volume"
+      ],
+      "hashes": [
+        "e717a5363c7b851ba5fd296d83056e13bd4e385bf4a193201ed9a6aab0023ee6",
+        "c9a6b5c3de32cb43dd625bddae42d26c71f9618a036749afca89b1ba692364d7"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_structure.buyer_fact",
+      "task": "plan_structure",
+      "path": [
+        "decisions",
+        0,
+        "kind"
+      ],
+      "hashes": [
+        "2ffec029b1d3d3a0f5ab649d2fa544cdca1ea74bd6bc9234c28498b40295a966",
+        "d10d5e80f883544eb5fa10b3a0bb318e232fa36f4226ca532ff6afc058377e21"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_structure.mode",
+      "task": "plan_structure",
+      "path": [
+        "sections",
+        0,
+        "mode"
+      ],
+      "hashes": [
+        "2ffec029b1d3d3a0f5ab649d2fa544cdca1ea74bd6bc9234c28498b40295a966",
+        "4f9b4331e271e9604f446123084d761a395b06afd1d9a8053f166fd97ba2cb98"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_structure.primary_ownership",
+      "task": "plan_structure",
+      "path": [
+        "sections",
+        0,
+        "requirement_ids",
+        0
+      ],
+      "hashes": [
+        "2ffec029b1d3d3a0f5ab649d2fa544cdca1ea74bd6bc9234c28498b40295a966",
+        "128b5ae0110e33b01ef6decd54535eb1db86347bb2e8b5ea3238019751d7f10c"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "plan_structure.volume",
+      "task": "plan_structure",
+      "path": [
+        "sections",
+        0,
+        "volume"
+      ],
+      "hashes": [
+        "2ffec029b1d3d3a0f5ab649d2fa544cdca1ea74bd6bc9234c28498b40295a966",
+        "d18aa5fd6cc296adfaeebb8c630116e7b6b3101bc6c4f887a09ad42e3806ae3a"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "review_proposal.owner_approval",
+      "task": "review_proposal",
+      "path": [
+        "responses",
+        0,
+        "status"
+      ],
+      "hashes": [
+        "b6378a9e11dd879992812a3436e1f9f1e011ab4075cf804c1ed877306fe03e4b",
+        "53dc846429bc38a21e2ba6ca7f585def23f0366ff6e006e3ddb167cefe2d5b0a"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "MODEL_CANNOT_APPROVE",
+      "paths": [
+        "$.responses[0].status"
+      ]
+    },
+    {
+      "id": "review_proposal.requirement_identity",
+      "task": "review_proposal",
+      "path": [
+        "responses",
+        0,
+        "requirement_id"
+      ],
+      "hashes": [
+        "b6378a9e11dd879992812a3436e1f9f1e011ab4075cf804c1ed877306fe03e4b",
+        "55df7c874df06d9c5a808f78948ee5ee66716ec0a99fabfc930c463e8ec6f576"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "MODEL_COVERAGE_INCOMPLETE",
+      "paths": [
+        "$.responses"
+      ]
+    },
+    {
+      "id": "review_proposal.severity",
+      "task": "review_proposal",
+      "path": [
+        "findings",
+        0,
+        "severity"
+      ],
+      "hashes": [
+        "b6378a9e11dd879992812a3436e1f9f1e011ab4075cf804c1ed877306fe03e4b",
+        "05ca11a720c05dec81582a1bcb31a4fff1e13cd6de96077e1d76f395f9b12f23"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "review_proposal.status_answered",
+      "task": "review_proposal",
+      "path": [
+        "responses",
+        0,
+        "status"
+      ],
+      "hashes": [
+        "b6378a9e11dd879992812a3436e1f9f1e011ab4075cf804c1ed877306fe03e4b",
+        "6e418c9e86f34d63e672f6e3a3f0354c32d9c846f91ac2ba266d26c627a28f4c"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "review_proposal.status_clarification_required",
+      "task": "review_proposal",
+      "path": [
+        "responses",
+        0,
+        "status"
+      ],
+      "hashes": [
+        "b6378a9e11dd879992812a3436e1f9f1e011ab4075cf804c1ed877306fe03e4b",
+        "c07f74d222b4de55ca519b2a9e0bb5cd26513ff3901df581f7f768fcad4da6d4"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "review_proposal.status_missing",
+      "task": "review_proposal",
+      "path": [
+        "responses",
+        0,
+        "status"
+      ],
+      "hashes": [
+        "b6378a9e11dd879992812a3436e1f9f1e011ab4075cf804c1ed877306fe03e4b",
+        "fb3ec045382cc979640b2ee8ccbab5109fb116b14b74aa2c0e76ac0fd410ab92"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "summarize_review.blocking_level",
+      "task": "summarize_review",
+      "path": [
+        "questions",
+        0,
+        "blocking_level"
+      ],
+      "hashes": [
+        "cc19cecef2e9cbe9ac6d7fd101e23dbb8f79aa60efce061be93849af7853bf54",
+        "68a47bb4b49aca3a890a34eb6ecd900ccec4cf7479b9bd670cd2a0a0b4344f70"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_domain_admitted_requires_semantic_review"
+    },
+    {
+      "id": "summarize_review.review_coverage",
+      "task": "summarize_review",
+      "path": [
+        "processed_review_ids",
+        0
+      ],
+      "hashes": [
+        "cc19cecef2e9cbe9ac6d7fd101e23dbb8f79aa60efce061be93849af7853bf54",
+        "c8bf48524256c77d4c804b7ab8cf69a8f117e5d88090f89ed197769abf2c46f7"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "MODEL_COVERAGE_INCOMPLETE",
+      "paths": [
+        "$.processed_review_ids"
+      ]
+    },
+    {
+      "id": "summarize_review.review_identity",
+      "task": "summarize_review",
+      "path": [
+        "directives",
+        0,
+        "source_refs",
+        0,
+        "id"
+      ],
+      "hashes": [
+        "cc19cecef2e9cbe9ac6d7fd101e23dbb8f79aa60efce061be93849af7853bf54",
+        "5a07f9297f90320fcf6454d38a48a48f8bf1ff639ef157a83a6812e4546f2cd6"
+      ],
+      "typed_whole_and_scoped_preserved": true,
+      "observed": "mutation_rejected",
+      "code": "EVIDENCE_REFERENCE_INVALID",
+      "paths": [
+        "$.directives[0].source_refs[0].quote"
+      ]
+    }
+  ]
+}

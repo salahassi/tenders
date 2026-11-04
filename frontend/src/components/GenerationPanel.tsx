@@ -6,9 +6,15 @@ import { isSelected } from "../lib/workflow";
 import type { DocumentRecord, Opportunity } from "../types";
 import { BackendRequestError } from "../lib/backendClient";
 import {
+  currentProposalRequest,
+  currentProposalCommands,
+  type CurrentProposalRequest,
+} from "../lib/currentProposalRequest";
+import {
   generationNeedsAttention,
   generationStageLabel,
   generationStatusMessage,
+  type ProposalIssuanceStatus,
 } from "../lib/generationStatus";
 type Plan = {
   id: string;
@@ -18,6 +24,8 @@ type Plan = {
   revision: number;
   error_code: string | null;
   created_at: string;
+  issuance_request_id?: string | null;
+  issuance?: ProposalIssuanceStatus | null;
 };
 export default function GenerationPanel({
   opportunity,
@@ -37,6 +45,10 @@ export default function GenerationPanel({
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
     [requesting, setRequesting] = useState(false),
+    [successor, setSuccessor] = useState<{
+      details: CurrentProposalRequest;
+      key: string;
+    } | null>(null),
     loadScope = useRef({
       active: true,
       busy: false,
@@ -57,20 +69,49 @@ export default function GenerationPanel({
       const ordered = [...records].sort((a, b) =>
         b.created_at.localeCompare(a.created_at),
       );
+      await Promise.all(
+        ordered
+          .filter((p) => p.kind === planKind)
+          .slice(0, 3)
+          .map(async (p) => {
+            if (!p.issuance_request_id) return;
+            const { data } =
+              await backend.request<ProposalIssuanceStatus | null>(
+                `/v1/proposal-issuance/${p.id}`,
+              );
+            if (
+              !data ||
+              data.id !== p.issuance_request_id ||
+              data.plan_id !== p.id
+            )
+              throw new Error(
+                "The current request changed. Refresh progress to load its file-package status.",
+              );
+            p.issuance = data;
+          }),
+      );
+      if (!scope.active) return;
       setPlans(ordered);
       const latestVisible = ordered.find((p) => p.kind === planKind);
       const attention =
         latestVisible && generationNeedsAttention(latestVisible)
-          ? `${latestVisible.id}:${latestVisible.status}:${latestVisible.error_code}`
+          ? `${latestVisible.id}:${latestVisible.status}:${latestVisible.issuance?.effective_error_code ?? latestVisible.error_code}`
           : "";
       if (attention && scope.attention !== attention)
         notify(generationStatusMessage(latestVisible!), "error");
       scope.attention = attention;
       const latest = ordered.find((p) => p.kind === "proposal");
-      if (latest?.status === "completed" && scope.completed !== latest.id) {
+      const completedKey = latest
+        ? `${latest.id}:${latest.issuance?.effective_outcome ?? latest.status}`
+        : "";
+      if (
+        (latest?.status === "completed" ||
+          latest?.issuance?.effective_outcome === "issued") &&
+        scope.completed !== completedKey
+      ) {
         await refresh?.();
         if (!scope.active) return;
-        scope.completed = latest.id;
+        scope.completed = completedKey;
       }
       setError("");
       return latestVisible;
@@ -90,20 +131,25 @@ export default function GenerationPanel({
       attention: "",
     };
     loadScope.current = scope;
+    setSuccessor(null);
+    setRequesting(false);
+    setError("");
     setLoading(true);
     void load();
     const timer = setInterval(() => {
       if (!document.hidden) void load();
-    }, 10000);
+    }, 5000);
     return () => {
       scope.active = false;
       clearInterval(timer);
     };
   }, [backend, opportunity.id, planKind]);
   async function action(operation: string, input: Record<string, unknown>) {
+    const scope = loadScope.current;
     setRequesting(true);
     try {
       await runCommand!(operation, input);
+      if (!scope.active || scope !== loadScope.current) return;
       const latest = await load();
       if (!latest || !generationNeedsAttention(latest))
         notify(
@@ -112,6 +158,25 @@ export default function GenerationPanel({
             : "Processing requested. You can leave this page; work continues automatically.",
         );
     } catch (e) {
+      if (!scope.active || scope !== loadScope.current) return;
+      if (
+        e instanceof BackendRequestError &&
+        e.code === "PROPOSAL_CURRENT_CONTRACT_REQUIRED"
+      ) {
+        const details = currentProposalRequest(e.details, opportunity.id);
+        setSuccessor((previous) =>
+          details
+            ? {
+                details,
+                key:
+                  previous &&
+                  JSON.stringify(previous.details) === JSON.stringify(details)
+                    ? previous.key
+                    : crypto.randomUUID(),
+              }
+            : null,
+        );
+      }
       const message =
         e instanceof BackendRequestError && e.code === "STALE_INPUT"
           ? "The saved inputs changed. Your completed work is retained. Automatic resume is available only when writing and review are complete and the notice is the only changed input. Review the changed evidence before starting an updated version."
@@ -120,6 +185,9 @@ export default function GenerationPanel({
                 "DATA_AUTHORIZATION_REQUIRED",
                 "DATA_POLICY_BLOCKED",
                 "MODEL_NOT_CONFIGURED",
+                "AI_AGENTS_UNAVAILABLE",
+                "PROPOSAL_ISSUANCE_TIMEOUT",
+                "PROPOSAL_CURRENT_CONTRACT_REQUIRED",
               ].includes(e.code)
             ? generationStatusMessage({
                 kind: "proposal",
@@ -132,7 +200,40 @@ export default function GenerationPanel({
       setError(message);
       notify(message, "error");
     } finally {
-      setRequesting(false);
+      if (scope.active && scope === loadScope.current) setRequesting(false);
+    }
+  }
+  async function startCurrentRequest() {
+    if (!backend || !successor || requesting) return;
+    const scope = loadScope.current;
+    setRequesting(true);
+    try {
+      await backend.request("/v1/commands", {
+        method: "POST",
+        idempotencyKey: successor.key,
+        body: { commands: await currentProposalCommands(successor.details) },
+      });
+      if (!scope.active || scope !== loadScope.current) return;
+      setSuccessor(null);
+      await refresh?.();
+      await load();
+      notify(
+        "A new request started with current checks. The original saved work is retained.",
+      );
+    } catch (e) {
+      if (!scope.active || scope !== loadScope.current) return;
+      const message =
+        e instanceof BackendRequestError && e.code === "REVISION_CONFLICT"
+          ? "The saved request changed. Refresh progress and resume it to load the current recovery action."
+          : e instanceof Error
+            ? e.message
+            : "The new request could not be started.";
+      if (e instanceof BackendRequestError && e.code === "REVISION_CONFLICT")
+        setSuccessor(null);
+      setError(message);
+      notify(message, "error");
+    } finally {
+      if (scope.active && scope === loadScope.current) setRequesting(false);
     }
   }
   if (!backend || !runCommand) return null;
@@ -160,6 +261,18 @@ export default function GenerationPanel({
         <p role="alert" className="admin-error">
           {error}
         </p>
+      )}
+      {successor && (
+        <div className="admin-muted-surface">
+          <p>
+            The original request and saved results will be retained. A new
+            request will use current checks and may call your configured AI
+            providers again.
+          </p>
+          <Button disabled={!editable || busy} onClick={startCurrentRequest}>
+            Start new request with current checks
+          </Button>
+        </div>
       )}
       {loading ? (
         <p>Loading progress…</p>
@@ -255,15 +368,20 @@ export default function GenerationPanel({
                 >
                   {generationStatusMessage(p)}
                 </p>
-                {p.error_code && (
+                {(p.issuance?.effective_error_code || p.error_code) && (
                   <details>
                     <summary>Technical details</summary>
                     <p>
-                      Reference code: <code>{p.error_code}</code>
+                      Reference code:{" "}
+                      <code>
+                        {p.issuance?.effective_error_code || p.error_code}
+                      </code>
                     </p>
                   </details>
                 )}
-                {p.error_code === "MODEL_NOT_CONFIGURED" && (
+                {["MODEL_NOT_CONFIGURED", "AI_AGENTS_UNAVAILABLE"].includes(
+                  p.issuance?.effective_error_code || p.error_code || "",
+                ) && (
                   <p>
                     <Link to="/settings?section=models">Set up a model</Link>
                   </p>

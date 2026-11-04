@@ -1,0 +1,15 @@
+{
+  "declared_128Mi_300m_observed": false,
+  "focused_tests_passed": 23,
+  "hosted_calls": 0,
+  "log_sha256": "eb79a8348ec4cfd7967542f2c163b8237133c98cd3c9bef8d756db2aa2cfd5f1",
+  "new_https_case": 1,
+  "passed": true,
+  "resource_changes": 0,
+  "scope": "additive HTTPS deployment and ready-Pod resource projection",
+  "source_sha256": {
+    "backend/scripts/ops/digitalocean-inventory.py": "15fd570397bad20f423675974a5b719699be416554f6eb89990cee241745b455",
+    "backend/scripts/ops/test_gateway_inventory_capacity.py": "d42c6ef9907c840f9392858a8cd6cc1c9781ebdec04f6f179bbd377a162e0c86"
+  },
+  "version": 1
+}

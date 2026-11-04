@@ -174,7 +174,25 @@ def validate_cluster() -> None:
         raise ProbeError("UNEXPECTED_CLUSTER_CONFIG") from None
 
 
-def target_credentials(token: str) -> tuple[dict[str, str], str]:
+def public_database_capacity(database: dict) -> dict:
+    """Only explicit service plan metadata, never connection or customer values."""
+    slug = database.get("size")
+    if slug is not None and (not isinstance(slug, str) or not re.fullmatch(
+        r"db-[a-z]{1,4}-[1-9][0-9]{0,3}vcpu-[1-9][0-9]{0,4}gb(?:-(?:intel|amd))?", slug
+    )):
+        slug = None
+    nodes = database.get("num_nodes")
+    if nodes is not None and (type(nodes) is not int or not 1 <= nodes <= 1000):
+        raise ProbeError("INVALID_DATABASE_CAPACITY")
+    # The normal database endpoint has a size slug, not unit-qualified RAM/CPU
+    # fields. Do not convert its naming convention into measured hardware.
+    return {"size_slug": slug, "node_count": nodes,
+            "ram_mib_per_node": None, "vcpus_per_node": None,
+            "hardware_basis": "not_reported_by_database_metadata",
+            "size_basis": "database_api_metadata" if slug is not None else "not_reported_or_unrecognized"}
+
+
+def target_credentials(token: str, *, capacity_metadata: dict | None = None) -> tuple[dict[str, str], str]:
     metadata = request_json(f"https://api.digitalocean.com/v2/databases/{DATABASE_ID}", token)
     try:
         database = metadata["database"]
@@ -211,6 +229,8 @@ def target_credentials(token: str) -> tuple[dict[str, str], str]:
         ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT).load_verify_locations(cadata=certificate)
     except (KeyError, TypeError, ValueError, UnicodeError, ssl.SSLError):
         raise ProbeError("INVALID_DATABASE_CA") from None
+    if capacity_metadata is not None:
+        capacity_metadata["managed_database"] = public_database_capacity(database)
     return credentials, certificate
 
 

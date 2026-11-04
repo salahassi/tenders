@@ -96,7 +96,7 @@ it("deduplicates confirmed 7/3/1 day reminders and routes date-only deadlines to
   expect(status.usage_timezone).toBe("Asia/Riyadh");
   expect(status.last_maintenance_at).toBeTruthy();
 });
-it("expires abandoned uploads, protects accepted evidence and releases storage only on verified cleanup", async () => {
+it("expires abandoned uploads, protects accepted evidence and retains untracked-write quota pending quiescence", async () => {
   const o = await opp(),
     pending = await document(o.id),
     retained = await document(o.id, true);
@@ -122,16 +122,31 @@ it("expires abandoned uploads, protects accepted evidence and releases storage o
   await f.db.exec(
     "rollback to savepoint lease_test;release savepoint lease_test",
   );
-  await f.rpc("complete_storage_cleanup", [
-    claimed[0].id,
-    claimed[0].lease_token,
-    true,
-  ]);
+  await f.db.exec("savepoint unknown_write");
+  await expect(
+    f.rpc("complete_storage_cleanup", [
+      claimed[0].id,
+      claimed[0].lease_token,
+      true,
+    ]),
+  ).rejects.toThrow("STORAGE_WRITE_RECONCILIATION_REQUIRED");
+  await f.db.exec(
+    "rollback to savepoint unknown_write;release savepoint unknown_write",
+  );
+  await f.rpc("defer_storage_cleanup", [claimed[0].id, claimed[0].lease_token]);
   const after = await userRpc("workspace_status");
   expect(
     Number(before.reserved_storage_bytes) -
       Number(after.reserved_storage_bytes),
-  ).toBe(claimed[0].estimated_size);
+  ).toBe(0);
+  expect(
+    (
+      await f.db.query<any>(
+        "select status,error_code from public.storage_cleanup_queue where id=$1",
+        [claimed[0].id],
+      )
+    ).rows[0],
+  ).toEqual({ status: "blocked", error_code: "STORAGE_QUIESCENCE_REQUIRED" });
   await f.db.query(
     "insert into public.storage_cleanup_queue(workspace_id,storage_key,estimated_size,reason) select workspace_id,storage_key,expected_size,'Synthetic erroneous cleanup request' from public.documents where id=$1",
     [retained.id],
@@ -140,7 +155,8 @@ it("expires abandoned uploads, protects accepted evidence and releases storage o
   expect(
     (
       await f.db.query<any>(
-        "select error_code from public.storage_cleanup_queue where status='blocked'",
+        "select error_code from public.storage_cleanup_queue where storage_key=(select storage_key from public.documents where id=$1)",
+        [retained.id],
       )
     ).rows[0].error_code,
   ).toBe("ACTIVE_REFERENCE_FOUND");

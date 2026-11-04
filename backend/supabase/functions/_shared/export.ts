@@ -1,16 +1,21 @@
 import { Decimal } from "decimal.js";
-import { XMLParser } from "fast-xml-parser";
-import { unzipSync } from "fflate";
 import { AppError } from "./http.ts";
-import { validateOriginal } from "./originals.ts";
+import { verifyBoundedDocx, verifyBoundedDocxAsync } from "./boundedDocx.ts";
 import { blockedContent } from "./model.ts";
 import { exportSectionGroups } from "./proposalOutline.ts";
+import {
+  hasNativeVerifierRuntime,
+  verifyDeliveryIsolated,
+  verifyOwnedDeliverySnapshot,
+} from "./deliveryVerifyIsolation.ts";
 type Row = Record<string, any>;
 export type ExportBlock =
   | { type: "paragraph" | "bullet" | "heading" | "title"; text: string }
+  | { type: "placeholder"; text: string; gap_id: string }
   | { type: "table"; headers: string[]; rows: string[][] }
   | { type: "toc"; text: string };
 export interface RenderModel {
+  placeholder_version?: 1 | 2;
   id: string;
   version: number;
   mode: string;
@@ -21,7 +26,13 @@ export interface RenderModel {
   blocks: ExportBlock[];
 }
 const clean = (v: unknown) => (typeof v === "string" ? v : "");
-export function buildExportModel(request: Row): RenderModel {
+export function buildExportModel(
+  request: Row,
+  placeholderPolicy: 2 | undefined = request.snapshot
+    ?.export_renderer_version === "ordinary-2"
+    ? 2
+    : undefined,
+): RenderModel {
   const s = request.snapshot,
     rtl = s.language === "ar",
     l = (en: string, ar: string) => (rtl ? ar : en),
@@ -50,7 +61,10 @@ export function buildExportModel(request: Row): RenderModel {
   // Column headings already identify each missing input. Short localized cell
   // values stay readable in narrow RTL tables and never imply a zero amount.
   const cell = (value: unknown) =>
-    clean(value).trim() || l("Not supplied", "غير محدد");
+    clean(value).trim() ||
+    (placeholderPolicy === 2
+      ? unknown(l("Not supplied", "غير محدد"))
+      : l("Not supplied", "غير محدد"));
   const sectionTitle = (key: string) =>
     s.sections.find((section: Row) => section.section_key === key)?.title ||
     l("Unlinked section", "قسم غير مرتبط");
@@ -174,10 +188,10 @@ export function buildExportModel(request: Row): RenderModel {
           if (b.type === "table")
             blocks.push({
               type: "table",
-              headers: b.headers,
-              rows: b.rows.map((r: string[]) =>
-                b.headers.map((_: string, i: number) => r[i] || ""),
-              ),
+              headers: [...b.headers],
+              // Preserve every authorized cell. The native renderer pads rows
+              // and headers to the widest row without inventing heading text.
+              rows: b.rows.map((r: string[]) => [...r]),
             });
           else
             blocks.push({
@@ -367,7 +381,9 @@ export function buildExportModel(request: Row): RenderModel {
           `${cell(line.quantity)} ${clean(line.unit)}`.trim(),
           cell(line.period_count),
           `${line.included_in_base ? l("Proposed base", "أساسي مقترح") : l("Outside proposed base", "خارج الأساسي المقترح")} · ${charge[line.charge_group] || clean(line.charge_group)}`,
-          l("Awaiting confirmed pricing", "بانتظار تأكيد التسعير"),
+          placeholderPolicy === 2
+            ? unknown(l("confirm pricing", "تأكيد التسعير"))
+            : l("Awaiting confirmed pricing", "بانتظار تأكيد التسعير"),
         ]),
       });
       for (const line of proposed.lines) {
@@ -434,7 +450,8 @@ export function buildExportModel(request: Row): RenderModel {
           });
     }
   }
-  const model = {
+  const model: RenderModel = {
+    ...(placeholderPolicy === 2 ? { placeholder_version: 2 as const } : {}),
     id: request.id,
     version: s.ordinal,
     mode: request.mode,
@@ -483,185 +500,32 @@ const normalize = (s: string) =>
     .replace(/\s+/g, " ")
     .trim();
 export function verifyExportDocx(bytes: Uint8Array, model: RenderModel) {
-  validateOriginal(
-    "proposal.docx",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  return verifyBoundedDocx(bytes, model, blockedContent);
+}
+
+export function verifyExportDocxAsync(
+  bytes: Uint8Array,
+  model: RenderModel,
+  signal?: AbortSignal,
+) {
+  if (hasNativeVerifierRuntime())
+    return verifyDeliveryIsolated(bytes, model, signal);
+  return verifyBoundedDocxAsync(bytes, model, blockedContent, signal);
+}
+
+/** Internal deliveryBytes bridge. Both inputs are already private call-time
+ * snapshots; no caller-owned buffer or mutable model is accepted on this path. */
+export function verifyOwnedExportDocxSnapshot(
+  bytes: Uint8Array,
+  modelJson: string,
+  signal?: AbortSignal,
+) {
+  if (hasNativeVerifierRuntime())
+    return verifyOwnedDeliverySnapshot(bytes, modelJson, signal);
+  return verifyBoundedDocxAsync(
     bytes,
+    JSON.parse(modelJson) as RenderModel,
+    blockedContent,
+    signal,
   );
-  let files: Record<string, Uint8Array>;
-  try {
-    files = unzipSync(bytes, {
-      filter: (file) => /\.xml$|\.rels$/.test(file.name),
-    });
-  } catch {
-    throw new AppError(
-      422,
-      "INVALID_EXPORT_ARCHIVE",
-      "The Word archive is invalid.",
-    );
-  }
-  const decode = (name: string) =>
-    new TextDecoder("utf-8", { fatal: true }).decode(
-      files[name] || new Uint8Array(),
-    );
-  for (const [name, bytes] of Object.entries(files)) {
-    const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
-    if (
-      /<!DOCTYPE|<!ENTITY|<w:(?:ins|del|commentRangeStart|commentRangeEnd|commentReference)\b/i.test(
-        text,
-      ) ||
-      /TargetMode\s*=\s*["']External["']/i.test(text) ||
-      (/comments\d*\.xml$/i.test(name) && /<w:comment\b/.test(text))
-    )
-      throw new AppError(
-        422,
-        "EXPORT_UNSAFE_CONTENT",
-        "Remove tracked changes, comments and external relationships.",
-      );
-  }
-  const parser = new XMLParser({
-      ignoreAttributes: false,
-      preserveOrder: true,
-      processEntities: true,
-      parseTagValue: false,
-      trimValues: false,
-    }),
-    xml = decode("word/document.xml"),
-    tree = parser.parse(xml);
-  function allText(nodes: any[]): string {
-    return nodes
-      .map((n) =>
-        Object.entries(n)
-          .filter(([k]) => k !== ":@")
-          .map(([k, v]) =>
-            k === "w:t" && Array.isArray(v)
-              ? v.map((x) => x["#text"] || "").join("")
-              : k === "w:tab"
-                ? "\t"
-                : k === "w:br"
-                  ? "\n"
-                  : k === "w:instrText"
-                    ? ""
-                    : Array.isArray(v)
-                      ? allText(v)
-                      : "",
-          )
-          .join(""),
-      )
-      .join("");
-  }
-  const paragraphs: string[] = [];
-  function walk(nodes: any[]) {
-    for (const n of nodes)
-      for (const [k, v] of Object.entries(n)) {
-        if (!Array.isArray(v)) continue;
-        if (k === "w:sdt" && /TOC/.test(JSON.stringify(v))) {
-          const contents = model.language === "ar" ? "المحتويات" : "Contents",
-            headings = model.blocks
-              .filter((b) => b.type === "heading")
-              .map((b) => (b as { text: string }).text);
-          const tocLines: string[] = [];
-          const collect = (nodes: any[]) => {
-            for (const x of nodes)
-              for (const [tag, children] of Object.entries(x)) {
-                if (!Array.isArray(children)) continue;
-                if (tag === "w:p") {
-                  const value = normalize(
-                    allText(children.filter((z: any) => !z["w:pPr"])).replace(
-                      /TOC\s+[^]*?$/,
-                      "",
-                    ),
-                  );
-                  if (value) tocLines.push(value);
-                } else collect(children);
-              }
-          };
-          collect(v);
-          if (
-            tocLines.some(
-              (line) =>
-                line !== contents &&
-                !headings.some(
-                  (h) =>
-                    line === normalize(h) ||
-                    new RegExp(
-                      "^" +
-                        normalize(h).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
-                        "[ \\t]*[0-9ivxlcdm]*$",
-                      "i",
-                    ).test(line),
-                ),
-            )
-          )
-            throw new AppError(
-              422,
-              "EXPORT_CONTENT_MISMATCH",
-              "The contents table contains unapproved text.",
-            );
-          continue;
-        }
-        if (k === "w:p") {
-          const text = allText(v.filter((x: any) => !x["w:pPr"])).replace(
-            /TOC\s+[^]*?$/,
-            "",
-          );
-          if (normalize(text)) paragraphs.push(normalize(text));
-        } else walk(v);
-      }
-  }
-  walk(tree);
-  const expected = exportParagraphs(model);
-  if (JSON.stringify(paragraphs) !== JSON.stringify(expected))
-    throw new AppError(
-      422,
-      "EXPORT_CONTENT_MISMATCH",
-      "Word content does not match the authorized proposal. Generate a new version for content changes.",
-    );
-  for (const name of Object.keys(files).filter((n) =>
-    /^word\/(?:header|footer|footnotes|endnotes)[0-9]*\.xml$/.test(n),
-  )) {
-    const text = normalize(allText(parser.parse(decode(name))));
-    if (/^word\/footer/.test(name)) {
-      const expected = normalize(model.footer);
-      if (
-        text !== expected &&
-        text !== normalize(expected + " ·") &&
-        !new RegExp(
-          "^" +
-            expected.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") +
-            "(?: · )?[0-9]*$",
-        ).test(text)
-      )
-        throw new AppError(
-          422,
-          "EXPORT_CONTENT_MISMATCH",
-          "Unexpected footer content.",
-        );
-    } else if (text)
-      throw new AppError(
-        422,
-        "EXPORT_CONTENT_MISMATCH",
-        "Unexpected header or note content.",
-      );
-  }
-  const props = decode("docProps/core.xml");
-  if (
-    blockedContent(props) ||
-    /<(?:dc:creator|cp:lastModifiedBy)>(?!Tenderdesk<)[^<]+</.test(props)
-  )
-    throw new AppError(
-      422,
-      "EXPORT_METADATA_REVIEW_REQUIRED",
-      "Remove personal author properties before uploading the reviewed file.",
-    );
-  if (
-    !/<w:updateFields\b/.test(decode("word/settings.xml")) ||
-    !/(?:TOC\s|TOC\\)/.test(xml)
-  )
-    throw new AppError(
-      422,
-      "EXPORT_FIELDS_MISSING",
-      "The Word file must retain live contents and update-fields settings.",
-    );
-  return true;
 }
