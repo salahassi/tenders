@@ -9853,3 +9853,31 @@ rollback; normal release/replay and four baseline guards passed. The
 [receipt](evidence/command-batch-exact-catalog-guards-20261104.json) binds this
 source-only guard correction. Canonical migration bytes did not change; hosted
 cutover and final integrated checks remain separate gates.
+
+### November 4 — preserve legacy SDK error handling during the gateway cutover
+
+The old `Backend.batch` passes the Supabase RPC error directly to
+`databaseError`, which reads `error.message`. The first gateway response used
+only the nested application envelope; the actual pinned Supabase SDK regression
+reproduced a `TypeError` instead of the intended upgrade error. The corrected
+response retains that nested envelope and adds fixed PostgREST-compatible
+`code`, `message`, `details` and `hint` fields. Both direct gateway and old
+adapter outcomes remain nonretryable; the unchanged old mapper reports 422 for
+the named upgrade error, while direct gateway HTTP status remains 409.
+
+The [SDK boundary receipt](evidence/legacy-batch-sdk-error-20261104.json)
+records two passing regressions using Supabase 2.117.3, the retained old batch
+method and the identical historical/current HTTP mapper. Each call sends once;
+no command is executed. Fetch transport is synthetic, and this does not claim
+the complete deployed old API image or real Auth was tested.
+
+The [new pinned Nginx receipt](evidence/legacy-batch-gateway-compatible-20261104.json)
+again passes 560 legacy method/path cases, 76 TUS checks, 24 ordinary-route
+controls and restart, now checking both response envelopes. Denied requests
+never reach the recording upstream. Both owned containers were removed.
+The earlier 089b024a routing receipt and historical physical/TUS receipt remain
+unchanged. The version 2 source contract now requires the new exact response
+configuration/receipt and `postgrest_error_envelope_qualified:true`; an old
+receipt cannot qualify the changed bytes. The 32 focused Python helper/render
+checks and backend typecheck pass. No production, model or customer-data
+operation occurred.

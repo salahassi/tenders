@@ -180,6 +180,7 @@ const send=c=>new Promise((resolve,reject)=>{const r=http.request({host:'127.0.0
             assert row['content_type'] == 'application/json' and row['cache_control'] == 'no-store'
             if row['method'] != 'HEAD':
                 body = json.loads(row['body']); assert body['error'] == UPGRADE and len(body['request_id']) == 32
+                assert {k: body[k] for k in ('code', 'message', 'details', 'hint')} == {'code': 'P0001', 'message': 'TRANSPORT_UPGRADE_REQUIRED', 'details': None, 'hint': None}
         assert self.stats() == prior, 'DENIED_LEGACY_REACHED_UPSTREAM'
         self.receipt['legacy_denied_cases'] = [{k: r[k] for k in ('port', 'method', 'path', 'status')} for r in blocked]
         tus = self.requests([{'port': p, 'method': m, 'path': route} for p in (8080, 8081) for m in ('POST', 'PATCH') for route in tus_paths()])
@@ -198,7 +199,7 @@ const send=c=>new Promise((resolve,reject)=>{const r=http.request({host:'127.0.0
         prior = self.stats()
         restarted = self.requests([{'port': port, 'method': 'POST', 'path': '/rest/v1/rpc/app_batch'} for port in (8080, 8081)])
         assert all(r['status'] == 409 for r in restarted) and self.stats() == prior
-        self.receipt.update(actual_binary_exercised=True, legacy_rpc_denial_qualified=True, gateway_resumable_denial_qualified=True, ordinary_routing_preserved=True, restart_denial_qualified=True)
+        self.receipt.update(actual_binary_exercised=True, legacy_rpc_denial_qualified=True, gateway_resumable_denial_qualified=True, ordinary_routing_preserved=True, restart_denial_qualified=True, postgrest_error_envelope_qualified=True)
 
     def cleanup(self):
         for name in reversed(self.owned):

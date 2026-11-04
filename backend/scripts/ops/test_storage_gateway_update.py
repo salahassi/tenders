@@ -43,7 +43,7 @@ class GatewayTests(unittest.TestCase):
   self.before.write_text('synthetic old __NAMESPACE__');self.after.write_text('synthetic guarded __NAMESPACE__')
   self.storage.write_text('synthetic storage guard __NAMESPACE__')
   self.r={'passed':True,'actual_binary_exercised':True,'signed_tus_bypass_confirmed':True,'gateway_resumable_denial_qualified':True,'gateway_image':IMAGE,'gateway_config_source_sha256':g.sha(self.storage.read_bytes())};self.receipt.write_text(json.dumps(self.r))
-  self.b={'passed':True,'actual_binary_exercised':True,'legacy_rpc_denial_qualified':True,'gateway_resumable_denial_qualified':True,'ordinary_routing_preserved':True,'restart_denial_qualified':True,'cleanup_confirmed':True,'gateway_image':IMAGE,'gateway_before_source_sha256':g.sha(self.storage.read_bytes()),'gateway_config_source_sha256':g.sha(self.after.read_bytes()),'storage_qualification_sha256':g.sha(self.receipt.read_bytes()),'production_calls':0,'customer_calls':0};self.batch.write_text(json.dumps(self.b))
+  self.b={'passed':True,'actual_binary_exercised':True,'legacy_rpc_denial_qualified':True,'gateway_resumable_denial_qualified':True,'ordinary_routing_preserved':True,'restart_denial_qualified':True,'postgrest_error_envelope_qualified':True,'cleanup_confirmed':True,'gateway_image':IMAGE,'gateway_before_source_sha256':g.sha(self.storage.read_bytes()),'gateway_config_source_sha256':g.sha(self.after.read_bytes()),'storage_qualification_sha256':g.sha(self.receipt.read_bytes()),'production_calls':0,'customer_calls':0};self.batch.write_text(json.dumps(self.b))
   self.patches=[patch.object(g,'BASELINE',self.before),patch.object(g,'TARGET',self.after),patch.object(g,'QUALIFICATION',self.receipt),patch.object(g,'STORAGE_QUALIFIED',self.storage),patch.object(g,'BATCH_QUALIFICATION',self.batch),patch.object(g,'BASELINE_SHA256',g.sha(self.before.read_bytes()))]
   for p in self.patches:p.start()
   self.d=Fake({'nginx.conf':'synthetic old tenderdesk-dev'},{'nginx.conf':'synthetic guarded tenderdesk-dev'});self.contract,_,_=g.source_contract(self.d)
@@ -97,7 +97,7 @@ class GatewayTests(unittest.TestCase):
   with self.assertRaisesRegex(g.GatewayError,'BATCH_GATEWAY_QUALIFICATION_CHANGED'):g.source_contract(self.d)
   self.assertEqual(self.d.calls,[])
  def test_new_route_qualification_flags_must_be_true(self):
-  for flag in ('passed','actual_binary_exercised','legacy_rpc_denial_qualified','gateway_resumable_denial_qualified','ordinary_routing_preserved','restart_denial_qualified','cleanup_confirmed'):
+  for flag in ('passed','actual_binary_exercised','legacy_rpc_denial_qualified','gateway_resumable_denial_qualified','ordinary_routing_preserved','restart_denial_qualified','postgrest_error_envelope_qualified','cleanup_confirmed'):
    b=copy.deepcopy(self.b);b[flag]=1;self.batch.write_text(json.dumps(b))
    with self.subTest(flag=flag),self.assertRaisesRegex(g.GatewayError,'BATCH_GATEWAY_QUALIFICATION_REQUIRED'):g.source_contract(self.d)
  def test_new_receipt_binds_actual_image_prior_proof_and_no_hosted_calls(self):

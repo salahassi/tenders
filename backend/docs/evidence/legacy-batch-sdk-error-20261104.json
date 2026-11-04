@@ -1,0 +1,46 @@
+{
+  "backend_typecheck": "passed",
+  "business_mutations": 0,
+  "compatible_native_receipt_sha256": "29079c1c2c075176ad36ae2e8d327567bbf1fc2551975a3234657c095a424944",
+  "gateway_config_source_sha256": "6d21e906c270cc4afe406dc28a646b8882e357beb07d34228a0221e03906d9dc",
+  "green": {
+    "configured_bodies": 4,
+    "error_code": "TRANSPORT_UPGRADE_REQUIRED",
+    "gateway_http_status": 409,
+    "legacy_adapter_status": 422,
+    "retryable": false,
+    "sends_per_call": 1,
+    "top_level_code": "P0001",
+    "top_level_details": null,
+    "top_level_hint": null
+  },
+  "historical_nested_only_native_receipt_sha256": "089b024a09e3306fe0fe95e7d5ef213469e57eaaff8ca09466723c7b34ca7711",
+  "legacy_backend_source_sha256": "76e98dd9c187ba802ea9c472f0ef3f28f0a0a876e4ed32e03289b8eacdb66481",
+  "legacy_batch_method_sha256": "88c05be3499369d969638a277986f24a3ea9c27299a648f5963e70d23aa55825",
+  "legacy_http_mapper_identical_to_current": true,
+  "legacy_http_source_sha256": "05596a823d1a15e3bd4e5f8a65b4fbb405ed1bd2d8727c16ac5c30c5a95347f7",
+  "legacy_source_revision": "28689b97503b1fe23f0999909c91427867131c91",
+  "limits": [
+    "The existing old API mapper chooses422 for the named nonretryable error; direct gateway status is409. No old API runtime is modified.",
+    "Legacy method is preserved as a test adapter; the complete deployed historical API image and real authentication are not exercised.",
+    "Only this response-compatibility boundary is qualified; cutover process/DB drain remains separate."
+  ],
+  "model_calls": 0,
+  "production_calls": 0,
+  "red": {
+    "actual_error_class": "TypeError",
+    "sends": 1,
+    "shape": "nested error only"
+  },
+  "scope": "Actual pinned Supabase SDK RPC error parsing and unchanged legacy Backend.batch/databaseError flow, with synthetic fetch transport returning the exact configured gateway error JSON. The pinned Nginx receipt independently validates that exact wire envelope; no real Auth or business mutation occurs.",
+  "supabase_js_version": "2.117.3",
+  "test_log_sha256": "1f68b0b985ad58c14ee8abd8b6e1c8ea4cfb0ee258c63d05c7240e3468fe0a4c",
+  "test_source_sha256": "9e3c84188993422ecfa5a72760c55d3391733fa000ebeef727dccae0ff80f5d1",
+  "tests": {
+    "duration_ms": 121,
+    "files": 1,
+    "passed": 2
+  },
+  "typecheck_log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220",
+  "version": 1
+}

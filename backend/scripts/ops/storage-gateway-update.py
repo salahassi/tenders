@@ -10,7 +10,7 @@ BASELINE=HERE/'storage-retirement/gateway-before.conf'
 TARGET=HERE.parents[1]/'deploy/kubernetes/gateway.conf'
 QUALIFICATION=HERE.parents[1]/'docs/evidence/storage-retirement-binary-20261104.json'
 STORAGE_QUALIFIED=HERE/'storage-retirement/gateway-storage-qualified.conf'
-BATCH_QUALIFICATION=HERE.parents[1]/'docs/evidence/legacy-batch-gateway-20261104.json'
+BATCH_QUALIFICATION=HERE.parents[1]/'docs/evidence/legacy-batch-gateway-compatible-20261104.json'
 BASELINE_SHA256='4907ecf81e2fa1e97754202906873ccd7c34e3dcbe26dd1e60cf4e276c639d23'
 CHECKSUM='checksum/public-config'
 class GatewayError(Exception):pass
@@ -30,7 +30,7 @@ def source_contract(d):
  need(sha(before)==BASELINE_SHA256 and before!=after,'STORAGE_GATEWAY_SOURCE_INVALID')
  need(r.get('passed') is True and r.get('actual_binary_exercised') is True and r.get('signed_tus_bypass_confirmed') is True and r.get('gateway_resumable_denial_qualified') is True,'STORAGE_GATEWAY_QUALIFICATION_REQUIRED')
  need(r.get('gateway_image')==d.renderer.NGINX_IMAGE and r.get('gateway_config_source_sha256')==sha(storage),'STORAGE_GATEWAY_QUALIFICATION_CHANGED')
- need(b.get('passed') is True and b.get('actual_binary_exercised') is True and b.get('legacy_rpc_denial_qualified') is True and b.get('gateway_resumable_denial_qualified') is True and b.get('ordinary_routing_preserved') is True and b.get('restart_denial_qualified') is True and b.get('cleanup_confirmed') is True,'BATCH_GATEWAY_QUALIFICATION_REQUIRED')
+ need(b.get('passed') is True and b.get('actual_binary_exercised') is True and b.get('legacy_rpc_denial_qualified') is True and b.get('gateway_resumable_denial_qualified') is True and b.get('ordinary_routing_preserved') is True and b.get('restart_denial_qualified') is True and b.get('postgrest_error_envelope_qualified') is True and b.get('cleanup_confirmed') is True,'BATCH_GATEWAY_QUALIFICATION_REQUIRED')
  need(b.get('gateway_image')==d.renderer.NGINX_IMAGE and b.get('gateway_before_source_sha256')==sha(storage) and b.get('gateway_config_source_sha256')==sha(after) and b.get('storage_qualification_sha256')==sha(receipt) and all(type(b.get(key)) is int and b[key]==0 for key in ('production_calls','customer_calls')),'BATCH_GATEWAY_QUALIFICATION_CHANGED')
  data_before={'nginx.conf':BASELINE.read_text().replace('__NAMESPACE__',d.NAMESPACE)};data_after={'nginx.conf':TARGET.read_text().replace('__NAMESPACE__',d.NAMESPACE)}
  contract={'version':2,'before_source_sha256':sha(before),'after_source_sha256':sha(after),'before_data_sha256':checksum(data_before),
