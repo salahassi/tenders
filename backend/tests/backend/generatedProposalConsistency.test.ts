@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { expect, it } from "vitest";
 import { qualifierHash } from "../../supabase/functions/_shared/proposalConsistency";
-import { nextStage } from "../../supabase/functions/_shared/generation";
+import {
+  nextStage,
+  taskInput,
+} from "../../supabase/functions/_shared/generation";
 import { candidateContent } from "../../supabase/functions/_shared/modelGrounding";
 import { assessGeneratedDelivery } from "../../supabase/functions/_shared/generatedProposalConsistency";
 import { generatedDeliveryFixture as fixture } from "./generatedDeliveryFixture";
@@ -225,4 +228,62 @@ it("does not turn a source echo into a proposed method by attaching an input mar
   receipt.verification.claims[0].claim =
     receipt.verification.claims[0].candidate_quote;
   expect((await assessGeneratedDelivery(f)).machine_eligible).toBe(false);
+});
+it("does not promote omitted or partial company discovery into verified claim evidence during issuance", async () => {
+  const claim = "The company maintains a current quality certificate.";
+  const f = await fixture(
+    `Configure the workflow in 30 days. Deliver the tested workflow and manual. Buyer acceptance uses the signed workflow test. ${claim}`,
+  );
+  f.plan.frozen_context.company_retrieval_version = 1;
+  f.plan.frozen_context.company_followup_version = 1;
+  f.plan.frozen_context.knowledge = [
+    {
+      id: "company-certificate",
+      kind: "company",
+      verified: true,
+      text:
+        claim +
+        "\n\n" +
+        "Other retained company context with qualifications. ".repeat(2000),
+      reference: {
+        entity_kind: "document",
+        entity_id: "00000000-0000-4000-8000-000000000009",
+        content_hash: "c".repeat(64),
+      },
+    },
+  ];
+  f.accepted_receipts[1].verification.claims.push({
+    id: "certificate",
+    claim,
+    candidate_quote: claim,
+    kind: "company_fact",
+    status: "supported",
+    source_refs: [{ id: "company-certificate", quote: claim }],
+    finding: "Purported supported claim despite incomplete selected evidence.",
+  });
+  const scope = taskInput({
+    plan: { ...f.plan, stage: "drafting" },
+    step: f.steps[1],
+    steps: f.steps,
+    requirements: f.requirements,
+  } as any);
+  expect(
+    scope.evidence.some((e) => e.id === "company-certificate" && e.verified),
+  ).toBe(false);
+  const final = (
+    await nextStage({
+      plan: { ...f.plan, stage: "reconciliation" },
+      step: { task: "advance_plan", input: {} },
+      steps: f.steps,
+      requirements: f.requirements,
+    } as any)
+  ).final_result!;
+  f.sections = final.sections;
+  f.section_outline = final.section_outline;
+  expect((await assessGeneratedDelivery(f)).blockers).toContainEqual(
+    expect.objectContaining({
+      code: "ACCEPTED_VERIFICATION_INVALID",
+      step_id: f.steps[1].id,
+    }),
+  );
 });

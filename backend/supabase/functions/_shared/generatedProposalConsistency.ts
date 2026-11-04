@@ -22,7 +22,6 @@ export type GeneratedDeliveryReceipt = {
   candidate: Row;
   verification: Row;
   accepted: true;
-  evidence?: Evidence[];
   task?: string;
   thread_id?: string;
   graph_input_hash?: string;
@@ -241,10 +240,10 @@ export async function assessGeneratedDelivery(
         steps: input.steps,
         requirements: input.requirements,
       });
-      const evidence = receipt.evidence || [
-        ...sources,
-        ...scope.evidence.filter((e) => e.id === `proposal-review:${step.id}`),
-      ];
+      // Issuance must retain the original prompt's proof eligibility. A full
+      // frozen parent may have supplied only an unverified discovery fragment;
+      // it cannot become verified claim support merely because it is retained.
+      const evidence = scope.evidence;
       validateGroundingReport(
         receipt.verification,
         receipt.candidate,

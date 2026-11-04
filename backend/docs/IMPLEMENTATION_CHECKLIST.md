@@ -373,6 +373,15 @@ worktree allowed the rerun. Combined backend/source/model/publication acceptance
 real-browser visual QA, native document qualification and hosted rollout remain
 root integration gates; this follow-up contains no live or paid calls.
 
+A subsequent issuance-boundary regression reproduced a verifier accepting a
+company claim when its original prompt had only partial/unverified discovery
+context but the full parent remained in frozen storage. The gate now reuses the
+reconstructed task's exact evidence eligibility, including its generated review
+source, and never broadens it to all retained parents. Full frozen sources are
+used only to check the original requirement citation. The new fixture failed
+before the fix; all 17 machine-gate tests, backend typecheck and build pass after
+it. Frontend is unchanged from the 303-test/build gate above.
+
 ## November 4 — integrated durable draft rendering and independent review
 
 Stages 3–7: six parallel implementation tracks are integrated on
