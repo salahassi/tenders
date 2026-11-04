@@ -10264,3 +10264,24 @@ review confirmed the correction retains exact encoding negotiation, real
 bounded decoding, independent/source hashes, length, health, resource and
 cancellation gates. Four tiny tests pass. The final unified six-case native
 repeat remains pending; no hosted transport or broad-load success is claimed.
+
+### November 4 — final exact-image HTTPS streaming qualification passed
+
+The final six-case local run passed at source5787071 using observed HTTPS
+registry image3a539c44, final gateway targetc1a25c41 with its exact one-worker
+directive, and actual workspace-overlay mounts verified inside both containers.
+Identity/gzip/zstd each delivered412,758,765 decoded bytes with independent and
+upstream hashes, followed by successful2MiB cancellation and upstream quiescence.
+All162 health checks passed. Peak cgroup memory: HTTPS25,833,472/134,217,728 bytes;
+Nginx13,045,760/67,108,864; synthetic helper96,387,072/134,217,728. No OOM or swap.
+Complete PID/FD/inode observation found36KiB HTTPS and4KiB Nginx allocated files.
+All owned containers/network/private files were removed, source hashes unchanged.
+
+Evidence: `https-api-streaming-20261104.json`, SHA
+`a10f52cf769a39d1204354796039e0bb6147a7a3dfdee5bae63a1a4621aace72`.
+The earlier failures remain preserved and adjudicated separately. Four focused
+harness tests passed. This closes the selected local full-proxy streaming proof;
+HTTP/2/3, concurrent/hosted load, public certificate renewal, production PVC
+behavior and proposal600s acceptance remain separate gates. Transfer timings
+include intentional slow-client pacing. The new gateway target is not claimed
+already deployed; no product configuration or production records were changed.
