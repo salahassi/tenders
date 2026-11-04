@@ -9084,3 +9084,30 @@ buffering, native renderer capacity, a real authenticated HTTP connection or hos
 load. Backend/handler and admission integration is a separate owned change; full
 repository checks and final integrated native/runtime qualification remain open.
 No external, provider, accounting, SQL or production operation occurred.
+
+### November 4 — preserve the scoped operational suite results and source drift
+
+At root revision `a6676866ea3247b85c1bfde7e140655ce126e444`, the canonical
+Python suites ran sequentially: 414 operational tests, 11 managed-schema tests,
+and 15 Kubernetes tests passed (440 total). The run started at 20:56:22 UTC and
+finished at 20:59:10 UTC. The public scoped receipt is
+[`ops-schema-kubernetes-scoped-20261104.json`](evidence/ops-schema-kubernetes-scoped-20261104.json);
+it binds the commands, counts, log hashes, observed revision and source hashes.
+Raw logs and the original receipt remain outside the repository.
+
+The 702-file before/after check detected a change to
+`deliveryVerifyIsolation.ts` during the run. The operational, schema and
+Kubernetes inputs in the recorded scopes remained unchanged, but the broad
+source identity gate failed as intended. The original receipt retains
+`passed:false`; the public receipt records passing suites separately from
+`combined_final_source_qualified:false`. The two acceptance scripts indirectly
+import this verifier through `export.ts`; their discovered Python tests mock
+the child process and external transports and therefore do not qualify the
+changed verifier. Existing native capacity harness edits are also disclosed.
+
+This is scoped local evidence, including PostgreSQL 17.6 fixture execution;
+it is not a final combined integration pass, package-suite result, native
+capacity result, production PostgreSQL qualification or hosted acceptance.
+There were no hosted or model calls. No immediate rerun was started during the
+reserved native capacity window. The final committed integration must rerun
+these canonical suites alongside the separately owned package and native gates.

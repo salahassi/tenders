@@ -1,0 +1,141 @@
+{
+  "all_suites_passed": true,
+  "combined_final_source_qualified": false,
+  "dependency_review": {
+    "changed_module": "backend/supabase/functions/_shared/deliveryVerifyIsolation.ts",
+    "finding": "These discovered Python acceptance tests exercise guarded orchestration with mocked subprocess/HTTP/cluster interactions and unactivated paths. They do not execute the changed child verifier. Their passing results do not qualify that runtime change.",
+    "importing_module": "backend/supabase/functions/_shared/export.ts",
+    "indirect_acceptance_scripts": [
+      "backend/scripts/ops/proposal-export-acceptance.mjs",
+      "backend/scripts/ops/delivery-snapshot-acceptance.mjs"
+    ],
+    "inspected_python_tests": [
+      "backend/scripts/ops/test_proposal_export_acceptance.py",
+      "backend/scripts/ops/test_delivery_snapshot_acceptance.py"
+    ]
+  },
+  "evidence": {
+    "local_evidence_directory": "/workspace/output/final-ops-a667686",
+    "local_postgresql_version": "17.6",
+    "original_receipt_passed": false,
+    "original_receipt_preserved": true,
+    "original_receipt_sha256": "7311f1ab9d201817216e5ec2133f9ff44a028c26216a1918f8aa2e5df2d50f71",
+    "raw_logs_committed": false
+  },
+  "execution_order": "sequential",
+  "final_release_gate_passed": false,
+  "finished_at": "2026-11-04T20:59:10.958136+00:00",
+  "head_after": "a6676866ea3247b85c1bfde7e140655ce126e444",
+  "head_before": "a6676866ea3247b85c1bfde7e140655ce126e444",
+  "limits": {
+    "full_backend_suite_claimed": false,
+    "full_frontend_suite_claimed": false,
+    "hosted_acceptance_claimed": false,
+    "hosted_calls": 0,
+    "model_calls": 0,
+    "native_capacity_claimed": false,
+    "production_postgresql_version_qualified": false,
+    "remaining_gate": "Rerun the canonical ops, managed-schema and Kubernetes suites with the final committed shared runtime source, alongside the separately owned package and native qualification gates. No immediate rerun was performed during the native capacity window."
+  },
+  "scope": "canonical_ops_managed_schema_kubernetes_only",
+  "source_observation": {
+    "after_map_sha256": "79d73621c611dfac91c60d7431e3040b5a3ffe30f27585543be92b6c3bae5c0e",
+    "before_map_sha256": "a50f57c9d1fc44a21270a08536e9aad8a6eda2f33a9b5b645f188df1a3787fdb",
+    "changed_files": [
+      {
+        "after_sha256": "44271ef4e47799ba5c6be97fcb5896bea47fe04b64e83e9c8420c7f8345041a8",
+        "before_sha256": "0c9cf9bd23a70ab702ad1c12cb6916650e411d51691c8a63613c1b0056faccc8",
+        "path": "backend/supabase/functions/_shared/deliveryVerifyIsolation.ts"
+      }
+    ],
+    "interpretation": "The shared verifier changed during the run. The tracked ops, managed-schema and Kubernetes test inputs in these scopes remained unchanged. The broad source identity gate correctly failed; this is not a final frozen integration pass.",
+    "scopes": [
+      "backend/scripts/ops",
+      "backend/deploy/kubernetes",
+      "backend/supabase",
+      "backend/tests",
+      "backend/package.json",
+      "backend/package-lock.json",
+      "frontend/src/lib",
+      "frontend/package.json",
+      "frontend/package-lock.json",
+      ".github/workflows/deploy-proposal-delivery.yml"
+    ],
+    "tracked_changes_after": [
+      " M backend/scripts/testing/capacity_renderer.py",
+      " M backend/scripts/testing/capacity_renderer.ts",
+      " M backend/supabase/functions/_shared/deliveryVerifyIsolation.ts"
+    ],
+    "tracked_changes_before": [
+      " M backend/scripts/testing/capacity_renderer.py",
+      " M backend/scripts/testing/capacity_renderer.ts"
+    ],
+    "tracked_file_count": 702
+  },
+  "started_at": "2026-11-04T20:56:22.524833+00:00",
+  "status": "suites_passed_source_drift_retained",
+  "suites": [
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "backend/scripts/ops",
+        "-p",
+        "test_*.py"
+      ],
+      "exit_code": 0,
+      "finished_at": "2026-11-04T20:59:08.650905+00:00",
+      "log_file": "ops.log",
+      "log_sha256": "dc01a00a2e6545085dc4a934d970676cdea5768fb8df7c3fee2658eae773b6ea",
+      "started_at": "2026-11-04T20:56:22.529458+00:00",
+      "suite": "ops",
+      "test_count": 414,
+      "wall_seconds": 166.121
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "backend/scripts/ops/production-schema",
+        "-p",
+        "test_*.py"
+      ],
+      "exit_code": 0,
+      "finished_at": "2026-11-04T20:59:10.880011+00:00",
+      "log_file": "production-schema.log",
+      "log_sha256": "0f33db5ba250da09645791a852ad89f94e10ecb789f9cc69f9e21b7b2722c130",
+      "started_at": "2026-11-04T20:59:08.651271+00:00",
+      "suite": "production-schema",
+      "test_count": 11,
+      "wall_seconds": 2.229
+    },
+    {
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "backend/deploy/kubernetes",
+        "-p",
+        "test_*.py"
+      ],
+      "exit_code": 0,
+      "finished_at": "2026-11-04T20:59:10.944356+00:00",
+      "log_file": "kubernetes.log",
+      "log_sha256": "2fdf7a432a53fceb691486981be60fcb65192fbaa6b7627e6b3fe3a0c95917bf",
+      "started_at": "2026-11-04T20:59:10.880303+00:00",
+      "suite": "kubernetes",
+      "test_count": 15,
+      "wall_seconds": 0.064
+    }
+  ],
+  "total_tests": 440,
+  "version": 1
+}
