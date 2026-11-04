@@ -7297,3 +7297,9 @@ migration hashes and the pinned PostgreSQL image digest. These are synthetic loc
 checks; they do not claim production deployment, hosted-storage qualification or
 native Word visual acceptance. API metadata and browser re-entry integration are
 composed with the parent/W08 changes before release.
+Legacy retry qualifier robustness: the joined step lookup now uses a stable local
+request_input variable rather than the function-name-qualified input parameter,
+so later private command wrapper renames cannot invalidate it. The actual two
+PostgreSQL successor cases pass again, now including the targeted job.action
+route. The actual migrated retry/capacity suites also pass52 tests against the
+new local-variable definition. No paid request identity or command behavior changed.
