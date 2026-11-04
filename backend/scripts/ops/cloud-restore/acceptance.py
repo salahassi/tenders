@@ -53,6 +53,34 @@ class RestoreAcceptance(Acceptance):
             time.sleep(2)
         raise ProbeFailure('RESTORE_SCHEMA_NOT_READY')
 
+    def storage_expect(self,response,statuses,code):
+        if response.status in statuses:return response
+        # Storage may return private SQL or object identifiers in message/error.
+        # Expose only exact protocol classes, never arbitrary response strings.
+        allowed={'InvalidFileSizeLimit','EntityTooLarge','AccessDenied','InvalidJWT','InvalidRequest',
+          'BucketAlreadyExists','KeyAlreadyExists','NoSuchBucket','DatabaseError'}
+        error='UNCLASSIFIED'
+        try:
+            value=json.loads(response.body)
+            if isinstance(value,dict) and isinstance(value.get('code'),str) and value['code'] in allowed:error=value['code']
+        except (ValueError,UnicodeError):pass
+        status=str(response.status) if type(response.status) is int and 0<=response.status<=599 else 'UNKNOWN'
+        raise ProbeFailure(code+'_HTTP_'+status+'_'+error,response.status)
+
+    def create_private_fixture_bucket(self):
+        # This disposable bootstrap Storage is explicitly limited to 1 MiB.
+        # Its tiny synthetic DOCX does not qualify the product's 10 MiB limit.
+        bucket='tenderdesk-private';limit=1048576
+        created=self.storage_expect(self.client.request(self.config.storage_url,'/bucket',method='POST',token=self.config.service_key,
+          data={'id':bucket,'name':bucket,'public':False,'file_size_limit':limit}),{200,201},'RESTORE_PRIVATE_BUCKET_CREATE_FAILED')
+        value=created.json('RESTORE_PRIVATE_BUCKET_RESPONSE_INVALID')
+        if not isinstance(value,dict) or value.get('name')!=bucket:raise ProbeFailure('RESTORE_PRIVATE_BUCKET_RESPONSE_INVALID')
+        metadata=self.storage_expect(self.client.request(self.config.storage_url,'/bucket/'+bucket,token=self.config.service_key),
+          {200},'RESTORE_PRIVATE_BUCKET_LOOKUP_FAILED').json('RESTORE_PRIVATE_BUCKET_METADATA_INVALID')
+        if (not isinstance(metadata,dict) or metadata.get('id')!=bucket or metadata.get('name')!=bucket
+          or metadata.get('public') is not False or type(metadata.get('file_size_limit')) is not int or metadata['file_size_limit']!=limit):
+            raise ProbeFailure('RESTORE_PRIVATE_BUCKET_METADATA_MISMATCH')
+
     def storage_put(self,key,data,token):
         path='/object/tenderdesk-private/'+urllib.parse.quote(key,safe='/')
         expect(self.client.request(self.config.storage_url,path,method='POST',token=token,raw=data,headers={
@@ -97,7 +125,7 @@ class RestoreAcceptance(Acceptance):
         snapshot=self.command('delivery.snapshot.prepare',{'opportunity_id':opportunity['id'],'expected_revision':current['revision']},source_token)
         requirement=self.rpc('cloud_restore_fixture_requirement',{'opportunity_id':opportunity['id'],'review_id':review['review_id']})
         self.passed('authorized_source_reviews_and_dormant_requirement')
-        expect(self.client.request(self.config.storage_url,'/bucket',method='POST',token=self.config.service_key,data={'id':'tenderdesk-private','name':'tenderdesk-private','public':False,'file_size_limit':10485760}),{200,201},'RESTORE_PRIVATE_BUCKET_CREATE_FAILED')
+        self.create_private_fixture_bucket()
         job=self.rpc('claim_backend_job_v4')
         if not job or job['type']!='render_delivery' or job['entity_id']!=snapshot['id']:raise ProbeFailure('RESTORE_LOCAL_FIXTURE_JOB_MISMATCH')
         export=self.rpc('delivery_export_context',{'job_id':job['id'],'lease':job['lease_token']})

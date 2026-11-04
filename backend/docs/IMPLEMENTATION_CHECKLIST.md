@@ -8795,3 +8795,29 @@ the actual pinned RLS behavior, not live Auth HTTP. The narrow regression cleans
 its exact temporary database and roles. The 22 frozen application migrations are
 unchanged. Hosted restore retry and actual production Auth metadata verification
 remain separate pending gates; no hosted call occurred in this correction.
+
+### 2026-11-04 — Isolated cloud restore bucket contract correction
+
+Cloud restore run `41905235686` advanced past synthetic Auth identities and source
+reviews, then stopped at private bucket creation. The disposable bootstrap Storage
+has a 1 MiB global object limit, while the restore fixture requested a 10 MiB
+bucket. Actual pinned Storage v1.81.0 with isolated PostgreSQL reproduced HTTP 400
+`EntityTooLarge` and confirmed that no bucket was created; this was not an
+already-existing bucket condition. The restore fixture now requests 1 MiB for its
+tiny synthetic DOCX. It requires successful creation and a separate exact
+id/name/private/size-limit metadata readback, rejects existing buckets, and emits
+only HTTP status plus an allowlisted error class. It never prints private Storage
+messages, details or identifiers.
+
+Six new focused tests and the existing twelve restore helper tests pass. The
+opt-in pinned binary probe executes the actual composed acceptance class: matching
+limit creation, metadata readback, exact upload/download bytes, unauthenticated
+public-path denial and duplicate rejection pass, and its own containers are
+removed. The sanitized receipt is
+`backend/docs/evidence/cloud-restore-bucket-20261104.json`; the reproducible command
+is `python3 backend/scripts/testing/cloud_restore_bucket_container.py --output /tmp/cloud-restore-bucket-proof`.
+This is isolated local HTTP evidence for a tiny fixture, not qualification of the
+product's 10 MiB file limit, whole application rendering, production Auth policy,
+or a successful hosted restore. No application migration, production configuration
+or hosted service was changed. The next reviewed hosted restore retry remains a
+separate gate.
