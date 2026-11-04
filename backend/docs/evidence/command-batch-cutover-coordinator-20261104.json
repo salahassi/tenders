@@ -1,0 +1,33 @@
+{
+  "actual_kubernetes_termination_exercised": false,
+  "actual_postgresql_activity_cases": 7,
+  "compatible_gateway_receipt_sha256": "29079c1c2c075176ad36ae2e8d327567bbf1fc2551975a3234657c095a424944",
+  "control_flow_tests": 30,
+  "hosted_calls": 0,
+  "live_managed_pg18_visibility_proved": false,
+  "logs": {
+    "command-batch-coordinator-r5.log": "bea6f0a8deb03d70c425ea12c22a7ea98f2b87d83f7ebe236a18e7636f1d37a0",
+    "command-batch-gateway-compatible-binding.log": "383e0baf215e9424889987d6e0826730370a7d89175bac3f9d7c2fa76c2b1879"
+  },
+  "model_calls": 0,
+  "passed": true,
+  "pure_release_binding_tests": 9,
+  "remaining_gates": [
+    "read-only managed own-login activity observation",
+    "checked hosted rollout actual gateway exit/current config proof",
+    "fresh24-migration cloud restore and final integrated ops/source checks",
+    "final actual API image capacity and hosted acceptance"
+  ],
+  "runtime_capacity_or_slo_qualified": false,
+  "scope": "reviewed cutover coordination and exact compatible gateway binding; no hosted rollout",
+  "sessions_terminated": 0,
+  "source_sha256": {
+    "backend/scripts/ops/command-batch-cutover.py": "06fac5663893a1adace369a0d5d3ea3637eeecb9c4274e5a3b4470c2cdf64d40",
+    "backend/scripts/ops/proposal-delivery-release.py": "da88eaf6ff42166074fd85193ec30bb533a0846cedc3bb86dbfac41b77f3fe38",
+    "backend/scripts/ops/proposal-delivery-update.py": "493732779c059e4254f7c8e45eb5eb4eeeeec65b4e0537cb8b8a2b6fdc5b2a87",
+    "backend/scripts/ops/test_command_batch_cutover.py": "cd07d9f6420f0e34619ccfeeb9def2cfbdeac12026e25675f2f578e40bd2b697",
+    "backend/scripts/ops/test_proposal_delivery_release.py": "44d2787d1519118ed6905a8b08569529eaedd904d161b6fe07b1c83d3e911853",
+    "backend/scripts/ops/test_proposal_delivery_update.py": "1f03fa3194ac922eb61b4cd4a12ee2b08c2e920e8e601389402e5b38ff2b5958"
+  },
+  "version": 1
+}

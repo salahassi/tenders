@@ -94,7 +94,7 @@ GATEWAY_BEFORE = 'scripts/ops/storage-retirement/gateway-before.conf'
 GATEWAY_AFTER = 'deploy/kubernetes/gateway.conf'
 GATEWAY_QUALIFICATION = 'docs/evidence/storage-retirement-binary-20261104.json'
 GATEWAY_STORAGE_QUALIFIED = 'scripts/ops/storage-retirement/gateway-storage-qualified.conf'
-GATEWAY_BATCH_QUALIFICATION = 'docs/evidence/legacy-batch-gateway-20261104.json'
+GATEWAY_BATCH_QUALIFICATION = 'docs/evidence/legacy-batch-gateway-compatible-20261104.json'
 GATEWAY_BASELINE_SHA256 = '4907ecf81e2fa1e97754202906873ccd7c34e3dcbe26dd1e60cf4e276c639d23'
 
 def gateway_configuration(root=ROOT):
@@ -131,7 +131,7 @@ def gateway_configuration(root=ROOT):
         raise ReleaseError('DELIVERY_RELEASE_GATEWAY_QUALIFICATION_INVALID')
     if (not isinstance(batch,dict) or any(batch.get(key) is not True for key in
       ('passed','actual_binary_exercised','legacy_rpc_denial_qualified','gateway_resumable_denial_qualified',
-       'ordinary_routing_preserved','restart_denial_qualified','cleanup_confirmed'))
+       'ordinary_routing_preserved','restart_denial_qualified','cleanup_confirmed','postgrest_error_envelope_qualified'))
       or any(type(batch.get(key)) is not int or batch[key]!=0 for key in ('production_calls','customer_calls'))
       or batch.get('gateway_image')!=image or batch.get('gateway_config_source_sha256')!=after_hash
       or batch.get('gateway_before_source_sha256')!=digest(values['storage_qualified'][0])

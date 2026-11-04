@@ -66,7 +66,13 @@ class DeliveryUpdateTests(unittest.TestCase):
    stack.enter_context(patch.object(p.runtime,'workload_snapshot',side_effect=snapshot));stack.enter_context(patch.object(p.runtime,'retained_configuration',side_effect=retained))
    stack.enter_context(patch.object(p.u,'owned',side_effect=lambda kind,name:copy.deepcopy(natives[name]) if kind=='cronjob' else {'data':{}}))
    stack.enter_context(patch.object(p.d,'command',side_effect=command));stack.enter_context(patch.object(p.d,'wait_deployments',side_effect=lambda names:stage(names[0]+'-ready')))
-   stack.enter_context(patch.object(p.gateway,'preflight',return_value={'fixture':True}));stack.enter_context(patch.object(p.gateway,'apply',side_effect=lambda *_:stage('gateway-guard')));stack.enter_context(patch.object(p.gateway,'after_snapshot',side_effect=lambda _:snapshot()['gateway']));stack.enter_context(patch.object(p.gateway,'verify',side_effect=lambda *_args,**_kwargs:stage('gateway-verify')))
+   def gateway_apply(*_,after_rollout):
+    stage('gateway-guard');after_rollout()
+   stack.enter_context(patch.object(p.gateway,'preflight',return_value={'fixture':True}));stack.enter_context(patch.object(p.gateway,'apply',side_effect=gateway_apply));stack.enter_context(patch.object(p.gateway,'after_snapshot',side_effect=lambda _:snapshot()['gateway']));stack.enter_context(patch.object(p.gateway,'verify',side_effect=lambda *_args,**_kwargs:stage('gateway-verify')))
+   stack.enter_context(patch.object(p.cutover,'api_gateway_binding',side_effect=lambda *_:stage('api-binding')))
+   stack.enter_context(patch.object(p.cutover,'observe_transactions',side_effect=lambda *_:stage('transaction-visibility')))
+   drain=stack.enter_context(patch.object(p.cutover,'GatewayDrain'));drain.return_value.prepare.side_effect=lambda:stage('gateway-protected');drain.return_value.after_rollout.side_effect=lambda:stage('gateway-process-exits')
+   stack.enter_context(patch.object(p.cutover,'drain_transactions',side_effect=lambda *_:stage('transaction-drain')))
    stack.enter_context(patch.object(p,'wait_drain',side_effect=lambda name,_image:stage(name+'-drained')))
    stack.enter_context(patch.object(p.code,'public_check',side_effect=public));stack.enter_context(patch.object(p.d,'sql',side_effect=sql))
    client=stack.enter_context(patch.object(p.inventory.observer,'Client'));client.return_value.labels={};client.return_value.prepare.side_effect=lambda:stage('client');client.return_value.cleanup.side_effect=lambda:stage('cleanup')
@@ -77,6 +83,10 @@ class DeliveryUpdateTests(unittest.TestCase):
   with self.fixture() as (state,native,events,emit):
    p.update()
    self.assertLess(events.index('gateway-guard'),events.index('schema'))
+   self.assertLess(events.index('transaction-visibility'),events.index('gateway-protected'))
+   self.assertLess(events.index('gateway-protected'),events.index('gateway-guard'))
+   self.assertLess(events.index('gateway-process-exits'),events.index('transaction-drain'))
+   self.assertLess(events.index('transaction-drain'),events.index('schema'))
    self.assertLess(events.index('schema'),events.index('worker-patch'))
    self.assertLess(events.index('worker-drained'),events.index('api-patch'))
    self.assertLess(events.index('source-browser-drained'),events.index('native-ocr-patch'))
@@ -161,7 +171,7 @@ class DeliveryUpdateTests(unittest.TestCase):
    self.assertEqual(receipt['desired_replicas'],2);self.assertFalse(receipt['hosted_load_qualified'])
 
  def test_each_failure_cleans_and_never_rolls_images_back_or_claims_success(self):
-  for failure in ('client','gateway-guard','schema','worker-patch','worker-drained','api-patch','source-browser-patch','native-ocr-patch','frontend-patch','public','schema-recheck','cleanup'):
+  for failure in ('client','api-binding','transaction-visibility','gateway-protected','gateway-guard','gateway-process-exits','transaction-drain','schema','worker-patch','worker-drained','api-patch','source-browser-patch','native-ocr-patch','frontend-patch','public','schema-recheck','cleanup'):
    with self.subTest(failure=failure),self.fixture(failure) as (state,natives,events,emit):
     with self.assertRaises(Exception):p.update()
     self.assertEqual(events[-1],'cleanup')

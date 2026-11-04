@@ -27,6 +27,7 @@ images=load('delivery_release_images','proposal-delivery-images.py')
 code=load('delivery_release_runtime','model-validation-update.py')
 inventory=load('delivery_release_inventory','digitalocean-inventory.py')
 gateway=load('delivery_storage_gateway','storage-gateway-update.py')
+cutover=load('delivery_batch_cutover','command-batch-cutover.py')
 runtime,u=code.runtime,code.u
 d=u.d
 RUNTIME=('worker','api','source-browser','scheduler')
@@ -187,13 +188,21 @@ def update():
     try:
         client.prepare()
         verify_configuration(before,configuration,native_original,selected)
+        api_binding=cutover.api_gateway_binding(d,original['api'])
+        # Fail before the permanent gateway change if this runner cannot see
+        # every relevant transaction. This preflight marker is not reused as
+        # the drain boundary: that clock is captured only after process exits.
+        cutover.observe_transactions(d,client)
         attempted=True
         # The unused resumable endpoint bypasses Storage's permission probe for
         # signed tokens. Install its qualified gateway denial before new schema
         # or runtime can rely on retirement. Never roll this guard back after an
         # ambiguous later stage; its exact bytes/spec are checked throughout.
-        gateway.apply(d,gateway_state)
+        gateway_drain=cutover.GatewayDrain(d,gateway,gateway_state)
+        old_gateway=gateway_drain.prepare()
+        gateway.apply(d,gateway_state,after_rollout=gateway_drain.after_rollout)
         before['gateway']=gateway.after_snapshot(gateway_state)
+        transaction_drain=cutover.drain_transactions(d,client)
         receipt=json.loads(d.sql(client.pod,release.migration_script(manifest)))
         if set(receipt)!={'release','manifest_sha256','catalog_sha256','replayed'} or receipt['release']!=release.RELEASE or receipt['manifest_sha256']!=release.digest(release.canonical(manifest).encode()) or not re.fullmatch('[a-f0-9]{64}',receipt['catalog_sha256']) or type(receipt['replayed']) is not bool:raise UpdateError('DELIVERY_SCHEMA_RECEIPT_INVALID')
         # All SQL becomes visible atomically before any runtime admits new pins.
@@ -220,7 +229,7 @@ def update():
     finally:
         try:client.cleanup();journal_path().unlink(missing_ok=True)
         except Exception:raise UpdateError('DELIVERY_CLIENT_CLEANUP_NOT_CONFIRMED') from None
-    emit('passed',source_revision=revision,images=selected,schema=receipt,worker_resources=observed_worker_resources,api_resources=observed_api_resources,deployments_updated=list(TARGETS)+['gateway'],cronjobs_updated=['native-ocr'],old_workers_drained=True,configuration_preserved_except_reviewed_storage_gateway=True,storage_gateway_configuration=manifest['gateway_configuration'],processing_retried=False,hosted_artifact_acceptance=False)
+    emit('passed',source_revision=revision,images=selected,schema=receipt,worker_resources=observed_worker_resources,api_resources=observed_api_resources,deployments_updated=list(TARGETS)+['gateway'],cronjobs_updated=['native-ocr'],old_workers_drained=True,configuration_preserved_except_reviewed_storage_gateway=True,storage_gateway_configuration=manifest['gateway_configuration'],command_batch_cutover={'api_binding':api_binding,'old_gateway':old_gateway,'actual_gateway_process_exits_proved':True,'transaction_drain':transaction_drain},processing_retried=False,hosted_artifact_acceptance=False)
 
 def main(argv=()):
     try:
@@ -238,7 +247,7 @@ def main(argv=()):
         return 0
     except Exception as error:
         code_value=str(error)
-        safe=code_value if isinstance(error,(UpdateError,release.ReleaseError,images.ImageError)) and re.fullmatch('[A-Z_]{1,100}',code_value) else 'DELIVERY_UPDATE_FAILED'
+        safe=code_value if isinstance(error,(UpdateError,release.ReleaseError,images.ImageError,cutover.CutoverError)) and re.fullmatch('[A-Z_]{1,100}',code_value) else 'DELIVERY_UPDATE_FAILED'
         emit('blocked',code=safe,automatic_rollback=False,forward_completion_may_be_required=True)
         return 1
 if __name__=='__main__':sys.exit(main(sys.argv[1:]))

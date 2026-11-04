@@ -9909,3 +9909,34 @@ acceptance. No provider, production or customer calls. Evidence:
 `docs/evidence/native-api-batch-capacity-20261104.json`; raw local receipt remains
 under `/workspace/output/api-batch-capacity-r1/receipt.json`. Deployment and final
 combined checks remain separate root-owned gates.
+
+### November 4 — retain actual gateway identities and drain only pre-fence transactions
+
+The release coordinator now checks the API's literal gateway upstream and actual
+inherited environment using fixed shell builtins that output only true/false.
+Before changing the gateway it persists the complete original Pod UID/container
+set and protects those identities with a dedicated finalizer. Every termination
+proof is durable before finalizer removal. Lost ACKs, immediate garbage
+collection, partial exit, missing identities and concurrent journal changes
+remain fail-closed. An absent original journal cannot adopt an already changed
+or partially changed gateway. The permanent route fence is never rolled back.
+
+After actual old gateway exits, a database clock marker bounds a metadata-only
+drain of the fixed authenticator login's old transactions. The existing SET
+authority is sufficient: the observer assumes that exact login role in a read-only
+transaction and excludes its own backend. It grants no global monitoring rights,
+terminates no sessions, and preserves pending sessions on timeout or unknown
+visibility. Seven actual PostgreSQL 17.6 cases passed for active and idle sessions
+that changed local JWT roles, direct observer self-exclusion, hidden/USAGE-only
+refusal, a fixed cutoff, natural commit and failure handling. The final helper
+hash and cleanup are bound in the [activity receipt](evidence/command-batch-activity-postgres-20261104.json);
+the initial harness decoding failure and earlier successful source are retained.
+
+Thirty coordinator/updater tests and nine pure release-binding checks passed.
+Independent source review found no further blocker. The compatible gateway
+receipt is now mandatory, including its actual old-SDK typed-error proof; old
+native receipts remain unchanged. [Coordinator evidence](evidence/command-batch-cutover-coordinator-20261104.json)
+separates these local checks from actual Kubernetes termination, managed PG18
+visibility, final image capacity and hosted acceptance. The early locked zero
+census and permanent INSERT trigger remain necessary for queued/direct REST
+callers. No hosted mutation or deployment occurred in this slice.

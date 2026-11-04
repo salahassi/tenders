@@ -28,7 +28,7 @@ class DeliveryReleaseTests(unittest.TestCase):
           'gateway_image':self.gateway_image,'fixture':'synthetic-only'}
         self.batch_qualification={'passed':True,'actual_binary_exercised':True,'production_calls':0,'customer_calls':0,
           'legacy_rpc_denial_qualified':True,'gateway_resumable_denial_qualified':True,'ordinary_routing_preserved':True,
-          'restart_denial_qualified':True,'cleanup_confirmed':True,'gateway_image':self.gateway_image,
+          'restart_denial_qualified':True,'cleanup_confirmed':True,'postgrest_error_envelope_qualified':True,'gateway_image':self.gateway_image,
           'gateway_before_source_sha256':hashlib.sha256(self.gateway_storage.encode()).hexdigest(),
           'gateway_config_source_sha256':hashlib.sha256(self.gateway_after.encode()).hexdigest(),
           'storage_qualification_sha256':hashlib.sha256(json.dumps(self.qualification).encode()).hexdigest()}
@@ -170,7 +170,7 @@ class DeliveryReleaseTests(unittest.TestCase):
         path=self.gateway_root/p.GATEWAY_BATCH_QUALIFICATION;raw=path.read_bytes()
         for key,value in [('passed',False),('actual_binary_exercised',1),('legacy_rpc_denial_qualified',False),
           ('gateway_resumable_denial_qualified',False),('ordinary_routing_preserved',False),('restart_denial_qualified',False),
-          ('cleanup_confirmed',False),('gateway_before_source_sha256','f'*64),('storage_qualification_sha256','f'*64),
+          ('cleanup_confirmed',False),('postgrest_error_envelope_qualified',False),('gateway_before_source_sha256','f'*64),('storage_qualification_sha256','f'*64),
           ('production_calls',True),('customer_calls',1)]:
             path.write_text(json.dumps({**self.batch_qualification,key:value}))
             with self.subTest(key=key),self.assertRaisesRegex(p.ReleaseError,'GATEWAY_QUALIFICATION_INVALID'):self.manifest()
