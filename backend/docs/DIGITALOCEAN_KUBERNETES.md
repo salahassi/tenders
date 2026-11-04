@@ -1,5 +1,9 @@
 # DigitalOcean Kubernetes access
 
+Start operational work from the [permanent DO access runbook](DIGITALOCEAN_ACCESS_RUNBOOK.md).
+This file retains the original access and migration history; consult the dated
+implementation checklist for current deployment facts.
+
 The owner requested deployment to the existing `tenderdesk-dev` cluster. The
 cloud development environment can reach DigitalOcean's management API, but its
 outbound Envoy proxy rejects the Kubernetes server certificate. Installing a
