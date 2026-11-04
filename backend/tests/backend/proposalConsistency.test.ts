@@ -417,3 +417,64 @@ it("accepts a source-bound human-reviewed Arabic qualifier equivalence and rejec
     (await assessProposalConsistency(f)).coverage[0].missing_fields,
   ).toContain("conditions");
 });
+it("keeps a current Owner-approved not-applicable decision counted and excludes it without inventing a response", async () => {
+  const f = fixture();
+  f.fulfillment = [];
+  f.sections = [];
+  f.requirements[0].applicability_binding = "d".repeat(64);
+  f.approved_exclusions = [
+    {
+      requirement_id: "r1",
+      approval_id: "approval",
+      actor_id: "owner",
+      approved_by_role: "Owner",
+      binding_hash: "d".repeat(64),
+      reason:
+        "Owner reviewed exact current scope and approved this explicit exclusion.",
+    },
+  ];
+  const report = await assessProposalConsistency(f);
+  expect(report.coverage).toHaveLength(1);
+  expect(report.coverage[0]).toMatchObject({
+    status: "excluded",
+    classification: "approved_not_applicable",
+  });
+  expect(report.substantive_complete).toBe(true);
+  f.requirements[0].applicability_binding = "e".repeat(64);
+  expect((await assessProposalConsistency(f)).substantive_complete).toBe(false);
+});
+it.each(["informational", "reference"])(
+  "classifies current reviewed %s as a non-obligation without dropping it or requiring method prose",
+  async (kind) => {
+    const f = fixture();
+    f.fulfillment = [];
+    f.sections = [];
+    f.requirements[0].source_review_reason =
+      "Reviewed original source as informational context rather than a buyer commitment.";
+    f.requirements[0].source_semantics!.actor = null;
+    if (kind === "informational")
+      f.requirements[0].source_semantics!.modality = "informational";
+    else f.requirements[0].source_semantics!.authority_role = "reference";
+    const report = await assessProposalConsistency(f);
+    expect(report.coverage[0]).toMatchObject({
+      status: "excluded",
+      classification: "non_obligation",
+    });
+    expect(report.substantive_complete).toBe(true);
+    delete f.requirements[0].source_review_reason;
+    expect((await assessProposalConsistency(f)).substantive_complete).toBe(
+      false,
+    );
+  },
+);
+it("does not silently exempt an optional buyer offer or an unknown source", async () => {
+  const f = fixture();
+  f.fulfillment = [];
+  f.sections = [];
+  f.requirements[0].mandatory = false;
+  f.requirements[0].source_semantics!.modality = "permitted";
+  expect((await assessProposalConsistency(f)).substantive_complete).toBe(false);
+  f.requirements[0].source_semantics!.authority_status = "unconfirmed";
+  f.requirements[0].source_review_reason = "An unconfirmed reference";
+  expect((await assessProposalConsistency(f)).substantive_complete).toBe(false);
+});

@@ -31,6 +31,8 @@ export type ConsistencyRequirement = {
   category?: string;
   source_refs?: { id: string; quote: string }[];
   source_semantics?: RequirementSemantics;
+  source_review_reason?: string;
+  applicability_binding?: string;
 };
 export type ConsistencySection = {
   key: string;
@@ -77,6 +79,15 @@ export type ConsistencyInput = {
   requirements: ConsistencyRequirement[];
   sections: ConsistencySection[];
   fulfillment: RequirementFulfillment[];
+  /** Server-derived from the existing current Owner compliance decision. */
+  approved_exclusions?: {
+    requirement_id: string;
+    approval_id: string;
+    actor_id: string;
+    approved_by_role: "Owner";
+    binding_hash: string;
+    reason: string;
+  }[];
   sources: ConsistencySource[];
   confirmed_shared_decisions?: {
     id: string;
@@ -114,7 +125,10 @@ export type ProposalConsistencyReport = {
   input_hash: string;
   coverage: {
     requirement_id: string;
-    status: "answered" | "gap" | "unreviewed";
+    status: "answered" | "excluded" | "gap" | "unreviewed";
+    classification?:
+      "obligation" | "non_obligation" | "approved_not_applicable";
+    exclusion_reason?: string;
     section_keys: string[];
     missing_fields: string[];
   }[];
@@ -271,6 +285,31 @@ function factInQuote(fact: ConsistencyFact, value: string | null): boolean {
     fact.kind === "date"
       ? token === value
       : numericLiteralValue(token) === value,
+  );
+}
+export function sourceQuantityInQuote(
+  quote: string,
+  quantity: { value: string; unit: string; currency?: string | null },
+): boolean {
+  const value = numericLiteralValue(consistencyText(quantity.value));
+  return (
+    value !== null &&
+    factInQuote(
+      {
+        key: "source",
+        kind: quantity.currency ? "money" : "quantity",
+        value,
+        unit: quantity.unit,
+        currency: quantity.currency || null,
+        quote,
+      },
+      value,
+    ) &&
+    (quantity.currency
+      ? (currencyAliases[quantity.currency] || [quantity.currency]).some(
+          (alias) => literalWord(quote, alias),
+        )
+      : unitInQuote(quote, quantity.unit))
   );
 }
 function hasFactValue(fact: ConsistencyFact, value: string | null): boolean {
@@ -603,21 +642,26 @@ export async function assessProposalConsistency(
   const coverage = input.requirements.map((r, ri) => {
     const forms = input.fulfillment.filter((f) => f.requirement_id === r.id);
     const missing = new Set<string>();
-    if (forms.length !== 1)
-      missing.add(forms.length ? "unique_primary_response" : "response");
     const semantics = r.source_semantics;
+    const nonObligation =
+      !!semantics &&
+      (semantics.modality === "informational" ||
+        ["supplier_proposal", "company_evidence", "reference"].includes(
+          semantics.authority_role,
+        ));
     if (
       !semantics ||
       semantics.review_status !== "confirmed" ||
       !semantics.review_id ||
       semantics.authority_status !== "confirmed" ||
-      !["buyer_rfp", "buyer_addendum"].includes(semantics.authority_role)
+      (!nonObligation &&
+        !["buyer_rfp", "buyer_addendum"].includes(semantics.authority_role))
     )
       missing.add("confirmed_source_semantics");
     if (
       semantics &&
       (semantics.modality === "unknown" ||
-        semantics.actor === null ||
+        (semantics.actor === null && !nonObligation) ||
         semantics.negated === null)
     )
       missing.add("source_obligation_meaning");
@@ -634,6 +678,37 @@ export async function assessProposalConsistency(
       )
     )
       missing.add("current_source_binding");
+    const exclusions = (input.approved_exclusions || []).filter(
+      (e) => e.requirement_id === r.id,
+    );
+    const approved =
+      exclusions.length === 1 &&
+      exclusions[0].approved_by_role === "Owner" &&
+      !!exclusions[0].actor_id &&
+      !!exclusions[0].approval_id &&
+      exclusions[0].reason.trim().length >= 10 &&
+      /^[a-f0-9]{64}$/.test(exclusions[0].binding_hash) &&
+      exclusions[0].binding_hash === r.applicability_binding;
+    if (
+      !missing.size &&
+      (approved || (nonObligation && !!r.source_review_reason?.trim()))
+    )
+      return {
+        requirement_id: r.id,
+        status: "excluded" as const,
+        classification: approved
+          ? ("approved_not_applicable" as const)
+          : ("non_obligation" as const),
+        exclusion_reason: approved
+          ? exclusions[0].reason
+          : r.source_review_reason!,
+        section_keys: [] as string[],
+        missing_fields: [] as string[],
+      };
+    if (nonObligation && !r.source_review_reason?.trim())
+      missing.add("source_classification_reason");
+    if (forms.length !== 1)
+      missing.add(forms.length ? "unique_primary_response" : "response");
     for (const f of forms) {
       const section = input.sections.find(
         (s) => s.key === f.response_section_key,
@@ -789,7 +864,9 @@ export async function assessProposalConsistency(
     diagnostics,
     substantive_complete:
       coverage.length > 0 &&
-      coverage.every((c) => c.status === "answered") &&
+      coverage.every(
+        (c) => c.status === "answered" || c.status === "excluded",
+      ) &&
       diagnostics.length === 0,
     semantic_review_required: coverage.some(
       (c) =>
@@ -806,7 +883,9 @@ export function requireProposalAcceptance(
     !report.substantive_complete ||
     report.diagnostics.some((d) => d.severity === "blocking") ||
     !report.coverage.length ||
-    report.coverage.some((c) => c.status !== "answered")
+    report.coverage.some(
+      (c) => c.status !== "answered" && c.status !== "excluded",
+    )
   )
     throw new Error("PROPOSAL_CONSISTENCY_REQUIRED");
 }

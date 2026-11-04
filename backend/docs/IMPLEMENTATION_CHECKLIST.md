@@ -286,6 +286,28 @@ this entry does not claim that gate passed. No production or paid model call was
 made. Ordinary final approval still requires explicit current human review;
 that does not wait inside generation or mask provider-unavailability errors.
 
+Automatic generated-delivery validation now has a separate pure machine gate.
+It reconstructs the canonical final assembly (including planned parts, fixed
+blocks and generated matrix), compares actual saved rows/outline, and requires
+matching accepted candidate and complete verifier receipts for every completed
+model step. Existing grounding and numeric evidence checks are reused; source
+restatement, generic compliance, empty/title-only content, missing response
+coverage, known quantity/unit mismatch, blocking review findings and absent
+cross-section reconciliation block issuance. Human authority/meaning/finalization
+review gaps remain explicit and do not masquerade as machine failure or human
+approval. The returned payload always remains draft and substantively incomplete.
+Nine isolated machine fixtures pass; actual publication/lease/deadline/renderer
+integration is owned by W10 and remains a combined gate.
+
+Core applicability handling now retains every inventory row with explicit
+`excluded/non_obligation` or `excluded/approved_not_applicable` classification and
+reason. Informational or confirmed nonbuyer sources require the current canonical
+source/meaning review reason. Optional buyer offers are never silently exempted;
+Owner N/A exclusions must carry the exact current source/content binding supplied
+by the existing compliance workflow. Source null actors are allowed only for
+reviewed non-obligations. The updated core/review integration subset passes 57
+tests; the W05 binding migration and UI integration are separate follow-up work.
+
 ## November 4 — integrated durable draft rendering and independent review
 
 Stages 3–7: six parallel implementation tracks are integrated on
