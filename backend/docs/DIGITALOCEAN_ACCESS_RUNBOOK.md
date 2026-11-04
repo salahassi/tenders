@@ -98,8 +98,13 @@ policy, application rendering or production deployment. The later
 at `28689b97503b1fe23f0999909c91427867131c91` repeats all thirteen checks using
 the shared platform helper and its frozen source contract. Its
 [receipt](evidence/cloud-restore-20261104-41910306855.json) retains successful
-original-CA verification and both cleanups. Production was not changed. Use the
-checklist for the latest source-specific release gates.
+original-CA verification and both cleanups. Production was not changed. The final 24-migration shared-policy drill also
+passed all thirteen checks, original CA verification and both cleanup stages in
+[run41933205779](https://github.com/salahassi/tenders/actions/runs/41933205779)
+at `865d8406fcaf148299184bcbe67522fb0b256258`; its
+[receipt](evidence/cloud-restore-20261104-41933205779.json) binds the complete frozen
+release manifest. This is isolated restore evidence, not application deployment
+or proposal acceptance. Use the checklist for the latest source-specific gates.
 
 The subsequent read-only model binding audit succeeded at commit
 `bc8e5709183fd228ae1bac207e643e2413e9c9fd` in

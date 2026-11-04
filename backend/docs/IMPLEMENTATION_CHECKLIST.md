@@ -10458,3 +10458,24 @@ times are functional-test evidence rather than capacity measurements. This does
 not claim completion of that package suite, the renewed hosted restore drill,
 or deployment acceptance. No standalone native benchmark, provider request,
 hosted mutation or workflow dispatch was performed by this check.
+
+### November 4 — full application checks and exact 24-migration cloud restore pass
+
+Both complete application packages passed at unchanged source
+`865d8406fcaf148299184bcbe67522fb0b256258`: backend 3,284 tests across 193 files,
+frontend 380 tests across 59 files, and typecheck/build for both. The
+[package receipt](evidence/complete-app-checks-865d840-20261104.json) binds all six
+commands, log hashes and the empty before/after source-map difference. Combined
+with the separately recorded 564 Python gates, this is 4,228 passing tests.
+Concurrent functional runs do not replace the retained native capacity proofs.
+
+[Cloud restore run41933205779](https://github.com/salahassi/tenders/actions/runs/41933205779)
+at the same exact source applied all 24 frozen migrations and passed all 13 actual
+Auth/Storage HTTP checks using the shared application Auth policy. The
+[receipt](evidence/cloud-restore-20261104-41933205779.json) binds canonical manifest
+`4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76`,
+original cluster CA/hostname verification and both successful cleanup stages.
+No customer rows were copied, no providers called and no production business
+records changed. Older 22-migration and fixture-policy receipts remain historical.
+Application deployment, real saved-proposal/browser acceptance, provider semantic
+qualification, Arabic OCR quality and Word field-update acceptance remain open.
