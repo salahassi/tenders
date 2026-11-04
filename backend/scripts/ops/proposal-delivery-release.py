@@ -19,6 +19,8 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 _auth_spec=importlib.util.spec_from_file_location('delivery_auth_read',HERE/'application_auth_read.py')
 auth_read=importlib.util.module_from_spec(_auth_spec);_auth_spec.loader.exec_module(auth_read)
+_https_spec=importlib.util.spec_from_file_location('delivery_https_capacity',HERE/'https-capacity.py')
+https_capacity=importlib.util.module_from_spec(_https_spec);_https_spec.loader.exec_module(https_capacity)
 MANIFEST = HERE / 'proposal-delivery-release.json'
 RELEASE = 'proposal-delivery-reliability-v1'
 CUTOFF = '20261103032000_model_admission_fairness.sql'
@@ -94,7 +96,8 @@ GATEWAY_BEFORE = 'scripts/ops/storage-retirement/gateway-before.conf'
 GATEWAY_AFTER = 'deploy/kubernetes/gateway.conf'
 GATEWAY_QUALIFICATION = 'docs/evidence/storage-retirement-binary-20261104.json'
 GATEWAY_STORAGE_QUALIFIED = 'scripts/ops/storage-retirement/gateway-storage-qualified.conf'
-GATEWAY_BATCH_QUALIFICATION = 'docs/evidence/legacy-batch-gateway-compatible-20261104.json'
+GATEWAY_BATCH_QUALIFICATION = 'docs/evidence/legacy-batch-gateway-disk-streaming-20261104.json'
+GATEWAY_STREAM_QUALIFICATION = 'docs/evidence/api-proxy-streaming-disk-20261104.json'
 GATEWAY_BASELINE_SHA256 = '4907ecf81e2fa1e97754202906873ccd7c34e3dcbe26dd1e60cf4e276c639d23'
 
 def gateway_configuration(root=ROOT):
@@ -104,7 +107,7 @@ def gateway_configuration(root=ROOT):
     values={}
     for label,name in (('before',GATEWAY_BEFORE),('after',GATEWAY_AFTER),
       ('qualification',GATEWAY_QUALIFICATION),('storage_qualified',GATEWAY_STORAGE_QUALIFIED),
-      ('batch_qualification',GATEWAY_BATCH_QUALIFICATION),('renderer','deploy/kubernetes/render.py')):
+      ('batch_qualification',GATEWAY_BATCH_QUALIFICATION),('stream_qualification',GATEWAY_STREAM_QUALIFICATION),('renderer','deploy/kubernetes/render.py')):
         path=root/name
         if not path.is_file() or path.is_symlink() or path.stat().st_size>1048576:
             raise ReleaseError('DELIVERY_RELEASE_GATEWAY_SOURCE_UNAVAILABLE')
@@ -116,7 +119,7 @@ def gateway_configuration(root=ROOT):
         tree=ast.parse(values['renderer'][1])
         images=[ast.literal_eval(node.value) for node in tree.body if isinstance(node,ast.Assign)
           and any(isinstance(target,ast.Name) and target.id=='NGINX_IMAGE' for target in node.targets)]
-        receipt=json.loads(values['qualification'][1]);batch=json.loads(values['batch_qualification'][1])
+        receipt=json.loads(values['qualification'][1]);batch=json.loads(values['batch_qualification'][1]);stream=json.loads(values['stream_qualification'][1])
     except (SyntaxError,ValueError,TypeError):
         raise ReleaseError('DELIVERY_RELEASE_GATEWAY_QUALIFICATION_INVALID') from None
     if len(images)!=1 or not isinstance(images[0],str) or not re.fullmatch(r'[a-zA-Z0-9./:_-]+@sha256:[a-f0-9]{64}',images[0]):
@@ -137,6 +140,19 @@ def gateway_configuration(root=ROOT):
       or batch.get('gateway_before_source_sha256')!=digest(values['storage_qualified'][0])
       or batch.get('storage_qualification_sha256')!=digest(values['qualification'][0])):
         raise ReleaseError('DELIVERY_RELEASE_GATEWAY_QUALIFICATION_INVALID')
+    if (not isinstance(stream,dict) or any(stream.get(key) is not True for key in
+      ('passed','actual_binary_exercised','cleanup_confirmed','exact_delivery_qualified','cancellation_qualified','temporary_budget_qualified','gateway_memory_qualified'))
+      or any(type(stream.get(key)) is not int or stream[key]!=0 for key in ('production_calls','customer_calls'))
+      or stream.get('gateway_image')!=image or stream.get('gateway_config_source_sha256')!=after_hash
+      or batch.get('api_proxy_streaming_receipt_sha256')!=digest(values['stream_qualification'][0])):
+        raise ReleaseError('DELIVERY_RELEASE_GATEWAY_STREAM_QUALIFICATION_INVALID')
+    envelope=stream.get('envelope',{})
+    if (not isinstance(envelope,dict) or any(type(envelope.get(key)) is not int or envelope[key]!=value for key,value in
+       [('gateway_memory_bytes',67108864),('gateway_cpu_millicores',200),('tmp_budget_bytes',67108864)])
+      or envelope.get('tmp_medium')!='disk' or envelope.get('census_includes_open_unlinked_files') is not True
+      or stream.get('actual_gateway_tmp_filesystem_magic') not in ('794c7630','ef53','58465342','9123683e')
+      or type(stream.get('payload_bytes')) is not int or stream['payload_bytes']!=412758765):
+        raise ReleaseError('DELIVERY_RELEASE_GATEWAY_STREAM_ENVELOPE_INVALID')
     def data_hash(text):
         # Deliberately matches render.py: default JSON whitespace/ASCII escaping.
         return digest(json.dumps({'nginx.conf':text.replace('__NAMESPACE__','tenderdesk-dev')},sort_keys=True).encode())
@@ -147,7 +163,11 @@ def gateway_configuration(root=ROOT):
       'storage_qualification_sha256':digest(values['qualification'][0]),
       'storage_qualified_source_sha256':digest(values['storage_qualified'][0]),'gateway_image':image}
 
-def freeze(inventory, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT, auth_root=ROOT):
+def https_configuration(root=ROOT):
+    try:return https_capacity.source_contract(root)
+    except https_capacity.HttpsError as error:raise ReleaseError(str(error)) from None
+
+def freeze(inventory, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT, auth_root=ROOT, https_root=ROOT):
     if (inventory.get('version')!=1 or inventory.get('namespace')!='tenderdesk-dev' or inventory.get('ready_workloads')!=10
       or inventory.get('inventory')!='captured' or inventory.get('bootstrap_run') is not False
       or inventory.get('business_mutations')!=0 or inventory.get('schema_mutations')!=0
@@ -167,8 +187,10 @@ def freeze(inventory, *, migrations=ROOT/'supabase/migrations', gateway_root=ROO
     schedules=inventory.get('native_schedules')
     if not isinstance(schedules,list) or {r.get('name') for r in schedules}!={'native-browser','native-ocr'}: raise ReleaseError('DELIVERY_RELEASE_NATIVE_BASELINE_REQUIRED')
     gateway=gateway_configuration(gateway_root)
+    https=https_configuration(https_root)
+    if images['https']!=https['image']:raise ReleaseError('DELIVERY_RELEASE_HTTPS_IMAGE_CHANGED')
     if images['gateway']!=gateway['gateway_image']:raise ReleaseError('DELIVERY_RELEASE_GATEWAY_IMAGE_CHANGED')
-    return {'version':1,'release':RELEASE,'gateway_configuration':gateway,'application_auth_read':auth_read.contract(auth_root),'baseline_images':images,'baseline_native_schedules':schedules,**json.loads(canonical(CAPABILITIES)),'baseline_catalog_sha256':schema['routine_catalog_sha256'],
+    return {'version':1,'release':RELEASE,'gateway_configuration':gateway,'https_configuration':https,'application_auth_read':auth_read.contract(auth_root),'baseline_images':images,'baseline_native_schedules':schedules,**json.loads(canonical(CAPABILITIES)),'baseline_catalog_sha256':schema['routine_catalog_sha256'],
       'baseline_releases':releases,'migrations':[{'name':p.name,'sha256':digest(p.read_bytes())} for p in files]}
 
 def validate_runtime_baseline(manifest):
@@ -194,8 +216,8 @@ def validate_runtime_baseline(manifest):
             for quantity in group.values():
                 if quantity is not None and (not isinstance(quantity,str) or len(quantity)>24 or not re.fullmatch(r'[0-9]{1,15}(?:\.[0-9]{1,9})?(?:m|Ki|Mi|Gi|Ti|K|M|G|T)?',quantity)):raise ReleaseError('DELIVERY_RELEASE_NATIVE_BASELINE_REQUIRED')
 
-def verify_source(manifest, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT, auth_root=ROOT):
-    if not isinstance(manifest,dict) or set(manifest)!={'version','release','baseline_catalog_sha256','baseline_releases','migrations','baseline_images','baseline_native_schedules','gateway_configuration','application_auth_read',*CAPABILITIES} or manifest['version']!=1 or manifest['release']!=RELEASE:
+def verify_source(manifest, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT, auth_root=ROOT, https_root=ROOT):
+    if not isinstance(manifest,dict) or set(manifest)!={'version','release','baseline_catalog_sha256','baseline_releases','migrations','baseline_images','baseline_native_schedules','gateway_configuration','https_configuration','application_auth_read',*CAPABILITIES} or manifest['version']!=1 or manifest['release']!=RELEASE:
         raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     if not re.fullmatch('[a-f0-9]{64}',manifest['baseline_catalog_sha256']): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     validate_runtime_baseline(manifest)
@@ -204,6 +226,9 @@ def verify_source(manifest, *, migrations=ROOT/'supabase/migrations', gateway_ro
     gateway=gateway_configuration(gateway_root)
     if canonical(manifest['gateway_configuration'])!=canonical(gateway):raise ReleaseError('DELIVERY_RELEASE_GATEWAY_SOURCE_CHANGED')
     if manifest['baseline_images']['gateway']!=gateway['gateway_image']:raise ReleaseError('DELIVERY_RELEASE_GATEWAY_IMAGE_CHANGED')
+    https=https_configuration(https_root)
+    if canonical(manifest['https_configuration'])!=canonical(https):raise ReleaseError('DELIVERY_RELEASE_HTTPS_SOURCE_CHANGED')
+    if manifest['baseline_images']['https']!=https['image']:raise ReleaseError('DELIVERY_RELEASE_HTTPS_IMAGE_CHANGED')
     receipts=manifest['baseline_releases']
     if not isinstance(receipts,dict) or len(receipts)!=6 or any(not re.fullmatch('[a-z][a-z0-9-]{1,100}',k) or not re.fullmatch('[a-f0-9]{64}',v) for k,v in receipts.items()):
         raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')

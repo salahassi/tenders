@@ -146,6 +146,13 @@ class CloudRestoreTests(unittest.TestCase):
   output=io.StringIO()
   with patch.object(m,'run',side_effect=failure),redirect_stdout(output):self.assertEqual(m.main(),1)
   self.assertEqual(json.loads(output.getvalue())['source_auth_read_authority'],metadata)
+ def test_https_manifest_required_before_cloud_capture_or_fixture_creation(self):
+  manifest=json.loads(m.release.MANIFEST.read_text());manifest.pop('https_configuration',None)
+  with tempfile.TemporaryDirectory() as folder:
+   path=Path(folder)/'manifest.json';path.write_text(json.dumps(manifest))
+   with patch.object(m.release,'MANIFEST',path),patch.object(m.images,'verify_checkout'),patch.object(m,'capture') as capture,patch.object(m.bootstrap,'run') as create:
+    with self.assertRaisesRegex(m.release.ReleaseError,'MANIFEST_INVALID'):m.run()
+    capture.assert_not_called();create.assert_not_called()
  def test_workflow_restore_is_explicit_and_other_modes_keep_existing_scope(self):
   workflow=(HERE.parents[2]/'.github/workflows/doks-access.yml').read_text()
   self.assertIn('default: inventory',workflow);self.assertIn('options: [inventory, bootstrap, restore, models]',workflow)

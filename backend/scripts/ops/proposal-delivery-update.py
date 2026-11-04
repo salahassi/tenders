@@ -27,6 +27,7 @@ images=load('delivery_release_images','proposal-delivery-images.py')
 code=load('delivery_release_runtime','model-validation-update.py')
 inventory=load('delivery_release_inventory','digitalocean-inventory.py')
 gateway=load('delivery_storage_gateway','storage-gateway-update.py')
+https=load('delivery_https_runtime','https-capacity.py')
 cutover=load('delivery_batch_cutover','command-batch-cutover.py')
 runtime,u=code.runtime,code.u
 d=u.d
@@ -55,11 +56,14 @@ def runtime_resource_envelope(value,name,minimum_cpu_millicores,minimum_memory_b
     if container.get('command') or container.get('args'):raise UpdateError(error_prefix+'ENTRYPOINT_OVERRIDE')
     service=[entry for entry in container.get('env',[]) if isinstance(entry,dict) and entry.get('name')=='APP_RUNTIME_SERVICE']
     if service!=[{'name':'APP_RUNTIME_SERVICE','value':name}]:raise UpdateError(error_prefix+'RUNTIME_ROLE_INVALID')
-    resources=containers[0].get('resources',{})
+    return resource_envelope(container.get('resources',{}),value.get('spec',{}).get('replicas',1),
+      minimum_cpu_millicores,minimum_memory_bytes,error_prefix)
+
+def resource_envelope(resources,replicas,minimum_cpu_millicores,minimum_memory_bytes,error_prefix):
+    """Shared exact quantity parsing; callers separately bind runtime identity."""
     if not isinstance(resources,dict) or not isinstance(resources.get('limits',{}),dict):raise UpdateError(error_prefix+'RESOURCES_INVALID')
     limits=resources.get('limits',{})
     requests=resources.get('requests',{})
-    replicas=value.get('spec',{}).get('replicas',1)
     if not isinstance(requests,dict) or type(replicas) is not int or not 1<=replicas<=2147483647:raise UpdateError(error_prefix+'RESOURCES_INVALID')
     def quantity(raw,factors,allow_zero=False):
         match=re.fullmatch(r'([0-9]{1,15}(?:\.[0-9]{1,9})?)([a-zA-Z]*)',raw) if isinstance(raw,str) else None
@@ -106,7 +110,7 @@ def cleanup_saved_client():
 def native_spec(value):
     result=copy.deepcopy(value['spec']);result['jobTemplate']['spec']['template']['spec']['containers'][0].pop('image');return result
 
-def verify_configuration(before,configuration,native_original,selected,*,final=False,gateway_state=None):
+def verify_configuration(before,configuration,native_original,selected,*,final=False,gateway_state=None,https_state=None):
     after=runtime.workload_snapshot()
     if set(before)!=set(after) or any(before[name]!=after[name] for name in before if name not in TARGETS):raise UpdateError('DELIVERY_OTHER_WORKLOAD_CHANGED')
     now=runtime.retained_configuration()
@@ -117,6 +121,7 @@ def verify_configuration(before,configuration,native_original,selected,*,final=F
     current=native['spec']['jobTemplate']['spec']['template']['spec']['containers'][0]['image']
     if current not in (native_original['spec']['jobTemplate']['spec']['template']['spec']['containers'][0]['image'],selected['ocr']) or (final and current!=selected['ocr']):raise UpdateError('DELIVERY_NATIVE_IMAGE_CHANGED')
     if gateway_state is not None:gateway.verify(d,gateway_state,check_pods=final)
+    if https_state is not None:https.verify(d,https_state,resource_envelope,check_pods=True)
 
 def patch_native(original,selected):
     current=u.owned('cronjob','native-ocr');path='/spec/jobTemplate/spec/template/spec/containers/0'
@@ -163,6 +168,7 @@ def update():
     observed_worker_resources=worker_resource_envelope(original['worker'])
     observed_api_resources=api_resource_envelope(original['api'])
     gateway_state=gateway.preflight(d,manifest.get('gateway_configuration'))
+    https_state=https.preflight(d,manifest.get('https_configuration'),resource_envelope)
     for name,value in original.items():
         if image_of(value) not in (manifest['baseline_images'][name],selected['frontend' if name=='frontend' else 'runtime']):raise UpdateError('DELIVERY_WORKLOAD_BASELINE_CHANGED')
     original['worker']=code.worker_baseline(original['worker'],selected['runtime'])
@@ -187,7 +193,7 @@ def update():
     attempted=False;receipt=None
     try:
         client.prepare()
-        verify_configuration(before,configuration,native_original,selected)
+        verify_configuration(before,configuration,native_original,selected,https_state=https_state)
         api_binding=cutover.api_gateway_binding(d,original['api'])
         # Fail before the permanent gateway change if this runner cannot see
         # every relevant transaction. This preflight marker is not reused as
@@ -216,20 +222,20 @@ def update():
             runtime.patch_runtime(name,selected['runtime'],original[name],manifest['baseline_images'][name]);d.wait_deployments([name]);wait_drain(name,selected['runtime'])
         patch_native(native_original,selected['ocr'])
         runtime.patch_runtime('frontend',selected['frontend'],original['frontend'],manifest['baseline_images']['frontend']);d.wait_deployments(['frontend'])
-        verify_targets(original,selected,True);verify_configuration(before,configuration,native_original,selected,final=True,gateway_state=gateway_state)
+        verify_targets(original,selected,True);verify_configuration(before,configuration,native_original,selected,final=True,gateway_state=gateway_state,https_state=https_state)
         code.public_check(u.owned('configmap','frontend-config'))
         # Re-read the exact post-catalog receipt after runtime/public acceptance.
         check=json.loads(d.sql(client.pod,release.migration_script(manifest)))
         if check.get('manifest_sha256')!=receipt['manifest_sha256'] or check.get('catalog_sha256')!=receipt['catalog_sha256'] or check.get('replayed') is not True:raise UpdateError('DELIVERY_SCHEMA_RECHECK_FAILED')
         code.patch_worker_strategy(original['worker'],selected['runtime'],False)
-        verify_targets(original,selected);verify_configuration(before,configuration,native_original,selected,final=True,gateway_state=gateway_state)
+        verify_targets(original,selected);verify_configuration(before,configuration,native_original,selected,final=True,gateway_state=gateway_state,https_state=https_state)
     except Exception:
         if attempted:emit('forward_completion_required',automatic_rollback=False,compatible_candidate_retained=True,images=selected)
         raise
     finally:
         try:client.cleanup();journal_path().unlink(missing_ok=True)
         except Exception:raise UpdateError('DELIVERY_CLIENT_CLEANUP_NOT_CONFIRMED') from None
-    emit('passed',source_revision=revision,images=selected,schema=receipt,worker_resources=observed_worker_resources,api_resources=observed_api_resources,deployments_updated=list(TARGETS)+['gateway'],cronjobs_updated=['native-ocr'],old_workers_drained=True,configuration_preserved_except_reviewed_storage_gateway=True,storage_gateway_configuration=manifest['gateway_configuration'],command_batch_cutover={'api_binding':api_binding,'old_gateway':old_gateway,'actual_gateway_process_exits_proved':True,'transaction_drain':transaction_drain},processing_retried=False,hosted_artifact_acceptance=False)
+    emit('passed',source_revision=revision,images=selected,schema=receipt,worker_resources=observed_worker_resources,api_resources=observed_api_resources,https_resources=https_state['resources'],https_configuration=manifest['https_configuration'],deployments_updated=list(TARGETS)+['gateway'],cronjobs_updated=['native-ocr'],old_workers_drained=True,configuration_preserved_except_reviewed_storage_gateway=True,storage_gateway_configuration=manifest['gateway_configuration'],command_batch_cutover={'api_binding':api_binding,'old_gateway':old_gateway,'actual_gateway_process_exits_proved':True,'transaction_drain':transaction_drain},processing_retried=False,hosted_artifact_acceptance=False)
 
 def main(argv=()):
     try:

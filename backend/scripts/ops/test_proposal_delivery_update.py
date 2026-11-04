@@ -30,7 +30,7 @@ class DeliveryUpdateTests(unittest.TestCase):
    deployments[name]={'metadata':{'uid':name+'-uid','name':name,'resourceVersion':'1','annotations':{}},'spec':{'replicas':1,'strategy':copy.deepcopy(p.code.WORKER_STRATEGY),
     'template':{'spec':{'terminationGracePeriodSeconds':240,'containers':[{'name':name,'env':[{'name':'APP_RUNTIME_SERVICE','value':name}],'image':REGISTRY+'frontend@sha256:'+'a'*64 if name=='frontend' else BASE,'resources':{'requests':{'cpu':'25m','memory':'192Mi'},'limits':{'cpu':'1000m','memory':'640Mi'}}}]}}}}
   natives={name:cron(name.removeprefix('native-')) for name in ('native-browser','native-ocr')}
-  manifest={'gateway_configuration':{'fixture':True},'executor_max':4,'renderer_versions':[1,2,3],'minimum_worker_executor':4,'baseline_images':{name:p.image_of(v) for name,v in deployments.items()},'baseline_native_schedules':p.inventory.public_schedules(list(natives.values()))}
+  manifest={'gateway_configuration':{'fixture':True},'https_configuration':{'fixture':True},'executor_max':4,'renderer_versions':[1,2,3],'minimum_worker_executor':4,'baseline_images':{name:p.image_of(v) for name,v in deployments.items()},'baseline_native_schedules':p.inventory.public_schedules(list(natives.values()))}
   def stage(name):
    events.append(name)
    if name==fail:raise RuntimeError('PRIVATE_FAILURE_PAYLOAD')
@@ -68,6 +68,7 @@ class DeliveryUpdateTests(unittest.TestCase):
    stack.enter_context(patch.object(p.d,'command',side_effect=command));stack.enter_context(patch.object(p.d,'wait_deployments',side_effect=lambda names:stage(names[0]+'-ready')))
    def gateway_apply(*_,after_rollout):
     stage('gateway-guard');after_rollout()
+   stack.enter_context(patch.object(p.https,'preflight',return_value={'resources':{'fixture':True}}));stack.enter_context(patch.object(p.https,'verify',side_effect=lambda *_args,**_kwargs:stage('https-verify')))
    stack.enter_context(patch.object(p.gateway,'preflight',return_value={'fixture':True}));stack.enter_context(patch.object(p.gateway,'apply',side_effect=gateway_apply));stack.enter_context(patch.object(p.gateway,'after_snapshot',side_effect=lambda _:snapshot()['gateway']));stack.enter_context(patch.object(p.gateway,'verify',side_effect=lambda *_args,**_kwargs:stage('gateway-verify')))
    stack.enter_context(patch.object(p.cutover,'api_gateway_binding',side_effect=lambda *_:stage('api-binding')))
    stack.enter_context(patch.object(p.cutover,'observe_transactions',side_effect=lambda *_:stage('transaction-visibility')))

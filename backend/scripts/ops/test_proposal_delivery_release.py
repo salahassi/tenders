@@ -32,25 +32,44 @@ class DeliveryReleaseTests(unittest.TestCase):
           'gateway_before_source_sha256':hashlib.sha256(self.gateway_storage.encode()).hexdigest(),
           'gateway_config_source_sha256':hashlib.sha256(self.gateway_after.encode()).hexdigest(),
           'storage_qualification_sha256':hashlib.sha256(json.dumps(self.qualification).encode()).hexdigest()}
+        self.stream_qualification={'fixture':'synthetic-only',**dict.fromkeys(('passed','actual_binary_exercised','cleanup_confirmed','exact_delivery_qualified','cancellation_qualified','temporary_budget_qualified','gateway_memory_qualified'),True),
+          'gateway_image':self.gateway_image,'gateway_config_source_sha256':hashlib.sha256(self.gateway_after.encode()).hexdigest(),
+          'production_calls':0,'customer_calls':0,'payload_bytes':412758765,'actual_gateway_tmp_filesystem_magic':'794c7630',
+          'envelope':{'gateway_memory_bytes':67108864,'gateway_cpu_millicores':200,'tmp_budget_bytes':67108864,'tmp_medium':'disk','census_includes_open_unlinked_files':True}}
+        self.batch_qualification['api_proxy_streaming_receipt_sha256']=hashlib.sha256(json.dumps(self.stream_qualification).encode()).hexdigest()
         for name,text in ((p.GATEWAY_BEFORE,baseline),(p.GATEWAY_AFTER,self.gateway_after),
-          (p.GATEWAY_QUALIFICATION,json.dumps(self.qualification)),
+          (p.GATEWAY_QUALIFICATION,json.dumps(self.qualification)),(p.GATEWAY_STREAM_QUALIFICATION,json.dumps(self.stream_qualification)),
           (p.GATEWAY_STORAGE_QUALIFIED,self.gateway_storage),(p.GATEWAY_BATCH_QUALIFICATION,json.dumps(self.batch_qualification)),
           ('deploy/kubernetes/render.py','NGINX_IMAGE = '+repr(self.gateway_image)+'\n')):
             path=self.gateway_root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
 
+        self.https_image='registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:'+'b'*64
+        config=(p.ROOT/p.https_capacity.CONFIG).read_text()
+        flags=('passed','actual_binary_exercised','exact_delivery_qualified','cancellation_qualified','temporary_budget_qualified','resource_envelope_qualified','tls_streaming_qualified','cleanup_confirmed','source_unchanged','synthetic_only','https_is_deployed_registry_image')
+        self.https_qualification={**dict.fromkeys(flags,True),'fixture':'synthetic-only',
+          'production_calls':0,'customer_calls':0,'model_calls':0,'images':{'https':self.https_image},
+          'image_binding':{'kind':'exact_deployed_registry_digest','repo_digest':self.https_image,'local_image_id':'sha256:'+'c'*64},
+          'resources':{'https_memory_bytes':134217728,'https_cpu_millicores':300,'tmp_budget_per_service_bytes':67108864},
+          'payload':{'bytes':412758765},'mount_filesystems':{name:{'statfs_magic':{'/tmp':'794c7630'}} for name in ('https','gateway')},
+          'tls':{'verification_enabled':True,'actual_handshake_verified':True},'qualified_encodings':['identity','gzip','zstd'],
+          'source_hashes':{'backend/'+p.https_capacity.CONFIG:hashlib.sha256(config.encode()).hexdigest(),
+           'backend/'+p.https_capacity.GATEWAY:hashlib.sha256(self.gateway_after.encode()).hexdigest()}}
+        for name,text in [(p.https_capacity.CONFIG,config),(p.https_capacity.QUALIFICATION,json.dumps(self.https_qualification))]:
+            path=self.gateway_root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
+
     def verify(self,manifest,**kwargs):
-        return p.verify_source(manifest,gateway_root=self.gateway_root,**kwargs)
+        return p.verify_source(manifest,gateway_root=self.gateway_root,https_root=self.gateway_root,**kwargs)
 
     def inventory(self):
         return {'version':1,'namespace':'tenderdesk-dev','ready_workloads':10,'inventory':'captured',
           'bootstrap_run':False,'business_mutations':0,'schema_mutations':0,'models_called':0,'temporary_client_cleanup_verified':True,
-          'workloads':[{'name':name,'image':self.gateway_image if name=='gateway' else 'registry.example/runtime@sha256:'+'a'*64} for name in ('api','worker','frontend','auth','rest','storage','source-browser','scheduler','gateway','https')],
+          'workloads':[{'name':name,'image':self.gateway_image if name=='gateway' else self.https_image if name=='https' else 'registry.example/runtime@sha256:'+'a'*64} for name in ('api','worker','frontend','auth','rest','storage','source-browser','scheduler','gateway','https')],
           'native_schedules':[{'name':name,'image':'registry.digitalocean.com/tenderdesk-a6093a76/'+name.removeprefix('native-')+'@sha256:'+'a'*64,'schedule':'*/10 * * * *','container_identity_recognized':True,'concurrency_policy':'Forbid','concurrency_policy_explicit':True,'suspended':False,'suspend_explicit':True,'active_deadline_seconds':600,'backoff_limit':0,'effective_backoff_limit':0,'resources':{'requests':None,'limits':None},'generation':1} for name in ('native-browser','native-ocr')],
           'schema':{'routine_catalog_sha256':'0'*64,'canonical_migrations':None,'release_history':[
             {'release':'prior-release-'+str(i),'migration_sha256':str(i)*64} for i in range(1,7)]}}
 
     def manifest(self):
-        return p.freeze(self.inventory(),gateway_root=self.gateway_root)
+        return p.freeze(self.inventory(),gateway_root=self.gateway_root,https_root=self.gateway_root)
 
     def test_every_final_contract_is_required_before_freezing(self):
         manifest=self.manifest()
@@ -64,7 +83,7 @@ class DeliveryReleaseTests(unittest.TestCase):
             for name in p.REQUIRED:
                 path=folder/name;data=path.read_bytes();path.unlink()
                 with self.subTest(name=name),self.assertRaisesRegex(p.ReleaseError,'MIGRATION_MISSING'):
-                    p.freeze(self.inventory(),migrations=folder,gateway_root=self.gateway_root)
+                    p.freeze(self.inventory(),migrations=folder,gateway_root=self.gateway_root,https_root=self.gateway_root)
                 path.write_bytes(data)
 
     def test_final_capabilities_cannot_be_downgraded_or_coerced(self):
@@ -139,7 +158,41 @@ class DeliveryReleaseTests(unittest.TestCase):
             with self.subTest(mutation=mutation),self.assertRaises(p.ReleaseError):self.verify(changed)
         bad=self.inventory();next(row for row in bad['workloads'] if row['name']=='gateway')['image']='registry.example/nginx@sha256:'+'f'*64
         with self.assertRaisesRegex(p.ReleaseError,'GATEWAY_IMAGE_CHANGED'):
-            p.freeze(bad,gateway_root=self.gateway_root)
+            p.freeze(bad,gateway_root=self.gateway_root,https_root=self.gateway_root)
+
+    def test_streaming_proof_requires_exact_disk_envelope_and_transitive_receipt(self):
+        manifest=self.manifest();path=self.gateway_root/p.GATEWAY_STREAM_QUALIFICATION;raw=path.read_bytes()
+        for key,value in [('passed',False),('actual_binary_exercised',1),('cleanup_confirmed',False),('production_calls',True),
+          ('customer_calls',1),('gateway_image','wrong'),('gateway_config_source_sha256','f'*64)]:
+            changed={**self.stream_qualification,key:value};path.write_text(json.dumps(changed))
+            with self.subTest(key=key),self.assertRaises(p.ReleaseError):self.verify(manifest)
+        # Rebinding an altered proof does not allow tmpfs, incomplete census or
+        # weaker resource/payload evidence to masquerade as the qualified disk run.
+        batch_path=self.gateway_root/p.GATEWAY_BATCH_QUALIFICATION;batch_raw=batch_path.read_bytes()
+        for key,value in [('actual_gateway_tmp_filesystem_magic','1021994'),('actual_gateway_tmp_filesystem_magic','unknown'),('payload_bytes',True),
+          ('envelope',{'gateway_memory_bytes':67108864,'gateway_cpu_millicores':200,'tmp_budget_bytes':67108864,'tmp_medium':'disk','census_includes_open_unlinked_files':False})]:
+            changed={**self.stream_qualification,key:value};path.write_text(json.dumps(changed))
+            batch_path.write_text(json.dumps({**self.batch_qualification,'api_proxy_streaming_receipt_sha256':hashlib.sha256(path.read_bytes()).hexdigest()}))
+            with self.subTest(key=key,value=value),self.assertRaisesRegex(p.ReleaseError,'STREAM_ENVELOPE_INVALID'):self.manifest()
+        path.write_bytes(raw);batch_path.write_bytes(batch_raw)
+        path.write_text(json.dumps({**self.stream_qualification,'receipt_revision':2}))
+        with self.assertRaisesRegex(p.ReleaseError,'STREAM_QUALIFICATION_INVALID'):self.verify(manifest)
+
+    def test_https_source_manifest_identity_and_changed_proof_refuse(self):
+        manifest=self.manifest();contract=manifest['https_configuration'];self.verify(manifest)
+        self.assertEqual(contract['image'],self.https_image)
+        self.assertEqual(contract['minimum_memory_bytes'],134217728)
+        self.assertEqual(contract['qualification_sha256'],hashlib.sha256((self.gateway_root/p.https_capacity.QUALIFICATION).read_bytes()).hexdigest())
+        for key in contract:
+            changed=copy.deepcopy(manifest);changed['https_configuration'][key]=None
+            with self.subTest(key=key),self.assertRaisesRegex(p.ReleaseError,'HTTPS_SOURCE_CHANGED'):self.verify(changed)
+        changed=copy.deepcopy(manifest);del changed['https_configuration']
+        with self.assertRaisesRegex(p.ReleaseError,'MANIFEST_INVALID'):self.verify(changed)
+        changed=self.inventory();next(row for row in changed['workloads'] if row['name']=='https')['image']=self.https_image[:-1]+'f'
+        with self.assertRaisesRegex(p.ReleaseError,'HTTPS_IMAGE_CHANGED'):p.freeze(changed,gateway_root=self.gateway_root,https_root=self.gateway_root)
+        path=self.gateway_root/p.https_capacity.QUALIFICATION
+        path.write_text(json.dumps({**self.https_qualification,'receipt_revision':2}))
+        with self.assertRaisesRegex(p.ReleaseError,'HTTPS_SOURCE_CHANGED'):self.verify(manifest)
 
     def test_gateway_qualification_is_strict_and_current(self):
         path=self.gateway_root/p.GATEWAY_QUALIFICATION;raw=path.read_bytes()
@@ -157,7 +210,7 @@ class DeliveryReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(p.ReleaseError,'GATEWAY_QUALIFICATION_INVALID'):self.verify(manifest)
 
     def test_gateway_missing_symlink_and_unreviewed_baseline_fail_closed(self):
-        for name in (p.GATEWAY_BEFORE,p.GATEWAY_AFTER,p.GATEWAY_QUALIFICATION,p.GATEWAY_BATCH_QUALIFICATION,p.GATEWAY_STORAGE_QUALIFIED,'deploy/kubernetes/render.py'):
+        for name in (p.GATEWAY_BEFORE,p.GATEWAY_AFTER,p.GATEWAY_QUALIFICATION,p.GATEWAY_BATCH_QUALIFICATION,p.GATEWAY_STREAM_QUALIFICATION,p.GATEWAY_STORAGE_QUALIFIED,'deploy/kubernetes/render.py'):
             path=self.gateway_root/name;raw=path.read_bytes();path.unlink()
             with self.subTest(name=name),self.assertRaisesRegex(p.ReleaseError,'GATEWAY_SOURCE_UNAVAILABLE'):self.manifest()
             other=path.with_name(path.name+'.copied');other.write_bytes(raw);path.symlink_to(other)

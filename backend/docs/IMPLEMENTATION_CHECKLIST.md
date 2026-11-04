@@ -10126,3 +10126,33 @@ changes occurred. Remaining: reviewed composite schedules; frozen typed requirem
 blueprint/draft/candidate/repair prerequisites; complete actual target/request locks;
 authorized live evaluation and independent adjudication; private holdout and noncritical
 business decisions. Full combined checks remain the separate root integration gate.
+
+### November 4 — bind HTTPS runtime and both proxy capacity proofs before release
+
+The release contract now requires a separately qualified HTTPS image and public
+Caddyfile, the actual deployed image digest and its image ID, the exact gateway
+source, and the retained TLS/compression receipt. The read-only preflight and
+readback check the Deployment and every ready Pod: minimum 128 MiB/300m limits,
+actual running image identity, exact command, four permitted mount locations,
+three literal environment entries, loaded public Caddyfile, and stable process
+identity. These checks neither read TLS private files nor alter resources or
+configuration. A changed spec while an old binary still runs is rejected.
+
+The gateway proof chain additionally requires the corrected disk-backed streaming
+receipt, its exact hash in the routing receipt, the 64 MiB/200m measured envelope,
+the 412,758,765-byte synthetic payload, complete open-unlinked-file accounting,
+and an allowlisted actual filesystem magic. A tmpfs run cannot qualify the disk
+case. Earlier receipts remain historical evidence; this change does not freeze
+or accept the superseded disk claim. The cloud-restore source gate now refuses a
+manifest missing the HTTPS binding before any capture or fixture creation.
+
+Local validation: 30 pure HTTPS boundary tests, 11 pure release/source tests,
+15 updater fault tests, and 13 cloud-restore helper tests passed. Temporary test
+receipts are explicitly synthetic; they are not native qualification evidence.
+[Guard evidence](evidence/https-release-capacity-guards-20261104.json) binds the
+source and logs. Canonical SQL is unchanged. Corrected gateway native proof,
+final HTTPS six-case native proof, final manifest freeze, renewed isolated cloud
+restore, and hosted preflight/deployment/readback remain separate required gates.
+Root's read-only runs observed gateway 64 MiB/200m and HTTPS 128 MiB/300m in both
+Deployment and ready Pod specs; those observations alone do not prove cgroup
+headroom, storage enforcement, concurrent load, or issuance latency.
