@@ -60,9 +60,19 @@ class InventoryTests(unittest.TestCase):
   result=p.public_schedules(schedules());self.assertEqual(len(result),2)
   self.assertNotIn('private-credential',json.dumps(result));self.assertNotIn('env',json.dumps(result))
   self.assertEqual(result[1]['active_deadline_seconds'],600)
-  for change in (lambda x:x[0]['spec'].update(schedule='private-text'),lambda x:x[0]['spec'].update(concurrencyPolicy='Allow'),lambda x:x.pop(),lambda x:x[0]['metadata']['labels'].clear()):
+  for change in (lambda x:x[0]['spec'].update(schedule='private-text'),lambda x:x[0]['spec'].update(concurrencyPolicy='private-invalid'),lambda x:x.pop(),lambda x:x[0]['metadata']['labels'].clear()):
    values=schedules();change(values)
    with self.assertRaises(p.InventoryError):p.public_schedules(values)
+
+ def test_inventory_reports_actual_schedule_and_optional_defaults_without_deployment_assumptions(self):
+  values=schedules();spec=values[0]['spec'];spec.update(schedule='*/5 0-23 * * 1,2,3,4,5',concurrencyPolicy='Replace');spec.pop('suspend')
+  job=spec['jobTemplate']['spec'];job.pop('backoffLimit');job.pop('activeDeadlineSeconds')
+  job['template']['spec']['containers'][0]['resources']={'limits':{'cpu':'0.5','memory':'1Gi'}}
+  result=p.public_schedules(values)[0]
+  self.assertEqual(result['schedule'],'*/5 0-23 * * 1,2,3,4,5');self.assertEqual(result['concurrency_policy'],'Replace')
+  self.assertIsNone(result['active_deadline_seconds']);self.assertIsNone(result['backoff_limit']);self.assertEqual(result['effective_backoff_limit'],6)
+  self.assertFalse(result['suspend_explicit']);self.assertFalse(result['suspended']);self.assertIsNone(result['resources']['requests'])
+  self.assertIsNone(result['resources']['limits']['ephemeral-storage'])
 
  def test_unknown_release_name_is_not_public_and_no_tip_is_invented(self):
   value=schema();value['releases'][0]['release']='customer-document-content'

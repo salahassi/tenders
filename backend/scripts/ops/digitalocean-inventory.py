@@ -142,16 +142,33 @@ def public_schedules(values):
             raise InventoryError('INVENTORY_OWNERSHIP_INVALID')
         spec=value.get('spec',{});job=spec.get('jobTemplate',{}).get('spec',{});pod=job.get('template',{}).get('spec',{})
         containers=pod.get('containers',[])
-        if len(containers)!=1 or containers[0].get('name')!=name.removeprefix('native-') or spec.get('schedule')!='*/10 * * * *' or spec.get('concurrencyPolicy')!='Forbid' or type(spec.get('suspend',False)) is not bool:
-            raise InventoryError('INVENTORY_SCHEDULE_INVALID')
+        if not isinstance(containers,list) or len(containers)!=1: raise InventoryError('INVENTORY_NATIVE_CONTAINER_COUNT')
+        schedule=spec.get('schedule')
+        if not isinstance(schedule,str) or len(schedule)>100 or not re.fullmatch(r'[0-9*/,\-]+(?: +[0-9*/,\-]+){4}',schedule): raise InventoryError('INVENTORY_NATIVE_SCHEDULE_FORMAT')
+        concurrency=spec.get('concurrencyPolicy','Allow')
+        if concurrency not in ('Allow','Forbid','Replace') or type(spec.get('suspend',False)) is not bool: raise InventoryError('INVENTORY_NATIVE_CONCURRENCY_INVALID')
         container=containers[0];resources=container.get('resources',{})
-        if set(resources)!={'requests','limits'} or any(set(v)!={'cpu','memory'} for v in resources.values()): raise InventoryError('INVENTORY_SCHEDULE_INVALID')
-        for resource in resources.values():
-            if not re.fullmatch(r'[0-9]{1,5}m?',str(resource['cpu'])) or not re.fullmatch(r'[0-9]{1,5}(?:Mi|Gi)',str(resource['memory'])): raise InventoryError('INVENTORY_SCHEDULE_INVALID')
-        result[name]={'name':name,'image':image(container.get('image')),'schedule':spec['schedule'],
-          'concurrency_policy':'Forbid','suspended':spec.get('suspend',False),'active_deadline_seconds':integer(job.get('activeDeadlineSeconds'),1800),
-          'backoff_limit':integer(job.get('backoffLimit'),10),'resources':resources,
-          'generation':integer(meta.get('generation',0))}
+        if not isinstance(resources,dict): raise InventoryError('INVENTORY_NATIVE_RESOURCES_FORMAT')
+        projected={}
+        for mode in ('requests','limits'):
+            group=resources.get(mode)
+            if group is None: projected[mode]=None;continue
+            if not isinstance(group,dict): raise InventoryError('INVENTORY_NATIVE_RESOURCES_FORMAT')
+            projected[mode]={}
+            for key in ('cpu','memory','ephemeral-storage'):
+                quantity=group.get(key)
+                if quantity is not None and (not isinstance(quantity,str) or len(quantity)>24 or not re.fullmatch(r'[0-9]{1,15}(?:\.[0-9]{1,9})?(?:m|Ki|Mi|Gi|Ti|K|M|G|T)?',quantity)):
+                    raise InventoryError('INVENTORY_NATIVE_RESOURCES_FORMAT')
+                projected[mode][key]=quantity
+        deadline=job.get('activeDeadlineSeconds');backoff=job.get('backoffLimit')
+        if deadline is not None and (type(deadline) is not int or not 1<=deadline<=604800): raise InventoryError('INVENTORY_NATIVE_DEADLINE_INVALID')
+        if backoff is not None and (type(backoff) is not int or not 0<=backoff<=100): raise InventoryError('INVENTORY_NATIVE_BACKOFF_INVALID')
+        result[name]={'name':name,'image':image(container.get('image')),'schedule':schedule,
+          'container_identity_recognized':container.get('name')==name.removeprefix('native-'),
+          'concurrency_policy':concurrency,'concurrency_policy_explicit':'concurrencyPolicy' in spec,
+          'suspended':spec.get('suspend',False),'suspend_explicit':'suspend' in spec,
+          'active_deadline_seconds':deadline,'backoff_limit':backoff,'effective_backoff_limit':6 if backoff is None else backoff,
+          'resources':projected,'generation':integer(meta.get('generation',0))}
     if set(result)!={'native-browser','native-ocr'}: raise InventoryError('INVENTORY_REQUIRED_SCHEDULE_MISSING')
     return [result[name] for name in sorted(result)]
 
@@ -231,7 +248,9 @@ def main(argv=()):
           'INVENTORY_WORKLOADS_INVALID','INVENTORY_OWNERSHIP_INVALID','INVENTORY_POD_IMAGE_INVALID','INVENTORY_REVISION_INVALID',
           'INVENTORY_REQUIRED_WORKLOAD_MISSING','INVENTORY_RUN_SOURCE_INVALID','INVENTORY_TEMPORARY_CLIENT_CLEANUP_NOT_CONFIRMED',
           'INVENTORY_CLEANUP_JOURNAL_INVALID','INVENTORY_MODE_INVALID','INVENTORY_WORKLOAD_CHANGED_DURING_READ',
-          'INVENTORY_SCHEDULE_INVALID','INVENTORY_REQUIRED_SCHEDULE_MISSING'}
+          'INVENTORY_SCHEDULE_INVALID','INVENTORY_REQUIRED_SCHEDULE_MISSING','INVENTORY_NATIVE_CONTAINER_COUNT',
+          'INVENTORY_NATIVE_SCHEDULE_FORMAT','INVENTORY_NATIVE_CONCURRENCY_INVALID','INVENTORY_NATIVE_RESOURCES_FORMAT',
+          'INVENTORY_NATIVE_DEADLINE_INVALID','INVENTORY_NATIVE_BACKOFF_INVALID'}
         code=str(error) if isinstance(error,InventoryError) and str(error) in allowed else 'INVENTORY_FAILED'
         print(json.dumps({'inventory':'failed','code':code}),flush=True)
         return 1

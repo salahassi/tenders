@@ -70,6 +70,19 @@ are absent. This confirms the new implementation is not deployed yet. API/worker
 use image digest `85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380`;
 image source revisions remain independently unverified. This is a current baseline
 for a guarded release, not hosted proposal/model acceptance or schema-tip proof.
+## November 4 — native inventory defaults correction
+
+The coordinator's extended inventory run `41845129587` passed TLS/readiness but
+stopped at `INVENTORY_SCHEDULE_INVALID` before database setup. The first attempt
+incorrectly required renderer defaults during observation. Inventory now accepts
+bounded actual five-field cron and Kubernetes concurrency values, reports absent
+deadline/resources as null and absent backoff as null with effective default six,
+and distinguishes explicit from defaulted suspension/concurrency. Field-specific
+fixed diagnostic codes replace the combined schedule check. Strict reviewed
+baseline matching remains a release responsibility. **17 Python inventory tests**
+pass, including alternate cadence and omitted optional fields. Fresh hosted
+native evidence is still pending the coordinator's rerun; bootstrap stays gated.
+
 ## November 4 — native schedule and queue/capacity observations (phase 2 W00/W09)
 
 Implementation: scoped inventory additionally reads the two owned native
