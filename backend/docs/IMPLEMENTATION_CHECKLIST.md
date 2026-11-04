@@ -9780,3 +9780,28 @@ All33 tests in the two affected files and backend typecheck pass after these
 corrections; [scoped receipt](evidence/completed-response-regressions-20261104.json).
 A complete final backend rerun remains required after the remaining source
 integration. No deployment, provider call or hosted acceptance occurred.
+
+## November 4 — actual API batch capacity harness preparation
+
+**Implementation:** added an isolated actual-image API -> real PostgreSQL/
+PostgREST harness for the existing 100-command/near-4.13MB serialized export
+fixture. It hashes each complete result incrementally, retaining only bounded
+metadata and hashes. It checks slow-consumer busy, EOF release, same-key replay,
+cancellation after the first chunk settles, and exact revision/audit/command/
+batch deltas. No application runtime, SQL, admission cap or resource limit changed.
+
+**Scope:** Auth user lookup is explicitly synthetic; membership and SQL authority
+use the real caller JWT. A loopback HTTP prefix adapter forwards real REST bytes.
+The actual immutable image entrypoint/heap settings are retained, but the command
+replaces runtime/main.ts with the harness and loads the same inactive module graph.
+Source hashes include actual image functions/runtime/frontend library files.
+The fixture directly seeds permitted structural rows before authorized export;
+it does not establish generator reachability or managed database sizing. Partial
+cancel control is after a settled chunk, not in-flight SQL cancellation.
+
+**Checks:** five pure stream-oracle tests passed, backend typecheck/build passed,
+and Python syntax passed. Independent source review identified and closed the
+missing runtime-module-graph baseline. No native run or memory/timing pass is
+claimed in this preparation commit. Root schedules the bounded real-container
+measurement separately; all source/receipt/cleanup outcomes remain explicit.
+See `docs/API_BATCH_CAPACITY.md`. No production, provider or customer calls.
