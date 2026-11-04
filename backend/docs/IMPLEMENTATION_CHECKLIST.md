@@ -7372,3 +7372,38 @@ repair. Backend typecheck passes. The root API integration owns invoking this re
 on authoritative404/hash/size failure and preserving transient503 behavior. The
 predecessor job-action wrapper uses its separately fixed stable request alias; the
 redundant ordinary-export rename rebinding is removed accordingly.
+G10 prebillable file capacity (2026-11-04): automatic issuance now acquires one
+request-bound20MiB allowance before its first new model reservation, under the
+workspace lock. This is exactly the existing maximum two delivery volumes times
+10MiB per artifact, within the existing250MiB storage policy. The canonical ledger
+includes the allowance, so concurrent input/export writers cannot steal it.
+Required renderer3 artifacts receive that allowance atomically when their exact
+pending slots reserve storage. Repeated context/reservation attempts do not add
+allowances; existing duplicate model reservations retain their rejection policy.
+Terminal requests release only unspent future capacity, preserving ready/pending
+artifact bytes and every provider usage row, including unknown receipts. Historical
+requests retain null capacity-version pins; no prompt, paid hash, token/daily cap,
+free-only/billing policy or provider configuration changes were made.
+
+Validation: both lockfiles reinstalled successfully after removing only obsolete
+worktree dependencies to recover disk space. Backend/frontend types and builds
+pass. Focused deadline/capacity regression32 tests passed; the added capacity
+managed-only-role test subsequently passed with all6 capacity lifecycle cases.
+Workflow agent independently proved the original unchanged full-storage reservation
+red now rejects before provider_usage, held20MiB excludes a competing10MiB upload,
+a1MiB remaining upload fits the exact250MiB boundary, and duplicate model-call
+rejection leaves usage/allowance unchanged. Four real PostgreSQL multi-session
+cases pass with canonical migrations plus the ordinary152913 storage wrapper:
+concurrent allowance idempotence, competing upload versus allowance serialization,
+required-artifact transfer and unused allowance release, and source rejection
+without reservation mutation. Receipt:/workspace/output/proposal-capacity-postgres-races.json
+contains exact migration hashes, synthetic-only fixture identity and lock evidence.
+Source/snapshot retention, early storage-error terminalization and unknown provider
+usage preservation are explicit tests. No provider calls or production mutations.
+
+Remaining: root's independent SQL review, final combined sequential regression,
+actual dense renderer capacity/OOM qualification (separate component), release,
+and hosted stopwatch/download acceptance. Structural SQL races do not establish
+semantic correctness or real DOCX rendering. The workflow-owned capacity tests
+remain in their separate root commit; this component adds the lifecycle/managed
+role tests and portable PostgreSQL script only.
