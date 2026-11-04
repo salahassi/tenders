@@ -3,6 +3,10 @@ import { AppError } from "./http.ts";
 import { verifyBoundedDocx, verifyBoundedDocxAsync } from "./boundedDocx.ts";
 import { blockedContent } from "./model.ts";
 import { exportSectionGroups } from "./proposalOutline.ts";
+import {
+  hasNativeVerifierRuntime,
+  verifyDeliveryIsolated,
+} from "./deliveryVerifyIsolation.ts";
 type Row = Record<string, any>;
 export type ExportBlock =
   | { type: "paragraph" | "bullet" | "heading" | "title"; text: string }
@@ -503,5 +507,7 @@ export function verifyExportDocxAsync(
   model: RenderModel,
   signal?: AbortSignal,
 ) {
+  if (hasNativeVerifierRuntime())
+    return verifyDeliveryIsolated(bytes, model, signal);
   return verifyBoundedDocxAsync(bytes, model, blockedContent, signal);
 }

@@ -6,10 +6,11 @@ ENV DENO_DIR=/deno-dir PORT=8080 \
 COPY --chown=deno:deno backend/supabase/functions/ ./supabase/functions/
 COPY --chown=deno:deno backend/scripts/runtime/ ./scripts/runtime/
 COPY --chown=deno:deno frontend/src/lib/renderDocx.ts /app/frontend/src/lib/renderDocx.ts
+COPY --chown=deno:deno frontend/src/lib/docxTableStream.ts /app/frontend/src/lib/docxTableStream.ts
 COPY --chown=deno:deno frontend/public/fonts/ /app/frontend/public/fonts/
 RUN --mount=type=secret,id=proxy_ca \
     if [ -f /run/secrets/proxy_ca ]; then export DENO_CERT=/run/secrets/proxy_ca; fi; \
-    deno cache --frozen --config=supabase/functions/deno.json scripts/runtime/main.ts supabase/functions/_shared/deliveryRender.process.ts && chmod -R a+rX /deno-dir
+    deno cache --frozen --config=supabase/functions/deno.json scripts/runtime/main.ts supabase/functions/_shared/deliveryRender.process.ts supabase/functions/_shared/deliveryVerify.process.ts && chmod -R a+rX /deno-dir
 USER deno
 EXPOSE 8080
 CMD ["run", "--cached-only", "--frozen", "--config=supabase/functions/deno.json", "--allow-env", "--allow-net", "--allow-sys", "--allow-run=/bin/deno", "--allow-read=/app,/deno-dir,/tmp", "--allow-write=/tmp", "scripts/runtime/main.ts"]

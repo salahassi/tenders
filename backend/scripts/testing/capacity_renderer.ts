@@ -1,3 +1,6 @@
+import { verifyDeliveryIsolated } from "../../supabase/functions/_shared/deliveryVerifyIsolation.ts";
+import { environment } from "../../supabase/functions/_shared/backend.ts";
+import { measureDeliveryWorker } from "./capacity_delivery_worker.ts";
 import {
   renderDeliveryIsolated,
   type RendererProcess,
@@ -16,7 +19,14 @@ const runtime = (
       args: string[];
       version: { deno: string; v8: string };
       readTextFile(path: string): Promise<string>;
+      readFile(path: string): Promise<Uint8Array>;
       writeFile(path: string, bytes: Uint8Array): Promise<void>;
+      memoryUsage(): {
+        rss: number;
+        heapTotal: number;
+        heapUsed: number;
+        external: number;
+      };
       exit(code: number): never;
       Command: new (
         path: string,
@@ -26,9 +36,41 @@ const runtime = (
   }
 ).Deno;
 const cases: Record<string, unknown>[] = [];
+async function captureCgroup() {
+  for (const [file, output] of [
+    ["memory.peak", "cgroup_memory_peak_bytes"],
+    ["memory.max", "cgroup_memory_limit_bytes"],
+    ["memory.stat", "cgroup_memory_stat"],
+    ["memory.events", "cgroup_memory_events"],
+  ]) {
+    const child = new runtime.Command("/bin/cat", {
+      args: [`/sys/fs/cgroup/${file}`],
+      stdin: "null",
+      stdout: "piped",
+      stderr: "piped",
+    }).spawn();
+    const bytes = new Uint8Array(
+      await new Response(child.stdout).arrayBuffer(),
+    );
+    await new Response(child.stderr).arrayBuffer();
+    if (!(await child.status).success)
+      throw Error("Cgroup evidence is unavailable");
+    await runtime.writeFile(`/outputs/${output}`, bytes);
+  }
+}
 async function verifyArtifact(bytes: Uint8Array, model: RenderModel) {
-  const verifier = (exportContract as unknown as { verifyExportDocxAsync?: (bytes: Uint8Array, model: RenderModel) => Promise<true> }).verifyExportDocxAsync;
-  if (!verifier) throw Error("The actual asynchronous export verifier is required for this qualification");
+  const verifier = (
+    exportContract as unknown as {
+      verifyExportDocxAsync?: (
+        bytes: Uint8Array,
+        model: RenderModel,
+      ) => Promise<true>;
+    }
+  ).verifyExportDocxAsync;
+  if (!verifier)
+    throw Error(
+      "The actual asynchronous export verifier is required for this qualification",
+    );
   return await verifier(bytes, model);
 }
 const applicationGraphLoaded = [
@@ -85,9 +127,250 @@ async function run(name: string, model: RenderModel, required = true) {
 }
 const folder = runtime.args[0];
 if (!folder) throw Error("Synthetic model directory is required");
+if (["verifier-capacity", "verifier-matrix"].includes(runtime.args[1])) {
+  const names =
+    runtime.args[1] === "verifier-matrix"
+      ? [
+          "dense-minimal-sparse-body-limit-authored",
+          "dense-direction-runs-authored",
+          "dense-ragged-authored",
+          "dense-empty-body-limit-authored",
+          "dense-paragraph-authored",
+          "dense-short-authored",
+          "dense-body-limit-authored",
+        ]
+      : ["dense-minimal-sparse-body-limit-authored"];
+  let model!: RenderModel, bytes!: Uint8Array;
+  const health = createApiHandler(
+    environment(() => undefined),
+    () => {
+      throw Error("Health must not access a database");
+    },
+  );
+  let healthCount = 0,
+    healthError: unknown;
+  const memoryPeaks = { rss: 0, heapTotal: 0, heapUsed: 0, external: 0 };
+  const sample = () => {
+    const value = runtime.memoryUsage();
+    for (const key of Object.keys(memoryPeaks) as Array<
+      keyof typeof memoryPeaks
+    >)
+      memoryPeaks[key] = Math.max(memoryPeaks[key], value[key]);
+  };
+  const phaseStarted = performance.now();
+  let phase = "starting",
+    persist: Promise<void> | undefined;
+  const telemetry = () => {
+    const value = {
+      phase,
+      elapsed_ms: Math.round(performance.now() - phaseStarted),
+      parent_memory: runtime.memoryUsage(),
+      parent_memory_peaks: memoryPeaks,
+      cases: structuredClone(cases),
+    };
+    persist = (persist ?? Promise.resolve()).then(() =>
+      runtime.writeFile(
+        "/outputs/api-verifier-telemetry.json",
+        new TextEncoder().encode(JSON.stringify(value, null, 2)),
+      ),
+    );
+    return persist;
+  };
+  const sampler = setInterval(sample, 250);
+  const telemetryTimer = setInterval(() => void telemetry(), 1000);
+  const healthTimer = setInterval(
+    () =>
+      void health(new Request("https://synthetic.invalid/v1/health"))
+        .then(async (response) => {
+          if (response.status !== 200) throw Error("API health failed");
+          await response.arrayBuffer();
+          healthCount++;
+        })
+        .catch((error) => {
+          healthError = error;
+        }),
+    1000,
+  );
+  try {
+    for (const name of names) {
+      model = JSON.parse(
+        await runtime.readTextFile(`${folder}/${name}.json`),
+      ) as RenderModel;
+      bytes = await runtime.readFile(
+        `${folder}/${names.length === 1 ? "verification.docx" : name + ".docx"}`,
+      );
+      for (let index = 0; index < 2; index++) {
+        phase = `${name}:${index}:verification`;
+        await telemetry();
+        const start = performance.now();
+        await verifyArtifact(bytes, model);
+        cases.push({
+          name: `${name}-api-canonical-verification-${index}`,
+          outcome: "verified",
+          elapsed_ms: Math.round(performance.now() - start),
+          parent_memory: runtime.memoryUsage(),
+          input_hash: await hash(
+            new TextEncoder().encode(JSON.stringify(model)),
+          ),
+          artifact_hash: await hash(bytes),
+        });
+        phase = `${name}:${index}:completed`;
+        await telemetry();
+      }
+    }
+    const bad = new Uint8Array(bytes);
+    bad[0] = 0;
+    try {
+      await verifyArtifact(bad, model);
+      throw Error("Malformed ZIP was accepted");
+    } catch (error) {
+      if ((error as AppError).code !== "INVALID_EXPORT_ARCHIVE") throw error;
+      cases.push({
+        name: "canonical-invalid-archive",
+        outcome: "rejected",
+        code: (error as AppError).code,
+      });
+    }
+    const changed = structuredClone(model);
+    const first = changed.blocks.find(
+      (b) => b.type !== "table" && b.type !== "toc",
+    );
+    if (!first || !("text" in first))
+      throw Error("Missing fixture visible block");
+    first.text += " SYNTHETIC UNAUTHORIZED CHANGE";
+    try {
+      await verifyArtifact(bytes, changed);
+      throw Error("Mismatching content accepted");
+    } catch (error) {
+      if ((error as AppError).code !== "EXPORT_CONTENT_MISMATCH") throw error;
+      cases.push({
+        name: "canonical-model-mismatch",
+        outcome: "rejected",
+        code: (error as AppError).code,
+      });
+    }
+    for (const mode of ["abort", "timeout"]) {
+      const controller = new AbortController(),
+        reason = new AppError(
+          409,
+          "STALE_LEASE",
+          "Synthetic verification lease expiry",
+        );
+      let child: RendererProcess | undefined;
+      const timer =
+        mode === "abort"
+          ? setTimeout(() => controller.abort(reason), 100)
+          : undefined;
+      const start = performance.now();
+      try {
+        await verifyDeliveryIsolated(
+          bytes,
+          model,
+          controller.signal,
+          () => {
+            child = new runtime.Command("/bin/deno", {
+              args: ["eval", "while(true){}"],
+              clearEnv: true,
+              stdin: "piped",
+              stdout: "piped",
+              stderr: "piped",
+            }).spawn();
+            return child;
+          },
+          mode === "timeout" ? 100 : 30000,
+        );
+        throw Error("Infinite verifier survived deadline");
+      } catch (error) {
+        if (
+          !child ||
+          (await child.status).success ||
+          (mode === "abort"
+            ? error !== reason
+            : (error as AppError).code !== "DELIVERY_RENDER_TIMEOUT")
+        )
+          throw error;
+        cases.push({
+          name: `actual-infinite-verifier-${mode}`,
+          outcome: "killed_and_reaped",
+          elapsed_ms: Math.round(performance.now() - start),
+          code: (error as AppError).code,
+        });
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    // A real canonical child after kill/reap proves the shared permit recovered.
+    try {
+      await verifyArtifact(bad, model);
+      throw Error("Malformed ZIP was accepted");
+    } catch (error) {
+      if ((error as AppError).code !== "INVALID_EXPORT_ARCHIVE") throw error;
+      cases.push({
+        name: "post-cancellation-canonical-child",
+        outcome: "rejected",
+        code: (error as AppError).code,
+      });
+    }
+    const response = await health(
+      new Request("https://synthetic.invalid/v1/health"),
+    );
+    if (response.status !== 200) throw Error("Post-cancel health failed");
+    await response.arrayBuffer();
+    if (healthError) throw healthError;
+    sample();
+  } finally {
+    clearInterval(sampler);
+    clearInterval(healthTimer);
+    clearInterval(telemetryTimer);
+    await telemetry();
+  }
+  await captureCgroup();
+  console.log(
+    JSON.stringify({
+      scope:
+        "actual image canonical asynchronous verifier in repeated API384MiB parent; no HTTP authorization/Storage simulation",
+      mode: runtime.args[1],
+      hosted_acceptance: false,
+      production_slo_qualified: false,
+      runtime: runtime.version,
+      application_graph_loaded: applicationGraphLoaded,
+      artifact_hash: await hash(bytes),
+      model_hash: await hash(new TextEncoder().encode(JSON.stringify(model))),
+      health_requests: healthCount,
+      post_cancellation_health_status: 200,
+      parent_memory_peaks: memoryPeaks,
+      parent_memory_at_completion: runtime.memoryUsage(),
+      cases,
+    }),
+  );
+  runtime.exit(0);
+}
+if (runtime.args[1] === "worker-capacity") {
+  const results = await measureDeliveryWorker(runtime, folder);
+  await captureCgroup();
+  console.log(
+    JSON.stringify({
+      scope:
+        "offline actual Deno two-volume worker with emulated SQL and Storage transport",
+      mode: "worker-capacity",
+      hosted_acceptance: false,
+      production_slo_qualified: false,
+      runtime: runtime.version,
+      application_graph_loaded: applicationGraphLoaded,
+      verifier:
+        "actual deliveryBytes/verifyExportDocxAsync and within-run readback proof",
+      child_heap_mebibytes: 128,
+      attempt_timeout_ms: 30000,
+      cases: results,
+    }),
+  );
+  runtime.exit(0);
+}
+
 if (
   [
     "final-capacity",
+    "boundary-render-only",
     "dense-heap-matrix",
     "streamed-capacity",
     "streamed-render-only",
@@ -220,25 +503,47 @@ if (
       "-retry-after-queue-deadline",
     );
   } else {
-    for (const name of mode === "final-capacity" ? ["dense-minimal-sparse-body-limit-authored","dense-direction-runs-authored","dense-ragged-authored","dense-empty-body-limit-authored","dense-paragraph-authored","dense-short-authored","dense-body-limit-authored"] : mode === "dense-heap-matrix"
-      ? ["dense-authored"]
-      : mode.startsWith("direction-") ? ["dense-direction-runs-authored"] : mode.startsWith("sparse-")
-        ? ["dense-sparse-body-limit-authored"]
-        : mode.startsWith("density-")
-          ? ["dense-empty-body-limit-authored", "dense-paragraph-authored"]
-          : ["dense-short-authored", "dense-body-limit-authored"])
+    for (const name of mode === "boundary-render-only"
+      ? ["near10m-ascii", "near10m-mixed100", "empty-rows-storage-shape"]
+      : mode === "final-capacity"
+        ? [
+            "dense-minimal-sparse-body-limit-authored",
+            "dense-direction-runs-authored",
+            "dense-ragged-authored",
+            "dense-empty-body-limit-authored",
+            "dense-paragraph-authored",
+            "dense-short-authored",
+            "dense-body-limit-authored",
+          ]
+        : mode === "dense-heap-matrix"
+          ? ["dense-authored"]
+          : mode.startsWith("direction-")
+            ? ["dense-direction-runs-authored"]
+            : mode.startsWith("sparse-")
+              ? ["dense-sparse-body-limit-authored"]
+              : mode.startsWith("density-")
+                ? [
+                    "dense-empty-body-limit-authored",
+                    "dense-paragraph-authored",
+                  ]
+                : ["dense-short-authored", "dense-body-limit-authored"])
       for (const heap of mode === "dense-heap-matrix" ? [128, 256, 384] : [128])
         await measure(name, heap);
   }
+  await captureCgroup();
   console.log(
     JSON.stringify({
-      scope: "offline actual Deno authenticated authoring payload capacity",
+      scope: mode.startsWith("boundary-")
+        ? "offline native render of synthetic protocol/storage-shape boundaries; API admission unproven"
+        : "offline actual Deno authenticated authoring payload capacity",
       mode,
       hosted_acceptance: false,
       production_slo_qualified: false,
       runtime: runtime.version,
       application_graph_loaded: applicationGraphLoaded,
-      verifier: mode.endsWith("render-only") ? "not_run" : "verifyExportDocxAsync",
+      verifier: mode.endsWith("render-only")
+        ? "not_run"
+        : "verifyExportDocxAsync",
       attempt_timeout_ms: 30000,
       maximum_simultaneous_children: maximumActive,
       active_children_after: active,
@@ -393,6 +698,7 @@ try {
   clearTimeout(cancelAt);
 }
 await run("after-adverse-parent-liveness", models[0].model);
+await captureCgroup();
 console.log(
   JSON.stringify({
     scope:

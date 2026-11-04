@@ -14,9 +14,10 @@ const timeoutError = () =>
  * limit: reserve one slot before allocating input or starting a subprocess.
  * FIFO waiting consumes the same attempt deadline and never spawns late work. */
 const abortReason = (signal: AbortSignal) => signal.reason ?? timeoutError();
-async function acquireRenderer(
+export async function acquireNativeDocxProcess(
   timeoutMs: number,
   signal?: AbortSignal,
+  expired: () => AppError = timeoutError,
 ): Promise<() => void> {
   if (signal?.aborted) throw abortReason(signal);
   if (rendererActive)
@@ -38,7 +39,7 @@ async function acquireRenderer(
       };
       const timer = setTimeout(() => {
         remove();
-        reject(timeoutError());
+        reject(expired());
       }, timeoutMs);
       waitingRenderers.push(admit);
       signal?.addEventListener("abort", abort, { once: true });
@@ -129,7 +130,7 @@ export async function renderDeliveryIsolated(
   signal?: AbortSignal,
 ): Promise<Uint8Array> {
   const started = performance.now();
-  const release = await acquireRenderer(timeoutMs, signal);
+  const release = await acquireNativeDocxProcess(timeoutMs, signal);
   try {
     if (signal?.aborted) throw abortReason(signal);
     const remaining = timeoutMs - (performance.now() - started);

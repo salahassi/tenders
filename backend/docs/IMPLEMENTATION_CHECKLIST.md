@@ -8855,3 +8855,60 @@ PostgreSQL 18 on the managed deployment remains an explicit guarded-release
 check; this local execution is PostgreSQL 17.6. Pinned Storage binary behavior,
 Kubernetes quiescence and hosted retirement acceptance retain their separate
 qualification requirements.
+
+
+### 2026-11-04 — isolate canonical DOCX verification; final resource gates pending
+
+Real steady-worker testing reproduced a cgroup OOM on the second large
+two-volume job despite a successful first job and a temporary worker-only
+256 MiB parent old-space experiment. The failed receipts are retained in
+`evidence/native-verifier-parent-default-red-20261104.json` and
+`evidence/native-verifier-parent256-steady-red-20261104.json`. The temporary
+parent entrypoint/heap override is removed; original pinned image startup and
+parent resources remain unchanged.
+
+Every runtime asynchronous canonical verifier now uses a fixed offline Deno
+child and the same physical FIFO permit as native rendering. The bounded binary
+input requires exact lengths and EOF; a successful child exit must return the
+exact model SHA256, DOCX SHA256 and size. Strict bounded verdicts, canonical
+content error codes, cancellation/deadline kill-and-reap, private within-run
+readback proofs and existing authority/currentness checks remain intact. Child
+infrastructure failures retain the existing bounded-retry renderer codes; Deno
+has no fallback to parent-process verification. The child budget is selected
+only from deployment-owned `APP_RUNTIME_SERVICE`: worker128 MiB old-space;
+API/other/default64 MiB. A private frame buffer no longer receives a redundant
+full-size hashing copy; shared backing buffers are copied defensively. Docker
+now includes the native streaming renderer dependency and caches both fixed
+child entrypoints. No storage/model quota, SQL schema, parent resource limit,
+prompt hash or published artifact is changed.
+
+The83-case canonical verifier/worker/process scope passed. After adding trusted
+service selection and exact byte-view/shared-buffer hashing checks, all34
+process/protocol tests and backend typecheck passed. Root owns final combined
+package gates; these checks are not a hosted acceptance claim.
+
+The128 MiB child image completed two consecutive dense two-volume jobs in the
+same worker parent in109.384s/108.943s, with fixed180s leases/600s request clocks,
+no forced GC/restart and concurrent real parsing/validation of exact1 MiB and
+50,000-cell synthetic provider envelopes. Peak cgroup memory was579.58/640 MiB;
+each job completed two PUTs/four GETs and both volumes. The expiry case wrote
+nothing and subsequent health returned200. SQL/Storage were explicitly emulated;
+see `evidence/native-verifier-worker128-steady-20261104.json`. Four default image
+service startups passed without the parent heap override.
+
+API384 MiB with128 MiB child hit a cgroup OOM and safely rejected the result;
+`evidence/native-verifier-api128-red-20261104.json` preserves it. The64 MiB child
+candidate passed seven actual admitted fixture families twice each plus five
+canonical rejection/real CPU cancellation/recovery checks in the same API-sized
+parent. This was1 CPU, not the declarative700m API limit. Peak cgroup memory
+383.94/384 MiB does not establish margin or burst safety. The giant verifications
+took71.9s/70.5s, so worker128 is retained. See
+`evidence/native-verifier-api64-candidate-20261104.json`.
+
+Still pending: final service-specific image proof, API700m/gateway150s timing,
+near10 MiB canonical-model/8 MiB saved-payload shapes and4 MiB reviewed metadata,
+anonymous/file memory telemetry, and early heavy-file API admission with slow
+consumer/burst tests. The native permit alone does not bound API inputs allocated
+before admission. The current sequential receipts do not qualify arbitrary
+concurrency, real authenticated HTTP/hosted Storage, or production SLOs. No
+provider, billing or production mutation occurred in this slice.
