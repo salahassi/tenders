@@ -387,3 +387,132 @@ export async function measureApiHandler(folder: string, passes = 2) {
     if (persist) await persist;
   }
 }
+
+/** Exact ordinary-policy2 artifact from the persisted-body fixture. The server
+ * renderer pin and Auth/RPC authority remain explicit synthetic test controls;
+ * this does not establish a new approved review in a real workspace. */
+export async function measureReviewedDocxHandler(folder: string) {
+  const artifactPath = `${folder}/verification.docx`;
+  const serializedRequest = await runtime.readTextFile(
+    `${folder}/authored-69-mixed-paragraphs.request.json`,
+  );
+  const saved = await fileDigest(artifactPath);
+  const counts = { context: 0, storage: 0, complete: 0 };
+  const backend = {
+    authenticate: async () => ({ id: actor }),
+    membership: async () => ({ workspace_id: actor, role: "Owner" }),
+    userRpc: async (
+      _token: string,
+      operation: string,
+      args: Record<string, unknown>,
+    ) => {
+      assert(
+        operation === "artifact_context" && args.artifact_id === artifactId,
+        "Unexpected review context",
+      );
+      counts.context++;
+      const request = JSON.parse(serializedRequest);
+      request.snapshot.export_renderer_version = "ordinary-2";
+      return {
+        request,
+        artifact: {
+          id: artifactId,
+          kind: "reviewed",
+          status: "pending",
+          original_name: "synthetic-reviewed.docx",
+          mime_type: DOCX_MIME,
+          content_hash: saved.hash,
+          expected_size: saved.size,
+          storage_key: "synthetic/reviewed.docx",
+        },
+      };
+    },
+    object: async (_key: string, signal?: AbortSignal) => {
+      counts.storage++;
+      signal?.throwIfAborted();
+      const blob = await new Response(
+        (await runtime.open(artifactPath)).readable,
+      ).blob();
+      signal?.throwIfAborted();
+      return blob;
+    },
+    internal: async (operation: string, args: Record<string, unknown>) => {
+      assert(
+        operation === "complete_export_artifact" &&
+          args.artifact_id === artifactId &&
+          args.actor_id === actor &&
+          args.actual_hash === saved.hash &&
+          args.actual_size === saved.size &&
+          args.verification_kind === "reviewed_docx",
+        "Review completion did not bind exact verified bytes and actor",
+      );
+      counts.complete++;
+      return { id: artifactId, status: "ready" };
+    },
+  };
+  const handle = createApiHandler(
+    environment,
+    () => backend as unknown as Backend,
+  );
+  const started = performance.now(),
+    controller = new AbortController();
+  const deadline = setTimeout(
+    () => controller.abort(new Error("Synthetic150s review deadline exceeded")),
+    150_000,
+  );
+  const peak = { rss: 0, heapTotal: 0, heapUsed: 0, external: 0 };
+  const monitor = setInterval(() => {
+    const memory = runtime.memoryUsage();
+    for (const key of Object.keys(peak) as Array<keyof typeof peak>)
+      peak[key] = Math.max(peak[key], memory[key]);
+  }, 250);
+  try {
+    const response = await handle(
+      new Request(
+        `https://edge.example.test/functions/v1/api/v1/export-artifacts/${artifactId}/complete`,
+        {
+          method: "POST",
+          signal: controller.signal,
+          headers: {
+            authorization: "Bearer synthetic-user-token",
+            origin: environment.allowedOrigins[0],
+          },
+        },
+      ),
+    );
+    const result = await response.json();
+    assert(
+      response.status === 200 && result.data?.status === "ready",
+      `Canonical reviewed DOCX failed: ${response.status}/${result.error?.code}`,
+    );
+    assert(
+      counts.context === 1 && counts.storage === 1 && counts.complete === 1,
+      "Review lifecycle inventory changed",
+    );
+    return {
+      scope:
+        "offline actual reviewed-DOCX completion handler and native canonical verifier; actual saved ordinary request with synthetic ordinary-2 server pin/Auth/RPC/Storage",
+      hosted_acceptance: false,
+      actual_upstream_postgrest: false,
+      actual_gateway: false,
+      production_slo_qualified: false,
+      parent_memory_peaks: peak,
+      parent_memory_final: runtime.memoryUsage(),
+      counts,
+      cases: [
+        {
+          name: "ordinary-large-reviewed-docx",
+          outcome: "verified",
+          status: response.status,
+          artifact_hash: saved.hash,
+          artifact_bytes: saved.size,
+          elapsed_ms: Math.round(performance.now() - started),
+          completion_calls: counts.complete,
+        },
+      ],
+    };
+  } finally {
+    clearTimeout(deadline);
+    clearInterval(monitor);
+  }
+}

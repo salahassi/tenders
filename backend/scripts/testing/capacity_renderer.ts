@@ -1,7 +1,10 @@
 import { verifyDeliveryIsolated } from "../../supabase/functions/_shared/deliveryVerifyIsolation.ts";
 import { environment } from "../../supabase/functions/_shared/backend.ts";
 import { measureDeliveryWorker } from "./capacity_delivery_worker.ts";
-import { measureApiHandler } from "./capacity_api_handler.ts";
+import {
+  measureApiHandler,
+  measureReviewedDocxHandler,
+} from "./capacity_api_handler.ts";
 import {
   renderDeliveryIsolated,
   type RendererProcess,
@@ -130,6 +133,18 @@ async function run(name: string, model: RenderModel, required = true) {
 }
 const folder = runtime.args[0];
 if (!folder) throw Error("Synthetic model directory is required");
+if (runtime.args[1] === "verifier-reviewed") {
+  const measured = await measureReviewedDocxHandler(folder);
+  await captureCgroup();
+  console.log(
+    JSON.stringify({
+      ...measured,
+      runtime: runtime.version,
+      application_graph_loaded: applicationGraphLoaded,
+    }),
+  );
+  runtime.exit(0);
+}
 if (runtime.args[1] === "ordinary-render-capacity") {
   for (const name of [
     "generated-100-tables",

@@ -20,7 +20,7 @@ import threading
 ROOT = Path(__file__).resolve().parents[3]
 IMAGE = "sha256:08eeb4ffa1c2"  # Resolved to the exact full local identity.
 MODES = (
-    "standard", "final-capacity", "worker-capacity", "ordinary-render-capacity", "verifier-capacity", "verifier-matrix", "verifier-handler", "verifier-handler-cancel", "handler-render-only", "verifier-boundaries", "boundary-render-only", "dense-heap-matrix",
+    "standard", "final-capacity", "worker-capacity", "ordinary-render-capacity", "verifier-capacity", "verifier-matrix", "verifier-handler", "verifier-handler-cancel", "verifier-reviewed", "handler-render-only", "verifier-boundaries", "boundary-render-only", "dense-heap-matrix",
     "streamed-capacity", "streamed-render-only", "concurrent-capacity",
     "density-edges", "density-render-only", "sparse-capacity",
     "sparse-render-only", "direction-capacity", "direction-render-only",
@@ -39,7 +39,9 @@ def docker(*args, timeout=60):
 
 
 def model_names(mode):
-    if mode == "ordinary-render-capacity":
+    if mode == "verifier-reviewed":
+        names = ("authored-69-mixed-paragraphs",)
+    elif mode == "ordinary-render-capacity":
         names = ("generated-100-tables", "authored-100-json-tables", "authored-69-mixed-paragraphs")
     elif mode == "verifier-boundaries":
         names = ("small-native-base", "small-native-core4m", "near10m-ascii", "near10m-ascii-core4m", "near10m-mixed100", "empty-rows-storage-shape")
@@ -115,7 +117,7 @@ def run(models, image, mode="standard", artifacts=None,
                                 app / "backend/supabase/functions/_shared" / name)
         for name in names:
             shutil.copyfile(inputs / name, staged_inputs / name)
-            if mode == "ordinary-render-capacity":
+            if mode in ("ordinary-render-capacity", "verifier-reviewed"):
                 request = name.removesuffix(".json") + ".request.json"
                 shutil.copyfile(inputs / request, staged_inputs / request)
         if mode.startswith("verifier-handler"):

@@ -9327,6 +9327,32 @@ provides the exact file for the separately owned reviewed-upload40MiB original
 archive-limit red/green test. Receipt:
 `evidence/native-ordinary-body-20261104.json`.
 
+The lifetime fix now has actual native repeat evidence on immutable image
+`89afc8a31d76e1616ad17e5896e0fc54f0acdc41cd7da389af456386f3e998fe`:
+two largest admitted downloads in one parent, followed by one separately launched
+fresh-parent repeat matching the prior failing sequence. At unchanged 384 MiB /
+700m, headers arrived in112.208s,107.866s and104.811s; exact complete responses
+took113.216s,108.872s and105.818s. Final actor/hash authorization, slow-consumer
+busy rejection before full context/Storage, and genuinely heavy `/v1/documents`
+reacquisition after EOF and cancellation passed. No forced GC, heap override or
+resource increase occurred. Cgroup peaks were387,506,176 and391,241,728 bytes,
+with no max/oom/oom_kill events and swap peak0. Minimum observed headroom is
+10.88 MiB: the local fixture gate passes, but arbitrary workload headroom or a
+universal SLO is not claimed. Original red receipts remain unchanged.
+
+The same image also passes the actual reviewed-DOCX completion handler using
+the exact ordinary artifact from the earlier rejection, its saved request and
+an explicitly synthetic server-owned `ordinary-2` pin. Canonical verification
+completed before the single actor/hash/size-bound completion call: HTTP200 in
+30.996s, peak367,247,360 bytes at384 MiB /700m, no OOM or swap. This closes the
+same-file native content/working-set gate for the separately implemented upload
+envelope fix; it does not create or qualify a real workspace approval. Receipts:
+`evidence/native-api-owned-snapshot-steady-20261104.json`,
+`evidence/native-api-owned-snapshot-fresh-20261104.json` and
+`evidence/native-reviewed-docx-handler-20261104.json`. Auth/RPC/Storage remain
+labelled synthetic adapters, and actual upstream, gateway, hosted authorization,
+full integrated package checks and deployment acceptance remain separate.
+
 ### 2026-11-04 — Additive read-only capacity inventory preparation
 
 The inventory now adds `capacity_observation` without changing its existing

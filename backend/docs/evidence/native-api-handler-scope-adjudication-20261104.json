@@ -44,9 +44,7 @@
   "historical_harness_sha256": "278455cd24535361505a97f0cb6388dc3e61e184279c2042dc70f14d0a71186d",
   "historical_harness_reconstruction": "Current capacity_api_handler.ts control path /v1/documents replaces /v1/proposals; original full staged source retained privately at output/proposal-api-handler-first-run.ts. Later optional pass-count support is also not in the historical run.",
   "remaining": [
-    "Corrected heavy reacquisition after cancel",
-    "Actual native current-policy ordinary projections for three persisted body-bound fixtures",
-    "Final integrated image startup/worker and release acceptance after upstream batch fix"
+    "Final integrated package checks and hosted release/authorization/real network acceptance remain separate"
   ],
   "followup": {
     "repeat_outcome": "The corrected cancellation probe failed before reaching response/cancel: same immutable image/input/resources, DELIVERY_RENDER_FAILED at103s and Docker OOMKilled true. The earlier two-pass result is historical scoped evidence, not stable release capacity.",
@@ -54,5 +52,51 @@
     "ordinary_projections": "All3 actual saved ordinary requests reprojected under current worker policy2 rendered and canonical-verified at640MiB/1CPU; legacy projections were matched to their saved requests before reprojection.",
     "ordinary_receipt": "native-ordinary-body-20261104.json",
     "release_gate": "open until lifetime fix passes actual native repeats; no heap/resource increase"
+  },
+  "current_candidate": {
+    "image_id": "sha256:89afc8a31d76e1616ad17e5896e0fc54f0acdc41cd7da389af456386f3e998fe",
+    "source_fix_commit": "6c2feb4",
+    "limits": {
+      "memory_bytes": 402653184,
+      "cpu": 0.7
+    },
+    "large_requests": 3,
+    "sequence": "two requests in one parent, then one separately launched fresh parent; no forced GC or heap/resource changes",
+    "headers_ms": [
+      112208,
+      107866,
+      104811
+    ],
+    "completed_ms": [
+      113216,
+      108872,
+      105818
+    ],
+    "peak_bytes": [
+      387506176,
+      391241728
+    ],
+    "minimum_observed_margin_bytes": 11411456,
+    "oom_events": 0,
+    "swap_peak": 0,
+    "corrected_cancel_heavy_reacquisition": true,
+    "reviewed_same_artifact": {
+      "status": 200,
+      "completion_calls": 1,
+      "elapsed_ms": 30996,
+      "peak_bytes": 367247360,
+      "artifact_hash": "1bee8e23cf2198c637555d448aad64fd8e57b64f8f1d902274b8ef55c547d25d"
+    },
+    "receipts": {
+      "native-api-owned-snapshot-steady-20261104.json": "56592aaa7951d1b2b144a88ed991f93b51745d0338ca19b7b57e53c83c9126be",
+      "native-api-owned-snapshot-fresh-20261104.json": "2d944815772dc9c677346a09c958baa7ca8a33517cc25e47e352004693a73154",
+      "native-reviewed-docx-handler-20261104.json": "e3b91fc1c4da28ae921908ef64ac2948991fceb3408f3279440a5cb96a2c711f"
+    },
+    "scope_limitations": [
+      "Auth/RPC and file-backed Storage are synthetic adapters; no actual hosted authorization, upstream PostgREST or NGINX qualification",
+      "The reviewed ordinary request has an explicitly synthetic server-owned ordinary-2 renderer pin; this test creates no real approval",
+      "Minimum measured headroom10.88MiB remains narrow; these admitted fixture repeats do not establish arbitrary workload/concurrency headroom or universal SLO",
+      "Previously retained protocol-only near10MiB single-field failure is not silently treated as producer-admitted or qualified"
+    ]
   }
 }
