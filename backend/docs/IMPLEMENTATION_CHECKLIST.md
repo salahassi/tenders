@@ -7021,3 +7021,18 @@ ordinary-export backend/UI, final combined gates and hosted acceptance remain op
 The existing OCR browser harness now also closes Vite and removes its temporary
 fixture on browser-launch failure. Its successful screenshot receipt is retained;
 this lifecycle cleanup is not a new hosted or visual acceptance claim.
+
+D06 legacy-contract admission: new retries/resumes of frozen plans without the
+current generated-delivery and consistency contracts fail immediately with
+PROPOSAL_CURRENT_CONTRACT_REQUIRED. The response details identify the exact
+revision and existing explicit successor route: cancel an open legacy plan then
+proposal.generate when no active version exists, or proposal.regenerate against
+the accepted active version. Existing idempotency replays retain the original
+response and deadline. A user cancellation now terminalizes its active issuance
+rather than leaving a knowingly canceled request waiting for the time limit.
+Historical frozen input/hash, accepted versions and model accounting are retained.
+Two real PostgreSQL successor cases pass against the combined schema, including
+no-active-version cancellation/new generation and completed-version regeneration;
+receipt /workspace/output/current-issuance-contract-postgres.json. The old retry
+accounting suites explicitly retain their historical142525 migration boundary.
+No silent promotion, automatic new request, model call, or deployment occurred.

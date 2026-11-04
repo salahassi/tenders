@@ -9,7 +9,12 @@ import {
 
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
-  f = await workflowFixture();
+  // Frozen legacy retry/accounting behavior is exercised at its deployed
+  // migration boundary. New current-contract admission has its own tests.
+  f = await workflowFixture(
+    undefined,
+    "20261104142525_proposal_issuance_deadline.sql",
+  );
 }, 30000);
 afterAll(async () => f?.db.close());
 beforeEach(async () => f.db.exec("begin"));
