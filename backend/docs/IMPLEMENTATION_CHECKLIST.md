@@ -7959,3 +7959,23 @@ renderer and verifier owners; this new API case does **not** assert native succe
 within 128 MiB/30 seconds or final document-XML verification. Any resulting native
 repair and stricter verifier guards require their own final combined rerun. No
 input ceiling was changed, and no provider or production calls were made.
+### 2026-11-04 — preserve ordinary export cells wider than the header row
+
+`buildExportModel` now copies every authorized source cell instead of projecting
+rows through the header count. Source rows and literal zero values survive; the
+native renderer alone pads the widest table with empty cells and empty headings.
+This changes new render projections, not immutable historical artifact bytes.
+
+The new local integration test failed before the fix because a unique source
+cell and `0` disappeared. It now passes through actual authenticated fixture API
+prepare, migrated SQL immutable request snapshot, ordinary background worker,
+object readback and authorized download. An independent native XML assertion
+checks all three columns, zero, blank header padding and short-row padding; the
+stored source remains byte-for-byte equivalent as JSON. This uses only synthetic
+local session/object transport, not hosted Auth or cloud Storage.
+
+Local validation: 27 ordinary pipeline/ragged cases, eight projection/structure
+cases and two native renderer cases pass; both package typechecks/builds pass.
+The renderer dependency is the separately committed native streaming/ragged
+implementation `178eb04`. Final composed suites, hosted acceptance and deployment
+remain separate release evidence. No production or provider calls.

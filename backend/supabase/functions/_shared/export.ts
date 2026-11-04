@@ -183,10 +183,10 @@ export function buildExportModel(
           if (b.type === "table")
             blocks.push({
               type: "table",
-              headers: b.headers,
-              rows: b.rows.map((r: string[]) =>
-                b.headers.map((_: string, i: number) => r[i] || ""),
-              ),
+              headers: [...b.headers],
+              // Preserve every authorized cell. The native renderer pads rows
+              // and headers to the widest row without inventing heading text.
+              rows: b.rows.map((r: string[]) => [...r]),
             });
           else
             blocks.push({
