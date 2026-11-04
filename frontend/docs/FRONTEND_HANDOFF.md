@@ -180,3 +180,16 @@ as saved corrections, not OCR guesses. `candidate_requires_review` identifies
 review that the current user must repeat. Whole-file confirmation requires one
 current actor's explicit page review; mixed-reviewer text remains saved with
 its original attribution and a visible review requirement.
+
+### Durable ordinary Word preparation (November 4, 2026)
+
+Proposal-list, editor and draft/final export actions now use the saved server
+export package. The worker prepares and verifies all required volumes even if
+the browser closes. Download again reconnects to the same current package and
+original deadline. The status panel distinguishes preparation, failure and
+explicit retry; Stop waiting affects this page only. Every volume is fetched
+and hash-checked before any browser file download, with a final authenticated
+package check. Final export still requires current approval and source
+currentness. Human-reviewed file uploads remain a separate supported path.
+This replaces browser-worker preparation for ordinary draft/final actions;
+local checks do not establish deployment or hosted acceptance.

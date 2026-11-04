@@ -224,9 +224,9 @@ export class BackendClient {
     } while (cursor);
     return rows;
   }
-  async downloadArtifact(id: string): Promise<Blob> {
+  async downloadArtifact(id: string, signal?: AbortSignal): Promise<Blob> {
     if (!/^[0-9a-f-]{36}$/.test(id)) throw Error("Invalid artifact.");
-    return this.downloadBytes(`/v1/export-artifacts/${id}/download`);
+    return this.downloadBytes(`/v1/export-artifacts/${id}/download`, signal);
   }
   async downloadDeliveryArtifact(
     id: string,
