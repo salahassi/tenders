@@ -8621,3 +8621,38 @@ real kubelet termination, PostgreSQL, native-container or hosted retirement test
 No production/provider calls or CPU-heavy suites were run by this review. The
 final scoped source review found no additional material blocker after the fix;
 checked rollout and hosted physical/process observations remain separate gates.
+
+### 2026-11-04 — expand G09 offline decision-field and retrieval qualification
+
+Frozen, independently reviewed fixture versions now exercise 76 typed-field
+pairs across all ten semantic primary tasks plus sixteen explicit nonrecursive
+verifier/repair/probe boundary cases. They preserve whole/batch field types,
+identity, ownership, disjoint quote scope and unchanged source candidates. Twenty
+mutations are deterministically rejected; forty remain visible for later semantic
+review; sixteen source-tuple cases are explicitly transport-only. Source tuples
+cover actor/negation/conditions/exceptions/consequences, authority/review identity,
+and distinct supplier-report versus buyer-account quantities and dates. Existing
+exact-source gates and all 43 historical wire hashes are mapped separately.
+
+The independent sixteen-case bilingual retrieval corpus retained every decisive
+whole source, and nine bounded fact-plus-qualification excerpts (Arabic queries
+4/8, English queries 5/8). All seven missed records remained explicit gaps; no partial
+source became claim-eligible and no result asserted capability absence. These
+measured misses are preserved without a new outcome-derived recall threshold.
+No live model correctness or complete semantic recall is claimed.
+
+The first run's sixteen failures were a missing source_evidence envelope in the
+transport harness. Adding an explicit empty catalog corrected that precondition;
+it does not fabricate source authority or turn those cases into domain-positive
+controls. All frozen fixture versions and first/final outcome hashes are retained.
+The focused final run passed 183 tests across five files in 1.47s, including actual
+modelPrompt JSON round-trips, source-tuple mutation rejection, scoped repairs and
+historical verification pins. Backend typecheck passed.
+See G09_OFFLINE_QUALIFICATION.md and evidence/g09-*-20261104.json for the exact
+coverage, observed limitations and independently owned provider-capacity gate.
+
+This slice adds tests, synthetic fixtures and evidence only. Root combined gates
+and actual-image capacity qualification remain separate; no provider calls,
+production mutations, prompt changes, paid-wire migrations or deployment occurred.
+Actual configured-provider semantic qualification remains pending while those
+providers are unavailable.

@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "observed_at": "2026-11-04",
+  "scope": "Offline G09 decision-field transport, deterministic boundaries, independent bilingual retrieval and omission qualification",
+  "repository_base": "c056ad1fa47e61b3313996f32f6493e18b40337b",
+  "provider_calls": 0,
+  "production_mutations": 0,
+  "fixture_sha256": {
+    "retrieval-qualification-v1.json": "64413933d81a5f9d66fb5671eb4472874b5441228b9e74eaee393e944f312272",
+    "typed-decision-pairs-v1.json": "add1fe4e43fea59a462ced9b72fb41c83bde4e3091d2a22da8109c0f46322cf4",
+    "typed-decision-pairs-v2.json": "0c15b60cb0435715f5ca6a3850ecbdd6ac15f28eff7f0451b9edf8b598748f70",
+    "typed-decision-pairs-v3.json": "390c74f3b314902eb8462be972fc6f680c59d8bc50093a3b20a0ec709fb0f99b"
+  },
+  "pre_outcome_review": [
+    "v1 retained unchanged. Independent review identified same-unit secondary ownership and an unsupported buyer cross-reference in the blueprint fixture; v2 adds a distinct R2 unit and source-backed cross-reference, and corrects authority downgrade wording.",
+    "v3 adds eleven source-tuple field/association pairs before any G09 execution. v1 and v2 remain unchanged. No outcome changed an oracle or recall threshold."
+  ],
+  "first_execution": {
+    "tests_passed": 110,
+    "tests_failed": 16,
+    "reason": "Harness omitted the required source_evidence envelope on source-contract transport-only fixtures. No product defect was inferred.",
+    "log_sha256": "a32a498616af7826f55c4835601cff36866b0999493f897aeb33a975b1d4d66f",
+    "retrieval_report_sha256": "0b3aeecb0895f00b250a6ca19144f223a91689696fd22a0eb602bb49453d0d9c"
+  },
+  "harness_correction": "Add explicit version1 empty spans/reviews envelope to transport-only contexts. No source authority/review is fabricated, and these sixteen cases do not call source-domain validation. Existing exact-source authority tests remain separately mapped.",
+  "focused_execution": {
+    "tests_passed": 183,
+    "files": 5,
+    "duration_seconds": 1.47,
+    "log_sha256": "761119110522141d125b0a14a7d1a54b2a653cfc8f0e1be7dfcb3f45045a68b2",
+    "files_run": [
+      "modelTypedDecisionPairs.test.ts",
+      "companyEvidenceQualification.test.ts",
+      "sourceEvidence.test.ts",
+      "modelTypedVerificationRegistry.test.ts",
+      "modelSemanticPatch.test.ts"
+    ],
+    "backend_typecheck": "passed",
+    "backend_typecheck_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "typed": {
+    "report_sha256": "dde0cf5ab7cfc7ab14681b324d11ca3fad75f35b1d4f5c25b5df852c4a76eb65",
+    "pairs": 76,
+    "task_pair_counts": {
+      "analyze_chunk": 20,
+      "classify_opportunity": 6,
+      "draft_section": 6,
+      "inspect_source_page": 7,
+      "plan_blueprint": 8,
+      "plan_commercial": 13,
+      "plan_proposal": 3,
+      "plan_structure": 4,
+      "review_proposal": 6,
+      "summarize_review": 3
+    },
+    "actual_domain_outcomes": {
+      "mutation_domain_admitted_requires_semantic_review": 40,
+      "not_executed_transport_only": 16,
+      "mutation_rejected": 20
+    },
+    "additional_nonrecursive_boundary_cases": 16,
+    "registry_census_tests": 1,
+    "old_wire_hashes_revalidated": 43,
+    "actual_model_prompt_json_round_trip": "All whole candidates and both disjoint batches preserve the complete untrusted_data JSON through modelPrompt serialization."
+  },
+  "retrieval": {
+    "report_sha256": "0b3aeecb0895f00b250a6ca19144f223a91689696fd22a0eb602bb49453d0d9c",
+    "complete_source_recall": {
+      "numerator": 16,
+      "denominator": 16
+    },
+    "bounded_discovery_recall": {
+      "numerator": 9,
+      "denominator": 16
+    },
+    "silent_omissions": 0,
+    "false_partial_claim_eligibility": 0,
+    "by_query_language": [
+      {
+        "language": "ar",
+        "bounded_discovery_recall": {
+          "numerator": 4,
+          "denominator": 8
+        }
+      },
+      {
+        "language": "en",
+        "bounded_discovery_recall": {
+          "numerator": 5,
+          "denominator": 8
+        }
+      }
+    ],
+    "bounded_missed_cases": [
+      "accessibility-ar",
+      "accessibility-en",
+      "cloud-ar",
+      "cloud-en",
+      "migration-ar",
+      "recovery-ar",
+      "recovery-en"
+    ]
+  },
+  "limits": [
+    "Whole/batch typed preservation and an injected rejecting verifier report do not prove an unavailable AI will detect the semantic mutation.",
+    "Source tuples with an empty catalog are transport-only fixtures, not faithful authorized-source positive controls.",
+    "Bounded discovery retrieved9/16 cases. All seven missed decisive records remain explicit gaps; this is not full semantic recall.",
+    "Final near-limit provider-envelope/runtime capacity belongs to separate actual-image qualification. Configured live provider task/language quality remains unqualified while providers are unavailable.",
+    "No new production/provider/model policy or paid-wire version was introduced by these test files."
+  ]
+}
