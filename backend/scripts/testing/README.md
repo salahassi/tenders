@@ -46,3 +46,15 @@ docker --host=unix:///var/run/docker.sock rm -f tdp-races-PRINTED
 
 These checks complement the normal Vitest suites. They do not exercise live
 Supabase Auth/Storage, the server renderer, Word layout or deployment.
+
+`delivery_artifact_races.py` exercises durable local export receipts with the same
+isolated harness: identical and conflicting receipt commits, current source and
+membership revocation, cancellation, and competing document/artifact capacity
+reservations. It observes real database lock waits before releasing each race.
+
+```sh
+python3 backend/scripts/testing/delivery_artifact_races.py --output /tmp/artifact-races.json
+```
+
+Trusted-worker hash/size receipts in SQL tests are synthetic. Canonical DOCX
+validation and real storage bytes are tested separately by the renderer suite.

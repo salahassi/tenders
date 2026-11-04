@@ -96,7 +96,7 @@ async function context(snapshot: string) {
 async function counts() {
   return row(`select (select count(*)::int from public.provider_usage) usage,
     (select count(*)::int from public.model_attempts) attempts,
-    (select count(*)::int from public.jobs) jobs,
+    (select count(*)::int from public.jobs where type<>'render_delivery') jobs,
     (select count(*)::int from public.proposal_versions) versions`);
 }
 

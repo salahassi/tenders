@@ -1410,7 +1410,7 @@ it.each(["MODEL_OUTPUT_INVALID", "MODEL_OUTPUT_TRUNCATED"])(
       null,
     ]);
     expect(
-      (await f.db.query<any>("select status from public.jobs")).rows[0].status,
+      (await f.db.query<any>("select status from public.jobs where id=$1", [job.id])).rows[0].status,
     ).toBe("blocked");
     const plan = (
       await f.db.query<any>("select * from public.generation_plans")
@@ -1428,7 +1428,7 @@ it.each(["MODEL_OUTPUT_INVALID", "MODEL_OUTPUT_TRUNCATED"])(
       ).rows[0].repair_count,
     ).toBe(1);
     expect(
-      (await f.db.query<any>("select status from public.jobs")).rows[0].status,
+      (await f.db.query<any>("select status from public.jobs where id=$1", [job.id])).rows[0].status,
     ).toBe("queued");
   },
 );

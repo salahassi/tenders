@@ -59,6 +59,58 @@ Deployment/hosted acceptance: **not deployed, no production or provider calls**.
 This is the persisted foundation, not a substantively complete non-model route,
 DOCX renderer or all-workflow closure. Renderer/API/UI integration, combined branch regression and actual Word/RTL/visual acceptance
 remain separate gates in the delivery plan.
+## November 4 — durable local delivery artifacts (W03/W09, EX-01/OP-04)
+
+Implementation: each immutable delivery snapshot creates a deduplicated local
+`render_delivery` job and its required combined or technical/financial artifact
+set. Executor-3 claim, local-drain and wake RPCs preserve old-worker exclusion,
+fair scheduling, model-slot accounting, restore, revision and lease guards.
+Snapshot/content commits reserve no storage. The first worker context atomically
+reserves the whole volume set against the existing combined 250 MiB ceiling;
+unknown upload bytes retain their 10 MiB reservation and stable path until a
+verified receipt or confirmed purge cleanup. Burst updates coalesce only older
+unattempted, unleased, entirely unreserved pending work; ready and uncertain files
+remain retained.
+
+The SQL service contract rechecks current actor/source access and immutable pins
+before reads or ready commits. Individual downloads require the complete volume
+set and successful package, followed by current actor/source/hash authorization.
+Authenticated metadata excludes storage paths. Receipts bind actual worker
+verification to artifact identity, lease, hash and size; SQL alone does not claim
+to inspect DOCX bytes. Rendering never changes proposal approval, accepts model
+content, calls a model or settles unknown usage.
+
+Retry policy 1 permits at most six transient failures, including expired worker
+leases, with bounded exponential delays for reported failures. Exhaustion leaves
+an explicit blocked package and retained bytes. `delivery.snapshot.retry` is an
+explicit current Editor/Owner action with delivery revision and idempotency checks;
+it creates a new local job under the current actor, preserves ready/uncertain
+bytes, and gives only restored missing volumes a fresh path. It never revives a
+historical actor or paid model job. Backup manifests include ready artifact bytes;
+restore retains completed packages and permits explicit completion of partial
+packages. Archive, purge, storage cleanup and maintenance retention now cover the
+new artifact/job references.
+
+Local evidence: **201 focused tests across seven files** pass, covering 38 new
+artifact cases plus snapshot, generation, fair queue, wake, retention and recovery
+regressions. The final corrupt-pin failure-recording adjustment was rechecked in
+all 38 artifact cases. Completed and partial two-volume backup/restore roundtrips
+pass. Six additional real PostgreSQL 17.6 cases observe independent sessions
+waiting on database locks before checking duplicate/conflicting receipts,
+source/membership/cancellation changes and competing document/artifact capacity.
+Both lockfile installs, both typechecks and both builds pass; the frontend retains
+the existing large-chunk build warning. Independent SQL review found no remaining
+blocking issue. The integration owner runs full combined suites and the actual
+renderer/API/UI checks before release.
+
+Deployment/hosted acceptance: **not deployed**; only local synthetic databases
+were used. No production, model, storage service or email call was made. Queue
+and delivery latency SLOs, actual storage saturation behavior, real DOCX/layout
+acceptance, the isolated cloud restore drill and hosted user download acceptance
+remain open. Finite retries and a local capacity guard do not establish guaranteed
+wall-clock availability under infrastructure outage or exhausted storage.
+
+
 ## November 4 — worker maintenance isolation (F11 / part of W09)
 
 Implementation: eligible business work is claimed and processed before unrelated
