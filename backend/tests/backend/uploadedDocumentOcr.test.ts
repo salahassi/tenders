@@ -1408,6 +1408,7 @@ it.each([true, false])(
       title: "Synthetic blank source",
       reference: "SYNTHETIC-BLANK",
       language: "en",
+      decision: "shortlisted",
     });
     const prepared = await f.command("document.prepare", {
       eligibility_attested: true,
@@ -1481,5 +1482,54 @@ it.each([true, false])(
       context.input_materials.documents.map((d: any) => d.document_id),
     ).toEqual([child.id]);
     expect(context.input_materials.documents[0].used_for_draft).toBe(false);
+    const snapshot = await f.command("delivery.snapshot.prepare", {
+      opportunity_id: opportunity.id,
+      expected_revision: opportunity.revision,
+    });
+    expect(snapshot.payload.gaps).toContainEqual(
+      expect.objectContaining({
+        source_ids: [child.id],
+        reason: allBlank ? "INSUFFICIENT_INPUT" : "UNREAD_INPUT",
+        label: expect.stringContaining(
+          allBlank
+            ? "reviewed and contain no usable scope text"
+            : "Not all material",
+        ),
+      }),
+    );
+    if (allBlank) {
+      const material = context.input_materials.documents[0];
+      const knownBlank = async (value: unknown) =>
+        (
+          await f.db.query<any>(
+            "select app_private.reviewed_blank_delivery_material($1,$2::jsonb) value",
+            [f.w, JSON.stringify(value)],
+          )
+        ).rows[0].value;
+      expect(await knownBlank(material)).toBe(true);
+      expect(await knownBlank({ ...material, ocr_provenance: undefined })).toBe(
+        false,
+      );
+      expect(
+        await knownBlank({ ...material, extraction_confirmed: false }),
+      ).toBe(false);
+      expect(
+        await knownBlank({
+          ...material,
+          ocr_provenance: {
+            ...material.ocr_provenance,
+            pages: material.ocr_provenance.pages.map((p: any) => ({
+              ...p,
+              original_hash: "f".repeat(64),
+            })),
+          },
+        }),
+      ).toBe(false);
+      await f.db.query(
+        "update public.memberships set active=false where workspace_id=$1 and user_id=$2",
+        [f.w, f.owner],
+      );
+      expect(await knownBlank(material)).toBe(false);
+    }
   },
 );

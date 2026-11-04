@@ -6964,3 +6964,14 @@ API-to-DOCX regression; that test is pending integration of this slice. Previous
 committed standalone backend validation finished green: 135 files / 2,198 tests,
 backend types/build; frontend46 files /299 tests and types/build. Hosted release,
 combined final regression and stopwatch acceptance remain separate gates.
+T02 reviewed-blank follow-up: a current, fully page-reviewed blank PDF now gets
+`INSUFFICIENT_INPUT` with an explicit reviewed-blank description in new v1
+snapshots. Unresolved scans and failed pages keep `UNREAD_INPUT`. The private
+predicate checks persisted original/page hashes, exact frozen review metadata,
+complete all-blank coverage and current reviewer authority; a client confirmation
+flag or filename cannot establish the disposition. Existing immutable payloads
+are not rewritten. The new assertion failed before the fix; **44/44** OCR SQL,
+transport and resource tests pass afterward, including fabricated metadata/hash
+and revoked-review negatives. Separate root tests cover the real UI and
+API → SQL lease → DOCX renderer → authorized download journey; hosted acceptance
+remains separate.

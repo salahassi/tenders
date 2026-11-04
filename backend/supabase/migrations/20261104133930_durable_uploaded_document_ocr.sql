@@ -424,6 +424,52 @@ declare result jsonb;items jsonb;begin
  return jsonb_set(jsonb_set(result,'{input_materials,documents}',items),'{input_materials,extraction_review_version}','1');
 end $$;
 
+-- Known blank is an evidence-backed disposition, not an unread/scanned input.
+-- Require the exact frozen review metadata and current persisted, page-bound
+-- human receipts. Client filenames or confirmation booleans cannot establish it.
+create function app_private.reviewed_blank_delivery_material(w uuid,material jsonb) returns boolean
+language plpgsql stable security definer set search_path='' as $$
+declare d public.documents;p jsonb;begin
+ if material->'extraction_review_version' is distinct from '1'::jsonb or material->'extraction_confirmed' is distinct from 'true'::jsonb
+  or material->'requires_human_review' is distinct from 'false'::jsonb then return false;end if;
+ select * into d from public.documents where workspace_id=w and id::text=material->>'document_id' and not archived;
+ if d.id is null or d.status<>'needs_processing' or d.mime_type<>'application/pdf' or d.extraction_confirmed_at is null or d.extraction_confirmed_by is null
+  or d.original_hash is null or d.extraction_hash is null or d.uploaded_size is distinct from d.expected_size
+  or app_private.current_document_extraction(w,d.id) is distinct from d.id
+  or not app_private.document_page_reviewer_current(d,d.extraction_confirmed_by::text)
+  or not coalesce(app_private.valid_document_coverage(d.extraction_coverage,d.extracted_text,d.status,d.pdf_pages),false)
+  or d.extraction_coverage is distinct from material->'extraction_coverage' or d.extraction_coverage->'complete' is distinct from 'true'::jsonb
+  or jsonb_strip_nulls(d.ocr_provenance) is distinct from material->'ocr_provenance' or d.ocr_provenance->'requires_human_review' is distinct from 'false'::jsonb
+  or d.ocr_provenance->>'original_hash' is distinct from d.original_hash or jsonb_typeof(d.ocr_provenance->'pages') is distinct from 'array' then return false;end if;
+ if jsonb_array_length(d.ocr_provenance->'pages')<>d.pdf_pages or exists(select 1 from jsonb_array_elements(d.extraction_coverage->'pages') x where x->>'status'<>'blank') then return false;end if;
+ for p in select value from jsonb_array_elements(d.ocr_provenance->'pages') loop
+  if p->>'engine' is distinct from 'human' or p->'blank_confirmed' is distinct from 'true'::jsonb or p->'requires_human_review' is distinct from 'false'::jsonb
+   or p->>'original_hash' is distinct from d.original_hash or p->>'reviewed_by' is distinct from d.extraction_confirmed_by::text or p->>'reviewed_at' is null
+   or p->>'text_hash' is distinct from encode(sha256(convert_to('','UTF8')),'hex') then return false;end if;
+ end loop;
+ return true;
+end $$;
+-- This migration precedes the authoring wrapper. Change only the new-payload
+-- constructor; immutable saved payloads and historical input hashes stay intact.
+do $$ declare definition text;old text;replacement text;begin
+ definition:=pg_get_functiondef('app_private.publish_delivery_snapshot(uuid,uuid,uuid,text)'::regprocedure);
+ old:=$old$available boolean:=false;partial boolean:=false;$old$;
+ if position(old in definition)=0 then raise exception 'BLANK_DELIVERY_DECLARATION_CHANGED';end if;
+ definition:=replace(definition,old,'known_blank boolean:=false;available boolean:=false;partial boolean:=false;');
+ old:=$old$   partial:=true;key:='unread-'||(source->>'document_id');
+   label:=case when lang='ar' then 'لم تُقرأ كل مواد هذا المستند. راجع الصفحات أو استكمل الاستخراج: ' else 'Not all material in this document was read. Review pages or complete extraction: ' end||coalesce(source->>'name','');
+   gaps:=gaps||jsonb_build_array(jsonb_build_object('id',key,'section_key','input-review','field_path','$.input_materials.documents',
+    'reason','UNREAD_INPUT','label',label,$old$;
+ replacement:=$new$   partial:=true;known_blank:=app_private.reviewed_blank_delivery_material(prop.workspace_id,source);
+   key:=case when known_blank then 'blank-' else 'unread-' end||(source->>'document_id');
+   label:=case when known_blank then case when lang='ar' then 'رُوجعت جميع صفحات هذا المستند، ولا تحتوي على نص قابل للاستخدام لتحديد نطاق العمل: ' else 'All pages of this document were reviewed and contain no usable scope text: ' end
+    else case when lang='ar' then 'لم تُقرأ كل مواد هذا المستند. راجع الصفحات أو استكمل الاستخراج: ' else 'Not all material in this document was read. Review pages or complete extraction: ' end end||coalesce(source->>'name','');
+   gaps:=gaps||jsonb_build_array(jsonb_build_object('id',key,'section_key','input-review','field_path','$.input_materials.documents',
+    'reason',case when known_blank then 'INSUFFICIENT_INPUT' else 'UNREAD_INPUT' end,'label',label,$new$;
+ if position(old in definition)=0 then raise exception 'BLANK_DELIVERY_DISPOSITION_CHANGED';end if;
+ execute replace(definition,old,replacement);
+end $$;
+
 -- Archiving any displayed extraction removes its original/source family from
 -- current use; historical rows remain retained and purge cannot orphan children.
 create function app_private.archive_ocr_family() returns trigger language plpgsql security definer set search_path='' as $$
@@ -700,6 +746,7 @@ do $$ declare name text;role_name text;signature text;begin
   'public.complete_uploaded_document_ocr_publication(uuid,uuid,text,bigint)',
   'public.fail_uploaded_document_ocr_publication(uuid,uuid,text)',
   'app_private.current_document_extraction(uuid,uuid)','app_private.document_page_reviewer_current(public.documents,text)',
+  'app_private.reviewed_blank_delivery_material(uuid,jsonb)',
   'app_private.check_uploaded_ocr_source(public.document_ocr_requests)',
   'app_private.uploaded_ocr_baseline(public.documents)','app_private.enqueue_uploaded_ocr(uuid,uuid)','app_private.correct_document_extraction(jsonb,text)',
   'app_private.generation_snapshot_before_uploaded_ocr(uuid,uuid,uuid,uuid)','app_private.generation_snapshot(uuid,uuid,uuid,uuid)',
