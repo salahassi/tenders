@@ -253,10 +253,38 @@ export default function OpportunityDetail() {
                       <Badge tone={d.status === "ready" ? "green" : "amber"}>
                         {d.status === "ready"
                           ? "Text extracted"
-                          : d.status === "needs_ocr"
-                            ? "Image or scan · no text extracted"
-                            : "Text unavailable"}
+                          : d.status === "partial"
+                            ? "Partial text extracted · unread pages retained"
+                            : d.status === "needs_ocr"
+                              ? "Image or scan · no text extracted"
+                              : "Text unavailable"}
                       </Badge>
+                      {d.extractionCoverage && (
+                        <p className="muted small">
+                          {
+                            d.extractionCoverage.pages.filter(
+                              (page) => page.status === "readable",
+                            ).length
+                          }{" "}
+                          of {d.extractionCoverage.pages.length} pages contain
+                          extracted text.
+                          {d.extractionCoverage.pages.some(
+                            (page) =>
+                              page.status === "needs_ocr" ||
+                              page.status === "extraction_failed",
+                          ) &&
+                            ` Pages needing processing: ${d.extractionCoverage.pages
+                              .filter(
+                                (page) =>
+                                  page.status === "needs_ocr" ||
+                                  page.status === "extraction_failed",
+                              )
+                              .map((page) => page.page)
+                              .join(
+                                ", ",
+                              )}. Readable pages remain available for the draft.`}
+                        </p>
+                      )}
                     </div>
                     <div className="simple-file-actions">
                       {backend &&

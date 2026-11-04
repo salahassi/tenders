@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { AppError, databaseError } from "./http.ts";
 import { MODEL_PROVIDER_IDS, type ModelProviderId } from "./modelProviders.ts";
+import type { DocumentCoverage } from "./documentCoverage.ts";
 export type ModelEnvironmentSlot = {
   provider: string;
   model: string;
@@ -326,16 +327,23 @@ export class Backend {
     text: string,
     status: string,
     key: string,
+    coverage?: DocumentCoverage,
   ) {
-    const { data, error } = await this.admin.rpc("accept_uploaded_document", {
-      document_id: id,
-      actor_id: actor,
-      actual_hash: hash,
-      actual_size: size,
-      extraction_text: text,
-      extraction_status: status,
-      command_key: key,
-    });
+    const { data, error } = await this.admin.rpc(
+      coverage
+        ? "accept_uploaded_document_with_coverage"
+        : "accept_uploaded_document",
+      {
+        document_id: id,
+        actor_id: actor,
+        actual_hash: hash,
+        actual_size: size,
+        extraction_text: text,
+        extraction_status: status,
+        command_key: key,
+        ...(coverage ? { coverage } : {}),
+      },
+    );
     if (error) throw databaseError(error);
     return data;
   }

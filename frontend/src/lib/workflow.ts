@@ -48,7 +48,7 @@ export const opportunityStageHelp: Record<OpportunityStage | "all", string> = {
   awaiting_rfp:
     "Attach a reference document inside the opportunity to begin a draft. It can be an RFP, brief, previous proposal or another useful file.",
   rfp_needs_text:
-    "Draft creation is available. Files without readable text are identified as unread; available text and opportunity details can still be used.",
+    "Draft creation is available. Readable pages are retained; missing page text and unread files remain identified for processing. Available text and opportunity details can still be used.",
   rfp_needs_review:
     "Draft creation is available. Checking the extracted text is optional; review incomplete or conflicting information in the resulting draft.",
   ready_to_generate:

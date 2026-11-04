@@ -91,7 +91,7 @@ function restoredDraft(cached: unknown): ReviewDraft | null {
         typeof file.hash === "string" &&
         typeof file.size === "number" &&
         typeof file.uploadedAt === "string" &&
-        ["ready", "needs_ocr", "needs_processing", "error"].includes(
+        ["ready", "partial", "needs_ocr", "needs_processing", "error"].includes(
           file.status,
         ) &&
         ["synthetic", "public", "sanitized", "unspecified"].includes(

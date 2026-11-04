@@ -12484,11 +12484,70 @@
                   "from_parts": {
                     "type": "boolean"
                   },
+                  "extraction_coverage": {
+                    "type": "object",
+                    "properties": {
+                      "version": {
+                        "type": "number",
+                        "const": 1
+                      },
+                      "kind": {
+                        "type": "string",
+                        "const": "pdf_pages"
+                      },
+                      "complete": {
+                        "type": "boolean"
+                      },
+                      "pages": {
+                        "minItems": 1,
+                        "maxItems": 200,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "page": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "maximum": 200
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "readable",
+                                "blank",
+                                "needs_ocr",
+                                "extraction_failed"
+                              ]
+                            },
+                            "characters": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 1000000
+                            }
+                          },
+                          "required": [
+                            "page",
+                            "status",
+                            "characters"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "version",
+                      "kind",
+                      "complete",
+                      "pages"
+                    ],
+                    "additionalProperties": false
+                  },
                   "status": {
                     "default": "needs_processing",
                     "type": "string",
                     "enum": [
                       "ready",
+                      "partial",
                       "needs_ocr",
                       "needs_processing",
                       "error"

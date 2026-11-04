@@ -23,7 +23,8 @@ export function buildAgentInput(
   rewrite?: RewriteRequest,
 ) {
   const readable = (document: { status: string; text: string }) =>
-    document.status === "ready" && document.text.trim().length > 0;
+    ["ready", "partial"].includes(document.status) &&
+    document.text.trim().length > 0;
   const companyFiles = state.knowledgeDocuments.filter(
     (document) => document.enabled,
   );
@@ -97,6 +98,9 @@ export function buildAgentInput(
       extractionConfirmed: document.extractionConfirmed === true,
       hash: document.hash,
       text: document.text,
+      ...(document.extractionCoverage
+        ? { extractionCoverage: document.extractionCoverage }
+        : {}),
     })),
     companyDocuments: companyFiles.filter(readable).map((document) => ({
       id: document.id,

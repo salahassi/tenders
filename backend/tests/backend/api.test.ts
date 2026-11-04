@@ -16,6 +16,7 @@ import {
 } from "../../supabase/functions/_shared/http";
 import { validateOriginal } from "../../supabase/functions/_shared/originals";
 import { commandSchemas } from "../../supabase/functions/_shared/contracts";
+import { PDFDocument } from "pdf-lib";
 const actor = "00000000-0000-4000-8000-000000000001",
   source = "00000000-0000-4000-8000-000000000002";
 const env: BackendEnvironment = {
@@ -247,6 +248,60 @@ describe("backend HTTP boundaries without a live provider", () => {
     expect(response.status).toBe(200);
     expect(factory).not.toHaveBeenCalled();
     expect((await response.json()).data).toEqual({ status: "available" });
+  });
+  it("binds supplied page coverage to the actual uploaded PDF before accepting partial text", async () => {
+    const f = fixture(),
+      pdf = await PDFDocument.create();
+    pdf.addPage();
+    pdf.addPage();
+    const original = new Blob([new Uint8Array(await pdf.save())]);
+    f.backend.one.mockResolvedValue({
+      id: source,
+      created_by: actor,
+      expected_size: original.size,
+      storage_key: "synthetic/partial",
+      original_name: "synthetic.pdf",
+      mime_type: "application/pdf",
+    });
+    f.backend.object.mockResolvedValue(original);
+    const coverage = {
+      version: 1,
+      kind: "pdf_pages",
+      complete: false,
+      pages: [
+        { page: 1, status: "readable", characters: 12 },
+        { page: 2, status: "needs_ocr", characters: 0 },
+      ],
+    };
+    const response = await f.handle(
+      request(`documents/${source}/complete-upload`, {
+        status: "partial",
+        extracted_text: "[Page 1]\nKnown scope.\n\n[Page 2]\n",
+        extraction_coverage: coverage,
+      }),
+    );
+    expect(response.status).toBe(200);
+    expect(f.backend.verifyPages).toHaveBeenCalledWith(source, 2);
+    expect(f.backend.accept).toHaveBeenCalledWith(
+      source,
+      actor,
+      expect.stringMatching(/^[a-f0-9]{64}$/),
+      original.size,
+      "[Page 1]\nKnown scope.\n\n[Page 2]\n",
+      "partial",
+      "synthetic-request-1",
+      coverage,
+    );
+    f.backend.accept.mockClear();
+    const mismatch = await f.handle(
+      request(`documents/${source}/complete-upload`, {
+        status: "partial",
+        extracted_text: "[Page 1]\nInvented extra source text.\n\n[Page 2]\n",
+        extraction_coverage: coverage,
+      }),
+    );
+    expect(mismatch.status).toBe(422);
+    expect(f.backend.accept).not.toHaveBeenCalled();
   });
   it("rejects absent or invalid user authentication before membership commands", async () => {
     const f = fixture();

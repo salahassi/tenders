@@ -41,3 +41,31 @@ it("ignores PDF.js worker handshakes and waits for the actual extraction result"
   await expect(pending).resolves.toEqual(document);
   expect(terminate).toHaveBeenCalledTimes(1);
 });
+
+it("preserves an input disposition code across the worker boundary", async () => {
+  vi.stubEnv("MODE", "production");
+  let worker: any;
+  class TestWorker {
+    onmessage: any;
+    onerror: any;
+    terminate() {}
+    constructor() {
+      worker = this;
+    }
+    postMessage() {}
+  }
+  vi.stubGlobal("Worker", TestWorker);
+  const pending = extractLocalDocument(new File([], "synthetic.txt"));
+  const rejected = expect(pending).rejects.toMatchObject({
+    code: "EMPTY_FILE",
+    message: "The file is empty.",
+  });
+  worker.onmessage({
+    data: {
+      kind: "document-result",
+      error: "The file is empty.",
+      code: "EMPTY_FILE",
+    },
+  });
+  await rejected;
+});

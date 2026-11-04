@@ -1,4 +1,8 @@
 import { extractDocumentOnWorker } from "./documentExtraction";
+import {
+  DocumentExtractionError,
+  extractionFailureCodes,
+} from "./documentExtractionError";
 import type {
   DocumentRecord,
   Opportunity,
@@ -14,7 +18,8 @@ export async function extractLocalDocument(
   if (import.meta.env.MODE === "test")
     return extractDocumentOnWorker(file, classification);
   if (typeof Worker === "undefined")
-    throw new Error(
+    throw new DocumentExtractionError(
+      "EXTRACTION_FAILED",
       "This browser does not support background file extraction. Use a current browser.",
     );
   const worker = new Worker(
@@ -29,7 +34,8 @@ export async function extractLocalDocument(
     const timer = setTimeout(() => {
       finish();
       reject(
-        new Error(
+        new DocumentExtractionError(
+          "EXTRACTION_LIMIT",
           "Extraction exceeded two minutes. Split the document or supply a readable text replacement.",
         ),
       );
@@ -40,12 +46,22 @@ export async function extractLocalDocument(
       // extraction; a library handshake is not an empty successful document.
       if (data?.kind !== "document-result") return;
       finish();
-      data.error ? reject(new Error(data.error)) : resolve(data.document);
+      data.error
+        ? reject(
+            new DocumentExtractionError(
+              extractionFailureCodes.includes(data.code)
+                ? data.code
+                : "EXTRACTION_FAILED",
+              data.error,
+            ),
+          )
+        : resolve(data.document);
     };
     worker.onerror = () => {
       finish();
       reject(
-        new Error(
+        new DocumentExtractionError(
+          "EXTRACTION_FAILED",
           "Background extraction failed. Reattach a supported readable file.",
         ),
       );

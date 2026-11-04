@@ -12,6 +12,7 @@ import {
 } from "../_shared/contracts.ts";
 import { AppError, corsHeaders, readJson } from "../_shared/http.ts";
 import { validateOriginal } from "../_shared/originals.ts";
+import { validateDocumentCoverage } from "../_shared/documentCoverage.ts";
 import { z } from "zod";
 import { taskRegistry } from "../_shared/modelContract.ts";
 import type { ModelProviderId } from "../_shared/modelProviders.ts";
@@ -822,17 +823,36 @@ export function createApiHandler(
         )
           .map((x) => x.toString(16).padStart(2, "0"))
           .join("");
-        const data = await backend.accept(
+        const extractionText = input.from_parts
+          ? await backend.extraction(token, id)
+          : input.extracted_text;
+        if (
+          input.extraction_coverage &&
+          (document.mime_type !== "application/pdf" ||
+            !validateDocumentCoverage(
+              input.extraction_coverage,
+              extractionText,
+              input.status,
+              pages,
+            ))
+        )
+          throw new AppError(
+            422,
+            "INVALID_EXTRACTION_COVERAGE",
+            "Page coverage does not match the original and extracted text.",
+          );
+        const acceptArgs = [
           id,
           user.id,
           hash,
           bytes.length,
-          input.from_parts
-            ? await backend.extraction(token, id)
-            : input.extracted_text,
+          extractionText,
           input.status,
           key,
-        );
+        ] as const;
+        const data = input.extraction_coverage
+          ? await backend.accept(...acceptArgs, input.extraction_coverage)
+          : await backend.accept(...acceptArgs);
         return respond(data, 200, { revision: data.revision });
       }
       for (const route of routeCommands) {

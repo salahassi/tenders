@@ -61,7 +61,8 @@ function fixture(fail = false) {
       if (fail) throw new Error("Server verification failed");
       documents.push({
         ...pending,
-        status: "ready",
+        status: options.body.status,
+        extraction_coverage: options.body.extraction_coverage,
         extracted_text: parts.join(""),
       });
       return { data: documents[0] };
@@ -171,4 +172,33 @@ it("sends neither a reservation nor original bytes before original eligibility i
   );
   expect(f.commands).toHaveLength(0);
   expect(f.uploadOriginal).not.toHaveBeenCalled();
+});
+
+it("persists and reloads readable partial-page coverage without converting it to complete text", async () => {
+  const f = fixture(),
+    previous = await f.repository.load(),
+    next = structuredClone(previous);
+  const d: DocumentRecord = {
+    ...file("[Page 1]\nKnown scope.\n\n[Page 2]\n"),
+    name: "synthetic.pdf",
+    status: "partial",
+    extractionCoverage: {
+      version: 1,
+      kind: "pdf_pages",
+      complete: false,
+      pages: [
+        { page: 1, status: "readable", characters: 12 },
+        { page: 2, status: "needs_ocr", characters: 0 },
+      ],
+    },
+  };
+  originals.set(d.id, new Blob(["%PDF-Synthetic original"]));
+  next.opportunities[0].documents.push(d);
+  await f.repository.save(previous, next);
+  const loaded = await f.repository.load();
+  expect(loaded.opportunities[0].documents[0]).toMatchObject({
+    status: "partial",
+    text: d.text,
+    extractionCoverage: d.extractionCoverage,
+  });
 });

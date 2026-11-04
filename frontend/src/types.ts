@@ -21,13 +21,24 @@ export interface DocumentRecord {
   size: number;
   uploadedAt: string;
   text: string;
-  status: "ready" | "needs_ocr" | "needs_processing" | "error";
+  status: "ready" | "partial" | "needs_ocr" | "needs_processing" | "error";
+  extractionCoverage?: DocumentExtractionCoverage;
   classification: "synthetic" | "public" | "sanitized" | "unspecified";
   hash: string;
   persisted?: boolean;
   extractionConfirmed?: boolean;
   precedence?: number;
   supersedesId?: string | null;
+}
+export interface DocumentExtractionCoverage {
+  version: 1;
+  kind: "pdf_pages";
+  complete: boolean;
+  pages: {
+    page: number;
+    status: "readable" | "blank" | "needs_ocr" | "extraction_failed";
+    characters: number;
+  }[];
 }
 export interface KnowledgeDocument extends DocumentRecord {
   verified?: boolean;

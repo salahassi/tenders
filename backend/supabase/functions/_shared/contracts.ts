@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { documentCoverageSchema } from "./documentCoverage.ts";
 import {
   capabilitySchema,
   executionProfileSchema,
@@ -782,14 +783,19 @@ export const completeUploadSchema = z
   .object({
     extracted_text: z.string().max(200000).default(""),
     from_parts: z.boolean().optional(),
+    extraction_coverage: documentCoverageSchema.optional(),
     status: z
-      .enum(["ready", "needs_ocr", "needs_processing", "error"])
+      .enum(["ready", "partial", "needs_ocr", "needs_processing", "error"])
       .default("needs_processing"),
   })
   .strict()
   .refine(
     (v) => v.status !== "ready" || v.from_parts || !!v.extracted_text.trim(),
     "Readable extraction text is required for ready status.",
+  )
+  .refine(
+    (v) => v.status !== "partial" || !!v.extraction_coverage,
+    "Partial extraction requires page coverage.",
   );
 export const applicationLimits = {
   maxRequestBytes: 1048576,

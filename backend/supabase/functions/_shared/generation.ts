@@ -609,6 +609,20 @@ export function taskInput(ctx: PlanContext) {
       context.instruction +=
         " When the extracted inventory is empty, keep all requirement ID arrays empty and create a coherent narrative proposal structure from the known opportunity context. Write substantive proposed approach where the scope supports it; otherwise make assumptions explicit. Do not substitute a refusal or a request to upload a formal RFP for the draft.";
   }
+  if (frozen.extraction_coverage_version === 1) {
+    context.input_extraction_coverage = {
+      version: 1,
+      documents: (frozen.input_materials?.documents || [])
+        .filter((document: Row) => document.extraction_coverage)
+        .map((document: Row) => ({
+          document_id: document.document_id,
+          used_for_draft: document.used_for_draft,
+          coverage: document.extraction_coverage,
+        })),
+      instruction:
+        "Only readable supplied page text is evidence. Blank pages and pages awaiting OCR or failed extraction are distinct. Preserve readable content, and never claim all pages or all buyer obligations were reviewed when coverage is incomplete.",
+    };
+  }
   evidence = Array.from(new Map(evidence.map((e) => [e.id, e])).values());
   // All evidence actually in the prompt and provenance of generated paragraphs stay gated.
   const manifest = Array.from(
@@ -1002,6 +1016,27 @@ export async function nextStage(ctx: PlanContext): Promise<{
       blocking_level: "finalization",
     });
   if (frozen.draft_input_version === 1) {
+    const partial = (frozen.input_materials?.documents || []).filter(
+      (document: Row) =>
+        document.used_for_draft &&
+        document.extraction_coverage?.complete === false,
+    );
+    for (const document of partial) {
+      const pages = document.extraction_coverage.pages
+        .filter((page: Row) =>
+          ["needs_ocr", "extraction_failed"].includes(page.status),
+        )
+        .map((page: Row) => page.page)
+        .join(", ");
+      questions.push({
+        question:
+          frozen.language === "ar"
+            ? `استُخدم النص المقروء من ${document.name} فقط. الصفحات التي لا تزال بحاجة إلى معالجة: ${pages}. راجع أثرها على النطاق والمتطلبات قبل الاعتماد النهائي.`
+            : `Only readable text from ${document.name} was used. Pages still requiring processing: ${pages}. Review their effect on scope and requirements before final approval.`,
+        blocking_level: "finalization",
+        reason: "INPUT_EXTRACTION_PARTIAL",
+      });
+    }
     const unread = (frozen.input_materials?.documents || []).filter(
       (document: Row) => document.used_for_draft === false,
     );

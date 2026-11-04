@@ -5227,3 +5227,52 @@ failure while its recorded reason correctly says provider usage limit; this
 display/classification follow-up does not disable the shared connection or block
 DeepSeek failover. No billing, credential, quota-mode or content-permission
 settings were changed to bypass these limits.
+
+## November 4 — W02 readable-page retention and typed upload disposition (implementation slice)
+
+Scope: F03's whole-document omission and F02's typed rejected-input handoff.
+The PDF extractor now records versioned per-page coverage, retains readable
+pages around blank/scanned/failed pages, and distinguishes confirmed blank
+pages from textless pages requiring processing. A single failed page no longer
+throws away later readable text. Partial documents retain `status=partial`;
+short readable plain text remains readable, and whitespace-only input is not
+misreported as a scan. Worker failures retain a bounded input-disposition code
+for the separately implemented `delivery.snapshot.prepare` flow; a rejected
+original is not inserted as fabricated source evidence.
+
+CLI-generated migration `20261104121022_partial_document_coverage.sql` adds
+immutable extraction coverage, checks page identity/count/text lengths/status,
+and a service-only acceptance wrapper retaining the original membership,
+integrity, idempotency and source hashing checks. Browser completion also binds
+coverage to the server-read PDF page count. New draft snapshots include readable
+partial RFP and scoped review text, freeze coverage and warn about unresolved
+pages. Existing paid snapshots without `extraction_coverage_version` retain
+exact prior selection and shape; no prompt/input/receipt is rewritten. Company
+Knowledge's existing ready/verified admission is unchanged. Final approval does
+not treat partial extraction as complete or confirmed. Expired/restored source
+metadata remains historical and cannot authorize current content.
+
+Implementation and focused validation are present; deployment and hosted
+acceptance are **not performed** by this slice. Focused tests cover mixed pages,
+page-read failures, a real synthetic PDF through the pinned PDF.js Node-compatible
+parser/worker, completion transport, metadata round-trip, fully migrated SQL
+admission/replay/legacy input preservation, revocation rollback and private RPC
+permissions. Final package checks are recorded after completion below.
+
+Remaining W02: actual durable OCR execution for private uploaded originals,
+source-linked OCR successor ingestion, hosted upload/download acceptance and
+full page-coverage quality measurement. No OCR provider calls, fake OCR text,
+production changes or customer document fixtures were used. Empty/corrupt
+input's persisted independent template belongs to the delivery implementation;
+typed errors alone do not close F02 or the complete W02 package.
+
+Final local package checks for this slice: backend typecheck/build and **1,853
+passed tests across 112 files**; frontend typecheck/build and **282 passed tests
+across 42 files**. Earlier runs exposed one old HTTP mock's extra undefined
+argument and Node compatibility requirements in the new real-PDF test; both
+were corrected and the complete package suites rerun successfully. The real-PDF
+fixture uses the pinned PDF.js legacy distribution solely for Node's missing
+modern runtime APIs; production continues to use the existing browser build.
+Page coverage describes extracted text and unresolved pages, not independent
+proof that a page's text layer captures every image, table or buyer obligation.
+Original-to-extraction fidelity and durable OCR remain separate W02 acceptance.

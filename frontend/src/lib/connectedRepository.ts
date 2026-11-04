@@ -299,8 +299,14 @@ export class ConnectedRepository {
       uploadedAt: str(d, "created_at"),
       text: str(d, "extracted_text"),
       status: z
-        .enum(["ready", "needs_ocr", "needs_processing", "error"])
+        .enum(["ready", "partial", "needs_ocr", "needs_processing", "error"])
         .parse(d.status),
+      ...(d.extraction_coverage
+        ? {
+            extractionCoverage:
+              d.extraction_coverage as DocumentRecord["extractionCoverage"],
+          }
+        : {}),
       classification: "unspecified" as const,
       hash: str(d, "original_hash"),
       persisted: true,
@@ -1124,7 +1130,13 @@ export class ConnectedRepository {
       );
     await this.client.request(`/v1/documents/${document.id}/complete-upload`, {
       method: "POST",
-      body: { from_parts: true, status: document.status },
+      body: {
+        from_parts: true,
+        status: document.status,
+        ...(document.extractionCoverage
+          ? { extraction_coverage: document.extractionCoverage }
+          : {}),
+      },
       idempotencyKey: `complete:${document.id}`,
     });
   }

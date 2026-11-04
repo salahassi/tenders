@@ -39,7 +39,34 @@ const documentRecord = z.object({
   size: count.max(10 * 1024 * 1024),
   uploadedAt: date,
   text,
-  status: z.enum(["ready", "needs_ocr", "needs_processing", "error"]),
+  status: z.enum([
+    "ready",
+    "partial",
+    "needs_ocr",
+    "needs_processing",
+    "error",
+  ]),
+  extractionCoverage: z
+    .object({
+      version: z.literal(1),
+      kind: z.literal("pdf_pages"),
+      complete: z.boolean(),
+      pages: z
+        .array(
+          z.object({
+            page: z.number().int().positive(),
+            status: z.enum([
+              "readable",
+              "blank",
+              "needs_ocr",
+              "extraction_failed",
+            ]),
+            characters: z.number().int().nonnegative(),
+          }),
+        )
+        .max(200),
+    })
+    .optional(),
   classification: z.enum(["synthetic", "public", "sanitized", "unspecified"]),
   hash: text,
 });
