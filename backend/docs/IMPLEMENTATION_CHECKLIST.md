@@ -8504,3 +8504,29 @@ binary/helper/guard/gateway source hashes and contains no credentials/customer d
 distinguish these checks from coordinator authorization, quota CAS and hosted PVC
 or cluster-recovery qualification. Root owns the final integrated package checks.
 No production deployment, retirement, provider call or hosted acceptance is claimed.
+### 2026-11-04 — bind the qualified storage gateway source to the release
+
+The manifest now requires `storage_gateway_guard_version: 1` and exact
+`gateway_configuration` bindings: reviewed baseline and target raw source hashes,
+namespace-expanded ConfigMap data hashes, qualification receipt SHA-256, and the
+pinned Nginx image from the deployment renderer. Freezing requires that image in
+the fresh hosted inventory and strict actual-binary/denial qualification flags
+against the target source. Missing or changed source, receipt, image, capability
+or manifest fields fail closed. This checker has no gateway or database mutation.
+
+Six lightweight Python methods pass with explicitly synthetic temporary
+source-binding fixtures, including absent/symlinked input, unqualified flags,
+changed receipts, image mismatch, raw-versus-rendered hashes and manifest drift.
+An independent read-only review found no current blocker. The actual independently
+produced binary receipt `1831842d…69ff3` and target `b87507bf…731e5` also pass the
+source checker with the fresh inner inventory from run 41881660683; all 22
+migrations verify in that in-memory candidate. No final manifest was written.
+`py_compile` passes. Evidence is retained in
+[evidence/gateway-release-binding-20261104.json](evidence/gateway-release-binding-20261104.json).
+
+The baseline source, target source and binary qualification receipt are borrowed
+integration dependencies owned by the gateway/retirement changes and are excluded
+from this guard commit. No PG/PGlite suite was run after this gateway-only change
+during the reserved native qualification window. Final composed operations/SQL
+checks, actual checked rollout, physical retirement and hosted acceptance remain
+separate gates; unit fixtures do not establish the binary result.

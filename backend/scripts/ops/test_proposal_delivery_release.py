@@ -1,6 +1,7 @@
 """Exact source, real SQL rollback/replay, private row and authority invariants."""
 import copy
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -12,16 +13,36 @@ SPEC=importlib.util.spec_from_file_location('tested_delivery_release',Path(__fil
 p=importlib.util.module_from_spec(SPEC);sys.modules[SPEC.name]=p;SPEC.loader.exec_module(p)
 
 class DeliveryReleaseTests(unittest.TestCase):
+    def setUp(self):
+        # This is an isolated source-binding fixture, not an executed gateway
+        # qualification receipt. Production freeze always reads its fixed files.
+        temporary=tempfile.TemporaryDirectory();self.addCleanup(temporary.cleanup)
+        self.gateway_root=Path(temporary.name)
+        baseline=(p.ROOT/p.GATEWAY_BEFORE).read_text()
+        self.gateway_image='docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8'
+        self.gateway_after=baseline+'\n# Synthetic test target; no runtime qualification asserted.\n'
+        self.qualification={'passed':True,'actual_binary_exercised':True,'production_calls':0,'customer_calls':0,
+          'gateway_resumable_denial_qualified':True,'signed_tus_bypass_confirmed':True,
+          'gateway_config_source_sha256':hashlib.sha256(self.gateway_after.encode()).hexdigest(),
+          'gateway_image':self.gateway_image,'fixture':'synthetic-only'}
+        for name,text in ((p.GATEWAY_BEFORE,baseline),(p.GATEWAY_AFTER,self.gateway_after),
+          (p.GATEWAY_QUALIFICATION,json.dumps(self.qualification)),
+          ('deploy/kubernetes/render.py','NGINX_IMAGE = '+repr(self.gateway_image)+'\n')):
+            path=self.gateway_root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
+
+    def verify(self,manifest,**kwargs):
+        return p.verify_source(manifest,gateway_root=self.gateway_root,**kwargs)
+
     def inventory(self):
         return {'version':1,'namespace':'tenderdesk-dev','ready_workloads':10,'inventory':'captured',
           'bootstrap_run':False,'business_mutations':0,'schema_mutations':0,'models_called':0,'temporary_client_cleanup_verified':True,
-          'workloads':[{'name':name,'image':'registry.example/runtime@sha256:'+'a'*64} for name in ('api','worker','frontend','auth','rest','storage','source-browser','scheduler','gateway','https')],
+          'workloads':[{'name':name,'image':self.gateway_image if name=='gateway' else 'registry.example/runtime@sha256:'+'a'*64} for name in ('api','worker','frontend','auth','rest','storage','source-browser','scheduler','gateway','https')],
           'native_schedules':[{'name':name,'image':'registry.digitalocean.com/tenderdesk-a6093a76/'+name.removeprefix('native-')+'@sha256:'+'a'*64,'schedule':'*/10 * * * *','container_identity_recognized':True,'concurrency_policy':'Forbid','concurrency_policy_explicit':True,'suspended':False,'suspend_explicit':True,'active_deadline_seconds':600,'backoff_limit':0,'effective_backoff_limit':0,'resources':{'requests':None,'limits':None},'generation':1} for name in ('native-browser','native-ocr')],
           'schema':{'routine_catalog_sha256':'0'*64,'canonical_migrations':None,'release_history':[
             {'release':'prior-release-'+str(i),'migration_sha256':str(i)*64} for i in range(1,7)]}}
 
     def manifest(self):
-        return p.freeze(self.inventory())
+        return p.freeze(self.inventory(),gateway_root=self.gateway_root)
 
     def test_every_final_contract_is_required_before_freezing(self):
         manifest=self.manifest()
@@ -35,29 +56,79 @@ class DeliveryReleaseTests(unittest.TestCase):
             for name in p.REQUIRED:
                 path=folder/name;data=path.read_bytes();path.unlink()
                 with self.subTest(name=name),self.assertRaisesRegex(p.ReleaseError,'MIGRATION_MISSING'):
-                    p.freeze(self.inventory(),migrations=folder)
+                    p.freeze(self.inventory(),migrations=folder,gateway_root=self.gateway_root)
                 path.write_bytes(data)
 
     def test_final_capabilities_cannot_be_downgraded_or_coerced(self):
         for key,value in (('executor_max',3),('minimum_worker_executor',0),('renderer_versions',[1,2]),
           ('ordinary_renderer_version','ordinary-1'),('current_proposal_issuance_contract',True),
           ('issuance_file_capacity_version',0),('global_renderer_limit',2),
-          ('storage_write_intents_version',False),('storage_retirement_version',0)):
+          ('storage_write_intents_version',False),('storage_retirement_version',0),('storage_gateway_guard_version',True)):
             manifest=self.manifest();manifest[key]=value
             with self.subTest(key=key),self.assertRaisesRegex(p.ReleaseError,'CAPABILITY_SOURCE_MISMATCH'):
-                p.verify_source(manifest)
+                self.verify(manifest)
 
     def test_source_set_and_bytes_are_frozen(self):
-        manifest=self.manifest();self.assertGreaterEqual(len(p.verify_source(manifest)),6)
+        manifest=self.manifest();self.assertGreaterEqual(len(self.verify(manifest)),6)
         for mutate in (lambda m:m['migrations'].pop(),lambda m:m['migrations'][0].update(sha256='f'*64),
           lambda m:m['migrations'][0].update(name='../unexpected.sql'),lambda m:m.update(release='another'),lambda m:m['baseline_native_schedules'].pop()):
             changed=copy.deepcopy(manifest);mutate(changed)
-            with self.assertRaises(p.ReleaseError):p.verify_source(changed)
+            with self.assertRaises(p.ReleaseError):self.verify(changed)
         with tempfile.TemporaryDirectory() as directory:
             for row in manifest['migrations']:
                 (Path(directory)/row['name']).write_bytes((p.ROOT/'supabase/migrations'/row['name']).read_bytes())
             (Path(directory)/'20261104999999_unreviewed.sql').write_text('select 1;')
-            with self.assertRaisesRegex(p.ReleaseError,'SET_CHANGED'):p.verify_source(manifest,migrations=Path(directory))
+            with self.assertRaisesRegex(p.ReleaseError,'SET_CHANGED'):self.verify(manifest,migrations=Path(directory))
+
+    def test_gateway_manifest_binds_raw_and_rendered_config_receipt_and_image(self):
+        manifest=self.manifest();value=manifest['gateway_configuration']
+        self.assertEqual(value['version'],1)
+        self.assertEqual(value['before_source_sha256'],p.GATEWAY_BASELINE_SHA256)
+        self.assertEqual(value['after_source_sha256'],hashlib.sha256(self.gateway_after.encode()).hexdigest())
+        self.assertEqual(value['after_data_sha256'],hashlib.sha256(json.dumps(
+          {'nginx.conf':self.gateway_after.replace('__NAMESPACE__','tenderdesk-dev')},sort_keys=True).encode()).hexdigest())
+        self.assertNotEqual(value['after_source_sha256'],value['after_data_sha256'])
+        self.assertEqual(value['qualification_sha256'],hashlib.sha256((self.gateway_root/p.GATEWAY_QUALIFICATION).read_bytes()).hexdigest())
+        self.assertEqual(value['gateway_image'],self.gateway_image)
+        self.verify(manifest)
+        for key in value:
+            changed=copy.deepcopy(manifest)
+            changed['gateway_configuration'][key]=True if key=='version' else 'f'*64
+            with self.subTest(key=key),self.assertRaisesRegex(p.ReleaseError,'GATEWAY_SOURCE_CHANGED'):
+                self.verify(changed)
+        for mutation in ('remove','extra'):
+            changed=copy.deepcopy(manifest)
+            if mutation=='remove':del changed['gateway_configuration']
+            else:changed['gateway_configuration']['unreviewed']=True
+            with self.subTest(mutation=mutation),self.assertRaises(p.ReleaseError):self.verify(changed)
+        bad=self.inventory();next(row for row in bad['workloads'] if row['name']=='gateway')['image']='registry.example/nginx@sha256:'+'f'*64
+        with self.assertRaisesRegex(p.ReleaseError,'GATEWAY_IMAGE_CHANGED'):
+            p.freeze(bad,gateway_root=self.gateway_root)
+
+    def test_gateway_qualification_is_strict_and_current(self):
+        path=self.gateway_root/p.GATEWAY_QUALIFICATION;raw=path.read_bytes()
+        for key,value in (('passed',False),('actual_binary_exercised',1),('gateway_resumable_denial_qualified',False),
+          ('signed_tus_bypass_confirmed',False),('production_calls',True),('customer_calls',1),
+          ('gateway_config_source_sha256','f'*64),('gateway_image',self.gateway_image[:-1]+'f')):
+            changed={**self.qualification,key:value};path.write_text(json.dumps(changed))
+            with self.subTest(key=key),self.assertRaisesRegex(p.ReleaseError,'GATEWAY_QUALIFICATION_INVALID'):
+                self.manifest()
+            path.write_bytes(raw)
+        manifest=self.manifest();path.write_text(json.dumps({**self.qualification,'receipt_revision':2}))
+        with self.assertRaisesRegex(p.ReleaseError,'GATEWAY_SOURCE_CHANGED'):self.verify(manifest)
+        path.write_bytes(raw)
+        after=self.gateway_root/p.GATEWAY_AFTER;after.write_text(self.gateway_after+'# unreviewed change\n')
+        with self.assertRaisesRegex(p.ReleaseError,'GATEWAY_QUALIFICATION_INVALID'):self.verify(manifest)
+
+    def test_gateway_missing_symlink_and_unreviewed_baseline_fail_closed(self):
+        for name in (p.GATEWAY_BEFORE,p.GATEWAY_AFTER,p.GATEWAY_QUALIFICATION,'deploy/kubernetes/render.py'):
+            path=self.gateway_root/name;raw=path.read_bytes();path.unlink()
+            with self.subTest(name=name),self.assertRaisesRegex(p.ReleaseError,'GATEWAY_SOURCE_UNAVAILABLE'):self.manifest()
+            other=path.with_name(path.name+'.copied');other.write_bytes(raw);path.symlink_to(other)
+            with self.subTest(name=name,symlink=True),self.assertRaisesRegex(p.ReleaseError,'GATEWAY_SOURCE_UNAVAILABLE'):self.manifest()
+            path.unlink();path.write_bytes(raw)
+        baseline=self.gateway_root/p.GATEWAY_BEFORE;baseline.write_text(baseline.read_text()+'# changed\n')
+        with self.assertRaisesRegex(p.ReleaseError,'GATEWAY_BASELINE_CHANGED'):self.manifest()
 
     def test_managed_atomic_batch_replay_drift_and_fault_rollback(self):
         self.managed_atomic_batch_cases()
@@ -66,7 +137,7 @@ class DeliveryReleaseTests(unittest.TestCase):
         self.managed_atomic_batch_cases(column_acl_only=True)
 
     def managed_atomic_batch_cases(self,column_acl_only=False):
-        manifest=self.manifest();sources=p.verify_source(manifest)
+        manifest=self.manifest();sources=self.verify(manifest)
         def script(sources=sources):return p.migration_script(manifest,sources).replace("current_database()<>'tenderdesk_app'","current_database()<>'postgres'")
         cases=[
           ('UPDATE public.release_preserved_fixture SET attempts=0;','DELIVERY_RELEASE_EXISTING_ROWS_CHANGED'),

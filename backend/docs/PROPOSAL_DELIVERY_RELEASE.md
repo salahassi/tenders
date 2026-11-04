@@ -27,6 +27,23 @@ helper does not replay the historical schema or infer a migration tip from
 application source. A source change after freezing requires regenerating and
 reviewing the manifest before the release.
 
+The manifest also requires `storage_gateway_guard_version: 1` and freezes the
+reviewed gateway configuration before and after the resumable-route restriction.
+It records each raw source hash, each namespace-expanded ConfigMap data hash,
+the exact pinned gateway image from the deployment renderer, and the SHA-256 of
+`storage-retirement-binary-20261104.json`. The source checker requires that
+separately executed receipt to confirm the signed resumable-upload bypass and
+the qualified denial guard against the exact target source and image. The
+baseline gateway image must match the fresh inventory. Missing qualification,
+source drift, changed receipt bytes or an altered image blocks freezing or
+verification. A synthetic manifest unit fixture is not that qualification.
+
+This source check does not change the gateway or retire any bytes. The rollout
+helper separately checks and applies the frozen configuration through its
+resource-version guard. The retirement coordinator must observe that guard
+before admitting a physical reconciliation; SQL key fences alone do not prove
+that every upload protocol is blocked.
+
 The full release requires executor version 4. Historical delivery payloads use
 renderer version 1 and executor version 3; the new authored payload uses renderer
 version 2 and executor version 4. The final batch requires all 22 migrations, including durable Storage write

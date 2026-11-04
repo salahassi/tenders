@@ -7,6 +7,7 @@ records its post-migration catalog for safe forward completion after lost ACKs.
 """
 from __future__ import annotations
 import argparse
+import ast
 import hashlib
 import json
 from pathlib import Path
@@ -42,7 +43,7 @@ CAPABILITIES = {'executor_max':4,'renderer_versions':[1,2,3],
  'minimum_worker_executor':4,'ordinary_renderer_version':'ordinary-2',
  'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1,
  'global_renderer_limit':1,'storage_write_intents_version':1,
- 'storage_retirement_version':1}
+ 'storage_retirement_version':1,'storage_gateway_guard_version':1}
 CATALOG = """SELECT encode(sha256(convert_to(coalesce(string_agg(
  p.oid::regprocedure::text||':'||pg_get_functiondef(p.oid)||':'||coalesce(p.proacl::text,''),E'\\n'
  ORDER BY p.oid::regprocedure::text),''),'UTF8')),'hex') INTO catalog_hash
@@ -73,7 +74,51 @@ def canonical(value): return json.dumps(value,sort_keys=True,separators=(',',':'
 def digest(value): return hashlib.sha256(value).hexdigest()
 def literal(value): return "'"+value.replace("'","''")+"'"
 
-def freeze(inventory, *, migrations=ROOT/'supabase/migrations'):
+GATEWAY_BEFORE = 'scripts/ops/storage-retirement/gateway-before.conf'
+GATEWAY_AFTER = 'deploy/kubernetes/gateway.conf'
+GATEWAY_QUALIFICATION = 'docs/evidence/storage-retirement-binary-20261104.json'
+GATEWAY_BASELINE_SHA256 = '4907ecf81e2fa1e97754202906873ccd7c34e3dcbe26dd1e60cf4e276c639d23'
+
+def gateway_configuration(root=ROOT):
+    # Qualification is a separately executed pinned-binary receipt, never an
+    # assertion supplied in the release manifest. Freeze exact source and bytes
+    # used by render.py's ConfigMap checksum. No network or gateway mutation.
+    values={}
+    for label,name in (('before',GATEWAY_BEFORE),('after',GATEWAY_AFTER),
+      ('qualification',GATEWAY_QUALIFICATION),('renderer','deploy/kubernetes/render.py')):
+        path=root/name
+        if not path.is_file() or path.is_symlink() or path.stat().st_size>1048576:
+            raise ReleaseError('DELIVERY_RELEASE_GATEWAY_SOURCE_UNAVAILABLE')
+        try:values[label]=(path.read_bytes(),path.read_text())
+        except (OSError,UnicodeError):raise ReleaseError('DELIVERY_RELEASE_GATEWAY_SOURCE_UNAVAILABLE') from None
+    if digest(values['before'][0])!=GATEWAY_BASELINE_SHA256:
+        raise ReleaseError('DELIVERY_RELEASE_GATEWAY_BASELINE_CHANGED')
+    try:
+        tree=ast.parse(values['renderer'][1])
+        images=[ast.literal_eval(node.value) for node in tree.body if isinstance(node,ast.Assign)
+          and any(isinstance(target,ast.Name) and target.id=='NGINX_IMAGE' for target in node.targets)]
+        receipt=json.loads(values['qualification'][1])
+    except (SyntaxError,ValueError,TypeError):
+        raise ReleaseError('DELIVERY_RELEASE_GATEWAY_QUALIFICATION_INVALID') from None
+    if len(images)!=1 or not isinstance(images[0],str) or not re.fullmatch(r'[a-zA-Z0-9./:_-]+@sha256:[a-f0-9]{64}',images[0]):
+        raise ReleaseError('DELIVERY_RELEASE_GATEWAY_IMAGE_UNQUALIFIED')
+    image=images[0];after_hash=digest(values['after'][0])
+    if (not isinstance(receipt,dict) or any(receipt.get(key) is not True for key in
+      ('passed','actual_binary_exercised','gateway_resumable_denial_qualified','signed_tus_bypass_confirmed'))
+      or type(receipt.get('production_calls')) is not int or receipt['production_calls']!=0
+      or type(receipt.get('customer_calls')) is not int or receipt['customer_calls']!=0
+      or receipt.get('gateway_config_source_sha256')!=after_hash or receipt.get('gateway_image')!=image
+      or after_hash==GATEWAY_BASELINE_SHA256):
+        raise ReleaseError('DELIVERY_RELEASE_GATEWAY_QUALIFICATION_INVALID')
+    def data_hash(text):
+        # Deliberately matches render.py: default JSON whitespace/ASCII escaping.
+        return digest(json.dumps({'nginx.conf':text.replace('__NAMESPACE__','tenderdesk-dev')},sort_keys=True).encode())
+    return {'version':1,'before_source_sha256':GATEWAY_BASELINE_SHA256,
+      'after_source_sha256':after_hash,'before_data_sha256':data_hash(values['before'][1]),
+      'after_data_sha256':data_hash(values['after'][1]),
+      'qualification_sha256':digest(values['qualification'][0]),'gateway_image':image}
+
+def freeze(inventory, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT):
     if (inventory.get('version')!=1 or inventory.get('namespace')!='tenderdesk-dev' or inventory.get('ready_workloads')!=10
       or inventory.get('inventory')!='captured' or inventory.get('bootstrap_run') is not False
       or inventory.get('business_mutations')!=0 or inventory.get('schema_mutations')!=0
@@ -92,7 +137,9 @@ def freeze(inventory, *, migrations=ROOT/'supabase/migrations'):
     if len(workloads)!=10 or set(images)!={'api','worker','frontend','auth','rest','storage','source-browser','scheduler','gateway','https'} or any(not isinstance(v,str) or not re.fullmatch(r'[a-zA-Z0-9./:_-]+@sha256:[a-f0-9]{64}',v) for v in images.values()): raise ReleaseError('DELIVERY_RELEASE_WORKLOAD_BASELINE_REQUIRED')
     schedules=inventory.get('native_schedules')
     if not isinstance(schedules,list) or {r.get('name') for r in schedules}!={'native-browser','native-ocr'}: raise ReleaseError('DELIVERY_RELEASE_NATIVE_BASELINE_REQUIRED')
-    return {'version':1,'release':RELEASE,'baseline_images':images,'baseline_native_schedules':schedules,**json.loads(canonical(CAPABILITIES)),'baseline_catalog_sha256':schema['routine_catalog_sha256'],
+    gateway=gateway_configuration(gateway_root)
+    if images['gateway']!=gateway['gateway_image']:raise ReleaseError('DELIVERY_RELEASE_GATEWAY_IMAGE_CHANGED')
+    return {'version':1,'release':RELEASE,'gateway_configuration':gateway,'baseline_images':images,'baseline_native_schedules':schedules,**json.loads(canonical(CAPABILITIES)),'baseline_catalog_sha256':schema['routine_catalog_sha256'],
       'baseline_releases':releases,'migrations':[{'name':p.name,'sha256':digest(p.read_bytes())} for p in files]}
 
 def validate_runtime_baseline(manifest):
@@ -118,12 +165,15 @@ def validate_runtime_baseline(manifest):
             for quantity in group.values():
                 if quantity is not None and (not isinstance(quantity,str) or len(quantity)>24 or not re.fullmatch(r'[0-9]{1,15}(?:\.[0-9]{1,9})?(?:m|Ki|Mi|Gi|Ti|K|M|G|T)?',quantity)):raise ReleaseError('DELIVERY_RELEASE_NATIVE_BASELINE_REQUIRED')
 
-def verify_source(manifest, *, migrations=ROOT/'supabase/migrations'):
-    if not isinstance(manifest,dict) or set(manifest)!={'version','release','baseline_catalog_sha256','baseline_releases','migrations','baseline_images','baseline_native_schedules',*CAPABILITIES} or manifest['version']!=1 or manifest['release']!=RELEASE:
+def verify_source(manifest, *, migrations=ROOT/'supabase/migrations', gateway_root=ROOT):
+    if not isinstance(manifest,dict) or set(manifest)!={'version','release','baseline_catalog_sha256','baseline_releases','migrations','baseline_images','baseline_native_schedules','gateway_configuration',*CAPABILITIES} or manifest['version']!=1 or manifest['release']!=RELEASE:
         raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     if not re.fullmatch('[a-f0-9]{64}',manifest['baseline_catalog_sha256']): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     validate_runtime_baseline(manifest)
     if canonical({key:manifest[key] for key in CAPABILITIES})!=canonical(CAPABILITIES): raise ReleaseError('DELIVERY_RELEASE_CAPABILITY_SOURCE_MISMATCH')
+    gateway=gateway_configuration(gateway_root)
+    if canonical(manifest['gateway_configuration'])!=canonical(gateway):raise ReleaseError('DELIVERY_RELEASE_GATEWAY_SOURCE_CHANGED')
+    if manifest['baseline_images']['gateway']!=gateway['gateway_image']:raise ReleaseError('DELIVERY_RELEASE_GATEWAY_IMAGE_CHANGED')
     receipts=manifest['baseline_releases']
     if not isinstance(receipts,dict) or len(receipts)!=6 or any(not re.fullmatch('[a-z][a-z0-9-]{1,100}',k) or not re.fullmatch('[a-f0-9]{64}',v) for k,v in receipts.items()):
         raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')

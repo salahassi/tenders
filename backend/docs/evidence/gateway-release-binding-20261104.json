@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "captured_at": "2026-11-04T19:44:35.221883+00:00",
+  "scope": "Local source/receipt binding only. In-memory candidate manifest; no final manifest file, SQL execution, runtime rollout or hosted acceptance. Actual binary qualification receipt was independently produced by the workflow owner.",
+  "production_calls_by_this_check": 0,
+  "gateway_configuration": {
+    "version": 1,
+    "before_source_sha256": "4907ecf81e2fa1e97754202906873ccd7c34e3dcbe26dd1e60cf4e276c639d23",
+    "after_source_sha256": "b87507bfd4253165c1e81d7d5557348f07b079481218e7f6db918a8fcdb731e5",
+    "before_data_sha256": "c8eb18fbcada22ecf58add2282b5024ca565d99d3d10d505b3999cedda4a8422",
+    "after_data_sha256": "74e25fa894eb577699d319b8fcd42050b03381b3dd8e1bda7b0f70c647920a0d",
+    "qualification_sha256": "1831842de23dc097269b403987d2530bb486f2fc01c4bde0cb491fd5ae369ff3",
+    "gateway_image": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8"
+  },
+  "required_gateway_capability": 1,
+  "migration_count": 22,
+  "source_verification": "passed",
+  "actual_inventory_receipt_sha256": "65150d57619e0fd81f9b916ada0bf817b75fde14fe01b1ecaeec7354c32a823d",
+  "source_sha256": {
+    "backend/scripts/ops/proposal-delivery-release.py": "747538ca897082c8f528c24f14e54053e03d1ddf180422ab0ad5b34967f65092",
+    "backend/scripts/ops/test_proposal_delivery_release.py": "88f238e7130063e1dda5f9e192af67e0c63bfbabfe0917a02c0bd0fc37848c59"
+  },
+  "local_tests": {
+    "synthetic_fixture_methods": 6,
+    "result": "passed",
+    "database_tests_run_after_gateway_change": false
+  },
+  "independent_review": "No material issue found; LF current source hashes agree with renderer/rollout. General CRLF normalization coupling reported to rollout owner.",
+  "unit_log": {
+    "path": "/workspace/output/gateway-release-binding-unit.log",
+    "sha256": "3aef9e06da1c10eeda9e013bfef3410b3bc9ec646b66c643aeb30c7a97c6c7bb",
+    "text": "test_gateway_manifest_binds_raw_and_rendered_config_receipt_and_image (backend.scripts.ops.test_proposal_delivery_release.DeliveryReleaseTests.test_gateway_manifest_binds_raw_and_rendered_config_receipt_and_image) ... ok\ntest_gateway_qualification_is_strict_and_current (backend.scripts.ops.test_proposal_delivery_release.DeliveryReleaseTests.test_gateway_qualification_is_strict_and_current) ... ok\ntest_gateway_missing_symlink_and_unreviewed_baseline_fail_closed (backend.scripts.ops.test_proposal_delivery_release.DeliveryReleaseTests.test_gateway_missing_symlink_and_unreviewed_baseline_fail_closed) ... ok\ntest_every_final_contract_is_required_before_freezing (backend.scripts.ops.test_proposal_delivery_release.DeliveryReleaseTests.test_every_final_contract_is_required_before_freezing) ... ok\ntest_final_capabilities_cannot_be_downgraded_or_coerced (backend.scripts.ops.test_proposal_delivery_release.DeliveryReleaseTests.test_final_capabilities_cannot_be_downgraded_or_coerced) ... ok\ntest_source_set_and_bytes_are_frozen (backend.scripts.ops.test_proposal_delivery_release.DeliveryReleaseTests.test_source_set_and_bytes_are_frozen) ... ok\n\n----------------------------------------------------------------------\nRan 6 tests in 0.027s\n\nOK\n"
+  }
+}
