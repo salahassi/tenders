@@ -52,3 +52,54 @@ export async function workflowFixture(
   }
   return { db, owner, w, command, rpc };
 }
+
+/** Existing model-only integration fixtures do not execute local DOCX rendering.
+ * Their synthetic initial/partial draft render jobs are explicitly canceled;
+ * dedicated delivery tests exercise the real queue order and renderer. The
+ * model jobs themselves use the canonical current-worker capability (4), with
+ * unchanged SQL eligibility, provider accounting and historical wire pins.
+ */
+export async function claimModelWorker4(
+  fixture: Pick<Awaited<ReturnType<typeof workflowFixture>>, "db">,
+  rpc: (name: string) => Promise<any>,
+) {
+  const previous = (
+    await fixture.db.query<{ value: string | null }>(
+      "select current_setting('app.worker_executor',true) value",
+    )
+  ).rows[0]?.value;
+  await fixture.db.query(
+    "update public.jobs set status='canceled',lease_token=null,lease_until=null where type='render_delivery' and checkpoint->>'delivery_renderer_version'='1' and status in ('queued','retry_wait','quota_wait')",
+  );
+  await fixture.db.query("select set_config('app.worker_executor','4',true)");
+  try {
+    return await rpc("claim_backend_job");
+  } finally {
+    await fixture.db.query("select set_config('app.worker_executor',$1,true)", [
+      previous || "",
+    ]);
+  }
+}
+
+/** Seed an explicitly historical proposal before the new admission policy.
+ * Only this fixture's creation transaction disables the new admission trigger;
+ * it is re-enabled before any worker, retry or recovery operation under test.
+ * This preserves legacy paid-history tests without a production bypass flag.
+ */
+export async function historicalGenerationCommand(
+  fixture: Awaited<ReturnType<typeof workflowFixture>>,
+  operation: "proposal.generate" | "proposal.regenerate",
+  input: unknown,
+  key = crypto.randomUUID(),
+) {
+  await fixture.db.exec(
+    "alter table app_private.generation_processing_requests disable trigger admit_proposal_issuance",
+  );
+  try {
+    return await fixture.command(operation, input, key);
+  } finally {
+    await fixture.db.exec(
+      "alter table app_private.generation_processing_requests enable trigger admit_proposal_issuance",
+    );
+  }
+}

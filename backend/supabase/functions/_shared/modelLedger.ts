@@ -1,11 +1,21 @@
 import type { Backend, BackendEnvironment } from "./backend.ts";
-import { parseModelPool, type Ledger } from "./model.ts";
+import {
+  ModelError,
+  parseModelPool,
+  type Ledger,
+  type ModelPool,
+} from "./model.ts";
 import { ROUND_ROBIN_PROVIDERS } from "./modelProviders.ts";
 import { defaultCapabilities, taskRegistry } from "./modelContract.ts";
 
 export function modelLedger(
   backend: Backend,
-  job: { id: string; lease_token: string; attempts: number },
+  job: {
+    id: string;
+    lease_token: string;
+    attempts: number;
+    checkpoint?: Record<string, unknown>;
+  },
   prefix: string,
   environments?: BackendEnvironment["models"],
   routeTask?: keyof typeof taskRegistry,
@@ -117,6 +127,14 @@ export function modelLedger(
       });
     },
     preflight: async (manifest, task) => {
+      const issuance = job.checkpoint?.issuance_request_id
+        ? ((await backend.internal(
+            "proposal_issuance_job_state",
+            identity,
+          )) as ModelPool["issuance_request"])
+        : undefined;
+      if (issuance && issuance.outcome !== "active")
+        throw new ModelError(issuance.error_code || "PROPOSAL_ISSUANCE_CLOSED");
       if (environments) {
         await backend.internal("import_model_catalog", {
           ...identity,
@@ -129,24 +147,36 @@ export function modelLedger(
           })),
         });
         if (task)
-          version = (await backend.internal("prepare_task_model_route", {
-            ...identity,
-            task_name: task,
-            default_profile: taskRegistry[task].profile,
-            ...(["plan_blueprint", "plan_structure"].includes(task)
-              ? { route_task: "plan_proposal" }
-              : {}),
-            ...(routeTask
-              ? {
-                  route_task: ["plan_blueprint", "plan_structure"].includes(
-                    routeTask,
-                  )
-                    ? "plan_proposal"
-                    : routeTask,
-                  default_profile: taskRegistry[routeTask].profile,
-                }
-              : {}),
-          }))
+          version = (await backend
+            .internal("prepare_task_model_route", {
+              ...identity,
+              task_name: task,
+              default_profile: taskRegistry[task].profile,
+              ...(["plan_blueprint", "plan_structure"].includes(task)
+                ? { route_task: "plan_proposal" }
+                : {}),
+              ...(routeTask
+                ? {
+                    route_task: ["plan_blueprint", "plan_structure"].includes(
+                      routeTask,
+                    )
+                      ? "plan_proposal"
+                      : routeTask,
+                    default_profile: taskRegistry[routeTask].profile,
+                  }
+                : {}),
+            })
+            .catch((error: unknown) => {
+              if (
+                issuance &&
+                error &&
+                typeof error === "object" &&
+                "code" in error &&
+                error.code === "MODEL_NOT_CONFIGURED"
+              )
+                throw new ModelError("AI_AGENTS_UNAVAILABLE");
+              throw error;
+            }))
             ? 2
             : 1;
       }
@@ -190,7 +220,7 @@ export function modelLedger(
           )?.retry_after,
         }));
       }
-      return pool;
+      return { ...pool, ...(issuance ? { issuance_request: issuance } : {}) };
     },
     attempt: async (provider_id, result_code, sent, config) => {
       await backend.internal(

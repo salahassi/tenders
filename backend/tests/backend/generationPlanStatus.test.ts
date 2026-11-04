@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { readFile } from "node:fs/promises";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from "vitest";
-import { workflowFixture } from "./workflowFixture";
+import {
+  workflowFixture,
+  claimModelWorker4,
+  historicalGenerationCommand,
+} from "./workflowFixture";
 
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
@@ -57,7 +61,7 @@ async function startWithSiblings() {
     id: document.id,
     expected_revision: document.revision,
   });
-  const plan = await f.command("proposal.generate", {
+  const plan = await historicalGenerationCommand(f, "proposal.generate", {
     id: opportunity.id,
     expected_revision: opportunity.revision,
   });
@@ -67,7 +71,7 @@ async function startWithSiblings() {
     "select app_private.enqueue_generation(p,s.task,s.input) from public.generation_plans p join public.generation_steps s on s.plan_id=p.id where p.id=$1 order by s.ordinal limit 1",
     [plan.id],
   );
-  const blocked = await f.rpc("claim_backend_job");
+  const blocked = await claimModelWorker4(f, f.rpc);
   await f.rpc("fail_generation", [
     blocked.id,
     blocked.lease_token,
@@ -79,7 +83,7 @@ async function startWithSiblings() {
     status: "blocked",
     error_code: "MODEL_CORRECTION_EXHAUSTED",
   });
-  const sibling = await f.rpc("claim_backend_job");
+  const sibling = await claimModelWorker4(f, f.rpc);
   expect(sibling.id).not.toBe(blocked.id);
   expect(sibling.entity_id).toBe(plan.id);
   return { plan, blocked, sibling };
@@ -589,10 +593,15 @@ it("ordinary generation retry clears the blocked aggregate and preserves complet
     input_hash: before.input_hash,
   });
   expect(await jobRow(sibling.id)).toEqual(completed);
-  const lease = await f.rpc("claim_backend_job");
+  const lease = await claimModelWorker4(f, f.rpc);
   expect(lease.id).toBe(blocked.id);
   expect(lease.attempts).toBe(before.attempts + 1);
-  expect(lease.checkpoint).toEqual(before.checkpoint);
+  expect(lease.checkpoint).toEqual({
+    ...before.checkpoint,
+    issuance_request_id: expect.any(String),
+    issuance_deadline_version: 1,
+    minimum_worker_executor: 4,
+  });
 });
 
 it("ordinary cancellation remains canceled even with a blocked child", async () => {

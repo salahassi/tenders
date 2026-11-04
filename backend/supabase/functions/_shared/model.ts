@@ -108,6 +108,8 @@ function sourceValidationError(error: unknown): unknown {
     source_path?: unknown;
     source_diagnostics?: { code: string; source_path: string }[];
   } | null;
+  if (source?.code === "SOURCE_MATERIALIZATION_CAPACITY")
+    return new ModelError("MODEL_CONTEXT_TOO_LARGE");
   return typeof source?.code === "string" &&
     /^SOURCE_[A-Z_]+$/.test(source.code) &&
     typeof source.source_path === "string"
@@ -189,6 +191,12 @@ export type ModelPool = {
   routing_mode?: "round_robin";
   executor_version?: number;
   pending_model_config_id?: string | null;
+  issuance_request?: {
+    id: string;
+    deadline_at: string;
+    outcome: string;
+    error_code: string | null;
+  };
 };
 export type ModelEnvironment = {
   provider: string;
@@ -1097,6 +1105,7 @@ export class FreeModelProvider {
     private verificationRevision: VerificationRevision = 1,
     private semanticRevision: SemanticRevision = 0,
     private patchWire = false,
+    private issuanceDeadline?: number,
   ) {}
   private async diagnoseRejectedRequest(
     response: Response,
@@ -1299,6 +1308,11 @@ export class FreeModelProvider {
     method: "POST" | "GET" | "DELETE" = "POST",
     diagnosticTask?: ModelTask,
   ): Promise<any> {
+    if (this.issuanceDeadline !== undefined) {
+      const remaining = this.issuanceDeadline - Date.now();
+      if (remaining <= 0) throw new ModelError("PROPOSAL_ISSUANCE_TIMEOUT");
+      timeout = Math.min(timeout, remaining);
+    }
     const controller = new AbortController();
     let wireDiagnostic: Promise<Record<string, unknown> | null> | null = null;
     let idleTimer: ReturnType<typeof setTimeout> | undefined;
@@ -1457,7 +1471,12 @@ export class FreeModelProvider {
       this.telemetry.provider_error_reason = controller.signal.aborted
         ? timeoutReason
         : "network_error";
-      throw new ModelError("MODEL_NETWORK_UNCERTAIN");
+      throw new ModelError(
+        this.issuanceDeadline !== undefined &&
+          Date.now() >= this.issuanceDeadline
+          ? "PROPOSAL_ISSUANCE_TIMEOUT"
+          : "MODEL_NETWORK_UNCERTAIN",
+      );
     } finally {
       clearTimeout(timer);
       clearTimeout(idleTimer);
@@ -1729,6 +1748,23 @@ export async function executeModel(
     throw new ModelError("MODEL_REQUEST_INVALID");
   const pool = await ledger.preflight(manifest, task);
   const automatic = pool.routing_mode === "round_robin";
+  const issuanceDeadline = pool.issuance_request
+    ? Date.parse(pool.issuance_request.deadline_at)
+    : null;
+  const remainingIssuanceMs = () =>
+    issuanceDeadline === null ? Infinity : issuanceDeadline - Date.now();
+  const assertIssuanceOpen = () => {
+    if (
+      issuanceDeadline !== null &&
+      (!Number.isFinite(issuanceDeadline) || remainingIssuanceMs() <= 0)
+    )
+      throw new ModelError("PROPOSAL_ISSUANCE_TIMEOUT");
+    if (pool.issuance_request && pool.issuance_request.outcome !== "active")
+      throw new ModelError(
+        pool.issuance_request.error_code || "PROPOSAL_ISSUANCE_CLOSED",
+      );
+  };
+  assertIssuanceOpen();
   const prompt = modelPrompt(
     task,
     context,
@@ -1777,6 +1813,21 @@ export async function executeModel(
         ),
       )
     : pool.providers;
+  if (
+    pool.issuance_request &&
+    !providers.some((config) => {
+      const environment =
+        ledger.environment?.(config) ?? environments[config.provider];
+      return (
+        environment &&
+        tryAvailable(config, environment) &&
+        ((pool.pending_model_config_id &&
+          config.model_config_id === pool.pending_model_config_id) ||
+          !(config.retry_after && Date.parse(config.retry_after) > Date.now()))
+      );
+    })
+  )
+    throw new ModelError("AI_AGENTS_UNAVAILABLE");
   let lastError: ModelError = new ModelError("MODEL_NOT_CONFIGURED");
   let outputError: ModelError | null = savedRound?.output_error
     ? new ModelError(savedRound.output_error)
@@ -1820,6 +1871,7 @@ export async function executeModel(
   };
   try {
     for (const [index, config] of providers.entries()) {
+      assertIssuanceOpen();
       const env = ledger.environment?.(config) ?? environments[config.provider];
       if (
         automatic &&
@@ -1858,6 +1910,7 @@ export async function executeModel(
         env,
         fetcher,
         Math.min(
+          remainingIssuanceMs(),
           (ledger.invocationBudgetMs ?? 110000) > 110000 ? 120000 : 90000,
           Math.max(
             90000,
@@ -1870,6 +1923,7 @@ export async function executeModel(
         verificationRevision,
         options.semanticRevision ?? 0,
         patchWire,
+        issuanceDeadline ?? undefined,
       );
       let reservation: string | null = null;
       let settled = false;
@@ -2033,6 +2087,7 @@ export async function executeModel(
           remoteId = pending.remote_request_id;
           settled = pending.state === "settled";
         } else {
+          assertIssuanceOpen();
           await ledger.beforeSend?.();
           // Automatic routing does not call a token-count endpoint or enforce a
           // daily token budget. This bounded local estimate is ledger metadata;
@@ -2192,6 +2247,7 @@ export async function executeModel(
             const completedId = remoteId;
             ledger.cleanup = () => provider.deleteBackground(completedId);
           }
+          assertIssuanceOpen();
           await finishAttempt("SUCCEEDED");
           if (automatic)
             await ledger.attempt?.(config.provider, "SUCCEEDED", true, config);
@@ -2373,6 +2429,7 @@ export async function executeModel(
     if (
       outputError &&
       (!automatic ||
+        pool.issuance_request ||
         [
           "analyze_chunk",
           "summarize_review",
@@ -2388,6 +2445,22 @@ export async function executeModel(
     // A local occupied request slot should not inherit the escalating outage
     // backoff (which can reach an hour after harmless background polls).
     if (automatic && lastError.code === "MODEL_RATE_WAIT") throw lastError;
+    assertIssuanceOpen();
+    if (pool.issuance_request) {
+      if (
+        [
+          "MODEL_CONTEXT_TOO_LARGE",
+          "MODEL_OUTPUT_TOO_LARGE",
+          "MODEL_OUTPUT_TRUNCATED",
+          "MODEL_IDENTITY_CHANGED",
+          "USAGE_REVIEW_REQUIRED",
+          "USAGE_UNKNOWN",
+          "MODEL_NETWORK_UNCERTAIN",
+        ].includes(lastError.code)
+      )
+        throw lastError;
+      throw new ModelError("AI_AGENTS_UNAVAILABLE");
+    }
     throw automatic
       ? new ModelError(
           "MODEL_ROUND_EXHAUSTED",

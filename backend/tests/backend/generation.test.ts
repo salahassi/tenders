@@ -6,7 +6,11 @@ import type {
 } from "../../supabase/functions/_shared/backend";
 // @vitest-environment node
 import { beforeAll, afterAll, beforeEach, afterEach, it, expect } from "vitest";
-import { workflowFixture } from "./workflowFixture";
+import {
+  workflowFixture,
+  claimModelWorker4,
+  historicalGenerationCommand,
+} from "./workflowFixture";
 import { buildExportModel } from "../../supabase/functions/_shared/export";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import {
@@ -83,7 +87,7 @@ async function start() {
   const s = await setup();
   return {
     ...s,
-    plan: await f.command("proposal.generate", {
+    plan: await historicalGenerationCommand(f, "proposal.generate", {
       id: s.opp.id,
       expected_revision: s.opp.revision,
     }),
@@ -98,7 +102,7 @@ it("upgrades only blocked planning, preserving completed analysis and paid recei
   );
   let planning: any;
   for (let i = 0; i < 10; i++) {
-    const job = await f.rpc("claim_backend_job");
+    const job = await claimModelWorker4(f, f.rpc);
     const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
     if (ctx.step.task === "plan_proposal") {
       planning = job;
@@ -276,7 +280,7 @@ it.each([1, 2, 3])(
     const { plan } = await start();
     let review: any;
     for (let i = 0; i < 30; i++) {
-      const job = await f.rpc("claim_backend_job");
+      const job = await claimModelWorker4(f, f.rpc);
       const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
       if (ctx.step.task === "review_proposal") {
         review = job;
@@ -534,7 +538,7 @@ function resultFor(ctx: any) {
 async function runPlan(result: (ctx: any) => any = resultFor) {
   let count = 0;
   for (;;) {
-    const job = await f.rpc("claim_backend_job");
+    const job = await claimModelWorker4(f, f.rpc);
     if (!job) break;
     if (++count > 45) throw Error("Unbounded fixture");
     const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
@@ -566,103 +570,326 @@ async function blockedSavedAssembly() {
   await f.db.query(`update public.generation_plans set input_hash=encode(sha256(convert_to(frozen_context::text,'UTF8')),'hex') where id=$1`,[started.plan.id]);
   await f.db.query(`update public.jobs j set input_hash=p.input_hash from public.generation_plans p where j.entity_id=p.id and p.id=$1`,[started.plan.id]);
   for (let i = 0; i < 30; i++) {
-    const job = await f.rpc("claim_backend_job");
+    const job = await claimModelWorker4(f, f.rpc);
     const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
     if (ctx.step.task === "advance_plan") {
       const next = await nextStage(ctx);
       if (next.next_stage === "completed") {
-        await f.rpc("fail_generation", [job.id, job.lease_token, "DATA_POLICY_BLOCKED", null, null]);
-        const plan = (await f.db.query<any>("select * from public.generation_plans where id=$1", [started.plan.id])).rows[0];
+        await f.rpc("fail_generation", [
+          job.id,
+          job.lease_token,
+          "DATA_POLICY_BLOCKED",
+          null,
+          null,
+        ]);
+        const plan = (
+          await f.db.query<any>(
+            "select * from public.generation_plans where id=$1",
+            [started.plan.id],
+          )
+        ).rows[0];
         return { ...started, plan, job, ctx };
       }
-      await f.rpc("advance_generation", [job.id, job.lease_token, next.next_stage,
-        JSON.stringify(next.requirements), JSON.stringify(next.steps), null]);
+      await f.rpc("advance_generation", [
+        job.id,
+        job.lease_token,
+        next.next_stage,
+        JSON.stringify(next.requirements),
+        JSON.stringify(next.steps),
+        null,
+      ]);
     } else {
       const result: any = resultFor(ctx);
       if (ctx.step.task === "draft_section")
-        result.content_blocks = [{ type: "paragraph", text: "Implement approval workflow. Review restrictions on confidential-data reuse." }];
-      await f.rpc("complete_generation_step", [job.id, job.lease_token, JSON.stringify(result)]);
+        result.content_blocks = [
+          {
+            type: "paragraph",
+            text: "Implement approval workflow. Review restrictions on confidential-data reuse.",
+          },
+        ];
+      await f.rpc("complete_generation_step", [
+        job.id,
+        job.lease_token,
+        JSON.stringify(result),
+      ]);
     }
   }
   throw new Error("Synthetic plan did not reach final assembly");
 }
 
 async function changeAssemblyNotice(opportunityId: string) {
-  await f.db.query("update public.opportunities set description=description || ' Additional published delivery requirements.' where id=$1", [opportunityId]);
+  await f.db.query(
+    "update public.opportunities set description=description || ' Additional published delivery requirements.' where id=$1",
+    [opportunityId],
+  );
 }
 
 it("recovers completed writing as a historical draft, preserving receipts and blocking final approval until regeneration", async () => {
   const { plan, opp } = await blockedSavedAssembly();
-  const saved = (await f.db.query("select * from public.generation_steps where plan_id=$1 and task<>'advance_plan' order by ordinal", [plan.id])).rows;
-  const usage = (await f.db.query("select * from public.provider_usage order by id")).rows;
+  const saved = (
+    await f.db.query(
+      "select * from public.generation_steps where plan_id=$1 and task<>'advance_plan' order by ordinal",
+      [plan.id],
+    )
+  ).rows;
+  const usage = (
+    await f.db.query("select * from public.provider_usage order by id")
+  ).rows;
   await changeAssemblyNotice(opp.id);
   const key = crypto.randomUUID();
-  const request = { id: plan.id, expected_revision: plan.revision, reason: "Recover the saved draft for review" };
+  const request = {
+    id: plan.id,
+    expected_revision: plan.revision,
+    reason: "Recover the saved draft for review",
+  };
   const resumed = await f.command("generation.retry", request, key);
   expect(await f.command("generation.retry", request, key)).toEqual(resumed);
-  expect(resumed).toMatchObject({ status: "queued", input_hash: plan.input_hash, evidence_revision: plan.evidence_revision, frozen_context: plan.frozen_context });
-  expect(await runPlan(() => { throw new Error("Recovery must not generate more model work"); })).toBe(1);
-  expect((await f.db.query("select * from public.generation_steps where plan_id=$1 and task<>'advance_plan' order by ordinal", [plan.id])).rows).toEqual(saved);
-  expect((await f.db.query("select * from public.provider_usage order by id")).rows).toEqual(usage);
-  const version = (await f.db.query<any>("select * from public.proposal_versions where plan_id=$1", [plan.id])).rows[0];
+  expect(resumed).toMatchObject({
+    status: "queued",
+    input_hash: plan.input_hash,
+    evidence_revision: plan.evidence_revision,
+    frozen_context: plan.frozen_context,
+  });
+  expect(
+    await runPlan(() => {
+      throw new Error("Recovery must not generate more model work");
+    }),
+  ).toBe(1);
+  expect(
+    (
+      await f.db.query(
+        "select * from public.generation_steps where plan_id=$1 and task<>'advance_plan' order by ordinal",
+        [plan.id],
+      )
+    ).rows,
+  ).toEqual(saved);
+  expect(
+    (await f.db.query("select * from public.provider_usage order by id")).rows,
+  ).toEqual(usage);
+  const version = (
+    await f.db.query<any>(
+      "select * from public.proposal_versions where plan_id=$1",
+      [plan.id],
+    )
+  ).rows[0];
   expect(version.evidence_revision).toBe(plan.evidence_revision);
-  expect(version.review_result.saved_notice_recovery).toMatchObject({ version: 1, frozen_notice_hash: plan.frozen_context.notice.reference.content_hash });
-  expect(version.review_result.saved_notice_recovery.observed_notice_hash).not.toBe(plan.frozen_context.notice.reference.content_hash);
-  expect((await f.db.query("select * from public.audit_events where action='generation.saved_draft.recovered' and entity_id=$1", [plan.id])).rows).toHaveLength(1);
-  expect((await f.db.query("select * from public.questions where proposal_version_id=$1 and reason='NOTICE_CHANGED_AFTER_DRAFTING' and blocking_level='finalization'", [version.id])).rows).toHaveLength(1);
-  const gate = (await f.db.query<any>("select app_private.approval_gate($1,$2) gate", [f.w, version.id])).rows[0].gate;
-  expect(gate.blockers).toContain("Recovered draft uses an earlier notice; regenerate with current evidence before approval.");
-  const exported = await f.command("export.prepare", { proposal_version_id: version.id, expected_revision: version.revision, mode: "draft", volume: "combined" });
-  expect(JSON.stringify(buildExportModel(exported))).toContain("recovered from saved work");
-  await expect(f.command("export.prepare", { proposal_version_id: version.id, expected_revision: version.revision, mode: "final", volume: "combined" })).rejects.toThrow("APPROVAL_REQUIRED");
-  await f.db.query("update public.questions set status='resolved',answer='Reviewed',answer_source='Synthetic review' where proposal_version_id=$1", [version.id]);
-  expect((await f.db.query<any>("select app_private.approval_gate($1,$2) gate", [f.w, version.id])).rows[0].gate.blockers).toContain("Recovered draft uses an earlier notice; regenerate with current evidence before approval.");
-  const proposal = (await f.db.query<any>("select * from public.proposals where id=$1", [plan.proposal_id])).rows[0];
-  await f.command("proposal.regenerate", { id: proposal.id, expected_revision: proposal.revision, base_version_id: version.id, input_hash: "b".repeat(64) });
+  expect(version.review_result.saved_notice_recovery).toMatchObject({
+    version: 1,
+    frozen_notice_hash: plan.frozen_context.notice.reference.content_hash,
+  });
+  expect(
+    version.review_result.saved_notice_recovery.observed_notice_hash,
+  ).not.toBe(plan.frozen_context.notice.reference.content_hash);
+  expect(
+    (
+      await f.db.query(
+        "select * from public.audit_events where action='generation.saved_draft.recovered' and entity_id=$1",
+        [plan.id],
+      )
+    ).rows,
+  ).toHaveLength(1);
+  expect(
+    (
+      await f.db.query(
+        "select * from public.questions where proposal_version_id=$1 and reason='NOTICE_CHANGED_AFTER_DRAFTING' and blocking_level='finalization'",
+        [version.id],
+      )
+    ).rows,
+  ).toHaveLength(1);
+  const gate = (
+    await f.db.query<any>("select app_private.approval_gate($1,$2) gate", [
+      f.w,
+      version.id,
+    ])
+  ).rows[0].gate;
+  expect(gate.blockers).toContain(
+    "Recovered draft uses an earlier notice; regenerate with current evidence before approval.",
+  );
+  const exported = await f.command("export.prepare", {
+    proposal_version_id: version.id,
+    expected_revision: version.revision,
+    mode: "draft",
+    volume: "combined",
+  });
+  expect(JSON.stringify(buildExportModel(exported))).toContain(
+    "recovered from saved work",
+  );
+  await expect(
+    f.command("export.prepare", {
+      proposal_version_id: version.id,
+      expected_revision: version.revision,
+      mode: "final",
+      volume: "combined",
+    }),
+  ).rejects.toThrow("APPROVAL_REQUIRED");
+  await f.db.query(
+    "update public.questions set status='resolved',answer='Reviewed',answer_source='Synthetic review' where proposal_version_id=$1",
+    [version.id],
+  );
+  expect(
+    (
+      await f.db.query<any>("select app_private.approval_gate($1,$2) gate", [
+        f.w,
+        version.id,
+      ])
+    ).rows[0].gate.blockers,
+  ).toContain(
+    "Recovered draft uses an earlier notice; regenerate with current evidence before approval.",
+  );
+  const proposal = (
+    await f.db.query<any>("select * from public.proposals where id=$1", [
+      plan.proposal_id,
+    ])
+  ).rows[0];
+  await historicalGenerationCommand(f, "proposal.regenerate", {
+    id: proposal.id,
+    expected_revision: proposal.revision,
+    base_version_id: version.id,
+    input_hash: "b".repeat(64),
+  });
   await runPlan();
-  const versions = (await f.db.query<any>("select * from public.proposal_versions where proposal_id=$1 order by ordinal", [proposal.id])).rows;
+  const versions = (
+    await f.db.query<any>(
+      "select * from public.proposal_versions where proposal_id=$1 order by ordinal",
+      [proposal.id],
+    )
+  ).rows;
   expect(versions).toHaveLength(2);
   expect(versions[0].content_hash).toBe(version.content_hash);
   expect(versions[1].review_result.saved_notice_recovery).toBeUndefined();
 });
 
-it.each(["rfp", "template", "unfinished_review", "canceled_job", "archived", "canceled_plan"])(
-  "does not recover a notice-changed draft when %s also makes assembly unsafe", async (change) => {
+it.each([
+  "rfp",
+  "template",
+  "unfinished_review",
+  "canceled_job",
+  "archived",
+  "canceled_plan",
+])(
+  "does not recover a notice-changed draft when %s also makes assembly unsafe",
+  async (change) => {
     const { plan, opp } = await blockedSavedAssembly();
     await changeAssemblyNotice(opp.id);
-    if (change === "rfp") await f.db.query("update public.document_blocks set text=text || ' Changed contractual evidence.' where document_id in (select id from public.documents where opportunity_id=$1)", [opp.id]);
-    if (change === "template") await f.db.query("update public.templates set fixed_blocks='[{\"key\":\"new\",\"title\":\"Changed terms\",\"body\":\"New delivery terms\",\"volume\":\"technical\"}]'::jsonb where workspace_id=$1", [f.w]);
-    if (change === "unfinished_review") await f.db.query("update public.generation_steps set status='queued' where plan_id=$1 and task='review_proposal'", [plan.id]);
-    if (change === "canceled_job") await f.db.query("update public.jobs set cancel_requested=true where entity_id=$1 and type='advance_plan' and status='blocked'", [plan.id]);
-    if (change === "archived") await f.db.query("update public.opportunities set archived=true where id=$1", [opp.id]);
-    if (change === "canceled_plan") await f.db.query("update public.generation_plans set status='canceled' where id=$1", [plan.id]);
-    await expect(f.command("generation.retry", { id: plan.id, expected_revision: plan.revision, reason: "Synthetic recovery rejection" })).rejects.toThrow(/STALE_INPUT|GENERATION_NOT_ACTIVE/);
-    expect((await f.db.query("select id from public.proposal_versions where plan_id=$1", [plan.id])).rows).toHaveLength(0);
+    if (change === "rfp")
+      await f.db.query(
+        "update public.document_blocks set text=text || ' Changed contractual evidence.' where document_id in (select id from public.documents where opportunity_id=$1)",
+        [opp.id],
+      );
+    if (change === "template")
+      await f.db.query(
+        'update public.templates set fixed_blocks=\'[{"key":"new","title":"Changed terms","body":"New delivery terms","volume":"technical"}]\'::jsonb where workspace_id=$1',
+        [f.w],
+      );
+    if (change === "unfinished_review")
+      await f.db.query(
+        "update public.generation_steps set status='queued' where plan_id=$1 and task='review_proposal'",
+        [plan.id],
+      );
+    if (change === "canceled_job")
+      await f.db.query(
+        "update public.jobs set cancel_requested=true where entity_id=$1 and type='advance_plan' and status='blocked'",
+        [plan.id],
+      );
+    if (change === "archived")
+      await f.db.query(
+        "update public.opportunities set archived=true where id=$1",
+        [opp.id],
+      );
+    if (change === "canceled_plan")
+      await f.db.query(
+        "update public.generation_plans set status='canceled' where id=$1",
+        [plan.id],
+      );
+    await expect(
+      f.command("generation.retry", {
+        id: plan.id,
+        expected_revision: plan.revision,
+        reason: "Synthetic recovery rejection",
+      }),
+    ).rejects.toThrow(/STALE_INPUT|GENERATION_NOT_ACTIVE/);
+    expect(
+      (
+        await f.db.query(
+          "select id from public.proposal_versions where plan_id=$1",
+          [plan.id],
+        )
+      ).rows,
+    ).toHaveLength(0);
   },
 );
 
 it("rejects changed original company evidence during saved assembly", async () => {
-  const knowledge = await f.command("knowledge.save", { category: "company", title: "Synthetic capability", content: "Approval workflow delivery.", enabled: true, evidence: "Synthetic test evidence" });
-  await f.command("knowledge.verify", { id: knowledge.id, expected_revision: knowledge.revision });
+  const knowledge = await f.command("knowledge.save", {
+    category: "company",
+    title: "Synthetic capability",
+    content: "Approval workflow delivery.",
+    enabled: true,
+    evidence: "Synthetic test evidence",
+  });
+  await f.command("knowledge.verify", {
+    id: knowledge.id,
+    expected_revision: knowledge.revision,
+  });
   const { plan, opp } = await blockedSavedAssembly();
   await changeAssemblyNotice(opp.id);
-  await f.db.query("update public.knowledge_items set content='Changed original capability' where id=$1", [knowledge.id]);
-  await expect(f.command("generation.retry", { id: plan.id, expected_revision: plan.revision, reason: "Synthetic recovery rejection" })).rejects.toThrow("STALE_INPUT");
+  await f.db.query(
+    "update public.knowledge_items set content='Changed original capability' where id=$1",
+    [knowledge.id],
+  );
+  await expect(
+    f.command("generation.retry", {
+      id: plan.id,
+      expected_revision: plan.revision,
+      reason: "Synthetic recovery rejection",
+    }),
+  ).rejects.toThrow("STALE_INPUT");
 });
 
 it("rechecks evidence after resume and keeps recovery private and revision-checked", async () => {
   const { plan, opp } = await blockedSavedAssembly();
   await changeAssemblyNotice(opp.id);
-  const privileges = (await f.db.query<any>("select has_function_privilege('authenticated','app_private.saved_proposal_assembly_ready(public.generation_plans)','execute') browser, has_function_privilege('service_role','app_private.saved_proposal_assembly_ready(public.generation_plans)','execute') service")).rows[0];
+  const privileges = (
+    await f.db.query<any>(
+      "select has_function_privilege('authenticated','app_private.saved_proposal_assembly_ready(public.generation_plans)','execute') browser, has_function_privilege('service_role','app_private.saved_proposal_assembly_ready(public.generation_plans)','execute') service",
+    )
+  ).rows[0];
   expect(privileges).toEqual({ browser: false, service: false });
-  await expect(f.command("generation.retry", { id: plan.id, expected_revision: plan.revision - 1, reason: "Synthetic stale click" })).rejects.toThrow("REVISION_CONFLICT");
-  await f.db.query("update public.memberships set role='Reviewer' where user_id=$1", [f.owner]);
-  await expect(f.command("generation.retry", { id: plan.id, expected_revision: plan.revision, reason: "Synthetic unauthorized recovery" })).rejects.toThrow("ROLE_FORBIDDEN");
-  await f.db.query("update public.memberships set role='Owner' where user_id=$1", [f.owner]);
-  await f.command("generation.retry", { id: plan.id, expected_revision: plan.revision, reason: "Synthetic authorized recovery" });
-  const job = await f.rpc("claim_backend_job");
-  await f.db.query("update public.document_blocks set text=text || ' Changed after resume.' where document_id in (select id from public.documents where opportunity_id=$1)", [opp.id]);
-  await expect(f.rpc("generation_context", [job.id, job.lease_token])).rejects.toThrow("STALE_INPUT");
+  await expect(
+    f.command("generation.retry", {
+      id: plan.id,
+      expected_revision: plan.revision - 1,
+      reason: "Synthetic stale click",
+    }),
+  ).rejects.toThrow("REVISION_CONFLICT");
+  await f.db.query(
+    "update public.memberships set role='Reviewer' where user_id=$1",
+    [f.owner],
+  );
+  await expect(
+    f.command("generation.retry", {
+      id: plan.id,
+      expected_revision: plan.revision,
+      reason: "Synthetic unauthorized recovery",
+    }),
+  ).rejects.toThrow("ROLE_FORBIDDEN");
+  await f.db.query(
+    "update public.memberships set role='Owner' where user_id=$1",
+    [f.owner],
+  );
+  await f.command("generation.retry", {
+    id: plan.id,
+    expected_revision: plan.revision,
+    reason: "Synthetic authorized recovery",
+  });
+  const job = await claimModelWorker4(f, f.rpc);
+  await f.db.query(
+    "update public.document_blocks set text=text || ' Changed after resume.' where document_id in (select id from public.documents where opportunity_id=$1)",
+    [opp.id],
+  );
+  await expect(
+    f.rpc("generation_context", [job.id, job.lease_token]),
+  ).rejects.toThrow("STALE_INPUT");
 });
 
 it("admits the semantic workflow without company files or a custom template and exports its reviewed matrix", async () => {
@@ -678,7 +905,7 @@ it("admits the semantic workflow without company files or a custom template and 
     "insert into public.model_execution_settings(workspace_id,enabled,created_by) values($1,true,$2)",
     [f.w, f.owner],
   );
-  const plan = await f.command("proposal.generate", {
+  const plan = await historicalGenerationCommand(f, "proposal.generate", {
     id: s.opp.id,
     expected_revision: s.opp.revision,
   });
@@ -826,7 +1053,7 @@ it("admits the semantic workflow without company files or a custom template and 
 });
 it("starts draft generation without requiring a separate extraction confirmation", async () => {
   const s = await setup(false);
-  const plan = await f.command("proposal.generate", {
+  const plan = await historicalGenerationCommand(f, "proposal.generate", {
     id: s.opp.id,
     expected_revision: s.opp.revision,
   });
@@ -836,7 +1063,12 @@ it("starts draft generation without requiring a separate extraction confirmation
     (await f.db.query("select * from public.generation_plans")).rows,
   ).toHaveLength(1);
   expect(
-    (await f.db.query<any>("select extraction_confirmed_at from public.documents where id=$1", [s.document.id])).rows[0].extraction_confirmed_at,
+    (
+      await f.db.query<any>(
+        "select extraction_confirmed_at from public.documents where id=$1",
+        [s.document.id],
+      )
+    ).rows[0].extraction_confirmed_at,
   ).toBeNull();
 });
 it("completes and exports a full RFP draft without templates, company knowledge or rates", async () => {
@@ -848,7 +1080,7 @@ it("completes and exports a full RFP draft without templates, company knowledge 
   expect(
     (await f.db.query("select id from public.rate_catalog")).rows,
   ).toHaveLength(0);
-  const plan = await f.command("proposal.generate", {
+  const plan = await historicalGenerationCommand(f, "proposal.generate", {
     id: s.opp.id,
     expected_revision: s.opp.revision,
   });
@@ -1018,7 +1250,7 @@ it("persists application-derived part lineage through canonical generation and t
 });
 it("allows initial quota failover but pins a proposal after measured model usage", async () => {
   await start();
-  const job = await f.rpc("claim_backend_job");
+  const job = await claimModelWorker4(f, f.rpc);
   const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
   const manifest = taskInput(ctx).manifest;
   for (const [provider, rank] of [
@@ -1101,7 +1333,7 @@ it("persists all automatic stages and switches versions only after completion", 
   expect(
     (await f.db.query("select * from public.questions")).rows.length,
   ).toBeGreaterThan(0);
-  await f.command("proposal.regenerate", {
+  await historicalGenerationCommand(f, "proposal.regenerate", {
     id: p.id,
     expected_revision: p.revision,
     base_version_id: v.id,
@@ -1126,7 +1358,7 @@ it("persists all automatic stages and switches versions only after completion", 
 });
 it("rejects completion after cancellation without publishing a partial version", async () => {
   const s = await start(),
-    job = await f.rpc("claim_backend_job");
+    job = await claimModelWorker4(f, f.rpc);
   await f.command("generation.cancel", {
     id: s.plan.id,
     expected_revision: s.plan.revision,
@@ -1152,7 +1384,7 @@ it("rejects changed supporting evidence even if a worker still holds its lease",
     [f.owner, knowledge.id],
   );
   await start();
-  const job = await f.rpc("claim_backend_job");
+  const job = await claimModelWorker4(f, f.rpc);
   await f.db.query(
     "update public.knowledge_items set content='Changed existing source after the plan was frozen' where id=$1",
     [knowledge.id],
@@ -1164,7 +1396,7 @@ it("rejects changed supporting evidence even if a worker still holds its lease",
 
 it("retains saved proposal work after unrelated evidence and collection metadata changes", async () => {
   const s = await start();
-  let job = await f.rpc("claim_backend_job");
+  let job = await claimModelWorker4(f, f.rpc);
   const before = await f.rpc("generation_context", [job.id, job.lease_token]);
   await f.db.query(
     "update public.opportunities set notice_evidence=$2::jsonb where id=$1",
@@ -1295,7 +1527,7 @@ it.each(["rfp", "notice", "template"])(
   "still rejects a changed proposal input: %s",
   async (kind) => {
     const s = await start();
-    const job = await f.rpc("claim_backend_job");
+    const job = await claimModelWorker4(f, f.rpc);
     if (kind === "rfp")
       await f.db.query(
         "update public.documents set archived=true where id=$1",
@@ -1322,7 +1554,7 @@ it.each([
 ])("handles %s without discarding durable model work", async (code, status) => {
   const { plan } = await start();
   await f.command("model.routing", { enabled: true, expected_revision: 0 });
-  const job = await f.rpc("claim_backend_job");
+  const job = await claimModelWorker4(f, f.rpc);
   const thread = "d".repeat(64);
   await f.db.query(
     "insert into app_private.model_graph_threads(id,workspace_id,job_id,input_hash,task,candidate_count) values($1,$2,$3,repeat('a',64),'analyze_chunk',1)",
@@ -1375,7 +1607,7 @@ it.each([
       "update public.jobs set next_attempt_at=now() where id=$1",
       [job.id],
     );
-    const resumed = await f.rpc("claim_backend_job_v2");
+    const resumed = await claimModelWorker4(f, f.rpc);
     expect(resumed.id).toBe(job.id);
     expect(resumed.checkpoint).toEqual(saved.checkpoint);
     await expect(
@@ -1388,7 +1620,7 @@ it.each(["MODEL_OUTPUT_INVALID", "MODEL_OUTPUT_TRUNCATED"])(
   "persists one repair for %s and then blocks; retry preserves previous steps",
   async (outputError) => {
     const s = await start();
-    let job = await f.rpc("claim_backend_job");
+    let job = await claimModelWorker4(f, f.rpc);
     await f.rpc("fail_generation", [
       job.id,
       job.lease_token,
@@ -1407,7 +1639,7 @@ it.each(["MODEL_OUTPUT_INVALID", "MODEL_OUTPUT_TRUNCATED"])(
       "update public.jobs set next_attempt_at=now() where id=$1",
       [job.id],
     );
-    job = await f.rpc("claim_backend_job");
+    job = await claimModelWorker4(f, f.rpc);
     await f.rpc("fail_generation", [
       job.id,
       job.lease_token,
@@ -1416,7 +1648,11 @@ it.each(["MODEL_OUTPUT_INVALID", "MODEL_OUTPUT_TRUNCATED"])(
       null,
     ]);
     expect(
-      (await f.db.query<any>("select status from public.jobs where id=$1", [job.id])).rows[0].status,
+      (
+        await f.db.query<any>("select status from public.jobs where id=$1", [
+          job.id,
+        ])
+      ).rows[0].status,
     ).toBe("blocked");
     const plan = (
       await f.db.query<any>("select * from public.generation_plans")
@@ -1434,7 +1670,11 @@ it.each(["MODEL_OUTPUT_INVALID", "MODEL_OUTPUT_TRUNCATED"])(
       ).rows[0].repair_count,
     ).toBe(1);
     expect(
-      (await f.db.query<any>("select status from public.jobs where id=$1", [job.id])).rows[0].status,
+      (
+        await f.db.query<any>("select status from public.jobs where id=$1", [
+          job.id,
+        ])
+      ).rows[0].status,
     ).toBe("queued");
   },
 );
@@ -1453,7 +1693,7 @@ it.each([
         expected_revision: 0,
         strategy: "round_robin",
       });
-    const job = await f.rpc("claim_backend_job");
+    const job = await claimModelWorker4(f, f.rpc);
     await f.rpc("fail_generation", [
       job.id,
       job.lease_token,
@@ -1481,7 +1721,7 @@ it.each([
         id: plan.id,
         status: "queued",
       });
-      const resumed = await f.rpc("claim_backend_job");
+      const resumed = await claimModelWorker4(f, f.rpc);
       expect(resumed.id).toBe(job.id);
       expect(resumed.attempts).toBe(2);
     } else {
@@ -1628,7 +1868,7 @@ it("checkpoints every long review segment and gives later tasks grounded directi
   });
   const current = (await f.db.query<any>("select * from public.proposals"))
     .rows[0];
-  await f.command("proposal.regenerate", {
+  await historicalGenerationCommand(f, "proposal.regenerate", {
     id: current.id,
     expected_revision: current.revision,
     base_version_id: current.active_version_id,
@@ -1685,7 +1925,7 @@ it("checkpoints every long review segment and gives later tasks grounded directi
 
 it("splits a truncated automatic proposal response and completes without dropping RFP boundaries", async () => {
   const source = await setup(true, "Implement approval workflow. ".repeat(100));
-  const plan = await f.command("proposal.generate", {
+  const plan = await historicalGenerationCommand(f, "proposal.generate", {
     id: source.opp.id,
     expected_revision: source.opp.revision,
   });
@@ -1694,7 +1934,7 @@ it("splits a truncated automatic proposal response and completes without droppin
     expected_revision: 0,
     strategy: "round_robin",
   });
-  const job = await f.rpc("claim_backend_job");
+  const job = await claimModelWorker4(f, f.rpc);
   const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
   for (const ref of taskInput(ctx).manifest)
     await f.command("content.authorize", {
@@ -1859,7 +2099,7 @@ it.each([false, true])(
       await f.db.exec(
         "update public.jobs set next_attempt_at=now()-interval '1 second' where status in ('retry_wait','quota_wait');update public.provider_usage set created_at=now()-interval '2 minutes'",
       );
-      const job = await f.rpc("claim_backend_job");
+      const job = await claimModelWorker4(f, f.rpc);
       if (!job) break;
       const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
       if (ctx.step.task !== "advance_plan")
@@ -2000,7 +2240,7 @@ it("runs every proposal stage through durable verification without a company lib
   });
   const source = await setup();
   await f.db.exec("delete from public.templates");
-  const plan = await f.command("proposal.generate", {
+  const plan = await historicalGenerationCommand(f, "proposal.generate", {
     id: source.opp.id,
     expected_revision: source.opp.revision,
   });
@@ -2035,7 +2275,7 @@ it("runs every proposal stage through durable verification without a company lib
   let verifications = 0,
     creations = 0;
   for (let i = 0; i < 120; i++) {
-    const job = await internal("claim_backend_job_v2");
+    const job = await claimModelWorker4(f, internal);
     if (!job) break;
     const ctx = await internal("generation_context", {
       job_id: job.id,

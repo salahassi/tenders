@@ -1,7 +1,7 @@
 import { sourceContractFixture } from "./sourceContractFixture";
 // @vitest-environment node
 import { beforeAll, afterAll, beforeEach, afterEach, expect, it } from "vitest";
-import { workflowFixture } from "./workflowFixture";
+import { workflowFixture, claimModelWorker4 } from "./workflowFixture";
 import {
   taskInput,
   processGeneration,
@@ -533,7 +533,7 @@ it.each([
     let creations = 0,
       verifications = 0;
     for (let index = 0; index < 120; index++) {
-      const job = await internal("claim_backend_job_v2");
+      const job = await claimModelWorker4(f, internal);
       if (!job) break;
       const ctx = await internal("generation_context", {
         job_id: job.id,

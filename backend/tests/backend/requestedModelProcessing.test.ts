@@ -261,7 +261,22 @@ it("resumes an existing blocked plan canonically without changing frozen work or
         [p.result.id],
       )
     ).rows,
-  ).toEqual(jobsBefore);
+  ).toEqual(
+    jobsBefore.map((j: any) => ({
+      ...j,
+      checkpoint: {
+        ...j.checkpoint,
+        issuance_request_id: expect.any(String),
+      },
+    })),
+  );
+  const issuance = (
+    await f.db.query<any>(
+      "select id from public.proposal_issuance_requests where plan_id=$1 and outcome='active'",
+      [p.result.id],
+    )
+  ).rows[0];
+  expect(issuance.id).not.toBe(jobsBefore[0].checkpoint.issuance_request_id);
   const j = (
     await f.db.query<any>(
       "update public.jobs set status='running',lease_token=gen_random_uuid(),lease_until=now()+interval '3 minutes' where id=$1 returning *",

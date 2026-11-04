@@ -6436,3 +6436,57 @@ edit rejects both old-view requests, and revoking the Owner while waiting reject
 both requests. Source workflow executor-4 and W08 context migrations are explicit
 integration dependencies. No live model, production, deployment or hosted
 acceptance call was made by this change.
+
+### 2026-11-04 D06: request-wide issuance deadline and terminal availability
+
+Implemented locally; deployment and hosted acceptance remain pending. New explicit
+proposal authorizations receive an immutable request row with acceptance time,
+600-second deadline and terminal outcome. The request ID lives outside frozen
+model input and follows generation children, repair/resume work and local rendering.
+An idempotent replay retains the original deadline. New reservations, successful
+generation commits and artifact completion are deadline-gated. Canonical queue
+claims and maintenance persist expiry; the member-scoped status RPC also reports
+the effective deadline outcome immediately, with database `server_now`. Unknown
+or reserved provider usage is preserved exactly and remains separately reconcilable.
+All initially unavailable targets, or an exhausted round of known rejections,
+return `AI_AGENTS_UNAVAILABLE` for a new issuance without waiting for another round.
+An accepted remote request may still perform GET-only reconciliation during its
+original remaining deadline. POST and GET transport timers share that absolute
+request deadline. Historical unpinned routes keep their prior behavior.
+
+New contracts require `minimum_worker_executor=4`, independently of immutable
+`model_executor=2` routing pins. The canonical claim predicate excludes older
+workers. The earlier W05 migration installs the first contract activation guard;
+this migration accepts that already-installed predicate. A single-job retry binds
+only its authorized target; unrelated historical running/waiting siblings and
+paid prompts remain unchanged. Explicit local projection/render retry starts a
+new authorization against the same accepted canonical version without another
+model call or changes to its candidate budgets. A completed plan cannot silently
+restart with no queued work. Automatic issuance requires the full immutable
+renderer-3 generated review-draft package, canonical version/hash pins, machine
+validation and all verified volumes. Partial templates never count as issuance;
+issued draft status does not grant final approval or human semantic confirmation.
+
+Validation so far: both dependency lockfiles had been installed; backend typecheck
+and build pass; frontend full 46 files / 299 tests, typecheck and build pass. Focused
+actual-SQL deadline/retry/managed-role checks and historical plan-state tests pass
+52 cases; provider deadline/availability tests cover missing/disabled/cooling
+routes, all-target 403 quota rejection, absolute POST/GET timeout and accepted
+GET-only continuation. Full routing/catalog regression group passed 152 cases.
+The previous broad run exposed a renamed PL/pgSQL parameter-qualification defect;
+that was corrected and routing/catalog rerun green. Historical model fixtures now
+explicitly seed legacy admissions only during synthetic setup, re-enable the new
+admission guard before execution, and use current worker capability for model-only
+claims. Dedicated renderer tests retain responsibility for real local job ordering.
+The combined full backend rerun is pending at this commit; earlier runs are not
+claimed green. The coordinated renderer-3 agent must complete positive full-package
+issuance and explicit projection/render retry tests against this migration before
+release. Managed-only role migration, exact SQL 599.999/600/600.001 boundaries,
+queue dwell, unknown receipt retention and old-worker exclusion are already tested.
+
+Remaining gates: combined source/consistency/renderer integration, full backend
+regression completion, actual connected stopwatch/queue-stall acceptance and fresh
+semantic qualification under the approved campaign. No provider calls, payment
+changes, daily application caps, or billing/free-only policy changes were made by
+this component. Public Supabase database-function guidance was consulted for the
+migration; local PGlite checks are not hosted PostgreSQL/cron acceptance.

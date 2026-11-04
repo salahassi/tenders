@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from "vitest";
 import { readFile } from "node:fs/promises";
-import { workflowFixture } from "./workflowFixture";
+import { workflowFixture, claimModelWorker4 } from "./workflowFixture";
 import { retrieveCompanyEvidence } from "../../supabase/functions/_shared/companyEvidenceRetrieval";
 
 let f: Awaited<ReturnType<typeof workflowFixture>>;
@@ -83,7 +83,7 @@ it("pins new normal proposal requests and preserves the pin and exact source sna
   const p = await plan();
   expect(p.frozen_context.company_retrieval_version).toBe(1);
   expect(await refreshed(p, p.frozen_context)).toEqual(p.frozen_context);
-  const job = await f.rpc("claim_backend_job");
+  const job = await claimModelWorker4(f, f.rpc);
   const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
   expect(ctx.plan.frozen_context.company_retrieval_version).toBe(1);
 });
@@ -125,7 +125,7 @@ it("excludes unverified and expired company records while style remains nonfactu
 it("still rejects a frozen source whose verification is revoked before processing", async () => {
   const k = await knowledge("verified");
   await plan();
-  const job = await f.rpc("claim_backend_job");
+  const job = await claimModelWorker4(f, f.rpc);
   await f.db.query(
     "update public.knowledge_items set verified=false,verified_at=null,verified_by=null where id=$1",
     [k.id],
@@ -138,7 +138,7 @@ it("still rejects a frozen source whose verification is revoked before processin
 it("cannot send newly selected seventh-source evidence after its exact provider permission is revoked", async () => {
   for (let i = 0; i < 7; i++) await knowledge(`source ${i}`);
   const p = await plan(),
-    job = await f.rpc("claim_backend_job");
+    job = await claimModelWorker4(f, f.rpc);
   const selected = retrieveCompanyEvidence(p.frozen_context.knowledge, [
     { id: "R1", text: "Workflow" },
   ]);
