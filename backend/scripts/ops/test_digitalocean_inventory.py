@@ -17,7 +17,7 @@ p=importlib.util.module_from_spec(SPEC);sys.modules[SPEC.name]=p;SPEC.loader.exe
 
 def schema():
  return {'version':1,'database_identity_verified':True,'releases':[{'release':'analysis-verifier-recheck-v1','migration_sha256':'a'*64,'applied_at':'2026-11-03T03:00:00+00:00'}],
-  'canonical_migrations':None,'routine_catalog_sha256':'b'*64,'metrics':{'window_hours':24,'jobs':None,'delivery':None,'capacity':None},'capabilities':{key:False for key in p.CAPABILITIES}}
+  'canonical_migrations':None,'routine_catalog_sha256':'b'*64,'metrics':{'window_hours':24,'jobs':None,'delivery':None,'capacity':None,'issuance':None},'capabilities':{key:False for key in p.CAPABILITIES}}
 
 
 def workloads():
@@ -50,7 +50,7 @@ class InventoryTests(unittest.TestCase):
   self.assertEqual(p.public_schema(schema())['canonical_migrations'],None)
 
  def test_metric_labels_and_counts_cannot_carry_private_text(self):
-  value={'window_hours':24,'jobs':[{'class':'local','pending':2,'due':1,'running':0,'blocked':0,'expired_leases':0,'oldest_due_age_seconds':5.5,'succeeded_in_window':0,'terminal_row_elapsed_p95_seconds':None}],'delivery':None,'capacity':None}
+  value={'window_hours':24,'jobs':[{'class':'local','pending':2,'due':1,'running':0,'blocked':0,'expired_leases':0,'oldest_due_age_seconds':5.5,'succeeded_in_window':0,'terminal_row_elapsed_p95_seconds':None}],'delivery':None,'capacity':None,'issuance':None}
   self.assertEqual(p.public_metrics(value),value)
   for change in (lambda v:v['jobs'][0].update({'class':'customer-private'}),lambda v:v['jobs'][0].update(pending='secret'),lambda v:v['jobs'][0].update(oldest_due_age_seconds=float('nan')),lambda v:v.update(extra='secret')):
    bad=copy.deepcopy(value);change(bad)

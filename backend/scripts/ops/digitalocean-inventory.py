@@ -50,7 +50,7 @@ def image(value):
     return value
 
 def public_metrics(value):
-    if not isinstance(value,dict) or set(value)!={'window_hours','jobs','delivery','capacity'} or value['window_hours']!=24: raise InventoryError('INVENTORY_SCHEMA_INVALID')
+    if not isinstance(value,dict) or set(value)!={'window_hours','jobs','delivery','capacity','issuance'} or value['window_hours']!=24: raise InventoryError('INVENTORY_SCHEMA_INVALID')
     jobs=value['jobs']
     if jobs is not None:
         if not isinstance(jobs,list) or len(jobs)>5: raise InventoryError('INVENTORY_SCHEMA_INVALID')
@@ -68,6 +68,15 @@ def public_metrics(value):
         if not isinstance(row,dict) or set(row)!=fields: raise InventoryError('INVENTORY_SCHEMA_INVALID')
         for item in row.values(): integer(item,10**15)
         if key=='capacity' and row['workspace_limit_bytes']!=262144000: raise InventoryError('INVENTORY_SCHEMA_INVALID')
+    issuance=value['issuance']
+    if issuance is not None:
+        counts={'active_before_deadline','expired_unsettled','issued_in_window','failed_in_window','issued_after_deadline','invalid_deadline_bindings','deadline_seconds'}
+        durations={'issued_latency_p95_seconds','issued_latency_max_seconds'}
+        if not isinstance(issuance,dict) or set(issuance)!=counts|durations or issuance['deadline_seconds']!=600: raise InventoryError('INVENTORY_SCHEMA_INVALID')
+        for key in counts: integer(issuance[key],1000000000)
+        for key in durations:
+            number=issuance[key]
+            if number is not None and (type(number) not in (float,int) or not 0<=number<=315576000): raise InventoryError('INVENTORY_SCHEMA_INVALID')
     return value
 
 def public_schema(value):

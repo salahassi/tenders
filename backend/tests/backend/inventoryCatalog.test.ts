@@ -84,6 +84,12 @@ it("measures real queue ages and storage reservations without exposing identitie
     create table public.workspaces(id uuid);
     create function app_private.storage_reserved_bytes(uuid) returns bigint language sql as $$select 1000::bigint$$;
     create table public.proposal_delivery_artifacts(status text,reserved_bytes bigint,expected_size bigint);
+    create table public.proposal_issuance_requests(outcome text,accepted_at timestamptz,deadline_at timestamptz,completed_at timestamptz,deadline_version int);
+    grant select on public.proposal_issuance_requests to tdp_app_owner;
+    insert into public.proposal_issuance_requests values
+      ('issued',now()-interval '200 seconds',now()+interval '400 seconds',now()-interval '20 seconds',1),
+      ('active',now()-interval '700 seconds',now()-interval '100 seconds',null,1),
+      ('issued',now()-interval '700 seconds',now()-interval '100 seconds',now()-interval '50 seconds',1);
     grant usage on schema public to tdp_app_owner;
     grant select on public.jobs,public.workspaces,public.proposal_delivery_artifacts to tdp_app_owner;
     insert into public.workspaces values(gen_random_uuid());
@@ -129,6 +135,16 @@ it("measures real queue ages and storage reservations without exposing identitie
       largest_workspace_reserved_bytes: 1000,
       workspaces_at_or_above_limit: 0,
       workspace_limit_bytes: 262144000,
+    });
+    expect(receipt.metrics.issuance).toMatchObject({
+      active_before_deadline: 0,
+      expired_unsettled: 1,
+      issued_in_window: 2,
+      failed_in_window: 0,
+      issued_after_deadline: 1,
+      invalid_deadline_bindings: 0,
+      issued_latency_max_seconds: 650,
+      deadline_seconds: 600,
     });
     expect(JSON.stringify(receipt)).not.toContain("Synthetic private text");
     expect(

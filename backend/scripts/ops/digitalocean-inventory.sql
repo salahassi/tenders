@@ -2,7 +2,7 @@ BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY;
 SET LOCAL ROLE tdp_app_owner;
 SET LOCAL statement_timeout='20s'; SET LOCAL lock_timeout='5s';
 DO $inventory$
-DECLARE releases jsonb:='[]'; canonical jsonb:=null; routines text; result jsonb; jobs jsonb:=null; delivery jsonb:=null; capacity jsonb:=null;
+DECLARE releases jsonb:='[]'; canonical jsonb:=null; routines text; result jsonb; jobs jsonb:=null; delivery jsonb:=null; capacity jsonb:=null; issuance jsonb:=null;
 BEGIN
  IF current_database()<>'tenderdesk_app' THEN RAISE EXCEPTION 'INVENTORY_DATABASE_IDENTITY_MISMATCH';END IF;
  IF to_regclass('app_private.application_release_history') IS NOT NULL THEN
@@ -38,8 +38,21 @@ BEGIN
    'largest_workspace_reserved_bytes',coalesce(max(bytes),0),'workspaces_at_or_above_limit',count(*) FILTER(WHERE bytes>=262144000),'workspace_limit_bytes',262144000)
    FROM (SELECT app_private.storage_reserved_bytes(id) bytes FROM public.workspaces)x$query$ INTO capacity;
  END IF;
+ IF to_regclass('public.proposal_issuance_requests') IS NOT NULL THEN
+  EXECUTE $query$SELECT jsonb_build_object(
+   'active_before_deadline',count(*) FILTER(WHERE outcome='active' AND deadline_at>now()),
+   'expired_unsettled',count(*) FILTER(WHERE outcome='active' AND deadline_at<=now()),
+   'issued_in_window',count(*) FILTER(WHERE outcome='issued' AND completed_at>=now()-interval '24 hours'),
+   'failed_in_window',count(*) FILTER(WHERE outcome='failed' AND completed_at>=now()-interval '24 hours'),
+   'issued_after_deadline',count(*) FILTER(WHERE outcome='issued' AND completed_at>deadline_at),
+   'invalid_deadline_bindings',count(*) FILTER(WHERE deadline_version<>1 OR deadline_at IS DISTINCT FROM accepted_at+interval '600 seconds' OR completed_at<accepted_at OR (outcome<>'active' AND completed_at IS NULL)),
+   'issued_latency_p95_seconds',(percentile_cont(0.95) WITHIN GROUP(ORDER BY extract(epoch FROM completed_at-accepted_at)) FILTER(WHERE outcome='issued' AND completed_at>=now()-interval '24 hours'))::float8,
+   'issued_latency_max_seconds',(max(extract(epoch FROM completed_at-accepted_at)) FILTER(WHERE outcome='issued' AND completed_at>=now()-interval '24 hours'))::float8,
+   'deadline_seconds',600)
+   FROM public.proposal_issuance_requests$query$ INTO issuance;
+ END IF;
  result:=jsonb_build_object('version',1,'database_identity_verified',true,'releases',releases,'canonical_migrations',canonical,
-  'routine_catalog_sha256',routines,'metrics',jsonb_build_object('window_hours',24,'jobs',jobs,'delivery',delivery,'capacity',capacity),'capabilities',jsonb_build_object(
+  'routine_catalog_sha256',routines,'metrics',jsonb_build_object('window_hours',24,'jobs',jobs,'delivery',delivery,'capacity',capacity,'issuance',issuance),'capabilities',jsonb_build_object(
    'delivery_snapshots',to_regclass('public.proposal_delivery_snapshots') IS NOT NULL,
    'delivery_artifacts',to_regclass('public.proposal_delivery_artifacts') IS NOT NULL,
    'claim_executor_3',to_regprocedure('public.claim_backend_job_v3()') IS NOT NULL,

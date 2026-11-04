@@ -70,6 +70,58 @@ are absent. This confirms the new implementation is not deployed yet. API/worker
 use image digest `85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380`;
 image source revisions remain independently unverified. This is a current baseline
 for a guarded release, not hosted proposal/model acceptance or schema-tip proof.
+## November 4 — guarded delivery release tooling (phase 2 W11)
+
+Implementation: the new manual-only `deploy-proposal-delivery.yml` verifies a
+reviewed frozen migration manifest before credentials or publication, builds or
+reuses immutable source-bound runtime/frontend/native OCR images, applies the
+entire additive schema batch atomically, drains the previous worker through
+`Recreate`, and updates API/source gateway/scheduler/native OCR/frontend in order.
+Current non-image specifications, configurations, secrets and native schedules
+are retained. The existing application owner executes the SQL without new roles
+or elevated permissions. Every original table column/row and existing authority
+is compared inside the migration transaction; new tables start empty. Exact
+manifest and post-catalog receipts make lost-acknowledgement retry verifiable.
+An ambiguous rollout retains compatible code for forward completion and never
+automatically rolls back new durable version pins. Temporary client cleanup is
+restricted to the exact current run/nonce/owner, including unconditional cleanup.
+
+Local evidence: **12 operations tests** pass, including actual managed-role SQL
+batch application/replay and transaction rollback on row or authority faults;
+wrong database, ledger drift, partial receipt and post-catalog changes fail closed.
+Fault injection covers 11 rollout boundaries, source-image mismatch, concurrent
+configuration change, private error suppression, immutable image reuse and exact
+cleanup ownership. The final manifest is intentionally not generated until all
+phase-2 changes, including the new 600-second deadline policy, are integrated.
+The workflow refuses to deploy without that reviewed file and executor-4 source.
+See `PROPOSAL_DELIVERY_RELEASE.md` for the concrete coordinator sequence.
+
+Deployment and hosted acceptance remain pending. Neither these tests nor the
+aggregate queue timings certify the 600-second request-to-file/error requirement.
+Cloud restore, first new native OCR job, real authenticated file download and
+actual accepted-request/ready/error timestamps still require their own evidence.
+No workflow dispatch, production mutation, model or email call was made by this
+implementation. Final package rerun: backend **2,156 tests/131 files**, frontend **299/46**, and
+both typechecks/builds pass. Operations **310 tests** and Kubernetes manifest
+**13 tests** pass. The last metric extension separately passes its **17 Python**
+and **four SQL** cases. Existing frontend bundle/runtime-config warnings remain.
+The new global minimum-worker-executor-4 propagation and actual mixed-version
+claim regression are mandatory before schema-first release; local render-job
+exclusion alone does not close that deployment window. Renderer/payload-3
+automatic review-draft capability is also a final integration prerequisite.
+
+## November 4 — canonical issuance timing observations (phase 2 W09)
+
+The optional issuance measurements use the new immutable request contract's
+`accepted_at`, `deadline_at`, `completed_at` and outcome, rather than job row
+update times. They report accepted-to-issued p95/max, issued-after-deadline,
+expired-but-unsettled and invalid 600-second binding counts without identities or
+content. The field is null until the issuance migration exists. Isolated SQL
+fixtures demonstrate both an ordinary 180-second issuance and a deliberately
+late 650-second issuance; the late result is counted as a violation and never
+reported as meeting the bound. This is instrumentation for subsequent hosted
+measurements, not evidence that the live application has met the requirement.
+
 ## November 4 — native inventory defaults correction
 
 The coordinator's extended inventory run `41845129587` passed TLS/readiness but
