@@ -1,5 +1,5 @@
 /** Explicitly selected real draft export acceptance. Never starts generation or approves content. */
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { createHash } from "node:crypto";
 import { chromium } from "playwright";
@@ -13,7 +13,7 @@ import {
 export const LIMITS = Object.freeze({
   volumes: 2,
   httpRequests: 32,
-  browserApiReads: 150,
+  browserApiReads: 700,
   browserMutations: 8,
   bytesPerArtifact: 10485760,
   reportBytes: 32 * 1024 * 1024,
@@ -182,7 +182,8 @@ export async function verifyServerRoundtrip(
   return { ...proof, authenticated_server_download_verified: true };
 }
 
-/** Validate every possible browser write before allowing it onto the network. */
+/** Historical browser-protocol guard retained for v1 regression fixtures.
+ * The current browser execution uses durableBrowserWriteAllowed below. */
 export function browserWriteAllowed(path, method, raw, state, input) {
   if (method === "POST" && path === "/functions/v1/api/v1/commands") {
     let body;
@@ -237,6 +238,327 @@ export function browserWriteAllowed(path, method, raw, state, input) {
     state.uploaded.has(complete[1]) &&
     !state.completed.has(complete[1])
   );
+}
+
+/** New browser path permits only one exact whole-package preparation. The
+ * explicit HTTP path below intentionally retains its historical v1 behavior. */
+export function durableBrowserWriteAllowed(path, method, raw, state, input) {
+  if (
+    method !== "POST" ||
+    path !== "/functions/v1/api/v1/commands" ||
+    state.prepared
+  )
+    return false;
+  try {
+    const body = JSON.parse(raw || "");
+    if (
+      Object.keys(body).join() !== "commands" ||
+      !Array.isArray(body.commands) ||
+      body.commands.length !== 1
+    )
+      return false;
+    const command = body.commands[0],
+      value = command.input;
+    return (
+      Object.keys(command).sort().join() === "input,operation" &&
+      command.operation === "export.package.prepare" &&
+      value?.proposal_version_id === input.proposal_version_id &&
+      value.expected_revision === input.expected_revision &&
+      value.mode === "draft" &&
+      Object.keys(value).sort().join() ===
+        "expected_revision,mode,proposal_version_id"
+    );
+  } catch {
+    return false;
+  }
+}
+export function observeDurablePackage(value, state, input, volumes) {
+  check(
+    UUID.test(value?.id || "") &&
+      value.proposal_version_id === input.proposal_version_id &&
+      value.mode === "draft" &&
+      Number.isSafeInteger(value.revision) &&
+      ["preparing", "ready", "blocked"].includes(value.status),
+    "EXPORT_DURABLE_PACKAGE_INVALID",
+  );
+  check(
+    Number.isFinite(Date.parse(value.server_now)) &&
+      Date.parse(value.deadline_at) - Date.parse(value.accepted_at) === 600000,
+    "EXPORT_DURABLE_CLOCK_INVALID",
+  );
+  const prior = state.package;
+  check(
+    !prior ||
+      (prior.id === value.id &&
+        prior.accepted_at === value.accepted_at &&
+        prior.deadline_at === value.deadline_at),
+    "EXPORT_DURABLE_IDENTITY_CHANGED",
+  );
+  check(
+    Array.isArray(value.artifacts) &&
+      JSON.stringify(value.artifacts.map((a) => a.volume).sort()) ===
+        JSON.stringify([...volumes].sort()),
+    "EXPORT_VOLUME_COVERAGE_INVALID",
+  );
+  if (value.status === "ready")
+    check(
+      value.job?.status === "succeeded" &&
+        value.artifacts.every(
+          (a) =>
+            UUID.test(a.id || "") &&
+            UUID.test(a.export_id || "") &&
+            a.status === "ready" &&
+            /^[a-f0-9]{64}$/.test(a.content_hash || "") &&
+            Number.isSafeInteger(Number(a.expected_size)) &&
+            Number(a.expected_size) > 0 &&
+            Number(a.expected_size) <= LIMITS.bytesPerArtifact,
+        ),
+      "EXPORT_DURABLE_PACKAGE_INCOMPLETE",
+    );
+  state.package = value;
+  return value;
+}
+async function acceptDurableBrowser(
+  input,
+  version,
+  volumes,
+  report,
+  api,
+  http,
+  readSelected,
+) {
+  const state = { prepared: false, package: null },
+    pending = new Set(),
+    downloads = [];
+  let violation = null,
+    failure = null;
+  const browser = await chromium.launch({
+    ...(process.env.CHROMIUM_PATH
+      ? { executablePath: process.env.CHROMIUM_PATH }
+      : {}),
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-background-networking",
+    ],
+  });
+  try {
+    const context = await browser.newContext({
+      acceptDownloads: true,
+      serviceWorkers: "block",
+      viewport: { width: 1440, height: 1000 },
+    });
+    const storageKey = `sb-${new URL(input.origin).hostname.split(".")[0]}-auth-token`;
+    await context.addInitScript(
+      ({ origin, key, session }) => {
+        if (window.location.origin === origin)
+          localStorage.setItem(key, JSON.stringify(session));
+      },
+      { origin: input.origin, key: storageKey, session: input.session },
+    );
+    await context.route("**/*", async (route) => {
+      const request = route.request(),
+        url = new URL(request.url()),
+        method = request.method();
+      if (["blob:", "data:"].includes(url.protocol)) return route.continue();
+      if (url.origin !== input.origin) {
+        violation = "EXPORT_BROWSER_ORIGIN_BLOCKED";
+        return route.abort();
+      }
+      if (["GET", "HEAD", "OPTIONS"].includes(method)) {
+        if (
+          url.pathname.startsWith("/functions/v1/api/") &&
+          ++report.browser_api_reads > LIMITS.browserApiReads
+        ) {
+          violation = "EXPORT_BROWSER_READ_LIMIT";
+          return route.abort();
+        }
+        return route.continue();
+      }
+      if (
+        method === "POST" &&
+        url.pathname === "/auth/v1/token" &&
+        url.searchParams.get("grant_type") === "refresh_token"
+      ) {
+        if (++report.browser_auth_refreshes > 3) {
+          violation = "EXPORT_BROWSER_REFRESH_LIMIT";
+          return route.abort();
+        }
+        return route.continue();
+      }
+      await Promise.all([...pending]);
+      if (
+        !durableBrowserWriteAllowed(
+          url.pathname,
+          method,
+          request.postData(),
+          state,
+          input,
+        )
+      ) {
+        violation = "EXPORT_BROWSER_WRITE_BLOCKED";
+        return route.abort();
+      }
+      state.prepared = true;
+      report.browser_mutations++;
+      return route.continue();
+    });
+    const page = await context.newPage();
+    page.on("response", (response) => {
+      const task = (async () => {
+        const url = new URL(response.url()),
+          path = url.pathname,
+          request = response.request();
+        if (url.origin !== input.origin) return;
+        if (request.method() === "POST" && path === "/auth/v1/token") {
+          check(response.ok(), "EXPORT_BROWSER_SESSION_REFRESH_FAILED");
+          const session = await response.json();
+          check(
+            session?.user?.id === input.actor_id,
+            "EXPORT_BROWSER_SESSION_IDENTITY_CHANGED",
+          );
+          return;
+        }
+        if (
+          request.method() === "POST" &&
+          path === "/functions/v1/api/v1/commands"
+        ) {
+          check(response.ok(), "EXPORT_BROWSER_COMMAND_FAILED");
+          const body = await response.json();
+          check(body?.data?.length === 1, "EXPORT_COMMAND_RESULT_INVALID");
+          observeDurablePackage(body.data[0], state, input, volumes);
+        } else if (
+          request.method() === "GET" &&
+          /^\/functions\/v1\/api\/v1\/export-packages\/[^/]+$/.test(path)
+        ) {
+          check(response.ok(), "EXPORT_PACKAGE_CURRENTNESS_FAILED");
+          const body = await response.json();
+          observeDurablePackage(body.data, state, input, volumes);
+        }
+        if (state.package?.status === "blocked")
+          failure = "EXPORT_DURABLE_PREPARATION_BLOCKED";
+      })().catch((error) => {
+        failure = safeCode(error);
+      });
+      pending.add(task);
+      void task.finally(() => pending.delete(task));
+    });
+    page.on("download", (download) => downloads.push(download));
+    await page.goto(`${input.origin}/#/proposals/${input.proposal_id}`, {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
+    const button = page.getByRole("button", {
+      name: "Download complete draft Word",
+      exact: true,
+    });
+    await button.waitFor({ state: "visible", timeout: 90000 });
+    check(!violation && !failure, violation || failure);
+    await readSelected();
+    report.checks.push("selected_owner_and_version_current_before_export");
+    await button.click();
+    const end = Date.now() + 660000;
+    while (
+      downloads.length < volumes.length &&
+      Date.now() < end &&
+      !violation &&
+      !failure
+    )
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    await Promise.all([...pending]);
+    check(!violation && !failure, violation || failure);
+    check(
+      downloads.length === volumes.length && state.package?.status === "ready",
+      "EXPORT_BROWSER_DOWNLOAD_INCOMPLETE",
+    );
+    const saved = observeDurablePackage(
+      await api(`/v1/export-packages/${state.package.id}`),
+      state,
+      input,
+      volumes,
+    );
+    check(saved.status === "ready", "EXPORT_DURABLE_PACKAGE_INCOMPLETE");
+    report.durable_package = {
+      id: saved.id,
+      revision: saved.revision,
+      accepted_at: saved.accepted_at,
+      deadline_at: saved.deadline_at,
+      status: saved.status,
+    };
+    report.export_path = "durable_server_package";
+    for (const download of downloads) {
+      check(!(await download.failure()), "EXPORT_BROWSER_DOWNLOAD_FAILED");
+      const file = await download.path();
+      check(file, "EXPORT_BROWSER_DOWNLOAD_FAILED");
+      check(
+        (await stat(file)).size <= LIMITS.bytesPerArtifact,
+        "EXPORT_DOCUMENT_TOO_LARGE",
+      );
+      const bytes = new Uint8Array(await readFile(file)),
+        hash = sha(bytes),
+        artifact = saved.artifacts.find((a) => a.content_hash === hash);
+      check(
+        artifact && !report.artifacts.some((a) => a.id === artifact.id),
+        "EXPORT_DOWNLOADED_HASH_MISMATCH",
+      );
+      const data = await api(`/v1/exports/${artifact.export_id}/context`);
+      contextIdentity(
+        data,
+        { id: artifact.export_id, volume: artifact.volume },
+        input,
+        version.ordinal,
+      );
+      const proof = await verifyServerRoundtrip(
+        bytes,
+        artifact,
+        data.model,
+        (id) => http(`/functions/v1/api/v1/export-artifacts/${id}/download`),
+      );
+      report.created_exports.push({
+        id: artifact.export_id,
+        volume: artifact.volume,
+        mode: "draft",
+      });
+      report.reserved_artifacts.push({
+        id: artifact.id,
+        export_id: artifact.export_id,
+        content_hash: artifact.content_hash,
+        bytes: bytes.length,
+      });
+      report.artifacts.push({
+        id: artifact.id,
+        export_id: artifact.export_id,
+        volume: artifact.volume,
+        original_name: artifact.original_name,
+        status: "ready",
+        verification: "generated_content",
+        content_hash: hash,
+        bytes: bytes.length,
+        ...proof,
+        docx_base64: Buffer.from(bytes).toString("base64"),
+      });
+    }
+    const final = observeDurablePackage(
+      await api(`/v1/export-packages/${saved.id}`),
+      state,
+      input,
+      volumes,
+    );
+    check(
+      final.status === "ready" &&
+        JSON.stringify(final.artifacts) === JSON.stringify(saved.artifacts),
+      "EXPORT_PACKAGE_CHANGED_AFTER_DOWNLOAD",
+    );
+    report.checks.push(
+      "actual_deployed_editor_download_clicked",
+      "browser_writes_restricted_to_one_durable_draft_prepare",
+      "server_rendered_complete_durable_package",
+      "original_600s_export_deadline_preserved",
+    );
+  } finally {
+    await browser.close();
+  }
 }
 
 export async function acceptProposalExport(rawInput, fetcher = fetch) {
@@ -390,6 +712,7 @@ export async function acceptProposalExport(rawInput, fetcher = fetch) {
     }
     report.checks.push("hosted_licensed_font_hashes_verified");
     if (input.mode === "http") {
+      report.export_path = "legacy_explicit_http_render_upload";
       await readSelected();
       report.checks.push("selected_owner_and_version_current_before_export");
       for (const volume of volumes) {
@@ -489,261 +812,14 @@ export async function acceptProposalExport(rawInput, fetcher = fetch) {
         });
       }
     } else {
-      const state = {
-          volumes,
-          preparedVolumes: new Set(),
-          reservedExports: new Set(),
-          contexts: new Map(),
-          artifacts: new Map(),
-          uploaded: new Set(),
-          completed: new Set(),
-        },
-        pending = new Set(),
-        downloads = [];
-      let violation = null,
-        failure = null;
-      browser = await chromium.launch({
-        ...(process.env.CHROMIUM_PATH
-          ? { executablePath: process.env.CHROMIUM_PATH }
-          : {}),
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-background-networking",
-        ],
-      });
-      const context = await browser.newContext({
-        acceptDownloads: true,
-        serviceWorkers: "block",
-        viewport: { width: 1440, height: 1000 },
-      });
-      const storageKey = `sb-${new URL(input.origin).hostname.split(".")[0]}-auth-token`;
-      await context.addInitScript(
-        ({ origin, key, session }) => {
-          if (window.location.origin === origin)
-            localStorage.setItem(key, JSON.stringify(session));
-        },
-        { origin: input.origin, key: storageKey, session: input.session },
-      );
-      await context.route("**/*", async (route) => {
-        const request = route.request(),
-          url = new URL(request.url()),
-          method = request.method();
-        if (["blob:", "data:"].includes(url.protocol)) return route.continue();
-        if (url.origin !== input.origin) {
-          violation = "EXPORT_BROWSER_ORIGIN_BLOCKED";
-          return route.abort();
-        }
-        if (["GET", "HEAD", "OPTIONS"].includes(method)) {
-          if (
-            url.pathname.startsWith("/functions/v1/api/") &&
-            ++report.browser_api_reads > LIMITS.browserApiReads
-          ) {
-            violation = "EXPORT_BROWSER_READ_LIMIT";
-            return route.abort();
-          }
-          return route.continue();
-        }
-        // Session refresh keeps only the isolated genuine login usable. No other Auth mutation is allowed.
-        if (
-          method === "POST" &&
-          url.pathname === "/auth/v1/token" &&
-          url.searchParams.get("grant_type") === "refresh_token"
-        ) {
-          if (++report.browser_auth_refreshes > 3) {
-            violation = "EXPORT_BROWSER_REFRESH_LIMIT";
-            return route.abort();
-          }
-          return route.continue();
-        }
-        await Promise.all([...pending]);
-        if (
-          !browserWriteAllowed(
-            url.pathname,
-            method,
-            request.postData(),
-            state,
-            input,
-          ) ||
-          report.browser_mutations >= LIMITS.browserMutations
-        ) {
-          violation = "EXPORT_BROWSER_WRITE_BLOCKED";
-          return route.abort();
-        }
-        report.browser_mutations++;
-        if (url.pathname === "/functions/v1/api/v1/commands") {
-          const { operation, input: value } =
-            request.postDataJSON().commands[0];
-          if (operation === "export.prepare")
-            state.preparedVolumes.add(value.volume);
-          if (operation === "export.reserve")
-            state.reservedExports.add(value.export_id);
-        }
-        return route.continue();
-      });
-      const page = await context.newPage();
-      page.on("response", (response) => {
-        const task = (async () => {
-          const url = new URL(response.url()),
-            path = url.pathname,
-            request = response.request();
-          if (request.method() === "POST" && path === "/auth/v1/token") {
-            check(response.ok(), "EXPORT_BROWSER_SESSION_REFRESH_FAILED");
-            const session = await response.json();
-            check(
-              session?.user?.id === input.actor_id,
-              "EXPORT_BROWSER_SESSION_IDENTITY_CHANGED",
-            );
-          } else if (
-            url.origin !== input.origin ||
-            (request.method() === "GET" &&
-              !/\/exports\/[^/]+\/context$/.test(path))
-          )
-            return;
-          if (
-            request.method() === "POST" &&
-            path === "/functions/v1/api/v1/commands"
-          ) {
-            check(response.ok(), "EXPORT_BROWSER_COMMAND_FAILED");
-            const command = request.postDataJSON().commands[0],
-              body = await response.json(),
-              record = body?.data?.[0];
-            if (command.operation === "export.prepare") {
-              identity(record, record?.id, input);
-              check(
-                UUID.test(record.id) &&
-                  record.mode === "draft" &&
-                  record.proposal_version_id === version.id,
-                "EXPORT_REQUEST_ID_INVALID",
-              );
-              report.created_exports.push({
-                id: record.id,
-                volume: record.volume,
-                mode: "draft",
-              });
-            }
-            if (command.operation === "export.reserve") {
-              const context = state.contexts.get(command.input.export_id);
-              artifactIdentity(record, context.request, input);
-              state.artifacts.set(record.id, record);
-              report.reserved_artifacts.push({
-                id: record.id,
-                export_id: record.export_id,
-                content_hash: record.content_hash,
-                bytes: Number(record.expected_size),
-              });
-            }
-          } else if (/\/exports\/[^/]+\/context$/.test(path)) {
-            check(response.ok(), "EXPORT_BROWSER_CONTEXT_FAILED");
-            const { data } = await response.json();
-            contextIdentity(
-              data,
-              { id: path.split("/").at(-2), volume: data?.request?.volume },
-              input,
-              version.ordinal,
-            );
-            check(
-              volumes.includes(data.request.volume),
-              "EXPORT_CONTEXT_MISMATCH",
-            );
-            state.contexts.set(data.request.id, data);
-          } else if (
-            path.startsWith("/storage/v1/object/tenderdesk-private/")
-          ) {
-            check(response.ok(), "EXPORT_BROWSER_UPLOAD_FAILED");
-            const artifact = [...state.artifacts.values()].find((a) =>
-              path.endsWith(a.storage_key),
-            );
-            check(artifact, "EXPORT_ARTIFACT_IDENTITY_MISMATCH");
-            state.uploaded.add(artifact.id);
-          } else if (/\/export-artifacts\/[^/]+\/complete$/.test(path)) {
-            check(response.ok(), "EXPORT_SERVER_VERIFICATION_FAILED");
-            const { data } = await response.json();
-            const artifact = state.artifacts.get(data?.id);
-            check(
-              artifact &&
-                data.status === "ready" &&
-                data.verification === "generated_content" &&
-                data.content_hash === artifact.content_hash,
-              "EXPORT_SERVER_VERIFICATION_FAILED",
-            );
-            state.completed.add(data.id);
-          }
-        })().catch((error) => {
-          failure = safeCode(error);
-        });
-        pending.add(task);
-        void task.finally(() => pending.delete(task));
-      });
-      page.on("download", (download) => {
-        downloads.push(download);
-      });
-      await page.goto(`${input.origin}/#/proposals/${input.proposal_id}`, {
-        waitUntil: "domcontentloaded",
-        timeout: 60000,
-      });
-      const button = page.getByRole("button", {
-        name: "Download complete draft Word",
-        exact: true,
-      });
-      await button.waitFor({ state: "visible", timeout: 90000 });
-      check(!violation && !failure, violation || failure);
-      await readSelected();
-      report.checks.push("selected_owner_and_version_current_before_export");
-      await button.click();
-      const deadline = Date.now() + 180000;
-      while (
-        downloads.length < volumes.length &&
-        Date.now() < deadline &&
-        !violation &&
-        !failure
-      )
-        await new Promise((r) => setTimeout(r, 200));
-      await Promise.all([...pending]);
-      check(!violation && !failure, violation || failure);
-      check(
-        downloads.length === volumes.length &&
-          state.completed.size === volumes.length,
-        "EXPORT_BROWSER_DOWNLOAD_INCOMPLETE",
-      );
-      for (const download of downloads) {
-        check(!(await download.failure()), "EXPORT_BROWSER_DOWNLOAD_FAILED");
-        const file = await download.path();
-        check(file, "EXPORT_BROWSER_DOWNLOAD_FAILED");
-        const bytes = new Uint8Array(await readFile(file)),
-          hash = sha(bytes),
-          artifact = [...state.artifacts.values()].find(
-            (a) => a.content_hash === hash,
-          );
-        check(
-          artifact && state.completed.has(artifact.id),
-          "EXPORT_DOWNLOADED_HASH_MISMATCH",
-        );
-        const data = state.contexts.get(artifact.export_id),
-          proof = await verifyServerRoundtrip(
-            bytes,
-            artifact,
-            data.model,
-            (id) =>
-              http(`/functions/v1/api/v1/export-artifacts/${id}/download`),
-          );
-        report.artifacts.push({
-          id: artifact.id,
-          export_id: artifact.export_id,
-          volume: data.request.volume,
-          original_name: artifact.original_name,
-          status: "ready",
-          verification: "generated_content",
-          content_hash: hash,
-          bytes: bytes.length,
-          ...proof,
-          docx_base64: Buffer.from(bytes).toString("base64"),
-        });
-      }
-      report.checks.push(
-        "actual_deployed_editor_download_clicked",
-        "browser_writes_restricted_to_draft_export",
+      await acceptDurableBrowser(
+        input,
+        version,
+        volumes,
+        report,
+        api,
+        http,
+        readSelected,
       );
     }
     check(

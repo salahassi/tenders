@@ -4,6 +4,8 @@ import { expect, it, vi } from "vitest";
 import {
   acceptProposalExport,
   browserWriteAllowed,
+  durableBrowserWriteAllowed,
+  observeDurablePackage,
   LIMITS,
   validateInput,
   verifyServerRoundtrip,
@@ -386,3 +388,157 @@ it("requires the exact genuine browser session and blocks every non-export comma
     ),
   ).toBe(false);
 });
+
+it("durable browser permits one exact selected draft package preparation and no retry, upload or approval", () => {
+  const selected = { ...input, mode: "browser" },
+    state = { prepared: false };
+  const body = (
+    operation = "export.package.prepare",
+    value: any = {
+      proposal_version_id: input.proposal_version_id,
+      expected_revision: input.expected_revision,
+      mode: "draft",
+    },
+  ) => JSON.stringify({ commands: [{ operation, input: value }] });
+  const path = "/functions/v1/api/v1/commands";
+  expect(
+    durableBrowserWriteAllowed(path, "POST", body(), state, selected),
+  ).toBe(true);
+  for (const operation of [
+    "export.package.retry",
+    "export.prepare",
+    "export.reserve",
+    "proposal.approve",
+    "generation.retry",
+  ])
+    expect(
+      durableBrowserWriteAllowed(
+        path,
+        "POST",
+        body(operation),
+        state,
+        selected,
+      ),
+    ).toBe(false);
+  for (const changes of [
+    { mode: "final" },
+    { proposal_version_id: id(999) },
+    { expected_revision: 999 },
+    { extra: "unapproved" },
+  ])
+    expect(
+      durableBrowserWriteAllowed(
+        path,
+        "POST",
+        body("export.package.prepare", {
+          proposal_version_id: input.proposal_version_id,
+          expected_revision: input.expected_revision,
+          mode: "draft",
+          ...changes,
+        }),
+        state,
+        selected,
+      ),
+    ).toBe(false);
+  expect(
+    durableBrowserWriteAllowed(
+      path,
+      "POST",
+      body(),
+      { prepared: true },
+      selected,
+    ),
+  ).toBe(false);
+  expect(
+    durableBrowserWriteAllowed(
+      "/storage/v1/object/tenderdesk-private/object",
+      "POST",
+      body(),
+      state,
+      selected,
+    ),
+  ).toBe(false);
+});
+function durablePackage() {
+  return {
+    id: id(100),
+    revision: 1,
+    proposal_version_id: input.proposal_version_id,
+    mode: "draft",
+    status: "preparing",
+    accepted_at: "2026-11-04T00:00:00Z",
+    deadline_at: "2026-11-04T00:10:00Z",
+    server_now: "2026-11-04T00:02:00Z",
+    job: { status: "running" },
+    artifacts: [
+      { id: null, export_id: id(101), volume: "technical", status: "pending" },
+      { id: null, export_id: id(102), volume: "financial", status: "pending" },
+    ],
+  };
+}
+it("durable browser tracks pending volumes and keeps original canonical deadline across readiness", () => {
+  const state: any = {},
+    first = durablePackage();
+  observeDurablePackage(first, state, input, ["technical", "financial"]);
+  const ready = {
+    ...first,
+    status: "ready",
+    job: { status: "succeeded" },
+    artifacts: first.artifacts.map((a, i) => ({
+      ...a,
+      id: id(200 + i),
+      status: "ready",
+      content_hash: "a".repeat(64),
+      expected_size: 50,
+    })),
+  };
+  expect(
+    observeDurablePackage(ready, state, input, ["technical", "financial"])
+      .status,
+  ).toBe("ready");
+  expect(() =>
+    observeDurablePackage(
+      { ...ready, deadline_at: "2026-11-04T00:11:00Z" },
+      state,
+      input,
+      ["technical", "financial"],
+    ),
+  ).toThrow();
+  expect(() =>
+    observeDurablePackage(
+      {
+        ...ready,
+        accepted_at: "2026-11-04T00:01:00Z",
+        deadline_at: "2026-11-04T00:11:00Z",
+      },
+      state,
+      input,
+      ["technical", "financial"],
+    ),
+  ).toThrow("IDENTITY_CHANGED");
+});
+it.each(["single", "pending", "wrong-version", "missing-export"])(
+  "durable browser rejects %s masquerading as a complete package",
+  (kind) => {
+    const first = durablePackage(),
+      ready: any = {
+        ...first,
+        status: "ready",
+        job: { status: "succeeded" },
+        artifacts: first.artifacts.map((a, i) => ({
+          ...a,
+          id: id(200 + i),
+          status: "ready",
+          content_hash: "a".repeat(64),
+          expected_size: 50,
+        })),
+      };
+    if (kind === "single") ready.artifacts.pop();
+    if (kind === "pending") ready.artifacts[1].status = "pending";
+    if (kind === "wrong-version") ready.proposal_version_id = id(999);
+    if (kind === "missing-export") ready.artifacts[1].export_id = null;
+    expect(() =>
+      observeDurablePackage(ready, {}, input, ["technical", "financial"]),
+    ).toThrow();
+  },
+);

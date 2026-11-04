@@ -125,7 +125,7 @@ def main(argv=None):
             stage='draft_export_acceptance'
             payload={**{k:v for k,v in selected.items() if k!='version'},'actor_id':actor_id,'proposal_id':proposal_id,
                      'origin':config.origin,'access_token':session['access_token'],'session':session,'mode':args.mode,'run_id':os.environ['GITHUB_RUN_ID']}
-            execution=subprocess.run(['node','--experimental-transform-types',str(HERE/'proposal-export-acceptance.mjs')],input=json.dumps(payload),capture_output=True,text=True,timeout=600,
+            execution=subprocess.run(['node','--experimental-transform-types',str(HERE/'proposal-export-acceptance.mjs')],input=json.dumps(payload),capture_output=True,text=True,timeout=900 if args.mode=='browser' else 600,
                 env=child_environment())
             if len(execution.stdout.encode())>32*1024*1024: raise AcceptanceError('EXPORT_REPORT_TOO_LARGE')
             report=validate_report(json.loads(execution.stdout))

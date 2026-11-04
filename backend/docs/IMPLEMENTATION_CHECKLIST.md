@@ -7150,3 +7150,26 @@ commercial/reference collection in generation.ts is assigned separately to the
 operations agent; do not infer that this base slice closes those checks. Full
 combined backend/frontend regression, independent code review and hosted release
 remain separate gates; no provider calls or deployed correctness claim was made.
+
+### Completed-proposal browser acceptance follows durable exports (2026-11-04)
+
+The existing completed-plan/current-version selection and genuine Auth/private
+report transport are preserved. Its browser mode now clicks the actual editor
+and permits only one exact `export.package.prepare` for the selected draft;
+legacy prepare/reserve/upload/complete, approval and retry mutations are denied
+in that browser run. It observes the original 600-second package clock, bounded
+pending reads and whole-volume readiness, then validates actual browser bytes
+against independent authenticated stored downloads and each canonical export
+context. The report records `durable_server_package`. The explicitly selected
+historical HTTP render/upload path remains separate and records
+`legacy_explicit_http_render_upload`; it is not presented as evidence of the new
+browser/server preparation flow.
+
+Local validation: **26 backend acceptance/selection tests passed**, including
+6 new durable write-boundary/clock/whole-volume tests; **8 Python guards passed**;
+backend typecheck/build passed. Browser-mode report duration permits observing
+the original server deadline plus UI startup and independent file checks; it
+does not reset or extend that server deadline. The reviewed workflow has not
+been dispatched, and there is **no new hosted or actual-browser acceptance
+claim** from these local tests. Pending hosted evidence still includes genuine
+Auth/Storage, tab closure/re-entry and late authorization/currentness behavior.

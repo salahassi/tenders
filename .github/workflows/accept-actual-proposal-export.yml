@@ -22,7 +22,7 @@ on:
         type: string
         required: true
       mode:
-        description: Actual editor Chromium, or explicit HTTP plus application renderer fallback
+        description: Actual editor durable server package, or explicit historical HTTP render/upload
         type: choice
         options: [browser, http]
         default: browser
