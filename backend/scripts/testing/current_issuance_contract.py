@@ -58,6 +58,6 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--repository');parser.add_argument('--container');parser.add_argument('--output',required=True);a=parser.parse_args()
     f=PostgresFixture(repository=a.repository,container=a.container).start()
     try:
-        cases=run(f);Path(a.output).write_text(json.dumps(f.receipt(cases),indent=2)+'\n');print(json.dumps({'passed':len(cases),'receipt':a.output}))
+        cases=run(f);receipt=f.receipt(cases);receipt['level']='real-postgresql-command-integration';Path(a.output).write_text(json.dumps(receipt,indent=2)+'\n');print(json.dumps({'passed':len(cases),'receipt':a.output}))
     finally:f.close()
 if __name__=='__main__':main()

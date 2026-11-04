@@ -102,7 +102,10 @@ export function recheckHelpers(f: Fixture) {
 }
 
 /** All state is synthetic and local to the fully migrated PGlite database. */
-export async function createRecheckFixture(f: Fixture) {
+export async function createRecheckFixture(
+  f: Fixture,
+  options: { historicalDeliveryContract?: boolean } = {},
+) {
   const h = recheckHelpers(f);
   await f.command("model.routing", { enabled: true, expected_revision: 0 });
   const connection = await f.command("model.connection.save", {
@@ -177,6 +180,23 @@ export async function createRecheckFixture(f: Fixture) {
       expected_revision: opportunity.revision,
     },
   );
+  if (options.historicalDeliveryContract) {
+    // Synthetic historical setup happens BEFORE any model receipt, graph result,
+    // or accepted sibling. It represents the source-aware contract before the
+    // consistency/generated-delivery additions, never a rewrite of paid history.
+    await f.db.query(
+      `update public.generation_plans set frozen_context=frozen_context-array['generated_delivery_version','proposal_consistency_version'] where id=$1`,
+      [originalPlan.id],
+    );
+    await f.db.query(
+      `update public.generation_plans set input_hash=encode(sha256(convert_to(frozen_context::text,'UTF8')),'hex') where id=$1`,
+      [originalPlan.id],
+    );
+    await f.db.query(
+      `update public.jobs j set input_hash=p.input_hash from public.generation_plans p where p.id=$1 and j.entity_id=p.id`,
+      [originalPlan.id],
+    );
+  }
   await f.db.query(
     "select app_private.enqueue_generation(p,s.task,s.input) from public.generation_plans p join public.generation_steps s on s.plan_id=p.id where p.id=$1 order by s.ordinal limit 1",
     [originalPlan.id],

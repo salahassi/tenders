@@ -1,5 +1,34 @@
 # Implementation status and continuation plan
 
+## November 4 — historical recovery transitions qualified at current schema
+
+G13 now has twelve additional public-command integration cases combining paid
+candidate/report/prompt state, exhausted verification budgets, accepted sibling
+work and the current issuance contract. Eligible terminal/expired unknown usage
+can be retried with a new explicit 600-second authorization while old request,
+usage, graph and source rows remain unchanged. Active ambiguity, manual policy,
+forged terminal provenance, stale source and revoked membership are denied with
+no hidden authorization or allowance change. A historical delivery contract
+requires explicit cancel/successor creation; its paid history stays immutable.
+
+The operational resume test now distinguishes its deployed November 3 boundary
+from the fully migrated refusal policy. It applies the later migrations as the
+managed owner and proves both current retry routes refuse the old contract.
+No production implementation, prompt, routing, billing policy or recovery budget
+changed. The helper's historical fixture setup precedes every paid receipt.
+
+Fresh local evidence on runtime baseline `c3f3693`: **328 focused Vitest cases**,
+**three operational Python tests**, **two real PostgreSQL command cases**, and
+backend typecheck pass. The focused count includes **43 historical wire hashes**;
+it is not a full-suite result. The complete migration hashes and scenario-level
+coverage are in [the historical recovery qualification](HISTORICAL_RECOVERY_QUALIFICATION.md).
+The two PostgreSQL cases are sequential command integration, not race evidence.
+Both dependency trees reuse the coordinator's exact lockfile installation;
+no broad package or frontend rerun was requested for this test-only change.
+Deployment, hosted/provider-specific recovery, the coordinator's final combined
+suite and other workstreams' semantic/artifact acceptance remain separate gates.
+No external model, storage, payment or production operation ran.
+
 ## November 4 — complete bounded generation-context diagnostics
 
 Generation now runs independent context checks after repairable base validation
