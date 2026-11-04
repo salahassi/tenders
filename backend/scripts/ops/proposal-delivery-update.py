@@ -7,6 +7,7 @@ The only writes are the guarded SQL batch, fixed image patches, and the owned
 worker Recreate marker. Ambiguity never triggers an incompatible image rollback.
 """
 from contextlib import redirect_stdout,redirect_stderr
+from decimal import Decimal
 import copy
 import importlib.util
 import io
@@ -35,6 +36,33 @@ class UpdateError(Exception):pass
 
 def emit(status,**fields):print(json.dumps({'release':release.RELEASE,'status':status,**fields},sort_keys=True),flush=True)
 def image_of(value):return code.image_of(value)
+
+def worker_resource_envelope(value):
+    """Read the actual target; never raise requests/limits or infer an SLO.
+
+    Parse a deliberately bounded Kubernetes quantity subset with exact decimal
+    arithmetic. Unsupported units/exponents, missing limits and malformed values
+    fail closed. Binary memory units and decimal CPU cores/milli/micro/nano are
+    accepted; stronger observed limits satisfy the measured minimum envelope.
+    """
+    containers=value.get('spec',{}).get('template',{}).get('spec',{}).get('containers',[])
+    if not isinstance(containers,list) or len(containers)!=1 or not isinstance(containers[0],dict) or containers[0].get('name')!='worker':raise UpdateError('DELIVERY_WORKER_RESOURCES_INVALID')
+    resources=containers[0].get('resources',{})
+    if not isinstance(resources,dict) or not isinstance(resources.get('limits',{}),dict):raise UpdateError('DELIVERY_WORKER_RESOURCES_INVALID')
+    limits=resources.get('limits',{})
+    def quantity(name,factors):
+        raw=limits.get(name)
+        match=re.fullmatch(r'([0-9]{1,15}(?:\.[0-9]{1,9})?)([a-zA-Z]*)',raw) if isinstance(raw,str) else None
+        if not match or match[2] not in factors:raise UpdateError('DELIVERY_WORKER_RESOURCES_INVALID')
+        result=Decimal(match[1])*factors[match[2]]
+        if result<=0 or result>2**63-1:raise UpdateError('DELIVERY_WORKER_RESOURCES_INVALID')
+        return raw,result
+    cpu,cores=quantity('cpu',{'':Decimal(1),'m':Decimal('0.001'),'u':Decimal('0.000001'),'n':Decimal('0.000000001')})
+    memory,byte_count=quantity('memory',{'':1,'k':1000,'K':1000,'M':1000**2,'G':1000**3,'T':1000**4,'P':1000**5,'E':1000**6,
+      'Ki':1024,'Mi':1024**2,'Gi':1024**3,'Ti':1024**4,'Pi':1024**5,'Ei':1024**6})
+    if cores<1 or byte_count<640*1024**2:raise UpdateError('DELIVERY_WORKER_RESOURCES_BELOW_QUALIFIED_ENVELOPE')
+    return {'limits':{'cpu':cpu,'memory':memory},'cpu_millicores':int(cores*1000),'memory_bytes':int(byte_count),
+      'minimum_cpu_millicores':1000,'minimum_memory_bytes':640*1024**2,'hosted_load_qualified':False}
 
 def journal_path():
     run,attempt=os.environ.get('GITHUB_RUN_ID',''),os.environ.get('GITHUB_RUN_ATTEMPT','')
@@ -115,6 +143,7 @@ def update():
     d.probe.validate_cluster()
     code.BASE_RUNTIME=manifest['baseline_images']['worker'];code.ROLLOUT_MARKER=MARKER
     original={name:u.deployment(name,ready=False) for name in TARGETS}
+    observed_worker_resources=worker_resource_envelope(original['worker'])
     for name,value in original.items():
         if image_of(value) not in (manifest['baseline_images'][name],selected['frontend' if name=='frontend' else 'runtime']):raise UpdateError('DELIVERY_WORKLOAD_BASELINE_CHANGED')
     original['worker']=code.worker_baseline(original['worker'],selected['runtime'])
@@ -167,7 +196,7 @@ def update():
     finally:
         try:client.cleanup();journal_path().unlink(missing_ok=True)
         except Exception:raise UpdateError('DELIVERY_CLIENT_CLEANUP_NOT_CONFIRMED') from None
-    emit('passed',source_revision=revision,images=selected,schema=receipt,deployments_updated=list(TARGETS),cronjobs_updated=['native-ocr'],old_workers_drained=True,configuration_preserved=True,processing_retried=False,hosted_artifact_acceptance=False)
+    emit('passed',source_revision=revision,images=selected,schema=receipt,worker_resources=observed_worker_resources,deployments_updated=list(TARGETS),cronjobs_updated=['native-ocr'],old_workers_drained=True,configuration_preserved=True,processing_retried=False,hosted_artifact_acceptance=False)
 
 def main(argv=()):
     try:

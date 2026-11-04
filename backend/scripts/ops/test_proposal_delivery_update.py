@@ -28,7 +28,7 @@ class DeliveryUpdateTests(unittest.TestCase):
   events=[];deployments={}
   for name in p.inventory.NAMES:
    deployments[name]={'metadata':{'uid':name+'-uid','name':name,'resourceVersion':'1','annotations':{}},'spec':{'replicas':1,'strategy':copy.deepcopy(p.code.WORKER_STRATEGY),
-    'template':{'spec':{'terminationGracePeriodSeconds':240,'containers':[{'name':name,'image':REGISTRY+'frontend@sha256:'+'a'*64 if name=='frontend' else BASE}]}}}}
+    'template':{'spec':{'terminationGracePeriodSeconds':240,'containers':[{'name':name,'image':REGISTRY+'frontend@sha256:'+'a'*64 if name=='frontend' else BASE,'resources':{'requests':{'cpu':'25m','memory':'192Mi'},'limits':{'cpu':'1000m','memory':'640Mi'}}}]}}}}
   natives={name:cron(name.removeprefix('native-')) for name in ('native-browser','native-ocr')}
   manifest={'executor_max':4,'renderer_versions':[1,2,3],'minimum_worker_executor':4,'baseline_images':{name:p.image_of(v) for name,v in deployments.items()},'baseline_native_schedules':p.inventory.public_schedules(list(natives.values()))}
   def stage(name):
@@ -83,6 +83,30 @@ class DeliveryUpdateTests(unittest.TestCase):
    self.assertEqual(state['worker']['spec']['strategy'],p.code.WORKER_STRATEGY)
    self.assertNotIn(p.MARKER,state['worker']['metadata']['annotations'])
    self.assertFalse(emit.call_args.kwargs['processing_retried']);self.assertFalse(emit.call_args.kwargs['hosted_artifact_acceptance'])
+   self.assertEqual(emit.call_args.kwargs['worker_resources']['limits'],{'cpu':'1000m','memory':'640Mi'})
+   self.assertFalse(emit.call_args.kwargs['worker_resources']['hosted_load_qualified'])
+
+ def test_worker_resource_limits_are_observed_and_rejected_before_mutation(self):
+  invalid=[{}, {'cpu':'999m','memory':'640Mi'}, {'cpu':'1','memory':'639Mi'},
+   {'cpu':'1','memory':'640M'}, {'cpu':'1','memory':'NaN'}, {'cpu':'1','memory':'1e9'},
+   {'cpu':'Infinity','memory':'1Gi'}, {'cpu':'1000m','memory':True},
+   {'cpu':'-1','memory':'1Gi'}, {'cpu':'1','memory':'private-secret'}]
+  for limits in invalid:
+   with self.subTest(limits=limits),self.fixture() as (state,_,events,emit):
+    state['worker']['spec']['template']['spec']['containers'][0]['resources']['limits']=limits
+    with self.assertRaisesRegex(p.UpdateError,'DELIVERY_WORKER_RESOURCES'):p.update()
+    self.assertEqual(events,[]);emit.assert_not_called()
+
+ def test_stronger_exact_quantities_preserve_requests_and_have_sanitized_receipts(self):
+  for limits in ({'cpu':'1','memory':'0.625Gi'},{'cpu':'1500m','memory':'1Gi'},
+    {'cpu':'1000000u','memory':'671088640'},{'cpu':'1000000000n','memory':'0.7G'}):
+   with self.subTest(limits=limits),self.fixture() as (state,_,_,emit):
+    container=state['worker']['spec']['template']['spec']['containers'][0]
+    container['resources']['limits']=limits;original=copy.deepcopy(container['resources'])
+    p.update()
+    self.assertEqual(container['resources'],original)
+    self.assertEqual(emit.call_args.kwargs['worker_resources']['limits'],limits)
+    self.assertGreaterEqual(emit.call_args.kwargs['worker_resources']['memory_bytes'],671088640)
 
  def test_each_failure_cleans_and_never_rolls_images_back_or_claims_success(self):
   for failure in ('client','schema','worker-patch','worker-drained','api-patch','source-browser-patch','native-ocr-patch','frontend-patch','public','schema-recheck','cleanup'):

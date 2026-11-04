@@ -7789,3 +7789,51 @@ Earlier full-run failures are correctly recorded as a mixture of real renamed
 function defects and fixture assumptions, not all dismissed as test-only issues.
 No deployment, final combined pass, provider availability or hosted acceptance is
 implied by these documentation updates. The draft PR records the same boundaries.
+### 2026-11-04 — explicit final release contracts and observed worker limits
+
+The release source gate now requires all 19 currently integrated additive
+migrations, including the current issuance contract, ordinary export packages and
+pre-billable file capacity. The manifest explicitly binds ordinary renderer
+`ordinary-2`, issuance contract 1 and file-capacity version 1 alongside worker 4
+and delivery renderers 1/2/3. Removing a required migration before re-freezing,
+downgrading a capability or substituting a JSON boolean for its version fails.
+A forthcoming global renderer-admission migration must be added before the final
+manifest is frozen; this entry is not approval to freeze or deploy this revision.
+
+The atomic transaction additionally checks the actual new RPC and private-helper
+permissions, ordinary metadata RPC, table and column privileges, row security,
+capacity column types/defaults/nullability, validated capacity constraint and
+enabled issuance triggers. Existing row/owner/ACL/security-definer invariants
+remain strict, and now include the original columns' individual ACLs. Tests inject
+missing RPCs, inappropriate grants, disabled row security and disabled capacity
+checks, verifying that the entire schema/receipt transaction rolls back. Catalog
+checks remain distinct from the actual mixed old/new worker claim and competing
+capacity-writer behavior suites.
+
+Before any SQL-client creation, schema application or workload patch, the rollout
+reads the target worker's actual limits and requires at least 640 MiB memory and
+one CPU, the measured container envelope. Exact decimal quantity parsing accepts
+stronger supported limits and rejects missing, malformed or lower limits. It
+never changes resources, requests, replicas or billing. The sanitized successful
+receipt retains the observed limits and normalized quantities while explicitly
+reporting hosted load as unqualified. Node contention and provider/network latency
+remain hosted acceptance requirements.
+
+Local focused validation passes 4 release tests (including real migrated PGlite
+rollback/replay fault cases) and 10 rollout fault-injection tests. Before these
+guard additions, the 19-migration real PostgreSQL reconstruction/public restore
+check passed all 8 assertions with explicit Auth/Storage stubs, managed-schema
+checks passed 11, Kubernetes helper checks 13, and model-audit redaction checks 7.
+The initial broader operations run had 335/337 pass: it exposed the queue classifier
+security-definer drift (fixed separately by c3aad92 and verified by the now-passing
+atomic gate) and a historical recovery fixture expecting a legacy guard before
+the new current-contract rejection (owned by the separate recovery qualification).
+A final scoped operations/reconstruction rerun is pending the remaining integrated
+SQL changes. No hosted operation, provider call or production mutation occurred.
+
+G12 hashing now includes every local frontend renderer helper, package manifests
+and lockfiles, including newly added untracked source during qualification. The
+next matrix will therefore bind the streaming-table helper as well as the renderer.
+No new visual pass is claimed while dense rendering and verification are changing;
+existing footer-only evidence and the open native-TOC compatibility limitation
+remain unchanged.

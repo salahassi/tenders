@@ -15,7 +15,10 @@ if (await access(join(output, "render-receipt.json")).then(() => true, () => fal
 const hash = (value: Uint8Array | string) => createHash("sha256").update(value).digest("hex");
 const json = (value: unknown) => JSON.stringify(value, null, 2) + "\n";
 const moduleFrom = (path: string) => import(pathToFileURL(join(repository, path)).href);
-const tracked = execFileSync("git", ["ls-files", "backend/supabase/functions/_shared", "frontend/src/lib/renderDocx.ts", "frontend/public/fonts", "frontend/package-lock.json", "backend/package-lock.json"], { cwd: repository, encoding: "utf8" }).trim().split("\n");
+// Bind every local renderer helper (including streaming table allocation) and
+// dependency declaration. Include untracked source during qualification so a
+// newly imported helper can never silently escape the before/after hash check.
+const tracked = [...new Set(execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "backend/supabase/functions/_shared", "frontend/src/lib", "frontend/public/fonts", "frontend/package.json", "frontend/package-lock.json", "backend/package.json", "backend/package-lock.json"], { cwd: repository, encoding: "utf8" }).trim().split("\n"))].sort();
 const sources = Object.fromEntries(await Promise.all(tracked.map(async path => [path, hash(await readFile(join(repository, path)))])));
 const { renderDocx } = await moduleFrom("frontend/src/lib/renderDocx.ts");
 const { verifyExportDocx } = await moduleFrom("backend/supabase/functions/_shared/export.ts");

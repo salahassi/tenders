@@ -21,7 +21,23 @@ CUTOFF = '20261103032000_model_admission_fairness.sql'
 REQUIRED = ('20261104121022_partial_document_coverage.sql',
  '20261104121116_proposal_delivery_snapshots.sql', '20261104121423_provider_failure_scope.sql',
  '20261104121443_automatic_usage_recovery.sql', '20261104122015_company_evidence_retrieval.sql',
- '20261104122333_durable_delivery_artifacts.sql')
+ '20261104122333_durable_delivery_artifacts.sql',
+ '20261104133930_durable_uploaded_document_ocr.sql',
+ '20261104134540_source_evidence_authority.sql',
+ '20261104134646_structured_proposal_authoring.sql',
+ '20261104135306_proposal_consistency_contract.sql',
+ '20261104135748_proposal_consistency_review.sql',
+ '20261104140628_authored_response_adoption.sql',
+ '20261104142525_proposal_issuance_deadline.sql',
+ '20261104143632_generated_review_delivery.sql',
+ '20261104144002_requirement_applicability_binding.sql',
+ '20261104150228_restored_source_review_assurance.sql',
+ '20261104151946_current_proposal_issuance_contract.sql',
+ '20261104152913_durable_ordinary_export_packages.sql',
+ '20261104160125_proposal_issuance_file_capacity.sql')
+CAPABILITIES = {'executor_max':4,'renderer_versions':[1,2,3],
+ 'minimum_worker_executor':4,'ordinary_renderer_version':'ordinary-2',
+ 'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1}
 CATALOG = """SELECT encode(sha256(convert_to(coalesce(string_agg(
  p.oid::regprocedure::text||':'||pg_get_functiondef(p.oid)||':'||coalesce(p.proacl::text,''),E'\\n'
  ORDER BY p.oid::regprocedure::text),''),'UTF8')),'hex') INTO catalog_hash
@@ -37,6 +53,9 @@ AUTHORITY = """SELECT jsonb_build_object(
   FROM unnest(functions_before)t(signature) LEFT JOIN pg_proc p ON p.oid=to_regprocedure(t.signature)),
  'tables',(SELECT jsonb_object_agg(t.signature,jsonb_build_object('owner',c.relowner,'acl',c.relacl,'rls',c.relrowsecurity,'force_rls',c.relforcerowsecurity))
   FROM unnest(relations_before)t(signature) LEFT JOIN pg_class c ON c.oid=to_regclass(t.signature)),
+ 'columns',(SELECT jsonb_object_agg(a.attrelid::regclass::text||':'||a.attnum,a.attacl)
+  FROM pg_attribute a WHERE a.attnum>0 AND NOT a.attisdropped
+   AND a.attrelid::regclass::text||':'||a.attnum=ANY(attributes_before)),
  'policies',(SELECT coalesce(jsonb_agg(to_jsonb(p) ORDER BY p.schemaname,p.tablename,p.policyname),'[]'::jsonb)
   FROM pg_policies p WHERE format('%I.%I',p.schemaname,p.tablename)=ANY(relations_before)),
  'roles',(SELECT jsonb_agg(to_jsonb(role_row) ORDER BY role_row.rolname) FROM pg_roles role_row),
@@ -68,7 +87,7 @@ def freeze(inventory, *, migrations=ROOT/'supabase/migrations'):
     if len(workloads)!=10 or set(images)!={'api','worker','frontend','auth','rest','storage','source-browser','scheduler','gateway','https'} or any(not isinstance(v,str) or not re.fullmatch(r'[a-zA-Z0-9./:_-]+@sha256:[a-f0-9]{64}',v) for v in images.values()): raise ReleaseError('DELIVERY_RELEASE_WORKLOAD_BASELINE_REQUIRED')
     schedules=inventory.get('native_schedules')
     if not isinstance(schedules,list) or {r.get('name') for r in schedules}!={'native-browser','native-ocr'}: raise ReleaseError('DELIVERY_RELEASE_NATIVE_BASELINE_REQUIRED')
-    return {'version':1,'release':RELEASE,'baseline_images':images,'baseline_native_schedules':schedules,'executor_max':4 if any(p.name.endswith('_structured_proposal_authoring.sql') for p in files) else 3,'renderer_versions':[1,2,3] if any(p.name.endswith('_generated_review_delivery.sql') for p in files) else ([1,2] if any(p.name.endswith('_structured_proposal_authoring.sql') for p in files) else [1]),'minimum_worker_executor':4 if any(p.name.endswith('_proposal_issuance_deadline.sql') for p in files) else 0,'baseline_catalog_sha256':schema['routine_catalog_sha256'],
+    return {'version':1,'release':RELEASE,'baseline_images':images,'baseline_native_schedules':schedules,**json.loads(canonical(CAPABILITIES)),'baseline_catalog_sha256':schema['routine_catalog_sha256'],
       'baseline_releases':releases,'migrations':[{'name':p.name,'sha256':digest(p.read_bytes())} for p in files]}
 
 def validate_runtime_baseline(manifest):
@@ -95,16 +114,16 @@ def validate_runtime_baseline(manifest):
                 if quantity is not None and (not isinstance(quantity,str) or len(quantity)>24 or not re.fullmatch(r'[0-9]{1,15}(?:\.[0-9]{1,9})?(?:m|Ki|Mi|Gi|Ti|K|M|G|T)?',quantity)):raise ReleaseError('DELIVERY_RELEASE_NATIVE_BASELINE_REQUIRED')
 
 def verify_source(manifest, *, migrations=ROOT/'supabase/migrations'):
-    if not isinstance(manifest,dict) or set(manifest)!={'version','release','baseline_catalog_sha256','baseline_releases','migrations','baseline_images','baseline_native_schedules','executor_max','renderer_versions','minimum_worker_executor'} or manifest['version']!=1 or manifest['release']!=RELEASE:
+    if not isinstance(manifest,dict) or set(manifest)!={'version','release','baseline_catalog_sha256','baseline_releases','migrations','baseline_images','baseline_native_schedules',*CAPABILITIES} or manifest['version']!=1 or manifest['release']!=RELEASE:
         raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     if not re.fullmatch('[a-f0-9]{64}',manifest['baseline_catalog_sha256']): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     validate_runtime_baseline(manifest)
-    if manifest['executor_max'] not in (3,4) or manifest['renderer_versions'] not in ([1],[1,2],[1,2,3]) or manifest['minimum_worker_executor'] not in (0,4): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
+    if canonical({key:manifest[key] for key in CAPABILITIES})!=canonical(CAPABILITIES): raise ReleaseError('DELIVERY_RELEASE_CAPABILITY_SOURCE_MISMATCH')
     receipts=manifest['baseline_releases']
     if not isinstance(receipts,dict) or len(receipts)!=6 or any(not re.fullmatch('[a-z][a-z0-9-]{1,100}',k) or not re.fullmatch('[a-f0-9]{64}',v) for k,v in receipts.items()):
         raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     entries=manifest['migrations']
-    if not isinstance(entries,list) or not 6<=len(entries)<=30: raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
+    if not isinstance(entries,list) or not len(REQUIRED)<=len(entries)<=30: raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     names=[]; sources=[]
     for row in entries:
         if not isinstance(row,dict) or set(row)!={'name','sha256'} or not re.fullmatch(r'20261104[0-9]{6}_[a-z0-9_]+\.sql',row['name']) or not re.fullmatch('[a-f0-9]{64}',row['sha256']): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
@@ -113,8 +132,6 @@ def verify_source(manifest, *, migrations=ROOT/'supabase/migrations'):
         names.append(row['name']); sources.append(path.read_text())
     if names!=sorted(set(names)) or not set(REQUIRED)<=set(names) or names!=sorted(p.name for p in migrations.glob('*.sql') if p.name>CUTOFF):
         raise ReleaseError('DELIVERY_RELEASE_MIGRATION_SET_CHANGED')
-    expected_renderers=[1,2,3] if any(n.endswith('_generated_review_delivery.sql') for n in names) else ([1,2] if any(n.endswith('_structured_proposal_authoring.sql') for n in names) else [1])
-    if manifest['renderer_versions']!=expected_renderers or manifest['minimum_worker_executor']!=(4 if any(n.endswith('_proposal_issuance_deadline.sql') for n in names) else 0): raise ReleaseError('DELIVERY_RELEASE_CAPABILITY_SOURCE_MISMATCH')
     return sources
 
 def migration_script(manifest, sources=None):
@@ -131,7 +148,7 @@ SET LOCAL statement_timeout='180s';SET LOCAL lock_timeout='15s';
 SELECT pg_advisory_xact_lock(hashtextextended('tenderdesk.proposal-delivery.release',0));
 DO $delivery_release$
 DECLARE r record; target text; catalog_hash text; saved_catalog text; saved_manifest text;
- columns_before jsonb; functions_before text[]; relations_before text[];
+ columns_before jsonb; functions_before text[]; relations_before text[]; attributes_before text[];
  version_number integer; selected_renderer text; selected_executor integer;
  row_count bigint; row_digest text; state jsonb; rows_before jsonb; authority jsonb; authority_before jsonb;
 BEGIN
@@ -159,6 +176,9 @@ BEGIN
     GROUP BY n.nspname,c.relname)t;
   SELECT array_agg(p.oid::regprocedure::text ORDER BY p.oid::regprocedure::text) INTO functions_before
    FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname IN ('public','app_private') AND p.prokind='f';
+  SELECT array_agg(a.attrelid::regclass::text||':'||a.attnum ORDER BY a.attrelid,a.attnum) INTO attributes_before
+   FROM pg_attribute a WHERE a.attrelid IN (SELECT to_regclass(signature) FROM unnest(relations_before)t(signature))
+    AND a.attnum>0 AND NOT a.attisdropped;
   __ROWS__
   rows_before:=state;
   __AUTHORITY__
@@ -198,6 +218,58 @@ BEGIN
  END IF;
  IF __MINIMUM_EXECUTOR__=4 AND (to_regclass('public.proposal_issuance_requests') IS NULL OR to_regclass('public.proposal_issuance_status') IS NULL)
   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_DEADLINE_CONTRACT_MISSING';END IF;
+ -- Source hashes bind the implementation. These independent catalog checks
+ -- reject absent/disabled contracts and exposed new RPCs before runtime rollout.
+ -- They do not substitute for actual mixed-version claim and capacity tests.
+ FOREACH target IN ARRAY ARRAY['public.export_render_context(uuid,uuid)',
+  'public.complete_export_package_volume(uuid,uuid,uuid,text,bigint)',
+  'public.finish_export_package(uuid,uuid)','public.fail_export_package(uuid,uuid,text)',
+  'public.report_export_package_artifact_failure(uuid,uuid,uuid,integer,text,text,text,bigint)',
+  'public.reserve_task_model_call(uuid,uuid,text,text,integer,integer,jsonb,uuid,uuid)',
+  'public.reserve_model_call(uuid,uuid,text,text,integer,integer,jsonb,text)',
+  'public.authorize_artifact_download(uuid,uuid,text)'] LOOP
+  IF to_regprocedure(target) IS NULL THEN RAISE EXCEPTION 'DELIVERY_RELEASE_FINAL_RPC_MISSING';END IF;
+  IF has_function_privilege('tdp_app_authenticated',target,'EXECUTE') OR has_function_privilege('tdp_app_anon',target,'EXECUTE')
+   OR NOT has_function_privilege('tdp_app_service',target,'EXECUTE')
+   OR NOT (SELECT prosecdef FROM pg_proc WHERE oid=to_regprocedure(target))
+   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_FINAL_RPC_AUTHORITY_INVALID';END IF;
+ END LOOP;
+ FOREACH target IN ARRAY ARRAY['app_private.ensure_issuance_file_capacity(uuid,uuid)',
+  'app_private.guard_issuance_file_capacity()','app_private.bind_issuance_job()',
+  'app_private.app_command_before_current_issuance_contract(text,jsonb,text)'] LOOP
+  IF to_regprocedure(target) IS NULL THEN RAISE EXCEPTION 'DELIVERY_RELEASE_FINAL_PRIVATE_CONTRACT_MISSING';END IF;
+  IF has_function_privilege('tdp_app_authenticated',target,'EXECUTE') OR has_function_privilege('tdp_app_anon',target,'EXECUTE')
+   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_FINAL_PRIVATE_AUTHORITY_INVALID';END IF;
+ END LOOP;
+ IF to_regprocedure('public.export_package_context(uuid)') IS NULL
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_FINAL_RPC_MISSING';END IF;
+ IF NOT has_function_privilege('tdp_app_authenticated','public.export_package_context(uuid)','EXECUTE')
+  OR has_function_privilege('tdp_app_anon','public.export_package_context(uuid)','EXECUTE')
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_FINAL_RPC_AUTHORITY_INVALID';END IF;
+ FOREACH target IN ARRAY ARRAY['public.export_packages','public.export_package_volumes'] LOOP
+  IF to_regclass(target) IS NULL THEN RAISE EXCEPTION 'DELIVERY_RELEASE_EXPORT_TABLE_MISSING';END IF;
+  IF NOT (SELECT relrowsecurity FROM pg_class WHERE oid=to_regclass(target))
+   OR has_table_privilege('tdp_app_authenticated',target,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+   OR has_table_privilege('tdp_app_anon',target,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+   OR has_any_column_privilege('tdp_app_authenticated',target,'SELECT,INSERT,UPDATE,REFERENCES')
+   OR has_any_column_privilege('tdp_app_anon',target,'SELECT,INSERT,UPDATE,REFERENCES')
+   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_EXPORT_TABLE_AUTHORITY_INVALID';END IF;
+ END LOOP;
+ IF EXISTS(SELECT 1 FROM (VALUES
+    ('file_capacity_version','integer'::regtype,false,'1'),
+    ('file_capacity_acquired','boolean'::regtype,true,'false'),
+    ('reserved_file_bytes','bigint'::regtype,true,'0')) expected(name,kind,required,default_value)
+   LEFT JOIN pg_attribute a ON a.attrelid='public.proposal_issuance_requests'::regclass AND a.attname=expected.name AND NOT a.attisdropped
+   LEFT JOIN pg_attrdef d ON d.adrelid=a.attrelid AND d.adnum=a.attnum
+   WHERE a.attname IS NULL OR a.atttypid<>expected.kind OR a.attnotnull<>expected.required
+    OR pg_get_expr(d.adbin,d.adrelid) IS DISTINCT FROM expected.default_value)
+  OR NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid='public.proposal_issuance_requests'::regclass
+   AND conname='issuance_file_capacity_bounds' AND contype='c' AND convalidated)
+  OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.proposal_issuance_requests'::regclass
+   AND tgname='issuance_capacity_guard' AND tgenabled='O' AND tgfoid='app_private.guard_issuance_file_capacity()'::regprocedure)
+  OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.jobs'::regclass
+   AND tgenabled='O' AND tgfoid='app_private.bind_issuance_job()'::regprocedure)
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_CAPACITY_CONTRACT_INVALID';END IF;
  PERFORM set_config('tenderdesk.delivery_release_receipt',jsonb_build_object('release','__RELEASE__',
   'manifest_sha256','__CHECKSUM__','catalog_sha256',catalog_hash,'replayed',saved_manifest IS NOT NULL)::text,true);
 END $delivery_release$;
