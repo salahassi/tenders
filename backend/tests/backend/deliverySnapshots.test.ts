@@ -585,3 +585,16 @@ it("removes snapshot payload and pointer through the existing confirmed opportun
     ]),
   ).toEqual({ n: 0 });
 });
+
+it("checks archived unread attachment metadata even without an extraction hash", async () => {
+  const o = await opportunity(),
+    unread = await upload(o, "", "needs_ocr"),
+    s = await prepare(o);
+  expect(
+    s.source_manifest.some((ref: any) => ref.entity_id === unread.id),
+  ).toBe(false);
+  await f.db.query("update public.documents set archived=true where id=$1", [
+    unread.id,
+  ]);
+  await expect(context(s.id)).rejects.toThrow("DELIVERY_SOURCE_UNAVAILABLE");
+});

@@ -91,6 +91,16 @@ begin
  end loop;
 end $$;
 
+-- Unread documents have no extraction hash but their names and gaps are still
+-- source-derived metadata; archiving one must also invalidate that read.
+create function app_private.check_delivery_materials(w uuid,materials jsonb)
+returns void language plpgsql stable security definer set search_path='' as $$
+begin
+ if exists(select 1 from jsonb_array_elements(coalesce(materials->'documents','[]')) item
+  where not exists(select 1 from public.documents d where d.workspace_id=w
+   and d.id=(item->>'document_id')::uuid and not d.archived)) then raise exception 'DELIVERY_SOURCE_UNAVAILABLE';end if;
+end $$;
+
 create function app_private.check_delivery_snapshot(snapshot public.proposal_delivery_snapshots,actor uuid)
 returns void language plpgsql stable security definer set search_path='' as $$
 begin
@@ -100,6 +110,7 @@ begin
   and o.id=snapshot.opportunity_id and not o.archived) then raise exception 'DELIVERY_SOURCE_UNAVAILABLE';end if;
  if exists(select 1 from public.restore_sessions where workspace_id=snapshot.workspace_id and state in ('staging','committing')) then raise exception 'RESTORE_IN_PROGRESS';end if;
  perform app_private.check_delivery_sources(snapshot.workspace_id,snapshot.source_manifest);
+ perform app_private.check_delivery_materials(snapshot.workspace_id,snapshot.payload->'input_materials');
 end $$;
 
 create function public.delivery_context(snapshot_id uuid) returns jsonb
@@ -246,6 +257,7 @@ begin
  select coalesce(jsonb_agg(ref order by ref->>'entity_kind',ref->>'entity_id'),'[]') into manifest
   from (select distinct jsonb_build_object('entity_kind',value->>'entity_kind','entity_id',value->>'entity_id','content_hash',value->>'content_hash') ref from jsonb_array_elements(manifest)) d;
  perform app_private.check_delivery_sources(prop.workspace_id,manifest);
+ perform app_private.check_delivery_materials(prop.workspace_id,materials);
  payload:=jsonb_build_object('version',1,'title',prop.title,'language',lang,'template',coalesce(ctx->'template',app_private.neutral_template(lang)),
   'separate_volumes',coalesce(ctx#>>'{template,volume_mode}'='separate',false) or exists(select 1 from public.generation_steps where plan_id=p.id and task='analyze_chunk' and status='completed' and output->'separate_volumes'='true'::jsonb),
   'input_state',case when not available then 'insufficient' when partial then 'partial' else 'available' end,
@@ -358,7 +370,7 @@ end $$;
 do $$ declare signature text;role_name text;begin
  foreach signature in array array[
   'app_private.delivery_snapshot_immutable()','app_private.delivery_actor(uuid,uuid,boolean)',
-  'app_private.check_delivery_sources(uuid,jsonb)','app_private.check_delivery_snapshot(public.proposal_delivery_snapshots,uuid)',
+  'app_private.check_delivery_sources(uuid,jsonb)','app_private.check_delivery_materials(uuid,jsonb)','app_private.check_delivery_snapshot(public.proposal_delivery_snapshots,uuid)',
   'app_private.delivery_input(uuid,uuid)','app_private.publish_delivery_snapshot(uuid,uuid,uuid,text)',
   'app_private.publish_initial_delivery()','app_private.publish_completed_delivery_unit()',
   'app_private.app_command_before_delivery(text,jsonb,text)','app_private.backup_tables_before_delivery()',

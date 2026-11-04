@@ -16,13 +16,14 @@ Readable context survives partial failures; insufficient scope produces typed
 placeholders. All these snapshots remain draft and substantively incomplete.
 
 Implemented controls: current membership and source checks on content reads,
-service-only actor context, RLS with metadata-only direct reads, immutable
+including unread attachment metadata, service-only actor context, RLS with
+metadata-only direct reads, immutable
 payload hashes, transactionally deduplicated publication and audit, idempotent
 command replay with current authorization, and backup/restore/purge registration.
 No model-processing consent is treated as blanket local-download authorization.
 The existing implementation-plan `delivery.prepare` command is preserved.
 
-Local evidence: **19 new delivery database/contract tests** pass using the full
+Local evidence: **20 new delivery database/contract tests** pass using the full
 migration chain in PGlite, including early snapshot versus running plan base,
 replay/revision conflict, source and membership revocation, exact accepted-unit
 provenance, metadata permissions, and confirmed purge. **43 generation tests**,
