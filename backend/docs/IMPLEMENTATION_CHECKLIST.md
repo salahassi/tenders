@@ -37,6 +37,42 @@ This is the persisted foundation, not a substantively complete non-model route,
 DOCX renderer or all-workflow closure. Renderer/API/UI integration, real database
 race checks, combined branch regression and actual Word/RTL/visual acceptance
 remain separate gates in the delivery plan.
+## November 4 — worker maintenance isolation (F11 / part of W09)
+
+Implementation: eligible business work is claimed and processed before unrelated
+maintenance, reminder scheduling, notification delivery, abandoned-request usage
+reconciliation and storage cleanup. An empty first claim runs housekeeping and
+then reclaims once through the unchanged canonical queue, preserving same-tick
+scheduling without a drain loop. Each housekeeping boundary reports only a fixed
+operation name through `worker_maintenance_pending` and the worker response's
+`maintenance_pending`; no provider, credential or customer exception text is
+emitted. Failed cleanup items retain their existing failure/lease accounting and
+do not abandon the rest of an already leased batch. Confirmed remote usage can
+now be reconciled after business work in the same invocation; it remains GET-only,
+retains the exact accepted request, and never infers missing usage as zero.
+
+Authorization, source eligibility, model capacity, due times and exclusive job
+leases remain in the canonical claim/processing paths. Their failures are not
+converted into housekeeping-only success. This change adds no queue class,
+schema, storage capacity, provider permission or billing policy.
+
+Local regression evidence: six new focused cases fail against source `b1a9793`
+and pass with this implementation. The new handler cases cover healthy execution,
+each housekeeping fault, stalled maintenance after business commit, malformed
+cleanup receipts, partial cleanup, unreconcilable usage, authentication and critical
+business/source failures. Queue database cases verify real admission, exclusive
+leases, future due times and occupied model capacity under housekeeping outages.
+Both lockfile installs and both package typechecks/builds pass. **258 focused
+tests across 11 files** pass for worker, queue, provider lifecycle, collection,
+notification and operations behavior. The integration owner runs the complete
+combined repository suites before release.
+
+Deployment and hosted acceptance: **not deployed**; no production, provider or
+email request was made for this change. W09 remains open for artifact queue
+integration, measured delivery/queue SLOs, storage saturation and isolated restore
+exercises (D01/D04/D05). In-flight housekeeping can still consume the remaining
+worker invocation after business commit; this change does not claim a measured
+latency bound, independent maintenance service or completed cloud restore.
 
 ## November 4 — complete proposal-delivery remediation and acceptance plan
 

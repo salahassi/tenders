@@ -46,11 +46,13 @@ it("authenticates before accepting and keeps background work alive after the cal
   const response = await handler(request(env.workerSecret));
   expect(response.status).toBe(202);
   expect(await response.json()).toEqual({ data: { accepted: true } });
-  expect(backend.claim).not.toHaveBeenCalled();
+  // Already eligible work gets its first claim before stalled housekeeping.
+  expect(backend.claim).toHaveBeenCalledTimes(1);
   controller.abort();
   release();
   await tasks[0];
-  expect(backend.claim).toHaveBeenCalledTimes(1);
+  // The empty first claim is retried once after scheduling/maintenance.
+  expect(backend.claim).toHaveBeenCalledTimes(2);
 });
 
 it("handles detached errors without an unhandled promise or invented success", async () => {

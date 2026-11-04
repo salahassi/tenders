@@ -1,14 +1,13 @@
 import { processGeneration } from "../_shared/generation.ts";
 import { processAutomaticSource } from "../_shared/automaticSources.ts";
 import { processModelProbe } from "../_shared/modelProbe.ts";
-import {
-  processNotificationEmail,
-  smtpStatus,
-} from "../_shared/notifications.ts";
 import { Backend, type BackendEnvironment } from "../_shared/backend.ts";
 import { AppError, secretMatches } from "../_shared/http.ts";
-import { FreeModelProvider, ModelError } from "../_shared/model.ts";
 import { wakeReadyQueue } from "./queueWake.ts";
+import {
+  runWorkerMaintenance,
+  type MaintenanceOperation,
+} from "./maintenance.ts";
 import {
   collect,
   CollectionError,
@@ -41,111 +40,41 @@ export function createWorkerHandler(
         : await backend.internal("verify_dispatcher_secret", { supplied });
       if (!allowed) return response({ error: "UNAUTHORIZED" }, 401);
       const process = async () => {
-        await backend.internal("maintenance_tick");
-        await backend.internal("schedule_assessment_refresh");
-        try {
-          const transport = smtpStatus(env);
-          if (!transport.configured)
-            console.warn(
-              "smtp_configuration_incomplete",
-              transport.issues.join(","),
-            );
-          await backend.internal("automation_notification_tick", {
-            transport_ready: transport.configured,
-          });
-          await processNotificationEmail(backend, env);
-        } catch {
-          console.warn("notification_delivery_pending");
-        }
-        // Superseded plans may still have a recorded provider request. Retrieve
-        // its measured usage without resubmitting content or publishing its output.
-        const abandoned = await backend.internal(
-          "claim_abandoned_model_request",
-        );
-        if (abandoned) {
-          const providerId = abandoned.provider || "gemini_free";
-          const model = abandoned.connection_id
-            ? backend.resolveModelEnvironment({
-                ...abandoned,
-                provider: providerId,
-              })
-            : env.models[providerId as keyof typeof env.models];
-          if (
-            model?.key &&
-            model.model === abandoned.model &&
-            (!abandoned.project_ref ||
-              model.projectRef === abandoned.project_ref)
-          ) {
-            try {
-              const provider = new FreeModelProvider(model, fetcher, 20000);
-              const result = await provider.pollBackground(
-                abandoned.remote_request_id,
-              );
-              if (
-                result.id === abandoned.remote_request_id &&
-                !["queued", "in_progress"].includes(result.status)
-              ) {
-                const { usage } = provider.backgroundResult(result);
-                const terminated = ["failed", "cancelled", "canceled"].includes(
-                  result.status,
-                );
-                if (
-                  terminated ||
-                  (usage.input !== null && usage.output !== null)
-                )
-                  await backend.internal("settle_model_call", {
-                    reservation: abandoned.id,
-                    actual_input: usage.input,
-                    actual_output: usage.output,
-                    thinking: usage.thinking,
-                    error_code: terminated
-                      ? "PROVIDER_BACKGROUND_TERMINATED"
-                      : ["canceled", "blocked", "failed"].includes(
-                            abandoned.job_status,
-                          )
-                        ? "SUPERSEDED_RESULT_RECONCILED"
-                        : "ACCEPTED_RESULT_RECONCILED",
-                  });
-              }
-            } catch (error) {
-              if (
-                error instanceof ModelError &&
-                error.code === "PROVIDER_BACKGROUND_RETRIEVAL_FAILED"
-              )
-                await backend.internal("settle_model_call", {
-                  reservation: abandoned.id,
-                  actual_input: null,
-                  actual_output: null,
-                  thinking: null,
-                  error_code: error.code,
-                });
-              // Retain unknown usage and retry GET later; never infer zero use.
-            }
-          }
-        }
-        const cleanup = await backend.internal("claim_storage_cleanup");
-        if (!Array.isArray(cleanup))
-          throw new AppError(
-            503,
-            "MAINTENANCE_RESPONSE_INVALID",
-            "Maintenance returned an invalid batch.",
+        let maintenancePending: MaintenanceOperation[] = [];
+        let maintenanceRan = false;
+        const maintain = async () => {
+          if (maintenanceRan) return;
+          maintenanceRan = true;
+          maintenancePending = await runWorkerMaintenance(
+            backend,
+            env,
+            fetcher,
           );
-        for (const item of cleanup) {
-          let succeeded = false;
-          try {
-            await backend.removeObject(item.storage_key);
-            succeeded = true;
-          } catch {
-            /* Keep the reservation and retry bounded cleanup. */
-          }
-          await backend.internal("complete_storage_cleanup", {
-            cleanup_id: item.id,
-            lease: item.lease_token,
-            succeeded,
-          });
-        }
+        };
+        const withMaintenance = async (result: Response) => {
+          await maintain();
+          return maintenancePending.length
+            ? response(
+                {
+                  ...(await result.json()),
+                  maintenance_pending: maintenancePending,
+                },
+                result.status,
+              )
+            : result;
+        };
+        // Claim eligible business work before any unrelated housekeeping RPC or
+        // provider/storage call. Claim still owns authorization, capacity, due
+        // time and exclusive lease checks; maintenance never replaces them.
         let job = await backend.claim();
-        if (!job) return response({ data: { claimed: false } });
+        if (!job) {
+          await maintain();
+          // Assessment scheduling/recovery can make work eligible in this tick.
+          // One normal re-claim preserves that behavior without draining a loop.
+          job = await backend.claim();
+          if (!job)
+            return withMaintenance(response({ data: { claimed: false } }));
+        }
         const processClaimed = async () => {
           if (job.type === "model_probe") {
             await processModelProbe(backend, env, job, fetcher);
@@ -276,7 +205,7 @@ export function createWorkerHandler(
           // wake cannot be queued; never turn successful work into a retry.
           console.warn("queue_wakeup_pending");
         }
-        return result;
+        return withMaintenance(result);
       };
       if (background) {
         background(

@@ -955,6 +955,7 @@ it("keeps usage unknown after a rejected poll and reconciles an active waiting j
   const queued = await f.command("model.probe", {});
   let posts = 0,
     gets = 0;
+  let retrievalAvailable = false;
   const tick = worker(async (url, init) => {
     if (String(url).endsWith(":countTokens"))
       return Response.json({ totalTokens: 20 });
@@ -966,7 +967,7 @@ it("keeps usage unknown after a rejected poll and reconciles an active waiting j
       });
     }
     gets++;
-    return gets === 1
+    return !retrievalAvailable
       ? Response.json(
           { error: { code: "invalid_request", message: "Invalid identifier" } },
           { status: 400 },
@@ -996,9 +997,16 @@ it("keeps usage unknown after a rejected poll and reconciles an active waiting j
     "update public.jobs set status='retry_wait',next_attempt_at=now()+interval '1 hour' where id=$1",
     [queued.id],
   );
+  // Housekeeping now follows committed business work, so the first safe GET-only
+  // reconciliation can occur in that same invocation. An ongoing retrieval
+  // outage must retain unknown usage until the provider actually recovers.
+  retrievalAvailable = true;
+  await f.db.exec(
+    "update public.provider_usage set reconciliation_after=now()-interval '1 second'",
+  );
   await tick();
   expect(posts).toBe(1);
-  expect(gets).toBe(2);
+  expect(gets).toBe(3);
   expect((await job(queued.id)).status).toBe("retry_wait");
   expect(
     (

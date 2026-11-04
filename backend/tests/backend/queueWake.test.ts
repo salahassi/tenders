@@ -1117,3 +1117,104 @@ it.each([false, true])(
     ).toBe(failWake);
   },
 );
+
+it.each(["ready", "future", "capacity"])(
+  "worker housekeeping failure preserves real queue admission and lease guards (%s)",
+  async (mode) => {
+    if (mode === "capacity") await acceptedPoll();
+    const target = await job();
+    if (mode === "future")
+      await f.db.query(
+        "update public.jobs set next_attempt_at=now()+interval '1 hour' where id=$1",
+        [target.id],
+      );
+    const before = (
+      await f.db.query<any>("select * from public.jobs where id=$1", [
+        target.id,
+      ])
+    ).rows[0];
+    let processingFailure: unknown;
+    processGeneration.mockImplementation(async (_backend, _env, claimed) => {
+      try {
+        expect(claimed.id).toBe(target.id);
+        expect(claimed.status).toBe("running");
+        expect(claimed.lease_token).toBeTruthy();
+        expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+        // This suite exercises queue admission, not the proposal domain handler.
+        // Keep its synthetic completion bound to the actual exclusively held lease.
+        expect(
+          (
+            await f.db.query<any>(
+              "update public.jobs set status='succeeded',lease_token=null,lease_until=null,revision=revision+1 where id=$1 and lease_token=$2 and status='running' returning id",
+              [claimed.id, claimed.lease_token],
+            )
+          ).rows,
+        ).toEqual([{ id: target.id }]);
+      } catch (error) {
+        processingFailure = error;
+        throw error;
+      }
+    });
+    const internal = vi.fn(async (name: string, args: any = {}) => {
+      if (name === "wake_backend_queue_status")
+        return wake(args.job_id, args.lease, true);
+      throw Error("Synthetic maintenance outage; never expose this body");
+    });
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const env: BackendEnvironment = {
+      url: "https://synthetic.supabase.co",
+      publishableKey: "fixture",
+      serviceKey: "fixture",
+      allowedOrigins: [],
+      workerSecret: "fixture-worker",
+      models: modelEnvironments(() => undefined),
+    };
+    const handler = createWorkerHandler(
+      env,
+      async () => [],
+      () =>
+        ({
+          internal,
+          claim: () => f.rpc("claim_backend_job_v2"),
+          invocationStartedAt: Date.now(),
+          invocationBudgetMs: 0,
+        }) as unknown as Backend,
+    );
+    const response = await handler(
+      new Request("https://synthetic.test/worker", {
+        method: "POST",
+        headers: { "x-worker-secret": env.workerSecret },
+      }),
+    );
+    expect(processingFailure).toBeUndefined();
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.maintenance_pending).toEqual([
+      "maintenance_tick",
+      "assessment_scheduling",
+      "notification_delivery",
+      "usage_reconciliation",
+      "storage_cleanup",
+    ]);
+    expect(
+      warning.mock.calls.some(
+        ([code]) => code === "worker_maintenance_pending",
+      ),
+    ).toBe(true);
+    const after = (
+      await f.db.query<any>("select * from public.jobs where id=$1", [
+        target.id,
+      ])
+    ).rows[0];
+    if (mode === "ready") {
+      expect(processGeneration).toHaveBeenCalledTimes(1);
+      expect(body.data).toEqual({ job_id: target.id, processed: true });
+      expect(after.status).toBe("succeeded");
+      expect(after.lease_token).toBeNull();
+    } else {
+      expect(processGeneration).not.toHaveBeenCalled();
+      expect(body.data).toEqual({ claimed: false });
+      expect(after).toEqual(before);
+    }
+  },
+);
