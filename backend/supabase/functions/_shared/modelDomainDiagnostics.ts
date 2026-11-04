@@ -161,7 +161,7 @@ export function collectDomainDiagnostics(
       result.content_blocks.forEach((block: any, index: number) => {
         const cells =
           block.type === "table"
-            ? [...block.headers, ...block.rows.flat()]
+            ? [[block.headers, ...block.rows].flat().join(" ")]
             : [block.text];
         if (
           cells.some((cell: string) =>

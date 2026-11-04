@@ -349,3 +349,36 @@ it("distinguishes duplicate claim identities from two independent requirement co
     "$.requirement_checks",
   ]);
 });
+
+it("does not let a cited company table header authorize an invented certification in another cell", () => {
+  const value = clone("draft_section");
+  value.content_blocks = [
+    { type: "table", headers: ["Our certifications"], rows: [["ISO 27001"]] },
+  ];
+  value.company_claims = [
+    {
+      claim: "Our certifications",
+      source_id: "company",
+      quote: "Our certifications are documented.",
+    },
+  ];
+  const company: Evidence = {
+    id: "company",
+    kind: "company",
+    verified: true,
+    text: "Our certifications are documented.",
+  };
+  const error = fail(() =>
+    validateModelResult("draft_section", value, [company], [], {
+      independentGrounding: false,
+    }),
+  );
+  expect(error.code).toBe("UNSUPPORTED_COMPANY_CLAIM");
+  expect(paths(error)).toEqual(["$.content_blocks[0]"]);
+  value.content_blocks[0].rows = [["are documented"]];
+  expect(() =>
+    validateModelResult("draft_section", value, [company], [], {
+      independentGrounding: false,
+    }),
+  ).not.toThrow();
+});

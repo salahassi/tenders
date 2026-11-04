@@ -7195,3 +7195,16 @@ key presence alone must not be reported as provider availability or qualificatio
 The combined integration frontend at4ad3a22 passed **356/356 tests in56files**.
 This is local jsdom evidence, not hosted browser acceptance. Later renderer
 changes still require the final combined package gate.
+ME05 independent review correction: W08 identified a legacy table guard regression
+where checking cells separately could allow an invented certification below a
+correctly cited company header. Restored the established joined-table sentence
+semantics while retaining exact block diagnostics. The new certification test
+fails against aaf3014 and passes with the correction; its valid table control also
+passes. Focused106 tests and backend typecheck pass. Independent model review found
+no additional schema-prerequisite, source-evidence or paid-pin blocker. A full
+qualification against root4ad3a22 plus the collector ran: backend2,499 passed/13
+failed and frontend355 passed/1 failed. Two SQL failures belong to the new legacy
+retry guard's parameter ambiguity; ten require renderer-wrapper parameter
+qualification; one historical migration test timed out; the frontend external
+submission journey needs export-transition reconciliation. Those failures remain
+open at this narrow correction and must not be reported as a full-green run.
