@@ -66,11 +66,26 @@ and the DigitalOcean cluster/nodes running. Kubernetes workload/version reads
 returned HTTP 503 through the configured proxy. A fresh read-only diagnostic at
 13:16 UTC found identical authenticated and anonymous `/version` failures with
 `TLS_error: ... CERTIFICATE_VERIFY_FAILED` before upstream response headers.
-This establishes certificate verification failure in the intermediary connection
-path, not a Kubernetes authentication rejection. The exact failing intermediary
-and whether trust, chain, expiry or hostname caused verification to fail remain
-unverified. The deployed image, application revision and schema tip therefore
-remain unverified; shallow health is not worker/database acceptance. OCR for uploaded scans, full source authority/span and semantic repair
+This reproduces the cloud container's previously documented direct-access
+limitation. **Correction:** the investigation initially missed the established
+GitHub Actions runner path in [DigitalOcean Kubernetes access](DIGITALOCEAN_KUBERNETES.md).
+Access was already verified on October 25 in
+[run 40230328689, attempt 2](https://github.com/salahassi/tenders/actions/runs/40230328689/attempts/2).
+The same route subsequently succeeded for
+[the November 3 runtime release](https://github.com/salahassi/tenders/actions/runs/41571450550)
+and [the following graph diagnostic](https://github.com/salahassi/tenders/actions/runs/41572919737).
+The local 503 is not evidence that this solution regressed or that cluster access
+requires a new certificate. The current deployed image, application revision and
+schema tip were not freshly inventoried through the runner in this implementation;
+they remain unverified here because that check was not performed. Historical
+success is not current workload acceptance. `AGENTS.md` now requires reading the
+established access documentation and selecting a scoped runner workflow before
+Kubernetes diagnosis, while retaining original CA/hostname verification. This
+correction changes documentation only; no workflow was dispatched, no certificate,
+proxy, firewall or production configuration was changed. Local application tests
+remain as recorded above; no runtime test rerun is needed for this correction.
+
+OCR for uploaded scans, full source authority/span and semantic repair
 contracts, provider-specific semantic/capacity qualification, whole-proposal
 consistency, substantive completion during total model outage, measured delivery
 latency, storage saturation, cloud restore and hosted upload-to-download acceptance
