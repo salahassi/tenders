@@ -1,0 +1,1025 @@
+{
+  "attempts": [
+    {
+      "adjudication": "Initial TLS health assertion failed before a large transfer. Docker-injected proxy variables were subsequently removed only for isolated local fixture traffic; no TLS relaxation.",
+      "attempt": 1,
+      "raw_receipt_sha256": "1c29a89ba44edca3aa203c8c541cb78cfe68fae5b503135fa7bfc2c93f465fcd",
+      "receipt": {
+        "cleanup_confirmed": true,
+        "client_library_versions": {
+          "cryptography": "50.0.0",
+          "zstandard": "0.25.0"
+        },
+        "customer_calls": 0,
+        "failure_class": "AssertionError",
+        "failure_detail": "",
+        "final_container_states": {
+          "gateway": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": true
+          },
+          "https": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": true
+          },
+          "upstream": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": true
+          }
+        },
+        "gateway_executed_config_sha256": "410414f04c3ad6406fba0edce88c6477354db696e946e296c1d37b8351395718",
+        "https_binary_sha256": "78ce36f1bee55a4c0a99c49842d89cebef4b4007f0fb30ad2078e1d3120e130f",
+        "https_binary_version": "v2.11.2 h1:iOlpsSiSKqEW+SIXrcZsZ/NO74SzB/ycqqvAIEfIm64=",
+        "https_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+        "https_image_user": "1000:1000",
+        "https_is_deployed_registry_image": true,
+        "image_binding": {
+          "kind": "exact_deployed_registry_digest",
+          "local_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+          "repo_digest": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce"
+        },
+        "images": {
+          "gateway": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+          "helper": "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799",
+          "https": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce",
+          "https_declared_source_base": "docker.io/library/caddy:2.11.2-alpine@sha256:6d125e80883be8a2bef5f088c7535945b42cdbb8a0f5471bf36eaf18dc0638f1"
+        },
+        "limitations": [
+          "Exact selected image is tested locally; no inference that local execution proves production rollout/configuration.",
+          "Synthetic varying ASCII JSON has the prior measured batch response byte length, not actual application/Auth/SQL data.",
+          "HTTP/1.1 TLS and each encoding are measured; HTTP/2, HTTP/3, public CA/ACME, cloud LoadBalancer and hosted traffic are not qualified.",
+          "One full response and one early cancellation per encoding, not concurrent load, universal output size or issuance SLO.",
+          "Nginx loopback service/DNS coordinates and one worker are isolated harness substitutions; exact Caddyfile, compression and TLS remain."
+        ],
+        "model_calls": 0,
+        "passed": false,
+        "payload": {
+          "aggregate_materialized": false,
+          "algorithm": "AES-256-CTR fixed synthetic key/IV, zero input, per-49152-byte base64 blocks, exact JSON wrapper",
+          "bytes": 412758765,
+          "content_type": "application/json"
+        },
+        "production_calls": 0,
+        "resources": {
+          "client": "external bounded Python stream reader; memory outside service cgroups",
+          "decoded_read_bytes": 65536,
+          "gateway_cpu_millicores": 200,
+          "gateway_memory_bytes": 67108864,
+          "helper_cpu_millicores": 1000,
+          "helper_memory_bytes": 134217728,
+          "https_cpu_millicores": 300,
+          "https_limit_provenance": "repository render.py declaration; actual hosted HTTPS limit not yet observed",
+          "https_memory_bytes": 134217728,
+          "network": "nonce-owned internal bridge; gateway shares upstream namespace",
+          "pause_ms_per_read": 4,
+          "per_transfer_wall_limit_seconds": 180,
+          "published_ports": [],
+          "swap": false,
+          "tmp_budget_per_service_bytes": 67108864,
+          "tmp_enforcement": "disk-backed directory plus owned-process open-unlinked inode census; observed budget, not filesystem ENOSPC"
+        },
+        "source_hashes": {
+          "backend/deploy/Dockerfile.https": "95af1b5ca755a4b7e6d75b1250b47cbf8415d1d3a9de3b0e9bcb2a549c149922",
+          "backend/deploy/kubernetes/Caddyfile": "f1739441ed4e26ff1806d06a8953bfa7bc8e50e5fb93fab80956ee759cf1bbc0",
+          "backend/deploy/kubernetes/gateway.conf": "e35ea7416a9699b61e5e66ca1b280e3dbe676005526c82d34232916b655ac260",
+          "backend/deploy/kubernetes/render.py": "89e7b0a0f6cf712c9a5f853eda172592bbdae37aec41d114eeaa348e1099144d",
+          "backend/scripts/testing/https_api_streaming.py": "71cccda574bed85e5decf24ae513edde88bc755e274d4f54a1a3a82a87508da5",
+          "backend/scripts/testing/legacy_batch_gateway.py": "0fec1cde3f465f3a62a4b7261350896608c80921948f36354652e2d3fb023c65"
+        },
+        "source_revision": "0b29d0053abdfb86344e074a7540155066e3b563",
+        "synthetic_only": true,
+        "tls": {
+          "hostname": "localhost",
+          "issuer": "offline local CA",
+          "root_ca_sha256": "24f929e069a26bf13aa70e61300d39781ecc15d2ecb90b11f20e4c3775c3324d",
+          "verification_enabled": true
+        },
+        "upstream_sha256": "10d743d70b193e82f7397f11e230d91daced014c0828d572fd4e6cbe8ec23e13",
+        "version": 1
+      }
+    },
+    {
+      "adjudication": "Intentionally interrupted after discovering tempfile default /tmp was tmpfs, despite its disk label. No completed capacity result; cleanup confirmed. The original medium label is explicitly invalid.",
+      "attempt": 2,
+      "raw_receipt_sha256": "251ec89368c7ca4938c08567ce05bbb499557ab5717da5f744269f32ea6bbeef",
+      "receipt": {
+        "cleanup_confirmed": true,
+        "client_library_versions": {
+          "cryptography": "50.0.0",
+          "zstandard": "0.25.0"
+        },
+        "customer_calls": 0,
+        "final_container_states": {
+          "gateway": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": true
+          },
+          "https": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": true
+          },
+          "upstream": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": true
+          }
+        },
+        "gateway_executed_config_sha256": "410414f04c3ad6406fba0edce88c6477354db696e946e296c1d37b8351395718",
+        "https_binary_sha256": "78ce36f1bee55a4c0a99c49842d89cebef4b4007f0fb30ad2078e1d3120e130f",
+        "https_binary_version": "v2.11.2 h1:iOlpsSiSKqEW+SIXrcZsZ/NO74SzB/ycqqvAIEfIm64=",
+        "https_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+        "https_image_user": "1000:1000",
+        "https_is_deployed_registry_image": true,
+        "image_binding": {
+          "kind": "exact_deployed_registry_digest",
+          "local_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+          "repo_digest": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce"
+        },
+        "images": {
+          "gateway": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+          "helper": "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799",
+          "https": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce",
+          "https_declared_source_base": "docker.io/library/caddy:2.11.2-alpine@sha256:6d125e80883be8a2bef5f088c7535945b42cdbb8a0f5471bf36eaf18dc0638f1"
+        },
+        "limitations": [
+          "Exact selected image is tested locally; no inference that local execution proves production rollout/configuration.",
+          "Synthetic varying ASCII JSON has the prior measured batch response byte length, not actual application/Auth/SQL data.",
+          "HTTP/1.1 TLS and each encoding are measured; HTTP/2, HTTP/3, public CA/ACME, cloud LoadBalancer and hosted traffic are not qualified.",
+          "One full response and one early cancellation per encoding, not concurrent load, universal output size or issuance SLO.",
+          "Nginx loopback service/DNS coordinates and one worker are isolated harness substitutions; exact Caddyfile, compression and TLS remain."
+        ],
+        "model_calls": 0,
+        "passed": false,
+        "payload": {
+          "aggregate_materialized": false,
+          "algorithm": "AES-256-CTR fixed synthetic key/IV, zero input, per-49152-byte base64 blocks, exact JSON wrapper",
+          "bytes": 412758765,
+          "content_type": "application/json",
+          "sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab"
+        },
+        "production_calls": 0,
+        "resources": {
+          "client": "external bounded Python stream reader; memory outside service cgroups",
+          "decoded_read_bytes": 65536,
+          "docker_injected_proxy_variables_removed_for_fixture_only": true,
+          "gateway_cpu_millicores": 200,
+          "gateway_memory_bytes": 67108864,
+          "helper_cpu_millicores": 1000,
+          "helper_memory_bytes": 134217728,
+          "https_cpu_millicores": 300,
+          "https_limit_provenance": "repository render.py declaration; actual hosted HTTPS limit not yet observed",
+          "https_memory_bytes": 134217728,
+          "network": "nonce-owned internal bridge; gateway shares upstream namespace",
+          "pause_ms_per_read": 4,
+          "per_transfer_wall_limit_seconds": 180,
+          "published_ports": [],
+          "swap": false,
+          "tmp_budget_per_service_bytes": 67108864,
+          "tmp_enforcement": "disk-backed directory plus owned-process open-unlinked inode census; observed budget, not filesystem ENOSPC"
+        },
+        "source_hashes": {
+          "backend/deploy/Dockerfile.https": "95af1b5ca755a4b7e6d75b1250b47cbf8415d1d3a9de3b0e9bcb2a549c149922",
+          "backend/deploy/kubernetes/Caddyfile": "f1739441ed4e26ff1806d06a8953bfa7bc8e50e5fb93fab80956ee759cf1bbc0",
+          "backend/deploy/kubernetes/gateway.conf": "e35ea7416a9699b61e5e66ca1b280e3dbe676005526c82d34232916b655ac260",
+          "backend/deploy/kubernetes/render.py": "89e7b0a0f6cf712c9a5f853eda172592bbdae37aec41d114eeaa348e1099144d",
+          "backend/scripts/testing/https_api_streaming.py": "83790978412aceeb9d5bbfad8ddbcf2761f49ac5166b92de88331fd9deb3fc6b",
+          "backend/scripts/testing/legacy_batch_gateway.py": "0fec1cde3f465f3a62a4b7261350896608c80921948f36354652e2d3fb023c65"
+        },
+        "source_revision": "0b29d0053abdfb86344e074a7540155066e3b563",
+        "synthetic_only": true,
+        "tls": {
+          "actual_handshake_verified": true,
+          "health_body_sha256": "dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22",
+          "health_status": 200,
+          "hostname": "localhost",
+          "issuer": "offline local CA",
+          "root_ca_sha256": "d8cde7f23488e7b4659d3a335a6360276fc7b9a38d104367b7f79008e416d9b5",
+          "verification_enabled": true
+        },
+        "transfers": [],
+        "upstream_sha256": "10d743d70b193e82f7397f11e230d91daced014c0828d572fd4e6cbe8ec23e13",
+        "version": 1
+      }
+    },
+    {
+      "adjudication": "Workspace-overlay fixture startup failed with GATEWAY_NOT_READY and Nginx exit1. No large transfer. The next instrumented attempt captured the precise ENOSPC diagnostic.",
+      "attempt": 3,
+      "raw_receipt_sha256": "7f56597481d85e6c484ec7851077b86d16c0cd37e9ef31cfb06e36b977126839",
+      "receipt": {
+        "cleanup_confirmed": true,
+        "client_library_versions": {
+          "cryptography": "50.0.0",
+          "zstandard": "0.25.0"
+        },
+        "customer_calls": 0,
+        "failure_class": "RuntimeError",
+        "failure_detail": "GATEWAY_NOT_READY",
+        "final_container_states": {
+          "gateway": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 1,
+            "OOMKilled": false,
+            "Running": false
+          },
+          "upstream": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": true
+          }
+        },
+        "gateway_executed_config_sha256": "410414f04c3ad6406fba0edce88c6477354db696e946e296c1d37b8351395718",
+        "https_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+        "https_image_user": "1000:1000",
+        "https_is_deployed_registry_image": true,
+        "image_binding": {
+          "kind": "exact_deployed_registry_digest",
+          "local_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+          "repo_digest": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce"
+        },
+        "images": {
+          "gateway": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+          "helper": "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799",
+          "https": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce",
+          "https_declared_source_base": "docker.io/library/caddy:2.11.2-alpine@sha256:6d125e80883be8a2bef5f088c7535945b42cdbb8a0f5471bf36eaf18dc0638f1"
+        },
+        "limitations": [
+          "Exact selected image is tested locally; no inference that local execution proves production rollout/configuration.",
+          "Synthetic varying ASCII JSON has the prior measured batch response byte length, not actual application/Auth/SQL data.",
+          "Local certificate-state storage is an overlay bind mount; production PVC durability/latency is not qualified.",
+          "HTTP/1.1 TLS and each encoding are measured; HTTP/2, HTTP/3, public CA/ACME, cloud LoadBalancer and hosted traffic are not qualified.",
+          "One full response and one early cancellation per encoding, not concurrent load, universal output size or issuance SLO.",
+          "Nginx loopback service/DNS coordinates and one worker are isolated harness substitutions; exact Caddyfile, compression and TLS remain."
+        ],
+        "model_calls": 0,
+        "passed": false,
+        "payload": {
+          "aggregate_materialized": false,
+          "algorithm": "AES-256-CTR fixed synthetic key/IV, zero input, per-49152-byte base64 blocks, exact JSON wrapper",
+          "bytes": 412758765,
+          "content_type": "application/json"
+        },
+        "production_calls": 0,
+        "resources": {
+          "client": "external bounded Python stream reader; memory outside service cgroups",
+          "decoded_read_bytes": 65536,
+          "docker_injected_proxy_variables_removed_for_fixture_only": true,
+          "gateway_cpu_millicores": 200,
+          "gateway_memory_bytes": 67108864,
+          "helper_cpu_millicores": 1000,
+          "helper_memory_bytes": 134217728,
+          "https_cpu_millicores": 300,
+          "https_limit_provenance": "repository render.py declaration; actual hosted HTTPS limit not yet observed",
+          "https_memory_bytes": 134217728,
+          "network": "nonce-owned internal bridge; gateway shares upstream namespace",
+          "pause_ms_per_read": 4,
+          "per_transfer_wall_limit_seconds": 180,
+          "published_ports": [],
+          "swap": false,
+          "tmp_budget_per_service_bytes": 67108864,
+          "tmp_enforcement": "workspace-overlay bind mount, directory plus owned-process open-unlinked inode census; observed budget, not filesystem ENOSPC"
+        },
+        "source_hashes": {
+          "backend/deploy/Dockerfile.https": "95af1b5ca755a4b7e6d75b1250b47cbf8415d1d3a9de3b0e9bcb2a549c149922",
+          "backend/deploy/kubernetes/Caddyfile": "f1739441ed4e26ff1806d06a8953bfa7bc8e50e5fb93fab80956ee759cf1bbc0",
+          "backend/deploy/kubernetes/gateway.conf": "e35ea7416a9699b61e5e66ca1b280e3dbe676005526c82d34232916b655ac260",
+          "backend/deploy/kubernetes/render.py": "89e7b0a0f6cf712c9a5f853eda172592bbdae37aec41d114eeaa348e1099144d",
+          "backend/scripts/testing/https_api_streaming.py": "c624dd2e709816f97fc06bb7ff924e40a1faa6f7fcb545b7e3b171614c650f8b",
+          "backend/scripts/testing/legacy_batch_gateway.py": "0fec1cde3f465f3a62a4b7261350896608c80921948f36354652e2d3fb023c65"
+        },
+        "source_revision": "0b29d0053abdfb86344e074a7540155066e3b563",
+        "synthetic_only": true,
+        "tls": {
+          "hostname": "localhost",
+          "issuer": "offline local CA",
+          "verification_enabled": true
+        },
+        "upstream_sha256": "10d743d70b193e82f7397f11e230d91daced014c0828d572fd4e6cbe8ec23e13",
+        "version": 1
+      }
+    },
+    {
+      "adjudication": "Exact startup diagnostic recorded ENOSPC from Nginx mkdir before a large transfer. No product capacity conclusion.",
+      "attempt": 4,
+      "raw_receipt_sha256": "8ddabf7787dd4982e85aa84e91fc3a83d49641ba4b3c85d06707b1a23e465379",
+      "receipt": {
+        "cleanup_confirmed": true,
+        "client_library_versions": {
+          "cryptography": "50.0.0",
+          "zstandard": "0.25.0"
+        },
+        "customer_calls": 0,
+        "failure_class": "RuntimeError",
+        "failure_detail": "GATEWAY_NOT_READY",
+        "final_container_states": {
+          "gateway": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 1,
+            "OOMKilled": false,
+            "Running": false
+          },
+          "upstream": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": true
+          }
+        },
+        "gateway_executed_config_sha256": "410414f04c3ad6406fba0edce88c6477354db696e946e296c1d37b8351395718",
+        "https_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+        "https_image_user": "1000:1000",
+        "https_is_deployed_registry_image": true,
+        "image_binding": {
+          "kind": "exact_deployed_registry_digest",
+          "local_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+          "repo_digest": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce"
+        },
+        "images": {
+          "gateway": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+          "helper": "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799",
+          "https": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce",
+          "https_declared_source_base": "docker.io/library/caddy:2.11.2-alpine@sha256:6d125e80883be8a2bef5f088c7535945b42cdbb8a0f5471bf36eaf18dc0638f1"
+        },
+        "limitations": [
+          "Exact selected image is tested locally; no inference that local execution proves production rollout/configuration.",
+          "Synthetic varying ASCII JSON has the prior measured batch response byte length, not actual application/Auth/SQL data.",
+          "Local certificate-state storage is an overlay bind mount; production PVC durability/latency is not qualified.",
+          "HTTP/1.1 TLS and each encoding are measured; HTTP/2, HTTP/3, public CA/ACME, cloud LoadBalancer and hosted traffic are not qualified.",
+          "One full response and one early cancellation per encoding, not concurrent load, universal output size or issuance SLO.",
+          "Nginx loopback service/DNS coordinates and one worker are isolated harness substitutions; exact Caddyfile, compression and TLS remain."
+        ],
+        "model_calls": 0,
+        "passed": false,
+        "payload": {
+          "aggregate_materialized": false,
+          "algorithm": "AES-256-CTR fixed synthetic key/IV, zero input, per-49152-byte base64 blocks, exact JSON wrapper",
+          "bytes": 412758765,
+          "content_type": "application/json"
+        },
+        "private_diagnostic_sha256": "9c88e1fa99374b59c734221287b8693e027b822406ed3a87b110c1078e2cc228",
+        "production_calls": 0,
+        "resources": {
+          "client": "external bounded Python stream reader; memory outside service cgroups",
+          "decoded_read_bytes": 65536,
+          "docker_injected_proxy_variables_removed_for_fixture_only": true,
+          "gateway_cpu_millicores": 200,
+          "gateway_memory_bytes": 67108864,
+          "helper_cpu_millicores": 1000,
+          "helper_memory_bytes": 134217728,
+          "https_cpu_millicores": 300,
+          "https_limit_provenance": "repository render.py declaration; actual hosted HTTPS limit not yet observed",
+          "https_memory_bytes": 134217728,
+          "network": "nonce-owned internal bridge; gateway shares upstream namespace",
+          "pause_ms_per_read": 4,
+          "per_transfer_wall_limit_seconds": 180,
+          "published_ports": [],
+          "swap": false,
+          "tmp_budget_per_service_bytes": 67108864,
+          "tmp_enforcement": "workspace-overlay bind mount, directory plus owned-process open-unlinked inode census; observed budget, not filesystem ENOSPC"
+        },
+        "source_hashes": {
+          "backend/deploy/Dockerfile.https": "95af1b5ca755a4b7e6d75b1250b47cbf8415d1d3a9de3b0e9bcb2a549c149922",
+          "backend/deploy/kubernetes/Caddyfile": "f1739441ed4e26ff1806d06a8953bfa7bc8e50e5fb93fab80956ee759cf1bbc0",
+          "backend/deploy/kubernetes/gateway.conf": "e35ea7416a9699b61e5e66ca1b280e3dbe676005526c82d34232916b655ac260",
+          "backend/deploy/kubernetes/render.py": "89e7b0a0f6cf712c9a5f853eda172592bbdae37aec41d114eeaa348e1099144d",
+          "backend/scripts/testing/https_api_streaming.py": "4ad1a47fbf9a8b6c18cc54586c5b89b1a44ffb394ba1576229dff519f0906634",
+          "backend/scripts/testing/legacy_batch_gateway.py": "0fec1cde3f465f3a62a4b7261350896608c80921948f36354652e2d3fb023c65"
+        },
+        "source_revision": "0b29d0053abdfb86344e074a7540155066e3b563",
+        "synthetic_only": true,
+        "tls": {
+          "hostname": "localhost",
+          "issuer": "offline local CA",
+          "verification_enabled": true
+        },
+        "upstream_sha256": "10d743d70b193e82f7397f11e230d91daced014c0828d572fd4e6cbe8ec23e13",
+        "version": 1
+      }
+    },
+    {
+      "adjudication": "Repeated startup ENOSPC while the unrelated large Storage helper image VFS copy was present. Replaced only the synthetic upstream with a lightweight cached Deno helper; production HTTPS/Nginx images and limits unchanged.",
+      "attempt": 5,
+      "raw_receipt_sha256": "6318af424c0f020bb87abd9eb1df815c2b70c8d3309e411008181034f609d968",
+      "receipt": {
+        "cleanup_confirmed": true,
+        "client_library_versions": {
+          "cryptography": "50.0.0",
+          "zstandard": "0.25.0"
+        },
+        "customer_calls": 0,
+        "failure_class": "RuntimeError",
+        "failure_detail": "GATEWAY_NOT_READY",
+        "final_container_states": {
+          "gateway": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 1,
+            "OOMKilled": false,
+            "Running": false
+          },
+          "upstream": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": true
+          }
+        },
+        "gateway_executed_config_sha256": "410414f04c3ad6406fba0edce88c6477354db696e946e296c1d37b8351395718",
+        "https_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+        "https_image_user": "1000:1000",
+        "https_is_deployed_registry_image": true,
+        "image_binding": {
+          "kind": "exact_deployed_registry_digest",
+          "local_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+          "repo_digest": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce"
+        },
+        "images": {
+          "gateway": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+          "helper": "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799",
+          "https": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce",
+          "https_declared_source_base": "docker.io/library/caddy:2.11.2-alpine@sha256:6d125e80883be8a2bef5f088c7535945b42cdbb8a0f5471bf36eaf18dc0638f1"
+        },
+        "limitations": [
+          "Exact selected image is tested locally; no inference that local execution proves production rollout/configuration.",
+          "Synthetic varying ASCII JSON has the prior measured batch response byte length, not actual application/Auth/SQL data.",
+          "Local certificate-state storage is an overlay bind mount; production PVC durability/latency is not qualified.",
+          "HTTP/1.1 TLS and each encoding are measured; HTTP/2, HTTP/3, public CA/ACME, cloud LoadBalancer and hosted traffic are not qualified.",
+          "One full response and one early cancellation per encoding, not concurrent load, universal output size or issuance SLO.",
+          "Nginx loopback service/DNS coordinates and one worker are isolated harness substitutions; exact Caddyfile, compression and TLS remain."
+        ],
+        "model_calls": 0,
+        "passed": false,
+        "payload": {
+          "aggregate_materialized": false,
+          "algorithm": "AES-256-CTR fixed synthetic key/IV, zero input, per-49152-byte base64 blocks, exact JSON wrapper",
+          "bytes": 412758765,
+          "content_type": "application/json"
+        },
+        "private_diagnostic_sha256": "b96c0d87c4d2c4af29bd59143dbeaa405573f5f477549c43d7976b03f3e9afeb",
+        "production_calls": 0,
+        "resources": {
+          "client": "external bounded Python stream reader; memory outside service cgroups",
+          "decoded_read_bytes": 65536,
+          "docker_injected_proxy_variables_removed_for_fixture_only": true,
+          "gateway_cpu_millicores": 200,
+          "gateway_memory_bytes": 67108864,
+          "helper_cpu_millicores": 1000,
+          "helper_memory_bytes": 134217728,
+          "https_cpu_millicores": 300,
+          "https_limit_provenance": "repository render.py declaration; actual hosted HTTPS limit not yet observed",
+          "https_memory_bytes": 134217728,
+          "network": "nonce-owned internal bridge; gateway shares upstream namespace",
+          "pause_ms_per_read": 4,
+          "per_transfer_wall_limit_seconds": 180,
+          "published_ports": [],
+          "swap": false,
+          "tmp_budget_per_service_bytes": 67108864,
+          "tmp_enforcement": "workspace-overlay bind mount, directory plus owned-process open-unlinked inode census; observed budget, not filesystem ENOSPC"
+        },
+        "source_hashes": {
+          "backend/deploy/Dockerfile.https": "95af1b5ca755a4b7e6d75b1250b47cbf8415d1d3a9de3b0e9bcb2a549c149922",
+          "backend/deploy/kubernetes/Caddyfile": "f1739441ed4e26ff1806d06a8953bfa7bc8e50e5fb93fab80956ee759cf1bbc0",
+          "backend/deploy/kubernetes/gateway.conf": "e35ea7416a9699b61e5e66ca1b280e3dbe676005526c82d34232916b655ac260",
+          "backend/deploy/kubernetes/render.py": "89e7b0a0f6cf712c9a5f853eda172592bbdae37aec41d114eeaa348e1099144d",
+          "backend/scripts/testing/https_api_streaming.py": "4e7ddf5d0f3f7e54d5fbf277bb279cc9fa72b139f852005ec0aef0b803b4b363",
+          "backend/scripts/testing/legacy_batch_gateway.py": "0fec1cde3f465f3a62a4b7261350896608c80921948f36354652e2d3fb023c65"
+        },
+        "source_revision": "0b29d0053abdfb86344e074a7540155066e3b563",
+        "synthetic_only": true,
+        "tls": {
+          "hostname": "localhost",
+          "issuer": "offline local CA",
+          "verification_enabled": true
+        },
+        "upstream_sha256": "10d743d70b193e82f7397f11e230d91daced014c0828d572fd4e6cbe8ec23e13",
+        "version": 1
+      }
+    },
+    {
+      "adjudication": "All three full TLS downloads had exact length and independent/upstream hashes, with no OOM/swap and observed overlay filesystems. Harness incorrectly required encoded length to shrink; zstd validly expanded by9460bytes. The raw result remains failed and its zstd cancellation case was not executed.",
+      "attempt": 6,
+      "raw_receipt_sha256": "0e0be49f80484efeac1dbef89c42433eedcec0864847e3834a17b0aca07a63fe",
+      "receipt": {
+        "cleanup_confirmed": true,
+        "client_library_versions": {
+          "cryptography": "50.0.0",
+          "zstandard": "0.25.0"
+        },
+        "customer_calls": 0,
+        "failure_class": "AssertionError",
+        "failure_detail": "",
+        "final_container_states": {
+          "gateway": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": true
+          },
+          "https": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": true
+          },
+          "upstream": {
+            "Dead": false,
+            "Error": "",
+            "ExitCode": 0,
+            "OOMKilled": false,
+            "Running": true
+          }
+        },
+        "gateway_executed_config_sha256": "410414f04c3ad6406fba0edce88c6477354db696e946e296c1d37b8351395718",
+        "https_binary_sha256": "78ce36f1bee55a4c0a99c49842d89cebef4b4007f0fb30ad2078e1d3120e130f",
+        "https_binary_version": "v2.11.2 h1:iOlpsSiSKqEW+SIXrcZsZ/NO74SzB/ycqqvAIEfIm64=",
+        "https_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+        "https_image_user": "1000:1000",
+        "https_is_deployed_registry_image": true,
+        "image_binding": {
+          "kind": "exact_deployed_registry_digest",
+          "local_image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+          "repo_digest": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce"
+        },
+        "images": {
+          "gateway": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+          "helper": "docker.io/denoland/deno@sha256:3dc638972caa62978182228a5a575e0498ae45129aa1c3ee8548663652ef7ab6",
+          "https": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce",
+          "https_declared_source_base": "docker.io/library/caddy:2.11.2-alpine@sha256:6d125e80883be8a2bef5f088c7535945b42cdbb8a0f5471bf36eaf18dc0638f1"
+        },
+        "last_transfer": {
+          "decoded_bytes": 412758765,
+          "decoded_sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab",
+          "elapsed_seconds": 26.442,
+          "encoding": "zstd",
+          "headers_ms": 80,
+          "health_checks": 53,
+          "health_failed": 0,
+          "memory": {
+            "gateway": {
+              "current_bytes": 5808128,
+              "events": {
+                "high": 0,
+                "low": 0,
+                "max": 0,
+                "oom": 0,
+                "oom_group_kill": 0,
+                "oom_kill": 0
+              },
+              "peak_bytes": 11771904,
+              "swap_bytes": 0
+            },
+            "helper": {
+              "current_bytes": 66244608,
+              "events": {
+                "high": 0,
+                "low": 0,
+                "max": 0,
+                "oom": 0,
+                "oom_group_kill": 0,
+                "oom_kill": 0
+              },
+              "peak_bytes": 101400576,
+              "swap_bytes": 0
+            },
+            "https": {
+              "current_bytes": 20332544,
+              "events": {
+                "high": 0,
+                "low": 0,
+                "max": 0,
+                "oom": 0,
+                "oom_group_kill": 0,
+                "oom_kill": 0
+              },
+              "peak_bytes": 27017216,
+              "swap_bytes": 0
+            }
+          },
+          "outcome": "complete",
+          "temporary_peak": {
+            "gateway": {
+              "allocated_bytes": 4096,
+              "files": 1,
+              "logical_bytes": 2,
+              "observed_processes": 2,
+              "open_unlinked_files": 0
+            },
+            "https": {
+              "allocated_bytes": 36864,
+              "files": 9,
+              "logical_bytes": 3528,
+              "observed_processes": 1,
+              "open_unlinked_files": 0
+            }
+          },
+          "wire_body_bytes": 412768225
+        },
+        "limitations": [
+          "Exact selected image is tested locally; no inference that local execution proves production rollout/configuration.",
+          "Synthetic varying ASCII JSON has the prior measured batch response byte length, not actual application/Auth/SQL data.",
+          "Local certificate-state storage is an overlay bind mount; production PVC durability/latency is not qualified.",
+          "HTTP/1.1 TLS and each encoding are measured; HTTP/2, HTTP/3, public CA/ACME, cloud LoadBalancer and hosted traffic are not qualified.",
+          "One full response and one early cancellation per encoding, not concurrent load, universal output size or issuance SLO.",
+          "Nginx loopback service/DNS coordinates and one worker are isolated harness substitutions; exact Caddyfile, compression and TLS remain."
+        ],
+        "model_calls": 0,
+        "mount_filesystems": {
+          "gateway": {
+            "meaning": "Linux overlayfs (0x794c7630); tmpfs magic is rejected",
+            "statfs_magic": {
+              "/tmp": "794c7630"
+            }
+          },
+          "https": {
+            "meaning": "Linux overlayfs (0x794c7630); tmpfs magic is rejected",
+            "statfs_magic": {
+              "/config": "794c7630",
+              "/data": "794c7630",
+              "/tmp": "794c7630"
+            }
+          }
+        },
+        "passed": false,
+        "payload": {
+          "aggregate_materialized": false,
+          "algorithm": "AES-256-CTR fixed synthetic key/IV, zero input, per-49152-byte base64 blocks, exact JSON wrapper",
+          "bytes": 412758765,
+          "content_type": "application/json",
+          "sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab"
+        },
+        "private_diagnostic_sha256": "d5a5d84630d107421415e13a8d3d2e4b304586d7b41c1e69273c683fb329b8e3",
+        "production_calls": 0,
+        "resources": {
+          "client": "external bounded Python stream reader; memory outside service cgroups",
+          "decoded_read_bytes": 65536,
+          "docker_injected_proxy_variables_removed_for_fixture_only": true,
+          "gateway_cpu_millicores": 200,
+          "gateway_memory_bytes": 67108864,
+          "helper_cpu_millicores": 1000,
+          "helper_memory_bytes": 134217728,
+          "https_cpu_millicores": 300,
+          "https_limit_provenance": "repository render.py declaration; actual hosted HTTPS limit not yet observed",
+          "https_memory_bytes": 134217728,
+          "network": "nonce-owned internal bridge; gateway shares upstream namespace",
+          "pause_ms_per_read": 4,
+          "per_transfer_wall_limit_seconds": 180,
+          "published_ports": [],
+          "swap": false,
+          "tmp_budget_per_service_bytes": 67108864,
+          "tmp_enforcement": "workspace-overlay bind mount, directory plus owned-process open-unlinked inode census; observed budget, not filesystem ENOSPC"
+        },
+        "source_hashes": {
+          "backend/deploy/Dockerfile.https": "95af1b5ca755a4b7e6d75b1250b47cbf8415d1d3a9de3b0e9bcb2a549c149922",
+          "backend/deploy/kubernetes/Caddyfile": "f1739441ed4e26ff1806d06a8953bfa7bc8e50e5fb93fab80956ee759cf1bbc0",
+          "backend/deploy/kubernetes/gateway.conf": "e35ea7416a9699b61e5e66ca1b280e3dbe676005526c82d34232916b655ac260",
+          "backend/deploy/kubernetes/render.py": "89e7b0a0f6cf712c9a5f853eda172592bbdae37aec41d114eeaa348e1099144d",
+          "backend/scripts/testing/https_api_streaming.py": "520fea2d8dd8f055ff2539a200670b25ae1cdd61947e00a7928807f75564fde3",
+          "backend/scripts/testing/legacy_batch_gateway.py": "0fec1cde3f465f3a62a4b7261350896608c80921948f36354652e2d3fb023c65"
+        },
+        "source_revision": "0b29d0053abdfb86344e074a7540155066e3b563",
+        "synthetic_only": true,
+        "tls": {
+          "actual_handshake_verified": true,
+          "health_body_sha256": "dc51b8c96c2d745df3bd5590d990230a482fd247123599548e0632fdbf97fc22",
+          "health_status": 200,
+          "hostname": "localhost",
+          "issuer": "offline local CA",
+          "root_ca_sha256": "51eedd8fcfea70044fec0c55f1631eeb3f8f21b24fe35d42b14434d62fb1137d",
+          "verification_enabled": true
+        },
+        "transfers": [
+          {
+            "decoded_bytes": 412758765,
+            "decoded_sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab",
+            "elapsed_seconds": 26.285,
+            "encoding": "identity",
+            "headers_ms": 78,
+            "health_checks": 53,
+            "health_failed": 0,
+            "memory": {
+              "gateway": {
+                "current_bytes": 5804032,
+                "events": {
+                  "high": 0,
+                  "low": 0,
+                  "max": 0,
+                  "oom": 0,
+                  "oom_group_kill": 0,
+                  "oom_kill": 0
+                },
+                "peak_bytes": 8683520,
+                "swap_bytes": 0
+              },
+              "helper": {
+                "current_bytes": 79421440,
+                "events": {
+                  "high": 0,
+                  "low": 0,
+                  "max": 0,
+                  "oom": 0,
+                  "oom_group_kill": 0,
+                  "oom_kill": 0
+                },
+                "peak_bytes": 94498816,
+                "swap_bytes": 0
+              },
+              "https": {
+                "current_bytes": 17629184,
+                "events": {
+                  "high": 0,
+                  "low": 0,
+                  "max": 0,
+                  "oom": 0,
+                  "oom_group_kill": 0,
+                  "oom_kill": 0
+                },
+                "peak_bytes": 24580096,
+                "swap_bytes": 0
+              }
+            },
+            "outcome": "complete",
+            "temporary_peak": {
+              "gateway": {
+                "allocated_bytes": 4096,
+                "files": 1,
+                "logical_bytes": 2,
+                "observed_processes": 2,
+                "open_unlinked_files": 0
+              },
+              "https": {
+                "allocated_bytes": 36864,
+                "files": 9,
+                "logical_bytes": 3528,
+                "observed_processes": 1,
+                "open_unlinked_files": 0
+              }
+            },
+            "upstream_after_completion_or_cancel": {
+              "backpressure": 6298,
+              "closed": true,
+              "completed": true,
+              "sent": 412758765,
+              "sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab"
+            },
+            "wire_body_bytes": 412758765
+          },
+          {
+            "decoded_bytes": 2097152,
+            "decoded_sha256": "fbd317b700a78c4ed7bda4921bd4dbc17c221477d6093126c8efe3598ae9d118",
+            "elapsed_seconds": 0.202,
+            "encoding": "identity",
+            "headers_ms": 72,
+            "health_checks": 1,
+            "health_failed": 0,
+            "memory": {
+              "gateway": {
+                "current_bytes": 4300800,
+                "events": {
+                  "high": 0,
+                  "low": 0,
+                  "max": 0,
+                  "oom": 0,
+                  "oom_group_kill": 0,
+                  "oom_kill": 0
+                },
+                "peak_bytes": 8941568,
+                "swap_bytes": 0
+              },
+              "helper": {
+                "current_bytes": 79925248,
+                "events": {
+                  "high": 0,
+                  "low": 0,
+                  "max": 0,
+                  "oom": 0,
+                  "oom_group_kill": 0,
+                  "oom_kill": 0
+                },
+                "peak_bytes": 94498816,
+                "swap_bytes": 0
+              },
+              "https": {
+                "current_bytes": 17440768,
+                "events": {
+                  "high": 0,
+                  "low": 0,
+                  "max": 0,
+                  "oom": 0,
+                  "oom_group_kill": 0,
+                  "oom_kill": 0
+                },
+                "peak_bytes": 24580096,
+                "swap_bytes": 0
+              }
+            },
+            "outcome": "cancelled",
+            "temporary_peak": {
+              "gateway": {
+                "allocated_bytes": 4096,
+                "files": 1,
+                "logical_bytes": 2,
+                "observed_processes": 2,
+                "open_unlinked_files": 0
+              },
+              "https": {
+                "allocated_bytes": 36864,
+                "files": 9,
+                "logical_bytes": 3528,
+                "observed_processes": 1,
+                "open_unlinked_files": 0
+              }
+            },
+            "upstream_after_completion_or_cancel": {
+              "backpressure": 236,
+              "closed": true,
+              "completed": false,
+              "sent": 15466505
+            },
+            "wire_body_bytes": 2097152
+          },
+          {
+            "decoded_bytes": 412758765,
+            "decoded_sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab",
+            "elapsed_seconds": 26.479,
+            "encoding": "gzip",
+            "headers_ms": 78,
+            "health_checks": 53,
+            "health_failed": 0,
+            "memory": {
+              "gateway": {
+                "current_bytes": 5746688,
+                "events": {
+                  "high": 0,
+                  "low": 0,
+                  "max": 0,
+                  "oom": 0,
+                  "oom_group_kill": 0,
+                  "oom_kill": 0
+                },
+                "peak_bytes": 8941568,
+                "swap_bytes": 0
+              },
+              "helper": {
+                "current_bytes": 66052096,
+                "events": {
+                  "high": 0,
+                  "low": 0,
+                  "max": 0,
+                  "oom": 0,
+                  "oom_group_kill": 0,
+                  "oom_kill": 0
+                },
+                "peak_bytes": 94498816,
+                "swap_bytes": 0
+              },
+              "https": {
+                "current_bytes": 17928192,
+                "events": {
+                  "high": 0,
+                  "low": 0,
+                  "max": 0,
+                  "oom": 0,
+                  "oom_group_kill": 0,
+                  "oom_kill": 0
+                },
+                "peak_bytes": 27017216,
+                "swap_bytes": 0
+              }
+            },
+            "outcome": "complete",
+            "temporary_peak": {
+              "gateway": {
+                "allocated_bytes": 4096,
+                "files": 1,
+                "logical_bytes": 2,
+                "observed_processes": 2,
+                "open_unlinked_files": 0
+              },
+              "https": {
+                "allocated_bytes": 36864,
+                "files": 9,
+                "logical_bytes": 3528,
+                "observed_processes": 1,
+                "open_unlinked_files": 0
+              }
+            },
+            "upstream_after_completion_or_cancel": {
+              "backpressure": 6298,
+              "closed": true,
+              "completed": true,
+              "sent": 412758765,
+              "sha256": "253baf9719aa484e05ea0ba656e3c12953459f60606ffd035de749d8362bf7ab"
+            },
+            "wire_body_bytes": 412091605
+          },
+          {
+            "decoded_bytes": 2097152,
+            "decoded_sha256": "fbd317b700a78c4ed7bda4921bd4dbc17c221477d6093126c8efe3598ae9d118",
+            "elapsed_seconds": 0.207,
+            "encoding": "gzip",
+            "headers_ms": 75,
+            "health_checks": 1,
+            "health_failed": 0,
+            "memory": {
+              "gateway": {
+                "current_bytes": 5849088,
+                "events": {
+                  "high": 0,
+                  "low": 0,
+                  "max": 0,
+                  "oom": 0,
+                  "oom_group_kill": 0,
+                  "oom_kill": 0
+                },
+                "peak_bytes": 11771904,
+                "swap_bytes": 0
+              },
+              "helper": {
+                "current_bytes": 88723456,
+                "events": {
+                  "high": 0,
+                  "low": 0,
+                  "max": 0,
+                  "oom": 0,
+                  "oom_group_kill": 0,
+                  "oom_kill": 0
+                },
+                "peak_bytes": 94498816,
+                "swap_bytes": 0
+              },
+              "https": {
+                "current_bytes": 17739776,
+                "events": {
+                  "high": 0,
+                  "low": 0,
+                  "max": 0,
+                  "oom": 0,
+                  "oom_group_kill": 0,
+                  "oom_kill": 0
+                },
+                "peak_bytes": 27017216,
+                "swap_bytes": 0
+              }
+            },
+            "outcome": "cancelled",
+            "temporary_peak": {
+              "gateway": {
+                "allocated_bytes": 4096,
+                "files": 1,
+                "logical_bytes": 2,
+                "observed_processes": 2,
+                "open_unlinked_files": 0
+              },
+              "https": {
+                "allocated_bytes": 36864,
+                "files": 9,
+                "logical_bytes": 3528,
+                "observed_processes": 1,
+                "open_unlinked_files": 0
+              }
+            },
+            "upstream_after_completion_or_cancel": {
+              "backpressure": 338,
+              "closed": true,
+              "completed": false,
+              "sent": 22151177
+            },
+            "wire_body_bytes": 2162698
+          }
+        ],
+        "upstream_sha256": "10d743d70b193e82f7397f11e230d91daced014c0828d572fd4e6cbe8ec23e13",
+        "version": 1
+      }
+    }
+  ],
+  "no_failed_receipt_relabeled": true,
+  "r6_measured_harness_sha256": "520fea2d8dd8f055ff2539a200670b25ae1cdd61947e00a7928807f75564fde3",
+  "scope": "Retained unsuccessful local harness attempts, not release qualification",
+  "startup_cause_limit": "The instrumented ENOSPC and lower-disk helper resolution are observations; no universal root-cause or product-capacity conclusion is inferred from the local VFS storage failure.",
+  "superseding_success_receipt": "https-api-streaming-20261104.json",
+  "version": 1
+}

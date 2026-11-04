@@ -10244,3 +10244,23 @@ tests pass. Native execution is a separate scheduled gate; preparation is not a
 memory or hosted-throughput success claim. HTTPS128MiB/300m is repository-declared
 until the separate current deployment inventory confirms it. See
 `HTTPS_STREAMING_QUALIFICATION.md` for exact scope and remaining limits.
+
+### November 4 — correct HTTPS fixture provenance and encoding oracle
+
+The exact deployed HTTPS registry image was acquired with a temporary read-only
+registry credential; private credentials were removed without logging values.
+The fixture now uses explicit local-only proxy settings, a lightweight pinned
+Deno synthetic upstream, and `/workspace/work` overlay mounts with numeric
+in-container statfs verification. It observes open-unlinked files and requires
+the final production `worker_processes 1` directive and actual process count.
+The separate hosted inventory41928176279 confirms HTTPS128MiB/300m; that read-only
+observation is distinct from local capacity execution.
+
+All unsuccessful attempts remain in the diagnostics receipt. In r6, identity,
+gzip and zstd each delivered412,758,765 exact decoded bytes under the limits;
+the harness then incorrectly rejected zstd's valid9,460-byte expansion. That
+result remains failed, with zstd cancellation unexecuted. Independent source
+review confirmed the correction retains exact encoding negotiation, real
+bounded decoding, independent/source hashes, length, health, resource and
+cancellation gates. Four tiny tests pass. The final unified six-case native
+repeat remains pending; no hosted transport or broad-load success is claimed.

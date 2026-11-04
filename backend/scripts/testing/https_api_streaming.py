@@ -28,7 +28,8 @@ import uuid
 
 import zstandard
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from legacy_batch_gateway import NGINX, NODE, DOCKER, executed_config
+from legacy_batch_gateway import NGINX, DOCKER, executed_config
+HELPER = 'docker.io/denoland/deno@sha256:3dc638972caa62978182228a5a575e0498ae45129aa1c3ee8548663652ef7ab6'
 
 ROOT = Path(__file__).resolve().parents[3]
 CADDY_BASE = 'docker.io/library/caddy:2.11.2-alpine@sha256:6d125e80883be8a2bef5f088c7535945b42cdbb8a0f5471bf36eaf18dc0638f1'
@@ -122,26 +123,27 @@ class Proof:
         self.output=output;self.image=image;self.nonce=uuid.uuid4().hex[:12]
         self.base='tdp-https-stream-'+self.nonce;self.net=self.base+'-net'
         self.helper=self.base+'-upstream';self.gateway=self.base+'-gateway';self.https=self.base+'-https'
-        self.temp=Path(tempfile.mkdtemp(prefix=self.base+'-'));self.temp.chmod(0o755)
+        self.temp=Path(tempfile.mkdtemp(prefix=self.base+'-',dir='/workspace/work'));self.temp.chmod(0o755)
         self.owned=[];self.network_owned=False
         self.paths={}
         for name in ('gateway-tmp','https-tmp','data','config'):
             path=self.temp/name;path.mkdir(mode=0o777);path.chmod(0o777);self.paths[name]=path
         self.receipt={'version':1,'passed':False,'synthetic_only':True,'production_calls':0,'customer_calls':0,'model_calls':0,
           'source_revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
-          'source_hashes':self.sources(),'client_library_versions':{name:importlib.metadata.version(name) for name in ('cryptography','zstandard')},'images':{'https':image,'https_declared_source_base':CADDY_BASE,'gateway':NGINX,'helper':NODE},
-          'https_is_deployed_registry_image':image==DEPLOYED_IMAGE,'tls':{'hostname':'localhost','verification_enabled':True,'issuer':'offline local CA'},
+          'source_hashes':self.sources(),'client_library_versions':{name:importlib.metadata.version(name) for name in ('cryptography','zstandard')},'images':{'https':image,'https_declared_source_base':CADDY_BASE,'gateway':NGINX,'helper':HELPER},
+          'https_is_deployed_registry_image':image==DEPLOYED_IMAGE,'hosted_resource_observation':{'receipt':'digitalocean-https-capacity-20261104-41928176279.json','sha256':'92298f14f069856591be81a07baff9807b85d7a181ac83e167b3cb0ec1692c4a','source_revision':'f331c28f727f19623715be00f98a001bd04185bb','scope':'read-only observed image/resources only; no hosted transport qualification'},'tls':{'hostname':'localhost','verification_enabled':True,'issuer':'offline local CA'},
           'payload':{'bytes':TOTAL,'content_type':'application/json','algorithm':'AES-256-CTR fixed synthetic key/IV, zero input, per-49152-byte base64 blocks, exact JSON wrapper','aggregate_materialized':False},
-          'resources':{'https_memory_bytes':128*1024**2,'https_cpu_millicores':300,'gateway_memory_bytes':BUDGET,'gateway_cpu_millicores':200,
+          'resources':{'https_memory_bytes':128*1024**2,'https_cpu_millicores':300,'gateway_memory_bytes':BUDGET,'gateway_cpu_millicores':200,'gateway_workers':1,'gateway_worker_count_basis':'exact production directive, no worker-count transform',
             'helper_memory_bytes':128*1024**2,'helper_cpu_millicores':1000,'swap':False,'published_ports':[],
-            'network':'nonce-owned internal bridge; gateway shares upstream namespace','client':'external bounded Python stream reader; memory outside service cgroups',
+            'network':'nonce-owned internal bridge; gateway shares upstream namespace','docker_injected_proxy_variables_removed_for_fixture_only':True,'client':'external bounded Python stream reader; memory outside service cgroups',
             'decoded_read_bytes':BLOCK,'pause_ms_per_read':4,'per_transfer_wall_limit_seconds':180,'tmp_budget_per_service_bytes':BUDGET,
-            'tmp_enforcement':'disk-backed directory plus owned-process open-unlinked inode census; observed budget, not filesystem ENOSPC','https_limit_provenance':'repository render.py declaration; actual hosted HTTPS limit not yet observed'},
+            'tmp_enforcement':'workspace-overlay bind mount, directory plus owned-process open-unlinked inode census; observed budget, not filesystem ENOSPC','https_limit_provenance':'repository render.py and separate read-only hosted Deployment/ready-Pod observation41928176279; local execution remains separate'},
           'limitations':['Exact selected image is tested locally; no inference that local execution proves production rollout/configuration.',
             'Synthetic varying ASCII JSON has the prior measured batch response byte length, not actual application/Auth/SQL data.',
+            'Local certificate-state storage is an overlay bind mount; production PVC durability/latency is not qualified.',
             'HTTP/1.1 TLS and each encoding are measured; HTTP/2, HTTP/3, public CA/ACME, cloud LoadBalancer and hosted traffic are not qualified.',
             'One full response and one early cancellation per encoding, not concurrent load, universal output size or issuance SLO.',
-            'Nginx loopback service/DNS coordinates and one worker are isolated harness substitutions; exact Caddyfile, compression and TLS remain.']}
+            'Only Nginx loopback service/DNS coordinates are fixture substitutions; exact production worker_processes1, Caddyfile, compression and TLS remain.']}
     def sources(self):
         files=[Path(__file__),Path(__file__).with_name('legacy_batch_gateway.py'),ROOT/'backend/deploy/Dockerfile.https',ROOT/'backend/deploy/kubernetes/Caddyfile',ROOT/'backend/deploy/kubernetes/gateway.conf',ROOT/'backend/deploy/kubernetes/render.py']
         return {str(p.relative_to(ROOT)):sha(p.read_bytes()) for p in files}
@@ -174,7 +176,7 @@ class Proof:
         raw=self.docker('exec',name,'sh','-c','cat /sys/fs/cgroup/memory.peak; cat /sys/fs/cgroup/memory.current; cat /sys/fs/cgroup/memory.swap.current; cat /sys/fs/cgroup/memory.events').stdout.splitlines()
         return {'peak_bytes':int(raw[0]),'current_bytes':int(raw[1]),'swap_bytes':int(raw[2]),'events':{x.split()[0]:int(x.split()[1]) for x in raw[3:]}}
     def start(self):
-        for image in (self.image,CADDY_BASE,NGINX,NODE): self.docker('image','inspect',image)
+        for image in (self.image,CADDY_BASE,NGINX,HELPER): self.docker('image','inspect',image)
         https=json.loads(self.docker('image','inspect',self.image).stdout)[0]
         base=json.loads(self.docker('image','inspect',CADDY_BASE).stdout)[0]
         if self.image==DEPLOYED_IMAGE:
@@ -194,10 +196,12 @@ class Proof:
         if self.docker('network','inspect',self.net,check=False).returncode==0:raise RuntimeError('FOREIGN_NETWORK_COLLISION')
         self.network_owned=True
         self.docker('network','create','--internal','--label','tenderdesk.https-streaming='+self.nonce,self.net)
-        script=self.temp/'upstream.js';script.write_text(UPSTREAM);script.chmod(0o644)
+        script=self.temp/'upstream.cjs';script.write_text(UPSTREAM);script.chmod(0o644)
         self.receipt['upstream_sha256']=sha(script.read_bytes())
         common=['--user','1000:1000','--read-only','--cap-drop','ALL','--security-opt','no-new-privileges','--pids-limit','64']
-        self.launch(self.helper,'--network',self.net,'--network-alias','gateway',*common,'--memory','128m','--memory-swap','128m','--cpus','1','-v',str(script)+':/upstream.js:ro','--entrypoint','node',NODE,'/upstream.js')
+        # Docker injects session proxies; the production Pod has none. All traffic here is isolated fixture traffic.
+        for name in ('HTTP_PROXY','HTTPS_PROXY','ALL_PROXY','NO_PROXY','http_proxy','https_proxy','all_proxy','no_proxy'):common+=['-e',name+'=']
+        self.launch(self.helper,'--network',self.net,'--network-alias','gateway',*common,'--memory','128m','--memory-swap','128m','--cpus','1','-v',str(script)+':/upstream.cjs:ro','--entrypoint','deno',HELPER,'run','--no-config','--no-npm','--no-remote','--allow-read','--allow-net=0.0.0.0:19080,0.0.0.0:19090','/upstream.cjs')
         self.helper_ip=self.ip(self.helper)
         for _ in range(60):
             try:self.json_get(19090);break
@@ -205,6 +209,7 @@ class Proof:
         else:raise RuntimeError('UPSTREAM_NOT_READY')
         source=(ROOT/'backend/deploy/kubernetes/gateway.conf').read_text()
         assert source.count('proxy_buffering off;')==2,'GREEN_GATEWAY_STREAMING_REQUIRED'
+        assert source.count('worker_processes 1;')==1 and 'worker_processes auto;' not in source,'PINNED_PRODUCTION_WORKER_COUNT_REQUIRED'
         config=self.temp/'nginx.conf';config.write_text(executed_config(source));config.chmod(0o644)
         self.receipt['gateway_executed_config_sha256']=sha(config.read_bytes())
         self.launch(self.gateway,'--network','container:'+self.helper,*common,'--memory','64m','--memory-swap','64m','--cpus','.2',
@@ -224,6 +229,11 @@ class Proof:
           '-v',str(self.paths['https-tmp'])+':/tmp','-v',str(self.paths['data'])+':/data','-v',str(self.paths['config'])+':/config',
           '--entrypoint','caddy',self.image,'run','--config','/etc/caddy/Caddyfile','--adapter','caddyfile')
         self.https_ip=self.ip(self.https)
+        self.receipt['mount_filesystems']={}
+        for name,paths in ((self.gateway,('/tmp',)),(self.https,('/tmp','/data','/config'))):
+            observed=self.docker('exec',name,'stat','-f','-c','%t',*paths).stdout.splitlines()
+            assert len(observed)==len(paths) and all(x.lower()=='794c7630' for x in observed),('DISK_BACKED_FIXTURE_REQUIRED',observed)
+            self.receipt['mount_filesystems']['gateway' if name==self.gateway else 'https']={'statfs_magic':dict(zip(paths,observed)),'meaning':'Linux overlayfs (0x794c7630); tmpfs magic is rejected'}
         ca=self.paths['data']/'caddy/pki/authorities/local/root.crt'
         for _ in range(100):
             if ca.exists():break
@@ -235,13 +245,16 @@ class Proof:
         self.receipt['https_binary_sha256']=self.docker('exec',self.https,'sha256sum','/usr/bin/caddy').stdout.split()[0]
         conn=TLSConnection(self.https_ip,self.context)
         try:
-            conn.request('GET','/healthz');response=conn.getresponse();assert response.status==200 and response.read(128)==b'ok\n'
+            conn.request('GET','/healthz');response=conn.getresponse();body=response.read(128)
+            self.receipt['tls']['health_status']=response.status;self.receipt['tls']['health_body_sha256']=sha(body)
+            assert response.status==200 and body==b'ok\n',('TLS_HEALTH_INVALID',response.status,len(body),sha(body))
             self.receipt['tls']['actual_handshake_verified']=True
         finally:conn.close()
         self.receipt['payload']['sha256']=payload_hash()
     def transfer(self,encoding,cancel=False):
         name=encoding+('-cancel' if cancel else '-full');started=time.monotonic();peaks={};stop=threading.Event();bad=[];health=[];observer_errors=[]
         pids={'gateway':self.process_ids(self.gateway),'https':self.process_ids(self.https)}
+        assert len(pids['gateway'])==2,'EXACT_NGINX_MASTER_PLUS_ONE_WORKER_REQUIRED'
         def observe():
             next_health=0
             while not stop.is_set():
@@ -304,7 +317,9 @@ class Proof:
         else:
             assert outcome=='complete' and count==TOTAL and h.hexdigest()==self.receipt['payload']['sha256'],result
             assert source['completed'] and source['sent']==TOTAL and source['sha256']==h.hexdigest(),source
-            if encoding!='identity':assert result['wire_body_bytes']<TOTAL
+            # Valid encoding can expand incompressible input. The exact negotiated
+            # Content-Encoding, successful decoder and full hash are the oracle.
+            assert result['wire_body_bytes']>0
         result['upstream_after_completion_or_cancel']=source;return result
     def qualify(self):
         self.start();self.receipt['transfers']=[]
@@ -331,6 +346,9 @@ class Proof:
             assert value['Labels'].get('tenderdesk.https-streaming')==self.nonce
             self.docker('network','rm',self.net)
             assert self.docker('network','inspect',self.net,check=False).returncode!=0
+        # A failed inspect alone is not absence proof when the daemon is unavailable.
+        assert not self.docker('ps','-aq','--filter','label=tenderdesk.https-streaming='+self.nonce).stdout.strip()
+        assert not self.docker('network','ls','-q','--filter','label=tenderdesk.https-streaming='+self.nonce).stdout.strip()
         shutil.rmtree(self.temp);self.receipt['cleanup_confirmed']=True
 
 
@@ -341,8 +359,15 @@ def main():
     if args.output.exists():raise ValueError('FRESH_RECEIPT_REQUIRED')
     proof=Proof(args.output,args.image)
     try:proof.qualify()
-    except Exception as error:
+    except BaseException as error:
         proof.receipt.update(passed=False,failure_class=type(error).__name__,failure_detail=str(error)[:1000])
+        diagnostics=[]
+        for name in proof.owned:
+            result=proof.docker('logs','--tail','20',name,check=False)
+            diagnostics.append(name+'\n'+result.stdout[:4000]+result.stderr[:4000])
+        data='\n'.join(diagnostics)
+        args.output.with_name('local-diagnostic.txt').write_text(data)
+        proof.receipt['private_diagnostic_sha256']=sha(data.encode())
     finally:
         try:proof.cleanup()
         except Exception as error:
