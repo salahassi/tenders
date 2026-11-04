@@ -7036,3 +7036,21 @@ no-active-version cancellation/new generation and completed-version regeneration
 receipt /workspace/output/current-issuance-contract-postgres.json. The old retry
 accounting suites explicitly retain their historical142525 migration boundary.
 No silent promotion, automatic new request, model call, or deployment occurred.
+
+
+## November 4 — explicit current-contract recovery in the proposal interface
+
+A rejected legacy resume now explains that its saved processing contract cannot
+issue the current complete package. The recovery control validates the server's
+plan/opportunity/proposal/version IDs and revisions, then requires an explicit
+click before a current successor request. Cancellation, when required, and
+generate/regenerate execute in one transactional command batch. Existing paid
+work and the accepted version remain retained. An interrupted response reuses
+the exact batch and idempotency key; a revision conflict requires fresh recovery
+metadata. The interface never silently resubmits models or changes billing.
+
+Validation: **36/36 frontend cases** (metadata rejection, accepted-version
+regeneration, stable hash/batch and lost response, existing panel behavior) plus
+frontend typecheck pass. The associated migration's two real PostgreSQL successor
+cases are separate evidence recorded above. Hosted recovery and the final
+integrated package gates remain pending.

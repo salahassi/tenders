@@ -22,6 +22,8 @@ export const generationNeedsAttention = (plan: GenerationProgress) =>
   plan.issuance?.effective_outcome === "failed";
 
 const errorMessages: Record<string, string> = {
+  PROPOSAL_CURRENT_CONTRACT_REQUIRED:
+    "This saved request uses an earlier processing version. Its work is retained. Start a new request with the current checks to prepare the complete file package.",
   AI_AGENTS_UNAVAILABLE:
     "No AI agents are available for this request. Processing stopped; your saved work is retained. Check Models & providers before trying again.",
   PROPOSAL_ISSUANCE_TIMEOUT:

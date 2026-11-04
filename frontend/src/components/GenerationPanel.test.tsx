@@ -26,6 +26,20 @@ const opportunity = () =>
       },
     ],
   }) as any;
+const recoveryId = (n: number) =>
+  `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+const recoveryDetails = () => ({
+  plan_id: recoveryId(1),
+  expected_plan_revision: 2,
+  preserved_input_hash: "a".repeat(64),
+  cancel_required: true,
+  opportunity_id: recoveryId(2),
+  expected_opportunity_revision: 4,
+  proposal_id: recoveryId(3),
+  expected_proposal_revision: 5,
+  base_version_id: null,
+  next_operation: "proposal.generate",
+});
 function context(records: any[] = []) {
   const value = {
     backend: {
@@ -46,6 +60,53 @@ function context(records: any[] = []) {
   vi.mocked(useApp).mockReturnValue(value as any);
   return value;
 }
+it("requires an explicit current successor and replays the same atomic batch after a lost response", async () => {
+  const c = context([
+    {
+      id: recoveryId(1),
+      kind: "proposal",
+      stage: "analysis",
+      status: "blocked",
+      revision: 2,
+      error_code: "MODEL_CORRECTION_EXHAUSTED",
+      created_at: "2026-10-22T10:00:00Z",
+    },
+  ]);
+  c.runCommand.mockRejectedValue(
+    new BackendRequestError(
+      "PROPOSAL_CURRENT_CONTRACT_REQUIRED",
+      "legacy",
+      422,
+      recoveryDetails(),
+    ),
+  );
+  const o = { ...opportunity(), id: recoveryId(2) };
+  render(
+    <MemoryRouter>
+      <GenerationPanel opportunity={o} />
+    </MemoryRouter>,
+  );
+  await userEvent.click(
+    await screen.findByRole("button", { name: "Resume saved work" }),
+  );
+  const start = await screen.findByRole("button", {
+    name: "Start new request with current checks",
+  });
+  expect(c.backend.request).not.toHaveBeenCalled();
+  c.backend.request.mockRejectedValueOnce(new Error("Connection interrupted"));
+  await userEvent.click(start);
+  expect(await screen.findByText("Connection interrupted")).toBeInTheDocument();
+  await userEvent.click(start);
+  const calls = c.backend.request.mock.calls as any[];
+  expect(calls).toHaveLength(2);
+  expect(calls[1]).toEqual(calls[0]);
+  expect(calls[0][0]).toBe("/v1/commands");
+  expect(calls[0][1].body.commands.map((x: any) => x.operation)).toEqual([
+    "generation.cancel",
+    "proposal.generate",
+  ]);
+  expect(c.refresh).toHaveBeenCalled();
+});
 it("offers resume for the latest blocked plan and hides it on an older canceled plan", async () => {
   const c = context([
     {

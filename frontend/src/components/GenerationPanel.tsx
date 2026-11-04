@@ -6,6 +6,11 @@ import { isSelected } from "../lib/workflow";
 import type { DocumentRecord, Opportunity } from "../types";
 import { BackendRequestError } from "../lib/backendClient";
 import {
+  currentProposalRequest,
+  currentProposalCommands,
+  type CurrentProposalRequest,
+} from "../lib/currentProposalRequest";
+import {
   generationNeedsAttention,
   generationStageLabel,
   generationStatusMessage,
@@ -40,6 +45,10 @@ export default function GenerationPanel({
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
     [requesting, setRequesting] = useState(false),
+    [successor, setSuccessor] = useState<{
+      details: CurrentProposalRequest;
+      key: string;
+    } | null>(null),
     loadScope = useRef({
       active: true,
       busy: false,
@@ -122,6 +131,9 @@ export default function GenerationPanel({
       attention: "",
     };
     loadScope.current = scope;
+    setSuccessor(null);
+    setRequesting(false);
+    setError("");
     setLoading(true);
     void load();
     const timer = setInterval(() => {
@@ -133,9 +145,11 @@ export default function GenerationPanel({
     };
   }, [backend, opportunity.id, planKind]);
   async function action(operation: string, input: Record<string, unknown>) {
+    const scope = loadScope.current;
     setRequesting(true);
     try {
       await runCommand!(operation, input);
+      if (!scope.active || scope !== loadScope.current) return;
       const latest = await load();
       if (!latest || !generationNeedsAttention(latest))
         notify(
@@ -144,6 +158,25 @@ export default function GenerationPanel({
             : "Processing requested. You can leave this page; work continues automatically.",
         );
     } catch (e) {
+      if (!scope.active || scope !== loadScope.current) return;
+      if (
+        e instanceof BackendRequestError &&
+        e.code === "PROPOSAL_CURRENT_CONTRACT_REQUIRED"
+      ) {
+        const details = currentProposalRequest(e.details, opportunity.id);
+        setSuccessor((previous) =>
+          details
+            ? {
+                details,
+                key:
+                  previous &&
+                  JSON.stringify(previous.details) === JSON.stringify(details)
+                    ? previous.key
+                    : crypto.randomUUID(),
+              }
+            : null,
+        );
+      }
       const message =
         e instanceof BackendRequestError && e.code === "STALE_INPUT"
           ? "The saved inputs changed. Your completed work is retained. Automatic resume is available only when writing and review are complete and the notice is the only changed input. Review the changed evidence before starting an updated version."
@@ -154,6 +187,7 @@ export default function GenerationPanel({
                 "MODEL_NOT_CONFIGURED",
                 "AI_AGENTS_UNAVAILABLE",
                 "PROPOSAL_ISSUANCE_TIMEOUT",
+                "PROPOSAL_CURRENT_CONTRACT_REQUIRED",
               ].includes(e.code)
             ? generationStatusMessage({
                 kind: "proposal",
@@ -166,7 +200,40 @@ export default function GenerationPanel({
       setError(message);
       notify(message, "error");
     } finally {
-      setRequesting(false);
+      if (scope.active && scope === loadScope.current) setRequesting(false);
+    }
+  }
+  async function startCurrentRequest() {
+    if (!backend || !successor || requesting) return;
+    const scope = loadScope.current;
+    setRequesting(true);
+    try {
+      await backend.request("/v1/commands", {
+        method: "POST",
+        idempotencyKey: successor.key,
+        body: { commands: await currentProposalCommands(successor.details) },
+      });
+      if (!scope.active || scope !== loadScope.current) return;
+      setSuccessor(null);
+      await refresh?.();
+      await load();
+      notify(
+        "A new request started with current checks. The original saved work is retained.",
+      );
+    } catch (e) {
+      if (!scope.active || scope !== loadScope.current) return;
+      const message =
+        e instanceof BackendRequestError && e.code === "REVISION_CONFLICT"
+          ? "The saved request changed. Refresh progress and resume it to load the current recovery action."
+          : e instanceof Error
+            ? e.message
+            : "The new request could not be started.";
+      if (e instanceof BackendRequestError && e.code === "REVISION_CONFLICT")
+        setSuccessor(null);
+      setError(message);
+      notify(message, "error");
+    } finally {
+      if (scope.active && scope === loadScope.current) setRequesting(false);
     }
   }
   if (!backend || !runCommand) return null;
@@ -194,6 +261,18 @@ export default function GenerationPanel({
         <p role="alert" className="admin-error">
           {error}
         </p>
+      )}
+      {successor && (
+        <div className="admin-muted-surface">
+          <p>
+            The original request and saved results will be retained. A new
+            request will use current checks and may call your configured AI
+            providers again.
+          </p>
+          <Button disabled={!editable || busy} onClick={startCurrentRequest}>
+            Start new request with current checks
+          </Button>
+        </div>
       )}
       {loading ? (
         <p>Loading progress…</p>
