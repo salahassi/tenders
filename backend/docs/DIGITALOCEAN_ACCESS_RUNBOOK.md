@@ -65,8 +65,8 @@ conditional steps and the called helper. A name containing "check", "inspect" or
 
 The latest successful inventory was verified on the published branch
 `codex/proposal-reliability-implementation`, commit
-`59c6b309470cacf4dd605325e9a76cb132b88449`, in
-[run 41849412810](https://github.com/salahassi/tenders/actions/runs/41849412810).
+`17ba94ba3e6ee13c1227f60b8849c8fe40873564`, in
+[run 41881660683](https://github.com/salahassi/tenders/actions/runs/41881660683).
 Use a reviewed ref that contains that commit; older `main` revisions do not have
 this input. For that published branch, the exact dispatch is:
 
@@ -77,12 +77,12 @@ gh workflow run doks-access.yml --repo salahassi/tenders \
 
 Check the run head SHA and executed steps after dispatch. The observed schema,
 image digests and cleanup receipt are saved in
-[`evidence/digitalocean-inventory-20261104-41849412810.json`](evidence/digitalocean-inventory-20261104-41849412810.json).
+[`evidence/digitalocean-inventory-20261104-41881660683.json`](evidence/digitalocean-inventory-20261104-41881660683.json).
 This evidence file wraps the inventory under `receipt`; release-manifest freezing
-requires that exact inner receipt, not the outer evidence wrapper. The intervening
-run 41845129587 failed an observer scheduling assumption; the corrected run above
-again verified the original certificate authority. That failure was not a TLS
-regression.
+requires that exact inner receipt, not the outer evidence wrapper. The earlier successful run41849412810 remains historical evidence. Its predecessor
+41845129587 failed an observer scheduling assumption; both subsequent successful
+inventories verified the original certificate authority. That failure was not a
+TLS regression.
 Ten ready workloads prove inventory readiness at that observation, not proposal
 workflow acceptance. The new delivery tables were absent at that time.
 

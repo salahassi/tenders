@@ -8314,3 +8314,22 @@ product code, tests, runtime gates, field caches, deployment or production state
 changed. Documentation references and whitespace checks passed. Root's final
 combined validation, hosted acceptance and other recorded limits remain
 separate.
+
+### 2026-11-04 — fresh original-CA inventory before final release freeze
+
+Read-only [run41881660683](https://github.com/salahassi/tenders/actions/runs/41881660683)
+succeeded on `17ba94ba3e6ee13c1227f60b8849c8fe40873564`. Original cluster
+certificate/hostname verification and owned temporary SQL-client/credential
+cleanup executed successfully; bootstrap, restore and model steps were skipped.
+The sanitized receipt is `evidence/digitalocean-inventory-20261104-41881660683.json`;
+manifest freezing consumes its inner `receipt` object.
+
+At17:55:32UTC, all ten owned workloads were ready, images and the six release
+receipts remained unchanged, and the routine catalog hash remained
+`6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287`.
+The delivery tables were still absent: this branch is not deployed. Aggregate
+observation included11blocked proposal jobs,91pending background jobs (84due),
+and no running or expired-leased jobs in those classes. These counts do not
+establish a cause or successful recovery. No business/schema/model changes ran.
+Native schedules remained unchanged. This fresh baseline is separate from the
+open worker memory, storage-retirement, cloud-restore and hosted acceptance gates.
