@@ -7732,3 +7732,14 @@ termination/reap tests separately fence an old physical child after cancellation
 or expiry. Neither the queue simulation nor lease count proves instantaneous CPU
 reap or hosted twelve-document throughput. No production, provider or email calls
 were made, and no request clock was extended by waiting.
+
+
+### 2026-11-04 — reconcile the plan with integrated work and retained failures
+
+The plan ledger now distinguishes completed local integration of ordinary exports,
+full diagnostic collection, historical recovery and render queue admission from
+the remaining dense-document, reviewed-Word and ambiguous-upload corrections.
+Earlier full-run failures are correctly recorded as a mixture of real renamed
+function defects and fixture assumptions, not all dismissed as test-only issues.
+No deployment, final combined pass, provider availability or hosted acceptance is
+implied by these documentation updates. The draft PR records the same boundaries.
