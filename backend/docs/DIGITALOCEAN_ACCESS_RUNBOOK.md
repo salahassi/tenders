@@ -63,7 +63,7 @@ conditional steps and the called helper. A name containing "check", "inspect" or
 | Release application changes | Select the specific reviewed `deploy-*.yml` and its helper. Check the exact migration set, immutable image, target namespace, rollout and acceptance. Historical release workflows do not automatically include newly added migrations. |
 | Evaluate models | [`evaluate-ai-models.yml`](../../.github/workflows/evaluate-ai-models.yml). Live activation is separate from inventory and may make paid provider requests; use only the authorized campaign and its limits. |
 
-The latest successful inventory was verified on the published branch
+The release-baseline inventory was verified on the published branch
 `codex/proposal-reliability-implementation`, commit
 `17ba94ba3e6ee13c1227f60b8849c8fe40873564`, in
 [run 41881660683](https://github.com/salahassi/tenders/actions/runs/41881660683).
@@ -177,3 +177,12 @@ the receipt explicitly leaves that claim false. The original inventory/schema
 fields and frozen release baseline remain unchanged, and older receipts are
 still valid for their original scope. A reviewed new Actions inventory is needed
 to obtain these observations; adding this code does not supply hosted evidence.
+
+The additive capacity inventory subsequently passed in
+[run 41916625820](https://github.com/salahassi/tenders/actions/runs/41916625820)
+at `84003906146c9b2970641348cfe67d84bb17e210`, including original-CA verification
+and both cleanup stages. Its
+[receipt](evidence/digitalocean-capacity-20261104-41916625820.json) records actual
+API/worker/REST manifest limits and safe database configuration metadata. It
+does not replace the earlier frozen release baseline or qualify runtime memory,
+provider availability, or an application release.

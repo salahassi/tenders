@@ -9399,3 +9399,37 @@ or managed database capacity qualification; the live REST resources and managed
 database sizing remain separate read-only inventory evidence. No product SQL,
 result cardinality, quota or accounting behavior was changed. A reviewed repair
 and the same real upstream regression remain open before release acceptance.
+
+### November 4 — complete frontend checks after admission and identity fixes
+
+At `c5b991eeac22e832ec9e2f3ce0018865db3ad449`, frontend typecheck, all
+380 tests in 59 files (`--maxWorkers=1`), and production build pass. The test
+runner reports 45.67 seconds. Before/after SHA-256 inventories of frontend and
+shared TypeScript sources were identical. The
+[receipt](evidence/frontend-admission-checks-20261104.json) preserves the exact
+commands, source hashes, timings and log hashes. This supersedes the earlier
+359-test result only for this newer frontend source. It is not hosted browser
+acceptance, a complete backend result, or deployment evidence. Subsequent shared
+backend edits still require affected checks and the final release suite.
+
+### November 4 — observe actual hosted capacity configuration
+
+Read-only [inventory run 41916625820](https://github.com/salahassi/tenders/actions/runs/41916625820)
+at `84003906146c9b2970641348cfe67d84bb17e210` passed original cluster
+CA/hostname verification and both temporary-client/credential cleanup stages.
+All ten workloads were ready at observation. The
+[receipt](evidence/digitalocean-capacity-20261104-41916625820.json) records
+matching deployment and ready-Pod resource limits: API 384 MiB/700m, worker
+640 MiB/one core, and REST 128 MiB/500m. REST's configured pool is 5 and maximum
+rows 1,000; its fixed authenticator binding was verified without exposing its URI.
+These are observed configuration values, not measured process consumption.
+
+The database metadata reports one node and size slug `db-s-1vcpu-1gb`; measured
+RAM and CPU remain unknown. The fresh observer login reports `work_mem=2048 kB`,
+`max_connections=25`, and `statement_timeout=0`, with no selected application
+role/database catalog overrides. These do not prove an authenticated REST
+transaction's effective settings. No business mutation, customer-row copy,
+model call, application deployment or release-baseline replacement occurred.
+The original inventory remains the frozen release baseline. The REST memory
+limit now matches the independently reproduced local upstream OOM's envelope;
+the repair and exact regression remain pending.
