@@ -6,7 +6,7 @@ import {
   DOCX_MIME,
   type DeliveryVolume,
 } from "./deliveryExport.ts";
-import { verifyExportDocx, type RenderModel } from "./export.ts";
+import { verifyExportDocxAsync, type RenderModel } from "./export.ts";
 import { renderDeliveryIsolated } from "./deliveryRenderIsolation.ts";
 
 export async function deliveryBytes(
@@ -23,7 +23,7 @@ export async function deliveryBytes(
       "DELIVERY_ARTIFACT_INVALID",
       "The draft file is outside the supported size.",
     );
-  verifyExportDocx(bytes, model);
+  await verifyExportDocxAsync(bytes, model);
   const hash = Array.from(
     new Uint8Array(
       await crypto.subtle.digest("SHA-256", new Uint8Array(bytes).buffer),

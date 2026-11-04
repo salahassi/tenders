@@ -7615,3 +7615,56 @@ Receipt capture now also includes `boundedDocx.ts`, `boundedDocxArchive.ts` and
 `boundedXml.ts` when present, for the final integrated rerun. No native large-file
 qualification, hosted timing, provider call or production deployment is claimed
 by these API/persistence density checks.
+
+### 2026-11-04 — bounded verification of large authorized DOCX content
+
+**Implemented locally:** Word verification now validates the ZIP central and local
+indexes, exact entry boundaries, duplicate paths, descriptors, actual expanded
+sizes and CRCs before accepting the file. Raw DEFLATE is fed 512 compressed bytes
+at a time; a 1 MiB callback limit is enforced. UTF-8/XML is parsed incrementally with
+bounded tags, depth and namespace state. No complete document XML, parsed tree or
+actual-paragraph list is retained. The existing 10 MiB archive limit stays; the
+export-only expanded-document allowance derives from authorized text and native
+paragraph/cell structure, including blank cells. Original-upload limits remain
+unchanged. This admits highly compressible valid tables while refusing expansion
+unrelated to the authorized model.
+
+The same verifier compares ordered paragraphs, exact table/grid/row/cell content
+and blank padding, yellow gap runs, native TOC text, enabled field updates,
+headers/footers, metadata and internal relationship targets including embedded
+fonts. Ragged model tables use the maximum header/row width with blank padding;
+no supplied overflow cell is discarded. DTDs, unsafe relationships, tracked
+changes, malformed XML/ZIP and missing referenced parts remain rejected. Independent
+review also exposed two inherited visible-content bypasses: a visible TOC suffix
+was stripped, and alternate Word namespace prefixes could evade text collection.
+Both now have actual DOCX mutation regressions; expanded names are canonicalized
+and visible text is never discarded as a field instruction.
+
+**Responsiveness:** synchronous compatibility and asynchronous runtime entrypoints
+consume the identical validation generator. The runtime version yields to the event
+loop during scans and supports cancellation without returning a partial pass.
+Both direct runtime callers (deliveryBytes, reused by ordinary/generated delivery,
+and the API reviewed-DOCX completion path) await it. Current source/lease/approval
+checks after verification remain the caller's authority boundary.
+
+**Evidence:** 54 verifier/delivery/field cases pass, covering malformed/truncated/
+duplicate ZIP/XML, real CRC mismatch, namespace aliases, dangerous metadata,
+field settings, text/gap changes, blank/shifted/ragged cells, a high-compression
+callback bound, concurrent heartbeat and cancellation. The 6-file composed API/
+DOCX/acceptance run passed 93/96 with 3 unchanged 5-second generated-pipeline test
+timeouts under concurrent local load; isolated rerun passed 13/13 at the original
+threshold. Full frontend passed 355/356 with an unrelated successor-button timing
+assertion; its unchanged isolated file passed 25/25. Both package typechecks and
+builds pass. These observations do not substitute for the parent's final combined
+full-suite run.
+
+Actual API-admitted 405,000-empty-cell native DOCX verifies asynchronously under a
+128MiB Node heap in 8.36 seconds, with the largest inflation callback 67,320 bytes;
+810 timer callbacks ran and the measured longest timer gap was 31 ms. Its 159 MB
+expanded package is checked without raising original-upload limits. The 329,000-cell 200 MB XML sample also passes the final asynchronous verifier in
+10.18 seconds at a 128 MiB heap, with a 68,546-byte maximum inflation callback
+and a measured 15 ms timer gap. Final Deno full-runtime
+image receipts are coordinated with the streaming renderer and bind all helper
+hashes. These are synthetic offline capacity measurements, not hosted Storage/Auth,
+production load qualification, a universal table maximum or a 600-second service SLO.
+No production/provider calls, deployment or billing changes were performed here.

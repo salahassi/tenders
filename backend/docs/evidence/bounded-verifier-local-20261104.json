@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "scope": "Synthetic actual API-admitted models and native streamed DOCX artifacts; final bounded verifier in offline Node. Not hosted or a universal capacity/SLO guarantee.",
+  "production_calls": 0,
+  "cases": [
+    {
+      "scope": "Actual API-admitted synthetic model and actual native streamed DOCX; offline Node128MiB heap verifier only, not hosted or universal SLO",
+      "result": true,
+      "elapsed_ms": 8358,
+      "compressed_bytes": 2507817,
+      "expanded_bytes": 159299255,
+      "max_inflated_callback_bytes": 67320,
+      "model_sha256": "ef1d7dba121c9d0da23b4f511989823a5c4f0108e97dcc4be49ebdc7848f94c3",
+      "docx_sha256": "bd50d713a21ea163aa9ecb60c04c48c9091a821baa0d6d4c96ae9df04a014827",
+      "runtime": "v24.19.0",
+      "heap_limit_flag_mib": 128,
+      "event_loop": {
+        "beats": 810,
+        "max_gap_ms": 31
+      },
+      "memory": {
+        "rss": 171507712,
+        "heapTotal": 20295680,
+        "heapUsed": 18022752,
+        "external": 59277640,
+        "arrayBuffers": 48861165
+      },
+      "max_rss_kib": 234424,
+      "sources": {
+        "export.ts": "162559c393daa79307827a63f07275833f01bfc0f32bf6b27f7fdacd18583cb3",
+        "boundedDocx.ts": "63a4c5e35972abcace468994e978e7e15a9c6bda45e34d9504c939f16f7156a9",
+        "boundedDocxArchive.ts": "44ad839d85a01f2baf778e234ec8a873d6f9cdb07affa25c72bf8e9ab079b599",
+        "boundedXml.ts": "3f3898e0b36e60b3121da07111572d0e4dc1870429b2420b869449737fabe99c"
+      }
+    },
+    {
+      "scope": "Actual API-admitted synthetic model and actual native streamed DOCX; offline Node128MiB heap verifier only, not hosted or universal SLO",
+      "result": true,
+      "elapsed_ms": 10179,
+      "compressed_bytes": 2732153,
+      "expanded_bytes": 202527104,
+      "max_inflated_callback_bytes": 68546,
+      "model_sha256": "cad2afb027b4adccb2e1a46a058d33f88105a5686ac8dcc336b6c5cf7530b3e5",
+      "docx_sha256": "7ed0059ba1791b728ef73cd450b6f54b1942ede4e5a16763e112e2dfb7e147cb",
+      "runtime": "v24.19.0",
+      "heap_limit_flag_mib": 128,
+      "event_loop": {
+        "beats": 946,
+        "max_gap_ms": 15
+      },
+      "memory": {
+        "rss": 174551040,
+        "heapTotal": 20295680,
+        "heapUsed": 16637128,
+        "external": 15033126,
+        "arrayBuffers": 4616651
+      },
+      "max_rss_kib": 237372,
+      "sources": {
+        "export.ts": "162559c393daa79307827a63f07275833f01bfc0f32bf6b27f7fdacd18583cb3",
+        "boundedDocx.ts": "63a4c5e35972abcace468994e978e7e15a9c6bda45e34d9504c939f16f7156a9",
+        "boundedDocxArchive.ts": "44ad839d85a01f2baf778e234ec8a873d6f9cdb07affa25c72bf8e9ab079b599",
+        "boundedXml.ts": "3f3898e0b36e60b3121da07111572d0e4dc1870429b2420b869449737fabe99c"
+      }
+    }
+  ]
+}

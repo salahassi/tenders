@@ -3,7 +3,7 @@ import {
   reviewProposalConsistency,
 } from "../_shared/proposalConsistencyReview.ts";
 import { recoveryRoute } from "../_shared/recovery.ts";
-import { buildExportModel, verifyExportDocx } from "../_shared/export.ts";
+import { buildExportModel, verifyExportDocxAsync } from "../_shared/export.ts";
 import {
   buildDeliveryExport,
   deliveryRenderingGapSummary,
@@ -779,12 +779,18 @@ export function createApiHandler(
             artifact_id: id,
           }),
           artifact = context.artifact;
-        const savedPackage = artifactPath[2] === "download" &&
-            artifact.kind === "generated" ? context.package : undefined;
-        const reportFailure = async (error_code: "EXPORT_ARTIFACT_MISSING" | "ARTIFACT_MISMATCH", actual_size: number | null = null) => {
+        const savedPackage =
+          artifactPath[2] === "download" && artifact.kind === "generated"
+            ? context.package
+            : undefined;
+        const reportFailure = async (
+          error_code: "EXPORT_ARTIFACT_MISSING" | "ARTIFACT_MISMATCH",
+          actual_size: number | null = null,
+        ) => {
           if (savedPackage)
             await backend.internal("report_export_package_artifact_failure", {
-              artifact_id: id, actor_id: user.id,
+              artifact_id: id,
+              actor_id: user.id,
               package_id: savedPackage.id,
               expected_revision: savedPackage.revision,
               expected_hash: artifact.content_hash,
@@ -801,7 +807,11 @@ export function createApiHandler(
           : await backend.object(artifact.storage_key);
         if (!blob) {
           await reportFailure("EXPORT_ARTIFACT_MISSING");
-          throw new AppError(422, "EXPORT_ARTIFACT_MISSING", "The saved export file is unavailable. Explicitly retry the package to restore it.");
+          throw new AppError(
+            422,
+            "EXPORT_ARTIFACT_MISSING",
+            "The saved export file is unavailable. Explicitly retry the package to restore it.",
+          );
         }
         if (
           blob.size !== Number(artifact.expected_size) ||
@@ -839,7 +849,11 @@ export function createApiHandler(
                 "EXPORT_PAGE_CAP_REACHED",
                 "Split the reviewed PDF.",
               );
-          } else verifyExportDocx(bytes, buildExportModel(context.request));
+          } else
+            await verifyExportDocxAsync(
+              bytes,
+              buildExportModel(context.request),
+            );
           return respond(
             await backend.internal("complete_export_artifact", {
               artifact_id: id,
