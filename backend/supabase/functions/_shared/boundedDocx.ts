@@ -2,6 +2,10 @@ import type { RenderModel } from "./export.ts";
 import { AppError } from "./http.ts";
 import { readDocxArchiveChunks } from "./boundedDocxArchive.ts";
 import { BoundedXml } from "./boundedXml.ts";
+import {
+  docxRunSegments,
+  NATIVE_DOCX_RUN_OVERHEAD,
+} from "./docxRunSegments.ts";
 const normalize = (s: string) =>
   s
     .normalize("NFC")
@@ -85,19 +89,27 @@ function* verifyChunks(
   let expectedCount = 0,
     structuralCount = 0,
     textUnits = 0,
+    nativeRuns = 0,
     longest = 0;
   for (const paragraph of sourceParagraphs(model)) {
     structuralCount++;
     if (normalize(paragraph.text)) expectedCount++;
     textUnits += paragraph.text.length;
     longest = Math.max(longest, paragraph.text.length);
+    // A short mixed-script source may need one native formatting run per
+    // character. Budget its exact authorized segmentation, without retaining
+    // a split/run array or trusting archive-declared expansion. Yield even
+    // when a single paragraph contains many alternating script runs.
+    for (const _segment of docxRunSegments(paragraph.text))
+      if (++nativeRuns % 4096 === 0) yield;
     if (structuralCount % 4096 === 0) yield;
   }
   const documentLimit = Math.max(
     40 * 1024 * 1024,
     8 * 1024 * 1024 +
       (structuralCount + model.blocks.length) * 2048 +
-      textUnits * 12,
+      textUnits * 12 +
+      nativeRuns * NATIVE_DOCX_RUN_OVERHEAD,
   );
   if (!Number.isSafeInteger(documentLimit)) invalid();
   const paragraphLimit = Math.max(65536, longest * 8 + 8192);

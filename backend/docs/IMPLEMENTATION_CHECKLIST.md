@@ -8035,3 +8035,28 @@ frontend typecheck pass, including the absence of an unsafe/ineffective retry an
 compatibility with the old response shape. Backend metadata, storage fencing,
 operational retirement, final combined checks and deployment retain separate
 implementation and acceptance evidence.
+
+### 2026-11-04 — bound native mixed-script run expansion from authorized content
+
+The incremental DOCX verifier now counts the exact historical ASCII/non-ASCII
+run segmentation lazily from the trusted render model and adds conservative
+native run-property overhead to its existing text/paragraph/table allowance.
+It does not infer an allowance from ZIP metadata or allocate all run objects.
+Preflight yields every 4,096 runs, including within one paragraph, so request
+cancellation remains effective. The 10 MiB compressed file cap, 512-byte inflater
+input chunks, 1 MiB output-chunk guard, CRC/local/central agreement, strict XML,
+field/table/content rules and original-document 40 MiB upload guard are unchanged.
+
+A new native-XML fixture repeated actual two-script Word run fragments into twelve
+20,000-character paragraphs. It failed the old expanded-content budget and now
+passes full asynchronous validation above 40 MiB. The same text-length model with
+contiguous script cannot borrow that allowance and still fails the budget; timer
+heartbeat and cancellation assertions pass. Exact segmentation is checked against
+the historical capturing split over 9,331 short strings plus punctuation/Unicode
+cases. The native fragment's formatting overhead is checked against the allowance.
+
+Local validation: 49 bounded-verifier/run-budget cases pass; both package types
+and builds pass. No claim is made that this synthetic XML fixture proves the
+native renderer's full admitted 69-paragraph direction-density case: final Deno
+render/verify, process/container memory and timing evidence remain with that
+separate qualification. No hosted or production/provider calls were performed.
