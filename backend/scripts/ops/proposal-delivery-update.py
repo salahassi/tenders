@@ -26,6 +26,7 @@ release=load('delivery_release_contract','proposal-delivery-release.py')
 images=load('delivery_release_images','proposal-delivery-images.py')
 code=load('delivery_release_runtime','model-validation-update.py')
 inventory=load('delivery_release_inventory','digitalocean-inventory.py')
+gateway=load('delivery_storage_gateway','storage-gateway-update.py')
 runtime,u=code.runtime,code.u
 d=u.d
 RUNTIME=('worker','api','source-browser','scheduler')
@@ -47,6 +48,10 @@ def worker_resource_envelope(value):
     """
     containers=value.get('spec',{}).get('template',{}).get('spec',{}).get('containers',[])
     if not isinstance(containers,list) or len(containers)!=1 or not isinstance(containers[0],dict) or containers[0].get('name')!='worker':raise UpdateError('DELIVERY_WORKER_RESOURCES_INVALID')
+    container=containers[0]
+    if container.get('command') or container.get('args'):raise UpdateError('DELIVERY_WORKER_ENTRYPOINT_OVERRIDE')
+    service=[entry for entry in container.get('env',[]) if isinstance(entry,dict) and entry.get('name')=='APP_RUNTIME_SERVICE']
+    if service!=[{'name':'APP_RUNTIME_SERVICE','value':'worker'}]:raise UpdateError('DELIVERY_WORKER_RUNTIME_ROLE_INVALID')
     resources=containers[0].get('resources',{})
     if not isinstance(resources,dict) or not isinstance(resources.get('limits',{}),dict):raise UpdateError('DELIVERY_WORKER_RESOURCES_INVALID')
     limits=resources.get('limits',{})
@@ -95,7 +100,7 @@ def cleanup_saved_client():
 def native_spec(value):
     result=copy.deepcopy(value['spec']);result['jobTemplate']['spec']['template']['spec']['containers'][0].pop('image');return result
 
-def verify_configuration(before,configuration,native_original,selected,*,final=False):
+def verify_configuration(before,configuration,native_original,selected,*,final=False,gateway_state=None):
     after=runtime.workload_snapshot()
     if set(before)!=set(after) or any(before[name]!=after[name] for name in before if name not in TARGETS):raise UpdateError('DELIVERY_OTHER_WORKLOAD_CHANGED')
     now=runtime.retained_configuration()
@@ -105,6 +110,7 @@ def verify_configuration(before,configuration,native_original,selected,*,final=F
     if native['metadata'].get('uid')!=native_original['metadata'].get('uid') or native_spec(native)!=native_spec(native_original):raise UpdateError('DELIVERY_NATIVE_CONFIGURATION_CHANGED')
     current=native['spec']['jobTemplate']['spec']['template']['spec']['containers'][0]['image']
     if current not in (native_original['spec']['jobTemplate']['spec']['template']['spec']['containers'][0]['image'],selected['ocr']) or (final and current!=selected['ocr']):raise UpdateError('DELIVERY_NATIVE_IMAGE_CHANGED')
+    if gateway_state is not None:gateway.verify(d,gateway_state,check_pods=final)
 
 def patch_native(original,selected):
     current=u.owned('cronjob','native-ocr');path='/spec/jobTemplate/spec/template/spec/containers/0'
@@ -149,6 +155,7 @@ def update():
     code.BASE_RUNTIME=manifest['baseline_images']['worker'];code.ROLLOUT_MARKER=MARKER
     original={name:u.deployment(name,ready=False) for name in TARGETS}
     observed_worker_resources=worker_resource_envelope(original['worker'])
+    gateway_state=gateway.preflight(d,manifest.get('gateway_configuration'))
     for name,value in original.items():
         if image_of(value) not in (manifest['baseline_images'][name],selected['frontend' if name=='frontend' else 'runtime']):raise UpdateError('DELIVERY_WORKLOAD_BASELINE_CHANGED')
     original['worker']=code.worker_baseline(original['worker'],selected['runtime'])
@@ -175,6 +182,12 @@ def update():
         client.prepare()
         verify_configuration(before,configuration,native_original,selected)
         attempted=True
+        # The unused resumable endpoint bypasses Storage's permission probe for
+        # signed tokens. Install its qualified gateway denial before new schema
+        # or runtime can rely on retirement. Never roll this guard back after an
+        # ambiguous later stage; its exact bytes/spec are checked throughout.
+        gateway.apply(d,gateway_state)
+        before['gateway']=gateway.after_snapshot(gateway_state)
         receipt=json.loads(d.sql(client.pod,release.migration_script(manifest)))
         if set(receipt)!={'release','manifest_sha256','catalog_sha256','replayed'} or receipt['release']!=release.RELEASE or receipt['manifest_sha256']!=release.digest(release.canonical(manifest).encode()) or not re.fullmatch('[a-f0-9]{64}',receipt['catalog_sha256']) or type(receipt['replayed']) is not bool:raise UpdateError('DELIVERY_SCHEMA_RECEIPT_INVALID')
         # All SQL becomes visible atomically before any runtime admits new pins.
@@ -188,20 +201,20 @@ def update():
             runtime.patch_runtime(name,selected['runtime'],original[name],manifest['baseline_images'][name]);d.wait_deployments([name]);wait_drain(name,selected['runtime'])
         patch_native(native_original,selected['ocr'])
         runtime.patch_runtime('frontend',selected['frontend'],original['frontend'],manifest['baseline_images']['frontend']);d.wait_deployments(['frontend'])
-        verify_targets(original,selected,True);verify_configuration(before,configuration,native_original,selected,final=True)
+        verify_targets(original,selected,True);verify_configuration(before,configuration,native_original,selected,final=True,gateway_state=gateway_state)
         code.public_check(u.owned('configmap','frontend-config'))
         # Re-read the exact post-catalog receipt after runtime/public acceptance.
         check=json.loads(d.sql(client.pod,release.migration_script(manifest)))
         if check.get('manifest_sha256')!=receipt['manifest_sha256'] or check.get('catalog_sha256')!=receipt['catalog_sha256'] or check.get('replayed') is not True:raise UpdateError('DELIVERY_SCHEMA_RECHECK_FAILED')
         code.patch_worker_strategy(original['worker'],selected['runtime'],False)
-        verify_targets(original,selected);verify_configuration(before,configuration,native_original,selected,final=True)
+        verify_targets(original,selected);verify_configuration(before,configuration,native_original,selected,final=True,gateway_state=gateway_state)
     except Exception:
         if attempted:emit('forward_completion_required',automatic_rollback=False,compatible_candidate_retained=True,images=selected)
         raise
     finally:
         try:client.cleanup();journal_path().unlink(missing_ok=True)
         except Exception:raise UpdateError('DELIVERY_CLIENT_CLEANUP_NOT_CONFIRMED') from None
-    emit('passed',source_revision=revision,images=selected,schema=receipt,worker_resources=observed_worker_resources,deployments_updated=list(TARGETS),cronjobs_updated=['native-ocr'],old_workers_drained=True,configuration_preserved=True,processing_retried=False,hosted_artifact_acceptance=False)
+    emit('passed',source_revision=revision,images=selected,schema=receipt,worker_resources=observed_worker_resources,deployments_updated=list(TARGETS)+['gateway'],cronjobs_updated=['native-ocr'],old_workers_drained=True,configuration_preserved_except_reviewed_storage_gateway=True,storage_gateway_configuration=manifest['gateway_configuration'],processing_retried=False,hosted_artifact_acceptance=False)
 
 def main(argv=()):
     try:

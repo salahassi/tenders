@@ -1,0 +1,63 @@
+name: Retire selected uncertain storage writes
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Retire reviewed keys, or only restore services after an interrupted run
+        type: choice
+        options: [retire, restore-services, reconcile-processes]
+        default: restore-services
+        required: true
+      selection_object:
+        description: Exact encrypted selection in the existing private transport
+        type: string
+        required: true
+      selection_sha256:
+        description: Reviewed selection plaintext SHA-256
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: tenderdesk-production-storage-maintenance
+  cancel-in-progress: false
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Check retirement boundaries
+        run: |
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_storage_retirement*.py'
+      - name: Execute the exact private selection using original cluster TLS
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          RETIREMENT_MODE: ${{ inputs.mode }}
+          RETIREMENT_SELECTION_OBJECT: ${{ inputs.selection_object }}
+          RETIREMENT_SELECTION_SHA256: ${{ inputs.selection_sha256 }}
+        run: |
+          python3 backend/scripts/ops/retire-storage-writes.py \
+            --mode "$RETIREMENT_MODE" \
+            --selection-object "$RETIREMENT_SELECTION_OBJECT" \
+            --selection-sha256 "$RETIREMENT_SELECTION_SHA256"
+      - name: Retry only owned service restoration and temporary client cleanup
+        if: ${{ always() }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/retire-storage-writes.py --cleanup
+      - name: Remove private runner plaintext and credentials
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil
+          run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+          if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):raise SystemExit('RETIREMENT_RUNNER_CLEANUP_IDENTITY_INVALID')
+          path=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+run+'-'+attempt)
+          if path.is_symlink():raise SystemExit('RETIREMENT_RUNNER_CLEANUP_PATH_INVALID')
+          if path.exists():shutil.rmtree(path)
+          print('{"storage_retirement":"runner_files_removed"}')
+          PY

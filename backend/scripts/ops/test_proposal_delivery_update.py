@@ -28,9 +28,9 @@ class DeliveryUpdateTests(unittest.TestCase):
   events=[];deployments={}
   for name in p.inventory.NAMES:
    deployments[name]={'metadata':{'uid':name+'-uid','name':name,'resourceVersion':'1','annotations':{}},'spec':{'replicas':1,'strategy':copy.deepcopy(p.code.WORKER_STRATEGY),
-    'template':{'spec':{'terminationGracePeriodSeconds':240,'containers':[{'name':name,'image':REGISTRY+'frontend@sha256:'+'a'*64 if name=='frontend' else BASE,'resources':{'requests':{'cpu':'25m','memory':'192Mi'},'limits':{'cpu':'1000m','memory':'640Mi'}}}]}}}}
+    'template':{'spec':{'terminationGracePeriodSeconds':240,'containers':[{'name':name,'env':[{'name':'APP_RUNTIME_SERVICE','value':name}],'image':REGISTRY+'frontend@sha256:'+'a'*64 if name=='frontend' else BASE,'resources':{'requests':{'cpu':'25m','memory':'192Mi'},'limits':{'cpu':'1000m','memory':'640Mi'}}}]}}}}
   natives={name:cron(name.removeprefix('native-')) for name in ('native-browser','native-ocr')}
-  manifest={'executor_max':4,'renderer_versions':[1,2,3],'minimum_worker_executor':4,'baseline_images':{name:p.image_of(v) for name,v in deployments.items()},'baseline_native_schedules':p.inventory.public_schedules(list(natives.values()))}
+  manifest={'gateway_configuration':{'fixture':True},'executor_max':4,'renderer_versions':[1,2,3],'minimum_worker_executor':4,'baseline_images':{name:p.image_of(v) for name,v in deployments.items()},'baseline_native_schedules':p.inventory.public_schedules(list(natives.values()))}
   def stage(name):
    events.append(name)
    if name==fail:raise RuntimeError('PRIVATE_FAILURE_PAYLOAD')
@@ -66,6 +66,7 @@ class DeliveryUpdateTests(unittest.TestCase):
    stack.enter_context(patch.object(p.runtime,'workload_snapshot',side_effect=snapshot));stack.enter_context(patch.object(p.runtime,'retained_configuration',side_effect=retained))
    stack.enter_context(patch.object(p.u,'owned',side_effect=lambda kind,name:copy.deepcopy(natives[name]) if kind=='cronjob' else {'data':{}}))
    stack.enter_context(patch.object(p.d,'command',side_effect=command));stack.enter_context(patch.object(p.d,'wait_deployments',side_effect=lambda names:stage(names[0]+'-ready')))
+   stack.enter_context(patch.object(p.gateway,'preflight',return_value={'fixture':True}));stack.enter_context(patch.object(p.gateway,'apply',side_effect=lambda *_:stage('gateway-guard')));stack.enter_context(patch.object(p.gateway,'after_snapshot',side_effect=lambda _:snapshot()['gateway']));stack.enter_context(patch.object(p.gateway,'verify',side_effect=lambda *_args,**_kwargs:stage('gateway-verify')))
    stack.enter_context(patch.object(p,'wait_drain',side_effect=lambda name,_image:stage(name+'-drained')))
    stack.enter_context(patch.object(p.code,'public_check',side_effect=public));stack.enter_context(patch.object(p.d,'sql',side_effect=sql))
    client=stack.enter_context(patch.object(p.inventory.observer,'Client'));client.return_value.labels={};client.return_value.prepare.side_effect=lambda:stage('client');client.return_value.cleanup.side_effect=lambda:stage('cleanup')
@@ -75,6 +76,7 @@ class DeliveryUpdateTests(unittest.TestCase):
  def test_atomic_schema_then_old_worker_drain_then_api_gateway_native_frontend(self):
   with self.fixture() as (state,native,events,emit):
    p.update()
+   self.assertLess(events.index('gateway-guard'),events.index('schema'))
    self.assertLess(events.index('schema'),events.index('worker-patch'))
    self.assertLess(events.index('worker-drained'),events.index('api-patch'))
    self.assertLess(events.index('source-browser-drained'),events.index('native-ocr-patch'))
@@ -119,7 +121,7 @@ class DeliveryUpdateTests(unittest.TestCase):
    self.assertEqual(receipt['desired_replicas'],2);self.assertFalse(receipt['hosted_load_qualified'])
 
  def test_each_failure_cleans_and_never_rolls_images_back_or_claims_success(self):
-  for failure in ('client','schema','worker-patch','worker-drained','api-patch','source-browser-patch','native-ocr-patch','frontend-patch','public','schema-recheck','cleanup'):
+  for failure in ('client','gateway-guard','schema','worker-patch','worker-drained','api-patch','source-browser-patch','native-ocr-patch','frontend-patch','public','schema-recheck','cleanup'):
    with self.subTest(failure=failure),self.fixture(failure) as (state,natives,events,emit):
     with self.assertRaises(Exception):p.update()
     self.assertEqual(events[-1],'cleanup')
@@ -167,3 +169,11 @@ class DeliveryUpdateTests(unittest.TestCase):
   for value in ('--activate','digitalocean-bootstrap','resume-requested-processing','upload-artifact'):self.assertNotIn(value,source)
 
 if __name__=='__main__':unittest.main()
+
+class WorkerEntrypointTests(unittest.TestCase):
+ def test_kubernetes_overrides_or_wrong_direct_role_are_rejected(self):
+  base={'spec':{'replicas':1,'template':{'spec':{'containers':[{'name':'worker','env':[{'name':'APP_RUNTIME_SERVICE','value':'worker'}],'resources':{'limits':{'cpu':'1','memory':'640Mi'}}}]}}}}
+  p.worker_resource_envelope(base)
+  for change in ({'command':['/bin/deno']},{'args':['run','main.ts']},{'env':[]},{'env':[{'name':'APP_RUNTIME_SERVICE','value':'api'}]},{'env':[{'name':'APP_RUNTIME_SERVICE','valueFrom':{'secretKeyRef':{'name':'private','key':'role'}}}]},{'env':[{'name':'APP_RUNTIME_SERVICE','value':'worker'},{'name':'APP_RUNTIME_SERVICE','value':'api'}]}):
+   value=copy.deepcopy(base);value['spec']['template']['spec']['containers'][0].update(change)
+   with self.subTest(change=change),self.assertRaisesRegex(p.UpdateError,'DELIVERY_WORKER_'):p.worker_resource_envelope(value)

@@ -8537,3 +8537,43 @@ The reviewed gateway baseline is retained in
 This is the expected pre-change configuration, not a claim that the recent
 inventory captured live ConfigMap contents. The release must compare actual
 ConfigMap bytes and workload identity before its exact guarded update.
+
+### Scoped retirement runner, gateway rollout and recovery controls
+
+The explicit `retire-storage-writes.yml` workflow defaults to service restoration;
+retirement and old-process reconciliation require explicit modes and an exact
+private encrypted selection. The runner preserves the original cluster CA,
+checks actual Storage/function owner authority, pinned binary/helper/guard hashes,
+qualified running gateway bytes and cluster-only Storage service/ingress policy.
+It refuses known physical namespace collisions before preparing a permanent
+fence, then rechecks after all old writers stop. Exact file hashes, inode checks,
+directory fsync and checked-owner metadata deletion precede private quota release.
+
+Original Pod identities and real exit receipts are durably retained in Kubernetes.
+Unknown live/deleting/missing Pods keep their records; replica restoration does
+not manufacture termination. Every workload's exit map is committed before any
+of its finalizers is removed, allowing recovery after immediate garbage collection
+or lost finalizer ACK. Explicit `reconcile-processes` uses exact UID/resourceVersion
+preconditions and normal grace, never force-deletion, and does not release quota.
+Independent source review reproduced the prior GC liveness failure and verified
+the unchanged reproduction green after this correction. That is synthetic API
+control-flow evidence, separately from actual hosted kubelet behavior.
+
+The release now binds and compare-and-set updates only the reviewed gateway
+ConfigMap and template checksum, verifies the running file and immutable image,
+and preserves the guard after later release ambiguity. The retained baseline is
+an expected source value until actual preflight checks it. The same release
+preflight rejects Kubernetes worker command/argument overrides and requires an
+explicit `APP_RUNTIME_SERVICE=worker`, so an image's measured heap entrypoint
+cannot silently be bypassed. It does not change requests, limits or cluster cost.
+
+Local scoped tests pass: 33 retirement/coordinator/adapter cases, 10 exact gateway
+rollout cases and 12 release boundary cases. Actual source binding matches the
+root's eight-field gateway manifest and binary qualification receipt
+`1831842de23dc097269b403987d2530bb486f2fc01c4bde0cb491fd5ae369ff3`.
+Python compilation and diff checks pass. The separate physical/binary and 25-case
+SQL receipts retain their own limits. No production mutation, maintenance,
+provider call or hosted retirement acceptance occurred. Root owns final package
+checks, manifest freeze, isolated cloud restore, release and hosted acceptance.
+The procedure and recovery/whole-cluster boundaries are documented in
+[STORAGE_WRITE_RETIREMENT_RUNBOOK.md](STORAGE_WRITE_RETIREMENT_RUNBOOK.md).
