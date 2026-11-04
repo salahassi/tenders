@@ -9686,3 +9686,39 @@ The already-written transaction and pre-table cached-function races still need
 actual PostgreSQL proof. The release's early exclusive lock, locked zero census,
 gateway admission fence, old-transaction drain and final capacity gates remain
 separate prerequisites. No hosted action or deployment occurred.
+
+## November 4 — A06 independent Arabic OCR diagnosis and rejected tuning
+
+**Implementation:** added an explicit bounded native diagnostic tool and a stricter
+whole-page oracle for fixed synthetic gold. No runtime recognizer, handler,
+migration, source-eligibility rule or page-review requirement changed. The oracle
+rejects extra negation, reordered conditions and altered numeric punctuation;
+ordered substring presence alone no longer counts as complete recognition.
+
+**Actual native evidence:** the pinned existing OCR image reproduced the historical
+Arabic failure, including its exact image/text hashes and confidence 82. A fixed
+18-setting matrix found one complete original-case match (1000px, Arabic-only,
+PSM 6). Independent pre-authored/frozen holdouts then rejected that candidate:
+all three Arabic/mixed pages failed complete gold and lost their English IDs;
+the unchanged English control regressed from exact/confidence96 to unreadable/24.
+The existing default also failed all three independent Arabic whole-page cases.
+Raw historical scores remain intact; the stronger independent adjudication is
+separate. Isolated containers used network-none/768MiB/oneCPU/64PIDs and were
+removed after completion. No further parameter search or external calls occurred.
+
+**Validation:** all 16 focused pure oracle regressions passed (124ms), including
+independent-review negatives for leading decimals and punctuation inside IDs.
+Backend `npm run typecheck` and `npm run build` both passed. Full combined
+package checks remain root-owned; no frontend/runtime code changed. Native Arabic qualification remains failed; the
+ordinary native gold suite is deliberately not relabeled green. The new diagnostic
+runner packages the measured procedure but has not itself been rerun as a rebuilt
+image. Original frozen gold/PDFs and independently prepared holdout gold are not
+changed to accommodate engine output.
+
+**Deployment / remaining:** no deployment or hosted claim. A06 remains open for
+automatic Arabic extraction. Qualify a different recognizer/policy against an
+independent Arabic/mixed corpus, or retain current source-bound visual correction
+and explicit coverage gaps. Opportunity language is not a verified page-language
+classifier. No genuine Microsoft Word engine was available; the separate Word
+update/save gate remains open. See `docs/ARABIC_OCR_DIAGNOSTIC.md` and
+`docs/evidence/uploaded-ocr-adjudication-20261104.json`.

@@ -6,6 +6,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
+import { matchesOcrPageGold } from "./ocrQualityOracle.ts";
 // This dedicated suite resolves the native module inside the built OCR image.
 const { readUploadedPdfPage } = await import(new URL("../backend/uploaded-document-ocr-worker.ts", import.meta.url).href);
 
@@ -13,11 +14,6 @@ const fixtureRoot = new URL("../../tests/backend/fixtures/uploaded-ocr/", import
 const manifestBytes = await readFile(new URL("manifest.json", fixtureRoot));
 const manifest = JSON.parse(manifestBytes.toString());
 const hash = (value: Buffer | string) => createHash("sha256").update(value).digest("hex");
-// Ignore only orthographic presentation (diacritics/punctuation/whitespace),
-// never digits, negation, word order, actors, dates, amounts or units.
-const normalized = (value: string) => value.normalize("NFKC")
-  .replace(/[\u0610-\u061a\u064b-\u065f\u0670\u06d6-\u06ed\u200e\u200f]/gu, "")
-  .replace(/[.,،]/gu, "").replace(/\s+/gu, " ").trim();
 
 async function fixture(name: string) {
   const bytes = await readFile(new URL(name, fixtureRoot));
@@ -36,16 +32,11 @@ for (const language of ["en", "ar"] as const) {
     assert.equal(result.text_hash, hash(result.text));
     assert.match(result.image_hash, /^[a-f0-9]{64}$/);
     assert.ok(result.confidence >= 0 && result.confidence <= 100);
-    const actual = normalized(result.text);
-    let previous = -1;
-    for (const obligation of manifest.recognition_oracle[language]) {
-      const position = actual.indexOf(normalized(obligation));
-      assert.ok(position > previous, `Missing/reordered/changed obligation: ${obligation}\nRecognized: ${result.text}`);
-      previous = position;
-    }
+    assert.ok(matchesOcrPageGold(result.text, manifest.recognition_oracle[language]),
+      `Page differs from complete pre-authored gold (including additions or numeric punctuation): ${result.text}`);
     console.log(JSON.stringify({ native_ocr: language, fixture_sha256: hash(bytes), manifest_sha256: hash(manifestBytes),
       engine_version: result.engine_version, text_sha256: result.text_hash, elapsed_ms: Math.round(performance.now() - started),
-      confidence: result.confidence, numeric_uncertainty: result.numeric_uncertainty, oracle: "all_exact_obligations" }));
+      confidence: result.confidence, numeric_uncertainty: result.numeric_uncertainty, oracle: "full_normalized_page_v2" }));
   });
 }
 
@@ -53,7 +44,7 @@ test("mixed PDF selects the exact scan page and leaves a blank page empty", { ti
   const bytes = await fixture("mixed-five-pages.pdf");
   const request = { original_hash: hash(bytes), total_pages: 5, page: 3, language: "auto" as const };
   const scan = await readUploadedPdfPage(bytes, request);
-  for (const line of manifest.recognition_oracle.en) assert.ok(normalized(scan.text).includes(normalized(line)));
+  assert.ok(matchesOcrPageGold(scan.text, manifest.recognition_oracle.en));
   assert.equal(scan.page, 3);
   assert.ok(!scan.text.includes("Native page"));
   const blank = await readUploadedPdfPage(bytes, { ...request, page: 5 });

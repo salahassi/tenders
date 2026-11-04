@@ -1,0 +1,252 @@
+{
+  "version": 1,
+  "scope": "Offline synthetic Arabic OCR diagnostic and independently frozen holdout adjudication; no automatic semantic qualification",
+  "source_revision": "1582a52dbf72777a29f44d4dededd5a444efa550",
+  "image_id": "sha256:42bda8349d80507c1b7d5fd299d1c9be59ece8f559256bfc8b8bf90f6d8b40af",
+  "limits": {
+    "network": "none",
+    "memory_mib": 768,
+    "cpus": 1,
+    "pids": 64,
+    "tmpfs_mib": 256
+  },
+  "historical_receipt_unchanged": true,
+  "runtime_recognition_changed": false,
+  "mandatory_page_review_retained": true,
+  "selected_candidate": {
+    "scale": 1000,
+    "lang": "ara",
+    "psm": 6,
+    "selection": "Only one of the predeclared18 configurations matched every original obligation; evaluated against independent controls without further tuning",
+    "adopted": false
+  },
+  "oracle": {
+    "version": 2,
+    "scope": "Entire fixed pre-authored page including headings; formatting-only diacritics/direction marks/whitespace and boundary quote/sentence punctuation ignored; leading decimal punctuation, numeric separators and punctuation internal to alphanumeric identifiers retained; no lexical addition, negation, word-order or identifier normalization",
+    "historical_raw_ordered_substring_scores_preserved": true
+  },
+  "receipts": {
+    "matrix": "f1425401cb19e26f4435cad4bd860178466922132288496e3bb78a87374aede7",
+    "holdouts": "9ceccf01f52e2d60a3ce1ff8bc968b187e69d564917aa0e098ff3b50d453fa2c",
+    "holdout_freeze": "3e7e6a5812b1d29cbc26a0058765f93a8af77ccfdd4a4b5444fbefbf66cb0706",
+    "holdout_gold": "9f855604b3df5dc26f4d10f72a9b57f6fc8d1e071381480bef72951211c48b99",
+    "matrix_harness": "162bbca906a07e9df469f588b6c993c9ce4ac6c11714c23a27b12303fe2eb45b",
+    "holdout_harness": "b827b8a4b36ffe6b7fc8417358bb4527f6f372f79e7dadce034d21d209cd727c",
+    "measured_harness_archive": {
+      "path": "uploaded-ocr-measured-harnesses-20261104.json",
+      "sha256": "488847765ad40c7277a689a1c4e7840e2977b302ff9d86e41381a917d7c3d71c"
+    }
+  },
+  "matrix": [
+    {
+      "scale": 1000,
+      "lang": "ara+eng",
+      "psm": 3,
+      "confidence": 88,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 1000,
+      "lang": "ara+eng",
+      "psm": 6,
+      "confidence": 87,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 1000,
+      "lang": "ara+eng",
+      "psm": 11,
+      "confidence": 85,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 3,
+      "confidence": 89,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 6,
+      "confidence": 88,
+      "full_normalized_page_exact": true
+    },
+    {
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 11,
+      "confidence": 85,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 1500,
+      "lang": "ara+eng",
+      "psm": 3,
+      "confidence": 87,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 1500,
+      "lang": "ara+eng",
+      "psm": 6,
+      "confidence": 85,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 1500,
+      "lang": "ara+eng",
+      "psm": 11,
+      "confidence": 87,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 1500,
+      "lang": "ara",
+      "psm": 3,
+      "confidence": 85,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 1500,
+      "lang": "ara",
+      "psm": 6,
+      "confidence": 87,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 1500,
+      "lang": "ara",
+      "psm": 11,
+      "confidence": 87,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 3,
+      "confidence": 82,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 6,
+      "confidence": 83,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 11,
+      "confidence": 82,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 2000,
+      "lang": "ara",
+      "psm": 3,
+      "confidence": 81,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 2000,
+      "lang": "ara",
+      "psm": 6,
+      "confidence": 84,
+      "full_normalized_page_exact": false
+    },
+    {
+      "scale": 2000,
+      "lang": "ara",
+      "psm": 11,
+      "confidence": 82,
+      "full_normalized_page_exact": false
+    }
+  ],
+  "holdouts": [
+    {
+      "case": "maintenance-obligation",
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 3,
+      "confidence": 84,
+      "full_normalized_page_exact": false
+    },
+    {
+      "case": "maintenance-obligation",
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 6,
+      "confidence": 77,
+      "full_normalized_page_exact": false
+    },
+    {
+      "case": "records-retention",
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 3,
+      "confidence": 90,
+      "full_normalized_page_exact": false
+    },
+    {
+      "case": "records-retention",
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 6,
+      "confidence": 87,
+      "full_normalized_page_exact": false
+    },
+    {
+      "case": "sensor-acceptance",
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 3,
+      "confidence": 89,
+      "full_normalized_page_exact": false
+    },
+    {
+      "case": "sensor-acceptance",
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 6,
+      "confidence": 86,
+      "full_normalized_page_exact": false
+    },
+    {
+      "case": "english-existing-control",
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 3,
+      "confidence": 96,
+      "full_normalized_page_exact": true
+    },
+    {
+      "case": "english-existing-control",
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 6,
+      "confidence": 24,
+      "full_normalized_page_exact": false
+    }
+  ],
+  "conclusion": "Do not adopt the single-case tuning. Arabic-only candidate damages all three independent mixed identifiers and the previously passing English page; both baseline and candidate remain unqualified on every independent Arabic whole-page gold.",
+  "remaining": [
+    "Qualify a different recognizer/configuration against independently frozen Arabic, mixed-language, sparse/complex-page, blank-page and number/negation gold before changing defaults.",
+    "Use existing source-bound visual page review and immutable authorized correction for unresolved OCR; preserve readable pages and explicit coverage gaps.",
+    "No real Microsoft Word engine is available in this local environment; LibreOffice evidence does not close the separate Word update/save gate."
+  ],
+  "production_calls": 0,
+  "external_provider_calls": 0,
+  "hosted_acceptance": false,
+  "validation": {
+    "pure_oracle_tests": 16,
+    "passed": 16,
+    "scope": "Vitest fixed-gold, lexical/numeric rejection, historical baseline reproduction and candidate mixed-ID regressions; no native acceptance claim",
+    "backend_typecheck": "passed",
+    "backend_build": "passed",
+    "full_combined_suite": "pending parent integration",
+    "new_diagnostic_runner_native_rerun": false
+  }
+}

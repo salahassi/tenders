@@ -1,0 +1,376 @@
+{
+  "scope": "Frozen independent synthetic holdouts and unchanged English control; baseline versus single selected diagnostic candidate; no production change or automatic semantic qualification",
+  "holdout_freeze_sha256": "3e7e6a5812b1d29cbc26a0058765f93a8af77ccfdd4a4b5444fbefbf66cb0706",
+  "holdout_gold_sha256": "9f855604b3df5dc26f4d10f72a9b57f6fc8d1e071381480bef72951211c48b99",
+  "engine": "tesseract 5.3.0",
+  "cases": [
+    {
+      "case": "maintenance-obligation",
+      "fixture_sha256": "865400db7e101086faf30311b81239c52cfa71074d1b51c80354b4acab959003",
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 3,
+      "elapsed_ms": 301,
+      "image_sha256": "cfba5504d4791f0cc9692c233a77e2c1bf6865246d2bfe2e72e2f422262ecfc9",
+      "tsv_sha256": "0489e3785df056a9a785de3e5a83c9f4582c2514e7aa1454751370ab18256610",
+      "text": "ملحق الصيانة\nيلتزم المتعهد بفحص 7 اجهزة في كل زيارة شبرية.\nلا يجوز إيقاف الخدمة أثناء ساعات العمل.\nإذا ظهر عطل حرجء تبدأ المعالجة خلال 6 ساعات.\nتبلغ قيمة الزيارة 3750 ريالاء ويبدأ العقد في 2027-02-18.\nع ججح الطلب: «MX-2047-B‏",
+      "confidence": 84,
+      "matches": [
+        false,
+        true,
+        false,
+        false,
+        false
+      ],
+      "critical_literals": [
+        {
+          "literal": "يلتزم",
+          "present": true
+        },
+        {
+          "literal": "7",
+          "present": true
+        },
+        {
+          "literal": "لا يجوز",
+          "present": true
+        },
+        {
+          "literal": "إذا",
+          "present": true
+        },
+        {
+          "literal": "6",
+          "present": true
+        },
+        {
+          "literal": "3750",
+          "present": true
+        },
+        {
+          "literal": "2027-02-18",
+          "present": true
+        },
+        {
+          "literal": "MX-2047-B",
+          "present": true
+        }
+      ],
+      "exact_gold": false
+    },
+    {
+      "case": "maintenance-obligation",
+      "fixture_sha256": "865400db7e101086faf30311b81239c52cfa71074d1b51c80354b4acab959003",
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 6,
+      "elapsed_ms": 97,
+      "image_sha256": "4050a8a9585c8dac87d33d3184fae88d32956f3c091980b27a6e8fa13189427d",
+      "tsv_sha256": "0a7c5b24b354c8adfa53ed361f81839bd0c97f7f2202b5b2d0e48e09e396aca2",
+      "text": "ملحق الصيانة\nيلتزم المتعهد بفحص 7 أجهزة في كل زيارة شهرية.\nلا يجوز إيقّاف الخدمة أثناء ساعات العمل.\nإذا ظهر عطل حرج» تبدأ المعالجة خلال 6 ساعات.\nتبلغ قيمة الزيارة 3750 ريالاء وييدأ العقد في 2027-02-18.\nهس جع الطلب: 1/(2047-8,",
+      "confidence": 77,
+      "matches": [
+        true,
+        true,
+        false,
+        false,
+        false
+      ],
+      "critical_literals": [
+        {
+          "literal": "يلتزم",
+          "present": true
+        },
+        {
+          "literal": "7",
+          "present": true
+        },
+        {
+          "literal": "لا يجوز",
+          "present": true
+        },
+        {
+          "literal": "إذا",
+          "present": true
+        },
+        {
+          "literal": "6",
+          "present": true
+        },
+        {
+          "literal": "3750",
+          "present": true
+        },
+        {
+          "literal": "2027-02-18",
+          "present": true
+        },
+        {
+          "literal": "MX-2047-B",
+          "present": false
+        }
+      ],
+      "exact_gold": false
+    },
+    {
+      "case": "records-retention",
+      "fixture_sha256": "8df77416bbfe305d1e964f72afa9a643cb6208902820b54ee233c2830768cf96",
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 3,
+      "elapsed_ms": 262,
+      "image_sha256": "b02240d3e2412b8b75bb4960b4e9a83d3b4aafa252b169d95b3043c5d1b4b8bd",
+      "tsv_sha256": "d6b8d61edbf551a033f1f8307a37b2f2a3d6849f005d2135f4bc0b85bca443e0",
+      "text": "شروط حفظ السجلات\nيجب حفظ النسخ الاحتياطية لمدة 90 يوما بعد انتهاء العقد.\nلا يسمح بنقل الملفات إلى جهة خارجية.\nعند تعذر استعادة سجل واحد, يقدم تقرير JUS‏ يومي عمل.\nتستحق الدفعة البالغة 6400 ريال في 3 أبريل 2027.\nرمز الحزمة: ARCHIVE-Q9‏",
+      "confidence": 90,
+      "matches": [
+        true,
+        true,
+        false,
+        true,
+        true
+      ],
+      "critical_literals": [
+        {
+          "literal": "يجب",
+          "present": true
+        },
+        {
+          "literal": "90",
+          "present": true
+        },
+        {
+          "literal": "لا يسمح",
+          "present": true
+        },
+        {
+          "literal": "عند تعذر",
+          "present": true
+        },
+        {
+          "literal": "يومي عمل",
+          "present": true
+        },
+        {
+          "literal": "6400",
+          "present": true
+        },
+        {
+          "literal": "3 أبريل 2027",
+          "present": true
+        },
+        {
+          "literal": "ARCHIVE-Q9",
+          "present": true
+        }
+      ],
+      "exact_gold": false
+    },
+    {
+      "case": "records-retention",
+      "fixture_sha256": "8df77416bbfe305d1e964f72afa9a643cb6208902820b54ee233c2830768cf96",
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 6,
+      "elapsed_ms": 113,
+      "image_sha256": "6a6cd37d3334d1c9b64e8f57f421eeaac26b30198382e453cea78e4873632522",
+      "tsv_sha256": "4cbcfacece5fd7908ab0ea670f7ac005fbfd4babdb9662708932851e861fb8fb",
+      "text": "شروط حفظ السجلات\nيجب حفظ النسخ الاحتياطية لمدة 90 يوما بعد انتهاء العقد.\nلا يسمح بنقل الملفات إلى جهة خارجية.\nعند تعذر استعادة سجل واحد, يقدم تقرير خلال يومي عمل.\nتستحق الدفعة البالغة 6400 ريال في 3 أبريل 2027.\nرمز الحزمة: 261111/8-09,",
+      "confidence": 87,
+      "matches": [
+        true,
+        true,
+        true,
+        true,
+        false
+      ],
+      "critical_literals": [
+        {
+          "literal": "يجب",
+          "present": true
+        },
+        {
+          "literal": "90",
+          "present": true
+        },
+        {
+          "literal": "لا يسمح",
+          "present": true
+        },
+        {
+          "literal": "عند تعذر",
+          "present": true
+        },
+        {
+          "literal": "يومي عمل",
+          "present": true
+        },
+        {
+          "literal": "6400",
+          "present": true
+        },
+        {
+          "literal": "3 أبريل 2027",
+          "present": true
+        },
+        {
+          "literal": "ARCHIVE-Q9",
+          "present": false
+        }
+      ],
+      "exact_gold": false
+    },
+    {
+      "case": "sensor-acceptance",
+      "fixture_sha256": "2954ab85ab810c853659aed7f7c95fd07785653fb588172da8076b37d9bb02e9",
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 3,
+      "elapsed_ms": 303,
+      "image_sha256": "24c2dfbae41a25d8ed39ab7ed6522bff715f87f1dcc16979ebf0720c0f5d365c",
+      "tsv_sha256": "d8bd355967f96d5c7d4815d780c2e38a8cfc97ca4866113a8323d2d0cdec0a0e",
+      "text": "إشعار تسليم المعدات\nعلى المقاول تركيب 24 حساسا قبل بدء التشغيل.\nلا تعد التجربة ناجحة ما لم تعمل جميع الحساسات.\nإذا تأخر التسليم أكثر من 5 abi‏ تخصم غرامة قدرها 850 ريالا.\nآخر موعد للفحص هو 2027/06/09« والمرجع هو -SENSOR-K3‏",
+      "confidence": 89,
+      "matches": [
+        true,
+        true,
+        false,
+        false
+      ],
+      "critical_literals": [
+        {
+          "literal": "على المقاول",
+          "present": true
+        },
+        {
+          "literal": "24",
+          "present": true
+        },
+        {
+          "literal": "لا تعد",
+          "present": true
+        },
+        {
+          "literal": "ما لم",
+          "present": true
+        },
+        {
+          "literal": "إذا",
+          "present": true
+        },
+        {
+          "literal": "5",
+          "present": true
+        },
+        {
+          "literal": "850",
+          "present": true
+        },
+        {
+          "literal": "2027/06/09",
+          "present": true
+        },
+        {
+          "literal": "SENSOR-K3",
+          "present": true
+        }
+      ],
+      "exact_gold": false
+    },
+    {
+      "case": "sensor-acceptance",
+      "fixture_sha256": "2954ab85ab810c853659aed7f7c95fd07785653fb588172da8076b37d9bb02e9",
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 6,
+      "elapsed_ms": 108,
+      "image_sha256": "a7e0636364ac06a35657a74c047d588eac877b2882eb1cad48ccb57128920730",
+      "tsv_sha256": "b3d35fff7aab36d80718074e5174e645b30d22c816c8fe3b26c634dcc2d96f47",
+      "text": "إشعار تسليم المعدات\nعلى المقاول تركيب 24 حساسا قبل بدء التشغيل.\nلا تعد التجربة ناجحة ما لم تعمل جميع الحساسات.\nإذا تأخر التسليم أكثر من 5 أيام. تخصم غرامة قدرها 850 ريالا.\nآخر موعد للفحص هو 2027/06/09. والمرجع هو 560508-63",
+      "confidence": 86,
+      "matches": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "critical_literals": [
+        {
+          "literal": "على المقاول",
+          "present": true
+        },
+        {
+          "literal": "24",
+          "present": true
+        },
+        {
+          "literal": "لا تعد",
+          "present": true
+        },
+        {
+          "literal": "ما لم",
+          "present": true
+        },
+        {
+          "literal": "إذا",
+          "present": true
+        },
+        {
+          "literal": "5",
+          "present": true
+        },
+        {
+          "literal": "850",
+          "present": true
+        },
+        {
+          "literal": "2027/06/09",
+          "present": true
+        },
+        {
+          "literal": "SENSOR-K3",
+          "present": false
+        }
+      ],
+      "exact_gold": false
+    },
+    {
+      "case": "english-existing-control",
+      "fixture_sha256": "019eb10cff310db890866ad993704ed4cc05f7583ddab36a1b3e1b3634b7b826",
+      "scale": 2000,
+      "lang": "ara+eng",
+      "psm": 3,
+      "elapsed_ms": 225,
+      "image_sha256": "c54b3a3c65138ea5c5e28d704376ac9c921147dc92dd5a71a8ba367a836c16f7",
+      "tsv_sha256": "ad45939758810c10773db020432eb83a83b67a640cd8e869a2e6c583228c73d8",
+      "text": "The supplier must deliver 12 reports within 30 days.\nPayment is SAR 12500 after acceptance.\nThe submission deadline is 2026-12-15.\nSubcontracting is prohibited without written approval.",
+      "confidence": 96,
+      "matches": [
+        true,
+        true,
+        true,
+        true
+      ],
+      "exact_gold": true
+    },
+    {
+      "case": "english-existing-control",
+      "fixture_sha256": "019eb10cff310db890866ad993704ed4cc05f7583ddab36a1b3e1b3634b7b826",
+      "scale": 1000,
+      "lang": "ara",
+      "psm": 6,
+      "elapsed_ms": 144,
+      "image_sha256": "fca91c32fef9f60bb263adfcdbf5bbe9677e149c32283ff855d318898918df1c",
+      "tsv_sha256": "fac3f146610948fe3e133717840a9a1696664033a406346a021b45e67f6fe220",
+      "text": ".031/5 30 (اتحاءأننا كأزممعء 12 ععلاأاعل أوباصص عع أاممبد عط\nعع 3:1 12500 جلمد ذأ أجاعممبردم\n.2026-12-15 وأ عو ذالدع0 موأووتصطط ند عط\n.مم3 معخا نا ألامطءأرنا لع تطتطممم دأ عمناء3 6 رممءطناد",
+      "confidence": 24,
+      "matches": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "exact_gold": false
+    }
+  ]
+}
