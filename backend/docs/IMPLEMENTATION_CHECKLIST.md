@@ -6292,3 +6292,12 @@ New delivery/issuance schema is still absent: this is baseline evidence, not dep
 or proof of the new 600-second SLO. Earlier run 41845129587 failed because the observer
 incorrectly assumed renderer schedule defaults; TLS access passed. The observer now
 records bounded actual settings and explicit/default fields instead.
+
+### 2026-11-04 — Semantic harness declaration integration
+
+Added TypeScript declarations for the frozen bilingual semantic qualification helper
+and its suite names/limits, and narrowed fixture-language/nullability in the existing
+semantic harness tests. Backend typecheck passes against integrated W05/W06/W08/W10
+foundations. No prompt, corpus, gold labels, provider calls or live outcomes changed.
+The real English/Arabic campaign remains unqualified; independent failure adjudication
+and the remaining implementation checks are recorded separately.

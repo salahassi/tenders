@@ -33,7 +33,7 @@ it("freezes 32 paired cases and keeps gold, variant, split and finding patterns 
   const { corpus, sha256: corpusHash } = await semanticCorpus();
   expect(corpus.policy).toMatchObject({ critical_false_acceptances: 0, faithful_false_rejections: 0, repetitions: 1, automatic_retries: 0 });
   expect(corpus.split).toBe("development");
-  for (const language of ["en", "ar"]) {
+  for (const language of ["en", "ar"] as const) {
     const cases = await fixtures(`semantic_${language}`);
     expect(cases).toHaveLength(16);
     expect(new Set(cases.map((f: any) => f.qualification.family)).size).toBe(8);
@@ -82,7 +82,7 @@ it("counts false rejection of each faithful bilingual control independently", as
 it("accepts a canonical short quotation of the changed field without requiring the full sentence", async () => {
   const { corpus } = await semanticCorpus();
   for (const f of [...await fixtures("semantic_en"), ...await fixtures("semantic_ar")].filter((f: any) => f.qualification.variant === "mutated")) {
-    const row = corpus.cases.find((r: any) => r.family === f.qualification.family && r.language === f.language);
+    const row = corpus.cases.find((r: any) => r.family === f.qualification.family && r.language === f.language)!;
     const report = reportFor(f);
     report.claims[0].candidate_quote = report.requirement_checks[0].candidate_quote = row.oracle.offending_candidate_spans[0];
     expect(() => f.domainValidate(report), f.id).not.toThrow();
