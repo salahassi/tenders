@@ -43,3 +43,22 @@ proposal-issuance service level.
 The five pure `batchStreamOracle.test.ts` cases verify split UTF-8/framing and
 reject altered, truncated, extra or reformatted bytes. Native results are a
 separate gate and must not be inferred from these tests.
+
+The actual run on root `6a73cafc0933723f6441a9b448d49443200d37ad` passed. Its
+[receipt](evidence/native-api-batch-capacity-20261104.json) binds the final batch
+INSERT fence, unchanged harness/SQL sources and actual immutable image files.
+The 100 results produced 412,758,765 response bytes, including the API envelope,
+in 58.024 seconds; headers arrived after 6.140 seconds. Every descriptor and SQL
+snapshot hash matched. The 1,600 stored chunks represented exactly 100 mutations;
+same-key replay/cancellation added no revision, audit, command or batch writes.
+Both EOF and settled-chunk cancellation released heavy admission; paused response
+consumption returned retryable busy without reaching heavy database work.
+
+API cgroup peak was 163,995,648 / 402,653,184 bytes, with no max/OOM/kill events.
+The sampled process RSS peak was 208,576,512 bytes; RSS and cgroup accounting are
+different observations and must not be combined into a universal headroom claim.
+PostgreSQL/PostgREST peaks were 184,496,128 / 49,012,736 bytes under their separate
+local fences. Health completed 114 times. All three owned containers were removed.
+This closes this one integrated native batch fixture, not hosted Auth, cold-start,
+concurrent-load, arbitrary result-size, browser aggregate parsing, or proposal
+issuance service-level qualification.

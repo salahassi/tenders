@@ -9881,3 +9881,31 @@ configuration/receipt and `postgrest_error_envelope_qualified:true`; an old
 receipt cannot qualify the changed bytes. The 32 focused Python helper/render
 checks and backend typecheck pass. No production, model or customer-data
 operation occurred.
+
+## November 4 — actual native API100 batch capacity passed
+
+**Actual run:** root `6a73cafc0933723f6441a9b448d49443200d37ad`, final batch SQL
+SHA `7bb805fefa6584e02ae8ef65fc6117fb86a9c48b2a8fcf4502e1e7783fe2dc22`, and
+immutable API image `89afc8a31d76e1616ad17e5896e0fc54f0acdc41cd7da389af456386f3e998fe`.
+The full API/worker/browser/scheduler module graph was loaded. The actual API
+handler/Backend.batchStream used real JWT membership and migrated PostgreSQL/
+PostgREST; only Auth lookup and loopback path-prefix routing were fixture adapters.
+No product source or parent heap/resource override was mounted.
+
+All100 result hashes and canonical SQL snapshots matched across1,600 chunks.
+412,758,765 full-envelope bytes streamed in58.024s, headers6.140s, with no aggregate
+response parsing. API cgroup peak163,995,648/402,653,184 bytes; no max/OOM/kill events.
+Sampled process RSS208,576,512 is separately recorded. Slow consumer busy503 skipped
+heavy upstream work; EOF and cancellation after one settled real chunk both
+allowed a subsequent heavy read. Same-key replay/cancel added no mutations:
+revision1→101, audits4→104, COMMAND receipts3→103, one batch,1,600 stored chunks.
+Health114; all three owned containers removed; source hashes unchanged.
+
+**Limits:** one synthetic, directly seeded structural fixture followed by actual
+authorized export.prepare; near4.13MB serialized snapshot is not near4MiB physical
+storage or proof of generator reachability. This is not hosted Auth/NGINX, cold
+start, browser aggregate parsing, arbitrary-size/concurrent-load or issuance-SLO
+acceptance. No provider, production or customer calls. Evidence:
+`docs/evidence/native-api-batch-capacity-20261104.json`; raw local receipt remains
+under `/workspace/output/api-batch-capacity-r1/receipt.json`. Deployment and final
+combined checks remain separate root-owned gates.
