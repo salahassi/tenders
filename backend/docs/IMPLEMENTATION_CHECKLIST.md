@@ -1,5 +1,16 @@
 # Implementation status and continuation plan
 
+## November 4 — Owner resolves D06 and the maximum issuance deadline
+
+The Owner requires immediate clear failure when no AI agent is available and a
+600-second maximum from request acceptance to issuance, including queue/stages/
+repair/render. Earlier terminal failures return when known. This supersedes the
+mandatory staffed no-model completion acceptance; optional manual authoring remains
+independent. The plan, BC-01/T06 and decisions now reflect that instruction. The
+model/executor agent is implementing the shared deadline/fail-fast contract with
+artifact and release coordination. No deadline deployment or timing acceptance is
+claimed yet. Historical/unknown accounting and accepted source/content remain intact.
+
 ## November 4 — actual uploaded OCR quality gate found Arabic recognition loss
 
 Three committed synthetic PDFs and pre-authored English/Arabic obligation oracles
