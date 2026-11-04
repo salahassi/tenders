@@ -8993,3 +8993,21 @@ hashes, gateway qualification and original deployment baseline remain identical.
 Source verification passes. The next isolated cloud drill must use this manifest
 and the shared helper; the preceding thirteen-check success is retained at its
 older source and does not substitute for that drill.
+
+### November 4 — verify the API runtime envelope before release
+
+The release preflight now checks the actual API container as well as the worker:
+at least 384 MiB memory and 700 millicores, no Kubernetes command/argument override,
+and exactly one explicit `APP_RUNTIME_SERVICE=api` environment entry. Missing,
+malformed or smaller limits and ambiguous roles fail before the SQL client,
+gateway patch or any workload mutation. The quantity parser is shared with the
+existing worker guard; its 640 MiB/one-core requirements and error codes remain
+unchanged. No resource requests, limits, replicas or billing settings are changed.
+
+The sanitized release receipt includes observed API limits, requests, replicas
+and minimum requirements, with `hosted_load_qualified:false`. This records the
+deployment boundary; actual image/native-capacity and hosted-load qualification
+remain separate gates. All 15 release-boundary tests pass, including API size,
+entrypoint/role rejection, stronger equivalent quantities, unchanged resources
+and receipt checks. Python compilation and diff checks pass. No model or hosted
+operation occurred; the frozen manifest and canonical migrations are unchanged.

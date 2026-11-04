@@ -89,6 +89,9 @@ class DeliveryUpdateTests(unittest.TestCase):
    self.assertEqual(emit.call_args.kwargs['worker_resources']['requests'],{'cpu':'25m','memory':'192Mi'})
    self.assertEqual(emit.call_args.kwargs['worker_resources']['desired_replicas'],1)
    self.assertFalse(emit.call_args.kwargs['worker_resources']['hosted_load_qualified'])
+   self.assertEqual(emit.call_args.kwargs['api_resources']['minimum_cpu_millicores'],700)
+   self.assertEqual(emit.call_args.kwargs['api_resources']['minimum_memory_bytes'],384*1024**2)
+   self.assertFalse(emit.call_args.kwargs['api_resources']['hosted_load_qualified'])
 
  def test_worker_resource_limits_are_observed_and_rejected_before_mutation(self):
   invalid=[{}, {'cpu':'999m','memory':'640Mi'}, {'cpu':'1','memory':'639Mi'},
@@ -100,6 +103,43 @@ class DeliveryUpdateTests(unittest.TestCase):
     state['worker']['spec']['template']['spec']['containers'][0]['resources']['limits']=limits
     with self.assertRaisesRegex(p.UpdateError,'DELIVERY_WORKER_RESOURCES'):p.update()
     self.assertEqual(events,[]);emit.assert_not_called()
+
+ def test_api_limits_below_release_envelope_fail_before_any_mutation(self):
+  invalid=[{}, {'cpu':'699m','memory':'384Mi'}, {'cpu':'700m','memory':'383Mi'},
+   {'cpu':'700m','memory':'384M'}, {'cpu':'700m','memory':True},
+   {'cpu':'NaN','memory':'384Mi'}, {'cpu':'700m','memory':'1e9'}]
+  for limits in invalid:
+   with self.subTest(limits=limits),self.fixture() as (state,_,events,emit):
+    state['api']['spec']['template']['spec']['containers'][0]['resources']['limits']=limits
+    with self.assertRaisesRegex(p.UpdateError,'DELIVERY_API_RESOURCES'):p.update()
+    self.assertEqual(events,[]);emit.assert_not_called()
+
+ def test_api_entrypoint_and_explicit_role_are_required_before_any_mutation(self):
+  invalid=[{'command':['/bin/deno']},{'args':['run','main.ts']},{'env':[]},
+   {'env':[{'name':'APP_RUNTIME_SERVICE','value':'worker'}]},
+   {'env':[{'name':'APP_RUNTIME_SERVICE','valueFrom':{'secretKeyRef':{'name':'private','key':'role'}}}]},
+   {'env':[{'name':'APP_RUNTIME_SERVICE','value':'api'},{'name':'APP_RUNTIME_SERVICE','value':'worker'}]}]
+  for change in invalid:
+   with self.subTest(change=change),self.fixture() as (state,_,events,emit):
+    state['api']['spec']['template']['spec']['containers'][0].update(change)
+    with self.assertRaisesRegex(p.UpdateError,'DELIVERY_API_'):p.update()
+    self.assertEqual(events,[]);emit.assert_not_called()
+
+ def test_api_exact_and_stronger_limits_preserve_configuration_and_receipt(self):
+  for limits in ({'cpu':'700m','memory':'384Mi'},{'cpu':'0.7','memory':'0.375Gi'},
+    {'cpu':'700000000n','memory':'402653184'},{'cpu':'1','memory':'512Mi'}):
+   with self.subTest(limits=limits),self.fixture() as (state,_,_,emit):
+    container=state['api']['spec']['template']['spec']['containers'][0]
+    container['resources']={'limits':limits,'requests':{'cpu':'100m','memory':'128Mi'}}
+    original=copy.deepcopy(container['resources']);p.update()
+    self.assertEqual(container['resources'],original)
+    receipt=emit.call_args.kwargs['api_resources']
+    self.assertEqual(receipt['limits'],limits)
+    self.assertEqual(receipt['requests'],original['requests'])
+    self.assertGreaterEqual(receipt['cpu_millicores'],700)
+    self.assertGreaterEqual(receipt['memory_bytes'],402653184)
+    self.assertEqual(receipt['desired_replicas'],1)
+    self.assertFalse(receipt['hosted_load_qualified'])
 
  def test_stronger_exact_quantities_preserve_requests_and_have_sanitized_receipts(self):
   for limits in ({'cpu':'1','memory':'0.625Gi'},{'cpu':'1500m','memory':'1Gi'},

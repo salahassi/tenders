@@ -38,31 +38,33 @@ class UpdateError(Exception):pass
 def emit(status,**fields):print(json.dumps({'release':release.RELEASE,'status':status,**fields},sort_keys=True),flush=True)
 def image_of(value):return code.image_of(value)
 
-def worker_resource_envelope(value):
+def runtime_resource_envelope(value,name,minimum_cpu_millicores,minimum_memory_bytes):
     """Read the actual target; never raise requests/limits or infer an SLO.
 
     Parse a deliberately bounded Kubernetes quantity subset with exact decimal
     arithmetic. Unsupported units/exponents, missing limits and malformed values
     fail closed. Binary memory units and decimal CPU cores/milli/micro/nano are
-    accepted; stronger observed limits satisfy the measured minimum envelope.
+    accepted; stronger observed limits satisfy the required release envelope.
     """
+    if name not in ('worker','api'):raise UpdateError('DELIVERY_RUNTIME_NAME_INVALID')
+    error_prefix='DELIVERY_'+name.upper()+'_'
     containers=value.get('spec',{}).get('template',{}).get('spec',{}).get('containers',[])
-    if not isinstance(containers,list) or len(containers)!=1 or not isinstance(containers[0],dict) or containers[0].get('name')!='worker':raise UpdateError('DELIVERY_WORKER_RESOURCES_INVALID')
+    if not isinstance(containers,list) or len(containers)!=1 or not isinstance(containers[0],dict) or containers[0].get('name')!=name:raise UpdateError(error_prefix+'RESOURCES_INVALID')
     container=containers[0]
-    if container.get('command') or container.get('args'):raise UpdateError('DELIVERY_WORKER_ENTRYPOINT_OVERRIDE')
+    if container.get('command') or container.get('args'):raise UpdateError(error_prefix+'ENTRYPOINT_OVERRIDE')
     service=[entry for entry in container.get('env',[]) if isinstance(entry,dict) and entry.get('name')=='APP_RUNTIME_SERVICE']
-    if service!=[{'name':'APP_RUNTIME_SERVICE','value':'worker'}]:raise UpdateError('DELIVERY_WORKER_RUNTIME_ROLE_INVALID')
+    if service!=[{'name':'APP_RUNTIME_SERVICE','value':name}]:raise UpdateError(error_prefix+'RUNTIME_ROLE_INVALID')
     resources=containers[0].get('resources',{})
-    if not isinstance(resources,dict) or not isinstance(resources.get('limits',{}),dict):raise UpdateError('DELIVERY_WORKER_RESOURCES_INVALID')
+    if not isinstance(resources,dict) or not isinstance(resources.get('limits',{}),dict):raise UpdateError(error_prefix+'RESOURCES_INVALID')
     limits=resources.get('limits',{})
     requests=resources.get('requests',{})
     replicas=value.get('spec',{}).get('replicas',1)
-    if not isinstance(requests,dict) or type(replicas) is not int or not 1<=replicas<=2147483647:raise UpdateError('DELIVERY_WORKER_RESOURCES_INVALID')
+    if not isinstance(requests,dict) or type(replicas) is not int or not 1<=replicas<=2147483647:raise UpdateError(error_prefix+'RESOURCES_INVALID')
     def quantity(raw,factors,allow_zero=False):
         match=re.fullmatch(r'([0-9]{1,15}(?:\.[0-9]{1,9})?)([a-zA-Z]*)',raw) if isinstance(raw,str) else None
-        if not match or match[2] not in factors:raise UpdateError('DELIVERY_WORKER_RESOURCES_INVALID')
+        if not match or match[2] not in factors:raise UpdateError(error_prefix+'RESOURCES_INVALID')
         result=Decimal(match[1])*factors[match[2]]
-        if result<0 or (not allow_zero and result==0) or result>2**63-1:raise UpdateError('DELIVERY_WORKER_RESOURCES_INVALID')
+        if result<0 or (not allow_zero and result==0) or result>2**63-1:raise UpdateError(error_prefix+'RESOURCES_INVALID')
         return raw,result
     factors={'cpu':{'':Decimal(1),'m':Decimal('0.001'),'u':Decimal('0.000001'),'n':Decimal('0.000000001')},
       'memory':{'':1,'k':1000,'K':1000,'M':1000**2,'G':1000**3,'T':1000**4,'P':1000**5,'E':1000**6,
@@ -70,9 +72,12 @@ def worker_resource_envelope(value):
     cpu,cores=quantity(limits.get('cpu'),factors['cpu'])
     memory,byte_count=quantity(limits.get('memory'),factors['memory'])
     observed_requests={name:quantity(requests[name],factor,True)[0] if name in requests else None for name,factor in factors.items()}
-    if cores<1 or byte_count<640*1024**2:raise UpdateError('DELIVERY_WORKER_RESOURCES_BELOW_QUALIFIED_ENVELOPE')
+    if cores<Decimal(minimum_cpu_millicores)/1000 or byte_count<minimum_memory_bytes:raise UpdateError(error_prefix+'RESOURCES_BELOW_QUALIFIED_ENVELOPE')
     return {'limits':{'cpu':cpu,'memory':memory},'requests':observed_requests,'desired_replicas':replicas,'cpu_millicores':int(cores*1000),'memory_bytes':int(byte_count),
-      'minimum_cpu_millicores':1000,'minimum_memory_bytes':640*1024**2,'hosted_load_qualified':False}
+      'minimum_cpu_millicores':minimum_cpu_millicores,'minimum_memory_bytes':minimum_memory_bytes,'hosted_load_qualified':False}
+
+def worker_resource_envelope(value):return runtime_resource_envelope(value,'worker',1000,640*1024**2)
+def api_resource_envelope(value):return runtime_resource_envelope(value,'api',700,384*1024**2)
 
 def journal_path():
     run,attempt=os.environ.get('GITHUB_RUN_ID',''),os.environ.get('GITHUB_RUN_ATTEMPT','')
@@ -155,6 +160,7 @@ def update():
     code.BASE_RUNTIME=manifest['baseline_images']['worker'];code.ROLLOUT_MARKER=MARKER
     original={name:u.deployment(name,ready=False) for name in TARGETS}
     observed_worker_resources=worker_resource_envelope(original['worker'])
+    observed_api_resources=api_resource_envelope(original['api'])
     gateway_state=gateway.preflight(d,manifest.get('gateway_configuration'))
     for name,value in original.items():
         if image_of(value) not in (manifest['baseline_images'][name],selected['frontend' if name=='frontend' else 'runtime']):raise UpdateError('DELIVERY_WORKLOAD_BASELINE_CHANGED')
@@ -214,7 +220,7 @@ def update():
     finally:
         try:client.cleanup();journal_path().unlink(missing_ok=True)
         except Exception:raise UpdateError('DELIVERY_CLIENT_CLEANUP_NOT_CONFIRMED') from None
-    emit('passed',source_revision=revision,images=selected,schema=receipt,worker_resources=observed_worker_resources,deployments_updated=list(TARGETS)+['gateway'],cronjobs_updated=['native-ocr'],old_workers_drained=True,configuration_preserved_except_reviewed_storage_gateway=True,storage_gateway_configuration=manifest['gateway_configuration'],processing_retried=False,hosted_artifact_acceptance=False)
+    emit('passed',source_revision=revision,images=selected,schema=receipt,worker_resources=observed_worker_resources,api_resources=observed_api_resources,deployments_updated=list(TARGETS)+['gateway'],cronjobs_updated=['native-ocr'],old_workers_drained=True,configuration_preserved_except_reviewed_storage_gateway=True,storage_gateway_configuration=manifest['gateway_configuration'],processing_retried=False,hosted_artifact_acceptance=False)
 
 def main(argv=()):
     try:
