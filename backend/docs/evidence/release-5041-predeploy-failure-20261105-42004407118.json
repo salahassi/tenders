@@ -1,0 +1,40 @@
+{
+  "status": "application_gates_passed_test_fixture_preparation_failed",
+  "source_revision": "5041a543ba81a6e1797ed70a30b5c9f15dcf456f",
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/42004407118",
+  "job_id": 127168606452,
+  "frontend": {
+    "tests": 380,
+    "files": 59,
+    "typecheck": true,
+    "build": true
+  },
+  "backend": {
+    "tests": 3488,
+    "files": 206,
+    "typecheck": true,
+    "build": true
+  },
+  "operations": {
+    "tests_run": 668,
+    "test_failures": 0,
+    "class_setup_errors": 1,
+    "unexecuted_authority_tests": 9,
+    "error": "Pinned PostgreSQL 17.6 image absent with docker run --pull=never."
+  },
+  "cluster_access": "skipped",
+  "images": "skipped",
+  "rollout": "skipped",
+  "cleanup_steps": "passed",
+  "application_deployed": false,
+  "model_evaluation": "not_activated",
+  "raw_log_sha256": "70608fe2b4df2590de68d59cb31d3137be40a2ced8cd39065126193c8b5d761a",
+  "correction": {
+    "explicit_workflow_image_preparation": 15,
+    "pinned_image": "postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94",
+    "registry_pull_verified": true,
+    "focused_authority_tests_passed": 9,
+    "seconds": 7.664,
+    "test_network_isolation_unchanged": true
+  }
+}
