@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "scope": "source_only_mapping_no_expected_text",
+  "prospective_gold_sha256": "c5ca3a7cc0ccb72eeb52e47dce2bac2429c92c47908c45aa63ea29da618fd735",
+  "cold_blank": {
+    "id": "separate-cold-blank",
+    "path": "backend/tests/backend/fixtures/paddle-ocr-prospective/a06-06-blank.pdf",
+    "sha256": "1047b345715fa826aa1aae46c2dd75f70e6fb9815d71be16778f5c6d89a83f73",
+    "page": 1,
+    "total_pages": 1,
+    "language": "auto"
+  },
+  "cases": [
+    {
+      "id": "a06-01-conditional-gate",
+      "path": "backend/tests/backend/fixtures/paddle-ocr-prospective/a06-01-conditional-gate.pdf",
+      "sha256": "bd605501181b674fae92109fa505a3b495008e8bfb16aa6da94716c708d0a10d",
+      "page": 1,
+      "total_pages": 1,
+      "language": "ar"
+    },
+    {
+      "id": "a06-02-decimal-payment",
+      "path": "backend/tests/backend/fixtures/paddle-ocr-prospective/a06-02-decimal-payment.pdf",
+      "sha256": "b2e3ef5c69e60da22b55ae95bb919f6767aa5eb05a804db453762dc6ada9e329",
+      "page": 1,
+      "total_pages": 1,
+      "language": "ar"
+    },
+    {
+      "id": "a06-03-incident-deadline",
+      "path": "backend/tests/backend/fixtures/paddle-ocr-prospective/a06-03-incident-deadline.pdf",
+      "sha256": "650a96e4302d36101d5438e56c198d81319bb85c84fb301838c1a2191f53e394",
+      "page": 1,
+      "total_pages": 1,
+      "language": "ar"
+    },
+    {
+      "id": "a06-04-right-column-first",
+      "path": "backend/tests/backend/fixtures/paddle-ocr-prospective/a06-04-right-column-first.pdf",
+      "sha256": "3358312a5bad2822f7077e7e23298d244fe33203043d59a0f52d7da6e0e56836",
+      "page": 1,
+      "total_pages": 1,
+      "language": "ar"
+    },
+    {
+      "id": "a06-05-mixed-table",
+      "path": "backend/tests/backend/fixtures/paddle-ocr-prospective/a06-05-mixed-table.pdf",
+      "sha256": "350708c7266d991c8fca14672abecb8cf9bb92f54e1866437b1ccb3c503d7852",
+      "page": 1,
+      "total_pages": 1,
+      "language": "auto"
+    },
+    {
+      "id": "a06-06-blank",
+      "path": "backend/tests/backend/fixtures/paddle-ocr-prospective/a06-06-blank.pdf",
+      "sha256": "1047b345715fa826aa1aae46c2dd75f70e6fb9815d71be16778f5c6d89a83f73",
+      "page": 1,
+      "total_pages": 1,
+      "language": "auto"
+    },
+    {
+      "id": "known-arabic-failure",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr/scanned-ar.pdf",
+      "sha256": "70cb0b2e615d8c9880ab414a87c7eadc7bc6129268e203010006e74be844331b",
+      "page": 1,
+      "total_pages": 1,
+      "language": "ar"
+    },
+    {
+      "id": "maintenance-obligation",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr-holdout/scanned-maintenance-obligation.pdf",
+      "sha256": "865400db7e101086faf30311b81239c52cfa71074d1b51c80354b4acab959003",
+      "page": 1,
+      "total_pages": 1,
+      "language": "ar"
+    },
+    {
+      "id": "records-retention",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr-holdout/scanned-records-retention.pdf",
+      "sha256": "8df77416bbfe305d1e964f72afa9a643cb6208902820b54ee233c2830768cf96",
+      "page": 1,
+      "total_pages": 1,
+      "language": "ar"
+    },
+    {
+      "id": "sensor-acceptance",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr-holdout/scanned-sensor-acceptance.pdf",
+      "sha256": "2954ab85ab810c853659aed7f7c95fd07785653fb588172da8076b37d9bb02e9",
+      "page": 1,
+      "total_pages": 1,
+      "language": "ar"
+    },
+    {
+      "id": "english-existing-control",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr/scanned-en.pdf",
+      "sha256": "019eb10cff310db890866ad993704ed4cc05f7583ddab36a1b3e1b3634b7b826",
+      "page": 1,
+      "total_pages": 1,
+      "language": "en"
+    },
+    {
+      "id": "mixed-exact-scan-page",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr/mixed-five-pages.pdf",
+      "sha256": "a8a11d021b8f503dcd98b5ec2654ba25610c1077bf171ddbc4405304988989a9",
+      "page": 3,
+      "total_pages": 5,
+      "language": "en"
+    },
+    {
+      "id": "mixed-blank-page",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr/mixed-five-pages.pdf",
+      "sha256": "a8a11d021b8f503dcd98b5ec2654ba25610c1077bf171ddbc4405304988989a9",
+      "page": 5,
+      "total_pages": 5,
+      "language": "auto"
+    }
+  ]
+}
