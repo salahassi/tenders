@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "corpus_sha256": "9a1fd88f07fc9fc9d9b06ae3b67699976dacf221e0af7ee03fafdd59bfe25d7c",
+  "scope": "Authored typed candidates for direct verifier-stage qualification. Canonical requirement.text/source_refs are materialized from the original span. Interpretation and pending typed semantics carry the frozen candidate meaning; no prior writer, independent verifier, human approval or production persistence is claimed.",
+  "cases": [
+    {
+      "case_id": "qr1.verify_grounding.faithful_acknowledgement.en",
+      "original_task": "analyze_chunk",
+      "source_document_id": "reserve-a373a97f-e536-5543-9068-94d7522be9f1",
+      "category": "operations",
+      "mandatory": true,
+      "interpretation": "The supplier must acknowledge a critical alarm within 6 business hours. Restoration time is subject to a separate incident agreement.",
+      "source_semantics": {
+        "modality": "required",
+        "actor": "supplier",
+        "negated": false,
+        "conditions": [
+          "Restoration time is subject to a separate incident agreement."
+        ],
+        "exceptions": [],
+        "consequences": [],
+        "quantities": [
+          {
+            "value": "6",
+            "unit": "business_hours",
+            "currency": null
+          }
+        ],
+        "dates": [],
+        "review_status": "pending",
+        "review_id": null
+      }
+    },
+    {
+      "case_id": "qr1.verify_grounding.faithful_acknowledgement.ar",
+      "original_task": "analyze_chunk",
+      "source_document_id": "reserve-58e3e7cd-0aa8-5398-8903-514d1fa517e3",
+      "category": "operations",
+      "mandatory": true,
+      "interpretation": "يجب على المورد تأكيد استلام الإنذار الحرج خلال 6 ساعات عمل. وتخضع مدة الاستعادة لاتفاق منفصل خاص بالحادث.",
+      "source_semantics": {
+        "modality": "required",
+        "actor": "المورد",
+        "negated": false,
+        "conditions": [
+          "وتخضع مدة الاستعادة لاتفاق منفصل خاص بالحادث."
+        ],
+        "exceptions": [],
+        "consequences": [],
+        "quantities": [
+          {
+            "value": "6",
+            "unit": "business_hours",
+            "currency": null
+          }
+        ],
+        "dates": [],
+        "review_status": "pending",
+        "review_id": null
+      }
+    },
+    {
+      "case_id": "qr1.verify_grounding.mutated_resolution.en",
+      "original_task": "analyze_chunk",
+      "source_document_id": "reserve-d3cc4736-e3c1-5011-be96-b3c6e447a074",
+      "category": "operations",
+      "mandatory": true,
+      "interpretation": "The supplier will fully restore service within 6 elapsed hours.",
+      "source_semantics": {
+        "modality": "required",
+        "actor": "supplier",
+        "negated": false,
+        "conditions": [],
+        "exceptions": [],
+        "consequences": [],
+        "quantities": [
+          {
+            "value": "6",
+            "unit": "elapsed_hours",
+            "currency": null
+          }
+        ],
+        "dates": [],
+        "review_status": "pending",
+        "review_id": null
+      }
+    },
+    {
+      "case_id": "qr1.verify_grounding.mutated_resolution.ar",
+      "original_task": "analyze_chunk",
+      "source_document_id": "reserve-4ee3b42a-e996-570a-97b1-0b829a06b378",
+      "category": "operations",
+      "mandatory": true,
+      "interpretation": "يلتزم المورد باستعادة الخدمة بالكامل خلال 6 ساعات زمنية.",
+      "source_semantics": {
+        "modality": "required",
+        "actor": "المورد",
+        "negated": false,
+        "conditions": [],
+        "exceptions": [],
+        "consequences": [],
+        "quantities": [
+          {
+            "value": "6",
+            "unit": "elapsed_hours",
+            "currency": null
+          }
+        ],
+        "dates": [],
+        "review_status": "pending",
+        "review_id": null
+      }
+    }
+  ]
+}

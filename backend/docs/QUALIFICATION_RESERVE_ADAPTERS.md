@@ -1,115 +1,133 @@
-# Initial reserve request adapters
+# Source-bound reserve request adapters
 
-This is a bounded follow-up to [the qualification reserve](QUALIFICATION_RESERVE.md).
-It constructs ten of the 50 frozen cases through existing production request helpers.
-Forty cases remain explicitly unsupported; no case is silently dropped and the
-100-per-model schedule is unchanged. This is offline request/validation evidence,
-not model qualification, authenticated database admission or a live campaign.
+The offline adapters now construct **42 of the 50 frozen source cases** through
+actual production request helpers. Eight cases remain explicitly unsupported;
+the 100-request-per-model schedule is unchanged. These results establish request
+construction and controlled validation, not model quality, real database admission
+or a live campaign. The original ten-case evidence remains retained.
 
 | Frozen cases | Constructible | Actual boundary |
 | --- | ---: | --- |
-| `analyze_chunk.retention_exception`, English/Arabic | 2 | `generation.taskInput`, current exact source-span contract, `validateGenerationResult` and production semantic prompt pin. |
-| `summarize_review.advisory_note`, English/Arabic | 2 | One UUID-identified review segment, canonical `general/general` review target, current task input and validation. |
-| Both `inspect_source_page` scenarios, English/Arabic | 4 | Actual `automaticSources` page/link projection and `sourceReadingPrompt`; complete mode restrictions tested through `executeModel`. |
-| `connection_probe.transport_identity`, English/Arabic | 2 | Empty context/evidence and canonical ready schema; protocol only. |
-| All remaining cases | 40 | Explicit reasons below; no fabricated prerequisite outputs. |
+| Retention analysis and advisory review, English/Arabic | 4 | Exact source spans, one immutable review segment, canonical generation input and validation. |
+| Both source-page scenarios and the connection probe, English/Arabic | 6 | Actual page/link projection and source-reading prompt; probe validates protocol alone. |
+| Classification, English/Arabic | 4 | Explicit synthetic document-to-notice projection, existing company-knowledge scope default and reverse source map. |
+| Planning, drafting, commercial and proposal review | 22 | Authored source-bound prerequisites pass actual `nextStage`, `taskInput` and domain validation. Four `plan_proposal` cases exercise the registered legacy task, not current hierarchical orchestration. |
+| Typed grounding verification, English/Arabic | 4 | Exact authored typed candidates and actual whole-verifier phase, schema, candidate hash and content/source bindings. |
+| Unrelated-payment draft repair, English/Arabic | 2 | Actual quote-fault diagnostics, pinned narrow patch, wire schema, application and target validation; payment prose stays unchanged. |
+| Composite, unsupported planning source and conflicting analysis repair cases | 8 | Explicit boundaries below; no fabricated inputs or hidden requests. |
 
-The new helper is [`reserve-adapters.ts`](../scripts/qualification/reserve-adapters.ts).
-`reserveAdapterCoverage()` enumerates every case and reason. `buildReserveAdapter(id)`
-throws for unsupported cases. It loads the hashed corpus, strips oracle/family/scenario
-labels before construction, and records an explicit original-to-canonical source map.
-The corpus and source meanings are unchanged.
+[`reserve-adapters.ts`](../scripts/qualification/reserve-adapters.ts) enumerates
+all cases and refuses unsupported construction. It loads the unchanged hashed
+corpus and removes oracle, family and scenario labels before building input.
+The source corpus remains `corpus-v4.json`, SHA-256
+`9a1fd88f07fc9fc9d9b06ae3b67699976dacf221e0af7ee03fafdd59bfe25d7c`.
 
-## Source, authority and request identity
+## Authored prerequisites and source authority
 
-Analysis keeps original text, content hash and Unicode code-point ranges. Canonical
-span identifiers use the production helper and are resolved against the exact source
-block. Review aliases map explicitly to their frozen entity UUIDs; original corpus
-identities remain in the trace. Source pages map their immutable source to `page` and
-retain exact `L1`–`L3` links. An opaque synthetic page URL discloses no scenario label;
-no page is fetched. Page snapshot hashes are synthetic input bindings, not server
-attestations or evidence of database authorization.
+Four additional fixture files were frozen and source-reviewed before their
+corresponding controlled execution. They are authored test inputs, never prior
+provider outputs, accepted production steps or semantic approvals.
 
-The generation envelope is an in-memory synthetic fixture: empty administrative
-opportunity context and template, no extra buyer facts, no company evidence, and no
-accepted stage outputs. Review notes use the existing `general/general` convention,
-validated against `review.save` input schema. This does not assert a real proposal
-version or authenticated review-save operation. Source-authority records mirror the
-frozen synthetic roles, while human semantic review records remain empty. Model
-confirmation flags cannot create such a review.
+| Fixture | Cases | SHA-256 |
+| --- | ---: | --- |
+| `workflow-prerequisites-v1.json` | 22 | `d93440770497a1491793f2065fe822900a3a2a9fce3e3885443bfcf59cb2b322` |
+| `assessment-prerequisites-v1.json` | 4 | `fbc9f3382a17263fea80de7b7071d221bd3e6e785aeade61d759b907d4751a2b` |
+| `verifier-prerequisites-v1.json` | 4 | `c7a5d975a0337c5abd6dc60113bad0bf66c5e61e81711b8a74c2c90b47071e2e` |
+| `repair-prerequisites-v1.json` | 2 | `f5a9fa7b26c090e11e91b568477d1fbd10f5c70bb643a0081c950660a9556d58` |
 
-Production `pinSemanticPrompt` runs against a deliberately new/unstarted in-memory
-phase. The adapter is not a historical replay or a migration of paid requests.
-`compileReserveRequest(adapter, explicitConfiguration)` rebuilds the source adapter
-and rejects any changed context, evidence, IDs, manifest or phase pins. It calls
-production `executeModel` only through `requestPrepared`, then stops before
-`beforeSend`, reservation or network fetch. Every forbidden operation fails closed.
-No default real provider, identity, configuration or access credential is supplied.
-The eventual runner must rebuild the adapter and use its actual `domainValidate`
-closure; request compilation does not qualify a caller-replaced validation function.
+The fixtures retain exact buyer wording and source coordinates. Requirement
+interpretations are exact source substrings, and their semantic review remains
+pending with no review ID. Section organization is an authored response structure,
+not a buyer mandate. Completed in-memory prerequisite records carry no claim of
+provider generation or database acceptance. Commercial placeholders remain empty;
+no approved not-applicable decisions or human review records are created.
 
-The returned request contains the actual canonical schema, versions, negotiated
-profile and capabilities. Durable `input_sha256` remains the application's user/
-context prompt hash. Qualification's `prompt_sha256` hashes the ordered JSON object
-`{system: actualSystemInstructions, user: actualUserPrompt}` so the separate system
-instruction cannot drift unnoticed. Individual system/user hashes are also retained.
-Future activation must still pin the actual source commit, adapter/validator code,
-configuration and schema hashes and independently capture provider-reported identity.
+Verified company knowledge requires the frozen verified flag and confirmed company
+authority. Style material remains unverified and cannot establish credentials;
+untrusted review notes do not approve exemptions. Classification explicitly maps
+a synthetic buyer document into the notice input expected by that task. Its trace
+preserves the original role and hash; it does not assert that a notice was actually
+published or collected. The company-knowledge scope comes from the hashed existing
+migration default, rather than a new test-specific product policy.
 
-The page worker uses Arabic request metadata for both page languages. The adapter
-retains that production behavior while recording the case's source language separately.
-The source-reading prompt preserves source quotations; this metadata does not claim
-that the output language can be selected through a new instruction.
+The verifier fixtures deliberately supply a typed candidate to the verifier stage.
+They do not assert that a previous writer or semantic verifier accepted it. Real
+candidate hashing, content-unit construction, source checks and report validation
+remain active. Authored supported/contradicted reports test these mechanics only;
+they are not evidence that a provider detects the semantic defect.
 
-## Explicit unsupported prerequisites
+## Phase, prompt and validation identity
 
-- Four analysis/review cells require a composite orchestration: production processing
-  selects one immutable block or review segment per request. Do not concatenate two
-  source identities or hide extra calls inside the frozen single-call slot. A future
-  reviewed corpus/schedule version must retain v4 and count every actual request.
-- Four classification cells need a frozen notice/attachment projection with a reverse
-  source map and an explicit service-scope policy. The corpus buyer sources are RFP
-  evidence; classification's canonical citations require notice evidence. No company
-  scope default or source-kind promotion is invented here.
-- Twenty-four planning, drafting, commercial and review cells need separately frozen
-  source-bound requirement inventories and, as applicable, blueprint/draft/commercial
-  prerequisite records. Logical IDs and source documents are insufficient. Such future
-  fixtures may be explicit test prerequisites, never mislabeled prior model successes.
-- Four verifier cells need the exact typed candidate and original task context.
-  `candidate_semantics` alone is not that schema-valid candidate.
-- Four repair cells need the exact failed candidate, actual diagnostics, candidate hash,
-  dependency closure and canonical patch scope. `allowed_paths` alone cannot establish
-  the production repair contract.
+The helpers use a deliberately new, unstarted in-memory phase. They do not migrate
+or repin historical paid work. Current semantic, verifier and repair-format pins
+are produced by the actual helpers. Original source identifiers map explicitly to
+canonical span, review, notice and knowledge identifiers in the retained trace.
 
-## Existing campaign integration boundary
+`compileReserveRequest(adapter, explicitConfiguration)` reconstructs the source
+adapter and rejects changed context, evidence, IDs, manifest, versions or pins.
+It requires the minted canonical domain validator and reconstructs wire callbacks
+rather than using caller replacements. Production `executeModel` runs through
+`requestPrepared`, then stops before `beforeSend`, reservation or fetch. Forbidden
+operations fail closed. No real provider target or credential is selected.
 
-The inspected `evaluate-ai-models.yml` / `live-model-evaluation.mjs` campaign exposes
-fixed development suites, target allowlists and generation ceilings. Its fixture path
-passes an empty manifest and uses `fixture.assert` to set a pass flag. Registering the
-new reserve there without the complete adapter/receipt/adjudication contract would
-misrepresent its provenance and semantic denominator. This change does not add a live
-suite, dispatch a workflow, alter those limits or treat canonical schema acceptance
-as semantic success.
+The returned schema, contract version and profile come from actual preparation.
+The application's input hash binds the user/context prompt. Qualification's full
+prompt hash additionally binds the separate system instruction through the ordered
+JSON object `{system, user}`. The adapter digest covers all five adapter modules
+and all four prerequisite fixture hashes. Future activation must separately bind
+the production validators, actual target identities, model/configuration hashes,
+acceptable provider-reported identity and independent adjudication.
 
-## Local verification and remaining work
+The two repair cases preserve the exact payment/checklist candidate text. Only its
+commissioning citation quote is intentionally wrong. Actual diagnostics derive the
+single patch path `$.evidence_refs[0].quote`, inside the frozen allowed parent.
+The real prepared request includes both buyer text and the untrusted reference
+instruction, so the injection check is not vacuous. Candidate, scope and previous
+value hash swaps and edits to payment prose are rejected. The entire applied
+candidate equals the original except for that permitted quote.
 
-The focused run passed 140 tests: 69 adapter/control tests plus the existing 71
-reserve-integrity tests; backend typecheck passed. Tests capture actual prepared
-requests without reservation/network operations, preserve source/span/identity
-bindings, reject changed pins and unsupported cases, and feed explicitly authored
-in-process response bytes through actual dispatch validation. They exercise trusted
-source-text materialization, model-forged review neutralization, unknown-span/coverage
-rejection, review UUID mapping and source-page mode restrictions that the base
-validator alone does not enforce. Controlled response bytes are not provider outputs
-or semantic-quality measurements.
+These execution controls exposed a production repair-context defect: recursive
+target validation read the outer repair envelope instead of the original task's
+source requirements. Both faithful English/Arabic patches failed. The narrow
+production fix is separately committed and evidenced in
+[the source-context correction receipt](evidence/repair-original-source-context-20261105.json).
+The adapter does not copy requirements into the envelope to bypass that defect.
 
-Independent review caught an invalid synthetic review target. The schema regression
-failed before correction and passes with the existing `general/general` shape. The
-final source-only reread found no remaining material blocker in this ten-case slice.
-See [the execution receipt](evidence/qualification-reserve-adapters-20261104.json).
+## Eight explicit unsupported cases
 
-The next bounded work is to freeze and independently review missing prerequisite
-fixtures/composite schedules before any model outputs, then connect complete requests
-and separate judgments to the authorized campaign mechanism. Private holdout,
-noncritical business thresholds, real target availability and live semantic/retrieval
-qualification remain open. This adapter slice closes none of those decisions.
+- Two addendum-analysis and two distinct-review cases require multiple canonical
+  requests and a reviewed aggregation contract. Concatenating source identities or
+  hiding extra requests in one scheduled cell is invalid. Two extraction calls that
+  merely retain old and new quantities do not establish correct addendum precedence.
+- Two proposed-method planning cases include supplier style material that current
+  planning does not select. Relabeling it as a buyer requirement or another source
+  role would change the case; omitting it would make the source-use test vacuous.
+- Two citation-only analysis repair cases conflict with the current materialization
+  and patch contract. A wrong analysis quote is automatically materialized; an actual
+  source-identity defect may expand dependencies beyond the frozen allowed paths.
+  A reviewed future fixture/contract version is required, with v4 retained.
+
+The eight slots remain visible and cannot become semantic passes. Resolving them
+requires faithful orchestration or an explicitly reviewed corpus/schedule revision,
+not reducing the planned denominator or inventing accepted workflow results.
+
+## Evidence and remaining qualification
+
+[The expanded execution receipt](evidence/qualification-reserve-expanded-20261105.json)
+records **189 passing tests across five files**, backend typecheck/build, unchanged
+source fingerprints, frozen fixture hashes and the retained failed diagnostics.
+This comprises 118 adapter/control tests and the existing 71 reserve-integrity
+checks. Controlled transport responses are authored in process. No provider,
+retrieval, database or production request ran.
+
+The earlier [ten-case receipt](evidence/qualification-reserve-adapters-20261104.json)
+remains unchanged. The separate production source-context correction changes a
+runtime image input and therefore requires new native image qualification and
+release evidence; this qualification-only expansion does not establish either.
+
+The existing live evaluation workflow still exposes development suites with a
+different receipt/adjudication contract. This change does not register a live suite
+or use its schema pass flag as a semantic result. Independently reviewed private
+holdout, approved noncritical thresholds, actual provider availability, all eight
+remaining adapter cases, measured retrieval outcomes and live semantic adjudication
+remain open. The synthetic reserve cannot replace the private holdout.

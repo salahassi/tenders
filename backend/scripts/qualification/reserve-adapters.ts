@@ -1,4 +1,21 @@
 /** Offline new/unstarted-phase construction only, not a live campaign runner. */
+import {
+  buildRepairInput,
+  REPAIR_PREREQUISITES_SHA256,
+} from "./reserve-repair-adapters.ts";
+import {
+  buildVerifierInput,
+  VERIFIER_PREREQUISITES_SHA256,
+} from "./reserve-verifier-adapters.ts";
+import {
+  buildAssessmentInput,
+  ASSESSMENT_PREREQUISITES_SHA256,
+} from "./reserve-assessment-adapters.ts";
+import {
+  buildWorkflowInput,
+  workflowConstructible,
+  WORKFLOW_PREREQUISITES_SHA256,
+} from "./reserve-workflow-adapters.ts";
 import { readFile } from "node:fs/promises";
 import {
   loadReserve,
@@ -30,40 +47,38 @@ import {
 } from "../../supabase/functions/_shared/model.ts";
 import { pinSemanticPrompt } from "../../supabase/functions/_shared/modelSemanticPrompt.ts";
 import type { StructuredRequest } from "../../supabase/functions/_shared/modelContract.ts";
-export const ADAPTER_VERSION = 1;
+export const ADAPTER_VERSION = 2;
 const idFor = (name: string) => {
   const h = sha256(name);
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-5${h.slice(13, 16)}-a${h.slice(17, 20)}-${h.slice(20, 32)}`;
 };
 const supported = (r: ReserveCase) =>
+  (r.task === "repair_result" && r.scenario === "unrelated_payment_change") ||
+  r.task === "classify_opportunity" ||
+  r.task === "verify_grounding" ||
+  workflowConstructible(r) ||
   r.task === "connection_probe" ||
   r.task === "inspect_source_page" ||
   (r.task === "analyze_chunk" && r.scenario === "retention_exception") ||
   (r.task === "summarize_review" && r.scenario === "advisory_note");
 function unsupportedReason(row: ReserveCase) {
+  if (row.task === "plan_structure" && row.scenario === "proposed_method")
+    return {
+      code: "PLANNING_STYLE_SOURCE_ROUTING_UNSUPPORTED",
+      prerequisite:
+        "Production planning does not select supplier style evidence. Do not invent a requirement or relabel company/review authority to include the brochure.",
+    };
   if (["analyze_chunk", "summarize_review"].includes(row.task))
     return {
       code: "COMPOSITE_PRODUCTION_REQUEST_REQUIRED",
       prerequisite:
         "taskInput selects one immutable block/review. Freeze and review multi-request orchestration/schedule; do not concatenate source identities.",
     };
-  if (row.task === "classify_opportunity")
-    return {
-      code: "NOTICE_PROJECTION_AND_SCOPE_POLICY_UNFROZEN",
-      prerequisite:
-        "Freeze a canonical notice projection and explicit service-scope policy. Buyer documents are rfp; do not silently relabel authority or invent policy.",
-    };
-  if (row.task === "verify_grounding")
-    return {
-      code: "TYPED_CANDIDATE_INPUT_UNFROZEN",
-      prerequisite:
-        "Freeze an exact typed candidate and source-bound original task context; candidate_semantics is not a canonical candidate.",
-    };
   if (row.task === "repair_result")
     return {
-      code: "REPAIR_CANDIDATE_AND_SCOPE_UNFROZEN",
+      code: "SOURCE_MATERIALIZATION_AND_REPAIR_SCOPE_CONFLICT",
       prerequisite:
-        "Freeze failed typed candidate, actual diagnostics, hash/dependency closure and production patch scope; allowed_paths alone is insufficient.",
+        "A quote-only analysis fault is automatically materialized; an actual source-identity fault can expand semantic dependencies beyond the frozen allowed_paths. A reviewed input/contract clarification is required.",
     };
   return {
     code: "ACCEPTED_WORKFLOW_PREREQUISITES_UNFROZEN",
@@ -119,11 +134,20 @@ export type ReserveAdapter = {
   required: string[];
   manifest: Reference[];
   semanticRevision: 0 | 1 | 2 | 3 | 4 | 5;
-  verificationRevision: 1;
+  verificationRevision: 1 | 2 | 3 | 4 | 5;
   domainValidate?: (value: unknown) => void;
+  repair: boolean;
+  wireHooks?: Pick<
+    Ledger,
+    "wireOutputSchema" | "transformCandidate" | "validateCandidateScope"
+  >;
   trace: Record<string, any>;
   phasePins: any[];
 };
+const canonicalValidators = new WeakMap<
+  ReserveAdapter,
+  ReserveAdapter["domainValidate"]
+>();
 export async function buildReserveAdapter(
   caseId: string,
 ): Promise<ReserveAdapter> {
@@ -144,7 +168,8 @@ export async function buildReserveAdapter(
     evidence: Evidence[] = [],
     required: string[] = [],
     manifest: Reference[] = [],
-    domainValidate: ReserveAdapter["domainValidate"];
+    domainValidate: ReserveAdapter["domainValidate"],
+    wireHooks: ReserveAdapter["wireHooks"];
   const trace: Record<string, any> = {
     version: ADAPTER_VERSION,
     corpus_sha256: CORPUS_SHA256,
@@ -157,7 +182,32 @@ export async function buildReserveAdapter(
       "Synthetic authority inputs; no human semantic approval is created.",
   };
   let language = row.language as "en" | "ar";
-  if (task === "inspect_source_page") {
+  let verificationRevision: ReserveAdapter["verificationRevision"] = 1;
+  if (task === "repair_result") {
+    const actual = await buildRepairInput(caseId, material, { ...phase, job });
+    ({ context, evidence, manifest, domainValidate, wireHooks } = actual);
+    required = actual.requiredIds;
+    Object.assign(trace, actual.trace);
+  } else if (task === "verify_grounding") {
+    const actual = await buildVerifierInput(caseId, material, {
+      ...phase,
+      job,
+    });
+    ({ context, evidence, manifest, domainValidate, verificationRevision } =
+      actual);
+    required = actual.requiredIds;
+    Object.assign(trace, actual.trace);
+  } else if (task === "classify_opportunity") {
+    const actual = await buildAssessmentInput(caseId, material);
+    ({ context, evidence, manifest, domainValidate } = actual);
+    required = actual.requiredIds;
+    Object.assign(trace, actual.trace);
+  } else if (workflowConstructible(row)) {
+    const actual = await buildWorkflowInput(caseId, material);
+    ({ context, evidence, manifest, domainValidate } = actual);
+    required = actual.requiredIds;
+    Object.assign(trace, actual.trace);
+  } else if (task === "inspect_source_page") {
     const doc = material.documents[0],
       links = material.workflow_facts.links;
     if (
@@ -337,14 +387,14 @@ export async function buildReserveAdapter(
     evidence,
     requiredIds: required,
     language,
-    repair: false,
-    verificationRevision: 1,
+    repair: task === "repair_result",
+    verificationRevision,
   });
   trace.request_language = language;
   trace.context_sha256 = sha256(JSON.stringify(context));
   trace.evidence_sha256 = sha256(JSON.stringify(evidence));
   trace.manifest_sha256 = sha256(JSON.stringify(manifest));
-  return {
+  const adapter: ReserveAdapter = {
     caseId,
     caseLanguage: row.language,
     task,
@@ -354,11 +404,15 @@ export async function buildReserveAdapter(
     required,
     manifest,
     semanticRevision,
-    verificationRevision: 1,
+    verificationRevision,
     domainValidate,
+    repair: task === "repair_result",
+    wireHooks,
     trace,
     phasePins: [...phase.pins].map(([key, value]) => ({ key, ...value })),
   };
+  canonicalValidators.set(adapter, domainValidate);
+  return adapter;
 }
 /** Uses production preparation, stopping before beforeSend/reserve/fetch.
  * Caller supplies explicit configuration; no actual enabled target is assumed. */
@@ -366,9 +420,15 @@ export async function compileReserveRequest(
   adapter: ReserveAdapter,
   configuration: ModelConfiguration,
 ) {
+  if (
+    !canonicalValidators.has(adapter) ||
+    canonicalValidators.get(adapter) !== adapter.domainValidate
+  )
+    throw Error("RESERVE_CANONICAL_VALIDATOR_CHANGED");
   const fresh = await buildReserveAdapter(adapter.caseId);
   for (const field of [
     "task",
+    "repair",
     "language",
     "context",
     "evidence",
@@ -381,6 +441,8 @@ export async function compileReserveRequest(
   ] as const)
     if (JSON.stringify(adapter[field]) !== JSON.stringify(fresh[field]))
       throw Error("RESERVE_ADAPTER_INPUT_CHANGED");
+  // Use freshly reconstructed canonical wire callbacks, never caller replacements.
+  adapter = fresh;
   let captured: StructuredRequest | undefined,
     captures = 0,
     forbiddenOperations = 0;
@@ -395,6 +457,7 @@ export async function compileReserveRequest(
     key: "offline-unused-no-provider-access",
   };
   const ledger: Ledger = {
+    ...adapter.wireHooks,
     preflight: async () => ({
       providers: [configuration],
       routing_mode: "round_robin",
@@ -421,7 +484,7 @@ export async function compileReserveRequest(
       { [configuration.provider]: environment },
       ledger,
       adapter.language,
-      false,
+      adapter.repair,
       forbid as typeof fetch,
       adapter.verificationRevision,
       { semanticRevision: adapter.semanticRevision },
@@ -438,7 +501,7 @@ export async function compileReserveRequest(
     adapter.evidence,
     adapter.required,
     adapter.language,
-    false,
+    adapter.repair,
     adapter.verificationRevision,
     adapter.semanticRevision,
   );
@@ -448,7 +511,7 @@ export async function compileReserveRequest(
     adapter.task,
     adapter.verificationRevision,
     adapter.semanticRevision,
-    false,
+    adapter.repair,
   );
   // Durable inputHash is the application's user/context hash. Qualification's
   // full prompt pin additionally binds the actual separate system instruction.
@@ -465,7 +528,35 @@ export async function compileReserveRequest(
     },
     trace: adapter.trace,
     phase_pins: adapter.phasePins,
-    adapter_sha256: sha256(await readFile(new URL(import.meta.url))),
+    adapter_sha256: sha256(
+      JSON.stringify({
+        adapter: sha256(await readFile(new URL(import.meta.url))),
+        workflow: sha256(
+          await readFile(
+            new URL("./reserve-workflow-adapters.ts", import.meta.url),
+          ),
+        ),
+        workflow_prerequisites: WORKFLOW_PREREQUISITES_SHA256,
+        assessment: sha256(
+          await readFile(
+            new URL("./reserve-assessment-adapters.ts", import.meta.url),
+          ),
+        ),
+        assessment_prerequisites: ASSESSMENT_PREREQUISITES_SHA256,
+        verifier: sha256(
+          await readFile(
+            new URL("./reserve-verifier-adapters.ts", import.meta.url),
+          ),
+        ),
+        verifier_prerequisites: VERIFIER_PREREQUISITES_SHA256,
+        repair: sha256(
+          await readFile(
+            new URL("./reserve-repair-adapters.ts", import.meta.url),
+          ),
+        ),
+        repair_prerequisites: REPAIR_PREREQUISITES_SHA256,
+      }),
+    ),
     provider_calls: 0,
     reservations: 0,
     database_mutations: 0,

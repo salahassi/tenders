@@ -18,6 +18,18 @@ import { commandSchemas } from "../../supabase/functions/_shared/contracts";
 import { defaultCapabilities } from "../../supabase/functions/_shared/modelContract";
 import { sha256 } from "../../scripts/qualification/reserve.mjs";
 const isSupported = (r: (typeof corpus.cases)[number]) =>
+  (r.task === "repair_result" && r.scenario === "unrelated_payment_change") ||
+  r.task === "classify_opportunity" ||
+  r.task === "verify_grounding" ||
+  ([
+    "plan_structure",
+    "plan_blueprint",
+    "plan_proposal",
+    "draft_section",
+    "plan_commercial",
+    "review_proposal",
+  ].includes(r.task) &&
+    r.scenario !== "proposed_method") ||
   r.task === "connection_probe" ||
   r.task === "inspect_source_page" ||
   (r.task === "analyze_chunk" && r.scenario === "retention_exception") ||
@@ -51,13 +63,13 @@ beforeEach(() => {
   vi.spyOn(console, "warn").mockImplementation(() => {});
 });
 afterEach(() => vi.restoreAllMocks());
-it("retains all 50 slots with an explicit10/40 boundary; never quietly shrinks the campaign", async () => {
+it("retains all 50 slots with an explicit42/8 boundary; never quietly shrinks the campaign", async () => {
   const coverage = await reserveAdapterCoverage();
   expect(coverage).toHaveLength(50);
   expect(
     coverage.filter((r) => r.status === "offline_single_request_constructible"),
-  ).toHaveLength(10);
-  expect(coverage.filter((r) => r.status === "unsupported")).toHaveLength(40);
+  ).toHaveLength(42);
+  expect(coverage.filter((r) => r.status === "unsupported")).toHaveLength(8);
   expect(new Set(coverage.map((r) => r.task)).size).toBe(13);
 });
 it.each(cases)(
@@ -161,7 +173,12 @@ it.each(unsupported)(
   "refuses unsupported $id instead of fabricating prerequisite outputs",
   async (row) => {
     await expect(buildReserveAdapter(row.id)).rejects.toMatchObject({
-      code: expect.stringMatching(/UNFROZEN|REQUIRED/),
+      code:
+        row.scenario === "proposed_method"
+          ? "PLANNING_STYLE_SOURCE_ROUTING_UNSUPPORTED"
+          : row.task === "repair_result"
+            ? "SOURCE_MATERIALIZATION_AND_REPAIR_SCOPE_CONFLICT"
+            : expect.stringMatching(/UNFROZEN|REQUIRED/),
     });
   },
 );
@@ -225,6 +242,7 @@ async function dispatchControlled(adapter: ReserveAdapter, candidate: unknown) {
     });
   });
   const ledger: Ledger = {
+    ...adapter.wireHooks,
     preflight: async () => ({
       providers: [config],
       routing_mode: "round_robin",
@@ -245,7 +263,7 @@ async function dispatchControlled(adapter: ReserveAdapter, candidate: unknown) {
     { [config.provider]: environment },
     ledger,
     adapter.language,
-    false,
+    adapter.repair,
     transport as typeof fetch,
     adapter.verificationRevision,
     { semanticRevision: adapter.semanticRevision },
@@ -414,4 +432,132 @@ it("uses the canonical review target shape before taskInput projection", async (
     commandSchemas["review.save"].shape.inputs.element.safeParse(input).success,
   ).toBe(true);
   expect(input).toMatchObject({ target_kind: "general", target_id: "general" });
+});
+
+it("refuses a replaced validator and an unminted clone before request preparation", async () => {
+  const adapter = await buildReserveAdapter(
+    "qr1.plan_proposal.owned_acceptance.en",
+  );
+  await expect(compileReserveRequest({ ...adapter }, config)).rejects.toThrow(
+    "RESERVE_CANONICAL_VALIDATOR_CHANGED",
+  );
+  adapter.domainValidate = () => {};
+  await expect(compileReserveRequest(adapter, config)).rejects.toThrow(
+    "RESERVE_CANONICAL_VALIDATOR_CHANGED",
+  );
+});
+
+it.each(
+  corpus.cases.filter(
+    (r) =>
+      r.task === "repair_result" && r.scenario === "unrelated_payment_change",
+  ),
+)(
+  "applies the real narrow patch wire and preserves immutable payment prose for $id",
+  async (row) => {
+    const external = vi
+      .spyOn(globalThis, "fetch")
+      .mockRejectedValue(Error("external forbidden"));
+    const adapter = await buildReserveAdapter(row.id),
+      compiled = await compileReserveRequest(adapter, config);
+    expect(adapter.repair).toBe(true);
+    expect(compiled.request.prompt).toContain(row.documents[0].text);
+    expect(compiled.request.prompt).toContain(row.documents[1].text);
+    expect(compiled.request.prompt).toContain(row.documents[1].entity_id);
+    expect(
+      adapter.evidence.find((e) => e.id === row.documents[1].entity_id),
+    ).toMatchObject({
+      kind: "style",
+      verified: false,
+      text: row.documents[1].text,
+    });
+    const scope = adapter.context.repair_patch_scope,
+      path = scope.paths[0],
+      candidate = adapter.context.candidate;
+    expect(scope.paths.map((p: any) => p.path)).toEqual([
+      "$.evidence_refs[0].quote",
+    ]);
+    expect(adapter.context.validation_diagnostics).toHaveLength(1);
+    expect(adapter.context.validation_diagnostics[0]).toMatchObject({
+      reason: "source_quote_mismatch",
+      paths: ["$.evidence_refs[0].quote"],
+    });
+    expect(
+      adapter.phasePins.some(
+        (p) => p.key.startsWith("repair-format-") && p.value.version === 1,
+      ),
+    ).toBe(true);
+    const patch = {
+      version: 1,
+      target_task: "draft_section",
+      base_candidate_hash: scope.candidate_hash,
+      scope_hash: scope.scope_hash,
+      operations: [
+        {
+          operation: path.operation,
+          path: path.path,
+          unit_id: path.unit_id,
+          previous_hash: path.previous_hash,
+          reason_ids: path.reason_ids,
+          value:
+            adapter.context.original_context.source_evidence.spans[0].quote,
+        },
+      ],
+    };
+    expect(compiled.request.schema.required).toContain("scope_hash");
+    const direct: any = await adapter.wireHooks!.transformCandidate!(patch);
+    await adapter.wireHooks!.validateCandidateScope!(direct);
+    adapter.domainValidate!(direct);
+    const response: any = await dispatchControlled(adapter, patch);
+    const expected = structuredClone(candidate);
+    expected.evidence_refs[0].quote = row.documents[0].text;
+    expect(response.result).toEqual(expected);
+    expect(response.result.content_blocks).toEqual(candidate.content_blocks);
+    expect(response.result.content_blocks[0].text).toBe(row.documents[0].text);
+    expect(response.result.evidence_refs[0].quote).toBe(row.documents[0].text);
+    expect(candidate.evidence_refs[0].quote).not.toBe(row.documents[0].text);
+    expect(response.result.requirement_ids).toEqual(candidate.requirement_ids);
+    expect(external).not.toHaveBeenCalled();
+    for (const mutate of [
+      (p: any) => {
+        p.operations[0].path = "$.content_blocks[0].text";
+        p.operations[0].value = row.documents[1].text;
+      },
+      (p: any) => {
+        p.base_candidate_hash = "0".repeat(64);
+      },
+      (p: any) => {
+        p.scope_hash = "0".repeat(64);
+      },
+      (p: any) => {
+        p.operations[0].previous_hash = "0".repeat(64);
+      },
+    ]) {
+      const invalid = structuredClone(patch);
+      mutate(invalid);
+      await expect(
+        adapter.wireHooks!.transformCandidate!(invalid),
+      ).rejects.toThrow();
+      expect(candidate.content_blocks[0].text).toBe(row.documents[0].text);
+    }
+  },
+);
+
+it("reconstructs canonical repair wire callbacks instead of executing caller replacements", async () => {
+  const adapter = await buildReserveAdapter(
+    "qr1.repair_result.unrelated_payment_change.en",
+  );
+  const original = await compileReserveRequest(adapter, config);
+  const forged = vi.fn(async () => {
+    throw Error("Caller callback must not run");
+  });
+  adapter.wireHooks = {
+    ...adapter.wireHooks,
+    transformCandidate: forged,
+    validateCandidateScope: forged,
+  };
+  const compiled = await compileReserveRequest(adapter, config);
+  expect(compiled.request_pin).toEqual(original.request_pin);
+  expect(compiled.request.schema).toEqual(original.request.schema);
+  expect(forged).not.toHaveBeenCalled();
 });

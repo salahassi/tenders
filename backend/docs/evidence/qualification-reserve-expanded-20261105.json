@@ -1,0 +1,439 @@
+{
+  "version": 1,
+  "recorded_at_utc": "2026-11-05T00:06:28.821315+00:00",
+  "scope": "offline canonical reserve request construction and authored validation controls",
+  "source_base_revision": "d4db7013307cdb11e0b91d5860f0d87996c9e73d",
+  "production_fix_commit": "d4db7013307cdb11e0b91d5860f0d87996c9e73d",
+  "qualification_only_changed_paths": [
+    "backend/scripts/qualification/reserve-adapters.ts",
+    "backend/scripts/qualification/reserve-assessment-adapters.ts",
+    "backend/scripts/qualification/reserve-repair-adapters.ts",
+    "backend/scripts/qualification/reserve-verifier-adapters.ts",
+    "backend/scripts/qualification/reserve-workflow-adapters.ts",
+    "backend/tests/backend/fixtures/qualification-reserve/assessment-prerequisites-v1.json",
+    "backend/tests/backend/fixtures/qualification-reserve/repair-prerequisites-v1.json",
+    "backend/tests/backend/fixtures/qualification-reserve/verifier-prerequisites-v1.json",
+    "backend/tests/backend/fixtures/qualification-reserve/workflow-prerequisites-v1.json",
+    "backend/tests/backend/qualificationAssessmentAdapters.test.ts",
+    "backend/tests/backend/qualificationReserveAdapters.test.ts",
+    "backend/tests/backend/qualificationVerifierAdapters.test.ts",
+    "backend/tests/backend/qualificationWorkflowAdapters.test.ts"
+  ],
+  "qualification_source_sha256": {
+    "backend/scripts/qualification/reserve-adapters.ts": "a63f4e093521b0fa5b39d3b24210164631a507dba9813399ebfb28c241df35ea",
+    "backend/scripts/qualification/reserve-assessment-adapters.ts": "6385def69aebb409e0b6d3b5e77d0dd90cc0c9b3a9ec56cae24f0b40f408ac99",
+    "backend/scripts/qualification/reserve-repair-adapters.ts": "e6b84245467d19f3bc45101d5cdc4e15816d4757a8bcaad2cdf3be0c5905c635",
+    "backend/scripts/qualification/reserve-verifier-adapters.ts": "a53e44d3bed5de9086f061aa7adcbd0a5dc888949c437c1e18a819eff2148551",
+    "backend/scripts/qualification/reserve-workflow-adapters.ts": "149bcd23b7f4d57079b001528aa5d426aea440ec442312fc664aaf2aa6e9907d",
+    "backend/tests/backend/fixtures/qualification-reserve/assessment-prerequisites-v1.json": "fbc9f3382a17263fea80de7b7071d221bd3e6e785aeade61d759b907d4751a2b",
+    "backend/tests/backend/fixtures/qualification-reserve/repair-prerequisites-v1.json": "f5a9fa7b26c090e11e91b568477d1fbd10f5c70bb643a0081c950660a9556d58",
+    "backend/tests/backend/fixtures/qualification-reserve/verifier-prerequisites-v1.json": "c7a5d975a0337c5abd6dc60113bad0bf66c5e61e81711b8a74c2c90b47071e2e",
+    "backend/tests/backend/fixtures/qualification-reserve/workflow-prerequisites-v1.json": "d93440770497a1491793f2065fe822900a3a2a9fce3e3885443bfcf59cb2b322",
+    "backend/tests/backend/qualificationAssessmentAdapters.test.ts": "e5511c0ba8e9ba94d5ba4da2b734e2ca1f6bf05714c63c97b019c94dd372421a",
+    "backend/tests/backend/qualificationReserveAdapters.test.ts": "68c4aadacf0a86793ac366fbc5cfa6bba664bcd051578140b921b95cda1137a6",
+    "backend/tests/backend/qualificationVerifierAdapters.test.ts": "92a9b859286347853bd8833ed845261b30964c8e4e0417b73ebb8ea917822d07",
+    "backend/tests/backend/qualificationWorkflowAdapters.test.ts": "fd6d6ddb202f2b6393c234e062af61169ab97fbc08ca44b286d3b0893b0ce611"
+  },
+  "corpus_sha256": "9a1fd88f07fc9fc9d9b06ae3b67699976dacf221e0af7ee03fafdd59bfe25d7c",
+  "retrieval_sha256": "cc8f3d70d4847bc1652e3560ff83ad209da5b64e1330d2b8abbf815981046c41",
+  "coverage": [
+    {
+      "case_id": "qr1.analyze_chunk.retention_exception.en",
+      "task": "analyze_chunk",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.analyze_chunk.retention_exception.ar",
+      "task": "analyze_chunk",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.analyze_chunk.addendum_precedence.en",
+      "task": "analyze_chunk",
+      "language": "en",
+      "status": "unsupported"
+    },
+    {
+      "case_id": "qr1.analyze_chunk.addendum_precedence.ar",
+      "task": "analyze_chunk",
+      "language": "ar",
+      "status": "unsupported"
+    },
+    {
+      "case_id": "qr1.classify_opportunity.unproven_licence.en",
+      "task": "classify_opportunity",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.classify_opportunity.unproven_licence.ar",
+      "task": "classify_opportunity",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.classify_opportunity.mixed_scope_boundary.en",
+      "task": "classify_opportunity",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.classify_opportunity.mixed_scope_boundary.ar",
+      "task": "classify_opportunity",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.summarize_review.advisory_note.en",
+      "task": "summarize_review",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.summarize_review.advisory_note.ar",
+      "task": "summarize_review",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.summarize_review.review_identity.en",
+      "task": "summarize_review",
+      "language": "en",
+      "status": "unsupported"
+    },
+    {
+      "case_id": "qr1.summarize_review.review_identity.ar",
+      "task": "summarize_review",
+      "language": "ar",
+      "status": "unsupported"
+    },
+    {
+      "case_id": "qr1.plan_structure.separate_envelopes.en",
+      "task": "plan_structure",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.plan_structure.separate_envelopes.ar",
+      "task": "plan_structure",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.plan_structure.proposed_method.en",
+      "task": "plan_structure",
+      "language": "en",
+      "status": "unsupported"
+    },
+    {
+      "case_id": "qr1.plan_structure.proposed_method.ar",
+      "task": "plan_structure",
+      "language": "ar",
+      "status": "unsupported"
+    },
+    {
+      "case_id": "qr1.plan_blueprint.cross_reference.en",
+      "task": "plan_blueprint",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.plan_blueprint.cross_reference.ar",
+      "task": "plan_blueprint",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.plan_blueprint.condition_in_footnote.en",
+      "task": "plan_blueprint",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.plan_blueprint.condition_in_footnote.ar",
+      "task": "plan_blueprint",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.plan_proposal.owned_acceptance.en",
+      "task": "plan_proposal",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.plan_proposal.owned_acceptance.ar",
+      "task": "plan_proposal",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.plan_proposal.missing_buyer_date.en",
+      "task": "plan_proposal",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.plan_proposal.missing_buyer_date.ar",
+      "task": "plan_proposal",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.draft_section.qualified_company_record.en",
+      "task": "draft_section",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.draft_section.qualified_company_record.ar",
+      "task": "draft_section",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.draft_section.style_is_not_credential.en",
+      "task": "draft_section",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.draft_section.style_is_not_credential.ar",
+      "task": "draft_section",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.plan_commercial.optional_quantity_association.en",
+      "task": "plan_commercial",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.plan_commercial.optional_quantity_association.ar",
+      "task": "plan_commercial",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.plan_commercial.dependency_and_period.en",
+      "task": "plan_commercial",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.plan_commercial.dependency_and_period.ar",
+      "task": "plan_commercial",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.review_proposal.partial_response.en",
+      "task": "review_proposal",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.review_proposal.partial_response.ar",
+      "task": "review_proposal",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.review_proposal.no_na_approval.en",
+      "task": "review_proposal",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.review_proposal.no_na_approval.ar",
+      "task": "review_proposal",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.inspect_source_page.publication_not_deadline.en",
+      "task": "inspect_source_page",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.inspect_source_page.publication_not_deadline.ar",
+      "task": "inspect_source_page",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.inspect_source_page.cancelled_listing.en",
+      "task": "inspect_source_page",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.inspect_source_page.cancelled_listing.ar",
+      "task": "inspect_source_page",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.verify_grounding.faithful_acknowledgement.en",
+      "task": "verify_grounding",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.verify_grounding.faithful_acknowledgement.ar",
+      "task": "verify_grounding",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.verify_grounding.mutated_resolution.en",
+      "task": "verify_grounding",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.verify_grounding.mutated_resolution.ar",
+      "task": "verify_grounding",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.repair_result.citation_only_repair.en",
+      "task": "repair_result",
+      "language": "en",
+      "status": "unsupported"
+    },
+    {
+      "case_id": "qr1.repair_result.citation_only_repair.ar",
+      "task": "repair_result",
+      "language": "ar",
+      "status": "unsupported"
+    },
+    {
+      "case_id": "qr1.repair_result.unrelated_payment_change.en",
+      "task": "repair_result",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.repair_result.unrelated_payment_change.ar",
+      "task": "repair_result",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.connection_probe.transport_identity.en",
+      "task": "connection_probe",
+      "language": "en",
+      "status": "offline_single_request_constructible"
+    },
+    {
+      "case_id": "qr1.connection_probe.transport_identity.ar",
+      "task": "connection_probe",
+      "language": "ar",
+      "status": "offline_single_request_constructible"
+    }
+  ],
+  "denominators": {
+    "source_cases": 50,
+    "constructible": 42,
+    "unsupported": 8,
+    "planned_requests_per_model": 100,
+    "semantic_requests_per_model": 96,
+    "probe_requests_per_model": 4,
+    "actual_provider_requests": 0,
+    "actual_retrieval_runs": 0,
+    "actual_database_requests": 0,
+    "actual_production_mutations": 0
+  },
+  "frozen_prerequisites": {
+    "assessment-prerequisites-v1.json": "fbc9f3382a17263fea80de7b7071d221bd3e6e785aeade61d759b907d4751a2b",
+    "repair-prerequisites-v1.json": "f5a9fa7b26c090e11e91b568477d1fbd10f5c70bb643a0081c950660a9556d58",
+    "workflow-prerequisites-v1.json": "d93440770497a1491793f2065fe822900a3a2a9fce3e3885443bfcf59cb2b322",
+    "verifier-prerequisites-v1.json": "c7a5d975a0337c5abd6dc60113bad0bf66c5e61e81711b8a74c2c90b47071e2e"
+  },
+  "source_authority": "Buyer text and spans unchanged; semantic review pending without IDs; company evidence requires the frozen verified flag; style and advisory review cannot become credentials or approval. Notice projection and authored prerequisite stages are explicit test inputs.",
+  "request_boundary": "Actual task/phase/prompt/schema preparation stops at requestPrepared before beforeSend, reserve or fetch. Controlled transport responses are authored in-process fixtures.",
+  "verification": {
+    "tests_passed": 189,
+    "test_files": 5,
+    "adapter_control_tests": 118,
+    "existing_reserve_integrity_tests": 71,
+    "checks": [
+      {
+        "name": "tests",
+        "command": [
+          "./node_modules/.bin/vitest",
+          "run",
+          "--maxWorkers=1",
+          "tests/backend/qualificationReserveAdapters.test.ts",
+          "tests/backend/qualificationWorkflowAdapters.test.ts",
+          "tests/backend/qualificationAssessmentAdapters.test.ts",
+          "tests/backend/qualificationVerifierAdapters.test.ts",
+          "tests/backend/qualificationReserve.test.ts"
+        ],
+        "exit_code": 0,
+        "seconds": 8.798,
+        "log_sha256": "e4880b6fda3aee8f151843dfd22fbaa3ca9e10f88d5ab907ad9ca94578d8a340"
+      },
+      {
+        "name": "typecheck",
+        "command": [
+          "npm",
+          "run",
+          "typecheck"
+        ],
+        "exit_code": 0,
+        "seconds": 2.335,
+        "log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220"
+      },
+      {
+        "name": "build",
+        "command": [
+          "npm",
+          "run",
+          "build"
+        ],
+        "exit_code": 0,
+        "seconds": 1.485,
+        "log_sha256": "8652d82be3115ea6597ae3b7dcf42d83bc898c68ec15888bbf53917a98ebac84"
+      }
+    ],
+    "changed_sources": [],
+    "source_file_count": 141,
+    "source_map_sha256": "a204819e699e25d4885ca4b90a3889700d197b18427d2824e4b1f1c2a99460d3",
+    "raw_receipt_sha256": "e3f2894996ef762ade325a9f2cd9e87f01edb585c509071c4ab66b66cb089a47"
+  },
+  "retained_diagnostics": {
+    "initial_focused": {
+      "passed": 186,
+      "failed": 2,
+      "log_sha256": "dad912a13f8aa8818daf7eefd2f42086ea14fc1b5ca71c24088138bb9a7a71c0",
+      "cause": "Production repair target validation used the outer envelope rather than original_context; corrected separately without adapter workaround."
+    },
+    "detailed_repair_failure_log_sha256": "cb0e9a9eeabdbc47559b87c5cf8827b8518ef69ee316413e2f7cddab3866df39",
+    "initial_broad_command": {
+      "exit_code": 130,
+      "log_sha256": "f9e926e027c3349fb11449147da6a6e3eb4a7c669dd356b3d32f39ca7ada2b81",
+      "scope": "Accidentally included the complete backend path through npm test; only the owned process was interrupted. No full-suite result or performance claim."
+    }
+  },
+  "independent_review": {
+    "fixture_review_scope": "Source-only reviews of explicitly authored prerequisites before corresponding controlled outputs; inherited handoff records and root review of repair fixture, not blind/private semantic adjudication.",
+    "final_reviewer": "reserve_finish/repair_review",
+    "final_review_scope": "Production-helper fidelity, authority, canonical phase and callback reconstruction; source-only, no execution by reviewer.",
+    "material_blockers": 0,
+    "tests_executed_by_reviewer": false
+  },
+  "limits": [
+    "No model quality, provider availability, actual provider identity, semantic approval, authenticated database admission or hosted issuance is established.",
+    "Four legacy plan_proposal cases exercise a registered legacy task, not current new-plan orchestration.",
+    "Eight source cases remain unsupported; composite orchestration/source-routing/analysis repair contract require explicit review without silently shrinking schedule.",
+    "Production model.ts correction is a separate commit and invalidates prior runtime image89af source binding; new native/image/release qualification is root-owned.",
+    "Private independent holdout, noncritical business thresholds and live semantic/retrieval execution remain open."
+  ]
+}

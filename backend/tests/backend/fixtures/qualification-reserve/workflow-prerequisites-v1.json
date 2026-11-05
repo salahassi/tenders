@@ -1,0 +1,1027 @@
+{
+  "version": 1,
+  "corpus_sha256": "9a1fd88f07fc9fc9d9b06ae3b67699976dacf221e0af7ee03fafdd59bfe25d7c",
+  "scope": "Explicitly authored offline task prerequisites; not provider outputs, database admission, human semantic approval or prior model success.",
+  "source_rule": "Every obligation retains its whole frozen source span, including conditions, exceptions and qualifications; interpretation distinguishes items without replacing the passage.",
+  "structure_rule": "Organizational titles/purposes and100word units are authored test prerequisites using existing schema bounds, not buyer facts or token/budget policy.",
+  "cases": [
+    {
+      "case_id": "qr1.plan_structure.separate_envelopes.en",
+      "requirements": [
+        {
+          "key": "TECH-1",
+          "document_id": "reserve-68996962-0a81-5b87-8943-d61a030c76a9",
+          "source_span_ids": [
+            "reserve-68996962-0a81-5b87-8943-d61a030c76a9:span1"
+          ],
+          "category": "submission",
+          "mandatory": true,
+          "interpretation": "Submit technical evidence and the deployment approach in the technical envelope.",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "FIN-1",
+          "document_id": "reserve-68996962-0a81-5b87-8943-d61a030c76a9",
+          "source_span_ids": [
+            "reserve-68996962-0a81-5b87-8943-d61a030c76a9:span1"
+          ],
+          "category": "commercial",
+          "mandatory": true,
+          "interpretation": "Submit all fees, optional prices and payment terms only in the separate financial envelope.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "technical",
+          "title": "Technical response",
+          "purpose": "Organize the response to the assigned requirements.",
+          "volume": "technical",
+          "requirement_keys": [
+            "TECH-1"
+          ]
+        },
+        {
+          "key": "financial",
+          "title": "Financial response",
+          "purpose": "Organize the response to the assigned requirements.",
+          "volume": "financial",
+          "requirement_keys": [
+            "FIN-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.plan_structure.separate_envelopes.ar",
+      "requirements": [
+        {
+          "key": "TECH-1",
+          "document_id": "reserve-53df8dbb-a817-50aa-8ab1-d6e5cbed116a",
+          "source_span_ids": [
+            "reserve-53df8dbb-a817-50aa-8ab1-d6e5cbed116a:span1"
+          ],
+          "category": "submission",
+          "mandatory": true,
+          "interpretation": "قدم الأدلة الفنية ومنهجية النشر في المظروف الفني.",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "FIN-1",
+          "document_id": "reserve-53df8dbb-a817-50aa-8ab1-d6e5cbed116a",
+          "source_span_ids": [
+            "reserve-53df8dbb-a817-50aa-8ab1-d6e5cbed116a:span1"
+          ],
+          "category": "commercial",
+          "mandatory": true,
+          "interpretation": "وقدم جميع الرسوم والأسعار الاختيارية وشروط الدفع في المظروف المالي المنفصل فقط.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "technical",
+          "title": "الاستجابة الفنية",
+          "purpose": "تنظيم الاستجابة للمتطلبات المحددة.",
+          "volume": "technical",
+          "requirement_keys": [
+            "TECH-1"
+          ]
+        },
+        {
+          "key": "financial",
+          "title": "الاستجابة المالية",
+          "purpose": "تنظيم الاستجابة للمتطلبات المحددة.",
+          "volume": "financial",
+          "requirement_keys": [
+            "FIN-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.plan_blueprint.cross_reference.en",
+      "requirements": [
+        {
+          "key": "OUTAGE-1",
+          "document_id": "reserve-a18b806f-1183-5c12-b339-f7062ef84456",
+          "source_span_ids": [
+            "reserve-a18b806f-1183-5c12-b339-f7062ef84456:span1"
+          ],
+          "category": "operations",
+          "mandatory": true,
+          "interpretation": "one outage procedure",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "TRAIN-1",
+          "document_id": "reserve-a18b806f-1183-5c12-b339-f7062ef84456",
+          "source_span_ids": [
+            "reserve-a18b806f-1183-5c12-b339-f7062ef84456:span1"
+          ],
+          "category": "deliverables",
+          "mandatory": true,
+          "interpretation": "a separate operator training chapter",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "outage",
+          "title": "Outage procedure",
+          "purpose": "Organize the required outage procedure.",
+          "volume": "technical",
+          "requirement_keys": [
+            "OUTAGE-1"
+          ]
+        },
+        {
+          "key": "training",
+          "title": "Operator training",
+          "purpose": "Organize the required operator training chapter.",
+          "volume": "technical",
+          "requirement_keys": [
+            "TRAIN-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.plan_blueprint.cross_reference.ar",
+      "requirements": [
+        {
+          "key": "OUTAGE-1",
+          "document_id": "reserve-652358f7-9d2c-5174-886e-bb3db251ff30",
+          "source_span_ids": [
+            "reserve-652358f7-9d2c-5174-886e-bb3db251ff30:span1"
+          ],
+          "category": "operations",
+          "mandatory": true,
+          "interpretation": "إجراءً واحداً للتعامل مع الانقطاع",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "TRAIN-1",
+          "document_id": "reserve-652358f7-9d2c-5174-886e-bb3db251ff30",
+          "source_span_ids": [
+            "reserve-652358f7-9d2c-5174-886e-bb3db251ff30:span1"
+          ],
+          "category": "deliverables",
+          "mandatory": true,
+          "interpretation": "فصلاً مستقلاً لتدريب المشغلين",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "outage",
+          "title": "إجراء الانقطاع",
+          "purpose": "تنظيم إجراء الانقطاع المطلوب.",
+          "volume": "technical",
+          "requirement_keys": [
+            "OUTAGE-1"
+          ]
+        },
+        {
+          "key": "training",
+          "title": "تدريب المشغلين",
+          "purpose": "تنظيم فصل تدريب المشغلين المطلوب.",
+          "volume": "technical",
+          "requirement_keys": [
+            "TRAIN-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.plan_blueprint.condition_in_footnote.en",
+      "requirements": [
+        {
+          "key": "HISTORY-1",
+          "document_id": "reserve-b56ba77a-c443-503d-9472-44fa0be0143e",
+          "source_span_ids": [
+            "reserve-b56ba77a-c443-503d-9472-44fa0be0143e:span1"
+          ],
+          "category": "data",
+          "mandatory": true,
+          "interpretation": "Table row: retain a 45-day searchable event history. Footnote: the 45-day minimum applies only after the buyer activates the premium monitoring tier; the basic tier retains 15 days.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "Proposed response",
+          "purpose": "Organize the response to the assigned requirements.",
+          "volume": "technical",
+          "requirement_keys": [
+            "HISTORY-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.plan_blueprint.condition_in_footnote.ar",
+      "requirements": [
+        {
+          "key": "HISTORY-1",
+          "document_id": "reserve-82a45c43-b1e3-5a26-b225-cffd46d8f273",
+          "source_span_ids": [
+            "reserve-82a45c43-b1e3-5a26-b225-cffd46d8f273:span1"
+          ],
+          "category": "data",
+          "mandatory": true,
+          "interpretation": "صف الجدول: الاحتفاظ بسجل أحداث قابل للبحث لمدة 45 يوماً. الحاشية: لا ينطبق الحد الأدنى البالغ 45 يوماً إلا بعد تفعيل المشتري لفئة المراقبة المتقدمة؛ وتحتفظ الفئة الأساسية بالسجل لمدة 15 يوماً.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "الاستجابة المقترحة",
+          "purpose": "تنظيم الاستجابة للمتطلبات المحددة.",
+          "volume": "technical",
+          "requirement_keys": [
+            "HISTORY-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.plan_proposal.owned_acceptance.en",
+      "requirements": [
+        {
+          "key": "COMMISSION-1",
+          "document_id": "reserve-e953208c-d614-5b19-be73-631dc7cefc66",
+          "source_span_ids": [
+            "reserve-e953208c-d614-5b19-be73-631dc7cefc66:span1"
+          ],
+          "category": "deliverables",
+          "mandatory": true,
+          "interpretation": "a commissioning record",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "SIMULATE-1",
+          "document_id": "reserve-e953208c-d614-5b19-be73-631dc7cefc66",
+          "source_span_ids": [
+            "reserve-e953208c-d614-5b19-be73-631dc7cefc66:span1"
+          ],
+          "category": "deliverables",
+          "mandatory": true,
+          "interpretation": "a fault simulation",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "Proposed response",
+          "purpose": "Organize the response to the assigned requirements.",
+          "volume": "technical",
+          "requirement_keys": [
+            "COMMISSION-1",
+            "SIMULATE-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.plan_proposal.owned_acceptance.ar",
+      "requirements": [
+        {
+          "key": "COMMISSION-1",
+          "document_id": "reserve-6caa2704-ce09-5330-99d0-0341d324b943",
+          "source_span_ids": [
+            "reserve-6caa2704-ce09-5330-99d0-0341d324b943:span1"
+          ],
+          "category": "deliverables",
+          "mandatory": true,
+          "interpretation": "سجل تشغيل أولي",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "SIMULATE-1",
+          "document_id": "reserve-6caa2704-ce09-5330-99d0-0341d324b943",
+          "source_span_ids": [
+            "reserve-6caa2704-ce09-5330-99d0-0341d324b943:span1"
+          ],
+          "category": "deliverables",
+          "mandatory": true,
+          "interpretation": "محاكاة للأعطال",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "الاستجابة المقترحة",
+          "purpose": "تنظيم الاستجابة للمتطلبات المحددة.",
+          "volume": "technical",
+          "requirement_keys": [
+            "COMMISSION-1",
+            "SIMULATE-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.plan_proposal.missing_buyer_date.en",
+      "requirements": [
+        {
+          "key": "CUTOVER-1",
+          "document_id": "reserve-b21233c3-f168-538d-9d5d-07b977253720",
+          "source_span_ids": [
+            "reserve-b21233c3-f168-538d-9d5d-07b977253720:span1"
+          ],
+          "category": "timeline",
+          "mandatory": true,
+          "interpretation": "The buyer requires a cutover plan but has not supplied the target cutover date. The delivery date must be confirmed before a final schedule is committed.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "Proposed response",
+          "purpose": "Organize the response to the assigned requirements.",
+          "volume": "technical",
+          "requirement_keys": [
+            "CUTOVER-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.plan_proposal.missing_buyer_date.ar",
+      "requirements": [
+        {
+          "key": "CUTOVER-1",
+          "document_id": "reserve-8890d8a0-7811-5b18-baa2-628515f4a21d",
+          "source_span_ids": [
+            "reserve-8890d8a0-7811-5b18-baa2-628515f4a21d:span1"
+          ],
+          "category": "timeline",
+          "mandatory": true,
+          "interpretation": "يشترط المشتري خطة للتحويل إلى النظام الجديد، لكنه لم يحدد تاريخ التحويل المستهدف. ويجب تأكيد تاريخ التسليم قبل الالتزام بجدول نهائي.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "الاستجابة المقترحة",
+          "purpose": "تنظيم الاستجابة للمتطلبات المحددة.",
+          "volume": "technical",
+          "requirement_keys": [
+            "CUTOVER-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.draft_section.qualified_company_record.en",
+      "requirements": [
+        {
+          "key": "VISIBLE-1",
+          "document_id": "reserve-73ec0aaa-6b18-530c-b50a-a89efce6e4ae",
+          "source_span_ids": [
+            "reserve-73ec0aaa-6b18-530c-b50a-a89efce6e4ae:span1"
+          ],
+          "category": "functional",
+          "mandatory": true,
+          "interpretation": "visible packaging defects",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "INTERNAL-1",
+          "document_id": "reserve-73ec0aaa-6b18-530c-b50a-a89efce6e4ae",
+          "source_span_ids": [
+            "reserve-73ec0aaa-6b18-530c-b50a-a89efce6e4ae:span1"
+          ],
+          "category": "functional",
+          "mandatory": true,
+          "interpretation": "internal structural defects",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "Proposed response",
+          "purpose": "Organize the response to the assigned requirements.",
+          "volume": "technical",
+          "requirement_keys": [
+            "VISIBLE-1",
+            "INTERNAL-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [
+        {
+          "document_id": "reserve-eaf6226e-83a1-54dd-be87-611c8dcfb7a6",
+          "channel": "verified_company_knowledge"
+        }
+      ],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.draft_section.qualified_company_record.ar",
+      "requirements": [
+        {
+          "key": "VISIBLE-1",
+          "document_id": "reserve-8437ba7e-ed1c-5314-a444-f700f8f94fb4",
+          "source_span_ids": [
+            "reserve-8437ba7e-ed1c-5314-a444-f700f8f94fb4:span1"
+          ],
+          "category": "functional",
+          "mandatory": true,
+          "interpretation": "عيوب التغليف المرئية",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "INTERNAL-1",
+          "document_id": "reserve-8437ba7e-ed1c-5314-a444-f700f8f94fb4",
+          "source_span_ids": [
+            "reserve-8437ba7e-ed1c-5314-a444-f700f8f94fb4:span1"
+          ],
+          "category": "functional",
+          "mandatory": true,
+          "interpretation": "العيوب الهيكلية الداخلية",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "الاستجابة المقترحة",
+          "purpose": "تنظيم الاستجابة للمتطلبات المحددة.",
+          "volume": "technical",
+          "requirement_keys": [
+            "VISIBLE-1",
+            "INTERNAL-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [
+        {
+          "document_id": "reserve-93a6615a-e195-5d29-ae7f-a1853af18689",
+          "channel": "verified_company_knowledge"
+        }
+      ],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.draft_section.style_is_not_credential.en",
+      "requirements": [
+        {
+          "key": "ACCREDITATION-1",
+          "document_id": "reserve-491cbc38-9fe9-5baa-b905-a6225a9e3017",
+          "source_span_ids": [
+            "reserve-491cbc38-9fe9-5baa-b905-a6225a9e3017:span1"
+          ],
+          "category": "eligibility",
+          "mandatory": true,
+          "interpretation": "The buyer requires a current safety accreditation.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "Proposed response",
+          "purpose": "Organize the response to the assigned requirements.",
+          "volume": "technical",
+          "requirement_keys": [
+            "ACCREDITATION-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [
+        {
+          "document_id": "reserve-02d9e089-353d-58b3-9f9c-3a8d128e3451",
+          "channel": "unverified_style_knowledge"
+        }
+      ],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.draft_section.style_is_not_credential.ar",
+      "requirements": [
+        {
+          "key": "ACCREDITATION-1",
+          "document_id": "reserve-608fde52-bf2d-5a7b-80ee-d544bbfcacc3",
+          "source_span_ids": [
+            "reserve-608fde52-bf2d-5a7b-80ee-d544bbfcacc3:span1"
+          ],
+          "category": "eligibility",
+          "mandatory": true,
+          "interpretation": "يشترط المشتري اعتماداً سارياً للسلامة.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "الاستجابة المقترحة",
+          "purpose": "تنظيم الاستجابة للمتطلبات المحددة.",
+          "volume": "technical",
+          "requirement_keys": [
+            "ACCREDITATION-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [
+        {
+          "document_id": "reserve-fa108791-f979-578d-bc4a-261f33b975e7",
+          "channel": "unverified_style_knowledge"
+        }
+      ],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.plan_commercial.optional_quantity_association.en",
+      "requirements": [
+        {
+          "key": "BASE-1",
+          "document_id": "reserve-12a0f7df-b243-5ed4-91ef-3d0b0cc996e0",
+          "source_span_ids": [
+            "reserve-12a0f7df-b243-5ed4-91ef-3d0b0cc996e0:span1"
+          ],
+          "category": "commercial",
+          "mandatory": true,
+          "interpretation": "The base package contains 8 wall sensors.",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "OPTION-1",
+          "document_id": "reserve-12a0f7df-b243-5ed4-91ef-3d0b0cc996e0",
+          "source_span_ids": [
+            "reserve-12a0f7df-b243-5ed4-91ef-3d0b0cc996e0:span1"
+          ],
+          "category": "commercial",
+          "mandatory": false,
+          "interpretation": "The buyer may order 5 handheld readers as a separately priced option.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "Proposed response",
+          "purpose": "Organize the response to the assigned requirements.",
+          "volume": "technical",
+          "requirement_keys": [
+            "BASE-1",
+            "OPTION-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.plan_commercial.optional_quantity_association.ar",
+      "requirements": [
+        {
+          "key": "BASE-1",
+          "document_id": "reserve-c8ded3dc-6730-551d-baae-f179dec961f6",
+          "source_span_ids": [
+            "reserve-c8ded3dc-6730-551d-baae-f179dec961f6:span1"
+          ],
+          "category": "commercial",
+          "mandatory": true,
+          "interpretation": "تحتوي الحزمة الأساسية على 8 مستشعرات جدارية.",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "OPTION-1",
+          "document_id": "reserve-c8ded3dc-6730-551d-baae-f179dec961f6",
+          "source_span_ids": [
+            "reserve-c8ded3dc-6730-551d-baae-f179dec961f6:span1"
+          ],
+          "category": "commercial",
+          "mandatory": false,
+          "interpretation": "ويجوز للمشتري طلب 5 قارئات محمولة كخيار مسعر بصورة منفصلة.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "الاستجابة المقترحة",
+          "purpose": "تنظيم الاستجابة للمتطلبات المحددة.",
+          "volume": "technical",
+          "requirement_keys": [
+            "BASE-1",
+            "OPTION-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.plan_commercial.dependency_and_period.en",
+      "requirements": [
+        {
+          "key": "VALIDATE-1",
+          "document_id": "reserve-532be142-e98d-5388-93a7-29ee8998f312",
+          "source_span_ids": [
+            "reserve-532be142-e98d-5388-93a7-29ee8998f312:span1"
+          ],
+          "category": "timeline",
+          "mandatory": true,
+          "interpretation": "Firmware validation takes 4 working days and must finish before field activation starts.",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "MONITOR-1",
+          "document_id": "reserve-532be142-e98d-5388-93a7-29ee8998f312",
+          "source_span_ids": [
+            "reserve-532be142-e98d-5388-93a7-29ee8998f312:span1"
+          ],
+          "category": "commercial",
+          "mandatory": true,
+          "interpretation": "Monitoring is billed monthly for 9 months only after activation.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "Proposed response",
+          "purpose": "Organize the response to the assigned requirements.",
+          "volume": "technical",
+          "requirement_keys": [
+            "VALIDATE-1",
+            "MONITOR-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.plan_commercial.dependency_and_period.ar",
+      "requirements": [
+        {
+          "key": "VALIDATE-1",
+          "document_id": "reserve-422a382b-c8e0-5f71-91e5-2602f9dd75e2",
+          "source_span_ids": [
+            "reserve-422a382b-c8e0-5f71-91e5-2602f9dd75e2:span1"
+          ],
+          "category": "timeline",
+          "mandatory": true,
+          "interpretation": "يستغرق التحقق من البرمجيات الثابتة 4 أيام عمل، ويجب أن ينتهي قبل بدء التفعيل الميداني.",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "MONITOR-1",
+          "document_id": "reserve-422a382b-c8e0-5f71-91e5-2602f9dd75e2",
+          "source_span_ids": [
+            "reserve-422a382b-c8e0-5f71-91e5-2602f9dd75e2:span1"
+          ],
+          "category": "commercial",
+          "mandatory": true,
+          "interpretation": "وتُفوتر المراقبة شهرياً لمدة 9 أشهر بعد التفعيل فقط.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "الاستجابة المقترحة",
+          "purpose": "تنظيم الاستجابة للمتطلبات المحددة.",
+          "volume": "technical",
+          "requirement_keys": [
+            "VALIDATE-1",
+            "MONITOR-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.review_proposal.partial_response.en",
+      "requirements": [
+        {
+          "key": "INTEGRITY-1",
+          "document_id": "reserve-97c86208-8429-5ecf-815b-315987aab735",
+          "source_span_ids": [
+            "reserve-97c86208-8429-5ecf-815b-315987aab735:span1"
+          ],
+          "category": "deliverables",
+          "mandatory": true,
+          "interpretation": "a signed integrity test report",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "RECOVERY-1",
+          "document_id": "reserve-97c86208-8429-5ecf-815b-315987aab735",
+          "source_span_ids": [
+            "reserve-97c86208-8429-5ecf-815b-315987aab735:span1"
+          ],
+          "category": "deliverables",
+          "mandatory": true,
+          "interpretation": "a recovery exercise",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "Proposed response",
+          "purpose": "Organize the response to the assigned requirements.",
+          "volume": "technical",
+          "requirement_keys": [
+            "INTEGRITY-1",
+            "RECOVERY-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [
+        {
+          "document_id": "reserve-c1ea194a-7aca-57d1-a6cb-21a811fc6ad8",
+          "channel": "authored_draft_under_review"
+        }
+      ],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.review_proposal.partial_response.ar",
+      "requirements": [
+        {
+          "key": "INTEGRITY-1",
+          "document_id": "reserve-f97f30fd-f6c2-5cc9-bc3b-0210b0454a43",
+          "source_span_ids": [
+            "reserve-f97f30fd-f6c2-5cc9-bc3b-0210b0454a43:span1"
+          ],
+          "category": "deliverables",
+          "mandatory": true,
+          "interpretation": "تقريراً موقعاً لاختبار سلامة البيانات",
+          "semantic_review_status": "pending"
+        },
+        {
+          "key": "RECOVERY-1",
+          "document_id": "reserve-f97f30fd-f6c2-5cc9-bc3b-0210b0454a43",
+          "source_span_ids": [
+            "reserve-f97f30fd-f6c2-5cc9-bc3b-0210b0454a43:span1"
+          ],
+          "category": "deliverables",
+          "mandatory": true,
+          "interpretation": "تمريناً للتعافي",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "الاستجابة المقترحة",
+          "purpose": "تنظيم الاستجابة للمتطلبات المحددة.",
+          "volume": "technical",
+          "requirement_keys": [
+            "INTEGRITY-1",
+            "RECOVERY-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [
+        {
+          "document_id": "reserve-b5837425-9644-5b23-a150-cd267c80750f",
+          "channel": "authored_draft_under_review"
+        }
+      ],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.review_proposal.no_na_approval.en",
+      "requirements": [
+        {
+          "key": "RETENTION-1",
+          "document_id": "reserve-bbf01fea-b2b1-5579-9162-d65098f2a6d7",
+          "source_span_ids": [
+            "reserve-bbf01fea-b2b1-5579-9162-d65098f2a6d7:span1"
+          ],
+          "category": "data",
+          "mandatory": true,
+          "interpretation": "Provide a retention schedule stating the event-log retention period and the action at its end.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "Proposed response",
+          "purpose": "Organize the response to the assigned requirements.",
+          "volume": "technical",
+          "requirement_keys": [
+            "RETENTION-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [
+        {
+          "document_id": "reserve-6262c693-61e2-58e3-b6d1-1e79c5b5587c",
+          "channel": "authored_draft_under_review"
+        },
+        {
+          "document_id": "reserve-b99f8b4d-4fd1-5b65-87e3-8fc4bd421e2a",
+          "channel": "untrusted_review_note"
+        }
+      ],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    },
+    {
+      "case_id": "qr1.review_proposal.no_na_approval.ar",
+      "requirements": [
+        {
+          "key": "RETENTION-1",
+          "document_id": "reserve-f4f0fd1c-f0c7-5816-ad1b-639ad201bf18",
+          "source_span_ids": [
+            "reserve-f4f0fd1c-f0c7-5816-ad1b-639ad201bf18:span1"
+          ],
+          "category": "data",
+          "mandatory": true,
+          "interpretation": "قدم جدولاً للاحتفاظ يبين مدة الاحتفاظ بسجلات الأحداث والإجراء عند نهايتها.",
+          "semantic_review_status": "pending"
+        }
+      ],
+      "organizational_sections": [
+        {
+          "key": "response",
+          "title": "الاستجابة المقترحة",
+          "purpose": "تنظيم الاستجابة للمتطلبات المحددة.",
+          "volume": "technical",
+          "requirement_keys": [
+            "RETENTION-1"
+          ]
+        }
+      ],
+      "additional_source_uses": [
+        {
+          "document_id": "reserve-689164c1-1930-5064-ba4b-8432b033ef15",
+          "channel": "authored_draft_under_review"
+        },
+        {
+          "document_id": "reserve-271b1e39-345a-5f6c-86e2-f4f260893b6a",
+          "channel": "untrusted_review_note"
+        }
+      ],
+      "authoring_unit_target_words": 100,
+      "commercial_draft": {
+        "lines": [],
+        "tasks": [],
+        "questions": []
+      },
+      "approved_na_decisions": []
+    }
+  ]
+}

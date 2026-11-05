@@ -10583,3 +10583,31 @@ These are authored fixture controls, not provider semantic results. `model.ts`
 is a runtime image input: the prior 89af image/source qualification cannot be
 reused unchanged. A newly qualified runtime, release freeze and actual deployment
 remain required; this local correction performs no provider or hosted operation.
+
+### November 5 — expand frozen reserve construction without provider activation
+
+The qualification adapters now construct 42 of 50 frozen cases: the prior ten,
+22 workflow cases with source-reviewed authored prerequisites, four explicit
+classification projections, four typed verifier phases and two narrow draft
+quote repairs. Eight cases remain explicit composite/source-routing/repair-contract
+boundaries. The fixed corpus, all 100 scheduled requests per model, source authority
+and private-holdout requirements are unchanged. Four legacy `plan_proposal` cases
+are labeled as legacy-task preparation rather than current hierarchical execution.
+
+[The expanded adapter documentation](QUALIFICATION_RESERVE_ADAPTERS.md) and
+[receipt](evidence/qualification-reserve-expanded-20261105.json) retain four frozen
+prerequisite hashes, all case statuses, source maps and the original failed repair
+controls. The controls exposed the separately committed production source-context
+fix; the adapter does not manufacture outer requirements to work around it.
+Actual request preparation and repair application now pass with immutable payment
+prose, exact source visibility, canonical hashes/scopes and rejected caller callback
+substitution. Source/semantic review stays pending; no model-authored approval or
+prior accepted production stage is inferred from authored test prerequisites.
+
+All 189 focused tests across five files pass (118 adapter controls plus 71 existing
+reserve integrity checks), with backend typecheck/build and unchanged source hashes.
+This commit changes qualification tools, fixtures, tests and documentation only;
+no additional runtime image input changes beyond the separate source-context fix.
+There were no actual provider/retrieval/database calls or production mutations.
+Complete live semantic qualification, independent private holdout, approved
+noncritical thresholds, eight unsupported cases and hosted acceptance remain open.
