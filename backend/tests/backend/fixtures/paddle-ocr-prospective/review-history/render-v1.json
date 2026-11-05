@@ -1,0 +1,337 @@
+{
+  "version": 1,
+  "scope": "fixture_preparation_only_before_ocr",
+  "gold_manifest_sha256": "6fa56e25cf3f6a29106c4c451bc3c35583d1e2cf952d28b2e6a66bfa5b3e8e10",
+  "generator_sha256": "b481ab197d9c16b6e57aeb48f60061e2041600977f3f2e7a07d35e0fb0e6472b",
+  "pymupdf_version": "1.26.6",
+  "fonts": {
+    "Amiri-Regular.ttf": {
+      "path": "frontend/public/fonts/Amiri-Regular.ttf",
+      "sha256": "ab391c4147d054c48976e98322ad0eefe1427aa0e0502a12a4c75d80a70cfcd7"
+    },
+    "Carlito-Regular.ttf": {
+      "path": "frontend/public/fonts/Carlito-Regular.ttf",
+      "sha256": "f6418f708baede9789daef5d458c0f53d2a888af9820e8062934e504fedc6595"
+    }
+  },
+  "gold_source_unchanged": true,
+  "all_historical_control_sources_unchanged": true,
+  "files": [
+    {
+      "id": "a06-01-conditional-gate",
+      "pdf": "a06-01-conditional-gate.pdf",
+      "pdf_bytes": 36055,
+      "pdf_sha256": "bd605501181b674fae92109fa505a3b495008e8bfb16aa6da94716c708d0a10d",
+      "png": "a06-01-conditional-gate.png",
+      "png_sha256": "9155dcdb8b664019fe8265f5bc82643358d1f25200811619ce0d88c90c35c3a1",
+      "raster_size_px": [
+        1190,
+        1684
+      ],
+      "scan_dpi": 144,
+      "image_objects": 1,
+      "hidden_text_characters": 0,
+      "texttrace_entries": 0,
+      "font_resources": 0,
+      "embedded_files": 0,
+      "annotations": 0,
+      "links": 0,
+      "blocks_fit_without_shrinking": [
+        {
+          "block_id": "heading",
+          "available_height_pt": 16.75,
+          "scale": 1.0
+        },
+        {
+          "block_id": "actor",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "prohibition",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "exception",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "condition",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "reference",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        }
+      ]
+    },
+    {
+      "id": "a06-02-decimal-payment",
+      "pdf": "a06-02-decimal-payment.pdf",
+      "pdf_bytes": 33580,
+      "pdf_sha256": "b2e3ef5c69e60da22b55ae95bb919f6767aa5eb05a804db453762dc6ada9e329",
+      "png": "a06-02-decimal-payment.png",
+      "png_sha256": "c1480821dae3dd25daae2b24da4f6cf80c734d5793c6e31ecf22577e5ee906d7",
+      "raster_size_px": [
+        1190,
+        1684
+      ],
+      "scan_dpi": 144,
+      "image_objects": 1,
+      "hidden_text_characters": 0,
+      "texttrace_entries": 0,
+      "font_resources": 0,
+      "embedded_files": 0,
+      "annotations": 0,
+      "links": 0,
+      "blocks_fit_without_shrinking": [
+        {
+          "block_id": "heading",
+          "available_height_pt": 16.75,
+          "scale": 1.0
+        },
+        {
+          "block_id": "decimal",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "quantity",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "acceptance",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "total",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "reference",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        }
+      ]
+    },
+    {
+      "id": "a06-03-incident-deadline",
+      "pdf": "a06-03-incident-deadline.pdf",
+      "pdf_bytes": 36521,
+      "pdf_sha256": "650a96e4302d36101d5438e56c198d81319bb85c84fb301838c1a2191f53e394",
+      "png": "a06-03-incident-deadline.png",
+      "png_sha256": "dba81889c51198864c79e0f09b0ea63e305e497f2509db40a93e73fcd4366a88",
+      "raster_size_px": [
+        1190,
+        1684
+      ],
+      "scan_dpi": 144,
+      "image_objects": 1,
+      "hidden_text_characters": 0,
+      "texttrace_entries": 0,
+      "font_resources": 0,
+      "embedded_files": 0,
+      "annotations": 0,
+      "links": 0,
+      "blocks_fit_without_shrinking": [
+        {
+          "block_id": "heading",
+          "available_height_pt": 16.75,
+          "scale": 1.0
+        },
+        {
+          "block_id": "actor",
+          "available_height_pt": 35.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "deadline",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "reference",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "fallback",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "prohibition",
+          "available_height_pt": 23.0,
+          "scale": 1.0
+        }
+      ]
+    },
+    {
+      "id": "a06-04-right-column-first",
+      "pdf": "a06-04-right-column-first.pdf",
+      "pdf_bytes": 26403,
+      "pdf_sha256": "3358312a5bad2822f7077e7e23298d244fe33203043d59a0f52d7da6e0e56836",
+      "png": "a06-04-right-column-first.png",
+      "png_sha256": "9f660f945977325881bdf4a74364d72e172ccd6bb942de2f5f37c06745d5ab45",
+      "raster_size_px": [
+        1190,
+        1684
+      ],
+      "scan_dpi": 144,
+      "image_objects": 1,
+      "hidden_text_characters": 0,
+      "texttrace_entries": 0,
+      "font_resources": 0,
+      "embedded_files": 0,
+      "annotations": 0,
+      "links": 0,
+      "blocks_fit_without_shrinking": [
+        {
+          "block_id": "heading",
+          "available_height_pt": 16.75,
+          "scale": 1.0
+        },
+        {
+          "block_id": "right-1",
+          "available_height_pt": 47.5,
+          "scale": 1.0
+        },
+        {
+          "block_id": "right-2",
+          "available_height_pt": 47.5,
+          "scale": 1.0
+        },
+        {
+          "block_id": "left-3",
+          "available_height_pt": 47.5,
+          "scale": 1.0
+        },
+        {
+          "block_id": "left-4",
+          "available_height_pt": 47.5,
+          "scale": 1.0
+        },
+        {
+          "block_id": "footer",
+          "available_height_pt": 25.5,
+          "scale": 1.0
+        }
+      ]
+    },
+    {
+      "id": "a06-05-mixed-table",
+      "pdf": "a06-05-mixed-table.pdf",
+      "pdf_bytes": 33104,
+      "pdf_sha256": "472548c84b8f2cb82e730d538325c6feb2af9e0fe01a02b896ec8254b8189970",
+      "png": "a06-05-mixed-table.png",
+      "png_sha256": "6dbb237b7b19417d25197c6607a3a7430640aa423f2dd45bcf0f9cfe2fbbd71c",
+      "raster_size_px": [
+        1190,
+        1684
+      ],
+      "scan_dpi": 144,
+      "image_objects": 1,
+      "hidden_text_characters": 0,
+      "texttrace_entries": 0,
+      "font_resources": 0,
+      "embedded_files": 0,
+      "annotations": 0,
+      "links": 0,
+      "blocks_fit_without_shrinking": [
+        {
+          "block_id": "heading",
+          "available_height_pt": 16.75,
+          "scale": 1.0
+        },
+        {
+          "block_id": "header-item",
+          "available_height_pt": 17.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "header-id",
+          "available_height_pt": 19.5,
+          "scale": 1.0
+        },
+        {
+          "block_id": "header-day",
+          "available_height_pt": 19.5,
+          "scale": 1.0
+        },
+        {
+          "block_id": "read-item",
+          "available_height_pt": 17.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "read-id",
+          "available_height_pt": 19.5,
+          "scale": 1.0
+        },
+        {
+          "block_id": "read-day",
+          "available_height_pt": 19.5,
+          "scale": 1.0
+        },
+        {
+          "block_id": "audit-item",
+          "available_height_pt": 17.0,
+          "scale": 1.0
+        },
+        {
+          "block_id": "audit-id",
+          "available_height_pt": 19.5,
+          "scale": 1.0
+        },
+        {
+          "block_id": "audit-day",
+          "available_height_pt": 19.5,
+          "scale": 1.0
+        },
+        {
+          "block_id": "preserve",
+          "available_height_pt": 25.5,
+          "scale": 1.0
+        },
+        {
+          "block_id": "prohibition",
+          "available_height_pt": 25.5,
+          "scale": 1.0
+        }
+      ]
+    },
+    {
+      "id": "a06-06-blank",
+      "pdf": "a06-06-blank.pdf",
+      "pdf_bytes": 4816,
+      "pdf_sha256": "1047b345715fa826aa1aae46c2dd75f70e6fb9815d71be16778f5c6d89a83f73",
+      "png": "a06-06-blank.png",
+      "png_sha256": "dd0ff318d8636bdf2e7bcae70f6f0b91365929cbe9570d628f63dd42dfdac966",
+      "raster_size_px": [
+        1190,
+        1684
+      ],
+      "scan_dpi": 144,
+      "image_objects": 1,
+      "hidden_text_characters": 0,
+      "texttrace_entries": 0,
+      "font_resources": 0,
+      "embedded_files": 0,
+      "annotations": 0,
+      "links": 0,
+      "blocks_fit_without_shrinking": []
+    }
+  ],
+  "ocr_executed": false,
+  "recognition_qualified": false,
+  "provider_calls": 0,
+  "production_changes": 0,
+  "native_capacity_measurement": false
+}

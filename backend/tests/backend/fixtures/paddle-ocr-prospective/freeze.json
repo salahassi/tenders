@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "frozen_at_utc": "2026-11-05T00:46:41.850200+00:00",
+  "scope": "six_prospective_synthetic_pages_and_seven_unchanged_development_controls",
+  "source_revision": "2b869ac341f3ca7944247930e68c022f91a7383a",
+  "gold_ready_for_candidate_qualification": true,
+  "complete_dependency_or_inference_plan_ready": false,
+  "ocr_executed": false,
+  "recognition_qualified": false,
+  "independent_agent_review": true,
+  "human_review": false,
+  "private_holdout": false,
+  "pre_output_corrections_retained": true,
+  "files": {
+    "README.md": {
+      "sha256": "f700545a5364df27fc64468f48c2fbd842a0ff60724059ac83c3b179792285dc",
+      "bytes": 4016
+    },
+    "a06-01-conditional-gate.pdf": {
+      "sha256": "bd605501181b674fae92109fa505a3b495008e8bfb16aa6da94716c708d0a10d",
+      "bytes": 36055
+    },
+    "a06-01-conditional-gate.png": {
+      "sha256": "9155dcdb8b664019fe8265f5bc82643358d1f25200811619ce0d88c90c35c3a1",
+      "bytes": 37420
+    },
+    "a06-02-decimal-payment.pdf": {
+      "sha256": "b2e3ef5c69e60da22b55ae95bb919f6767aa5eb05a804db453762dc6ada9e329",
+      "bytes": 33580
+    },
+    "a06-02-decimal-payment.png": {
+      "sha256": "c1480821dae3dd25daae2b24da4f6cf80c734d5793c6e31ecf22577e5ee906d7",
+      "bytes": 34922
+    },
+    "a06-03-incident-deadline.pdf": {
+      "sha256": "650a96e4302d36101d5438e56c198d81319bb85c84fb301838c1a2191f53e394",
+      "bytes": 36521
+    },
+    "a06-03-incident-deadline.png": {
+      "sha256": "dba81889c51198864c79e0f09b0ea63e305e497f2509db40a93e73fcd4366a88",
+      "bytes": 37781
+    },
+    "a06-04-right-column-first.pdf": {
+      "sha256": "3358312a5bad2822f7077e7e23298d244fe33203043d59a0f52d7da6e0e56836",
+      "bytes": 26403
+    },
+    "a06-04-right-column-first.png": {
+      "sha256": "9f660f945977325881bdf4a74364d72e172ccd6bb942de2f5f37c06745d5ab45",
+      "bytes": 27509
+    },
+    "a06-05-mixed-table.pdf": {
+      "sha256": "350708c7266d991c8fca14672abecb8cf9bb92f54e1866437b1ccb3c503d7852",
+      "bytes": 36982
+    },
+    "a06-05-mixed-table.png": {
+      "sha256": "9dd424070f7078b70f08072f4be4a2d968cfd871d7569874742aa04ca098112d",
+      "bytes": 35534
+    },
+    "a06-06-blank.pdf": {
+      "sha256": "1047b345715fa826aa1aae46c2dd75f70e6fb9815d71be16778f5c6d89a83f73",
+      "bytes": 4816
+    },
+    "a06-06-blank.png": {
+      "sha256": "dd0ff318d8636bdf2e7bcae70f6f0b91365929cbe9570d628f63dd42dfdac966",
+      "bytes": 5578
+    },
+    "generate.py": {
+      "sha256": "b481ab197d9c16b6e57aeb48f60061e2041600977f3f2e7a07d35e0fb0e6472b",
+      "bytes": 6383
+    },
+    "gold-manifest.json": {
+      "sha256": "c5ca3a7cc0ccb72eeb52e47dce2bac2429c92c47908c45aa63ea29da618fd735",
+      "bytes": 41571
+    },
+    "oracle.py": {
+      "sha256": "13c70789d651bdceb1b56c57053280f4ef836e4dcd2165f501e58374b3d39c03",
+      "bytes": 397
+    },
+    "pre-output-review.json": {
+      "sha256": "d055cd13ea625684809878bbef35ee0befa5159534fcde8eb74e94bb03563370",
+      "bytes": 7431
+    },
+    "render-manifest.json": {
+      "sha256": "f0395351dd0f9f1e45f08935ec94770d3cccd0071d2a653ab8a790c524d26f02",
+      "bytes": 9162
+    },
+    "review-history/gold-authoring-v1.json": {
+      "sha256": "6fa56e25cf3f6a29106c4c451bc3c35583d1e2cf952d28b2e6a66bfa5b3e8e10",
+      "bytes": 39671
+    },
+    "review-history/render-v1.json": {
+      "sha256": "049804c5c3e855f3dbdd0c85f2e67fcd58affecca457a4a5c474cfc09ef10b51",
+      "bytes": 9040
+    },
+    "test_oracle.py": {
+      "sha256": "fd29581c98c945ef4d35cea4d72a959dec7706e569ffd2786b9cfaf467c2528e",
+      "bytes": 4410
+    },
+    "verify_freeze.py": {
+      "sha256": "b7573692e77946698e924a7cdbd1ff645b5ff77c26c6ed56dc928c67f13c8417",
+      "bytes": 2465
+    }
+  },
+  "oracle_checks": {
+    "tests_passed": 6,
+    "failed": 0,
+    "reported_body_seconds": 0.001,
+    "scope": "Authored-source consistency and frozen normalization mutation controls only; not OCR execution."
+  },
+  "remaining_before_candidate_execution": [
+    "Complete transitive wheel lock and verified actual bytes",
+    "Verified graph/model files and immutable Python/Node/native-library base",
+    "Frozen whole-page configuration, parent harness, campaign deadline and cleanup",
+    "Fresh disk/resource preflight and root-coordinated exclusive native inference window"
+  ]
+}
