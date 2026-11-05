@@ -203,7 +203,10 @@ def prepare():
     base['uid']=created.get('metadata',{}).get('uid');b.save(base)
     state=c.initial_state(base,c.manifest_contract());r.save(state,initial=True)
     parent=b.build_bootstrap_job(c.namespace(state),c.labels(state))
-    parent['spec'].update(suspend=True,activeDeadlineSeconds=3500,ttlSecondsAfterFinished=3600)
+    parent['spec'].update(suspend=True,activeDeadlineSeconds=3500)
+    # Keep the exact upstream Job identity for late, ownership-checked cleanup.
+    # Its clients still have a bounded lifetime; namespace cleanup owns the Job.
+    parent['spec'].pop('ttlSecondsAfterFinished',None)
     pod=parent['spec']['template']['spec']
     pod['initContainers']=[x for x in pod['initContainers'] if x['name'] in ('auth','rest')]
     pod['volumes']=[x for x in pod['volumes'] if x['name'] not in ('bootstrap-objects','tmp-storage')]
