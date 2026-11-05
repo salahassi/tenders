@@ -1,4 +1,16 @@
-# Reliability acceptance status — November 4, 2026
+# Reliability acceptance status — November 5, 2026
+
+**November 5 runtime update:** The original-task repair correction at `1949866`
+requires a different runtime image. Candidate `176bcf738676` now has four passing
+native receipts and exact source, layer and configuration evidence. Its minimum
+observed memory margin is 17.21 MiB for the frozen document fixtures; no causal
+performance improvement or general capacity claim follows. The new publication
+record is deliberately pending, so promotion and manifest freezing fail closed.
+The November 4 publication, manifest and restore results below remain historical
+evidence for their recorded source. New publication, manifest refreeze, renewed
+restore and actual release remain required. See
+[the current provenance record](RUNTIME_QUALIFICATION_PROVENANCE.md) for exact
+measurements and disclosed metadata activity during the native window.
 
 This refresh is anchored to `8d970aa`, whose application and operations source is the tested `865d840`. Complete local functional checks and the renewed isolated cloud restore have passed. The reliability application has not been deployed at this evidence anchor, and authenticated hosted proposal issuance/export acceptance has not passed. This refresh includes one explicitly authorized read-only inspection of an existing real proposal; it invoked no model, retry, authorization or business mutation. API means application programming interface; OCR means optical character recognition.
 

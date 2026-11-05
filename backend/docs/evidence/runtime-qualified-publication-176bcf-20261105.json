@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "qualified_image_id": "sha256:176bcf738676421ebc58d26cd7bc2a29910d0242635de6084129a06701a9e4f8",
+  "source_revision": "19498666b511a29c251923baa75bf42c88a0c6f0",
+  "qualification_sha256": "92b463d5cae58019b1dde7d235989638ee63e333ce21c23c824bf2f1a070ee68",
+  "reference": null,
+  "status": "pending_actual_publication_and_exact_digest_readback",
+  "application_deployed": false,
+  "registry_pull_verified": false,
+  "rootfs_and_config_identical": null,
+  "models_called": 0,
+  "business_mutations": 0,
+  "historical_publication_reused": false
+}

@@ -61,7 +61,7 @@ class DeliveryReleaseTests(unittest.TestCase):
             path=self.gateway_root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
 
         # Explicitly synthetic publication fixture: no image is published here.
-        runtime_receipt={'version':1,'qualified_image':{'id':'sha256:89afc8a31d76e1616ad17e5896e0fc54f0acdc41cd7da389af456386f3e998fe'},'fixture':'synthetic-only'}
+        runtime_receipt={'version':1,'qualified_image':{'id':'sha256:176bcf738676421ebc58d26cd7bc2a29910d0242635de6084129a06701a9e4f8'},'fixture':'synthetic-only'}
         runtime_bytes=json.dumps(runtime_receipt).encode()
         runtime_helper="QUALIFIED_ID = "+repr(runtime_receipt['qualified_image']['id'])+"\nREGISTRY = 'registry.digitalocean.com/tenderdesk-a6093a76/runtime'\nRECEIPT_SHA256 = "+repr(hashlib.sha256(runtime_bytes).hexdigest())+'\n'
         self.runtime_publication={'version':1,'qualified_image_id':runtime_receipt['qualified_image']['id'],'reference':'registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:'+'d'*64,'fixture':'synthetic-only'}

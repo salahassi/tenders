@@ -10611,3 +10611,46 @@ no additional runtime image input changes beyond the separate source-context fix
 There were no actual provider/retrieval/database calls or production mutations.
 Complete live semantic qualification, independent private holdout, approved
 noncritical thresholds, eight unsupported cases and hosted acceptance remain open.
+
+### November 5 — requalify the corrected runtime and keep publication pending
+
+The corrected source `19498666b511a29c251923baa75bf42c88a0c6f0` was built as
+`sha256:176bcf738676421ebc58d26cd7bc2a29910d0242635de6084129a06701a9e4f8`.
+The new [qualification receipt](evidence/runtime-qualification-176bcf-20261105.json)
+has SHA-256 `92b463d5cae58019b1dde7d235989638ee63e333ce21c23c824bf2f1a070ee68`.
+It binds the observed build, all 130 copied files, 146 filesystem entries,
+17 ordered layers, full runtime configuration and four new native receipts.
+The pinned Deno base contributes the same ten-layer prefix. All earlier 89af
+qualification, publication and native evidence files remain unchanged.
+
+Sequential actual-image qualification passed two warm owned-snapshot downloads,
+one fresh-parent repeat, the same reviewed DOCX artifact and the real local
+PostgreSQL/PostgREST 100-command API stream, at unchanged 384 MiB/700m API limits.
+The stream contains 100 ordered results, 412,758,765 bytes and 1,600 chunks in
+56.703 seconds. The lowest observed memory margin is 17.21 MiB, from the warm
+document run. These are fresh fixture measurements, not a causal improvement
+claim or a hosted/concurrent capacity guarantee. No out-of-memory event or actual
+swap occurred; the document harness relied on a zero-swap host rather than an
+explicit no-swap flag. Source/fixture hashes and cleanup checks passed.
+
+The [activity disclosure](evidence/native-orchestration-activity-scope-176bcf-20261105.json)
+retains the four metadata tests near the warm-run end and their reported
+0.002-second test-body duration; interpreter startup/import duration was not
+measured. Normal metadata inspection and an isolated git commit also overlapped
+the sequence. No receipt is described as having zero other processor activity.
+
+Runtime qualification and release-manifest guards now pin only this exact new
+image, receipt path and receipt hash. The separate
+[new publication record](evidence/runtime-qualified-publication-176bcf-20261105.json)
+has a null reference, so both release freezing and runtime promotion reject it
+until actual push and immutable-digest readback. The older image's real registry
+publication cannot satisfy the new identity. Publication, manifest refreeze from
+the original deployment baseline, renewed restore and deployment remain pending.
+This update performs no provider call, registry write or hosted mutation.
+
+After the native window closed, all 22 focused qualification/image-promotion
+tests and both focused manifest-binding/publication tests passed. Read-only
+inspection verified the actual new image and complete checkout/native binding;
+both pending-publication paths returned their expected errors. The
+[guard verification receipt](evidence/runtime-guard-verification-176bcf-20261105.json)
+also verifies seven historical evidence files byte for byte against `1949866`.

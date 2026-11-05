@@ -2,7 +2,7 @@
 """Exact runtime identity for promotion of an already qualified image.
 
 This is a release guard, not a source rebuild or a new native qualification.
-The original Dockerfile was not embedded; its binding is retrospective.
+The current image has an observed build and four retained native receipts.
 """
 import hashlib
 import json
@@ -11,12 +11,12 @@ import re
 import stat
 import subprocess
 
-QUALIFIED_ID = 'sha256:89afc8a31d76e1616ad17e5896e0fc54f0acdc41cd7da389af456386f3e998fe'
+QUALIFIED_ID = 'sha256:176bcf738676421ebc58d26cd7bc2a29910d0242635de6084129a06701a9e4f8'
 REGISTRY = 'registry.digitalocean.com/tenderdesk-a6093a76/runtime'
 REVISION_LABEL = 'org.opencontainers.image.revision'
-RECEIPT = 'backend/docs/evidence/runtime-qualification-89af-20261104.json'
-PUBLICATION = 'backend/docs/evidence/runtime-qualified-publication-20261104.json'
-RECEIPT_SHA256 = '6e031a746917c8183f59264e6482df0b97e4b2515f9b45f2cfd9378cce80b0ac'
+RECEIPT = 'backend/docs/evidence/runtime-qualification-176bcf-20261105.json'
+PUBLICATION = 'backend/docs/evidence/runtime-qualified-publication-176bcf-20261105.json'
+RECEIPT_SHA256 = '92b463d5cae58019b1dde7d235989638ee63e333ce21c23c824bf2f1a070ee68'
 COPY_ROOTS = (
     'backend/supabase/functions', 'backend/scripts/runtime',
     'frontend/src/lib/renderDocx.ts', 'frontend/src/lib/docxTableStream.ts',
