@@ -11403,3 +11403,14 @@ raw error messages, to identify that assertion. The updater also retains only
 SQLSTATE/line and fixed transport failures. All57 affected controls pass (6 SQL
 diagnosis, 5 preflight/diagnostic, 15 updater, 31 deployment helper). A follow-up
 rollback diagnosis is required; no production schema correction is claimed.
+
+The source-allowlisted follow-up 42025233806 at 3e81848 identifies
+DELIVERY_RELEASE_EXISTING_AUTHORITY_CHANGED, with catalog restoration and both
+cleanups passing. This is a real authority comparison rejection, not a reason
+to remove the guard. Rollback diagnosis now adds a bounded notice immediately
+before that unchanged rejection: changed metadata sections, baseline function
+signatures/field names, and only fixed application-role ACL entries. Unknown
+role entries are redacted; no owners/configuration values/policy bodies/customer
+rows are emitted. Seven SQL-diagnosis and31 deployment-helper controls pass;
+a real PGlite synthetic SQL probe verifies notice syntax and the preserved
+P0001 rejection. Exact authority differences remain to be observed.

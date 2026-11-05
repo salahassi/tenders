@@ -459,9 +459,10 @@ def sql_pod(admin):
     return name
 
 
-def sql(pod, script, *, database=DATABASE, variables=None, diagnostic_codes=()):
+def sql(pod, script, *, database=DATABASE, variables=None, diagnostic_codes=(), diagnostic_callback=None):
     if not isinstance(diagnostic_codes,(tuple,list,set,frozenset)) or len(diagnostic_codes)>512 or any(not isinstance(code,str) or not re.fullmatch('[A-Z][A-Z0-9_]{1,99}',code) for code in diagnostic_codes):
         raise DeployError('SQL_DIAGNOSTIC_CODES_INVALID')
+    if diagnostic_callback is not None and not callable(diagnostic_callback):raise DeployError('SQL_DIAGNOSTIC_CALLBACK_INVALID')
     arguments = ["exec", "-i", pod, "-n", NAMESPACE, "--", "psql", "-X", "--quiet", "--no-align", "--tuples-only",
                  "--set=ON_ERROR_STOP=1", "--set=VERBOSITY=verbose", "--dbname=" + database]
     for key, value in (variables or {}).items():
@@ -473,6 +474,7 @@ def sql(pod, script, *, database=DATABASE, variables=None, diagnostic_codes=()):
     except (OSError, subprocess.TimeoutExpired):
         raise DeployError("MIGRATION_SQL_TIMEOUT") from None
     if result.returncode:
+        if diagnostic_callback is not None:diagnostic_callback(result.stderr)
         state = re.search(r"ERROR:\s+([A-Z0-9]{5}):", result.stderr)
         line = re.search(r"psql:<stdin>:([0-9]{1,6}):", result.stderr)
         diagnostic={}

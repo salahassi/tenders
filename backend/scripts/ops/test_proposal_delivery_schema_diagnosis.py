@@ -28,6 +28,21 @@ class SchemaDiagnosisTests(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 m.rollback_script(value)
 
+    def test_authority_notice_preserves_the_rejection_and_has_bounded_output(self):
+        guard="IF authority_before IS DISTINCT FROM authority THEN RAISE EXCEPTION 'DELIVERY_RELEASE_EXISTING_AUTHORITY_CHANGED';END IF;"
+        sql=m.authority_notice(guard)
+        self.assertIn("RAISE EXCEPTION 'DELIVERY_RELEASE_EXISTING_AUTHORITY_CHANGED'",sql)
+        with self.assertRaises(ValueError):m.authority_notice(guard+guard)
+        entry={'signature':'app_private.app_command(text,jsonb,text)','fields':['acl'],
+               'before_acl':['tdp_app_owner=X/tdp_app_owner'],'after_acl':['tdp_app_authenticated=X/tdp_app_owner','PRIVATE_ROLE=X/tdp_app_owner']}
+        value={'sections':['functions'],'functions':[entry]}
+        parsed=m.authority_diagnostic('NOTICE: 00000: DELIVERY_AUTHORITY_DIFF '+json.dumps(value)+'\nDETAIL: PRIVATE_CUSTOMER')
+        self.assertEqual(parsed['functions'][0]['after_acl'],['tdp_app_authenticated=X/tdp_app_owner','unreviewed_acl'])
+        self.assertNotIn('PRIVATE',json.dumps(parsed))
+        for key,bad in [('signature','PRIVATE_CUSTOMER'),('fields',['secret']),('after_acl','PRIVATE_VALUE')]:
+            changed={**entry,key:bad}
+            self.assertIsNone(m.authority_diagnostic('NOTICE: DELIVERY_AUTHORITY_DIFF '+json.dumps({'sections':['functions'],'functions':[changed]})))
+
     def test_sql_diagnostic_never_releases_private_fields_or_invalid_values(self):
         value = {'deployment':'tenderdesk-dev','status':'sql_failed','sqlstate':'42501','line':22,'message':'PRIVATE_CUSTOMER'}
         self.assertEqual(m.sql_failure(json.dumps(value)), {'sqlstate':'42501','line':22})
