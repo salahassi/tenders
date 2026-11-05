@@ -11374,3 +11374,22 @@ normal updater now preserves its typed gateway, HTTPS and runtime-qualification
 errors instead of replacing them with the generic code. All 31 focused controls
 pass (4 preflight, 15 updater, 12 image helper). Hosted diagnosis and a corrected
 full release remain required; no qualification guard is relaxed.
+
+### November 5 — read-only prerequisites pass; explicit rollback SQL diagnosis
+
+Inspection 42023690528 at 4aca907 passes exact qualified runtime bytes and all
+resource/gateway/HTTPS guards, with original CA and private cleanup. Comparing
+post-release inventory to the original baseline shows gateway generation2→5
+and Kubernetes revision2→3, while application images and routine-catalog hash
+remain unchanged. This partial gateway transition must not be called a rollout.
+
+A separately explicit `diagnose_schema=true` input now permits the frozen SQL
+to run with its sole final NOTIFY/COMMIT replaced by ROLLBACK. It requires
+inspection mode, preserves the entire guarded body and refuses any other
+transaction shape. The helper compares the routine catalog before/after even
+when SQL fails, emits only SQLSTATE/line and fixed outcomes, and verifies owned
+SQL-client cleanup. The workflow also runs cleanup on failure. This operation
+can take temporary database locks; it is rollback-only diagnosis, not read-only
+inventory or an applied migration. All36 focused controls pass (5 SQL diagnosis,
+4 preflight, 12 image, 15 updater). Actual schema diagnosis and release remain
+pending; customer processing is still unactivated.

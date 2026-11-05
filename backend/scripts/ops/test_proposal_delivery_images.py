@@ -52,7 +52,7 @@ class DeliveryImageTests(unittest.TestCase):
   workflow=(Path(__file__).resolve().parents[3]/'.github/workflows/deploy-proposal-delivery.yml').read_text()
   self.assertEqual(workflow.count('if: ${{ inputs.inspect_qualified_image != true }}'),3)
   self.assertIn('if: ${{ inputs.inspect_qualified_image == true }}',workflow)
-  self.assertIn('always() && inputs.inspect_qualified_image != true',workflow)
+  self.assertIn('always() && (inputs.inspect_qualified_image != true || inputs.diagnose_schema == true)',workflow)
   self.assertIn('default: false',workflow)
   self.assertIn('proposal-delivery-images.py --inspect-qualified',workflow)
  def test_inspection_requires_exact_source_label_own_repo_and_digest(self):
