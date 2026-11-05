@@ -11171,3 +11171,8 @@ finalizer and readiness requirements. No arbitrary exception text is logged.
 All 71 focused retirement tests pass, including fault injection proving that
 other workloads are restored after failures and private data is excluded.
 One instrumented hosted retry is next; no production deployment is claimed.
+
+The R0 evidence index, remaining-action matrix and remaining-gates document now
+include the 27-migration restore pass and the verified cleanup of the fifth
+retirement attempt. Historical failures remain intact. The instrumented run
+41996978998 uses 718ac68; no customer request or model call was started.
