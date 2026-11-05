@@ -1,0 +1,9 @@
+{
+  "container_id": "49cfc3ab222726b536c0607578459f6bd78deacacba923da3741370b88bef2f2",
+  "never_started": true,
+  "copy_exit_code": 1,
+  "copy_error": "mkdir image-provenance: no space left on device",
+  "finally_removal_verified": true,
+  "disk_free_after_cleanup": 2624208896,
+  "inference_executed": false
+}

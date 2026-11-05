@@ -1,0 +1,30 @@
+{
+  "scope": "replace only verified same-mode byte-identical owned Node/app copies by hardlinks; preserve every original context path, bytes and manifest",
+  "rows": [
+    {
+      "context": "/workspace/output/a06-paddle-offline-context-20261105-r1",
+      "files_deduplicated": 2197,
+      "logical_duplicate_bytes_relinked": 141851346,
+      "manifest_sha256_unchanged": "0295a11f8159e431edf23bc0a64649bca2a6f1cde4e36f672889784f6ae02d11"
+    },
+    {
+      "context": "/workspace/output/a06-paddle-offline-context-20261105-r2",
+      "files_deduplicated": 2197,
+      "logical_duplicate_bytes_relinked": 141851346,
+      "manifest_sha256_unchanged": "4f10906ae57c014133216edcda8296d5c80abbb14449277c3201cda2c9a976ba"
+    },
+    {
+      "context": "/workspace/output/a06-paddle-offline-context-20261105-r3",
+      "files_deduplicated": 2197,
+      "logical_duplicate_bytes_relinked": 141851346,
+      "manifest_sha256_unchanged": "786c8cd19c337428645b8e980b0ffab82af30f132e908c489b5e2036cc1751f6"
+    },
+    {
+      "context": "/workspace/output/a06-paddle-offline-context-20261105-r4",
+      "files_deduplicated": 2197,
+      "logical_duplicate_bytes_relinked": 141851346,
+      "manifest_sha256_unchanged": "ba9f19ad53190963d36bdc5098d5c3df83d1ec8f3cedd233f8045cece0049aea"
+    }
+  ],
+  "disk_free": 3779481600
+}

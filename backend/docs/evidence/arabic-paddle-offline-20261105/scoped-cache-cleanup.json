@@ -1,0 +1,65 @@
+{
+  "scope": "only three experiment-owned failed-build input caches; source contexts/logs/inputs retained; no image deletion",
+  "rows": [
+    {
+      "argv": [
+        "docker",
+        "--host=unix:///var/run/docker.sock",
+        "buildx",
+        "prune",
+        "--filter",
+        "id=0u8fcvq1o2xz3nz6rvx09tcho",
+        "--filter",
+        "type=source.local",
+        "--filter",
+        "shared=false",
+        "--force",
+        "--verbose"
+      ],
+      "returncode": 0,
+      "stdout": "Total:\t0B\n",
+      "stderr": "",
+      "free_after": 930213888
+    },
+    {
+      "argv": [
+        "docker",
+        "--host=unix:///var/run/docker.sock",
+        "buildx",
+        "prune",
+        "--filter",
+        "id=j1u7t7g00kfuedj0umvcr1476",
+        "--filter",
+        "type=source.local",
+        "--filter",
+        "shared=false",
+        "--force",
+        "--verbose"
+      ],
+      "returncode": 0,
+      "stdout": "Total:\t0B\n",
+      "stderr": "",
+      "free_after": 930213888
+    },
+    {
+      "argv": [
+        "docker",
+        "--host=unix:///var/run/docker.sock",
+        "buildx",
+        "prune",
+        "--filter",
+        "id=uqd7e96w4so3h63psbg0ub6ph",
+        "--filter",
+        "type=source.local",
+        "--filter",
+        "shared=false",
+        "--force",
+        "--verbose"
+      ],
+      "returncode": 0,
+      "stdout": "Total:\t0B\n",
+      "stderr": "",
+      "free_after": 930213888
+    }
+  ]
+}

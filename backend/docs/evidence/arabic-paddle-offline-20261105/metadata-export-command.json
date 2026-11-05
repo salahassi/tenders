@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "docker",
+    "--host=unix:///var/run/docker.sock",
+    "build",
+    "--pull=false",
+    "--network=none",
+    "--progress=plain",
+    "--output",
+    "type=local,dest=/workspace/output/a06-paddle-offline-build-20261105-r4/image-provenance",
+    "/workspace/output/a06-paddle-offline-build-20261105-r4/metadata-export-context"
+  ],
+  "source_image_id": "sha256:2cf5d314540a69ca1eaeccbf7edc5fc6db48ec4047eb1405318d6406ce2969d5",
+  "Dockerfile_sha256": "725b791432f5402a9f0759e4c232afd649f3abf9c0d72d3da88e3eababc61af6",
+  "no_RUN_or_container_start": true
+}

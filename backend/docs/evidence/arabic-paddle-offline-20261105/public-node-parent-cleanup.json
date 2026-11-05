@@ -1,0 +1,16 @@
+{
+  "authorization": "root confirmed this public Node parent is not reserved; exact removal permitted after zero-reference check",
+  "removed_image": "sha256:dc1f22974dab4be31a8b56d58cb1f8fc218e83de83ccd831d885b3d7ac1223fb",
+  "original_reference": [
+    "node@sha256:2dd9a4f758e173b65fee15388f7706af6fb01ef50cf7a2c0538711d67a6981ae"
+  ],
+  "container_reference_count": 0,
+  "ancestor_container_reference_count": 0,
+  "container_count_inspected": 1,
+  "retained_candidate": "sha256:2cf5d314540a69ca1eaeccbf7edc5fc6db48ec4047eb1405318d6406ce2969d5",
+  "retained_extracted_binary_sha256": "e32e2d16081cf644f88392934288086e7662529d0d43277c34f7aad2207cfafb",
+  "stdout": "Untagged: node@sha256:2dd9a4f758e173b65fee15388f7706af6fb01ef50cf7a2c0538711d67a6981ae\nDeleted: sha256:dc1f22974dab4be31a8b56d58cb1f8fc218e83de83ccd831d885b3d7ac1223fb\n",
+  "stderr": "",
+  "disk_free_before": 3744788480,
+  "disk_free_after": 3744796672
+}

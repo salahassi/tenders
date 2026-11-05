@@ -1,0 +1,73 @@
+{
+  "pip_check": {
+    "argv": [
+      "/opt/paddle/bin/python",
+      "-m",
+      "pip",
+      "check"
+    ],
+    "returncode": 0,
+    "stdout": "No broken requirements found.\n",
+    "stderr": ""
+  },
+  "pip_version": {
+    "argv": [
+      "/opt/paddle/bin/python",
+      "-m",
+      "pip",
+      "--version"
+    ],
+    "returncode": 0,
+    "stdout": "pip 24.0 from /opt/paddle/lib/python3.11/site-packages/pip (python 3.11)\n",
+    "stderr": ""
+  },
+  "node_version": {
+    "argv": [
+      "/usr/local/bin/node",
+      "--version"
+    ],
+    "returncode": 0,
+    "stdout": "v24.22.1\n",
+    "stderr": ""
+  },
+  "node_parent_import": {
+    "argv": [
+      "/usr/local/bin/node",
+      "--experimental-transform-types",
+      "--input-type=module",
+      "-e",
+      "const m=await import('/app/backend/scripts/backend/uploaded-document-ocr-worker.ts'); if(typeof m.processUploadedDocumentOcr!=='function')throw Error('missing actual parent'); console.log('actual parent import verified; no invocation');"
+    ],
+    "returncode": 0,
+    "stdout": "actual parent import verified; no invocation\n",
+    "stderr": "(node:1016) ExperimentalWarning: Transform Types is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+  },
+  "dpkg_inventory": {
+    "argv": [
+      "dpkg-query",
+      "-W",
+      "-f=${Package}\t${Version}\t${Architecture}\n"
+    ],
+    "returncode": 0,
+    "stdout": "adduser\t3.134\tall\napt\t2.6.1\tamd64\nbase-files\t12.4+deb12u15\tamd64\nbase-passwd\t3.6.1\tamd64\nbash\t5.2.15-2+b13\tamd64\nbsdutils\t1:2.38.1-5+deb12u3\tamd64\nca-certificates\t20250419~deb12u2\tall\ncoreutils\t9.1-1\tamd64\ndash\t0.5.12-2\tamd64\ndebconf\t1.5.82\tall\ndebian-archive-keyring\t2023.3+deb12u2\tall\ndebianutils\t5.7-0.5~deb12u1\tamd64\ndiffutils\t1:3.8-4\tamd64\ndpkg\t1.21.23\tamd64\ne2fsprogs\t1.47.0-2+b2\tamd64\nfindutils\t4.9.0-4\tamd64\nfontconfig-config\t2.14.1-4\tamd64\nfonts-dejavu-core\t2.37-6\tall\ngcc-12-base\t12.2.0-14+deb12u1\tamd64\ngpgv\t2.2.40-1.1+deb12u2\tamd64\ngrep\t3.8-5\tamd64\ngzip\t1.12-1\tamd64\nhostname\t3.23+nmu1\tamd64\ninit-system-helpers\t1.65.2+deb12u1\tall\nlibacl1\t2.3.1-3\tamd64\nlibapt-pkg6.0\t2.6.1\tamd64\nlibattr1\t1:2.5.1-4\tamd64\nlibaudit-common\t1:3.0.9-1\tall\nlibaudit1\t1:3.0.9-1\tamd64\nlibblkid1\t2.38.1-5+deb12u3\tamd64\nlibbrotli1\t1.0.9-2+deb12u1\tamd64\nlibbsd0\t0.11.7-2\tamd64\nlibbz2-1.0\t1.0.8-5+b1\tamd64\nlibc-bin\t2.36-9+deb12u14\tamd64\nlibc6\t2.36-9+deb12u14\tamd64\nlibcairo2\t1.16.0-7\tamd64\nlibcap-ng0\t0.8.3-1+b3\tamd64\nlibcap2\t1:2.66-4+deb12u3+b1\tamd64\nlibcom-err2\t1.47.0-2+b2\tamd64\nlibcrypt1\t1:4.4.33-2\tamd64\nlibdb5.3\t5.3.28+dfsg2-1\tamd64\nlibdebconfclient0\t0.270\tamd64\nlibdeflate0\t1.14-1\tamd64\nlibdrm-amdgpu1\t2.4.114-1+b1\tamd64\nlibdrm-common\t2.4.114-1\tall\nlibdrm-intel1\t2.4.114-1+b1\tamd64\nlibdrm-nouveau2\t2.4.114-1+b1\tamd64\nlibdrm-radeon1\t2.4.114-1+b1\tamd64\nlibdrm2\t2.4.114-1+b1\tamd64\nlibedit2\t3.1-20221030-2\tamd64\nlibelf1\t0.188-2.1\tamd64\nlibexpat1\t2.5.0-1+deb12u5\tamd64\nlibext2fs2\t1.47.0-2+b2\tamd64\nlibffi8\t3.4.4-1\tamd64\nlibfontconfig1\t2.14.1-4\tamd64\nlibfreetype6\t2.12.1+dfsg-5+deb12u4\tamd64\nlibgcc-s1\t12.2.0-14+deb12u1\tamd64\nlibgcrypt20\t1.10.1-3+deb12u1\tamd64\nlibgdbm6\t1.23-3\tamd64\nlibgl1\t1.6.0-1\tamd64\nlibgl1-mesa-dri\t22.3.6-1+deb12u2\tamd64\nlibglapi-mesa\t22.3.6-1+deb12u2\tamd64\nlibglib2.0-0\t2.74.6-2+deb12u9\tamd64\nlibglvnd0\t1.6.0-1\tamd64\nlibglx-mesa0\t22.3.6-1+deb12u2\tamd64\nlibglx0\t1.6.0-1\tamd64\nlibgmp10\t2:6.2.1+dfsg1-1.1\tamd64\nlibgnutls30\t3.7.9-2+deb12u7\tamd64\nlibgomp1\t12.2.0-14+deb12u1\tamd64\nlibgpg-error0\t1.46-1\tamd64\nlibgssapi-krb5-2\t1.20.1-2+deb12u5\tamd64\nlibhogweed6\t3.8.1-2\tamd64\nlibice6\t2:1.0.10-1\tamd64\nlibicu72\t72.1-3+deb12u1\tamd64\nlibidn2-0\t2.3.3-1+b1\tamd64\nlibjbig0\t2.1-6.1\tamd64\nlibjpeg62-turbo\t1:2.1.5-2\tamd64\nlibk5crypto3\t1.20.1-2+deb12u5\tamd64\nlibkeyutils1\t1.6.3-2\tamd64\nlibkrb5-3\t1.20.1-2+deb12u5\tamd64\nlibkrb5support0\t1.20.1-2+deb12u5\tamd64\nliblcms2-2\t2.14-2+deb12u1\tamd64\nliblerc4\t4.0.0+ds-2\tamd64\nlibllvm15\t1:15.0.6-4+b1\tamd64\nliblz4-1\t1.9.4-1\tamd64\nliblzma5\t5.4.1-1+deb12u2\tamd64\nlibmd0\t1.0.4-2\tamd64\nlibmount1\t2.38.1-5+deb12u3\tamd64\nlibncursesw6\t6.4-4\tamd64\nlibnettle8\t3.8.1-2\tamd64\nlibnsl2\t1.3.0-2\tamd64\nlibnspr4\t2:4.35-1\tamd64\nlibnss3\t2:3.87.1-1+deb12u4\tamd64\nlibopenjp2-7\t2.5.0-2+deb12u3\tamd64\nlibp11-kit0\t0.24.1-2\tamd64\nlibpam-modules\t1.5.2-6+deb12u2\tamd64\nlibpam-modules-bin\t1.5.2-6+deb12u2\tamd64\nlibpam-runtime\t1.5.2-6+deb12u2\tall\nlibpam0g\t1.5.2-6+deb12u2\tamd64\nlibpciaccess0\t0.17-2\tamd64\nlibpcre2-8-0\t10.42-1+deb12u2\tamd64\nlibpixman-1-0\t0.42.2-1\tamd64\nlibpng16-16\t1.6.39-2+deb12u6\tamd64\nlibpoppler126\t22.12.0-2+deb12u3\tamd64\nlibreadline8\t8.2-1.3\tamd64\nlibseccomp2\t2.5.4-1+deb12u1\tamd64\nlibselinux1\t3.4-1+b6\tamd64\nlibsemanage-common\t3.4-1\tall\nlibsemanage2\t3.4-1+b5\tamd64\nlibsensors-config\t1:3.6.0-7.1\tall\nlibsensors5\t1:3.6.0-7.1\tamd64\nlibsepol2\t3.4-2.1\tamd64\nlibsm6\t2:1.2.3-1\tamd64\nlibsmartcols1\t2.38.1-5+deb12u3\tamd64\nlibsqlite3-0\t3.40.1-2+deb12u2\tamd64\nlibss2\t1.47.0-2+b2\tamd64\nlibssl3\t3.0.22-1~deb12u2\tamd64\nlibstdc++6\t12.2.0-14+deb12u1\tamd64\nlibsystemd0\t252.39-1~deb12u2\tamd64\nlibtasn1-6\t4.19.0-2+deb12u1\tamd64\nlibtiff6\t4.5.0-6+deb12u4\tamd64\nlibtinfo6\t6.4-4\tamd64\nlibtirpc-common\t1.3.3+ds-1\tall\nlibtirpc3\t1.3.3+ds-1\tamd64\nlibudev1\t252.39-1~deb12u2\tamd64\nlibunistring2\t1.0-2\tamd64\nlibuuid1\t2.38.1-5+deb12u3\tamd64\nlibwebp7\t1.2.4-0.2+deb12u1\tamd64\nlibx11-6\t2:1.8.4-2+deb12u2\tamd64\nlibx11-data\t2:1.8.4-2+deb12u2\tall\nlibx11-xcb1\t2:1.8.4-2+deb12u2\tamd64\nlibxau6\t1:1.0.9-1\tamd64\nlibxcb-dri2-0\t1.15-1\tamd64\nlibxcb-dri3-0\t1.15-1\tamd64\nlibxcb-glx0\t1.15-1\tamd64\nlibxcb-present0\t1.15-1\tamd64\nlibxcb-randr0\t1.15-1\tamd64\nlibxcb-render0\t1.15-1\tamd64\nlibxcb-shm0\t1.15-1\tamd64\nlibxcb-sync1\t1.15-1\tamd64\nlibxcb-xfixes0\t1.15-1\tamd64\nlibxcb1\t1.15-1\tamd64\nlibxdmcp6\t1:1.1.2-3\tamd64\nlibxext6\t2:1.3.4-1+b1\tamd64\nlibxfixes3\t1:6.0.0-2\tamd64\nlibxml2\t2.9.14+dfsg-1.3~deb12u6\tamd64\nlibxrender1\t1:0.9.10-1.1\tamd64\nlibxshmfence1\t1.3-1\tamd64\nlibxxf86vm1\t1:1.1.4-1+b2\tamd64\nlibxxhash0\t0.8.1-1\tamd64\nlibz3-4\t4.8.12-3.1\tamd64\nlibzstd1\t1.5.4+dfsg2-5\tamd64\nlogin\t1:4.13+dfsg1-1+deb12u2\tamd64\nlogsave\t1.47.0-2+b2\tamd64\nmawk\t1.3.4.20200120-3.1\tamd64\nmount\t2.38.1-5+deb12u3\tamd64\nncurses-base\t6.4-4\tall\nncurses-bin\t6.4-4\tamd64\nnetbase\t6.4\tall\nopenssl\t3.0.22-1~deb12u2\tamd64\npasswd\t1:4.13+dfsg1-1+deb12u2\tamd64\nperl-base\t5.36.0-7+deb12u4\tamd64\npoppler-utils\t22.12.0-2+deb12u3\tamd64\nreadline-common\t8.2-1.3\tall\nsed\t4.9-1+deb12u1\tamd64\nsysvinit-utils\t3.06-4\tamd64\ntar\t1.34+dfsg-1.2+deb12u1\tamd64\ntzdata\t2026e-0+deb12u1\tall\nusr-is-merged\t37~deb12u1\tall\nutil-linux\t2.38.1-5+deb12u3\tamd64\nutil-linux-extra\t2.38.1-5+deb12u3\tamd64\nx11-common\t1:7.7+23\tall\nzlib1g\t1:1.2.13.dfsg-1\tamd64\n",
+    "stderr": ""
+  },
+  "dpkg_audit": {
+    "argv": [
+      "dpkg",
+      "--audit"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "poppler_version": {
+    "argv": [
+      "pdftoppm",
+      "-v"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "pdftoppm version 22.12.0\nCopyright 2005-2022 The Poppler Developers - http://poppler.freedesktop.org\nCopyright 1996-2011, 2022 Glyph & Cog, LLC\n"
+  }
+}

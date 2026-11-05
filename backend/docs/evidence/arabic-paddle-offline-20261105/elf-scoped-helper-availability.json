@@ -1,0 +1,275 @@
+[
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libavcodec-9aae324f.so.59.37.100",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libavcodec-9aae324f.so.59.37.100"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007f836f709000)\n\tlibswresample-2ec4394e.so.4.7.100 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libswresample-2ec4394e.so.4.7.100 (0x00007f836e437000)\n\tlibavutil-a0a0531e.so.57.28.100 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libavutil-a0a0531e.so.57.28.100 (0x00007f836e259000)\n\tlibvpx-c3a7933e.so.9.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libvpx-c3a7933e.so.9.0.0 (0x00007f836df2c000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f836de49000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f836de2a000)\n\tlibpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f836de23000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f836dc41000)\n\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f836da27000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f836da07000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f836f70b000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libavformat-3ff1be5b.so.59.27.100",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libavformat-3ff1be5b.so.59.27.100"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007f2d662f1000)\n\tlibavcodec-9aae324f.so.59.37.100 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libavcodec-9aae324f.so.59.37.100 (0x00007f2d64dcc000)\n\tlibavutil-a0a0531e.so.57.28.100 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libavutil-a0a0531e.so.57.28.100 (0x00007f2d64bee000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f2d64b0b000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f2d64aec000)\n\tlibssl-28bef1ac.so.1.1 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libssl-28bef1ac.so.1.1 (0x00007f2d64a4d000)\n\tlibcrypto-337dac8b.so.1.1 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libcrypto-337dac8b.so.1.1 (0x00007f2d64749000)\n\tlibpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f2d64744000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f2d64562000)\n\tlibswresample-2ec4394e.so.4.7.100 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libswresample-2ec4394e.so.4.7.100 (0x00007f2d64540000)\n\tlibvpx-c3a7933e.so.9.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libvpx-c3a7933e.so.9.0.0 (0x00007f2d64213000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f2d662f3000)\n\tlibdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f2d6420c000)\n\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f2d63ff2000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f2d63fd2000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libgfortran-91cc3cb1.so.3.0.0",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libgfortran-91cc3cb1.so.3.0.0"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007f16de0fc000)\n\tlibquadmath-96973f99.so.0.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libquadmath-96973f99.so.0.0.0 (0x00007f16dd800000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f16de011000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f16ddff1000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f16dd61e000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f16de0fe000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libopenblas-r0-f650aae0.3.3.so",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libopenblas-r0-f650aae0.3.3.so"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007f031ae1f000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f0318720000)\n\tlibgfortran-91cc3cb1.so.3.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libgfortran-91cc3cb1.so.3.0.0 (0x00007f0318200000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f031853e000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f031ae21000)\n\tlibquadmath-96973f99.so.0.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libquadmath-96973f99.so.0.0.0 (0x00007f0317e00000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f031adf4000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libssl-28bef1ac.so.1.1",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libssl-28bef1ac.so.1.1"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007f23e40e1000)\n\tlibcrypto-337dac8b.so.1.1 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libcrypto-337dac8b.so.1.1 (0x00007f23e3d38000)\n\tlibz.so.1 => /lib/x86_64-linux-gnu/libz.so.1 (0x00007f23e3d16000)\n\tlibdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f23e3d11000)\n\tlibpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f23e3d0c000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f23e3b2a000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f23e40e3000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libswresample-2ec4394e.so.4.7.100",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libswresample-2ec4394e.so.4.7.100"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007ff83aa08000)\n\tlibavutil-a0a0531e.so.57.28.100 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libavutil-a0a0531e.so.57.28.100 (0x00007ff83a800000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007ff83a71d000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007ff83a53b000)\n\tlibpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007ff83a536000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007ff83aa0a000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libswscale-2c3c8be7.so.6.7.100",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libswscale-2c3c8be7.so.6.7.100"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007f6f7cd74000)\n\tlibavutil-a0a0531e.so.57.28.100 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libavutil-a0a0531e.so.57.28.100 (0x00007f6f7caed000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f6f7ca0a000)\n\tlibpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f6f7ca05000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f6f7c823000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f6f7cd76000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-image-e82a276d.so.0.0.0",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-image-e82a276d.so.0.0.0"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007fbf55f78000)\n\tlibxcb-shm-7a199f70.so.0.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-shm-7a199f70.so.0.0.0 (0x00007fbf55800000)\n\tlibxcb-util-4d666913.so.1.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-util-4d666913.so.1.0.0 (0x00007fbf55400000)\n\tlibxcb.so.1 => /lib/x86_64-linux-gnu/libxcb.so.1 (0x00007fbf55f43000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fbf55a1e000)\n\tlibXau-00ec42fe.so.6.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libXau-00ec42fe.so.6.0.0 (0x00007fbf55000000)\n\tlibXau.so.6 => /lib/x86_64-linux-gnu/libXau.so.6 (0x00007fbf55f3c000)\n\tlibXdmcp.so.6 => /lib/x86_64-linux-gnu/libXdmcp.so.6 (0x00007fbf54c00000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fbf55f7a000)\n\tlibbsd.so.0 => /lib/x86_64-linux-gnu/libbsd.so.0 (0x00007fbf55f26000)\n\tlibmd.so.0 => /lib/x86_64-linux-gnu/libmd.so.0 (0x00007fbf55f19000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-randr-a96a5a87.so.0.1.0",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-randr-a96a5a87.so.0.1.0"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007f8839c49000)\n\tlibxcb.so.1 => /lib/x86_64-linux-gnu/libxcb.so.1 (0x00007f88399d6000)\n\tlibXau-00ec42fe.so.6.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libXau-00ec42fe.so.6.0.0 (0x00007f8839600000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f883941e000)\n\tlibXau.so.6 => /lib/x86_64-linux-gnu/libXau.so.6 (0x00007f8839c39000)\n\tlibXdmcp.so.6 => /lib/x86_64-linux-gnu/libXdmcp.so.6 (0x00007f8839200000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f8839c4b000)\n\tlibbsd.so.0 => /lib/x86_64-linux-gnu/libbsd.so.0 (0x00007f8839c21000)\n\tlibmd.so.0 => /lib/x86_64-linux-gnu/libmd.so.0 (0x00007f88399c9000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-render-637b984a.so.0.0.0",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-render-637b984a.so.0.0.0"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007f4645e44000)\n\tlibxcb.so.1 => /lib/x86_64-linux-gnu/libxcb.so.1 (0x00007f4645bd6000)\n\tlibXau-00ec42fe.so.6.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libXau-00ec42fe.so.6.0.0 (0x00007f4645800000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f464561e000)\n\tlibXau.so.6 => /lib/x86_64-linux-gnu/libXau.so.6 (0x00007f4645e34000)\n\tlibXdmcp.so.6 => /lib/x86_64-linux-gnu/libXdmcp.so.6 (0x00007f4645400000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f4645e46000)\n\tlibbsd.so.0 => /lib/x86_64-linux-gnu/libbsd.so.0 (0x00007f4645e1c000)\n\tlibmd.so.0 => /lib/x86_64-linux-gnu/libmd.so.0 (0x00007f4645bc9000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-render-util-43ce00f5.so.0.0.0",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-render-util-43ce00f5.so.0.0.0"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007fa437f4b000)\n\tlibxcb-render-637b984a.so.0.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-render-637b984a.so.0.0.0 (0x00007fa437800000)\n\tlibxcb.so.1 => /lib/x86_64-linux-gnu/libxcb.so.1 (0x00007fa437f16000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fa437a1e000)\n\tlibXau-00ec42fe.so.6.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libXau-00ec42fe.so.6.0.0 (0x00007fa437400000)\n\tlibXau.so.6 => /lib/x86_64-linux-gnu/libXau.so.6 (0x00007fa437f11000)\n\tlibXdmcp.so.6 => /lib/x86_64-linux-gnu/libXdmcp.so.6 (0x00007fa437000000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fa437f4d000)\n\tlibbsd.so.0 => /lib/x86_64-linux-gnu/libbsd.so.0 (0x00007fa437ef9000)\n\tlibmd.so.0 => /lib/x86_64-linux-gnu/libmd.so.0 (0x00007fa437eec000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-shape-25c2b258.so.0.0.0",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-shape-25c2b258.so.0.0.0"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007fe7ca93b000)\n\tlibxcb.so.1 => /lib/x86_64-linux-gnu/libxcb.so.1 (0x00007fe7ca906000)\n\tlibXau-00ec42fe.so.6.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libXau-00ec42fe.so.6.0.0 (0x00007fe7ca200000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fe7ca41e000)\n\tlibXau.so.6 => /lib/x86_64-linux-gnu/libXau.so.6 (0x00007fe7ca901000)\n\tlibXdmcp.so.6 => /lib/x86_64-linux-gnu/libXdmcp.so.6 (0x00007fe7c9e00000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fe7ca93d000)\n\tlibbsd.so.0 => /lib/x86_64-linux-gnu/libbsd.so.0 (0x00007fe7ca8e9000)\n\tlibmd.so.0 => /lib/x86_64-linux-gnu/libmd.so.0 (0x00007fe7ca8dc000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-shm-7a199f70.so.0.0.0",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-shm-7a199f70.so.0.0.0"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007fe2e6c38000)\n\tlibxcb.so.1 => /lib/x86_64-linux-gnu/libxcb.so.1 (0x00007fe2e69d6000)\n\tlibXau-00ec42fe.so.6.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libXau-00ec42fe.so.6.0.0 (0x00007fe2e6600000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fe2e641e000)\n\tlibXau.so.6 => /lib/x86_64-linux-gnu/libXau.so.6 (0x00007fe2e6c28000)\n\tlibXdmcp.so.6 => /lib/x86_64-linux-gnu/libXdmcp.so.6 (0x00007fe2e6200000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fe2e6c3a000)\n\tlibbsd.so.0 => /lib/x86_64-linux-gnu/libbsd.so.0 (0x00007fe2e6c10000)\n\tlibmd.so.0 => /lib/x86_64-linux-gnu/libmd.so.0 (0x00007fe2e69c9000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-sync-89374f40.so.1.0.0",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-sync-89374f40.so.1.0.0"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007ffbc9dc0000)\n\tlibxcb.so.1 => /lib/x86_64-linux-gnu/libxcb.so.1 (0x00007ffbc9d8b000)\n\tlibXau-00ec42fe.so.6.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libXau-00ec42fe.so.6.0.0 (0x00007ffbc9600000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007ffbc981e000)\n\tlibXau.so.6 => /lib/x86_64-linux-gnu/libXau.so.6 (0x00007ffbc9d86000)\n\tlibXdmcp.so.6 => /lib/x86_64-linux-gnu/libXdmcp.so.6 (0x00007ffbc9200000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007ffbc9dc2000)\n\tlibbsd.so.0 => /lib/x86_64-linux-gnu/libbsd.so.0 (0x00007ffbc9d6e000)\n\tlibmd.so.0 => /lib/x86_64-linux-gnu/libmd.so.0 (0x00007ffbc9d61000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-xfixes-9be3ba6f.so.0.0.0",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-xfixes-9be3ba6f.so.0.0.0"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007fa3ef44a000)\n\tlibxcb.so.1 => /lib/x86_64-linux-gnu/libxcb.so.1 (0x00007fa3ef415000)\n\tlibXau-00ec42fe.so.6.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libXau-00ec42fe.so.6.0.0 (0x00007fa3eee00000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fa3ef01e000)\n\tlibXau.so.6 => /lib/x86_64-linux-gnu/libXau.so.6 (0x00007fa3ef410000)\n\tlibXdmcp.so.6 => /lib/x86_64-linux-gnu/libXdmcp.so.6 (0x00007fa3eea00000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fa3ef44c000)\n\tlibbsd.so.0 => /lib/x86_64-linux-gnu/libbsd.so.0 (0x00007fa3ef008000)\n\tlibmd.so.0 => /lib/x86_64-linux-gnu/libmd.so.0 (0x00007fa3eedf3000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-xinerama-ae147f87.so.0.0.0",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-xinerama-ae147f87.so.0.0.0"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007fcd59dc9000)\n\tlibxcb.so.1 => /lib/x86_64-linux-gnu/libxcb.so.1 (0x00007fcd59d94000)\n\tlibXau-00ec42fe.so.6.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libXau-00ec42fe.so.6.0.0 (0x00007fcd59600000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fcd5981e000)\n\tlibXau.so.6 => /lib/x86_64-linux-gnu/libXau.so.6 (0x00007fcd59d8f000)\n\tlibXdmcp.so.6 => /lib/x86_64-linux-gnu/libXdmcp.so.6 (0x00007fcd59200000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fcd59dcb000)\n\tlibbsd.so.0 => /lib/x86_64-linux-gnu/libbsd.so.0 (0x00007fcd59d77000)\n\tlibmd.so.0 => /lib/x86_64-linux-gnu/libmd.so.0 (0x00007fcd59d6a000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-xkb-9ba31ab3.so.1.0.0",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libxcb-xkb-9ba31ab3.so.1.0.0"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007f0315912000)\n\tlibxcb.so.1 => /lib/x86_64-linux-gnu/libxcb.so.1 (0x00007f03158dd000)\n\tlibXau-00ec42fe.so.6.0.0 => /opt/paddle/lib/python3.11/site-packages/opencv_contrib_python.libs/libXau-00ec42fe.so.6.0.0 (0x00007f0315200000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f031541e000)\n\tlibXau.so.6 => /lib/x86_64-linux-gnu/libXau.so.6 (0x00007f03158d8000)\n\tlibXdmcp.so.6 => /lib/x86_64-linux-gnu/libXdmcp.so.6 (0x00007f0314e00000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f0315914000)\n\tlibbsd.so.0 => /lib/x86_64-linux-gnu/libbsd.so.0 (0x00007f03158c0000)\n\tlibmd.so.0 => /lib/x86_64-linux-gnu/libmd.so.0 (0x00007f03158b3000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/paddle/libs/libmklml_intel.so",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/paddle/libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/paddle/libs/libmklml_intel.so"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007f154a127000)\n\tlibiomp5.so => /opt/paddle/lib/python3.11/site-packages/paddle/libs/libiomp5.so (0x00007f1541e00000)\n\tlibpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f154a117000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f1541d20000)\n\tlibdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f154a112000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f1541b3e000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f154a129000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f154a0f0000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/paddle/libs/libopenvino.so.2500",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/paddle/libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/paddle/libs/libopenvino.so.2500"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007fc71b262000)\n\tlibdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007fc719e9b000)\n\tlibtbb.so.12 => /opt/paddle/lib/python3.11/site-packages/paddle/libs/libtbb.so.12 (0x00007fc719e38000)\n\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fc719c1e000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fc719b3e000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fc719b1e000)\n\tlibpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007fc719b17000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fc719935000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007fc71b264000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/paddle/libs/libopenvino_intel_cpu_plugin.so",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/paddle/libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/paddle/libs/libopenvino_intel_cpu_plugin.so"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007f6e6650b000)\n\tlibopenvino.so.2500 => /opt/paddle/lib/python3.11/site-packages/paddle/libs/libopenvino.so.2500 (0x00007f6e6156a000)\n\tlibtbb.so.12 => /opt/paddle/lib/python3.11/site-packages/paddle/libs/libtbb.so.12 (0x00007f6e61507000)\n\tlibdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f6e614ff000)\n\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f6e612e5000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f6e61205000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f6e611e3000)\n\tlibpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f6e611de000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f6e60ffc000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f6e6650d000)\n",
+    "stderr": ""
+  },
+  {
+    "path": "/opt/paddle/lib/python3.11/site-packages/paddle/libs/libopenvino_paddle_frontend.so.2500",
+    "scope": "bundled_helper_availability_not_runtime_loading",
+    "LD_LIBRARY_PATH_for_this_inspection_only": "/opt/paddle/lib/python3.11/site-packages/paddle/libs",
+    "passed": true,
+    "argv": [
+      "ldd",
+      "/opt/paddle/lib/python3.11/site-packages/paddle/libs/libopenvino_paddle_frontend.so.2500"
+    ],
+    "returncode": 0,
+    "stdout": "\tlinux-vdso.so.1 (0x00007f32ce0cb000)\n\tlibopenvino.so.2500 => /opt/paddle/lib/python3.11/site-packages/paddle/libs/libopenvino.so.2500 (0x00007f32cca53000)\n\tlibdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f32cca4b000)\n\tlibstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f32cc831000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f32cc751000)\n\tlibgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f32cc731000)\n\tlibpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f32cc72a000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f32cc548000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007f32ce0cd000)\n\tlibtbb.so.12 => /opt/paddle/lib/python3.11/site-packages/paddle/libs/libtbb.so.12 (0x00007f32cc4e5000)\n",
+    "stderr": ""
+  }
+]

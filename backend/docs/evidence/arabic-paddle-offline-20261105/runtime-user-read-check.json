@@ -1,0 +1,6 @@
+{
+  "uid": 1000,
+  "returncode": 0,
+  "stdout": "{\"uid\":1000,\"gid\":1000,\"model_config_parent_readable\":true,\"paddle_imported\":false,\"ocr_executed\":false}\n",
+  "stderr": "(node:2889) ExperimentalWarning: Transform Types is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n"
+}

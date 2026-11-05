@@ -174,3 +174,62 @@ Do not relabel the returned strings as pre-transformation network output, revers
 them, reorder columns or repair identifiers from the expected answer. Runtime
 adoption requires a versioned engine/provenance contract and separate source,
 review, authorization and hosted checks; this build plan changes none of them.
+
+## Recorded offline assembly and pre-inference review
+
+The preparation above has now produced an offline candidate image, with no
+Paddle import or recognition yet. The exact image is
+`sha256:2cf5d314540a69ca1eaeccbf7edc5fc6db48ec4047eb1405318d6406ce2969d5`
+(1,706,755,238 logical bytes). Its closed 2,358-file build context has SHA-256
+`ba9f19ad53190963d36bdc5098d5c3df83d1ec8f3cedd233f8045cece0049aea`.
+[The assembly receipt](evidence/arabic-paddle-offline-assembly-20261105.json)
+binds its ordered layers, configuration, commands, source snapshots, failures
+and [installed metadata](evidence/arabic-paddle-offline-20261105/).
+
+The image contains CPython 3.11.18, pip 24.0, glibc 2.36, the exact 71-wheel
+lock, six model files and the staged Node 24.22.1 parent. Python dependency
+checking, Debian package auditing, actual Node module import and UID/GID 1000
+model/configuration/parent readability passed. No product function, default
+Tesseract reader or customer/provider gateway was invoked during this build.
+
+Three earlier assembly attempts remain failures in the record: local apt
+archive resolution failed; the initial Node invocation omitted the production
+TypeScript transformation flag; and direct checks of all ELF shared libraries
+found unresolved helper names. The final assembly uses offline `dpkg` with
+68 authenticated archives, including the additional `libsm6`, `libice6` and
+`x11-common` closure. The wheel/model pins and recognition settings were not
+changed. All 245 direct ELF inspections exited successfully. Twenty-one helper
+checks still have their original unresolved-path output retained; narrowly
+scoped checks against each wheel's own bundled library directory establish
+dependency availability. These checks do not establish runtime loading:
+`LD_LIBRARY_PATH` is not added to the runtime environment, and actual native
+imports remain part of the first bounded blank attempt.
+
+VFS disk behavior also stopped metadata extraction despite 2.624 GB free.
+That never-started container was removed. The successful extraction used an
+offline COPY-only scratch stage, with no RUN or container startup. Only exact
+experiment-owned input-cache copies were removed, while all context paths and
+hashes were preserved; identical copied Node/app files were deduplicated using
+hardlinks. Root authorized removal of the unused public Node parent image after
+zero container references were verified. Its immutable reference, original
+inspection and extracted binary remain recorded, and the candidate and qualified
+runtime images were retained. The campaign now requires at least
+`max(4 GiB, 2 * actual image size + 512 MiB)` free before every creation.
+
+The independently reviewed [campaign coordinator](../scripts/testing/paddle_candidate/CAMPAIGN.md)
+freezes a separate 90-second cold blank, thirteen 90-second page attempts, a
+1,170-second campaign wall deadline, 1,260 seconds of total work and a separate
+cumulative 120-second cleanup allowance. Its absolute outer limit is 1,380
+seconds. Each page uses a fresh container with the actual Node parent and Python
+child in one 768 MiB, one-CPU, zero-swap cgroup. This measures fresh-process page
+attempts; it does not qualify a persistent parent or cold operating-system cache.
+Gold is never mounted or passed to either process. Raw upstream strings/order
+and the Node newline-joined/trimmed projection are retained and scored separately
+on the host using the frozen oracle.
+
+Independent byte/source review found no remaining concrete preparation blocker.
+Nineteen standard-library/mocked coordinator tests passed; they do not prove
+Docker behavior, native compatibility, memory fit or recognition accuracy. At
+this record's freeze, execution is still pending the required free disk, the
+root coordinator's exact execution binding and an exclusive native window.
+No OCR output exists, and neither resource fit nor quality is claimed.

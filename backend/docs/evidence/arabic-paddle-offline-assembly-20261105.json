@@ -1,0 +1,302 @@
+{
+  "version": 1,
+  "scope": "pre-inference_candidate_offline_build_and_source_review_only",
+  "recorded_at": "2026-11-05T01:25:42.678408+00:00",
+  "status": "built_and_source_reviewed_execution_not_started",
+  "candidate_image": {
+    "Id": "sha256:2cf5d314540a69ca1eaeccbf7edc5fc6db48ec4047eb1405318d6406ce2969d5",
+    "Size": 1706755238,
+    "Architecture": "amd64",
+    "Os": "linux",
+    "RootFS": {
+      "Type": "layers",
+      "Layers": [
+        "sha256:44a87794b739d471ec360bec56cc0ceac640d06bbf579ee7d9061a0b88d09818",
+        "sha256:3a7a4b0d1bb1f8b4a91dcf08e472863049e9ba53b4ad6b16996ea9545d0cfb8d",
+        "sha256:3496cce332545ccf7377cbfd1bf179472f2ac03809b42e0fd16c08a4c657d520",
+        "sha256:65613e91118245ec492452aefa21eda4ea4a3f0e14f94ed33b8b67e7cd3d4d7d",
+        "sha256:f0f871edb4ce4f6d06761ef47d1093b8c2e37bee564c7ebc5e4d6e5071ae7a46",
+        "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef"
+      ]
+    },
+    "Config": {
+      "Cmd": null,
+      "Entrypoint": [
+        "/usr/local/bin/node",
+        "--experimental-transform-types",
+        "/experiment/run_parent.mjs"
+      ],
+      "Env": [
+        "PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "LANG=C.UTF-8",
+        "GPG_KEY=A035C8C19219BA821ECEA86B64E628F8D684696D",
+        "PYTHON_VERSION=3.11.18",
+        "PYTHON_SHA256=9120e0a653868f6e3698d36cdd99e5a58903ec9469e448f21d98f7b16d8fa290",
+        "PYTHONDONTWRITEBYTECODE=1"
+      ],
+      "Labels": null,
+      "OnBuild": null,
+      "User": "1000:1000",
+      "Volumes": null,
+      "WorkingDir": "/app/backend"
+    }
+  },
+  "python_base_reference": "docker.io/library/python:3.11-slim-bookworm@sha256:061c190f3d5815b341a18dfe8a45771f8ba68c15a607ea56997fde3009ac4eec",
+  "node_original_reference": "docker.io/library/node:24-bookworm-slim@sha256:2dd9a4f758e173b65fee15388f7706af6fb01ef50cf7a2c0538711d67a6981ae",
+  "source_context_sha256": "ba9f19ad53190963d36bdc5098d5c3df83d1ec8f3cedd233f8045cece0049aea",
+  "prepared_input_manifest_sha256": "cd19a7f58998d4a126ec026dbb08214872d18aa1d5bd0ec04cb0c206873c8d84",
+  "native_supplement_receipt_sha256": "ce49e32fef5fa221aae10dc1e39918c960be178d66603a952973f4bcc0a91f9d",
+  "wheel_lock_sha256": "91d74b353fd987540f6e0c1ea8c8e26078f980c16814d8ef75b908b14553df14",
+  "python_distributions_including_base_pip": 72,
+  "debian_archives_in_final_context": 68,
+  "model_runtime_files": 6,
+  "actual_product_parent_invoked": false,
+  "actual_product_parent_imported_as_root_and_uid1000": true,
+  "paddle_imported": false,
+  "ocr_executed": false,
+  "resource_fit_proven": false,
+  "quality_proven": false,
+  "production_changes": false,
+  "image_harness_sha256": {
+    "experiment-config.json": "ce8721461e536125fbe29c3601bb5bbd04c0cfcb37e12d9cd50a0d1d96c52286",
+    "run_parent.mjs": "0a7775b37f5b6f62f4a919baa8acad1bc7a86ab171097cb270513517e38acfd8",
+    "run_engine.py": "5cab126750ef6a2989362273f99b068471a2560826299bcad50ffa45237cd2c8"
+  },
+  "host_harness_sha256": {
+    "run_campaign.py": "7d975684d2aeef69a9234d715753bd1a6fc498bc0ca6d2b9906ee18633d73f82",
+    "entry_gate.py": "b452179e0e5a6766b549bd2265e2ddefe41bb1376ce418c3f5940b139b75e408",
+    "campaign-sources.json": "0f91ab17980f5ce725126cbb6c6f6e96047d3f39911121fbabe6062ac6eb71e4",
+    "evaluate_campaign.py": "7f6dca6cb9931d3b3012f8bc7de306b2d5c552303f5a18e08cac57c0ceae3e3c"
+  },
+  "independent_review": {
+    "agent": "/root/current_request_finish",
+    "scope": "gold/source bytes, package/model closure, image provenance, engine/parent/coordinator sources",
+    "remaining_concrete_source_blockers_reported": 0,
+    "runtime_or_quality_qualification": false
+  },
+  "attempts": [
+    {
+      "attempt": "r1",
+      "receipt": {
+        "exit_code": 1,
+        "elapsed_seconds": 2.0199727840008563,
+        "finished_at": "2026-11-05T01:07:31.581202+00:00",
+        "disk_free": 6624428032
+      },
+      "diagnosis": "Local apt --no-download assembly stopped with Pathname to install is not absolute; switched to dpkg unpack/configure exact archives. No wheel install or OCR.",
+      "command": {
+        "argv": [
+          "docker",
+          "--host=unix:///var/run/docker.sock",
+          "build",
+          "--platform=linux/amd64",
+          "--pull=false",
+          "--network=none",
+          "--progress=plain",
+          "--tag",
+          "a06-paddle-offline:20261105-r1",
+          "/workspace/output/a06-paddle-offline-context-20261105-r1"
+        ],
+        "no_candidate_import_or_inference": true,
+        "started_at": "2026-11-05T01:07:29.560791+00:00",
+        "context_manifest_sha256": "0295a11f8159e431edf23bc0a64649bca2a6f1cde4e36f672889784f6ae02d11"
+      },
+      "build_log_sha256": "225a85e1afc594add4c0e76735dacad6e8b9e645b00f9f8d912e29915add8bb9",
+      "source_before_sha256": "3d40aa89b73c96315659467f61ab688357587633c2b601ae7f646eee470ba22f",
+      "source_after_sha256": "a45a00cfbc82239e61e3055367ab71df859a39f43e9c35ecc668c937351a721d"
+    },
+    {
+      "attempt": "r2",
+      "receipt": {
+        "exit_code": 1,
+        "elapsed_seconds": 16.657551020995015,
+        "finished_at": "2026-11-05T01:09:37.430356+00:00",
+        "disk_free": 4528848896
+      },
+      "diagnosis": "Exact Python/system install and pip check passed; actual Node parent import failed because production --experimental-transform-types flag was omitted. Added existing production flag; no OCR.",
+      "command": {
+        "argv": [
+          "docker",
+          "--host=unix:///var/run/docker.sock",
+          "build",
+          "--platform=linux/amd64",
+          "--pull=false",
+          "--network=none",
+          "--progress=plain",
+          "--tag",
+          "a06-paddle-offline:20261105-r2",
+          "/workspace/output/a06-paddle-offline-context-20261105-r2"
+        ],
+        "no_candidate_import_or_inference": true,
+        "started_at": "2026-11-05T01:09:20.772312+00:00",
+        "context_manifest_sha256": "4f10906ae57c014133216edcda8296d5c80abbb14449277c3201cda2c9a976ba",
+        "build_helper_sha256": "a4c66f675f11f8abf18ada715cc80766bb0742acd0bb9417eddbe424bd3de4d8"
+      },
+      "build_log_sha256": "d4785d4555a3628d364e98db051851f5678bb44b1cadcaf8d5804dfe384445bb",
+      "source_before_sha256": "0d999ab40674302ffc1f366cd8995fb3dd7f10215cada4fd64f640d136b2181e",
+      "source_after_sha256": "2967d22cbcae8860f20c41c7f80c40812463465a4a6e982b14d03606fd0f9d14"
+    },
+    {
+      "attempt": "r3",
+      "receipt": {
+        "exit_code": 1,
+        "elapsed_seconds": 21.93541740499495,
+        "finished_at": "2026-11-05T01:10:34.236061+00:00",
+        "disk_free": 4002426880
+      },
+      "diagnosis": "Strict direct-per-file ELF check reported unresolved bundled-helper dependencies and Qt system libSM/libICE. Retained default results; added authenticated native system closure and separate narrowly scoped helper availability checks. No candidate import/OCR.",
+      "command": {
+        "argv": [
+          "docker",
+          "--host=unix:///var/run/docker.sock",
+          "build",
+          "--platform=linux/amd64",
+          "--pull=false",
+          "--network=none",
+          "--progress=plain",
+          "--tag",
+          "a06-paddle-offline:20261105-r3",
+          "/workspace/output/a06-paddle-offline-context-20261105-r3"
+        ],
+        "no_candidate_import_or_inference": true,
+        "started_at": "2026-11-05T01:10:12.300203+00:00",
+        "context_manifest_sha256": "786c8cd19c337428645b8e980b0ffab82af30f132e908c489b5e2036cc1751f6",
+        "build_helper_sha256": "a4c66f675f11f8abf18ada715cc80766bb0742acd0bb9417eddbe424bd3de4d8"
+      },
+      "build_log_sha256": "70f2a6d1e19cb02763bac9bb2c7b3a152ce663020f7f8797570f62810ec7316a",
+      "source_before_sha256": "6d286a331a1197488f59ed57b0f27b6a7ceb88b0d25f8955580172cdd54e2b8b",
+      "source_after_sha256": "849c045bf0a0d9e4cc9a4c85241a314d8f5a8fc08f0ba9d70987332c89c5f160"
+    },
+    {
+      "attempt": "r4",
+      "receipt": {
+        "exit_code": 0,
+        "elapsed_seconds": 31.542336237995187,
+        "finished_at": "2026-11-05T01:15:26.508184+00:00",
+        "disk_free": 930430976
+      },
+      "diagnosis": "Offline build, metadata checks, actual Node import and UID1000 readability passed. Native Paddle import/dlopen/recognition remain untested.",
+      "command": {
+        "argv": [
+          "docker",
+          "--host=unix:///var/run/docker.sock",
+          "build",
+          "--platform=linux/amd64",
+          "--pull=false",
+          "--network=none",
+          "--progress=plain",
+          "--tag",
+          "a06-paddle-offline:20261105-r4",
+          "/workspace/output/a06-paddle-offline-context-20261105-r4"
+        ],
+        "no_candidate_import_or_inference": true,
+        "started_at": "2026-11-05T01:14:54.965384+00:00",
+        "context_manifest_sha256": "ba9f19ad53190963d36bdc5098d5c3df83d1ec8f3cedd233f8045cece0049aea",
+        "build_helper_sha256": "a4c66f675f11f8abf18ada715cc80766bb0742acd0bb9417eddbe424bd3de4d8"
+      },
+      "build_log_sha256": "2fddfc1adbb96f7c97ea6854850324b7fd124168eabeb248aa317a3ccfaf1c5a",
+      "source_before_sha256": "0f23862a8787c69025080de6e2c8bdd8fb826b0d5d95a10bde841949bac72a14",
+      "source_after_sha256": "1d63bee1419a3c6d1bb5b723d4a423ceb861bbe81d79c4525d83183f6b27ddda"
+    }
+  ],
+  "workspace_output_directory": "/workspace/output/a06-paddle-offline-build-20261105-r4",
+  "attached_metadata": {
+    "checks.json": {
+      "bytes": 7477,
+      "sha256": "af6fc1836f0a038af54152a9ded88614957dc82b66456459fa077c8b6e444ee5"
+    },
+    "closure-status.json": {
+      "bytes": 2696,
+      "sha256": "8e9f18c483214d14ef52f84f969927f18f00e363015124d02b13da4ea0b1156f"
+    },
+    "elf-dependencies.json": {
+      "bytes": 202481,
+      "sha256": "0dcc2e1444e2bc6b3f56f7bdaccef58736f2a67202cb4c8e89d18f532807007e"
+    },
+    "elf-scoped-helper-availability.json": {
+      "bytes": 25786,
+      "sha256": "fcd3e8622bc5d5068716390a1afe1bb6cd89ee4f3a47a7c612c0857771948449"
+    },
+    "interpreter.json": {
+      "bytes": 176,
+      "sha256": "4e179bfeca363f00dcbef26edd08b009d3e1f849885aac58ba382e48b1706749"
+    },
+    "native-supplement-receipt.json": {
+      "bytes": 4070,
+      "sha256": "ce49e32fef5fa221aae10dc1e39918c960be178d66603a952973f4bcc0a91f9d"
+    },
+    "python-installed.json": {
+      "bytes": 4135,
+      "sha256": "48bb090786891750c787b25529f9dcdf54d5fd52c6b2f2d24fa88cdc066811c5"
+    },
+    "runtime-user-read-check.json": {
+      "bytes": 364,
+      "sha256": "dd41e64a3b18a74abdee2aba94374782891e5a10198980ad5f0975f30ca55619"
+    },
+    "static-elf-declarations.json": {
+      "bytes": 27243,
+      "sha256": "484aef6e3aa2c69f70af7db83cc08d43fb400667599122e1e0b397aaca2fae78"
+    },
+    "context-manifest.json": {
+      "bytes": 420997,
+      "sha256": "ba9f19ad53190963d36bdc5098d5c3df83d1ec8f3cedd233f8045cece0049aea"
+    },
+    "parent-closure-parent-source-manifest.json": {
+      "bytes": 446586,
+      "sha256": "9b3ac2905b5b2499f033ff1796bf8fa0b677be9bdabd2d9161f293a933864b51"
+    },
+    "post-build-disk-guard.json": {
+      "bytes": 375,
+      "sha256": "fb4ddc5fbddb972a288b3e8e27539dac7e51ea8094796eea762b42f4bbfceea4"
+    },
+    "metadata-extraction-failure-r1.json": {
+      "bytes": 312,
+      "sha256": "cad3ca64b157e15d208437f417c33f8cc6cc8b95ca24a73f1c85ecd805310753"
+    },
+    "metadata-export-command.json": {
+      "bytes": 575,
+      "sha256": "adf17dd48bbc61079d752fe74ff51e7b9e3d90b1020d61f6cac6524e49e52b30"
+    },
+    "metadata-export-receipt.json": {
+      "bytes": 222,
+      "sha256": "a346ba7abd0060cd1a1e972194aa5fc7f69687f5294fe229a12042321f1a0389"
+    },
+    "scoped-cache-cleanup.json": {
+      "bytes": 1446,
+      "sha256": "ba9c48c0b8c33fb35ba7cab4965b8fe575c2e0e1d2e8b5f0c382a323b93d6b59"
+    },
+    "scoped-cache-cleanup-r2.json": {
+      "bytes": 3217,
+      "sha256": "f5f86a97e3cf24b51669ae482486b05d4cadb177f0a4d7aba317540472e543ab"
+    },
+    "scoped-cache-cleanup-r3.json": {
+      "bytes": 910,
+      "sha256": "e3012b8f5b47244dccda3fa67536c8543f6b209e16367e10b8914e4c0d709a79"
+    },
+    "scoped-cache-cleanup-r4.json": {
+      "bytes": 883,
+      "sha256": "ee2323cf8977688b6c60a7b5b4d44790efdc4bd3d4fb48270ee64653028a3569"
+    },
+    "context-deduplication.json": {
+      "bytes": 1316,
+      "sha256": "38420b647b719b3de55d02056c88ea48287b11aafd17e8cbde5a3130832fabec"
+    },
+    "public-node-parent-cleanup.json": {
+      "bytes": 925,
+      "sha256": "67fb2b163402e1e2df3520769238a89ae34b9396ed0cd60fd9bd1441f40ff51c"
+    }
+  },
+  "pending": [
+    "exact root-authorized execution binding and exclusive window",
+    "at least max(4GiB,2*imageSize+512MiB) free on output and Docker filesystems before each create",
+    "first separate <=90s cold blank with actual native loading",
+    "frozen13-page campaign and host-only unchanged oracle evaluation"
+  ],
+  "unchanged_gold_freeze_sha256": "cf9e4216f488d3dc7e0ab33ab877a53a6c7dec73093304d7c81e2cdd09986038",
+  "notes": [
+    "Original failed assembly attempts and disk extraction failure are retained, not OCR failures.",
+    "245 direct ELF checks had exit0;21 bundled helper default unresolved-path findings are retained alongside separately successful availability checks. No runtime LD_LIBRARY_PATH is added; dynamic native loading is unproven.",
+    "The helper source now incorporates the successful COPY-only metadata export; the actual r4 build command/source hashes and separate follow-up export are recorded without rewriting that history.",
+    "Only exact experiment-owned BuildKit input-cache duplicates were removed; all source context paths/hashes remain. Byte-identical Node/app files were deduplicated by hardlink. Public Node parent removal had root authorization and zero container references; candidate and qualified runtime images were retained."
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "verified_cache": {
+    "CreatedAt": "2026-11-05 01:14:55.060304812 +0000 UTC",
+    "Description": "local source for context",
+    "ID": "rcaaociqgolzjeumn94wfpsig",
+    "LastUsedAt": "3 minutes ago",
+    "Mutable": true,
+    "Parents": null,
+    "Reclaimable": true,
+    "Shared": false,
+    "Size": "558.3MB",
+    "Type": "source.local",
+    "UsageCount": 1
+  },
+  "argv": [
+    "docker",
+    "--host=unix:///var/run/docker.sock",
+    "buildx",
+    "prune",
+    "--all",
+    "--filter",
+    "id=rcaaociqgolzjeumn94wfpsig",
+    "--force",
+    "--verbose"
+  ],
+  "stdout": "ID:\t\trcaaociqgolzjeumn94wfpsig\nCreated at:\t2026-11-05 01:14:55.060304812 +0000 UTC\nMutable:\ttrue\nReclaimable:\ttrue\nShared:\t\tfalse\nSize:\t\t558.3MB\nDescription:\tlocal source for context\nUsage count:\t1\nLast used:\t3 minutes ago\n\nTotal:\t558.3MB\n",
+  "stderr": "",
+  "only_experiment_context_cache_removed": true
+}

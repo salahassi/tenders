@@ -1,0 +1,290 @@
+[
+  {
+    "name": "aiohappyeyeballs",
+    "version": "2.7.1"
+  },
+  {
+    "name": "aiohttp",
+    "version": "3.14.5"
+  },
+  {
+    "name": "aiosignal",
+    "version": "1.4.0"
+  },
+  {
+    "name": "aistudio_sdk",
+    "version": "0.3.9"
+  },
+  {
+    "name": "annotated-types",
+    "version": "0.8.0"
+  },
+  {
+    "name": "anyio",
+    "version": "4.16.0"
+  },
+  {
+    "name": "attrs",
+    "version": "26.1.0"
+  },
+  {
+    "name": "bce-python-sdk",
+    "version": "0.9.79"
+  },
+  {
+    "name": "certifi",
+    "version": "2026.10.23"
+  },
+  {
+    "name": "cffi",
+    "version": "2.1.1"
+  },
+  {
+    "name": "chardet",
+    "version": "7.7.0"
+  },
+  {
+    "name": "charset-normalizer",
+    "version": "3.5.2"
+  },
+  {
+    "name": "click",
+    "version": "8.5.0"
+  },
+  {
+    "name": "colorlog",
+    "version": "6.12.0"
+  },
+  {
+    "name": "crc32c",
+    "version": "2.9.post0"
+  },
+  {
+    "name": "cryptography",
+    "version": "50.0.2"
+  },
+  {
+    "name": "filelock",
+    "version": "4.2.9"
+  },
+  {
+    "name": "frozenlist",
+    "version": "1.8.0"
+  },
+  {
+    "name": "fsspec",
+    "version": "2026.9.0"
+  },
+  {
+    "name": "future",
+    "version": "1.0.0"
+  },
+  {
+    "name": "h11",
+    "version": "0.16.0"
+  },
+  {
+    "name": "hf-xet",
+    "version": "1.8.0"
+  },
+  {
+    "name": "httpcore",
+    "version": "1.0.9"
+  },
+  {
+    "name": "httpcore2",
+    "version": "2.16.0"
+  },
+  {
+    "name": "httpx",
+    "version": "0.28.1"
+  },
+  {
+    "name": "httpx2",
+    "version": "2.16.0"
+  },
+  {
+    "name": "huggingface_hub",
+    "version": "2.4.0"
+  },
+  {
+    "name": "idna",
+    "version": "3.20"
+  },
+  {
+    "name": "imagesize",
+    "version": "2.0.1"
+  },
+  {
+    "name": "modelscope",
+    "version": "1.40.2"
+  },
+  {
+    "name": "modelscope-hub",
+    "version": "0.6.1"
+  },
+  {
+    "name": "multidict",
+    "version": "7.2.1"
+  },
+  {
+    "name": "networkx",
+    "version": "3.6.1"
+  },
+  {
+    "name": "numpy",
+    "version": "2.3.5"
+  },
+  {
+    "name": "opencv-contrib-python",
+    "version": "4.10.0.84"
+  },
+  {
+    "name": "opt-einsum",
+    "version": "3.3.0"
+  },
+  {
+    "name": "packaging",
+    "version": "26.3"
+  },
+  {
+    "name": "paddleocr",
+    "version": "3.7.0"
+  },
+  {
+    "name": "paddlepaddle",
+    "version": "3.2.0"
+  },
+  {
+    "name": "paddlex",
+    "version": "3.7.0"
+  },
+  {
+    "name": "pandas",
+    "version": "3.1.1"
+  },
+  {
+    "name": "pillow",
+    "version": "13.0.0"
+  },
+  {
+    "name": "pip",
+    "version": "24.0"
+  },
+  {
+    "name": "prettytable",
+    "version": "3.18.0"
+  },
+  {
+    "name": "propcache",
+    "version": "0.5.4"
+  },
+  {
+    "name": "protobuf",
+    "version": "7.36.2"
+  },
+  {
+    "name": "psutil",
+    "version": "7.2.2"
+  },
+  {
+    "name": "py-cpuinfo",
+    "version": "9.0.0"
+  },
+  {
+    "name": "pyclipper",
+    "version": "1.4.0"
+  },
+  {
+    "name": "pycparser",
+    "version": "3.12"
+  },
+  {
+    "name": "pycryptodome",
+    "version": "4.3.0"
+  },
+  {
+    "name": "pydantic",
+    "version": "2.14.2"
+  },
+  {
+    "name": "pydantic_core",
+    "version": "2.50.2"
+  },
+  {
+    "name": "pypdfium2",
+    "version": "5.14.0"
+  },
+  {
+    "name": "python-bidi",
+    "version": "0.6.12"
+  },
+  {
+    "name": "python-dateutil",
+    "version": "4.0.0"
+  },
+  {
+    "name": "PyYAML",
+    "version": "6.0.2"
+  },
+  {
+    "name": "requests",
+    "version": "2.34.2"
+  },
+  {
+    "name": "ruamel.yaml",
+    "version": "0.19.1"
+  },
+  {
+    "name": "safetensors",
+    "version": "0.8.0"
+  },
+  {
+    "name": "setuptools",
+    "version": "84.2.1"
+  },
+  {
+    "name": "shapely",
+    "version": "2.2.0"
+  },
+  {
+    "name": "six",
+    "version": "1.17.0"
+  },
+  {
+    "name": "tqdm",
+    "version": "4.70.1"
+  },
+  {
+    "name": "truststore",
+    "version": "0.10.5"
+  },
+  {
+    "name": "typing-inspection",
+    "version": "0.4.5"
+  },
+  {
+    "name": "typing_extensions",
+    "version": "4.16.0"
+  },
+  {
+    "name": "tzdata",
+    "version": "2026.6"
+  },
+  {
+    "name": "ujson",
+    "version": "6.1.0"
+  },
+  {
+    "name": "urllib3",
+    "version": "2.8.0"
+  },
+  {
+    "name": "wcwidth",
+    "version": "0.9.4"
+  },
+  {
+    "name": "yarl",
+    "version": "1.25.1"
+  }
+]

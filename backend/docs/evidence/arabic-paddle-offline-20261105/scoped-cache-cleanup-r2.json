@@ -1,0 +1,95 @@
+{
+  "scope": "exact three IDs verified individually; original source contexts/logs retained; no image deletion",
+  "rows": [
+    {
+      "verified_cache": {
+        "CreatedAt": "2026-11-05 01:07:29.665811854 +0000 UTC",
+        "Description": "local source for context",
+        "ID": "0u8fcvq1o2xz3nz6rvx09tcho",
+        "LastUsedAt": "9 minutes ago",
+        "Mutable": true,
+        "Parents": null,
+        "Reclaimable": true,
+        "Shared": false,
+        "Size": "557.9MB",
+        "Type": "source.local",
+        "UsageCount": 1
+      },
+      "argv": [
+        "docker",
+        "--host=unix:///var/run/docker.sock",
+        "buildx",
+        "prune",
+        "--all",
+        "--filter",
+        "id=0u8fcvq1o2xz3nz6rvx09tcho",
+        "--force",
+        "--verbose"
+      ],
+      "returncode": 0,
+      "stdout": "ID:\t\t0u8fcvq1o2xz3nz6rvx09tcho\nCreated at:\t2026-11-05 01:07:29.665811854 +0000 UTC\nMutable:\ttrue\nReclaimable:\ttrue\nShared:\t\tfalse\nSize:\t\t557.9MB\nDescription:\tlocal source for context\nUsage count:\t1\nLast used:\t9 minutes ago\n\nTotal:\t557.9MB\n",
+      "stderr": "",
+      "free_after": 1494929408
+    },
+    {
+      "verified_cache": {
+        "CreatedAt": "2026-11-05 01:09:20.872641767 +0000 UTC",
+        "Description": "local source for context",
+        "ID": "j1u7t7g00kfuedj0umvcr1476",
+        "LastUsedAt": "7 minutes ago",
+        "Mutable": true,
+        "Parents": null,
+        "Reclaimable": true,
+        "Shared": false,
+        "Size": "557.9MB",
+        "Type": "source.local",
+        "UsageCount": 1
+      },
+      "argv": [
+        "docker",
+        "--host=unix:///var/run/docker.sock",
+        "buildx",
+        "prune",
+        "--all",
+        "--filter",
+        "id=j1u7t7g00kfuedj0umvcr1476",
+        "--force",
+        "--verbose"
+      ],
+      "returncode": 0,
+      "stdout": "ID:\t\tj1u7t7g00kfuedj0umvcr1476\nCreated at:\t2026-11-05 01:09:20.872641767 +0000 UTC\nMutable:\ttrue\nReclaimable:\ttrue\nShared:\t\tfalse\nSize:\t\t557.9MB\nDescription:\tlocal source for context\nUsage count:\t1\nLast used:\t7 minutes ago\n\nTotal:\t557.9MB\n",
+      "stderr": "",
+      "free_after": 2059710464
+    },
+    {
+      "verified_cache": {
+        "CreatedAt": "2026-11-05 01:10:12.402416997 +0000 UTC",
+        "Description": "local source for context",
+        "ID": "uqd7e96w4so3h63psbg0ub6ph",
+        "LastUsedAt": "6 minutes ago",
+        "Mutable": true,
+        "Parents": null,
+        "Reclaimable": true,
+        "Shared": false,
+        "Size": "557.9MB",
+        "Type": "source.local",
+        "UsageCount": 1
+      },
+      "argv": [
+        "docker",
+        "--host=unix:///var/run/docker.sock",
+        "buildx",
+        "prune",
+        "--all",
+        "--filter",
+        "id=uqd7e96w4so3h63psbg0ub6ph",
+        "--force",
+        "--verbose"
+      ],
+      "returncode": 0,
+      "stdout": "ID:\t\tuqd7e96w4so3h63psbg0ub6ph\nCreated at:\t2026-11-05 01:10:12.402416997 +0000 UTC\nMutable:\ttrue\nReclaimable:\ttrue\nShared:\t\tfalse\nSize:\t\t557.9MB\nDescription:\tlocal source for context\nUsage count:\t1\nLast used:\t6 minutes ago\n\nTotal:\t557.9MB\n",
+      "stderr": "",
+      "free_after": 2624491520
+    }
+  ]
+}

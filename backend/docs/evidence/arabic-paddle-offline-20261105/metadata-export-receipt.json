@@ -1,0 +1,7 @@
+{
+  "returncode": 0,
+  "elapsed_seconds": 7.883365812987904,
+  "disk_free": 3773861888,
+  "source_image_id": "sha256:2cf5d314540a69ca1eaeccbf7edc5fc6db48ec4047eb1405318d6406ce2969d5",
+  "no_RUN_or_container_start": true
+}

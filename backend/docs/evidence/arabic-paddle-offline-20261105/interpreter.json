@@ -1,0 +1,9 @@
+{
+  "version": "3.11.18 (main, Oct 28 2026, 02:05:49) [GCC 12.2.0]",
+  "executable": "/opt/paddle/bin/python",
+  "libc": [
+    "glibc",
+    "2.36"
+  ],
+  "machine": "x86_64"
+}

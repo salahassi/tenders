@@ -1,0 +1,33 @@
+{
+  "scope": "only exact experiment build-exec cache; image ID and tag retained",
+  "verified_record": {
+    "CreatedAt": "2026-11-05 01:15:17.356621708 +0000 UTC",
+    "Description": "mount / from exec /bin/sh -c /bin/sh /build/install_offline.sh",
+    "ID": "aqgyea635j5izfng01i5e73s2",
+    "LastUsedAt": "3 minutes ago",
+    "Mutable": false,
+    "Parents": [
+      "r2dz0ldh293xiko9kuvs33g7y"
+    ],
+    "Reclaimable": true,
+    "Shared": true,
+    "Size": "1.577GB",
+    "Type": "regular",
+    "UsageCount": 1
+  },
+  "argv": [
+    "docker",
+    "--host=unix:///var/run/docker.sock",
+    "buildx",
+    "prune",
+    "--all",
+    "--filter",
+    "id=aqgyea635j5izfng01i5e73s2",
+    "--force",
+    "--verbose"
+  ],
+  "stdout": "Total:\t0B\n",
+  "stderr": "",
+  "retained_image": "sha256:2cf5d314540a69ca1eaeccbf7edc5fc6db48ec4047eb1405318d6406ce2969d5",
+  "disk_free": 3779477504
+}

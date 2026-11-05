@@ -1,0 +1,8 @@
+{
+  "build_exit_code": 0,
+  "build_helper_postbuild_result": "AssertionError: Insufficient disk for never-started extraction container",
+  "initial_container_created": false,
+  "initial_observed_disk_free_bytes": 930279424,
+  "following_action": "only three verified experiment-owned source.local cache IDs removed; source contexts retained",
+  "inference_executed": false
+}

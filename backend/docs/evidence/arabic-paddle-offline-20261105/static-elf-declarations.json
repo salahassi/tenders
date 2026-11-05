@@ -1,0 +1,904 @@
+[
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libavformat-3ff1be5b.so.59.27.100",
+    "bytes": 2571489,
+    "sha256": "fc0dacc9de38f9e2527f89e71267d7df7ec4f574f95acb44f0839bd9b7ecf068",
+    "needed": [
+      "libavcodec-9aae324f.so.59.37.100",
+      "libavutil-a0a0531e.so.57.28.100",
+      "libm.so.6",
+      "libz.so.1",
+      "libssl-28bef1ac.so.1.1",
+      "libcrypto-337dac8b.so.1.1",
+      "libpthread.so.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libvpx-c3a7933e.so.9.0.0",
+    "bytes": 3508265,
+    "sha256": "2061d817820fce0fc00797fd2dec8686eaf4646cb8c608bf8ff7090546dd545f",
+    "needed": [
+      "libpthread.so.0",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libavutil-a0a0531e.so.57.28.100",
+    "bytes": 844673,
+    "sha256": "fc78622aa7f0647edf67de47958583f69dc034eb9c50f2efa853c7be1c53aba6",
+    "needed": [
+      "libm.so.6",
+      "libpthread.so.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxcb-render-637b984a.so.0.0.0",
+    "bytes": 78105,
+    "sha256": "08e3a2b9b2e4f4abf64b8c1503941a4738259496292cb1978d840028cde1b367",
+    "needed": [
+      "libxcb.so.1",
+      "libXau-00ec42fe.so.6.0.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxcb-util-4d666913.so.1.0.0",
+    "bytes": 26281,
+    "sha256": "e389a0ecf45d83e00adaf1f3d064f5cb35b488df1dfc6505be114696b2ed328f",
+    "needed": [
+      "libxcb.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxcb-xkb-9ba31ab3.so.1.0.0",
+    "bytes": 157921,
+    "sha256": "e2da004caf83ef69cde058c3bfb6425e390ca54d468aba23e61af679b5653a39",
+    "needed": [
+      "libxcb.so.1",
+      "libXau-00ec42fe.so.6.0.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxcb-sync-89374f40.so.1.0.0",
+    "bytes": 35673,
+    "sha256": "fb0d70574a5f1106d2996f901b3b114800d135179a85c42d95882a2232a01de1",
+    "needed": [
+      "libxcb.so.1",
+      "libXau-00ec42fe.so.6.0.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libQt5Widgets-e392eaf8.so.5.15.13",
+    "bytes": 8930793,
+    "sha256": "b71c3b238508ac1f37c1acdfe0f590d464b94521aa4ee0c8f2b45c0ea634671a",
+    "needed": [
+      "libQt5Gui-5dea4132.so.5.15.13",
+      "libQt5Core-e6d3f451.so.5.15.13",
+      "libpthread.so.0",
+      "libGL.so.1",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [
+      "$ORIGIN"
+    ],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxcb-shape-25c2b258.so.0.0.0",
+    "bytes": 21769,
+    "sha256": "f311d37bd0d0985ce4fb91ed4f7ded87c6ef802ae82c9884bd774088dde2d62a",
+    "needed": [
+      "libxcb.so.1",
+      "libXau-00ec42fe.so.6.0.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxcb-keysyms-21015570.so.1.0.0",
+    "bytes": 13209,
+    "sha256": "3e35f758b717359b9c28e36ab6a056e303db99c6ae90f5722cfbb62425d9ed04",
+    "needed": [
+      "libxcb.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libswscale-2c3c8be7.so.6.7.100",
+    "bytes": 619945,
+    "sha256": "2e9d87cf0bc36262075146b2d33e15a8ba398c80a6550af7678b83d42d485d50",
+    "needed": [
+      "libavutil-a0a0531e.so.57.28.100",
+      "libm.so.6",
+      "libpthread.so.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libQt5Test-d435aae7.so.5.15.13",
+    "bytes": 428265,
+    "sha256": "39030b94d9edefa091c88ac916cbf64c791289d62bfde6969a39e92bdeaafbff",
+    "needed": [
+      "libQt5Core-e6d3f451.so.5.15.13",
+      "libpthread.so.0",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [
+      "$ORIGIN"
+    ],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libssl-28bef1ac.so.1.1",
+    "bytes": 736177,
+    "sha256": "cedc4cdd914b92099831b6684ea346aa3ff2720ae7eb86ba59af4d8bae805a65",
+    "needed": [
+      "libcrypto-337dac8b.so.1.1",
+      "libz.so.1",
+      "libdl.so.2",
+      "libpthread.so.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libgfortran-91cc3cb1.so.3.0.0",
+    "bytes": 1259665,
+    "sha256": "55e3eb67306c2ff17e6f8a0810eaa0dcb26e94cd83924c5065d5040e87814608",
+    "needed": [
+      "libquadmath-96973f99.so.0.0.0",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libpng16-1bde1c40.so.16.43.0",
+    "bytes": 1105201,
+    "sha256": "d368f960b9545b7af38e55dd6a44671ddf39dbff61589e9d6ef67e2b0a1ec766",
+    "needed": [
+      "libz.so.1",
+      "libm.so.6",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxcb-xinerama-ae147f87.so.0.0.0",
+    "bytes": 17529,
+    "sha256": "8945c00743b1eadeef54024e404cd32b81958d6dc06e71ce16c5b2c6697a44da",
+    "needed": [
+      "libxcb.so.1",
+      "libXau-00ec42fe.so.6.0.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libQt5Core-e6d3f451.so.5.15.13",
+    "bytes": 7403809,
+    "sha256": "6abf9d9bcc1892da5238f99041685ca65e7ae335e4fd913d02c48c5ba4601ae8",
+    "needed": [
+      "libpthread.so.0",
+      "libz.so.1",
+      "libdl.so.2",
+      "libgthread-2.0.so.0",
+      "libglib-2.0.so.0",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libQt5Gui-5dea4132.so.5.15.13",
+    "bytes": 8873169,
+    "sha256": "3c520d6647d3466f489821a67cedf0329078bdab331d523017d89d8a06d90626",
+    "needed": [
+      "libQt5Core-e6d3f451.so.5.15.13",
+      "libpthread.so.0",
+      "libGL.so.1",
+      "libpng16-1bde1c40.so.16.43.0",
+      "libz.so.1",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [
+      "$ORIGIN"
+    ],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libX11-xcb-0e257303.so.1.0.0",
+    "bytes": 8873,
+    "sha256": "a8cf52f67fb6844bfa19d47fdfb6781a02af3ca6afe78ba9fb58a314b9365d72",
+    "needed": [
+      "libdl.so.2",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxcb-image-e82a276d.so.0.0.0",
+    "bytes": 25601,
+    "sha256": "4180bf2ac4e8097290daef3bb8e6f658998ae99f92e32ca78ea616888decb536",
+    "needed": [
+      "libxcb-shm-7a199f70.so.0.0.0",
+      "libxcb-util-4d666913.so.1.0.0",
+      "libxcb.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxcb-icccm-413c9f41.so.4.0.0",
+    "bytes": 24377,
+    "sha256": "2abb54207bb8eb1f6623030490461f961385998163bd40773a4d439fdf77e9e2",
+    "needed": [
+      "libxcb.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libQt5XcbQpa-3bf8a55a.so.5.15.13",
+    "bytes": 1837473,
+    "sha256": "2315f1c3c4c5ff751f9db04e8fdceaa4bcc80a2a9ceda468f36ee95a2d98eade",
+    "needed": [
+      "libpng16-1bde1c40.so.16.43.0",
+      "libz.so.1",
+      "libGL.so.1",
+      "libQt5Gui-5dea4132.so.5.15.13",
+      "libQt5Core-e6d3f451.so.5.15.13",
+      "libpthread.so.0",
+      "libX11-xcb-0e257303.so.1.0.0",
+      "libxcb-icccm-413c9f41.so.4.0.0",
+      "libxcb-image-e82a276d.so.0.0.0",
+      "libxcb-shm-7a199f70.so.0.0.0",
+      "libxcb-keysyms-21015570.so.1.0.0",
+      "libxcb-randr-a96a5a87.so.0.1.0",
+      "libxcb-render-util-43ce00f5.so.0.0.0",
+      "libxcb-render-637b984a.so.0.0.0",
+      "libxcb-shape-25c2b258.so.0.0.0",
+      "libxcb-sync-89374f40.so.1.0.0",
+      "libxcb-xfixes-9be3ba6f.so.0.0.0",
+      "libxcb-xinerama-ae147f87.so.0.0.0",
+      "libxcb-xkb-9ba31ab3.so.1.0.0",
+      "libxcb.so.1",
+      "libXext.so.6",
+      "libX11.so.6",
+      "libSM.so.6",
+      "libICE.so.6",
+      "libxkbcommon-x11-c65ed502.so.0.0.0",
+      "libxkbcommon-71ae2972.so.0.0.0",
+      "libdl.so.2",
+      "libgthread-2.0.so.0",
+      "libglib-2.0.so.0",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [
+      "$ORIGIN"
+    ],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxkbcommon-71ae2972.so.0.0.0",
+    "bytes": 269865,
+    "sha256": "1fcb38a646bd1ce1daaf682ad29b72e65bfdf67a06335b278f8e99d0b7530212",
+    "needed": [
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxcb-shm-7a199f70.so.0.0.0",
+    "bytes": 21377,
+    "sha256": "5eb17d9e520a90dacb1bd1e45e79ff5c87881cfc2bdb4851ad35844dbcd51b01",
+    "needed": [
+      "libxcb.so.1",
+      "libXau-00ec42fe.so.6.0.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libXau-00ec42fe.so.6.0.0",
+    "bytes": 17049,
+    "sha256": "263cac12d8d8b5ead7dc2391c355fe9fc939940e1ea22ed98ee56a8cb61ce684",
+    "needed": [
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libswresample-2ec4394e.so.4.7.100",
+    "bytes": 132417,
+    "sha256": "e774be33f1a7d3ace801a51b62475a32e2ef5c45aed8cbf5fd82e4896da827d2",
+    "needed": [
+      "libavutil-a0a0531e.so.57.28.100",
+      "libm.so.6",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxkbcommon-x11-c65ed502.so.0.0.0",
+    "bytes": 48097,
+    "sha256": "34b0726b008fe059b70204265080e5db34afacc0af2a12698ad6c38ae1166d54",
+    "needed": [
+      "libxkbcommon-71ae2972.so.0.0.0",
+      "libxcb.so.1",
+      "libxcb-xkb-9ba31ab3.so.1.0.0",
+      "libc.so.6"
+    ],
+    "rpath": [
+      "$ORIGIN"
+    ],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxcb-render-util-43ce00f5.so.0.0.0",
+    "bytes": 22161,
+    "sha256": "37438f6dab3b0be8d9c7b91bdfef9fa098893dce6874f4a3fa17666b5c911b61",
+    "needed": [
+      "libxcb-render-637b984a.so.0.0.0",
+      "libxcb.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libavcodec-9aae324f.so.59.37.100",
+    "bytes": 13448513,
+    "sha256": "82a8362a2fba0bb6d6b8f565c472f2ae30fafa0f6836c7701a0ea4641dad0616",
+    "needed": [
+      "libswresample-2ec4394e.so.4.7.100",
+      "libavutil-a0a0531e.so.57.28.100",
+      "libvpx-c3a7933e.so.9.0.0",
+      "libm.so.6",
+      "libz.so.1",
+      "libpthread.so.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libcrypto-337dac8b.so.1.1",
+    "bytes": 3481345,
+    "sha256": "d28a738e776f5f5c17b3577b16b6dfc093132060612769d03cf4048eba10b7aa",
+    "needed": [
+      "libz.so.1",
+      "libdl.so.2",
+      "libpthread.so.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libopenblas-r0-f650aae0.3.3.so",
+    "bytes": 37325001,
+    "sha256": "79ec02b53f573cd7116a89f04c397473018e7fda05720b354d43505c19d47958",
+    "needed": [
+      "libm.so.6",
+      "libgfortran-91cc3cb1.so.3.0.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxcb-randr-a96a5a87.so.0.1.0",
+    "bytes": 93921,
+    "sha256": "2d99951ea4b9b284eb0147c8278732d01287ac193443c732ec804915b86c1ef6",
+    "needed": [
+      "libxcb.so.1",
+      "libXau-00ec42fe.so.6.0.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libxcb-xfixes-9be3ba6f.so.0.0.0",
+    "bytes": 45337,
+    "sha256": "9f9ffde3fd4bc3222f83d4b523575bbba6b744e067dbc310813fa668b9d1b453",
+    "needed": [
+      "libxcb.so.1",
+      "libXau-00ec42fe.so.6.0.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "opencv_contrib_python.libs/libquadmath-96973f99.so.0.0.0",
+    "bytes": 247609,
+    "sha256": "934c22ded0e7d169c4d4678876c96051adf3d94545da962f60b41659b075da3b",
+    "needed": [
+      "libm.so.6",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "cv2/cv2.abi3.so",
+    "bytes": 78819177,
+    "sha256": "460fa53b0fcf667a433a262ea45e42226bea7e87d58ed424fd8d3c62c60130dd",
+    "needed": [
+      "libpng16-1bde1c40.so.16.43.0",
+      "libavcodec-9aae324f.so.59.37.100",
+      "libavformat-3ff1be5b.so.59.27.100",
+      "libavutil-a0a0531e.so.57.28.100",
+      "libswscale-2c3c8be7.so.6.7.100",
+      "libQt5Widgets-e392eaf8.so.5.15.13",
+      "libQt5Gui-5dea4132.so.5.15.13",
+      "libQt5Test-d435aae7.so.5.15.13",
+      "libQt5Core-e6d3f451.so.5.15.13",
+      "libz.so.1",
+      "libopenblas-r0-f650aae0.3.3.so",
+      "libdl.so.2",
+      "libpthread.so.0",
+      "librt.so.1",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "rpath": [
+      "$ORIGIN/../opencv_contrib_python.libs"
+    ],
+    "runpath": []
+  },
+  {
+    "wheel": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+    "member": "cv2/qt/plugins/platforms/libqxcb.so",
+    "bytes": 29321,
+    "sha256": "f2d4fa61236c2977614b5e962d6e3ad042a8ade21b9a66e4436b9e4fd8ff3728",
+    "needed": [
+      "libQt5XcbQpa-3bf8a55a.so.5.15.13",
+      "libpng16-1bde1c40.so.16.43.0",
+      "libz.so.1",
+      "libQt5Gui-5dea4132.so.5.15.13",
+      "libQt5Core-e6d3f451.so.5.15.13",
+      "libGL.so.1",
+      "libpthread.so.0",
+      "libX11-xcb-0e257303.so.1.0.0",
+      "libxcb-icccm-413c9f41.so.4.0.0",
+      "libxcb-image-e82a276d.so.0.0.0",
+      "libxcb-shm-7a199f70.so.0.0.0",
+      "libxcb-keysyms-21015570.so.1.0.0",
+      "libxcb-randr-a96a5a87.so.0.1.0",
+      "libxcb-render-util-43ce00f5.so.0.0.0",
+      "libxcb-render-637b984a.so.0.0.0",
+      "libxcb-shape-25c2b258.so.0.0.0",
+      "libxcb-sync-89374f40.so.1.0.0",
+      "libxcb-xfixes-9be3ba6f.so.0.0.0",
+      "libxcb-xinerama-ae147f87.so.0.0.0",
+      "libxcb-xkb-9ba31ab3.so.1.0.0",
+      "libxcb.so.1",
+      "libXext.so.6",
+      "libX11.so.6",
+      "libSM.so.6",
+      "libICE.so.6",
+      "libxkbcommon-x11-c65ed502.so.0.0.0",
+      "libxkbcommon-71ae2972.so.0.0.0",
+      "libdl.so.2",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [
+      "$ORIGIN/../../lib:$ORIGIN/../../../../opencv_contrib_python.libs"
+    ],
+    "runpath": []
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "_foo.cpython-311-x86_64-linux-gnu.so",
+    "bytes": 15664,
+    "sha256": "f8c0d6504cbb566805020408b565da9c664a38fc91d914897cdba0c12e050e95",
+    "needed": [
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libpthread.so.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/base/libpaddle.so",
+    "bytes": 254769896,
+    "sha256": "cd6f88ebe9b67f2e965ec4be350ab53066326e243a9ede5f608bc9ee3c1c408f",
+    "needed": [
+      "libpthread.so.0",
+      "librt.so.1",
+      "libopenvino.so.2500",
+      "libtbb.so.12",
+      "libopenvino_paddle_frontend.so.2500",
+      "libphi.so",
+      "libphi_core.so",
+      "libcommon.so",
+      "libdnnl.so.3",
+      "libiomp5.so",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "rpath": [],
+    "runpath": [
+      "$ORIGIN/../../nvidia/cuda_runtime/lib:$ORIGIN/../../nvidia/cuda_nvrtc/lib:$ORIGIN/../../nvidia/cublas/lib:$ORIGIN/../../nvidia/cudnn/lib:$ORIGIN/../../nvidia/curand/lib:$ORIGIN/../../nvidia/cusparse/lib:$ORIGIN/../../nvidia/nvjitlink/lib:$ORIGIN/../../nvidia/cuda_cupti/lib:$ORIGIN/../../nvidia/cuda_runtime/lib:$ORIGIN/../../nvidia/cufft/lib:$ORIGIN/../../nvidia/cufft/lib:$ORIGIN/../../nvidia/cusolver/lib:$ORIGIN/../../nvidia/nccl/lib:$ORIGIN/../../nvidia/nvtx/lib:$ORIGIN/../libs/"
+    ]
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libblas.so.3",
+    "bytes": 547096,
+    "sha256": "3aa37a3929095a40a8af3e7578b659ae2b04f3d829539ae9d618ea65a9d3bc3d",
+    "needed": [
+      "libgfortran.so.3",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libquadmath.so.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": [
+      "$ORIGIN/"
+    ]
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libcommon.so",
+    "bytes": 451848,
+    "sha256": "442b569a46b663af1bffac16128f9030a5cac8a31be2e793506339e806566734",
+    "needed": [
+      "libpthread.so.0",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgomp.so.1",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libdnnl.so.3",
+    "bytes": 63727816,
+    "sha256": "382f24d2635ad93ce6bc25556b0356015ffc03517d2688ba7487486f6d4863d3",
+    "needed": [
+      "libpthread.so.0",
+      "libdl.so.2",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgomp.so.1",
+      "libgcc_s.so.1",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "rpath": [],
+    "runpath": [
+      "$ORIGIN/"
+    ]
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libgfortran.so.3",
+    "bytes": 1229288,
+    "sha256": "426eb80df096bcd0b2a821522086ce1aeccf0bf7b9c65197389bc8659b456408",
+    "needed": [
+      "libquadmath.so.0",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": [
+      "$ORIGIN/"
+    ]
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libiomp5.so",
+    "bytes": 1932448,
+    "sha256": "85d288e9799382766377a042b1d2f8044bb0a0af76ed6ff19b41f27a2029414e",
+    "needed": [
+      "libgcc_s.so.1",
+      "libpthread.so.0",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2",
+      "libdl.so.2"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/liblapack.so.3",
+    "bytes": 9546272,
+    "sha256": "8fb4dcb814e6f242dedc6fc9d3d6887a9d39c42eff1822d820c783fe00b7356d",
+    "needed": [
+      "libblas.so.3",
+      "libgfortran.so.3",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libquadmath.so.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": [
+      "$ORIGIN/"
+    ]
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libmklml_intel.so",
+    "bytes": 130096544,
+    "sha256": "51fbd95a70504b0c6b7a1fbc316560580a32bf308cca7af4eea7bacd1e0d137b",
+    "needed": [
+      "libiomp5.so",
+      "libpthread.so.0",
+      "libm.so.6",
+      "libdl.so.2",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libopenvino.so.2500",
+    "bytes": 20589456,
+    "sha256": "650ff6fb8c2a537285231b437371881f8eebdbfd2a3c140242c0daad8ed4b88d",
+    "needed": [
+      "libdl.so.2",
+      "libtbb.so.12",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libpthread.so.0",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libopenvino_intel_cpu_plugin.so",
+    "bytes": 62626840,
+    "sha256": "dd7910362a9f6942ff6966283ebcfa3e957c32679c34c51c9d325befbc830f22",
+    "needed": [
+      "libopenvino.so.2500",
+      "libtbb.so.12",
+      "libdl.so.2",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libpthread.so.0",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libopenvino_paddle_frontend.so.2500",
+    "bytes": 2845360,
+    "sha256": "327386687f4c0a41870cf15e3d1c2f9bcfedca8ea24d6a22b54a8905cf8b1917",
+    "needed": [
+      "libopenvino.so.2500",
+      "libdl.so.2",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libpthread.so.0",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libphi.so",
+    "bytes": 14048,
+    "sha256": "e9737dc70811dc8ae0c80a0de1ab0a05118eb00a4a76149da571bee272a490a6",
+    "needed": [
+      "libpthread.so.0",
+      "libphi_core.so",
+      "libcommon.so",
+      "libdnnl.so.3",
+      "libiomp5.so"
+    ],
+    "rpath": [],
+    "runpath": [
+      "$ORIGIN/../../nvidia/cuda_runtime/lib:$ORIGIN:$ORIGIN/../libs"
+    ]
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libphi_core.so",
+    "bytes": 112773896,
+    "sha256": "277391a724944c276d580a1fe50b687aba3584a5fc41de2a0def1b973316949c",
+    "needed": [
+      "libpthread.so.0",
+      "libcommon.so",
+      "librt.so.1",
+      "libdnnl.so.3",
+      "libiomp5.so",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "rpath": [],
+    "runpath": [
+      "$ORIGIN/../../nvidia/cuda_runtime/lib:$ORIGIN:$ORIGIN/../libs"
+    ]
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libquadmath.so.0",
+    "bytes": 244904,
+    "sha256": "96973f995bad4e4b80eaa188b7bac60bd0df44b22ee67bd046b3aa4ecb9e34fd",
+    "needed": [
+      "libm.so.6",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libtbb.so.12",
+    "bytes": 309680,
+    "sha256": "3f901522e7c1180e67e987ed6771e639b3b2ebbdcef3ced142f6cb751b93343d",
+    "needed": [
+      "libdl.so.2",
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgcc_s.so.1",
+      "libpthread.so.0",
+      "libc.so.6",
+      "ld-linux-x86-64.so.2"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libwarpctc.so",
+    "bytes": 43208,
+    "sha256": "1a0a04c57bd60f2b3bf5f1336e9318710ebb430b0a944942ca4710aa64037299",
+    "needed": [
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgomp.so.1",
+      "libgcc_s.so.1",
+      "libpthread.so.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  },
+  {
+    "wheel": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+    "member": "paddle/libs/libwarprnnt.so",
+    "bytes": 26920,
+    "sha256": "4b2ecc21b111c5230cc0e524d00b050b124cba31febe1f3aa928e5574d4e01ba",
+    "needed": [
+      "libstdc++.so.6",
+      "libm.so.6",
+      "libgomp.so.1",
+      "libgcc_s.so.1",
+      "libpthread.so.0",
+      "libc.so.6"
+    ],
+    "rpath": [],
+    "runpath": []
+  }
+]
