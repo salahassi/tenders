@@ -10990,3 +10990,8 @@ separate arbitrary-prose false-verifier limitation. SQL persistence/export parit
 worker-five integration, complete source gates, deployment and live admission
 remain required before this issue can be marked fully released. No reserve gold,
 corpus, frozen qualification prompt or historical paid request was rewritten to pass the fixture.
+### November 5 — isolated retirement refresh-token contract correction
+
+The instrumented retry [41948742569](https://github.com/salahassi/tenders/actions/runs/41948742569) fails at `canonical_fixture_write` with the fixed child code `RETIREMENT_FIXTURE_REFRESH_MISSING`. The actual private token was not inspected. The pinned GoTrue v2.197.0 upstream implementation generates legitimate 12-character refresh tokens; the fixture client incorrectly required at least 20 characters in both session and persisted-state validation. Both now accept a nonempty bounded opaque string. Refresh HTTP success, UUID/role checks, the same actor after rotation, and private-state ownership and permissions remain enforced.
+
+The [source-bound receipt](evidence/storage-retirement-refresh-contract-20261105.json) records the pinned upstream blob identities and 68 passing focused Python tests, including 12-character private-state roundtrip, malformed values, role/identity denial, failed refresh and changed-owner refusal before state writes. No hosted redispatch or production mutation occurred in this correction. The deliberate interruption/resume and physical retirement acceptance remain outstanding.

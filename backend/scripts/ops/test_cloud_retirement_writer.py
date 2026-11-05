@@ -27,6 +27,42 @@ class WriterGuards(unittest.TestCase):
     def client(self,status=200,body=b'null'):
         transport=Transport(status,body)
         return writer.RetirementClient(self.config,transport),transport
+    def session_value(self,refresh='abcdefgh2345',actor='00000000-0000-4000-8000-000000000001'):
+        return {'user':{'id':actor,'role':self.config.prefix+'_authenticated'},
+          'access_token':'synthetic-access-token','refresh_token':refresh}
+    def test_pinned_gotrue_twelve_character_token_keeps_session_identity_checks(self):
+        client,transport=self.client();value=self.session_value()
+        actor,token=client.session(value)
+        self.assertEqual((actor,token),(value['user']['id'],value['access_token']))
+        self.assertEqual(client.refresh_tokens,{actor:value['refresh_token']})
+        for user in ({'id':'invalid','role':self.config.prefix+'_authenticated'},
+          {'id':actor,'role':'wrong_authenticated_role'}):
+            with self.subTest(user=user),self.assertRaises(base.ProbeFailure):client.session({**value,'user':user})
+        self.assertEqual(transport.calls,[])
+    def test_refresh_value_is_nonempty_bounded_string_without_token_logging(self):
+        client,_=self.client()
+        for refresh in (None,'',0,[],{},'x'*4097):
+            with self.subTest(kind=type(refresh).__name__),self.assertRaises(base.ProbeFailure) as failure:
+                client.session(self.session_value(refresh))
+            self.assertEqual(failure.exception.code,'RETIREMENT_FIXTURE_REFRESH_MISSING')
+        self.assertEqual(client.refresh_tokens,{})
+    def test_refresh_rotation_requires_success_and_the_same_actor_before_state_write(self):
+        actor=self.session_value()['user']['id']
+        state={'actor_id':actor,'refresh_token':'abcdefgh2345'}
+        value=self.session_value('ijklmnop2345')
+        client,transport=self.client(body=json.dumps(value).encode())
+        with patch.object(writer,'load_private',return_value=state),patch.object(writer,'save_private') as saved:
+            loaded,token=client.loaded()
+            self.assertIs(loaded,state);self.assertEqual(token,value['access_token'])
+            self.assertEqual(state['refresh_token'],value['refresh_token']);saved.assert_called_once_with(state)
+        self.assertEqual(transport.calls[0][0],(self.config.auth_url,'/token?grant_type=refresh_token'))
+        self.assertEqual(transport.calls[0][1]['data'],{'refresh_token':'abcdefgh2345'})
+        for status,response,code in ((400,{},'RETIREMENT_FIXTURE_SESSION_REFRESH_FAILED'),
+          (200,self.session_value(actor='00000000-0000-4000-8000-000000000002'),'RETIREMENT_FIXTURE_OWNER_CHANGED')):
+            client,_=self.client(status,json.dumps(response).encode())
+            with patch.object(writer,'load_private',return_value=dict(state)),patch.object(writer,'save_private') as saved:
+                with self.assertRaises(base.ProbeFailure) as failure:client.loaded()
+                self.assertEqual(failure.exception.code,code);saved.assert_not_called()
     def test_versioned_canonical_rpc_is_allowed(self):
         client,transport=self.client()
         self.assertIsNone(client.rpc('claim_backend_job_v4'))
@@ -54,10 +90,13 @@ class WriterGuards(unittest.TestCase):
           'selection':[{'id':'00000000-0000-4000-8000-000000000003','retirement_nonce':'00000000-0000-4000-8000-000000000004',
             'storage_key':workspace+'/delivery/file.docx','revision':2}]}
         state={'version':1,'database':self.config.database,'prefix':self.config.prefix,'actor_id':actor,
-          'refresh_token':'synthetic-refresh-token-private-value','fixture':fixture}
+          'refresh_token':'abcdefgh2345','fixture':fixture}
         with tempfile.TemporaryDirectory() as temporary,patch.object(writer,'STATE',Path(temporary)/'state.json'):
             writer.save_private(state,initial=True)
             self.assertEqual(writer.load_private(self.config),state)
+            for refresh in ('',None,'x'*4097):
+                writer.save_private({**state,'refresh_token':refresh})
+                with self.assertRaises(base.ProbeFailure):writer.load_private(self.config)
             state['database']='production_database';writer.save_private(state)
             with self.assertRaises(base.ProbeFailure):writer.load_private(self.config)
             state['database']=self.config.database;writer.save_private(state)

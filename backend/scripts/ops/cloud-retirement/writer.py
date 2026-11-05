@@ -32,6 +32,13 @@ def require(value,code):
     if not value:raise ProbeFailure(code)
 
 
+def valid_refresh_token(value):
+    # Opaque issuer value, not an entropy/identity proof. Pinned GoTrue v2.197.0
+    # supports SecureAlphanumeric(12); refresh success and actor checks below
+    # remain the authority. Keep the existing private-state size bound.
+    return isinstance(value,str) and 0<len(value)<=4096
+
+
 def save_private(value,*,initial=False):
     raw=json.dumps(value,sort_keys=True,separators=(',',':')).encode()
     require(len(raw)<=32768,'RETIREMENT_FIXTURE_PRIVATE_STATE_SIZE')
@@ -61,8 +68,8 @@ def load_private(config):
         value=json.loads(stream.read(32769))
     require(isinstance(value,dict) and set(value)=={'version','database','prefix','actor_id','refresh_token','fixture'}
       and type(value['version']) is int and value['version']==1 and value['database']==config.database and value['prefix']==config.prefix
-      and value['actor_id']==value['fixture']['actor_id'] and isinstance(value['refresh_token'],str)
-      and 20<=len(value['refresh_token'])<=4096,'RETIREMENT_FIXTURE_PRIVATE_STATE_INVALID')
+      and value['actor_id']==value['fixture']['actor_id'] and valid_refresh_token(value['refresh_token']),
+      'RETIREMENT_FIXTURE_PRIVATE_STATE_INVALID')
     validate_fixture(value['fixture'])
     return value
 
@@ -97,7 +104,7 @@ class RetirementClient(Acceptance):
     def session(self,value):
         user,token=super().session(value)
         refresh=value.get('refresh_token')
-        require(isinstance(refresh,str) and 20<=len(refresh)<=4096,'RETIREMENT_FIXTURE_REFRESH_MISSING')
+        require(valid_refresh_token(refresh),'RETIREMENT_FIXTURE_REFRESH_MISSING')
         self.refresh_tokens[user]=refresh
         return user,token
 
