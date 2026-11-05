@@ -131,6 +131,7 @@ def main():
             build['source_unchanged'] is True and build['build_exit_code'] == 0 and
             sha(run / 'source-before.json') == build['source_before_sha256'] and
             sha(run / 'source-after.json') == build['source_after_sha256'] and
+            sha(run / 'candidate-image-inspect.json') == build['image_inspect_sha256'] and
             sha(run / 'build.log') == build['build_log_sha256'], 'BUILD_BINDING')
     frozen = read(run / 'source-before.json')
     require(frozen == read(run / 'source-after.json'), 'BUILD_SOURCE_CHANGED')
@@ -141,6 +142,9 @@ def main():
     native_before, native_after = read(run / 'native-source-before.json'), read(run / 'native-source-after.json')
     require(native_before == native_after and native_before['revision'] == REVISION and
             native_before['tracked_status'] == '', 'NATIVE_SOURCE_CHANGED')
+    preflight = read(run / 'native-preflight.json')
+    require(preflight['host_swap']['SwapTotal'] == '0 kB', 'HOST_SWAP_SCOPE')
+    activity = read(run / 'native-orchestration-activity-scope.json')
     require(subprocess.check_output(['git', '-C', str(root), 'rev-parse', 'HEAD'], text=True).strip() == REVISION and
             not subprocess.check_output(['git', '-C', str(root), 'status', '--porcelain=v1', '--untracked-files=no'], text=True),
             'CURRENT_REVISION')
@@ -204,15 +208,20 @@ def main():
         receipt['native_evidence'].append({'path':target.relative_to(output).as_posix(), 'sha256':sha(target), 'format':fmt, 'scope':value['scope']})
     build_target = evidence/f'runtime-build-{SUFFIX}.json'
     write(build_target, build)
+    activity_target = evidence/f'native-orchestration-activity-scope-{SUFFIX}.json'
+    write(activity_target, activity)
     receipt['observed_build'] = {'path':build_target.relative_to(output).as_posix(), 'sha256':sha(build_target),
         'native_orchestration_sha256':sha(run/'native-orchestration.json'),
+        'native_preflight_sha256':sha(run/'native-preflight.json'),
         'tracked_source_before_sha256':sha(run/'native-source-before.json'),
         'tracked_source_after_sha256':sha(run/'native-source-after.json')}
+    receipt['orchestration_activity_scope'] = {'path':activity_target.relative_to(output).as_posix(), 'sha256':sha(activity_target)}
     receipt['limits'] = [
         'Build command, recipe, COPY sources and supplementary inputs were captured before and after this build; build log SHA256 and exact local image identity are bound. Historical 89af evidence remains unchanged.',
         'Exact image modes/owners are recorded separately from portable Git executable modes; no image permission normalization occurs.',
         'Owned-snapshot warm 2 and fresh 1 plus reviewed DOCX retain actual image entrypoint and immutable product bytes, with synthetic Auth/RPC/Storage and no production gateway. API 100 uses real local PostgreSQL/PostgREST with synthetic Auth and a loopback prefix adapter.',
         'API fixtures run at 384 MiB/700m. Renderer harness records zero actual swap on a host with SwapTotal 0; it does not set an explicit no-swap limit. API 100 explicitly disables swap. Local database limits do not prove managed database capacity.',
+        'The native suites were sequential in a reserved window. Normal metadata orchestration, four metadata unit tests reporting a 0.002-second body near the warm run end, and an isolated git commit overlapped the sequence. Total helper-process time was not measured; this is not a claim of zero other CPU activity.',
         'This receipt qualifies these frozen native fixtures only, not hosted acceptance, production SLO, arbitrary document capacity, model quality, or desktop Word layout.',
         'Registry publication/promotion remains pending; no registry digest is inferred from the local image ID.',
     ]
