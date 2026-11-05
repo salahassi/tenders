@@ -10919,3 +10919,23 @@ interruption was not reached and resume was skipped. Fixture cleanup verified
 success and private runner files were removed. The [attempt receipt](evidence/storage-retirement-first-attempt-20261105-41946883085.json)
 does not infer the underlying command failure: the old helper discarded that
 diagnostic detail. A safe finite diagnostic is being added before retry.
+### November 5 — first hosted retirement failure and safe command diagnostics
+
+The first [isolated retirement run41946883085](https://github.com/salahassi/tenders/actions/runs/41946883085)
+checked out `bc7afab77d02fb8cdcb591870e044317ad342977`. All57 fixture tests passed,
+but prepare returned `RETIREMENT_FIXTURE_COMMAND_FAILED` before the deliberate
+interruption. Owned fixture cleanup and runner-file cleanup succeeded; resume
+was skipped. The full job log identifies neither the failing command nor its
+output, so the underlying cause remains unproved. Successful cleanup does not
+qualify interrupted retirement or prove which preparation phases completed.
+
+Added fixed phase/command/exit/category diagnostics and an allowlisted envelope
+for fixture-writer errors. Commands, payloads, private output, TLS verification,
+ownership and cleanup authority are unchanged. The diagnostic boundary rejects
+unrecognized/malformed metadata instead of publishing it. Focused local
+verification ([scoped receipt](evidence/storage-retirement-failure-diagnostics-20261105.json)):
+65 Python tests passed, including eight new failure-location,
+privacy, timeout, child-envelope and cleanup controls. This change neither
+reruns the hosted drill nor repairs an inferred infrastructure fault. Runtime,
+application packages and canonical migrations are unaffected; no broad package
+or provider test was run for this operations-only change.
