@@ -1,22 +1,27 @@
 # Reliability acceptance status — November 5, 2026
 
-PR28–31 are merged through cc49d00. Release42019256347 passes3,488 backend
-and380 frontend tests, both typechecks/builds,686 operational,11 schema-helper
-and16 Kubernetes checks. All three runtime/frontend/OCR images publish. The
-application rollout is still **incomplete**: gateway configuration advanced, but
-application images and the routine catalog remain at the original baseline.
-Read-only inventory42023050579 confirms ten ready workloads. No customer request
-or model campaign has been started.
+PR28–32 are merged through8874111. **Application release42031298536 passes**
+3,488 backend and380 frontend tests, both typechecks/builds,700 operational,
+11 schema-helper and16 Kubernetes checks, exact images/schema/configuration,
+old-process drain, public checks and both cleanups. The prior partial gateway
+transition is now completed. Deployed runtime9a94ce1a retains the qualified
+f2d0f9 filesystem; the27-migration manifest isada21f57.
 
-Rollback diagnosis42026869332 identifies two removed pre-existing service grants
-on artifact_context(uuid) and workspace_status(). Draft PR32 preserves those
-exact grants without granting missing access or reopening predecessor functions.
-Fourteen actual PostgreSQL scenarios and28 targeted backend tests pass; the
-authority guard is unchanged. The27-migration manifest is refrozen from the
-original baseline at **ada21f57**. At6c469c5, rollback42028955332 passes the exact SQL and catalog restoration;
-cloud restore42029295368 and interrupted retirement42029747879 each pass all13
-checks and cleanup for ada21f57. Full release and actual issuance remain required.
-Earlier restore41993933795 and retirement42002971002 retain their1fdf73f4 scope.
+The two removed pre-existing service grants are preserved without granting
+missing access or reopening predecessor functions. Fourteen actual PostgreSQL
+scenarios and28 targeted backend tests pass. At6c469c5, rollback42028955332 passes
+the full SQL and catalog restoration; cloud restore42029295368 and interrupted
+retirement42029747879 each pass13 checks and cleanup forada21f57. Earlier passes
+retain their exact historical scopes.
+
+The one authorized current request started, then its exact successor failed with
+`AI_AGENTS_UNAVAILABLE` about 60.652 seconds after acceptance. No package issued.
+Workflow42034910171 failed a response assumption; private after-commit evidence
+and read-only inspection42036499094 prove start and early terminal failure
+separately. The captured command response predates the issuance-admission
+trigger; the local harness correction now uses actual saved SQL wire results
+and strict database binding. No request replay or new model campaign occurred.
+See [the current receipt](evidence/current-request-followup-20261105.json).
 
 Native runtimef2d0f9 and its four qualified fixture scopes are unchanged; the
 failed721340 OOM image remains rejected. The heaviest measured case retains its
@@ -29,8 +34,8 @@ original-CA restore 41933205779 passed its exact 24-migration manifest
 `4cb2e712`. **A02 closes the exact `2b869ac` local scope; the retirement-cleanup
 follow-up now passes 57 focused guards; the mandatory final GitHub gate remains. A03 records the exact historical `2b869ac`/`2e6512d2` isolated
 restore scope.** Neither establishes deployed proposal completion.
-The last authorized read-only customer-target inspection remains incomplete and
-unchanged; no current-request activation has occurred at this anchor.
+That historical anchor preceded the actual request and read-only inspection
+recorded in the current checkpoint above.
 
 Three release attempts were cancelled during verification: 41934809173 retained
 the real-DOCX default-timeout follow-up, and 41937345060 at `3c21a65` stopped after
@@ -42,13 +47,13 @@ records. No successful deployment is inferred from these cancelled workflows.
 | Action and current scope | Required next work and completion evidence | Evidence and acceptance |
 | --- | --- | --- |
 | **A01 — Complete hosted capacity and whole-path acceptance** | After the checked release, exercise the deployed Auth/API/worker/Storage/proxy path with exact bytes, complete volumes, slow consumers, cancellation and measured resource margins. Bind the actual accepted-to-issued clock to 600 seconds. Current 17.21 MiB and historical 10.88 MiB are fixture margins only. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E01, E02, E13; W04, W09, D02, D04; EX-01, EX-02, EX-05, OP-02, BC-01 |
-| **A02 — Run complete integrated verification on the current source** | Current source-resolution/worker5 application gates pass at `f41adb8` (3,488 backend / 380 frontend); subsequent verifier allocation and operations changes have focused passing controls. Historical scope: the later isolated-retirement cleanup correction passes 57 focused guards at `0cfb2ef`, with application/runtime source unchanged. Require the mandatory full GitHub release gate. The 667 operations/schema/Kubernetes checks pass at `2b869ac` before the later retirement-cleanup correction; the changed cleanup scope has its separate focused revalidation. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E01; W00, W11; R0, W11 exit evidence |
-| **A03 — Renew isolated cloud restore for the final source-resolution release** | Current pass at `b933587` and manifest `1fdf73f4`: run 41993933795 passes all 13 actual Auth/Storage HTTP checks, 27 migrations and both cleanup stages. Repeat if relevant release/schema/Auth/Storage contracts change; renderer, deployment and recovery objectives remain separate. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E06, E13; W09, W11, D05; OP-03, OP-04, D05 |
-| **A04 — Establish actual available model routes under the existing policy** | Resolve provider-side quota/credit/credential availability through existing authorized routing and billing policy; confirm enabled task routes without silently buying capacity or changing usage accounting. Separately verify immediate clear error when every route is unavailable. **Completion:** Current configured-route availability and no-agent behavior have actual receipts; failures and unknown usage retained. | E08, E09; W07, W10, D06; ME-10, ME-11, BC-01 |
+| **A02 — Complete integrated verification** | Passed at8874111 in release42031298536:3,488 backend/380frontend tests, both typechecks/builds,700 operations,11 schema-helper and16 Kubernetes checks. Source-specific limits of earlier runs remain retained. | E01; W00, W11; R0, W11 exit evidence |
+| **A03 — Current-manifest cloud restore** | Passed at6c469c5 forada21f57 in42029295368: all13 Auth/Storage checks,27 migrations and both cleanups. Repeat when relevant schema/Auth/Storage contracts change; renderer and general recovery objectives remain separate. | E06, E13; W09, W11, D05; OP-03, OP-04, D05 |
+| **A04 — Establish actual available model routes under the existing policy** | Resolve provider-side quota/credit/credential availability through existing authorized routing and billing policy; confirm enabled task routes without silently buying capacity or changing usage accounting. Early no-agent behavior is now observed for the selected request; configured route availability remains unresolved. **Completion:** Current configured-route availability and no-agent behavior have actual receipts; failures and unknown usage retained. | E08, E09; W07, W10, D06; ME-10, ME-11, BC-01 |
 | **A05 — Complete independent semantic and bounded-retrieval qualification** | 42single-request cases plus two independently reviewed two-request composites make44/50 cases constructible; six require explicit contracts. Typed supersession is corrected and passes SQL-to-DOCX controls; reserve-adapter/provider qualification remains open. Complete and review those prerequisites/composite schedules without reducing the 100-cell/model denominator. Freeze provider/phase/prompt/schema/validator and business decisions before authorized execution; retain independent per-class outcome adjudication, the 48-cell retrieval plan and a separately authorized private holdout. Offline authored controls are not model quality. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E09, E10; W05, W06, W08, D07; ME-01, ME-02, ME-04, ME-08, ME-09, ME-14, RT-01, RT-02 |
 | **A06 — Qualify Arabic scanned-input extraction** | Keep both the rejected parameter tuning and official tessdata_best candidate unadopted. Qualify a maintainable alternative against frozen whole-page Arabic, mixed identifiers, English and blank controls before changing defaults. Preserve readable pages and mandatory source-bound visual correction. **Completion:** Independent gold tests preserve the supported Arabic obligations, numbers and blank/read coverage. Until then, automatic valid-scan correctness remains an explicit unclosed product limitation; mandatory review is a safety control, not automatic success. | E11; W02, W05, D03; IN-03, IN-04, D03 |
 | **A07 — Verify Word table-of-contents update and target-engine compatibility** | Perform actual Microsoft Word update/save and verify page numbers, headings, Arabic/English layout and yellow gaps. Preserve the two failed explicit LibreOffice invocation attempts; they produced no refreshed artifact and do not identify the absent-cache cause. **Completion:** Named actual reviewer/engine versions, updated files and per-page hashes/visual evidence; no invented cache numbers. | E03; W04, D02; EX-02, EX-06 |
-| **A08 — Execute the checked release** | Source-resolution/worker5 integration, new f2d0f9 runtime qualification/publication, 27-migration freeze and current isolated restore pass. The isolated interrupted-retirement gate now passes; run complete final release gates before rollout. Prove old-process exit, permanent legacy-RPC fence, visible database drain, locked fresh zero census and exact deployed schema/images/configuration. Publication and the local promotion probe do not prove rollout. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E04, E05, E08, E13; W00, W11; W11 exit evidence, OP-02, OP-04 |
+| **A08 — Checked application release** | Passed at8874111 in42031298536: atomicada21f57 schema, exact three images, old-process exit, gateway fence, transaction drain, fresh locked zero census, final readback/public checks and cleanup. Customer issuance/export remain A09. | E04, E05, E08, E13; W00, W11; W11 exit evidence, OP-02, OP-04 |
 | **A09 — Complete actual authenticated issuance, export and recovery acceptance** | After verified release, activate the reviewed current-request workflow with the private selection, fresh server details and exact durable request body/key. Preserve predecessor accepted work and unknown usage. Observe accepted/deadline/whole-package completion and earlier terminal errors; authenticate actual complete-volume downloads separately. Execute the prepared nonce-owned retirement interruption/PVC drill, retain cleanup/recovery evidence and define service recovery objectives. Local browser/PGlite controls and metadata-only issuance do not close hosted acceptance. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E02, E04, E05, E06, E07, E12; W01, W03, W04, W07, W09, W10, W11, D01, D04, D05, D06; AR-04, AR-05, EX-01, EX-03, EX-04, EX-05, OP-02, OP-03, OP-04, OP-05, UX-01, UX-02, UX-03, BC-01 |
 
 ## Recorded evidence and its source

@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { readFile } from "node:fs/promises";
 import { afterEach, beforeAll, beforeEach, expect, it } from "vitest";
+import { CurrentRequestGuard } from "../../scripts/ops/proposal-current-request.mjs";
 import { workflowFixture } from "./workflowFixture";
 import { createRecheckFixture } from "./analysisVerifierRecheckFixture";
 import { currentProposalCommands, currentProposalRequest } from "../../../frontend/src/lib/currentProposalRequest";
@@ -94,7 +95,7 @@ it("preserves exact history through legacy rejection and one canonical atomic cu
   let guarded: any;
   await transaction(async () => {
     try {
-      await f.command("generation.retry", { id: scenario.plan.id, expected_revision: before.expected_plan_revision, reason: "Synthetic explicit continuation" });
+      await f.command("generation.retry", { id: scenario.plan.id, expected_revision: before.expected_plan_revision, reason: "User requested continuation of the saved work." });
     } catch (error) { guarded = error; }
   });
   expect(guarded?.message).toBe("PROPOSAL_CURRENT_CONTRACT_REQUIRED");
@@ -109,6 +110,26 @@ it("preserves exact history through legacy rejection and one canonical atomic cu
     return (await f.db.query<{ result: any }>("select public.app_batch_prepare($1::jsonb,$2) result", [JSON.stringify(commands), key])).rows[0].result;
   });
   expect(manifest.result_count).toBe(2);
+  // Consume the actual persisted wire results, not a hand-built plan response.
+  const wire = (await f.db.query<{ result: any }>(
+    "select convert_from(string_agg(data, ''::bytea order by chunk_index),'UTF8')::jsonb result from app_private.command_batch_chunks where receipt_id=$1 group by result_ordinal order by result_ordinal",
+    [manifest.receipt_id])).rows.map(row => row.result);
+  const guard = new CurrentRequestGuard({
+    origin: "https://current-request.example.test", workspace_id: f.w, actor_id: f.owner,
+    opportunity_id: scenario.opportunity.id, plan_id: scenario.plan.id, proposal_id: before.proposal_id,
+    run_id: "123", expected_plan_revision: before.expected_plan_revision,
+    expected_opportunity_revision: before.expected_opportunity_revision,
+    expected_proposal_revision: before.expected_proposal_revision, preserved_input_hash: before.preserved_input_hash,
+    access_token: "synthetic-private-access-token", session: { access_token: "synthetic-private-access-token", refresh_token: "synthetic-refresh-token", user: { id: f.owner } },
+  });
+  guard.probe({ commands: [{ operation: "generation.retry", input: { id: scenario.plan.id,
+    expected_revision: before.expected_plan_revision, reason: "User requested continuation of the saved work." } }] }, crypto.randomUUID());
+  guard.observeProbe(422, { error: { code: guarded.message, details: JSON.parse(guarded.detail) } });
+  await guard.prepare({ commands }, key, async request => ({ event: "persisted", body_sha256: request.body_sha256, report_sha256: "a".repeat(64) }));
+  expect(wire[1].issuance_request_id).toBeNull(); // Admission runs after the command captures its result.
+  expect(() => guard.observeBatch(200, { data: wire })).not.toThrow();
+  expect(guard.report.outcome).toBe("started");
+
   const after = await inspect();
   expect(after.protected_history).toEqual(before.protected_history);
   expect(after.source_manifest_sha256).toBe(before.source_manifest_sha256);

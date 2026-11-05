@@ -42,6 +42,12 @@ private runner directory. The isolated Auth session, observer and private runner
 files are cleaned on failure as well as success; unconfirmed cleanup fails the
 workflow. PID reuse or unproved process-group ownership fails closed.
 
+The command response can have a null issuance ID because admission binds it
+after the command captures its result. The browser must still prove the exact
+successor and current contract. The parent then requires the matching database
+issuance, actor, operation, preserved history and original clock; a conflicting
+supplied ID or missing binding fails closed.
+
 After a proven start, the read-only issuance observer binds the exact successor,
 request and Owner. It records the database's accepted, deadline, persisted
 completed and effective completed timestamps. The product deadline remains
@@ -81,3 +87,9 @@ throwaway HTTPS certificate; production TLS verification is unchanged. PGlite
 and fixture HTML are not native PostgreSQL, hosted Auth or deployed-frontend
 acceptance. Deployment and actual customer-request acceptance remain separate
 release-owner gates.
+
+The November 5 request42034910171 is already sent. Its durable marker remains a
+stop condition. Read-only inspection42036499094 confirms the exact successor
+failed with `AI_AGENTS_UNAVAILABLE`; fixing this harness is not authorization to
+replay that request. The [followup receipt](evidence/current-request-followup-20261105.json)
+retains the initial unknown result and the separate after-commit evidence.

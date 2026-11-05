@@ -2,24 +2,43 @@
 
 ## November 5 — latest integration checkpoint
 
-Merged PR28 contains source resolution, worker5 and the27-migration release;
-PR29 adds explicit immutable PostgreSQL fixture preparation to CI.
-Complete f41adb8 application gates pass3,488 backend and380frontend tests, both
-typechecks and builds. The later API verifier allocation setting passes35focused
-controls and four native fixture suites on imagef2d0f9. The failed721340image is
-retained as a rejection. The new image is published and pulled back exactly at
-registry digestaabe842e; temporary credentials were removed. The manifest is
-refrozen from the original deployment baseline. The current 27-migration cloud restore passes all 13 Auth/Storage
-checks and both cleanups in run 41993933795. Interrupted retirement now passes all 13 actual checks and cleanup in run
-42002971002 at e4192f9, against the same manifest. Earlier readiness/mount
-failures and their separate cleanup are retained. Latest release CI at 9b54bad passes all 3,868 application tests and 713 operational/schema/Kubernetes checks. Runtime promotion is published, but the image step blocks before rollout. The frontend root-context correction now passes a real local Docker build; a fresh release remains required. Application rollout and actual issuance
-remain pending; no application deployment or customer issuance is claimed. The Paddle candidate is rejected and the remaining acceptance gates
-are listed in RELIABILITY_REMAINING_GATES.md. Historical statuses follow.
+**Application release42031298536 passed on main8874111.** PR28–32 are merged.
+Both application packages pass3,488 backend and380 frontend tests, typechecks
+and builds;700 operations,11 schema-helper and16 Kubernetes checks pass.
+The27-migration manifestada21f57 is applied atomically; exact image/schema and
+configuration readback, old-process drain, public checks and both cleanups pass.
+Deployed runtime is9a94ce1a, preserving the qualifiedf2d0f9 native filesystem.
+The original inventory baseline and all failed attempts remain retained.
+
+At6c469c5, rollback42028955332 passes exact full SQL and catalog restoration;
+restore42029295368 and interrupted retirement42029747879 each pass13 actual
+checks and cleanup forada21f57. These finite scopes do not establish arbitrary
+capacity or general recovery objectives.
+
+The one authorized current request **did start**, but it ended with
+`AI_AGENTS_UNAVAILABLE`: all 12 successor jobs failed about 60.652 seconds after
+acceptance. No proposal file issued. Request workflow42034910171 failed its
+response guard; private after-commit proof and read-only inspection42036499094
+establish the exact successor separately. Historical results and unknown usage,
+the one-send marker and all cleanup proofs remain intact. No request replay or
+additional model campaign was started. The retained attempt was skipped before
+send with `PROVIDER_QUOTA_WAIT`; this is not a fresh provider availability test.
+See [the request followup](evidence/current-request-followup-20261105.json).
+
+The harness correction now tests actual persisted command-response chunks:
+admission attaches the issuance ID after the captured command result. Browser
+successor checks remain strict; the parent binds the issuance ID from the exact
+current database proof before observing completion. Focused checks pass: 23
+request/11 issuance Python controls, 36 TypeScript/exact-SQL tests, four actual
+local Chromium controls and five read-only recovery tests. The recovery
+projection now includes persisted/effective issuance clocks; its hosted followup
+is pending. Provider availability, private semantic/retrieval holdout, automatic
+Arabic OCR and actual Word TOC update/save remain open.
 
 ## November 4 — current integration status and remaining release gates
 
-This overview supersedes the intermediate status statements in the dated entries
-below. The implementation branch remains **not deployed**. The permanent
+This is a historical November 4 checkpoint, superseded by the November 5
+checkpoint above. At this earlier anchor the implementation was **not deployed**. The permanent
 GitHub Actions → DigitalOcean access runbook is merged on `main` through PR25;
 the current reliability implementation is still draft PR24.
 
@@ -11463,3 +11482,30 @@ Receipts are indexed separately from the earlier1fdf73f4-manifest passes.
 The release prerequisites are now renewed. Application rollout remains
 incomplete until the mandatory full release gate, exact image/schema readback
 and public checks pass. No actual customer request or provider campaign has run.
+
+### November 5 — application release passes at8874111
+
+[Release42031298536](https://github.com/salahassi/tenders/actions/runs/42031298536)
+passes the complete package and operational checks, all three image publications,
+atomic schema, compatible workload rollout and exact final readback. The final
+catalog hash is8f82c88194713bff62224f307d8ab6744a42f4d7fa57a3559fafc4d083cddc04.
+Worker/API/source-browser/scheduler use runtime9a94ce1a; frontend32f26e92 and
+native OCR15519127 are verified. Old workers and gateway processes are drained;
+both cleanup steps pass. No historical processing was explicitly retried.
+The sanitized receipt retains exact images, schema, resource/configuration
+evidence and scope. Authenticated customer issuance/export remain separate.
+
+### November 5 — current request starts; early no-agent failure and observer correction
+
+The deployed application accepted one canonical cancel-and-generate request.
+Its original 600-second deadline is retained; the exact successor failed early
+with `AI_AGENTS_UNAVAILABLE` and no issued version. The initial browser harness
+returned unknown because its hand-built fixture assumed the captured response
+already contained the issuance ID. The actual admission trigger binds that ID
+after the command captures its result. The fully migrated SQL regression now
+consumes the real saved wire chunks and reproduces the old guard failure before
+passing the correction. Database history, exact successor, actor, operation and
+clock checks remain mandatory. No durable marker was bypassed and no second
+business request was sent. The read-only inspector adds issuance clocks without
+calling commands, providers or scheduler functions. See the linked current
+followup receipt for private report hashes, cleanup and separate evidence limits.

@@ -5,6 +5,16 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 5, 2026.
 
+## Latest verified application release
+
+[Run42031298536](https://github.com/salahassi/tenders/actions/runs/42031298536)
+passes at main887411188b9591b01c9e3d01456372a37c3a0f68, with manifestada21f57.
+The API and worker verified immutable runtime is
+`registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:9a94ce1a89c66627157efb6b67536d94c1d6b6e414752d45af144d97bd74df07`.
+See [the release receipt](evidence/proposal-release-passed-20261105-42031298536.json).
+This is deployment evidence; current-request and export acceptance are separate.
+The original release-baseline inventory below remains unchanged.
+
 ## Established route
 
 **GitHub Actions on a GitHub-hosted runner → DigitalOcean management API →

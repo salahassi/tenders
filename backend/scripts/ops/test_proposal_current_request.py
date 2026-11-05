@@ -290,6 +290,21 @@ class CurrentRequestTests(unittest.TestCase):
             'requested_by': self.before['actor_id'], 'operation': 'proposal.generate',
             'accepted_at': '2026-11-05T00:00:00+00:00', 'deadline_at': '2026-11-05T00:10:00+00:00'}
         m.postconditions(self.before, after, self.child_report)
+        without_id = {k: v for k, v in self.child_report.items() if k != 'issuance_request_id'}
+        m.validate_report(without_id)
+        self.assertEqual(m.bind_issuance(self.before, after, without_id), self.child_report)
+        self.assertNotIn('issuance_request_id', without_id)
+        for changed in [dict(self.child_report, issuance_request_id=self.selection['plan_id']),
+                        dict(without_id, successor_plan_id=self.selection['plan_id']),
+                        dict(without_id, outcome='unknown')]:
+            with self.assertRaises(m.CurrentRequestError):
+                m.bind_issuance(self.before, after, changed)
+        for field in ['latest_issuance', 'latest_plan']:
+            missing = copy.deepcopy(after)
+            missing[field] = {}
+            with self.assertRaises(m.CurrentRequestError):
+                m.bind_issuance(self.before, missing, without_id)
+
         for key, value in [('deadline_at', '2026-11-05T00:11:00+00:00'), ('requested_by', self.selection['plan_id']),
                            ('accepted_at', '2026-11-05T00:00:00'), ('plan_id', self.selection['plan_id'])]:
             invalid = copy.deepcopy(after)

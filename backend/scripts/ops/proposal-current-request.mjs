@@ -134,11 +134,13 @@ export class CurrentRequestGuard {
         next.workspace_id === this.input.workspace_id && next.opportunity_id === this.input.opportunity_id &&
         next.proposal_id === this.input.proposal_id && next.kind === "proposal" &&
         next.frozen_context?.generated_delivery_version === 3 && next.frozen_context?.proposal_consistency_version === 1 &&
-        UUID.test(next.issuance_request_id || ""),
+        (next.issuance_request_id == null || UUID.test(next.issuance_request_id)),
       "CURRENT_REQUEST_SUCCESSOR_RESPONSE_INVALID",
     );
     this.report.successor_plan_id = next.id;
-    this.report.issuance_request_id = next.issuance_request_id;
+    // Admission can bind issuance after the command captures its response.
+    // The parent requires the exact current database binding before observation.
+    if (next.issuance_request_id != null) this.report.issuance_request_id = next.issuance_request_id;
     this.report.outcome = "started";
     this.report.checks.push("frontend_received_successor");
     this.phase = "finished";

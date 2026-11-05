@@ -146,3 +146,18 @@ it("requires exact isolated session identity and HTTPS origin", () => {
   expect(() => validateInput({ ...input(), origin: "http://example.test" })).toThrow();
   expect(() => validateInput({ ...input(), session: { ...input().session, user: { id: id(99) } } })).toThrow();
 });
+
+it.each([null, undefined])("defers absent issuance %j to the parent's exact database binding", async issuance => {
+  const guard = await sending(), body = successful();
+  body.data[1].issuance_request_id = issuance as any;
+  guard.observeBatch(200, body);
+  expect(guard.report.outcome).toBe("started");
+  expect(guard.report.successor_plan_id).toBe(id(20));
+  expect(guard.report.issuance_request_id).toBeUndefined();
+});
+
+it("rejects a malformed supplied issuance identity", async () => {
+  const guard = await sending(), body = successful();
+  body.data[1].issuance_request_id = "malformed";
+  expect(() => guard.observeBatch(200, body)).toThrow("CURRENT_REQUEST_SUCCESSOR_RESPONSE_INVALID");
+});
