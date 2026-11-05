@@ -176,6 +176,20 @@
           "level": "Source-bound observed gate",
           "observed_result": "All 3488 backend / 380 frontend, types/builds, 677 operations, 11 schema-helper and 16 Kubernetes checks pass at bc5453f.",
           "limits": "Image config guard blocks before rollout; later image-helper changes have separate focused/hosted controls."
+        },
+        {
+          "path": "backend/docs/evidence/release-image-build-blocked-20261105-42014591057.json",
+          "sha256": "8141b6e3198ed2a98a1ac740bf1992c05a4ce8f051d822819e3051321e19ae8c",
+          "level": "L1/L2",
+          "observed_result": "9b54bad complete application and operations gates pass; exact runtime promoted/published. Image command fails, rollout skipped, both cleanups pass.",
+          "limits": "No deployment; hosted image error is generic. Concrete missing shared-module failure reproduced separately locally."
+        },
+        {
+          "path": "backend/docs/evidence/frontend-root-context-build-20261105.json",
+          "sha256": "598009ed57356142d6a287325eabb8e2d0777816d870f067580a53e9837fa3bf",
+          "level": "L1/L2",
+          "observed_result": "Actual local frontend Docker build passes with root context and browser shared modules; 31 focused controls and frozen runtime source guard pass.",
+          "limits": "Uncommitted changed input hashes bind this local proof. No hosted release, customer request or model calls."
         }
       ]
     },
@@ -799,6 +813,13 @@
           "level": "L4 authorized read-only real-target inspection",
           "observed_result": "Run41934185072 at865d840 observes latest legacy proposal blocked/analysis/MODEL_CORRECTION_EXHAUSTED, no active version and zero versions, one committed analysis sibling and50 unknown usage rows. Missing historical selection404 retained; unchanged172-byte encrypted re-upload and cleanup succeeded.",
           "limits": "No retry/provider/business mutation or completed export. Exact identities/content remain private; fresh server details required after deployment."
+        },
+        {
+          "path": "backend/docs/evidence/release-image-build-blocked-20261105-42014591057.json",
+          "sha256": "8141b6e3198ed2a98a1ac740bf1992c05a4ce8f051d822819e3051321e19ae8c",
+          "level": "L1/L2",
+          "observed_result": "9b54bad complete application and operations gates pass; exact runtime promoted/published. Image command fails, rollout skipped, both cleanups pass.",
+          "limits": "No deployment; hosted image error is generic. Concrete missing shared-module failure reproduced separately locally."
         }
       ]
     },

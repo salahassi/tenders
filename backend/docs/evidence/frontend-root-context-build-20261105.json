@@ -1,0 +1,39 @@
+{
+  "exit_code": 0,
+  "elapsed_seconds": 11.378,
+  "containers_started": false,
+  "registry_writes": false,
+  "image_id": "sha256:fc43ca2c4d9428b0b0048c03ea9c391d0d6fe179c84fd2a3a5ac469b8f2bfc60",
+  "runtime_user": "101:101",
+  "entrypoint": [
+    "nginx",
+    "-g",
+    "daemon off;"
+  ],
+  "owned_tag_removed": true,
+  "status": "passed_local_frontend_image_build",
+  "base_revision": "9b54badb3865af979bbe931cadd199dc234ed5b6",
+  "changed_inputs_sha256": {
+    "frontend/Dockerfile": "e2b525ed5708b95c4ab6c0fd2aa5f92a03b3667620351a2d7e9ad326004c3da5",
+    "frontend/Dockerfile.dockerignore": "4c132ce934d6c9c371f47016312e0f8438495ee960ccb9f5e27a725c4237d44c",
+    "backend/scripts/ops/proposal-delivery-images.py": "911aac2b7c2f7d7cb62f166bf71f6d1a08079ffea487435ccb6b96df33666333",
+    ".github/workflows/deploy-ai-reliability.yml": "926c8f3ea5efda3962f19bb4646a6224d44f9fa86ba15875a522feeed5754c87",
+    ".github/workflows/deploy-digitalocean.yml": "3bfcaf974187d57df4a90533ca2a382e183f65dfe8a1100bb150ae9f90490c61",
+    ".github/workflows/deploy-flexible-proposal-inputs.yml": "d4647926b1bdbabb484bee8791975bd36c046b646361d02573777322c7aa82ed",
+    ".github/workflows/deploy-frontend.yml": "a2226914537787ee5e3cd9ea70a0715e305261268f018336004297ccd63eb0fc",
+    ".github/workflows/deploy-model-admission.yml": "9a8746d4a49e522780465c1f336403843010b40dd13f6a4eec423d1374a55c5d",
+    ".github/workflows/deploy-model-validation.yml": "50d126733de925f7609b9a0a5ebadeb277815e6500374da34d517deca966cf80",
+    ".github/workflows/deploy-pages.yml": "050ac45b9d30c9dbf3fda811e0ab1b48563ae1d11c731a2c93016f5dd0e96b35",
+    ".github/workflows/deploy-proposal-delivery.yml": "34ef0cc83b16514911b6d39e3124de4f149883903ae929ddca03fb5bc7a16f4f",
+    ".github/workflows/deploy-requested-processing.yml": "b42e9e598ae6ecb537bd136850f25fd04f20db73de15099f1ebe95f840b35dad",
+    ".github/workflows/deploy-scope-factor-guard.yml": "1eaa6e165b36542893e9f9fa743d36e0de94e099ef23217a1f2206ce6083892f",
+    ".github/workflows/deploy-typed-verification.yml": "90a1c20f3d65352bc33c0b1de103a5d030d26e48aec46421900b04c0917a01f3",
+    ".github/workflows/deploy-verifier-recheck.yml": "5f0d59c51991a865919065c2b363551470c3d410f7b1c2806d4e6ca356af7f14",
+    ".github/workflows/update-providers.yml": "7c0d1043d69c67aadf9261febbea854ac4b0e6095789e9ca422af1f7b2de1586"
+  },
+  "focused_image_and_qualification_tests": 31,
+  "qualified_runtime_source_guard": "passed_unchanged",
+  "build_log_sha256": "d320e8421ec0ba32538eff22f16157aead574ff3df7aeb96c1313cb1d6ed5859",
+  "prior_local_attempt": "Failed before compilation because development Docker storage was full. Only owned probe caches and the rejected Paddle candidate image/cache were removed; evidence and source remain. The final build uses fewer intermediate layers.",
+  "scope": "Actual local linux/amd64 image build, production TypeScript and Vite bundle; image metadata inspection and owned tag removal. No containers started, registry writes, deployment, browser acceptance or provider calls."
+}

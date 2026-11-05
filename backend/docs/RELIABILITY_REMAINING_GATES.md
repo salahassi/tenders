@@ -5,7 +5,7 @@ tests**, both typechecks and builds. Source resolution preserves the corrected
 14-terminal obligation and unchanged 3 cabinets through SQL and a real local
 Word artifact, then rejects access after source revocation. Worker capability 5,
 retry parameter qualification and restricted-owner Storage catalog lookup are
-integrated. Draft PR28 stores the changes; the application remains **not deployed**.
+integrated. Merged PR28 stores the changes; PR29 and PR30 address cold-runner preparation and exact raw image configuration. The application remains **not deployed**.
 
 The initial new image721340 failed native verification with OOM and HTTP503;
 that rejection is retained. API verifier young-generation bounds then passed
@@ -17,7 +17,7 @@ capacity or hosted latency. Image publication and pullback are verified at
 The27-migration manifest is frozen from the unchanged original deployment baseline.
 Current cloud restore 41993933795 passes all 13 Auth/Storage checks and both
 cleanups against this exact manifest. Interrupted retirement now passes all 13 checks and cleanup in run 42002971002.
-Final release CI, rollout and actual customer issuance remain gates. No customer request was resumed.
+Release 42014591057 at 9b54bad passes all application gates plus 686 operations, 11 schema-helper and 16 Kubernetes checks. Runtime promotion/publication passes, then the image step blocks before rollout. The frontend root-context repair now passes an actual local image build and 31 focused controls; fresh complete release gates, rollout and actual customer issuance remain required. No customer request was resumed.
 
 Retirement run41988242066 identified SQLSTATE42501 at prepare and cleaned up.
 The corrected catalog lookup passes27 restricted-owner PostgreSQL controls;

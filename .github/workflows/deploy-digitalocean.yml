@@ -74,7 +74,7 @@ jobs:
           entries = [
               ('https', 'backend/deploy/Dockerfile.https', '.'),
               ('runtime', 'backend/deploy/Dockerfile', '.'),
-              ('frontend', 'frontend/Dockerfile', 'frontend'),
+              ('frontend', 'frontend/Dockerfile', '.'),
               ('browser', 'backend/deploy/Dockerfile.browser', '.'),
               ('ocr', 'backend/deploy/Dockerfile.ocr', '.'),
           ]

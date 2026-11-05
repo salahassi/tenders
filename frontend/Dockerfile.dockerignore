@@ -1,0 +1,26 @@
+# Repository-root context; admit only browser build inputs and shared modules.
+**
+!frontend/
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/tsconfig*.json
+!frontend/vite.config.ts
+!frontend/index.html
+!frontend/src/
+!frontend/src/**
+!frontend/public/
+!frontend/public/**
+!frontend/deploy/
+!frontend/deploy/nginx.conf
+!backend/
+!backend/supabase/
+!backend/supabase/functions/
+!backend/supabase/functions/_shared/
+!backend/supabase/functions/_shared/**
+**/node_modules
+**/dist
+**/coverage
+**/.env
+**/.env.*
+**/*.tsbuildinfo
+**/__pycache__

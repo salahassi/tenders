@@ -80,7 +80,7 @@ docker build -f backend/deploy/Dockerfile .
 docker build -f backend/deploy/Dockerfile.browser .
 docker build -f backend/deploy/Dockerfile.ocr .
 docker build -f backend/deploy/Dockerfile.https .
-docker build -f frontend/Dockerfile frontend
+docker build -f frontend/Dockerfile .
 ```
 
 The HTTPS image removes the official Caddy binary's file capability during the

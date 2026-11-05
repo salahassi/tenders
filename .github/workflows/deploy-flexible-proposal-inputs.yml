@@ -53,7 +53,7 @@ jobs:
           import json, os, pathlib, re, subprocess
           registry = 'registry.digitalocean.com/tenderdesk-a6093a76/'
           directory = pathlib.Path(os.environ['DOKS_WORKDIR'])
-          for name, dockerfile, context in [('runtime','backend/deploy/Dockerfile','.'), ('frontend','frontend/Dockerfile','frontend')]:
+          for name, dockerfile, context in [('runtime','backend/deploy/Dockerfile','.'), ('frontend','frontend/Dockerfile','.')]:
               reference = registry + name + ':' + os.environ['GITHUB_SHA']
               with (directory / ('build-' + name + '.log')).open('w') as log:
                   for arguments in [['docker','build','--platform=linux/amd64','--file',dockerfile,'--tag',reference,context], ['docker','push',reference]]:

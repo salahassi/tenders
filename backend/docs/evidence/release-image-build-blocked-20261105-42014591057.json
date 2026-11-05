@@ -1,0 +1,23 @@
+{
+  "status": "blocked_after_runtime_publication",
+  "source_revision": "9b54badb3865af979bbe931cadd199dc234ed5b6",
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/42014591057",
+  "job_id": 127201816723,
+  "application_checks": {
+    "frontend_tests": 380,
+    "backend_tests": 3488,
+    "both_typechecks": "passed",
+    "both_builds": "passed",
+    "operations_tests": 686,
+    "schema_helper_tests": 11,
+    "kubernetes_tests": 16
+  },
+  "original_ca": "passed",
+  "runtime_publication": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:e8e8cdce8de07ba81b267819227dd65df944b0db3eed8b0d0a307b1332be1cc6",
+  "image_step_error": "DELIVERY_IMAGE_COMMAND_FAILED",
+  "rollout": "skipped",
+  "owned_database_client_cleanup": "passed",
+  "private_runner_cleanup": "passed",
+  "local_diagnosis": "Same frontend Docker build reproduces missing sibling backend shared modules (TS2307) with the old frontend-only context. The hosted helper retained only the generic command failure; its private build log was removed during cleanup.",
+  "scope": "Complete CI and runtime publication only. No application rollout, customer request or provider campaign."
+}
