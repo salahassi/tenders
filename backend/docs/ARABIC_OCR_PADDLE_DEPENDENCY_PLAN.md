@@ -1,24 +1,28 @@
 # Paddle mobile experiment: dependency and offline build plan
 
-The retained metadata pins four candidate wheels and two model revisions. It
-does **not** contain a complete transitive dependency lock, a prepared runtime
-base, verified downloaded wheels/weights, or measured installation size. This
-plan introduces no installation, native import, recognition run, provider call,
-or production change. The six new gold pages are prepared separately and must
-be frozen and independently reviewed before any recognizer output.
+The authorized November 5 preparation now has a target-specific **71-wheel
+hash lock**, six verified model files and 65 verified Debian archives ready for
+an offline image build. [The preparation receipt](evidence/arabic-paddle-build-preparation-20261105.json)
+binds every input, exact base/interpreter, commands, logs, repository indexes and
+cleanup. No package installation, native OCR import, recognition run, provider
+call or production change occurred in this preparation. Installed dependency
+closure, native compatibility, final image identity and resource fit remain
+unverified. The six prospective gold pages are prepared and reviewed separately.
 
 The source-only package is in
 [`scripts/testing/paddle_candidate`](../scripts/testing/paddle_candidate/).
-`seed-manifest.json` retains each exact official wheel URL, filename, version,
+The original `seed-manifest.json` retains each official root-wheel URL, filename, version,
 size, SHA-256 digest and published dependency declarations, including their
 environment markers. `requirements.seed.in` is a resolver input, **not** an
-installation lock. `freeze_lock.py` converts a later target-native pip report
-into one hash per selected wheel without importing an OCR package. Its output
-explicitly remains unverified until offline dependency closure and byte checks
-pass. It refuses changed root pins, an incorrect target, source archives,
+installation lock. The actual full lock is
+[`requirements-linux-x86_64-cp311-20261105.lock`](../scripts/testing/paddle_candidate/requirements-linux-x86_64-cp311-20261105.lock),
+SHA-256 `91d74b353fd987540f6e0c1ea8c8e26078f980c16814d8ef75b908b14553df14`.
+`freeze_lock.py` converted the target-native pip report into one hash per selected
+wheel without importing an OCR package. Offline dependency closure remains
+unverified. The converter refuses changed root pins, an incorrect target, source archives,
 non-PyPI wheel hosts, missing hashes, duplicate/yanked packages and overwriting.
 
-## Candidate pins and unresolved closure
+## Candidate pins and dependency closure
 
 The candidate is CPython 3.11 on Linux x86-64 with glibc, PaddleOCR 3.7.0,
 PaddleX 3.7.0 with only its `ocr-core` extra, PaddlePaddle 3.2.0 CPU and
@@ -30,12 +34,16 @@ The selected model repositories are:
 - `PaddlePaddle/arabic_PP-OCRv5_mobile_rec` at `33d91636a65dca87f5562cc48860332ae367ee1b`.
 
 Both model cards declare Apache 2.0. The seed records the exact large-file SHA-256
-digests and known configuration-file hashes. Each graph JSON has an immutable
-Git blob SHA-1 and revision pin, but its SHA-256 is still missing. Fetch only
-those exact revisions, verify the Git blob identity (`SHA1("blob " + byte_count +
-NUL + bytes)`), and record SHA-256 before the experiment. Actual graph, parameter
-and configuration bytes, sizes and licenses must all be checked; no mutable
-`main` model URL or automatic runtime download is allowed.
+digests and configuration-file hashes. Both graph files were downloaded from
+their exact revisions and checked against the Git blob SHA-1 identity
+(`SHA1("blob " + byte_count + NUL + bytes)`). The Arabic graph SHA-256 is
+`d43832804d89c0e18d59f8446a3babd0ef60c44bc335efddac3176caf71d50af`; the detector
+graph SHA-256 is `05feef1acb00aa4cd7362b15f7f501fc4f99d7b1fa73c1c871e0c7b1504b0f5c`.
+All six files match their pinned sizes and hashes. Parameter bytes also match
+the large-file SHA-256 and reconstructed Git LFS pointer identity. The original
+seed's missing graph hashes remain a historical preparation state; use the
+verified input manifest for the build. No mutable model URL or automatic runtime
+download is allowed.
 
 PaddleX unconditionally requires `aistudio-sdk`, `huggingface-hub`, `modelscope`,
 NumPy, Pandas, Pillow, Pydantic and other packages. Its `ocr-core` extra adds
@@ -43,37 +51,45 @@ NumPy, Pandas, Pillow, Pydantic and other packages. Its `ocr-core` extra adds
 adds `httpx`, Protobuf, `opt-einsum==3.3.0`, NetworkX and SafeTensors. PaddleOCR
 adds `aiohttp`, requests and typing extensions. PaddleX requires
 `PyYAML==6.0.2`; NumPy's applicable intersection includes `>=1.24,<2.4`.
-These are requirements, not a resolved package list. Their transitive versions,
-wheels, platform markers and hashes are not available in the retained four
-package indexes. Omitting client libraries or using `--no-deps` at installation
-would not establish a complete supported environment. Do not add the `all`,
+The original four package indexes could not establish transitive closure. The
+target-native resolver subsequently selected 71 binary wheels with the fixed
+candidate roots unchanged; all downloaded filenames, SHA-256 hashes and top-level
+package names/versions match that lock. Offline installation and `pip check`
+still must verify dependency closure. Omitting client libraries or using
+`--no-deps` at installation would not establish a supported environment. Do not add the `all`,
 `ocr`, training, GPU or high-performance extras to this candidate.
 
-The known four-wheel size is 260,054,611 compressed bytes and 897,243,540 declared
-expanded bytes. Model runtime files add 13,070,333 bytes. These are lower bounds,
-not disk reservations or memory requirements. A fresh resource check must include
+The downloaded 71-wheel set totals 340,238,500 compressed bytes and 1,162,198,456
+ZIP-declared expanded bytes. Model runtime files add 13,070,333 bytes; the Debian
+archives total 61,548,668 compressed bytes. Archive-member sizes are not an
+installed footprint, disk reservation or memory requirement. A fresh check must include
 all selected wheels, extraction, models, interpreter, Node parent, native system
 libraries, package caches, image layers and the Docker storage driver. Host
 `/tmp` is memory-backed; it is not interchangeable with workspace disk.
 
-## Exact preparation sequence for the later execution window
+## Recorded preparation and remaining offline build
 
-No commands in this section have been run for this candidate. First prepare and
-record an immutable experimental base containing CPython 3.11, the exact pip
-version, the existing Node 24 parent dependencies, Poppler where the parent
-requires it, and the actual dynamic libraries needed by the selected wheels.
-Record its digest and complete native package/library inventory. The existing
-Node base is pinned by `backend/deploy/Dockerfile.ocr`; it does not prove that
-Python or the Paddle/OpenCV native dependencies are present. Do not infer required
+Resolution and download used
+`docker.io/library/python:3.11-slim-bookworm@sha256:061c190f3d5815b341a18dfe8a45771f8ba68c15a607ea56997fde3009ac4eec`,
+local image `sha256:65dc71ea3f90f9df522590028b8ee3e562f5e6b0d55c657f99ab71ad1426821c`.
+It provides CPython 3.11.18, pip 24.0 and glibc 2.36 on Linux x86-64. Its complete
+dpkg inventory is recorded. A separate disposable container downloaded the
+authenticated Debian dependency closure for `poppler-utils`, `libgl1`,
+`libglib2.0-0` and `libgomp1`; package versions, archive hashes, repository indexes
+and signing-keyring hash are retained. Base dpkg state remained byte-identical.
+
+The final offline image must combine this exact Python base, verified Debian
+archives and the exact Node 24 binary/parent dependency closure prepared by the
+coordinator. The existing Node base is pinned by `backend/deploy/Dockerfile.ocr`;
+it alone does not supply the Python or Paddle/OpenCV libraries. Do not infer required
 libraries from package names or install an unversioned apt set. Missing shared
 libraries, glibc incompatibility or an unsupported CPU instruction are failures
 to investigate, not grounds to substitute another engine silently.
 
-Run resolution inside that exact Linux x86-64 CPython 3.11 environment with a
-fresh private output directory. Preserve its command, base identity, Python/pip
-versions and target environment along with the JSON report. Network resolution
-may download wheels when metadata-only resolution is unavailable, so it belongs
-in the later disk-approved preparation window, not this metadata task:
+The following resolver, lock and wheel-download commands completed inside that
+exact target environment. Their command arrays and logs are retained. The
+resolver also downloaded wheels to temporary files; it installed none. Reuse
+these immutable outputs instead of repeating resolution against changing indexes:
 
 ```sh
 python3.11 -m pip install --dry-run --ignore-installed --only-binary=:all: \
@@ -84,7 +100,7 @@ python3.11 -m pip download --require-hashes --only-binary=:all: --no-deps \
   --dest wheelhouse --requirement frozen-lock/requirements.lock
 ```
 
-The download command uses `--no-deps` only because every selected dependency must
+The download command used `--no-deps` only because every selected dependency must
 already be an explicit hash-bound entry in the lock. It does not justify omitting
 dependency checks. Verify every wheel against its selected filename, URL,
 SHA-256 and target tag; reject extra wheels and missing entries. Inspect each
@@ -109,9 +125,20 @@ Hash and retain the installed package inventory, actual wheel set, full system
 library inventory, image ID, ordered layers, configuration and build log. The
 offline installation intentionally omits `--no-deps`: an omitted or incompatible
 dependency must fail instead of being hidden by the preparation script. No
-online package index or model repository is available to this build. The base,
-complete lock, graph hashes and parent harness fields in the seed are currently
-unset; therefore there is no ready-to-build image or runnable benchmark command.
+online package index or model repository is available to this build. The new
+`prepared-inputs.json` receipt supplies verified base, complete lock, graph and
+archive hashes; the original seed remains unchanged. The final parent harness,
+effective inference settings, immutable image and installed inventory must still
+be frozen before any recognition. This preparation supplies no runnable or
+approved OCR benchmark.
+
+The first post-download metadata inspection stopped on setuptools' nested
+vendored distribution metadata. The corrected inspection requires one top-level
+distribution and inventories the vendored metadata separately. The initial
+failure is retained; wheel bytes, versions and hashes did not change. Both
+preparation containers exited successfully without out-of-memory termination
+and were removed. Shared workspace disk observations include concurrent Node
+base preparation and do not measure an isolated package footprint.
 
 ## Frozen inference and resource requirements
 
