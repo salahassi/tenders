@@ -26,7 +26,8 @@ PHASES=frozenset(('not_started','access','schema_catalog','namespace_allocation'
     'fixture_assets','fixture_network','storage_allocation','database_setup','workload_start','upstream_readiness',
     'storage_readiness','schema_reconstruction','sql_client_readiness','remaining_workload_readiness',
     'canonical_fixture_write','retirement_capture','retirement_fence_inspect','retirement_fence_install',
-    'retirement_fence_hash','retirement_census','retirement_accounting','retirement_prepare','resume','cleanup'))
+    'retirement_fence_hash','retirement_census','retirement_accounting','retirement_prepare','resume','cleanup',
+    'restore_physical_cleanup','restore_workload','restore_process_journal','restore_readiness'))
 _phase='not_started'
 WRITER_FAILURE_CODES=frozenset(('RETIREMENT_FIXTURE_'+name) for name in (
     'ALREADY_INITIALIZED','ARTIFACT_SCOPE_INVALID','BUCKET_CREATE_FAILED','BUCKET_INVALID','BUCKET_READ_FAILED',
@@ -81,7 +82,7 @@ def command_failure(code,args,*,result=None,category=None):
         'child_code':child_code,'child_http_status':child_http_status,'sqlstate':sqlstate}
     return error
 
-def failure_diagnostic(error):
+def command_diagnostic(error):
     value=getattr(error,'public_command_diagnostic',None)
     if not isinstance(error,c.FixtureError) or not isinstance(value,dict):return {}
     if (set(value)!={'phase','command','resource_class','exit_code','category','child_code','child_http_status','sqlstate'}
@@ -95,6 +96,47 @@ def failure_diagnostic(error):
       or not (value['child_code'] is None or isinstance(value['child_code'],str) and value['child_code'] in WRITER_FAILURE_CODES)
       or not (value['child_http_status'] is None or type(value['child_http_status']) is int and 100<=value['child_http_status']<=599)):return {}
     return {'command_diagnostic':dict(value)}
+
+# Fixed source-defined labels only. Never publish arbitrary exception messages,
+# even when they resemble a guard code, or the name of a custom exception class.
+RESTORE_CODES=frozenset('RETIREMENT_FIXTURE_'+name for name in (
+    'RESTORE_SPEC_CHANGED','PHYSICAL_PROCESS_CHANGED','GATEWAY_CHANGED','NETWORK_BOUNDARY_CHANGED',
+    'PUBLIC_EXPOSURE','JOURNAL_MISSING','ORIGINAL_PROCESS_CHANGED','JOURNAL_READBACK_FAILED',
+    'PROCESS_RECONCILIATION_REQUIRED','COMMAND_FAILED','COMMAND_TIMEOUT','RESOURCE_MISSING')) | frozenset(
+    'STORAGE_RETIREMENT_'+name for name in ('PROCESS_PROOF_INVALID','POD_JOURNAL_INVALID',
+    'POD_DISAPPEARED_WITHOUT_PROOF','POD_OWNERSHIP_CHANGED','POD_SPEC_CHANGED','PROCESS_EXIT_UNPROVEN',
+    'PHYSICAL_REMAINS','METADATA_REMAINS','PHYSICAL_CHANGED','COMPLETION_NOT_CONFIRMED'))
+RESTORE_STAGES=frozenset(('physical_cleanup','workload_restore','process_journal','readiness'))
+ERROR_KINDS=frozenset(('guard','key','type','value','other'))
+
+def error_summary(error):
+    kind=next((name for cls,name in ((c.FixtureError,'guard'),(c.proof.RetirementError,'guard'),
+        (KeyError,'key'),(TypeError,'type'),(ValueError,'value')) if isinstance(error,cls)),'other')
+    code=error.args[0] if kind=='guard' and len(error.args)==1 and isinstance(error.args[0],str) else None
+    return {'kind':kind,'code':code if code in RESTORE_CODES else None,**command_diagnostic(error)}
+
+def valid_error_summary(value):
+    if not isinstance(value,dict) or set(value) not in ({'kind','code'},{'kind','code','command_diagnostic'}):return False
+    if not isinstance(value['kind'],str) or value['kind'] not in ERROR_KINDS:return False
+    if value['code'] is not None and (not isinstance(value['code'],str) or value['code'] not in RESTORE_CODES):return False
+    if 'command_diagnostic' in value:
+        error=c.FixtureError('RETIREMENT_FIXTURE_COMMAND_FAILED');error.public_command_diagnostic=value['command_diagnostic']
+        if not command_diagnostic(error):return False
+    return True
+
+def failure_diagnostic(error):
+    result=command_diagnostic(error)
+    value=getattr(error,'public_restoration_diagnostic',None)
+    if not isinstance(error,c.FixtureError) or not isinstance(value,dict) or set(value)!={'failures','prior_error'}:return result
+    failures=value['failures']
+    if not isinstance(failures,list) or not 1<=len(failures)<=7:return result
+    for item in failures:
+        if not isinstance(item,dict) or set(item)!={'stage','workload','error'}:return result
+        if not isinstance(item['stage'],str) or item['stage'] not in RESTORE_STAGES:return result
+        if not isinstance(item['workload'],str) or item['workload'] not in ('physical','worker','gateway','storage'):return result
+        if not valid_error_summary(item['error']):return result
+    if value['prior_error'] is not None and not valid_error_summary(value['prior_error']):return result
+    return {**result,'restoration_diagnostic':copy.deepcopy(value)}
 
 def pointer(value):return value.replace('~','~0').replace('/','~1')
 

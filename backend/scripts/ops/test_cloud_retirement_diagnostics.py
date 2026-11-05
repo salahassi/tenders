@@ -86,5 +86,20 @@ class CommandDiagnostics(unittest.TestCase):
    self.assertEqual(r.command(['get','secret','private-name'],payload='private body',timeout=17),'private result')
   self.assertEqual(command.call_args.args[0],['/private/kubectl','--request-timeout=30s','get','secret','private-name'])
   self.assertEqual(command.call_args.kwargs,{'input':'private body','capture_output':True,'text':True,'timeout':17})
+ def test_restoration_metadata_rejects_private_or_unrecognized_labels(self):
+  safe={'stage':'workload_restore','workload':'storage','error':{'kind':'guard','code':'RETIREMENT_FIXTURE_RESTORE_SPEC_CHANGED'}}
+  error=c.FixtureError('RETIREMENT_FIXTURE_SERVICE_RESTORATION_REQUIRED')
+  error.public_restoration_diagnostic={'failures':[safe],'prior_error':None}
+  self.assertIn('restoration_diagnostic',r.failure_diagnostic(error))
+  for changed in ({**safe,'stage':'private-stage'},{**safe,'workload':'private-name'},
+    {**safe,'error':{'kind':'guard','code':'RETIREMENT_FIXTURE_PRIVATE_SECRET'}},
+    {**safe,'error':{'kind':'private-class','code':None}},{**safe,'private':'payload'}):
+   error.public_restoration_diagnostic={'failures':[changed],'prior_error':None}
+   self.assertEqual(r.failure_diagnostic(error),{})
+  error.public_restoration_diagnostic={'failures':[safe],'prior_error':{'kind':'value','code':'private'}}
+  self.assertEqual(r.failure_diagnostic(error),{})
+  for cause in (ValueError('private'),c.FixtureError('RETIREMENT_FIXTURE_PRIVATE_SECRET')):
+   self.assertIsNone(r.error_summary(cause)['code'])
+   self.assertNotIn('private',json.dumps(r.error_summary(cause)))
 
 if __name__=='__main__':unittest.main()

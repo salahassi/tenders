@@ -8,9 +8,11 @@ typechecks and builds. The later API verifier allocation setting passes35focused
 controls and four native fixture suites on imagef2d0f9. The failed721340image is
 retained as a rejection. The new image is published and pulled back exactly at
 registry digestaabe842e; temporary credentials were removed. The manifest is
-refrozen from the original deployment baseline. Final ops and fresh cloud
-restore/retirement are pending; no application deployment or customer issuance
-is claimed. The Paddle candidate is rejected and the remaining acceptance gates
+refrozen from the original deployment baseline. The current 27-migration cloud restore passes all 13 Auth/Storage
+checks and both cleanups in run 41993933795. Retirement reaches the deliberate
+interruption, then fails service restoration with cleanup verified in run
+41994312853. Final release CI and hosted retirement remain pending; no application
+deployment or customer issuance is claimed. The Paddle candidate is rejected and the remaining acceptance gates
 are listed in RELIABILITY_REMAINING_GATES.md. Historical statuses follow.
 
 ## November 4 — current integration status and remaining release gates
@@ -11143,3 +11145,29 @@ The current gate now requires worker5, source resolution1 and all three new
 migrations; focused negative controls cover old/future workers and missing
 contracts. All15 focused restore guards pass. Both cleanup stages passed. A fresh hosted restore remains required;
 this failure is not a certificate regression or an application rollout.
+
+### November 5 — current27-migration cloud Auth/Storage restore passes
+
+Run41993933795 atb933587 passes all13 actual Auth/Storage recovery checks and
+both cleanups against manifest1fdf73f4. Original cluster CA verification and
+15local guards pass. All27additive migrations were applied only to the isolated
+fixture. No customer rows were copied, no model calls or production business
+mutations occurred. The receipt preserves exact source/role-mapped migration
+hashes. This proves isolated recovery, not rendering or application deployment.
+The new interrupted retirement drill is running against the same source.
+
+### November 5 — diagnose restoration without changing its authority or deadlines
+
+Run 41994312853 at b933587 completes canonical fixture creation, retirement
+prepare and the deliberate durable interruption. Resume fails with
+`RETIREMENT_FIXTURE_SERVICE_RESTORATION_REQUIRED`; the separate cleanup and
+private-runner-file removal both succeed. The aggregate error did not identify
+the failed restoration stage and could mask an earlier coordinator exception.
+
+The isolated adapter now retains bounded stage/workload labels, fixed error
+categories and validated command diagnostics, including a sanitized prior error.
+It still attempts every restoration and keeps the original identity, journal,
+finalizer and readiness requirements. No arbitrary exception text is logged.
+All 71 focused retirement tests pass, including fault injection proving that
+other workloads are restored after failures and private data is excluded.
+One instrumented hosted retry is next; no production deployment is claimed.

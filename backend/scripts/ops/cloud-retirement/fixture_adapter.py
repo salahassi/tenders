@@ -9,6 +9,7 @@ import copy
 import ipaddress
 import json
 import os
+import sys
 import time
 import uuid
 from types import SimpleNamespace
@@ -345,7 +346,9 @@ class FixtureAdapter:
    self.patch_pod(current,[{'op':'test','path':'/metadata/annotations/'+r.pointer(c.ANNOTATION),'value':nonce},{'op':'test','path':'/metadata/finalizers','value':[c.FINALIZER]},{'op':'remove','path':'/metadata/finalizers'},{'op':'remove','path':'/metadata/annotations/'+r.pointer(c.ANNOTATION)}])
   return True
  def restore(self,capture,nonce):
-  failed=False;unproven=False
+  prior=sys.exc_info()[1];failures=[];unproven=False
+  prior_summary=r.error_summary(prior) if prior is not None else None
+  r.phase('restore_physical_cleanup')
   try:
    if self.physical_uid:
     current=r.get(self.state,'pod',r.PHYSICAL,missing=True)
@@ -355,8 +358,9 @@ class FixtureAdapter:
     # Missing helper is only a cleanup fact. Original writer exit proof still
     # comes exclusively from the separately retained full process journals.
     self.physical_uid=None
-  except Exception:failed=True
+  except Exception as error:failures.append({'stage':'physical_cleanup','workload':'physical','error':r.error_summary(error)})
   for name in reversed(c.NAMES):
+   stage='workload_restore';r.phase('restore_workload')
    try:
     current=r.get(self.state,'deployment',name);old=capture['workloads'][name];raw=current['metadata'].get('annotations',{}).get(c.ANNOTATION)
     self.assert_boundary();ops=annotation_ops(current,RESTORED,nonce+':'+str(uuid.uuid4()))
@@ -366,12 +370,17 @@ class FixtureAdapter:
      f.need(raw==marker(old,nonce) and current['spec']==expected,'RETIREMENT_FIXTURE_RESTORE_SPEC_CHANGED')
      ops.extend([{'op':'test','path':'/metadata/annotations/'+r.pointer(c.ANNOTATION),'value':raw},{'op':'test','path':'/spec/replicas','value':0},{'op':'replace','path':'/spec/replicas','value':old['spec']['replicas']},{'op':'remove','path':'/metadata/annotations/'+r.pointer(c.ANNOTATION)}])
     r.patch(self.state,'deployment',name,current,ops)
+    stage='process_journal';r.phase('restore_process_journal')
     if not self.save_terminations(capture,name,nonce):unproven=True
-   except Exception:failed=True
+   except Exception as error:failures.append({'stage':stage,'workload':name,'error':r.error_summary(error)})
   for name in reversed(c.NAMES):
+   r.phase('restore_readiness')
    try:r.wait_deployment(self.state,name,180)
-   except Exception:failed=True
-  f.need(not failed,'RETIREMENT_FIXTURE_SERVICE_RESTORATION_REQUIRED')
+   except Exception as error:failures.append({'stage':'readiness','workload':name,'error':r.error_summary(error)})
+  if failures:
+   error=f.FixtureError('RETIREMENT_FIXTURE_SERVICE_RESTORATION_REQUIRED')
+   error.public_restoration_diagnostic={'failures':failures,'prior_error':prior_summary}
+   raise error from None
   f.need(not unproven,'RETIREMENT_FIXTURE_PROCESS_RECONCILIATION_REQUIRED')
  def verify_retirement(self):
   completion=self.state['completion'];f.need(completion and completion['receipt'] and completion['evidence'],'RETIREMENT_FIXTURE_COMPLETION_MISSING')
