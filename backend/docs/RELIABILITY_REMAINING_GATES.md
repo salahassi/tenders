@@ -2,10 +2,10 @@
 
 Latest integration checkpoint: source resolution and worker5 focused gates pass,
 including corrected14/3SQL/DOCX issuance, stale-source artifact refusal, and all18
-26-migration release checks. Final whole-package and new native-image qualification
+26-migration release checks at the earlier checkpoint. Final whole-package and new native-image qualification
 remain pending. The Paddle OCR candidate is rejected (4/13pages;2/21critical facts).
 Retirement attempt41949704413failed before interruption and cleaned up; bounded
-SQLSTATE localization is running as41988242066. No application deployment.
+SQLSTATE localization in41988242066found42501atprepare; the restricted-owner SQL correction passes27localcontrols. Migration20261105120200also corrects retry parameter ambiguity. The release now requires27migrations and fresh final gates. No application deployment.
 
 
 The latest complete local application gate at `9501068` passes3,419 backend

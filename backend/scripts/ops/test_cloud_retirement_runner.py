@@ -123,7 +123,7 @@ class RunnerBoundaries(unittest.TestCase):
  def test_manifest_is_current_and_verified_without_frozen_hash_assumption(self):
   path=Path(self.temp.name)/'manifest.json'
   for revision in ('first','second'):
-   manifest={'migrations':[{'name':str(i)} for i in range(26)],'storage_retirement_version':1,'source_resolution_version':1,'minimum_worker_executor':5,'reviewed_change':revision}
+   manifest={'migrations':[{'name':str(i)} for i in range(27)],'storage_retirement_version':1,'source_resolution_version':1,'minimum_worker_executor':5,'reviewed_change':revision}
    path.write_text(json.dumps(manifest))
    with patch.object(c.restore.release,'MANIFEST',path),patch.object(c.restore.release,'verify_source') as verify:
     self.assertEqual(c.manifest_contract(),c.restore.release.digest(c.restore.release.canonical(manifest).encode()))

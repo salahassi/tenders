@@ -44,7 +44,7 @@ const policy = {
 };
 async function rpc(name: string, args: Record<string, unknown> = {}) {
   const entries = Object.entries(args);
-  if (![name, ...entries.map(([key]) => key)].every((x) => /^[a-z_]+$/.test(x)))
+  if (![name, ...entries.map(([key]) => key)].every((x) => /^[a-z_][a-z0-9_]*$/.test(x)))
     throw Error("Bad fixture identifier");
   await f.db.exec("savepoint worker_rpc; set local role service_role");
   try {

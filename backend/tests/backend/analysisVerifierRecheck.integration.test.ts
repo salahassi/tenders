@@ -58,15 +58,7 @@ it("creates a separate verifier child in the same plan without replacing complet
   });
   const { minimum_worker_executor, ...immutableRecheckPins } =
     childJob.checkpoint;
-  expect(minimum_worker_executor).toBe(
-    [
-      "source_contract_version",
-      "repair_contract_version",
-      "proposal_consistency_version",
-    ].some((key) => s.plan.frozen_context[key] === 1)
-      ? 4
-      : undefined,
-  );
+  expect(minimum_worker_executor).toBe(5);
   expect(immutableRecheckPins).toEqual({
     verifier_recheck: {
       version: 1,

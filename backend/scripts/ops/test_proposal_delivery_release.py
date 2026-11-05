@@ -84,7 +84,7 @@ class DeliveryReleaseTests(unittest.TestCase):
 
     def test_every_final_contract_is_required_before_freezing(self):
         manifest=self.manifest()
-        self.assertEqual(len(p.REQUIRED),26)
+        self.assertEqual(len(p.REQUIRED),27)
         self.assertEqual({key:manifest[key] for key in p.CAPABILITIES},p.CAPABILITIES)
         with self.assertRaises(p.ReleaseError):p.freeze({'receipt':self.inventory()})
         with tempfile.TemporaryDirectory() as directory:
@@ -342,6 +342,8 @@ class DeliveryReleaseTests(unittest.TestCase):
           ("UPDATE public.storage_write_intents SET created_at='2000-01-01';",'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID'),
           ("CREATE TABLE app_private.forbidden_release_seed(value integer);INSERT INTO app_private.forbidden_release_seed VALUES(1);",'DELIVERY_RELEASE_UNREQUESTED_NEW_ROWS'),
           ("INSERT INTO app_private.storage_retirement_batches(operation_nonce,workspace_id,actor_id,scope,scope_sha256) VALUES(gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'[]',repeat('a',64));",'DELIVERY_RELEASE_UNREQUESTED_NEW_ROWS'),
+          ("DO $$ BEGIN EXECUTE replace(pg_get_functiondef('app_private.app_command(text,jsonb,text)'::regprocedure),'app_command.input','input');END $$;",'DELIVERY_RELEASE_RETRY_SCOPE_INVALID'),
+          ("CREATE OR REPLACE FUNCTION app_private.prepare_storage_write_retirement(actor_id uuid,operation_nonce uuid,selection jsonb) RETURNS jsonb LANGUAGE sql SECURITY DEFINER SET search_path='' AS 'select null::jsonb';",'DELIVERY_RELEASE_STORAGE_CATALOG_INVALID'),
           ('DROP FUNCTION public.begin_render_storage_write(uuid,uuid,text,text,bigint);','DELIVERY_RELEASE_STORAGE_RPC_MISSING'),
           ('GRANT EXECUTE ON FUNCTION public.begin_render_storage_write(uuid,uuid,text,text,bigint) TO tdp_app_authenticated;','DELIVERY_RELEASE_STORAGE_RPC_AUTHORITY_INVALID'),
           ('GRANT EXECUTE ON FUNCTION app_private.finish_storage_write_retirement(uuid,uuid,jsonb) TO tdp_app_service;','DELIVERY_RELEASE_STORAGE_PRIVATE_AUTHORITY_INVALID'),

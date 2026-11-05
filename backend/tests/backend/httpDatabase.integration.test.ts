@@ -38,7 +38,7 @@ const env: BackendEnvironment = {
 };
 const actors = () => ({ owner: f.owner, reviewer, outsider });
 const identifier = (value: string) => {
-  if (!/^[a-z_]+$/.test(value)) throw new Error("Invalid fixture identifier");
+  if (!/^[a-z_][a-z0-9_]*$/.test(value)) throw new Error("Invalid fixture identifier");
   return `"${value}"`;
 };
 async function sql(

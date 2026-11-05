@@ -66,7 +66,7 @@ def validate_bootstrap(base):
 
 def manifest_contract():
  manifest=json.loads(restore.release.MANIFEST.read_text());restore.release.verify_source(manifest)
- need(len(manifest['migrations'])==26 and manifest.get('storage_retirement_version')==1 and manifest.get('source_resolution_version')==1 and manifest.get('minimum_worker_executor')==5,'RETIREMENT_FIXTURE_SCHEMA_UNQUALIFIED')
+ need(len(manifest['migrations'])==27 and manifest.get('storage_retirement_version')==1 and manifest.get('source_resolution_version')==1 and manifest.get('minimum_worker_executor')==5,'RETIREMENT_FIXTURE_SCHEMA_UNQUALIFIED')
  return restore.release.digest(restore.release.canonical(manifest).encode())
 
 def initial_state(base,manifest_sha256):

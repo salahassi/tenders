@@ -3,7 +3,7 @@
 ## November 5 — latest integration checkpoint
 
 Draft PR28 contains the current integration; no application rollout has occurred.
-Source-resolution and worker5 are integrated, including26migration release guards.
+Source-resolution and worker5 are integrated, including26migration release guards at the earlier checkpoint; the later catalog/retry correction brings the current set to27.
 The corrected14/3review-draft Word pipeline and later revocation control pass.
 Current exact-image qualification, full package checks, cloud restore and hosted
 issuance remain gates. The Paddle candidate is rejected; retirement diagnosis
@@ -11068,3 +11068,28 @@ The26migration atomic release suite passes18tests in121.303seconds. The
 [source-bound integration receipt](evidence/source-resolution-integrated-20261105.json)
 records focused logs and exact changed-source hashes. Safe SQLSTATE diagnostics
 from18fe844are integrated without exposing raw database messages.
+
+### November 5 — final-suite findings and narrow compatibility correction
+
+The e7e8ad4 full run passed3451backend tests and failed37across7files; frontend
+380tests, both typechecks and both builds pass. Most failures were obsolete
+fixture identifier validation and capability4expectations; the actual retry
+wrapper also had an ambiguous `input` parameter beside `generation_steps.input`.
+The full665operations suite found that retry defect plus the deliberately stale
+runtime qualification binding, which requires a newly measured image.
+
+Hosted retirement run41988242066 now identifies `retirement_prepare`/SQLSTATE42501;
+both cleanups pass. Local PostgreSQL reproduces permission denial from
+`to_regclass('storage.objects')` under a non-superuser application owner without
+Storage schema USAGE. Replacing only those lookups with exact catalog OIDs passes
+all25retirement controls with existing permissions. New migration20261105120200
+also qualifies the retry parameter and preserves historical migration bytes.
+The release set becomes27migrations. The permanent retirement suite now checks
+this restricted owner profile explicitly. Focused corrected and final gates are
+pending; deployment remains blocked.
+
+Restricted-owner27SQL checks and3canonical operational retry tests pass after
+the correction. The affected7backend suites reduced37failures to3obsolete
+worker-floor expectations; those are corrected to5and their focused rerun is
+pending. Independent release guards now reject the old catalog lookup and
+unqualified retry parameter. Full runtime requalification remains pending.

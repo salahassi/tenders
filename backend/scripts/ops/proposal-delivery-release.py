@@ -47,7 +47,8 @@ REQUIRED = ('20261104121022_partial_document_coverage.sql',
  '20261104212300_structured_section_body_bound.sql',
  '20261104212818_bounded_command_batch_results.sql',
  '20261105120000_source_obligation_resolution.sql',
- '20261105120100_worker_capability_five.sql')
+ '20261105120100_worker_capability_five.sql',
+ '20261105120200_retirement_catalog_and_retry_scope.sql')
 CAPABILITIES = {'executor_max':5,'renderer_versions':[1,2,3],
  'minimum_worker_executor':5,'ordinary_renderer_version':'ordinary-2',
  'source_resolution_version':1,'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1,
@@ -418,6 +419,16 @@ BEGIN
   AND tgname='source_supersession_revision' AND tgenabled='O'
   AND tgfoid='app_private.pin_source_supersession_revision()'::regprocedure)
   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_SOURCE_RESOLUTION_MISSING';END IF;
+ IF EXISTS(SELECT 1 FROM pg_proc WHERE oid IN (
+  'app_private.prepare_storage_write_retirement(uuid,uuid,jsonb)'::regprocedure,
+  'app_private.finish_storage_write_retirement(uuid,uuid,jsonb)'::regprocedure)
+  AND (position('to_regclass(''storage.objects'')' in prosrc)>0
+   OR position('''storage.objects''::regclass' in prosrc)>0
+   OR position('pg_catalog.pg_class' in prosrc)=0))
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_STORAGE_CATALOG_INVALID';END IF;
+ IF position('step.job_id=(app_command.input->>''id'')::uuid' in
+  pg_get_functiondef('app_private.app_command(text,jsonb,text)'::regprocedure))=0
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_RETRY_SCOPE_INVALID';END IF;
  -- Source hashes bind the implementation. These independent catalog checks
  -- reject absent/disabled contracts and exposed new RPCs before runtime rollout.
  -- They do not substitute for actual mixed-version claim and capacity tests.

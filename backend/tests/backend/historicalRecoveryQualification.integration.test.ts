@@ -200,7 +200,7 @@ it.each(["terminal-proven", "expired-no-remote", "at-remote-deadline"])(
     const resumed = await s.row("public.jobs", s.parent.id);
     expect(resumed.checkpoint).toEqual({
       ...s.parent.checkpoint,
-      minimum_worker_executor: 4,
+      minimum_worker_executor: 5,
       issuance_deadline_version: 1,
       issuance_request_id: request.id,
     });
