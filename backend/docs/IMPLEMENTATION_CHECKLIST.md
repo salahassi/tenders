@@ -9,10 +9,12 @@ controls and four native fixture suites on imagef2d0f9. The failed721340image is
 retained as a rejection. The new image is published and pulled back exactly at
 registry digestaabe842e; temporary credentials were removed. The manifest is
 refrozen from the original deployment baseline. The current 27-migration cloud restore passes all 13 Auth/Storage
-checks and both cleanups in run 41993933795. Retirement reaches the deliberate
-interruption, then fails service restoration with cleanup verified in run
-41994312853. Final release CI and hosted retirement remain pending; no application
-deployment or customer issuance is claimed. The Paddle candidate is rejected and the remaining acceptance gates
+checks and both cleanups in run 41993933795. Interrupted retirement remains
+unqualified: run 41999178689 failed Storage restoration; exact later inspection
+found Storage ready and its failed-job retry verified cleanup. The durable-retired
+resume guard is corrected at e4192f9 with 80 focused controls. A fresh hosted
+trial, final release CI and rollout remain pending. No application deployment or
+customer issuance is claimed. The Paddle candidate is rejected and the remaining acceptance gates
 are listed in RELIABILITY_REMAINING_GATES.md. Historical statuses follow.
 
 ## November 4 — current integration status and remaining release gates

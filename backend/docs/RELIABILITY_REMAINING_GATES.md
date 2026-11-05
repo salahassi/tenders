@@ -21,9 +21,11 @@ rollout and actual customer issuance remain gates. No customer request was resum
 
 Retirement run41988242066 identified SQLSTATE42501 at prepare and cleaned up.
 The corrected catalog lookup passes27 restricted-owner PostgreSQL controls;
-run 41994312853 now reaches the deliberate durable interruption but fails
-service restoration; its separate cleanup passes. Bounded phase diagnostics and
-71 focused controls are committed at 718ac68; one hosted retry is underway.
+run 41999178689 later completed retirement but failed Storage restoration
+and cleanup. Exact read-only inspection then found Storage ready with FailedMount
+events. A scoped failed-job retry verified cleanup; it did not establish hosted
+acceptance. The durable-retired resume guard is now corrected with 80 focused
+controls, and a fresh trial is pending. No detailed mount cause is claimed.
 The Paddle OCR candidate is rejected
 (4/13 whole pages and2/21 critical facts). Automatic Arabic OCR, provider
 availability, private semantic/retrieval holdout and actual Word TOC update remain

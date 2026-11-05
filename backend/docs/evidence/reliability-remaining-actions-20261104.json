@@ -64,7 +64,7 @@
         "R0",
         "W11 exit evidence"
       ],
-      "implementation": "3488 backend and380frontend tests plus both typechecks/builds pass atf41adb8. Subsequent verifier setting passes35isolation tests and all four native suites; final release CI verifies the promoted head.",
+      "implementation": "3488 backend and380frontend tests plus both typechecks/builds pass atf41adb8. Subsequent verifier setting passes35isolation tests and all four native suites; final release CI verifies the promoted head. Current complete operations pass at 718ac68: 668 ops, 11 schema-helper and 16 Kubernetes checks; subsequent recovery changes pass 80 focused controls.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -237,7 +237,7 @@
         "D05",
         "D06"
       ],
-      "status": "retirement_interrupted_restore_failed_cleanup_verified_current_request_not_activated",
+      "status": "owned_cleanup_recovered_durable_resume_corrected_hosted_trial_pending",
       "evidence": [
         "E02",
         "E04",
@@ -246,7 +246,7 @@
         "E07",
         "E12"
       ],
-      "remaining": "Use bounded phase diagnostics to identify and correct restoration failure after deliberate interruption; retain failures and cleanup evidence. Actual current request and complete authenticated files require verified deployment, existing encrypted selection and the server-owned 600-second clock.",
+      "remaining": "Finish source-bound interrupted-retirement acceptance after the corrected durable-retired recovery guard. Retain mount/readiness failures and separate cleanup receipts. Deploy only after required gates, then activate the reviewed actual request and authenticate complete files.",
       "done_when": "Independent authenticated download hashes/sizes/complete-set and browser state; full request timestamps including failures; quota/usage/lease/currentness invariants; cleanup and recovery receipts.",
       "not_proven": "No real completed export, hosted 600s/concurrency claim or production physical retirement. Do not use incompatible legacy successor helper or fabricate version/completion.",
       "acceptance_cases": [
@@ -265,7 +265,7 @@
         "UX-03",
         "BC-01"
       ],
-      "implementation": "Current-request helper local34Python/33TS-SQL/1canonicalDOCX/4actual synthetic-browser controls pass,with exact durable request persistence,old-history preservation and original600s read-only observer. Separate isolatedretirement45cloud+62strict/PG+3PGlite controls pass; no hosted drill or current-request activation. Existing real target remains last observed incomplete with50unknown usage unchanged. Latest run 41994312853 passes prepare and deliberate interruption, fails aggregate restoration, and verifies cleanup; 71 focused guards pass with sanitized stage diagnostics at 718ac68.",
+      "implementation": "Latest run 41999178689 failed Storage restoration and initial cleanup. Read-only run 42001827175 observed the exact Storage Pod ready; an exact failed-job retry verified owned cleanup. The old runner rejected retired phase; e4192f9 corrects this with 80 focused controls. No current customer request or application rollout occurred.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     }
