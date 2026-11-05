@@ -10828,3 +10828,24 @@ both cleanup stages. The later isolated-retirement cleanup correction requires
 its own source review/revalidation; it was not silently included in these runs.
 Mandatory final GitHub verification, deployment, actual current-request
 activation and authenticated complete-file acceptance remain pending.
+
+### November 5 — preserve retirement cleanup proof across deleted resources
+
+Independent review of the prepared drill found that a cleanup retry after
+Deployment/PVC deletion tried to restore those deleted Deployments. The fixture
+now persists and reads back the complete original termination journals and
+protection-release proof before ordinary destructive cleanup. A new runner
+validates that checkpoint and continues without re-adopting missing workloads.
+Failures before any protection use a distinct exact-running-original witness;
+that mode grants no process-exit or quota-retirement claim. Partial protection
+with unknown exit still fails closed for reconciliation.
+
+PVC cleanup now validates and durably records a new initial binding before
+using that same observation's UID/resourceVersion for deletion. Missing/unbound
+PVC recovery censuses volumes by the original claim UID; existing PV and
+nonce/comment-bound database cleanup guards remain separate. The
+[correction receipt](evidence/storage-retirement-cleanup-checkpoint-20261105.json)
+records 56 passing focused Python tests, syntax/diff checks and independent
+read review with no remaining material blocker. This is source-only evidence:
+no hosted drill, production mutation, model call, runtime-image change or
+canonical migration change occurred. Earlier local receipts remain historical.

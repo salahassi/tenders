@@ -73,11 +73,11 @@ def initial_state(base,manifest_sha256):
  validate_bootstrap(base)
  state={'version':1,'source_revision':revision(),'manifest_sha256':manifest_sha256,
   'operation_nonce':str(uuid.uuid4()),'bootstrap':base,'phase':'allocated',
-  'resource_uids':{},'fixture':None,'process_capture':None,'completion':None}
+  'resource_uids':{},'fixture':None,'process_capture':None,'completion':None,'cleanup_proof':None}
  return validate_state(state)
 
 def validate_state(state):
- need(isinstance(state,dict) and set(state)=={'version','source_revision','manifest_sha256','operation_nonce','bootstrap','phase','resource_uids','fixture','process_capture','completion'},'RETIREMENT_FIXTURE_STATE_INVALID')
+ need(isinstance(state,dict) and set(state)=={'version','source_revision','manifest_sha256','operation_nonce','bootstrap','phase','resource_uids','fixture','process_capture','completion','cleanup_proof'},'RETIREMENT_FIXTURE_STATE_INVALID')
  need(type(state['version']) is int and state['version']==1 and state['source_revision']==revision()
   and isinstance(state['manifest_sha256'],str) and re.fullmatch('[a-f0-9]{64}',state['manifest_sha256'])
   and uid(state['operation_nonce']) and state['phase'] in PHASES,'RETIREMENT_FIXTURE_STATE_INVALID')
@@ -88,7 +88,52 @@ def validate_state(state):
  for key,value in resources.items():
   need(isinstance(key,str) and re.fullmatch('(deployment|service|configmap|secret|pod|job|persistentvolumeclaim|networkpolicy)/[a-z0-9-]{1,63}',key) and uid(value),'RETIREMENT_FIXTURE_RESOURCE_CENSUS_INVALID')
  if state['fixture'] is not None:validate_fixture(state['fixture'])
+ if state['cleanup_proof'] is not None:validate_cleanup_proof(state,state['cleanup_proof'])
  return state
+
+def validate_cleanup_proof(state,value):
+ """A protected-process cleanup checkpoint retains the full original exit proof.
+
+ Namespace ownership, phase or an absent Pod cannot substitute for this proof.
+ Before protection, a distinct full live-original observation can authorize
+ ordinary fixture teardown; it cannot authorize retirement or claim an exit.
+ Empty workload evidence is allowed only when no process capture ever existed.
+ """
+ need(isinstance(value,dict) and set(value)=={'version','operation_nonce','namespace_uid','mode','workloads'}
+  and type(value['version']) is int and value['version']==1 and value['operation_nonce']==state['operation_nonce']
+  and value['namespace_uid']==state['bootstrap']['uid'] and value['mode'] in ('uncaptured','unprotected_originals','terminated_originals') and isinstance(value['workloads'],dict),'RETIREMENT_FIXTURE_CLEANUP_PROOF_INVALID')
+ capture=state['process_capture']
+ if capture is None:
+  need(value['mode']=='uncaptured' and value['workloads']=={},'RETIREMENT_FIXTURE_CLEANUP_PROOF_INVALID');return value
+ need(value['mode'] in ('unprotected_originals','terminated_originals'),'RETIREMENT_FIXTURE_CLEANUP_PROOF_INVALID')
+ if value['mode']=='unprotected_originals':need(state['phase'] in ('fixture_ready','cleaning'),'RETIREMENT_FIXTURE_CLEANUP_PROOF_INVALID')
+ need(isinstance(capture,dict) and isinstance(capture.get('selection'),dict),'RETIREMENT_FIXTURE_CLEANUP_PROOF_INVALID')
+ selection=proof.validate_selection(capture['selection'])
+ need(selection['operation_nonce']==state['operation_nonce'] and selection['namespace_uid']==state['bootstrap']['uid']
+  and set(value['workloads'])==set(proof.NAMES) and set(capture.get('workloads',{}))==set(proof.NAMES)
+  and set(capture.get('pods',{}))==set(proof.NAMES),'RETIREMENT_FIXTURE_CLEANUP_PROOF_INVALID')
+ for name,item in value['workloads'].items():
+  fields={'deployment_uid','journal','protection_released'} if value['mode']=='terminated_originals' else {'deployment_uid','deployment','pods'}
+  need(isinstance(item,dict) and set(item)==fields,'RETIREMENT_FIXTURE_CLEANUP_PROOF_INVALID')
+  deployment=capture['workloads'][name];expected=selection['expected_workloads'][name];pods=capture['pods'][name]
+  need(item['deployment_uid']==deployment['metadata']['uid']==expected['uid']==state['resource_uids'].get('deployment/'+name)
+   and deployment['metadata']['namespace']==state['bootstrap']['namespace'] and isinstance(pods,list) and len(pods)==expected['replicas'],'RETIREMENT_FIXTURE_CLEANUP_PROOF_INVALID')
+  identities=[proof.pod_identity(pod) for pod in pods]
+  if value['mode']=='terminated_originals':
+   need(item['protection_released'] is True,'RETIREMENT_FIXTURE_CLEANUP_PROOF_INVALID')
+   journal=proof.validate_process_journal(item['journal'],state['operation_nonce'])
+   need(journal['pods']==identities and set(journal['termination'])=={x['uid'] for x in identities},'RETIREMENT_FIXTURE_CLEANUP_PROOF_INVALID')
+  else:
+   observed=item['deployment'];metadata=observed.get('metadata',{})
+   need(metadata.get('uid')==item['deployment_uid'] and metadata.get('namespace')==state['bootstrap']['namespace'] and observed.get('spec')==deployment['spec']
+    and proof.ANNOTATION not in metadata.get('annotations',{}) and 'tenderdesk.io/storage-retirement-processes' not in metadata.get('annotations',{})
+    and isinstance(item['pods'],list) and len(item['pods'])==len(pods),'RETIREMENT_FIXTURE_UNPROTECTED_PROOF_INVALID')
+   for original,current in zip(pods,item['pods']):
+    metadata=current.get('metadata',{})
+    need(proof.pod_identity(current)==proof.pod_identity(original) and current.get('spec')==original['spec'] and metadata.get('namespace')==state['bootstrap']['namespace']
+     and not metadata.get('deletionTimestamp') and not metadata.get('finalizers') and proof.ANNOTATION not in metadata.get('annotations',{})
+     and all(status.get('ready') is True and isinstance(status.get('state',{}).get('running'),dict) for status in current.get('status',{}).get('containerStatuses',[])), 'RETIREMENT_FIXTURE_UNPROTECTED_PROOF_INVALID')
+ return value
 
 def validate_fixture(value):
  need(isinstance(value,dict) and set(value)=={'actor_id','workspace_id','selection','expected_hash','expected_size'},'RETIREMENT_FIXTURE_DATA_INVALID')

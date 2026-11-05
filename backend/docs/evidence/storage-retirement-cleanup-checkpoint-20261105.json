@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "date_utc": "2026-11-05",
+  "base_revision": "d05232b8d99818f7f962f5fc7f293d47925aff6e",
+  "source_sha256": {
+    "backend/scripts/ops/cloud-retirement/contract.py": "86fedf3b17ec61bfac519e6c86099264d9462b61230d510500738534cd990ef8",
+    "backend/scripts/ops/cloud-retirement/fixture_adapter.py": "84484cdf9002368c3eddaa17394648ed23cf7ac49f248432721c7bb83493c7d7",
+    "backend/scripts/ops/cloud-retirement/resources.py": "00f948c822ceb5e27b55c3b1848b761e28d85a6b9858c78563c9bfb3a7a49395",
+    "backend/scripts/ops/cloud-retirement/runner.py": "345a62608c423e68d7901fd461d627f0a71dce34c7ed5ba57466322bf2d954d9",
+    "backend/scripts/ops/test_cloud_retirement_cleanup.py": "87c494002e36e1fd34ddb00b789090d0a0016eab548985bc530b9f7f24769ebf"
+  },
+  "checks": [
+    {
+      "command": "python3 -m unittest discover -s backend/scripts/ops -p 'test_cloud_retirement*.py'",
+      "passed": 56,
+      "failed": 0
+    },
+    {
+      "command": "python3 -m py_compile backend/scripts/ops/cloud-retirement/*.py",
+      "passed": true
+    },
+    {
+      "command": "git diff --check",
+      "passed": true
+    }
+  ],
+  "findings_corrected": [
+    "Cleanup retry no longer tries to restore Deployments already deleted after a durable full-process cleanup checkpoint.",
+    "The pre-protection path requires exact still-running original identities and absent markers, with a distinct cleanup-only proof mode.",
+    "PVC deletion uses the same binding observation UID/resourceVersion; new bindings and claim-UID volume census remain separately verified."
+  ],
+  "independent_review": {
+    "reviewer": "activation_browser_review",
+    "scope": "Read-only source and regression review; no tests executed by reviewer.",
+    "result": "No remaining material blocker found in reviewed correction."
+  },
+  "hosted_dispatches": 0,
+  "production_business_mutations": 0,
+  "model_calls": 0,
+  "production_fixed_target_adapter_exercised": false,
+  "actual_pvc_qualification_passed": false,
+  "limitations": [
+    "Unit tests use simulated Kubernetes resources and do not establish actual kubelet/PVC behavior.",
+    "Partial protection without complete original exit proof requires reconciliation.",
+    "Allocation acknowledgment loss before recorded UID still fails closed.",
+    "No runtime image, canonical migration, production adapter or root worktree file changed."
+  ]
+}

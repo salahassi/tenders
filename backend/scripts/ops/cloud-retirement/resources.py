@@ -173,6 +173,11 @@ def sql_client(state):
 def delete(state,kind,name):
     actual=get(state,kind,name,missing=True)
     if actual is None:return
+    delete_observed(state,kind,name,actual)
+
+def delete_observed(state,kind,name,actual):
+    c.owned(state,kind,name,actual)
+    namespace_guard(state)
     ns=c.namespace(state)
     plural={'pod':'pods','deployment':'deployments','persistentvolumeclaim':'persistentvolumeclaims'}[kind]
     prefix='/apis/apps/v1' if kind=='deployment' else '/api/v1'

@@ -399,9 +399,35 @@ class FixtureAdapter:
   self.validate_manifest(fresh,fresh_scope)
   f.need(c.pod_identity(self.pod(pod['metadata']['name']))==identity and fresh['absent'] is False and any(x.get('size')==self.state['fixture']['expected_size'] and x.get('sha256')==self.state['fixture']['expected_hash'] for x in fresh['files']) and self.metadata_remaining(new_storage_key)==1,'RETIREMENT_FIXTURE_NEW_KEY_NOT_PHYSICAL')
   return True
+ def validate_cleanup_checkpoint(self):
+  if self.capture_value is not None:
+   self.validate_binary(self.capture_value['selection']['binary_receipt_sha256'])
+   self.validate_capture(self.capture_value,self.capture_value['selection'])
+  return f.validate_cleanup_proof(self.state,self.state['cleanup_proof'])
  def cleanup_preconditions(self):
   if self.capture_value is not None:
    self.validate_binary(self.capture_value['selection']['binary_receipt_sha256']);self.validate_capture(self.capture_value,self.capture_value['selection'])
+   if self.state['phase']=='fixture_ready':
+    deployments={name:r.get(self.state,'deployment',name) for name in c.NAMES}
+    if all(UNCERTAIN not in dep['metadata'].get('annotations',{}) and c.ANNOTATION not in dep['metadata'].get('annotations',{}) for dep in deployments.values()):
+     # A failed fence/census/prepare can precede all protection writes. Preserve
+     # a distinct live-original witness; it is never a process-exit/quota proof.
+     unprotected={'version':1,'operation_nonce':self.nonce,'namespace_uid':self.state['bootstrap']['uid'],'mode':'unprotected_originals',
+      'workloads':{name:{'deployment_uid':dep['metadata']['uid'],'deployment':dep,'pods':[self.pod(p['metadata']['name']) for p in self.capture_value['pods'][name]]} for name,dep in deployments.items()}}
+     f.need(all(p is not None for item in unprotected['workloads'].values() for p in item['pods']),'RETIREMENT_FIXTURE_UNPROTECTED_PROOF_INVALID')
+     return f.validate_cleanup_proof(self.state,unprotected)
    self.restore(self.capture_value,self.nonce)
   for pod in self.items('pods'):
    f.need(c.FINALIZER not in pod.get('metadata',{}).get('finalizers',[]) and not pod.get('metadata',{}).get('annotations',{}).get(c.ANNOTATION),'RETIREMENT_FIXTURE_UNRESOLVED_PROCESS_PROOF')
+  proof={'version':1,'operation_nonce':self.nonce,'namespace_uid':self.state['bootstrap']['uid'],'mode':'terminated_originals' if self.capture_value else 'uncaptured','workloads':{}}
+  if self.capture_value is not None:
+   for name in c.NAMES:
+    dep=r.get(self.state,'deployment',name);old=self.capture_value['workloads'][name]
+    f.need(dep['spec']==old['spec'] and dep['metadata'].get('annotations',{}).get(c.ANNOTATION) is None,'RETIREMENT_FIXTURE_PROTECTION_RELEASE_NOT_CONFIRMED')
+    raw=dep['metadata'].get('annotations',{}).get(UNCERTAIN)
+    f.need(isinstance(raw,str),'RETIREMENT_FIXTURE_CLEANUP_EXIT_PROOF_MISSING')
+    journal=c.validate_process_journal(json.loads(raw),self.nonce)
+    # Retain these complete proofs outside the Deployments before ordinary
+    # cleanup removes their journals. A later runner can validate the originals.
+    proof['workloads'][name]={'deployment_uid':dep['metadata']['uid'],'journal':journal,'protection_released':True}
+  return f.validate_cleanup_proof(self.state,proof)

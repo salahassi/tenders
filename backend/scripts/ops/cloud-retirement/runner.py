@@ -258,6 +258,8 @@ def cleanup_journal(state):
           and (value['pv_uid'] is None or c.uid(value['pv_uid'])) and type(value['storage_absence_confirmed']) is bool,
           'RETIREMENT_FIXTURE_CLEANUP_JOURNAL_INVALID')
         c.need(state['resource_uids'].get('persistentvolumeclaim/'+c.PVC_NAME)==value['pvc_uid'],'RETIREMENT_FIXTURE_CLEANUP_JOURNAL_INVALID')
+        if state['process_capture'] is not None:
+            c.need(value['pv_name']==state['process_capture']['pvc']['spec'].get('volumeName'),'RETIREMENT_FIXTURE_VOLUME_BINDING_CHANGED')
         return value
     pvc=r.get(state,'persistentvolumeclaim',c.PVC_NAME)
     name=pvc.get('spec',{}).get('volumeName');pv=None
@@ -272,7 +274,44 @@ def cleanup_journal(state):
     value={'pvc_uid':pvc['metadata']['uid'],'pv_name':name,'pv_uid':pv['metadata']['uid'] if pv else None,'storage_absence_confirmed':False}
     r.create(state,'secret',{'apiVersion':'v1','kind':'Secret','type':'Opaque','metadata':r.meta(state,CLEANUP),
       'data':{'cleanup':base64.b64encode(c.canonical(value).encode()).decode()}})
+    c.need(r.get(state,'secret',CLEANUP).get('data',{}).get('cleanup')==base64.b64encode(c.canonical(value).encode()).decode(),'RETIREMENT_FIXTURE_CLEANUP_JOURNAL_READBACK_FAILED')
     return value
+
+def save_cleanup_journal(state,value):
+    secret=r.get(state,'secret',CLEANUP);encoded=base64.b64encode(c.canonical(value).encode()).decode()
+    r.patch(state,'secret',CLEANUP,secret,[{'op':'replace','path':'/data/cleanup','value':encoded}])
+    c.need(r.get(state,'secret',CLEANUP).get('data',{}).get('cleanup')==encoded,'RETIREMENT_FIXTURE_CLEANUP_JOURNAL_READBACK_FAILED')
+
+def bind_cleanup_volume(state,journal,pv):
+    metadata=pv.get('metadata',{});spec=pv.get('spec',{});claim=spec.get('claimRef',{})
+    c.need(claim.get('uid')==journal['pvc_uid'] and claim.get('namespace')==c.namespace(state) and claim.get('name')==c.PVC_NAME
+      and spec.get('persistentVolumeReclaimPolicy')=='Delete' and spec.get('csi',{}).get('driver')=='dobs.csi.digitalocean.com'
+      and c.uid(metadata.get('uid')) and re.fullmatch('[a-z0-9-]{1,253}',metadata.get('name','')),'RETIREMENT_FIXTURE_VOLUME_IDENTITY_CHANGED')
+    if journal['pv_name'] is not None:
+        c.need(metadata['name']==journal['pv_name'] and metadata['uid']==journal['pv_uid'],'RETIREMENT_FIXTURE_VOLUME_IDENTITY_CHANGED')
+        return journal
+    c.need(state['process_capture'] is None,'RETIREMENT_FIXTURE_VOLUME_BINDING_CHANGED')
+    updated={**journal,'pv_name':metadata['name'],'pv_uid':metadata['uid'],'storage_absence_confirmed':False}
+    save_cleanup_journal(state,updated);return updated
+
+def delete_fixture_pvc(state,journal):
+    pvc=r.get(state,'persistentvolumeclaim',c.PVC_NAME,missing=True)
+    if pvc is not None:
+        name=pvc.get('spec',{}).get('volumeName')
+        if name!=journal['pv_name']:
+            c.need(journal['pv_name'] is None and isinstance(name,str) and re.fullmatch('[a-z0-9-]{1,253}',name),'RETIREMENT_FIXTURE_VOLUME_BINDING_CHANGED')
+        if name is not None:journal=bind_cleanup_volume(state,journal,json.loads(r.command(['get','pv',name,'-o','json'])))
+        # The same binding observation supplies deletion UID+resourceVersion;
+        # a concurrent bind/update conflicts instead of bypassing the PV wait.
+        r.delete_observed(state,'persistentvolumeclaim',c.PVC_NAME,pvc)
+    await_gone(state,'persistentvolumeclaim',c.PVC_NAME)
+    if journal['pv_name'] is None:
+        census=json.loads(r.command(['get','pv','-o','json']))
+        c.need(isinstance(census.get('items'),list) and len(census['items'])<=2000,'RETIREMENT_FIXTURE_VOLUME_CENSUS_INVALID')
+        owned=[pv for pv in census['items'] if pv.get('spec',{}).get('claimRef',{}).get('uid')==journal['pvc_uid']]
+        c.need(len(owned)<=1,'RETIREMENT_FIXTURE_VOLUME_IDENTITY_CHANGED')
+        if owned:journal=bind_cleanup_volume(state,journal,owned[0])
+    return journal
 
 def await_gone(state,kind,name,seconds=180):
     end=time.monotonic()+seconds
@@ -302,12 +341,23 @@ def delete_namespace(base):
 def cleanup(state):
     from fixture_adapter import FixtureAdapter
     r.namespace_guard(state)
-    if state['process_capture'] is not None:FixtureAdapter(state).cleanup_preconditions()
-    state['phase']='cleaning';r.save(state)
-    # Ordinary fixture cleanup is permitted only after the strict adapter has
-    # proved all protected original process identities or retained their fence.
-    c.need(not any(c.proof.FINALIZER in p.get('metadata',{}).get('finalizers',[]) for p in r.items(state,'pods')),
+    if state['cleanup_proof'] is None:
+        if state['process_capture'] is not None:proof=FixtureAdapter(state).cleanup_preconditions()
+        else:proof={'version':1,'operation_nonce':state['operation_nonce'],'namespace_uid':state['bootstrap']['uid'],'mode':'uncaptured','workloads':{}}
+        c.validate_cleanup_proof(state,proof)
+    else:
+        c.need(state['phase']=='cleaning','RETIREMENT_FIXTURE_CLEANUP_PHASE_INVALID')
+        proof=FixtureAdapter(state).validate_cleanup_checkpoint()
+    # Protected originals require complete exit proof. A distinct pre-protection
+    # checkpoint retains still-live originals without claiming an exit or quota
+    # release. Unknown or newly observed protection blocks both cleanup paths.
+    c.need(not any(c.proof.FINALIZER in p.get('metadata',{}).get('finalizers',[]) or c.proof.ANNOTATION in p.get('metadata',{}).get('annotations',{}) for p in r.items(state,'pods')),
       'RETIREMENT_FIXTURE_PROTECTED_PROCESS_REQUIRES_RECONCILIATION')
+    if state['cleanup_proof'] is None:
+        state['cleanup_proof']=proof;state['phase']='cleaning'
+        # save() performs UID/version CAS and exact Secret-data readback. No
+        # ordinary fixture controller/PVC/database deletion precedes it.
+        r.save(state)
     for name in c.proof.NAMES:
         if 'deployment/'+name in state['resource_uids']:r.delete(state,'deployment',name)
     for name in (r.PHYSICAL,r.SQL):
@@ -322,7 +372,7 @@ def cleanup(state):
     c.need(not mounted,'RETIREMENT_FIXTURE_VOLUME_CLIENTS_REMAIN')
     if 'persistentvolumeclaim/'+c.PVC_NAME in state['resource_uids']:
         journal=cleanup_journal(state)
-        r.delete(state,'persistentvolumeclaim',c.PVC_NAME);await_gone(state,'persistentvolumeclaim',c.PVC_NAME)
+        journal=delete_fixture_pvc(state,journal)
         if journal['pv_name']:
             end=time.monotonic()+180
             while time.monotonic()<end:
@@ -333,8 +383,7 @@ def cleanup(state):
                 time.sleep(2)
             c.need(not raw,'RETIREMENT_FIXTURE_PHYSICAL_VOLUME_CLEANUP_PENDING')
         journal['storage_absence_confirmed']=True
-        secret=r.get(state,'secret',CLEANUP)
-        r.patch(state,'secret',CLEANUP,secret,[{'op':'replace','path':'/data/cleanup','value':base64.b64encode(c.canonical(journal).encode()).decode()}])
+        save_cleanup_journal(state,journal)
     # The reviewed bootstrap SQL checks exact nonce DB/role comments. Keep its
     # Job UID and the confirmed database-cleanup result durable before deleting
     # the namespace; a resumed cleanup can reobserve the same successful Job.
