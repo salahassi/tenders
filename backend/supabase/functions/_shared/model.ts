@@ -69,6 +69,7 @@ import {
   collectSourceCandidateDiagnostics,
 } from "./sourceEvidence.ts";
 import { SEMANTIC_PATCH_INSTRUCTIONS } from "./modelSemanticPatch.ts";
+import { validateSourceResolution } from "./sourceResolution.ts";
 import { readModelStream, ModelStreamError } from "./modelStream.ts";
 import { serviceScopeSchema, type ServiceScope } from "./discovery.ts";
 import {
@@ -429,6 +430,7 @@ export function validateModelResult(
     );
   try {
     validateSourceCandidate(task, result, options?.sourceContext, evidence);
+    validateSourceResolution(task, result, options?.sourceContext);
   } catch (error) {
     throw sourceValidationError(error);
   }

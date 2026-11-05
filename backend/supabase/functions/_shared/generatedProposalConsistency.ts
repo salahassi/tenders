@@ -13,6 +13,7 @@ import {
   type ConsistencyRequirement,
 } from "./proposalConsistency.ts";
 import type { Evidence } from "./model.ts";
+import { assertActiveSourceInventory } from "./sourceResolution.ts";
 type Row = Record<string, any>;
 export type GeneratedDeliveryReceipt = {
   step_id: string;
@@ -146,6 +147,12 @@ export async function assessGeneratedDelivery(
     code: string,
     detail: Omit<GeneratedDeliveryReport["blockers"][number], "code"> = {},
   ) => blockers.push({ code, ...detail });
+  try {
+    assertActiveSourceInventory(frozen, input.requirements);
+  } catch (error: any) {
+    add(typeof error?.code === "string" && error.code.startsWith("SOURCE_")
+      ? error.code : "SOURCE_OBLIGATION_RESOLUTION_REQUIRED");
+  }
   if (
     input.plan.kind !== "proposal" ||
     input.plan.status !== "completed" ||

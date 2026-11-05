@@ -5,6 +5,15 @@ import {
   assertSourceBlockHash,
 } from "./sourceEvidence.ts";
 import {
+  sourceResolutionContext,
+  retiredSourceUnit,
+  matchesActiveSourceUnit,
+  reviewedSourceRequirement,
+  assertCurrentSourceRequirements,
+  assertSourceResolutionSources,
+  sourceCandidateIdentity,
+} from "./sourceResolution.ts";
+import {
   hierarchicalPlanning,
   expandStructure,
   validateStructure,
@@ -194,12 +203,16 @@ export function taskInput(ctx: PlanContext) {
           ? "plan_blueprint"
           : step.task
     ) as ModelTask;
+  const sourceResolution = sourceResolutionContext(frozen);
+  if (sourceResolution) assertSourceResolutionSources(frozen);
   const requirements = ctx.requirements.filter(
     (r) =>
       (["plan_blueprint", "plan_structure"].includes(task) &&
         input.requirement_scope === "all") ||
       (input.requirement_ids || []).includes(r.id),
   );
+  if (sourceResolution && task !== "analyze_chunk")
+    assertCurrentSourceRequirements(frozen, requirements);
   let evidence: Row[] = [],
     context: Row = {},
     requiredIds: string[] = [];
@@ -758,6 +771,12 @@ export function taskInput(ctx: PlanContext) {
       (context.instruction || "") +
       " Source evidence contract v1: cite only supplied exact span IDs for requirement source_refs and source_semantics.source_span_ids. The application preserves original clause wording separately from your interpretation. Preserve actor, modality, negation, conditions, exceptions, consequences, numeric units, currency and date roles. Source authority comes only from the supplied authority record; never infer it from filename, chronology, document kind or numeric precedence. Only copy review_id/review_status confirmed and its exact tuple when an identical current supplied human review covers all selected spans. Otherwise review_id=null and review_status=pending. Preserve buyer obligations even when company evidence is missing. A pending interpretation is not a reviewed commitment. A proposed approach is distinct from buyer instructions.";
   }
+  if (sourceResolution) {
+    context.source_resolution_version = 1;
+    context.source_resolution = sourceResolution;
+    context.instruction = (context.instruction || "") +
+      " Source obligation resolution v1: active_reviews and supersessions are immutable authorized review units. A supersession replaces only the exact reviewed obligation tuple, not every fact in its source passage. Keep unrelated and unchanged obligations even when they share that passage. Do not reinstate a predecessor obligation as a new pending requirement. Do not infer additional replacements or mark your response human-approved. Preserve unresolved scope as a specific question; the application seeds current reviewed units independently and records exact-unit retirements.";
+  }
   const manifest = Array.from(
     new Map(
       evidence.map((e) => [
@@ -897,6 +916,10 @@ export async function nextStage(ctx: PlanContext): Promise<{
   steps: Row[];
   final_result: Row | null;
 }> {
+  // New resolution decisions and their audit references use one immutable
+  // operation snapshot across ID hashing; legacy snapshots keep their wire.
+  if (ctx.plan.frozen_context.source_resolution_version === 1)
+    ctx = structuredClone(ctx);
   const stage = ctx.plan.stage,
     frozen = ctx.plan.frozen_context,
     output = {
@@ -955,8 +978,31 @@ export async function nextStage(ctx: PlanContext): Promise<{
   }
   if (stage === "analysis") {
     const byIdentity = new Map<string, Row>();
-    for (const s of successful(ctx, "analyze_chunk"))
-      for (const r of s.output.requirements) {
+    const resolution = sourceResolutionContext(frozen);
+    if (resolution) assertSourceResolutionSources(frozen);
+    const retired: Row[] = [], seeded: Row[] = [];
+    const reviewMetadata = new Map<string, Row>();
+    for (const s of ctx.steps.filter((step) => step.task === "analyze_chunk" && step.status === "completed"))
+      for (const [requirementIndex, r] of s.output.requirements.entries()) {
+        if (resolution) {
+          const edge = retiredSourceUnit(r, frozen);
+          if (edge) {
+            retired.push({
+              step_id: s.id, requirement_index: requirementIndex,
+              predecessor_review_id: edge.predecessor.id,
+              predecessor_revision: edge.predecessor.revision,
+              replacement_review_id: edge.replacement.id,
+              replacement_revision: edge.replacement.revision,
+            });
+            continue;
+          }
+          const current = resolution.active_reviews.filter((review) =>
+            matchesActiveSourceUnit(r, review, frozen));
+          if (current.length === 1) {
+            if (!reviewMetadata.has(current[0].id)) reviewMetadata.set(current[0].id, r);
+            continue;
+          }
+        }
         const identity =
           r.text.normalize("NFKC").trim().replace(/\s+/g, " ") +
           "\n" +
@@ -972,13 +1018,23 @@ export async function nextStage(ctx: PlanContext): Promise<{
                 source_semantics: r.source_semantics,
                 interpretation: r.interpretation,
               })
-            : "");
+            : "") + (resolution ? "\n" + sourceCandidateIdentity(r) : "");
         if (!byIdentity.has(identity))
           byIdentity.set(identity, {
             ...r,
             id: await stableId(ctx.plan.id, identity),
           });
       }
+    if (resolution) {
+      for (const review of resolution.active_reviews) {
+        const id = await stableId(ctx.plan.id, `source-obligation-review:${review.id}:${review.revision}`);
+        byIdentity.set(`source-obligation-review:${review.id}`, {
+          ...reviewedSourceRequirement(review, reviewMetadata.get(review.id)), id,
+        });
+        seeded.push({ review_id: review.id, revision: review.revision, requirement_id: id });
+      }
+      output.final_result = { source_resolution_dispositions: { version: 1, retired, seeded } };
+    }
     output.requirements = [...byIdentity.values()];
     output.next_stage = "planning";
     if (semanticWorkflow(ctx.plan)) {

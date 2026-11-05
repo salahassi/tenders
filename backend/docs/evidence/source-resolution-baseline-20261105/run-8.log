@@ -1,0 +1,9 @@
+
+ RUN  v5.0.4 /workspace/output/addendum-supersession-diagnostic
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  01:09:49
+   Duration  4.16s (tests 87%, import 11%, transform 3%)
+

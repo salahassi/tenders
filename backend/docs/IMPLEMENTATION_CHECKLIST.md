@@ -10969,3 +10969,24 @@ runtime. Final runtime/SQL integration and independent review remain required. W
 five is owned by the separate following migration. No deployment or provider
 inference occurred in this change. The contract and limitations are documented in
 [SOURCE_OBLIGATION_RESOLUTION.md](SOURCE_OBLIGATION_RESOLUTION.md).
+### November 5 — stop release for confirmed supersession inventory defect
+
+The complete typed-review-to-export audit found a production inventory defect,
+beyond the earlier unsupported reserve-adapter boundary. A human-superseded
+nine-terminal requirement could be re-extracted as pending from the retained raw
+source and reject a correct fourteen-terminal/three-cabinet response. Controlled
+false-positive verifier records also reached an issued review-draft DOCX; final
+approval remained blocked. The unchanged [baseline evidence](evidence/source-resolution-baseline-20261105/README.md)
+records five passing counterexample controls, full source hashes and the limits
+of the deliberately authored verifier records. Release `41944374857` at `bc7afab`
+was canceled before rollout while this material issue was investigated.
+
+The [versioned reviewed-unit repair](SOURCE_OBLIGATION_RESOLUTION.md) preserves
+raw source and accepted analysis outputs, seeds current reviewed obligations,
+retires only unambiguous exact typed units, and records source-bound dispositions.
+Mixed/partial units require scoped resolution instead of silently entering the
+active inventory. Runtime controls cover English and Arabic and retain the
+separate arbitrary-prose false-verifier limitation. SQL persistence/export parity,
+worker-five integration, complete source gates, deployment and live admission
+remain required before this issue can be marked fully released. No reserve gold,
+corpus, frozen qualification prompt or historical paid request was rewritten to pass the fixture.
