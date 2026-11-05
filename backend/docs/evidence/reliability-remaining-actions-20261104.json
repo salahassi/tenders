@@ -1,9 +1,9 @@
 {
-  "version": 6,
+  "version": 7,
   "status": "draft_remaining_actions_not_complete",
-  "generated_at_utc": "2026-11-05T00:49:56.794792+00:00",
+  "generated_at_utc": "2026-11-05T01:34:30.549296+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
-  "observed_root_commit": "2b869ac341f3ca7944247930e68c022f91a7383a",
+  "observed_root_commit": "2157dcf740e40dc547706ebb7d3402be161428f7",
   "evidence_index": "backend/docs/evidence/reliability-r0-index-20261104.json",
   "application_deployed": false,
   "final_hosted_acceptance_passed": false,
@@ -13,7 +13,7 @@
     "migrations": 24,
     "source_migrations": 24,
     "missing_migrations": [],
-    "state": "local_application_and_relevant_followup_checks_passed_isolated_restore_passed_final_github_release_pending",
+    "state": "historical24_manifest_retained_new_typed_resolution_and_worker5_pending_integration_qualification_refreeze_restore",
     "gateway_contract": "v2_final_pinned_one_worker_with_exact_gateway_https_runtime_qualification_binding"
   },
   "actions": [
@@ -53,11 +53,11 @@
         "W00",
         "W11"
       ],
-      "status": "closed_local_scopes_final_github_release_gate_pending",
+      "status": "9501068_local_packages_passed_new_source_resolution_and_worker5_gates_pending",
       "evidence": [
         "E01"
       ],
-      "remaining": "Complete2b869ac packages and667 operations checks passed. Isolated-retirement cleanup follow-up passes57 focused guards at integrated0cfb2ef, with application/runtime source unchanged. Require the mandatory complete GitHub release gate on the final commit.",
+      "remaining": "Complete source-resolution/worker5 integration, new complete local gates and mandatory final GitHub verification. Retain historical667 operations pass and latest65retirement guards as scoped evidence.",
       "done_when": "One exact final commit has required complete green checks and source-bound logs; any remaining failure is explicit.",
       "not_proven": "Functional gates do not prove deployment, provider semantics, native universal capacity or hosted issuance.",
       "acceptance_cases": [
@@ -70,18 +70,18 @@
     },
     {
       "id": "A03",
-      "title": "Renew the isolated cloud restore for the final 24-migration release",
+      "title": "Renew isolated cloud restore for the final source-resolution release",
       "plan": [
         "W09",
         "W11",
         "D05"
       ],
-      "status": "closed_current2e6512d2_isolated_restore_scope_at2b869ac",
+      "status": "historical24_migration_restore_passed_new_schema_requires_renewal",
       "evidence": [
         "E06",
         "E13"
       ],
-      "remaining": "No pending restore for the exact2b869ac/2e6512d2 contract proven in41942455870; repeat if relevant release/schema/Auth/Storage contracts change. Application renderer,deployment and recovery objectives remain separate.",
+      "remaining": "Fresh restoration must bind the upcoming source-resolution/worker5 migrations and newly frozen manifest, using the original baseline and original CA. Prior41942455870 remains a24-migration scoped pass.",
       "done_when": "The renewed exact-source isolated schema/Auth/Storage drill passes required checks and both cleanup stages; its receipt names the final manifest and source hashes.",
       "not_proven": "Isolated synthetic restore does not prove application rendering, real proposal issuance, production deployment or declared recovery-point/time objectives.",
       "acceptance_cases": [
@@ -127,12 +127,12 @@
         "W08",
         "D07"
       ],
-      "status": "reserve42_single_requests_constructible8_unsupported_no_outputs",
+      "status": "reserve44_cases_constructible6_unsupported_typed_source_defect_under_correction",
       "evidence": [
         "E09",
         "E10"
       ],
-      "remaining": "Complete and review the 8 unsupported reserve cases with faithful workflow prerequisites/composite schedules. Freeze actual targets, source/prompt/schema/adapter/validator locks and noncritical acceptance decisions before authorized execution. Retain 100 scheduled cells/model and separately qualify 48 prospective retrieval cells plus independent outcome adjudication. Separately obtain and evaluate the authorized independently reviewed private holdout required by ME-14; synthetic reserve results cannot replace it.",
+      "remaining": "Integrate and qualify typed supersession resolution; retain the baseline counterexample. Define supplier proposed-input and zero-call citation materialization contracts, version composite live execution, then run current-source independent semantic/retrieval/private holdouts under unchanged billing policy.",
       "done_when": "All 13 task boundaries accounted for; independent gold, per-class attempted/completed/scored denominators and critical false-acceptance/rejection/omission outcomes, source bindings and measured retrieval scope retained. The separately authorized independently reviewed private holdout passes its frozen per-class oracles with full denominators and retained counterexamples.",
       "not_proven": "Synthetic reserve is not independently blind/private holdout. Request construction and authored control responses do not qualify model semantics; prior critical findings and7/16 bounded retrieval misses remain.",
       "acceptance_cases": [
@@ -202,14 +202,14 @@
         "W00",
         "W11"
       ],
-      "status": "corrected_runtime_published_manifest_refrozen_current_gates_restore_and_deployment_pending",
+      "status": "third_release_cancelled_before_access_new_runtime_and_schema_qualification_required",
       "evidence": [
         "E04",
         "E05",
         "E08",
         "E13"
       ],
-      "remaining": "After complete current-source gates (current-manifest isolated restore41942455870 already passed),execute checked release using exact qualified996e1ea5 digest and verified release-head label promotion. Validate actual oldgateway identities,permanent legacy-RPC fence,old-process termination,visibleDBdrain and pre-snapshot lockedzero census. Retain exact deployed schema/image/config readback and forward recovery.",
+      "remaining": "Finish typed resolution/worker5, build and qualify new source-native runtime, publish and verify exact image, refreeze from original baseline, renew isolated restore/full gates, then deploy with original-CA runner. Do not reuse176bcf qualification for changed executable source.",
       "done_when": "Release workflow and deployed schema/image/gateway readback match the reviewed contract, with protected historical rows/ACLs and a concrete recovery record.",
       "not_proven": "Application is not yet deployed. Publication, zero point-in-time census and isolated restore do not establish actual fence/drain/rollout.",
       "acceptance_cases": [
@@ -237,7 +237,7 @@
         "D05",
         "D06"
       ],
-      "status": "guarded_current_request_and_isolated_retirement_drill_prepared_hosted_execution_pending",
+      "status": "current_request_prepared_two_retirement_attempts_failed_cleanup_verified",
       "evidence": [
         "E02",
         "E04",
@@ -246,7 +246,7 @@
         "E07",
         "E12"
       ],
-      "remaining": "Use isolated fixtures or explicitly authorized existing records through the real browser/API/worker/storage paths. Cover early template/partial vs substantive issued status, generated and ordinary draft/final exports, one/two-volume atomic readiness, close-tab/reentry/retry, late source/member/approval changes, full/unknown storage and readback. Measure accepted-to-whole-package issuance including queue against 600 seconds; terminal unavailability returns earlier. For retirement acceptance, run the exact fenced process/physical recovery protocol in an authorized isolated setting; local fake process proofs are insufficient. Both historical4cb2e712 and current2e6512d2 isolated24-migration13-check restores are proven at their exact sources; application rendering/issuance and recovery objectives remain separate. Separately define service recovery-point/time objectives and compare observed recovery against them before claiming D05. Use the corrected manual retirement helper with strict original-container identities and validated saved exit proofs (54 focused tests passed); actual isolated Kubernetes/PVC interruption acceptance remains open. The release gateway drain is separately guarded. Execute the prepared nonce-owned two-job retirement drill and reviewed current-request workflow only in their authorized scopes. Preserve exact request timestamps,nullable persisted completion,effective timeout and immediate observed terminal errors; successful start is not whole-package issuance or downloaded-file acceptance.",
+      "remaining": "Correct fixture refresh-token format after source verification and rerun exact owned retirement drill. Actual current request and authenticated files require the verified new deployment, existing prepared encrypted selection and fresh server-owned identity/600-second clock.",
       "done_when": "Independent authenticated download hashes/sizes/complete-set and browser state; full request timestamps including failures; quota/usage/lease/currentness invariants; cleanup and recovery receipts.",
       "not_proven": "No real completed export, hosted 600s/concurrency claim or production physical retirement. Do not use incompatible legacy successor helper or fabricate version/completion.",
       "acceptance_cases": [

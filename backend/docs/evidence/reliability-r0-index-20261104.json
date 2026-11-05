@@ -1,9 +1,9 @@
 {
   "version": 6,
   "status": "draft_not_release_acceptance",
-  "generated_at_utc": "2026-11-05T00:49:56.794792+00:00",
+  "generated_at_utc": "2026-11-05T01:34:30.549296+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
-  "observed_root_commit": "2b869ac341f3ca7944247930e68c022f91a7383a",
+  "observed_root_commit": "2157dcf740e40dc547706ebb7d3402be161428f7",
   "scope": "Docs-only discovery refresh at integrated2b869ac. Historical receipt hashes/scopes retained; current corrected runtime publication/manifest and prepared request/retirement helpers indexed. Current2b869ac combined application gates now pass; release and actual request/export remain pending. Exact2b869ac operations checks and current-manifest isolated restore now pass at their stated scopes. No execution or external mutations by this refresh.",
   "r0_reference": "backend/docs/RELIABLE_PROPOSAL_ACCEPTANCE.md:83",
   "r0_completeness": "This index is not a per-case R0 completion certificate. Linked receipts retain their own source/fixture/image/migration/clock/policy bindings. Missing applicable R0 evidence remains unproven.",
@@ -127,6 +127,20 @@
           "level": "L1/L2",
           "observed_result": "Exact2b869ac complete backend3379/200files and frontend380/59files, both types/builds passed; no source changes during checks.",
           "limits": "Functional source-specific pass before the isolated-retirement cleanup follow-up; not deployment or hosted semantic/file acceptance."
+        },
+        {
+          "path": "backend/docs/evidence/complete-app-checks-9501068-20261105.json",
+          "sha256": "3482bf4ce40307240840966f92228c86b42f594b93e537e1b9eea1a7fdca3e8d",
+          "level": "L1/L2",
+          "observed_result": "3419backend/202files,380frontend/59files,both types/builds; source unchanged.",
+          "limits": "Before source-resolution/worker5 changes; not final release qualification."
+        },
+        {
+          "path": "backend/docs/evidence/release-cancelled-before-access-20261105-41944374857.json",
+          "sha256": "5dc279ae307154ed16c54e2ec0fa05f525b76a5987f63140f16a4311ba41beba",
+          "level": "L3",
+          "observed_result": "Third release canceled during source checks; cluster access/publication/rollout skipped; cleanups passed.",
+          "limits": "Canonical synthetic typed-source defect with authored verifier receipts; no real-provider false-pass or final-approval bypass claimed."
         }
       ]
     },
@@ -321,6 +335,27 @@
           "level": "Prepared isolated physical-retirement qualification",
           "observed_result": "45 cloud-retirement controls,62 strict retirement/PG authority checks and3 migrated PGlite fixture cases pass; reviewed two-job nonce/PVC/Auth/Storage drill is prepared.",
           "limits": "Hosted dispatches0; actual PVC interruption and production adapter qualification remain false. Service RPO/RTO and allocation-ack reconciliation remain open."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-first-attempt-20261105-41946883085.json",
+          "sha256": "81ca92870aea0bef74fbc391aced87208a87978e9ddb521604f41815b802a0b5",
+          "level": "L3",
+          "observed_result": "57fixture tests pass; prepare generic failure, resume skipped, cleanup verified.",
+          "limits": "Cause not recoverable from discarded details; retirement remains unqualified."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-failure-diagnostics-20261105.json",
+          "sha256": "b9091dcad13c3042b891131fd1ab6bdf42e1cb1cc9141ea371bc0437466dd047",
+          "level": "L1",
+          "observed_result": "65focused tests pass; finite sanitized command/stage diagnostics added.",
+          "limits": "Diagnostic instrumentation, not an infrastructure correction or hosted pass."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-second-attempt-20261105-41948742569.json",
+          "sha256": "58629372e83f1dd7b2b4041b195d3a403fa901e94eea2c79ad671d681c1d9d79",
+          "level": "L3",
+          "observed_result": "65fixture tests pass; prepare fails REFRESH_MISSING at canonical fixture write; cleanup verified.",
+          "limits": "Fixture Auth refresh compatibility correction/actual retry still required."
         }
       ]
     },
@@ -691,6 +726,13 @@
           "level": "L1",
           "observed_result": "Whole-source 16/16; bounded discovery 9/16 (Arabic 4/8, English 5/8); zero silent omissions or partial claim-authority grants.",
           "limits": "Seven explicit misses remain; no post-outcome recall threshold or general semantic-recall guarantee."
+        },
+        {
+          "path": "backend/docs/evidence/qualification-review-composites-20261105.json",
+          "sha256": "536044430e9d2a8c1b9b2fa153f1d892ad4e86c4376349d252518c3713da603e",
+          "level": "L1/L2",
+          "observed_result": "Two faithful offline two-request composites expand constructible logical cases44/50;229focused tests pass.",
+          "limits": "No provider outputs/live qualifications. Six cases need explicit contracts; v1 live activation is incompatible."
         }
       ]
     },
@@ -981,7 +1023,7 @@
       "evidence_kind": "Immutable historical hashes plus explicit correction."
     }
   ],
-  "previous_observed_root_commit": "8d970aa23f943d5909d194cdd8d466ab4dffee42",
+  "previous_observed_root_commit": "2b869ac341f3ca7944247930e68c022f91a7383a",
   "refresh_requested_anchor": "2b869ac341f3ca7944247930e68c022f91a7383a",
   "historical_runtime_source_hashes": {
     "backend/deploy/Dockerfile": "503d4774ce8b42d80d8216371f029d22e3d7bc06e51e12593fbe9eb9db9ce001",
@@ -1044,15 +1086,16 @@
     }
   ],
   "current_predeployment_summary": {
-    "source_revision": "2b869ac341f3ca7944247930e68c022f91a7383a",
-    "full_combined_checks": "passed_at2b869ac_3379backend_380frontend_types_build_and667operations",
+    "source_revision": "2157dcf740e40dc547706ebb7d3402be161428f7",
+    "full_combined_checks": "passed_at9501068_3419backend_380frontend_types_build_source_resolution_worker5_require_new_gates",
     "renewed_cloud_restore": "passed41942455870_at2b869ac_manifest2e6512d2",
-    "release": "pending",
+    "release": "third_attempt41944374857_cancelled_before_access_for_typed_source_defect",
     "actual_request_activation": "pending",
-    "indexed_receipts": 111,
+    "indexed_receipts": 117,
     "historical_receipts_preserved": 92,
-    "new_receipts": 19,
+    "new_receipts": 25,
     "operations_checks": "667passed_at2b869ac_before_retirement_cleanup_followup",
-    "retirement_cleanup_followup": "57_focused_passed_after_integration_at0cfb2ef_final_github_gate_pending"
+    "retirement_cleanup_followup": "57_focused_passed_after_integration_at0cfb2ef_final_github_gate_pending",
+    "retirement_drill": "two_attempts_failed_before_interruption_both_cleanup_verified_second_located_refresh_token_guard"
   }
 }

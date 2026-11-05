@@ -10939,3 +10939,13 @@ privacy, timeout, child-envelope and cleanup controls. This change neither
 reruns the hosted drill nor repairs an inferred infrastructure fault. Runtime,
 application packages and canonical migrations are unaffected; no broad package
 or provider test was run for this operations-only change.
+
+### November 5 — second hosted retirement attempt now identifies the failed guard
+
+Run41948742569 at2157dcf passed65 local guards, then stopped in
+`canonical_fixture_write` with the recognized fixture error
+`RETIREMENT_FIXTURE_REFRESH_MISSING`. Both cleanup steps passed and resume was
+skipped. The [sanitized receipt](evidence/storage-retirement-second-attempt-20261105-41948742569.json)
+locates the session-token validation failure without exposing token data.
+Underlying format compatibility and its correction require verification; the
+retirement acceptance gate remains open.
