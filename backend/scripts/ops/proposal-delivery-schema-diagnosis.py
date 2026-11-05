@@ -55,7 +55,7 @@ def authority_diagnostic(stderr):
             return [item if isinstance(item,str) and re.fullmatch(role+r'?=[X*]*/'+role,item) else 'unreviewed_acl' for item in items]
         for item in functions:
             signature=item['signature'];fields=item['fields']
-            if not isinstance(signature,str) or len(signature)>300 or not re.fullmatch(r'(?:public|app_private)\.[a-z_][a-z0-9_]*\([a-z0-9_., \[\]]*\)',signature) or not isinstance(fields,list) or not set(fields)<={'owner','acl','definer','config'}:return None
+            if not isinstance(signature,str) or len(signature)>300 or not re.fullmatch(r'(?:(?:public|app_private)\.)?[a-z_][a-z0-9_]*\([a-z0-9_., \[\]]*\)',signature) or not isinstance(fields,list) or not set(fields)<={'owner','acl','definer','config'}:return None
             result.append({'signature':signature,'fields':fields,'before_acl':acl(item['before_acl']),'after_acl':acl(item['after_acl'])})
         return {'sections':sections,'functions':result}
     except (ValueError,TypeError,KeyError):return None
@@ -69,11 +69,13 @@ def main():
     error = False
     codes = set()
     authority_difference = None
+    authority_notice_seen = False
     try:
         with redirect_stdout(capture), redirect_stderr(io.StringIO()):
             manifest = json.loads(p.release.MANIFEST.read_text())
             p.release.verify_source(manifest)
             script = authority_notice(rollback_script(p.release.migration_script(manifest)))
+            script = script.replace('BEGIN ISOLATION LEVEL REPEATABLE READ;\n',"BEGIN ISOLATION LEVEL REPEATABLE READ;\nSET LOCAL client_min_messages='notice';\n",1)
             codes = set(re.findall(r"RAISE EXCEPTION '([A-Z][A-Z0-9_]{1,99})'", script))
             stage = 'cluster'
             p.d.probe.validate_cluster()
@@ -91,7 +93,8 @@ def main():
                 try:
                     stage = 'rollback_migration'
                     def diagnostic(stderr):
-                        nonlocal authority_difference
+                        nonlocal authority_difference,authority_notice_seen
+                        authority_notice_seen='DELIVERY_AUTHORITY_DIFF ' in stderr
                         authority_difference=authority_diagnostic(stderr)
                     p.d.sql(client.pod, script, diagnostic_codes=codes,diagnostic_callback=diagnostic)
                 finally:
@@ -107,6 +110,7 @@ def main():
     print(json.dumps({'schema_diagnosis': 'passed_rolled_back' if passed else 'blocked', 'stage': stage,
                       'sql_failure': sql_failure(capture.getvalue(),codes), 'catalog_unchanged': unchanged,
                       'authority_difference':authority_difference,
+                      'authority_notice_seen':authority_notice_seen,
                       'before_catalog_sha256': before, 'after_catalog_sha256': after,
                       'owned_client_cleanup': cleanup, 'deployment_performed': False,
                       'model_calls': 0}), flush=True)

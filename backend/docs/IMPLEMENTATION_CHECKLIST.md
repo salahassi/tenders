@@ -11414,3 +11414,13 @@ role entries are redacted; no owners/configuration values/policy bodies/customer
 rows are emitted. Seven SQL-diagnosis and31 deployment-helper controls pass;
 a real PGlite synthetic SQL probe verifies notice syntax and the preserved
 P0001 rejection. Exact authority differences remain to be observed.
+
+Authority-notice run42026259554 retains the same rejection and verified
+rollback/cleanup, but produces no accepted authority projection. The parser is
+now corrected to accept PostgreSQL's visible public-function signatures without
+an explicit public schema prefix, and the diagnostic transaction requests
+notices locally with a separate notice-present flag. Seven focused controls
+pass. The first local PGlite probe failed to collect the notice because its
+callback was passed to the constructor; the corrected exec callback probe
+passes and preserves the same SQL rejection. No missing hosted metadata is
+inferred from either local probe; the next hosted observation remains required.

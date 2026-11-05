@@ -39,6 +39,9 @@ class SchemaDiagnosisTests(unittest.TestCase):
         parsed=m.authority_diagnostic('NOTICE: 00000: DELIVERY_AUTHORITY_DIFF '+json.dumps(value)+'\nDETAIL: PRIVATE_CUSTOMER')
         self.assertEqual(parsed['functions'][0]['after_acl'],['tdp_app_authenticated=X/tdp_app_owner','unreviewed_acl'])
         self.assertNotIn('PRIVATE',json.dumps(parsed))
+        public_entry={**entry,'signature':'app_command(text,jsonb,text)'}
+        public_notice='NOTICE: 00000: DELIVERY_AUTHORITY_DIFF '+json.dumps({'sections':['functions'],'functions':[public_entry]})
+        self.assertEqual(m.authority_diagnostic(public_notice)['functions'][0]['signature'],'app_command(text,jsonb,text)')
         for key,bad in [('signature','PRIVATE_CUSTOMER'),('fields',['secret']),('after_acl','PRIVATE_VALUE')]:
             changed={**entry,key:bad}
             self.assertIsNone(m.authority_diagnostic('NOTICE: DELIVERY_AUTHORITY_DIFF '+json.dumps({'sections':['functions'],'functions':[changed]})))
