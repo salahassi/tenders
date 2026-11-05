@@ -2,7 +2,8 @@
 
 ## November 5 — latest integration checkpoint
 
-Draft PR28 contains source resolution, worker5 and the27-migration release.
+Merged PR28 contains source resolution, worker5 and the27-migration release;
+PR29 adds explicit immutable PostgreSQL fixture preparation to CI.
 Complete f41adb8 application gates pass3,488 backend and380frontend tests, both
 typechecks and builds. The later API verifier allocation setting passes35focused
 controls and four native fixture suites on imagef2d0f9. The failed721340image is
@@ -11318,3 +11319,12 @@ registry writes or running containers; its temporary image is removed. The probe
 binds the pending guard bytes by SHA-256 rather than claiming the base commit
 already contains them. A fresh short hosted inspection and the normal complete
 release gate remain required.
+
+### November 5 — hosted raw-config verification passes
+
+Read-only run 42014223667 at 533faeb passes original-CA access and the qualified
+image guard using the SHA-256-verified config blob. Image ID, layers, platform,
+labels and all config fields match, with no missing/added/changed fields.
+Private credential/log cleanup passes. Explicit inspection mode skips package
+checks, image build/publication, schema work and rollout; this is not a release.
+The normal release mode still requires every complete check before deployment.

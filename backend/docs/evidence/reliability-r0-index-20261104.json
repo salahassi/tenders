@@ -169,6 +169,13 @@
           "level": "Source-bound observed gate",
           "observed_result": "668 operations, 11 schema-helper and 16 Kubernetes tests pass on current executable source 718ac68.",
           "limits": "Final complete GitHub release gate and hosted acceptance remain required."
+        },
+        {
+          "path": "backend/docs/evidence/release-bc5453-image-config-failure-20261105-42008161260.json",
+          "sha256": "4dfa929445ff0988416577eb685d6d7236f1f7df2e2f52a460e7a4d44a2bcbb4",
+          "level": "Source-bound observed gate",
+          "observed_result": "All 3488 backend / 380 frontend, types/builds, 677 operations, 11 schema-helper and 16 Kubernetes checks pass at bc5453f.",
+          "limits": "Image config guard blocks before rollout; later image-helper changes have separate focused/hosted controls."
         }
       ]
     },
@@ -1138,6 +1145,27 @@
           "level": "Source-bound observed gate",
           "observed_result": "Actual API100 native fixture and cleanup pass.",
           "limits": "Exact synthetic fixtures and resource bounds; no hosted application deployment or universal capacity proof."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-inspect-default-fields-20261105-42012896976.json",
+          "sha256": "5f3abeac93641f6a2ba8abb66c67742cf3881bd76662d8f8ffbc82c0715ff3c9",
+          "level": "Source-bound observed gate",
+          "observed_result": "Exact qualified image ID/layers/platform/labels match; runner inspect adds 11 presentation fields.",
+          "limits": "Diagnostic failure, not qualification or rollout."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-raw-config-local-probe-20261105.json",
+          "sha256": "65cb2f6aa803ceade069c3762d5dc629b333bbc9e41bb4f4a0d387cca719022f",
+          "level": "Source-bound observed gate",
+          "observed_result": "Real local immutable-config and label-only promotion pass with unchanged layers and owned-image cleanup.",
+          "limits": "Guard bytes bound by hash; local scope only."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-raw-config-hosted-pass-20261105-42014223667.json",
+          "sha256": "06b6e2713843f0ca40ece3912ca2c84c27cbbdedfd23e033e39a2b5488ffad74",
+          "level": "Source-bound observed gate",
+          "observed_result": "Hosted exact raw-config/image/layer/platform/label verification passes with cleanup.",
+          "limits": "Explicit read-only inspection; no application checks, publication or rollout."
         }
       ]
     }
@@ -1239,5 +1267,5 @@
       "scope": "Main merge/CI failure, scoped timeout correction and dormant manual-retirement proof fix. Frozen24 manifest unchanged; complete corrected GitHub gate and deployment remain open."
     }
   ],
-  "current_predeployment_summary": "Current 27-migration cloud restore and interrupted-retirement gates pass with cleanup. Qualified f2d0f9 image publication and native scopes pass. Final mandatory release CI, rollout and actual customer issuance remain open. Earlier failures remain recorded."
+  "current_predeployment_summary": "Complete release checks pass at bc5453f; image guard found runner-added Docker inspect fields. Hash-verified raw-config correction passes 31 focused controls, actual local promotion and hosted read-only image verification. Application/runtime/migration bytes remain unchanged. Final guarded rollout and customer issuance remain open."
 }

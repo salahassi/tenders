@@ -1,0 +1,28 @@
+{
+  "status": "passed_read_only_qualified_image_verification",
+  "source_revision": "533faeb29e49af927bdc7350905abf00918f2f54",
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/42014223667",
+  "job_id": 127200564643,
+  "observations": [
+    {
+      "runner": "strict_cluster_tls_and_temporary_credentials_ready"
+    },
+    {
+      "image": "qualified_runtime_inspection",
+      "configuration_source": "sha256_verified_image_config_blob",
+      "original_id_matches": true,
+      "rootfs_matches": true,
+      "platform_matches": true,
+      "labels_match": true,
+      "config_fields": {
+        "missing": [],
+        "added": [],
+        "changed": []
+      }
+    }
+  ],
+  "private_runner_cleanup": "passed",
+  "application_checks": "skipped_in_explicit_inspection_mode",
+  "build_publication_schema_and_rollout": "skipped",
+  "scope": "Original-CA access and read-only immutable image verification. Actual raw config hash, original image ID, layers, platform, labels and complete config match. This is not an application release."
+}
