@@ -1,0 +1,32 @@
+{
+  "event": "metadata_only_unittest_overlap",
+  "command": [
+    "python3",
+    "-m",
+    "unittest",
+    "discover",
+    "-s",
+    "backend/scripts/ops",
+    "-p",
+    "test_capture_runtime_requalification.py",
+    "-v"
+  ],
+  "working_directory": "/workspace/work/reliability-runtime-requalification",
+  "tests": 4,
+  "passed": true,
+  "reported_unittest_body_seconds": 0.002,
+  "total_process_wall_seconds_not_measured": true,
+  "bytecode_write_observations": [
+    {
+      "path": "/workspace/work/reliability-runtime-requalification/backend/scripts/ops/__pycache__/test_capture_runtime_requalification.cpython-312.pyc",
+      "mtime_utc": "2026-11-05T00:13:05.080582+00:00",
+      "mtime_ns": 1793837585080581731
+    },
+    {
+      "path": "/workspace/work/reliability-runtime-requalification/backend/scripts/ops/__pycache__/capture-runtime-requalification-176bcf.cpython-312.pyc",
+      "mtime_utc": "2026-11-05T00:13:05.086443+00:00",
+      "mtime_ns": 1793837585086443126
+    }
+  ],
+  "observation_limit": "Bytecode modification times locate module import approximately; they are not exact test start/end timestamps. Python startup/import and git commit also occurred during the native sequence. No absolutely-zero-other-CPU claim is made. No further helper tests during this window."
+}

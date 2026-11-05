@@ -1,10 +1,10 @@
 {
-  "version": 5,
+  "version": 6,
   "status": "draft_not_release_acceptance",
-  "generated_at_utc": "2026-11-04T23:35:08.412544+00:00",
+  "generated_at_utc": "2026-11-05T00:49:56.794792+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
-  "observed_root_commit": "8d970aa23f943d5909d194cdd8d466ab4dffee42",
-  "scope": "Public evidence index refreshed at final predeployment source; one authorized read-only hosted inspection is explicitly indexed. No model/provider call, release or business mutation performed by this refresh.",
+  "observed_root_commit": "2b869ac341f3ca7944247930e68c022f91a7383a",
+  "scope": "Docs-only discovery refresh at integrated2b869ac. Historical receipt hashes/scopes retained; current corrected runtime publication/manifest and prepared request/retirement helpers indexed. Current2b869ac combined application gates now pass; release and actual request/export remain pending. Exact2b869ac operations checks and current-manifest isolated restore now pass at their stated scopes. No execution or external mutations by this refresh.",
   "r0_reference": "backend/docs/RELIABLE_PROPOSAL_ACCEPTANCE.md:83",
   "r0_completeness": "This index is not a per-case R0 completion certificate. Linked receipts retain their own source/fixture/image/migration/clock/policy bindings. Missing applicable R0 evidence remains unproven.",
   "never_infer": [
@@ -99,6 +99,34 @@
           "level": "CI failure and scoped local correction",
           "observed_result": "Main2ac0613 CI passed3283 backend tests and failed one real-DOCX test at5239ms/default5000ms. Explicit30s integration budget preserves all callbacks/assertions; three one-CPU repeats pass15 executions plus types/build.",
           "limits": "Corrected complete GitHub gate remains required; product/native image and issuance deadline unchanged."
+        },
+        {
+          "path": "backend/docs/evidence/repair-original-source-context-20261105.json",
+          "sha256": "f41cb983cafc48cc02b9c9ce6e9a40fa688aa29dbd07c614e4a49dd1e58f856a",
+          "level": "Canonical production repair red/green correction",
+          "observed_result": "EN/AR controlled repairs reproduced the real original-context bug; 67 production regressions and 139 combined scoped controls pass after the narrow model.ts correction.",
+          "limits": "Authored provider responses are fixtures. No provider quality, full current-source gate or deployment is established; prior89af runtime binding does not cover corrected bytes."
+        },
+        {
+          "path": "backend/docs/evidence/current-proposal-request-local-20261105.json",
+          "sha256": "8b39262e99f6a27f7333e7f47f543062291b686403c614aad7100c06c7c97a7f",
+          "level": "Operations helper local SQL/browser and process evidence",
+          "observed_result": "34 Python,33 focused TS/PGlite,1 selected canonical two-volume DOCX issuance observer and4 actual local Chromium/CLI controls pass. Both types/builds and frontend380/59 pass; two affected old-base cases pass serially.",
+          "limits": "Broad old-base backend/ops runs were interrupted and remain incomplete. Browser uses synthetic HTTPS/HTML; metadata-only issuance is not authenticated hosted download or human approval. No activation."
+        },
+        {
+          "path": "backend/docs/evidence/complete-operations-checks-2b869ac-20261105.json",
+          "sha256": "d4df656d74bb9cdb4b5e37ada54398f32295f0671f36937435cd6c89feed68ce",
+          "level": "Complete source-bound operations checks",
+          "observed_result": "Exact2b869ac passes640operations+11schema+16Kubernetes=667,all exits0,539 source files unchanged.",
+          "limits": "Before forthcoming retirement cleanup correction; complete app packages and hosted acceptance remain separate."
+        },
+        {
+          "path": "backend/docs/evidence/complete-app-checks-2b869ac-20261105.json",
+          "sha256": "efab491d41820b280c61c7bc607ea5706f85a259b342c98f87985f7d3045a09a",
+          "level": "L1/L2",
+          "observed_result": "Exact2b869ac complete backend3379/200files and frontend380/59files, both types/builds passed; no source changes during checks.",
+          "limits": "Functional source-specific pass before the isolated-retirement cleanup follow-up; not deployment or hosted semantic/file acceptance."
         }
       ]
     },
@@ -186,7 +214,7 @@
           "path": "backend/docs/evidence/native-reviewed-docx-handler-20261104.json",
           "sha256": "e3b91fc1c4da28ae921908ef64ac2948991fceb3408f3279440a5cb96a2c711f",
           "level": "L3 actual native reviewed-upload handler",
-          "observed_result": "Same artifact1bee8e23…547d25d passes native canonical verification and one completion RPC with HTTP200 in30.996s; peak367247360/402653184bytes.",
+          "observed_result": "Same artifact1bee8e23\u2026547d25d passes native canonical verification and one completion RPC with HTTP200 in30.996s; peak367247360/402653184bytes.",
           "limits": "Synthetic ordinary-2 server pin/Auth/RPC/Storage, no real approval or production completion; no actual upstream/gateway."
         },
         {
@@ -195,6 +223,34 @@
           "level": "L3 actual native projection",
           "observed_result": "Three actual saved ordinary request projections rendered and canonical-verified under current worker policy2 at640MiB/1CPU.",
           "limits": "Saved requests are synthetic; legacy projections were matched before reprojection. Not proof of every producer shape or hosted export."
+        },
+        {
+          "path": "backend/docs/evidence/native-api-owned-snapshot-steady-176bcf-20261105.json",
+          "sha256": "8f719620870352266c5b45d17b4d1a48f0c9948d322b88ad3298c9a14891dc56",
+          "level": "Actual corrected-image native document fixture",
+          "observed_result": "Two warm actual-image handler/verifier requests complete without parent restart or forced GC; peak384602112 of402653184 bytes,17.21MiB measured headroom.",
+          "limits": "Synthetic Auth/RPC/Storage and frozen artifact. Not universal capacity, hosted issuance or a causal performance comparison."
+        },
+        {
+          "path": "backend/docs/evidence/native-api-owned-snapshot-fresh-176bcf-20261105.json",
+          "sha256": "5edb411fabcb37ac6830442033dcf2600bd36ea355146bc0e2dd6a4951416956",
+          "level": "Actual corrected-image fresh native document fixture",
+          "observed_result": "Same frozen artifact passes in a fresh parent; peak378441728 of402653184 bytes and23.09MiB measured headroom.",
+          "limits": "Synthetic upstream authority and fixed input; no provider or hosted acceptance."
+        },
+        {
+          "path": "backend/docs/evidence/native-reviewed-docx-handler-176bcf-20261105.json",
+          "sha256": "93efab4467bedea680ba7eda850cee8578a38813c105e21463f4f4e946b11d32",
+          "level": "Actual corrected-image reviewed DOCX completion",
+          "observed_result": "Unchanged3177596-byte ordinary DOCX passes canonical actual-handler completion; peak359337984 of402653184 bytes,41.31MiB measured headroom.",
+          "limits": "Synthetic ordinary-2 review pin; no independent human approval or hosted upload acceptance."
+        },
+        {
+          "path": "backend/docs/evidence/native-orchestration-activity-scope-176bcf-20261105.json",
+          "sha256": "37f2940ff238038740352d5f79393f3cedc407a793cb406c6106ca3cdb8bbd1f",
+          "level": "Native-window activity disclosure",
+          "observed_result": "Four metadata tests near warm-run end report0.002s test-body time; bytecode times and unmeasured import/startup activity are retained.",
+          "limits": "No absolutely-zero-other-CPU or causal performance-improvement claim. Native payload/source scopes unchanged."
         }
       ]
     },
@@ -258,6 +314,13 @@
           "level": "L2 actual PostgreSQL adapter SQL",
           "observed_result": "Actual local adapter SQL reproduced inappropriate inherited-USAGE guard rejection and qualified explicit SET-role authority without extra grants.",
           "limits": "No Kubernetes/production calls or physical deletion; PostgreSQL 17.6 only, actual PostgreSQL 18 admission remains a release check."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-isolated-local-20261105.json",
+          "sha256": "eb30ea51dd4ffe7b475d21b61e76cc747d5a1774d217a88002e5fe50fd39345f",
+          "level": "Prepared isolated physical-retirement qualification",
+          "observed_result": "45 cloud-retirement controls,62 strict retirement/PG authority checks and3 migrated PGlite fixture cases pass; reviewed two-job nonce/PVC/Auth/Storage drill is prepared.",
+          "limits": "Hosted dispatches0; actual PVC interruption and production adapter qualification remain false. Service RPO/RTO and allocation-ack reconciliation remain open."
         }
       ]
     },
@@ -382,6 +445,13 @@
           "level": "L1 release preflight regressions",
           "observed_result": "Publication/source manifest and actual HTTPS disk-resource guards pass14 restore, 33 HTTPS, 15 release and 15 updater tests.",
           "limits": "Synthetic negative guards; actual runtime publication/native/managed observations are separate receipts."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-cleanup-checkpoint-20261105.json",
+          "sha256": "ce9049c2451173325866867b2b152ed326df2c57381507cbdb1a7acd405c08e5",
+          "level": "L1/L2",
+          "observed_result": "Final isolated-retirement cleanup checkpoint and PVC identity correction passes 57 focused tests; independent source review cleared. Root repeated all57 after integration at0cfb2ef.",
+          "limits": "Source and simulated Kubernetes guards only; actual two-runner Kubernetes/PVC drill remains unexecuted. Unknown allocation and partial-protection reconciliation remain explicit."
         }
       ]
     },
@@ -426,7 +496,7 @@
           "path": "backend/docs/evidence/application-auth-read-postgres-20261104.json",
           "sha256": "3314c13283eba5f7c6b8177c9a9cd501501de5a71e716799c2527eb871c9f3ff",
           "level": "L2 actual PostgreSQL concurrent connections",
-          "observed_result": "Eleven real PostgreSQL checks passed: exact policy replay, rollback, managed SET authority, browser denial, and observed late-snapshot red/early-lock green with row visibility 0→2 retained.",
+          "observed_result": "Eleven real PostgreSQL checks passed: exact policy replay, rollback, managed SET authority, browser denial, and observed late-snapshot red/early-lock green with row visibility 0\u21922 retained.",
           "limits": "No live Auth HTTP in this local receipt; production policy not changed."
         },
         {
@@ -456,6 +526,13 @@
           "level": "L1/L2 manual retirement proof correction",
           "observed_result": "Four baseline wrong-identity/weak-journal failures reproduced, strict captured-process guards corrected and54 focusedtests pass.",
           "limits": "No actual hosted Kubernetes/PVC retirement or production adapter execution; runtime/release manifest unchanged."
+        },
+        {
+          "path": "backend/docs/evidence/cloud-restore-20261105-41942455870.json",
+          "sha256": "a5ff59c0ac9415ca8f4ff3a0d3cc78fb5ec452093298065102e95fdca027b73c",
+          "level": "Actual current-manifest isolated original-CA restore",
+          "observed_result": "Run41942455870 at2b869ac passes13 actual Auth/Storage HTTP checks,24migrations,manifest2e6512d2,originalCA/hostname and both cleanup stages.",
+          "limits": "Synthetic isolated data only; no application renderer,customer rows,provider calls,production deployment,declared recovery objectives or end-to-end issuance proof."
         }
       ]
     },
@@ -574,6 +651,13 @@
           "level": "L1 offline adapter construction",
           "observed_result": "140 offline tests/types pass. Ten of 50 cases construct one canonical request across 4 task families;40 remain explicitly unsupported; planned100/model denominator unchanged.",
           "limits": "No real model/retrieval output or SQL admission. Unsupported prerequisites/composite schedules, activation locks and independent outcome adjudication remain open."
+        },
+        {
+          "path": "backend/docs/evidence/qualification-reserve-expanded-20261105.json",
+          "sha256": "14148dc532859a72a1bdd7e570d04e09b02d688b2ace4b0707873a4df1b5f180",
+          "level": "Offline canonical reserve expansion",
+          "observed_result": "42/50 cases across13 task families construct actual single requests;8 unsupported,planned100/model unchanged.189 controlled adapter/integrity tests pass.",
+          "limits": "Provider/retrieval/database requests0. Four legacy plan_proposal cases remain explicitly legacy. Authored responses are not semantic qualification or an independent private holdout."
         }
       ]
     },
@@ -809,6 +893,55 @@
           "level": "Actual workflow control boundary",
           "observed_result": "Release41934809173 cancelled during verification; original-CA preparation, images and rollout all skipped; both cleanupsteps passed.",
           "limits": "No application deployment or hosted acceptance."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-build-176bcf-20261105.json",
+          "sha256": "4119d0886354618150caadc9cdbb4763187543e5d38bda366c383bee8489c7c4",
+          "level": "Corrected runtime build provenance",
+          "observed_result": "New176bcf runtime built from corrected model.ts source; build command/log/image and before/after source inventories retained.",
+          "limits": "Build receipt itself is not native qualification, registry publication or deployment; later receipts record those distinct scopes."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-qualification-176bcf-20261105.json",
+          "sha256": "92b463d5cae58019b1dde7d235989638ee63e333ce21c23c824bf2f1a070ee68",
+          "level": "Corrected image closure and four native receipt bindings",
+          "observed_result": "Actual image176bcf has130 copied files,146/app entries,17 ordered layers and all4 new native receipt bindings.",
+          "limits": "Fixed source/fixture image proof; not arbitrary reproducible builds, universal capacity or hosted acceptance."
+        },
+        {
+          "path": "backend/docs/evidence/native-api-batch-capacity-176bcf-20261105.json",
+          "sha256": "35c942eb68b09ab406ec22b7bbc808408b7d68e215fd92ba9cb6c3d1c778745a",
+          "level": "Actual corrected-image API100 with isolated SQL/REST",
+          "observed_result": "100 ordered results,412758765 bytes and1600 chunks complete in56.703s; peak161759232 of402653184 bytes; exact hashes,replay,slow-consumer,cancel/reacquisition and cleanup pass.",
+          "limits": "Synthetic Auth lookup and replaced harness main; actual membership/SQL uses caller JWT. No public gateway, managed hardware or hosted service-level result."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-guard-verification-176bcf-20261105.json",
+          "sha256": "ba23a864d889a9484d6734c6448fe55427c58e0b3b67854ab32ce5d9402f0abb",
+          "level": "Prepublication fail-closed source/image guard evidence",
+          "observed_result": "22 qualification/image and2 manifest controls pass; actual image/checkout inspection and expected pending-publication rejections recorded; historical7 receipt hashes retained.",
+          "limits": "This receipt predates the subsequent publication. Its null-reference rejection is historical proof, not current publication state."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-qualified-publication-176bcf-20261105.json",
+          "sha256": "278be9a6c489888ed36dbc78b6d579505064bd7e9af490121066356b1d67b18e",
+          "level": "Actual corrected-image registry publication",
+          "observed_result": "Qualified176bcf published as996e1ea5 manifest,pulled back and verified exact layers/config; temporary credentials removed.",
+          "limits": "No application workload or customer mutation; publication is not deployment."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-label-promotion-176bcf-20261105.json",
+          "sha256": "c76ece0a389c4652980b85e171ae8161019882369c0d7e283f6bad081276126c",
+          "level": "Actual local corrected-image revision-label promotion",
+          "observed_result": "Localc8b6db38 probe changes only revision label for621bac58; network/pull disabled,ordered layers/runtime config identical.",
+          "limits": "Probe not pushed/deployed. Release-head promotion and deployed readback remain required."
+        },
+        {
+          "path": "backend/docs/evidence/release-cancelled-before-access-20261105-41937345060.json",
+          "sha256": "4691e334f7ee07550f525be814eec15ac6dff3ccf4ddacbd03583fc132ef7f97",
+          "level": "Actual second cancelled release boundary",
+          "observed_result": "Release41937345060 at3c21a65 cancelled during checks after repair-context defect discovery; cluster/images/rollout skipped,both cleanup stages pass.",
+          "limits": "No deployment. Later native qualification and registry publication were independent operations."
         }
       ]
     }
@@ -829,17 +962,17 @@
   "remaining_static_findings": [
     {
       "subject": "Hosted whole-path acceptance",
-      "finding": "Final local API100, DOCX, Nginx and HTTPS layers pass their explicit scopes. Real hosted Auth/LoadBalancer/issuance and actual browser exports remain pending; minimum measured DOCX margin 10.88 MiB is unchanged.",
+      "finding": "Corrected176bcf local DOCX/API100 and retained gateway/HTTPS proofs pass their exact scopes. Current minimum DOCX fixture margin17.21MiB; historical10.88MiB remains unchanged. Actual hosted Auth/LoadBalancer/issuance and browser exports remain pending.",
       "evidence_kind": "Exact local layer receipts plus read-only actual resource/state observations; no fabricated combined hosted result."
     },
     {
       "subject": "Checked release and current target",
-      "finding": "Final24 manifest4cb2e712, full865d840 functional gates and renewed cloud restore pass. Deployment is pending. Authorized real target has no completed version; an explicit current-contract successor must retain old accepted result/pins/unknown accounting.",
+      "finding": "Current24-migration manifest2e6512d2 binds corrected176bcf publication. Exact2b869ac operations667 and current-manifest restore41942455870 pass; complete current app gates and release are pending. Older865d840 functional/restore closures remain historical. Actual target has no proven completed version; guarded canonical successor helper is locally verified but not activated.",
       "evidence_kind": "Direct manifest hash, complete gates, original-CA restore and authorized read-only inspection."
     },
     {
       "subject": "Remaining semantic and extraction limits",
-      "finding": "Reserve10/50 canonical single requests constructible,40 unsupported,no provider outputs; prior bounded retrieval9/16 remains. Official OCRbest3/7 with 0/4 Arabic rejected. Word field update/save remains unqualified.",
+      "finding": "Reserve42/50 canonical single requests constructible,8 unsupported,zero provider/retrieval outputs. Prior bounded retrieval9/16 remains; official OCRbest3/7 and0/4Arabic rejected. Private holdout and Word field update/save remain unqualified.",
       "evidence_kind": "Frozen per-case evidence; no score inflation or false automatic correctness."
     },
     {
@@ -848,8 +981,8 @@
       "evidence_kind": "Immutable historical hashes plus explicit correction."
     }
   ],
-  "previous_observed_root_commit": "a7922ed717bdc6f8d4973fb9aa72979a5549d675",
-  "refresh_requested_anchor": "8d970aa23f943d5909d194cdd8d466ab4dffee42",
+  "previous_observed_root_commit": "8d970aa23f943d5909d194cdd8d466ab4dffee42",
+  "refresh_requested_anchor": "2b869ac341f3ca7944247930e68c022f91a7383a",
   "historical_runtime_source_hashes": {
     "backend/deploy/Dockerfile": "503d4774ce8b42d80d8216371f029d22e3d7bc06e51e12593fbe9eb9db9ce001",
     "backend/supabase/functions/_shared/deliveryVerifyIsolation.ts": "44271ef4e47799ba5c6be97fcb5896bea47fe04b64e83e9c8420c7f8345041a8",
@@ -874,13 +1007,52 @@
     "backend/deploy/kubernetes/gateway.conf": "c1a25c41c24f8bb804ecb0e162c8e0577437fd31b16ef82cefbacebbb20795ba",
     "backend/deploy/kubernetes/Caddyfile": "f1739441ed4e26ff1806d06a8953bfa7bc8e50e5fb93fab80956ee759cf1bbc0",
     "backend/scripts/ops/storage-gateway-update.py": "5d8b15b9f4cdd19ad17c986a84952a4db7561bb008b4a88151fe35ffde4324c8",
-    "backend/scripts/ops/command-batch-cutover.py": "cbded3595dfc8447c3dfa6e4e9cb4d78b7a98ba98de621c287b0d0fb6e1f81e0"
+    "backend/scripts/ops/command-batch-cutover.py": "cbded3595dfc8447c3dfa6e4e9cb4d78b7a98ba98de621c287b0d0fb6e1f81e0",
+    "backend/supabase/functions/_shared/model.ts": "e98fdffb10e6a07aea33c34d214b6432081955a37aa9aa8d66e1ee4d97ea2ae8"
   },
   "historical_revision4_runtime_source_note": "At a7922ed, actual API100 and final pinned1 gateway disk transport are qualified at their explicit local scopes. Full current application/ops checks, final HTTPS binding, runtime image promotion, manifest refreeze, renewed24-migration restore and deployment remain pending.",
-  "current_runtime_source_note": "At8d970aa the865d840 full application/ops gates, final HTTPS source binding, exact qualified image publication, local label-only promotion proof, final24 manifest and renewed isolated24-migration restore pass at their recorded scopes. Deployment and authenticated hosted acceptance remain pending.",
+  "current_runtime_source_note": "At2b869ac corrected model.ts has new176bcf native/source qualification,published996e1ea5 digest and localc8b6db38 label-only probe. Refrozen24-migration manifest2e6512d2 is current. Exact2b869ac667 operations checks and current-manifest restore41942455870 pass. Complete2b869ac application gates pass; the isolated-retirement cleanup follow-up passes57 focused guards without application/runtime changes. Final GitHub gate,release and authenticated hosted acceptance remain pending; older865d840/4cb2e712 closures are historical only.",
   "post_anchor_followup": {
-    "source_revision": "cf3ee05",
-    "generated_at_utc": "2026-11-04T23:53:06.410398+00:00",
-    "scope": "Main merge/CI failure, scoped timeout correction and dormant manual-retirement proof fix. Frozen24 manifest unchanged; complete corrected GitHub gate and deployment remain open."
+    "source_revision": "2b869ac341f3ca7944247930e68c022f91a7383a",
+    "generated_at_utc": "2026-11-05T00:38:01.092197+00:00",
+    "scope": "Corrected runtime and prepared operational helpers integrated. Exact2b869ac operations667 and current-manifest isolated restore41942455870 pass; current full application gates pass; final GitHub gate and actual release/resume remain pending. Both cancelled release attempts retained."
+  },
+  "historical_revision5_runtime_source_hashes": {
+    "backend/deploy/Dockerfile": "503d4774ce8b42d80d8216371f029d22e3d7bc06e51e12593fbe9eb9db9ce001",
+    "backend/supabase/functions/_shared/batchTransport.ts": "7c90ab814d1ad84eaac411042ff8697afc3fac99b23b9254e6fd2d42c270db6c",
+    "backend/supabase/functions/_shared/deliveryRenderIsolation.ts": "39da5e14f8064a69f2b183a3d50af14276037b185cabd679da126215b92632b3",
+    "backend/supabase/functions/_shared/deliveryVerify.process.ts": "e00a77845dc19599a85f38a1901bc245e07d8aa94ca57bf1acb94619189b71e5",
+    "backend/supabase/functions/_shared/deliveryVerifyIsolation.ts": "647571ee5d91449916dd59d97a44b9117e5de983d2f6b75d890a1fdac2a3a001",
+    "backend/supabase/functions/_shared/deliveryVerifyProtocol.ts": "39259d53e740fc2bfa4d4c71a832cc46d66beb54e0a398294512abef7a2c30c3",
+    "backend/supabase/functions/_shared/export.ts": "587e4b13836d4a9087e08726d915b71077e816f575c5f9ae2985bdeac1647282",
+    "backend/supabase/functions/_shared/heavyFileProjection.ts": "1dd7c82567d01593c6345ae91d000b9670ce77652f298a92feafca36c8aac830",
+    "backend/supabase/functions/api/handler.ts": "5ab8fd1e73cfea6e6ee8310eafe24f6bac4f1c8591d3906367c13d127886689d",
+    "backend/supabase/functions/api/heavyFileAdmission.ts": "2bf6ede8423ef2020917ba2eaf393d4250905d99308a64c335d590717b3b363e",
+    "frontend/src/lib/backendClient.ts": "0aa501a0c92a575de9b213a0311a9be7087906782407c71610738bb3c1b3d2b8",
+    "frontend/src/lib/connectedRepository.ts": "e20904d244db3c601a5dfab4e8d9dc3fea597b63daa001dde2f45232f345cb72",
+    "backend/deploy/kubernetes/gateway.conf": "c1a25c41c24f8bb804ecb0e162c8e0577437fd31b16ef82cefbacebbb20795ba",
+    "backend/deploy/kubernetes/Caddyfile": "f1739441ed4e26ff1806d06a8953bfa7bc8e50e5fb93fab80956ee759cf1bbc0",
+    "backend/scripts/ops/storage-gateway-update.py": "5d8b15b9f4cdd19ad17c986a84952a4db7561bb008b4a88151fe35ffde4324c8",
+    "backend/scripts/ops/command-batch-cutover.py": "cbded3595dfc8447c3dfa6e4e9cb4d78b7a98ba98de621c287b0d0fb6e1f81e0"
+  },
+  "historical_revision5_runtime_source_note": "At8d970aa the865d840 full application/ops gates, final HTTPS source binding, exact qualified image publication, local label-only promotion proof, final24 manifest and renewed isolated24-migration restore pass at their recorded scopes. Deployment and authenticated hosted acceptance remain pending.",
+  "historical_post_anchor_followups": [
+    {
+      "source_revision": "cf3ee05",
+      "generated_at_utc": "2026-11-04T23:53:06.410398+00:00",
+      "scope": "Main merge/CI failure, scoped timeout correction and dormant manual-retirement proof fix. Frozen24 manifest unchanged; complete corrected GitHub gate and deployment remain open."
+    }
+  ],
+  "current_predeployment_summary": {
+    "source_revision": "2b869ac341f3ca7944247930e68c022f91a7383a",
+    "full_combined_checks": "passed_at2b869ac_3379backend_380frontend_types_build_and667operations",
+    "renewed_cloud_restore": "passed41942455870_at2b869ac_manifest2e6512d2",
+    "release": "pending",
+    "actual_request_activation": "pending",
+    "indexed_receipts": 111,
+    "historical_receipts_preserved": 92,
+    "new_receipts": 19,
+    "operations_checks": "667passed_at2b869ac_before_retirement_cleanup_followup",
+    "retirement_cleanup_followup": "57_focused_passed_after_integration_at0cfb2ef_final_github_gate_pending"
   }
 }

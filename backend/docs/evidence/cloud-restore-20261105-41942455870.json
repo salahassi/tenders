@@ -1,0 +1,196 @@
+{
+  "version": 1,
+  "workflow_run_id": 41942455870,
+  "workflow_job_id": 126966384052,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41942455870",
+  "source_revision": "2b869ac341f3ca7944247930e68c022f91a7383a",
+  "mode": "restore",
+  "workflow_conclusion": "success",
+  "original_cluster_ca_and_hostname_verified": true,
+  "temporary_runner_credentials_cleanup_verified": true,
+  "isolated_restore_cleanup_step_verified": true,
+  "local_guard_tests_passed": 14,
+  "job_log_sha256": "c997c51918d422130297d373ac465951d287844105ff2da99b18805e817bd053",
+  "receipt": {
+    "actual_application_renderer_exercised": false,
+    "checks": {
+      "admin_invitation_password_signin_and_distinct_users": true,
+      "authorized_source_reviews_and_dormant_requirement": true,
+      "backup_rows_and_bytes_verified_before_fixture_reset": true,
+      "exact_fixture_reset_and_trigger_restoration": true,
+      "private_draft_bytes_and_service_boundaries": true,
+      "real_restore_preserves_file_hashes_and_changes_storage_keys": true,
+      "restore_replay_has_no_duplicate_history_or_model_usage": true,
+      "restored_package_owner_access_and_old_owner_denial": true,
+      "restored_requirement_assurance_not_reactivated": true,
+      "restored_review_history_retained_with_current_revocation": true,
+      "services_migrated_and_application_schema_ready": true,
+      "signup_disabled_and_admin_requires_service_identity": true,
+      "synthetic_owner_workspaces_and_disabled_external_processing": true
+    },
+    "cleanup_verified": true,
+    "cloud_restore": "passed",
+    "isolated_additive_migrations_applied": 24,
+    "isolated_migration_receipts": [
+      {
+        "isolated_role_mapping_sha256": "1ec74c7652c55e86493bf003adde0ad1dce833b94dcb7025a37ba5750396d2e6",
+        "name": "20261104121022_partial_document_coverage.sql",
+        "source_sha256": "7a33a9794c32d398d8fa2740c80f9dce0f9eeac93c7af5616947fb24bcdb9663"
+      },
+      {
+        "isolated_role_mapping_sha256": "70194269aa0c43a637f2d5c403c34a4ee01f325cdc5a9c81e43988ff64b5d7aa",
+        "name": "20261104121116_proposal_delivery_snapshots.sql",
+        "source_sha256": "323ae4275ffd64bf61413f961d9a753674154a63241cfc63230f6e2ccf27e6d2"
+      },
+      {
+        "isolated_role_mapping_sha256": "fc8ac7d2f2eaa7ec5ac2e21a68c94faac3455c325e121fceba89f461abe16830",
+        "name": "20261104121423_provider_failure_scope.sql",
+        "source_sha256": "68410a020a500f45587fbf845c947aff491d0f6586a3a1b09be6593b840f715a"
+      },
+      {
+        "isolated_role_mapping_sha256": "c99e45004eca792e21bbdf1fec33bb8e0a42a631182559689947ae6793bf02dc",
+        "name": "20261104121443_automatic_usage_recovery.sql",
+        "source_sha256": "0121ca91d4cdaea64eaacbce44ee790609ae03278a771ce1773a08e97f6170b8"
+      },
+      {
+        "isolated_role_mapping_sha256": "5692bb0506f6ac39333cd9fe3c47063bb2a67c486b8de918a14376d8e967e1d2",
+        "name": "20261104122015_company_evidence_retrieval.sql",
+        "source_sha256": "4cf7302d5a137e33741a1369eb65a9563ea37da5b9428a3222ad0566c48fedee"
+      },
+      {
+        "isolated_role_mapping_sha256": "ce6a61795120c12896ebc3208f380867448c35fba3f5b78695f45927f9c4993e",
+        "name": "20261104122333_durable_delivery_artifacts.sql",
+        "source_sha256": "40e413760862579d6caddf79ddbb4c42134f05a4657cef5c15294be5d2aaf128"
+      },
+      {
+        "isolated_role_mapping_sha256": "1634c835f635a0d2ea30790fd07f80b6e3c8ba77b16913e0aa14f6ae87869038",
+        "name": "20261104133930_durable_uploaded_document_ocr.sql",
+        "source_sha256": "1f189df86545aec22f2d4ee8053912b0edad36fd4fa915caf3e5df3d68638f9d"
+      },
+      {
+        "isolated_role_mapping_sha256": "e579c5cfb29db992562f2c699db525dde228df5b8b832ec88dc87487375293f4",
+        "name": "20261104134540_source_evidence_authority.sql",
+        "source_sha256": "fba123633c45282cbf12a2f7907768c647032da673d65a7853433fab615bce0e"
+      },
+      {
+        "isolated_role_mapping_sha256": "47f86d316702563a84ddc7cff10dba9f2f8dc209986202d50b68a80fa8b75026",
+        "name": "20261104134646_structured_proposal_authoring.sql",
+        "source_sha256": "1ee8a3bdc3c5eaa0b698f22565653d8d0a73b4cb4f42d4c36c893cbb4bf46bd5"
+      },
+      {
+        "isolated_role_mapping_sha256": "466f4fc58409b24ab9c222445b0b36bf3a236d073453d2ecd64ca1455aa37fcf",
+        "name": "20261104135306_proposal_consistency_contract.sql",
+        "source_sha256": "1b8401b675194055d69d78e38ffc3f73f9f4d1036b7ce3fc66fe64cff8a6cdfe"
+      },
+      {
+        "isolated_role_mapping_sha256": "3b5d7aee122b1e3218c4de9b28e99bc1b3e3c05aa60f63ee187e71e366548d75",
+        "name": "20261104135748_proposal_consistency_review.sql",
+        "source_sha256": "b31ae1d9dc08e4dea56cd32af49cb2c430f7a8ef18d1d4104c50fcaec5107097"
+      },
+      {
+        "isolated_role_mapping_sha256": "412bdd5d1b24135d9076aeffa29f638ce9d29267845ccfcc133cd6a2d2262835",
+        "name": "20261104140628_authored_response_adoption.sql",
+        "source_sha256": "2afe615339f15807baf38ff761df392222de529dac233acaeb81f225506f3404"
+      },
+      {
+        "isolated_role_mapping_sha256": "764b0e6ab5e09fb4619ad18697d3f5ed391ca367a964d5f82a178d61b73bcf21",
+        "name": "20261104142525_proposal_issuance_deadline.sql",
+        "source_sha256": "5d81ed380b3c4c0eb2637cf4e9ebea566b6b86e5a4a42adcc476391e475aca51"
+      },
+      {
+        "isolated_role_mapping_sha256": "ee15d4161252f89d4cbe7df59079b9a183bb9ba3f0ae6aca8d9abe496280444f",
+        "name": "20261104143632_generated_review_delivery.sql",
+        "source_sha256": "8da4bdcbd534b04f62d157bbd49d2aa2a5e0224cdfd7fdd19f18682653dfeeaa"
+      },
+      {
+        "isolated_role_mapping_sha256": "6e308f62dd02ff92b213d65adb7d23bcee9499188e8361c8e6b107798ba944f6",
+        "name": "20261104144002_requirement_applicability_binding.sql",
+        "source_sha256": "dca1898a34571f6ccf88ce57bf24e84f5faed983d81dc5aa348b320155ebfb3b"
+      },
+      {
+        "isolated_role_mapping_sha256": "4db2f8422a381b518be700cb8d9e51263eb5894fe984b43da611910486dc12e2",
+        "name": "20261104150228_restored_source_review_assurance.sql",
+        "source_sha256": "d2e9f7b70f4cf2379d1a488b72612cb07afae9636eeed337b27c2225ecf6659a"
+      },
+      {
+        "isolated_role_mapping_sha256": "a00f0983dcc16e55d73f9a482da4afc19f6304c274143d4837871e54ed832656",
+        "name": "20261104151946_current_proposal_issuance_contract.sql",
+        "source_sha256": "4413206e83a6a19755d969d70b6ca4dc370c76ba79e57159d7f206d96d0a841e"
+      },
+      {
+        "isolated_role_mapping_sha256": "de12f55681f79d1f88de2455c08441d1b95d1970015b2f5daece731628845cd2",
+        "name": "20261104152913_durable_ordinary_export_packages.sql",
+        "source_sha256": "c697b1117d8a9398cbdb48848c4090870960e9ec7679577207bd9392f7589c52"
+      },
+      {
+        "isolated_role_mapping_sha256": "ff1f2a262f56d0036ce4a99bc9dbcbae6bb8d54ade04e6aa932d1b27e3565376",
+        "name": "20261104160125_proposal_issuance_file_capacity.sql",
+        "source_sha256": "46ba7ddc4c1d004557bd35e7c11c99c89f416349554e1411197c2193f9d16723"
+      },
+      {
+        "isolated_role_mapping_sha256": "32a85da732f43f73a5dda18bfa9c5fd773e834c8313a1936942ced2dfea2e602",
+        "name": "20261104163406_serialize_local_document_rendering.sql",
+        "source_sha256": "6f1a87cff03d035446cce8e8aefab0e09ce23c2d2c1d4d59377f741e89e2f088"
+      },
+      {
+        "isolated_role_mapping_sha256": "444fc28f5818fc2cb160d2dfb8dd09ca8c79d0ed66d2dfcf12b0172cb31d6a32",
+        "name": "20261104170442_durable_storage_write_intents.sql",
+        "source_sha256": "a89083335e0e61107ab7939f3582fa7dc8e664615bcc6fe8180eb5630df623c9"
+      },
+      {
+        "isolated_role_mapping_sha256": "d48f25b32e7c1ddc83a501a3960922787f985f25b9923d65e3ce7cdac6404b4d",
+        "name": "20261104172700_storage_write_retirement_proofs.sql",
+        "source_sha256": "5269599b431da34c3f7ee77d06442441e692c9f2b754d2f2050a42e06dbe1634"
+      },
+      {
+        "isolated_role_mapping_sha256": "e35c6131b64fd80943b340d1352e072db43ded8f3444885fd082720397b87e37",
+        "name": "20261104212300_structured_section_body_bound.sql",
+        "source_sha256": "e35c6131b64fd80943b340d1352e072db43ded8f3444885fd082720397b87e37"
+      },
+      {
+        "isolated_role_mapping_sha256": "ad51e70679d642bfd9961f23b5d9a54c87c010be57fb600d27934a3b5c2c76eb",
+        "name": "20261104212818_bounded_command_batch_results.sql",
+        "source_sha256": "7bb805fefa6584e02ae8ef65fc6117fb86a9c48b2a8fcf4502e1e7783fe2dc22"
+      }
+    ],
+    "model_calls": 0,
+    "production_business_mutations": 0,
+    "scope": "isolated_current_catalog_auth_storage_synthetic_restore_only",
+    "source_auth_read_authority": {
+      "application_owner": "tdp_app_owner",
+      "application_owner_bypassrls": false,
+      "application_owner_superuser": false,
+      "bootstrap_function_owner": "tdp_app_owner",
+      "tables": [
+        {
+          "app_owner_effective_owner": false,
+          "app_owner_select": true,
+          "applicable_policies": [],
+          "force_rls": false,
+          "owner": "tdp_app_authadmin",
+          "rls_enabled": true,
+          "table": "identities"
+        },
+        {
+          "app_owner_effective_owner": false,
+          "app_owner_select": true,
+          "applicable_policies": [],
+          "force_rls": false,
+          "owner": "tdp_app_authadmin",
+          "rls_enabled": true,
+          "table": "users"
+        }
+      ]
+    },
+    "source_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+    "source_manifest_sha256": "2e6512d2eef73bc130f928cfcc01b04bcb437529cb5ab4b90fa815a228dce6fa",
+    "source_revision": "2b869ac341f3ca7944247930e68c022f91a7383a",
+    "source_rows_copied": 0,
+    "source_stage": "baseline"
+  },
+  "limits": [
+    "Isolated actual Auth/Storage HTTP restore only, with synthetic data and the shared application Auth policy.",
+    "Production source schema metadata was read; no customer rows were copied, no model calls or production business mutations occurred.",
+    "No claim of application renderer, hosted proposal completion, deployment, RTO/RPO, or end-to-end issuance deadline acceptance."
+  ]
+}

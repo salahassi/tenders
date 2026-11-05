@@ -152,10 +152,13 @@ requests, then use the existing authorized campaign mechanism. Preserve authoriz
 raw outputs privately and every first failure. Mechanical test passes cannot promote
 a model route or erase prior failed qualification.
 
-## Initial production-helper construction follow-up
+## Production-helper construction follow-up
 
-[The bounded adapter slice](QUALIFICATION_RESERVE_ADAPTERS.md) now constructs ten
-single-request cases through current production task, source, prompt and schema
-helpers. Forty cases retain explicit prerequisite/composite reasons. Controlled
-in-process validation is separate from live outputs; the 100/model schedule and
-all private-holdout/business acceptance limitations above remain unchanged.
+[The expanded adapter slice](QUALIFICATION_RESERVE_ADAPTERS.md) now constructs
+42 single-request cases through current production task, source, prompt and schema
+helpers using separately frozen authored prerequisites. Eight cases retain explicit
+composite/source-routing/repair-contract boundaries. Controlled repair execution
+also exposed a production source-context defect, corrected in a separate runtime
+commit with retained red evidence. Controlled validation is separate from provider
+outputs; the 100/model schedule, private holdout and business acceptance limitations
+above remain unchanged. No live campaign is activated by this tooling.

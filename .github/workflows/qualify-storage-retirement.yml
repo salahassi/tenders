@@ -1,0 +1,77 @@
+name: Qualify interrupted storage retirement on an isolated PVC
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  interrupt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    outputs:
+      nonce: ${{ steps.interrupt.outputs.nonce }}
+      interrupted: ${{ steps.interrupt.outputs.interrupted }}
+      cleaned: ${{ steps.cleanup.outputs.cleaned }}
+      origin_attempt: ${{ steps.interrupt.outputs.origin_attempt }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Verify fixture and strict coordinator boundaries
+        run: python3 -m unittest discover -s backend/scripts/ops -p 'test_cloud_retirement*.py'
+      - name: Build the nonce fixture and interrupt after durable scale-to-zero
+        id: interrupt
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        shell: bash
+        run: |
+          set +e
+          python3 backend/scripts/ops/cloud-retirement/runner.py prepare
+          result=$?
+          set -e
+          if [ "$result" -ne 86 ]; then
+            echo 'RETIREMENT_EXPECTED_INTERRUPTION_NOT_OBSERVED'
+            exit 1
+          fi
+          echo 'interrupted=true' >> "$GITHUB_OUTPUT"
+      - name: Clean a fixture whose preparation failed before the deliberate interruption
+        id: cleanup
+        if: ${{ failure() && steps.interrupt.outputs.nonce != '' }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          FIXTURE_NONCE: ${{ steps.interrupt.outputs.nonce }}
+          FIXTURE_ORIGIN_ATTEMPT: ${{ steps.interrupt.outputs.origin_attempt }}
+        run: |
+          python3 backend/scripts/ops/cloud-retirement/runner.py cleanup --nonce "$FIXTURE_NONCE" --origin-attempt "$FIXTURE_ORIGIN_ATTEMPT"
+          echo 'cleaned=true' >> "$GITHUB_OUTPUT"
+      - name: Remove private files from the interrupted runner
+        if: ${{ always() }}
+        run: python3 backend/scripts/ops/cloud-retirement/runner.py runner-cleanup
+  resume:
+    needs: interrupt
+    if: ${{ always() && needs.interrupt.outputs.nonce != '' && needs.interrupt.outputs.cleaned != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Resume the strict coordinator from the durable Kubernetes journal
+        if: ${{ needs.interrupt.outputs.interrupted == 'true' }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          FIXTURE_NONCE: ${{ needs.interrupt.outputs.nonce }}
+          FIXTURE_ORIGIN_ATTEMPT: ${{ needs.interrupt.outputs.origin_attempt }}
+        run: python3 backend/scripts/ops/cloud-retirement/runner.py resume --nonce "$FIXTURE_NONCE" --origin-attempt "$FIXTURE_ORIGIN_ATTEMPT"
+      - name: Retry only nonce-owned fixture cleanup
+        if: ${{ always() }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          FIXTURE_NONCE: ${{ needs.interrupt.outputs.nonce }}
+          FIXTURE_ORIGIN_ATTEMPT: ${{ needs.interrupt.outputs.origin_attempt }}
+        run: python3 backend/scripts/ops/cloud-retirement/runner.py cleanup --nonce "$FIXTURE_NONCE" --origin-attempt "$FIXTURE_ORIGIN_ATTEMPT"
+      - name: Remove private files from the fresh runner
+        if: ${{ always() }}
+        run: python3 backend/scripts/ops/cloud-retirement/runner.py runner-cleanup

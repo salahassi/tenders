@@ -1,0 +1,426 @@
+{
+  "version": 2,
+  "assessment_only": true,
+  "created_at": "2026-11-04T23:53:39.674315+00:00",
+  "subject": "One materially different local Arabic OCR candidate; no runtime adoption",
+  "decision": "Suitable for a bounded isolated feasibility experiment, not qualified for the existing resource envelope or Arabic semantic correctness. No production default or fallback change is justified.",
+  "candidate": {
+    "pipeline": "PP-OCRv5_mobile_det + arabic_PP-OCRv5_mobile_rec",
+    "recognizer_architecture": "Official SVTR_LCNet/PPLCNetV3+CTC, materially different from Tesseract LSTM traineddata",
+    "paddleocr_version": "3.7.0",
+    "paddleocr_commit": "b03f46425e8ff4442b268ce449e3eef758146cd4",
+    "paddlex_version": "3.7.0",
+    "paddlex_commit": "e0068ce0bfe75b2992e5b38d06a0393c70f887f7",
+    "paddlepaddle_cpu_version": "3.2.0",
+    "target_python": "CPython3.11 Linux x86_64 glibc",
+    "dependency_lock_complete": false,
+    "dependency_lock_remaining": "Resolve and SHA-pin all transitives from official package metadata; no install/import compatibility has been proved. Do not use [all], training, GPU, or third-party converted weights."
+  },
+  "package_pins_and_directory_metadata": [
+    {
+      "package": "paddleocr-pypi",
+      "filename": "paddleocr-3.7.0-py3-none-any.whl",
+      "wheel_sha256": "c0f0a81ad4112727f30c6fcf986ac0ef6a120d31ee0991a01fae0357ee32d338",
+      "compressed_wheel_bytes": 146750,
+      "zip_declared_uncompressed_member_bytes": 534817,
+      "entry_count": 78,
+      "metadata_range_bytes_read": 71731,
+      "largest_members": [
+        [
+          59546,
+          "paddleocr/_doc2md/converters/docx.py"
+        ],
+        [
+          41758,
+          "paddleocr/_pipelines/pp_structurev3.py"
+        ],
+        [
+          41195,
+          "paddleocr/_pipelines/pp_doctranslation.py"
+        ]
+      ],
+      "scope": "Package index plus bounded remote ZIP directory only; contents not downloaded, installed or verified"
+    },
+    {
+      "package": "paddlex-pypi",
+      "filename": "paddlex-3.7.0-py3-none-any.whl",
+      "wheel_sha256": "70c5762d6bae7efe3a7db0e3264eb88e9ce1c3bf88d8e30cd32759924357acdc",
+      "compressed_wheel_bytes": 2220975,
+      "zip_declared_uncompressed_member_bytes": 7191694,
+      "entry_count": 1331,
+      "metadata_range_bytes_read": 204602,
+      "largest_members": [
+        [
+          246217,
+          "paddlex/inference/models/runners/hpi/hpi_model_info_collection.json"
+        ],
+        [
+          164090,
+          "paddlex/inference/models/common/tokenizer/tokenizer_utils_base.py"
+        ],
+        [
+          153480,
+          "paddlex-3.7.0.dist-info/RECORD"
+        ]
+      ],
+      "scope": "Package index plus bounded remote ZIP directory only; contents not downloaded, installed or verified"
+    },
+    {
+      "package": "paddlepaddle-pypi",
+      "filename": "paddlepaddle-3.2.0-cp311-cp311-manylinux1_x86_64.whl",
+      "wheel_sha256": "83dd7f4a29bd20fa13fc1cb96a6febc175e9869f21e29681b0310c75748cc301",
+      "compressed_wheel_bytes": 189005397,
+      "zip_declared_uncompressed_member_bytes": 700775865,
+      "entry_count": 3307,
+      "metadata_range_bytes_read": 393702,
+      "largest_members": [
+        [
+          254769896,
+          "paddle/base/libpaddle.so"
+        ],
+        [
+          130096544,
+          "paddle/libs/libmklml_intel.so"
+        ],
+        [
+          112773896,
+          "paddle/libs/libphi_core.so"
+        ]
+      ],
+      "scope": "Package index plus bounded remote ZIP directory only; contents not downloaded, installed or verified"
+    },
+    {
+      "package": "opencv-pypi",
+      "filename": "opencv_contrib_python-4.10.0.84-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+      "wheel_sha256": "a261223db41f6e512d76deaf21c8fcfb4fbbcbc2de62ca7f74a05f2c9ee489ef",
+      "compressed_wheel_bytes": 68681489,
+      "zip_declared_uncompressed_member_bytes": 188741164,
+      "entry_count": 268,
+      "metadata_range_bytes_read": 85058,
+      "largest_members": [
+        [
+          78819177,
+          "cv2/cv2.abi3.so"
+        ],
+        [
+          37325001,
+          "opencv_contrib_python.libs/libopenblas-r0-f650aae0.3.3.so"
+        ],
+        [
+          13448513,
+          "opencv_contrib_python.libs/libavcodec-9aae324f.so.59.37.100"
+        ]
+      ],
+      "scope": "Linux x86_64 index plus bounded remote ZIP directory only; contents not downloaded, installed or verified"
+    }
+  ],
+  "model_pins": [
+    {
+      "repository": "PaddlePaddle/arabic_PP-OCRv5_mobile_rec",
+      "revision": "33d91636a65dca87f5562cc48860332ae367ee1b",
+      "license": "apache-2.0",
+      "files": [
+        {
+          "rfilename": "inference.json",
+          "blobId": "58571000d0f43d9e059aefd9a4452623859cce05",
+          "size": 217712
+        },
+        {
+          "rfilename": "inference.pdiparams",
+          "blobId": "35ca9c6081a680ff6d072859b65ae6657cfa533e",
+          "size": 7922839,
+          "lfs": {
+            "sha256": "4b4271fd1dd89a40b2056e1a42e58de7c0df2fdcf1a97ca9a8916d7ec45f9143",
+            "size": 7922839,
+            "pointerSize": 132
+          }
+        },
+        {
+          "rfilename": "inference.yml",
+          "blobId": "bfc972d4c07cf0654e07ed9451a3868d325b95b9",
+          "size": 6165
+        }
+      ],
+      "runtime_files_total_bytes": 8146716,
+      "index_url": "https://huggingface.co/api/models/PaddlePaddle/arabic_PP-OCRv5_mobile_rec?blobs=true",
+      "weights_downloaded": false
+    },
+    {
+      "repository": "PaddlePaddle/PP-OCRv5_mobile_det",
+      "revision": "0d63e78e2b680928f6b1747d76a08db6e645efb7",
+      "license": "apache-2.0",
+      "files": [
+        {
+          "rfilename": "inference.json",
+          "blobId": "6cd678f39460a27372f8fe570e4e12e7a383418f",
+          "size": 229777
+        },
+        {
+          "rfilename": "inference.pdiparams",
+          "blobId": "5e6d602681aa10f3660406dd7ec0ba48268d56e4",
+          "size": 4692937,
+          "lfs": {
+            "sha256": "afa1820cb16c1fd0dad589d0f8b389139061c1ef6d68019685fd07be997dda5b",
+            "size": 4692937,
+            "pointerSize": 132
+          }
+        },
+        {
+          "rfilename": "inference.yml",
+          "blobId": "579d10695d2dd6e85c5ecba02d151ae5c077aa49",
+          "size": 903
+        }
+      ],
+      "runtime_files_total_bytes": 4923617,
+      "index_url": "https://huggingface.co/api/models/PaddlePaddle/PP-OCRv5_mobile_det?blobs=true",
+      "weights_downloaded": false
+    }
+  ],
+  "resource_assessment": {
+    "observed_ocr_envelope": {
+      "memory_bytes": 805306368,
+      "cpu_cores": 1,
+      "cron_active_deadline_seconds": 600,
+      "concurrency_policy": "Forbid",
+      "receipt": "backend/docs/evidence/digitalocean-https-capacity-20261104-41928176279.json",
+      "receipt_sha256": "92298f14f069856591be81a07baff9807b85d7a181ac83e167b3cb0ec1692c4a",
+      "scope": "Existing native-ocr CronJob resource limit observed in hosted read-only inventory; not a PaddleOCR run"
+    },
+    "existing_page_contract": {
+      "max_original_bytes": 10485760,
+      "max_pdf_pages": 200,
+      "max_raster_side_px": 2000,
+      "attempt_deadline_seconds": 90,
+      "source": "backend/scripts/backend/uploaded-document-ocr-worker.ts"
+    },
+    "current_workspace_free_bytes": 1971470336,
+    "four_core_packages_download_bytes": 260054611,
+    "four_core_packages_zip_declared_expanded_bytes": 897243540,
+    "two_models_runtime_files_bytes": 13070333,
+    "disk_limitations": "897243540 declared expanded bytes for four package wheels alone, before NumPy/Pandas/PDFium/Shapely/python-bidi/other transitives, interpreter, model files, bytecode, pip/build cache and Docker layers. About1.9GiB local free is not proof a clean image build fits. Remote directory data is metadata, not installed footprint or content validation; no deployed ephemeral-storage limit is declared in the inventory.",
+    "ram_and_latency": "No authoritative measured minimum/peak for this exact Arabic mobile pair at one CPU/768MiB found. Model weight size is not RSS. Official Arabic time cells are blank; general timings use Xeon6271C and8threads, with pre/postprocessing excluded. Import/init/peak/steady-state/cgroup file-cache and Node-parent coexistence remain unmeasured.",
+    "model_download_policy": "Only official small source/metadata and bounded wheel ZIP directory ranges read. No full wheels, model weights, installs, builds, recognition calls or production calls."
+  },
+  "reading_order_assessment": {
+    "line_support": "Official Arabic dictionary contains Arabic, Latin letters, punctuation, Western and Arabic-Indic digits. Runner applies python-bidi.get_display to line text. This is explicit RTL handling, not verified logical Unicode correctness for dates, IDs, brackets or mixed scripts.",
+    "page_support": "General pipeline SortQuadBoxes sorts y then ascending x. Two RTL columns or split Arabic fragments on the same baseline can be returned in the wrong semantic order. No page-language-aware logical order guarantee is present.",
+    "required_oracle": "Compare the exact normalized logical Unicode sequence and block order against pre-output gold, not rendered appearance. Retain original upstream returned rec_texts, polygons and scores. Those returned strings have already passed through the upstream bidi display transformation; they must not be called raw pre-bidi network output or assumed logical text. No blind reversal, opportunity-language inference or gold-specific reorder fix.",
+    "limit": "Standard upright single-column pages can be an initial candidate scope, but two-column/split-line controls must remain in the qualification set and report failures, not disappear as unsupported successes."
+  },
+  "smallest_proposed_experiment": {
+    "authorization_state": "Source assessment only; no execution started",
+    "freeze_before_outputs": [
+      "Complete transitive wheel hash lock and native dependency inventory, offline image digest and exact source hash; verify model/config/graph hashes from the immutable official revisions",
+      "Independent different author prepares and independent reviewer visually checks six new image-only pages and exact logical whole-page gold, frozen with SHA before any candidate output; rendering font/dpi/coordinates and absence of hidden text are recorded",
+      "Freeze one full-page detector+recognizer configuration and one oracle version; known four failed Arabic pages are regression data, never the selection set"
+    ],
+    "six_new_gold_scope": [
+      "Arabic maintenance or insurance obligations with actor, prohibition, exception and a distant condition on a later line; different wording/values from previous pages",
+      "Arabic budget/payment with decimal0.850 versus850, explicit currency, zero and Arabic-Indic plus Western digits; exact quantities and negation retained",
+      "Arabic incident deadline with full calendar date/time and mixed Latin ID, slash and parentheses; logical character order judged directly",
+      "Right-column-first Arabic two-column page with numbered clauses and a footer, explicit block order",
+      "Mixed Arabic/English small table and English paragraph with hyphenated technical IDs; all cells and reading order preserved",
+      "Independent visually blank page; no invented text allowed"
+    ],
+    "retained_controls": "All seven prior frozen pages, reported separately as development regressions: four Arabic failures, two English/mixed controls and blank. No page drops or post-output gold edits.",
+    "fixed_candidate_settings": {
+      "models": "Exact pinned mobile detector plus Arabic v5 model, explicit local directories",
+      "engine": "paddle_static CPU; one CPU inference thread; batch1 page and crop; no automatic downloads",
+      "preprocessing": "Existing <=2000px whole-page raster unchanged; one frozen official mobile detector resize policy, no post-output pixel/threshold search",
+      "extra_models": "Document orientation, unwarp and textline orientation disabled explicitly for predeclared upright typed-page candidate scope; no claim about rotated/warped sources",
+      "recognition_filter": "Explicit score_thresh0.0; all detected line results retained, no confidence-based omission or correctness assertion",
+      "ordering": "Preserve the unmodified upstream returned text and polygon order. This is post-bidi display transformation, not a demonstrated logical Unicode stream. Compare it to logical gold and retain any mismatch; no application ordering patch in this first run."
+    },
+    "run_sequence": "Once the root agent allocates a serialized native-test window and disk/dependency preflight succeeds, measure one offline cold initialization plus blank page under the existing 768 MiB/1 CPU/no-swap/90-second envelope. A resource failure stops the experiment and is retained. If it passes, process all 13 frozen pages sequentially with per-page 90 seconds and a fixed campaign cap, retaining failed and not-run denominators. Include the actual parent wrapper overhead in the same cgroup. No ensemble, second candidate or parameter search. This is execution coordination within the existing user-authorized testing scope, not a new user-permission requirement.",
+    "acceptance": "All new and old critical obligations, negation, dates, quantities, IDs and logical block order must survive; full normalized-page oracle unchanged in substance. Report complete page matches plus every critical omission/substitution/order defect, OOM/timeout/peak memory/process cleanup. Passing this finite synthetic set permits only further qualification, never universal correctness or removal of mandatory page review.",
+    "stop_or_remaining": "If memory/disk fails, do not silently raise resources or substitute conversion engines. If reading order or text fails, preserve raw evidence and maintain reviewed page correction as the current supported recovery. Future adoption needs versioned engine/provenance contract (current UploadedOcrPage engine is tesseract), current source binding and all existing review/authorization guards.",
+    "gold_normalization": "Freeze normalization before any recognizer output: NFC Unicode, normalized line endings and explicitly specified whitespace handling only. Do not silently reverse Arabic, reorder blocks, fold punctuation/digits, strip negation or repair from expected text. Exact-page mismatch and critical semantic defect are reported separately."
+  },
+  "sources": [
+    {
+      "id": "S01",
+      "url": "https://github.com/PaddlePaddle/PaddleOCR/blob/b03f46425e8ff4442b268ce449e3eef758146cd4/docs/version3.x/module_usage/text_recognition.en.md#L384-L392",
+      "supports": "Official Arabic v5 line model: 81.27% on vendor multilingual evaluation, 7.6 MB, no Arabic CPU timings; not a document/business accuracy claim"
+    },
+    {
+      "id": "S02",
+      "url": "https://github.com/PaddlePaddle/PaddleOCR/blob/b03f46425e8ff4442b268ce449e3eef758146cd4/pyproject.toml",
+      "supports": "Package3.7.0 Python>=3.8 and PaddleX OCR-core>=3.7,<3.8, Apache2.0"
+    },
+    {
+      "id": "S03",
+      "url": "https://github.com/PaddlePaddle/PaddleOCR/blob/b03f46425e8ff4442b268ce449e3eef758146cd4/docs/version3.x/paddlepaddle_installation.en.md",
+      "supports": "Official CPU install guide names PaddlePaddle3.2.0; Docker8GB shared-memory example is not an inference minimum"
+    },
+    {
+      "id": "S04",
+      "url": "https://github.com/PaddlePaddle/PaddleOCR/blob/b03f46425e8ff4442b268ce449e3eef758146cd4/paddleocr/_pipelines/ocr.py#L361-L391",
+      "supports": "Arabic language convenience selection returns server detector; explicit mobile detector override is needed"
+    },
+    {
+      "id": "S05",
+      "url": "https://github.com/PaddlePaddle/PaddleX/blob/e0068ce0bfe75b2992e5b38d06a0393c70f887f7/paddlex/inference/models/text_recognition/predictor.py#L183-L203",
+      "supports": "Actual Arabic runner applies bidi.algorithm.get_display before returning rec_text"
+    },
+    {
+      "id": "S06",
+      "url": "https://github.com/PaddlePaddle/PaddleX/blob/e0068ce0bfe75b2992e5b38d06a0393c70f887f7/paddlex/inference/pipelines/components/common/sort_boxes.py#L31-L53",
+      "supports": "Actual general pipeline boxes sort top-to-bottom then left-to-right, not an RTL column/page reading-order algorithm"
+    },
+    {
+      "id": "S07",
+      "url": "https://github.com/PaddlePaddle/PaddleX/blob/e0068ce0bfe75b2992e5b38d06a0393c70f887f7/paddlex/configs/pipelines/OCR.yaml",
+      "supports": "Defaults include extra orientation/unwarp models, mediumv6 and rec batch6; explicit candidate freeze must avoid inherited changing defaults"
+    },
+    {
+      "id": "S08",
+      "url": "https://pypi.org/project/python-bidi/",
+      "supports": "get_display returns display layout; its use does not by itself prove correct logical mixed-script output from the model"
+    },
+    {
+      "id": "S09",
+      "url": "https://huggingface.co/PaddlePaddle/arabic_PP-OCRv5_mobile_rec/blob/33d91636a65dca87f5562cc48860332ae367ee1b/README.md",
+      "supports": "Official model card defines whole-line correctness including punctuation; metadata language tag en disagrees with explicit Arabic model description, so no locale inference from tag"
+    },
+    {
+      "id": "S10",
+      "url": "https://huggingface.co/PaddlePaddle/PP-OCRv5_mobile_det/blob/0d63e78e2b680928f6b1747d76a08db6e645efb7/README.md",
+      "supports": "Official detector benchmark lists Chinese/English/Japanese domains, not an Arabic page-detection/recall proof"
+    }
+  ],
+  "gates_closed": [],
+  "gates_remaining": [
+    "A06 Arabic end-to-end accuracy",
+    "Exact package-stack fit and peak memory/latency",
+    "Logical mixed-script and multi-column order",
+    "Independent new gold construction/review/freeze",
+    "Runtime integration and hosted qualification"
+  ],
+  "resumed_review_at": "2026-11-04T23:59:03.701854+00:00",
+  "source_revision": "3c21a65c6c9a04fff5070632201d17210309f760",
+  "recovered_assessment_sha256": "92efc827cd099e372fedbde1d302f753cb27e2aba7ea3032d80737be5bcb32ca",
+  "retained_source_index_sha256": "fa9579e2c475d8a5a0a6937aecc8b231822f5a1e5e2eeec4f93a68e13180c3fd",
+  "retained_source_files_verified": 23,
+  "retained_source_files": [
+    {
+      "file": "PP-OCRv5_mobile_det-README-md",
+      "bytes": 16243,
+      "sha256": "4cc20ad6d41af86b3ce9885ffb0956e152574a2eb14179aeb07fd2d3956161ca"
+    },
+    {
+      "file": "PP-OCRv5_mobile_det-inference-yml",
+      "bytes": 903,
+      "sha256": "98069072e1b6b37d727fd9d9f11725faa46d6ea0de012f2ed26caea011c37699"
+    },
+    {
+      "file": "arabic-model.json",
+      "bytes": 1482,
+      "sha256": "a779ca7a52cffd1558f4450bb5ea1987a05e8e5ee4858b58571600998fcaf5db"
+    },
+    {
+      "file": "arabic_PP-OCRv5_mobile_rec-README-md",
+      "bytes": 6950,
+      "sha256": "9407c910bfbff151146db58c7e2b0fc35a65bd5a140a14b139e4f558ecb0380b"
+    },
+    {
+      "file": "arabic_PP-OCRv5_mobile_rec-inference-yml",
+      "bytes": 6165,
+      "sha256": "21368419e6c016c31db55d316d59e11c128e1913e6e6fe10287084710043d3a6"
+    },
+    {
+      "file": "assessment.json",
+      "bytes": 17003,
+      "sha256": "92efc827cd099e372fedbde1d302f753cb27e2aba7ea3032d80737be5bcb32ca"
+    },
+    {
+      "file": "detector-model.json",
+      "bytes": 1493,
+      "sha256": "42dbba15381c9fc6269ca11557b5b37f37458ae54072dbcf94d0932f9420f142"
+    },
+    {
+      "file": "opencv-pypi.json",
+      "bytes": 27595,
+      "sha256": "001ad9041937ad9f49f94d5dae906251040f8960906a94edaf4b8f7b560603ed"
+    },
+    {
+      "file": "paddleocr-installation.en.md",
+      "bytes": 4711,
+      "sha256": "093c35c8532ab7ed3219c511b742d2681190493a3c9bba2a69cc250d6cda3a2a"
+    },
+    {
+      "file": "paddleocr-ocr.py",
+      "bytes": 23065,
+      "sha256": "f7a175d9e3e28eda440b7f94a4d2b8e7884ac9f6cf173bff8c4ee7c8357e377a"
+    },
+    {
+      "file": "paddleocr-pipeline-usage.en.md",
+      "bytes": 131397,
+      "sha256": "ec49874f2b25429196d495a74e8948216f79bdb504a5b4ef694e6a92399423f5"
+    },
+    {
+      "file": "paddleocr-pypi.json",
+      "bytes": 30593,
+      "sha256": "4c639433fe1162458c51df797e0190b5fa7141b276dc4c3e3da86fce22f25be5"
+    },
+    {
+      "file": "paddleocr-pyproject.toml",
+      "bytes": 2708,
+      "sha256": "d66b2cf6aeaf9c82d38c2eb8c8c7be7bca215483a77da885a5073586fcafe691"
+    },
+    {
+      "file": "paddleocr-text-recognition.en.md",
+      "bytes": 55565,
+      "sha256": "4aeddc31929bf4fa3a4b6b1fd1a2f0b49fa2046913bf38fb2e451c688855160d"
+    },
+    {
+      "file": "paddleocr-training-arabic.yaml",
+      "bytes": 2936,
+      "sha256": "475229426b4aa1ad9a97d678adca3d922c9bb0e6680a613b0a4e128fb24c48c0"
+    },
+    {
+      "file": "paddlepaddle-pypi.json",
+      "bytes": 26209,
+      "sha256": "baf352089bfc43b2fae6416f2bde166156d63490ce9aaf776eca9d33b0400ec9"
+    },
+    {
+      "file": "paddlex-OCR.yaml",
+      "bytes": 1038,
+      "sha256": "e37c34ef45a2ebff1b513f1c511c1fbf3611a00ce6d4cc37b6829f7619e98c43"
+    },
+    {
+      "file": "paddlex-ocr-pipeline.py",
+      "bytes": 22900,
+      "sha256": "471dfec19574fc9a117a3a27c5f8c9e30808dcab9b25e3d890f8f07e1fa73567"
+    },
+    {
+      "file": "paddlex-pypi.json",
+      "bytes": 81957,
+      "sha256": "9ce4d641fe3b5b773de2521bd6f5935c639260a5665807833e67277f08c6c116"
+    },
+    {
+      "file": "paddlex-recognition-predictor.py",
+      "bytes": 10379,
+      "sha256": "d7a3ec6e8e9fdd7e64321362cecc8698e7e27ed1b88b142c9c55877a24a310f8"
+    },
+    {
+      "file": "paddlex-recognition-processors.py",
+      "bytes": 12537,
+      "sha256": "0479affa2dabee399bb6c313ad3a6346a8fa3af6773f247adc1b8948b9d4af04"
+    },
+    {
+      "file": "paddlex-sort-boxes.py",
+      "bytes": 2770,
+      "sha256": "6599aa6c9d9be24f01f8981aa3e6f369a3b09fa892e9a511d9da0a67c4571fa8"
+    },
+    {
+      "file": "wheel-directory-sizes.json",
+      "bytes": 3063,
+      "sha256": "aae811220306e99cbc847f8e689e9d572cf08ee3c7a5b5369ba676926c01dc54"
+    }
+  ],
+  "resumed_review_limits": [
+    "No additional network call, package or weight download, install, import, inference, container run, provider request or production mutation occurred during this resumed review.",
+    "Source-hash checks and metadata arithmetic only; this is not a dependency resolver result or an installed-stack measurement.",
+    "Independent source-review delegation was attempted but the agent-thread limit prevented spawning; this resumed consistency review is by the author, not independent approval."
+  ]
+}

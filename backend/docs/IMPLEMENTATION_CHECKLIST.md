@@ -10556,3 +10556,310 @@ records this boundary, not a deployment. The action matrix/R0 retain all earlier
 receipts plus the CI correction and strict manual retirement proof fix. Complete
 corrected GitHub verification and actual deployment remain pending. Canonical24
 manifest remains `4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76`.
+
+### November 5 — repair validation retains the original task's source binding
+
+Actual controlled execution of the frozen English/Arabic draft-repair cases
+revealed a production defect: a valid quote correction failed with
+`EVIDENCE_REFERENCE_INVALID` at `$.requirement_ids`. The recursive target validator
+received the outer repair envelope, while draft source validation reads the
+original task's source requirements. Direct original-task validation passed.
+
+The narrow correction unwraps `original_context` only for that recursive target
+validation, retaining the other options and all outer repair checks. It does not
+copy requirements into the envelope, relax source or semantic validation, or
+change provider policies. [The receipt](evidence/repair-original-source-context-20261105.json)
+retains the two failed execution controls and a standalone baseline regression
+with three failures/nine passes. After correction, 67 production source/repair
+tests across six files pass, as do backend typecheck/build. A combined run with
+the separately pending qualification controls passes 139 tests. Independent
+source review found no remaining material blocker in the narrow correction.
+
+The tests preserve faithful English/Arabic repairs, reject missing/different
+original requirement bindings, invalid spans and changed reviewed conditions,
+and prevent outer metadata from substituting for original requirements. Legacy
+quote rejection and source-bound analysis tuple enforcement remain intact.
+These are authored fixture controls, not provider semantic results. `model.ts`
+is a runtime image input: the prior 89af image/source qualification cannot be
+reused unchanged. A newly qualified runtime, release freeze and actual deployment
+remain required; this local correction performs no provider or hosted operation.
+
+### November 5 — expand frozen reserve construction without provider activation
+
+The qualification adapters now construct 42 of 50 frozen cases: the prior ten,
+22 workflow cases with source-reviewed authored prerequisites, four explicit
+classification projections, four typed verifier phases and two narrow draft
+quote repairs. Eight cases remain explicit composite/source-routing/repair-contract
+boundaries. The fixed corpus, all 100 scheduled requests per model, source authority
+and private-holdout requirements are unchanged. Four legacy `plan_proposal` cases
+are labeled as legacy-task preparation rather than current hierarchical execution.
+
+[The expanded adapter documentation](QUALIFICATION_RESERVE_ADAPTERS.md) and
+[receipt](evidence/qualification-reserve-expanded-20261105.json) retain four frozen
+prerequisite hashes, all case statuses, source maps and the original failed repair
+controls. The controls exposed the separately committed production source-context
+fix; the adapter does not manufacture outer requirements to work around it.
+Actual request preparation and repair application now pass with immutable payment
+prose, exact source visibility, canonical hashes/scopes and rejected caller callback
+substitution. Source/semantic review stays pending; no model-authored approval or
+prior accepted production stage is inferred from authored test prerequisites.
+
+All 189 focused tests across five files pass (118 adapter controls plus 71 existing
+reserve integrity checks), with backend typecheck/build and unchanged source hashes.
+This commit changes qualification tools, fixtures, tests and documentation only;
+no additional runtime image input changes beyond the separate source-context fix.
+There were no actual provider/retrieval/database calls or production mutations.
+Complete live semantic qualification, independent private holdout, approved
+noncritical thresholds, eight unsupported cases and hosted acceptance remain open.
+
+### November 5 — requalify the corrected runtime and keep publication pending
+
+The corrected source `19498666b511a29c251923baa75bf42c88a0c6f0` was built as
+`sha256:176bcf738676421ebc58d26cd7bc2a29910d0242635de6084129a06701a9e4f8`.
+The new [qualification receipt](evidence/runtime-qualification-176bcf-20261105.json)
+has SHA-256 `92b463d5cae58019b1dde7d235989638ee63e333ce21c23c824bf2f1a070ee68`.
+It binds the observed build, all 130 copied files, 146 filesystem entries,
+17 ordered layers, full runtime configuration and four new native receipts.
+The pinned Deno base contributes the same ten-layer prefix. All earlier 89af
+qualification, publication and native evidence files remain unchanged.
+
+Sequential actual-image qualification passed two warm owned-snapshot downloads,
+one fresh-parent repeat, the same reviewed DOCX artifact and the real local
+PostgreSQL/PostgREST 100-command API stream, at unchanged 384 MiB/700m API limits.
+The stream contains 100 ordered results, 412,758,765 bytes and 1,600 chunks in
+56.703 seconds. The lowest observed memory margin is 17.21 MiB, from the warm
+document run. These are fresh fixture measurements, not a causal improvement
+claim or a hosted/concurrent capacity guarantee. No out-of-memory event or actual
+swap occurred; the document harness relied on a zero-swap host rather than an
+explicit no-swap flag. Source/fixture hashes and cleanup checks passed.
+
+The [activity disclosure](evidence/native-orchestration-activity-scope-176bcf-20261105.json)
+retains the four metadata tests near the warm-run end and their reported
+0.002-second test-body duration; interpreter startup/import duration was not
+measured. Normal metadata inspection and an isolated git commit also overlapped
+the sequence. No receipt is described as having zero other processor activity.
+
+Runtime qualification and release-manifest guards now pin only this exact new
+image, receipt path and receipt hash. The separate
+[new publication record](evidence/runtime-qualified-publication-176bcf-20261105.json)
+has a null reference, so both release freezing and runtime promotion reject it
+until actual push and immutable-digest readback. The older image's real registry
+publication cannot satisfy the new identity. Publication, manifest refreeze from
+the original deployment baseline, renewed restore and deployment remain pending.
+This update performs no provider call, registry write or hosted mutation.
+
+After the native window closed, all 22 focused qualification/image-promotion
+tests and both focused manifest-binding/publication tests passed. Read-only
+inspection verified the actual new image and complete checkout/native binding;
+both pending-publication paths returned their expected errors. The
+[guard verification receipt](evidence/runtime-guard-verification-176bcf-20261105.json)
+also verifies seven historical evidence files byte for byte against `1949866`.
+
+### November 5 — publish corrected qualified runtime and refreeze the release
+
+The second release attempt [41937345060](https://github.com/salahassi/tenders/actions/runs/41937345060)
+at `3c21a65` was cancelled during package verification after the canonical Arabic
+and English repair controls exposed the real recursive source-context defect.
+Cluster access, images and rollout were skipped; both cleanup steps passed.
+[The retained receipt](evidence/release-cancelled-before-access-20261105-41937345060.json)
+is not deployment evidence. The correction and four fresh native proofs are
+recorded separately above; historical 89af measurements remain unchanged.
+
+Exact qualified image `176bcf738676` was published, pulled back and verified at
+`runtime@sha256:996e1ea5b3ff63ca4ea0e5ef75dc45c7d5a83f0c8a2501539bb0a8fc669fbfb2`.
+[Publication evidence](evidence/runtime-qualified-publication-176bcf-20261105.json)
+records 26.554 seconds and temporary credential removal. An actual local
+[FROM/LABEL promotion](evidence/runtime-label-promotion-176bcf-20261105.json)
+passed in 0.525 seconds with network/pull disabled and unchanged ordered layers
+and runtime configuration except the revision label. That probe was not pushed.
+No application workload or customer record changed during either operation.
+
+The complete 24-migration manifest is refrozen to the corrected source, new
+qualification/publication and unchanged final gateway/HTTPS proofs. Canonical
+SHA-256: `2e6512d2eef73bc130f928cfcc01b04bcb437529cb5ab4b90fa815a228dce6fa`.
+Only the original inner baseline receipt from run41881660683 was used. Source
+verification passes. Complete integrated application/ops checks, renewed isolated
+cloud restore, actual release and authenticated hosted acceptance remain required.
+
+### November 5 — isolated interrupted-retirement qualification prepared
+
+Added a separate two-job GitHub Actions qualification for the unchanged strict
+manual retirement coordinator. The first job creates a nonce-owned database,
+actual Auth/REST services and independent pinned Storage/gateway/synthetic-writer
+Deployments on a new PVC. Genuine canonical application commands and a real
+Storage upload leave an uncertain key with its cleanup reservation. The process
+exits deliberately after durable original-container capture and scale-to-zero;
+a fresh runner resumes from Kubernetes state, proves exact process exit and
+physical/metadata absence, then checks canonical exactly-once quota release,
+old-key denial, a new canonical upload and replica restoration.
+
+The [qualification runbook](STORAGE_RETIREMENT_QUALIFICATION_RUNBOOK.md) specifies
+ownership, original-CA access, current 24-migration manifest verification, private
+proof storage, cross-attempt identity handling and verified PVC/database cleanup.
+The fixed production adapter is neither imported nor retargeted. No provider
+calls or production business rows are involved. The retained
+[local qualification receipt](evidence/storage-retirement-isolated-local-20261105.json)
+records 45 new Python checks, 3 fully migrated canonical SQL tests, 62 existing
+retirement regressions, backend typechecking and syntax checks. Independent
+source review identified a missing-helper cleanup retry and insufficient helper
+process validation; both were corrected and covered by the new guards. No hosted
+workflow has been dispatched. Initial allocation acknowledgment loss can require
+ownership reconciliation; the intended durable interruption checkpoint is the
+qualified recovery scope. Whole-cluster restore continuity, actual worker
+capacity and user-defined recovery objectives remain open.
+
+### November 4 — retain a bounded PaddleOCR feasibility proposal for A06
+
+The [candidate assessment](ARABIC_OCR_PADDLE_FEASIBILITY.md) evaluates the official
+mobile detector and Arabic v5 recognizer as a materially different local option.
+Its [receipt](evidence/arabic-paddle-feasibility-20261104.json) retains immutable
+source/model/package pins and verifies 23 recovered small source/metadata files.
+Four core wheels alone declare 897,243,540 expanded bytes, before dependencies and
+container overhead; the 768 MiB/one-CPU fit remains unmeasured. Upstream display
+transformation and left-to-right box sorting leave logical mixed-script and Arabic
+column order unresolved.
+
+A fixed experiment is proposed with six newly authored and independently reviewed
+pages plus all seven retained development controls. The candidate has not been
+installed, run, adopted or deployed; no default, product limit, runtime image or
+model-routing policy changed. The resumed checks are hash/arithmetic/document
+validation only. No application or native tests were rerun for this documentation
+change. Independent review remains required; the reviewer could not be spawned
+because the agent-thread limit was reached. A06 and hosted acceptance remain open.
+
+### November 5 — current-request operations helper and bounded issuance evidence
+
+Added [the explicitly activated current-request workflow](../../.github/workflows/request-current-proposal.yml)
+and [permanent operation reference](CURRENT_PROPOSAL_REQUEST_RUNBOOK.md). The
+helper uses the deployed GenerationPanel buttons, genuine existing Owner Auth,
+fresh server-owned details and exact canonical cancel-and-generate batch. The
+encrypted exact body/key is read back before one send; stable predecessor
+identity prevents a changed image or selection serialization from bypassing an
+existing prepared marker. Original accepted results, frozen context, verifier
+pins, budgets, checkpoints and unknown accounting are proven before/after.
+Unknown transport never causes automatic resubmission.
+
+The browser process is captured before any session/navigation, and detached
+Chromium exits before driver cleanup on failure. Protocol input closes after its
+terminal result. The read-only observer preserves actual accepted/deadline,
+nullable persisted completion and effective timeout timestamps. It stops on the
+first observed terminal error, preserves the original 600-second request clock,
+and requires current generated draft/version/snapshot plus every ready volume
+for recorded whole-package issuance. Blocking observations share a remaining
+absolute watchdog budget; cleanup is separate. Actual file download and human
+approval remain distinct evidence.
+
+[Local source-hashed verification](evidence/current-proposal-request-local-20261105.json):
+34 Python controls, 33 frontend-guard/exact-PGlite SQL cases, one selected
+canonical generated-delivery/two-volume DOCX/observer case (17 other cases
+explicitly unselected), and four real local Chromium/production-CLI lifecycle
+controls passed. The browser controls verify one send, withheld acknowledgement,
+forced driver death and terminal EOF; no browser absence is silently skipped.
+The workflow installs the lockfile-pinned browser for this mandatory separate
+gate. Both package types/builds and all frontend 380 tests/59 files passed.
+
+The broader backend and operations runs on this older isolated base were
+interrupted at the release owner's request before completion. Two backend cases
+reported failures around their five-second default budget during concurrent
+validation; their partial logs are retained rather than counted as passes.
+Both affected cases subsequently passed a serial focused recheck using their
+unchanged default budgets (two selected, 21 explicitly unselected); that does
+not convert the interrupted full run into a passing suite.
+No owned Node/Python process or fixture container remained after interruption;
+the shared PostgreSQL fixture was untouched. The current integrated release
+requires its own complete combined checks.
+
+Implementation and focused local verification are ready for integration.
+Deployment, explicit hosted activation, actual saved-proposal issuance outcome,
+authenticated customer file acceptance and semantic quality acceptance remain
+open. This change performs no activation, provider call, migration, billing,
+capacity or unknown-usage mutation. Synthetic PGlite and local fixture HTML are
+not native PostgreSQL, hosted Auth or deployed-frontend acceptance.
+
+### November 5 — integrated evidence refresh, complete operations and renewed restore
+
+The R0 discovery index and remaining-action matrix now bind integrated source
+`2b869ac341f3ca7944247930e68c022f91a7383a`. All 92 prior receipt entries and hashes
+remain unchanged; 17 new receipts bring the index to 109. The refresh includes
+the production original-context repair correction, 42/50 constructible reserve
+cases (eight unsupported, zero provider/retrieval/database requests), new
+`176bcf` native/source qualification, exact `996e1ea5` publication, local
+`c8b6db38` label-only promotion, manifest `2e6512d2`, prepared retirement/current
+request helpers and both cancelled release boundaries. Runtime provenance now
+distinguishes its historical pending-publication guard from the later completed
+publication and manifest refreeze.
+
+[Complete operations evidence](evidence/complete-operations-checks-2b869ac-20261105.json)
+records 640 operations, 11 production-schema and 16 Kubernetes tests passing
+(667 total), with all 539 source files unchanged. This exact-source result
+precedes the forthcoming isolated-retirement cleanup correction and does not
+qualify that later change. It does not replace the complete application gate.
+
+[Restore run 41942455870](https://github.com/salahassi/tenders/actions/runs/41942455870)
+at the same source passes all 13 actual Auth/Storage HTTP checks, all 24 additive
+migrations from manifest `2e6512d2`, original cluster certificate/hostname
+verification and both cleanup stages. Its [sanitized receipt](evidence/cloud-restore-20261105-41942455870.json)
+was copied unchanged from the actual run evidence. A03 is closed only for this
+isolated source/manifest scope. Synthetic data, zero copied customer rows and no
+renderer execution do not establish production deployment, actual proposal
+completion or recovery objectives.
+
+Complete current application verification, relevant operations revalidation,
+checked rollout, actual current-request activation and authenticated file
+acceptance remain open at this refresh. Documentation validation checked JSON,
+all 109 receipt paths/hashes, preservation of the 92 historical entries, action
+mappings and the exact canonical manifest hash. No application/operations tests,
+native runs, workflow dispatches or source changes occurred in this docs-only
+refresh.
+
+### November 5 — complete integrated application and operations gates at 2b869ac
+
+All six package checks passed: backend 3,379 tests in 200 files, frontend 380
+tests in 59 files, both type checks and builds. The harness recomputed its
+source map and found no changed sources. The separate complete operations pass
+is 640 operations + 11 production-schema + 16 Kubernetes tests: 4,426 total
+functional tests across these application/operations scopes. Raw logs and
+source-map hashes are bound by the public receipts; elapsed times are not native
+capacity measurements.
+
+The renewed original-CA cloud restore41942455870 at the same source passes
+all13 Auth/Storage HTTP checks, all24 migrations, current manifest2e6512d2 and
+both cleanup stages. The later isolated-retirement cleanup correction requires
+its own source review/revalidation; it was not silently included in these runs.
+Mandatory final GitHub verification, deployment, actual current-request
+activation and authenticated complete-file acceptance remain pending.
+
+### November 5 — preserve retirement cleanup proof across deleted resources
+
+Independent review of the prepared drill found that a cleanup retry after
+Deployment/PVC deletion tried to restore those deleted Deployments. The fixture
+now persists and reads back the complete original termination journals and
+protection-release proof before ordinary destructive cleanup. A new runner
+validates that checkpoint and continues without re-adopting missing workloads.
+Failures before any protection use a distinct exact-running-original witness;
+that mode grants no process-exit or quota-retirement claim. Partial protection
+with unknown exit still fails closed for reconciliation.
+
+PVC cleanup now validates and durably records a new initial binding before
+using that same observation's UID/resourceVersion for deletion. Missing/unbound
+PVC recovery censuses volumes by the original claim UID; existing PV and
+nonce/comment-bound database cleanup guards remain separate. The
+[correction receipt](evidence/storage-retirement-cleanup-checkpoint-20261105.json)
+records 57 passing focused Python tests, syntax/diff checks and independent
+read review with no remaining material blocker. This is source-only evidence:
+no hosted drill, production mutation, model call, runtime-image change or
+canonical migration change occurred. An empty census after an unbound PVC is
+gone does not settle in-flight external provisioning: that case retains state
+and namespace for allocation reconciliation, without storage certification or
+database cleanup. Earlier local receipts remain historical.
+
+### November 5 — integrated cleanup follow-up and release readiness
+
+Integrated the independently reviewed cleanup checkpoint and unproven-allocation
+guards as `0cfb2ef`. Root repeated all57 isolated-retirement Python tests: passed.
+The five changed/new fixture Python paths exactly match the new hashed receipt;
+application, runtime, migration and image source remain byte-identical to the
+complete `2b869ac` gate. Current manifest source verification still passes.
+The public index now preserves all110 prior receipts and adds the scoped cleanup
+receipt. Final GitHub verification, actual deployment and the isolated hosted
+retirement drill remain distinct pending execution steps.

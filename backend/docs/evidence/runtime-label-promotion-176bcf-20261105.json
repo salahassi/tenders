@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "scope": "actual_local_label_only_promotion_of_qualified_runtime",
+  "qualified_image_id": "sha256:176bcf738676421ebc58d26cd7bc2a29910d0242635de6084129a06701a9e4f8",
+  "qualified_reference": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:996e1ea5b3ff63ca4ea0e5ef75dc45c7d5a83f0c8a2501539bb0a8fc669fbfb2",
+  "qualification_sha256": "92b463d5cae58019b1dde7d235989638ee63e333ce21c23c824bf2f1a070ee68",
+  "source_revision": "621bac58f5486a40b03d5f93827a0322e1af3866",
+  "recipe": "FROM registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:996e1ea5b3ff63ca4ea0e5ef75dc45c7d5a83f0c8a2501539bb0a8fc669fbfb2\nLABEL org.opencontainers.image.revision=621bac58f5486a40b03d5f93827a0322e1af3866\n",
+  "recipe_sha256": "29cad183c34801a61996ed92df5dbcd18a3492207e6376928a14bf03f9e063ab",
+  "promoted_local_image_id": "sha256:c8b6db388e67213bf07eb4bac3d72072d013629bcdd484a86a33878611932fd1",
+  "rootfs_layers_identical": true,
+  "all_runtime_config_except_revision_label_identical": true,
+  "source_and_native_receipts_verified": true,
+  "network": "none",
+  "pull": false,
+  "seconds": 0.525,
+  "build_log_sha256": "fe7d3975233f4465015ddfbca9981728f666f1659359031260c8da80429fbb9d",
+  "pushed": false,
+  "deployed": false,
+  "containers_started": 0
+}

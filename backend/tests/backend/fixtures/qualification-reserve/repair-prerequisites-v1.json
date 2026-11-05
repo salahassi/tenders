@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "corpus_sha256": "9a1fd88f07fc9fc9d9b06ae3b67699976dacf221e0af7ee03fafdd59bfe25d7c",
+  "scope": "Authored failed draft candidates for the existing quote-fault repair path. Wrong quote is controlled fault; actual diagnostics, source-specific patch schema, hash and application are derived at construction. No prior provider output or semantic approval is claimed.",
+  "cases": [
+    {
+      "case_id": "qr1.repair_result.unrelated_payment_change.en",
+      "target_task": "draft_section",
+      "fault": {
+        "kind": "existing_source_wrong_quote",
+        "quote": "The commissioning checklist may be omitted.",
+        "path": "$.evidence_refs[0].quote"
+      },
+      "candidate_content": "The buyer pays after documented acceptance. The supplier must submit a commissioning checklist.",
+      "allowed_parent_paths": [
+        "$.evidence_refs"
+      ],
+      "workflow": {
+        "case_id": "qr1.repair_result.unrelated_payment_change.en",
+        "requirements": [
+          {
+            "key": "PAYMENT-1",
+            "document_id": "reserve-b87cad83-3253-5961-8a04-7a76051f3115",
+            "source_span_ids": [
+              "reserve-b87cad83-3253-5961-8a04-7a76051f3115:span1"
+            ],
+            "category": "commercial",
+            "mandatory": true,
+            "interpretation": "The buyer pays after documented acceptance.",
+            "semantic_review_status": "pending"
+          },
+          {
+            "key": "CHECKLIST-1",
+            "document_id": "reserve-b87cad83-3253-5961-8a04-7a76051f3115",
+            "source_span_ids": [
+              "reserve-b87cad83-3253-5961-8a04-7a76051f3115:span1"
+            ],
+            "category": "deliverables",
+            "mandatory": true,
+            "interpretation": "The supplier must submit a commissioning checklist.",
+            "semantic_review_status": "pending"
+          }
+        ],
+        "organizational_sections": [
+          {
+            "key": "response",
+            "title": "Proposed response",
+            "purpose": "Organize the response to the assigned requirements.",
+            "volume": "technical",
+            "requirement_keys": [
+              "PAYMENT-1",
+              "CHECKLIST-1"
+            ]
+          }
+        ],
+        "additional_source_uses": [
+          {
+            "document_id": "reserve-ba4ee749-a6ba-57cb-bd67-b4089db7c27c",
+            "channel": "unverified_style_knowledge"
+          }
+        ],
+        "authoring_unit_target_words": 100,
+        "commercial_draft": {
+          "lines": [],
+          "tasks": [],
+          "questions": []
+        },
+        "approved_na_decisions": []
+      }
+    },
+    {
+      "case_id": "qr1.repair_result.unrelated_payment_change.ar",
+      "target_task": "draft_section",
+      "fault": {
+        "kind": "existing_source_wrong_quote",
+        "quote": "يجوز تجاهل قائمة التشغيل.",
+        "path": "$.evidence_refs[0].quote"
+      },
+      "candidate_content": "يدفع المشتري بعد القبول الموثق. ويجب على المورد تقديم قائمة تحقق للتشغيل الأولي.",
+      "allowed_parent_paths": [
+        "$.evidence_refs"
+      ],
+      "workflow": {
+        "case_id": "qr1.repair_result.unrelated_payment_change.ar",
+        "requirements": [
+          {
+            "key": "PAYMENT-1",
+            "document_id": "reserve-99bf053c-01bc-590e-a354-de3e01a8c008",
+            "source_span_ids": [
+              "reserve-99bf053c-01bc-590e-a354-de3e01a8c008:span1"
+            ],
+            "category": "commercial",
+            "mandatory": true,
+            "interpretation": "يدفع المشتري بعد القبول الموثق.",
+            "semantic_review_status": "pending"
+          },
+          {
+            "key": "CHECKLIST-1",
+            "document_id": "reserve-99bf053c-01bc-590e-a354-de3e01a8c008",
+            "source_span_ids": [
+              "reserve-99bf053c-01bc-590e-a354-de3e01a8c008:span1"
+            ],
+            "category": "deliverables",
+            "mandatory": true,
+            "interpretation": "ويجب على المورد تقديم قائمة تحقق للتشغيل الأولي.",
+            "semantic_review_status": "pending"
+          }
+        ],
+        "organizational_sections": [
+          {
+            "key": "response",
+            "title": "الاستجابة المقترحة",
+            "purpose": "تنظيم الاستجابة للمتطلبات المحددة.",
+            "volume": "technical",
+            "requirement_keys": [
+              "PAYMENT-1",
+              "CHECKLIST-1"
+            ]
+          }
+        ],
+        "additional_source_uses": [
+          {
+            "document_id": "reserve-fe353f5f-fa01-5e29-80ff-c2ba55ce14b8",
+            "channel": "unverified_style_knowledge"
+          }
+        ],
+        "authoring_unit_target_words": 100,
+        "commercial_draft": {
+          "lines": [],
+          "tasks": [],
+          "questions": []
+        },
+        "approved_na_decisions": []
+      }
+    }
+  ]
+}

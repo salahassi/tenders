@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "corpus_sha256": "9a1fd88f07fc9fc9d9b06ae3b67699976dacf221e0af7ee03fafdd59bfe25d7c",
+  "scope": "Explicitly authored synthetic assessment inputs. Original buyer document text is projected into one synthetic notice record; no publication, enrichment fetch, collection, database verification or actual company credential is asserted.",
+  "scope_policy": {
+    "scope": "company_knowledge",
+    "include_keywords": [],
+    "exclude_keywords": []
+  },
+  "scope_policy_origin": {
+    "path": "backend/supabase/migrations/20261018210235_configurable_company_scope.sql",
+    "sha256": "5a4846b54753cf6a1063c4761b72b7cc23c8020061a785a9cfc9fe153256f519",
+    "meaning": "Existing workspace default; no invented include/exclude terms or new business threshold."
+  },
+  "cases": [
+    {
+      "case_id": "qr1.classify_opportunity.unproven_licence.en",
+      "buyer_document_id": "reserve-a6b31970-1b5d-5856-9349-ef7398241e0b",
+      "notice_projection": "exact_original_text_without_added_title_or_newlines",
+      "company_document_ids": [
+        "reserve-eec16ff0-b2cb-5d30-ba7b-720f42f59d60"
+      ],
+      "notice_evidence": null
+    },
+    {
+      "case_id": "qr1.classify_opportunity.unproven_licence.ar",
+      "buyer_document_id": "reserve-027ced53-9c1b-55e6-8c99-285bfd223ba8",
+      "notice_projection": "exact_original_text_without_added_title_or_newlines",
+      "company_document_ids": [
+        "reserve-ecc4acf1-c2b9-5722-b0b9-71758bfb1b07"
+      ],
+      "notice_evidence": null
+    },
+    {
+      "case_id": "qr1.classify_opportunity.mixed_scope_boundary.en",
+      "buyer_document_id": "reserve-5a248cd4-24aa-50ef-8c5a-647e60c65eb5",
+      "notice_projection": "exact_original_text_without_added_title_or_newlines",
+      "company_document_ids": [
+        "reserve-e29a667e-a280-5895-b66d-efe90350afe8"
+      ],
+      "notice_evidence": null
+    },
+    {
+      "case_id": "qr1.classify_opportunity.mixed_scope_boundary.ar",
+      "buyer_document_id": "reserve-d335bb7e-5404-5432-a243-648926fb3e71",
+      "notice_projection": "exact_original_text_without_added_title_or_newlines",
+      "company_document_ids": [
+        "reserve-481ef48e-d482-5696-af80-dc76e3dd3330"
+      ],
+      "notice_evidence": null
+    }
+  ]
+}

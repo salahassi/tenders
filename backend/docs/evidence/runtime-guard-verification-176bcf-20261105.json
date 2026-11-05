@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "observed_at": "2026-11-05T00:22:19.408119+00:00",
+  "qualified_image_id": "sha256:176bcf738676421ebc58d26cd7bc2a29910d0242635de6084129a06701a9e4f8",
+  "qualification_receipt_sha256": "92b463d5cae58019b1dde7d235989638ee63e333ce21c23c824bf2f1a070ee68",
+  "source_model_sha256": "e98fdffb10e6a07aea33c34d214b6432081955a37aa9aa8d66e1ee4d97ea2ae8",
+  "actual_local_image_inspection_verified": true,
+  "exact_checkout_and_four_native_receipts_verified": true,
+  "copied_files": 130,
+  "image_app_entries": 146,
+  "ordered_layers": 17,
+  "new_publication_reference": null,
+  "expected_fail_closed_errors": {
+    "promotion": "RUNTIME_QUALIFICATION_PUBLICATION_PENDING",
+    "manifest_freeze_binding": "DELIVERY_RELEASE_RUNTIME_PUBLICATION_REQUIRED"
+  },
+  "checked_source_sha256": {
+    "backend/scripts/ops/runtime-qualification.py": "24d53844cb8958fbc389ecfaf9f4f6adb7e4422b33815f58397403bb3bc6de09",
+    "backend/scripts/ops/proposal-delivery-release.py": "1562378ac246254fd616776569e7fe914348fe9145d6c881dc87075c1d372c16",
+    "backend/scripts/ops/test_runtime_qualification.py": "c74e90b958ab77591a26fc54cebc8bcc2ebf4b61cd15c92000de27157646c116",
+    "backend/scripts/ops/test_proposal_delivery_images.py": "1492297c25080390bd10ff352b8f8f0ca2c38df70f43bc54854e7e7417e803b1",
+    "backend/scripts/ops/test_proposal_delivery_release.py": "17fb864e71a2ed6e9559a26a75c97ad8641660005fc66a8a9bd233f44b41554c",
+    "backend/docs/evidence/runtime-qualification-176bcf-20261105.json": "92b463d5cae58019b1dde7d235989638ee63e333ce21c23c824bf2f1a070ee68",
+    "backend/docs/evidence/runtime-qualified-publication-176bcf-20261105.json": "628788e26c6be96948e29043c6ae37efdb07a486485094a63072965016297163"
+  },
+  "historical_evidence_byte_identical_to_1949866": {
+    "backend/docs/evidence/runtime-qualification-89af-20261104.json": "6e031a746917c8183f59264e6482df0b97e4b2515f9b45f2cfd9378cce80b0ac",
+    "backend/docs/evidence/runtime-qualified-publication-20261104.json": "482838a7210dc9751d2c19393f115cb03e30c2c95c07357bb2a81d973a2ac6ee",
+    "backend/docs/evidence/runtime-label-promotion-20261104.json": "d6d50e529298263595e4d10ea71ca081701ad31a5f08df9e18457e4196357bc6",
+    "backend/docs/evidence/native-api-owned-snapshot-steady-20261104.json": "56592aaa7951d1b2b144a88ed991f93b51745d0338ca19b7b57e53c83c9126be",
+    "backend/docs/evidence/native-api-owned-snapshot-fresh-20261104.json": "2d944815772dc9c677346a09c958baa7ca8a33517cc25e47e352004693a73154",
+    "backend/docs/evidence/native-reviewed-docx-handler-20261104.json": "e3b91fc1c4da28ae921908ef64ac2948991fceb3408f3279440a5cb96a2c711f",
+    "backend/docs/evidence/native-api-batch-capacity-20261104.json": "192580407c590ec872b9d2be3311fa5841e48454079e4f43820740cf0baaade0"
+  },
+  "tests": [
+    {
+      "command": "python3 -m unittest test_runtime_qualification test_proposal_delivery_images -v",
+      "passed": 22,
+      "failed": 0,
+      "reported_test_seconds": 0.172
+    },
+    {
+      "command": "python3 -m unittest test_proposal_delivery_release.DeliveryReleaseTests.test_runtime_qualification_manifest_binds_all_operational_inputs test_proposal_delivery_release.DeliveryReleaseTests.test_pending_or_wrong_runtime_publication_cannot_freeze -v",
+      "passed": 2,
+      "failed": 0,
+      "reported_test_seconds": 0.011
+    }
+  ],
+  "tests_after_native_window_closed": true,
+  "test_logs": "Reported in tool execution output; no separate local raw unittest log retained.",
+  "actual_inspection_command": [
+    "docker",
+    "--host=unix:///var/run/docker.sock",
+    "image",
+    "inspect",
+    "sha256:176bcf738676421ebc58d26cd7bc2a29910d0242635de6084129a06701a9e4f8",
+    "--format",
+    "{{json .}}"
+  ],
+  "containers_started": 0,
+  "native_tests_repeated": false,
+  "registry_write": false,
+  "manifest_refrozen": false,
+  "production_mutations": 0
+}

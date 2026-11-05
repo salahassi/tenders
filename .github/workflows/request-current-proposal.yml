@@ -1,0 +1,114 @@
+name: Request one current proposal through the authenticated application
+on:
+  push:
+    branches: [codex/reliability-current-request]
+    paths:
+      - .github/workflows/request-current-proposal.yml
+      - backend/scripts/ops/proposal-current-request.py
+      - backend/scripts/ops/proposal-current-request-inspect.sql
+      - backend/scripts/ops/proposal-current-issuance.py
+      - backend/scripts/ops/proposal-current-issuance.sql
+      - backend/scripts/ops/proposal-current-request.mjs
+      - backend/scripts/ops/test_proposal_current_request.py
+      - backend/scripts/ops/proposal-current-browser-test.py
+      - backend/scripts/ops/test_proposal_current_issuance.py
+      - backend/tests/backend/proposalCurrentRequest.test.ts
+      - backend/tests/backend/proposalCurrentRequestSql.integration.test.ts
+      - backend/tests/backend/proposalCurrentIssuanceSql.integration.test.ts
+      - backend/tests/backend/currentIssuanceObserverFixture.ts
+      - backend/tests/backend/generatedDeliveryPipeline.integration.test.ts
+  workflow_dispatch:
+    inputs:
+      run_current_request:
+        description: Explicitly start only the reviewed existing proposal's current-contract request after verified deployment
+        type: boolean
+        default: false
+        required: true
+      selection_object:
+        description: Existing encrypted exact workspace, opportunity and predecessor plan selection
+        type: string
+        required: true
+      selection_sha256:
+        description: Reviewed selection plaintext SHA-256
+        type: string
+        required: true
+      expected_runtime_image:
+        description: Verified deployed immutable API and worker runtime image
+        type: string
+        required: true
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Verify target, frontend request, private persistence and cleanup guards
+        run: |
+          npm ci --prefix backend
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_proposal_current_request.py'
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_proposal_current_issuance.py'
+          cd backend
+          npx vitest run tests/backend/proposalCurrentRequest.test.ts tests/backend/proposalCurrentRequestSql.integration.test.ts tests/backend/proposalCurrentIssuanceSql.integration.test.ts --maxWorkers=1
+          npx vitest run tests/backend/generatedDeliveryPipeline.integration.test.ts -t 'observes canonical whole-package' --maxWorkers=1
+      - name: Verify real local browser persistence, driver death and cleanup boundaries
+        run: |
+          backend/node_modules/.bin/playwright install --with-deps chromium
+          python3 backend/scripts/ops/proposal-current-browser-test.py
+  request:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_current_request }}
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    concurrency:
+      group: tenderdesk-digitalocean-production
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Install locked browser and private transport dependencies
+        run: |
+          npm ci --prefix backend
+          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
+          backend/node_modules/.bin/playwright install --with-deps chromium
+      - name: Invoke only the explicitly selected current request through the real frontend
+        env:
+          RUN_CURRENT_PROPOSAL_REQUEST: "true"
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          CURRENT_SELECTION_OBJECT: ${{ inputs.selection_object }}
+          CURRENT_SELECTION_SHA256: ${{ inputs.selection_sha256 }}
+          CURRENT_RUNTIME_IMAGE: ${{ inputs.expected_runtime_image }}
+        run: |
+          python3 backend/scripts/ops/proposal-current-request.py \
+            --selection-object "$CURRENT_SELECTION_OBJECT" \
+            --selection-sha256 "$CURRENT_SELECTION_SHA256" \
+            --expected-runtime-image "$CURRENT_RUNTIME_IMAGE" --activate
+      - name: Remove temporary cluster credentials, isolated session files and private plaintext
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil,sys
+          try:
+              run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+              if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):raise ValueError()
+              path=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-sources-'+run+'-'+attempt)
+              if path.exists():shutil.rmtree(path)
+          except Exception:
+              print('{"current_proposal_request":"failed","code":"RUNNER_CLEANUP_NOT_CONFIRMED"}')
+              sys.exit(1)
+          print('{"current_proposal_request":"runner_files_removed"}')
+          PY

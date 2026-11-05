@@ -379,7 +379,14 @@ export function validateModelResult(
       result.result,
       evidence,
       requiredIds,
-      options,
+      {
+        ...options,
+        // The target task owns its source requirements. The outer repair
+        // envelope contains correction metadata, not a substitute binding.
+        sourceContext:
+          (options?.sourceContext as { original_context?: unknown } | undefined)
+            ?.original_context ?? options?.sourceContext,
+      },
     );
   }
   const referenceErrors = collectReferenceDiagnostics(

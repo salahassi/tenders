@@ -1,0 +1,106 @@
+{
+  "version": 1,
+  "kind": "current_proposal_request_local_verification",
+  "date": "2026-11-05",
+  "base_commit": "e67dbb4a6a382f2890ff8a3aad10a94376ec1056",
+  "source_files_sha256": {
+    ".github/workflows/request-current-proposal.yml": "58f3842875c0e7a2242ed835c18f7fc4a9da226f63cbc098aec1f9686209d504",
+    "backend/scripts/ops/proposal-current-request.py": "699a1a1cb724b0f746e686281eac9b7bb54a28ff669b4ecfd2bbce5d251f8467",
+    "backend/scripts/ops/proposal-current-request.mjs": "5342fb2cfc56776cf52a0defb30ebe192445a7cc243bd8962e43fd2d893bcfda",
+    "backend/scripts/ops/proposal-current-request.d.mts": "e28d95bac2d3d936227684b9c048d03f8c300b1f99f456337ed550ea4cb09045",
+    "backend/scripts/ops/proposal-current-request-inspect.sql": "babfb7cf459f03a3dffcba88b0db9c422dee0bd18d5f810af93dce87aa40a435",
+    "backend/scripts/ops/proposal-current-issuance.py": "c41d48cabb49c013b1479a173c1f5138ff6a5242ee5aa74416289973cec25a9c",
+    "backend/scripts/ops/proposal-current-issuance.sql": "1c5f070087afe03ba130f73f9ea0258a8b46735415ae204b26178ea4c079f64e",
+    "backend/scripts/ops/test_proposal_current_request.py": "bfbf78e0f1159c4ef224a76d7eea687c7901cd98743c2c60a84142445b4db5fc",
+    "backend/scripts/ops/test_proposal_current_issuance.py": "c510b0afdc876be92a0a472f142c17e3ef60f2bbd6daffd52dae69d0360bbfca",
+    "backend/scripts/ops/proposal-current-browser-test.py": "4a5b4cd28dc83abb0b07cbbfe1c2ac245c2bbb1984fa590d084652ffc681fa41",
+    "backend/tests/backend/proposalCurrentRequest.test.ts": "bb0e342777d7bf7eb8599d97a31a4764b20cff364e043658db1e9df35169f2cb",
+    "backend/tests/backend/proposalCurrentRequestSql.integration.test.ts": "02976660c20caaee7aee934550e6fea0fda8a31d1530aad6199f1a03c5d572cc",
+    "backend/tests/backend/proposalCurrentIssuanceSql.integration.test.ts": "e5875c5fba4fdd3cd5c229b20c5517ceec5ef2166b974584a2ac367331c0f8fd",
+    "backend/tests/backend/currentIssuanceObserverFixture.ts": "50e4e1e8313ffedb4daab330f3c011440c91b210ed6c954424c7bd5793deff39",
+    "backend/tests/backend/generatedDeliveryPipeline.integration.test.ts": "8562a4dfe5b272377199a33f8e72eeb3688d4c15bda8d5c6a029860fa45bf2bc"
+  },
+  "checks": [
+    {
+      "name": "python_protocol_and_observation",
+      "passed": 34,
+      "explicitly_unselected": 0,
+      "log_sha256": "62b7e8f5652dc6db7efffd6f805beb1d05f7d822366a0c145cbf30635434165d"
+    },
+    {
+      "name": "frontend_guard_and_exact_sql",
+      "passed": 33,
+      "explicitly_unselected": 0,
+      "log_sha256": "abfd12e0e817cded8c6818f1e3baedd2dc746dd755cbc2cb0d6df50d1f36e92a"
+    },
+    {
+      "name": "canonical_generated_issuance_and_source_drift",
+      "passed": 1,
+      "explicitly_unselected": 17,
+      "log_sha256": "8de294b2bf7d182c1899841525beaec0bcb9c38e5ee59fa6ef25cca8700cda6d"
+    },
+    {
+      "name": "actual_local_browser_and_production_cli",
+      "passed": 4,
+      "explicitly_unselected": 0,
+      "log_sha256": "cc82021856e8e7ae1e9ca5141bfe0ad9015467ca5620b923c12415d74a6c7850"
+    },
+    {
+      "name": "two_reported_older_base_failures_serial_recheck",
+      "passed": 2,
+      "explicitly_unselected": 21,
+      "log_sha256": "8d6f3f927be13ced0f41a005797503db416268120217a744965580bdd101ea4e",
+      "note": "Both affected cases passed serially with their unchanged default budgets; this does not convert the interrupted full run into a passing suite."
+    }
+  ],
+  "additional_completed_checks": {
+    "backend_typecheck": true,
+    "backend_build": true,
+    "frontend_typecheck": true,
+    "frontend_tests": {
+      "passed": 380,
+      "files": 59
+    },
+    "frontend_build": true,
+    "workflow_structure_and_mandatory_browser_install": true,
+    "diff_whitespace": true
+  },
+  "interrupted_diagnostics": [
+    {
+      "suite": "full backend on older isolated base",
+      "complete": false,
+      "log_sha256": "a33d96c10932bff1bc36e3b99bfe36fa51a33680af1bf5dcae36e347c07a9de2",
+      "reported_failures": [
+        "generatedDeliveryPipeline: projects actual accepted responses, renders verified DOCX, and keeps human approval pending",
+        "deliveryByteProof: reuses only privately verified identical bytes and exact current model binding"
+      ],
+      "note": "Two cases reported failure at approximately five seconds during concurrent validation; final traceback was not emitted before the owning parent requested interruption. This is not a full passing run."
+    },
+    {
+      "suite": "full operations discovery",
+      "complete": false,
+      "log_sha256": "7aa2fbee4df1b31b9ca1bce456bb2acdd045d0d543d7863c483d203fe033465d",
+      "note": "Interrupted by owning parent before complete; no complete count or pass claimed."
+    }
+  ],
+  "cleanup": {
+    "owned_worktree_node_python_processes_after_interruption": 0,
+    "owned_fixture_containers_remaining": 0,
+    "shared_postgres_untouched": true,
+    "actual_browser_process_and_private_fixture_cleanup_verified": true
+  },
+  "boundaries": {
+    "hosted_activation": false,
+    "deployment": false,
+    "customer_mutation": false,
+    "provider_calls": false,
+    "billing_or_unknown_usage_mutation": false,
+    "native_postgres_qualification": false,
+    "pglite_fixture_only": true,
+    "actual_browser_uses_synthetic_https_and_html": true,
+    "production_tls_bypass": false,
+    "authenticated_customer_download": false,
+    "human_approval": false,
+    "complete_combined_checks_on_current_main": "release owner gate"
+  }
+}

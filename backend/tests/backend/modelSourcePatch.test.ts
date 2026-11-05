@@ -15,9 +15,12 @@ import {
   buildSemanticPatchScope,
 } from "../../supabase/functions/_shared/modelSemanticPatch";
 
-function fixture() {
+function fixture(language: "en" | "ar" = "en") {
   const id = "00000000-0000-4000-8000-000000000001",
-    text = "The supplier must deliver within 30 days after approval.";
+    text =
+      language === "ar"
+        ? "يجب على المورد التسليم خلال 30 يومًا بعد الموافقة."
+        : "The supplier must deliver within 30 days after approval.";
   const source = {
     version: 1,
     entity_kind: "document",
@@ -228,4 +231,181 @@ it("lets application materialization discard forged review flags without giving 
       sourceContext: f.context,
     }),
   ).not.toThrow();
+});
+
+function draftRepairFixture(language: "en" | "ar") {
+  const original = fixture(language);
+  const requirement = {
+    ...structuredClone(original.candidate.requirements[0]),
+    id: "10000000-0000-4000-8000-000000000001",
+  };
+  const sourceContext = {
+    ...original.context,
+    source_requirements: [requirement],
+  };
+  const draft = {
+    key: "response",
+    title: "Proposed response",
+    content_blocks: [{ type: "paragraph", text: requirement.text }],
+    requirement_ids: [requirement.id],
+    evidence_refs: structuredClone(requirement.source_refs),
+    company_claims: [],
+    assumptions: [],
+    questions: [],
+  };
+  const context: any = {
+    target_task: "draft_section",
+    original_context: sourceContext,
+    candidate: {
+      ...structuredClone(draft),
+      evidence_refs: [
+        { id: original.evidence[0].id, quote: "Wrong quotation." },
+      ],
+    },
+  };
+  const repaired = {
+    target_task: "draft_section",
+    result: draft,
+    changes: ["replace:$.evidence_refs[0].quote"],
+  };
+  return { original, context, repaired, required: [requirement.id] };
+}
+
+it.each(["en", "ar"] as const)(
+  "validates a faithful %s draft repair against its original source requirements",
+  (language) => {
+    const f = draftRepairFixture(language);
+    expect(() =>
+      validateModelResult(
+        "draft_section",
+        f.repaired.result,
+        f.original.evidence,
+        f.required,
+        { sourceContext: f.context.original_context },
+      ),
+    ).not.toThrow();
+    const validated = validateModelResult(
+      "repair_result",
+      f.repaired,
+      f.original.evidence,
+      f.required,
+      { sourceContext: f.context },
+    );
+    expect(validated.result).toEqual(f.repaired.result);
+    expect(validated.result.requirement_ids).toEqual(f.required);
+    expect(validated.result.content_blocks[0].text).toBe(
+      f.original.evidence[0].text,
+    );
+  },
+);
+
+it.each([
+  "missing_requirement",
+  "different_requirement",
+  "invalid_span",
+  "changed_reviewed_condition",
+])(
+  "a repair cannot bypass the original %s binding using outer-envelope requirements",
+  (fault) => {
+    const f = draftRepairFixture("en");
+    // A plausible outer copy cannot substitute for the original task's binding.
+    f.context.source_requirements = structuredClone(
+      f.context.original_context.source_requirements,
+    );
+    const original = f.context.original_context;
+    if (fault === "missing_requirement") delete original.source_requirements;
+    if (fault === "different_requirement")
+      original.source_requirements[0].id =
+        "20000000-0000-4000-8000-000000000001";
+    if (fault === "invalid_span")
+      original.source_requirements[0].source_refs[0].id = "unknown-source-span";
+    if (fault === "changed_reviewed_condition")
+      original.source_requirements[0].source_semantics.conditions = [];
+    expect(() =>
+      validateModelResult(
+        "repair_result",
+        f.repaired,
+        f.original.evidence,
+        f.required,
+        { sourceContext: f.context },
+      ),
+    ).toThrow("EVIDENCE_REFERENCE_INVALID");
+  },
+);
+
+it("does not replace original requirements with conflicting outer-envelope metadata", () => {
+  const f = draftRepairFixture("ar");
+  f.context.source_requirements = [];
+  expect(() =>
+    validateModelResult(
+      "repair_result",
+      f.repaired,
+      f.original.evidence,
+      f.required,
+      { sourceContext: f.context },
+    ),
+  ).not.toThrow();
+  f.repaired.result.requirement_ids = ["30000000-0000-4000-8000-000000000001"];
+  expect(() =>
+    validateModelResult(
+      "repair_result",
+      f.repaired,
+      f.original.evidence,
+      f.required,
+      { sourceContext: f.context },
+    ),
+  ).toThrow();
+});
+
+it("retains legacy repair validation without a source contract and still rejects source quote changes", () => {
+  const f = draftRepairFixture("en");
+  const context = {
+    target_task: "draft_section",
+    original_context: {},
+    candidate: f.context.candidate,
+  };
+  expect(() =>
+    validateModelResult(
+      "repair_result",
+      f.repaired,
+      f.original.evidence,
+      f.required,
+      { sourceContext: context },
+    ),
+  ).not.toThrow();
+  f.repaired.result.evidence_refs[0].quote = "A different delivery obligation.";
+  expect(() =>
+    validateModelResult(
+      "repair_result",
+      f.repaired,
+      f.original.evidence,
+      f.required,
+      { sourceContext: context },
+    ),
+  ).toThrow("EVIDENCE_REFERENCE_INVALID");
+});
+
+it("retains source-bound analysis repair validation and reviewed tuple enforcement", () => {
+  const f = fixture();
+  const context = {
+    target_task: "analyze_chunk",
+    original_context: f.context,
+    candidate: f.candidate,
+  };
+  const repaired = {
+    target_task: "analyze_chunk",
+    result: structuredClone(f.candidate),
+    changes: [],
+  };
+  expect(() =>
+    validateModelResult("repair_result", repaired, f.evidence, f.required, {
+      sourceContext: context,
+    }),
+  ).not.toThrow();
+  repaired.result.requirements[0].source_semantics.quantities[0].value = "7";
+  expect(() =>
+    validateModelResult("repair_result", repaired, f.evidence, f.required, {
+      sourceContext: context,
+    }),
+  ).toThrow("EVIDENCE_REFERENCE_INVALID");
 });

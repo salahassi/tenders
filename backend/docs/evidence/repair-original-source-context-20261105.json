@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "observed_at_utc": "2026-11-05T00:02:19.129337+00:00",
+  "scope": "canonical repair target validation source-context correction",
+  "baseline_source_revision": "8d970aa23f943d5909d194cdd8d466ab4dffee42",
+  "runtime_file": "backend/supabase/functions/_shared/model.ts",
+  "runtime_before_sha256": "cd7210ff103d9ca524b513f9a44c800a1ec2c0aafee3e38585ab32e0aefb1405",
+  "runtime_after_sha256": "e98fdffb10e6a07aea33c34d214b6432081955a37aa9aa8d66e1ee4d97ea2ae8",
+  "regression_file": "backend/tests/backend/modelSourcePatch.test.ts",
+  "regression_sha256": "c088c3aaf7787dd1cffa25ed1ca02c9d24a7f5d65433095645ab645419b1881a",
+  "discovery": {
+    "qualification_control_results": {
+      "passed": 186,
+      "failed": 2,
+      "files": 5
+    },
+    "retained_log_sha256": "dad912a13f8aa8818daf7eefd2f42086ea14fc1b5ca71c24088138bb9a7a71c0",
+    "failure": "Actual executeModel rejects faithful EN/AR scoped draft quote repairs with EVIDENCE_REFERENCE_INVALID at $.requirement_ids. Direct original-task validation passes.",
+    "cause": "Recursive repair target validation reused the outer repair envelope; draft source validation finds the nested source contract but reads source_requirements from the outer envelope, where they are absent."
+  },
+  "baseline_regression": {
+    "command": [
+      "./node_modules/.bin/vitest",
+      "run",
+      "--maxWorkers=1",
+      "tests/backend/modelSourcePatch.test.ts"
+    ],
+    "passed": 9,
+    "failed": 3,
+    "log_sha256": "a30a7e7a6abbb9cc57251218317f0209632f38cb6fa782603fd8c9c5bc13063c"
+  },
+  "correction": "Only recursive target validation receives original_context when present, otherwise its existing sourceContext; other options and outer repair validation remain unchanged.",
+  "verification": {
+    "production_only": {
+      "command": [
+        "./node_modules/.bin/vitest",
+        "run",
+        "--maxWorkers=1",
+        "tests/backend/modelSourcePatch.test.ts",
+        "tests/backend/modelRepairFormat.test.ts",
+        "tests/backend/modelContentRepair.test.ts",
+        "tests/backend/modelRepairRecovery.test.ts",
+        "tests/backend/modelQuoteRepairScope.test.ts",
+        "tests/backend/sourceEvidence.test.ts"
+      ],
+      "passed": 67,
+      "files": 6,
+      "exit_code": 0,
+      "log_sha256": "269b5a87137d656394734bd08d6767cdbc2376221824e900a69f03f1b3a3d4c5"
+    },
+    "production_plus_pending_qualification_controls": {
+      "passed": 139,
+      "files": 7,
+      "exit_code": 0,
+      "log_sha256": "9de3a72670802c688902df8d3418e0094df0830b639a6032dd9d0730ca44392d",
+      "qualification_changes_committed_separately": true
+    },
+    "typecheck": {
+      "exit_code": 0,
+      "log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220"
+    },
+    "build": {
+      "exit_code": 0,
+      "log_sha256": "8652d82be3115ea6597ae3b7dcf42d83bc898c68ec15888bbf53917a98ebac84"
+    }
+  },
+  "independent_review": {
+    "reviewer": "reserve_finish/repair_review",
+    "method": "source-only review of production envelope, narrow final diff and regression boundaries",
+    "material_blockers": 0,
+    "tests_executed_by_reviewer": false
+  },
+  "limits": [
+    "No provider requests, reservations or production mutations. Controlled response bytes are authored fixtures, not model semantic qualification.",
+    "Runtime model.ts is a native-image COPY input. The previous image89af source binding is invalid for this corrected runtime; image build, qualification, manifest freeze and actual deployment must be renewed.",
+    "Full integrated package/operations gates and hosted acceptance remain separate.",
+    "The initial npm test invocation accidentally selected the full backend due the broad package script; only that owned process was interrupted with exit130. No complete-suite result is claimed."
+  ]
+}

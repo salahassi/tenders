@@ -1,19 +1,19 @@
 {
-  "version": 5,
+  "version": 6,
   "status": "draft_remaining_actions_not_complete",
-  "generated_at_utc": "2026-11-04T23:35:08.412544+00:00",
+  "generated_at_utc": "2026-11-05T00:49:56.794792+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
-  "observed_root_commit": "8d970aa23f943d5909d194cdd8d466ab4dffee42",
+  "observed_root_commit": "2b869ac341f3ca7944247930e68c022f91a7383a",
   "evidence_index": "backend/docs/evidence/reliability-r0-index-20261104.json",
   "application_deployed": false,
   "final_hosted_acceptance_passed": false,
   "release_manifest": {
     "path": "backend/scripts/ops/proposal-delivery-release.json",
-    "canonical_sha256": "4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76",
+    "canonical_sha256": "2e6512d2eef73bc130f928cfcc01b04bcb437529cb5ab4b90fa815a228dce6fa",
     "migrations": 24,
     "source_migrations": 24,
     "missing_migrations": [],
-    "state": "final_source_frozen_restore_passed_deployment_pending",
+    "state": "local_application_and_relevant_followup_checks_passed_isolated_restore_passed_final_github_release_pending",
     "gateway_contract": "v2_final_pinned_one_worker_with_exact_gateway_https_runtime_qualification_binding"
   },
   "actions": [
@@ -34,7 +34,7 @@
       ],
       "remaining": "Exercise the deployed full Auth/API/worker/Storage/proxy path under observed resource limits after the checked release. Retain exact bytes/order, slow-consumer/cancel behavior and measured margins without inventing a product quota.",
       "done_when": "Actual hosted path receipts bind deployed source/images/authority to full result hashes/order, complete required volumes, slow-consumer/cancel behavior, cleanup and the existing 600-second issuance clock; retain measured fixture scope and margin.",
-      "not_proven": "No combined hosted Auth/LoadBalancer issuance SLO or universal admitted capacity. Minimum measured DOCX margin remains 10.88 MiB.",
+      "not_proven": "No combined hosted Auth/LoadBalancer issuance SLO or universal admitted capacity. Current DOCX fixture minimum17.21MiB; earlier10.88MiB retained without causal comparison.",
       "acceptance_cases": [
         "EX-01",
         "EX-02",
@@ -42,7 +42,7 @@
         "OP-02",
         "BC-01"
       ],
-      "implementation": "Actual API100, DOCX warm-two/fresh-one, final Nginx and exact-image HTTPS six-case proofs are ingested and source-bound. Runtime image is qualified and published.",
+      "implementation": "Corrected176bcf API100,DOCX warm2/fresh1/reviewed and retained final Nginx/HTTPS proofs bound; exact996e1ea5 runtime published. Historical native failures/scopes unchanged.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -53,18 +53,18 @@
         "W00",
         "W11"
       ],
-      "status": "local865d840_pass_retained_corrected_full_github_gate_pending",
+      "status": "closed_local_scopes_final_github_release_gate_pending",
       "evidence": [
         "E01"
       ],
-      "remaining": "Run corrected complete GitHub release verification after main CI41934787660 exposed one 5000ms real-DOCX harness timeout. Explicit bounded integration timeout and15 focused one-CPU executions pass; no product deadline/verification assertions changed.",
+      "remaining": "Complete2b869ac packages and667 operations checks passed. Isolated-retirement cleanup follow-up passes57 focused guards at integrated0cfb2ef, with application/runtime source unchanged. Require the mandatory complete GitHub release gate on the final commit.",
       "done_when": "One exact final commit has required complete green checks and source-bound logs; any remaining failure is explicit.",
       "not_proven": "Functional gates do not prove deployment, provider semantics, native universal capacity or hosted issuance.",
       "acceptance_cases": [
         "R0",
         "W11 exit evidence"
       ],
-      "implementation": "Backend3284/193 and frontend 380/59 tests plus both package types/builds pass;537 operations + 11 schema + 16 Kubernetes pass with no source drift.",
+      "implementation": "At2b869ac backend3379/200files,frontend380/59files,both types/builds and640operations+11schema+16Kubernetes pass, with unchanged source maps. Actual browser4controls remain separately source-bound. Historical failures and passes retain their exact scopes. The later cleanup correction has57 focused passes and independent source review; it changes only four fixture Python modules and adds their regression module.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -76,12 +76,12 @@
         "W11",
         "D05"
       ],
-      "status": "closed_final24_isolated_cloud_restore_scope",
+      "status": "closed_current2e6512d2_isolated_restore_scope_at2b869ac",
       "evidence": [
         "E06",
         "E13"
       ],
-      "remaining": "No pending isolated restore for this exact 24-migration manifest; repeat if relevant release/schema/Auth/Storage contracts change.",
+      "remaining": "No pending restore for the exact2b869ac/2e6512d2 contract proven in41942455870; repeat if relevant release/schema/Auth/Storage contracts change. Application renderer,deployment and recovery objectives remain separate.",
       "done_when": "The renewed exact-source isolated schema/Auth/Storage drill passes required checks and both cleanup stages; its receipt names the final manifest and source hashes.",
       "not_proven": "Isolated synthetic restore does not prove application rendering, real proposal issuance, production deployment or declared recovery-point/time objectives.",
       "acceptance_cases": [
@@ -89,7 +89,7 @@
         "OP-04",
         "D05"
       ],
-      "implementation": "Original-CA run41933205779 at865d840 passes all 13 Auth/Storage HTTP checks, exact 24 migrations and both cleanup stages under manifest4cb2e712.",
+      "implementation": "Original-CA run41942455870 at2b869ac passes13 actual Auth/Storage HTTP checks,24migrations,currentmanifest2e6512d2 and both cleanup stages. Historical41933205779/4cb2e712 retained unchanged.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -127,12 +127,12 @@
         "W08",
         "D07"
       ],
-      "status": "reserve_frozen_ten_single_requests_constructible_forty_unsupported_no_outputs",
+      "status": "reserve42_single_requests_constructible8_unsupported_no_outputs",
       "evidence": [
         "E09",
         "E10"
       ],
-      "remaining": "Complete and review the 40 unsupported reserve cases with faithful workflow prerequisites/composite schedules. Freeze actual targets, source/prompt/schema/adapter/validator locks and noncritical acceptance decisions before authorized execution. Retain 100 scheduled cells/model and separately qualify 48 prospective retrieval cells plus independent outcome adjudication. Separately obtain and evaluate the authorized independently reviewed private holdout required by ME-14; synthetic reserve results cannot replace it.",
+      "remaining": "Complete and review the 8 unsupported reserve cases with faithful workflow prerequisites/composite schedules. Freeze actual targets, source/prompt/schema/adapter/validator locks and noncritical acceptance decisions before authorized execution. Retain 100 scheduled cells/model and separately qualify 48 prospective retrieval cells plus independent outcome adjudication. Separately obtain and evaluate the authorized independently reviewed private holdout required by ME-14; synthetic reserve results cannot replace it.",
       "done_when": "All 13 task boundaries accounted for; independent gold, per-class attempted/completed/scored denominators and critical false-acceptance/rejection/omission outcomes, source bindings and measured retrieval scope retained. The separately authorized independently reviewed private holdout passes its frozen per-class oracles with full denominators and retained counterexamples.",
       "not_proven": "Synthetic reserve is not independently blind/private holdout. Request construction and authored control responses do not qualify model semantics; prior critical findings and7/16 bounded retrieval misses remain.",
       "acceptance_cases": [
@@ -145,7 +145,7 @@
         "RT-01",
         "RT-02"
       ],
-      "implementation": "50-case reserve and scoring/activation boundaries frozen;140 offline tests pass. Ten single-request cases across4families construct canonical requests;40 remain explicitly unsupported. No provider/retrieval outputs.",
+      "implementation": "50-case reserve/corpus/gold and100planned cells/model unchanged;42single requests across13families constructible,8unsupported;189controlled tests pass. Four plan_proposal cases are explicitly legacy. EN/AR repair controls exposed a production original-context defect corrected separately; no provider/retrieval/database requests.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -202,14 +202,14 @@
         "W00",
         "W11"
       ],
-      "status": "final_manifest_images_binding_gates_restore_ready_deployment_pending",
+      "status": "corrected_runtime_published_manifest_refrozen_current_gates_restore_and_deployment_pending",
       "evidence": [
         "E04",
         "E05",
         "E08",
         "E13"
       ],
-      "remaining": "Execute the checked release using final 24 manifest and qualified image promotion. Validate actual old gateway identities; keep permanent legacy-RPC fence, prove old-process termination, visible database drain and pre-snapshot locked zero census. Complete exact deployed schema/image/config readback and preserve forward recovery.",
+      "remaining": "After complete current-source gates (current-manifest isolated restore41942455870 already passed),execute checked release using exact qualified996e1ea5 digest and verified release-head label promotion. Validate actual oldgateway identities,permanent legacy-RPC fence,old-process termination,visibleDBdrain and pre-snapshot lockedzero census. Retain exact deployed schema/image/config readback and forward recovery.",
       "done_when": "Release workflow and deployed schema/image/gateway readback match the reviewed contract, with protected historical rows/ACLs and a concrete recovery record.",
       "not_proven": "Application is not yet deployed. Publication, zero point-in-time census and isolated restore do not establish actual fence/drain/rollout.",
       "acceptance_cases": [
@@ -217,7 +217,7 @@
         "OP-02",
         "OP-04"
       ],
-      "implementation": "Final 24 manifest4cb2e712 frozen; exact runtime published, label-only promotion probe passes, final proxy/image guards and full gates/renewed cloud restore pass.",
+      "implementation": "Corrected176bcf qualification/published996e1ea5 and localc8b6db38label-only probe pass. Current24manifest2e6512d2 frozen using unchanged originalbaseline. Both41934809173 and41937345060 cancelled before cluster/images/rollout; neither deployed.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -237,7 +237,7 @@
         "D05",
         "D06"
       ],
-      "status": "current_real_target_incomplete_supported_successor_and_hosted_acceptance_pending",
+      "status": "guarded_current_request_and_isolated_retirement_drill_prepared_hosted_execution_pending",
       "evidence": [
         "E02",
         "E04",
@@ -246,7 +246,7 @@
         "E07",
         "E12"
       ],
-      "remaining": "Use isolated fixtures or explicitly authorized existing records through the real browser/API/worker/storage paths. Cover early template/partial vs substantive issued status, generated and ordinary draft/final exports, one/two-volume atomic readiness, close-tab/reentry/retry, late source/member/approval changes, full/unknown storage and readback. Measure accepted-to-whole-package issuance including queue against 600 seconds; terminal unavailability returns earlier. For retirement acceptance, run the exact fenced process/physical recovery protocol in an authorized isolated setting; local fake process proofs are insufficient. The renewed exact 24-migration shared-helper 13-check restore is proven. Separately define service recovery-point/time objectives and compare observed recovery against them before claiming D05. Use the corrected manual retirement helper with strict original-container identities and validated saved exit proofs (54 focused tests passed); actual isolated Kubernetes/PVC interruption acceptance remains open. The release gateway drain is separately guarded.",
+      "remaining": "Use isolated fixtures or explicitly authorized existing records through the real browser/API/worker/storage paths. Cover early template/partial vs substantive issued status, generated and ordinary draft/final exports, one/two-volume atomic readiness, close-tab/reentry/retry, late source/member/approval changes, full/unknown storage and readback. Measure accepted-to-whole-package issuance including queue against 600 seconds; terminal unavailability returns earlier. For retirement acceptance, run the exact fenced process/physical recovery protocol in an authorized isolated setting; local fake process proofs are insufficient. Both historical4cb2e712 and current2e6512d2 isolated24-migration13-check restores are proven at their exact sources; application rendering/issuance and recovery objectives remain separate. Separately define service recovery-point/time objectives and compare observed recovery against them before claiming D05. Use the corrected manual retirement helper with strict original-container identities and validated saved exit proofs (54 focused tests passed); actual isolated Kubernetes/PVC interruption acceptance remains open. The release gateway drain is separately guarded. Execute the prepared nonce-owned two-job retirement drill and reviewed current-request workflow only in their authorized scopes. Preserve exact request timestamps,nullable persisted completion,effective timeout and immediate observed terminal errors; successful start is not whole-package issuance or downloaded-file acceptance.",
       "done_when": "Independent authenticated download hashes/sizes/complete-set and browser state; full request timestamps including failures; quota/usage/lease/currentness invariants; cleanup and recovery receipts.",
       "not_proven": "No real completed export, hosted 600s/concurrency claim or production physical retirement. Do not use incompatible legacy successor helper or fabricate version/completion.",
       "acceptance_cases": [
@@ -265,7 +265,7 @@
         "UX-03",
         "BC-01"
       ],
-      "implementation": "Durable package and browser acceptance harnesses implemented. Fresh authorized inspection finds no current completed version; after verified deployment use fresh server-owned details for explicit canonical current-contract successor, retaining old committed analysis/pins/50 unknown usage receipts. No activation performed.",
+      "implementation": "Current-request helper local34Python/33TS-SQL/1canonicalDOCX/4actual synthetic-browser controls pass,with exact durable request persistence,old-history preservation and original600s read-only observer. Separate isolatedretirement45cloud+62strict/PG+3PGlite controls pass; no hosted drill or current-request activation. Existing real target remains last observed incomplete with50unknown usage unchanged.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     }
@@ -287,8 +287,8 @@
       "result": "Local PostgreSQL red/green proof integrated; actual production admission and physical retirement remain distinct."
     }
   ],
-  "previous_observed_root_commit": "a7922ed717bdc6f8d4973fb9aa72979a5549d675",
-  "refresh_requested_anchor": "8d970aa23f943d5909d194cdd8d466ab4dffee42",
+  "previous_observed_root_commit": "8d970aa23f943d5909d194cdd8d466ab4dffee42",
+  "refresh_requested_anchor": "2b869ac341f3ca7944247930e68c022f91a7383a",
   "completed_scopes_since_revision2": [
     {
       "scope": "API admission/client identity and complete paging implemented",
@@ -329,14 +329,15 @@
     }
   ],
   "pending_at_anchor": {
-    "full_checks": "passed865d840_backend3284_frontend380_and564_ops_schema_kubernetes",
-    "final_https_receipt": "ingested_a10f52cf_six_cases_passed",
-    "final_gateway_release_binding": "exact_final_proofs_bound",
-    "runtime_image_promotion": "qualified_image_published_label_only_local_probe_passed_actual_release_head_rollout_pending",
-    "renewed24_migration_restore": "passed41933205779_manifest4cb2e712",
-    "model_reserve": "10_constructible40_unsupported_no_provider_outputs_not_blind",
+    "full_checks": "operations667pass_at2b869ac_before_cleanup_followup_current_full_application_gates_pending",
+    "final_https_receipt": "historical_exact_final_transport_proof_retained",
+    "final_gateway_release_binding": "unchanged_final_proofs_bound_in2e6512d2",
+    "runtime_image_promotion": "qualified176bcf_published996e1ea5_localc8b6db38_probe_passed_release_head_promotion_and_rollout_pending",
+    "renewed24_migration_restore": "passed41942455870_at2b869ac_manifest2e6512d2",
+    "model_reserve": "42constructible8unsupported_zero_outputs_not_blind",
+    "isolated_retirement_drill": "prepared_locally_verified_no_hosted_dispatch",
     "application_deployed": false,
-    "actual_proposal_export": "blocked_no_current_completed_version"
+    "actual_proposal_export": "current_request_helper_ready_not_activated_no_proven_current_completed_version"
   },
   "completed_scopes_since_revision3": [
     {
@@ -414,9 +415,80 @@
     }
   ],
   "post_anchor_followup": {
-    "source_revision": "cf3ee05",
-    "release_attempt": 41934809173,
-    "release_attempt_conclusion": "cancelled_before_cluster_access",
-    "manual_retirement_proof_fix": "54 focused tests pass; actual isolated Kubernetes/PVC interruption acceptance remains open."
-  }
+    "source_revision": "2b869ac341f3ca7944247930e68c022f91a7383a",
+    "cancelled_release_attempts": [
+      41934809173,
+      41937345060
+    ],
+    "scope": "Both releases cancelled before access. Exact2b869ac operations667 and current-manifest restore41942455870 pass; complete current application gate,release and actualresume pending."
+  },
+  "historical_release_manifests": [
+    {
+      "path": "backend/scripts/ops/proposal-delivery-release.json",
+      "canonical_sha256": "4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76",
+      "migrations": 24,
+      "source_migrations": 24,
+      "missing_migrations": [],
+      "state": "final_source_frozen_restore_passed_deployment_pending",
+      "gateway_contract": "v2_final_pinned_one_worker_with_exact_gateway_https_runtime_qualification_binding"
+    }
+  ],
+  "historical_pending_at_revision5": {
+    "full_checks": "passed865d840_backend3284_frontend380_and564_ops_schema_kubernetes",
+    "final_https_receipt": "ingested_a10f52cf_six_cases_passed",
+    "final_gateway_release_binding": "exact_final_proofs_bound",
+    "runtime_image_promotion": "qualified_image_published_label_only_local_probe_passed_actual_release_head_rollout_pending",
+    "renewed24_migration_restore": "passed41933205779_manifest4cb2e712",
+    "model_reserve": "10_constructible40_unsupported_no_provider_outputs_not_blind",
+    "application_deployed": false,
+    "actual_proposal_export": "blocked_no_current_completed_version"
+  },
+  "completed_scopes_since_revision5": [
+    {
+      "scope": "Production original-task context correction and new source-bound native/runtime publication",
+      "evidence": [
+        "E01",
+        "E02",
+        "E13"
+      ],
+      "limit": "Current complete gates,renewedrestore,release and hostedquality remain pending."
+    },
+    {
+      "scope": "42 canonical reserve request constructions across13families",
+      "evidence": [
+        "E09"
+      ],
+      "limit": "8unsupported;zero actualprovider/retrieval/database requests;no semanticqualification."
+    },
+    {
+      "scope": "Prepared isolatedretirement and current-request browser/observer helpers",
+      "evidence": [
+        "E01",
+        "E04"
+      ],
+      "limit": "No hostedactivation;metadata issuance is distinct from authenticateddownload/humanapproval."
+    },
+    {
+      "scope": "Exact2b869ac complete operations/schema/Kubernetes checks",
+      "evidence": [
+        "E01"
+      ],
+      "limit": "667 pass before forthcoming retirement cleanup correction; current complete applications stillpending."
+    },
+    {
+      "scope": "Current2e6512d2 original-CA isolated cloud restore",
+      "evidence": [
+        "E06"
+      ],
+      "limit": "13 actual HTTPchecks/24migrations/bothcleanups,syntheticisolateddata;noapplicationrenderer/productiondeployment/issuance."
+    }
+  ],
+  "historical_post_anchor_followups": [
+    {
+      "source_revision": "cf3ee05",
+      "release_attempt": 41934809173,
+      "release_attempt_conclusion": "cancelled_before_cluster_access",
+      "manual_retirement_proof_fix": "54 focused tests pass; actual isolated Kubernetes/PVC interruption acceptance remains open."
+    }
+  ]
 }

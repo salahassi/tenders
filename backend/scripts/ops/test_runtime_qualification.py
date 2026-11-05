@@ -53,6 +53,10 @@ class RuntimeQualificationTests(unittest.TestCase):
         self.assertEqual(sum(e['type'] == 'file' for e in self.receipt['source_entries'].values()), 130)
         self.assertEqual(len(self.receipt['image_app_tar_inventory']), 146)
         self.assertEqual(len(self.receipt['qualified_image']['rootfs']['Layers']), 17)
+        self.assertEqual(len(self.receipt['native_evidence']), 4)
+        self.assertEqual(self.receipt['source_entries']['backend/supabase/functions/_shared/model.ts']['sha256'],
+                         'e98fdffb10e6a07aea33c34d214b6432081955a37aa9aa8d66e1ee4d97ea2ae8')
+        self.assertEqual(self.receipt['observed_checkout_revision'], '19498666b511a29c251923baa75bf42c88a0c6f0')
         q.verify_published(self.image(), REFERENCE, self.receipt)
 
     def test_source_bytes_and_executable_mode_are_both_required(self):
@@ -189,6 +193,14 @@ class RuntimeQualificationTests(unittest.TestCase):
 
     def test_publication_never_infers_registry_digest_from_local_id(self):
         with self.assertRaisesRegex(q.QualificationError,'PUBLICATION_PENDING'):q.publication(self.root)
+        # An actual historical publication cannot qualify the corrected image.
+        path = self.root / q.PUBLICATION
+        pending = path.read_bytes()
+        try:
+            path.write_bytes((ROOT/'backend/docs/evidence/runtime-qualified-publication-20261104.json').read_bytes())
+            with self.assertRaisesRegex(q.QualificationError,'PUBLICATION_IDENTITY'):q.publication(self.root)
+        finally:
+            path.write_bytes(pending)
         for reference in ['runtime:latest','other/runtime@sha256:'+'b'*64,REFERENCE+'\nRUN something']:
             with self.assertRaises(q.QualificationError): q.promotion_dockerfile(reference,REVISION)
         value=self.image();value['RepoDigests']=[]
