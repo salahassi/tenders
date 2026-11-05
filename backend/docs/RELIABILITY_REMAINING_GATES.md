@@ -6,7 +6,7 @@ and guarded current-request browser/observer helper are integrated. **Complete l
 in 200 files, 380 frontend tests in 59 files, and both type checks/builds.
 Actual release and actual proposal resume/issuance remain pending.** Exact `2b869ac` operations/schema/Kubernetes
 checks and current-manifest isolated cloud restore now pass at their recorded
-scopes, before the forthcoming retirement-cleanup correction. Earlier completed local and restore scopes are
+scopes, before the later retirement-cleanup correction. Earlier completed local and restore scopes are
 retained against their original source; they do not close these current gates.
 
 The corrected runtime `176bcf738676` has four fresh native receipts and exact
@@ -30,7 +30,7 @@ programming interface; OCR means optical character recognition.
 Historical source `865d840` passed complete local functional checks, and
 original-CA restore 41933205779 passed its exact 24-migration manifest
 `4cb2e712`. **A02 closes the exact `2b869ac` local scope; the retirement-cleanup
-follow-up and mandatory final GitHub gate still require verification. A03 now also closes the exact current `2b869ac`/`2e6512d2` isolated
+follow-up now passes 57 focused guards; the mandatory final GitHub gate remains. A03 now also closes the exact current `2b869ac`/`2e6512d2` isolated
 restore scope.** Neither establishes deployed proposal completion.
 The last authorized read-only customer-target inspection remains incomplete and
 unchanged; no current-request activation has occurred at this anchor.
@@ -45,7 +45,7 @@ records. No successful deployment is inferred from either cancelled workflow.
 | Action and current scope | Required next work and completion evidence | Evidence and acceptance |
 | --- | --- | --- |
 | **A01 — Complete hosted capacity and whole-path acceptance** | After the checked release, exercise the deployed Auth/API/worker/Storage/proxy path with exact bytes, complete volumes, slow consumers, cancellation and measured resource margins. Bind the actual accepted-to-issued clock to 600 seconds. Current 17.21 MiB and historical 10.88 MiB are fixture margins only. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E01, E02, E13; W04, W09, D02, D04; EX-01, EX-02, EX-05, OP-02, BC-01 |
-| **A02 — Run complete integrated verification on the current source** | Pending for integrated `2b869ac`. Finish complete application gates and retain source-bound operations/schema/Kubernetes and mandatory real-browser proofs on one exact final source. The 667 operations/schema/Kubernetes checks pass at `2b869ac` before the forthcoming retirement-cleanup correction; changed scopes need relevant revalidation. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E01; W00, W11; R0, W11 exit evidence |
+| **A02 — Run complete integrated verification on the current source** | Complete local application checks pass at `2b869ac`; the later isolated-retirement cleanup correction passes 57 focused guards at `0cfb2ef`, with application/runtime source unchanged. Require the mandatory full GitHub release gate. The 667 operations/schema/Kubernetes checks pass at `2b869ac` before the later retirement-cleanup correction; the changed cleanup scope has its separate focused revalidation. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E01; W00, W11; R0, W11 exit evidence |
 | **A03 — Renew isolated cloud restore for the current 24-migration manifest** | Closed for `2b869ac` and manifest `2e6512d2`: run 41942455870 passes all 13 actual Auth/Storage HTTP checks, 24 migrations and both cleanup stages. Repeat if relevant release/schema/Auth/Storage contracts change; renderer, deployment and recovery objectives remain separate. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E06, E13; W09, W11, D05; OP-03, OP-04, D05 |
 | **A04 — Establish actual available model routes under the existing policy** | Resolve provider-side quota/credit/credential availability through existing authorized routing and billing policy; confirm enabled task routes without silently buying capacity or changing usage accounting. Separately verify immediate clear error when every route is unavailable. **Completion:** Current configured-route availability and no-agent behavior have actual receipts; failures and unknown usage retained. | E08, E09; W07, W10, D06; ME-10, ME-11, BC-01 |
 | **A05 — Complete independent semantic and bounded-retrieval qualification** | 42/50 source cases construct canonical requests; eight remain unsupported. Complete and review those prerequisites/composite schedules without reducing the 100-cell/model denominator. Freeze provider/phase/prompt/schema/validator and business decisions before authorized execution; retain independent per-class outcome adjudication, the 48-cell retrieval plan and a separately authorized private holdout. Offline authored controls are not model quality. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E09, E10; W05, W06, W08, D07; ME-01, ME-02, ME-04, ME-08, ME-09, ME-14, RT-01, RT-02 |
@@ -78,15 +78,15 @@ Chromium/CLI controls passing at the retained source hashes. Both package types
 and builds and all 380 frontend tests across 59 files passed in its isolated checkout. Its broad
 older-base backend/operations runs were interrupted; the two reported roughly
 five-second failures later passed serial focused rechecks. Those diagnostics
-remain separate from the pending complete integrated gate.
+remain separate from the mandatory final GitHub release gate.
 
 At `865d840`, **3,284 backend tests in 193 files and 380 frontend tests in 59 files passed**, together with both packages' type checks and builds. All **537 operations, 11 production-schema and 16 Kubernetes tests passed**. Recorded source maps show no changes during these checks. They are functional results, not capacity timing. The earlier 3,135-pass/two-failure diagnostic and the 33-test response-consumption correction remain indexed; no production busy/authorization guard was relaxed to fix those fixtures.
 
 At exact integrated `2b869ac`, **640 operations, 11 production-schema and 16
 Kubernetes tests pass (667 total)**, with all 539 captured source files unchanged.
-This receipt predates the forthcoming retirement-cleanup correction and does not
+This receipt predates the later retirement-cleanup correction and does not
 cover that later change. Timings from concurrent functional checks are not native
-capacity measurements. The complete current application result remains pending.
+capacity measurements. The complete `2b869ac` application result now passes: 3,379 backend and 380 frontend tests, with both type checks and builds. The later cleanup-only change has 57 focused passes.
 
 Current original-CA restore **41942455870** at `2b869ac` applies all 24 migrations
 from manifest `2e6512d2` and passes all 13 actual Auth/Storage HTTP checks, original
@@ -142,4 +142,4 @@ point/time objectives and whole-cluster fence/restore continuity remain open.
 
 The [machine-readable action matrix](evidence/reliability-remaining-actions-20261104.json) maps each action to the [R0 evidence index](evidence/reliability-r0-index-20261104.json). R0 requires applicable source, fixture, image, migration, clock, policy, hashes, outcomes, usage, cleanup and human-review evidence. The index is a discovery record, not a certificate that every field is complete.
 
-A template or partial draft does not establish substantive issuance; a generated draft requiring source review is not final human approval. Unavailable routes, unsupported adapters and OCR confidence are not semantic passes. The deadline remains **600 seconds from each authorized request's acceptance, including queue time**, with earlier terminal errors; an explicit new request never changes the old request's deadline or accounting. Complete current application gates, relevant operations revalidation, checked deployment, actual provider availability, semantic/retrieval qualification, automatic Arabic OCR, Word update/save and authenticated hosted issuance/export/recovery acceptance remain open.
+A template or partial draft does not establish substantive issuance; a generated draft requiring source review is not final human approval. Unavailable routes, unsupported adapters and OCR confidence are not semantic passes. The deadline remains **600 seconds from each authorized request's acceptance, including queue time**, with earlier terminal errors; an explicit new request never changes the old request's deadline or accounting. The mandatory final GitHub gate, checked deployment, actual provider availability, semantic/retrieval qualification, automatic Arabic OCR, Word update/save and authenticated hosted issuance/export/recovery acceptance remain open.

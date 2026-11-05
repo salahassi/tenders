@@ -1,7 +1,7 @@
 {
   "version": 6,
   "status": "draft_not_release_acceptance",
-  "generated_at_utc": "2026-11-05T00:45:09.107813+00:00",
+  "generated_at_utc": "2026-11-05T00:49:56.794792+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
   "observed_root_commit": "2b869ac341f3ca7944247930e68c022f91a7383a",
   "scope": "Docs-only discovery refresh at integrated2b869ac. Historical receipt hashes/scopes retained; current corrected runtime publication/manifest and prepared request/retirement helpers indexed. Current2b869ac combined application gates now pass; release and actual request/export remain pending. Exact2b869ac operations checks and current-manifest isolated restore now pass at their stated scopes. No execution or external mutations by this refresh.",
@@ -445,6 +445,13 @@
           "level": "L1 release preflight regressions",
           "observed_result": "Publication/source manifest and actual HTTPS disk-resource guards pass14 restore, 33 HTTPS, 15 release and 15 updater tests.",
           "limits": "Synthetic negative guards; actual runtime publication/native/managed observations are separate receipts."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-cleanup-checkpoint-20261105.json",
+          "sha256": "ce9049c2451173325866867b2b152ed326df2c57381507cbdb1a7acd405c08e5",
+          "level": "L1/L2",
+          "observed_result": "Final isolated-retirement cleanup checkpoint and PVC identity correction passes 57 focused tests; independent source review cleared. Root repeated all57 after integration at0cfb2ef.",
+          "limits": "Source and simulated Kubernetes guards only; actual two-runner Kubernetes/PVC drill remains unexecuted. Unknown allocation and partial-protection reconciliation remain explicit."
         }
       ]
     },
@@ -1004,11 +1011,11 @@
     "backend/supabase/functions/_shared/model.ts": "e98fdffb10e6a07aea33c34d214b6432081955a37aa9aa8d66e1ee4d97ea2ae8"
   },
   "historical_revision4_runtime_source_note": "At a7922ed, actual API100 and final pinned1 gateway disk transport are qualified at their explicit local scopes. Full current application/ops checks, final HTTPS binding, runtime image promotion, manifest refreeze, renewed24-migration restore and deployment remain pending.",
-  "current_runtime_source_note": "At2b869ac corrected model.ts has new176bcf native/source qualification,published996e1ea5 digest and localc8b6db38 label-only probe. Refrozen24-migration manifest2e6512d2 is current. Exact2b869ac667 operations checks and current-manifest restore41942455870 pass. Full integrated application gates,release and authenticated hosted acceptance remain pending; older865d840/4cb2e712 closures are historical only.",
+  "current_runtime_source_note": "At2b869ac corrected model.ts has new176bcf native/source qualification,published996e1ea5 digest and localc8b6db38 label-only probe. Refrozen24-migration manifest2e6512d2 is current. Exact2b869ac667 operations checks and current-manifest restore41942455870 pass. Complete2b869ac application gates pass; the isolated-retirement cleanup follow-up passes57 focused guards without application/runtime changes. Final GitHub gate,release and authenticated hosted acceptance remain pending; older865d840/4cb2e712 closures are historical only.",
   "post_anchor_followup": {
     "source_revision": "2b869ac341f3ca7944247930e68c022f91a7383a",
     "generated_at_utc": "2026-11-05T00:38:01.092197+00:00",
-    "scope": "Corrected runtime and prepared operational helpers integrated. Exact2b869ac operations667 and current-manifest isolated restore41942455870 pass; current full application gates and actual release/resume remain pending. Both cancelled release attempts retained."
+    "scope": "Corrected runtime and prepared operational helpers integrated. Exact2b869ac operations667 and current-manifest isolated restore41942455870 pass; current full application gates pass; final GitHub gate and actual release/resume remain pending. Both cancelled release attempts retained."
   },
   "historical_revision5_runtime_source_hashes": {
     "backend/deploy/Dockerfile": "503d4774ce8b42d80d8216371f029d22e3d7bc06e51e12593fbe9eb9db9ce001",
@@ -1042,9 +1049,10 @@
     "renewed_cloud_restore": "passed41942455870_at2b869ac_manifest2e6512d2",
     "release": "pending",
     "actual_request_activation": "pending",
-    "indexed_receipts": 110,
+    "indexed_receipts": 111,
     "historical_receipts_preserved": 92,
-    "new_receipts": 18,
-    "operations_checks": "667passed_at2b869ac_before_retirement_cleanup_followup"
+    "new_receipts": 19,
+    "operations_checks": "667passed_at2b869ac_before_retirement_cleanup_followup",
+    "retirement_cleanup_followup": "57_focused_passed_after_integration_at0cfb2ef_final_github_gate_pending"
   }
 }

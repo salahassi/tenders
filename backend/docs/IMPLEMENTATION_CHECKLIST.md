@@ -10852,3 +10852,14 @@ canonical migration change occurred. An empty census after an unbound PVC is
 gone does not settle in-flight external provisioning: that case retains state
 and namespace for allocation reconciliation, without storage certification or
 database cleanup. Earlier local receipts remain historical.
+
+### November 5 — integrated cleanup follow-up and release readiness
+
+Integrated the independently reviewed cleanup checkpoint and unproven-allocation
+guards as `0cfb2ef`. Root repeated all57 isolated-retirement Python tests: passed.
+The five changed/new fixture Python paths exactly match the new hashed receipt;
+application, runtime, migration and image source remain byte-identical to the
+complete `2b869ac` gate. Current manifest source verification still passes.
+The public index now preserves all110 prior receipts and adds the scoped cleanup
+receipt. Final GitHub verification, actual deployment and the isolated hosted
+retirement drill remain distinct pending execution steps.
