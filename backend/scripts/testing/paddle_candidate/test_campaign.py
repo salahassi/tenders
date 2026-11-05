@@ -64,6 +64,83 @@ class CampaignGuards(unittest.TestCase):
             with self.subTest(key=key), self.assertRaises(ValueError):
                 campaign.validate_controls({**campaign.EXPECTED, key: 'max'})
 
+    def cgroup_fixture(self, proc_path=None):
+        identity, image, owner, pid = 'c' * 64, 'sha256:' + 'd' * 64, 'test-owner', 2468
+        cgroups, proc = self.root / 'cgroups', self.root / 'proc'
+        target = cgroups / 'docker' / identity
+        target.mkdir(parents=True)
+        (target / 'cgroup.procs').write_text(str(pid) + '\n')
+        (proc / str(pid)).mkdir(parents=True)
+        (proc / str(pid) / 'cgroup').write_text('0::' + (proc_path or '/docker/' + identity) + '\n')
+        info = {'Id': identity, 'Image': image, 'State': {'Running': True, 'Pid': pid},
+                'Config': {'Labels': {'a06.campaign.owner': owner}}}
+        return info, image, owner, cgroups, proc, target
+
+    def test_namespace_relative_and_absolute_paths_use_exact_docker_id(self):
+        info, image, owner, cgroups, proc, expected = self.cgroup_fixture()
+        for observed in ['../docker/', '/../docker/', '/../../docker/', '/docker/']:
+            with self.subTest(namespace_path=observed):
+                raw = '0::' + observed + info['Id'] + '\n'
+                (proc / str(info['State']['Pid']) / 'cgroup').write_text(raw)
+                evidence = {}
+                actual, receipt = campaign.resolve_container_cgroup(info, image, owner, cgroups, proc, evidence)
+                self.assertEqual(actual, expected)
+                self.assertEqual(receipt['observed_proc_cgroup'], raw)
+                self.assertIs(receipt, evidence)
+                self.assertFalse(receipt['observed_proc_path_used_for_filesystem_resolution'])
+                self.assertTrue(receipt['host_pid_membership_verified_before_node'])
+
+    def test_proc_id_mismatch_and_unsupported_layouts_preserve_diagnostic(self):
+        info, image, owner, cgroups, proc, _ = self.cgroup_fixture()
+        for observed in ['/docker/' + 'a' * 64, '/system.slice/docker-' + info['Id'] + '.scope',
+                         '/', '/../docker/' + info['Id'] + '/../foreign', '/docker/' + info['Id'] + '\n0::/']:
+            with self.subTest(namespace_path=observed):
+                raw = '0::' + observed + '\n'
+                (proc / str(info['State']['Pid']) / 'cgroup').write_text(raw)
+                diagnostic = {}
+                with self.assertRaises(ValueError):
+                    campaign.resolve_container_cgroup(info, image, owner, cgroups, proc, diagnostic)
+                self.assertEqual(diagnostic['observed_proc_cgroup'], raw)
+                self.assertFalse(diagnostic['host_pid_membership_verified_before_node'])
+
+    def test_cgroup_membership_missing_foreign_or_malformed_fails(self):
+        info, image, owner, cgroups, proc, target = self.cgroup_fixture()
+        for members in ['', '9876\n', '2468\nnot-a-pid\n']:
+            with self.subTest(members=members):
+                (target / 'cgroup.procs').write_text(members)
+                with self.assertRaises(ValueError):
+                    campaign.resolve_container_cgroup(info, image, owner, cgroups, proc)
+        (target / 'cgroup.procs').unlink()
+        with self.assertRaises(FileNotFoundError):
+            campaign.resolve_container_cgroup(info, image, owner, cgroups, proc)
+
+    def test_cgroup_identity_image_owner_and_liveness_fail_closed(self):
+        info, image, owner, cgroups, proc, _ = self.cgroup_fixture()
+        invalid = [dict(info, Id='short'), dict(info, Id='../' + info['Id']), dict(info, Image='sha256:' + 'e' * 64),
+                   dict(info, Config={'Labels': {'a06.campaign.owner': 'foreign'}}),
+                   dict(info, State={'Running': False, 'Pid': 2468}), dict(info, State={'Running': True, 'Pid': True})]
+        for changed in invalid:
+            with self.subTest(info=changed), self.assertRaises(ValueError):
+                campaign.resolve_container_cgroup(changed, image, owner, cgroups, proc)
+
+    def test_cgroup_symlink_redirection_is_rejected(self):
+        info, image, owner, cgroups, proc, target = self.cgroup_fixture()
+        (target / 'cgroup.procs').unlink()
+        target.rmdir()
+        foreign = self.root / 'foreign'
+        foreign.mkdir()
+        (foreign / 'cgroup.procs').write_text('2468\n')
+        target.symlink_to(foreign, target_is_directory=True)
+        with self.assertRaises(ValueError):
+            campaign.resolve_container_cgroup(info, image, owner, cgroups, proc)
+
+    def test_missing_identity_directory_has_no_fallback(self):
+        info, image, owner, cgroups, proc, target = self.cgroup_fixture()
+        (target / 'cgroup.procs').unlink()
+        target.rmdir()
+        with self.assertRaises(FileNotFoundError):
+            campaign.resolve_container_cgroup(info, image, owner, cgroups, proc)
+
     def test_disk_headroom_rejects_known_vfs_insufficiency(self):
         runner = campaign.Runner(self.root)
         runner.image_size = 1706755238
@@ -194,7 +271,8 @@ class CampaignGuards(unittest.TestCase):
             if args[0] == 'image':
                 return 0, json.dumps([{'Id': image, 'Architecture': 'amd64', 'Os': 'linux', 'Size': 1706755238}])
             self.assertEqual(args[0], 'info')
-            return 0, str(self.root)
+            return 0, json.dumps({'DockerRootDir': str(self.root), 'Driver': 'vfs',
+                                  'CgroupDriver': 'cgroupfs', 'CgroupVersion': '2'})
         def fail(runner, row, index, *args):
             self.assertEqual(index, 0)
             folder = runner.output / ('00-' + row['id'])

@@ -78,6 +78,59 @@ def read_controls(path):
             (*EXPECTED, 'memory.current', 'memory.peak', 'memory.events', 'cgroup.procs')}
 
 
+def validate_host_membership(controls, host_pid):
+    members = controls.get('cgroup.procs', '').split()
+    if not members or not all(re.fullmatch(r'[1-9][0-9]*', item) for item in members):
+        raise ValueError('Actual cgroup process membership is missing or malformed')
+    if str(host_pid) not in members:
+        raise ValueError('Inspected container host PID is not in its actual cgroup')
+
+
+def resolve_container_cgroup(info, expected_image, owner,
+                             cgroup_root=Path('/sys/fs/cgroup'), proc_root=Path('/proc'), evidence=None):
+    """Reuse upstream_batch_capacity.Monitor's exact Docker-ID host layout.
+
+    A proc cgroup path is relative to the observer's cgroup namespace. Its '..'
+    components must never be joined to the host mount path. Keep that value as
+    diagnostic identity evidence; resolve only the full inspected Docker ID.
+    Unsupported layouts or mismatched identity/membership fail closed.
+    """
+    identity = info.get('Id', '')
+    if not re.fullmatch(r'[a-f0-9]{64}', identity):
+        raise ValueError('Exact inspected Docker container ID is required')
+    if (info.get('Image') != expected_image or
+            info.get('Config', {}).get('Labels', {}).get('a06.campaign.owner') != owner):
+        raise ValueError('Inspected container image or owner differs from this attempt')
+    state = info.get('State', {})
+    host_pid = state.get('Pid')
+    if state.get('Running') is not True or type(host_pid) is not int or host_pid < 1:
+        raise ValueError('A live inspected container host PID is required')
+    observed = (proc_root / str(host_pid) / 'cgroup').read_text()
+    diagnostic = evidence if evidence is not None else {}
+    diagnostic.update({'method': 'upstream_batch_capacity.Monitor_exact_inspected_Docker_ID',
+                       'container_id': identity, 'host_pid': host_pid,
+                       'observed_proc_cgroup': observed,
+                       'observed_proc_path_used_for_filesystem_resolution': False,
+                       'host_pid_membership_verified_before_node': False})
+    unified = [line[3:] for line in observed.splitlines() if line.startswith('0::')]
+    if len(unified) != 1:
+        raise ValueError('Exactly one unified proc cgroup identity is required')
+    match = re.fullmatch(r'/?(?:\.\./)*docker/([a-f0-9]{64})', unified[0])
+    if match is None or match.group(1) != identity:
+        raise ValueError('Proc cgroup identity does not match the inspected Docker container')
+    root = cgroup_root.resolve(strict=True)
+    candidate = root / 'docker' / identity
+    diagnostic['candidate_host_cgroup_path'] = str(candidate)
+    resolved = candidate.resolve(strict=True)
+    if resolved != candidate:
+        raise ValueError('Docker cgroup path must not redirect through a symlink')
+    resolved.relative_to(root)
+    validate_host_membership({'cgroup.procs': (resolved / 'cgroup.procs').read_text()}, host_pid)
+    diagnostic.update({'resolved_host_cgroup_path': str(resolved),
+                       'host_pid_membership_verified_before_node': True})
+    return resolved, diagnostic
+
+
 def counters(text):
     return {line.split()[0]: int(line.split()[1]) for line in text.splitlines()}
 
@@ -152,6 +205,7 @@ class Runner:
         self.commands = []
         self.image_size = None
         self.disk_roots = None
+        self.docker_environment = None
 
     def disk_preflight(self):
         if type(self.image_size) is not int or self.image_size <= 0 or not self.disk_roots:
@@ -320,16 +374,13 @@ class Runner:
                 _, inspected = self.docker(['inspect', name], deadline)
                 info = json.loads(inspected)[0]
                 dump(folder / 'container-before.json', info)
-                if info['Image'] != binding['image_id']:
-                    raise ValueError('Actual container image differs from binding')
-                host_pid = info['State']['Pid']
-                lines = Path(f'/proc/{host_pid}/cgroup').read_text().splitlines()
-                relative = next(line[3:] for line in lines if line.startswith('0::'))
-                cgroup = (Path('/sys/fs/cgroup') / relative.lstrip('/')).resolve()
-                cgroup.relative_to('/sys/fs/cgroup')
+                receipt['cgroup_resolution'] = {'docker_environment': self.docker_environment}
+                cgroup, resolution = resolve_container_cgroup(info, binding['image_id'], self.owner,
+                                                             evidence=receipt['cgroup_resolution'])
                 receipt['host_cgroup_path'] = str(cgroup)
                 baseline = read_controls(cgroup)
                 validate_controls(baseline)
+                validate_host_membership(baseline, info['State']['Pid'])
                 receipt['actual_host_controls_before_node'] = baseline
                 receipt['phase'] = 'gate'
                 with (folder / 'cgroup-samples.jsonl').open('x') as samples:
@@ -343,7 +394,9 @@ class Runner:
                     validate_controls(gate['controls'])
                     if gate['experiment_files'] != binding['experiment_files']:
                         raise ValueError('In-image experiment files differ from binding')
-                    validate_controls(read_controls(cgroup))
+                    before_release = read_controls(cgroup)
+                    validate_controls(before_release)
+                    validate_host_membership(before_release, info['State']['Pid'])
                     left(deadline, 1)
                     (folder / 'gate/start').write_text('root-bound-host-controls-verified\n')
                     receipt['node_released_utc_ns'] = time.time_ns()
@@ -498,8 +551,17 @@ def main():
             if info['Id'] != binding['image_id'] or info.get('Architecture') != 'amd64' or info.get('Os') != 'linux':
                 raise ValueError('Exact Linux/amd64 image is unavailable')
             runner.image_size = info['Size']
-            _, docker_root = runner.docker(['info', '--format', '{{.DockerRootDir}}'], runner.work_deadline)
-            runner.disk_roots = [args.output, Path(docker_root.strip()).resolve(strict=True)]
+            _, docker_details = runner.docker(['info', '--format',
+                '{"DockerRootDir":{{json .DockerRootDir}},"Driver":{{json .Driver}},'
+                '"CgroupDriver":{{json .CgroupDriver}},"CgroupVersion":{{json .CgroupVersion}}}'],
+                runner.work_deadline)
+            runner.docker_environment = json.loads(docker_details)
+            summary['docker_environment'] = runner.docker_environment
+            if (runner.docker_environment.get('Driver') != 'vfs' or
+                    runner.docker_environment.get('CgroupDriver') != 'cgroupfs' or
+                    runner.docker_environment.get('CgroupVersion') != '2'):
+                raise ValueError('Unsupported Docker storage/cgroup driver; no host-path fallback is allowed')
+            runner.disk_roots = [args.output, Path(runner.docker_environment['DockerRootDir']).resolve(strict=True)]
             summary['disk_preflight'] = runner.disk_preflight()
             if not summary['disk_preflight']['passed']:
                 raise RuntimeError('Insufficient disk headroom before cold attempt')

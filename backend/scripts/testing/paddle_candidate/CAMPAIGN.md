@@ -32,12 +32,32 @@ container creation and remains a blocked/failed attempt with no OCR output.
 
 Each fresh container first runs `entry_gate.py`. Before releasing Node, the
 host verifies actual `memory.max`, `memory.swap.max`, `cpu.max` both through the
-gate receipt and the host cgroup reached through Docker's inspected PID. It
+gate receipt and the host cgroup reached through the exact inspected Docker ID.
+It uses the established `upstream_batch_capacity.Monitor` layout,
+`/sys/fs/cgroup/docker/<64-hex-container-ID>`, with the observed VFS storage,
+`cgroupfs` driver and cgroup v2 explicitly checked and retained. It validates the
+exact container image/owner, running host PID and that PID's actual membership
+in `cgroup.procs`, including another membership check immediately before Node
+release. Missing directories, unsupported layouts, symlink redirection,
+identity mismatches or changed resource controls fail closed. It
 also checks actual in-image configuration/parent/engine hashes. The gate then
 execs Node with `--experimental-transform-types`, matching the existing parent
 runtime. Node and its native child must report the same cgroup, and the child's
 parent PID must equal Node's PID. The engine receives the original frozen
 settings, not per-language or output-dependent tuning.
+
+The first approved November 5 attempt stopped before Node release because the
+old resolver joined a namespace-relative proc path to the host cgroup mount and
+rejected the resulting `/sys/fs/docker/...` path. The original attempt did not
+retain the raw proc string; its exact value is therefore unknown. That failure,
+its original binding, all 13 not-run rows and positive cleanup remain unchanged.
+The corrected resolver retains raw `/proc/<host-PID>/cgroup` diagnostics before
+resolution validation, including on failure, but never uses that string as a
+filesystem path. Relative `../docker/<ID>` and absolute `/docker/<ID>` forms are
+checked against the inspected ID; both resolve through the same fixed Docker-ID
+host layout. Source-only namespace tests cover these forms and rejection cases.
+This correction changes no model, configuration, fixture or acceptance oracle;
+it requires a new root-reviewed binding and execution window before retry.
 
 The external monotonic deadline is 90 seconds per attempt, beginning before
 staging, Docker creation and startup. An owned POSIX interval timer interrupts
