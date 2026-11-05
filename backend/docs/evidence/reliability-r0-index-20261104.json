@@ -1,9 +1,9 @@
 {
   "version": 6,
   "status": "draft_not_release_acceptance",
-  "generated_at_utc": "2026-11-05T01:34:30.549296+00:00",
+  "generated_at_utc": "2026-11-05T08:18:06.077040+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
-  "observed_root_commit": "2157dcf740e40dc547706ebb7d3402be161428f7",
+  "observed_root_commit": "4b249cab99b024780ff92ccc9e5158a937cd895b",
   "scope": "Docs-only discovery refresh at integrated2b869ac. Historical receipt hashes/scopes retained; current corrected runtime publication/manifest and prepared request/retirement helpers indexed. Current2b869ac combined application gates now pass; release and actual request/export remain pending. Exact2b869ac operations checks and current-manifest isolated restore now pass at their stated scopes. No execution or external mutations by this refresh.",
   "r0_reference": "backend/docs/RELIABLE_PROPOSAL_ACCEPTANCE.md:83",
   "r0_completeness": "This index is not a per-case R0 completion certificate. Linked receipts retain their own source/fixture/image/migration/clock/policy bindings. Missing applicable R0 evidence remains unproven.",
@@ -148,6 +148,13 @@
           "level": "Current scoped observation",
           "observed_result": "Current 14/3 SQL and DOCX issuance, later revocation denial,26-migration release guards and local authority pass.",
           "limits": "Focused synthetic local evidence; no full final package/native/hosted/deployment claim."
+        },
+        {
+          "path": "backend/docs/evidence/complete-app-checks-f41adb8-20261105.json",
+          "sha256": "8a46a328b349ec519541111b509178d73ee014d28f0d85b85c6a80729510e856",
+          "level": "Source-bound observed gate",
+          "observed_result": "3488 backend / 380 frontend tests, both typechecks and builds pass.",
+          "limits": "Source f41adb8; subsequent API verifier setting has 35 focused tests, final CI still required."
         }
       ]
     },
@@ -272,6 +279,48 @@
           "level": "Native-window activity disclosure",
           "observed_result": "Four metadata tests near warm-run end report0.002s test-body time; bytecode times and unmeasured import/startup activity are retained.",
           "limits": "No absolutely-zero-other-CPU or causal performance-improvement claim. Native payload/source scopes unchanged."
+        },
+        {
+          "path": "backend/docs/evidence/native-runtime-721340-rejected-20261105.json",
+          "sha256": "4d5ebe049189a70d5a09121354ef32ea3144ebd7df01f403b4fbdb4368b0ae36",
+          "level": "Source-bound observed gate",
+          "observed_result": "First native document download failed with child failure/HTTP503 and container OOM; image rejected.",
+          "limits": "Observed rejection retained; sample maximum is not exact OOM peak."
+        },
+        {
+          "path": "backend/docs/evidence/native-api-owned-snapshot-steady-f2d0f9-20261105.json",
+          "sha256": "192b84efb878d66e6f84a1b6783bf98430dba23f7c1782e7df86534dba069b48",
+          "level": "Source-bound observed gate",
+          "observed_result": "Two sequential exact Word downloads pass; peak301563904/402653184bytes.",
+          "limits": "Exact synthetic fixtures and resource bounds; no hosted application deployment or universal capacity proof."
+        },
+        {
+          "path": "backend/docs/evidence/native-api-owned-snapshot-fresh-f2d0f9-20261105.json",
+          "sha256": "dc4f44dc41ecc324c2fccd07a0fa4b94969aa727596560af1b2c46de81dcc498",
+          "level": "Source-bound observed gate",
+          "observed_result": "Fresh process and cancellation/exact download pass; peak267440128bytes.",
+          "limits": "Exact synthetic fixtures and resource bounds; no hosted application deployment or universal capacity proof."
+        },
+        {
+          "path": "backend/docs/evidence/native-reviewed-docx-handler-f2d0f9-20261105.json",
+          "sha256": "b5e2e3dc66969e294c208e0bb34571d0d498c310ad66bebd7caffd9db9240c0c",
+          "level": "Source-bound observed gate",
+          "observed_result": "Exact reviewed Word verification completes once; peak284729344bytes.",
+          "limits": "Exact synthetic fixtures and resource bounds; no hosted application deployment or universal capacity proof."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-qualification-f2d0f9-20261105.json",
+          "sha256": "a1e6f82c57ecae4561878412996022e2eba9e45f7d1aa19628698d363599d358",
+          "level": "Source-bound observed gate",
+          "observed_result": "New f2d0f9 image binds131COPYfiles,147appentries and four new native receipts.",
+          "limits": "Exact synthetic fixtures and resource bounds; no hosted application deployment or universal capacity proof."
+        },
+        {
+          "path": "backend/docs/evidence/runtime-qualified-publication-f2d0f9-20261105.json",
+          "sha256": "61f4ab0d6bb4c0be2d1c605ab654ef7acd5e7f9b3707b0298fecff840bf9fe20",
+          "level": "Source-bound observed gate",
+          "observed_result": "Exact image published as aabe842e and pulled back; credentials removed.",
+          "limits": "Exact synthetic fixtures and resource bounds; no hosted application deployment or universal capacity proof."
         }
       ]
     },
@@ -370,6 +419,20 @@
           "level": "Current scoped observation",
           "observed_result": "Third attempt fails at retirement_capture with exit3; both cleanups pass.",
           "limits": "Exact failing SQL unknown; interruption/resume unproven."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-fourth-attempt-20261105-41988242066.json",
+          "sha256": "af7cd74ee777272ba9d885e23ea0ff6e50b3f972b04b0b36038f7ea821a7e586",
+          "level": "Source-bound observed gate",
+          "observed_result": "Hosted prepare failed with SQLSTATE42501; both cleanup stages passed.",
+          "limits": "No deliberate interruption/resume proof."
+        },
+        {
+          "path": "backend/docs/evidence/retirement-catalog-restricted-owner-20261105.json",
+          "sha256": "70a9796e710637ee2414b7d5c74c34d99596659fd9421fcb58c0584633f0684a",
+          "level": "Source-bound observed gate",
+          "observed_result": "27 canonical local PostgreSQL controls pass without Storage schema USAGE or superuser ownership.",
+          "limits": "Process/PVC evidence is authored; requires hosted retirement drill."
         }
       ]
     },
@@ -1005,6 +1068,13 @@
           "level": "Actual second cancelled release boundary",
           "observed_result": "Release41937345060 at3c21a65 cancelled during checks after repair-context defect discovery; cluster/images/rollout skipped,both cleanup stages pass.",
           "limits": "No deployment. Later native qualification and registry publication were independent operations."
+        },
+        {
+          "path": "backend/docs/evidence/native-api-batch-capacity-f2d0f9-20261105.json",
+          "sha256": "43931195155d53856e0d8b2a3d1aca55e5f3e4016229ad65e9bff41171126b3e",
+          "level": "Source-bound observed gate",
+          "observed_result": "Actual API100 native fixture and cleanup pass.",
+          "limits": "Exact synthetic fixtures and resource bounds; no hosted application deployment or universal capacity proof."
         }
       ]
     }
@@ -1106,5 +1176,5 @@
       "scope": "Main merge/CI failure, scoped timeout correction and dormant manual-retirement proof fix. Frozen24 manifest unchanged; complete corrected GitHub gate and deployment remain open."
     }
   ],
-  "current_predeployment_summary": "Source-resolution and worker5 integration focused checks pass; complete final gates/native qualification/26-migration cloud restore/deploy pending. Paddle candidate rejected. Retirement SQL diagnosis in progress."
+  "current_predeployment_summary": "Complete f41 application gates plus focused API verifier setting pass; f2d0f9 new native fixtures and registry publication pass;27-migration manifest refrozen from original baseline. Final ops, fresh hosted restore/retirement and deployment pending."
 }

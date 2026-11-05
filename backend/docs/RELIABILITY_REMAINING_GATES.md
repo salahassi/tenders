@@ -1,35 +1,29 @@
 # Reliability acceptance status — November 5, 2026
 
-Latest integration checkpoint: source resolution and worker5 focused gates pass,
-including corrected14/3SQL/DOCX issuance, stale-source artifact refusal, and all18
-26-migration release checks at the earlier checkpoint. Final whole-package and new native-image qualification
-remain pending. The Paddle OCR candidate is rejected (4/13pages;2/21critical facts).
-Retirement attempt41949704413failed before interruption and cleaned up; bounded
-SQLSTATE localization in41988242066found42501atprepare; the restricted-owner SQL correction passes27localcontrols. Migration20261105120200also corrects retry parameter ambiguity. The release now requires27migrations and fresh final gates. No application deployment.
+Current application source f41adb8 passes **3,488 backend tests and 380 frontend
+tests**, both typechecks and builds. Source resolution preserves the corrected
+14-terminal obligation and unchanged 3 cabinets through SQL and a real local
+Word artifact, then rejects access after source revocation. Worker capability 5,
+retry parameter qualification and restricted-owner Storage catalog lookup are
+integrated. Draft PR28 stores the changes; the application remains **not deployed**.
 
+The initial new image721340 failed native verification with OOM and HTTP503;
+that rejection is retained. API verifier young-generation bounds then passed
+35 focused tests and four unchanged native fixture scopes on imagef2d0f9.
+The heaviest measured Word case peaked at301,563,904 of402,653,184 bytes
+(**96.41 MiB observed margin**). These finite fixtures do not prove arbitrary
+capacity or hosted latency. Image publication and pullback are verified at
+`registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:aabe842e35259b86969ddef810dd297e9a0b0e4a27d7f0746cdcd80a6a12fc6a`.
+The27-migration manifest is frozen from the unchanged original deployment baseline.
+Final operational checks, fresh cloud restore/retirement, rollout and actual
+customer issuance remain gates. No customer request was resumed by these tests.
 
-The latest complete local application gate at `9501068` passes3,419 backend
-and380 frontend tests, with both type checks and builds. A subsequent canonical
-supersession diagnostic found that a retired source obligation could return as
-an unreviewed requirement. Release41944374857 was stopped before cluster access.
-Typed obligation resolution and worker capability5 are being integrated and
-require new complete gates, native runtime qualification and isolated restore.
-**The application has not been deployed and the actual proposal has not been
-resumed or issued by these changes.** Draft pull request28 stores the follow-up.
-
-The earlier `176bcf738676` runtime qualification, published registry digest
-`996e1ea5…669fbfb2` and24-migration manifest `2e6512d2…8dce6fa` remain historical
-source-specific evidence. They cannot qualify changed source-resolution or
-worker code. The next freeze must use the unchanged original deployment
-baseline and fresh source/native proofs. Historical receipts below retain
-their recorded source and scope.
-
-The minimum current measured document memory margin is **17.21 MiB** for the
-frozen native fixtures. The historical **10.88 MiB** measurement remains intact;
-no causal improvement or universal capacity claim follows. See
-[the provenance record](RUNTIME_QUALIFICATION_PROVENANCE.md) for precise scope and
-disclosed metadata activity during the native window. API means application
-programming interface; OCR means optical character recognition.
+Retirement run41988242066 identified SQLSTATE42501 at prepare and cleaned up.
+The corrected catalog lookup passes27 restricted-owner PostgreSQL controls;
+real interruption/resume must still pass. The Paddle OCR candidate is rejected
+(4/13 whole pages and2/21 critical facts). Automatic Arabic OCR, provider
+availability, private semantic/retrieval holdout and actual Word TOC update remain
+open. All earlier receipts retain their source-specific scope and failures.
 
 Historical source `865d840` passed complete local functional checks, and
 original-CA restore 41933205779 passed its exact 24-migration manifest

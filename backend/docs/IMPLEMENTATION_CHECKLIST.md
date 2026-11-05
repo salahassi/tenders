@@ -2,13 +2,16 @@
 
 ## November 5 — latest integration checkpoint
 
-Draft PR28 contains the current integration; no application rollout has occurred.
-Source-resolution and worker5 are integrated, including26migration release guards at the earlier checkpoint; the later catalog/retry correction brings the current set to27.
-The corrected14/3review-draft Word pipeline and later revocation control pass.
-Current exact-image qualification, full package checks, cloud restore and hosted
-issuance remain gates. The Paddle candidate is rejected; retirement diagnosis
-continues in isolated run41988242066 on source18fe844 with69localguards passing.
-Historical statuses below retain their original source scope.
+Draft PR28 contains source resolution, worker5 and the27-migration release.
+Complete f41adb8 application gates pass3,488 backend and380frontend tests, both
+typechecks and builds. The later API verifier allocation setting passes35focused
+controls and four native fixture suites on imagef2d0f9. The failed721340image is
+retained as a rejection. The new image is published and pulled back exactly at
+registry digestaabe842e; temporary credentials were removed. The manifest is
+refrozen from the original deployment baseline. Final ops and fresh cloud
+restore/retirement are pending; no application deployment or customer issuance
+is claimed. The Paddle candidate is rejected and the remaining acceptance gates
+are listed in RELIABILITY_REMAINING_GATES.md. Historical statuses follow.
 
 ## November 4 — current integration status and remaining release gates
 
@@ -11111,3 +11114,17 @@ also bounds its young-generation semi-space to4MiB, preserving the64MiB old-spac
 transient heap allocation; it is not an RSS guarantee and remains unqualified
 until the same exact native fixtures pass. All35focused isolation tests and backend typecheck pass. New native
 measurements are pending; no retry of the unchanged image is used as proof.
+
+### November5 — complete current packages and new runtime qualification
+
+Committed f41adb8 passes3488backend tests in206files and380frontend tests in59files,
+with both typechecks/builds passing and no source changes during the complete run.
+All18atomic27migration release controls,27restricted-owner retirement SQL checks,
+11schema helper tests and16Kubernetes tests pass. Earlier e7e8ad4failures remain
+recorded. Native imagef2d0f9 now has four fresh sequential receipts bound to the
+current seven changed runtime files and added source-resolution module. Frozen
+fixtures, base, build recipe and container limits are preserved. API child young-generation settings changed as documented after the rejected721340attempt; full package proof remains bound tof41adb8plus35focused isolation controls. Registry publication,
+manifest re-freeze, fresh cloud drills and deployment remain pending.
+
+Registry publicationf2d0f9 and27migration source verification pass. Manifest
+canonical SHA256: `1fdf73f4a9b638938285afd13cbf3e4077e28da3932816ea80f9d03a6d748f82`. Fresh hosted acceptance is the next gate.

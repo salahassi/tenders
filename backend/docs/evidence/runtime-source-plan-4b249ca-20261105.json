@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "source_revision": "4b249cab99b024780ff92ccc9e5158a937cd895b",
+  "changed": [
+    "backend/supabase/functions/_shared/backend.ts",
+    "backend/supabase/functions/_shared/deliveryVerifyIsolation.ts",
+    "backend/supabase/functions/_shared/generatedProposalConsistency.ts",
+    "backend/supabase/functions/_shared/generation.ts",
+    "backend/supabase/functions/_shared/model.ts",
+    "backend/supabase/functions/worker/handler.ts",
+    "backend/supabase/functions/worker/queueWake.ts"
+  ],
+  "added": [
+    "backend/supabase/functions/_shared/sourceResolution.ts"
+  ],
+  "removed": [],
+  "sha256": {
+    "backend/supabase/functions/_shared/backend.ts": "6d6e8f69df96d8904d7c73ca9950423281062480408a41df0419de29f51f7189",
+    "backend/supabase/functions/_shared/deliveryVerifyIsolation.ts": "fa26b281baa851e773813c741806a57822ff495b9333face4c17b1c28ddb5f6f",
+    "backend/supabase/functions/_shared/generatedProposalConsistency.ts": "43d20c78ef4bf45579d263e9ffa800fd1035f5093fa9e862c09b7e4aa2af0d86",
+    "backend/supabase/functions/_shared/generation.ts": "0bbf3a3578cd514e4e93b3b8b829d19483eb35b05634231ca8a8da8ef39c4933",
+    "backend/supabase/functions/_shared/model.ts": "d2f2e2a55842ff47653d45c0a96c334534088f6e8c678988c3053fb5027807d7",
+    "backend/supabase/functions/worker/handler.ts": "3cfbe3b39b019e819221aa681192e5fc234e455ef37fc2416c9d7f5141448442",
+    "backend/supabase/functions/worker/queueWake.ts": "6cb7c1c0d910fbaba12ee4c32605185a968dbf0eb480bc94c07939c778a25427",
+    "backend/supabase/functions/_shared/sourceResolution.ts": "7945af088fef748c73197a3ffbecc0c23dc73fd040165e1033a9d1e91e51dd91"
+  },
+  "copy_files": 131,
+  "app_entries": 147,
+  "scope": "worker capability5 and reviewed source resolution; unchanged build recipe, base, limits and native fixtures; API verifier semi-space4MiB, unchanged frozen native fixtures and container limits"
+}

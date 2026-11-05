@@ -1,0 +1,8 @@
+{
+  "event": "sequential_native_window",
+  "source_commit": "4b249cab99b024780ff92ccc9e5158a937cd895b",
+  "full_application_gate_revision": "f41adb8df5bad1d64b82946921ff0b811214408b",
+  "subsequent_change": "API verifier young-generation allocation bound;35focused isolation tests and backend typecheck pass",
+  "other_functional_tests_complete": true,
+  "scope": "No intentional local builds/tests overlap native measurements. Normal metadata/host activity remains; no zero-background-CPU claim."
+}

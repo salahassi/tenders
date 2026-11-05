@@ -86,7 +86,7 @@
   "command_batch_chunk_bytes": 262144,
   "command_batch_transport_version": 1,
   "current_proposal_issuance_contract": 1,
-  "executor_max": 4,
+  "executor_max": 5,
   "gateway_configuration": {
     "after_data_sha256": "9636fdac1a1ff54b88f10ae352eeee3d8933df886003ab42de7652d2725f0377",
     "after_source_sha256": "c1a25c41c24f8bb804ecb0e162c8e0577437fd31b16ef82cefbacebbb20795ba",
@@ -209,9 +209,21 @@
     {
       "name": "20261104212818_bounded_command_batch_results.sql",
       "sha256": "7bb805fefa6584e02ae8ef65fc6117fb86a9c48b2a8fcf4502e1e7783fe2dc22"
+    },
+    {
+      "name": "20261105120000_source_obligation_resolution.sql",
+      "sha256": "d77199d7309e804a6638e46f3169b9eec8cf85f5fd650e9a1f89ab4cd4cba0f1"
+    },
+    {
+      "name": "20261105120100_worker_capability_five.sql",
+      "sha256": "231981048bbaff8b2c8a2e85ed4deb16f68a0ec656fd0b2908b4e84d69f943b3"
+    },
+    {
+      "name": "20261105120200_retirement_catalog_and_retry_scope.sql",
+      "sha256": "504282160eabd9f641b6a4b8bce5a1c654f46f0f9f626517cf485a4adc7c3978"
     }
   ],
-  "minimum_worker_executor": 4,
+  "minimum_worker_executor": 5,
   "ordinary_renderer_version": "ordinary-2",
   "release": "proposal-delivery-reliability-v1",
   "renderer_versions": [
@@ -220,13 +232,14 @@
     3
   ],
   "runtime_qualification": {
-    "helper_sha256": "24d53844cb8958fbc389ecfaf9f4f6adb7e4422b33815f58397403bb3bc6de09",
-    "publication_sha256": "278be9a6c489888ed36dbc78b6d579505064bd7e9af490121066356b1d67b18e",
-    "published_reference": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:996e1ea5b3ff63ca4ea0e5ef75dc45c7d5a83f0c8a2501539bb0a8fc669fbfb2",
-    "qualified_image_id": "sha256:176bcf738676421ebc58d26cd7bc2a29910d0242635de6084129a06701a9e4f8",
-    "receipt_sha256": "92b463d5cae58019b1dde7d235989638ee63e333ce21c23c824bf2f1a070ee68",
+    "helper_sha256": "822c875f26d93f22ea177ca88f17258c98381a93c62bb604f78199a112947a9b",
+    "publication_sha256": "61f4ab0d6bb4c0be2d1c605ab654ef7acd5e7f9b3707b0298fecff840bf9fe20",
+    "published_reference": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:aabe842e35259b86969ddef810dd297e9a0b0e4a27d7f0746cdcd80a6a12fc6a",
+    "qualified_image_id": "sha256:f2d0f99d4933c47d137940973a17aa78fe198ad385ac25f7a936ef45bdafcf44",
+    "receipt_sha256": "a1e6f82c57ecae4561878412996022e2eba9e45f7d1aa19628698d363599d358",
     "version": 1
   },
+  "source_resolution_version": 1,
   "storage_gateway_guard_version": 1,
   "storage_retirement_version": 1,
   "storage_write_intents_version": 1,

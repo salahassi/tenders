@@ -174,8 +174,8 @@ def https_configuration(root=ROOT):
     except https_capacity.HttpsError as error:raise ReleaseError(str(error)) from None
 
 RUNTIME_HELPER = 'scripts/ops/runtime-qualification.py'
-RUNTIME_QUALIFICATION = 'docs/evidence/runtime-qualification-176bcf-20261105.json'
-RUNTIME_PUBLICATION = 'docs/evidence/runtime-qualified-publication-176bcf-20261105.json'
+RUNTIME_QUALIFICATION = 'docs/evidence/runtime-qualification-f2d0f9-20261105.json'
+RUNTIME_PUBLICATION = 'docs/evidence/runtime-qualified-publication-f2d0f9-20261105.json'
 
 def runtime_qualification(root=ROOT):
     values={}
@@ -194,7 +194,7 @@ def runtime_qualification(root=ROOT):
             constants[name]=found[0]
         receipt=json.loads(values['receipt'][1]);publication=json.loads(values['publication'][1])
     except (SyntaxError,ValueError,TypeError):raise ReleaseError('DELIVERY_RELEASE_RUNTIME_QUALIFICATION_INVALID') from None
-    if (constants['QUALIFIED_ID']!='sha256:176bcf738676421ebc58d26cd7bc2a29910d0242635de6084129a06701a9e4f8'
+    if (constants['QUALIFIED_ID']!='sha256:f2d0f99d4933c47d137940973a17aa78fe198ad385ac25f7a936ef45bdafcf44'
       or constants['REGISTRY']!='registry.digitalocean.com/tenderdesk-a6093a76/runtime'
       or digest(values['receipt'][0])!=constants['RECEIPT_SHA256'] or not isinstance(receipt,dict)
       or type(receipt.get('version')) is not int or receipt['version']!=1
