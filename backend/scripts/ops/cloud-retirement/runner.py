@@ -311,6 +311,9 @@ def delete_fixture_pvc(state,journal):
         owned=[pv for pv in census['items'] if pv.get('spec',{}).get('claimRef',{}).get('uid')==journal['pvc_uid']]
         c.need(len(owned)<=1,'RETIREMENT_FIXTURE_VOLUME_IDENTITY_CHANGED')
         if owned:journal=bind_cleanup_volume(state,journal,owned[0])
+        # An empty API census does not settle an external CSI CreateVolume
+        # already in flight. Keep this namespace/state for later reconciliation.
+        c.need(journal['pv_name'] is not None,'RETIREMENT_FIXTURE_VOLUME_ALLOCATION_RECONCILIATION_REQUIRED')
     return journal
 
 def await_gone(state,kind,name,seconds=180):

@@ -40,14 +40,16 @@ class CleanupCheckpoint(unittest.TestCase):
  def test_fresh_runner_resumes_after_controllers_deleted_and_pvc_wait_failed(self):
   adapter,capture,proof=self.prepared();events=[];durable={};deleted=set()
   self.state['bootstrap']['setup_started']=True
-  cleanup_journal={'pvc_uid':capture['pvc']['metadata']['uid'],'pv_name':None,'pv_uid':None,'storage_absence_confirmed':False}
+  capture['pvc']['spec']['volumeName']='pvc-owned'
+  pv={'metadata':{'name':'pvc-owned','uid':fixtures.UUIDS[30]},'spec':{'claimRef':{'uid':capture['pvc']['metadata']['uid'],'namespace':c.namespace(self.state),'name':c.PVC_NAME},'persistentVolumeReclaimPolicy':'Delete','csi':{'driver':'dobs.csi.digitalocean.com'}}}
+  cleanup_journal={'pvc_uid':capture['pvc']['metadata']['uid'],'pv_name':'pvc-owned','pv_uid':pv['metadata']['uid'],'storage_absence_confirmed':False}
   def save(state):
    c.validate_state(state);durable['state']=json.loads(c.canonical(state));events.append('checkpoint_readback')
   def delete(state,kind,name):
    self.assertIsNotNone(durable['state']['cleanup_proof']);deleted.add((kind,name));events.append('delete:'+kind+'/'+name)
   def waiting(state,kind,name,seconds=180):
    if kind=='persistentvolumeclaim':raise c.FixtureError('RETIREMENT_FIXTURE_RESOURCE_CLEANUP_PENDING')
-  with patch.object(r,'namespace_guard'),patch.object(a.FixtureAdapter,'cleanup_preconditions',return_value=proof) as restore,patch.object(r,'items',return_value=[]),patch.object(r,'save',side_effect=save),patch.object(r,'delete',side_effect=delete),patch.object(r,'get',return_value=capture['pvc']),patch.object(r,'delete_observed',side_effect=lambda state,kind,name,pvc:delete(state,kind,name)),patch.object(m,'cleanup_journal',return_value=cleanup_journal),patch.object(m,'await_gone',side_effect=waiting):
+  with patch.object(r,'namespace_guard'),patch.object(a.FixtureAdapter,'cleanup_preconditions',return_value=proof) as restore,patch.object(r,'items',return_value=[]),patch.object(r,'save',side_effect=save),patch.object(r,'delete',side_effect=delete),patch.object(r,'get',return_value=capture['pvc']),patch.object(r,'command',return_value=json.dumps(pv)),patch.object(r,'delete_observed',side_effect=lambda state,kind,name,pvc:delete(state,kind,name)),patch.object(m,'cleanup_journal',return_value=cleanup_journal),patch.object(m,'await_gone',side_effect=waiting):
    with self.assertRaisesRegex(c.FixtureError,'CLEANUP_PENDING'):m.cleanup(self.state)
   self.assertEqual(events[0],'checkpoint_readback')
   self.assertTrue(all(('deployment',name) in deleted for name in c.proof.NAMES))
@@ -58,7 +60,7 @@ class CleanupCheckpoint(unittest.TestCase):
    if kind=='deployment':raise AssertionError('deleted Deployment must not be restored or reread')
    if kind=='persistentvolumeclaim':return None
    return {'metadata':{'uid':fixtures.UUIDS[36]}}
-  with patch.object(r,'namespace_guard'),patch.object(a.FixtureAdapter,'cleanup_preconditions',side_effect=AssertionError('must use durable full proof')),patch.object(r,'items',return_value=[]),patch.object(r,'save',side_effect=save),patch.object(r,'delete',side_effect=delete),patch.object(m,'cleanup_journal',return_value=cleanup_journal),patch.object(m,'await_gone'),patch.object(r,'get',side_effect=remaining),patch.object(r,'command',return_value='{"items":[]}'),patch.object(m,'save_cleanup_journal'),patch.object(m,'patch_parent'),patch.object(m.b,'wait_clients_stopped'),patch.object(m,'create_sql_job') as cleanup_sql,patch.object(m.b,'save'),patch.object(m,'record_cleaned'),patch.object(m,'delete_namespace') as namespace,patch.object(m.b,'private_state_path'):
+  with patch.object(r,'namespace_guard'),patch.object(a.FixtureAdapter,'cleanup_preconditions',side_effect=AssertionError('must use durable full proof')),patch.object(r,'items',return_value=[]),patch.object(r,'save',side_effect=save),patch.object(r,'delete',side_effect=delete),patch.object(m,'cleanup_journal',return_value=cleanup_journal),patch.object(m,'await_gone'),patch.object(r,'get',side_effect=remaining),patch.object(r,'command',return_value=''),patch.object(m,'save_cleanup_journal'),patch.object(m,'patch_parent'),patch.object(m.b,'wait_clients_stopped'),patch.object(m,'create_sql_job') as cleanup_sql,patch.object(m.b,'save'),patch.object(m,'record_cleaned'),patch.object(m,'delete_namespace') as namespace,patch.object(m.b,'private_state_path'):
    m.cleanup(restored)
   cleanup_sql.assert_called_once();namespace.assert_called_once()
   self.assertTrue(restored['bootstrap']['database_cleanup_confirmed'])
@@ -134,5 +136,11 @@ class VolumeBinding(unittest.TestCase):
   with patch.object(r,'get',return_value=pvc),patch.object(r,'command',return_value=json.dumps(pv)),patch.object(r,'delete_observed') as delete:
    with self.assertRaisesRegex(c.FixtureError,'VOLUME_IDENTITY_CHANGED'):m.delete_fixture_pvc(self.state,journal)
   delete.assert_not_called()
+ def test_empty_unbound_census_retains_state_without_database_or_namespace_cleanup(self):
+  pvc,pv,journal=self.fixture();self.state['bootstrap']['setup_started']=True
+  with patch.object(r,'namespace_guard'),patch.object(r,'items',return_value=[]),patch.object(r,'save'),patch.object(r,'get',return_value=None),patch.object(r,'command',return_value='{"items":[]}'),patch.object(m,'cleanup_journal',return_value=journal),patch.object(m,'await_gone'),patch.object(m,'save_cleanup_journal') as certify,patch.object(m,'create_sql_job') as database,patch.object(m,'delete_namespace') as namespace:
+   with self.assertRaisesRegex(c.FixtureError,'VOLUME_ALLOCATION_RECONCILIATION_REQUIRED'):m.cleanup(self.state)
+  certify.assert_not_called();database.assert_not_called();namespace.assert_not_called()
+  self.assertFalse(journal['storage_absence_confirmed']);self.assertEqual(self.state['phase'],'cleaning')
 
 if __name__=='__main__':unittest.main()

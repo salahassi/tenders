@@ -10845,7 +10845,10 @@ using that same observation's UID/resourceVersion for deletion. Missing/unbound
 PVC recovery censuses volumes by the original claim UID; existing PV and
 nonce/comment-bound database cleanup guards remain separate. The
 [correction receipt](evidence/storage-retirement-cleanup-checkpoint-20261105.json)
-records 56 passing focused Python tests, syntax/diff checks and independent
+records 57 passing focused Python tests, syntax/diff checks and independent
 read review with no remaining material blocker. This is source-only evidence:
 no hosted drill, production mutation, model call, runtime-image change or
-canonical migration change occurred. Earlier local receipts remain historical.
+canonical migration change occurred. An empty census after an unbound PVC is
+gone does not settle in-flight external provisioning: that case retains state
+and namespace for allocation reconciliation, without storage certification or
+database cleanup. Earlier local receipts remain historical.
