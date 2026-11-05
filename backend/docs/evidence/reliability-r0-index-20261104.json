@@ -197,6 +197,13 @@
           "level": "L2",
           "observed_result": "cc49d00 full package and operational checks pass; all three images publish; deployment blocks with generic error; both cleanups pass.",
           "limits": "No successful rollout or customer request."
+        },
+        {
+          "path": "backend/docs/evidence/context-service-authority-repair-20261105.json",
+          "sha256": "8b495cb693c38edb6440c0f3e983283d513e86396e8dbe17d023b10ad7f0268f",
+          "level": "L1/L2",
+          "observed_result": "14 native PostgreSQL cases and28 targeted backend tests pass; release/diagnosis/native/restore guards pass; manifest ada21f57 from original baseline.",
+          "limits": "Pending input hashes bind local proof; new-manifest cloud gates and full rollout/actual issuance remain open."
         }
       ]
     },
@@ -855,6 +862,20 @@
           "level": "L2",
           "observed_result": "Rollback SQL reproduces P0001 at final release assertion block; catalog unchanged, both cleanups pass.",
           "limits": "Diagnostic scope only; application rollout and actual customer request remain pending."
+        },
+        {
+          "path": "backend/docs/evidence/release-authority-diagnosis-20261105.json",
+          "sha256": "6da1b6dda2dd557bacdc3cfc6fbfaab91fb749ab35e2373650d8e28a4f7e8735",
+          "level": "L1/L2",
+          "observed_result": "Three rollback observations identify exactly two removed prior service grants; routine catalog unchanged; all cleanups pass.",
+          "limits": "Diagnostic only; first authority projection absent and retained."
+        },
+        {
+          "path": "backend/docs/evidence/context-service-authority-repair-20261105.json",
+          "sha256": "8b495cb693c38edb6440c0f3e983283d513e86396e8dbe17d023b10ad7f0268f",
+          "level": "L1/L2",
+          "observed_result": "14 native PostgreSQL cases and28 targeted backend tests pass; release/diagnosis/native/restore guards pass; manifest ada21f57 from original baseline.",
+          "limits": "Pending input hashes bind local proof; new-manifest cloud gates and full rollout/actual issuance remain open."
         }
       ]
     },

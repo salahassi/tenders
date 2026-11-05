@@ -11424,3 +11424,28 @@ pass. The first local PGlite probe failed to collect the notice because its
 callback was passed to the constructor; the corrected exec callback probe
 passes and preserves the same SQL rejection. No missing hosted metadata is
 inferred from either local probe; the next hosted observation remains required.
+
+### November 5 — preserve the two pre-existing service EXECUTE grants
+
+Rollback run42026869332 at ee0f272 identifies exactly two ACL changes:
+artifact_context(uuid) and workspace_status() lost tdp_app_service EXECUTE.
+No owner, definer, configuration, table/column, policy, role or membership
+difference is reported. The routine catalog is restored and both cleanups pass.
+The original authority guard is correct and remains unchanged.
+
+The two still-unreleased migration permission blocks now snapshot only explicit
+service-role EXECUTE grants from their renamed predecessors before revocation,
+then restore those exact grants/options on the checked canonical wrappers.
+Missing grants remain missing; predecessors remain private; an unreviewed
+grantor fails closed. Capture and restoration occur in the same DO block,
+without session settings, extra schema objects or cross-statement state.
+
+Actual isolated PostgreSQL passes14 scenarios in2 test methods, covering both
+role families, no grant, grant, grant option and unsupported grantor. Targeted
+backend migration/ordinary export suites pass28 tests. Release guards pass18,
+schema diagnosis7, native qualification13 and restore guards15. The exact native
+source guard passes unchanged. The27-migration manifest is refrozen from the
+original baseline at ada21f57461fa81e3b45778685d86438117ef419ad8c31ceaac86c06dcb2dba3.
+Receipts retain the pending input hashes, earlier failures and original baseline.
+Full rollback diagnosis, current-manifest cloud restore/retirement, final release
+and actual issuance remain pending; no customer processing has started.

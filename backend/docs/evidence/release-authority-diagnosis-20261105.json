@@ -1,0 +1,109 @@
+{
+  "status": "reproduced_missing_prior_service_grants",
+  "runs": [
+    {
+      "run_url": "https://github.com/salahassi/tenders/actions/runs/42025233806",
+      "source_revision": "3e81848a15169fe88bd85368649c61bb326b15c6",
+      "receipt": {
+        "schema_diagnosis": "blocked",
+        "stage": "rollback_migration",
+        "sql_failure": {
+          "sqlstate": "P0001",
+          "line": 6330,
+          "guard": "DELIVERY_RELEASE_EXISTING_AUTHORITY_CHANGED"
+        },
+        "catalog_unchanged": true,
+        "before_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+        "after_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+        "owned_client_cleanup": true,
+        "deployment_performed": false,
+        "model_calls": 0
+      },
+      "original_ca": "passed",
+      "owned_client_and_private_cleanup": "passed"
+    },
+    {
+      "run_url": "https://github.com/salahassi/tenders/actions/runs/42026259554",
+      "source_revision": "97a4e07783270539085c79f6bd57c62805052a2a",
+      "receipt": {
+        "schema_diagnosis": "blocked",
+        "stage": "rollback_migration",
+        "sql_failure": {
+          "sqlstate": "P0001",
+          "line": 6338,
+          "guard": "DELIVERY_RELEASE_EXISTING_AUTHORITY_CHANGED"
+        },
+        "catalog_unchanged": true,
+        "authority_difference": null,
+        "before_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+        "after_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+        "owned_client_cleanup": true,
+        "deployment_performed": false,
+        "model_calls": 0
+      },
+      "original_ca": "passed",
+      "owned_client_and_private_cleanup": "passed"
+    },
+    {
+      "run_url": "https://github.com/salahassi/tenders/actions/runs/42026869332",
+      "source_revision": "ee0f2728c30ba996406eaa7207bef758e82c2c81",
+      "receipt": {
+        "schema_diagnosis": "blocked",
+        "stage": "rollback_migration",
+        "sql_failure": {
+          "sqlstate": "P0001",
+          "line": 6339,
+          "guard": "DELIVERY_RELEASE_EXISTING_AUTHORITY_CHANGED"
+        },
+        "catalog_unchanged": true,
+        "authority_difference": {
+          "sections": [
+            "functions"
+          ],
+          "functions": [
+            {
+              "signature": "artifact_context(uuid)",
+              "fields": [
+                "acl"
+              ],
+              "before_acl": [
+                "tdp_app_owner=X/tdp_app_owner",
+                "tdp_app_authenticated=X/tdp_app_owner",
+                "tdp_app_service=X/tdp_app_owner"
+              ],
+              "after_acl": [
+                "tdp_app_owner=X/tdp_app_owner",
+                "tdp_app_authenticated=X/tdp_app_owner"
+              ]
+            },
+            {
+              "signature": "workspace_status()",
+              "fields": [
+                "acl"
+              ],
+              "before_acl": [
+                "tdp_app_owner=X/tdp_app_owner",
+                "tdp_app_authenticated=X/tdp_app_owner",
+                "tdp_app_service=X/tdp_app_owner"
+              ],
+              "after_acl": [
+                "tdp_app_owner=X/tdp_app_owner",
+                "tdp_app_authenticated=X/tdp_app_owner"
+              ]
+            }
+          ]
+        },
+        "authority_notice_seen": true,
+        "before_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+        "after_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+        "owned_client_cleanup": true,
+        "deployment_performed": false,
+        "model_calls": 0
+      },
+      "original_ca": "passed",
+      "owned_client_and_private_cleanup": "passed"
+    }
+  ],
+  "finding": "Only existing function ACLs differ: artifact_context(uuid) and workspace_status() lose tdp_app_service EXECUTE. Original catalog is restored after each rollback. The authority guard is correct and remains unchanged.",
+  "scope": "Rollback diagnostic receipts only. No application release, customer request or provider campaign."
+}

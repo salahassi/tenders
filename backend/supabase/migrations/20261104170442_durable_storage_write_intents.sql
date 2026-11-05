@@ -212,7 +212,14 @@ end$$;
 
 -- No browser access to private paths or operational settlement. Actual observed
 -- receipts use service RPCs; quiescence retirement is a separate reviewed tool.
-do $$declare role_name text;signature text;begin
+do $workspace_status_permissions$declare role_name text;signature text;old_service_acl aclitem[];old_owner oid;grant_row record;begin
+ -- Preserve only service EXECUTE grants explicitly held by the predecessor.
+ -- Snapshot before revoking its direct access; the predecessor stays private.
+ select proacl,proowner into old_service_acl,old_owner from pg_proc where oid='public.workspace_status_before_storage_intents()'::regprocedure;
+ if exists(select 1 from aclexplode(coalesce(old_service_acl,acldefault('f',old_owner))) a
+  join pg_roles r on r.oid=a.grantee where r.rolname in ('service_role','tdp_app_service') and a.grantor<>old_owner)
+ then raise exception 'LEGACY_CONTEXT_SERVICE_GRANTOR_UNSUPPORTED';end if;
+
  foreach role_name in array array['anon','authenticated','service_role','tdp_app_anon','tdp_app_authenticated','tdp_app_service'] loop
   if exists(select 1 from pg_roles where rolname=role_name) then execute format('revoke all on public.storage_write_intents from %I',role_name);end if;
  end loop;
@@ -238,8 +245,15 @@ do $$declare role_name text;signature text;begin
    end loop;
   end if;
  end loop;
-end$$;
+-- Preserve the established authenticated canonical command entrypoint.
+ foreach role_name in array array['authenticated','tdp_app_authenticated'] loop if exists(select 1 from pg_roles roles where roles.rolname=role_name) then execute 'grant execute on function app_private.app_command(text,jsonb,text),public.workspace_status() to '||quote_ident(role_name);end if;end loop;
 
--- Preserve the established authenticated canonical command entrypoint. The
--- renamed predecessor above remains private so callers cannot bypass intents.
-do $$declare r text;begin foreach r in array array['authenticated','tdp_app_authenticated'] loop if exists(select 1 from pg_roles where rolname=r) then execute 'grant execute on function app_private.app_command(text,jsonb,text),public.workspace_status() to '||quote_ident(r);end if;end loop;end$$;
+ -- Restore these exact existing grants only on the canonical checked wrapper.
+ for grant_row in select r.rolname,a.is_grantable
+  from unnest(coalesce(old_service_acl,acldefault('f',old_owner))) with ordinality old_acl(value,position)
+  cross join lateral aclexplode(array[old_acl.value]) a join pg_roles r on r.oid=a.grantee
+  where r.rolname in ('service_role','tdp_app_service') and a.privilege_type='EXECUTE' order by old_acl.position loop
+  execute format('grant execute on function public.workspace_status() to %I%s',grant_row.rolname,
+   case when grant_row.is_grantable then ' with grant option' else '' end);
+ end loop;
+end $workspace_status_permissions$;
