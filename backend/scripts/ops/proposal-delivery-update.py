@@ -253,7 +253,7 @@ def main(argv=()):
         return 0
     except Exception as error:
         code_value=str(error)
-        safe=code_value if isinstance(error,(UpdateError,release.ReleaseError,images.ImageError,cutover.CutoverError)) and re.fullmatch('[A-Z_]{1,100}',code_value) else 'DELIVERY_UPDATE_FAILED'
+        safe=code_value if isinstance(error,(UpdateError,release.ReleaseError,images.ImageError,cutover.CutoverError,gateway.GatewayError,https.HttpsError,images.qualification.QualificationError)) and re.fullmatch('[A-Z_]{1,100}',code_value) else 'DELIVERY_UPDATE_FAILED'
         emit('blocked',code=safe,automatic_rollback=False,forward_completion_may_be_required=True)
         return 1
 if __name__=='__main__':sys.exit(main(sys.argv[1:]))

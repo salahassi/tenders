@@ -1,0 +1,55 @@
+{
+  "status": "blocked_during_deployment",
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/42019256347",
+  "job_id": 127217618675,
+  "source_revision": "cc49d00dabd138d754109c237bd562426ba4ffff",
+  "checks": {
+    "frontend_tests": 380,
+    "backend_tests": 3488,
+    "operations_tests": 686,
+    "schema_helper_tests": 11,
+    "kubernetes_tests": 16,
+    "both_typechecks": "passed",
+    "both_builds": "passed"
+  },
+  "observations": [
+    {
+      "release": "proposal-delivery-reliability-v1",
+      "status": "source_verified",
+      "manifest_sha256": "1fdf73f4a9b638938285afd13cbf3e4077e28da3932816ea80f9d03a6d748f82",
+      "migration_count": 27
+    },
+    {
+      "image": "runtime",
+      "status": "published",
+      "reference": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:39f6bf7e375679da7721f25fde15a0d469940e3d25ddc3674a4617a8f9e06250",
+      "source_revision": "cc49d00dabd138d754109c237bd562426ba4ffff",
+      "existing_candidate_reused": false
+    },
+    {
+      "image": "frontend",
+      "status": "published",
+      "reference": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:f9bd1b6a2af18b7d836c3a4a20f6183f48ddf51fdac07634e9469a945238001c",
+      "source_revision": "cc49d00dabd138d754109c237bd562426ba4ffff",
+      "existing_candidate_reused": false
+    },
+    {
+      "image": "ocr",
+      "status": "published",
+      "reference": "registry.digitalocean.com/tenderdesk-a6093a76/ocr@sha256:0b177537830ff838d50e8fef010309212bd756e145289dd01f5583b7c86392b5",
+      "source_revision": "cc49d00dabd138d754109c237bd562426ba4ffff",
+      "existing_candidate_reused": false
+    },
+    {
+      "automatic_rollback": false,
+      "code": "DELIVERY_UPDATE_FAILED",
+      "forward_completion_may_be_required": true,
+      "release": "proposal-delivery-reliability-v1",
+      "status": "blocked"
+    }
+  ],
+  "original_ca": "passed",
+  "both_cleanup_steps": "passed",
+  "actual_request_started": false,
+  "scope": "All application checks and all three image publications passed. Deployment returned only a generic error; stage and cause require separate read-only evidence. No successful rollout or customer issuance claimed."
+}

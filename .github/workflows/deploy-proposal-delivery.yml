@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       inspect_qualified_image:
-        description: Inspect only the published qualified image; no build, publication, schema change or rollout
+        description: Inspect qualified image and read-only release prerequisites; no build, publication, schema change or rollout
         type: boolean
         required: true
         default: false
@@ -57,9 +57,11 @@ jobs:
       - name: Publish or reuse exact source runtime, frontend and native OCR images
         if: ${{ inputs.inspect_qualified_image != true }}
         run: python3 backend/scripts/ops/proposal-delivery-images.py
-      - name: Inspect only the immutable qualified runtime metadata
+      - name: Inspect immutable runtime metadata and read-only release prerequisites
         if: ${{ inputs.inspect_qualified_image == true }}
-        run: python3 backend/scripts/ops/proposal-delivery-images.py --inspect-qualified
+        run: |
+          python3 backend/scripts/ops/proposal-delivery-images.py --inspect-qualified
+          python3 backend/scripts/ops/proposal-delivery-preflight.py
       - name: Apply atomic schema and complete compatible workload rollout
         if: ${{ inputs.inspect_qualified_image != true }}
         env:

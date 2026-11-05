@@ -190,6 +190,13 @@
           "level": "L1/L2",
           "observed_result": "Actual local frontend Docker build passes with root context and browser shared modules; 31 focused controls and frozen runtime source guard pass.",
           "limits": "Uncommitted changed input hashes bind this local proof. No hosted release, customer request or model calls."
+        },
+        {
+          "path": "backend/docs/evidence/release-update-blocked-20261105-42019256347.json",
+          "sha256": "f13714d81b6ec98deae9979179cecece61a12f92b850e8655fcacfa2f9e79756",
+          "level": "L2",
+          "observed_result": "cc49d00 full package and operational checks pass; all three images publish; deployment blocks with generic error; both cleanups pass.",
+          "limits": "No successful rollout or customer request."
         }
       ]
     },
@@ -820,6 +827,20 @@
           "level": "L1/L2",
           "observed_result": "9b54bad complete application and operations gates pass; exact runtime promoted/published. Image command fails, rollout skipped, both cleanups pass.",
           "limits": "No deployment; hosted image error is generic. Concrete missing shared-module failure reproduced separately locally."
+        },
+        {
+          "path": "backend/docs/evidence/release-update-blocked-20261105-42019256347.json",
+          "sha256": "f13714d81b6ec98deae9979179cecece61a12f92b850e8655fcacfa2f9e79756",
+          "level": "L2",
+          "observed_result": "cc49d00 full package and operational checks pass; all three images publish; deployment blocks with generic error; both cleanups pass.",
+          "limits": "No successful rollout or customer request."
+        },
+        {
+          "path": "backend/docs/evidence/post-release-inventory-20261105-42023050579.json",
+          "sha256": "516493a95a1d9a0cc84cb5192782c22c5f8a6ddd9e4c3882f400024ec1b4d156",
+          "level": "L2",
+          "observed_result": "Original-CA read-only inventory passes: ten workloads ready, old application images, new delivery schema absent; both cleanups pass.",
+          "limits": "Does not identify the failed prerequisite or prove every pre-schema configuration untouched."
         }
       ]
     },

@@ -11355,3 +11355,22 @@ retaining evidence and source. No containers or provider calls were started.
 Receipts: `release-image-build-blocked-20261105-42014591057.json` and
 `frontend-root-context-build-20261105.json`. A fresh complete hosted release and
 actual customer request/export remain required; local build success is not rollout.
+
+### November 5 — full CI and image publication pass; release preflight diagnosis
+
+PR31 is merged at cc49d00. Release 42019256347 passes 3,488 backend and 380
+frontend tests, both typechecks/builds, 686 operations, 11 schema-helper and
+16 Kubernetes tests. All three exact-source runtime/frontend/OCR images publish
+successfully. Deployment then reports only DELIVERY_UPDATE_FAILED; both cleanup
+steps pass. Read-only inventory 42023050579 confirms all ten workloads ready,
+previous application images and absent new delivery schema capabilities. It
+does not prove that every pre-schema configuration was untouched. No actual
+customer request was activated. Both receipts are retained in the R0 index.
+
+The short explicit inspection mode now also runs the production resource,
+Storage-gateway and HTTPS prerequisite guards without workload/schema writes
+or a SQL client. It reports only fixed stages and validated guard codes. The
+normal updater now preserves its typed gateway, HTTPS and runtime-qualification
+errors instead of replacing them with the generic code. All 31 focused controls
+pass (4 preflight, 15 updater, 12 image helper). Hosted diagnosis and a corrected
+full release remain required; no qualification guard is relaxed.
