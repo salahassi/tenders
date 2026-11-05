@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "workflow_run_id": 41993470511,
+  "workflow_job_id": 127130965068,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41993470511",
+  "source_revision": "42812352020548141476a0e62cd9e6098bc5f2a2",
+  "conclusion": "failure",
+  "local_guard_tests_passed": 14,
+  "original_cluster_ca_verified": true,
+  "code": "RESTORE_FINAL_SOURCE_CONTRACT_REQUIRED",
+  "failed_before_catalog_capture_or_fixture_allocation": true,
+  "cleanup_verified": true,
+  "temporary_credentials_removed": true,
+  "raw_log_sha256": "b89e71a01b6c31a000fdd27680b595dbc55304323370dcff289e578c960233cb",
+  "limits": [
+    "The obsolete worker4-only helper gate rejected the current worker5 manifest.",
+    "No actual Auth/Storage restore assertion ran; a successful retry is required."
+  ]
+}

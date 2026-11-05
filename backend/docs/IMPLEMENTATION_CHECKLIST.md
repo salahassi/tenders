@@ -11128,3 +11128,18 @@ manifest re-freeze, fresh cloud drills and deployment remain pending.
 
 Registry publicationf2d0f9 and27migration source verification pass. Manifest
 canonical SHA256: `1fdf73f4a9b638938285afd13cbf3e4077e28da3932816ea80f9d03a6d748f82`. Fresh hosted acceptance is the next gate.
+
+### November 5 — final operational integration and first27-migration restore guard
+
+The complete operations suite runs665tests;664pass and one current-image metadata
+expectation still assumed130files/146entries and the historical source revision.
+The expected values now bind the observed131files/147entries and4b249ca source.
+All13 focused runtime guards now pass.
+
+Cloud restore41993470511 at4281235 validates the original cluster CA and passes
+14local guards, then stops before catalog capture or fixture allocation with
+`RESTORE_FINAL_SOURCE_CONTRACT_REQUIRED`. Its helper still required worker4.
+The current gate now requires worker5, source resolution1 and all three new
+migrations; focused negative controls cover old/future workers and missing
+contracts. All15 focused restore guards pass. Both cleanup stages passed. A fresh hosted restore remains required;
+this failure is not a certificate regression or an application rollout.
