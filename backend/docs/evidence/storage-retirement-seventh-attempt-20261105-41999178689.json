@@ -1,0 +1,70 @@
+{
+  "status": "failed_cleanup_pending",
+  "source_revision": "cac55b91d4fed22871aff14f05a98fca68ea4b53",
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/41999178689",
+  "interrupt_job": 127149798561,
+  "resume_job": 127150920164,
+  "receipts": [
+    {
+      "code": "RETIREMENT_FIXTURE_SERVICE_RESTORATION_REQUIRED",
+      "restoration_diagnostic": {
+        "failures": [
+          {
+            "error": {
+              "code": "RETIREMENT_FIXTURE_COMMAND_FAILED",
+              "command_diagnostic": {
+                "category": "readiness_timeout",
+                "child_code": null,
+                "child_http_status": null,
+                "command": "rollout",
+                "exit_code": 1,
+                "phase": "restore_readiness",
+                "resource_class": "other",
+                "sqlstate": null
+              },
+              "kind": "guard"
+            },
+            "stage": "readiness",
+            "workload": "storage"
+          }
+        ],
+        "prior_error": null
+      },
+      "storage_retirement_qualification": "blocked"
+    },
+    {
+      "code": "RETIREMENT_FIXTURE_SERVICE_RESTORATION_REQUIRED",
+      "restoration_diagnostic": {
+        "failures": [
+          {
+            "error": {
+              "code": "RETIREMENT_FIXTURE_COMMAND_FAILED",
+              "command_diagnostic": {
+                "category": "readiness_timeout",
+                "child_code": null,
+                "child_http_status": null,
+                "command": "rollout",
+                "exit_code": 1,
+                "phase": "restore_readiness",
+                "resource_class": "other",
+                "sqlstate": null
+              },
+              "kind": "guard"
+            },
+            "stage": "readiness",
+            "workload": "storage"
+          }
+        ],
+        "prior_error": null
+      },
+      "storage_retirement_qualification": "blocked"
+    },
+    {
+      "storage_retirement_qualification": "runner_files_removed"
+    }
+  ],
+  "interpretation": "No prior coordinator exception and no helper-cleanup failure were reported. Both normal restoration and subsequent cleanup fail only on Storage readiness. The nonce-owned fixture remains for scoped inspection; do not allocate another fixture or claim cleanup/hosted acceptance.",
+  "application_deployed": false,
+  "model_calls": 0,
+  "customer_rows_used": false
+}

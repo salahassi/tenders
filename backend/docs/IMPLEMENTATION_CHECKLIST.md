@@ -11203,3 +11203,24 @@ All 74 focused tests pass, including absent-identity cleanup, rejection of
 foreign identity, private-event redaction and preservation of the initial error.
 A new isolated trial is required to identify the initial startup cause; no
 application deployment or customer invocation has occurred.
+
+The permanent DO access runbook now directly names the interrupted-retirement
+workflow, its original-CA path, nonce/PVC boundary, cleanup requirement and
+fixture-worker limitations. This documentation change does not alter runtime,
+manifest, cluster state or test outcomes.
+
+### November 5 — retained fixture requires exact-origin inspection
+
+Run 41999178689 at cac55b9 reports no prior coordinator error and no helper
+cleanup error, but Storage rollout still times out. The later cleanup fails on
+the same readiness condition; the nonce-owned fixture remains. This is not a
+cleanup pass. No new fixture or deployment is authorized by this result.
+
+The existing qualification workflow now has an explicit read-only inspection
+mode fixed to that run, attempt and source. It verifies the namespace UID,
+durable Secret identity, original manifest and deployment/ReplicaSet/Pod
+lineage before reading status, events and bounded logs. Only fixed categories
+and SQLSTATE values are public. It performs no cluster writes or SQL and
+removes its own runner credentials. The original recovery authority is unchanged.
+All 78 focused retirement controls pass; current fixture cleanup and release
+remain pending.
