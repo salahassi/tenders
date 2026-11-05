@@ -84,7 +84,7 @@ class DeliveryReleaseTests(unittest.TestCase):
 
     def test_every_final_contract_is_required_before_freezing(self):
         manifest=self.manifest()
-        self.assertEqual(len(p.REQUIRED),25)
+        self.assertEqual(len(p.REQUIRED),26)
         self.assertEqual({key:manifest[key] for key in p.CAPABILITIES},p.CAPABILITIES)
         with self.assertRaises(p.ReleaseError):p.freeze({'receipt':self.inventory()})
         with tempfile.TemporaryDirectory() as directory:
@@ -98,7 +98,7 @@ class DeliveryReleaseTests(unittest.TestCase):
                 path.write_bytes(data)
 
     def test_final_capabilities_cannot_be_downgraded_or_coerced(self):
-        for key,value in (('executor_max',4),('minimum_worker_executor',4),('renderer_versions',[1,2]),
+        for key,value in (('source_resolution_version',0),('source_resolution_version',True),('executor_max',4),('minimum_worker_executor',4),('renderer_versions',[1,2]),
           ('ordinary_renderer_version','ordinary-1'),('current_proposal_issuance_contract',True),
           ('issuance_file_capacity_version',0),('global_renderer_limit',2),
           ('storage_write_intents_version',False),('storage_retirement_version',0),('storage_gateway_guard_version',True),('application_auth_read_version',0),
@@ -313,6 +313,9 @@ class DeliveryReleaseTests(unittest.TestCase):
           ('DELETE FROM app_private.release_private_fixture;','DELIVERY_RELEASE_EXISTING_ROWS_CHANGED'),
           ('GRANT SELECT ON public.release_preserved_fixture TO tdp_app_authenticated;','DELIVERY_RELEASE_EXISTING_AUTHORITY_CHANGED'),
           ('GRANT SELECT(id) ON public.release_preserved_fixture TO tdp_app_authenticated;','DELIVERY_RELEASE_EXISTING_AUTHORITY_CHANGED'),
+          ('ALTER TABLE public.jobs DISABLE TRIGGER zzzz_current_worker_capability;','DELIVERY_RELEASE_WORKER_FLOOR_MISSING'),
+          ('ALTER TABLE public.requirements DISABLE TRIGGER requirement_z_resolution_guard;','DELIVERY_RELEASE_SOURCE_RESOLUTION_MISSING'),
+          ('ALTER TABLE public.source_obligation_reviews DISABLE TRIGGER source_supersession_revision;','DELIVERY_RELEASE_SOURCE_RESOLUTION_MISSING'),
           ('DROP FUNCTION public.export_render_context(uuid,uuid);','DELIVERY_RELEASE_FINAL_RPC_MISSING'),
           ('GRANT EXECUTE ON FUNCTION public.export_render_context(uuid,uuid) TO tdp_app_authenticated;','DELIVERY_RELEASE_FINAL_RPC_AUTHORITY_INVALID'),
           ('REVOKE EXECUTE ON FUNCTION public.export_package_context(uuid) FROM tdp_app_authenticated;','DELIVERY_RELEASE_FINAL_RPC_AUTHORITY_INVALID'),

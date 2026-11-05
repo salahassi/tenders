@@ -46,10 +46,11 @@ REQUIRED = ('20261104121022_partial_document_coverage.sql',
  '20261104172700_storage_write_retirement_proofs.sql',
  '20261104212300_structured_section_body_bound.sql',
  '20261104212818_bounded_command_batch_results.sql',
+ '20261105120000_source_obligation_resolution.sql',
  '20261105120100_worker_capability_five.sql')
 CAPABILITIES = {'executor_max':5,'renderer_versions':[1,2,3],
  'minimum_worker_executor':5,'ordinary_renderer_version':'ordinary-2',
- 'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1,
+ 'source_resolution_version':1,'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1,
  'global_renderer_limit':1,'storage_write_intents_version':1,
  'storage_retirement_version':1,'storage_gateway_guard_version':1,'application_auth_read_version':1,
  'command_batch_transport_version':1,'command_batch_chunk_bytes':262144,'legacy_batch_insert_fence_version':1,
@@ -406,6 +407,17 @@ BEGIN
   WHERE tgrelid='public.jobs'::regclass AND tgname='zzzz_current_worker_capability'
    AND tgenabled='O' AND tgfoid='app_private.guard_current_worker_capability()'::regprocedure)
   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_WORKER_FLOOR_MISSING';END IF;
+ IF to_regprocedure('app_private.source_resolution(uuid,uuid)') IS NULL
+  OR to_regprocedure('app_private.assert_plan_source_resolution(uuid)') IS NULL
+  OR to_regprocedure('app_private.validate_source_resolution_inventory(public.generation_plans,jsonb,jsonb)') IS NULL
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_SOURCE_RESOLUTION_MISSING';END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.requirements'::regclass
+  AND tgname='requirement_z_resolution_guard' AND tgenabled='O'
+  AND tgfoid='app_private.guard_requirement_resolution()'::regprocedure)
+  OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.source_obligation_reviews'::regclass
+  AND tgname='source_supersession_revision' AND tgenabled='O'
+  AND tgfoid='app_private.pin_source_supersession_revision()'::regprocedure)
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_SOURCE_RESOLUTION_MISSING';END IF;
  -- Source hashes bind the implementation. These independent catalog checks
  -- reject absent/disabled contracts and exposed new RPCs before runtime rollout.
  -- They do not substitute for actual mixed-version claim and capacity tests.

@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "source_revision": "834165692ffc8542275c89a5d76a75f532deb4c3",
+  "workflow_run_id": 41949704413,
+  "workflow_job_id": 126990474887,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41949704413",
+  "conclusion": "failure",
+  "local_fixture_tests": {
+    "passed": 68
+  },
+  "prepare": {
+    "code": "RETIREMENT_FIXTURE_COMMAND_FAILED",
+    "command_diagnostic": {
+      "category": "remote_exit",
+      "child_code": null,
+      "child_http_status": null,
+      "command": "exec",
+      "exit_code": 3,
+      "phase": "retirement_capture",
+      "resource_class": "other"
+    }
+  },
+  "deliberate_interruption_reached": false,
+  "resume": "skipped",
+  "cleanup_verified": true,
+  "runner_files_removed": true,
+  "raw_log_sha256": "1979b61b222075e94ac636fe42edd7491bfa9ba8a59df963171bcb67b2ee84a4",
+  "limits": [
+    "Existing phase spans several database boundaries; exact failing SQL is not yet established.",
+    "Cleanup does not establish passing interruption/resume. No customer workspace records or model calls."
+  ]
+}

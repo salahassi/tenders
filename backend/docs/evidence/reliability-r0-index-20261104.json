@@ -141,6 +141,13 @@
           "level": "L3",
           "observed_result": "Third release canceled during source checks; cluster access/publication/rollout skipped; cleanups passed.",
           "limits": "Canonical synthetic typed-source defect with authored verifier receipts; no real-provider false-pass or final-approval bypass claimed."
+        },
+        {
+          "path": "backend/docs/evidence/source-resolution-integrated-20261105.json",
+          "sha256": "b1e4d26cfae52d54c2ac9f594d024182b3d1a07291ca984eaae5c97b2d8a9c25",
+          "level": "Current scoped observation",
+          "observed_result": "Current 14/3 SQL and DOCX issuance, later revocation denial,26-migration release guards and local authority pass.",
+          "limits": "Focused synthetic local evidence; no full final package/native/hosted/deployment claim."
         }
       ]
     },
@@ -228,7 +235,7 @@
           "path": "backend/docs/evidence/native-reviewed-docx-handler-20261104.json",
           "sha256": "e3b91fc1c4da28ae921908ef64ac2948991fceb3408f3279440a5cb96a2c711f",
           "level": "L3 actual native reviewed-upload handler",
-          "observed_result": "Same artifact1bee8e23\u2026547d25d passes native canonical verification and one completion RPC with HTTP200 in30.996s; peak367247360/402653184bytes.",
+          "observed_result": "Same artifact1bee8e23…547d25d passes native canonical verification and one completion RPC with HTTP200 in30.996s; peak367247360/402653184bytes.",
           "limits": "Synthetic ordinary-2 server pin/Auth/RPC/Storage, no real approval or production completion; no actual upstream/gateway."
         },
         {
@@ -356,6 +363,13 @@
           "level": "L3",
           "observed_result": "65fixture tests pass; prepare fails REFRESH_MISSING at canonical fixture write; cleanup verified.",
           "limits": "Fixture Auth refresh compatibility correction/actual retry still required."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-third-attempt-20261105-41949704413.json",
+          "sha256": "eda11c7e2c008df71efec1917179aeb6a78e86035a3ba852634cd7cf5acf1883",
+          "level": "Current scoped observation",
+          "observed_result": "Third attempt fails at retirement_capture with exit3; both cleanups pass.",
+          "limits": "Exact failing SQL unknown; interruption/resume unproven."
         }
       ]
     },
@@ -531,7 +545,7 @@
           "path": "backend/docs/evidence/application-auth-read-postgres-20261104.json",
           "sha256": "3314c13283eba5f7c6b8177c9a9cd501501de5a71e716799c2527eb871c9f3ff",
           "level": "L2 actual PostgreSQL concurrent connections",
-          "observed_result": "Eleven real PostgreSQL checks passed: exact policy replay, rollback, managed SET authority, browser denial, and observed late-snapshot red/early-lock green with row visibility 0\u21922 retained.",
+          "observed_result": "Eleven real PostgreSQL checks passed: exact policy replay, rollback, managed SET authority, browser denial, and observed late-snapshot red/early-lock green with row visibility 0→2 retained.",
           "limits": "No live Auth HTTP in this local receipt; production policy not changed."
         },
         {
@@ -800,6 +814,13 @@
           "level": "L3 independent retained adjudication",
           "observed_result": "Rejects official tessdata_best candidate:3/7 overall,0/4 Arabic,2 English controls and1 blank control pass, no infrastructure failure/OOM.",
           "limits": "Gold unchanged; no runtime tuning adopted. Automatic Arabic remains unqualified and human correction remains required."
+        },
+        {
+          "path": "backend/docs/evidence/paddle-ocr-candidate-rejected-20261105.json",
+          "sha256": "05e798df9f7f35202c11763381d8f1c0f4292f614dc9c59737ac47f4534a5e09",
+          "level": "Current scoped observation",
+          "observed_result": "All13pages execute;4wholepages and2of21critical facts pass; candidate rejected.",
+          "limits": "Authored and known controls; no production adoption."
         }
       ]
     },
@@ -1085,17 +1106,5 @@
       "scope": "Main merge/CI failure, scoped timeout correction and dormant manual-retirement proof fix. Frozen24 manifest unchanged; complete corrected GitHub gate and deployment remain open."
     }
   ],
-  "current_predeployment_summary": {
-    "source_revision": "2157dcf740e40dc547706ebb7d3402be161428f7",
-    "full_combined_checks": "passed_at9501068_3419backend_380frontend_types_build_source_resolution_worker5_require_new_gates",
-    "renewed_cloud_restore": "passed41942455870_at2b869ac_manifest2e6512d2",
-    "release": "third_attempt41944374857_cancelled_before_access_for_typed_source_defect",
-    "actual_request_activation": "pending",
-    "indexed_receipts": 117,
-    "historical_receipts_preserved": 92,
-    "new_receipts": 25,
-    "operations_checks": "667passed_at2b869ac_before_retirement_cleanup_followup",
-    "retirement_cleanup_followup": "57_focused_passed_after_integration_at0cfb2ef_final_github_gate_pending",
-    "retirement_drill": "two_attempts_failed_before_interruption_both_cleanup_verified_second_located_refresh_token_guard"
-  }
+  "current_predeployment_summary": "Source-resolution and worker5 integration focused checks pass; complete final gates/native qualification/26-migration cloud restore/deploy pending. Paddle candidate rejected. Retirement SQL diagnosis in progress."
 }

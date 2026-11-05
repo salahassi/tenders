@@ -1000,12 +1000,21 @@ it("rejects a source-obligation revocation after the completed machine report wa
       [f.w, o.id, reviewed.review_id],
     )
   ).value;
-  const currentCatalog = (
-    await rpc("source_review_context", { opportunity_id: o.id })
-  ).source_evidence;
+  const currentReview = (
+    await row(
+      "select app_private.draft_generation_snapshot($1,$2,$3,null,null) value",
+      [f.w, o.id, p.proposal_id],
+    )
+  ).value;
   await f.db.query(
-    "update public.generation_plans set frozen_context=jsonb_set(frozen_context,'{source_evidence}',$2::jsonb) where id=$1",
-    [p.id, JSON.stringify(currentCatalog)],
+    "update public.generation_plans set frozen_context=frozen_context||jsonb_build_object('source_evidence',$2::jsonb,'source_resolution_version',1,'source_resolution',$3::jsonb,'blocks',$4::jsonb,'notice',$5::jsonb) where id=$1",
+    [
+      p.id,
+      JSON.stringify(currentReview.source_evidence),
+      JSON.stringify(currentReview.source_resolution),
+      JSON.stringify(currentReview.blocks),
+      JSON.stringify(currentReview.notice),
+    ],
   );
   await f.db.query(
     "update public.requirements set text=$2,source_refs=$3::jsonb,source_semantics=$4::jsonb where plan_id=$1",
@@ -1021,10 +1030,9 @@ it("rejects a source-obligation revocation after the completed machine report wa
     job_id: j.id,
     lease: job.lease_token,
   });
-  const payload = await buildGeneratedPayload(
-    ctx,
-    await assessGeneratedDelivery(ctx),
-  );
+  const report = await assessGeneratedDelivery(ctx);
+  expect(report.blockers).toEqual([]);
+  const payload = await buildGeneratedPayload(ctx, report);
   await f.command("source.obligation.review", {
     opportunity_id: o.id,
     review_id: reviewed.review_id,
@@ -1332,29 +1340,66 @@ it("observes canonical whole-package issuance and preserves timestamps after sou
     await f.db.exec("begin");
     const { j, p, o, issuance } = await setup(undefined, 0, false, true);
     const t = transport();
-    const generated = await processGeneratedDelivery(t.backend, await claim(j.id));
+    const generated = await processGeneratedDelivery(
+      t.backend,
+      await claim(j.id),
+    );
     expect(generated).toMatchObject({ projected: true });
     const render = await rpc("claim_backend_local_job_v5");
     expect(render.type).toBe("render_delivery");
-    const rendered = await processDeliveryExport(t.backend, render, async (model) =>
-      new Uint8Array(await (await renderDocx(model, fonts)).arrayBuffer()));
+    const rendered = await processDeliveryExport(
+      t.backend,
+      render,
+      async (model) =>
+        new Uint8Array(await (await renderDocx(model, fonts)).arrayBuffer()),
+    );
     expect(rendered.error_code).toBeFalsy();
     await f.db.exec("commit");
-    const target = { opportunity_id: o.id, proposal_id: p.proposal_id, plan_id: p.id, issuance_request_id: issuance.id };
+    const target = {
+      opportunity_id: o.id,
+      proposal_id: p.proposal_id,
+      plan_id: p.id,
+      issuance_request_id: issuance.id,
+    };
     const observed = await currentIssuanceObservation(f, target);
-    expect(Object.values(observed.guards)).toEqual(Array(Object.keys(observed.guards).length).fill(true));
+    expect(Object.values(observed.guards)).toEqual(
+      Array(Object.keys(observed.guards).length).fill(true),
+    );
     expect(observed.artifact_check).toBe("passed");
-    expect(observed.issuance).toMatchObject({ outcome: "issued", effective_outcome: "issued", error_code: null });
-    expect(observed.issuance.completed_at).toBe(observed.issuance.effective_completed_at);
-    expect(new Date(observed.issuance.completed_at).getTime()).toBeLessThan(new Date(observed.issuance.deadline_at).getTime());
-    expect(observed.package).toMatchObject({ current_version: true, current_snapshot: true,
-      validated_generated_draft: true, approval_state: "draft", required_volumes: ["technical", "financial"],
-      render_job: { status: "succeeded" } });
+    expect(observed.issuance).toMatchObject({
+      outcome: "issued",
+      effective_outcome: "issued",
+      error_code: null,
+    });
+    expect(observed.issuance.completed_at).toBe(
+      observed.issuance.effective_completed_at,
+    );
+    expect(new Date(observed.issuance.completed_at).getTime()).toBeLessThan(
+      new Date(observed.issuance.deadline_at).getTime(),
+    );
+    expect(observed.package).toMatchObject({
+      current_version: true,
+      current_snapshot: true,
+      validated_generated_draft: true,
+      approval_state: "draft",
+      required_volumes: ["technical", "financial"],
+      render_job: { status: "succeeded" },
+    });
     expect(observed.package.artifacts).toHaveLength(2);
-    expect(observed.package.artifacts.every((a: any) => a.status === "ready" && a.renderer_version === "3" && a.expected_size > 0)).toBe(true);
+    expect(
+      observed.package.artifacts.every(
+        (a: any) =>
+          a.status === "ready" &&
+          a.renderer_version === "3" &&
+          a.expected_size > 0,
+      ),
+    ).toBe(true);
     // Test-only fixture edit, never a production operation. The immutable
     // issuance times remain visible even when the source guards reject it.
-    await f.db.query("update public.opportunities set description='Changed synthetic source' where id=$1", [o.id]);
+    await f.db.query(
+      "update public.opportunities set description='Changed synthetic source' where id=$1",
+      [o.id],
+    );
     const stale = await currentIssuanceObservation(f, target);
     expect(stale.guards.sources).toBe(false);
     expect(stale.source_check).toBe("STALE_INPUT");

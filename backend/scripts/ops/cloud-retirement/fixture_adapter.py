@@ -148,9 +148,11 @@ class FixtureAdapter:
    spec=service.get('spec',{})
    f.need(spec.get('type','ClusterIP')=='ClusterIP' and not any(spec.get(x) for x in ('externalIPs','externalName','loadBalancerIP')) and all(not p.get('nodePort') for p in spec.get('ports',[])),'RETIREMENT_FIXTURE_PUBLIC_EXPOSURE')
  def install_fence(self,capture):
+  r.phase('retirement_fence_inspect')
   owner=self.state['bootstrap']['role_prefix']+'_owner'
   observed=self.query("select jsonb_build_object('owner',pg_get_userbyid(p.proowner),'security_definer',p.prosecdef,'config',p.proconfig,'body_sha256',encode(sha256(convert_to(p.prosrc,'UTF8')),'hex')) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='guard_retired_storage_write' and p.pronargs=0 and p.prokind='f'",None)
   f.need(observed=={'owner':owner,'security_definer':True,'config':['search_path=""'],'body_sha256':self.binary['guard_body_sha256']},'RETIREMENT_FIXTURE_GUARD_CHANGED')
+  r.phase('retirement_fence_install')
   self.sql("""do $fence$ declare so name;fo name;sid oid;fid oid;caller name:=current_user;had boolean;begin
    select r.oid,pg_get_userbyid(r.relowner) into sid,so from pg_class r join pg_namespace n on n.oid=r.relnamespace where n.nspname='storage' and r.relname='objects';
    select p.oid,pg_get_userbyid(p.proowner) into fid,fo from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='guard_retired_storage_write' and p.pronargs=0 and p.prokind='f';
@@ -163,8 +165,10 @@ class FixtureAdapter:
     execute format('set local role %I',so);execute 'create trigger tenderdesk_retired_storage_write before insert or update on storage.objects for each row execute function public.guard_retired_storage_write()';
     execute format('set local role %I',fo);if not had then execute format('revoke execute on function public.guard_retired_storage_write() from %I',so);end if;execute format('set local role %I',caller);
    end if;end $fence$""",None)
+  r.phase('retirement_fence_hash')
   self.fence_sha=self.query("select to_jsonb(encode(sha256(convert_to(pg_get_functiondef(p.oid)||pg_get_triggerdef(t.oid),'UTF8')),'hex')) from pg_trigger t join pg_class r on r.oid=t.tgrelid join pg_namespace rn on rn.oid=r.relnamespace join pg_proc p on p.oid=t.tgfoid where rn.nspname='storage' and r.relname='objects' and t.tgname='tenderdesk_retired_storage_write'",None)
  def accounting(self):
+  r.phase('retirement_accounting')
   fixture=self.state['fixture'];key=literal(fixture['selection'][0]['storage_key']);workspace=literal(fixture['workspace_id']);intent=literal(fixture['selection'][0]['id']);nonce=literal(self.nonce)
   return self.query("select jsonb_build_object('reserved',app_private.storage_reserved_bytes("+workspace+"::uuid),'pending',coalesce((select sum(estimated_size) from public.storage_cleanup_queue where workspace_id="+workspace+"::uuid and storage_key="+key+" and status<>'done'),0),'intent',(select jsonb_build_object('state',state,'revision',revision,'expected_hash',expected_hash,'expected_size',expected_size,'closed',send_closed_at is not null,'receipt',retirement_receipt is not null) from public.storage_write_intents where id="+intent+"::uuid),'completed_audits',(select count(*) from public.audit_events where action='storage.retirement.completed' and entity_id="+nonce+"::uuid))")
  def assert_uncertain(self):
@@ -174,10 +178,12 @@ class FixtureAdapter:
  def prepare(self,selection):
   if self.state['completion'] is None:
    self.state['completion']={'before':self.assert_uncertain(),'evidence':None,'receipt':None,'after':None};r.save(self.state)
+  r.phase('retirement_prepare')
   batch=self.query('select app_private.prepare_storage_write_retirement('+literal(selection['actor_id'])+','+literal(self.nonce)+','+value_sql(selection['selection'])+')')
   if batch['state']!='complete':f.need(self.assert_uncertain()==self.state['completion']['before'],'RETIREMENT_FIXTURE_ALLOWANCE_CHANGED')
   return batch
  def census(self):
+  r.phase('retirement_census')
   # All owners are read in one repeatable snapshot; only this synthetic DB exists.
   role=f.restore.builder.identifier(self.state['bootstrap']['role_prefix']+'_storageadmin');owner=f.restore.builder.identifier(self.state['bootstrap']['role_prefix']+'_owner')
   return self.query('SET LOCAL ROLE '+role+";DO $census$ BEGIN perform set_config('tenderdesk.retirement_census',(select coalesce(jsonb_agg(k),'[]')::text from(select name k from storage.objects where bucket_id='tenderdesk-private' union select key from storage.s3_multipart_uploads where bucket_id='tenderdesk-private' union select key from storage.s3_multipart_uploads_parts where bucket_id='tenderdesk-private')x),true);END $census$;SET LOCAL ROLE "+owner+";select coalesce(jsonb_agg(k),'[]') from(select jsonb_array_elements_text(current_setting('tenderdesk.retirement_census')::jsonb) k union select storage_key from public.storage_write_intents union select storage_key from public.storage_cleanup_queue union select storage_key from public.documents union select storage_key from public.export_artifacts union select storage_key from public.proposal_delivery_artifacts union select storage_key from public.export_package_volumes union select storage_key from public.restore_files)x",None)

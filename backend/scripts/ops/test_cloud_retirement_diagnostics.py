@@ -26,7 +26,7 @@ class CommandDiagnostics(unittest.TestCase):
  def test_remote_failure_keeps_location_without_private_command_or_output(self):
   error=self.failure('private-customer command terminated with exit code 1')
   value=r.failure_diagnostic(error)
-  self.assertEqual(value,{'command_diagnostic':{'phase':'canonical_fixture_write','command':'exec','resource_class':'other','exit_code':1,'category':'remote_exit','child_code':None,'child_http_status':None}})
+  self.assertEqual(value,{'command_diagnostic':{'phase':'canonical_fixture_write','command':'exec','resource_class':'other','exit_code':1,'category':'remote_exit','child_code':None,'child_http_status':None,'sqlstate':None}})
   self.assertEqual(str(error),'RETIREMENT_FIXTURE_COMMAND_FAILED')
   self.assertNotIn('private',json.dumps(vars(error)))
   self.assertNotIn('bearer',json.dumps(vars(error)))
@@ -38,6 +38,16 @@ class CommandDiagnostics(unittest.TestCase):
     {**known,'failed':False},{**known,'http_status':True}):
    value=r.failure_diagnostic(self.failure('',json.dumps(changed)))['command_diagnostic']
    self.assertIsNone(value['child_code']);self.assertIsNone(value['child_http_status'])
+ def test_sqlstate_requires_exact_psql_mode_and_excludes_private_error_text(self):
+  for stderr,expected in [('ERROR:  42501\ncommand terminated with exit code 3\n','42501'),
+    ('ERROR:  42703\n','42703'),('ERROR:  SECRET\n',None),
+    ('ERROR:  42501: private-name\n',None),('ERROR:  42501\nERROR:  P0001\n',None)]:
+   result=SimpleNamespace(returncode=3,stdout='private row',stderr=stderr)
+   args=['exec','private-pod','--','psql','-v','VERBOSITY=sqlstate']
+   value=r.failure_diagnostic(r.command_failure('RETIREMENT_FIXTURE_COMMAND_FAILED',args,result=result))
+   self.assertEqual(value['command_diagnostic']['sqlstate'],expected)
+   self.assertNotIn('private',json.dumps(value))
+  self.assertIsNone(r.failure_diagnostic(self.failure('ERROR:  42501\n'))['command_diagnostic']['sqlstate'])
  def test_client_start_failure_is_distinct_from_timeout_without_exception_text(self):
   with patch.object(r.subprocess,'run',side_effect=OSError('private executable path')):
    with self.assertRaises(c.FixtureError) as result:r.command(['get','secret','private-name'])

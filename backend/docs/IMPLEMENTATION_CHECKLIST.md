@@ -1,5 +1,15 @@
 # Implementation status and continuation plan
 
+## November 5 — latest integration checkpoint
+
+Draft PR28 contains the current integration; no application rollout has occurred.
+Source-resolution and worker5 are integrated, including26migration release guards.
+The corrected14/3review-draft Word pipeline and later revocation control pass.
+Current exact-image qualification, full package checks, cloud restore and hosted
+issuance remain gates. The Paddle candidate is rejected; retirement diagnosis
+continues in isolated run41988242066 on source18fe844 with69localguards passing.
+Historical statuses below retain their original source scope.
+
 ## November 4 — current integration status and remaining release gates
 
 This overview supersedes the intermediate status statements in the dated entries
@@ -11020,3 +11030,41 @@ contract tests. These overlapping suites are not summed as unique tests. Backend
 typecheck passes after linking both installed package dependencies in the
 isolated worktree. The [focused receipt](evidence/worker-capability-five-focused-20261105.json)
 retains log hashes, known iterative failures and final integration limits.
+
+### November 5 — integrate source-resolution and worker5 release contracts
+
+The upcoming release requires both new migrations,26total, source-resolution
+version1 and worker capability5. Independent catalog guards require the source
+review revision pin, requirement-resolution trigger and worker-floor trigger.
+The isolated restore/retirement current-worker helpers use v5, while historical
+24-migration hosted attempts retain their recorded v4 source. The old manifest
+is intentionally retained until fresh native runtime qualification and exact
+publication permit a reviewed re-freeze from the original baseline.
+Integrated checks and deployment remain pending.
+
+### November 5 — corrected source inventory reaches actual SQL and DOCX
+
+The integrated runtime/SQL regression now issues a local Word review draft with
+14 observation terminals and the unchanged3relay cabinets. The obsolete9-terminal
+commitment is absent. Current artifact access is rejected with
+`SOURCE_RESOLUTION_STALE` after later revocation. The independent analysis advance
+also retains accepted analysis bytes and records the resolution audit. Two new
+integration tests and the existing18delivery pipeline tests pass; the older
+revocation fixture now refreshes authority-bound source blocks as well as reviews.
+Authored verifier receipts remain fault injection, not a live-model accuracy proof.
+No final approval, provider usage or deployment is claimed.
+
+The completed [Paddle candidate campaign](evidence/paddle-ocr-candidate-rejected-20261105.json)
+passed4of13whole-page controls and preserved2of21critical exact-quote facts.
+All13pages plus the cold blank completed in159.956seconds; cleanup took8.707seconds.
+The candidate is rejected for adoption, and the Arabic OCR acceptance gate remains
+open. The [third retirement attempt](evidence/storage-retirement-third-attempt-20261105-41949704413.json)
+failed at the broad retirement-capture phase with exit3; both cleanups passed.
+Exact SQL localization is pending. Local non-superuser PostgreSQL tests now also
+execute the isolated adapter's actual fence and census statements; all9authority
+tests pass without changing grants or owners.
+
+The26migration atomic release suite passes18tests in121.303seconds. The
+[source-bound integration receipt](evidence/source-resolution-integrated-20261105.json)
+records focused logs and exact changed-source hashes. Safe SQLSTATE diagnostics
+from18fe844are integrated without exposing raw database messages.

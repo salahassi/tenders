@@ -25,7 +25,8 @@ SQL='retirement-sql'
 PHASES=frozenset(('not_started','access','schema_catalog','namespace_allocation','fixture_journal','upstream_allocation',
     'fixture_assets','fixture_network','storage_allocation','database_setup','workload_start','upstream_readiness',
     'storage_readiness','schema_reconstruction','sql_client_readiness','remaining_workload_readiness',
-    'canonical_fixture_write','retirement_capture','resume','cleanup'))
+    'canonical_fixture_write','retirement_capture','retirement_fence_inspect','retirement_fence_install',
+    'retirement_fence_hash','retirement_census','retirement_accounting','retirement_prepare','resume','cleanup'))
 _phase='not_started'
 WRITER_FAILURE_CODES=frozenset(('RETIREMENT_FIXTURE_'+name) for name in (
     'ALREADY_INITIALIZED','ARTIFACT_SCOPE_INVALID','BUCKET_CREATE_FAILED','BUCKET_INVALID','BUCKET_READ_FAILED',
@@ -51,9 +52,14 @@ def command_failure(code,args,*,result=None,category=None):
     resource=args[1] if len(args)>1 and args[1] in ('pod','pods','job','secret','configmap','deployment','service','pv','storageclass','networkpolicies','replicasets','horizontalpodautoscalers') else 'other'
     category=category or ('timeout' if code.endswith('_TIMEOUT') else 'nonzero_exit')
     status=None
-    child_code=child_http_status=None
+    child_code=child_http_status=sqlstate=None
     if result is not None:
         status=result.returncode if type(result.returncode) is int and -255<=result.returncode<=255 else None
+        # PostgreSQL's SQLSTATE-only verbosity excludes messages, statements and data.
+        if verb=='exec' and 'psql' in args and 'VERBOSITY=sqlstate' in args:
+            codes=re.findall(r'^ERROR:\s+([A-Z0-9]{5})\s*$',result.stderr or '',re.M)
+            if len(codes)==1 and codes[0] in ('42501','42703','42P01','42883','42601','P0001','40001','55P03','23505','23503','22023'):
+                sqlstate=codes[0]
         # Only fixed categories leave this boundary; matching text is discarded.
         message=(result.stderr or '')[:65536].lower()
         for fragment,label in (('certificate signed by unknown authority','tls_verification'),('certificate verify failed','tls_verification'),
@@ -72,15 +78,16 @@ def command_failure(code,args,*,result=None,category=None):
             except (ValueError,TypeError):pass
     error=c.FixtureError(code)
     error.public_command_diagnostic={'phase':_phase,'command':verb,'resource_class':resource,'exit_code':status,'category':category,
-        'child_code':child_code,'child_http_status':child_http_status}
+        'child_code':child_code,'child_http_status':child_http_status,'sqlstate':sqlstate}
     return error
 
 def failure_diagnostic(error):
     value=getattr(error,'public_command_diagnostic',None)
     if not isinstance(error,c.FixtureError) or not isinstance(value,dict):return {}
-    if (set(value)!={'phase','command','resource_class','exit_code','category','child_code','child_http_status'}
+    if (set(value)!={'phase','command','resource_class','exit_code','category','child_code','child_http_status','sqlstate'}
       or any(not isinstance(value[key],str) for key in ('phase','command','resource_class','category'))):return {}
-    if (value['phase'] not in PHASES
+    if (value['sqlstate'] not in (None,'42501','42703','42P01','42883','42601','P0001','40001','55P03','23505','23503','22023')
+      or value['phase'] not in PHASES
       or value['command'] not in ('get','patch','exec','wait','rollout','delete','other')
       or value['resource_class'] not in ('pod','pods','job','secret','configmap','deployment','service','pv','storageclass','networkpolicies','replicasets','horizontalpodautoscalers','other')
       or value['category'] not in ('client_start','timeout','nonzero_exit','tls_verification','cluster_transport','forbidden','unauthenticated','resource_missing','resource_exists','readiness_timeout','remote_exit')
@@ -225,7 +232,7 @@ def sql(state,statement,*,role='owner'):
     c.need(role in ('owner','storageadmin',None),'RETIREMENT_FIXTURE_ROLE_INVALID')
     prefix="BEGIN ISOLATION LEVEL REPEATABLE READ;SET LOCAL statement_timeout='30s';SET LOCAL lock_timeout='5s';SET LOCAL search_path='';"+c.database_guard(state)
     if role:prefix+='SET LOCAL ROLE '+c.restore.builder.identifier(state['bootstrap']['role_prefix']+'_'+role)+';'
-    return command(['exec','-i',SQL,'-n',c.namespace(state),'--','psql','-X','-A','-t','-q','-v','ON_ERROR_STOP=1'],payload=prefix+statement+';COMMIT;',timeout=45).strip()
+    return command(['exec','-i',SQL,'-n',c.namespace(state),'--','psql','-X','-A','-t','-q','-v','ON_ERROR_STOP=1','-v','VERBOSITY=sqlstate'],payload=prefix+statement+';COMMIT;',timeout=45).strip()
 
 def query(state,statement,*,role='owner'):
     value=sql(state,statement,role=role)

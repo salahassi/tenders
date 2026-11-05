@@ -189,6 +189,33 @@ insert into storage.objects values
                     with self.assertRaisesRegex(RuntimeError, "permission denied to set role"):
                         self.sql("set role tdp_app_owner", user)
 
+    def test_isolated_adapter_fence_and_census_with_set_only_admin(self):
+        # Execute the isolated adapter's actual SQL, not the production adapter
+        # or a mocked query result. Only local transport/nonce names differ.
+        import test_cloud_retirement_runner as fixture
+        from fixture_adapter import FixtureAdapter
+        a = FixtureAdapter.__new__(FixtureAdapter)
+        a.state = {"bootstrap": {"role_prefix": "tdp_app"}}
+        a.binary = self.adapter.binary
+        def run(statement, role="owner"):
+            prefix = "begin;set local search_path='';"
+            if role:
+                prefix += "set local role tdp_app_" + role + ";"
+            return self.sql(prefix + statement + ";commit;", "fixture_admin")
+        a.sql = run
+        a.query = lambda statement, role="owner": json.loads(run(statement, role))
+        before = self.state()
+        a.install_fence(None)
+        a.install_fence(None)
+        keys = a.census()
+        self.assertIn("synthetic/multipart", keys)
+        self.assertIn("synthetic/part", keys)
+        self.assertIn("synthetic/restore_files", keys)
+        self.assertNotIn("synthetic/ignored-part", keys)
+        after = self.state()
+        for key in before.keys() - {"triggers"}:
+            self.assertEqual(after[key], before[key], key)
+
     def test_installs_and_replays_with_set_without_inherit_preserving_acl(self):
         before = self.state()
         with self.as_user("fixture_admin"):

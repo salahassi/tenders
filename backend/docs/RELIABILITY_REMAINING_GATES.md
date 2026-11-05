@@ -1,5 +1,13 @@
 # Reliability acceptance status — November 5, 2026
 
+Latest integration checkpoint: source resolution and worker5 focused gates pass,
+including corrected14/3SQL/DOCX issuance, stale-source artifact refusal, and all18
+26-migration release checks. Final whole-package and new native-image qualification
+remain pending. The Paddle OCR candidate is rejected (4/13pages;2/21critical facts).
+Retirement attempt41949704413failed before interruption and cleaned up; bounded
+SQLSTATE localization is running as41988242066. No application deployment.
+
+
 The latest complete local application gate at `9501068` passes3,419 backend
 and380 frontend tests, with both type checks and builds. A subsequent canonical
 supersession diagnostic found that a retired source obligation could return as
