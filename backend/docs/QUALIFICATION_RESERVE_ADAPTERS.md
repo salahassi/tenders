@@ -1,8 +1,12 @@
 # Source-bound reserve request adapters
 
-The offline adapters now construct **42 of the 50 frozen source cases** through
-actual production request helpers. Eight cases remain explicitly unsupported;
-the 100-request-per-model schedule is unchanged. These results establish request
+The single-request adapters construct **42 of the 50 frozen source cases** through
+actual production request helpers. Eight cases remain unsupported at that entrypoint.
+The separate [review-composite follow-up](QUALIFICATION_RESERVE_COMPOSITES.md)
+constructs two of those cases as two physical requests each, leaving six cases
+without faithful construction. It preserves 100 logical cells per model and
+explicitly requires a versioned activation contract before live execution.
+These results establish request
 construction and controlled validation, not model quality, real database admission
 or a live campaign. The original ten-case evidence remains retained.
 

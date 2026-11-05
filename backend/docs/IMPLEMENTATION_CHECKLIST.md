@@ -10863,3 +10863,36 @@ complete `2b869ac` gate. Current manifest source verification still passes.
 The public index now preserves all110 prior receipts and adds the scoped cleanup
 receipt. Final GitHub verification, actual deployment and the isolated hosted
 retirement drill remain distinct pending execution steps.
+
+### November 5 — separate two-review reserve composites and remaining contracts
+
+The qualification-only follow-up adds two independently pinned canonical review
+requests for each English/Arabic review-identity case. The original single-request
+entrypoint retains its 42/8 boundary. Combined offline construction now covers
+44/50 cases: 100 logical cells per model remain scheduled; 88 are constructible
+and require 92 physical requests, while 12 logical cells remain unsupported.
+Version-one activation cannot represent this composition and remains explicitly
+incompatible. No provider or retrieval request, billing/accounting mutation,
+production source change, deployment or semantic pass follows.
+
+Completed constituent outputs retain canonical source validation and hashes even
+when a sibling fails. Incomplete composites have no success aggregate. Independent
+source review caught asynchronous caller mutation that could relabel a case after
+reconstruction; canonical identity and observation snapshots now remain stable
+across awaits, with a regression control. A second reproduced projection defect
+accepted the other frozen review's exact quotation when only the domain callback
+ran; selected-evidence base validation now precedes it, matching the existing
+production executor. The failing control remains retained. The
+[follow-up design](QUALIFICATION_RESERVE_COMPOSITES.md) records exact remaining
+work for scoped addendum inventory, explicit untrusted supplier planning inputs,
+and deterministic quotation materialization versus identity repair dependencies.
+Six English/Arabic controls reproduce those boundaries; they do not count as
+passes of the six original semantic oracles.
+
+All 229 focused tests across seven files, backend typecheck and build passed.
+The 130-file source map remained unchanged during this final check. This includes
+34 new composite controls, six boundary controls and 189 existing qualification
+tests. Focused verification and source hashes are retained in
+[the local receipt](evidence/qualification-review-composites-20261105.json).
+Full current-source release gates, live composite execution, independent private
+holdout, provider availability and semantic acceptance remain distinct.
