@@ -10556,3 +10556,30 @@ records this boundary, not a deployment. The action matrix/R0 retain all earlier
 receipts plus the CI correction and strict manual retirement proof fix. Complete
 corrected GitHub verification and actual deployment remain pending. Canonical24
 manifest remains `4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76`.
+
+### November 5 — repair validation retains the original task's source binding
+
+Actual controlled execution of the frozen English/Arabic draft-repair cases
+revealed a production defect: a valid quote correction failed with
+`EVIDENCE_REFERENCE_INVALID` at `$.requirement_ids`. The recursive target validator
+received the outer repair envelope, while draft source validation reads the
+original task's source requirements. Direct original-task validation passed.
+
+The narrow correction unwraps `original_context` only for that recursive target
+validation, retaining the other options and all outer repair checks. It does not
+copy requirements into the envelope, relax source or semantic validation, or
+change provider policies. [The receipt](evidence/repair-original-source-context-20261105.json)
+retains the two failed execution controls and a standalone baseline regression
+with three failures/nine passes. After correction, 67 production source/repair
+tests across six files pass, as do backend typecheck/build. A combined run with
+the separately pending qualification controls passes 139 tests. Independent
+source review found no remaining material blocker in the narrow correction.
+
+The tests preserve faithful English/Arabic repairs, reject missing/different
+original requirement bindings, invalid spans and changed reviewed conditions,
+and prevent outer metadata from substituting for original requirements. Legacy
+quote rejection and source-bound analysis tuple enforcement remain intact.
+These are authored fixture controls, not provider semantic results. `model.ts`
+is a runtime image input: the prior 89af image/source qualification cannot be
+reused unchanged. A newly qualified runtime, release freeze and actual deployment
+remain required; this local correction performs no provider or hosted operation.
