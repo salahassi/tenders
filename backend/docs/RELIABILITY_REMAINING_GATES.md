@@ -16,8 +16,8 @@ capacity or hosted latency. Image publication and pullback are verified at
 `registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:aabe842e35259b86969ddef810dd297e9a0b0e4a27d7f0746cdcd80a6a12fc6a`.
 The27-migration manifest is frozen from the unchanged original deployment baseline.
 Current cloud restore 41993933795 passes all 13 Auth/Storage checks and both
-cleanups against this exact manifest. Final release CI, interrupted retirement,
-rollout and actual customer issuance remain gates. No customer request was resumed.
+cleanups against this exact manifest. Interrupted retirement now passes all 13 checks and cleanup in run 42002971002.
+Final release CI, rollout and actual customer issuance remain gates. No customer request was resumed.
 
 Retirement run41988242066 identified SQLSTATE42501 at prepare and cleaned up.
 The corrected catalog lookup passes27 restricted-owner PostgreSQL controls;
@@ -25,7 +25,10 @@ run 41999178689 later completed retirement but failed Storage restoration
 and cleanup. Exact read-only inspection then found Storage ready with FailedMount
 events. A scoped failed-job retry verified cleanup; it did not establish hosted
 acceptance. The durable-retired resume guard is now corrected with 80 focused
-controls, and a fresh trial is pending. No detailed mount cause is claimed.
+controls. The fresh trial at e4192f9 passes all 13 checks and cleanup in run
+42002971002, with 125.502 seconds for resume/verification. It uses an idle fixture
+worker; inflight uploads and general recovery objectives remain unqualified.
+No detailed cause of the earlier mount failures is claimed.
 The Paddle OCR candidate is rejected
 (4/13 whole pages and2/21 critical facts). Automatic Arabic OCR, provider
 availability, private semantic/retrieval holdout and actual Word TOC update remain
@@ -55,7 +58,7 @@ records. No successful deployment is inferred from these cancelled workflows.
 | **A05 — Complete independent semantic and bounded-retrieval qualification** | 42single-request cases plus two independently reviewed two-request composites make44/50 cases constructible; six require explicit contracts. Typed supersession is corrected and passes SQL-to-DOCX controls; reserve-adapter/provider qualification remains open. Complete and review those prerequisites/composite schedules without reducing the 100-cell/model denominator. Freeze provider/phase/prompt/schema/validator and business decisions before authorized execution; retain independent per-class outcome adjudication, the 48-cell retrieval plan and a separately authorized private holdout. Offline authored controls are not model quality. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E09, E10; W05, W06, W08, D07; ME-01, ME-02, ME-04, ME-08, ME-09, ME-14, RT-01, RT-02 |
 | **A06 — Qualify Arabic scanned-input extraction** | Keep both the rejected parameter tuning and official tessdata_best candidate unadopted. Qualify a maintainable alternative against frozen whole-page Arabic, mixed identifiers, English and blank controls before changing defaults. Preserve readable pages and mandatory source-bound visual correction. **Completion:** Independent gold tests preserve the supported Arabic obligations, numbers and blank/read coverage. Until then, automatic valid-scan correctness remains an explicit unclosed product limitation; mandatory review is a safety control, not automatic success. | E11; W02, W05, D03; IN-03, IN-04, D03 |
 | **A07 — Verify Word table-of-contents update and target-engine compatibility** | Perform actual Microsoft Word update/save and verify page numbers, headings, Arabic/English layout and yellow gaps. Preserve the two failed explicit LibreOffice invocation attempts; they produced no refreshed artifact and do not identify the absent-cache cause. **Completion:** Named actual reviewer/engine versions, updated files and per-page hashes/visual evidence; no invented cache numbers. | E03; W04, D02; EX-02, EX-06 |
-| **A08 — Execute the checked release** | Source-resolution/worker5 integration, new f2d0f9 runtime qualification/publication, 27-migration freeze and current isolated restore pass. Close interrupted retirement and run complete final release gates before rollout. Prove old-process exit, permanent legacy-RPC fence, visible database drain, locked fresh zero census and exact deployed schema/images/configuration. Publication and the local promotion probe do not prove rollout. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E04, E05, E08, E13; W00, W11; W11 exit evidence, OP-02, OP-04 |
+| **A08 — Execute the checked release** | Source-resolution/worker5 integration, new f2d0f9 runtime qualification/publication, 27-migration freeze and current isolated restore pass. The isolated interrupted-retirement gate now passes; run complete final release gates before rollout. Prove old-process exit, permanent legacy-RPC fence, visible database drain, locked fresh zero census and exact deployed schema/images/configuration. Publication and the local promotion probe do not prove rollout. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E04, E05, E08, E13; W00, W11; W11 exit evidence, OP-02, OP-04 |
 | **A09 — Complete actual authenticated issuance, export and recovery acceptance** | After verified release, activate the reviewed current-request workflow with the private selection, fresh server details and exact durable request body/key. Preserve predecessor accepted work and unknown usage. Observe accepted/deadline/whole-package completion and earlier terminal errors; authenticate actual complete-volume downloads separately. Execute the prepared nonce-owned retirement interruption/PVC drill, retain cleanup/recovery evidence and define service recovery objectives. Local browser/PGlite controls and metadata-only issuance do not close hosted acceptance. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E02, E04, E05, E06, E07, E12; W01, W03, W04, W07, W09, W10, W11, D01, D04, D05, D06; AR-04, AR-05, EX-01, EX-03, EX-04, EX-05, OP-02, OP-03, OP-04, OP-05, UX-01, UX-02, UX-03, BC-01 |
 
 ## Recorded evidence and its source

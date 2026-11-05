@@ -482,6 +482,13 @@
           "level": "Source-bound observed gate",
           "observed_result": "Original failed job retry verifies owned cleanup after readiness observation.",
           "limits": "Old runner rejects retired phase; cleanup does not imply acceptance."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-passed-20261105-42002971002.json",
+          "sha256": "e9185d3f4d9c5448006d17612602c7c30a1faf39a54b13c3c75e03ab327037ae",
+          "level": "Actual isolated Auth/Storage/PVC interruption and recovery",
+          "observed_result": "Run 42002971002 at e4192f9 passes all 13 checks, deliberate interruption and complete cleanup against current 27-migration manifest.",
+          "limits": "Idle fixture worker; no actual inflight PUT, production fixed-target adapter, general RTO, renderer or customer issuance proof."
         }
       ]
     },
@@ -1232,5 +1239,5 @@
       "scope": "Main merge/CI failure, scoped timeout correction and dormant manual-retirement proof fix. Frozen24 manifest unchanged; complete corrected GitHub gate and deployment remain open."
     }
   ],
-  "current_predeployment_summary": "Current isolated 27-migration restore passes. Interrupted retirement remains unqualified: retained Storage later became ready, exact failed-job cleanup is now verified, and the durable-retired resume guard is corrected with 80 focused controls. Final release CI, rollout and customer issuance remain open."
+  "current_predeployment_summary": "Current 27-migration cloud restore and interrupted-retirement gates pass with cleanup. Qualified f2d0f9 image publication and native scopes pass. Final mandatory release CI, rollout and actual customer issuance remain open. Earlier failures remain recorded."
 }

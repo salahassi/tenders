@@ -13,7 +13,7 @@
     "migrations": 27,
     "source_migrations": 27,
     "missing_migrations": [],
-    "state": "frozen_published_and_cloud_restore_passed_retirement_and_release_pending",
+    "state": "frozen_published_cloud_restore_and_retirement_passed_release_pending",
     "gateway_contract": "v2_final_pinned_one_worker_with_exact_gateway_https_runtime_qualification_binding"
   },
   "actions": [
@@ -202,14 +202,14 @@
         "W00",
         "W11"
       ],
-      "status": "runtime_publication_manifest_and_restore_passed_retirement_release_pending",
+      "status": "predeployment_qualified_final_release_pending",
       "evidence": [
         "E04",
         "E05",
         "E08",
         "E13"
       ],
-      "remaining": "Close isolated interrupted-retirement failure, then execute mandatory final release CI and guarded original-CA rollout. Preserve baseline and verify actual deployed immutable image and migration hashes.",
+      "remaining": "Execute mandatory final release CI and guarded original-CA rollout. Preserve the original baseline and verify actual deployed immutable image and migration hashes.",
       "done_when": "Release workflow and deployed schema/image/gateway readback match the reviewed contract, with protected historical rows/ACLs and a concrete recovery record.",
       "not_proven": "Application is not yet deployed. Publication, zero point-in-time census and isolated restore do not establish actual fence/drain/rollout.",
       "acceptance_cases": [
@@ -237,7 +237,7 @@
         "D05",
         "D06"
       ],
-      "status": "owned_cleanup_recovered_durable_resume_corrected_hosted_trial_pending",
+      "status": "isolated_retirement_passed_actual_request_and_export_pending",
       "evidence": [
         "E02",
         "E04",
@@ -246,7 +246,7 @@
         "E07",
         "E12"
       ],
-      "remaining": "Finish source-bound interrupted-retirement acceptance after the corrected durable-retired recovery guard. Retain mount/readiness failures and separate cleanup receipts. Deploy only after required gates, then activate the reviewed actual request and authenticate complete files.",
+      "remaining": "After verified deployment, activate the reviewed actual request and authenticate complete files. Retain production-path, actual inflight-upload and recovery-objective limitations.",
       "done_when": "Independent authenticated download hashes/sizes/complete-set and browser state; full request timestamps including failures; quota/usage/lease/currentness invariants; cleanup and recovery receipts.",
       "not_proven": "No real completed export, hosted 600s/concurrency claim or production physical retirement. Do not use incompatible legacy successor helper or fabricate version/completion.",
       "acceptance_cases": [
@@ -265,7 +265,7 @@
         "UX-03",
         "BC-01"
       ],
-      "implementation": "Latest run 41999178689 failed Storage restoration and initial cleanup. Read-only run 42001827175 observed the exact Storage Pod ready; an exact failed-job retry verified owned cleanup. The old runner rejected retired phase; e4192f9 corrects this with 80 focused controls. No current customer request or application rollout occurred.",
+      "implementation": "Latest run 41999178689 failed Storage restoration and initial cleanup. Read-only run 42001827175 observed the exact Storage Pod ready; an exact failed-job retry verified owned cleanup. The old runner rejected retired phase; e4192f9 corrects this with 80 focused controls. No current customer request or application rollout occurred. Fresh run 42002971002 at e4192f9 passes all 13 isolated retirement checks and complete cleanup; actual current request remains unactivated.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     }

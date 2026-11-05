@@ -9,12 +9,10 @@ controls and four native fixture suites on imagef2d0f9. The failed721340image is
 retained as a rejection. The new image is published and pulled back exactly at
 registry digestaabe842e; temporary credentials were removed. The manifest is
 refrozen from the original deployment baseline. The current 27-migration cloud restore passes all 13 Auth/Storage
-checks and both cleanups in run 41993933795. Interrupted retirement remains
-unqualified: run 41999178689 failed Storage restoration; exact later inspection
-found Storage ready and its failed-job retry verified cleanup. The durable-retired
-resume guard is corrected at e4192f9 with 80 focused controls. A fresh hosted
-trial, final release CI and rollout remain pending. No application deployment or
-customer issuance is claimed. The Paddle candidate is rejected and the remaining acceptance gates
+checks and both cleanups in run 41993933795. Interrupted retirement now passes all 13 actual checks and cleanup in run
+42002971002 at e4192f9, against the same manifest. Earlier readiness/mount
+failures and their separate cleanup are retained. Final release CI and rollout
+remain pending; no application deployment or customer issuance is claimed. The Paddle candidate is rejected and the remaining acceptance gates
 are listed in RELIABILITY_REMAINING_GATES.md. Historical statuses follow.
 
 ## November 4 — current integration status and remaining release gates
@@ -11246,3 +11244,18 @@ original process exits and restored replicas before client verification. Partial
 records cannot enter recovery. All 80 focused controls pass. The prior 668-test
 operational pass retains its earlier source scope. A fresh hosted trial of the
 corrected recovery source is still required before application deployment.
+
+### November 5 — isolated interrupted retirement passes
+
+Run 42002971002 at e4192f9 passes deliberate interruption and all 13 actual
+resume/verification checks against manifest 1fdf73f4. It observes original writer
+exits, physical and metadata deletion, once-only allowance release and replay,
+old-key HTTP denial, new canonical upload/read and physical absence/presence
+after service restart. Resume and verification take 125.502 seconds in this
+fixture. Both fixture cleanup and private runner-file cleanup pass.
+
+This closes the isolated retirement gate only. The worker is an idle stand-in;
+actual inflight upload, production fixed-target execution, production throughput
+and a general recovery-time target are not established. Previous mount/readiness
+failures remain recorded. No customer data, provider calls or production business
+mutations occurred. The checked application release is the next step.
