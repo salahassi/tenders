@@ -152,13 +152,17 @@ class RunnerBoundaries(unittest.TestCase):
    create.assert_not_called()
  def test_workflow_separates_real_runners_and_never_treats_any_error_as_interruption(self):
   workflow=(HERE.parents[2]/'.github/workflows/qualify-storage-retirement.yml').read_text()
-  self.assertEqual(workflow.count('runs-on: ubuntu-latest'),2)
+  self.assertEqual(workflow.count('runs-on: ubuntu-latest'),3)
   self.assertIn('group: tenderdesk-digitalocean-production',workflow)
   self.assertIn('cancel-in-progress: false',workflow)
   self.assertIn('if [ "$result" -ne 86 ]',workflow)
   self.assertIn("needs.interrupt.outputs.interrupted == 'true'",workflow)
   self.assertIn('FIXTURE_ORIGIN_ATTEMPT: ${{ needs.interrupt.outputs.origin_attempt }}',workflow)
-  self.assertNotIn('inputs:',workflow)
+  self.assertIn('inspect:\n    if: ${{ inputs.inspect_retained == true }}',workflow)
+  self.assertIn('interrupt:\n    if: ${{ inputs.inspect_retained != true }}',workflow)
+  self.assertIn('type: boolean',workflow)
+  for target in ('namespace','nonce','run_id','database','source_revision'):
+   self.assertNotIn('inputs.'+target,workflow)
   self.assertNotIn('upload-artifact',workflow)
 
 if __name__=='__main__':unittest.main()

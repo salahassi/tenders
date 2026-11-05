@@ -11222,5 +11222,8 @@ durable Secret identity, original manifest and deployment/ReplicaSet/Pod
 lineage before reading status, events and bounded logs. Only fixed categories
 and SQLSTATE values are public. It performs no cluster writes or SQL and
 removes its own runner credentials. The original recovery authority is unchanged.
-All 78 focused retirement controls pass; current fixture cleanup and release
-remain pending.
+The initial helper-only 78 controls passed. The workflow integration then
+exposed one stale two-job/no-input assertion; it now requires three definitions
+with mutually exclusive inspection/allocation and rejects caller-supplied target
+selectors. All 78 integrated controls pass after this correction. Current
+fixture cleanup and release remain pending.
