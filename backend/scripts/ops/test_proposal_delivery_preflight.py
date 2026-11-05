@@ -72,3 +72,20 @@ class ReleasePreflightTests(unittest.TestCase):
             with patch.object(m.p, 'update', side_effect=error), redirect_stdout(output):
                 self.assertEqual(m.p.main(), 1)
             self.assertEqual(json.loads(output.getvalue())['code'], str(error))
+
+    def test_release_preserves_only_bounded_sql_metadata_and_fixed_transport_codes(self):
+        def failed_update():
+            print(json.dumps({'deployment':'tenderdesk-dev','status':'sql_failed','sqlstate':'42501','line':22,'private':'PRIVATE_SQL'}))
+            raise m.p.d.DeployError('MIGRATION_SQL_FAILED')
+        output = io.StringIO()
+        with patch.object(m.p,'update',side_effect=failed_update), redirect_stdout(output):
+            self.assertEqual(m.p.main(),1)
+        receipt=json.loads(output.getvalue())
+        self.assertEqual(receipt['code'],'MIGRATION_SQL_FAILED')
+        self.assertEqual(receipt['sql_failure'],{'sqlstate':'42501','line':22})
+        self.assertNotIn('PRIVATE',output.getvalue())
+        output=io.StringIO()
+        with patch.object(m.p,'update',side_effect=m.p.d.DeployError('PRIVATE_RESPONSE')), redirect_stdout(output):
+            self.assertEqual(m.p.main(),1)
+        self.assertEqual(json.loads(output.getvalue())['code'],'DELIVERY_UPDATE_FAILED')
+        self.assertNotIn('PRIVATE',output.getvalue())

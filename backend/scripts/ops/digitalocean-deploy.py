@@ -459,7 +459,9 @@ def sql_pod(admin):
     return name
 
 
-def sql(pod, script, *, database=DATABASE, variables=None):
+def sql(pod, script, *, database=DATABASE, variables=None, diagnostic_codes=()):
+    if not isinstance(diagnostic_codes,(tuple,list,set,frozenset)) or len(diagnostic_codes)>512 or any(not isinstance(code,str) or not re.fullmatch('[A-Z][A-Z0-9_]{1,99}',code) for code in diagnostic_codes):
+        raise DeployError('SQL_DIAGNOSTIC_CODES_INVALID')
     arguments = ["exec", "-i", pod, "-n", NAMESPACE, "--", "psql", "-X", "--quiet", "--no-align", "--tuples-only",
                  "--set=ON_ERROR_STOP=1", "--set=VERBOSITY=verbose", "--dbname=" + database]
     for key, value in (variables or {}).items():
@@ -473,7 +475,11 @@ def sql(pod, script, *, database=DATABASE, variables=None):
     if result.returncode:
         state = re.search(r"ERROR:\s+([A-Z0-9]{5}):", result.stderr)
         line = re.search(r"psql:<stdin>:([0-9]{1,6}):", result.stderr)
-        emit("sql_failed", sqlstate=state.group(1) if state else "unknown", line=int(line.group(1)) if line else None)
+        diagnostic={}
+        if diagnostic_codes:
+            guard=re.search(r'ERROR:\s+[A-Z0-9]{5}:\s*([A-Z][A-Z0-9_]{1,99})[ \t]*(?:\r?\n|$)',result.stderr)
+            diagnostic['guard']=guard.group(1) if guard and guard.group(1) in diagnostic_codes else None
+        emit("sql_failed", sqlstate=state.group(1) if state else "unknown", line=int(line.group(1)) if line else None,**diagnostic)
         raise DeployError("MIGRATION_SQL_FAILED")
     return result.stdout.strip()
 

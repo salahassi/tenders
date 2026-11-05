@@ -21,18 +21,7 @@ def rollback_script(script):
     return script[:-len(suffix)] + 'ROLLBACK;\n'
 
 
-def sql_failure(capture):
-    for line in reversed(capture.splitlines()):
-        try:
-            value = json.loads(line)
-        except ValueError:
-            continue
-        if not isinstance(value, dict) or value.get('deployment') != 'tenderdesk-dev' or value.get('status') != 'sql_failed':
-            continue
-        state, number = value.get('sqlstate'), value.get('line')
-        return {'sqlstate': state if isinstance(state, str) and re.fullmatch('[A-Z0-9]{5}', state) else 'unknown',
-                'line': number if type(number) is int and 1 <= number <= 999999 else None}
-    return None
+sql_failure = p.sql_failure_diagnostic
 
 
 def main():
@@ -41,11 +30,13 @@ def main():
     before = after = None
     cleanup = False
     error = False
+    codes = set()
     try:
         with redirect_stdout(capture), redirect_stderr(io.StringIO()):
             manifest = json.loads(p.release.MANIFEST.read_text())
             p.release.verify_source(manifest)
             script = rollback_script(p.release.migration_script(manifest))
+            codes = set(re.findall(r"RAISE EXCEPTION '([A-Z][A-Z0-9_]{1,99})'", script))
             stage = 'cluster'
             p.d.probe.validate_cluster()
             client = p.inventory.observer.Client(1800)
@@ -61,7 +52,7 @@ def main():
                 before = catalog()
                 try:
                     stage = 'rollback_migration'
-                    p.d.sql(client.pod, script)
+                    p.d.sql(client.pod, script, diagnostic_codes=codes)
                 finally:
                     after = catalog()
             finally:
@@ -73,7 +64,7 @@ def main():
     unchanged = before is not None and after == before
     passed = not error and unchanged and cleanup
     print(json.dumps({'schema_diagnosis': 'passed_rolled_back' if passed else 'blocked', 'stage': stage,
-                      'sql_failure': sql_failure(capture.getvalue()), 'catalog_unchanged': unchanged,
+                      'sql_failure': sql_failure(capture.getvalue(),codes), 'catalog_unchanged': unchanged,
                       'before_catalog_sha256': before, 'after_catalog_sha256': after,
                       'owned_client_cleanup': cleanup, 'deployment_performed': False,
                       'model_calls': 0}), flush=True)

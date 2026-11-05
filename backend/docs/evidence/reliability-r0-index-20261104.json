@@ -841,6 +841,20 @@
           "level": "L2",
           "observed_result": "Original-CA read-only inventory passes: ten workloads ready, old application images, new delivery schema absent; both cleanups pass.",
           "limits": "Does not identify the failed prerequisite or prove every pre-schema configuration untouched."
+        },
+        {
+          "path": "backend/docs/evidence/release-preflight-passed-20261105-42023690528.json",
+          "sha256": "e7d0713ced64cc73d73ad5d348b1ba97bf03fe895853be7c590a6566e9131e49",
+          "level": "L2",
+          "observed_result": "All exact runtime/resource/gateway/HTTPS prerequisites and cleanup pass; no schema or workload changes.",
+          "limits": "Diagnostic scope only; application rollout and actual customer request remain pending."
+        },
+        {
+          "path": "backend/docs/evidence/schema-rollback-blocked-20261105-42024617445.json",
+          "sha256": "b9cc9c7c3ee1b79bb84a30feec56b556ceda1c9064c522e3525d6fa1e4f43dc3",
+          "level": "L2",
+          "observed_result": "Rollback SQL reproduces P0001 at final release assertion block; catalog unchanged, both cleanups pass.",
+          "limits": "Diagnostic scope only; application rollout and actual customer request remain pending."
         }
       ]
     },

@@ -2,8 +2,10 @@ from contextlib import ExitStack, redirect_stdout
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -32,14 +34,30 @@ class SchemaDiagnosisTests(unittest.TestCase):
         value.update(sqlstate='PRIVATE_VALUE',line=True)
         self.assertEqual(m.sql_failure(json.dumps(value)), {'sqlstate':'unknown','line':None})
 
+    def test_sql_transport_exposes_only_an_exact_source_allowlisted_guard(self):
+        allowed='DELIVERY_RELEASE_BATCH_CONTRACT_INVALID'
+        for message,expected in [(allowed,allowed),('PRIVATE_SECRET',None),(allowed+' PRIVATE_SECRET',None)]:
+            output=io.StringIO()
+            result=subprocess.CompletedProcess([],1,'',f'psql:<stdin>:42: ERROR: P0001: {message}\nDETAIL: PRIVATE_CUSTOMER\n')
+            with patch.dict(os.environ,{'KUBECTL':'fixture-kubectl'}),patch.object(m.p.d.subprocess,'run',return_value=result),redirect_stdout(output),self.assertRaises(m.p.d.DeployError):
+                m.p.d.sql('fixture-pod','fixture SQL',diagnostic_codes={allowed})
+            self.assertNotIn('PRIVATE',output.getvalue())
+            self.assertEqual(json.loads(output.getvalue())['guard'],expected)
+            diagnostic=m.sql_failure(output.getvalue(),{allowed})
+            self.assertEqual(diagnostic.get('guard'),expected)
+        with patch.object(m.p.d.subprocess,'run') as run,self.assertRaises(m.p.d.DeployError):
+            m.p.d.sql('fixture-pod','fixture SQL',diagnostic_codes={'private invalid'})
+        run.assert_not_called()
+
     def test_success_failure_catalog_change_and_cleanup_failure(self):
         for failed, changed, cleanup_failed in [(False,False,False),(True,False,False),(False,True,False),(False,False,True)]:
             with self.subTest(failed=failed,changed=changed,cleanup_failed=cleanup_failed), tempfile.TemporaryDirectory() as temp, ExitStack() as stack:
                 calls=[]
-                def sql(_pod, script):
+                def sql(_pod, script, **kwargs):
                     calls.append(script)
                     if len(calls)==2:
                         self.assertTrue(script.endswith('ROLLBACK;\n'))
+                        self.assertIn('DELIVERY_RELEASE_BATCH_CONTRACT_INVALID',kwargs['diagnostic_codes'])
                         if failed:
                             print(json.dumps({'deployment':'tenderdesk-dev','status':'sql_failed','sqlstate':'42501','line':22,'private':'PRIVATE_CUSTOMER'}))
                             raise RuntimeError('PRIVATE_FAILURE')

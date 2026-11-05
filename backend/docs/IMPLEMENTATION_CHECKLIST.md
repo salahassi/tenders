@@ -11393,3 +11393,13 @@ can take temporary database locks; it is rollback-only diagnosis, not read-only
 inventory or an applied migration. All36 focused controls pass (5 SQL diagnosis,
 4 preflight, 12 image, 15 updater). Actual schema diagnosis and release remain
 pending; customer processing is still unactivated.
+
+Rollback diagnosis 42024617445 at 23d6aee reproduces SQLSTATE P0001 at generated
+line6330, the final release-contract assertion block. Before/after routine
+catalog hashes match and both owned-client/private cleanup pass. The existing
+images, resources and proxy prerequisites pass again. A bounded diagnostic now
+allows only exact literal RAISE identifiers taken from the frozen SQL, never
+raw error messages, to identify that assertion. The updater also retains only
+SQLSTATE/line and fixed transport failures. All57 affected controls pass (6 SQL
+diagnosis, 5 preflight/diagnostic, 15 updater, 31 deployment helper). A follow-up
+rollback diagnosis is required; no production schema correction is claimed.

@@ -1,0 +1,22 @@
+{
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/42024617445",
+  "job_id": 127235602498,
+  "source_revision": "23d6aee691810eb5129ada3b6894be97567fd616",
+  "receipt": {
+    "schema_diagnosis": "blocked",
+    "stage": "rollback_migration",
+    "sql_failure": {
+      "sqlstate": "P0001",
+      "line": 6330
+    },
+    "catalog_unchanged": true,
+    "before_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+    "after_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+    "owned_client_cleanup": true,
+    "deployment_performed": false,
+    "model_calls": 0
+  },
+  "original_ca": "passed",
+  "private_cleanup": "passed",
+  "scope": "Rollback-only execution of the frozen SQL. Guard failure P0001 at generated line6330; routine catalog unchanged and owned SQL client cleanup passed. No schema commit, rollout or provider call."
+}

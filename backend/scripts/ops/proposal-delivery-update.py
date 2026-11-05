@@ -237,6 +237,19 @@ def update():
         except Exception:raise UpdateError('DELIVERY_CLIENT_CLEANUP_NOT_CONFIRMED') from None
     emit('passed',source_revision=revision,images=selected,schema=receipt,worker_resources=observed_worker_resources,api_resources=observed_api_resources,https_resources=https_state['resources'],https_configuration=manifest['https_configuration'],deployments_updated=list(TARGETS)+['gateway'],cronjobs_updated=['native-ocr'],old_workers_drained=True,configuration_preserved_except_reviewed_storage_gateway=True,storage_gateway_configuration=manifest['gateway_configuration'],command_batch_cutover={'api_binding':api_binding,'old_gateway':old_gateway,'actual_gateway_process_exits_proved':True,'transaction_drain':transaction_drain},processing_retried=False,hosted_artifact_acceptance=False)
 
+def sql_failure_diagnostic(capture,allowed_codes=()):
+    for line in reversed(capture.splitlines()):
+        try:value=json.loads(line)
+        except ValueError:continue
+        if not isinstance(value,dict) or value.get('deployment')!='tenderdesk-dev' or value.get('status')!='sql_failed':continue
+        state,number=value.get('sqlstate'),value.get('line')
+        result={'sqlstate':state if isinstance(state,str) and re.fullmatch('[A-Z0-9]{5}',state) else 'unknown',
+                'line':number if type(number) is int and 1<=number<=999999 else None}
+        guard=value.get('guard')
+        if isinstance(guard,str) and guard in allowed_codes:result['guard']=guard
+        return result
+    return None
+
 def main(argv=()):
     try:
         # Suppress raw manifests/SQL/provider exceptions; only validated receipts
@@ -254,6 +267,7 @@ def main(argv=()):
     except Exception as error:
         code_value=str(error)
         safe=code_value if isinstance(error,(UpdateError,release.ReleaseError,images.ImageError,cutover.CutoverError,gateway.GatewayError,https.HttpsError,images.qualification.QualificationError)) and re.fullmatch('[A-Z_]{1,100}',code_value) else 'DELIVERY_UPDATE_FAILED'
-        emit('blocked',code=safe,automatic_rollback=False,forward_completion_may_be_required=True)
+        if isinstance(error,d.DeployError) and code_value in {'MIGRATION_SQL_FAILED','MIGRATION_SQL_TIMEOUT','KUBERNETES_COMMAND_FAILED','KUBERNETES_COMMAND_TIMEOUT','APPLICATION_ROLLOUT_FAILED'}:safe=code_value
+        emit('blocked',code=safe,sql_failure=sql_failure_diagnostic(capture.getvalue()),automatic_rollback=False,forward_completion_may_be_required=True)
         return 1
 if __name__=='__main__':sys.exit(main(sys.argv[1:]))
