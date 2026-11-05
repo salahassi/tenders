@@ -2,6 +2,12 @@ name: Release reviewed proposal delivery reliability
 
 on:
   workflow_dispatch:
+    inputs:
+      inspect_qualified_image:
+        description: Inspect only the published qualified image; no build, publication, schema change or rollout
+        type: boolean
+        required: true
+        default: false
 
 permissions:
   contents: read
@@ -26,6 +32,7 @@ jobs:
             frontend/package-lock.json
             backend/package-lock.json
       - name: Verify exact reviewed source and both application packages
+        if: ${{ inputs.inspect_qualified_image != true }}
         run: |
           set -euo pipefail
           python3 backend/scripts/ops/proposal-delivery-release.py
@@ -48,13 +55,18 @@ jobs:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         run: python3 backend/scripts/ops/digitalocean-runner.py
       - name: Publish or reuse exact source runtime, frontend and native OCR images
+        if: ${{ inputs.inspect_qualified_image != true }}
         run: python3 backend/scripts/ops/proposal-delivery-images.py
+      - name: Inspect only the immutable qualified runtime metadata
+        if: ${{ inputs.inspect_qualified_image == true }}
+        run: python3 backend/scripts/ops/proposal-delivery-images.py --inspect-qualified
       - name: Apply atomic schema and complete compatible workload rollout
+        if: ${{ inputs.inspect_qualified_image != true }}
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         run: python3 backend/scripts/ops/proposal-delivery-update.py
       - name: Remove only this release attempt's owned temporary database client
-        if: ${{ always() }}
+        if: ${{ always() && inputs.inspect_qualified_image != true }}
         run: |
           if [ -n "${DOKS_WORKDIR:-}" ] && [ -x "${KUBECTL:-}" ]; then
             python3 backend/scripts/ops/proposal-delivery-update.py --cleanup

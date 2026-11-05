@@ -11280,3 +11280,19 @@ The merge-triggered duplicate credential-sync verification 42004363235 was
 cancelled while still in package checks; discovery, binding and reload did not
 run. The full mandatory release verification was preserved. No live model
 evaluation or actual customer request was activated.
+
+### November 5 — all final source checks pass; image metadata mismatch isolated
+
+PR29 merged as bc5453f. Release 42008161260 passes 3,488 backend and 380 frontend
+tests, both typechecks/builds, all 677 operations tests, 11 schema-helper and 16
+Kubernetes checks. Original cluster CA verification passes. Image preparation
+then stops with `RUNTIME_QUALIFICATION_CONFIG`; rollout is skipped and both
+cleanups pass. No actual image-configuration difference was recorded, so its
+cause remains unknown. The first cold-runner image prerequisite is resolved.
+
+A separate inspection mode now pulls only the immutable qualified image and
+reports identity/configuration-field comparisons without configuration values.
+It cannot build, publish, migrate or roll out. The normal mode retains all
+mandatory checks. All 12 focused image-helper tests pass, including private-value
+redaction and mode separation. This diagnostic mode will identify the observed
+difference before any change to qualification rules.

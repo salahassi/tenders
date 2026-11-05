@@ -1,0 +1,42 @@
+{
+  "status": "complete_gates_passed_image_config_guard_blocked",
+  "source_revision": "bc5453f72390f9c03e06dda6046ba3b4bcbec766",
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/42008161260",
+  "job_id": 127180712883,
+  "frontend": {
+    "tests": 380,
+    "files": 59,
+    "typecheck": true,
+    "build": true
+  },
+  "backend": {
+    "tests": 3488,
+    "files": 206,
+    "typecheck": true,
+    "build": true
+  },
+  "operations": {
+    "tests": 677,
+    "passed": true,
+    "seconds": 385.697
+  },
+  "schema_helper": {
+    "tests": 11,
+    "passed": true
+  },
+  "kubernetes": {
+    "tests": 16,
+    "passed": true
+  },
+  "original_cluster_ca": "passed",
+  "image_step": {
+    "status": "blocked",
+    "code": "RUNTIME_QUALIFICATION_CONFIG",
+    "cause": "Exact inspect-config difference not yet observed; do not assume cause or weaken identity checks."
+  },
+  "rollout": "skipped",
+  "cleanup_steps": "passed",
+  "application_deployed": false,
+  "live_ai_evaluation": "not_activated",
+  "raw_log_sha256": "4f6dcf5c18cfb2a6742e2845d71c6b25cf136dd8623ecbfe887a5bdf70f2b2c9"
+}

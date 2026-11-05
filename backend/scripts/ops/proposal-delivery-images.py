@@ -18,6 +18,36 @@ REGISTRY='registry.digitalocean.com/tenderdesk-a6093a76/'
 IMAGES={'runtime':('backend/deploy/Dockerfile','.'),'frontend':('frontend/Dockerfile','frontend'),'ocr':('backend/deploy/Dockerfile.ocr','.')}
 class ImageError(Exception):pass
 
+def qualification_diagnostic(value,receipt):
+    expected=receipt['qualified_image'];actual=value.get('Config',{})
+    if not isinstance(actual,dict):actual={}
+    actual_labels=actual.get('Labels')
+    actual={k:v for k,v in actual.items() if k!='Labels'};baseline=expected['config_without_labels']
+    # Field names are fixed Docker configuration names, never payload values.
+    names={'User','Env','Cmd','Entrypoint','WorkingDir','ExposedPorts','Volumes','Healthcheck',
+      'StopSignal','StopTimeout','Shell','OnBuild','ArgsEscaped','Hostname','Domainname','Image',
+      'AttachStdin','AttachStdout','AttachStderr','Tty','OpenStdin','StdinOnce','NetworkDisabled'}
+    safe=lambda keys:sorted({key if key in names else 'unknown_field' for key in keys})
+    return {'original_id_matches':value.get('Id')==qualification.QUALIFIED_ID,
+      'rootfs_matches':value.get('RootFS')==expected['rootfs'],
+      'platform_matches':value.get('Os')==expected['os'] and value.get('Architecture')==expected['architecture'] and value.get('Variant','')==expected['variant'],
+      'labels_match':actual_labels==expected['labels'],
+      'config_fields':{'missing':safe(set(baseline)-set(actual)),'added':safe(set(actual)-set(baseline)),
+        'changed':safe(k for k in set(actual)&set(baseline) if actual[k]!=baseline[k])}}
+
+def inspect_qualified():
+    manifest=json.loads(release.MANIFEST.read_text());release.verify_source(manifest)
+    root=release.ROOT.parent;receipt=qualification.load(root);qualification.verify_checkout(root,receipt)
+    reference=qualification.publication(root)
+    path=Path(os.environ['DOKS_WORKDIR'])/'qualified-image-inspection.log'
+    with path.open('w') as log:
+        os.chmod(path,0o600)
+        if subprocess.run(['docker','pull',reference],stdout=log,stderr=subprocess.STDOUT,timeout=1200).returncode:
+            raise ImageError('DELIVERY_IMAGE_COMMAND_FAILED')
+    value=image_metadata(reference)
+    print(json.dumps({'image':'qualified_runtime_inspection',**qualification_diagnostic(value,receipt)}),flush=True)
+    qualification.verify_published(value,reference,receipt)
+
 def verify_checkout(revision):
     head=subprocess.run(['git','-C',str(release.ROOT.parent),'rev-parse','HEAD'],capture_output=True,text=True,timeout=30)
     clean=subprocess.run(['git','-C',str(release.ROOT.parent),'diff','--quiet','HEAD','--'],capture_output=True,text=True,timeout=30)
@@ -92,8 +122,13 @@ def prepare():
         for name,value in selected.items():output.write('TENDERDESK_'+name.upper()+'_IMAGE='+value+'\n')
     return selected
 
-def main():
-    try:prepare();return 0
+def main(inspect_only=False):
+    try:
+        if inspect_only:inspect_qualified()
+        else:prepare()
+        return 0
     except Exception as error:
         print(json.dumps({'image':'delivery_release','status':'blocked','code':str(error) if isinstance(error,(ImageError,qualification.QualificationError)) else 'DELIVERY_IMAGE_FAILED'}));return 1
-if __name__=='__main__':sys.exit(main())
+if __name__=='__main__':
+    if sys.argv[1:] not in ([],['--inspect-qualified']):raise SystemExit('DELIVERY_IMAGE_ARGUMENTS_INVALID')
+    sys.exit(main(inspect_only=bool(sys.argv[1:])))
