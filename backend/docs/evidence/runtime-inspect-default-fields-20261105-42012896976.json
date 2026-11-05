@@ -1,0 +1,42 @@
+{
+  "status": "mismatch_identified",
+  "source_revision": "af88b8d3107caa59b474f8f387cfaeda22ede6f9",
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/42012896976",
+  "job_id": 127196119037,
+  "observations": [
+    {
+      "runner": "strict_cluster_tls_and_temporary_credentials_ready"
+    },
+    {
+      "image": "qualified_runtime_inspection",
+      "original_id_matches": true,
+      "rootfs_matches": true,
+      "platform_matches": true,
+      "labels_match": true,
+      "config_fields": {
+        "missing": [],
+        "added": [
+          "AttachStderr",
+          "AttachStdin",
+          "AttachStdout",
+          "Domainname",
+          "Hostname",
+          "Image",
+          "OnBuild",
+          "OpenStdin",
+          "StdinOnce",
+          "Tty",
+          "Volumes"
+        ],
+        "changed": []
+      }
+    },
+    {
+      "image": "delivery_release",
+      "status": "blocked",
+      "code": "RUNTIME_QUALIFICATION_CONFIG"
+    }
+  ],
+  "scope": "Read-only pull and inspection of the published immutable qualified image. No image build/push, schema operation or rollout.",
+  "interpretation": "The exact image ID, layers, platform and labels match. Docker inspect on the runner adds 11 container-configuration fields absent from the original raw image config. Do not discard arbitrary fields; verify the original content-addressed config blob."
+}

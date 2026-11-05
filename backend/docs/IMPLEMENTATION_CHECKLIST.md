@@ -11296,3 +11296,25 @@ It cannot build, publish, migrate or roll out. The normal mode retains all
 mandatory checks. All 12 focused image-helper tests pass, including private-value
 redaction and mode separation. This diagnostic mode will identify the observed
 difference before any change to qualification rules.
+
+### November 5 — exact image bytes distinguished from Docker inspect defaults
+
+Read-only run 42012896976 at af88b8d proves that image ID, filesystem layers,
+platform and labels match the published qualified image. Runner Docker inspect
+adds 11 configuration fields; it reports no missing or changed qualified field.
+The unchanged raw config blob matches the qualification receipt locally and
+its SHA-256 is the exact qualified image ID. No image or source rebuild is needed.
+
+Runtime image inspection now reads that content-addressed config from a private
+Docker save archive, verifies its SHA-256, platform and layer identity, and feeds
+the unmodified raw config to the existing exact qualification guard. Both Docker
+and OCI archive layouts are supported; missing, duplicate, symlink or tampered
+config members fail. Nothing is extracted. Immutable-ID caching avoids repeated
+large archives; private temporary files are removed.
+
+All 31 focused controls pass. A real local image/promotion probe passes raw config
+and unchanged-layer verification with only the revision label changed, without
+registry writes or running containers; its temporary image is removed. The probe
+binds the pending guard bytes by SHA-256 rather than claiming the base commit
+already contains them. A fresh short hosted inspection and the normal complete
+release gate remain required.

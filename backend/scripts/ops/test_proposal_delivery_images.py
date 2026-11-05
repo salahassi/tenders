@@ -31,6 +31,11 @@ def runtime_image(promoted=False):
 
 
 class DeliveryImageTests(unittest.TestCase):
+ def setUp(self):
+  # These orchestration controls use authored metadata. Separate raw-archive
+  # tests and real-image probes cover the content-addressed decoding boundary.
+  patcher=patch.object(p,'raw_image_config',side_effect=lambda value:copy.deepcopy(value['Config']))
+  patcher.start();self.addCleanup(patcher.stop)
  def test_diagnostic_reports_only_bound_field_names_and_identity_booleans(self):
   value=runtime_image();value['Config'].pop('ArgsEscaped');value['Config']['Env']=['PRIVATE_SECRET'];value['Config']['PRIVATE_KEY']='PRIVATE_VALUE'
   observed=p.qualification_diagnostic(value,RECEIPT)
