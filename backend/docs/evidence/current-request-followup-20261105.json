@@ -66,14 +66,56 @@
       "typescript_real_sql_and_guard": 36,
       "real_local_chromium": 4,
       "read_only_recovery": 5
+    },
+    "full_backend_verification": {
+      "source": "a4a3e9583172452248e174a84d6e4931037979fc",
+      "typecheck": "passed",
+      "tests": 3491,
+      "files": 206,
+      "build": "passed",
+      "frontend": "Unchanged; 380 tests, typecheck and build passed in release42031298536.",
+      "log_sha256": {
+        "current-response-backend-tests.log": "8afc35ee7f075d38e0b7e66ceb50c172108a969fa3c7ff87dd9ffffb92f9b2c4",
+        "current-response-backend-types.log": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220",
+        "current-response-backend-build.log": "8652d82be3115ea6597ae3b7dcf42d83bc898c68ec15888bbf53917a98ebac84",
+        "current-response-wire-red.log": "84ecd0d8fed94777868b29c6e72602863162aa992a6b455d03fcbcaeec18d57f",
+        "current-response-focused.log": "220201bc10cfeb56cfd190784fb4697346b1520ab056f1ad4e200a25ae4ff25f",
+        "current-response-python.log": "327b3345ea30051e7d047286bca03afb9dcb72d56852460bd6c0cdad948e0e10",
+        "current-issuance-python.log": "c203ab48011aadc2b7ca543cb3559eac1d88238ffe921a60012adafa9c437dde",
+        "current-response-browser.log": "2b82926a67e3e206e7dbb4d147bd1861ec3023ab9b2d59e777a78e721f4f5acd",
+        "current-recovery-issuance-python.log": "eaad3bb0873958e222c7685dbeefbeeb6aab9456df0bb93c083f4b85c08b15d0"
+      }
     }
   },
   "business_request_retried": false,
   "whole_package_issued": false,
   "authenticated_export_verified": false,
   "limits": [
-    "This first followup proves failed plan/job state; it does not yet project the persisted issuance completion timestamp.",
+    "The persisted request failed after60.658012s; no generated version or issued package exists, so authenticated export acceptance cannot pass. The original request workflow remains failed and has not been rerun.",
     "The skipped quota attempt is not a fresh provider availability probe or a semantic quality result.",
     "No request replay, billing change, new agent or model campaign was performed."
-  ]
+  ],
+  "persisted_issuance_followup": {
+    "run": "https://github.com/salahassi/tenders/actions/runs/42037659578",
+    "source": "a4a3e9583172452248e174a84d6e4931037979fc",
+    "conclusion": "success",
+    "report_sha256": "622d3ccb11ea9e9c148985ed7d490cdb8a7045de72b891faef39330789c22489",
+    "exact_original_request_actor_plan_and_clock_match": true,
+    "runtime_images_match_deployed_release": true,
+    "issuance": {
+      "outcome": "failed",
+      "operation": "proposal.generate",
+      "error_code": "AI_AGENTS_UNAVAILABLE",
+      "accepted_at": "2026-11-05T13:27:06.352459+00:00",
+      "deadline_at": "2026-11-05T13:37:06.352459+00:00",
+      "completed_at": "2026-11-05T13:28:07.010471+00:00",
+      "effective_outcome": "failed",
+      "effective_error_code": "AI_AGENTS_UNAVAILABLE",
+      "effective_completed_at": "2026-11-05T13:28:07.010471+00:00"
+    },
+    "elapsed_seconds": 60.658012,
+    "business_mutations": 0,
+    "proposal_versions": 0,
+    "cleanup_confirmed": true
+  }
 }

@@ -90,6 +90,7 @@ release-owner gates.
 
 The November 5 request42034910171 is already sent. Its durable marker remains a
 stop condition. Read-only inspection42036499094 confirms the exact successor
-failed with `AI_AGENTS_UNAVAILABLE`; fixing this harness is not authorization to
-replay that request. The [followup receipt](evidence/current-request-followup-20261105.json)
+failed with `AI_AGENTS_UNAVAILABLE`; followup42037659578 confirms the same
+issuance closed after60.658012 seconds with zero proposal versions. Fixing this
+harness is not authorization to replay that request. The [followup receipt](evidence/current-request-followup-20261105.json)
 retains the initial unknown result and the separate after-commit evidence.

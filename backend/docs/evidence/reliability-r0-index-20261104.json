@@ -1,10 +1,10 @@
 {
   "version": 6,
   "status": "draft_not_release_acceptance",
-  "generated_at_utc": "2026-11-05T13:38:30.394535+00:00",
+  "generated_at_utc": "2026-11-05T13:41:55.650396+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
   "observed_root_commit": "887411188b9591b01c9e3d01456372a37c3a0f68",
-  "scope": "Current release42031298536 is deployed at8874111/manifestada21f57. The single authorized request started and failed early with AI_AGENTS_UNAVAILABLE; no package/export acceptance. Historical receipt hashes and scopes remain retained. Current response-harness correction and read-only clock projection have focused local checks; final followup pending.",
+  "scope": "Current release42031298536 is deployed at8874111/manifestada21f57. The single authorized request started and failed early with AI_AGENTS_UNAVAILABLE; no package/export acceptance. Historical receipt hashes and scopes remain retained. Response-harness correction has 3,491 passing backend tests/types/build plus focused operations/browser controls at a4a3e95. Read-only42037659578 confirms original issuance failed after60.658012s, zero versions and cleanup; no replay.",
   "r0_reference": "backend/docs/RELIABLE_PROPOSAL_ACCEPTANCE.md:83",
   "r0_completeness": "This index is not a per-case R0 completion certificate. Linked receipts retain their own source/fixture/image/migration/clock/policy bindings. Missing applicable R0 evidence remains unproven.",
   "never_infer": [
@@ -214,10 +214,10 @@
         },
         {
           "path": "backend/docs/evidence/current-request-followup-20261105.json",
-          "sha256": "1d4a34f19d4ea577421c40b0dc690da5ace1bb16e66f4cdc16c2fb417e98ebef",
+          "sha256": "80d295744147c3b398ec7504d92cc0c4b056ce11bf26285335cc7928a1e6068d",
           "level": "L1/L3",
-          "observed_result": "One actual request started; exact successor failed AI_AGENTS_UNAVAILABLE around61s; response-harness bug reproduced with actual saved command result and locally corrected.",
-          "limits": "No request replay or issued package; persisted issuance clock followup pending. Provider availability and semantic qualification remain open."
+          "observed_result": "One actual request started; persisted issuance failed AI_AGENTS_UNAVAILABLE after60.658012s in read-only42037659578. Harness correction passes 3,491 backend tests/types/build and focused protocol/browser/SQL checks.",
+          "limits": "No request replay or issued package. Deployed runtime/schema unchanged. Provider availability, private semantic/retrieval, automatic Arabic OCR and actual Word TOC remain open."
         }
       ]
     },
@@ -928,10 +928,10 @@
         },
         {
           "path": "backend/docs/evidence/current-request-followup-20261105.json",
-          "sha256": "1d4a34f19d4ea577421c40b0dc690da5ace1bb16e66f4cdc16c2fb417e98ebef",
+          "sha256": "80d295744147c3b398ec7504d92cc0c4b056ce11bf26285335cc7928a1e6068d",
           "level": "L1/L3",
-          "observed_result": "One actual request started; exact successor failed AI_AGENTS_UNAVAILABLE around61s; response-harness bug reproduced with actual saved command result and locally corrected.",
-          "limits": "No request replay or issued package; persisted issuance clock followup pending. Provider availability and semantic qualification remain open."
+          "observed_result": "One actual request started; persisted issuance failed AI_AGENTS_UNAVAILABLE after60.658012s in read-only42037659578. Harness correction passes 3,491 backend tests/types/build and focused protocol/browser/SQL checks.",
+          "limits": "No request replay or issued package. Deployed runtime/schema unchanged. Provider availability, private semantic/retrieval, automatic Arabic OCR and actual Word TOC remain open."
         }
       ]
     },
@@ -1316,10 +1316,10 @@
         },
         {
           "path": "backend/docs/evidence/current-request-followup-20261105.json",
-          "sha256": "1d4a34f19d4ea577421c40b0dc690da5ace1bb16e66f4cdc16c2fb417e98ebef",
+          "sha256": "80d295744147c3b398ec7504d92cc0c4b056ce11bf26285335cc7928a1e6068d",
           "level": "L1/L3",
-          "observed_result": "One actual request started; exact successor failed AI_AGENTS_UNAVAILABLE around61s; response-harness bug reproduced with actual saved command result and locally corrected.",
-          "limits": "No request replay or issued package; persisted issuance clock followup pending. Provider availability and semantic qualification remain open."
+          "observed_result": "One actual request started; persisted issuance failed AI_AGENTS_UNAVAILABLE after60.658012s in read-only42037659578. Harness correction passes 3,491 backend tests/types/build and focused protocol/browser/SQL checks.",
+          "limits": "No request replay or issued package. Deployed runtime/schema unchanged. Provider availability, private semantic/retrieval, automatic Arabic OCR and actual Word TOC remain open."
         }
       ]
     }

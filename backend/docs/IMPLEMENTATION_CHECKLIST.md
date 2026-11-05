@@ -17,7 +17,7 @@ capacity or general recovery objectives.
 
 The one authorized current request **did start**, but it ended with
 `AI_AGENTS_UNAVAILABLE`: all 12 successor jobs failed about 60.652 seconds after
-acceptance. No proposal file issued. Request workflow42034910171 failed its
+acceptance; persisted issuance closure was at 60.658012 seconds. No proposal file issued. Request workflow42034910171 failed its
 response guard; private after-commit proof and read-only inspection42036499094
 establish the exact successor separately. Historical results and unknown usage,
 the one-send marker and all cleanup proofs remain intact. No request replay or
@@ -31,8 +31,12 @@ successor checks remain strict; the parent binds the issuance ID from the exact
 current database proof before observing completion. Focused checks pass: 23
 request/11 issuance Python controls, 36 TypeScript/exact-SQL tests, four actual
 local Chromium controls and five read-only recovery tests. The recovery
-projection now includes persisted/effective issuance clocks; its hosted followup
-is pending. Provider availability, private semantic/retrieval holdout, automatic
+projection now includes persisted/effective issuance clocks; hosted followup
+42037659578 passes at a4a3e95 with exact request/actor/clock/runtime matching
+and cleanup. It confirms `AI_AGENTS_UNAVAILABLE`, persisted closure after
+60.658012 seconds and zero proposal versions. All 3,491 backend tests across
+206 files, typecheck and build pass at a4a3e95. Frontend production sources
+are unchanged from the 380-test release gate. Provider availability, private semantic/retrieval holdout, automatic
 Arabic OCR and actual Word TOC update/save remain open.
 
 ## November 4 — current integration status and remaining release gates
@@ -11509,3 +11513,13 @@ clock checks remain mandatory. No durable marker was bypassed and no second
 business request was sent. The read-only inspector adds issuance clocks without
 calling commands, providers or scheduler functions. See the linked current
 followup receipt for private report hashes, cleanup and separate evidence limits.
+
+Read-only followup [42037659578](https://github.com/salahassi/tenders/actions/runs/42037659578)
+at `a4a3e9583172452248e174a84d6e4931037979fc` confirms the exact original issuance
+ID/actor/plan/accepted/deadline tuple, deployed runtime, zero proposal versions
+and persisted `AI_AGENTS_UNAVAILABLE` closure after **60.658012 seconds**.
+The 600-second deadline was neither reset nor reached. Original-CA access and
+cleanup passed. All 3,491 backend tests / 206 files, typecheck and build pass on
+that source. This followup changes operational observation and documentation;
+production runtime/schema bytes are unchanged, so no replacement deployment or
+second business request is performed.
