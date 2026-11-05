@@ -1,10 +1,10 @@
 {
   "version": 6,
   "status": "draft_not_release_acceptance",
-  "generated_at_utc": "2026-11-05T00:38:01.092197+00:00",
+  "generated_at_utc": "2026-11-05T00:45:09.107813+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
   "observed_root_commit": "2b869ac341f3ca7944247930e68c022f91a7383a",
-  "scope": "Docs-only discovery refresh at integrated2b869ac. Historical receipt hashes/scopes retained; current corrected runtime publication/manifest and prepared request/retirement helpers indexed. Current application combined gates, release and actual request/export remain pending. Exact2b869ac operations checks and current-manifest isolated restore now pass at their stated scopes. No execution or external mutations by this refresh.",
+  "scope": "Docs-only discovery refresh at integrated2b869ac. Historical receipt hashes/scopes retained; current corrected runtime publication/manifest and prepared request/retirement helpers indexed. Current2b869ac combined application gates now pass; release and actual request/export remain pending. Exact2b869ac operations checks and current-manifest isolated restore now pass at their stated scopes. No execution or external mutations by this refresh.",
   "r0_reference": "backend/docs/RELIABLE_PROPOSAL_ACCEPTANCE.md:83",
   "r0_completeness": "This index is not a per-case R0 completion certificate. Linked receipts retain their own source/fixture/image/migration/clock/policy bindings. Missing applicable R0 evidence remains unproven.",
   "never_infer": [
@@ -120,6 +120,13 @@
           "level": "Complete source-bound operations checks",
           "observed_result": "Exact2b869ac passes640operations+11schema+16Kubernetes=667,all exits0,539 source files unchanged.",
           "limits": "Before forthcoming retirement cleanup correction; complete app packages and hosted acceptance remain separate."
+        },
+        {
+          "path": "backend/docs/evidence/complete-app-checks-2b869ac-20261105.json",
+          "sha256": "efab491d41820b280c61c7bc607ea5706f85a259b342c98f87985f7d3045a09a",
+          "level": "L1/L2",
+          "observed_result": "Exact2b869ac complete backend3379/200files and frontend380/59files, both types/builds passed; no source changes during checks.",
+          "limits": "Functional source-specific pass before the isolated-retirement cleanup follow-up; not deployment or hosted semantic/file acceptance."
         }
       ]
     },
@@ -1031,13 +1038,13 @@
   ],
   "current_predeployment_summary": {
     "source_revision": "2b869ac341f3ca7944247930e68c022f91a7383a",
-    "full_combined_checks": "pending",
+    "full_combined_checks": "passed_at2b869ac_3379backend_380frontend_types_build_and667operations",
     "renewed_cloud_restore": "passed41942455870_at2b869ac_manifest2e6512d2",
     "release": "pending",
     "actual_request_activation": "pending",
-    "indexed_receipts": 109,
+    "indexed_receipts": 110,
     "historical_receipts_preserved": 92,
-    "new_receipts": 17,
+    "new_receipts": 18,
     "operations_checks": "667passed_at2b869ac_before_retirement_cleanup_followup"
   }
 }

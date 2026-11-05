@@ -1,7 +1,7 @@
 {
   "version": 6,
   "status": "draft_remaining_actions_not_complete",
-  "generated_at_utc": "2026-11-05T00:38:01.092197+00:00",
+  "generated_at_utc": "2026-11-05T00:45:09.107813+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
   "observed_root_commit": "2b869ac341f3ca7944247930e68c022f91a7383a",
   "evidence_index": "backend/docs/evidence/reliability-r0-index-20261104.json",
@@ -13,7 +13,7 @@
     "migrations": 24,
     "source_migrations": 24,
     "missing_migrations": [],
-    "state": "corrected_runtime_refrozen_isolated_restore_passed_full_application_gates_and_release_pending",
+    "state": "current2b869ac_full_local_gates_and_isolated_restore_passed_retirement_cleanup_followup_and_release_pending",
     "gateway_contract": "v2_final_pinned_one_worker_with_exact_gateway_https_runtime_qualification_binding"
   },
   "actions": [
@@ -53,18 +53,18 @@
         "W00",
         "W11"
       ],
-      "status": "current_integrated_2b869ac_complete_gates_pending_historical_and_focused_passes_retained",
+      "status": "closed_local2b869ac_scope_final_helper_revalidation_and_github_gate_pending",
       "evidence": [
         "E01"
       ],
-      "remaining": "Finish complete current-source application checks and preserve source-bound operations/schema/Kubernetes and mandatory real-browser results on the final integrated source. Exact2b869ac operations667 pass predates the forthcoming retirement cleanup correction; changed scopes require relevant revalidation.",
+      "remaining": "Exact2b869ac complete local packages and667operations/schema/Kubernetes checks pass. Revalidate the forthcoming isolated-retirement cleanup correction, then require the mandatory complete GitHub release gate on the final commit.",
       "done_when": "One exact final commit has required complete green checks and source-bound logs; any remaining failure is explicit.",
       "not_proven": "Functional gates do not prove deployment, provider semantics, native universal capacity or hosted issuance.",
       "acceptance_cases": [
         "R0",
         "W11 exit evidence"
       ],
-      "implementation": "Historical865d840 full package/564ops-schema-Kubernetes pass retained. Current repair67production regressions,reserve189offline controls,and prepared helper34Python/33TS-SQL/1canonicalDOCX/4browser cases pass at explicit source hashes. Current combined result pending. Exact2b869ac operations640+schema11+Kubernetes16 pass with539 source files unchanged before forthcoming retirement cleanup correction.",
+      "implementation": "At2b869ac backend3379/200files,frontend380/59files,both types/builds and640operations+11schema+16Kubernetes pass, with unchanged source maps. Actual browser4controls remain separately source-bound. Historical failures and passes retain their exact scopes.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },

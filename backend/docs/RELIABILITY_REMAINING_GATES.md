@@ -2,8 +2,9 @@
 
 This refresh is anchored to integrated source `2b869ac`: the production repair
 context correction, expanded offline model reserve, prepared retirement drill
-and guarded current-request browser/observer helper are integrated. **Complete current application checks, actual release and actual proposal
-resume/issuance remain pending.** Exact `2b869ac` operations/schema/Kubernetes
+and guarded current-request browser/observer helper are integrated. **Complete local application checks pass at `2b869ac`: 3,379 backend tests
+in 200 files, 380 frontend tests in 59 files, and both type checks/builds.
+Actual release and actual proposal resume/issuance remain pending.** Exact `2b869ac` operations/schema/Kubernetes
 checks and current-manifest isolated cloud restore now pass at their recorded
 scopes, before the forthcoming retirement-cleanup correction. Earlier completed local and restore scopes are
 retained against their original source; they do not close these current gates.
@@ -28,8 +29,8 @@ programming interface; OCR means optical character recognition.
 
 Historical source `865d840` passed complete local functional checks, and
 original-CA restore 41933205779 passed its exact 24-migration manifest
-`4cb2e712`. **A02 retains the historical full closure with current application checks
-pending. A03 now also closes the exact current `2b869ac`/`2e6512d2` isolated
+`4cb2e712`. **A02 closes the exact `2b869ac` local scope; the retirement-cleanup
+follow-up and mandatory final GitHub gate still require verification. A03 now also closes the exact current `2b869ac`/`2e6512d2` isolated
 restore scope.** Neither establishes deployed proposal completion.
 The last authorized read-only customer-target inspection remains incomplete and
 unchanged; no current-request activation has occurred at this anchor.

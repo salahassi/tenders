@@ -10811,3 +10811,20 @@ all 109 receipt paths/hashes, preservation of the 92 historical entries, action
 mappings and the exact canonical manifest hash. No application/operations tests,
 native runs, workflow dispatches or source changes occurred in this docs-only
 refresh.
+
+### November 5 — complete integrated application and operations gates at 2b869ac
+
+All six package checks passed: backend 3,379 tests in 200 files, frontend 380
+tests in 59 files, both type checks and builds. The harness recomputed its
+source map and found no changed sources. The separate complete operations pass
+is 640 operations + 11 production-schema + 16 Kubernetes tests: 4,426 total
+functional tests across these application/operations scopes. Raw logs and
+source-map hashes are bound by the public receipts; elapsed times are not native
+capacity measurements.
+
+The renewed original-CA cloud restore41942455870 at the same source passes
+all13 Auth/Storage HTTP checks, all24 migrations, current manifest2e6512d2 and
+both cleanup stages. The later isolated-retirement cleanup correction requires
+its own source review/revalidation; it was not silently included in these runs.
+Mandatory final GitHub verification, deployment, actual current-request
+activation and authenticated complete-file acceptance remain pending.
