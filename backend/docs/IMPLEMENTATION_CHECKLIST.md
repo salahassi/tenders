@@ -10949,3 +10949,23 @@ skipped. The [sanitized receipt](evidence/storage-retirement-second-attempt-2026
 locates the session-token validation failure without exposing token data.
 Underlying format compatibility and its correction require verification; the
 retirement acceptance gate remains open.
+### November 5 — exact source-obligation resolution database contract
+
+The isolated database correction adds `20261105120000_source_obligation_resolution.sql`.
+It pins new predecessor review revisions without rewriting historical rows, keeps
+raw passages, resolves exact typed units, validates pending as well as confirmed
+requirements, and checks current generated artifacts and ordinary exports.
+Analysis advancement independently verifies and stores retirement/current-unit
+audits while preserving accepted analysis outputs. The existing current-request
+user flow handles legacy refresh through `PROPOSAL_CURRENT_CONTRACT_REQUIRED`.
+The strict restore scope and historical paid contexts remain intact.
+
+Local focused verification passed 19 tests across the new source-resolution suite
+and existing source-review restore suite. This includes real requirement INSERT,
+real `advance_generation`, audit tampering, unchanged cabinets in a broad source,
+revision and revocation controls, multi-source authority, 64 current reviews, and
+canonical cancel/new-request commands. Source review aligned locator identity and marked-plan ambiguity rules with the
+runtime. Final runtime/SQL integration and independent review remain required. Worker capability
+five is owned by the separate following migration. No deployment or provider
+inference occurred in this change. The contract and limitations are documented in
+[SOURCE_OBLIGATION_RESOLUTION.md](SOURCE_OBLIGATION_RESOLUTION.md).
