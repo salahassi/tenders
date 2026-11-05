@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "scope": "agent_authored_synthetic_and_known_development_controls",
+  "campaign_sha256": "5397b8278427234e9d73bc5b553b870a7550a3ab6f6c9fbfb029dfdc627d59c1",
+  "gold_sha256": "c5ca3a7cc0ccb72eeb52e47dce2bac2429c92c47908c45aa63ea29da618fd735",
+  "oracle_sha256": "13c70789d651bdceb1b56c57053280f4ef836e4dcd2165f501e58374b3d39c03",
+  "gold_accessed_only_after_campaign_finished": true,
+  "normalization": "a06-strict-nfc-whitespace-v1",
+  "expected_denominator": 13,
+  "completed": 0,
+  "whole_page_passed": 0,
+  "critical_facts_total_frozen": 21,
+  "critical_facts_scored": 0,
+  "critical_facts_exact_quote_survived": 0,
+  "cold_blank_status": "failed",
+  "candidate_passed_this_finite_campaign": false,
+  "universal_correctness_or_production_adoption_established": false,
+  "human_or_private_holdout_review": false,
+  "output_repair_performed": false,
+  "rows": [
+    {
+      "id": "a06-01-conditional-gate",
+      "attempt_status": "not_run",
+      "whole_page_exact": false,
+      "critical_facts": [],
+      "scored": false,
+      "qualification_pass": false,
+      "critical_fact_scope": "Frozen source exact-quote checks, not a semantic correctness guarantee"
+    },
+    {
+      "id": "a06-02-decimal-payment",
+      "attempt_status": "not_run",
+      "whole_page_exact": false,
+      "critical_facts": [],
+      "scored": false,
+      "qualification_pass": false,
+      "critical_fact_scope": "Frozen source exact-quote checks, not a semantic correctness guarantee"
+    },
+    {
+      "id": "a06-03-incident-deadline",
+      "attempt_status": "not_run",
+      "whole_page_exact": false,
+      "critical_facts": [],
+      "scored": false,
+      "qualification_pass": false,
+      "critical_fact_scope": "Frozen source exact-quote checks, not a semantic correctness guarantee"
+    },
+    {
+      "id": "a06-04-right-column-first",
+      "attempt_status": "not_run",
+      "whole_page_exact": false,
+      "critical_facts": [],
+      "scored": false,
+      "qualification_pass": false,
+      "critical_fact_scope": "Frozen source exact-quote checks, not a semantic correctness guarantee"
+    },
+    {
+      "id": "a06-05-mixed-table",
+      "attempt_status": "not_run",
+      "whole_page_exact": false,
+      "critical_facts": [],
+      "scored": false,
+      "qualification_pass": false,
+      "critical_fact_scope": "Frozen source exact-quote checks, not a semantic correctness guarantee"
+    },
+    {
+      "id": "a06-06-blank",
+      "attempt_status": "not_run",
+      "whole_page_exact": false,
+      "critical_facts": [],
+      "scored": false,
+      "qualification_pass": false,
+      "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+    },
+    {
+      "id": "known-arabic-failure",
+      "attempt_status": "not_run",
+      "whole_page_exact": false,
+      "critical_facts": [],
+      "scored": false,
+      "qualification_pass": false,
+      "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+    },
+    {
+      "id": "maintenance-obligation",
+      "attempt_status": "not_run",
+      "whole_page_exact": false,
+      "critical_facts": [],
+      "scored": false,
+      "qualification_pass": false,
+      "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+    },
+    {
+      "id": "records-retention",
+      "attempt_status": "not_run",
+      "whole_page_exact": false,
+      "critical_facts": [],
+      "scored": false,
+      "qualification_pass": false,
+      "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+    },
+    {
+      "id": "sensor-acceptance",
+      "attempt_status": "not_run",
+      "whole_page_exact": false,
+      "critical_facts": [],
+      "scored": false,
+      "qualification_pass": false,
+      "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+    },
+    {
+      "id": "english-existing-control",
+      "attempt_status": "not_run",
+      "whole_page_exact": false,
+      "critical_facts": [],
+      "scored": false,
+      "qualification_pass": false,
+      "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+    },
+    {
+      "id": "mixed-exact-scan-page",
+      "attempt_status": "not_run",
+      "whole_page_exact": false,
+      "critical_facts": [],
+      "scored": false,
+      "qualification_pass": false,
+      "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+    },
+    {
+      "id": "mixed-blank-page",
+      "attempt_status": "not_run",
+      "whole_page_exact": false,
+      "critical_facts": [],
+      "scored": false,
+      "qualification_pass": false,
+      "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+    }
+  ]
+}

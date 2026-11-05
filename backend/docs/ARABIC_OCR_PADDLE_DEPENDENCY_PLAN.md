@@ -233,3 +233,24 @@ Docker behavior, native compatibility, memory fit or recognition accuracy. At
 this record's freeze, execution is still pending the required free disk, the
 root coordinator's exact execution binding and an exclusive native window.
 No OCR output exists, and neither resource fit nor quality is claimed.
+
+### First frozen campaign stopped before Node release
+
+After root supplied sufficient disk and opened the exclusive window, the exact
+binding `4e836620f76e4c6d5990149d1d7804721bf6afe6a9c921d74c4697061dce672f`
+stopped during its first pre-Node control check. The container's stdlib gate
+reported the requested memory, swap and CPU limits, but the host cgroup path
+resolver rejected a namespace-relative process path that resolved outside its
+assumed `/sys/fs/cgroup` mount. It never wrote the gate-start sentinel. Node,
+Paddle and recognition did not run; all thirteen campaign pages remain
+`not_run`. This is a coordinator failure, with no accuracy or memory-fit result.
+
+The run stopped in 4.698 seconds, within its frozen deadlines; cumulative cleanup
+was 0.649 seconds and positive owned-container removal/absence was independently
+checked. [The original failed result](evidence/arabic-paddle-campaign-result-20261105-r1.json)
+preserves its exact binding, gate receipt, source-before/after identity, cleanup
+and host-only unscored evaluation. The resolved-path exception is retained, but
+the original raw host process cgroup string was not captured. Root authorized
+a separately reviewed namespace-resolution correction using the existing native
+qualification harness pattern, followed by a new binding/window. No model,
+recognition configuration, gold, threshold or output postprocessing is changed.

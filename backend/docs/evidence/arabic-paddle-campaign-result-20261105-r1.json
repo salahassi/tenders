@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "scope": "first_frozen_campaign_orchestration_failure_before_Node_or_Paddle",
+  "image_id": "sha256:2cf5d314540a69ca1eaeccbf7edc5fc6db48ec4047eb1405318d6406ce2969d5",
+  "binding_sha256": "4e836620f76e4c6d5990149d1d7804721bf6afe6a9c921d74c4697061dce672f",
+  "status": "stopped_before_node_release",
+  "whole_campaign_denominator": 13,
+  "campaign_pages_executed": 0,
+  "campaign_pages_not_run": 13,
+  "cold_blank_recognition_executed": false,
+  "actual_product_parent_invoked": false,
+  "paddle_imported": false,
+  "ocr_executed": false,
+  "model_accuracy_or_resource_fit_measured": false,
+  "all_original_files_preserved": true,
+  "observed_phase": "create_start",
+  "failure": {
+    "type": "ValueError",
+    "message": "'/sys/fs/docker/a90d2c523591e12d8cf79c0f7c5e7c42952f6cd2a96189d0eddad476f50932e7' is not in the subpath of '/sys/fs/cgroup'"
+  },
+  "raw_host_proc_cgroup_string_retained": false,
+  "scope_limit": "The original exception retains the resolved path; the raw host /proc/PID/cgroup string was not captured before rejection. Do not invent that exact string retrospectively.",
+  "cleanup_verified": true,
+  "elapsed_seconds": 4.697702104007476,
+  "cleanup_seconds": 0.6494895599898882,
+  "native_outputs_missing": [
+    "gate/start",
+    "outputs/node-start.json",
+    "outputs/effective-config.json",
+    "outputs/raw-engine.json",
+    "outputs/node-projection.json",
+    "outputs/parent-receipt.json"
+  ],
+  "frozen_boundaries_unchanged": true,
+  "next_step_authorization": "Root authorized a separately reviewed namespace-resolution harness correction and a new binding/window; no automatic retry or model/config/gold change.",
+  "files": {
+    "campaign.json": {
+      "bytes": 3309,
+      "sha256": "5397b8278427234e9d73bc5b553b870a7550a3ab6f6c9fbfb029dfdc627d59c1"
+    },
+    "host-evaluation.json": {
+      "bytes": 4870,
+      "sha256": "d65dfee54ffafd2d940c416504f98e7cf7d5a109e421eeda9208b0ce7a795c2d"
+    },
+    "attempt.json": {
+      "bytes": 3193,
+      "sha256": "baf2e1041bd389c9b80fa837a2241802189c55473a5a7ce2489d39e40121a565"
+    },
+    "cleanup.json": {
+      "bytes": 318,
+      "sha256": "148250dfaacf50a92d05d8a1d501ac5bc8390e1ef0612a647df2d5d77d6ff48a"
+    },
+    "gate-ready.json": {
+      "bytes": 716,
+      "sha256": "116ee0d485f06715d34a25dcccadb55e1d6e3885097eaf6cc0f44efa4651421f"
+    },
+    "run-binding.json": {
+      "bytes": 941,
+      "sha256": "4e836620f76e4c6d5990149d1d7804721bf6afe6a9c921d74c4697061dce672f"
+    },
+    "execution-command.json": {
+      "bytes": 842,
+      "sha256": "066290aa0d4988acfe6792931d4bac061f94b1704e5b3403b4ae6d8771160bb6"
+    },
+    "execution-receipt.json": {
+      "bytes": 149,
+      "sha256": "203a6fa26212abd0ad296b49e9c3afbd16ece2bc0a347eba2022a17460030d9c"
+    },
+    "source-before.json": {
+      "bytes": 126,
+      "sha256": "41a8deefa8ca5927ac21f02f5e8869bf0e09e23783047e79f17c87d696dc590f"
+    },
+    "source-after.json": {
+      "bytes": 126,
+      "sha256": "3ed572fcb2ea4a5fe3bb54f9dd0ba7d6bc4d0088882b1e9c1b94d1af65b7276d"
+    },
+    "post-cleanup-verification.json": {
+      "bytes": 328,
+      "sha256": "1e60b1453e4aeac6f9b4519007befad5220fae225ebb32593d0b2744c0f26c8b"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "argv": [
+    "python3",
+    "/workspace/work/reliability-a06-paddle-gold/backend/scripts/testing/paddle_candidate/run_campaign.py",
+    "--binding",
+    "/workspace/output/a06-paddle-campaign-freeze-20261105-r1/run-binding.json",
+    "--expected-binding-sha256",
+    "4e836620f76e4c6d5990149d1d7804721bf6afe6a9c921d74c4697061dce672f",
+    "--source-root",
+    "/workspace/work/reliability-a06-paddle-gold",
+    "--config",
+    "/workspace/work/reliability-a06-paddle-gold/backend/scripts/testing/paddle_candidate/experiment-config.json",
+    "--output",
+    "/workspace/output/a06-paddle-campaign-20261105-r1"
+  ],
+  "root_authorized_window": "root-exclusive-a06-20261105-r1",
+  "sql_owner_completed_and_paused_at": "2026-11-05T01:27:26Z",
+  "started_at": "2026-11-05T01:29:02.108666+00:00",
+  "external_wrapper_timeout_seconds": 1380
+}

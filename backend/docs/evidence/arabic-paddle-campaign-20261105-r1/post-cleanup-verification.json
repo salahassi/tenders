@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "docker",
+    "--host=unix:///var/run/docker.sock",
+    "ps",
+    "-aq",
+    "--filter",
+    "label=a06.campaign.owner=0db01ba5188ccb47136b45542305bfe780c93160cd09368f3c242878a7549217"
+  ],
+  "matching_container_ids": [],
+  "observed_at": "2026-11-05T01:31:07.556240+00:00",
+  "owned_cleanup_verified": true
+}

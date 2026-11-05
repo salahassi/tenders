@@ -1,0 +1,11 @@
+{
+  "started_utc_ns": 1793842146178421838,
+  "container": "a06-paddle-0db01ba5188ccb47-00",
+  "removed": true,
+  "creation_acknowledged": true,
+  "cleanup_unknown": false,
+  "remove_exit_code": 0,
+  "observed_absent": true,
+  "elapsed_seconds": 0.6488274259900209,
+  "cumulative_cleanup_seconds": 0.6488274259900209
+}

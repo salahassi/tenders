@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "scope": "isolated_feasibility_not_production_qualification",
+  "binding_sha256": "4e836620f76e4c6d5990149d1d7804721bf6afe6a9c921d74c4697061dce672f",
+  "started_utc_ns": 1793842142130649749,
+  "status": "failed",
+  "cases": [
+    {
+      "id": "separate-cold-blank",
+      "status": "failed",
+      "receipt": "00-separate-cold-blank/attempt.json",
+      "receipt_sha256": "baf2e1041bd389c9b80fa837a2241802189c55473a5a7ce2489d39e40121a565"
+    },
+    {
+      "id": "a06-01-conditional-gate",
+      "status": "not_run",
+      "reason": "preflight_or_prior_failure"
+    },
+    {
+      "id": "a06-02-decimal-payment",
+      "status": "not_run",
+      "reason": "preflight_or_prior_failure"
+    },
+    {
+      "id": "a06-03-incident-deadline",
+      "status": "not_run",
+      "reason": "preflight_or_prior_failure"
+    },
+    {
+      "id": "a06-04-right-column-first",
+      "status": "not_run",
+      "reason": "preflight_or_prior_failure"
+    },
+    {
+      "id": "a06-05-mixed-table",
+      "status": "not_run",
+      "reason": "preflight_or_prior_failure"
+    },
+    {
+      "id": "a06-06-blank",
+      "status": "not_run",
+      "reason": "preflight_or_prior_failure"
+    },
+    {
+      "id": "known-arabic-failure",
+      "status": "not_run",
+      "reason": "preflight_or_prior_failure"
+    },
+    {
+      "id": "maintenance-obligation",
+      "status": "not_run",
+      "reason": "preflight_or_prior_failure"
+    },
+    {
+      "id": "records-retention",
+      "status": "not_run",
+      "reason": "preflight_or_prior_failure"
+    },
+    {
+      "id": "sensor-acceptance",
+      "status": "not_run",
+      "reason": "preflight_or_prior_failure"
+    },
+    {
+      "id": "english-existing-control",
+      "status": "not_run",
+      "reason": "preflight_or_prior_failure"
+    },
+    {
+      "id": "mixed-exact-scan-page",
+      "status": "not_run",
+      "reason": "preflight_or_prior_failure"
+    },
+    {
+      "id": "mixed-blank-page",
+      "status": "not_run",
+      "reason": "preflight_or_prior_failure"
+    }
+  ],
+  "gold_loaded_in_coordinator": false,
+  "gold_mounted_in_container": false,
+  "host_evaluation_pending": true,
+  "total_campaign_denominator": 13,
+  "cold_blank_is_additional_attempt": true,
+  "polling_scope": "External host cgroup polling and Docker orchestration consume host CPU; no claim of zero orchestration overhead.",
+  "disk_preflight": {
+    "scope": "Conservative VFS pre-create headroom after retained ENOSPC preparation failure",
+    "image_logical_bytes": 1706755238,
+    "minimum_free_bytes": 4294967296,
+    "filesystems": [
+      {
+        "path": "/workspace/output/a06-paddle-campaign-20261105-r1",
+        "free_bytes": 5678497792,
+        "total_bytes": 33770192896,
+        "required_free_bytes": 4294967296,
+        "enough": true
+      },
+      {
+        "path": "/var/lib/docker",
+        "free_bytes": 5678497792,
+        "total_bytes": 33770192896,
+        "required_free_bytes": 4294967296,
+        "enough": true
+      }
+    ],
+    "passed": true
+  },
+  "failure": {
+    "type": "RuntimeError",
+    "message": "Stop on first failed attempt: separate-cold-blank"
+  },
+  "elapsed_seconds": 4.697702104007476,
+  "cleanup_seconds": 0.6494895599898882,
+  "absolute_1380_seconds_respected": true,
+  "finished_utc_ns": 1793842146828302470
+}

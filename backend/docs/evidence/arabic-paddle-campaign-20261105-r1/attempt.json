@@ -1,0 +1,96 @@
+{
+  "id": "separate-cold-blank",
+  "source": {
+    "id": "separate-cold-blank",
+    "path": "backend/tests/backend/fixtures/paddle-ocr-prospective/a06-06-blank.pdf",
+    "sha256": "1047b345715fa826aa1aae46c2dd75f70e6fb9815d71be16778f5c6d89a83f73",
+    "page": 1,
+    "total_pages": 1,
+    "language": "auto"
+  },
+  "container": "a06-paddle-0db01ba5188ccb47-00",
+  "started_utc_ns": 1793842142213705628,
+  "deadline_seconds": 90,
+  "status": "failed",
+  "phase": "create_start",
+  "outputs": {
+    "cleanup.json": {
+      "sha256": "148250dfaacf50a92d05d8a1d501ac5bc8390e1ef0612a647df2d5d77d6ff48a",
+      "bytes": 318
+    },
+    "container-before.json": {
+      "sha256": "6b9b2c8c2f4c69d45b255a8c86fc9a15dff6a7adac1ad2f07ba325a12920e7c3",
+      "bytes": 7306
+    },
+    "container-logs-command.json": {
+      "sha256": "5defea6dd177f2de68aa44c5b61caf84294b707deddde915c32c8105eaa6bb23",
+      "bytes": 314
+    },
+    "container-logs.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "container-logs.stdout": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "container-wait-command.json": {
+      "sha256": "40bd78bd38d55b59abc832fe67c613ef7f4516ca7ce720d681fc38d4c08cee59",
+      "bytes": 278
+    },
+    "container-wait.stderr": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "container-wait.stdout": {
+      "sha256": "e3b9c2844b5a5c2677b3a2279db2ec8487491dd9a23d6b22fac153391b3bb63c",
+      "bytes": 4
+    },
+    "gate/entry_gate.py": {
+      "sha256": "b452179e0e5a6766b549bd2265e2ddefe41bb1376ce418c3f5940b139b75e408",
+      "bytes": 1665
+    },
+    "inputs/request.json": {
+      "sha256": "15cf23e9516e4a1b85d24968620db169895092310c2e4a71032c51a6ab5d233d",
+      "bytes": 145
+    },
+    "inputs/source.pdf": {
+      "sha256": "1047b345715fa826aa1aae46c2dd75f70e6fb9815d71be16778f5c6d89a83f73",
+      "bytes": 4816
+    },
+    "outputs/gate-ready.json": {
+      "sha256": "116ee0d485f06715d34a25dcccadb55e1d6e3885097eaf6cc0f44efa4651421f",
+      "bytes": 716
+    }
+  },
+  "disk_before_create": {
+    "scope": "Conservative VFS pre-create headroom after retained ENOSPC preparation failure",
+    "image_logical_bytes": 1706755238,
+    "minimum_free_bytes": 4294967296,
+    "filesystems": [
+      {
+        "path": "/workspace/output/a06-paddle-campaign-20261105-r1",
+        "free_bytes": 5678465024,
+        "total_bytes": 33770192896,
+        "required_free_bytes": 4294967296,
+        "enough": true
+      },
+      {
+        "path": "/var/lib/docker",
+        "free_bytes": 5678465024,
+        "total_bytes": 33770192896,
+        "required_free_bytes": 4294967296,
+        "enough": true
+      }
+    ],
+    "passed": true
+  },
+  "creation_acknowledged": true,
+  "failure": {
+    "type": "ValueError",
+    "message": "'/sys/fs/docker/a90d2c523591e12d8cf79c0f7c5e7c42952f6cd2a96189d0eddad476f50932e7' is not in the subpath of '/sys/fs/cgroup'"
+  },
+  "work_elapsed_seconds": 3.96483126100793,
+  "work_finished_utc_ns": 1793842146178418233,
+  "finished_utc_ns": 1793842146827983956
+}

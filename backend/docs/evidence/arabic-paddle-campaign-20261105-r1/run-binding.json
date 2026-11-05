@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "scope": "isolated_candidate_exact_inputs_reviewed_before_inference",
+  "image_id": "sha256:2cf5d314540a69ca1eaeccbf7edc5fc6db48ec4047eb1405318d6406ce2969d5",
+  "root_window_reference": "root-exclusive-a06-20261105-r1",
+  "host_files": {
+    "run_campaign.py": "7d975684d2aeef69a9234d715753bd1a6fc498bc0ca6d2b9906ee18633d73f82",
+    "entry_gate.py": "b452179e0e5a6766b549bd2265e2ddefe41bb1376ce418c3f5940b139b75e408",
+    "campaign-sources.json": "0f91ab17980f5ce725126cbb6c6f6e96047d3f39911121fbabe6062ac6eb71e4",
+    "evaluate_campaign.py": "7f6dca6cb9931d3b3012f8bc7de306b2d5c552303f5a18e08cac57c0ceae3e3c"
+  },
+  "experiment_files": {
+    "experiment-config.json": "ce8721461e536125fbe29c3601bb5bbd04c0cfcb37e12d9cd50a0d1d96c52286",
+    "run_parent.mjs": "0a7775b37f5b6f62f4a919baa8acad1bc7a86ab171097cb270513517e38acfd8",
+    "run_engine.py": "5cab126750ef6a2989362273f99b068471a2560826299bcad50ffa45237cd2c8"
+  }
+}

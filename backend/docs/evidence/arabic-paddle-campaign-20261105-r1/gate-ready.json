@@ -1,0 +1,21 @@
+{
+  "phase": "before_node",
+  "pid": 1,
+  "utc_ns": 1793842146128548388,
+  "monotonic_ns": 66825174837860,
+  "cgroup": "0::/\n",
+  "controls": {
+    "memory.max": "805306368",
+    "memory.swap.max": "0",
+    "cpu.max": "100000 100000",
+    "memory.current": "6643712",
+    "memory.peak": "8855552",
+    "memory.events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0",
+    "cgroup.procs": "1"
+  },
+  "experiment_files": {
+    "experiment-config.json": "ce8721461e536125fbe29c3601bb5bbd04c0cfcb37e12d9cd50a0d1d96c52286",
+    "run_parent.mjs": "0a7775b37f5b6f62f4a919baa8acad1bc7a86ab171097cb270513517e38acfd8",
+    "run_engine.py": "5cab126750ef6a2989362273f99b068471a2560826299bcad50ffa45237cd2c8"
+  }
+}
