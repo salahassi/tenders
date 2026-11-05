@@ -10890,3 +10890,13 @@ or provider test was run for this operations-only change.
 The instrumented retry [41948742569](https://github.com/salahassi/tenders/actions/runs/41948742569) fails at `canonical_fixture_write` with the fixed child code `RETIREMENT_FIXTURE_REFRESH_MISSING`. The actual private token was not inspected. The pinned GoTrue v2.197.0 upstream implementation generates legitimate 12-character refresh tokens; the fixture client incorrectly required at least 20 characters in both session and persisted-state validation. Both now accept a nonempty bounded opaque string. Refresh HTTP success, UUID/role checks, the same actor after rotation, and private-state ownership and permissions remain enforced.
 
 The [source-bound receipt](evidence/storage-retirement-refresh-contract-20261105.json) records the pinned upstream blob identities and 68 passing focused Python tests, including 12-character private-state roundtrip, malformed values, role/identity denial, failed refresh and changed-owner refusal before state writes. No hosted redispatch or production mutation occurred in this correction. The deliberate interruption/resume and physical retirement acceptance remain outstanding.
+
+### November 5 — bounded retirement SQL failure localization
+
+The third hosted attempt41949704413 failed after fixture writes, before deliberate
+interruption, with remote exit3; both cleanup steps passed. The previous phase
+covered several SQL boundaries and does not identify the cause. The isolated
+adapter now labels fence inspection/installation, census, accounting and prepare
+separately, and psql uses SQLSTATE-only errors. Only fixed recognized five-character
+codes can enter the public receipt; statements, messages, resource names and
+credentials remain excluded. All69focused guards pass. A fresh hosted diagnostic is pending. No application rollout or inferred permission change is made.
