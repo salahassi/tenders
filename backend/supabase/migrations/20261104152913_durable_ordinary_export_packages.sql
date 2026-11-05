@@ -374,7 +374,14 @@ create function public.maintenance_tick() returns jsonb language plpgsql securit
 
 -- New public tables are member-readable only through their RPC metadata. The
 -- canonical API computes actor identity; arbitrary browser UUIDs grant no access.
-do $$declare t text;r text;signature text;begin
+do $artifact_context_permissions$declare t text;r text;signature text;old_service_acl aclitem[];old_owner oid;grant_row record;begin
+ -- Preserve only service EXECUTE grants explicitly held by the predecessor.
+ -- Snapshot before revoking its direct access; the predecessor stays private.
+ select proacl,proowner into old_service_acl,old_owner from pg_proc where oid='public.artifact_context_before_export_package(uuid)'::regprocedure;
+ if exists(select 1 from aclexplode(coalesce(old_service_acl,acldefault('f',old_owner))) a
+  join pg_roles r on r.oid=a.grantee where r.rolname in ('service_role','tdp_app_service') and a.grantor<>old_owner)
+ then raise exception 'LEGACY_CONTEXT_SERVICE_GRANTOR_UNSUPPORTED';end if;
+
  foreach t in array array['export_packages','export_package_volumes'] loop
   execute format('alter table public.%I enable row level security',t);execute format('revoke all on public.%I from public',t);
   foreach r in array array['anon','authenticated','service_role','tdp_app_anon','tdp_app_authenticated','tdp_app_service'] loop if exists(select 1 from pg_roles where rolname=r) then
@@ -394,4 +401,13 @@ do $$declare t text;r text;signature text;begin
  end loop;
  foreach r in array array['authenticated','tdp_app_authenticated'] loop if exists(select 1 from pg_roles where rolname=r) then execute 'grant execute on function app_private.app_command(text,jsonb,text),public.export_package_context(uuid),public.artifact_context(uuid) to '||quote_ident(r);end if;end loop;
  foreach r in array array['service_role','tdp_app_service'] loop if exists(select 1 from pg_roles where rolname=r) then execute 'grant execute on function public.export_render_context(uuid,uuid),public.complete_export_package_volume(uuid,uuid,uuid,text,bigint),public.finish_export_package(uuid,uuid),public.fail_export_package(uuid,uuid,text),public.authorize_artifact_download(uuid,uuid,text),public.report_export_package_artifact_failure(uuid,uuid,uuid,integer,text,text,text,bigint),public.maintenance_tick() to '||quote_ident(r);end if;end loop;
-end $$;
+
+ -- Restore these exact existing grants only on the canonical checked wrapper.
+ for grant_row in select r.rolname,a.is_grantable
+  from unnest(coalesce(old_service_acl,acldefault('f',old_owner))) with ordinality old_acl(value,position)
+  cross join lateral aclexplode(array[old_acl.value]) a join pg_roles r on r.oid=a.grantee
+  where r.rolname in ('service_role','tdp_app_service') and a.privilege_type='EXECUTE' order by old_acl.position loop
+  execute format('grant execute on function public.artifact_context(uuid) to %I%s',grant_row.rolname,
+   case when grant_row.is_grantable then ' with grant option' else '' end);
+ end loop;
+end $artifact_context_permissions$;

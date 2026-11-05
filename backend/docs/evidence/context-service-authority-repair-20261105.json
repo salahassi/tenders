@@ -1,0 +1,26 @@
+{
+  "status": "passed_local_authority_preservation_controls",
+  "base_revision": "ee0f2728c30ba996406eaa7207bef758e82c2c81",
+  "pending_input_sha256": {
+    "backend/supabase/migrations/20261104152913_durable_ordinary_export_packages.sql": "b174c3c4d569cb508b00615a7f08ef347ac4787fa53161caae636ee2aaae7e50",
+    "backend/supabase/migrations/20261104170442_durable_storage_write_intents.sql": "af8ff6c5a07c946a60b40563549492466387c3d8eb324c67995d80d1a0d10694",
+    "backend/scripts/ops/test_context_service_authority.py": "eb6a2dacf6c5f38aa407b5c7dbcf4951c8d5434d537636d7e8ffacace908506c",
+    "backend/scripts/ops/proposal-delivery-release.json": "80e412f2a22e89b806a981dfd54378ac69a49dfe907a98c944d98761fa946f60"
+  },
+  "manifest_sha256": "ada21f57461fa81e3b45778685d86438117ef419ad8c31ceaac86c06dcb2dba3",
+  "migration_count": 27,
+  "baseline": "unchanged_original_41881660683_inventory",
+  "checks": {
+    "native_postgresql_test_methods": 2,
+    "native_postgresql_scenarios": 14,
+    "targeted_backend_tests": 28,
+    "release_guard_tests": 18,
+    "schema_diagnosis_tests": 7,
+    "runtime_qualification_tests": 13,
+    "cloud_restore_guard_tests": 15,
+    "frozen_native_runtime_inputs": "unchanged_pass"
+  },
+  "native_scope": "Actual isolated PostgreSQL permission blocks from both migrations with synthetic function bodies. Managed and standard role families; no absent service grant added; grant option and exact prior ACL preserved; renamed predecessors and anonymous role denied; unreviewed grantor rejected. Owned container removed. No network/host port/customer records.",
+  "application_scope": "Storage migration authority and ordinary export pipeline suites pass. Full final integrated and hosted checks remain required.",
+  "limits": "No production schema commit or successful rollout; no customer request/model calls. Renew cloud restore and retirement evidence for the refrozen manifest."
+}

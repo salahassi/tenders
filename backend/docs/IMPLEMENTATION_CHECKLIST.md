@@ -11355,3 +11355,111 @@ retaining evidence and source. No containers or provider calls were started.
 Receipts: `release-image-build-blocked-20261105-42014591057.json` and
 `frontend-root-context-build-20261105.json`. A fresh complete hosted release and
 actual customer request/export remain required; local build success is not rollout.
+
+### November 5 — full CI and image publication pass; release preflight diagnosis
+
+PR31 is merged at cc49d00. Release 42019256347 passes 3,488 backend and 380
+frontend tests, both typechecks/builds, 686 operations, 11 schema-helper and
+16 Kubernetes tests. All three exact-source runtime/frontend/OCR images publish
+successfully. Deployment then reports only DELIVERY_UPDATE_FAILED; both cleanup
+steps pass. Read-only inventory 42023050579 confirms all ten workloads ready,
+previous application images and absent new delivery schema capabilities. It
+does not prove that every pre-schema configuration was untouched. No actual
+customer request was activated. Both receipts are retained in the R0 index.
+
+The short explicit inspection mode now also runs the production resource,
+Storage-gateway and HTTPS prerequisite guards without workload/schema writes
+or a SQL client. It reports only fixed stages and validated guard codes. The
+normal updater now preserves its typed gateway, HTTPS and runtime-qualification
+errors instead of replacing them with the generic code. All 31 focused controls
+pass (4 preflight, 15 updater, 12 image helper). Hosted diagnosis and a corrected
+full release remain required; no qualification guard is relaxed.
+
+### November 5 — read-only prerequisites pass; explicit rollback SQL diagnosis
+
+Inspection 42023690528 at 4aca907 passes exact qualified runtime bytes and all
+resource/gateway/HTTPS guards, with original CA and private cleanup. Comparing
+post-release inventory to the original baseline shows gateway generation2→5
+and Kubernetes revision2→3, while application images and routine-catalog hash
+remain unchanged. This partial gateway transition must not be called a rollout.
+
+A separately explicit `diagnose_schema=true` input now permits the frozen SQL
+to run with its sole final NOTIFY/COMMIT replaced by ROLLBACK. It requires
+inspection mode, preserves the entire guarded body and refuses any other
+transaction shape. The helper compares the routine catalog before/after even
+when SQL fails, emits only SQLSTATE/line and fixed outcomes, and verifies owned
+SQL-client cleanup. The workflow also runs cleanup on failure. This operation
+can take temporary database locks; it is rollback-only diagnosis, not read-only
+inventory or an applied migration. All36 focused controls pass (5 SQL diagnosis,
+4 preflight, 12 image, 15 updater). Actual schema diagnosis and release remain
+pending; customer processing is still unactivated.
+
+Rollback diagnosis 42024617445 at 23d6aee reproduces SQLSTATE P0001 at generated
+line6330, the final release-contract assertion block. Before/after routine
+catalog hashes match and both owned-client/private cleanup pass. The existing
+images, resources and proxy prerequisites pass again. A bounded diagnostic now
+allows only exact literal RAISE identifiers taken from the frozen SQL, never
+raw error messages, to identify that assertion. The updater also retains only
+SQLSTATE/line and fixed transport failures. All57 affected controls pass (6 SQL
+diagnosis, 5 preflight/diagnostic, 15 updater, 31 deployment helper). A follow-up
+rollback diagnosis is required; no production schema correction is claimed.
+
+The source-allowlisted follow-up 42025233806 at 3e81848 identifies
+DELIVERY_RELEASE_EXISTING_AUTHORITY_CHANGED, with catalog restoration and both
+cleanups passing. This is a real authority comparison rejection, not a reason
+to remove the guard. Rollback diagnosis now adds a bounded notice immediately
+before that unchanged rejection: changed metadata sections, baseline function
+signatures/field names, and only fixed application-role ACL entries. Unknown
+role entries are redacted; no owners/configuration values/policy bodies/customer
+rows are emitted. Seven SQL-diagnosis and31 deployment-helper controls pass;
+a real PGlite synthetic SQL probe verifies notice syntax and the preserved
+P0001 rejection. Exact authority differences remain to be observed.
+
+Authority-notice run42026259554 retains the same rejection and verified
+rollback/cleanup, but produces no accepted authority projection. The parser is
+now corrected to accept PostgreSQL's visible public-function signatures without
+an explicit public schema prefix, and the diagnostic transaction requests
+notices locally with a separate notice-present flag. Seven focused controls
+pass. The first local PGlite probe failed to collect the notice because its
+callback was passed to the constructor; the corrected exec callback probe
+passes and preserves the same SQL rejection. No missing hosted metadata is
+inferred from either local probe; the next hosted observation remains required.
+
+### November 5 — preserve the two pre-existing service EXECUTE grants
+
+Rollback run42026869332 at ee0f272 identifies exactly two ACL changes:
+artifact_context(uuid) and workspace_status() lost tdp_app_service EXECUTE.
+No owner, definer, configuration, table/column, policy, role or membership
+difference is reported. The routine catalog is restored and both cleanups pass.
+The original authority guard is correct and remains unchanged.
+
+The two still-unreleased migration permission blocks now snapshot only explicit
+service-role EXECUTE grants from their renamed predecessors before revocation,
+then restore those exact grants/options on the checked canonical wrappers.
+Missing grants remain missing; predecessors remain private; an unreviewed
+grantor fails closed. Capture and restoration occur in the same DO block,
+without session settings, extra schema objects or cross-statement state.
+
+Actual isolated PostgreSQL passes14 scenarios in2 test methods, covering both
+role families, no grant, grant, grant option and unsupported grantor. Targeted
+backend migration/ordinary export suites pass28 tests. Release guards pass18,
+schema diagnosis7, native qualification13 and restore guards15. The exact native
+source guard passes unchanged. The27-migration manifest is refrozen from the
+original baseline at ada21f57461fa81e3b45778685d86438117ef419ad8c31ceaac86c06dcb2dba3.
+Receipts retain the pending input hashes, earlier failures and original baseline.
+Full rollback diagnosis, current-manifest cloud restore/retirement, final release
+and actual issuance remain pending; no customer processing has started.
+
+### November 5 — current-manifest rollback, restore and interrupted retirement pass
+
+At6c469c5 and manifestada21f57, rollback run42028955332 passes the exact complete
+frozen SQL and every release guard, restores the original catalog and cleans up.
+Cloud restore42029295368 passes all13 actual Auth/Storage checks and both
+cleanups. Interrupted retirement42029747879 passes all13 actual checks, owned
+fixture cleanup and both runner cleanups. It still uses an idle fixture writer;
+no inflight PUT, production adapter or general recovery objective is claimed.
+Receipts are indexed separately from the earlier1fdf73f4-manifest passes.
+
+The release prerequisites are now renewed. Application rollout remains
+incomplete until the mandatory full release gate, exact image/schema readback
+and public checks pass. No actual customer request or provider campaign has run.

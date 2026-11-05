@@ -190,6 +190,20 @@
           "level": "L1/L2",
           "observed_result": "Actual local frontend Docker build passes with root context and browser shared modules; 31 focused controls and frozen runtime source guard pass.",
           "limits": "Uncommitted changed input hashes bind this local proof. No hosted release, customer request or model calls."
+        },
+        {
+          "path": "backend/docs/evidence/release-update-blocked-20261105-42019256347.json",
+          "sha256": "f13714d81b6ec98deae9979179cecece61a12f92b850e8655fcacfa2f9e79756",
+          "level": "L2",
+          "observed_result": "cc49d00 full package and operational checks pass; all three images publish; deployment blocks with generic error; both cleanups pass.",
+          "limits": "No successful rollout or customer request."
+        },
+        {
+          "path": "backend/docs/evidence/context-service-authority-repair-20261105.json",
+          "sha256": "8b495cb693c38edb6440c0f3e983283d513e86396e8dbe17d023b10ad7f0268f",
+          "level": "L1/L2",
+          "observed_result": "14 native PostgreSQL cases and28 targeted backend tests pass; release/diagnosis/native/restore guards pass; manifest ada21f57 from original baseline.",
+          "limits": "Pending input hashes bind local proof; new-manifest cloud gates and full rollout/actual issuance remain open."
         }
       ]
     },
@@ -510,6 +524,13 @@
           "level": "Actual isolated Auth/Storage/PVC interruption and recovery",
           "observed_result": "Run 42002971002 at e4192f9 passes all 13 checks, deliberate interruption and complete cleanup against current 27-migration manifest.",
           "limits": "Idle fixture worker; no actual inflight PUT, production fixed-target adapter, general RTO, renderer or customer issuance proof."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-ada21-passed-20261105-42029747879.json",
+          "sha256": "0cfc821a46e840b3df041cd21251d0a404b28930bb7c420d1102f086c296b565",
+          "level": "L2",
+          "observed_result": "6c469c5/ada21f57 all13 isolated interruption/resume checks and fixture/runner cleanup pass.",
+          "limits": "Idle fixture writer; not inflight PUT, production adapter or general RTO/RPO."
         }
       ]
     },
@@ -641,6 +662,13 @@
           "level": "L1/L2",
           "observed_result": "Final isolated-retirement cleanup checkpoint and PVC identity correction passes 57 focused tests; independent source review cleared. Root repeated all57 after integration at0cfb2ef.",
           "limits": "Source and simulated Kubernetes guards only; actual two-runner Kubernetes/PVC drill remains unexecuted. Unknown allocation and partial-protection reconciliation remain explicit."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-ada21-passed-20261105-42029747879.json",
+          "sha256": "0cfc821a46e840b3df041cd21251d0a404b28930bb7c420d1102f086c296b565",
+          "level": "L2",
+          "observed_result": "6c469c5/ada21f57 all13 isolated interruption/resume checks and fixture/runner cleanup pass.",
+          "limits": "Idle fixture writer; not inflight PUT, production adapter or general RTO/RPO."
         }
       ]
     },
@@ -729,6 +757,13 @@
           "level": "Source-bound observed gate",
           "observed_result": "Current 27-migration Auth/Storage restore passes 13 HTTP checks, original CA verification and both cleanups at b933587.",
           "limits": "Isolated fixtures only; no renderer, customer requests or rollout proof."
+        },
+        {
+          "path": "backend/docs/evidence/cloud-restore-ada21-passed-20261105-42029295368.json",
+          "sha256": "b93c38a25b1cc710e18b8f1fcac2dd18c69a6bcf3b9a6e98017f8a91aa9a93b5",
+          "level": "L2",
+          "observed_result": "6c469c5/ada21f57 all13 isolated Auth/Storage restore checks and both cleanups pass.",
+          "limits": "No customer rows, models, application renderer or production rollout."
         }
       ]
     },
@@ -820,6 +855,55 @@
           "level": "L1/L2",
           "observed_result": "9b54bad complete application and operations gates pass; exact runtime promoted/published. Image command fails, rollout skipped, both cleanups pass.",
           "limits": "No deployment; hosted image error is generic. Concrete missing shared-module failure reproduced separately locally."
+        },
+        {
+          "path": "backend/docs/evidence/release-update-blocked-20261105-42019256347.json",
+          "sha256": "f13714d81b6ec98deae9979179cecece61a12f92b850e8655fcacfa2f9e79756",
+          "level": "L2",
+          "observed_result": "cc49d00 full package and operational checks pass; all three images publish; deployment blocks with generic error; both cleanups pass.",
+          "limits": "No successful rollout or customer request."
+        },
+        {
+          "path": "backend/docs/evidence/post-release-inventory-20261105-42023050579.json",
+          "sha256": "516493a95a1d9a0cc84cb5192782c22c5f8a6ddd9e4c3882f400024ec1b4d156",
+          "level": "L2",
+          "observed_result": "Original-CA read-only inventory passes: ten workloads ready, old application images, new delivery schema absent; both cleanups pass.",
+          "limits": "Does not identify the failed prerequisite or prove every pre-schema configuration untouched."
+        },
+        {
+          "path": "backend/docs/evidence/release-preflight-passed-20261105-42023690528.json",
+          "sha256": "e7d0713ced64cc73d73ad5d348b1ba97bf03fe895853be7c590a6566e9131e49",
+          "level": "L2",
+          "observed_result": "All exact runtime/resource/gateway/HTTPS prerequisites and cleanup pass; no schema or workload changes.",
+          "limits": "Diagnostic scope only; application rollout and actual customer request remain pending."
+        },
+        {
+          "path": "backend/docs/evidence/schema-rollback-blocked-20261105-42024617445.json",
+          "sha256": "b9cc9c7c3ee1b79bb84a30feec56b556ceda1c9064c522e3525d6fa1e4f43dc3",
+          "level": "L2",
+          "observed_result": "Rollback SQL reproduces P0001 at final release assertion block; catalog unchanged, both cleanups pass.",
+          "limits": "Diagnostic scope only; application rollout and actual customer request remain pending."
+        },
+        {
+          "path": "backend/docs/evidence/release-authority-diagnosis-20261105.json",
+          "sha256": "6da1b6dda2dd557bacdc3cfc6fbfaab91fb749ab35e2373650d8e28a4f7e8735",
+          "level": "L1/L2",
+          "observed_result": "Three rollback observations identify exactly two removed prior service grants; routine catalog unchanged; all cleanups pass.",
+          "limits": "Diagnostic only; first authority projection absent and retained."
+        },
+        {
+          "path": "backend/docs/evidence/context-service-authority-repair-20261105.json",
+          "sha256": "8b495cb693c38edb6440c0f3e983283d513e86396e8dbe17d023b10ad7f0268f",
+          "level": "L1/L2",
+          "observed_result": "14 native PostgreSQL cases and28 targeted backend tests pass; release/diagnosis/native/restore guards pass; manifest ada21f57 from original baseline.",
+          "limits": "Pending input hashes bind local proof; new-manifest cloud gates and full rollout/actual issuance remain open."
+        },
+        {
+          "path": "backend/docs/evidence/schema-rollback-passed-20261105-42028955332.json",
+          "sha256": "bb24b801b8f48a215c4c7d33352e782df07ea074581d64f925ff36a465b8c6db",
+          "level": "L2",
+          "observed_result": "6c469c5/ada21f57 exact full SQL and release guards pass in rollback-only production transaction; original routine catalog restored; both cleanups pass.",
+          "limits": "No schema commit or rollout."
         }
       ]
     },
@@ -1187,6 +1271,13 @@
           "level": "Source-bound observed gate",
           "observed_result": "Hosted exact raw-config/image/layer/platform/label verification passes with cleanup.",
           "limits": "Explicit read-only inspection; no application checks, publication or rollout."
+        },
+        {
+          "path": "backend/docs/evidence/schema-rollback-passed-20261105-42028955332.json",
+          "sha256": "bb24b801b8f48a215c4c7d33352e782df07ea074581d64f925ff36a465b8c6db",
+          "level": "L2",
+          "observed_result": "6c469c5/ada21f57 exact full SQL and release guards pass in rollback-only production transaction; original routine catalog restored; both cleanups pass.",
+          "limits": "No schema commit or rollout."
         }
       ]
     }

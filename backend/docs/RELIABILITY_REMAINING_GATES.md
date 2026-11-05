@@ -1,38 +1,28 @@
 # Reliability acceptance status — November 5, 2026
 
-Current application source f41adb8 passes **3,488 backend tests and 380 frontend
-tests**, both typechecks and builds. Source resolution preserves the corrected
-14-terminal obligation and unchanged 3 cabinets through SQL and a real local
-Word artifact, then rejects access after source revocation. Worker capability 5,
-retry parameter qualification and restricted-owner Storage catalog lookup are
-integrated. Merged PR28 stores the changes; PR29 and PR30 address cold-runner preparation and exact raw image configuration. The application remains **not deployed**.
+PR28–31 are merged through cc49d00. Release42019256347 passes3,488 backend
+and380 frontend tests, both typechecks/builds,686 operational,11 schema-helper
+and16 Kubernetes checks. All three runtime/frontend/OCR images publish. The
+application rollout is still **incomplete**: gateway configuration advanced, but
+application images and the routine catalog remain at the original baseline.
+Read-only inventory42023050579 confirms ten ready workloads. No customer request
+or model campaign has been started.
 
-The initial new image721340 failed native verification with OOM and HTTP503;
-that rejection is retained. API verifier young-generation bounds then passed
-35 focused tests and four unchanged native fixture scopes on imagef2d0f9.
-The heaviest measured Word case peaked at301,563,904 of402,653,184 bytes
-(**96.41 MiB observed margin**). These finite fixtures do not prove arbitrary
-capacity or hosted latency. Image publication and pullback are verified at
-`registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:aabe842e35259b86969ddef810dd297e9a0b0e4a27d7f0746cdcd80a6a12fc6a`.
-The27-migration manifest is frozen from the unchanged original deployment baseline.
-Current cloud restore 41993933795 passes all 13 Auth/Storage checks and both
-cleanups against this exact manifest. Interrupted retirement now passes all 13 checks and cleanup in run 42002971002.
-Release 42014591057 at 9b54bad passes all application gates plus 686 operations, 11 schema-helper and 16 Kubernetes checks. Runtime promotion/publication passes, then the image step blocks before rollout. The frontend root-context repair now passes an actual local image build and 31 focused controls; fresh complete release gates, rollout and actual customer issuance remain required. No customer request was resumed.
+Rollback diagnosis42026869332 identifies two removed pre-existing service grants
+on artifact_context(uuid) and workspace_status(). Draft PR32 preserves those
+exact grants without granting missing access or reopening predecessor functions.
+Fourteen actual PostgreSQL scenarios and28 targeted backend tests pass; the
+authority guard is unchanged. The27-migration manifest is refrozen from the
+original baseline at **ada21f57**. At6c469c5, rollback42028955332 passes the exact SQL and catalog restoration;
+cloud restore42029295368 and interrupted retirement42029747879 each pass all13
+checks and cleanup for ada21f57. Full release and actual issuance remain required.
+Earlier restore41993933795 and retirement42002971002 retain their1fdf73f4 scope.
 
-Retirement run41988242066 identified SQLSTATE42501 at prepare and cleaned up.
-The corrected catalog lookup passes27 restricted-owner PostgreSQL controls;
-run 41999178689 later completed retirement but failed Storage restoration
-and cleanup. Exact read-only inspection then found Storage ready with FailedMount
-events. A scoped failed-job retry verified cleanup; it did not establish hosted
-acceptance. The durable-retired resume guard is now corrected with 80 focused
-controls. The fresh trial at e4192f9 passes all 13 checks and cleanup in run
-42002971002, with 125.502 seconds for resume/verification. It uses an idle fixture
-worker; inflight uploads and general recovery objectives remain unqualified.
-No detailed cause of the earlier mount failures is claimed.
-The Paddle OCR candidate is rejected
-(4/13 whole pages and2/21 critical facts). Automatic Arabic OCR, provider
-availability, private semantic/retrieval holdout and actual Word TOC update remain
-open. All earlier receipts retain their source-specific scope and failures.
+Native runtimef2d0f9 and its four qualified fixture scopes are unchanged; the
+failed721340 OOM image remains rejected. The heaviest measured case retains its
+96.41MiB observed margin, without an arbitrary-capacity claim. Provider
+availability, private semantic/retrieval holdout, automatic Arabic OCR and
+actual Word TOC update/save remain open. The Paddle candidate remains rejected.
 
 Historical source `865d840` passed complete local functional checks, and
 original-CA restore 41933205779 passed its exact 24-migration manifest

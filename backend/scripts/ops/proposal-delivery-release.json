@@ -184,7 +184,7 @@
     },
     {
       "name": "20261104152913_durable_ordinary_export_packages.sql",
-      "sha256": "c697b1117d8a9398cbdb48848c4090870960e9ec7679577207bd9392f7589c52"
+      "sha256": "b174c3c4d569cb508b00615a7f08ef347ac4787fa53161caae636ee2aaae7e50"
     },
     {
       "name": "20261104160125_proposal_issuance_file_capacity.sql",
@@ -196,7 +196,7 @@
     },
     {
       "name": "20261104170442_durable_storage_write_intents.sql",
-      "sha256": "a89083335e0e61107ab7939f3582fa7dc8e664615bcc6fe8180eb5630df623c9"
+      "sha256": "af8ff6c5a07c946a60b40563549492466387c3d8eb324c67995d80d1a0d10694"
     },
     {
       "name": "20261104172700_storage_write_retirement_proofs.sql",

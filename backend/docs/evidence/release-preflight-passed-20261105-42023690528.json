@@ -1,0 +1,22 @@
+{
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/42023690528",
+  "job_id": 127232493113,
+  "source_revision": "4aca907105286248bdf2fa49a7c71be5104c6ca6",
+  "receipt": {
+    "release_preflight": "passed",
+    "completed": [
+      "source",
+      "cluster",
+      "worker_resources",
+      "api_resources",
+      "storage_gateway",
+      "https"
+    ],
+    "scope": "resource_and_proxy_prerequisites_only",
+    "schema_or_workload_writes": false,
+    "model_calls": 0
+  },
+  "original_ca": "passed",
+  "private_cleanup": "passed",
+  "scope": "Qualified runtime and exact production resource/proxy prerequisites pass. No schema/workload writes, SQL client or provider calls."
+}

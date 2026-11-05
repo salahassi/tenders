@@ -4,7 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       inspect_qualified_image:
-        description: Inspect only the published qualified image; no build, publication, schema change or rollout
+        description: Inspect qualified image and read-only release prerequisites; no build, publication, schema change or rollout
+        type: boolean
+        required: true
+        default: false
+      diagnose_schema:
+        description: With inspection enabled, test the frozen migration in a rollback-only transaction; no schema commit or rollout
         type: boolean
         required: true
         default: false
@@ -21,6 +26,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 75
     steps:
+      - name: Require explicit inspection for rollback-only schema diagnosis
+        if: ${{ inputs.diagnose_schema == true && inputs.inspect_qualified_image != true }}
+        run: exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
@@ -57,16 +65,23 @@ jobs:
       - name: Publish or reuse exact source runtime, frontend and native OCR images
         if: ${{ inputs.inspect_qualified_image != true }}
         run: python3 backend/scripts/ops/proposal-delivery-images.py
-      - name: Inspect only the immutable qualified runtime metadata
+      - name: Inspect immutable runtime metadata and read-only release prerequisites
         if: ${{ inputs.inspect_qualified_image == true }}
-        run: python3 backend/scripts/ops/proposal-delivery-images.py --inspect-qualified
+        run: |
+          python3 backend/scripts/ops/proposal-delivery-images.py --inspect-qualified
+          python3 backend/scripts/ops/proposal-delivery-preflight.py
+      - name: Diagnose frozen migration with rollback and verify catalog restoration
+        if: ${{ inputs.inspect_qualified_image == true && inputs.diagnose_schema == true }}
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/proposal-delivery-schema-diagnosis.py
       - name: Apply atomic schema and complete compatible workload rollout
         if: ${{ inputs.inspect_qualified_image != true }}
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         run: python3 backend/scripts/ops/proposal-delivery-update.py
       - name: Remove only this release attempt's owned temporary database client
-        if: ${{ always() && inputs.inspect_qualified_image != true }}
+        if: ${{ always() && (inputs.inspect_qualified_image != true || inputs.diagnose_schema == true) }}
         run: |
           if [ -n "${DOKS_WORKDIR:-}" ] && [ -x "${KUBECTL:-}" ]; then
             python3 backend/scripts/ops/proposal-delivery-update.py --cleanup
