@@ -10,6 +10,7 @@ import {
 } from "vitest";
 import { readFile } from "node:fs/promises";
 import { workflowFixture } from "./workflowFixture";
+import { currentIssuanceObservation } from "./currentIssuanceObserverFixture";
 import { generatedDeliveryFixture } from "./generatedDeliveryFixture";
 import { assessGeneratedDelivery } from "../../supabase/functions/_shared/generatedProposalConsistency";
 import {
@@ -1320,3 +1321,46 @@ it("rolls back an allowance transfer when the delegated artifact reservation fai
     (await row("select count(*)::int n from public.provider_usage")).n,
   ).toBe(0);
 });
+
+// A separate fully migrated database lets the exact operations SQL retain its
+// own READ ONLY transaction/ROLLBACK, independently of this suite's fixture txn.
+it("observes canonical whole-package issuance and preserves timestamps after source drift", async () => {
+  const previousFixture = f;
+  const isolated = await workflowFixture();
+  f = isolated;
+  try {
+    await f.db.exec("begin");
+    const { j, p, o, issuance } = await setup(undefined, 0, false, true);
+    const t = transport();
+    const generated = await processGeneratedDelivery(t.backend, await claim(j.id));
+    expect(generated).toMatchObject({ projected: true });
+    const render = await rpc("claim_backend_local_job_v4");
+    expect(render.type).toBe("render_delivery");
+    const rendered = await processDeliveryExport(t.backend, render, async (model) =>
+      new Uint8Array(await (await renderDocx(model, fonts)).arrayBuffer()));
+    expect(rendered.error_code).toBeFalsy();
+    await f.db.exec("commit");
+    const target = { opportunity_id: o.id, proposal_id: p.proposal_id, plan_id: p.id, issuance_request_id: issuance.id };
+    const observed = await currentIssuanceObservation(f, target);
+    expect(Object.values(observed.guards)).toEqual(Array(Object.keys(observed.guards).length).fill(true));
+    expect(observed.artifact_check).toBe("passed");
+    expect(observed.issuance).toMatchObject({ outcome: "issued", effective_outcome: "issued", error_code: null });
+    expect(observed.issuance.completed_at).toBe(observed.issuance.effective_completed_at);
+    expect(new Date(observed.issuance.completed_at).getTime()).toBeLessThan(new Date(observed.issuance.deadline_at).getTime());
+    expect(observed.package).toMatchObject({ current_version: true, current_snapshot: true,
+      validated_generated_draft: true, approval_state: "draft", required_volumes: ["technical", "financial"],
+      render_job: { status: "succeeded" } });
+    expect(observed.package.artifacts).toHaveLength(2);
+    expect(observed.package.artifacts.every((a: any) => a.status === "ready" && a.renderer_version === "3" && a.expected_size > 0)).toBe(true);
+    // Test-only fixture edit, never a production operation. The immutable
+    // issuance times remain visible even when the source guards reject it.
+    await f.db.query("update public.opportunities set description='Changed synthetic source' where id=$1", [o.id]);
+    const stale = await currentIssuanceObservation(f, target);
+    expect(stale.guards.sources).toBe(false);
+    expect(stale.source_check).toBe("STALE_INPUT");
+    expect(stale.issuance).toEqual(observed.issuance);
+  } finally {
+    await isolated.db.close();
+    f = previousFixture;
+  }
+}, 30000);

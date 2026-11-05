@@ -10726,3 +10726,52 @@ model-routing policy changed. The resumed checks are hash/arithmetic/document
 validation only. No application or native tests were rerun for this documentation
 change. Independent review remains required; the reviewer could not be spawned
 because the agent-thread limit was reached. A06 and hosted acceptance remain open.
+
+### November 5 — current-request operations helper and bounded issuance evidence
+
+Added [the explicitly activated current-request workflow](../../.github/workflows/request-current-proposal.yml)
+and [permanent operation reference](CURRENT_PROPOSAL_REQUEST_RUNBOOK.md). The
+helper uses the deployed GenerationPanel buttons, genuine existing Owner Auth,
+fresh server-owned details and exact canonical cancel-and-generate batch. The
+encrypted exact body/key is read back before one send; stable predecessor
+identity prevents a changed image or selection serialization from bypassing an
+existing prepared marker. Original accepted results, frozen context, verifier
+pins, budgets, checkpoints and unknown accounting are proven before/after.
+Unknown transport never causes automatic resubmission.
+
+The browser process is captured before any session/navigation, and detached
+Chromium exits before driver cleanup on failure. Protocol input closes after its
+terminal result. The read-only observer preserves actual accepted/deadline,
+nullable persisted completion and effective timeout timestamps. It stops on the
+first observed terminal error, preserves the original 600-second request clock,
+and requires current generated draft/version/snapshot plus every ready volume
+for recorded whole-package issuance. Blocking observations share a remaining
+absolute watchdog budget; cleanup is separate. Actual file download and human
+approval remain distinct evidence.
+
+[Local source-hashed verification](evidence/current-proposal-request-local-20261105.json):
+34 Python controls, 33 frontend-guard/exact-PGlite SQL cases, one selected
+canonical generated-delivery/two-volume DOCX/observer case (17 other cases
+explicitly unselected), and four real local Chromium/production-CLI lifecycle
+controls passed. The browser controls verify one send, withheld acknowledgement,
+forced driver death and terminal EOF; no browser absence is silently skipped.
+The workflow installs the lockfile-pinned browser for this mandatory separate
+gate. Both package types/builds and all frontend 380 tests/59 files passed.
+
+The broader backend and operations runs on this older isolated base were
+interrupted at the release owner's request before completion. Two backend cases
+reported failures around their five-second default budget during concurrent
+validation; their partial logs are retained rather than counted as passes.
+Both affected cases subsequently passed a serial focused recheck using their
+unchanged default budgets (two selected, 21 explicitly unselected); that does
+not convert the interrupted full run into a passing suite.
+No owned Node/Python process or fixture container remained after interruption;
+the shared PostgreSQL fixture was untouched. The current integrated release
+requires its own complete combined checks.
+
+Implementation and focused local verification are ready for integration.
+Deployment, explicit hosted activation, actual saved-proposal issuance outcome,
+authenticated customer file acceptance and semantic quality acceptance remain
+open. This change performs no activation, provider call, migration, billing,
+capacity or unknown-usage mutation. Synthetic PGlite and local fixture HTML are
+not native PostgreSQL, hosted Auth or deployed-frontend acceptance.
