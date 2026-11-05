@@ -31,6 +31,30 @@ def runtime_image(promoted=False):
 
 
 class DeliveryImageTests(unittest.TestCase):
+ def setUp(self):
+  # These orchestration controls use authored metadata. Separate raw-archive
+  # tests and real-image probes cover the content-addressed decoding boundary.
+  patcher=patch.object(p,'raw_image_config',side_effect=lambda value:copy.deepcopy(value['Config']))
+  patcher.start();self.addCleanup(patcher.stop)
+ def test_diagnostic_reports_only_bound_field_names_and_identity_booleans(self):
+  value=runtime_image();value['Config'].pop('ArgsEscaped');value['Config']['Env']=['PRIVATE_SECRET'];value['Config']['PRIVATE_KEY']='PRIVATE_VALUE'
+  observed=p.qualification_diagnostic(value,RECEIPT)
+  self.assertTrue(observed['original_id_matches']);self.assertTrue(observed['rootfs_matches'])
+  self.assertEqual(observed['config_fields'],{'missing':['ArgsEscaped'],'added':['unknown_field'],'changed':['Env']})
+  self.assertNotIn('PRIVATE',json.dumps(observed))
+  self.assertFalse(p.qualification_diagnostic({**value,'Config':None},RECEIPT)['labels_match'])
+ def test_read_only_inspection_pulls_only_qualified_reference_and_never_builds_or_pushes(self):
+  with tempfile.TemporaryDirectory() as directory,patch.dict(os.environ,{'DOKS_WORKDIR':directory}),patch.object(p.subprocess,'run',return_value=result()) as run,patch.object(p,'image_metadata',return_value=runtime_image()),patch.object(p.qualification,'publication',return_value=QUALIFIED),patch.object(p.qualification,'verify_checkout'),redirect_stdout(io.StringIO()) as output:
+   p.inspect_qualified()
+  self.assertEqual(run.call_count,1);self.assertEqual(run.call_args.args[0],['docker','pull',QUALIFIED])
+  self.assertEqual(json.loads(output.getvalue())['config_fields'],{'missing':[],'added':[],'changed':[]})
+ def test_inspection_mode_is_separate_from_mandatory_release_gates(self):
+  workflow=(Path(__file__).resolve().parents[3]/'.github/workflows/deploy-proposal-delivery.yml').read_text()
+  self.assertEqual(workflow.count('if: ${{ inputs.inspect_qualified_image != true }}'),3)
+  self.assertIn('if: ${{ inputs.inspect_qualified_image == true }}',workflow)
+  self.assertIn('always() && inputs.inspect_qualified_image != true',workflow)
+  self.assertIn('default: false',workflow)
+  self.assertIn('proposal-delivery-images.py --inspect-qualified',workflow)
  def test_inspection_requires_exact_source_label_own_repo_and_digest(self):
   ref=p.REGISTRY+'runtime@sha256:'+'b'*64
   good=runtime_image(True)

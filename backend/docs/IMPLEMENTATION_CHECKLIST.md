@@ -2,7 +2,8 @@
 
 ## November 5 — latest integration checkpoint
 
-Draft PR28 contains source resolution, worker5 and the27-migration release.
+Merged PR28 contains source resolution, worker5 and the27-migration release;
+PR29 adds explicit immutable PostgreSQL fixture preparation to CI.
 Complete f41adb8 application gates pass3,488 backend and380frontend tests, both
 typechecks and builds. The later API verifier allocation setting passes35focused
 controls and four native fixture suites on imagef2d0f9. The failed721340image is
@@ -11280,3 +11281,50 @@ The merge-triggered duplicate credential-sync verification 42004363235 was
 cancelled while still in package checks; discovery, binding and reload did not
 run. The full mandatory release verification was preserved. No live model
 evaluation or actual customer request was activated.
+
+### November 5 — all final source checks pass; image metadata mismatch isolated
+
+PR29 merged as bc5453f. Release 42008161260 passes 3,488 backend and 380 frontend
+tests, both typechecks/builds, all 677 operations tests, 11 schema-helper and 16
+Kubernetes checks. Original cluster CA verification passes. Image preparation
+then stops with `RUNTIME_QUALIFICATION_CONFIG`; rollout is skipped and both
+cleanups pass. No actual image-configuration difference was recorded, so its
+cause remains unknown. The first cold-runner image prerequisite is resolved.
+
+A separate inspection mode now pulls only the immutable qualified image and
+reports identity/configuration-field comparisons without configuration values.
+It cannot build, publish, migrate or roll out. The normal mode retains all
+mandatory checks. All 12 focused image-helper tests pass, including private-value
+redaction and mode separation. This diagnostic mode will identify the observed
+difference before any change to qualification rules.
+
+### November 5 — exact image bytes distinguished from Docker inspect defaults
+
+Read-only run 42012896976 at af88b8d proves that image ID, filesystem layers,
+platform and labels match the published qualified image. Runner Docker inspect
+adds 11 configuration fields; it reports no missing or changed qualified field.
+The unchanged raw config blob matches the qualification receipt locally and
+its SHA-256 is the exact qualified image ID. No image or source rebuild is needed.
+
+Runtime image inspection now reads that content-addressed config from a private
+Docker save archive, verifies its SHA-256, platform and layer identity, and feeds
+the unmodified raw config to the existing exact qualification guard. Both Docker
+and OCI archive layouts are supported; missing, duplicate, symlink or tampered
+config members fail. Nothing is extracted. Immutable-ID caching avoids repeated
+large archives; private temporary files are removed.
+
+All 31 focused controls pass. A real local image/promotion probe passes raw config
+and unchanged-layer verification with only the revision label changed, without
+registry writes or running containers; its temporary image is removed. The probe
+binds the pending guard bytes by SHA-256 rather than claiming the base commit
+already contains them. A fresh short hosted inspection and the normal complete
+release gate remain required.
+
+### November 5 — hosted raw-config verification passes
+
+Read-only run 42014223667 at 533faeb passes original-CA access and the qualified
+image guard using the SHA-256-verified config blob. Image ID, layers, platform,
+labels and all config fields match, with no missing/added/changed fields.
+Private credential/log cleanup passes. Explicit inspection mode skips package
+checks, image build/publication, schema work and rollout; this is not a release.
+The normal release mode still requires every complete check before deployment.

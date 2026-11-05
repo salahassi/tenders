@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "docker_api": "1.48",
+  "legacy_inspect_differences": {
+    "original_id_matches": true,
+    "rootfs_matches": true,
+    "platform_matches": true,
+    "labels_match": true,
+    "config_fields": {
+      "missing": [],
+      "added": [],
+      "changed": []
+    }
+  },
+  "raw_published_configuration_passed": true,
+  "raw_promoted_configuration_passed": true,
+  "rootfs_layers_unchanged": true,
+  "only_revision_label_changed": true,
+  "registry_writes": 0,
+  "containers_started": 0,
+  "probe_image_cleanup_verified": true,
+  "base_commit": "af88b8d3107caa59b474f8f387cfaeda22ede6f9",
+  "guard_source_sha256": "e3183fd60a3fd3e4e2553270d7e4f2182e0a1d8ae6928461755ed67853eafb71",
+  "guard_worktree_changed_since_base": true,
+  "limits": "Local Docker image/config and label-only promotion probe; actual GitHub added-default behavior remains a separate recorded observation. No executable runtime bytes changed or containers started."
+}
