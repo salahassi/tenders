@@ -102,7 +102,7 @@ class RetirementClient(Acceptance):
         return user,token
 
     def rpc(self,name,body=None,token=None):
-        require(re.fullmatch('[a-z_]{1,64}',name),'RETIREMENT_FIXTURE_RPC_INVALID')
+        require(re.fullmatch('[a-z_][a-z0-9_]{0,63}',name),'RETIREMENT_FIXTURE_RPC_INVALID')
         response=self.client.request(self.config.rest_url,'/rpc/'+name,method='POST',
           token=token or self.config.service_key,data=body or {})
         if response.status==204 and name=='fail_delivery_export':return None
