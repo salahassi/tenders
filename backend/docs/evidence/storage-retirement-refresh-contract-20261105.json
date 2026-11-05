@@ -1,0 +1,48 @@
+{
+  "version": 1,
+  "scope": "Isolated retirement client refresh-token contract correction; hosted physical retirement still unproven",
+  "failing_run": {
+    "id": 41948742569,
+    "job_id": 126987348008,
+    "diagnostic": {
+      "phase": "canonical_fixture_write",
+      "command": "exec",
+      "exit_code": 1,
+      "category": "remote_exit",
+      "child_code": "RETIREMENT_FIXTURE_REFRESH_MISSING"
+    },
+    "decoded_job_log_sha256": "77752880ffce81a130924b00a98476f500e04ce931c9a23101d3e21901db064b",
+    "actual_refresh_token_observed": false
+  },
+  "upstream_contract": {
+    "pinned_image": "docker.io/supabase/gotrue:v2.197.0@sha256:839f529492d116b4e8b7777c953a27c381d34c15a744b1bcefde5eefaa1f9f9f",
+    "refresh_generator": "createRefreshToken calls crypto.SecureAlphanumeric(12); helper returns exactly the requested number of characters",
+    "sources": [
+      {
+        "url": "https://github.com/supabase/auth/blob/v2.197.0/internal/models/refresh_token.go",
+        "git_blob_sha": "8b4cc2d8e1107423bc209719debdcf9e255d6574"
+      },
+      {
+        "url": "https://github.com/supabase/auth/blob/v2.197.0/internal/crypto/crypto.go",
+        "git_blob_sha": "1d54170245d520cf721e7b859a93f23226ac64fb"
+      }
+    ]
+  },
+  "correction": "Treat refresh token as a nonempty bounded opaque string in both response and private-state validation; retain issuer refresh HTTP200, session UUID/role and same-actor checks before durable rotation",
+  "local_validation": {
+    "command": "python3 -m unittest discover -s backend/scripts/ops -p 'test_cloud_retirement*.py'",
+    "passed": 68,
+    "new_tests": 3,
+    "existing_private_state_test": "extended with 12-character roundtrip and malformed token rejection",
+    "git_diff_check": "passed",
+    "broad_application_tests": "not_run_operations_only"
+  },
+  "source_sha256": {
+    "backend/scripts/ops/cloud-retirement/writer.py": "8f1b0b486c4b4950c1ac907229aad984e7faaf457202e204c2229ebd9cf43fac",
+    "backend/scripts/ops/test_cloud_retirement_writer.py": "2dd03b9ecb02fc895a5d0db75fef317cb93a316a765f040a7895e53219f14707"
+  },
+  "hosted_redispatch": false,
+  "production_business_mutations": 0,
+  "model_calls": 0,
+  "runtime_or_migration_changes": false
+}
