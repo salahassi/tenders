@@ -20,7 +20,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Verify fixture and strict coordinator boundaries
-        run: python3 -m unittest discover -s backend/scripts/ops -p 'test_cloud_retirement.py'
+        run: python3 -m unittest discover -s backend/scripts/ops -p 'test_cloud_retirement*.py'
       - name: Build the nonce fixture and interrupt after durable scale-to-zero
         id: interrupt
         env:
