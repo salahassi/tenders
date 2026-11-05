@@ -10654,3 +10654,29 @@ inspection verified the actual new image and complete checkout/native binding;
 both pending-publication paths returned their expected errors. The
 [guard verification receipt](evidence/runtime-guard-verification-176bcf-20261105.json)
 also verifies seven historical evidence files byte for byte against `1949866`.
+
+### November 5 — publish corrected qualified runtime and refreeze the release
+
+The second release attempt [41937345060](https://github.com/salahassi/tenders/actions/runs/41937345060)
+at `3c21a65` was cancelled during package verification after the canonical Arabic
+and English repair controls exposed the real recursive source-context defect.
+Cluster access, images and rollout were skipped; both cleanup steps passed.
+[The retained receipt](evidence/release-cancelled-before-access-20261105-41937345060.json)
+is not deployment evidence. The correction and four fresh native proofs are
+recorded separately above; historical 89af measurements remain unchanged.
+
+Exact qualified image `176bcf738676` was published, pulled back and verified at
+`runtime@sha256:996e1ea5b3ff63ca4ea0e5ef75dc45c7d5a83f0c8a2501539bb0a8fc669fbfb2`.
+[Publication evidence](evidence/runtime-qualified-publication-176bcf-20261105.json)
+records 26.554 seconds and temporary credential removal. An actual local
+[FROM/LABEL promotion](evidence/runtime-label-promotion-176bcf-20261105.json)
+passed in 0.525 seconds with network/pull disabled and unchanged ordered layers
+and runtime configuration except the revision label. That probe was not pushed.
+No application workload or customer record changed during either operation.
+
+The complete 24-migration manifest is refrozen to the corrected source, new
+qualification/publication and unchanged final gateway/HTTPS proofs. Canonical
+SHA-256: `2e6512d2eef73bc130f928cfcc01b04bcb437529cb5ab4b90fa815a228dce6fa`.
+Only the original inner baseline receipt from run41881660683 was used. Source
+verification passes. Complete integrated application/ops checks, renewed isolated
+cloud restore, actual release and authenticated hosted acceptance remain required.

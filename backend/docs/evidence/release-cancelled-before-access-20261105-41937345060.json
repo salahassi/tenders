@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "source_revision": "3c21a65c6c9a04fff5070632201d17210309f760",
+  "workflow_run_id": 41937345060,
+  "workflow_job_id": 126949040785,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41937345060",
+  "conclusion": "cancelled",
+  "reason": "New EN/AR canonical repair controls reproduced the production recursive-source-context defect; stop before deployment for correction and runtime requalification.",
+  "verification": "cancelled",
+  "cluster_access": "skipped",
+  "image_publication": "skipped",
+  "schema_and_workload_rollout": "skipped",
+  "owned_database_client_cleanup_step": "success",
+  "private_runner_cleanup_step": "success",
+  "application_deployed": false,
+  "limit": "No cluster access or application deployment by this attempt. Native requalification and registry publication were separate later operations."
+}
