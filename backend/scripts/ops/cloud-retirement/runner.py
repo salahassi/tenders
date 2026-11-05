@@ -193,15 +193,7 @@ def pvc_manifest(state):
       'spec':{'storageClassName':'do-block-storage','accessModes':['ReadWriteOnce'],'volumeMode':'Filesystem',
         'resources':{'requests':{'storage':'1Gi'}}}}
 
-def prepare():
-    manifest=json.loads(c.restore.release.MANIFEST.read_text())
-    catalog=c.restore.capture(manifest)
-    credentials,ca=b.preflight.target_credentials(os.environ['DIGITALOCEAN_ACCESS_TOKEN'])
-    base=b.identity();output_nonce(base)
-    created=b.create({'apiVersion':'v1','kind':'Namespace','metadata':{'name':base['namespace'],
-      'labels':{**base['labels'],'tenderdesk.io/qualification':'storage-retirement','pod-security.kubernetes.io/enforce':'restricted'}}})
-    base['uid']=created.get('metadata',{}).get('uid');b.save(base)
-    state=c.initial_state(base,c.manifest_contract());r.save(state,initial=True)
+def upstream_job(state):
     parent=b.build_bootstrap_job(c.namespace(state),c.labels(state))
     parent['spec'].update(suspend=True,activeDeadlineSeconds=3500)
     # Keep the exact upstream Job identity for late, ownership-checked cleanup.
@@ -211,6 +203,18 @@ def prepare():
     pod['initContainers']=[x for x in pod['initContainers'] if x['name'] in ('auth','rest')]
     pod['volumes']=[x for x in pod['volumes'] if x['name'] not in ('bootstrap-objects','tmp-storage')]
     pod['containers'][0]['command']=['python3','-B','-c','import time; time.sleep(3500)']
+    return parent
+
+def prepare():
+    manifest=json.loads(c.restore.release.MANIFEST.read_text())
+    catalog=c.restore.capture(manifest)
+    credentials,ca=b.preflight.target_credentials(os.environ['DIGITALOCEAN_ACCESS_TOKEN'])
+    base=b.identity();output_nonce(base)
+    created=b.create({'apiVersion':'v1','kind':'Namespace','metadata':{'name':base['namespace'],
+      'labels':{**base['labels'],'tenderdesk.io/qualification':'storage-retirement','pod-security.kubernetes.io/enforce':'restricted'}}})
+    base['uid']=created.get('metadata',{}).get('uid');b.save(base)
+    state=c.initial_state(base,c.manifest_contract());r.save(state,initial=True)
+    parent=upstream_job(state)
     job=b.create(parent);base['job_uid']=job['metadata']['uid'];b.save(base);r.save(state)
     values=b.secret_values(credentials,ca,base)
     r.create(state,'secret',{'apiVersion':'v1','kind':'Secret','type':'Opaque','metadata':r.meta(state,'bootstrap-secrets'),

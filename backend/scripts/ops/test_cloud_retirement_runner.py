@@ -94,6 +94,14 @@ class RunnerBoundaries(unittest.TestCase):
  def test_sql_failure_is_not_accepted_as_a_cleanup_receipt(self):
   with patch.object(r,'get',return_value={'status':{'failed':1}}):
    with self.assertRaisesRegex(c.FixtureError,'SQL_JOB_FAILED'):m.wait_sql_job(self.state,'database-cleanup')
+ def test_upstream_clients_expire_but_parent_identity_survives_for_late_cleanup(self):
+  job=m.upstream_job(self.state);pod=job['spec']['template']['spec']
+  self.assertNotIn('ttlSecondsAfterFinished',job['spec'])
+  self.assertEqual(job['spec']['activeDeadlineSeconds'],3500)
+  self.assertTrue(job['spec']['suspend'])
+  self.assertEqual([value['name'] for value in pod['initContainers']],['auth','rest'])
+  self.assertFalse(any(value['name'] in ('bootstrap-objects','tmp-storage') for value in pod['volumes']))
+  self.assertEqual(pod['containers'][0]['command'],['python3','-B','-c','import time; time.sleep(3500)'])
  def test_catalog_source_keeps_exact_migrations_but_replaces_only_broad_fixture_suffix(self):
   broad='-- original broad restore helpers\n';prefix=b'-- exact reviewed reconstructed schema\n'
   created=[]
