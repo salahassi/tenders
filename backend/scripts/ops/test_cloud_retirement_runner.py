@@ -29,6 +29,22 @@ class RunnerBoundaries(unittest.TestCase):
   self.state=c.initial_state(self.base,'b'*64)
  def resource(self,name,uid=UID):
   return {'metadata':{'name':name,'namespace':c.namespace(self.state),'uid':uid,'resourceVersion':'43','labels':c.labels(self.state)}}
+ def test_durable_retirement_can_resume_after_restoration_failure_but_verification_remains_required(self):
+  import fixture_adapter
+  self.state.update(phase='retired',process_capture={'retained':True},completion={
+   'before':{'pending':16384},'after':{'pending':0},'evidence':{'retained':True},'receipt':{'state':'complete'}})
+  with patch.object(r,'load',return_value=self.state),patch.object(fixture_adapter,'FixtureAdapter') as adapter,patch.object(c.proof,'retire') as retire,patch.object(m,'writer') as writer,patch.object(m,'cleanup') as cleanup:
+   adapter.return_value.verify_retirement.side_effect=c.FixtureError('RETIREMENT_FIXTURE_ALLOWANCE_RELEASE_INVALID')
+   with self.assertRaisesRegex(c.FixtureError,'ALLOWANCE_RELEASE_INVALID'):m.resume('1234abcd')
+  retire.assert_called_once();adapter.return_value.verify_retirement.assert_called_once()
+  writer.assert_not_called();cleanup.assert_not_called()
+ def test_partial_retirement_record_cannot_enter_resumed_coordinator(self):
+  import fixture_adapter
+  for completion in (None,{}, {'before':{},'after':{},'evidence':{},'receipt':{'state':'complete'}},
+    {'before':{'pending':1},'after':{'pending':0},'evidence':{'retained':True},'receipt':{'state':'pending'}}):
+   self.state.update(phase='retired',process_capture={'retained':True},completion=completion)
+   with patch.object(r,'load',return_value=self.state),patch.object(fixture_adapter,'FixtureAdapter') as adapter,self.assertRaisesRegex(c.FixtureError,'COMPLETION_MISSING'):m.resume('1234abcd')
+   adapter.assert_not_called()
  def test_origin_attempt_is_explicit_bounded_and_does_not_change_execution_attempt(self):
   with patch.object(m,'prepare_access'),patch.object(m,'already_cleaned',return_value=True),redirect_stdout(io.StringIO()) as out:
    self.assertEqual(m.main(['cleanup','--nonce','1234abcd','--origin-attempt','1']),0)

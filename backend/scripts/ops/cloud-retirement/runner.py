@@ -476,7 +476,15 @@ def already_cleaned(nonce):
 def resume(nonce):
     from fixture_adapter import FixtureAdapter
     state=r.load(nonce)
-    c.need(state['phase']=='interrupted' and state['process_capture'] is not None,'RETIREMENT_FIXTURE_INTERRUPTION_NOT_JOURNALED')
+    c.need(state['phase'] in ('interrupted','retired') and state['process_capture'] is not None,'RETIREMENT_FIXTURE_INTERRUPTION_NOT_JOURNALED')
+    if state['phase']=='retired':
+        # SQL retirement may be durable before service restoration fails. Reuse
+        # that exact journal; the coordinator and verify_retirement still check
+        # canonical completion, accounting, original exits and current replicas.
+        completion=state['completion']
+        c.need(isinstance(completion,dict) and set(completion)=={'before','evidence','receipt','after'}
+          and all(isinstance(completion[k],dict) and completion[k] for k in completion)
+          and completion['receipt'].get('state')=='complete','RETIREMENT_FIXTURE_COMPLETION_MISSING')
     started=time.monotonic()
     adapter=FixtureAdapter(state)
     c.proof.retire(adapter,adapter.selection())

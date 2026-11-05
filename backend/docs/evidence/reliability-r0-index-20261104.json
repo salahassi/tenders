@@ -454,6 +454,34 @@
           "level": "Source-bound observed gate",
           "observed_result": "Prepare and deliberate durable interruption pass; resume fails aggregate restoration; separate cleanup verified.",
           "limits": "Root cause pending bounded phase diagnostics; no hosted retirement acceptance."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-sixth-attempt-20261105-41996978998.json",
+          "sha256": "a4794ee2639b392569b0b956e53cc16e147411b5745fc20b430e96e005770646",
+          "level": "Source-bound observed gate",
+          "observed_result": "Helper readiness failure and missing-identity cleanup error observed; later cleanup passes.",
+          "limits": "Failed acceptance retained."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-seventh-attempt-20261105-41999178689.json",
+          "sha256": "8ec563d4909224225fd578bc6155cfb46cdb98d6a6b70433a91423f024fa7f06",
+          "level": "Source-bound observed gate",
+          "observed_result": "Storage readiness and cleanup initially fail after durable retirement.",
+          "limits": "See later separate cleanup receipt; no original pass."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-readonly-inspection-20261105-42001827175.json",
+          "sha256": "e363a20e1743312f7fa4199ea28775e15ee4cb5dedf76589b8a57c404523ac5d",
+          "level": "Source-bound observed gate",
+          "observed_result": "Retained exact Storage Pod is ready; FailedMount events present.",
+          "limits": "Read-only observation; detailed mount cause unknown."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-owned-cleanup-retry-20261105-41999178689.json",
+          "sha256": "2cfee3785d35526d2fc0186117b9436500e3ecb1a2cf5b4e9794363ffc88a674",
+          "level": "Source-bound observed gate",
+          "observed_result": "Original failed job retry verifies owned cleanup after readiness observation.",
+          "limits": "Old runner rejects retired phase; cleanup does not imply acceptance."
         }
       ]
     },
@@ -1204,5 +1232,5 @@
       "scope": "Main merge/CI failure, scoped timeout correction and dormant manual-retirement proof fix. Frozen24 manifest unchanged; complete corrected GitHub gate and deployment remain open."
     }
   ],
-  "current_predeployment_summary": "Complete f41 application gates plus focused verifier controls and f2d0f9 native/publication pass. Manifest has 27 migrations; current isolated Auth/Storage restore passes. Retirement reached durable interruption but restoration failed and cleanup passed; instrumented retry pending. Final release CI, rollout and customer issuance remain open."
+  "current_predeployment_summary": "Current isolated 27-migration restore passes. Interrupted retirement remains unqualified: retained Storage later became ready, exact failed-job cleanup is now verified, and the durable-retired resume guard is corrected with 80 focused controls. Final release CI, rollout and customer issuance remain open."
 }

@@ -11227,3 +11227,20 @@ exposed one stale two-job/no-input assertion; it now requires three definitions
 with mutually exclusive inspection/allocation and rejects caller-supplied target
 selectors. All 78 integrated controls pass after this correction. Current
 fixture cleanup and release remain pending.
+
+### November 5 — retained fixture removed; durable-resume phase corrected
+
+Read-only run 42001827175 verifies the exact retained Storage Pod is ready and
+records FailedMount events. Their detailed cause was not established. This
+observation justified retrying only the failed job of run 41999178689. Attempt 2
+rejects the durable retired phase in the old runner, then successfully completes
+owned-resource cleanup and removes runner credentials. No fixture remains
+reported by that cleanup; acceptance did not pass.
+
+The runner now accepts interrupted or durably retired state. A retired state
+requires its complete before/evidence/receipt/after record, and the unchanged
+coordinator and verification still check canonical completion, accounting,
+original process exits and restored replicas before client verification. Partial
+records cannot enter recovery. All 80 focused controls pass. The prior 668-test
+operational pass retains its earlier source scope. A fresh hosted trial of the
+corrected recovery source is still required before application deployment.
