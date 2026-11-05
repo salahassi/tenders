@@ -39,7 +39,7 @@ await db.query(`insert into app_private.model_graph_budgets(workspace_id,thread_
 await db.query(`insert into app_private.model_graph_results(workspace_id,thread_id,result_key,value,content_hash) values($1,repeat('c',64),'semantic-instructions-fixture','{"version":2,"instructions":"PRIVATE HISTORICAL PROMPT"}',repeat('d',64))`,[workspace]);
 const state=async()=>{
  const value={};
- for(const table of ['public.generation_plans','public.jobs','public.provider_usage','public.model_attempts','public.model_execution_settings','public.operations','app_private.dispatcher_settings','app_private.k8s_dispatch_queue','app_private.queue_dispatch_state','app_private.queue_owner_service','app_private.model_graph_threads','app_private.model_graph_budgets','app_private.model_graph_results','public.content_authorizations','app_private.proposal_workflow_admission'])
+ for(const table of ['public.generation_plans','public.proposal_issuance_requests','public.jobs','public.provider_usage','public.model_attempts','public.model_execution_settings','public.operations','app_private.dispatcher_settings','app_private.k8s_dispatch_queue','app_private.queue_dispatch_state','app_private.queue_owner_service','app_private.model_graph_threads','app_private.model_graph_budgets','app_private.model_graph_results','public.content_authorizations','app_private.proposal_workflow_admission'])
   if((await db.query('select to_regclass($1) relation',[table])).rows[0].relation)
    value[table]=(await db.query(`select to_jsonb(t) value from ${table} t order by to_jsonb(t)::text`)).rows;
  return value;
@@ -121,4 +121,21 @@ assert.equal(metadata.jobs[0].checkpoint.round_attempts,7);
 assert.equal(metadata.latest_attempts[0].result_code,'MODEL_NETWORK_UNCERTAIN');
 assert.doesNotMatch(JSON.stringify(metadata),/PRIVATE|private-dispatch|999999999999999999|00000000-0000-4000-8000-000000009999|00000000-0000-4000-8000-000000008888|00000000-0000-4000-8000-000000007777/);
 assert.deepEqual(await state(),extendedBefore);
+assert.equal(report.latest_issuance, null);
+const issuance = (await db.query(`insert into public.proposal_issuance_requests
+ (workspace_id,plan_id,requested_by,operation,idempotency_key,accepted_at,deadline_at,outcome,error_code,completed_at)
+ values($1,$2,$3,'proposal.generate','PRIVATE ISSUANCE KEY',now()-interval '1 minute',now()+interval '9 minutes',
+ 'failed','AI_AGENTS_UNAVAILABLE',now()) returning id`, [workspace,selection.plan_id,owner])).rows[0].id;
+await db.query('update public.generation_plans set issuance_request_id=$1 where id=$2',[issuance,selection.plan_id]);
+const issuanceBefore = await state();
+const withIssuance = (await db.exec(sql)).flatMap(r=>r.rows||[]).find(r=>r.jsonb_build_object).jsonb_build_object;
+assert.equal(withIssuance.latest_issuance.id, issuance);
+assert.equal(withIssuance.latest_issuance.plan_id, selection.plan_id);
+assert.equal(withIssuance.latest_issuance.requested_by, owner);
+assert.equal(withIssuance.latest_issuance.outcome, 'failed');
+assert.equal(withIssuance.latest_issuance.error_code, 'AI_AGENTS_UNAVAILABLE');
+assert.equal(new Date(withIssuance.latest_issuance.deadline_at)-new Date(withIssuance.latest_issuance.accepted_at),600000);
+assert.equal(withIssuance.latest_issuance.completed_at,withIssuance.latest_issuance.effective_completed_at);
+assert.doesNotMatch(JSON.stringify(withIssuance),/PRIVATE ISSUANCE KEY/);
+assert.deepEqual(await state(),issuanceBefore);
 await db.close();

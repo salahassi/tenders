@@ -250,7 +250,7 @@ def validate_report(report):
         if key in report and not digest(report[key]):
             raise CurrentRequestError('CURRENT_REQUEST_CHILD_REPORT_INVALID')
     if report['outcome'] == 'started' and (commands != {'resume': 1, 'batch': 1, 'unexpected_mutations': 0}
-            or not all(key in report for key in ('successor_plan_id', 'issuance_request_id', 'request_body_sha256', 'prepared_request_sha256'))):
+            or not all(key in report for key in ('successor_plan_id', 'request_body_sha256', 'prepared_request_sha256'))):
         raise CurrentRequestError('CURRENT_REQUEST_CHILD_REPORT_INVALID')
     return report
 
@@ -415,6 +415,18 @@ def run_child(payload, persist, state, *, timeout=CHILD_SECONDS, private_directo
             state['child_termination_confirmed'] = True
 
 
+def bind_issuance(before, after, report):
+    # The command's captured result predates the admission trigger. Never infer
+    # issuance from that nullable field or accept a different browser successor.
+    issuance_id = (after.get('latest_plan') or {}).get('issuance_request_id')
+    if (report.get('outcome') != 'started' or not uuid_value(issuance_id)
+            or report.get('issuance_request_id', issuance_id) != issuance_id):
+        raise CurrentRequestError('CURRENT_REQUEST_POSTCONDITION_ISSUANCE_MISMATCH')
+    bound = {**report, 'issuance_request_id': issuance_id}
+    postconditions(before, after, bound)
+    return bound
+
+
 def postconditions(before, after, report):
     if before['protected_history'] != after['protected_history'] or before['source_manifest_sha256'] != after['source_manifest_sha256']:
         raise CurrentRequestError('CURRENT_REQUEST_POSTCONDITION_HISTORY_CHANGED')
@@ -531,7 +543,7 @@ def main(argv=None):
                 raise CurrentRequestError('CURRENT_REQUEST_BROWSER_CLEANUP_NOT_CONFIRMED')
             if report['outcome'] == 'started':
                 after = inspect(database, selection)
-                postconditions(before, after, report)
+                report = bind_issuance(before, after, report)
                 issuance = observe_issuance(database, selection, before, report, args.expected_runtime_image)
                 no_secrets(issuance, secrets)
     except Exception as error:

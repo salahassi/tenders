@@ -69,6 +69,11 @@ SELECT jsonb_build_object(
  'proposal',(SELECT jsonb_build_object('id',p.id,'revision',p.revision,'state',p.state,'active_version_id',p.active_version_id)
    FROM public.proposals p JOIN target t ON p.workspace_id=t.workspace_id AND p.id=t.proposal_id),
  'latest_plan',(SELECT jsonb_build_object('id',id,'status',status,'stage',stage,'revision',revision,'error_code',error_code,'workflow_version',workflow_version) FROM latest),
+ 'latest_issuance',(SELECT jsonb_build_object('id',r.id,'plan_id',r.plan_id,'requested_by',r.requested_by,
+   'operation',r.operation,'outcome',r.outcome,'error_code',r.error_code,'accepted_at',r.accepted_at,
+   'deadline_at',r.deadline_at,'completed_at',r.completed_at,'effective_outcome',r.effective_outcome,
+   'effective_error_code',r.effective_error_code,'effective_completed_at',r.effective_completed_at)
+   FROM public.proposal_issuance_status r JOIN latest p ON p.workspace_id=r.workspace_id AND p.id=r.plan_id AND p.issuance_request_id=r.id),
  'prospective_draft_snapshot_sha256',(SELECT encode(sha256(convert_to(value::text,'UTF8')),'hex') FROM prospective),
  'workspace_evidence_revision',(SELECT evidence_revision FROM public.workspaces WHERE id='__WORKSPACE__'),
  'workflow_admission',(SELECT jsonb_build_object('enabled',a.enabled,'trial_opportunity_id',a.trial_opportunity_id,

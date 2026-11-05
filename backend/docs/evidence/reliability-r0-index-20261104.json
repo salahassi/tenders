@@ -1,10 +1,10 @@
 {
   "version": 6,
   "status": "draft_not_release_acceptance",
-  "generated_at_utc": "2026-11-05T08:47:21.060351+00:00",
+  "generated_at_utc": "2026-11-05T13:41:55.650396+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
-  "observed_root_commit": "718ac68b717774503230f70b2e90150af4968393",
-  "scope": "Docs-only discovery refresh at integrated2b869ac. Historical receipt hashes/scopes retained; current corrected runtime publication/manifest and prepared request/retirement helpers indexed. Current2b869ac combined application gates now pass; release and actual request/export remain pending. Exact2b869ac operations checks and current-manifest isolated restore now pass at their stated scopes. No execution or external mutations by this refresh.",
+  "observed_root_commit": "887411188b9591b01c9e3d01456372a37c3a0f68",
+  "scope": "Current release42031298536 is deployed at8874111/manifestada21f57. The single authorized request started and failed early with AI_AGENTS_UNAVAILABLE; no package/export acceptance. Historical receipt hashes and scopes remain retained. Response-harness correction has 3,491 passing backend tests/types/build plus focused operations/browser controls at a4a3e95. Read-only42037659578 confirms original issuance failed after60.658012s, zero versions and cleanup; no replay.",
   "r0_reference": "backend/docs/RELIABLE_PROPOSAL_ACCEPTANCE.md:83",
   "r0_completeness": "This index is not a per-case R0 completion certificate. Linked receipts retain their own source/fixture/image/migration/clock/policy bindings. Missing applicable R0 evidence remains unproven.",
   "never_infer": [
@@ -204,6 +204,20 @@
           "level": "L1/L2",
           "observed_result": "14 native PostgreSQL cases and28 targeted backend tests pass; release/diagnosis/native/restore guards pass; manifest ada21f57 from original baseline.",
           "limits": "Pending input hashes bind local proof; new-manifest cloud gates and full rollout/actual issuance remain open."
+        },
+        {
+          "path": "backend/docs/evidence/proposal-release-passed-20261105-42031298536.json",
+          "sha256": "f40b561470a5e0ff076b0d1e3400a673b64b566da34814d63e205c82771f7ca3",
+          "level": "L2",
+          "observed_result": "8874111 complete app/operational checks and actualada21f57 schema/images/configuration rollout pass; old processes drained; public checks and both cleanups pass.",
+          "limits": "Deployment only; actual customer issuance/export, semantic quality and arbitrary capacity remain separate."
+        },
+        {
+          "path": "backend/docs/evidence/current-request-followup-20261105.json",
+          "sha256": "80d295744147c3b398ec7504d92cc0c4b056ce11bf26285335cc7928a1e6068d",
+          "level": "L1/L3",
+          "observed_result": "One actual request started; persisted issuance failed AI_AGENTS_UNAVAILABLE after60.658012s in read-only42037659578. Harness correction passes 3,491 backend tests/types/build and focused protocol/browser/SQL checks.",
+          "limits": "No request replay or issued package. Deployed runtime/schema unchanged. Provider availability, private semantic/retrieval, automatic Arabic OCR and actual Word TOC remain open."
         }
       ]
     },
@@ -291,7 +305,7 @@
           "path": "backend/docs/evidence/native-reviewed-docx-handler-20261104.json",
           "sha256": "e3b91fc1c4da28ae921908ef64ac2948991fceb3408f3279440a5cb96a2c711f",
           "level": "L3 actual native reviewed-upload handler",
-          "observed_result": "Same artifact1bee8e23…547d25d passes native canonical verification and one completion RPC with HTTP200 in30.996s; peak367247360/402653184bytes.",
+          "observed_result": "Same artifact1bee8e23\u2026547d25d passes native canonical verification and one completion RPC with HTTP200 in30.996s; peak367247360/402653184bytes.",
           "limits": "Synthetic ordinary-2 server pin/Auth/RPC/Storage, no real approval or production completion; no actual upstream/gateway."
         },
         {
@@ -713,7 +727,7 @@
           "path": "backend/docs/evidence/application-auth-read-postgres-20261104.json",
           "sha256": "3314c13283eba5f7c6b8177c9a9cd501501de5a71e716799c2527eb871c9f3ff",
           "level": "L2 actual PostgreSQL concurrent connections",
-          "observed_result": "Eleven real PostgreSQL checks passed: exact policy replay, rollback, managed SET authority, browser denial, and observed late-snapshot red/early-lock green with row visibility 0→2 retained.",
+          "observed_result": "Eleven real PostgreSQL checks passed: exact policy replay, rollback, managed SET authority, browser denial, and observed late-snapshot red/early-lock green with row visibility 0\u21922 retained.",
           "limits": "No live Auth HTTP in this local receipt; production policy not changed."
         },
         {
@@ -904,6 +918,20 @@
           "level": "L2",
           "observed_result": "6c469c5/ada21f57 exact full SQL and release guards pass in rollback-only production transaction; original routine catalog restored; both cleanups pass.",
           "limits": "No schema commit or rollout."
+        },
+        {
+          "path": "backend/docs/evidence/proposal-release-passed-20261105-42031298536.json",
+          "sha256": "f40b561470a5e0ff076b0d1e3400a673b64b566da34814d63e205c82771f7ca3",
+          "level": "L2",
+          "observed_result": "8874111 complete app/operational checks and actualada21f57 schema/images/configuration rollout pass; old processes drained; public checks and both cleanups pass.",
+          "limits": "Deployment only; actual customer issuance/export, semantic quality and arbitrary capacity remain separate."
+        },
+        {
+          "path": "backend/docs/evidence/current-request-followup-20261105.json",
+          "sha256": "80d295744147c3b398ec7504d92cc0c4b056ce11bf26285335cc7928a1e6068d",
+          "level": "L1/L3",
+          "observed_result": "One actual request started; persisted issuance failed AI_AGENTS_UNAVAILABLE after60.658012s in read-only42037659578. Harness correction passes 3,491 backend tests/types/build and focused protocol/browser/SQL checks.",
+          "limits": "No request replay or issued package. Deployed runtime/schema unchanged. Provider availability, private semantic/retrieval, automatic Arabic OCR and actual Word TOC remain open."
         }
       ]
     },
@@ -1278,6 +1306,20 @@
           "level": "L2",
           "observed_result": "6c469c5/ada21f57 exact full SQL and release guards pass in rollback-only production transaction; original routine catalog restored; both cleanups pass.",
           "limits": "No schema commit or rollout."
+        },
+        {
+          "path": "backend/docs/evidence/proposal-release-passed-20261105-42031298536.json",
+          "sha256": "f40b561470a5e0ff076b0d1e3400a673b64b566da34814d63e205c82771f7ca3",
+          "level": "L2",
+          "observed_result": "8874111 complete app/operational checks and actualada21f57 schema/images/configuration rollout pass; old processes drained; public checks and both cleanups pass.",
+          "limits": "Deployment only; actual customer issuance/export, semantic quality and arbitrary capacity remain separate."
+        },
+        {
+          "path": "backend/docs/evidence/current-request-followup-20261105.json",
+          "sha256": "80d295744147c3b398ec7504d92cc0c4b056ce11bf26285335cc7928a1e6068d",
+          "level": "L1/L3",
+          "observed_result": "One actual request started; persisted issuance failed AI_AGENTS_UNAVAILABLE after60.658012s in read-only42037659578. Harness correction passes 3,491 backend tests/types/build and focused protocol/browser/SQL checks.",
+          "limits": "No request replay or issued package. Deployed runtime/schema unchanged. Provider availability, private semantic/retrieval, automatic Arabic OCR and actual Word TOC remain open."
         }
       ]
     }
