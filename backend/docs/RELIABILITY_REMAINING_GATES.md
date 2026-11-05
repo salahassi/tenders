@@ -13,9 +13,10 @@ on artifact_context(uuid) and workspace_status(). Draft PR32 preserves those
 exact grants without granting missing access or reopening predecessor functions.
 Fourteen actual PostgreSQL scenarios and28 targeted backend tests pass; the
 authority guard is unchanged. The27-migration manifest is refrozen from the
-original baseline at **ada21f57**. Updated rollback, cloud restore/retirement and
-full release evidence are still required. Earlier restore41993933795 and
-retirement42002971002 passes remain valid only for their stated1fdf73f4 manifest.
+original baseline at **ada21f57**. At6c469c5, rollback42028955332 passes the exact SQL and catalog restoration;
+cloud restore42029295368 and interrupted retirement42029747879 each pass all13
+checks and cleanup for ada21f57. Full release and actual issuance remain required.
+Earlier restore41993933795 and retirement42002971002 retain their1fdf73f4 scope.
 
 Native runtimef2d0f9 and its four qualified fixture scopes are unchanged; the
 failed721340 OOM image remains rejected. The heaviest measured case retains its

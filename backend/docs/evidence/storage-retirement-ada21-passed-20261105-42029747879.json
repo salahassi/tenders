@@ -1,0 +1,43 @@
+{
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/42029747879",
+  "source_revision": "6c469c51517c1aadcb5028cb7cb65f901d9dc292",
+  "interrupt_job_id": 127252870385,
+  "resume_job_id": 127254437662,
+  "receipt": {
+    "checks": {
+      "allowance_released_exactly_once": true,
+      "new_canonical_key_physically_present": true,
+      "new_canonical_key_uploaded_and_read": true,
+      "old_intent_quiesced": true,
+      "old_key_http_upload_denied": true,
+      "old_quota_released_with_one_completion_audit": true,
+      "original_process_exits_observed": true,
+      "physical_and_metadata_absent_before_finish": true,
+      "post_restart_retired_key_physically_absent": true,
+      "provider_usage_absent_before_positive_control": true,
+      "replicas_restored": true,
+      "same_proof_replay_no_release": true,
+      "unknown_allowance_retained_until_proof": true
+    },
+    "cleanup_verified": true,
+    "execution_run_attempt": "1",
+    "manifest_sha256": "ada21f57461fa81e3b45778685d86438117ef419ad8c31ceaac86c06dcb2dba3",
+    "model_calls": 0,
+    "observed_seconds": {
+      "resume_and_verification": 146.59090449899998
+    },
+    "origin_run_attempt": "1",
+    "passed": true,
+    "production_business_mutations": 0,
+    "production_fixed_target_adapter_exercised": false,
+    "rto_rpo_target_defined": false,
+    "scope": "isolated Kubernetes/PVC, canonical SQL and unchanged coordinator; synthetic writer process",
+    "source_revision": "6c469c51517c1aadcb5028cb7cb65f901d9dc292",
+    "storage_retirement_qualification": "passed",
+    "version": 1,
+    "whole_cluster_restore_qualified": false
+  },
+  "owned_fixture_cleanup": "passed",
+  "both_private_runner_cleanups": "passed",
+  "scope": "Actual isolated Auth/Storage/PVC interruption and fresh-runner recovery at manifest ada21f57. Idle fixture writer, no production fixed-target adapter or inflight customer PUT; no general RTO/RPO or hosted renderer qualification."
+}

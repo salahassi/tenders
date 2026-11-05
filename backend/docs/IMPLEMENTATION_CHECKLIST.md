@@ -11449,3 +11449,17 @@ original baseline at ada21f57461fa81e3b45778685d86438117ef419ad8c31ceaac86c06dcb
 Receipts retain the pending input hashes, earlier failures and original baseline.
 Full rollback diagnosis, current-manifest cloud restore/retirement, final release
 and actual issuance remain pending; no customer processing has started.
+
+### November 5 — current-manifest rollback, restore and interrupted retirement pass
+
+At6c469c5 and manifestada21f57, rollback run42028955332 passes the exact complete
+frozen SQL and every release guard, restores the original catalog and cleans up.
+Cloud restore42029295368 passes all13 actual Auth/Storage checks and both
+cleanups. Interrupted retirement42029747879 passes all13 actual checks, owned
+fixture cleanup and both runner cleanups. It still uses an idle fixture writer;
+no inflight PUT, production adapter or general recovery objective is claimed.
+Receipts are indexed separately from the earlier1fdf73f4-manifest passes.
+
+The release prerequisites are now renewed. Application rollout remains
+incomplete until the mandatory full release gate, exact image/schema readback
+and public checks pass. No actual customer request or provider campaign has run.

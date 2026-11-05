@@ -1,0 +1,22 @@
+{
+  "source_revision": "6c469c51517c1aadcb5028cb7cb65f901d9dc292",
+  "manifest_sha256": "ada21f57461fa81e3b45778685d86438117ef419ad8c31ceaac86c06dcb2dba3",
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/42028955332",
+  "job_id": 127250172755,
+  "original_ca": "passed",
+  "private_cleanup": "passed",
+  "receipt": {
+    "schema_diagnosis": "passed_rolled_back",
+    "stage": "rollback_migration",
+    "sql_failure": null,
+    "catalog_unchanged": true,
+    "authority_difference": null,
+    "authority_notice_seen": false,
+    "before_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+    "after_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+    "owned_client_cleanup": true,
+    "deployment_performed": false,
+    "model_calls": 0
+  },
+  "scope": "Exact frozen SQL and all release guards pass in a rollback-only production transaction; original routine catalog restored and both cleanups pass. No schema commit or rollout."
+}

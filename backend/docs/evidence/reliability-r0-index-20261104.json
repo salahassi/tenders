@@ -524,6 +524,13 @@
           "level": "Actual isolated Auth/Storage/PVC interruption and recovery",
           "observed_result": "Run 42002971002 at e4192f9 passes all 13 checks, deliberate interruption and complete cleanup against current 27-migration manifest.",
           "limits": "Idle fixture worker; no actual inflight PUT, production fixed-target adapter, general RTO, renderer or customer issuance proof."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-ada21-passed-20261105-42029747879.json",
+          "sha256": "0cfc821a46e840b3df041cd21251d0a404b28930bb7c420d1102f086c296b565",
+          "level": "L2",
+          "observed_result": "6c469c5/ada21f57 all13 isolated interruption/resume checks and fixture/runner cleanup pass.",
+          "limits": "Idle fixture writer; not inflight PUT, production adapter or general RTO/RPO."
         }
       ]
     },
@@ -655,6 +662,13 @@
           "level": "L1/L2",
           "observed_result": "Final isolated-retirement cleanup checkpoint and PVC identity correction passes 57 focused tests; independent source review cleared. Root repeated all57 after integration at0cfb2ef.",
           "limits": "Source and simulated Kubernetes guards only; actual two-runner Kubernetes/PVC drill remains unexecuted. Unknown allocation and partial-protection reconciliation remain explicit."
+        },
+        {
+          "path": "backend/docs/evidence/storage-retirement-ada21-passed-20261105-42029747879.json",
+          "sha256": "0cfc821a46e840b3df041cd21251d0a404b28930bb7c420d1102f086c296b565",
+          "level": "L2",
+          "observed_result": "6c469c5/ada21f57 all13 isolated interruption/resume checks and fixture/runner cleanup pass.",
+          "limits": "Idle fixture writer; not inflight PUT, production adapter or general RTO/RPO."
         }
       ]
     },
@@ -743,6 +757,13 @@
           "level": "Source-bound observed gate",
           "observed_result": "Current 27-migration Auth/Storage restore passes 13 HTTP checks, original CA verification and both cleanups at b933587.",
           "limits": "Isolated fixtures only; no renderer, customer requests or rollout proof."
+        },
+        {
+          "path": "backend/docs/evidence/cloud-restore-ada21-passed-20261105-42029295368.json",
+          "sha256": "b93c38a25b1cc710e18b8f1fcac2dd18c69a6bcf3b9a6e98017f8a91aa9a93b5",
+          "level": "L2",
+          "observed_result": "6c469c5/ada21f57 all13 isolated Auth/Storage restore checks and both cleanups pass.",
+          "limits": "No customer rows, models, application renderer or production rollout."
         }
       ]
     },
@@ -876,6 +897,13 @@
           "level": "L1/L2",
           "observed_result": "14 native PostgreSQL cases and28 targeted backend tests pass; release/diagnosis/native/restore guards pass; manifest ada21f57 from original baseline.",
           "limits": "Pending input hashes bind local proof; new-manifest cloud gates and full rollout/actual issuance remain open."
+        },
+        {
+          "path": "backend/docs/evidence/schema-rollback-passed-20261105-42028955332.json",
+          "sha256": "bb24b801b8f48a215c4c7d33352e782df07ea074581d64f925ff36a465b8c6db",
+          "level": "L2",
+          "observed_result": "6c469c5/ada21f57 exact full SQL and release guards pass in rollback-only production transaction; original routine catalog restored; both cleanups pass.",
+          "limits": "No schema commit or rollout."
         }
       ]
     },
@@ -1243,6 +1271,13 @@
           "level": "Source-bound observed gate",
           "observed_result": "Hosted exact raw-config/image/layer/platform/label verification passes with cleanup.",
           "limits": "Explicit read-only inspection; no application checks, publication or rollout."
+        },
+        {
+          "path": "backend/docs/evidence/schema-rollback-passed-20261105-42028955332.json",
+          "sha256": "bb24b801b8f48a215c4c7d33352e782df07ea074581d64f925ff36a465b8c6db",
+          "level": "L2",
+          "observed_result": "6c469c5/ada21f57 exact full SQL and release guards pass in rollback-only production transaction; original routine catalog restored; both cleanups pass.",
+          "limits": "No schema commit or rollout."
         }
       ]
     }
