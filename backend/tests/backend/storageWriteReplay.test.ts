@@ -24,7 +24,7 @@ async function setup() {
     opportunity_id: opp.id,
     expected_revision: opp.revision,
   });
-  const job = await f.rpc("claim_backend_job_v4");
+  const job = await f.rpc("claim_backend_job_v5");
   const context = await f.rpc("delivery_export_context", [
     job.id,
     job.lease_token,
@@ -65,7 +65,7 @@ it("retry replay must leave a later failed upload and cleanup inventory unchange
   };
   const key = crypto.randomUUID();
   const first = await f.command("delivery.snapshot.retry", input, key);
-  const job = await f.rpc("claim_backend_job_v4");
+  const job = await f.rpc("claim_backend_job_v5");
   const context = await f.rpc("delivery_export_context", [
     job.id,
     job.lease_token,

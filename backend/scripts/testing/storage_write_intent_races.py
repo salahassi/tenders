@@ -16,7 +16,7 @@ from ordinary_export_races import setup
 def prepared(f):
     opportunity, _, payload = setup(f)
     package = f.command('export.package.prepare', payload)
-    job = f.value("select public.claim_backend_job_v4()")
+    job = f.value("select public.claim_backend_job_v5()")
     context = f.value(f"select public.export_render_context({literal(job['id'])},{literal(job['lease_token'])})")
     key = context['volumes'][0]['storage_key']
     command = f"select public.begin_render_storage_write({literal(job['id'])},{literal(job['lease_token'])},{literal(key)},{literal('a'*64)},100)"

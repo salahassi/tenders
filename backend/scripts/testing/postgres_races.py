@@ -211,7 +211,7 @@ def run_delivery(f):
     proposal = f.value(f"select to_jsonb(p) from public.proposals p where id={literal(snapshot['proposal_id'])}")
     assert proposal["active_version_id"] is None and generation["base_version_id"] is None
     assert proposal["active_delivery_snapshot_id"] != snapshot["id"]
-    job = f.value("select public.claim_backend_job()")
+    job = f.value("select public.claim_backend_job_v5()")
     context = f.value(f"select public.generation_context({literal(job['id'])},{literal(job['lease_token'])})")
     assert context["plan"]["id"] == generation["id"]
     assert context["plan"]["base_version_id"] is None

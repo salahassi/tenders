@@ -156,7 +156,7 @@ const transport = {
       )
     )[0],
   internal: (name: string, args?: Record<string, unknown>) => rpc(name, args),
-  claim: () => rpc("claim_backend_job"),
+  claim: () => rpc("claim_backend_job_v5"),
   object: async (path: string) => {
     const object = objects.get(path);
     if (!object)

@@ -80,7 +80,7 @@ async function fixture() {
     )
   ).rows[0].id;
   await f.rpc("schedule_assessment_refresh");
-  const job = await f.rpc("claim_backend_job");
+  const job = await f.rpc("claim_backend_job_v5");
   expect(job.type).toBe("classify_opportunity");
   return { source, opportunity, job };
 }
@@ -118,7 +118,7 @@ it("defers and resumes the same lease-bound assessment with exact-hash OCR evide
     JSON.stringify(output),
     null,
   ]);
-  const resumed = await f.rpc("claim_backend_job");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   expect(await request(resumed)).toEqual({ status: "ready", result: output });
   const after = (
@@ -214,7 +214,7 @@ it.each(["ready", "waiting", "partial_waiting", "stale"])(
       ]);
     }
     if (mode === "partial_waiting") {
-      const resumed = await f.rpc("claim_backend_job_v2");
+      const resumed = await f.rpc("claim_backend_job_v5");
       expect(resumed.id).toBe(job.id);
       await request(resumed, url + "?attachment=second");
     }
@@ -237,9 +237,9 @@ it.each(["ready", "waiting", "partial_waiting", "stale"])(
         [f.w, f.owner],
       )
     ).rows[0];
-    const claimed = await f.rpc("claim_backend_job_v2");
+    const claimed = await f.rpc("claim_backend_job_v5");
     expect(claimed.id).toBe(mode === "ready" ? job.id : unseen.id);
-    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+    expect(await f.rpc("claim_backend_job_v5")).toBeNull();
     expect(
       (await f.db.query("select * from public.provider_usage")).rows,
     ).toHaveLength(0);
@@ -262,7 +262,7 @@ it("alternates initial public notice reading with model owners while preserving 
       [f.w, f.owner],
     )
   ).rows[0];
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(unseen.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(unseen.id);
   await f.db.query(
     "update public.jobs set status='succeeded',lease_token=null,lease_until=null where id=$1",
     [unseen.id],
@@ -277,7 +277,7 @@ it("alternates initial public notice reading with model owners while preserving 
       [f.w, f.owner],
     )
   ).rows[0];
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(second.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(second.id);
   await f.db.query(
     "update public.jobs set status='succeeded',lease_token=null,lease_until=null where id=$1",
     [second.id],
@@ -288,7 +288,7 @@ it("alternates initial public notice reading with model owners while preserving 
       [f.w, f.owner],
     )
   ).rows[0];
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(job.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(job.id);
   expect(
     (
       await f.db.query<any>("select attempts from public.jobs where id=$1", [
@@ -329,7 +329,7 @@ it("creates a new revision-bound request after source reconfiguration and retain
     "update public.sources set revision=revision+1 where id=$1",
     [source.id],
   );
-  const resumed = await f.rpc("claim_backend_job");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   const current = await request(resumed);
   expect(current.status).toBe("pending");
@@ -365,7 +365,7 @@ it("skips multiple stale requests and claims valid work in the same bounded scan
   await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
     job.id,
   ]);
-  const second = await request(await f.rpc("claim_backend_job"));
+  const second = await request(await f.rpc("claim_backend_job_v5"));
   await f.db.query(
     "update public.sources set revision=revision+1 where id=$1",
     [source.id],
@@ -373,7 +373,7 @@ it("skips multiple stale requests and claims valid work in the same bounded scan
   await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
     job.id,
   ]);
-  const third = await request(await f.rpc("claim_backend_job"));
+  const third = await request(await f.rpc("claim_backend_job_v5"));
   await f.db.query(
     "update app_private.public_notice_ocr_requests set created_at=now()-interval '1 hour' where id=any($1::uuid[])",
     [[first.request_id, second.request_id]],
@@ -541,7 +541,7 @@ it("retries one transient native failure within the original two-attempt budget"
       )
     ).rows[0],
   ).toEqual({ status: "blocked", attempts: 2 });
-  const resumed = await f.rpc("claim_backend_job_v2");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   const terminal = await request(resumed);
   expect(terminal).toEqual({
@@ -561,7 +561,7 @@ it("retries one transient native failure within the original two-attempt budget"
       )
     ).rows[0],
   ).toEqual({ status: "blocked", error_code: "NOTICE_OCR_FAILED" });
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   expect(
     (
       await f.db.query<any>(
@@ -582,7 +582,7 @@ it("keeps low-confidence OCR blocked without consuming a second native attempt",
     null,
     "NOTICE_OCR_LOW_CONFIDENCE",
   ]);
-  const resumed = await f.rpc("claim_backend_job_v2");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(await request(resumed)).toEqual({
     status: "blocked",
     error_code: "NOTICE_OCR_LOW_CONFIDENCE",
@@ -613,15 +613,15 @@ it.each(["queued", "running"])(
         [job.id],
       )
     ).rows[0];
-    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
-    expect(await f.rpc("claim_backend_job")).toBeNull();
+    expect(await f.rpc("claim_backend_job_v5")).toBeNull();
+    expect(await f.rpc("claim_backend_job_v5")).toBeNull();
     const other = (
       await f.db.query<any>(
         "insert into public.jobs(workspace_id,type,entity_id,input_hash,created_by,status) values($1,'model_probe',gen_random_uuid(),'synthetic-other',$2,'queued') returning id",
         [f.w, f.owner],
       )
     ).rows[0];
-    expect((await f.rpc("claim_backend_job_v2")).id).toBe(other.id);
+    expect((await f.rpc("claim_backend_job_v5")).id).toBe(other.id);
     expect(
       (
         await f.db.query(
@@ -668,7 +668,7 @@ it.each(["source", "membership", "cancel"])(
         )
       ).rows[0].waiting,
     ).toBe(false);
-    const claimed = await f.rpc("claim_backend_job_v2");
+    const claimed = await f.rpc("claim_backend_job_v5");
     if (change === "cancel") {
       expect(claimed).toBeNull();
       expect(

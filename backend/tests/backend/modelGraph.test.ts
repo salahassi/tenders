@@ -35,7 +35,7 @@ async function rpc(name: string, args: Record<string, unknown> = {}) {
 async function setup(budget_version = 1) {
   await f.command("model.routing", { enabled: true, expected_revision: 0 });
   await f.command("model.probe", {});
-  const job = await rpc("claim_backend_job_v2");
+  const job = await rpc("claim_backend_job_v5");
   await f.db.query(
     "update public.jobs set checkpoint=checkpoint||'{\"model_executor\":2}'::jsonb where id=$1",
     [job.id],
@@ -95,7 +95,7 @@ it("persists LangGraph state and pending writes and resumes under a new lease wi
     ).rows[0].count,
   ).toBeGreaterThan(0);
   await store.action("yield");
-  const resumed = await rpc("claim_backend_job_v2");
+  const resumed = await rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   const newProcess = new ModelGraphStore(
     { internal: rpc },

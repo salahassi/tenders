@@ -452,7 +452,7 @@ async function setup(
   return { o, base, p, v, j, issuance, parent };
 }
 async function claim(id: string) {
-  const j = await rpc("claim_backend_local_job_v4");
+  const j = await rpc("claim_backend_local_job_v5");
   expect(j?.id).toBe(id);
   return j;
 }
@@ -501,7 +501,7 @@ it("projects actual accepted responses, renders verified DOCX, and keeps human a
       machine_validation: { passed: true },
     },
   });
-  const rendered = await rpc("claim_backend_local_job_v4");
+  const rendered = await rpc("claim_backend_local_job_v5");
   expect(rendered.type).toBe("render_delivery");
   const output = await processDeliveryExport(
     t.backend,
@@ -679,7 +679,7 @@ it("fails at the request deadline during rendering, then explicitly retries the 
   );
   expect(projected).toMatchObject({ projected: true });
   const snapshotId = (projected as any).snapshot_id;
-  const renderJob = await rpc("claim_backend_local_job_v4");
+  const renderJob = await rpc("claim_backend_local_job_v5");
   expect(renderJob.type).toBe("render_delivery");
   const failed = await processDeliveryExport(
     t.backend,
@@ -757,7 +757,7 @@ it("fails at the request deadline during rendering, then explicitly retries the 
   await expect(f.command("delivery.snapshot.retry", input)).rejects.toThrow(
     "REVISION_CONFLICT",
   );
-  const next = await rpc("claim_backend_local_job_v4");
+  const next = await rpc("claim_backend_local_job_v5");
   expect(next.checkpoint.issuance_request_id).toBe(fresh.id);
   expect(next.entity_id).toBe(snapshotId);
   const rendered = await processDeliveryExport(
@@ -877,7 +877,7 @@ it.each(["projection", "render"])(
         expected_context_hash: ctx.context_hash,
         payload,
       });
-      const renderJob = await rpc("claim_backend_local_job_v4");
+      const renderJob = await rpc("claim_backend_local_job_v5");
       const renderContext = await rpc("delivery_export_context", {
         job_id: renderJob.id,
         lease: renderJob.lease_token,
@@ -1053,7 +1053,7 @@ it("issues two genuine volumes only after both byte-verified files are ready; on
   );
   expect(projected).toMatchObject({ projected: true });
   const snapshotId = (projected as any).snapshot_id;
-  const renderJob = await rpc("claim_backend_local_job_v4");
+  const renderJob = await rpc("claim_backend_local_job_v5");
   const identity = { job_id: renderJob.id, lease: renderJob.lease_token };
   const context = await rpc("delivery_export_context", identity);
   expect(context.artifacts).toHaveLength(2);
@@ -1146,7 +1146,7 @@ it.each([false, true])(
     ).toBe(20971520);
     const projected = await processGeneratedDelivery(t.backend, job);
     expect(projected).toMatchObject({ projected: true });
-    const rendering = await rpc("claim_backend_local_job_v4");
+    const rendering = await rpc("claim_backend_local_job_v5");
     expect(rendering.type).toBe("render_delivery");
     const context = await rpc("delivery_export_context", {
       job_id: rendering.id,
@@ -1225,7 +1225,7 @@ it("does not consume the file allowance on a stale-source render context and rel
     job.lease_token,
   ]);
   await processGeneratedDelivery(t.backend, job);
-  const rendering = await rpc("claim_backend_local_job_v4");
+  const rendering = await rpc("claim_backend_local_job_v5");
   await f.db.query(
     "update public.opportunities set title='Changed source before capacity transfer' where id=$1",
     [o.id],
@@ -1284,7 +1284,7 @@ it("rolls back an allowance transfer when the delegated artifact reservation fai
     job.lease_token,
   ]);
   await processGeneratedDelivery(transport().backend, job);
-  const rendering = await rpc("claim_backend_local_job_v4");
+  const rendering = await rpc("claim_backend_local_job_v5");
   // Fault injection after admission: bypass canonical writers to force the
   // delegated capacity check to fail after the allowance-decrease statement.
   await f.db.query(
@@ -1334,7 +1334,7 @@ it("observes canonical whole-package issuance and preserves timestamps after sou
     const t = transport();
     const generated = await processGeneratedDelivery(t.backend, await claim(j.id));
     expect(generated).toMatchObject({ projected: true });
-    const render = await rpc("claim_backend_local_job_v4");
+    const render = await rpc("claim_backend_local_job_v5");
     expect(render.type).toBe("render_delivery");
     const rendered = await processDeliveryExport(t.backend, render, async (model) =>
       new Uint8Array(await (await renderDocx(model, fonts)).arrayBuffer()));

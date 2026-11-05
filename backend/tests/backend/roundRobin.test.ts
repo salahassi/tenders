@@ -100,7 +100,7 @@ async function usage(id: string) {
 function worker(fetcher: typeof fetch, env = environment) {
   const backend = {
     internal: rpc,
-    claim: () => rpc("claim_backend_job"),
+    claim: () => rpc("claim_backend_job_v5"),
     finish: (
       job_id: string,
       lease: string,
@@ -277,7 +277,7 @@ it.each(["priority", "round_robin"] as const)(
 it("keeps round checkpoints private, input-bound, lease-bound and canceled-job safe", async () => {
   await enable();
   const q = await queue();
-  const j = await rpc("claim_backend_job");
+  const j = await rpc("claim_backend_job_v5");
   await rpc("prepare_model_routing", {
     job_id: j.id,
     lease: j.lease_token,
@@ -633,7 +633,7 @@ it.each(["gemini_free", "openai"] as const)(
       remote_request_id: "synthetic-durable",
     });
     await age();
-    const claimed = await rpc("claim_backend_job");
+    const claimed = await rpc("claim_backend_job_v5");
     expect(claimed.id).toBe(q.id);
     await f.db.exec(
       "update public.jobs set lease_until=now()-interval '1 second' where status='running'",
@@ -834,7 +834,7 @@ it("can fail over within a one-request token budget after a proven initial 429 r
 it("requires exact per-provider content permission and service-only metadata preparation", async () => {
   await enable();
   const q = await queue();
-  const claimed = await rpc("claim_backend_job");
+  const claimed = await rpc("claim_backend_job_v5");
   await rpc("prepare_model_routing", {
     job_id: q.id,
     lease: claimed.lease_token,
@@ -1009,7 +1009,7 @@ it("accepts four-slot workers during deployment even when the new cursor points 
   await enable();
   await f.db.exec("update public.model_routing set next_position=4");
   const q = await queue();
-  const claimed = await rpc("claim_backend_job");
+  const claimed = await rpc("claim_backend_job_v5");
   await rpc("prepare_model_routing", {
     job_id: q.id,
     lease: claimed.lease_token,
@@ -1085,7 +1085,7 @@ it("keeps z.ai exact-content consent separate from Gemini consent", async () => 
     (x: any) => x.entity_id === item.id,
   );
   const q = await queue();
-  const claimed = await rpc("claim_backend_job");
+  const claimed = await rpc("claim_backend_job_v5");
   await f.db.query(
     "update public.jobs set type='classify_opportunity' where id=$1",
     [q.id],
@@ -1764,7 +1764,7 @@ it("accepts a seven-slot worker with a cursor at Cloudflare without removing the
   await enable();
   await f.db.exec("update public.model_routing set next_position=7");
   const q = await queue();
-  const claimed = await rpc("claim_backend_job");
+  const claimed = await rpc("claim_backend_job_v5");
   await rpc("prepare_model_routing", {
     job_id: q.id,
     lease: claimed.lease_token,

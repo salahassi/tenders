@@ -35,7 +35,7 @@ def run(f):
     assert used(f)<=CAP
     cases.append({'case':'competing input reservation and future complete package serialize without overcommit','passed':True,'contenders_observed_waiting':2,'model_allowance_won':results[0].returncode==0})
     f.sql(f"select app_private.fail_proposal_issuance({literal(r)},'AI_AGENTS_UNAVAILABLE');delete from public.storage_cleanup_queue where storage_key like 'synthetic-capacity-%';")
-    reset_pending(f);o,p,publish=setup(f);j=job(f,p);r=request(f,p);baseline=used(f);f.sql(hold(j));s=f.value(publish);render=f.value('select public.claim_backend_local_job_v4()')
+    reset_pending(f);o,p,publish=setup(f);j=job(f,p);r=request(f,p);baseline=used(f);f.sql(hold(j));s=f.value(publish);render=f.value('select public.claim_backend_local_job_v5()')
     assert render['entity_id']==s['id'],render
     c=f.value(f"select public.delivery_export_context({literal(render['id'])},{literal(render['lease_token'])})")
     assert len(c['artifacts'])==1 and c['artifacts'][0]['reserved_bytes']==10485760
@@ -47,7 +47,7 @@ def run(f):
     f.value(f"select public.finish_delivery_export({literal(render['id'])},{literal(render['lease_token'])})")
     assert state(f,r)['outcome']=='issued' and state(f,r)['reserved_file_bytes']==0 and used(f)==baseline+321
     cases.append({'case':'required artifact atomically receives held capacity once; issuance releases unused allowance only','passed':True,'ready_bytes_retained':321})
-    reset_pending(f);o,p,publish=setup(f);j=job(f,p);r=request(f,p);f.sql(hold(j));s=f.value(publish);render=f.value('select public.claim_backend_local_job_v4()')
+    reset_pending(f);o,p,publish=setup(f);j=job(f,p);r=request(f,p);f.sql(hold(j));s=f.value(publish);render=f.value('select public.claim_backend_local_job_v5()')
     f.sql(f"update public.opportunities set description='Synthetic changed source' where id={literal(o['id'])}")
     result=f.sql(f"select public.delivery_export_context({literal(render['id'])},{literal(render['lease_token'])})",False)
     assert result.returncode and ('STALE_INPUT' in result.stderr or 'DELIVERY_SOURCE_UNAVAILABLE' in result.stderr),result.stderr

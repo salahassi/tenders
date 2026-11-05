@@ -56,10 +56,10 @@ export async function workflowFixture(
 /** Existing model-only integration fixtures do not execute local DOCX rendering.
  * Their synthetic initial/partial draft render jobs are explicitly canceled;
  * dedicated delivery tests exercise the real queue order and renderer. The
- * model jobs themselves use the canonical current-worker capability (4), with
+ * model jobs themselves use the canonical current-worker capability (5), with
  * unchanged SQL eligibility, provider accounting and historical wire pins.
  */
-export async function claimModelWorker4(
+export async function claimModelWorker5(
   fixture: Pick<Awaited<ReturnType<typeof workflowFixture>>, "db">,
   rpc: (name: string) => Promise<any>,
 ) {
@@ -71,7 +71,7 @@ export async function claimModelWorker4(
   await fixture.db.query(
     "update public.jobs set status='canceled',lease_token=null,lease_until=null where type='render_delivery' and checkpoint->>'delivery_renderer_version'='1' and status in ('queued','retry_wait','quota_wait')",
   );
-  await fixture.db.query("select set_config('app.worker_executor','4',true)");
+  await fixture.db.query("select set_config('app.worker_executor','5',true)");
   try {
     return await rpc("claim_backend_job");
   } finally {

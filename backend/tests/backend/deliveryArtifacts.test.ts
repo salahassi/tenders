@@ -78,7 +78,7 @@ async function bytes() {
   );
 }
 async function claim(s: any) {
-  const j = await f.rpc("claim_backend_job_v3");
+  const j = await f.rpc("claim_backend_job_v5");
   expect(j?.entity_id).toBe(s.id);
   return j;
 }
@@ -153,9 +153,9 @@ it("keeps old workers out while v3 local work bypasses occupied model slots, not
     `insert into public.provider_usage(workspace_id,job_id,lease_token,call_key,provider,model,input_hash,application_day,settings_revision,reserved_input,reserved_output,state,created_by) values($1,null,gen_random_uuid(),'synthetic-busy','openai','synthetic-model',repeat('a',64),current_date,1,100,100,'reserved',$2)`,
     [f.w, f.owner],
   );
-  const j = await f.rpc("claim_backend_local_job_v3");
+  const j = await f.rpc("claim_backend_local_job_v5");
   expect(j.entity_id).toBe(s.id);
-  expect(await f.rpc("claim_backend_job_v3")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   expect((await row("select state from public.provider_usage")).state).toBe(
     "reserved",
   );
@@ -346,7 +346,7 @@ it.each(["DELIVERY_STORAGE_UNAVAILABLE", "DELIVERY_RENDER_FAILED"])(
     expect(waiting.status).toBe("retry_wait");
     expect(waiting.failure_count).toBe(1);
     expect(waiting.lease_token).toBeNull();
-    expect(await f.rpc("claim_backend_job_v3")).toBeNull();
+    expect(await f.rpc("claim_backend_job_v5")).toBeNull();
     await f.db.query(
       "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
       [j.id],
@@ -386,7 +386,7 @@ it.each([
     expected_size: null,
     reserved_bytes: 10485760,
   });
-  expect(await f.rpc("claim_backend_job_v3")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
 });
 it("rejects arbitrary diagnostics and foreign artifact IDs", async () => {
   const { snapshot: s } = await setup(),
@@ -693,7 +693,7 @@ it("bounds transient attempts and explicitly retries under current authority wit
     snapshot: { proposal_id: s.proposal_id, delivery_revision: revision + 1 },
   });
 });
-it("wakes new local artifacts with full model slots only through v3 and preserves wake revision guards", async () => {
+it("wakes new local artifacts with full model slots only through the current worker and preserves wake revision guards", async () => {
   const { snapshot: s } = await setup();
   await f.db.exec(
     `create table app_private.test_delivery_dispatches(id int);create or replace function app_private.dispatch_backend() returns void language plpgsql security definer set search_path='' as $$begin insert into app_private.test_delivery_dispatches values(1);end$$;`,
@@ -714,19 +714,19 @@ it("wakes new local artifacts with full model slots only through v3 and preserve
     dispatched: false,
   });
   expect(
-    await f.rpc("wake_backend_queue_revision_v3", [
+    await f.rpc("wake_backend_queue_revision_v5", [
       done.id,
       lease,
       done.revision + 1,
     ]),
   ).toEqual({ dispatched: false });
-  expect(await f.rpc("wake_backend_queue_status_v3", [done.id, lease])).toEqual(
+  expect(await f.rpc("wake_backend_queue_status_v5", [done.id, lease])).toEqual(
     { dispatched: true },
   );
-  expect(await f.rpc("wake_backend_queue_status_v3", [done.id, lease])).toEqual(
+  expect(await f.rpc("wake_backend_queue_status_v5", [done.id, lease])).toEqual(
     { dispatched: false },
   );
-  expect((await f.rpc("claim_backend_local_job_v3")).entity_id).toBe(s.id);
+  expect((await f.rpc("claim_backend_local_job_v5")).entity_id).toBe(s.id);
 });
 it.each([false, true])(
   "restores %s partial volume package and resumes only through current explicit authority",
@@ -806,7 +806,7 @@ it.each([false, true])(
           expected_delivery_revision: pack.snapshot.delivery_revision,
         };
         await target.command("delivery.snapshot.retry", retryInput);
-        const next = await target.rpc("claim_backend_job_v3");
+        const next = await target.rpc("claim_backend_job_v5");
         expect(next.created_by).toBe(target.owner);
         expect(next.id).not.toBe(j.id);
         const nextContext = await target.rpc("delivery_export_context", [
@@ -867,7 +867,7 @@ it("bounds six crash recoveries and retains uncertain storage for explicit retry
       "update public.jobs set lease_until=now()-interval '1 second' where id=$1",
       [j.id],
     );
-    const next = await f.rpc("claim_backend_job_v3");
+    const next = await f.rpc("claim_backend_job_v5");
     if (crash < 6) {
       expect(next.id).toBe(j.id);
       expect(next.failure_count).toBe(crash);

@@ -170,7 +170,7 @@ class RetirementClient(Acceptance):
           'language':'en','decision':'shortlisted'},token)
         snapshot=self.command('delivery.snapshot.prepare',{'opportunity_id':opportunity['id'],
           'expected_revision':opportunity['revision']},token)
-        job=self.rpc('claim_backend_job_v4')
+        job=self.rpc('claim_backend_job_v5')
         require(isinstance(job,dict) and job.get('type')=='render_delivery' and job.get('entity_id')==snapshot['id'],
           'RETIREMENT_FIXTURE_CLAIM_MISMATCH')
         export=self.rpc('delivery_export_context',{'job_id':job['id'],'lease':job['lease_token']})

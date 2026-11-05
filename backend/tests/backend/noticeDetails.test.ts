@@ -557,7 +557,7 @@ async function fixture() {
     [o],
   );
   await f.rpc("schedule_assessment_refresh");
-  const job = await f.rpc("claim_backend_job");
+  const job = await f.rpc("claim_backend_job_v5");
   return { s, o, item, job };
 }
 it("persists detail evidence under the lease, supersedes title-only plans, preserves decisions and excludes expired notices", async () => {
@@ -603,7 +603,7 @@ it("persists detail evidence under the lease, supersedes title-only plans, prese
     assessment_current: false,
   });
   await f.rpc("schedule_assessment_refresh");
-  const next = await f.rpc("claim_backend_job");
+  const next = await f.rpc("claim_backend_job_v5");
   const refreshed = await f.rpc("generation_context", [
     next.id,
     next.lease_token,
@@ -668,7 +668,7 @@ async function enrichedFixture() {
     JSON.stringify(details),
   ]);
   await f.rpc("schedule_assessment_refresh");
-  const job = await f.rpc("claim_backend_job");
+  const job = await f.rpc("claim_backend_job_v5");
   return { ...base, details, job };
 }
 
@@ -733,7 +733,7 @@ async function acceptedAssessment() {
     base.job.lease_token,
     JSON.stringify({ synthetic: "accepted test assessment" }),
   ]);
-  const advance = await f.rpc("claim_backend_job");
+  const advance = await f.rpc("claim_backend_job_v5");
   await f.rpc("advance_generation", [
     advance.id,
     advance.lease_token,
@@ -767,7 +767,7 @@ async function acceptedAssessment() {
 async function refreshJob(base: { o: string; s: any }) {
   await expireDetailFetch(base.o, base.s.id);
   await f.rpc("schedule_assessment_refresh");
-  const job = await f.rpc("claim_backend_job");
+  const job = await f.rpc("claim_backend_job_v5");
   expect(
     (await f.rpc("generation_context", [job.id, job.lease_token]))
       .detail_source,
@@ -941,7 +941,7 @@ it("a manual re-evaluation is never replaced with an old assessment after an unc
     expected_revision: opportunity.revision,
   });
   await expireDetailFetch(base.o, base.s.id);
-  const job = await f.rpc("claim_backend_job");
+  const job = await f.rpc("claim_backend_job_v5");
   expect(job.entity_id).toBe(manual.id);
   await f.rpc("complete_notice_details", [
     job.id,
@@ -1017,7 +1017,7 @@ it.each([
     ).rows[0].evidence_revision;
     expect(version).toBeGreaterThan(before.evidence_revision);
     await f.rpc("schedule_assessment_refresh");
-    const next = await f.rpc("claim_backend_job");
+    const next = await f.rpc("claim_backend_job_v5");
     const ctx = await f.rpc("generation_context", [next.id, next.lease_token]);
     expect(ctx.plan.evidence_revision).toBe(version);
     expect(ctx.detail_source).toBeUndefined();
@@ -1181,7 +1181,7 @@ it("volatile HTTP refresh keeps an approval, but changed attachment evidence inv
     JSON.stringify(freshDetails(base.details)),
   ]);
   expect(await state()).toEqual(before);
-  const job = await f.rpc("claim_backend_job");
+  const job = await f.rpc("claim_backend_job_v5");
   await expireDetailFetch(base.o, base.s.id);
   const changed = freshDetails(base.details);
   changed.notice_evidence.attachments[0].sha256 = "f".repeat(64);
@@ -1350,7 +1350,7 @@ it("reads pending detail pages before starting an older ready-to-model assessmen
     )
   ).rows[0].id;
   await f.rpc("schedule_assessment_refresh");
-  const next = await f.rpc("claim_backend_job");
+  const next = await f.rpc("claim_backend_job_v5");
   const ctx = await f.rpc("generation_context", [next.id, next.lease_token]);
   expect(ctx.plan.opportunity_id).toBe(newer);
   expect(ctx.detail_source).toBeDefined();

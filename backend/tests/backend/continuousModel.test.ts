@@ -84,7 +84,7 @@ function worker(
 ) {
   const backend = {
     internal: rpc,
-    claim: () => rpc("claim_backend_job"),
+    claim: () => rpc("claim_backend_job_v5"),
     finish: (
       job_id: string,
       lease: string,
@@ -156,7 +156,7 @@ it("saves an attested continuous Gemini policy without an invented quota or peri
     (await f.command("model.probe", {}, "00000000-0000-4000-8000-000000000011"))
       .id,
   ).toBe(queued.id);
-  const claimed = await rpc("claim_backend_job");
+  const claimed = await rpc("claim_backend_job_v5");
   await expect(
     rpc("finish_backend_job", {
       job_id: claimed.id,
@@ -353,7 +353,7 @@ it("does not bypass unknown request hashes, pending reservations, legacy policie
     "update public.provider_usage set created_at=now()-interval '2 minutes'",
   );
   await f.command("model.probe", {});
-  const claimed = await rpc("claim_backend_job");
+  const claimed = await rpc("claim_backend_job_v5");
   const args = {
     job_id: claimed.id,
     lease: claimed.lease_token,
@@ -411,7 +411,7 @@ it("honors finite Retry-After and bounds invalid or repeated provider quota wait
     await f.db.exec(
       "update public.jobs set next_attempt_at=now()-interval '1 second'",
     );
-    const claimed = await rpc("claim_backend_job");
+    const claimed = await rpc("claim_backend_job_v5");
     await f.db.query("update public.jobs set attempts=$1 where id=$2", [
       attempts,
       claimed.id,
@@ -433,7 +433,7 @@ it("honors finite Retry-After and bounds invalid or repeated provider quota wait
   await f.db.exec(
     "update public.jobs set next_attempt_at=now()-interval '1 second'",
   );
-  const claimed = await rpc("claim_backend_job");
+  const claimed = await rpc("claim_backend_job_v5");
   const next = new Date(Date.now() + 600000).toISOString();
   await rpc("fail_generation", {
     job_id: claimed.id,
@@ -634,7 +634,7 @@ it("recovers a lost worker lease by retrieving the recorded request instead of c
   await f.db.exec(
     "update public.jobs set next_attempt_at=now()-interval '1 second'",
   );
-  const claimed = await rpc("claim_backend_job");
+  const claimed = await rpc("claim_backend_job_v5");
   const usage = (await f.db.query<any>("select * from public.provider_usage"))
     .rows[0];
   await rpc("resume_model_request", {
@@ -714,7 +714,7 @@ it("pins background identity and conservatively retains canceled usage", async (
   await f.db.exec(
     "update public.jobs set next_attempt_at=now()-interval '1 second'",
   );
-  const claimed = await rpc("claim_backend_job");
+  const claimed = await rpc("claim_backend_job_v5");
   const usage = (await f.db.query<any>("select * from public.provider_usage"))
     .rows[0];
   const args = {

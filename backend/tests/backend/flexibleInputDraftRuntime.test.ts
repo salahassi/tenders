@@ -1,7 +1,7 @@
 import { sourceContractFixture } from "./sourceContractFixture";
 // @vitest-environment node
 import { beforeAll, afterAll, beforeEach, afterEach, expect, it } from "vitest";
-import { workflowFixture, claimModelWorker4 } from "./workflowFixture";
+import { workflowFixture, claimModelWorker5 } from "./workflowFixture";
 import {
   taskInput,
   processGeneration,
@@ -539,7 +539,7 @@ it.each([
       if ((await f.db.query<{ status: string }>(
         "select status from public.generation_plans where id=$1", [plan.id],
       )).rows[0].status === "completed") break;
-      const job = await claimModelWorker4(f, internal);
+      const job = await claimModelWorker5(f, internal);
       if (!job) break;
       const ctx = await internal("generation_context", {
         job_id: job.id,

@@ -100,7 +100,7 @@ async function configure(
     expected_revision: 0,
   });
   const queued = await f.command("model.probe", {});
-  const job = await rpc("claim_backend_job_v2");
+  const job = await rpc("claim_backend_job_v5");
   expect(job.id).toBe(queued.id);
   const envs = modelEnvironments((name) =>
     name.endsWith("_KEY")
@@ -194,7 +194,7 @@ it.each([
     await expect(executeGuardedModel(options)).rejects.toBeInstanceOf(
       ModelDeferred,
     );
-    const current = await rpc("claim_backend_job_v2");
+    const current = await rpc("claim_backend_job_v5");
     const thread = (
       await f.db.query<any>(
         "select id from app_private.model_graph_threads where job_id=$1",
@@ -391,9 +391,9 @@ it("admits two distinct background jobs, keeps the same-job guard and drains acc
       [s.job.id],
     )
   ).rows[0];
-  const secondJob = await rpc("claim_backend_job_v2");
+  const secondJob = await rpc("claim_backend_job_v5");
   expect(secondJob.id).toBe(queued.id);
-  expect(await rpc("claim_backend_job_v2")).toBeNull();
+  expect(await rpc("claim_backend_job_v5")).toBeNull();
   const ledger = modelLedger(
     s.backend,
     secondJob,
@@ -426,7 +426,7 @@ it("admits two distinct background jobs, keeps the same-job guard and drains acc
       [s.job.id],
     )
   ).rows[0];
-  expect(await rpc("claim_backend_job_v2")).toBeNull();
+  expect(await rpc("claim_backend_job_v5")).toBeNull();
   // Admission now waits before leasing a third inference job. Also exercise
   // reservation protection for a worker leased before a capacity reduction.
   const thirdJob = (
@@ -466,7 +466,7 @@ it("admits two distinct background jobs, keeps the same-job guard and drains acc
   await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
     s.job.id,
   ]);
-  const resumed = await rpc("claim_backend_job_v2");
+  const resumed = await rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(s.job.id);
   const pending = await rpc("resume_task_model_request", {
     job_id: resumed.id,
@@ -668,7 +668,7 @@ it.each([false, true])(
       ModelDeferred,
     );
     expect(bodies).toHaveLength(1);
-    const resumed = await rpc("claim_backend_job_v2");
+    const resumed = await rpc("claim_backend_job_v5");
     expect(resumed.id).toBe(job.id);
     expect(resumed.lease_token).not.toBe(job.lease_token);
     const identity = {
@@ -755,7 +755,7 @@ it.each([false, true])(
       thread_id: outcome.threadId,
     });
     const queued = await f.command("model.probe", {});
-    const next = await rpc("claim_backend_job_v2");
+    const next = await rpc("claim_backend_job_v5");
     expect(next.id).toBe(queued.id);
     expect(
       (
@@ -908,7 +908,7 @@ it("preserves a historical draft request through the semantic-policy rollout wit
     "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
     [job.id],
   );
-  const resumed = await rpc("claim_backend_job_v2");
+  const resumed = await rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   // Producing the paid candidate yields before independent verification. No
   // new writer, reserve, or altered-input generation is permitted on replay.
@@ -1029,7 +1029,7 @@ it("resumes an accepted Gemini request with its original effective metadata and 
     "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
     [job.id],
   );
-  const resumed = await rpc("claim_backend_job_v2");
+  const resumed = await rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   internal.mockClear();
   expect(
@@ -1150,7 +1150,7 @@ it.each(["openai", "gemini_free"] as const)(
       "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
       [job.id],
     );
-    const resumed = await rpc("claim_backend_job_v2");
+    const resumed = await rpc("claim_backend_job_v5");
     expect(resumed.lease_token).not.toBe(job.lease_token);
     const identity = {
       job_id: job.id,
@@ -1323,7 +1323,7 @@ it.each([
       "update jobs set next_attempt_at=now()-interval '1 second' where id=$1",
       [job.id],
     );
-    const current = await rpc("claim_backend_job_v2");
+    const current = await rpc("claim_backend_job_v5");
     expect(await run(current)).toEqual({ status: "ready" });
     expect(methods).toEqual(["openai:POST", "openai:GET", "qwencloud:POST"]);
     expect(
@@ -1383,7 +1383,7 @@ it.each([
         [job.id],
       );
       await f.command("model.probe", {});
-      const next = await rpc("claim_backend_job_v2");
+      const next = await rpc("claim_backend_job_v5");
       expect(await run(next)).toEqual({ status: "ready" });
       expect(methods).toEqual([
         "openai:POST",
@@ -1496,7 +1496,7 @@ it("keeps a pending remote request pinned to its original model across settings 
     "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
     [job.id],
   );
-  const resumed = await rpc("claim_backend_job_v2");
+  const resumed = await rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   expect(
     await executeModel(
@@ -1592,7 +1592,7 @@ it("makes healthy polls eligible at the next normal cron tick without shortening
       "update jobs set next_attempt_at=now()-interval '1 second' where id=$1",
       [job.id],
     );
-    const current = await rpc("claim_backend_job_v2");
+    const current = await rpc("claim_backend_job_v5");
     expect(current.id).toBe(job.id);
     await expect(run(current)).rejects.toBeInstanceOf(ModelDeferred);
     expect(await timing()).toEqual({
@@ -2036,7 +2036,7 @@ it.each([
             ).rows[0].count,
           ).toBe(0);
         }
-        current = await rpc("claim_backend_job_v2");
+        current = await rpc("claim_backend_job_v5");
         expect(current.id).toBe(job.id);
       }
     }
@@ -2242,7 +2242,7 @@ it.each([
         break;
       } catch (error) {
         if (!(error instanceof ModelDeferred)) throw error;
-        current = await rpc("claim_backend_job_v2");
+        current = await rpc("claim_backend_job_v5");
         expect(current.id).toBe(job.id);
         const retained = (
           await f.db.query<any>(
@@ -2431,7 +2431,7 @@ it("retains unknown accepted-request protection across jobs with the same input"
     [job.id],
   );
   const queued = await f.command("model.probe", {});
-  const next = await rpc("claim_backend_job_v2");
+  const next = await rpc("claim_backend_job_v5");
   expect(next.id).toBe(queued.id);
   await modelLedger(backend, next, "new-phase", envs).preflight(
     [],
@@ -2498,7 +2498,7 @@ it("keeps jobs on legacy routing when new-work admission is disabled", async () 
 it("imports an existing server setup before new routes have been configured", async () => {
   await f.command("model.routing", { enabled: true, expected_revision: 0 });
   await f.command("model.probe", {});
-  const job = await rpc("claim_backend_job_v2");
+  const job = await rpc("claim_backend_job_v5");
   const envs = modelEnvironments((name) =>
     name.endsWith("_KEY")
       ? "fixture-key"
@@ -2695,7 +2695,7 @@ it("persists a pending provider request before releasing the graph lease and pol
     "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
     [job.id],
   );
-  const resumed = await rpc("claim_backend_job_v2");
+  const resumed = await rpc("claim_backend_job_v5");
   const outcome = await executeGuardedModel({ ...options, job: resumed });
   expect(outcome.result).toEqual({ status: "ready" });
   expect(methods).toEqual(["POST", "GET", "DELETE"]);
@@ -2830,7 +2830,7 @@ it.each(["corrected", "unchanged", "evolving", "unsupported_verifier"])(
           break;
         }
         expect(e).toBeInstanceOf(ModelDeferred);
-        current = await rpc("claim_backend_job_v2");
+        current = await rpc("claim_backend_job_v5");
         expect(current.id).toBe(job.id);
       }
     }
@@ -2994,7 +2994,7 @@ it.each([false, true])(
           break;
         }
         if (!(error instanceof ModelDeferred)) throw error;
-        current = await rpc("claim_backend_job_v2");
+        current = await rpc("claim_backend_job_v5");
         expect(current.id).toBe(job.id);
       }
     }
@@ -3071,7 +3071,7 @@ it.each([false, true, "missing_support"])(
     await expect(executeGuardedModel(options)).rejects.toBeInstanceOf(
       ModelDeferred,
     );
-    const current = await rpc("claim_backend_job_v2");
+    const current = await rpc("claim_backend_job_v5");
     expect(current.id).toBe(job.id);
     const thread = (
       await f.db.query<any>(
@@ -3442,7 +3442,7 @@ it.each([
           "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
           [job.id],
         );
-        current = await rpc("claim_backend_job_v2");
+        current = await rpc("claim_backend_job_v5");
         expect(current.id).toBe(job.id);
       }
     }
@@ -3671,7 +3671,7 @@ it.each([false, true])(
           "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
           [job.id],
         );
-        current = await rpc("claim_backend_job_v2");
+        current = await rpc("claim_backend_job_v5");
         expect(current.id).toBe(job.id);
       }
     }
@@ -3807,7 +3807,7 @@ it("recovers an unstarted false repair, reuses verified batches and completes fu
   await expect(executeGuardedModel(options)).rejects.toBeInstanceOf(
     ModelDeferred,
   );
-  let current = await rpc("claim_backend_job_v2");
+  let current = await rpc("claim_backend_job_v5");
   const thread = (
     await f.db.query<any>(
       "select id,candidate_count from app_private.model_graph_threads where job_id=$1",
@@ -3874,7 +3874,7 @@ it("recovers an unstarted false repair, reuses verified batches and completes fu
         "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
         [job.id],
       );
-      current = await rpc("claim_backend_job_v2");
+      current = await rpc("claim_backend_job_v5");
     }
   }
   expect(outcome?.result).toEqual(candidate);
@@ -3953,7 +3953,7 @@ it("cannot accept a partial report accidentally stored as complete verification"
   await expect(executeGuardedModel(options)).rejects.toBeInstanceOf(
     ModelDeferred,
   );
-  const current = await rpc("claim_backend_job_v2");
+  const current = await rpc("claim_backend_job_v5");
   const thread = (
     await f.db.query<any>(
       "select id from app_private.model_graph_threads where job_id=$1",
@@ -4016,7 +4016,7 @@ it("lets legacy workers skip graph work and resumes it with a capable worker aft
     expected_revision: 1,
   });
   expect(await rpc("claim_backend_job")).toBeNull();
-  expect((await rpc("claim_backend_job_v2")).id).toBe(job.id);
+  expect((await rpc("claim_backend_job_v5")).id).toBe(job.id);
 });
 
 it("saves model routes through the same transactional batch RPC used by the browser, with idempotent replay", async () => {
@@ -4408,7 +4408,7 @@ it.each(["model", "project"])(
       [job.id],
     );
     await f.command("model.probe", {});
-    const next = await rpc("claim_backend_job_v2");
+    const next = await rpc("claim_backend_job_v5");
     await modelLedger(backend, next, `probe:${next.id}`, envs).preflight(
       [],
       "connection_probe",

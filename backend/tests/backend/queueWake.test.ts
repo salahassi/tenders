@@ -71,7 +71,7 @@ async function wake(id: string, lease = crypto.randomUUID(), details = false) {
   try {
     return (
       await f.db.query<any>(
-        `select public.${details ? "wake_backend_queue_status" : "wake_backend_queue"}($1,$2) value`,
+        `select ${details ? "public.wake_backend_queue_status_v5($1,$2)" : "(public.wake_backend_queue_status_v5($1,$2)->>'dispatched')::boolean"} value`,
         [id, lease],
       )
     ).rows[0].value;
@@ -84,14 +84,14 @@ async function wake(id: string, lease = crypto.randomUUID(), details = false) {
 }
 async function runtimeWake(name: string, args: any) {
   expect([
-    "wake_backend_queue_status_v4",
-    "wake_backend_queue_revision_v4",
+    "wake_backend_queue_status_v5",
+    "wake_backend_queue_revision_v5",
   ]).toContain(name);
   await f.db.exec("savepoint runtime_wake_rpc;set local role service_role");
   try {
     return await f.rpc(
       name,
-      name === "wake_backend_queue_revision_v4"
+      name === "wake_backend_queue_revision_v5"
         ? [args.job_id, args.lease, args.expected_revision]
         : [args.job_id, args.lease],
     );
@@ -124,7 +124,7 @@ async function acceptedPoll() {
     graph_thread: "f".repeat(64),
     model_round: { input_hash: input },
   });
-  const claimed = await f.rpc("claim_backend_job_v2");
+  const claimed = await f.rpc("claim_backend_job_v5");
   expect(claimed.id).toBe(queued.id);
   const usage = crypto.randomUUID();
   await f.db.query(
@@ -170,8 +170,8 @@ it("wakes independent ready work only when a configured request slot is availabl
   );
   expect(await wake(done.id)).toBe(true);
   expect(await dispatches()).toBe(1);
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(ready.id);
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(ready.id);
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
 });
 
 it("wakes and claims local assembly even when every inference slot is reserved", async () => {
@@ -183,7 +183,7 @@ it("wakes and claims local assembly even when every inference slot is reserved",
   ]);
   expect(await wake(done.id)).toBe(true);
   expect(await dispatches()).toBe(1);
-  expect((await f.rpc("claim_backend_local_job")).id).toBe(local.id);
+  expect((await f.rpc("claim_backend_local_job_v5")).id).toBe(local.id);
 });
 
 it("keeps an accepted poll wake eligible beside another job's accepted request, even after lowering capacity", async () => {
@@ -213,8 +213,8 @@ it("keeps an accepted poll wake eligible beside another job's accepted request, 
       )
     ).rows[0].n,
   ).toBe(2);
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(claimed.id);
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(claimed.id);
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
 });
 
 it("waits for the existing accepted request's persisted due time, then wakes and claims only one normal poll lease", async () => {
@@ -247,22 +247,22 @@ it("waits for the existing accepted request's persisted due time, then wakes and
     [claimed.id],
   );
   expect(
-    await f.rpc("wake_backend_queue_revision", [
+    await f.rpc("wake_backend_queue_revision_v5", [
       claimed.id,
       claimed.lease_token,
       row.revision,
     ]),
   ).toEqual({ dispatched: true });
   expect(
-    await f.rpc("wake_backend_queue_revision", [
+    await f.rpc("wake_backend_queue_revision_v5", [
       claimed.id,
       claimed.lease_token,
       row.revision,
     ]),
   ).toEqual({ dispatched: false });
   expect(await dispatches()).toBe(1);
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(claimed.id);
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(claimed.id);
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   expect(
     (
       await f.db.query<any>(
@@ -305,7 +305,7 @@ it.each([
     [claimed.id],
   );
   if (change === "cron_claim")
-    expect((await f.rpc("claim_backend_job_v2")).id).toBe(claimed.id);
+    expect((await f.rpc("claim_backend_job_v5")).id).toBe(claimed.id);
   if (change === "revision")
     await f.db.query("update public.jobs set revision=revision+1 where id=$1", [
       claimed.id,
@@ -366,7 +366,7 @@ it.each([
       [claimed.id],
     );
   expect(
-    await f.rpc("wake_backend_queue_revision", [
+    await f.rpc("wake_backend_queue_revision_v5", [
       claimed.id,
       claimed.lease_token,
       row.revision,
@@ -388,7 +388,7 @@ it("preserves remote retry backoff and rejects a different released lease", asyn
     dispatched: false,
   });
   expect(
-    await f.rpc("wake_backend_queue_revision", [
+    await f.rpc("wake_backend_queue_revision_v5", [
       claimed.id,
       crypto.randomUUID(),
       row.revision,
@@ -472,8 +472,8 @@ it("performs one delayed RPC for an accepted request and safely loses a race to 
   const { claimed } = await acceptedPoll();
   let clock = 0;
   const internal = vi.fn(async (name: string, args: any) => {
-    if (name === "wake_backend_queue_status_v4") return runtimeWake(name, args);
-    expect(name).toBe("wake_backend_queue_revision_v4");
+    if (name === "wake_backend_queue_status_v5") return runtimeWake(name, args);
+    expect(name).toBe("wake_backend_queue_revision_v5");
     return runtimeWake(name, args);
   });
   const sleep = vi.fn(async (ms: number) => {
@@ -482,7 +482,7 @@ it("performs one delayed RPC for an accepted request and safely loses a race to 
       "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
       [claimed.id],
     );
-    expect((await f.rpc("claim_backend_job_v2")).id).toBe(claimed.id);
+    expect((await f.rpc("claim_backend_job_v5")).id).toBe(claimed.id);
   });
   await wakeReadyQueue(
     { internal, invocationStartedAt: 0, invocationBudgetMs: 130000 },
@@ -492,7 +492,7 @@ it("performs one delayed RPC for an accepted request and safely loses a race to 
   expect(sleep).toHaveBeenCalledTimes(1);
   expect(internal).toHaveBeenCalledTimes(2);
   expect(await dispatches()).toBe(0);
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   expect(
     (await f.db.query<any>("select count(*)::int n from public.provider_usage"))
       .rows[0].n,
@@ -510,8 +510,8 @@ it("a released canceled job wakes unrelated work without reviving cancellation-m
   const other = await job();
   expect(await wake(terminal.id)).toBe(true);
   // Claim may first consume the canceled sibling; neither can receive a lease.
-  const first = await f.rpc("claim_backend_job_v2");
-  const claimed = first ?? (await f.rpc("claim_backend_job_v2"));
+  const first = await f.rpc("claim_backend_job_v5");
+  const claimed = first ?? (await f.rpc("claim_backend_job_v5"));
   expect(claimed.id).toBe(other.id);
   expect(
     (
@@ -541,8 +541,8 @@ it("dispatches the existing queue once after completion without changing jobs or
       )
     ).rows,
   ).toEqual(before);
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(waiting.id);
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(waiting.id);
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
 });
 
 it("wakes a canonically claimed and yielded graph continuation while retaining its saved identity and history", async () => {
@@ -551,7 +551,7 @@ it("wakes a canonically claimed and yielded graph continuation while retaining i
     immutable: "fixture-context",
   };
   const queued = await job("queued", null, checkpoint);
-  const continuation = await f.rpc("claim_backend_job_v2");
+  const continuation = await f.rpc("claim_backend_job_v5");
   expect(continuation.id).toBe(queued.id);
   const lease = continuation.lease_token;
   const thread = "a".repeat(64);
@@ -601,7 +601,7 @@ it("wakes a canonically claimed and yielded graph continuation while retaining i
     lease_token: null,
     lease_until: null,
     due: true,
-    checkpoint: { ...checkpoint, graph_thread: thread },
+    checkpoint: { ...checkpoint, graph_thread: thread, minimum_worker_executor: 5 },
     attempts: 2,
     revision: 4,
   });
@@ -622,7 +622,7 @@ it("wakes a canonically claimed and yielded graph continuation while retaining i
       )
     ).rows[0].value,
   ).toEqual({ result: { fixture: "saved immutable result" } });
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(continuation.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(continuation.id);
 });
 
 it("throttles different completions across the workspace and deduplicates older callbacks after the throttle expires", async () => {
@@ -666,7 +666,7 @@ it.each([
 
 it("a canonically blocked source hands off to another due graph without retrying the source", async () => {
   const ready = await job("queued", null, { model_executor: 2 });
-  const graphJob = await f.rpc("claim_backend_job_v2");
+  const graphJob = await f.rpc("claim_backend_job_v5");
   expect(graphJob.id).toBe(ready.id);
   const thread = "b".repeat(64);
   const graph = (lease: string, action: string, payload = {}) =>
@@ -706,7 +706,7 @@ it("a canonically blocked source hands off to another due graph without retrying
     "update public.jobs set updated_at=now()-interval '3 minutes' where entity_id=$1",
     [approved.id],
   );
-  const claimed = await f.rpc("claim_backend_job_v2");
+  const claimed = await f.rpc("claim_backend_job_v5");
   expect(claimed).toMatchObject({
     type: "source_collect",
     entity_id: source.id,
@@ -727,7 +727,7 @@ it("a canonically blocked source hands off to another due graph without retrying
   });
   expect(await wake(claimed.id, claimed.lease_token)).toBe(true);
   expect(await wake(claimed.id, claimed.lease_token)).toBe(false);
-  const resumed = await f.rpc("claim_backend_job_v2");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(ready.id);
   expect(
     (await graph(resumed.lease_token, "result_get", { key: "candidate-0" })).id,
@@ -758,7 +758,7 @@ it.each(["blocked", "failed", "canceled"])(
     expect(
       (await f.db.query<any>("select * from public.jobs order by id")).rows,
     ).toEqual(before);
-    expect((await f.rpc("claim_backend_job_v2")).id).toBe(queued.id);
+    expect((await f.rpc("claim_backend_job_v5")).id).toBe(queued.id);
     expect(await dispatches()).toBe(1);
   },
 );
@@ -768,7 +768,7 @@ it.each(["blocked", "failed", "canceled"])(
   async (status) => {
     const terminal = await job(status, "SYNTHETIC_TERMINAL_ERROR");
     expect(await wake(terminal.id)).toBe(false);
-    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+    expect(await f.rpc("claim_backend_job_v5")).toBeNull();
     expect(await dispatches()).toBe(0);
   },
 );
@@ -899,7 +899,7 @@ it.each([false, true])(
         "update app_private.worker_queue_wakes set dispatched_at=clock_timestamp()-interval '11 seconds'",
       );
       if (claimedDuringWait)
-        expect((await f.rpc("claim_backend_job_v2")).id).toBe(queued.id);
+        expect((await f.rpc("claim_backend_job_v5")).id).toBe(queued.id);
     });
     await wakeReadyQueue(
       { internal, invocationStartedAt: 0, invocationBudgetMs: 130000 },
@@ -910,7 +910,7 @@ it.each([false, true])(
     expect(internal).toHaveBeenCalledTimes(2);
     expect(
       internal.mock.calls.every(
-        ([name]) => name === "wake_backend_queue_status_v4",
+        ([name]) => name === "wake_backend_queue_status_v5",
       ),
     ).toBe(true);
     expect(await dispatches()).toBe(claimedDuringWait ? 1 : 2);
@@ -967,7 +967,7 @@ it.each(["none", "future", "capacity", "failed", "canceled", "new-executor"])(
           : mode === "failed"
             ? "SOURCE_TEMPORARY_FAILURE"
             : null,
-        mode === "new-executor" ? { model_executor: 3 } : {},
+        mode === "new-executor" ? { model_executor: 6 } : {},
       );
       if (mode === "future")
         await f.db.query(
@@ -1076,7 +1076,7 @@ it.each([false, true])(
       );
     });
     const internal = vi.fn(async (name: string, args: any = {}) => {
-      if (name === "wake_backend_queue_status_v4")
+      if (name === "wake_backend_queue_status_v5")
         return runtimeWake(name, args);
       return name === "claim_storage_cleanup" ? [] : null;
     });
@@ -1103,7 +1103,7 @@ it.each([false, true])(
     expect(response.status).toBe(200);
     expect(
       internal.mock.calls.filter(
-        ([name]) => name === "wake_backend_queue_status_v4",
+        ([name]) => name === "wake_backend_queue_status_v5",
       ),
     ).toHaveLength(1);
     expect(
@@ -1175,7 +1175,7 @@ it.each(["ready", "future", "capacity"])(
       }
     });
     const internal = vi.fn(async (name: string, args: any = {}) => {
-      if (name === "wake_backend_queue_status_v4")
+      if (name === "wake_backend_queue_status_v5")
         return runtimeWake(name, args);
       throw Error("Synthetic maintenance outage; never expose this body");
     });
@@ -1194,7 +1194,7 @@ it.each(["ready", "future", "capacity"])(
       () =>
         ({
           internal,
-          claim: () => f.rpc("claim_backend_job_v3"),
+          claim: () => f.rpc("claim_backend_job_v5"),
           invocationStartedAt: Date.now(),
           invocationBudgetMs: 0,
         }) as unknown as Backend,
@@ -1237,3 +1237,23 @@ it.each(["ready", "future", "capacity"])(
     }
   },
 );
+
+it.each(["", "_v3", "_v4"])("keeps a minimum5 accepted remote poll out of the old %s wake even when protocol2 is supported", async suffix => {
+  const {claimed,row}=await acceptedPoll();
+  await f.db.query("update public.jobs set next_attempt_at=now() where id=$1",[claimed.id]);
+  expect(await f.rpc(`wake_backend_queue_status${suffix}`,[claimed.id,claimed.lease_token])).toEqual({dispatched:false});
+  expect(await f.rpc(`wake_backend_queue_revision${suffix}`,[claimed.id,claimed.lease_token,row.revision])).toEqual({dispatched:false});
+  expect(await dispatches()).toBe(0);
+  expect(await f.rpc("wake_backend_queue_status_v5",[claimed.id,claimed.lease_token])).toEqual({dispatched:true});
+  expect(await dispatches()).toBe(1);
+});
+it.each(["", "_v3", "_v4"])("does not use a minimum5 local job as an old %s wake capacity exception",async suffix=>{
+  await acceptedPoll();
+  const done=await job("succeeded");
+  const local=await job();
+  await f.db.query("update public.jobs set type='advance_plan' where id=$1",[local.id]);
+  expect(await f.rpc(`wake_backend_queue_status${suffix}`,[done.id,crypto.randomUUID()])).toEqual({dispatched:false});
+  expect(await dispatches()).toBe(0);
+  expect(await f.rpc("wake_backend_queue_status_v5",[done.id,crypto.randomUUID()])).toEqual({dispatched:true});
+  expect((await f.rpc("claim_backend_local_job_v5")).id).toBe(local.id);
+});

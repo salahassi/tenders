@@ -158,7 +158,7 @@ def update():
     if not re.fullmatch('[a-f0-9]{40}',revision):raise UpdateError('DELIVERY_RUN_SOURCE_INVALID')
     images.verify_checkout(revision)
     manifest=json.loads(release.MANIFEST.read_text());release.verify_source(manifest)
-    if manifest['executor_max']!=4 or manifest['renderer_versions']!=[1,2,3] or manifest['minimum_worker_executor']!=4:raise UpdateError('DELIVERY_FINAL_RUNTIME_CONTRACT_REQUIRED')
+    if manifest['executor_max']!=5 or manifest['renderer_versions']!=[1,2,3] or manifest['minimum_worker_executor']!=5:raise UpdateError('DELIVERY_FINAL_RUNTIME_CONTRACT_REQUIRED')
     selected={name:u.image(os.environ.get('TENDERDESK_'+name.upper()+'_IMAGE',''),name) for name in images.IMAGES}
     for name,reference in selected.items():
         if images.inspect(reference,revision,name)!=reference:raise UpdateError('DELIVERY_IMAGE_SOURCE_MISMATCH')
@@ -212,7 +212,7 @@ def update():
         receipt=json.loads(d.sql(client.pod,release.migration_script(manifest)))
         if set(receipt)!={'release','manifest_sha256','catalog_sha256','replayed'} or receipt['release']!=release.RELEASE or receipt['manifest_sha256']!=release.digest(release.canonical(manifest).encode()) or not re.fullmatch('[a-f0-9]{64}',receipt['catalog_sha256']) or type(receipt['replayed']) is not bool:raise UpdateError('DELIVERY_SCHEMA_RECEIPT_INVALID')
         # All SQL becomes visible atomically before any runtime admits new pins.
-        # The final batch must also enforce minimum_worker_executor4 on ALL
+        # The final batch must also enforce minimum_worker_executor5 on ALL
         # newly pinned normal/child/retry/render jobs. Its mixed-version claim
         # regression is a release prerequisite, not inferred from render jobs.
         code.patch_worker_strategy(original['worker'],selected['runtime'],True)

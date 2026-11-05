@@ -45,9 +45,10 @@ REQUIRED = ('20261104121022_partial_document_coverage.sql',
  '20261104170442_durable_storage_write_intents.sql',
  '20261104172700_storage_write_retirement_proofs.sql',
  '20261104212300_structured_section_body_bound.sql',
- '20261104212818_bounded_command_batch_results.sql')
-CAPABILITIES = {'executor_max':4,'renderer_versions':[1,2,3],
- 'minimum_worker_executor':4,'ordinary_renderer_version':'ordinary-2',
+ '20261104212818_bounded_command_batch_results.sql',
+ '20261105120100_worker_capability_five.sql')
+CAPABILITIES = {'executor_max':5,'renderer_versions':[1,2,3],
+ 'minimum_worker_executor':5,'ordinary_renderer_version':'ordinary-2',
  'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1,
  'global_renderer_limit':1,'storage_write_intents_version':1,
  'storage_retirement_version':1,'storage_gateway_guard_version':1,'application_auth_read_version':1,
@@ -275,7 +276,7 @@ def verify_source(manifest, *, migrations=ROOT/'supabase/migrations', gateway_ro
     if not isinstance(entries,list) or not len(REQUIRED)<=len(entries)<=30: raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     names=[]; sources=[]
     for row in entries:
-        if not isinstance(row,dict) or set(row)!={'name','sha256'} or not re.fullmatch(r'20261104[0-9]{6}_[a-z0-9_]+\.sql',row['name']) or not re.fullmatch('[a-f0-9]{64}',row['sha256']): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
+        if not isinstance(row,dict) or set(row)!={'name','sha256'} or not re.fullmatch(r'[0-9]{14}_[a-z0-9_]+\.sql',row['name']) or not re.fullmatch('[a-f0-9]{64}',row['sha256']): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
         path=migrations/row['name']
         if not path.is_file() or path.is_symlink() or digest(path.read_bytes())!=row['sha256']: raise ReleaseError('DELIVERY_RELEASE_SOURCE_CHANGED')
         names.append(row['name']); sources.append(path.read_text())
@@ -382,12 +383,14 @@ BEGIN
   OR to_regprocedure('public.claim_backend_local_job_v__EXECUTOR__()') IS NULL
   OR to_regprocedure('public.delivery_artifact_context(uuid,uuid)') IS NULL
  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_RUNTIME_CONTRACT_MISSING';END IF;
- FOREACH target IN ARRAY ARRAY['public.claim_backend_job_v__EXECUTOR__()','public.delivery_export_context(uuid,uuid)',
+ FOREACH target IN ARRAY ARRAY['public.claim_backend_job_v__EXECUTOR__()','public.claim_backend_local_job_v__EXECUTOR__()',
+  'public.wake_backend_queue_status_v__EXECUTOR__(uuid,uuid)','public.wake_backend_queue_revision_v__EXECUTOR__(uuid,uuid,bigint)',
+  'public.delivery_export_context(uuid,uuid)',
   'public.complete_delivery_artifact(uuid,uuid,uuid,text,bigint)','public.delivery_artifact_context(uuid,uuid)'] LOOP
   IF has_function_privilege('tdp_app_authenticated',target,'EXECUTE') OR has_function_privilege('tdp_app_anon',target,'EXECUTE')
    OR NOT has_function_privilege('tdp_app_service',target,'EXECUTE') THEN RAISE EXCEPTION 'DELIVERY_RELEASE_SERVICE_AUTHORITY_INVALID';END IF;
  END LOOP;
- IF __EXECUTOR__=4 THEN
+ IF __EXECUTOR__>=4 THEN
   IF to_regprocedure('app_private.delivery_renderer(public.proposal_delivery_snapshots)') IS NULL
    OR to_regprocedure('app_private.delivery_executor(public.proposal_delivery_snapshots)') IS NULL THEN RAISE EXCEPTION 'DELIVERY_RELEASE_RENDERER_CONTRACT_MISSING';END IF;
   FOREACH version_number IN ARRAY __RENDERERS__ LOOP
@@ -397,8 +400,12 @@ BEGIN
     THEN RAISE EXCEPTION 'DELIVERY_RELEASE_RENDERER_CONTRACT_MISMATCH';END IF;
   END LOOP;
  END IF;
- IF __MINIMUM_EXECUTOR__=4 AND (to_regclass('public.proposal_issuance_requests') IS NULL OR to_regclass('public.proposal_issuance_status') IS NULL)
+ IF __MINIMUM_EXECUTOR__>=4 AND (to_regclass('public.proposal_issuance_requests') IS NULL OR to_regclass('public.proposal_issuance_status') IS NULL)
   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_DEADLINE_CONTRACT_MISSING';END IF;
+ IF __MINIMUM_EXECUTOR__>=5 AND NOT EXISTS(SELECT 1 FROM pg_trigger
+  WHERE tgrelid='public.jobs'::regclass AND tgname='zzzz_current_worker_capability'
+   AND tgenabled='O' AND tgfoid='app_private.guard_current_worker_capability()'::regprocedure)
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_WORKER_FLOOR_MISSING';END IF;
  -- Source hashes bind the implementation. These independent catalog checks
  -- reject absent/disabled contracts and exposed new RPCs before runtime rollout.
  -- They do not substitute for actual mixed-version claim and capacity tests.

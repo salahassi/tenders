@@ -423,7 +423,7 @@ describe("paid initial writer recovery through the real graph and SQL store", ()
         expected_revision: 0,
       });
       await db.command("model.probe", {});
-      let job = await rpc("claim_backend_job_v2");
+      let job = await rpc("claim_backend_job_v5");
       const environments = modelEnvironments((name) =>
         name === "APP_MODEL_OPENAI_KEY" ? "synthetic-key" : undefined,
       );
@@ -618,7 +618,7 @@ describe("paid initial writer recovery through the real graph and SQL store", ()
           accepted = await executeGuardedModel({ ...options, job });
         } catch (error) {
           expect(error).toBeInstanceOf(ModelDeferred);
-          job = await rpc("claim_backend_job_v2");
+          job = await rpc("claim_backend_job_v5");
           expect(job.id).toBe(options.job.id);
           store = new ModelGraphStore(backend, job, threadId);
         }

@@ -91,7 +91,7 @@ it("enables and resumes more than five sources while keeping activation checks a
     policy_note: "",
   });
   await expect(approve(unreviewed)).rejects.toThrow("SOURCE_POLICY_REQUIRED");
-  const job = await f.rpc("claim_backend_job");
+  const job = await f.rpc("claim_backend_job_v5");
   expect(job.type).toBe("source_collect");
   expect(
     (
@@ -104,11 +104,11 @@ it("enables and resumes more than five sources while keeping activation checks a
 
 it("does not schedule proposed sources; due approved jobs are exclusive and paused sources cannot execute", async () => {
   const s = await source();
-  expect(await f.rpc("claim_backend_job")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   const active = await approve(s),
-    j = await f.rpc("claim_backend_job");
+    j = await f.rpc("claim_backend_job_v5");
   expect(j.entity_id).toBe(s.id);
-  expect(await f.rpc("claim_backend_job")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   await f.command("source.action", {
     id: s.id,
     expected_revision: active.revision,
@@ -143,7 +143,7 @@ it.each(["queued", "blocked"])(
         "update public.jobs set status='blocked',error_code='STALE_INPUT' where id=$1",
         [queued.job_id],
       );
-    const job = await f.rpc("claim_backend_job");
+    const job = await f.rpc("claim_backend_job_v5");
     expect(job.type).toBe("source_collect");
     expect(job.id).not.toBe(queued.job_id);
     expect(job.input_hash).toBe(String(resumed.revision));
@@ -165,7 +165,7 @@ it.each(["queued", "blocked"])(
 );
 it("deduplicates collections, preserves human decisions, and snapshots material changes", async () => {
   const s = await approve(await source());
-  let j = await f.rpc("claim_backend_job");
+  let j = await f.rpc("claim_backend_job_v5");
   await f.rpc("complete_collection", [
     j.id,
     j.lease_token,
@@ -184,7 +184,7 @@ it("deduplicates collections, preserves human decisions, and snapshots material 
       id: s.id,
       expected_revision: s.revision,
     });
-    j = await f.rpc("claim_backend_job");
+    j = await f.rpc("claim_backend_job_v5");
     await f.rpc("complete_collection", [
       j.id,
       j.lease_token,
@@ -217,7 +217,7 @@ it("deduplicates collections, preserves human decisions, and snapshots material 
 });
 it("disappearance or 304 retains earlier records and never marks lost/canceled", async () => {
   const s = await approve(await source());
-  let j = await f.rpc("claim_backend_job");
+  let j = await f.rpc("claim_backend_job_v5");
   await f.rpc("complete_collection", [
     j.id,
     j.lease_token,
@@ -227,7 +227,7 @@ it("disappearance or 304 retains earlier records and never marks lost/canceled",
     id: s.id,
     expected_revision: s.revision,
   });
-  j = await f.rpc("claim_backend_job");
+  j = await f.rpc("claim_backend_job_v5");
   await f.rpc("complete_collection", [
     j.id,
     j.lease_token,
@@ -239,7 +239,7 @@ it("disappearance or 304 retains earlier records and never marks lost/canceled",
 });
 it("automatically rechecks a headerless quota error and continues bounded network retries", async () => {
   await approve(await source());
-  let j = await f.rpc("claim_backend_job");
+  let j = await f.rpc("claim_backend_job_v5");
   await f.rpc("fail_collection", [
     j.id,
     j.lease_token,
@@ -254,12 +254,12 @@ it("automatically rechecks a headerless quota error and continues bounded networ
       )
     ).rows[0].waiting,
   ).toBe(true);
-  expect(await f.rpc("claim_backend_job")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   await f.db.query(
     "update public.jobs set status='queued',attempts=3,next_attempt_at=now() where id=$1",
     [j.id],
   );
-  j = await f.rpc("claim_backend_job");
+  j = await f.rpc("claim_backend_job_v5");
   await f.rpc("fail_collection", [
     j.id,
     j.lease_token,
@@ -324,5 +324,5 @@ it("finishes a saved generation stage before routine discovery assessments", asy
     "insert into public.jobs(workspace_id,type,entity_id,input_hash,status,created_by,created_at) values($1,'classify_opportunity',$2,'synthetic','queued',$3,now()-interval '10 minutes'),($1,'advance_plan',$4,'synthetic','queued',$3,now())",
     [f.w, crypto.randomUUID(), f.owner, crypto.randomUUID()],
   );
-  expect((await f.rpc("claim_backend_job")).type).toBe("advance_plan");
+  expect((await f.rpc("claim_backend_job_v5")).type).toBe("advance_plan");
 });

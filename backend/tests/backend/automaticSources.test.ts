@@ -107,7 +107,7 @@ async function source(url = "https://source.example.test/") {
 function worker(fetcher: typeof fetch, resolve = async () => ["8.8.8.8"]) {
   const backend = {
     internal: rpc,
-    claim: () => rpc("claim_backend_job"),
+    claim: () => rpc("claim_backend_job_v5"),
     finish: (
       job_id: string,
       lease: string,
@@ -571,7 +571,7 @@ it.each(["collect", "discover"])(
       await f.command("source.discover", {
         url: "https://directory.example.test/",
       });
-    const j = await rpc("claim_backend_job");
+    const j = await rpc("claim_backend_job_v5");
     const failureCount = j.failure_count;
     const notifications = (
       await f.db.query<any>("select count(*) n from public.notifications")
@@ -603,7 +603,7 @@ it.each(["collect", "discover"])(
       "update public.jobs set next_attempt_at=now() where id=$1",
       [j.id],
     );
-    expect((await rpc("claim_backend_job")).id).toBe(j.id);
+    expect((await rpc("claim_backend_job_v5")).id).toBe(j.id);
   },
 );
 
@@ -611,7 +611,7 @@ it("can retry an independent discovery job without requiring a source row", asyn
   await f.command("source.discover", {
     url: "https://directory.example.test/",
   });
-  const j = await rpc("claim_backend_job");
+  const j = await rpc("claim_backend_job_v5");
   await rpc("fail_source_reading", {
     job_id: j.id,
     lease: j.lease_token,
@@ -633,7 +633,7 @@ it("can retry an independent discovery job without requiring a source row", asyn
     input_hash: j.input_hash,
     checkpoint: { discovery_url: "https://directory.example.test/" },
   });
-  expect((await rpc("claim_backend_job")).id).toBe(j.id);
+  expect((await rpc("claim_backend_job_v5")).id).toBe(j.id);
 });
 
 it("gives collection a guaranteed turn beside continuously eligible model retries", async () => {
@@ -651,13 +651,13 @@ it("gives collection a guaranteed turn beside continuously eligible model retrie
       [f.w, f.owner],
     )
   ).rows[0];
-  const initial = await rpc("claim_backend_job");
+  const initial = await rpc("claim_backend_job_v5");
   expect(initial.id).toBe(oldJob.id);
   await f.db.query(
     "update public.jobs set status='retry_wait',lease_token=null,lease_until=null,next_attempt_at=now() where id=$1",
     [initial.id],
   );
-  const first = await rpc("claim_backend_job");
+  const first = await rpc("claim_backend_job_v5");
   expect(first).toMatchObject({ type: "source_collect", entity_id: s.id });
   await rpc("fail_collection", {
     job_id: first.id,
@@ -668,7 +668,7 @@ it("gives collection a guaranteed turn beside continuously eligible model retrie
   await f.db.exec(
     "update public.jobs set next_attempt_at=now() where type='source_collect'",
   );
-  expect(await rpc("claim_backend_job")).toMatchObject({
+  expect(await rpc("claim_backend_job_v5")).toMatchObject({
     id: oldJob.id,
     type: "model_probe",
   });
@@ -704,18 +704,18 @@ it("alternates a requested proposal with old assessment work and respects provid
   const assessment = await insert("classify_opportunity");
   const delayed = await insert("analyze_chunk", true);
   const proposal = await insert("analyze_chunk");
-  expect(await rpc("claim_backend_job")).toMatchObject({ id: proposal });
-  expect(await rpc("claim_backend_job")).toBeNull();
+  expect(await rpc("claim_backend_job_v5")).toMatchObject({ id: proposal });
+  expect(await rpc("claim_backend_job_v5")).toBeNull();
   await f.db.query(
     "update public.jobs set status='retry_wait',lease_token=null,lease_until=null,next_attempt_at=now() where id=$1",
     [proposal],
   );
-  expect(await rpc("claim_backend_job")).toMatchObject({ id: assessment });
+  expect(await rpc("claim_backend_job_v5")).toMatchObject({ id: assessment });
   await f.db.query(
     "update public.jobs set status='succeeded',lease_token=null,lease_until=null,updated_at=now()+interval '1 second' where id=$1",
     [assessment],
   );
-  expect(await rpc("claim_backend_job")).toMatchObject({ id: proposal });
+  expect(await rpc("claim_backend_job_v5")).toMatchObject({ id: proposal });
   expect(
     (
       await f.db.query<any>("select attempts from public.jobs where id=$1", [
@@ -743,20 +743,20 @@ it("alternates saved graph/failover continuations that have no accepted request 
   const assessment = await continuationJob("classify_opportunity", true);
   const proposal = await continuationJob("analyze_chunk");
   // A previous assessment's saved continuation must not monopolize the worker.
-  const first = await rpc("claim_backend_job");
+  const first = await rpc("claim_backend_job_v5");
   expect(first).toMatchObject({ id: proposal, status: "running", attempts: 1 });
   expect(first.lease_token).toEqual(expect.any(String));
-  expect(await rpc("claim_backend_job")).toBeNull();
+  expect(await rpc("claim_backend_job_v5")).toBeNull();
   await f.db.query(
     "update public.jobs set status='retry_wait',lease_token=null,lease_until=null,next_attempt_at=now() where id=$1",
     [proposal],
   );
-  expect(await rpc("claim_backend_job")).toMatchObject({ id: assessment });
+  expect(await rpc("claim_backend_job_v5")).toMatchObject({ id: assessment });
   await f.db.query(
     "update public.jobs set status='retry_wait',lease_token=null,lease_until=null,next_attempt_at=now(),updated_at=now()+interval '1 second' where id=$1",
     [assessment],
   );
-  expect(await rpc("claim_backend_job")).toMatchObject({ id: proposal });
+  expect(await rpc("claim_backend_job_v5")).toMatchObject({ id: proposal });
 });
 
 it.each([
@@ -782,9 +782,9 @@ it.each([
        case when $5::text is not null then now()+interval '1 hour' else null end)`,
       [f.w, assessment, state, f.owner, remote ? "synthetic-accepted" : null],
     );
-    const claimed = await rpc("claim_backend_job");
+    const claimed = await rpc("claim_backend_job_v5");
     expect(claimed.id).toBe(shouldPoll ? assessment : proposal);
-    expect(await rpc("claim_backend_job")).toBeNull();
+    expect(await rpc("claim_backend_job_v5")).toBeNull();
     if (!shouldPoll) return;
 
     // Settling the result does not make the next graph stage another poll.
@@ -796,7 +796,7 @@ it.each([
       "update public.jobs set status='retry_wait',lease_token=null,lease_until=null,next_attempt_at=now() where id=$1",
       [assessment],
     );
-    expect(await rpc("claim_backend_job")).toMatchObject({ id: proposal });
+    expect(await rpc("claim_backend_job_v5")).toMatchObject({ id: proposal });
   },
 );
 
@@ -819,7 +819,7 @@ it("never polls an accepted request before its saved retry time", async () => {
     "update public.jobs set next_attempt_at=now()+interval '5 minutes' where id=$1",
     [assessment],
   );
-  expect(await rpc("claim_backend_job")).toMatchObject({ id: proposal });
+  expect(await rpc("claim_backend_job_v5")).toMatchObject({ id: proposal });
   expect(
     (
       await f.db.query<any>("select attempts from public.jobs where id=$1", [

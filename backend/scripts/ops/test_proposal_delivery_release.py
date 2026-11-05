@@ -84,7 +84,7 @@ class DeliveryReleaseTests(unittest.TestCase):
 
     def test_every_final_contract_is_required_before_freezing(self):
         manifest=self.manifest()
-        self.assertEqual(len(p.REQUIRED),24)
+        self.assertEqual(len(p.REQUIRED),25)
         self.assertEqual({key:manifest[key] for key in p.CAPABILITIES},p.CAPABILITIES)
         with self.assertRaises(p.ReleaseError):p.freeze({'receipt':self.inventory()})
         with tempfile.TemporaryDirectory() as directory:
@@ -98,7 +98,7 @@ class DeliveryReleaseTests(unittest.TestCase):
                 path.write_bytes(data)
 
     def test_final_capabilities_cannot_be_downgraded_or_coerced(self):
-        for key,value in (('executor_max',3),('minimum_worker_executor',0),('renderer_versions',[1,2]),
+        for key,value in (('executor_max',4),('minimum_worker_executor',4),('renderer_versions',[1,2]),
           ('ordinary_renderer_version','ordinary-1'),('current_proposal_issuance_contract',True),
           ('issuance_file_capacity_version',0),('global_renderer_limit',2),
           ('storage_write_intents_version',False),('storage_retirement_version',0),('storage_gateway_guard_version',True),('application_auth_read_version',0),

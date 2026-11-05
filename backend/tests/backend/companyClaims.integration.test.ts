@@ -83,7 +83,7 @@ async function configure(modelNames = ["fixture-writer", "fixture-verifier"]) {
     expected_revision: 0,
   });
   const queued = await f.command("model.probe", {});
-  const job = await rpc("claim_backend_job_v2");
+  const job = await rpc("claim_backend_job_v5");
   expect(job.id).toBe(queued.id);
   const environments = modelEnvironments((name) =>
     name.endsWith("_KEY")
@@ -220,7 +220,7 @@ it.each([
           break;
         }
         expect(error).toBeInstanceOf(ModelDeferred);
-        current = await rpc("claim_backend_job_v2");
+        current = await rpc("claim_backend_job_v5");
         expect(current.id).toBe(job.id);
       }
     }
@@ -478,7 +478,7 @@ it("recovers a paid rejected writer through the existing produce checkpoint and 
       )
     ).rows[0].count,
   ).toBe(0);
-  current = await rpc("claim_backend_job_v2");
+  current = await rpc("claim_backend_job_v5");
   expect(current.id).toBe(job.id);
   const outcome = await executeGuardedModel({ ...options, job: current });
   expect(outcome.result).toEqual(candidate);

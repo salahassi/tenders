@@ -2,7 +2,7 @@
 import { readFile } from "node:fs/promises";
 import { databaseWithMigrations } from "./databaseFixture";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from "vitest";
-import { workflowFixture, claimModelWorker4 } from "./workflowFixture";
+import { workflowFixture, claimModelWorker5 } from "./workflowFixture";
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
   f = await workflowFixture();
@@ -47,7 +47,7 @@ async function setup() {
     id: o.id,
     expected_revision: o.revision,
   });
-  const j = await claimModelWorker4(f, (name) => f.rpc(name));
+  const j = await claimModelWorker5(f, (name) => f.rpc(name));
   expect(j.type).toBe("analyze_chunk");
   const r = await row(
     "select r.* from public.proposal_issuance_requests r join public.generation_plans p on p.issuance_request_id=r.id where p.id=$1",

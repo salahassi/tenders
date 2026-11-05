@@ -100,7 +100,7 @@ async function readyBrowserListing() {
     action: "approve",
     reason: "Synthetic public page",
   });
-  const job = await f.rpc("claim_backend_job_v2");
+  const job = await f.rpc("claim_backend_job_v5");
   await f.rpc("queue_source_browser_page", [job.id, job.lease_token]);
   const browser = await f.rpc("claim_source_browser_page");
   await f.rpc("complete_source_browser_page", [
@@ -129,9 +129,9 @@ async function readyBrowserListing() {
 it("consumes a ready browser page before unseen assessments when admission is available", async () => {
   const ready = await readyBrowserListing();
   const assessment = await enqueue("classify_opportunity");
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(ready.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(ready.id);
   await finish(ready.id);
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(assessment.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(assessment.id);
 });
 it("does not give browser/model work preference when admitted requests fill capacity", async () => {
   await readyBrowserListing();
@@ -143,7 +143,7 @@ it("does not give browser/model work preference when admitted requests fill capa
   ).rows[0].n;
   for (let i = 0; i < limit; i++) await reserve(await enqueue("draft_section"));
   const directory = await enqueue("source_candidates");
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(directory.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(directory.id);
 });
 it("gives a retried static listing a background turn and an unseen assessment the next cycle", async () => {
   const first = await staticListing(),
@@ -153,12 +153,12 @@ it("gives a retried static listing a background turn and an unseen assessment th
     "update public.jobs set next_attempt_at=now()-interval '1 minute' where id=$1",
     [first.id],
   );
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(first.id);
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(first.id);
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   await finish(first.id);
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(assessment.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(assessment.id);
   await finish(assessment.id);
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(second.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(second.id);
   expect(
     (await f.db.query("select * from public.provider_usage")).rows,
   ).toHaveLength(0);
@@ -180,16 +180,16 @@ it("alternates configured automatic fetches with assessment owners without requi
     "update public.jobs set next_attempt_at=now()-interval '1 minute' where id=$1",
     [first.id],
   );
-  const claimed = await f.rpc("claim_backend_job_v2");
+  const claimed = await f.rpc("claim_backend_job_v5");
   expect(claimed.id).toBe(first.id);
   expect(claimed.lease_token).toBeTruthy();
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   await finish(first.id);
   // Free admission using only fixture settlement; the ordinary owner turn remains.
   await f.db.query("update public.provider_usage set state='settled'");
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(assessment.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(assessment.id);
   await finish(assessment.id);
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(second.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(second.id);
   expect(
     (await f.db.query("select * from public.provider_usage")).rows,
   ).toHaveLength(limit);
@@ -226,7 +226,7 @@ it.each([
       );
     if (mode === "saved_model_page") {
       // The old saved page lacks selector-preserving markup and still needs inference.
-      const first = await f.rpc("claim_backend_job_v2");
+      const first = await f.rpc("claim_backend_job_v5");
       expect(first.id).toBe(sourceJob.id);
       await f.rpc("auto_source_context", [first.id, first.lease_token]);
       await f.db.query(
@@ -243,7 +243,7 @@ it.each([
       );
     }
     const unseen = await enqueue("classify_opportunity");
-    expect((await f.rpc("claim_backend_job_v2")).id).toBe(unseen.id);
+    expect((await f.rpc("claim_backend_job_v5")).id).toBe(unseen.id);
   },
 );
 it("preserves proposal slots, future due times and source revisions for automatic configured fetches", async () => {
@@ -254,16 +254,16 @@ it("preserves proposal slots, future due times and source revisions for automati
   ]);
   const due = await staticListing(false, true);
   const proposal = await enqueue("draft_section");
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(proposal.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(proposal.id);
   await finish(proposal.id);
-  const next = await f.rpc("claim_backend_job_v2");
+  const next = await f.rpc("claim_backend_job_v5");
   expect(next.id).not.toBe(stale.id);
   if (next.id !== due.id) {
     // Source revision repair creates a fresh eligible collection job normally.
     expect(next.entity_id).toBe(stale.entity_id);
     expect(next.input_hash).not.toBe("obsolete");
     await finish(next.id);
-    expect((await f.rpc("claim_backend_job_v2")).id).toBe(due.id);
+    expect((await f.rpc("claim_backend_job_v5")).id).toBe(due.id);
   }
   expect(
     (
@@ -285,11 +285,11 @@ it("preserves proposal slots and future eligibility when static collection is wa
   const delayed = await staticListing(true);
   const due = await staticListing();
   const proposal = await enqueue("draft_section");
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(proposal.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(proposal.id);
   await finish(proposal.id);
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(due.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(due.id);
   await finish(due.id);
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   expect(
     (
       await f.db.query<{ attempts: number }>(
@@ -314,17 +314,17 @@ it("finishes saved proposal units before fresh siblings without taking other own
   );
   const other = await enqueue("draft_section");
   const collection = await enqueue("source_collect");
-  const first = await f.rpc("claim_backend_job_v2");
+  const first = await f.rpc("claim_backend_job_v5");
   expect(first.id).toBe(continuing.id);
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   await finish(first.id);
-  const background = await f.rpc("claim_backend_job_v2");
+  const background = await f.rpc("claim_backend_job_v5");
   expect(background.id).toBe(collection.id);
   await finish(background.id);
-  const nextOwner = await f.rpc("claim_backend_job_v2");
+  const nextOwner = await f.rpc("claim_backend_job_v5");
   expect(nextOwner.id).toBe(other.id);
   await finish(nextOwner.id);
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(fresh.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(fresh.id);
 });
 
 it("does not wake a saved continuation before its due time or bypass accepted-request capacity", async () => {
@@ -335,7 +335,7 @@ it("does not wake a saved continuation before its due time or bypass accepted-re
     [delayed.id],
   );
   const fresh = await enqueue("draft_section", owner);
-  const current = await f.rpc("claim_backend_job_v2");
+  const current = await f.rpc("claim_backend_job_v5");
   expect(current.id).toBe(fresh.id);
   await finish(current.id);
   const accepted = await enqueue("draft_section");
@@ -343,7 +343,7 @@ it("does not wake a saved continuation before its due time or bypass accepted-re
   await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
     delayed.id,
   ]);
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   expect(
     (
       await f.db.query<any>("select attempts from public.jobs where id=$1", [
@@ -360,10 +360,10 @@ it("serves three proposal owners and background work under continuously arriving
   const background = await enqueue("classify_opportunity");
   const claims = [];
   for (let i = 0; i < 12; i++) {
-    const j = await f.rpc("claim_backend_job_v2");
+    const j = await f.rpc("claim_backend_job_v5");
     expect(j).not.toBeNull();
     claims.push(j);
-    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+    expect(await f.rpc("claim_backend_job_v5")).toBeNull();
     await finish(j.id);
     if (j.type === "classify_opportunity")
       await enqueue("classify_opportunity");
@@ -383,12 +383,12 @@ it("executes local transitions at full model capacity without claiming new infer
   const inference = await enqueue("draft_section");
   const delayed = await enqueue("advance_plan", crypto.randomUUID(), true);
   const transition = await enqueue("advance_plan");
-  const j = await f.rpc("claim_backend_local_job");
+  const j = await f.rpc("claim_backend_local_job_v5");
   expect(j.id).toBe(transition.id);
-  expect(await f.rpc("claim_backend_local_job")).toBeNull();
+  expect(await f.rpc("claim_backend_local_job_v5")).toBeNull();
   await finish(j.id);
-  expect(await f.rpc("claim_backend_local_job")).toBeNull();
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(await f.rpc("claim_backend_local_job_v5")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   const attempts = (
     await f.db.query<any>(
       "select id,attempts from public.jobs where id=any($1::uuid[])",
@@ -399,7 +399,7 @@ it("executes local transitions at full model capacity without claiming new infer
   await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
     waiting.id,
   ]);
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(waiting.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(waiting.id);
 });
 
 it("uses the owning plan to classify assessment transitions and enforces stage dependencies", async () => {
@@ -436,12 +436,12 @@ it("uses the owning plan to classify assessment transitions and enforces stage d
     values($1,$2,$3,'classify_opportunity','assessment',0,'{}',$4)`,
     [f.w, plan.id, assessment.id, f.owner],
   );
-  expect(await f.rpc("claim_backend_local_job")).toBeNull();
+  expect(await f.rpc("claim_backend_local_job_v5")).toBeNull();
   await f.db.query(
     "update public.generation_steps set status='completed',output='{}' where job_id=$1",
     [assessment.id],
   );
-  expect((await f.rpc("claim_backend_local_job")).id).toBe(transition.id);
+  expect((await f.rpc("claim_backend_local_job_v5")).id).toBe(transition.id);
 });
 
 it("keeps scheduler state private and exposes only the service local claim", async () => {
@@ -450,7 +450,7 @@ it("keeps scheduler state private and exposes only the service local claim", asy
       await f.db.query<any>(
         `select has_table_privilege($1,'app_private.queue_dispatch_state','SELECT') state,
       has_function_privilege($1,'app_private.next_fair_job(uuid,boolean)','EXECUTE') picker,
-      has_function_privilege($1,'public.claim_backend_local_job()','EXECUTE') claim`,
+      has_function_privilege($1,'public.claim_backend_local_job_v5()','EXECUTE') claim`,
         [role],
       )
     ).rows[0];

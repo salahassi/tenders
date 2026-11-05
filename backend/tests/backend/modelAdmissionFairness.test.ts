@@ -75,7 +75,7 @@ async function state() {
   ).rows[0];
 }
 async function claim(id: string | null) {
-  const result = await f.rpc("claim_backend_job_v2");
+  const result = await f.rpc("claim_backend_job_v5");
   expect(result?.id ?? null).toBe(id);
   return result;
 }
@@ -206,7 +206,7 @@ it.each([1, 2])(
         [f.w],
       )
     ).rows[0].cursor;
-    expect((await f.rpc("claim_backend_local_job")).id).toBe(local.id);
+    expect((await f.rpc("claim_backend_local_job_v5")).id).toBe(local.id);
     expect(await state()).toEqual(before);
     expect(
       (
@@ -307,7 +307,7 @@ it.each(["future", "executor"])(
       );
     else
       await f.db.query(
-        "update public.jobs set checkpoint='{\"model_executor\":3}' where id=$1",
+        "update public.jobs set checkpoint='{\"model_executor\":6}' where id=$1",
         [background.id],
       );
     const target = await enqueue("draft_section");

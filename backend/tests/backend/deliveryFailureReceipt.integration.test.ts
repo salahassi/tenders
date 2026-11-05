@@ -31,7 +31,7 @@ it("records a genuine missing-yellow verifier failure as blocked without losing 
       opportunity_id: opportunity.id,
       expected_revision: opportunity.revision,
     });
-    const job = await f.rpc("claim_backend_job_v3");
+    const job = await f.rpc("claim_backend_job_v5");
     expect(job.entity_id).toBe(snapshot.id);
     const context = await f.rpc("delivery_export_context", [
       job.id,

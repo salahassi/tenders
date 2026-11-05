@@ -43,7 +43,7 @@ async function setup() {
     values($1,'draft_section',$1,'synthetic-typed-phase','queued',$2,'{"model_executor":2}')`,
     [f.w, f.owner],
   );
-  const job = await rpc("claim_backend_job_v2");
+  const job = await rpc("claim_backend_job_v5");
   const store = new ModelGraphStore({ internal: rpc }, job, "c".repeat(64));
   await store.action("init", {
     input_hash: "d".repeat(64),

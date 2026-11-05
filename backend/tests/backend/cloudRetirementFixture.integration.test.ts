@@ -154,7 +154,7 @@ it("creates one uncertain canonical intent and real purge allowance without dire
       opportunity_id: opportunity.id,
       expected_revision: opportunity.revision,
     });
-    const job = await rpc("claim_backend_job_v4");
+    const job = await rpc("claim_backend_job_v5");
     expect(job).toMatchObject({
       type: "render_delivery",
       entity_id: snapshot.id,

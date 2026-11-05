@@ -12,7 +12,7 @@ def run(f):
     def setup():
         opportunity = f.opportunity()
         snapshot = f.command('delivery.snapshot.prepare', {'opportunity_id': opportunity['id'], 'expected_revision': opportunity['revision']})
-        job = f.value('select public.claim_backend_job_v3()')
+        job = f.value('select public.claim_backend_job_v5()')
         assert job['entity_id'] == snapshot['id']
         return opportunity, snapshot, job
     def context(job):

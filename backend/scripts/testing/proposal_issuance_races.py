@@ -13,7 +13,7 @@ from generated_delivery_fixture import setup
 def rendering(f, remaining=600):
     f.sql("update public.jobs set status='canceled',lease_token=null,lease_until=null where status in ('queued','running','retry_wait','blocked')")
     o,p,publish=setup(f,remaining_seconds=remaining)
-    s=f.value(publish);j=f.value('select public.claim_backend_local_job_v4()')
+    s=f.value(publish);j=f.value('select public.claim_backend_local_job_v5()')
     assert j['entity_id']==s['id'],j
     c=f.value(f"select public.delivery_export_context({literal(j['id'])},{literal(j['lease_token'])})")
     r=f.value(f"select to_jsonb(r) from public.proposal_issuance_requests r join public.generation_plans p on p.issuance_request_id=r.id where p.id={literal(p)}")
@@ -79,9 +79,9 @@ def run(f):
     assert f.command('delivery.snapshot.retry',command,key)==response
     newer=f.value(f"select to_jsonb(r) from public.proposal_issuance_requests r join public.generation_plans p on p.issuance_request_id=r.id where p.id={literal(r['plan_id'])}")
     assert newer['id']!=r['id'] and newer['accepted_at']>r['accepted_at'] and state(f,r)==observed
-    for worker in (1,2,3):
+    for worker in (1,2,3,4):
         assert f.scalar(f"begin;set local app.worker_executor='{worker}';select public.claim_backend_job();commit;")==""
-    retry=f.value('select public.claim_backend_local_job_v4()')
+    retry=f.value('select public.claim_backend_local_job_v5()')
     assert retry['entity_id']==s['id'] and retry['checkpoint']['issuance_request_id']==newer['id']
     f.value(f"select public.delivery_export_context({literal(retry['id'])},{literal(retry['lease_token'])})")
     f.value(finish_sql(retry))

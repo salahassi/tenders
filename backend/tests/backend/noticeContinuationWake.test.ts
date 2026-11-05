@@ -73,7 +73,7 @@ async function prepared() {
     id: opportunity,
     expected_revision: revision,
   });
-  const job = await f.rpc("claim_backend_job_v2");
+  const job = await f.rpc("claim_backend_job_v5");
   expect(job.entity_id).toBe(plan.id);
   expect(
     (await f.rpc("generation_context", [job.id, job.lease_token]))
@@ -112,7 +112,7 @@ async function released() {
 async function wake(job: any, lease = job.lease_token) {
   await f.db.exec("savepoint notice_wake;set local role service_role");
   try {
-    return await f.rpc("wake_backend_queue_status", [job.id, lease]);
+    return await f.rpc("wake_backend_queue_status_v5", [job.id, lease]);
   } catch (error) {
     await f.db.exec("rollback to savepoint notice_wake");
     throw error;
@@ -152,7 +152,7 @@ it("wakes the same healthy notice continuation immediately after canonical compl
   });
   expect(await wake(job)).toEqual({ dispatched: true });
   expect(await count()).toBe(1);
-  const next = await f.rpc("claim_backend_job_v2");
+  const next = await f.rpc("claim_backend_job_v5");
   expect(next.id).toBe(job.id);
   expect(next.lease_token).not.toBe(job.lease_token);
   expect(next.input_hash).toBe(job.input_hash);
@@ -161,7 +161,7 @@ it("wakes the same healthy notice continuation immediately after canonical compl
     (await f.rpc("generation_context", [next.id, next.lease_token]))
       .detail_source,
   ).toBeUndefined();
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   expect(
     (
       await f.db.query<any>(
@@ -186,7 +186,7 @@ it("retains normal interactive ordering instead of giving the successful detail 
   const { job } = await released();
   const next = await queued();
   expect(await wake(job)).toEqual({ dispatched: true });
-  expect((await f.rpc("claim_backend_job_v2")).id).toBe(next.id);
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(next.id);
 });
 
 it("deduplicates replay of the exact successful release", async () => {

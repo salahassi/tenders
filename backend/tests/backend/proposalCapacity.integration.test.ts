@@ -183,7 +183,7 @@ it("refuses a new billable reservation when a saved request has no complete-file
   );
   // The optional early draft can fail locally; it must not let later model work
   // cross the billable boundary without capacity for the required file package.
-  let job = await h.rpc("claim_backend_job_v4");
+  let job = await h.rpc("claim_backend_job_v5");
   if (job.type === "render_delivery") {
     const render = vi.fn();
     expect(
@@ -191,7 +191,7 @@ it("refuses a new billable reservation when a saved request has no complete-file
     ).toEqual({ error_code: "STORAGE_CAP_REACHED" });
     expect(render).not.toHaveBeenCalled();
     expect(t.backend.storeDeliveryObject).not.toHaveBeenCalled();
-    job = await h.rpc("claim_backend_job_v4");
+    job = await h.rpc("claim_backend_job_v5");
   }
   expect(job).toMatchObject({
     type: "analyze_chunk",
@@ -348,7 +348,7 @@ it("holds the complete existing two-file allowance once before billing, and a co
     "update public.jobs set status='canceled' where type='render_delivery' and status='queued' and checkpoint->>'issuance_request_id'=(select id::text from public.proposal_issuance_requests where plan_id=$1)",
     [plan.id],
   );
-  const job = await h.rpc("claim_backend_job_v4");
+  const job = await h.rpc("claim_backend_job_v5");
   expect(job).toMatchObject({ type: "analyze_chunk", entity_id: plan.id });
   const context = await h.rpc("generation_context", {
     job_id: job.id,
@@ -1271,7 +1271,7 @@ it.each([
       frontier = Math.max(frontier, block.locator.end);
     }
     expect(frontier).toBe(characters);
-    const job = await h.rpc("claim_backend_job_v4");
+    const job = await h.rpc("claim_backend_job_v5");
     expect(job).toMatchObject({
       type: "render_delivery",
       entity_id: snapshot.id,

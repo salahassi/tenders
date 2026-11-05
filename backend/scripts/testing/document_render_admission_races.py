@@ -29,7 +29,7 @@ def finish(f, job):
 
 def run(f):
     cases = []
-    claim = "select coalesce(public.claim_backend_job_v4(),'null'::jsonb)"
+    claim = "select coalesce(public.claim_backend_job_v5(),'null'::jsonb)"
     one = enqueue(f, 'render_delivery'); two = enqueue(f, 'render_export')
     results = f.race([claim, claim])
     assert all(r.returncode == 0 for r in results), [r.stderr for r in results]

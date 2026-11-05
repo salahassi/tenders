@@ -8,7 +8,7 @@ import type {
 import { beforeAll, afterAll, beforeEach, afterEach, it, expect } from "vitest";
 import {
   workflowFixture,
-  claimModelWorker4,
+  claimModelWorker5,
   historicalGenerationCommand,
 } from "./workflowFixture";
 import { buildExportModel } from "../../supabase/functions/_shared/export";
@@ -107,7 +107,7 @@ it("upgrades only blocked planning, preserving completed analysis and paid recei
   );
   let planning: any;
   for (let i = 0; i < 10; i++) {
-    const job = await claimModelWorker4(f, f.rpc);
+    const job = await claimModelWorker5(f, f.rpc);
     const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
     if (ctx.step.task === "plan_proposal") {
       planning = job;
@@ -285,7 +285,7 @@ it.each([1, 2, 3])(
     const { plan } = await start();
     let review: any;
     for (let i = 0; i < 30; i++) {
-      const job = await claimModelWorker4(f, f.rpc);
+      const job = await claimModelWorker5(f, f.rpc);
       const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
       if (ctx.step.task === "review_proposal") {
         review = job;
@@ -543,7 +543,7 @@ function resultFor(ctx: any) {
 async function runPlan(result: (ctx: any) => any = resultFor) {
   let count = 0;
   for (;;) {
-    const job = await claimModelWorker4(f, f.rpc);
+    const job = await claimModelWorker5(f, f.rpc);
     if (!job) break;
     if (++count > 45) throw Error("Unbounded fixture");
     const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
@@ -575,7 +575,7 @@ async function blockedSavedAssembly() {
   await f.db.query(`update public.generation_plans set input_hash=encode(sha256(convert_to(frozen_context::text,'UTF8')),'hex') where id=$1`,[started.plan.id]);
   await f.db.query(`update public.jobs j set input_hash=p.input_hash from public.generation_plans p where j.entity_id=p.id and p.id=$1`,[started.plan.id]);
   for (let i = 0; i < 30; i++) {
-    const job = await claimModelWorker4(f, f.rpc);
+    const job = await claimModelWorker5(f, f.rpc);
     const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
     if (ctx.step.task === "advance_plan") {
       const next = await nextStage(ctx);
@@ -887,7 +887,7 @@ it("rechecks evidence after resume and keeps recovery private and revision-check
     expected_revision: plan.revision,
     reason: "Synthetic authorized recovery",
   });
-  const job = await claimModelWorker4(f, f.rpc);
+  const job = await claimModelWorker5(f, f.rpc);
   await f.db.query(
     "update public.document_blocks set text=text || ' Changed after resume.' where document_id in (select id from public.documents where opportunity_id=$1)",
     [opp.id],
@@ -1255,7 +1255,7 @@ it("persists application-derived part lineage through canonical generation and t
 });
 it("allows initial quota failover but pins a proposal after measured model usage", async () => {
   await start();
-  const job = await claimModelWorker4(f, f.rpc);
+  const job = await claimModelWorker5(f, f.rpc);
   const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
   const manifest = taskInput(ctx).manifest;
   for (const [provider, rank] of [
@@ -1363,7 +1363,7 @@ it("persists all automatic stages and switches versions only after completion", 
 });
 it("rejects completion after cancellation without publishing a partial version", async () => {
   const s = await start(),
-    job = await claimModelWorker4(f, f.rpc);
+    job = await claimModelWorker5(f, f.rpc);
   await f.command("generation.cancel", {
     id: s.plan.id,
     expected_revision: s.plan.revision,
@@ -1389,7 +1389,7 @@ it("rejects changed supporting evidence even if a worker still holds its lease",
     [f.owner, knowledge.id],
   );
   await start();
-  const job = await claimModelWorker4(f, f.rpc);
+  const job = await claimModelWorker5(f, f.rpc);
   await f.db.query(
     "update public.knowledge_items set content='Changed existing source after the plan was frozen' where id=$1",
     [knowledge.id],
@@ -1401,7 +1401,7 @@ it("rejects changed supporting evidence even if a worker still holds its lease",
 
 it("retains saved proposal work after unrelated evidence and collection metadata changes", async () => {
   const s = await start();
-  let job = await claimModelWorker4(f, f.rpc);
+  let job = await claimModelWorker5(f, f.rpc);
   const before = await f.rpc("generation_context", [job.id, job.lease_token]);
   await f.db.query(
     "update public.opportunities set notice_evidence=$2::jsonb where id=$1",
@@ -1532,7 +1532,7 @@ it.each(["rfp", "notice", "template"])(
   "still rejects a changed proposal input: %s",
   async (kind) => {
     const s = await start();
-    const job = await claimModelWorker4(f, f.rpc);
+    const job = await claimModelWorker5(f, f.rpc);
     if (kind === "rfp")
       await f.db.query(
         "update public.documents set archived=true where id=$1",
@@ -1559,7 +1559,7 @@ it.each([
 ])("handles %s without discarding durable model work", async (code, status) => {
   const { plan } = await start();
   await f.command("model.routing", { enabled: true, expected_revision: 0 });
-  const job = await claimModelWorker4(f, f.rpc);
+  const job = await claimModelWorker5(f, f.rpc);
   const thread = "d".repeat(64);
   await f.db.query(
     "insert into app_private.model_graph_threads(id,workspace_id,job_id,input_hash,task,candidate_count) values($1,$2,$3,repeat('a',64),'analyze_chunk',1)",
@@ -1612,7 +1612,7 @@ it.each([
       "update public.jobs set next_attempt_at=now() where id=$1",
       [job.id],
     );
-    const resumed = await claimModelWorker4(f, f.rpc);
+    const resumed = await claimModelWorker5(f, f.rpc);
     expect(resumed.id).toBe(job.id);
     expect(resumed.checkpoint).toEqual(saved.checkpoint);
     await expect(
@@ -1625,7 +1625,7 @@ it.each(["MODEL_OUTPUT_INVALID", "MODEL_OUTPUT_TRUNCATED"])(
   "persists one repair for %s and then blocks; retry preserves previous steps",
   async (outputError) => {
     const s = await start();
-    let job = await claimModelWorker4(f, f.rpc);
+    let job = await claimModelWorker5(f, f.rpc);
     await f.rpc("fail_generation", [
       job.id,
       job.lease_token,
@@ -1644,7 +1644,7 @@ it.each(["MODEL_OUTPUT_INVALID", "MODEL_OUTPUT_TRUNCATED"])(
       "update public.jobs set next_attempt_at=now() where id=$1",
       [job.id],
     );
-    job = await claimModelWorker4(f, f.rpc);
+    job = await claimModelWorker5(f, f.rpc);
     await f.rpc("fail_generation", [
       job.id,
       job.lease_token,
@@ -1698,7 +1698,7 @@ it.each([
         expected_revision: 0,
         strategy: "round_robin",
       });
-    const job = await claimModelWorker4(f, f.rpc);
+    const job = await claimModelWorker5(f, f.rpc);
     await f.rpc("fail_generation", [
       job.id,
       job.lease_token,
@@ -1726,7 +1726,7 @@ it.each([
         id: plan.id,
         status: "queued",
       });
-      const resumed = await claimModelWorker4(f, f.rpc);
+      const resumed = await claimModelWorker5(f, f.rpc);
       expect(resumed.id).toBe(job.id);
       expect(resumed.attempts).toBe(2);
     } else {
@@ -1939,7 +1939,7 @@ it("splits a truncated automatic proposal response and completes without droppin
     expected_revision: 0,
     strategy: "round_robin",
   });
-  const job = await claimModelWorker4(f, f.rpc);
+  const job = await claimModelWorker5(f, f.rpc);
   const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
   for (const ref of taskInput(ctx).manifest)
     await f.command("content.authorize", {
@@ -2104,7 +2104,7 @@ it.each([false, true])(
       await f.db.exec(
         "update public.jobs set next_attempt_at=now()-interval '1 second' where status in ('retry_wait','quota_wait');update public.provider_usage set created_at=now()-interval '2 minutes'",
       );
-      const job = await claimModelWorker4(f, f.rpc);
+      const job = await claimModelWorker5(f, f.rpc);
       if (!job) break;
       const ctx = await f.rpc("generation_context", [job.id, job.lease_token]);
       if (ctx.step.task !== "advance_plan")
@@ -2280,7 +2280,7 @@ it("runs every proposal stage through durable verification without a company lib
   let verifications = 0,
     creations = 0;
   for (let i = 0; i < 120; i++) {
-    const job = await claimModelWorker4(f, internal);
+    const job = await claimModelWorker5(f, internal);
     if (!job) break;
     const ctx = await internal("generation_context", {
       job_id: job.id,

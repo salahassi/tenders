@@ -36,7 +36,7 @@ async function pending() {
     action: "approve",
     reason: "Synthetic public collection",
   });
-  const job = await f.rpc("claim_backend_job");
+  const job = await f.rpc("claim_backend_job_v5");
   const queued = await f.rpc("queue_source_browser_page", [
     job.id,
     job.lease_token,
@@ -63,7 +63,7 @@ it("recovers a legacy first listing timeout and reports exhaustion as a terminal
   await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
     job.id,
   ]);
-  const resumed = await f.rpc("claim_backend_job_v2");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(
     (await f.rpc("source_browser_page", [resumed.id, resumed.lease_token]))
       .status,
@@ -77,7 +77,7 @@ it("recovers a legacy first listing timeout and reports exhaustion as a terminal
     null,
     "SOURCE_TIMEOUT",
   ]);
-  const current = await f.rpc("claim_backend_job_v2");
+  const current = await f.rpc("claim_backend_job_v5");
   expect(
     await f.rpc("source_browser_page", [current.id, current.lease_token]),
   ).toMatchObject({ status: "blocked", error_code: "SOURCE_BROWSER_FAILED" });
@@ -99,7 +99,7 @@ it("resumes the same saved job with rendered evidence and rejects a stale browse
     JSON.stringify(page),
     null,
   ]);
-  const resumed = await f.rpc("claim_backend_job");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   expect(
     await f.rpc("source_browser_page", [resumed.id, resumed.lease_token]),
@@ -118,7 +118,7 @@ it("accepts a current listing receipt while its parent holds a resumed lease", a
   await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
     job.id,
   ]);
-  const resumed = await f.rpc("claim_backend_job_v2");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   const before = (
     await f.db.query<any>("select * from public.jobs where id=$1", [job.id])
@@ -136,7 +136,7 @@ it("accepts a current listing receipt while its parent holds a resumed lease", a
   expect(
     await f.rpc("source_browser_page", [resumed.id, resumed.lease_token]),
   ).toMatchObject({ status: "ready", page });
-  expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+  expect(await f.rpc("claim_backend_job_v5")).toBeNull();
 });
 it("requires current Owner authority, binds CAPTCHA answers to the live challenge, and redacts its audit", async () => {
   const { source, browser } = await pending();

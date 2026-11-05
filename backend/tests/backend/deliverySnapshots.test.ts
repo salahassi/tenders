@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from "vitest";
-import { workflowFixture, claimModelWorker4 } from "./workflowFixture";
+import { workflowFixture, claimModelWorker5 } from "./workflowFixture";
 import { deliveryPayloadSchema } from "../../supabase/functions/_shared/deliveryContract";
 import { commandSchemas } from "../../supabase/functions/_shared/contracts";
 
@@ -219,7 +219,7 @@ it("publishes before model work without making its own active generation base st
   expect(p.base_version_id).toBeNull();
   expect(prop.delivery_revision).toBe(1);
   expect((await counts()).usage).toBe(0);
-  const job = await claimModelWorker4(f, f.rpc);
+  const job = await claimModelWorker5(f, f.rpc);
   expect(job.id).toBeTruthy();
   const current = await f.rpc("generation_context", [job.id, job.lease_token]);
   expect(current.plan.id).toBe(p.id);

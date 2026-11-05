@@ -95,7 +95,7 @@ def run(repository):
    revision=int(f.scalar('select revision from public.opportunities where id='+L(opp['id'])))
    snapshot=command('delivery.snapshot.prepare',{'opportunity_id':opp['id'],'expected_revision':revision})
    requirement=rpc('cloud_restore_fixture_requirement',(opp['id'],review['review_id']))
-   job=rpc('claim_backend_job_v4');assert job['type']=='render_delivery'
+   job=rpc('claim_backend_job_v5');assert job['type']=='render_delivery'
    export=rpc('delivery_export_context',(job['id'],job['lease_token']))
    checksum='c'*64
    for artifact in export['artifacts']:rpc('complete_delivery_artifact',(job['id'],job['lease_token'],artifact['id'],checksum,128))

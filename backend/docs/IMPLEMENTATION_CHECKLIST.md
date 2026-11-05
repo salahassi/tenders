@@ -10995,3 +10995,28 @@ corpus, frozen qualification prompt or historical paid request was rewritten to 
 The instrumented retry [41948742569](https://github.com/salahassi/tenders/actions/runs/41948742569) fails at `canonical_fixture_write` with the fixed child code `RETIREMENT_FIXTURE_REFRESH_MISSING`. The actual private token was not inspected. The pinned GoTrue v2.197.0 upstream implementation generates legitimate 12-character refresh tokens; the fixture client incorrectly required at least 20 characters in both session and persisted-state validation. Both now accept a nonempty bounded opaque string. Refresh HTTP success, UUID/role checks, the same actor after rotation, and private-state ownership and permissions remain enforced.
 
 The [source-bound receipt](evidence/storage-retirement-refresh-contract-20261105.json) records the pinned upstream blob identities and 68 passing focused Python tests, including 12-character private-state roundtrip, malformed values, role/identity denial, failed refresh and changed-owner refusal before state writes. No hosted redispatch or production mutation occurred in this correction. The deliberate interruption/resume and physical retirement acceptance remain outstanding.
+### November 5 — source-resolution worker capability boundary (in progress)
+
+Fresh jobs now require worker capability5. The new claim/local-claim/wake RPCs
+retain independent model protocol pins, render versions, lease controls and
+provider accounting. The job trigger preserves every existing row at migration
+and never lowers an already stored floor5 or future higher floor on update.
+Current runtime entrypoints use capability5; historical RPCs remain present
+and cannot claim new work. Wake checks apply the floor to queue, completed-job
+and ready-local aliases, including accepted remote polling and handoffs.
+
+Current-schema test/race/restore helpers use worker5 explicitly. Historical
+migration-boundary tests and old-worker refusal controls keep their original
+workers. At the intermediate patch,158 focused tests and38 admission/delay
+controls passed; subsequent alias guards and new compatibility tests need
+revalidation after the exclusive OCR measurement window. No full gate, new
+runtime qualification, current manifest freeze, deployment or hosted request
+acceptance is claimed by this work-in-progress change.
+
+Focused worker5 verification now passes:120wake/contract/handoff tests in4files,
+264mixed model/source/delivery tests in8files,158source/issuance controls in5files,
+38admission/delay controls,9image guards,15update guards and18real atomic release
+contract tests. These overlapping suites are not summed as unique tests. Backend
+typecheck passes after linking both installed package dependencies in the
+isolated worktree. The [focused receipt](evidence/worker-capability-five-focused-20261105.json)
+retains log hashes, known iterative failures and final integration limits.

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from "vitest";
-import { workflowFixture, claimModelWorker4 } from "./workflowFixture";
+import { workflowFixture, claimModelWorker5 } from "./workflowFixture";
 import { createRecheckFixture } from "./analysisVerifierRecheckFixture";
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
@@ -255,7 +255,7 @@ it("accepts unchanged selected work after a sibling completes and advances the s
       [s.plan.id, JSON.stringify(s.step.input)],
     )
   ).rows[0].id;
-  const sibling = await claimModelWorker4(f, s.rpc);
+  const sibling = await claimModelWorker5(f, s.rpc);
   expect(sibling.id).toBe(siblingId);
   await s.rpc("complete_generation_step", {
     job_id: sibling.id,
