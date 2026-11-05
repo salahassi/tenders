@@ -1,42 +1,100 @@
 # Reliability acceptance status — November 5, 2026
 
-**November 5 runtime update:** The original-task repair correction at `1949866`
-requires a different runtime image. Candidate `176bcf738676` now has four passing
-native receipts and exact source, layer and configuration evidence. Its minimum
-observed memory margin is 17.21 MiB for the frozen document fixtures; no causal
-performance improvement or general capacity claim follows. The new publication
-record is deliberately pending, so promotion and manifest freezing fail closed.
-The November 4 publication, manifest and restore results below remain historical
-evidence for their recorded source. New publication, manifest refreeze, renewed
-restore and actual release remain required. See
-[the current provenance record](RUNTIME_QUALIFICATION_PROVENANCE.md) for exact
-measurements and disclosed metadata activity during the native window.
+This refresh is anchored to integrated source `2b869ac`: the production repair
+context correction, expanded offline model reserve, prepared retirement drill
+and guarded current-request browser/observer helper are integrated. **Complete current application checks, actual release and actual proposal
+resume/issuance remain pending.** Exact `2b869ac` operations/schema/Kubernetes
+checks and current-manifest isolated cloud restore now pass at their recorded
+scopes, before the forthcoming retirement-cleanup correction. Earlier completed local and restore scopes are
+retained against their original source; they do not close these current gates.
 
-This refresh is anchored to `8d970aa`, whose application and operations source is the tested `865d840`. Complete local functional checks and the renewed isolated cloud restore have passed. The reliability application has not been deployed at this evidence anchor, and authenticated hosted proposal issuance/export acceptance has not passed. This refresh includes one explicitly authorized read-only inspection of an existing real proposal; it invoked no model, retry, authorization or business mutation. API means application programming interface; OCR means optical character recognition.
+The corrected runtime `176bcf738676` has four fresh native receipts and exact
+source, layer and configuration evidence. It is published and read back at
+`runtime@sha256:996e1ea5b3ff63ca4ea0e5ef75dc45c7d5a83f0c8a2501539bb0a8fc669fbfb2`.
+The separate local revision-label promotion produced `c8b6db388e67`, retaining
+all executable layers and runtime configuration; that probe was not pushed or
+deployed. The current 24-migration release manifest is refrozen to canonical
+SHA-256 `2e6512d2eef73bc130f928cfcc01b04bcb437529cb5ab4b90fa815a228dce6fa`,
+using the unchanged original deployment baseline. Publication and freezing are
+complete; current release-head promotion and rollout are not. The renewed isolated
+restore is proven separately below.
 
-The actual release manifest contains **24 migrations**, canonical SHA-256 `4cb2e712d4ce1b02a6b8bf907d78c78d968c9a27435b009842f6f48be46cff76`. It binds the final one-worker gateway/HTTPS proofs and qualified runtime image. The original deployment baseline remains unchanged. The exact runtime image is published and verified; the separate label-only promotion probe was local and was not pushed. Actual release execution, deployed readback and hosted acceptance remain separate.
+The minimum current measured document memory margin is **17.21 MiB** for the
+frozen native fixtures. The historical **10.88 MiB** measurement remains intact;
+no causal improvement or universal capacity claim follows. See
+[the provenance record](RUNTIME_QUALIFICATION_PROVENANCE.md) for precise scope and
+disclosed metadata activity during the native window. API means application
+programming interface; OCR means optical character recognition.
 
-**A02 is closed for the frozen local functional source. A03 is closed for the exact final 24-migration isolated restore.** Their completion does not close hosted acceptance or semantic qualification. Earlier failures and successful historical 22-migration restore receipts retain their original hashes and source scopes.
+Historical source `865d840` passed complete local functional checks, and
+original-CA restore 41933205779 passed its exact 24-migration manifest
+`4cb2e712`. **A02 retains the historical full closure with current application checks
+pending. A03 now also closes the exact current `2b869ac`/`2e6512d2` isolated
+restore scope.** Neither establishes deployed proposal completion.
+The last authorized read-only customer-target inspection remains incomplete and
+unchanged; no current-request activation has occurred at this anchor.
 
-The subsequent main CI run41934787660 at `2ac0613` passed 3,283 backend tests and failed one real-DOCX case against the 5-second default test timeout. Its bounded integration-test correction passes three one-CPU repeats; the corrected complete GitHub gate is now required. Release41934809173 was cancelled during checks, with cluster access/images/rollout skipped and cleanup successful. The separate manual retirement identity/journal defect is corrected with 54 focused tests; actual Kubernetes/PVC interruption acceptance remains open. These follow-ups preserve the earlier successful local and isolated scopes.
+Both release attempts were cancelled during verification: 41934809173 retained
+the real-DOCX default-timeout follow-up, and 41937345060 at `3c21a65` stopped after
+English/Arabic controls reproduced the real recursive repair-context defect.
+Both skipped cluster access, images and rollout and passed their cleanup steps.
+The correction, native requalification and later registry publication are separate
+records. No successful deployment is inferred from either cancelled workflow.
 
 | Action and current scope | Required next work and completion evidence | Evidence and acceptance |
 | --- | --- | --- |
-| **A01 — Complete hosted capacity and whole-path acceptance** | Exercise the deployed full Auth/API/worker/Storage/proxy path under observed resource limits after the checked release. Retain exact bytes/order, slow-consumer/cancel behavior and measured margins without inventing a product quota. **Completion:** Actual hosted path receipts bind deployed source/images/authority to full result hashes/order, complete required volumes, slow-consumer/cancel behavior, cleanup and the existing 600-second issuance clock; retain measured fixture scope and margin. | E01, E02, E13; W04, W09, D02, D04; EX-01, EX-02, EX-05, OP-02, BC-01 |
-| **A02 — Run the complete integrated verification on the final source** | Frozen local pass retained; corrected complete GitHub verification remains pending after the one real-DOCX default-timeout failure. **Completion:** One exact final commit has required complete green checks and source-bound logs; any remaining failure is explicit. | E01; W00, W11; R0, W11 exit evidence |
-| **A03 — Renew the isolated cloud restore for the final 24-migration release** | Closed isolated scope. No pending isolated restore for this exact 24-migration manifest; repeat if relevant release/schema/Auth/Storage contracts change. **Completion:** The renewed exact-source isolated schema/Auth/Storage drill passes required checks and both cleanup stages; its receipt names the final manifest and source hashes. | E06, E13; W09, W11, D05; OP-03, OP-04, D05 |
+| **A01 — Complete hosted capacity and whole-path acceptance** | After the checked release, exercise the deployed Auth/API/worker/Storage/proxy path with exact bytes, complete volumes, slow consumers, cancellation and measured resource margins. Bind the actual accepted-to-issued clock to 600 seconds. Current 17.21 MiB and historical 10.88 MiB are fixture margins only. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E01, E02, E13; W04, W09, D02, D04; EX-01, EX-02, EX-05, OP-02, BC-01 |
+| **A02 — Run complete integrated verification on the current source** | Pending for integrated `2b869ac`. Finish complete application gates and retain source-bound operations/schema/Kubernetes and mandatory real-browser proofs on one exact final source. The 667 operations/schema/Kubernetes checks pass at `2b869ac` before the forthcoming retirement-cleanup correction; changed scopes need relevant revalidation. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E01; W00, W11; R0, W11 exit evidence |
+| **A03 — Renew isolated cloud restore for the current 24-migration manifest** | Closed for `2b869ac` and manifest `2e6512d2`: run 41942455870 passes all 13 actual Auth/Storage HTTP checks, 24 migrations and both cleanup stages. Repeat if relevant release/schema/Auth/Storage contracts change; renderer, deployment and recovery objectives remain separate. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E06, E13; W09, W11, D05; OP-03, OP-04, D05 |
 | **A04 — Establish actual available model routes under the existing policy** | Resolve provider-side quota/credit/credential availability through existing authorized routing and billing policy; confirm enabled task routes without silently buying capacity or changing usage accounting. Separately verify immediate clear error when every route is unavailable. **Completion:** Current configured-route availability and no-agent behavior have actual receipts; failures and unknown usage retained. | E08, E09; W07, W10, D06; ME-10, ME-11, BC-01 |
-| **A05 — Complete independent semantic and bounded-retrieval qualification** | Complete and review the 40 unsupported reserve cases with faithful workflow prerequisites/composite schedules. Freeze actual targets, source/prompt/schema/adapter/validator locks and noncritical acceptance decisions before authorized execution. Retain 100 scheduled cells/model and separately qualify 48 prospective retrieval cells plus independent outcome adjudication. Separately obtain and evaluate the authorized independently reviewed private holdout required by ME-14; synthetic reserve results cannot replace it. **Completion:** All 13 task boundaries accounted for; independent gold, per-class attempted/completed/scored denominators and critical false-acceptance/rejection/omission outcomes, source bindings and measured retrieval scope retained. The separately authorized independently reviewed private holdout passes its frozen per-class oracles with full denominators and retained counterexamples. | E09, E10; W05, W06, W08, D07; ME-01, ME-02, ME-04, ME-08, ME-09, ME-14, RT-01, RT-02 |
+| **A05 — Complete independent semantic and bounded-retrieval qualification** | 42/50 source cases construct canonical requests; eight remain unsupported. Complete and review those prerequisites/composite schedules without reducing the 100-cell/model denominator. Freeze provider/phase/prompt/schema/validator and business decisions before authorized execution; retain independent per-class outcome adjudication, the 48-cell retrieval plan and a separately authorized private holdout. Offline authored controls are not model quality. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E09, E10; W05, W06, W08, D07; ME-01, ME-02, ME-04, ME-08, ME-09, ME-14, RT-01, RT-02 |
 | **A06 — Qualify Arabic scanned-input extraction** | Keep both the rejected parameter tuning and official tessdata_best candidate unadopted. Qualify a maintainable alternative against frozen whole-page Arabic, mixed identifiers, English and blank controls before changing defaults. Preserve readable pages and mandatory source-bound visual correction. **Completion:** Independent gold tests preserve the supported Arabic obligations, numbers and blank/read coverage. Until then, automatic valid-scan correctness remains an explicit unclosed product limitation; mandatory review is a safety control, not automatic success. | E11; W02, W05, D03; IN-03, IN-04, D03 |
 | **A07 — Verify Word table-of-contents update and target-engine compatibility** | Perform actual Microsoft Word update/save and verify page numbers, headings, Arabic/English layout and yellow gaps. Preserve the two failed explicit LibreOffice invocation attempts; they produced no refreshed artifact and do not identify the absent-cache cause. **Completion:** Named actual reviewer/engine versions, updated files and per-page hashes/visual evidence; no invented cache numbers. | E03; W04, D02; EX-02, EX-06 |
-| **A08 — Execute the checked release** | Execute the checked release using final 24 manifest and qualified image promotion. Validate actual old gateway identities; keep permanent legacy-RPC fence, prove old-process termination, visible database drain and pre-snapshot locked zero census. Complete exact deployed schema/image/config readback and preserve forward recovery. **Completion:** Release workflow and deployed schema/image/gateway readback match the reviewed contract, with protected historical rows/ACLs and a concrete recovery record. | E04, E05, E08, E13; W00, W11; W11 exit evidence, OP-02, OP-04 |
-| **A09 — Complete actual authenticated hosted issuance, export and recovery acceptance** | Use isolated fixtures or explicitly authorized existing records through the real browser/API/worker/storage paths. Cover early template/partial vs substantive issued status, generated and ordinary draft/final exports, one/two-volume atomic readiness, close-tab/reentry/retry, late source/member/approval changes, full/unknown storage and readback. Measure accepted-to-whole-package issuance including queue against 600 seconds; terminal unavailability returns earlier. For retirement acceptance, run the exact fenced process/physical recovery protocol in an authorized isolated setting; local fake process proofs are insufficient. The renewed exact 24-migration shared-helper 13-check restore is proven. Separately define service recovery-point/time objectives and compare observed recovery against them before claiming D05. Use the corrected manual retirement helper with strict captured identities and saved proofs (54 focused tests passed); actual isolated Kubernetes/PVC recovery remains unproved. **Completion:** Independent authenticated download hashes/sizes/complete-set and browser state; full request timestamps including failures; quota/usage/lease/currentness invariants; cleanup and recovery receipts. | E02, E04, E05, E06, E07, E12; W01, W03, W04, W07, W09, W10, W11, D01, D04, D05, D06; AR-04, AR-05, EX-01, EX-03, EX-04, EX-05, OP-02, OP-03, OP-04, OP-05, UX-01, UX-02, UX-03, BC-01 |
+| **A08 — Execute the checked release** | After current complete gates (the current-manifest isolated restore has passed), release manifest `2e6512d2` with the qualified published digest and verified release-head promotion. Prove old-process exit, permanent legacy-RPC fence, visible database drain, locked fresh zero census and exact deployed schema/images/configuration. Publication and the local promotion probe do not prove rollout. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E04, E05, E08, E13; W00, W11; W11 exit evidence, OP-02, OP-04 |
+| **A09 — Complete actual authenticated issuance, export and recovery acceptance** | After verified release, activate the reviewed current-request workflow with the private selection, fresh server details and exact durable request body/key. Preserve predecessor accepted work and unknown usage. Observe accepted/deadline/whole-package completion and earlier terminal errors; authenticate actual complete-volume downloads separately. Execute the prepared nonce-owned retirement interruption/PVC drill, retain cleanup/recovery evidence and define service recovery objectives. Local browser/PGlite controls and metadata-only issuance do not close hosted acceptance. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E02, E04, E05, E06, E07, E12; W01, W03, W04, W07, W09, W10, W11, D01, D04, D05, D06; AR-04, AR-05, EX-01, EX-03, EX-04, EX-05, OP-02, OP-03, OP-04, OP-05, UX-01, UX-02, UX-03, BC-01 |
 
-## What the current evidence establishes
+## Recorded evidence and its source
+
+Current repair controls reproduced faithful English/Arabic quote repairs rejected
+with `EVIDENCE_REFERENCE_INVALID`: recursive target validation read the outer
+repair envelope instead of the original task context. The narrow production
+correction passes 67 production regressions and 139 combined controlled cases.
+It changes copied runtime bytes, so the old qualified image cannot substitute
+for the new `176bcf` proofs. These are authored controls, not provider semantic
+qualification.
+
+The new runtime's four sequential native runs verify two warm downloads, a
+fresh-parent repeat, the unchanged reviewed DOCX and 100 ordered API results
+(412,758,765 bytes, 1,600 chunks). The current batch stream completes in 56.703
+seconds. Exact source/fixture hashes, memory measurements and cleanup are
+retained in their new receipts. Publication is verified and the local label-only
+promotion preserves executable identity. All older measurements below remain
+historical evidence for their recorded source and input scope.
+
+The integrated current-request helper has 34 Python, 33 frontend-guard/exact-SQL,
+one selected canonical two-volume DOCX observation and four actual local
+Chromium/CLI controls passing at the retained source hashes. Both package types
+and builds and all 380 frontend tests across 59 files passed in its isolated checkout. Its broad
+older-base backend/operations runs were interrupted; the two reported roughly
+five-second failures later passed serial focused rechecks. Those diagnostics
+remain separate from the pending complete integrated gate.
 
 At `865d840`, **3,284 backend tests in 193 files and 380 frontend tests in 59 files passed**, together with both packages' type checks and builds. All **537 operations, 11 production-schema and 16 Kubernetes tests passed**. Recorded source maps show no changes during these checks. They are functional results, not capacity timing. The earlier 3,135-pass/two-failure diagnostic and the 33-test response-consumption correction remain indexed; no production busy/authorization guard was relaxed to fix those fixtures.
 
-Original-CA cloud restore run **41933205779** at `865d840` applies all 24 frozen migrations and passes all 13 genuine Auth/Storage HTTP checks, original certificate/hostname verification and both cleanup stages. It uses synthetic isolated data and reads production schema metadata without copying customer rows. It does not exercise the application renderer or prove production deployment, actual proposal completion, recovery-point/time objectives or the issuance deadline. The historical successful 22-migration run 41910306855 and earlier failed drills remain retained.
+At exact integrated `2b869ac`, **640 operations, 11 production-schema and 16
+Kubernetes tests pass (667 total)**, with all 539 captured source files unchanged.
+This receipt predates the forthcoming retirement-cleanup correction and does not
+cover that later change. Timings from concurrent functional checks are not native
+capacity measurements. The complete current application result remains pending.
+
+Current original-CA restore **41942455870** at `2b869ac` applies all 24 migrations
+from manifest `2e6512d2` and passes all 13 actual Auth/Storage HTTP checks, original
+certificate/hostname verification and both cleanup stages. It reads production
+schema metadata and uses synthetic isolated data, with zero copied customer rows
+or model calls. It does not prove application rendering, actual proposal
+completion, declared recovery objectives or the end-to-end issuance deadline.
+
+Historical original-CA cloud restore run **41933205779** at `865d840` applies all 24 frozen migrations and passes all 13 genuine Auth/Storage HTTP checks, original certificate/hostname verification and both cleanup stages. It uses synthetic isolated data and reads production schema metadata without copying customer rows. It does not exercise the application renderer or prove production deployment, actual proposal completion, recovery-point/time objectives or the issuance deadline. The historical successful 22-migration run 41910306855 and earlier failed drills remain retained.
 
 Actual API-image qualification at `6a73caf` exercises the real handler and bounded batch stream against isolated PostgreSQL/PostgREST: **100 ordered results, 412,758,765 bytes and 1,600 chunks in 58.024 seconds**. API peak memory was 163,995,648 of 402,653,184 bytes, with no out-of-memory event. Exact SQL/result hashes, replay without extra writes, slow consumption, cancellation and admission reacquisition passed. Auth user lookup was synthetic; membership and SQL authorization used the actual caller JWT. The qualification harness replaced the runtime entrypoint. This is not a hosted Auth, managed-database hardware or service-level result.
 
@@ -46,13 +104,22 @@ The final HTTPS receipt `a10f52cf…1aace72` exercises the exact deployed HTTPS 
 
 The earlier proxy fixture incorrectly described host `/tmp` as disk-backed; it is tmpfs in this environment. Its disk qualification is explicitly withdrawn in the indexed scope-correction receipt. Original hashes and observed OOM/observer failures are preserved. Final pinned-worker Nginx and HTTPS proofs use actual filesystem-magic checks and fresh source-bound runs. No earlier receipt is relabeled as final evidence.
 
-Native document qualification completes two warm DOCX downloads in one parent and one fresh-parent repeat at 384 MiB/700m. Exact bytes, final authorization, busy responses and heavy cancellation/reacquisition pass. The minimum measured headroom remains **10.88 MiB**. The same 3,177,596-byte reviewed DOCX that originally failed upload-envelope validation passes native canonical verification with one completion call. Auth/RPC/file-backed Storage and the ordinary-policy-2 review pin are synthetic. These receipts establish exact fixtures, not arbitrary concurrency or universal admitted capacity. Historical OOM failures remain indexed.
+Historical native document qualification on the older image completes two warm DOCX downloads in one parent and one fresh-parent repeat at 384 MiB/700m. Exact bytes, final authorization, busy responses and heavy cancellation/reacquisition pass. Its minimum measured headroom was **10.88 MiB**. The same 3,177,596-byte reviewed DOCX that originally failed upload-envelope validation passes native canonical verification with one completion call. Auth/RPC/file-backed Storage and the ordinary-policy-2 review pin are synthetic. These receipts establish exact fixtures, not arbitrary concurrency or universal admitted capacity. Historical OOM failures remain indexed.
 
-The qualified `89af` runtime image has exact source/filesystem, ordered-layer and configuration evidence. It was published as `runtime@sha256:67fc1be0f574ea9b65e40408da436c3173fb4f332bb7729fe8da75e1ccaa4d28`, pulled back and verified identical; temporary publication credentials were removed. A separate local promotion probe changes only the revision label and preserves layers/runtime configuration. Publication and that probe do not mean the application is deployed. The final manifest binds these records and the final proxy/source guards; actual rollout must still verify the deployed identities and bytes.
+The historical qualified `89af` runtime image has exact source/filesystem, ordered-layer and configuration evidence. It was published as `runtime@sha256:67fc1be0f574ea9b65e40408da436c3173fb4f332bb7729fe8da75e1ccaa4d28`, pulled back and verified identical; temporary publication credentials were removed. A separate local promotion probe changes only the revision label and preserves layers/runtime configuration. Publication and that probe do not mean the application is deployed. The historical `4cb2e712` manifest binds those records. Current `2e6512d2` binds the corrected runtime and retained final proxy/source guards; actual rollout must still verify deployed identities and bytes.
 
 Read-only, original-CA runs 41919585078 and 41926843276 observed zero legacy BATCH receipts at their markers. The latter also proves existing SET-only authenticator visibility, with no old transactions observed, and actual gateway Deployment/ready-Pod limits of 64 MiB/200m with a writable default-medium 64 MiB temporary volume. Run 41928176279 observes HTTPS Deployment/ready-Pod limits of 128 MiB/300m. Cleanup passed. These observations do not install an admission fence or drain transactions. Managed database RAM/vCPU remain unknown where authoritative metadata did not report them; a size slug is not substituted for measured hardware. Actual PostgreSQL cutover tests cover cached old code, the permanent INSERT backstop, fresh visibility after the early lock and refusal on legacy drift. Real process termination, database drain and locked fresh zero census remain release-time steps.
 
-The model reserve contains 50 source cases across 13 tasks and 16 retrieval pairs, frozen and independently reviewed before its outputs. Scorer/integrity and offline canonical-adapter checks pass, but only **10 of 50 cases** construct a single canonical request across four task families; **40 remain explicitly unsupported**. The planned 100 scheduled cells per model is unchanged. There are no provider or retrieval outputs from this reserve. It is synthetic and authored with knowledge of prior campaigns, not a blind/private holdout. Prior critical findings and the seven misses in the earlier bounded-retrieval 16-case result remain unresolved by request construction.
+The model reserve retains 50 frozen source cases across 13 tasks and 16 retrieval
+pairs. Expanded faithful prerequisites now construct **42/50 canonical single
+requests across all 13 task families**; **eight remain unsupported**. All 189
+offline adapter/integrity controls pass. Four `plan_proposal` cases explicitly
+exercise the legacy registered task rather than current new-plan orchestration.
+The planned 100 cells/model, corpus/gold and retrieval schedule remain unchanged.
+There are zero provider, retrieval or database requests from this reserve.
+Authored controls are not independent blind/private holdout results. Prior
+critical findings and seven misses in the earlier 16-case bounded-retrieval
+result remain unresolved by request construction.
 
 Automatic Arabic OCR remains unqualified. The rejected 18-configuration tuning damaged independent identifiers and an English control. A later official `tessdata_best` substitution completes all seven frozen cases but passes only **3/7 overall and 0/4 Arabic pages**; two English/mixed-page controls and one blank control pass. Independent adjudication rejects the candidate. No OOM, timeout or infrastructure failure explains the Arabic defects. Runtime recognition defaults and gold are unchanged, and mandatory source-bound page correction remains a safety control rather than automatic correctness.
 
@@ -62,10 +129,16 @@ Actual Microsoft Word table-of-contents update/save remains open. Two bounded Li
 
 Read-only run **41934185072** at `865d840` observes the exact authorized latest proposal at **2026-11-04 23:30:36 UTC**. It is blocked in analysis with `MODEL_CORRECTION_EXHAUSTED`, has no active version and has zero proposal versions. One committed analysis result and one split step remain. Its 50 unknown usage rows remain unknown; none are reserved at this marker. The first inspection attempt 41933863776 failed before database access because the old encrypted selection object was missing. Re-uploading the identical 172-byte selection through the reviewed encrypted transport allowed the successful inspection; cleanup passed. Customer identifiers/text stay private.
 
-There is therefore no legitimate completed proposal for browser/export acceptance yet. After verified deployment, the supported interface first obtains fresh server-owned `PROPOSAL_CURRENT_CONTRACT_REQUIRED` details and then, on the explicitly requested action, sends an atomic idempotent canonical cancel-and-generate batch for a current-contract successor. The predecessor's accepted analysis, frozen inputs, paid pins, budgets and unknown accounting remain historical. The older operations successor helper is unsuitable because it requires no accepted sibling. No activation occurred in this refresh. Export selection must wait for an actual current completed version; a template or partial artifact cannot substitute for that result.
+There is therefore no legitimate completed proposal for browser/export acceptance yet. After verified deployment, the supported interface first obtains fresh server-owned `PROPOSAL_CURRENT_CONTRACT_REQUIRED` details and then, on the explicitly requested action, sends an atomic idempotent canonical cancel-and-generate batch for a current-contract successor. The predecessor's accepted analysis, frozen inputs, paid pins, budgets and unknown accounting remain historical. The older operations successor helper is unsuitable because it requires no accepted sibling. The guarded operations workflow and bounded read-only issuance observer are now locally verified, with browser process capture before session/navigation, exact encrypted persistence before one send, no automatic replay after uncertainty, and actual nullable database timestamps. Known terminal errors stop observation early; effective timeout is kept separate from persisted completion. No activation occurred in this refresh. Export selection must wait for an actual current completed version; a template or partial artifact cannot substitute for that result.
+
+The separate nonce-owned two-job retirement drill is also prepared. Its local
+controls pass 45 cloud-retirement tests, 62 strict retirement/PostgreSQL authority
+checks and three migrated PGlite cases. Actual isolated Auth/Storage/PVC process
+interruption and recovery have not been dispatched. Owner-defined recovery
+point/time objectives and whole-cluster fence/restore continuity remain open.
 
 ## R0 and release limits
 
 The [machine-readable action matrix](evidence/reliability-remaining-actions-20261104.json) maps each action to the [R0 evidence index](evidence/reliability-r0-index-20261104.json). R0 requires applicable source, fixture, image, migration, clock, policy, hashes, outcomes, usage, cleanup and human-review evidence. The index is a discovery record, not a certificate that every field is complete.
 
-A template or partial draft does not establish substantive issuance; a generated draft requiring source review is not final human approval. Unavailable routes, unsupported adapters and OCR confidence are not semantic passes. The deadline remains **600 seconds from each authorized request's acceptance, including queue time**, with earlier terminal errors; an explicit new request never changes the old request's deadline or accounting. Checked deployment, actual provider availability, semantic/retrieval qualification, automatic Arabic OCR, Word update/save and authenticated hosted issuance/export/recovery acceptance remain open.
+A template or partial draft does not establish substantive issuance; a generated draft requiring source review is not final human approval. Unavailable routes, unsupported adapters and OCR confidence are not semantic passes. The deadline remains **600 seconds from each authorized request's acceptance, including queue time**, with earlier terminal errors; an explicit new request never changes the old request's deadline or accounting. Complete current application gates, relevant operations revalidation, checked deployment, actual provider availability, semantic/retrieval qualification, automatic Arabic OCR, Word update/save and authenticated hosted issuance/export/recovery acceptance remain open.

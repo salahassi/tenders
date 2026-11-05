@@ -10775,3 +10775,39 @@ authenticated customer file acceptance and semantic quality acceptance remain
 open. This change performs no activation, provider call, migration, billing,
 capacity or unknown-usage mutation. Synthetic PGlite and local fixture HTML are
 not native PostgreSQL, hosted Auth or deployed-frontend acceptance.
+
+### November 5 — integrated evidence refresh, complete operations and renewed restore
+
+The R0 discovery index and remaining-action matrix now bind integrated source
+`2b869ac341f3ca7944247930e68c022f91a7383a`. All 92 prior receipt entries and hashes
+remain unchanged; 17 new receipts bring the index to 109. The refresh includes
+the production original-context repair correction, 42/50 constructible reserve
+cases (eight unsupported, zero provider/retrieval/database requests), new
+`176bcf` native/source qualification, exact `996e1ea5` publication, local
+`c8b6db38` label-only promotion, manifest `2e6512d2`, prepared retirement/current
+request helpers and both cancelled release boundaries. Runtime provenance now
+distinguishes its historical pending-publication guard from the later completed
+publication and manifest refreeze.
+
+[Complete operations evidence](evidence/complete-operations-checks-2b869ac-20261105.json)
+records 640 operations, 11 production-schema and 16 Kubernetes tests passing
+(667 total), with all 539 source files unchanged. This exact-source result
+precedes the forthcoming isolated-retirement cleanup correction and does not
+qualify that later change. It does not replace the complete application gate.
+
+[Restore run 41942455870](https://github.com/salahassi/tenders/actions/runs/41942455870)
+at the same source passes all 13 actual Auth/Storage HTTP checks, all 24 additive
+migrations from manifest `2e6512d2`, original cluster certificate/hostname
+verification and both cleanup stages. Its [sanitized receipt](evidence/cloud-restore-20261105-41942455870.json)
+was copied unchanged from the actual run evidence. A03 is closed only for this
+isolated source/manifest scope. Synthetic data, zero copied customer rows and no
+renderer execution do not establish production deployment, actual proposal
+completion or recovery objectives.
+
+Complete current application verification, relevant operations revalidation,
+checked rollout, actual current-request activation and authenticated file
+acceptance remain open at this refresh. Documentation validation checked JSON,
+all 109 receipt paths/hashes, preservation of the 92 historical entries, action
+mappings and the exact canonical manifest hash. No application/operations tests,
+native runs, workflow dispatches or source changes occurred in this docs-only
+refresh.

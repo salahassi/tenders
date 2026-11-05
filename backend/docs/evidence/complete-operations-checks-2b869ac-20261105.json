@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "source_revision": "2b869ac341f3ca7944247930e68c022f91a7383a",
+  "started_at": "2026-11-05T00:35:19.257920+00:00",
+  "finished_at": "2026-11-05T00:38:48.415615+00:00",
+  "passed": true,
+  "changed_sources": [],
+  "kind": "complete_operations_checks_at_integrated_source",
+  "raw_receipt_sha256": "794f0455e42249566205d663700ab6af681948e69756dec431b4ea2b17a1b7a5",
+  "source_files": 539,
+  "source_before_sha256": "aa68968fdd153e4d9db105a63356bead56edbcb20ef1446cb0459c0ae07b699e",
+  "source_after_sha256": "aa68968fdd153e4d9db105a63356bead56edbcb20ef1446cb0459c0ae07b699e",
+  "checks": [
+    {
+      "name": "operations",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "backend/scripts/ops"
+      ],
+      "exit_code": 0,
+      "seconds": 206.449,
+      "log_sha256": "944c9d64fd51964463eb31624cbe2a410f8cafd6cd45fcbbe960252cc6438a4d",
+      "passed_tests": 640
+    },
+    {
+      "name": "production-schema",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "backend/scripts/ops/production-schema"
+      ],
+      "exit_code": 0,
+      "seconds": 2.5,
+      "log_sha256": "2be4d554ff015f84b1d0436feea8df39bd90f0b01474b4efc9595db4e9ff18d2",
+      "passed_tests": 11
+    },
+    {
+      "name": "kubernetes",
+      "command": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "backend/deploy/kubernetes"
+      ],
+      "exit_code": 0,
+      "seconds": 0.114,
+      "log_sha256": "40e7e701b0fb7520dec152943e03896c5835fbb8b2ebe4c5ca0e04b62aeaeb2b",
+      "passed_tests": 16
+    }
+  ],
+  "total_passed": 667,
+  "limits": [
+    "Exact 2b869ac operations/schema/Kubernetes source before the forthcoming isolated-retirement cleanup correction.",
+    "No complete application-package, provider, production release or hosted issuance claim.",
+    "Functional tests ran alongside separately owned application checks; timings are not native capacity evidence."
+  ]
+}
