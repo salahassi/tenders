@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "date_utc": "2026-11-05",
+  "qualification": "isolated retirement harness local checks",
+  "base_revision": "7e4f3593bff9514cf4b2354fa59fb3ad2f32fbe7",
+  "source_sha256": {
+    "backend/scripts/ops/cloud-retirement/contract.py": "2f9570da7033f5131fa91c43bf53035490b50276b78ddce2f5bfa3723bd35174",
+    "backend/scripts/ops/cloud-retirement/fixture_adapter.py": "935bd1cf225a408ae581c59d3c06b59c58d615df159e40cf720adae727508fec",
+    "backend/scripts/ops/cloud-retirement/resources.py": "dc15a632a3ed50a0d7ea18f506cc1c1ca3f68af4f5193fb8bb7d9a01bd1fa3c9",
+    "backend/scripts/ops/cloud-retirement/runner.py": "3351ea246cef894efd93406096eb78491d0c725f09a6c60daae76765d51ae0b4",
+    "backend/scripts/ops/cloud-retirement/writer.py": "c19a706ea3db9fcea46b71f9ceda74aa29dc08add0110b9a7d29074d761a4555",
+    "backend/scripts/ops/cloud-retirement/fixture.sql": "f01e8a94d52fff09a17cc33279f33f9df38e6bd805a9e54c18dab627c5ebbcbc",
+    "backend/scripts/ops/test_cloud_retirement.py": "92e1954babdf90b597d37fc8611d0e72dd300e6734fcc8898b42129384a8db41",
+    "backend/scripts/ops/test_cloud_retirement_runner.py": "bf44c960a7604f4edc053265e03c9600e915c94225fcfcdd55ee166c4fabccf0",
+    "backend/scripts/ops/test_cloud_retirement_writer.py": "1a50c42e8173813545decbc1e74e6ea7e926ba631d3b23540b5868a330331f68",
+    ".github/workflows/qualify-storage-retirement.yml": "3886b687be328cccbbecbe256de30cdfe79975cda8e8081655f169874636804a",
+    "backend/tests/backend/cloudRetirementFixture.integration.test.ts": "6a5968f4fe62fe88fd980e2582913d944c0b564e8aa343db0d2ef8b5529c42af",
+    "backend/scripts/ops/storage-retirement/coordinator.py": "2b1b4122520a093f9298e101c87279558eb2c6ff80bf126f2a56315fb5589e8a",
+    "backend/scripts/ops/storage-retirement/physical.mjs": "5da1c91c120a0f6e248744433aac7c1816346d4d48c03cefce85dac4f298d8db"
+  },
+  "checks": [
+    {
+      "command": "python3 -m unittest discover -s backend/scripts/ops -p 'test_cloud_retirement*.py'",
+      "passed": 45,
+      "failed": 0
+    },
+    {
+      "command": "python3 -m unittest discover -s backend/scripts/ops -p 'test_storage_retirement*.py'",
+      "passed": 62,
+      "failed": 0,
+      "scope": "Includes 8 local PostgreSQL authority checks and 54 existing strict retirement guards."
+    },
+    {
+      "command": "npx vitest run tests/backend/cloudRetirementFixture.integration.test.ts",
+      "cwd": "backend",
+      "passed": 3,
+      "failed": 0,
+      "scope": "Fully migrated synthetic PGlite canonical SQL; actual Auth/Storage HTTP remains hosted work."
+    },
+    {
+      "command": "npm run typecheck",
+      "cwd": "backend",
+      "passed": true
+    },
+    {
+      "command": "python3 -m py_compile backend/scripts/ops/cloud-retirement/*.py",
+      "passed": true
+    },
+    {
+      "command": "git diff --check",
+      "passed": true
+    }
+  ],
+  "initial_diagnostics": [
+    "Initial fixture RPC guard rejected the canonical versioned claim_backend_job_v4; corrected before the passing SQL and writer tests.",
+    "Initial backend typecheck lacked frontend dependency resolution in the isolated checkout; repeated successfully after verifying both package-lock hashes and temporarily linking installed dependencies."
+  ],
+  "hosted_dispatches": 0,
+  "production_business_mutations": 0,
+  "model_calls": 0,
+  "production_fixed_target_adapter_exercised": false,
+  "actual_pvc_qualification_passed": false,
+  "scope_limits": [
+    "No hosted interruption/cleanup proof until reviewed workflow execution.",
+    "Synthetic idle worker Deployment and actual HTTP fixture client are separate; no real application-worker capacity claim.",
+    "Original-CA catalog observer reads production schema metadata only during hosted setup.",
+    "Allocation acknowledgment loss before durable UID can require ownership reconciliation.",
+    "Whole-cluster retirement-fence restore continuity unproved.",
+    "Owner-defined recovery time and recovery point targets remain unspecified.",
+    "No full backend/frontend package rerun in this isolated operations change."
+  ]
+}

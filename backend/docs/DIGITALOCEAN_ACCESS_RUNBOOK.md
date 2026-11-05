@@ -261,3 +261,14 @@ resource observations (128 MiB / 300m), with original-CA and both cleanups. Its
 [receipt](evidence/digitalocean-https-capacity-20261104-41928176279.json) remains
 read-only configuration evidence; it does not qualify proxy capacity or replace
 the original frozen release baseline.
+
+## Isolated interrupted storage retirement
+
+`qualify-storage-retirement.yml` uses this same original-CA GitHub runner path and
+shared production concurrency group. It provisions a separate nonce-owned
+namespace, database and PVC; it does not invoke the fixed production retirement
+adapter. Its first job deliberately exits after durable process capture and
+scale-to-zero, and its second job resumes from a new runner. Read the full
+[qualification runbook](STORAGE_RETIREMENT_QUALIFICATION_RUNBOOK.md) and workflow
+before dispatch. Source preparation and local tests are not evidence of a
+hosted pass. Preserve strict original-process proof and owned cleanup on failure.

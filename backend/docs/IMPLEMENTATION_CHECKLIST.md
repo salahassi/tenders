@@ -10680,3 +10680,30 @@ SHA-256: `2e6512d2eef73bc130f928cfcc01b04bcb437529cb5ab4b90fa815a228dce6fa`.
 Only the original inner baseline receipt from run41881660683 was used. Source
 verification passes. Complete integrated application/ops checks, renewed isolated
 cloud restore, actual release and authenticated hosted acceptance remain required.
+
+### November 5 — isolated interrupted-retirement qualification prepared
+
+Added a separate two-job GitHub Actions qualification for the unchanged strict
+manual retirement coordinator. The first job creates a nonce-owned database,
+actual Auth/REST services and independent pinned Storage/gateway/synthetic-writer
+Deployments on a new PVC. Genuine canonical application commands and a real
+Storage upload leave an uncertain key with its cleanup reservation. The process
+exits deliberately after durable original-container capture and scale-to-zero;
+a fresh runner resumes from Kubernetes state, proves exact process exit and
+physical/metadata absence, then checks canonical exactly-once quota release,
+old-key denial, a new canonical upload and replica restoration.
+
+The [qualification runbook](STORAGE_RETIREMENT_QUALIFICATION_RUNBOOK.md) specifies
+ownership, original-CA access, current 24-migration manifest verification, private
+proof storage, cross-attempt identity handling and verified PVC/database cleanup.
+The fixed production adapter is neither imported nor retargeted. No provider
+calls or production business rows are involved. The retained
+[local qualification receipt](evidence/storage-retirement-isolated-local-20261105.json)
+records 45 new Python checks, 3 fully migrated canonical SQL tests, 62 existing
+retirement regressions, backend typechecking and syntax checks. Independent
+source review identified a missing-helper cleanup retry and insufficient helper
+process validation; both were corrected and covered by the new guards. No hosted
+workflow has been dispatched. Initial allocation acknowledgment loss can require
+ownership reconciliation; the intended durable interruption checkpoint is the
+qualified recovery scope. Whole-cluster restore continuity, actual worker
+capacity and user-defined recovery objectives remain open.
