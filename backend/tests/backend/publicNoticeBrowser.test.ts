@@ -82,7 +82,7 @@ async function pending() {
     )
   ).rows[0].id;
   await f.rpc("schedule_assessment_refresh");
-  const job = await f.rpc("claim_backend_job");
+  const job = await f.rpc("claim_backend_job_v5");
   expect(job.type).toBe("classify_opportunity");
   const before = (
     await f.db.query<any>(
@@ -132,7 +132,7 @@ it.each(["SOURCE_TIMEOUT", "SOURCE_BROWSER_FAILED"])(
       code,
     ]);
     expect(await f.rpc("claim_source_browser_page")).toBeNull();
-    const resumed = await f.rpc("claim_backend_job_v2");
+    const resumed = await f.rpc("claim_backend_job_v5");
     expect(resumed.id).toBe(job.id);
     const result = await f.rpc("request_notice_browser", [
       resumed.id,
@@ -160,7 +160,7 @@ it.each(["SOURCE_TIMEOUT", "SOURCE_BROWSER_FAILED"])(
       error_code: "SOURCE_BROWSER_FAILED",
       plan_status: "blocked",
     });
-    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+    expect(await f.rpc("claim_backend_job_v5")).toBeNull();
     const receipt = (
       await f.db.query<any>(
         "select status,error_code,attempts,input_hash,notice_hash,source_revision from public.source_browser_requests where id=$1",
@@ -179,7 +179,7 @@ it("requeues an existing blocked first timeout under its current assessment leas
   await f.db.query("update public.jobs set next_attempt_at=now() where id=$1", [
     job.id,
   ]);
-  const resumed = await f.rpc("claim_backend_job_v2");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   expect(
     await f.rpc("request_notice_browser", [
@@ -196,7 +196,7 @@ it("requeues an existing blocked first timeout under its current assessment leas
     JSON.stringify(renderedPage(html, url, url)),
     null,
   ]);
-  const current = await f.rpc("claim_backend_job_v2");
+  const current = await f.rpc("claim_backend_job_v5");
   expect(
     (
       await f.rpc("request_notice_browser", [
@@ -228,7 +228,7 @@ it.each([
     null,
     code,
   ]);
-  const resumed = await f.rpc("claim_backend_job_v2");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   expect(
     await f.rpc("request_notice_browser", [
@@ -277,10 +277,10 @@ it.each(["ready", "waiting", "stale"])(
         [f.w, f.owner],
       )
     ).rows[0];
-    expect((await f.rpc("claim_backend_job_v2")).id).toBe(
+    expect((await f.rpc("claim_backend_job_v5")).id).toBe(
       mode === "ready" ? job.id : unseen.id,
     );
-    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+    expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   },
 );
 
@@ -293,7 +293,7 @@ it("binds rendered details to the original assessment and resumes it without cha
     JSON.stringify(page),
     null,
   ]);
-  const resumed = await f.rpc("claim_backend_job");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   expect(
     await f.rpc("request_notice_browser", [
@@ -333,7 +333,7 @@ it.each([null, "SOURCE_TIMEOUT"])(
       "update public.jobs set next_attempt_at=now() where id=$1",
       [job.id],
     );
-    const resumed = await f.rpc("claim_backend_job_v2");
+    const resumed = await f.rpc("claim_backend_job_v5");
     expect(resumed.id).toBe(job.id);
     const before = (
       await f.db.query<any>("select * from public.jobs where id=$1", [job.id])
@@ -349,7 +349,7 @@ it.each([null, "SOURCE_TIMEOUT"])(
       (await f.db.query<any>("select * from public.jobs where id=$1", [job.id]))
         .rows[0],
     ).toEqual(before);
-    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+    expect(await f.rpc("claim_backend_job_v5")).toBeNull();
     const receipt = (
       await f.db.query<any>(
         "select status,attempts,lease_token,lease_until from public.source_browser_requests where id=$1",
@@ -389,7 +389,7 @@ it.each(["cancel", "source"])(
       "update public.jobs set next_attempt_at=now() where id=$1",
       [job.id],
     );
-    const resumed = await f.rpc("claim_backend_job_v2");
+    const resumed = await f.rpc("claim_backend_job_v5");
     expect(resumed.id).toBe(job.id);
     if (change === "cancel")
       await f.db.query(
@@ -483,7 +483,7 @@ it("creates a new revision-bound request and skips stale queue heads without ove
     "update public.sources set revision=revision+1 where id=$1",
     [source.id],
   );
-  const resumed = await f.rpc("claim_backend_job");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   const replacement = await f.rpc("request_notice_browser", [
     resumed.id,
@@ -598,7 +598,7 @@ it("rejects a different URL and keeps detail queue mutation RPCs unavailable to 
     null,
     "SOURCE_BROWSER_FAILED",
   ]);
-  const resumed = await f.rpc("claim_backend_job");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   await expect(
     guardedRpc("request_notice_browser", [

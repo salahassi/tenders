@@ -75,7 +75,7 @@ async function setup(separate = false) {
       ),
   );
   const run = async () => {
-    const job = await fixture.rpc("claim_backend_job_v4");
+    const job = await fixture.rpc("claim_backend_job_v5");
     expect(job?.type).toBe("render_export");
     return {
       job,
@@ -127,7 +127,7 @@ it("requires both real volumes before any package download", async () => {
   const d = await setup(true);
   const pending = await d.prepare();
   expect(pending.artifacts).toHaveLength(2);
-  const job = await fixture.rpc("claim_backend_job_v4");
+  const job = await fixture.rpc("claim_backend_job_v5");
   const original = d.backend.internal.getMockImplementation()!;
   d.backend.internal.mockImplementation(async (name, args) => {
     if (name === "finish_export_package") throw Error("simulated process loss");
@@ -247,7 +247,7 @@ it("rejects old executors and atomically reserves the complete two-volume capaci
   await d.prepare();
   expect(await fixture.rpc("claim_backend_job_v2")).toBeNull();
   expect(await fixture.rpc("claim_backend_job_v3")).toBeNull();
-  expect((await fixture.rpc("claim_backend_job_v4")).type).toBe(
+  expect((await fixture.rpc("claim_backend_job_v5")).type).toBe(
     "render_export",
   );
 });
@@ -647,7 +647,7 @@ it("dispatches the persisted export job after the original caller is gone, reusi
       : Promise.resolve(name === "claim_storage_cleanup" ? [] : null),
   );
   Object.assign(d.backend, {
-    claim: () => fixture.rpc("claim_backend_job_v4"),
+    claim: () => fixture.rpc("claim_backend_job_v5"),
     invocationBudgetMs: 0,
     invocationStartedAt: Date.now(),
   });
@@ -820,7 +820,7 @@ it.each(["missing", "null"])(
   async (form) => {
     const d = await setup();
     await d.prepare();
-    const job = await fixture.rpc("claim_backend_job_v4");
+    const job = await fixture.rpc("claim_backend_job_v5");
     await fixture.f.db.query(
       form === "missing"
         ? "update public.jobs set checkpoint=checkpoint-'export_renderer_version' where id=$1"

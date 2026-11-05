@@ -142,7 +142,7 @@ it("replaces only the unpublished section job and preserves paid output, usage, 
     ).rows[0],
   ).toEqual({
     status: "queued",
-    checkpoint: { rfp_context_replaces_job: s.job },
+    checkpoint: { rfp_context_replaces_job: s.job, minimum_worker_executor: 5 },
   });
 });
 

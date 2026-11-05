@@ -1,19 +1,19 @@
 {
-  "version": 6,
+  "version": 8,
   "status": "draft_remaining_actions_not_complete",
-  "generated_at_utc": "2026-11-05T00:49:56.794792+00:00",
+  "generated_at_utc": "2026-11-05T08:47:21.060351+00:00",
   "requested_anchor": "41930bb6c3d74aa64499f9541ff17079d6f0e284",
-  "observed_root_commit": "2b869ac341f3ca7944247930e68c022f91a7383a",
+  "observed_root_commit": "718ac68b717774503230f70b2e90150af4968393",
   "evidence_index": "backend/docs/evidence/reliability-r0-index-20261104.json",
   "application_deployed": false,
   "final_hosted_acceptance_passed": false,
   "release_manifest": {
     "path": "backend/scripts/ops/proposal-delivery-release.json",
-    "canonical_sha256": "2e6512d2eef73bc130f928cfcc01b04bcb437529cb5ab4b90fa815a228dce6fa",
-    "migrations": 24,
-    "source_migrations": 24,
+    "canonical_sha256": "1fdf73f4a9b638938285afd13cbf3e4077e28da3932816ea80f9d03a6d748f82",
+    "migrations": 27,
+    "source_migrations": 27,
     "missing_migrations": [],
-    "state": "local_application_and_relevant_followup_checks_passed_isolated_restore_passed_final_github_release_pending",
+    "state": "frozen_published_cloud_restore_and_retirement_passed_release_pending",
     "gateway_contract": "v2_final_pinned_one_worker_with_exact_gateway_https_runtime_qualification_binding"
   },
   "actions": [
@@ -42,7 +42,7 @@
         "OP-02",
         "BC-01"
       ],
-      "implementation": "Corrected176bcf API100,DOCX warm2/fresh1/reviewed and retained final Nginx/HTTPS proofs bound; exact996e1ea5 runtime published. Historical native failures/scopes unchanged.",
+      "implementation": "Current f2d0f9 API100, DOCX warm2/fresh1/reviewed scopes pass; exact aabe842e registry publication verified. Earlier measurements retain their separate scope.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -53,35 +53,35 @@
         "W00",
         "W11"
       ],
-      "status": "closed_local_scopes_final_github_release_gate_pending",
+      "status": "packages_and_focused_followups_pass_final_release_ci_pending",
       "evidence": [
         "E01"
       ],
-      "remaining": "Complete2b869ac packages and667 operations checks passed. Isolated-retirement cleanup follow-up passes57 focused guards at integrated0cfb2ef, with application/runtime source unchanged. Require the mandatory complete GitHub release gate on the final commit.",
+      "remaining": "Run mandatory full GitHub verification on the release commit. Complete packages pass at f41adb8; verifier, catalog, restore and retirement changes have focused source-bound controls.",
       "done_when": "One exact final commit has required complete green checks and source-bound logs; any remaining failure is explicit.",
       "not_proven": "Functional gates do not prove deployment, provider semantics, native universal capacity or hosted issuance.",
       "acceptance_cases": [
         "R0",
         "W11 exit evidence"
       ],
-      "implementation": "At2b869ac backend3379/200files,frontend380/59files,both types/builds and640operations+11schema+16Kubernetes pass, with unchanged source maps. Actual browser4controls remain separately source-bound. Historical failures and passes retain their exact scopes. The later cleanup correction has57 focused passes and independent source review; it changes only four fixture Python modules and adds their regression module.",
+      "implementation": "3488 backend and380frontend tests plus both typechecks/builds pass atf41adb8. Subsequent verifier setting passes35isolation tests and all four native suites; final release CI verifies the promoted head. Current complete operations pass at 718ac68: 668 ops, 11 schema-helper and 16 Kubernetes checks; subsequent recovery changes pass 80 focused controls.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
     {
       "id": "A03",
-      "title": "Renew the isolated cloud restore for the final 24-migration release",
+      "title": "Renew isolated cloud restore for the final source-resolution release",
       "plan": [
         "W09",
         "W11",
         "D05"
       ],
-      "status": "closed_current2e6512d2_isolated_restore_scope_at2b869ac",
+      "status": "current_27_migration_isolated_restore_passed",
       "evidence": [
         "E06",
         "E13"
       ],
-      "remaining": "No pending restore for the exact2b869ac/2e6512d2 contract proven in41942455870; repeat if relevant release/schema/Auth/Storage contracts change. Application renderer,deployment and recovery objectives remain separate.",
+      "remaining": "Repeat only if relevant schema/Auth/Storage release contracts change; preserve separate rendering, rollout and recovery-objective gates.",
       "done_when": "The renewed exact-source isolated schema/Auth/Storage drill passes required checks and both cleanup stages; its receipt names the final manifest and source hashes.",
       "not_proven": "Isolated synthetic restore does not prove application rendering, real proposal issuance, production deployment or declared recovery-point/time objectives.",
       "acceptance_cases": [
@@ -89,9 +89,9 @@
         "OP-04",
         "D05"
       ],
-      "implementation": "Original-CA run41942455870 at2b869ac passes13 actual Auth/Storage HTTP checks,24migrations,currentmanifest2e6512d2 and both cleanup stages. Historical41933205779/4cb2e712 retained unchanged.",
+      "implementation": "Run 41993933795 at b933587 passes 13 actual Auth/Storage HTTP checks, all 27 migrations, original CA verification and both cleanups against manifest 1fdf73f4.",
       "deployed": false,
-      "hosted_acceptance": "not_complete"
+      "hosted_acceptance": "isolated_restore_passed"
     },
     {
       "id": "A04",
@@ -127,12 +127,12 @@
         "W08",
         "D07"
       ],
-      "status": "reserve42_single_requests_constructible8_unsupported_no_outputs",
+      "status": "reserve44_cases_constructible6_unsupported_typed_source_defect_under_correction",
       "evidence": [
         "E09",
         "E10"
       ],
-      "remaining": "Complete and review the 8 unsupported reserve cases with faithful workflow prerequisites/composite schedules. Freeze actual targets, source/prompt/schema/adapter/validator locks and noncritical acceptance decisions before authorized execution. Retain 100 scheduled cells/model and separately qualify 48 prospective retrieval cells plus independent outcome adjudication. Separately obtain and evaluate the authorized independently reviewed private holdout required by ME-14; synthetic reserve results cannot replace it.",
+      "remaining": "Qualify the corrected typed-resolution pipeline in the reserve adapter and complete the six explicit case contracts. Preserve the 100-cell/model denominator, independent adjudication and separate private holdout; authored controls do not qualify provider semantics.",
       "done_when": "All 13 task boundaries accounted for; independent gold, per-class attempted/completed/scored denominators and critical false-acceptance/rejection/omission outcomes, source bindings and measured retrieval scope retained. The separately authorized independently reviewed private holdout passes its frozen per-class oracles with full denominators and retained counterexamples.",
       "not_proven": "Synthetic reserve is not independently blind/private holdout. Request construction and authored control responses do not qualify model semantics; prior critical findings and7/16 bounded retrieval misses remain.",
       "acceptance_cases": [
@@ -145,7 +145,7 @@
         "RT-01",
         "RT-02"
       ],
-      "implementation": "50-case reserve/corpus/gold and100planned cells/model unchanged;42single requests across13families constructible,8unsupported;189controlled tests pass. Four plan_proposal cases are explicitly legacy. EN/AR repair controls exposed a production original-context defect corrected separately; no provider/retrieval/database requests.",
+      "implementation": "Source resolution preserves the corrected 14 terminals plus unchanged 3 cabinets through real SQL and local DOCX; source revocation blocks later access. Reserve-adapter and live-provider qualifications remain separate.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -157,7 +157,7 @@
         "W05",
         "D03"
       ],
-      "status": "automatic_arabic_semantic_qualification_failed",
+      "status": "paddle_candidate_rejected_automatic_arabic_qualification_open",
       "evidence": [
         "E11"
       ],
@@ -169,7 +169,7 @@
         "IN-04",
         "D03"
       ],
-      "implementation": "Durable extraction/manual review implemented; official tessdata_best native comparison finishes3/7 overall and 0/4 Arabic, with independent rejection and no runtime change.",
+      "implementation": "Official tessdata and Paddle alternatives remain unadopted. Paddle completes 13 pages plus blank control but passes only 4/13 whole pages and 2/21 critical facts.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -202,14 +202,14 @@
         "W00",
         "W11"
       ],
-      "status": "corrected_runtime_published_manifest_refrozen_current_gates_restore_and_deployment_pending",
+      "status": "predeployment_qualified_final_release_pending",
       "evidence": [
         "E04",
         "E05",
         "E08",
         "E13"
       ],
-      "remaining": "After complete current-source gates (current-manifest isolated restore41942455870 already passed),execute checked release using exact qualified996e1ea5 digest and verified release-head label promotion. Validate actual oldgateway identities,permanent legacy-RPC fence,old-process termination,visibleDBdrain and pre-snapshot lockedzero census. Retain exact deployed schema/image/config readback and forward recovery.",
+      "remaining": "Execute mandatory final release CI and guarded original-CA rollout. Preserve the original baseline and verify actual deployed immutable image and migration hashes.",
       "done_when": "Release workflow and deployed schema/image/gateway readback match the reviewed contract, with protected historical rows/ACLs and a concrete recovery record.",
       "not_proven": "Application is not yet deployed. Publication, zero point-in-time census and isolated restore do not establish actual fence/drain/rollout.",
       "acceptance_cases": [
@@ -217,7 +217,7 @@
         "OP-02",
         "OP-04"
       ],
-      "implementation": "Corrected176bcf qualification/published996e1ea5 and localc8b6db38label-only probe pass. Current24manifest2e6512d2 frozen using unchanged originalbaseline. Both41934809173 and41937345060 cancelled before cluster/images/rollout; neither deployed.",
+      "implementation": "Worker 5/source resolution 1 integrated; f2d0f9 native fixtures and aabe842e publication pass. Original baseline frozen to 27 migrations; current cloud restore passes in run 41993933795.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     },
@@ -237,7 +237,7 @@
         "D05",
         "D06"
       ],
-      "status": "guarded_current_request_and_isolated_retirement_drill_prepared_hosted_execution_pending",
+      "status": "isolated_retirement_passed_actual_request_and_export_pending",
       "evidence": [
         "E02",
         "E04",
@@ -246,7 +246,7 @@
         "E07",
         "E12"
       ],
-      "remaining": "Use isolated fixtures or explicitly authorized existing records through the real browser/API/worker/storage paths. Cover early template/partial vs substantive issued status, generated and ordinary draft/final exports, one/two-volume atomic readiness, close-tab/reentry/retry, late source/member/approval changes, full/unknown storage and readback. Measure accepted-to-whole-package issuance including queue against 600 seconds; terminal unavailability returns earlier. For retirement acceptance, run the exact fenced process/physical recovery protocol in an authorized isolated setting; local fake process proofs are insufficient. Both historical4cb2e712 and current2e6512d2 isolated24-migration13-check restores are proven at their exact sources; application rendering/issuance and recovery objectives remain separate. Separately define service recovery-point/time objectives and compare observed recovery against them before claiming D05. Use the corrected manual retirement helper with strict original-container identities and validated saved exit proofs (54 focused tests passed); actual isolated Kubernetes/PVC interruption acceptance remains open. The release gateway drain is separately guarded. Execute the prepared nonce-owned two-job retirement drill and reviewed current-request workflow only in their authorized scopes. Preserve exact request timestamps,nullable persisted completion,effective timeout and immediate observed terminal errors; successful start is not whole-package issuance or downloaded-file acceptance.",
+      "remaining": "After verified deployment, activate the reviewed actual request and authenticate complete files. Retain production-path, actual inflight-upload and recovery-objective limitations.",
       "done_when": "Independent authenticated download hashes/sizes/complete-set and browser state; full request timestamps including failures; quota/usage/lease/currentness invariants; cleanup and recovery receipts.",
       "not_proven": "No real completed export, hosted 600s/concurrency claim or production physical retirement. Do not use incompatible legacy successor helper or fabricate version/completion.",
       "acceptance_cases": [
@@ -265,7 +265,7 @@
         "UX-03",
         "BC-01"
       ],
-      "implementation": "Current-request helper local34Python/33TS-SQL/1canonicalDOCX/4actual synthetic-browser controls pass,with exact durable request persistence,old-history preservation and original600s read-only observer. Separate isolatedretirement45cloud+62strict/PG+3PGlite controls pass; no hosted drill or current-request activation. Existing real target remains last observed incomplete with50unknown usage unchanged.",
+      "implementation": "Latest run 41999178689 failed Storage restoration and initial cleanup. Read-only run 42001827175 observed the exact Storage Pod ready; an exact failed-job retry verified owned cleanup. The old runner rejected retired phase; e4192f9 corrects this with 80 focused controls. No current customer request or application rollout occurred. Fresh run 42002971002 at e4192f9 passes all 13 isolated retirement checks and complete cleanup; actual current request remains unactivated.",
       "deployed": false,
       "hosted_acceptance": "not_complete"
     }
@@ -430,6 +430,15 @@
       "source_migrations": 24,
       "missing_migrations": [],
       "state": "final_source_frozen_restore_passed_deployment_pending",
+      "gateway_contract": "v2_final_pinned_one_worker_with_exact_gateway_https_runtime_qualification_binding"
+    },
+    {
+      "path": "backend/scripts/ops/proposal-delivery-release.json",
+      "canonical_sha256": "2e6512d2eef73bc130f928cfcc01b04bcb437529cb5ab4b90fa815a228dce6fa",
+      "migrations": 24,
+      "source_migrations": 24,
+      "missing_migrations": [],
+      "state": "historical24_manifest_retained_new_typed_resolution_and_worker5_pending_integration_qualification_refreeze_restore",
       "gateway_contract": "v2_final_pinned_one_worker_with_exact_gateway_https_runtime_qualification_binding"
     }
   ],

@@ -61,7 +61,7 @@ class DeliveryReleaseTests(unittest.TestCase):
             path=self.gateway_root/name;path.parent.mkdir(parents=True,exist_ok=True);path.write_text(text)
 
         # Explicitly synthetic publication fixture: no image is published here.
-        runtime_receipt={'version':1,'qualified_image':{'id':'sha256:176bcf738676421ebc58d26cd7bc2a29910d0242635de6084129a06701a9e4f8'},'fixture':'synthetic-only'}
+        runtime_receipt={'version':1,'qualified_image':{'id':'sha256:f2d0f99d4933c47d137940973a17aa78fe198ad385ac25f7a936ef45bdafcf44'},'fixture':'synthetic-only'}
         runtime_bytes=json.dumps(runtime_receipt).encode()
         runtime_helper="QUALIFIED_ID = "+repr(runtime_receipt['qualified_image']['id'])+"\nREGISTRY = 'registry.digitalocean.com/tenderdesk-a6093a76/runtime'\nRECEIPT_SHA256 = "+repr(hashlib.sha256(runtime_bytes).hexdigest())+'\n'
         self.runtime_publication={'version':1,'qualified_image_id':runtime_receipt['qualified_image']['id'],'reference':'registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:'+'d'*64,'fixture':'synthetic-only'}
@@ -84,7 +84,7 @@ class DeliveryReleaseTests(unittest.TestCase):
 
     def test_every_final_contract_is_required_before_freezing(self):
         manifest=self.manifest()
-        self.assertEqual(len(p.REQUIRED),24)
+        self.assertEqual(len(p.REQUIRED),27)
         self.assertEqual({key:manifest[key] for key in p.CAPABILITIES},p.CAPABILITIES)
         with self.assertRaises(p.ReleaseError):p.freeze({'receipt':self.inventory()})
         with tempfile.TemporaryDirectory() as directory:
@@ -98,7 +98,7 @@ class DeliveryReleaseTests(unittest.TestCase):
                 path.write_bytes(data)
 
     def test_final_capabilities_cannot_be_downgraded_or_coerced(self):
-        for key,value in (('executor_max',3),('minimum_worker_executor',0),('renderer_versions',[1,2]),
+        for key,value in (('source_resolution_version',0),('source_resolution_version',True),('executor_max',4),('minimum_worker_executor',4),('renderer_versions',[1,2]),
           ('ordinary_renderer_version','ordinary-1'),('current_proposal_issuance_contract',True),
           ('issuance_file_capacity_version',0),('global_renderer_limit',2),
           ('storage_write_intents_version',False),('storage_retirement_version',0),('storage_gateway_guard_version',True),('application_auth_read_version',0),
@@ -313,6 +313,9 @@ class DeliveryReleaseTests(unittest.TestCase):
           ('DELETE FROM app_private.release_private_fixture;','DELIVERY_RELEASE_EXISTING_ROWS_CHANGED'),
           ('GRANT SELECT ON public.release_preserved_fixture TO tdp_app_authenticated;','DELIVERY_RELEASE_EXISTING_AUTHORITY_CHANGED'),
           ('GRANT SELECT(id) ON public.release_preserved_fixture TO tdp_app_authenticated;','DELIVERY_RELEASE_EXISTING_AUTHORITY_CHANGED'),
+          ('ALTER TABLE public.jobs DISABLE TRIGGER zzzz_current_worker_capability;','DELIVERY_RELEASE_WORKER_FLOOR_MISSING'),
+          ('ALTER TABLE public.requirements DISABLE TRIGGER requirement_z_resolution_guard;','DELIVERY_RELEASE_SOURCE_RESOLUTION_MISSING'),
+          ('ALTER TABLE public.source_obligation_reviews DISABLE TRIGGER source_supersession_revision;','DELIVERY_RELEASE_SOURCE_RESOLUTION_MISSING'),
           ('DROP FUNCTION public.export_render_context(uuid,uuid);','DELIVERY_RELEASE_FINAL_RPC_MISSING'),
           ('GRANT EXECUTE ON FUNCTION public.export_render_context(uuid,uuid) TO tdp_app_authenticated;','DELIVERY_RELEASE_FINAL_RPC_AUTHORITY_INVALID'),
           ('REVOKE EXECUTE ON FUNCTION public.export_package_context(uuid) FROM tdp_app_authenticated;','DELIVERY_RELEASE_FINAL_RPC_AUTHORITY_INVALID'),
@@ -339,6 +342,8 @@ class DeliveryReleaseTests(unittest.TestCase):
           ("UPDATE public.storage_write_intents SET created_at='2000-01-01';",'DELIVERY_RELEASE_STORAGE_CENSUS_INVALID'),
           ("CREATE TABLE app_private.forbidden_release_seed(value integer);INSERT INTO app_private.forbidden_release_seed VALUES(1);",'DELIVERY_RELEASE_UNREQUESTED_NEW_ROWS'),
           ("INSERT INTO app_private.storage_retirement_batches(operation_nonce,workspace_id,actor_id,scope,scope_sha256) VALUES(gen_random_uuid(),gen_random_uuid(),gen_random_uuid(),'[]',repeat('a',64));",'DELIVERY_RELEASE_UNREQUESTED_NEW_ROWS'),
+          ("DO $$ BEGIN EXECUTE replace(pg_get_functiondef('app_private.app_command(text,jsonb,text)'::regprocedure),'app_command.input','input');END $$;",'DELIVERY_RELEASE_RETRY_SCOPE_INVALID'),
+          ("CREATE OR REPLACE FUNCTION app_private.prepare_storage_write_retirement(actor_id uuid,operation_nonce uuid,selection jsonb) RETURNS jsonb LANGUAGE sql SECURITY DEFINER SET search_path='' AS 'select null::jsonb';",'DELIVERY_RELEASE_STORAGE_CATALOG_INVALID'),
           ('DROP FUNCTION public.begin_render_storage_write(uuid,uuid,text,text,bigint);','DELIVERY_RELEASE_STORAGE_RPC_MISSING'),
           ('GRANT EXECUTE ON FUNCTION public.begin_render_storage_write(uuid,uuid,text,text,bigint) TO tdp_app_authenticated;','DELIVERY_RELEASE_STORAGE_RPC_AUTHORITY_INVALID'),
           ('GRANT EXECUTE ON FUNCTION app_private.finish_storage_write_retirement(uuid,uuid,jsonb) TO tdp_app_service;','DELIVERY_RELEASE_STORAGE_PRIVATE_AUTHORITY_INVALID'),

@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "scope": "Isolated retirement failure-location diagnostics; not a hosted recovery pass or root-cause diagnosis",
+  "failing_run": {
+    "id": 41946883085,
+    "job_id": 126981204276,
+    "source_revision": "bc7afab77d02fb8cdcb591870e044317ad342977",
+    "fixture_tests_passed": 57,
+    "prepare_code": "RETIREMENT_FIXTURE_COMMAND_FAILED",
+    "deliberate_interruption_observed": false,
+    "fixture_cleanup_verified": true,
+    "runner_files_removed": true,
+    "resume": "skipped",
+    "underlying_cause": "unidentified: command location and private output were discarded",
+    "decoded_job_log_sha256": "775576748206c0f8a85ec1929e0d41b9bc6a8c40301171599043a8525a05fff1"
+  },
+  "local_validation": {
+    "command": "python3 -m unittest discover -s backend/scripts/ops -p 'test_cloud_retirement*.py'",
+    "passed": 65,
+    "new_diagnostic_tests": 8,
+    "git_diff_check": "passed",
+    "broad_application_tests": "not_run_operations_only"
+  },
+  "source_sha256": {
+    "backend/scripts/ops/cloud-retirement/resources.py": "b3a7e7e93c7161c81e695fb1308ecaf7fd802d7290ccb2d2784b09c4296b1f1a",
+    "backend/scripts/ops/cloud-retirement/runner.py": "25b7c73734f86d4fb89044d83fd9ad0383871693384531e68740d9e613b264d6",
+    "backend/scripts/ops/test_cloud_retirement_diagnostics.py": "aca4cefc46199a817c27f52f681f6cc8b4d9ed8d7694c4b0c0aa613b2e5d562f"
+  },
+  "hosted_redispatch": false,
+  "production_business_mutations": 0,
+  "model_calls": 0,
+  "runtime_or_migration_changes": false
+}

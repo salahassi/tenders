@@ -17,8 +17,21 @@ IMAGE='docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530
 def run(repository,container):
  f=PostgresFixture(repository,container=container)
  results=[]
+ role="tdp_retirement_"+uuid.uuid4().hex[:12]
  try:
   f.start()
+  # Only the two retirement functions run as this non-superuser application
+  # owner. Storage stays separately owned and its schema USAGE is absent.
+  f.sql(f"""create role {role} nologin nosuperuser nobypassrls;
+   grant usage on schema public,app_private to {role};
+   grant execute on all functions in schema app_private to {role};
+   do $$declare r record;begin for r in select n.nspname,c.relname from pg_class c
+    join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('public','app_private')
+    and c.relkind in ('r','p') loop
+    execute format('alter table %I.%I owner to {role}',r.nspname,r.relname);end loop;end$$;
+   alter function app_private.prepare_storage_write_retirement(uuid,uuid,jsonb) owner to {role};
+   alter function app_private.finish_storage_write_retirement(uuid,uuid,jsonb) owner to {role};
+  """)
   def ok(name,condition):
    if not condition:raise AssertionError(name)
    results.append(name)
@@ -44,6 +57,8 @@ def run(repository,container):
       'finished_at':datetime.now(timezone.utc).isoformat(),'exit_code':0}]}]} for name in ('worker','gateway','storage')],
     'keys':[{'id':i['id'],'retirement_nonce':i['retirement_nonce'],'storage_key_sha256':hashlib.sha256(i['storage_key'].encode()).hexdigest(),
      'before_manifest_sha256':'d'*64,'after_manifest_sha256':'e'*64,'remaining_count':0,'metadata_remaining':0,'removed_count':0,'removed_bytes':0} for i in batch['scope']]}
+  ok('managed_owner_has_no_storage_usage',f.scalar(f"select has_schema_privilege({literal(role)},'storage','USAGE')")=='f')
+  ok('managed_owner_not_superuser_or_bypassrls',f.scalar(f"select rolsuper or rolbypassrls from pg_roles where rolname={literal(role)}")=='f')
   item=seed();nonce=str(uuid.uuid4())
   ok('prepare_requires_installed_fence',blocked(f"select app_private.prepare_storage_write_retirement({literal(OWNER)},{literal(nonce)},{literal([item])}::jsonb)",'STORAGE_RETIREMENT_FENCE_REQUIRED'))
   f.sql('create trigger tenderdesk_retired_storage_write before insert or update on storage.objects for each row execute function public.guard_retired_storage_write()')
@@ -91,6 +106,7 @@ def run(repository,container):
  finally:
   if not f.owns_container:docker('exec',f.container,'dropdb','-U','postgres','--if-exists',f.database)
   f.close()
+  if not f.owns_container:docker("exec",f.container,"psql","-U","postgres","-c",f"drop role if exists {role}")
 
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--repository',type=Path,default=Path(__file__).resolve().parents[3]);p.add_argument('--container',default=None);a=p.parse_args();print(json.dumps(run(a.repository,a.container),sort_keys=True))

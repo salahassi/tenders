@@ -63,7 +63,7 @@ it.each(["ordinary", "delivery"])(
         expected_revision: opportunity.revision,
       });
     }
-    const job = await fixture.rpc("claim_backend_job_v4");
+    const job = await fixture.rpc("claim_backend_job_v5");
     await f.db.query("update public.jobs set failure_count=5 where id=$1", [
       job.id,
     ]);
@@ -248,7 +248,7 @@ async function prepared(kind: "ordinary" | "delivery") {
       expected_revision: o.revision,
     });
   }
-  const job = await fixture.rpc("claim_backend_job_v4");
+  const job = await fixture.rpc("claim_backend_job_v5");
   const context = await fixture.rpc(
     kind === "ordinary" ? "export_render_context" : "delivery_export_context",
     { job_id: job.id, lease: job.lease_token },
@@ -290,7 +290,7 @@ it.each(["ordinary", "delivery"] as const)(
       "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
       [d.job.id],
     );
-    const next = await fixture.rpc("claim_backend_job_v4");
+    const next = await fixture.rpc("claim_backend_job_v5");
     expect(await d.run(next)).toMatchObject({
       error_code: "DELIVERY_STORAGE_UNAVAILABLE",
     });
@@ -309,7 +309,7 @@ it.each(["ordinary", "delivery"] as const)(
       "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
       [d.job.id],
     );
-    const recovered = await fixture.rpc("claim_backend_job_v4");
+    const recovered = await fixture.rpc("claim_backend_job_v5");
     const result = await d.run(recovered);
     expect(result.error_code).toBeFalsy();
     expect(d.t.backend.storeDeliveryObject).toHaveBeenCalledTimes(1);
@@ -362,7 +362,7 @@ it.each(["ordinary", "delivery"] as const)(
         expected_delivery_revision: p.delivery_revision,
       });
     }
-    const next = await fixture.rpc("claim_backend_job_v4");
+    const next = await fixture.rpc("claim_backend_job_v5");
     const context = await fixture.rpc(
       kind === "ordinary" ? "export_render_context" : "delivery_export_context",
       { job_id: next.id, lease: next.lease_token },
@@ -411,7 +411,7 @@ it("preserves a lost begin-RPC acknowledgement as unknown even when no PUT was s
     "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
     [d.job.id],
   );
-  await d.run(await fixture.rpc("claim_backend_job_v4"));
+  await d.run(await fixture.rpc("claim_backend_job_v5"));
   expect(d.t.backend.storeDeliveryObject).not.toHaveBeenCalled();
   expect(d.render).toHaveBeenCalledTimes(1);
   expect(

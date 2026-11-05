@@ -50,13 +50,13 @@ class RuntimeQualificationTests(unittest.TestCase):
 
     def test_actual_frozen_copied_inputs_native_receipts_and_git_modes(self):
         q.verify_checkout(ROOT, self.receipt)
-        self.assertEqual(sum(e['type'] == 'file' for e in self.receipt['source_entries'].values()), 130)
-        self.assertEqual(len(self.receipt['image_app_tar_inventory']), 146)
+        self.assertEqual(sum(e['type'] == 'file' for e in self.receipt['source_entries'].values()), 131)
+        self.assertEqual(len(self.receipt['image_app_tar_inventory']), 147)
         self.assertEqual(len(self.receipt['qualified_image']['rootfs']['Layers']), 17)
         self.assertEqual(len(self.receipt['native_evidence']), 4)
         self.assertEqual(self.receipt['source_entries']['backend/supabase/functions/_shared/model.ts']['sha256'],
-                         'e98fdffb10e6a07aea33c34d214b6432081955a37aa9aa8d66e1ee4d97ea2ae8')
-        self.assertEqual(self.receipt['observed_checkout_revision'], '19498666b511a29c251923baa75bf42c88a0c6f0')
+                         'd2f2e2a55842ff47653d45c0a96c334534088f6e8c678988c3053fb5027807d7')
+        self.assertEqual(self.receipt['observed_checkout_revision'], '4b249cab99b024780ff92ccc9e5158a937cd895b')
         q.verify_published(self.image(), REFERENCE, self.receipt)
 
     def test_source_bytes_and_executable_mode_are_both_required(self):

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "source_revision": "bc7afab77d02fb8cdcb591870e044317ad342977",
+  "workflow_run_id": 41946883085,
+  "workflow_job_id": 126981204276,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41946883085",
+  "conclusion": "failure",
+  "local_fixture_tests": {
+    "passed": 57,
+    "seconds": 0.126
+  },
+  "prepare": {
+    "result": "blocked",
+    "error_code": "RETIREMENT_FIXTURE_COMMAND_FAILED",
+    "deliberate_interruption_reached": false
+  },
+  "resume": "skipped",
+  "cleanup_verified": true,
+  "runner_files_removed": true,
+  "application_deployed": false,
+  "raw_log_sha256": "c6a5bbd0f7da52c77c120993672d73d9a4e4bff4fc255c3c258eeb3b96791d12",
+  "limits": [
+    "The helper discarded command/stage details. Underlying failure cause is not established by this log.",
+    "Cleanup success is not a retirement success or proof of the resume path.",
+    "Only isolated fixture resources were authorized. No customer workspace records or model calls."
+  ]
+}

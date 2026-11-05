@@ -197,12 +197,19 @@ def cleanup():
     except Exception:failed=True
     if failed:raise RestoreError('RESTORE_CLEANUP_UNCONFIRMED')
 
+def validate_final_contract(manifest):
+    names={r['name'] for r in manifest.get('migrations',[])}
+    required={'20261104150228_restored_source_review_assurance.sql',
+      '20261105120000_source_obligation_resolution.sql','20261105120100_worker_capability_five.sql',
+      '20261105120200_retirement_catalog_and_retry_scope.sql'}
+    if (manifest.get('minimum_worker_executor')!=5 or manifest.get('renderer_versions')!=[1,2,3]
+      or manifest.get('source_resolution_version')!=1 or not required<=names):
+        raise RestoreError('RESTORE_FINAL_SOURCE_CONTRACT_REQUIRED')
+
 def run():
     images.verify_checkout(os.environ.get('GITHUB_SHA',''))
     manifest=json.loads(release.MANIFEST.read_text());release.verify_source(manifest)
-    names={r['name'] for r in manifest['migrations']}
-    if (manifest['minimum_worker_executor']!=4 or manifest['renderer_versions']!=[1,2,3]
-      or '20261104150228_restored_source_review_assurance.sql' not in names):raise RestoreError('RESTORE_FINAL_SOURCE_CONTRACT_REQUIRED')
+    validate_final_contract(manifest)
     value=capture(manifest)
     emit('source_auth_metadata',source_auth_read_authority=value['auth_read_authority'])
     original=bootstrap.sql_job

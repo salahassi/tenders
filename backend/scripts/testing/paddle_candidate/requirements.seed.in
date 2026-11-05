@@ -1,0 +1,5 @@
+# Exact candidate roots only; this is NOT a complete hash lock.
+paddleocr==3.7.0
+paddlex[ocr-core]==3.7.0
+paddlepaddle==3.2.0
+opencv-contrib-python==4.10.0.84

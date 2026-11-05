@@ -38,7 +38,7 @@ const env: BackendEnvironment = {
 };
 const actors = () => ({ owner: f.owner, reviewer, outsider });
 const identifier = (value: string) => {
-  if (!/^[a-z_]+$/.test(value)) throw new Error("Invalid fixture identifier");
+  if (!/^[a-z_][a-z0-9_]*$/.test(value)) throw new Error("Invalid fixture identifier");
   return `"${value}"`;
 };
 async function sql(
@@ -156,7 +156,7 @@ const transport = {
       )
     )[0],
   internal: (name: string, args?: Record<string, unknown>) => rpc(name, args),
-  claim: () => rpc("claim_backend_job"),
+  claim: () => rpc("claim_backend_job_v5"),
   object: async (path: string) => {
     const object = objects.get(path);
     if (!object)

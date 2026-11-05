@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from "vitest";
-import { workflowFixture, claimModelWorker4 } from "./workflowFixture";
+import { workflowFixture, claimModelWorker5 } from "./workflowFixture";
 import { createRecheckFixture } from "./analysisVerifierRecheckFixture";
 let f: Awaited<ReturnType<typeof workflowFixture>>;
 beforeAll(async () => {
@@ -58,15 +58,7 @@ it("creates a separate verifier child in the same plan without replacing complet
   });
   const { minimum_worker_executor, ...immutableRecheckPins } =
     childJob.checkpoint;
-  expect(minimum_worker_executor).toBe(
-    [
-      "source_contract_version",
-      "repair_contract_version",
-      "proposal_consistency_version",
-    ].some((key) => s.plan.frozen_context[key] === 1)
-      ? 4
-      : undefined,
-  );
+  expect(minimum_worker_executor).toBe(5);
   expect(immutableRecheckPins).toEqual({
     verifier_recheck: {
       version: 1,
@@ -255,7 +247,7 @@ it("accepts unchanged selected work after a sibling completes and advances the s
       [s.plan.id, JSON.stringify(s.step.input)],
     )
   ).rows[0].id;
-  const sibling = await claimModelWorker4(f, s.rpc);
+  const sibling = await claimModelWorker5(f, s.rpc);
   expect(sibling.id).toBe(siblingId);
   await s.rpc("complete_generation_step", {
     job_id: sibling.id,

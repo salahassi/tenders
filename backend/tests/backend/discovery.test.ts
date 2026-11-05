@@ -414,7 +414,7 @@ it("never fabricates a scope assessment from hardware keywords when the model is
   const fetcher: typeof fetch = async () => {
     throw Error("No external calls in this fixture");
   };
-  const job = await f.rpc("claim_backend_job");
+  const job = await f.rpc("claim_backend_job_v5");
   await processGeneration(backend, env, job, fetcher);
   const view = (
     await f.db.query<any>(

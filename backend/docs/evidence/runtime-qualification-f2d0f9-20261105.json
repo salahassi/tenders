@@ -1,0 +1,2435 @@
+{
+  "version": 1,
+  "observed_checkout_revision": "4b249cab99b024780ff92ccc9e5158a937cd895b",
+  "observation": "Observed candidate build and four new sequential native receipts; read-only image inspect/history and complete /app tar inventory from a never-started network-none container. No publication or production operation.",
+  "qualified_image": {
+    "id": "sha256:f2d0f99d4933c47d137940973a17aa78fe198ad385ac25f7a936ef45bdafcf44",
+    "os": "linux",
+    "architecture": "amd64",
+    "variant": "",
+    "rootfs": {
+      "Type": "layers",
+      "Layers": [
+        "sha256:74d97c428c51a828f9051a7a40a53ff1fc99e54fc30323ce36760701b0b7f711",
+        "sha256:3fa1b3c0c26da1e7e030d74490891272d21b1a1793c552c5b1c2ac871705ced4",
+        "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+        "sha256:6f4d9a8037b8362c2a9eb2fa4be41548c0aa7c8a308aa296ade4ebac2400e3da",
+        "sha256:987e193d63bb8e4d02cf32462c092377078fd81997997b9a97b61ec15a2da86c",
+        "sha256:38f49cabdf61e20074275fe4390aa740d12e11a5cb51c865c843e4298cf1b428",
+        "sha256:e72cdf8d5b175a037a0419f79e0e0af300810a0d581dc727dc7ffd4dcb08c53c",
+        "sha256:a1a45dd5c676a056fc9c7cb3e94f1d482f46a391324ce536a0b3ce01c6bc5403",
+        "sha256:0ff06f8ca98b9d2fd992d5f03398610bed23eb1dfef2c3735278dab378dec782",
+        "sha256:5d491aad61a30a263f3a45b4e494b55121a01236220aa7966dff7bb8f79c2d6e",
+        "sha256:c12835820176dd3fb836ab0421ff50e188ba3b8c307a32d8dd887fc1b1f93e4c",
+        "sha256:4f58e7a8abcdddd014513d2a72319cd2e27c5f06cc069b4be7a1a6dd14db6439",
+        "sha256:cba79e4ddf9fd5aca7c8b4af367046955d55af7adcd2849866084c4c05a84b22",
+        "sha256:bb8d75708b7254af98dd509e3fbbedb8ac472dfb34b3ea2a43ea3bf5671d6003",
+        "sha256:b424a612afef5638ccb5848a42b69e2438209e9e5bb9588cb7c6924e1c030ea4",
+        "sha256:e7f8e825cafd083a1134959d787a724fb364378cee12f33f305abdd78f529317",
+        "sha256:e6f563e32d4d9a30d1ef67dd5327e22934f08a1644fc6f50420a1e9f23a10a15"
+      ]
+    },
+    "config_without_labels": {
+      "User": "deno",
+      "ExposedPorts": {
+        "8080/tcp": {}
+      },
+      "Env": [
+        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        "DENO_USE_CGROUPS=1",
+        "DENO_DIR=/deno-dir",
+        "DENO_INSTALL_ROOT=/usr/local",
+        "DENO_VERSION=2.9.8",
+        "PORT=8080",
+        "LANGSMITH_CONFIG_FILE=/app/backend/.langsmith-disabled.json"
+      ],
+      "Entrypoint": [
+        "/tini",
+        "--",
+        "docker-entrypoint.sh"
+      ],
+      "Cmd": [
+        "run",
+        "--cached-only",
+        "--frozen",
+        "--config=supabase/functions/deno.json",
+        "--allow-env",
+        "--allow-net",
+        "--allow-sys",
+        "--allow-run=/bin/deno",
+        "--allow-read=/app,/deno-dir,/tmp",
+        "--allow-write=/tmp",
+        "scripts/runtime/main.ts"
+      ],
+      "WorkingDir": "/app/backend",
+      "ArgsEscaped": true
+    },
+    "labels": {
+      "org.opencontainers.image.description": "Deno Docker image (Alpine)",
+      "org.opencontainers.image.licenses": "MIT",
+      "org.opencontainers.image.revision": "4b249cab99b024780ff92ccc9e5158a937cd895b",
+      "org.opencontainers.image.source": "https://github.com/denoland/deno_docker",
+      "org.opencontainers.image.title": "Deno",
+      "org.opencontainers.image.url": "https://github.com/denoland/deno_docker",
+      "org.opencontainers.image.version": "2.9.8"
+    }
+  },
+  "base": {
+    "reference": "denoland/deno:alpine-2.9.8@sha256:3dc638972caa62978182228a5a575e0498ae45129aa1c3ee8548663652ef7ab6",
+    "id": "sha256:7d481683f84e9fcd9f2779229992d8cbca618438083ddd3fe78240f67f452039",
+    "rootfs": {
+      "Type": "layers",
+      "Layers": [
+        "sha256:74d97c428c51a828f9051a7a40a53ff1fc99e54fc30323ce36760701b0b7f711",
+        "sha256:3fa1b3c0c26da1e7e030d74490891272d21b1a1793c552c5b1c2ac871705ced4",
+        "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+        "sha256:6f4d9a8037b8362c2a9eb2fa4be41548c0aa7c8a308aa296ade4ebac2400e3da",
+        "sha256:987e193d63bb8e4d02cf32462c092377078fd81997997b9a97b61ec15a2da86c",
+        "sha256:38f49cabdf61e20074275fe4390aa740d12e11a5cb51c865c843e4298cf1b428",
+        "sha256:e72cdf8d5b175a037a0419f79e0e0af300810a0d581dc727dc7ffd4dcb08c53c",
+        "sha256:a1a45dd5c676a056fc9c7cb3e94f1d482f46a391324ce536a0b3ce01c6bc5403",
+        "sha256:0ff06f8ca98b9d2fd992d5f03398610bed23eb1dfef2c3735278dab378dec782",
+        "sha256:5d491aad61a30a263f3a45b4e494b55121a01236220aa7966dff7bb8f79c2d6e"
+      ]
+    },
+    "ordered_layer_prefix_matches": true,
+    "observed_repo_digests": [
+      "denoland/deno@sha256:3dc638972caa62978182228a5a575e0498ae45129aa1c3ee8548663652ef7ab6"
+    ]
+  },
+  "copy_roots": [
+    "backend/supabase/functions",
+    "backend/scripts/runtime",
+    "frontend/src/lib/renderDocx.ts",
+    "frontend/src/lib/docxTableStream.ts",
+    "frontend/public/fonts"
+  ],
+  "source_entries": {
+    "backend/scripts/runtime": {
+      "type": "directory",
+      "observed_checkout_mode": "0700"
+    },
+    "backend/scripts/runtime/auth-invitations.sql": {
+      "type": "file",
+      "size": 2285,
+      "sha256": "3d81ffd8e5db53838d9b2b1976e50f1a29ab2569e91f3b52ed993c23efc64d31",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/scripts/runtime/dispatcher.sql": {
+      "type": "file",
+      "size": 5294,
+      "sha256": "a4049289c865dcf1697622cc792abbbc217e04ca6046079d22be15f35c0fa9ad",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/scripts/runtime/main.ts": {
+      "type": "file",
+      "size": 3223,
+      "sha256": "ffc9ffa3575f66852a04a7e660dd5d88eea6e29a53ba79f8501dc630f5e0b9eb",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/scripts/runtime/scheduler.test.ts": {
+      "type": "file",
+      "size": 4290,
+      "sha256": "dfe417b2a50d25b0e8e5ab75a696226f8b0a3fbe03256daa8fc469d1b010187b",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/scripts/runtime/scheduler.ts": {
+      "type": "file",
+      "size": 3973,
+      "sha256": "e00d34d15f9afb0ddae0c45e312586a91e0ed52a6ad3af3d8cc7c91cd476d09b",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/scripts/runtime/test-auth-invitations.mjs": {
+      "type": "file",
+      "size": 4894,
+      "sha256": "2072d331ebbb3ba015b2323fffbe0e00a8eb55de295d8226ba9ae06d9d4b5c1c",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/scripts/runtime/test-dispatcher.mjs": {
+      "type": "file",
+      "size": 4043,
+      "sha256": "00812870e2a8f4a4ade8d55456a5ff94214096ba68337e568e18033b7bca6968",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions": {
+      "type": "directory",
+      "observed_checkout_mode": "0700"
+    },
+    "backend/supabase/functions/_shared": {
+      "type": "directory",
+      "observed_checkout_mode": "0700"
+    },
+    "backend/supabase/functions/_shared/automaticSources.ts": {
+      "type": "file",
+      "size": 10640,
+      "sha256": "82b80a77501984b9b39b428d7be5d971a5dfce5b717b5fce2ca12206ca93745c",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/backend.ts": {
+      "type": "file",
+      "size": 19177,
+      "sha256": "6d6e8f69df96d8904d7c73ca9950423281062480408a41df0419de29f51f7189",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/batchTransport.ts": {
+      "type": "file",
+      "size": 13899,
+      "sha256": "7c90ab814d1ad84eaac411042ff8697afc3fac99b23b9254e6fd2d42c270db6c",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/boundedDocx.ts": {
+      "type": "file",
+      "size": 27815,
+      "sha256": "fd5b564b321de31ef0ef96a10c4291558050c6408d65b20a27ab623374d2e2d3",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/boundedDocxArchive.ts": {
+      "type": "file",
+      "size": 7360,
+      "sha256": "44ad839d85a01f2baf778e234ec8a873d6f9cdb07affa25c72bf8e9ab079b599",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/boundedXml.ts": {
+      "type": "file",
+      "size": 10914,
+      "sha256": "3f3898e0b36e60b3121da07111572d0e4dc1870429b2420b869449737fabe99c",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/browserGateway.ts": {
+      "type": "file",
+      "size": 5689,
+      "sha256": "869c30e75eff7d3970583107a1a86053ae121d6d6b54d9e3eee58140338a209b",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/browserIdentity.ts": {
+      "type": "file",
+      "size": 4109,
+      "sha256": "ef1554cc74d44f521188e16ad3d8105f3ae144c4da9b88f54ee25b86b5aff656",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/collector.ts": {
+      "type": "file",
+      "size": 16424,
+      "sha256": "13581fee47a56ed580eb5872ee9acd9bfe91e87dd03c260a55284edb757ed9f3",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/companyEvidenceFollowup.ts": {
+      "type": "file",
+      "size": 8471,
+      "sha256": "4481151afbf6825dffa37e6aae6b63e3ba60a63ea921f8c4672cebc592256944",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/companyEvidenceRetrieval.ts": {
+      "type": "file",
+      "size": 7488,
+      "sha256": "8fade8d94a5dfd5050a8088f53b3810afcff72d81aa186d6b1b42be06dc3c8d1",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/contentPolicy.ts": {
+      "type": "file",
+      "size": 2082,
+      "sha256": "34e2de158ba81a8896ebc8420f8c46e5d1ccd895c013afa83b5ab2834e280cab",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/contracts.ts": {
+      "type": "file",
+      "size": 27042,
+      "sha256": "b49751ada6c926b3535d28ecb23875bce93ac30a4ad62029de68b86bd85c454d",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/deliveryContract.ts": {
+      "type": "file",
+      "size": 5762,
+      "sha256": "788c9d22fb14f8aa179644e67ad2d196fd361a779f6451ce9b4a2d770870bbd8",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/deliveryExport.ts": {
+      "type": "file",
+      "size": 14380,
+      "sha256": "47a04e2f658e355609221aa34e84a42f02701fb4a48e891cd0aa12c6eec2e532",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/deliveryRender.process.ts": {
+      "type": "file",
+      "size": 568,
+      "sha256": "308d3b9ecc71d1ff815dfd134db3ab6a70c7e757ed8344ffc8acd371b493b99a",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/deliveryRenderIsolation.ts": {
+      "type": "file",
+      "size": 6618,
+      "sha256": "39da5e14f8064a69f2b183a3d50af14276037b185cabd679da126215b92632b3",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/deliveryRenderer.ts": {
+      "type": "file",
+      "size": 1315,
+      "sha256": "59a201f0b1cac176fc3d371db1640dbc2a0d1e2e994f5f9c74e7825b50391fd0",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/deliveryVerify.process.ts": {
+      "type": "file",
+      "size": 1653,
+      "sha256": "e00a77845dc19599a85f38a1901bc245e07d8aa94ca57bf1acb94619189b71e5",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/deliveryVerifyIsolation.ts": {
+      "type": "file",
+      "size": 6902,
+      "sha256": "fa26b281baa851e773813c741806a57822ff495b9333face4c17b1c28ddb5f6f",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/deliveryVerifyProtocol.ts": {
+      "type": "file",
+      "size": 4363,
+      "sha256": "39259d53e740fc2bfa4d4c71a832cc46d66beb54e0a398294512abef7a2c30c3",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/deliveryWorkBudget.ts": {
+      "type": "file",
+      "size": 2552,
+      "sha256": "58e03491d2b16a084ca0602e5a7cca36cde280d8a65333d0fad18449e2bdc0ba",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/deliveryWorker.ts": {
+      "type": "file",
+      "size": 8732,
+      "sha256": "4947722931e58325bf69740c3731d3be713f81c07e4ec7466bd44d8644ed96eb",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/discovery.ts": {
+      "type": "file",
+      "size": 1999,
+      "sha256": "0e91718bc366b0bcd1349c6b35e0e49a61ff6be99286a2ccb143ce7532822414",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/documentCoverage.ts": {
+      "type": "file",
+      "size": 2527,
+      "sha256": "519c9a52b8b9f8f3c93c5dc423a4ab0dca4dbe091f50291fca9ec4d0b1e75fc0",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/docxRunSegments.ts": {
+      "type": "file",
+      "size": 952,
+      "sha256": "8e5b474932d20ef792909c5a831dd9dd86fb9080c1e7ba384a49dfc2f1650597",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/export.ts": {
+      "type": "file",
+      "size": 20435,
+      "sha256": "587e4b13836d4a9087e08726d915b71077e816f575c5f9ae2985bdeac1647282",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/exportUpload.ts": {
+      "type": "file",
+      "size": 1042,
+      "sha256": "0efaf56bcdf99dbbca708f6fee4df9132a491b287bda25fc4d2f42b72e949aba",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/finance.ts": {
+      "type": "file",
+      "size": 14073,
+      "sha256": "da288875ba9990d4439ada54db96be3fce7f0d1c9b2d473c6170be09033919ee",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/generatedDeliveryWorker.ts": {
+      "type": "file",
+      "size": 7792,
+      "sha256": "08ca580ce8735237f76afff05fdddb66bc7154314b3a2c364eac08b0f419d35d",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/generatedProposalConsistency.ts": {
+      "type": "file",
+      "size": 17351,
+      "sha256": "43d20c78ef4bf45579d263e9ffa800fd1035f5093fa9e862c09b7e4aa2af0d86",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/generation.ts": {
+      "type": "file",
+      "size": 74765,
+      "sha256": "0bbf3a3578cd514e4e93b3b8b829d19483eb35b05634231ca8a8da8ef39c4933",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/generationBatching.ts": {
+      "type": "file",
+      "size": 1595,
+      "sha256": "68a652d77b12cebe24b20131a2603b8931387b1391042b12ab1fd3834b14eb4b",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/heavyFileProjection.ts": {
+      "type": "file",
+      "size": 3643,
+      "sha256": "1dd7c82567d01593c6345ae91d000b9670ce77652f298a92feafca36c8aac830",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/http.ts": {
+      "type": "file",
+      "size": 4549,
+      "sha256": "05596a823d1a15e3bd4e5f8a65b4fbb405ed1bd2d8727c16ac5c30c5a95347f7",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/model.ts": {
+      "type": "file",
+      "size": 80787,
+      "sha256": "d2f2e2a55842ff47653d45c0a96c334534088f6e8c678988c3053fb5027807d7",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelAdapters": {
+      "type": "directory",
+      "observed_checkout_mode": "0700"
+    },
+    "backend/supabase/functions/_shared/modelAdapters/anthropic.ts": {
+      "type": "file",
+      "size": 2235,
+      "sha256": "05dd75d4ae54b5c9ed0340f33f30516c617395078e705e0c6d866ccf91f762f8",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelAdapters/chat.ts": {
+      "type": "file",
+      "size": 3793,
+      "sha256": "29a55eec7643f2a7e911d9b4419f86ea9a762de65c8beaed28f8e9d3636d3444",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelAdapters/gemini.ts": {
+      "type": "file",
+      "size": 9235,
+      "sha256": "7091210130947aeff60b189fe34c7389d0226a2f90562ef9213ece16dd13eaba",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelAdapters/index.ts": {
+      "type": "file",
+      "size": 741,
+      "sha256": "a34a218150906096d0e39e1049b9771c35f99d448d946e10dc26c01c0cc8d94b",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelAdapters/openai.ts": {
+      "type": "file",
+      "size": 2991,
+      "sha256": "0bb45c01bdf59a9e7a3183b40b6807221a603ddd49d199649a669ac034243520",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelAdapters/types.ts": {
+      "type": "file",
+      "size": 1262,
+      "sha256": "b096c74690d2425e54e0dc3c195ffee2ffc8bf8fff8a0155671db6f0b00dd330",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelAlternateWriterRecovery.ts": {
+      "type": "file",
+      "size": 5771,
+      "sha256": "132ce0d5a9ebf4106c23dfae1046c503493898a31f0330c5cc17816946433f7e",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelAnalysisEvidenceInstructions.ts": {
+      "type": "file",
+      "size": 5565,
+      "sha256": "3e49ab95b145213af9d1ec3cbc7884e172016bec418af075956df87f39f0a354",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelBlockedRecovery.ts": {
+      "type": "file",
+      "size": 5149,
+      "sha256": "e9ed259fac2dcc0a9752e56b69dafaf47d2a97eb74bc4aeeaf4af94ac9938e85",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelContextDiagnostics.ts": {
+      "type": "file",
+      "size": 1314,
+      "sha256": "b919bfe75370809503b9d9da00af7a4ed1ee378dce88a604bf4e675016787cea",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelContract.ts": {
+      "type": "file",
+      "size": 9685,
+      "sha256": "ddc25fe6ef0ca5541e865ada137ff2c6fe6ca624ad633c81a6c3d137b0005a7d",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelDomainDiagnostics.ts": {
+      "type": "file",
+      "size": 6927,
+      "sha256": "8dbd619b2e22215eccc134819dc46f39de783d381d0b61d7a9cf18c06251414b",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelGraph.ts": {
+      "type": "file",
+      "size": 62678,
+      "sha256": "da92ec5fcf2eb436c8d20f758971f77a65613b948735f5fef6b323b5f6e96697",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelGraphStore.ts": {
+      "type": "file",
+      "size": 5605,
+      "sha256": "dac7fd89af77f78042ab2e6d56e01b95ffb84539f6023f5ef273c31265bde0f2",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelGrounding.ts": {
+      "type": "file",
+      "size": 20897,
+      "sha256": "95bfbf6edb4e2e66147af13ab747a1aff4778faf17842734dd4ccca3fa3b1c10",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelInvalidVerificationRecovery.ts": {
+      "type": "file",
+      "size": 8074,
+      "sha256": "0692ddfe8f6bc83d1a83568a6717cf9acb82a60fd8941eaaafa2a84d8c868da6",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelLedger.ts": {
+      "type": "file",
+      "size": 10475,
+      "sha256": "4711341b7959144044b86d307fc4d12f1c3995b23f9a7a1a57b73e696a40bfd0",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelOutputPolicy.ts": {
+      "type": "file",
+      "size": 714,
+      "sha256": "966b8492b56d5548c792858941aff6c4d53c4b03531cd29d22918e907f9e9601",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelPlanningInstructions.ts": {
+      "type": "file",
+      "size": 5558,
+      "sha256": "cbba1230e538c07b00c267abd0b19edcbcbc9d62ada9f3b8043fde4e6007c3d3",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelProbe.ts": {
+      "type": "file",
+      "size": 1722,
+      "sha256": "7687cf357fc4075a8a25b46aa1346af6f9a6d224f515d9a78f222c472942e0a9",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelProviderErrors.ts": {
+      "type": "file",
+      "size": 4595,
+      "sha256": "4d7ae20d79703de2084530968526db08fe4464c9891d0b33a3b198bf5319e53f",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelProviders.ts": {
+      "type": "file",
+      "size": 1121,
+      "sha256": "bc1087da8661c0b16cf525af62cf4b7cda61a38421ff292faa3893786b7a40a9",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelQuoteRepairScope.ts": {
+      "type": "file",
+      "size": 5322,
+      "sha256": "36f843d0ac5a31ec343740388e68d4bc19380d7a31114d77a4307c4cd7799deb",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelReasoning.ts": {
+      "type": "file",
+      "size": 4016,
+      "sha256": "b2fdc0cfdea71d36117d3b787b08258e6f3cf22454dbcbfe918a5a1d9e013c3c",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelReferenceDiagnostics.ts": {
+      "type": "file",
+      "size": 7458,
+      "sha256": "7fc9d5a464fbc80465af76e8a7415c050d059da618b9a2be343841db49586a01",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelRepairFormat.ts": {
+      "type": "file",
+      "size": 3598,
+      "sha256": "728be6dcb65d25816f6ab5ce4d96faad2043cbe235eaad88ac64b93d0c7fbada",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelRepairRecovery.ts": {
+      "type": "file",
+      "size": 4445,
+      "sha256": "609fd3551c3f02126e32a706c6bfc6fd02b175d7a9eb43c4e8a4703219db79fe",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelRevalidatedWriter.ts": {
+      "type": "file",
+      "size": 3929,
+      "sha256": "9660260d86cee0fadc1403119e301fceebfe95765ad081c07c0de189549313cb",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelSchemas.ts": {
+      "type": "file",
+      "size": 10070,
+      "sha256": "e851670c70452ce43070e0c4f1fae4f9bc4eda4570f9f458185f88be5fa5c779",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelScopeInstructions.ts": {
+      "type": "file",
+      "size": 4596,
+      "sha256": "9aee9aeea105cd5971edecf0d6b9dc57c9fe593a0e9d1b83d130a93f1580953b",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelSemanticInstructions.ts": {
+      "type": "file",
+      "size": 2892,
+      "sha256": "c9bd061be9215bb2a9e20cc6d32e59479d93bf87aceb4e8e52a69c223e8201b2",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelSemanticPatch.ts": {
+      "type": "file",
+      "size": 23968,
+      "sha256": "38e364d8aeccfddd1fb5c5cebb6300b52c08c31f7193a7746264ffdc150b2f10",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelSemanticPrompt.ts": {
+      "type": "file",
+      "size": 3292,
+      "sha256": "6f4adc65b785b97249fe45f51229669689098b834fe39ca7e5c3660669636883",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelStream.ts": {
+      "type": "file",
+      "size": 4082,
+      "sha256": "1d2781c4a7abb630a3d1a11a64ca9eaed33544af32b13771d5c6b6ee96449960",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelStructuralReferences.ts": {
+      "type": "file",
+      "size": 3361,
+      "sha256": "795d31014fccf82ddc080c18be03860bfff946a12a3582f4ae6eb65ab197fd26",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelTypedCandidate.ts": {
+      "type": "file",
+      "size": 2945,
+      "sha256": "d5c7059b94b7db3c63462a5e69fca6ccfe92b06503ab22b689afa0a07bd3458a",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelValidationDiagnostics.ts": {
+      "type": "file",
+      "size": 8170,
+      "sha256": "36709d354505a6b3ced923ef665e732bb8ee26bee41f38ca28521859a4e64dba",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelVerification.ts": {
+      "type": "file",
+      "size": 3829,
+      "sha256": "51c2c8df08bc4ae4ee63fe4878703a99c34da029893ee4a331ef0df9c6801580",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelVerificationBatchContext.ts": {
+      "type": "file",
+      "size": 3463,
+      "sha256": "c3169982caba120764922f7e6c7630ce278d6b5caa730ee0807b0647f8c61b60",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelVerificationFormat.ts": {
+      "type": "file",
+      "size": 1559,
+      "sha256": "ad4f8ed77c24d8480edd676cd32680ee222d681fc5b60403cacc45d9062e2e0f",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelVerificationInstructions.ts": {
+      "type": "file",
+      "size": 8810,
+      "sha256": "5daed393648fb04474212c3b1618f78fe5bf22897a5f63257034e791a5854f13",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelVerificationPrompt.ts": {
+      "type": "file",
+      "size": 2345,
+      "sha256": "e251f893ce7b2112c387ba207dd09759880c5ff77c811f56dd14616e0404c36b",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelVerifierRecheck.ts": {
+      "type": "file",
+      "size": 6765,
+      "sha256": "73446d5107b87907669c699cf149aca24f84ecebac857a356baf633cdfc2f288",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/modelWriterRecovery.ts": {
+      "type": "file",
+      "size": 10117,
+      "sha256": "33cb74e5ec7054f55d3f84afd9b32492fd9d224a8a114a9a3766f37c2f62c477",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/notifications.ts": {
+      "type": "file",
+      "size": 10999,
+      "sha256": "78e47bdb36bdbfec74919664d1205cae020a651b96ab69f47b352594fb537022",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/officialListings.ts": {
+      "type": "file",
+      "size": 11828,
+      "sha256": "64568de355eba185c2d080cfc401d7f5e9c4f8ef45ede90778aca5a6151808d5",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/ordinaryExportWorker.ts": {
+      "type": "file",
+      "size": 5233,
+      "sha256": "ca5105bdcab04c485942c1151aa6a35f06ac35124705e7c15c5ccd82c617223a",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/originals.ts": {
+      "type": "file",
+      "size": 3224,
+      "sha256": "ebbe282f784dc42bfce27f1b0c6355c2702a98b8f2925b8ce2278e6458052b61",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/proposalAuthoring.ts": {
+      "type": "file",
+      "size": 15168,
+      "sha256": "76ce3393435cdedf5ad5929850c85e92481b195acf4c7b0519e0a22676da314c",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/proposalBlueprint.ts": {
+      "type": "file",
+      "size": 19305,
+      "sha256": "f808dee18523fc43a53e218b47a64ade408c3cbeafbd9250a48a9e7055463250",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/proposalBlueprintSchema.ts": {
+      "type": "file",
+      "size": 3648,
+      "sha256": "bc7002dfcdd83013394e58fd526b4250f2ae684ce625dcd0d88323e858df7058",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/proposalConsistency.ts": {
+      "type": "file",
+      "size": 28679,
+      "sha256": "08f19b247f4691d700afed8f5917af120c943bf93e8cd68d4c53f434da04c625",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/proposalConsistencyReview.ts": {
+      "type": "file",
+      "size": 4538,
+      "sha256": "9177b5a50a3c30b660fa0ff35bcf1f115e470d344ffb4334b019186eefbfc9b5",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/proposalOutline.ts": {
+      "type": "file",
+      "size": 8443,
+      "sha256": "f89269ac2c3c67ca9332342726c6c024e3fa590c11599c046b60f2026ff8f6dd",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/proposalPlanning.ts": {
+      "type": "file",
+      "size": 11337,
+      "sha256": "9d9eeab17a1a6a97fdf3dee15d05239c03cbd2b34f0c898a1c436ae5554d234f",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/proposalReviewEvidence.ts": {
+      "type": "file",
+      "size": 2798,
+      "sha256": "3ab6a1a72d0e68e62a6bc505be34d231a1f52b3fa57c3e2a54190c2e511d3210",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/publicNoticeBrowser.ts": {
+      "type": "file",
+      "size": 1546,
+      "sha256": "0f61f0485958a2f03068f7b1e0a13d571e69218871754907491579e61c166e82",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/publicNoticeDetails.ts": {
+      "type": "file",
+      "size": 29799,
+      "sha256": "fba830c99a9a929a5903edbcf12e717e8dda2461eb7c15188ee68830bba0a055",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/publicPostback.ts": {
+      "type": "file",
+      "size": 8327,
+      "sha256": "83df1a13ea1e11eea0efb7173ec2b477789273dec4c279e18751132c442ed09e",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/publicPostbackConfig.ts": {
+      "type": "file",
+      "size": 635,
+      "sha256": "1a3e7ab87a6c6c487b4dc1f23e020c8789b503e17e0e2a314bb51c088e621da9",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/recovery.ts": {
+      "type": "file",
+      "size": 5068,
+      "sha256": "812620674e90efc6f89e1957158d637af4961d44dc2f3c00d6dca913af8706ad",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/sourceEvidence.ts": {
+      "type": "file",
+      "size": 18836,
+      "sha256": "226bce8cf4d491e7749769f7d439f4e27509ecbd87f06a91fd99db1d03f173e1",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/sourceModel.ts": {
+      "type": "file",
+      "size": 6565,
+      "sha256": "8e7bc2605423bc97fbecbcac26581fb39c0d41512ccdea076193fbe762c2392d",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/sourcePageMarkup.ts": {
+      "type": "file",
+      "size": 1567,
+      "sha256": "57536deebb58ee1c4e5a635bb1ec2c0c14c4be5a29a289b5f6a6ac72f770a3b1",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/sourceResolution.ts": {
+      "type": "file",
+      "size": 14269,
+      "sha256": "7945af088fef748c73197a3ffbecc0c23dc73fd040165e1033a9d1e91e51dd91",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/storageWrites.ts": {
+      "type": "file",
+      "size": 2873,
+      "sha256": "260e9c40358c4e0f0efca874e60f14071a2afb6a20e41d72d74867335355f9dc",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/_shared/uploadedDocumentOcrGateway.ts": {
+      "type": "file",
+      "size": 4391,
+      "sha256": "9200e167513c7fe7ce778781d817e16738582a13c038fccc2f5cbd4c1f7e0701",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/api": {
+      "type": "directory",
+      "observed_checkout_mode": "0700"
+    },
+    "backend/supabase/functions/api/handler.ts": {
+      "type": "file",
+      "size": 49552,
+      "sha256": "5ab8fd1e73cfea6e6ee8310eafe24f6bac4f1c8591d3906367c13d127886689d",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/api/heavyFileAdmission.ts": {
+      "type": "file",
+      "size": 3555,
+      "sha256": "2bf6ede8423ef2020917ba2eaf393d4250905d99308a64c335d590717b3b363e",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/api/index.ts": {
+      "type": "file",
+      "size": 175,
+      "sha256": "61b93d923035531b9b19c7ce9b760d46b93e27a074fe7f8adaf580fd4d4e293c",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/deno.json": {
+      "type": "file",
+      "size": 780,
+      "sha256": "751952d53fd091e58934e082831da5fa97e81b0a832191a3e0198ae9bf894f11",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/deno.lock": {
+      "type": "file",
+      "size": 19673,
+      "sha256": "ebb2122dac915d232b62b1391d66f3bd1fc240590971c57d38c1a0fa8a1ae55b",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/runtime.d.ts": {
+      "type": "file",
+      "size": 213,
+      "sha256": "029c0ad4dce562ee1f8845b2ec508eabcc533964a5218407320c6127bf472af6",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/source-browser": {
+      "type": "directory",
+      "observed_checkout_mode": "0700"
+    },
+    "backend/supabase/functions/source-browser/index.ts": {
+      "type": "file",
+      "size": 199,
+      "sha256": "804e5ce51f085e6c139554eb83d7a6882c263b301a880f54011ae072a12b43b4",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/worker": {
+      "type": "directory",
+      "observed_checkout_mode": "0700"
+    },
+    "backend/supabase/functions/worker/handler.ts": {
+      "type": "file",
+      "size": 9096,
+      "sha256": "3cfbe3b39b019e819221aa681192e5fc234e455ef37fc2416c9d7f5141448442",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/worker/index.ts": {
+      "type": "file",
+      "size": 433,
+      "sha256": "34742ca0fa10271b41875f8362131cade78cf423cc34a55e26a626c600bf1ed5",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/worker/maintenance.ts": {
+      "type": "file",
+      "size": 6563,
+      "sha256": "a68606086e8f0277445ce578b3262cc057b6d34b98a106404d54a229cdd44ed0",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "backend/supabase/functions/worker/queueWake.ts": {
+      "type": "file",
+      "size": 1684,
+      "sha256": "6cb7c1c0d910fbaba12ee4c32605185a968dbf0eb480bc94c07939c778a25427",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "frontend/public/fonts": {
+      "type": "directory",
+      "observed_checkout_mode": "0700"
+    },
+    "frontend/public/fonts/Amiri-Bold.ttf": {
+      "type": "file",
+      "size": 413480,
+      "sha256": "cfccb794268e7d573d857e6d6a67f89cf8a053e8ffd85dfa0c8ec1bb36fc4827",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "frontend/public/fonts/Amiri-OFL.txt": {
+      "type": "file",
+      "size": 4389,
+      "sha256": "72de68e5954f4fdd24702292ef5a32f003ca960ec9330dc86e5eefb5dffb9b22",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "frontend/public/fonts/Amiri-Regular.ttf": {
+      "type": "file",
+      "size": 431116,
+      "sha256": "ab391c4147d054c48976e98322ad0eefe1427aa0e0502a12a4c75d80a70cfcd7",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "frontend/public/fonts/Carlito-Bold.ttf": {
+      "type": "file",
+      "size": 682468,
+      "sha256": "bb5d20f79b82599ec72983597437373a80f2d2085fa91fc144fd74e876a594db",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "frontend/public/fonts/Carlito-OFL.txt": {
+      "type": "file",
+      "size": 4424,
+      "sha256": "58402f82a7c332a700294988fe7554fbb0a63a8d27ccc1ee3bbc640311990a00",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "frontend/public/fonts/Carlito-Regular.ttf": {
+      "type": "file",
+      "size": 628032,
+      "sha256": "f6418f708baede9789daef5d458c0f53d2a888af9820e8062934e504fedc6595",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "frontend/public/fonts/NOTICE.md": {
+      "type": "file",
+      "size": 647,
+      "sha256": "49f27447c4310d57dff363256e0ca6d778f9222087e632596e5aa557ddcc7a39",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "frontend/public/fonts/manifest.json": {
+      "type": "file",
+      "size": 681,
+      "sha256": "aa9b915194b2ecf25249ce1182e969c6c51c9fa0a98044fe14253e3731ddb942",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "frontend/src/lib/docxTableStream.ts": {
+      "type": "file",
+      "size": 3947,
+      "sha256": "f17a9a22cd1c5f85008ae44e0b97754a8bebcc4bd4c3fa0d93d33e69dd2ff545",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    },
+    "frontend/src/lib/renderDocx.ts": {
+      "type": "file",
+      "size": 16001,
+      "sha256": "c00351e975b5684f1aed9493d2ee4a7d8fe913b5545046daee46d0ddbfaabb94",
+      "git_mode": "100644",
+      "observed_checkout_mode": "0600"
+    }
+  },
+  "image_app_tar_inventory": {
+    ".": {
+      "type": "directory",
+      "mode": "0755",
+      "uid": 0,
+      "gid": 0
+    },
+    "backend": {
+      "type": "directory",
+      "mode": "0755",
+      "uid": 0,
+      "gid": 0
+    },
+    "backend/scripts": {
+      "type": "directory",
+      "mode": "0755",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "backend/scripts/runtime": {
+      "type": "directory",
+      "mode": "0755",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "backend/scripts/runtime/auth-invitations.sql": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 2285,
+      "sha256": "3d81ffd8e5db53838d9b2b1976e50f1a29ab2569e91f3b52ed993c23efc64d31"
+    },
+    "backend/scripts/runtime/dispatcher.sql": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 5294,
+      "sha256": "a4049289c865dcf1697622cc792abbbc217e04ca6046079d22be15f35c0fa9ad"
+    },
+    "backend/scripts/runtime/main.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3223,
+      "sha256": "ffc9ffa3575f66852a04a7e660dd5d88eea6e29a53ba79f8501dc630f5e0b9eb"
+    },
+    "backend/scripts/runtime/scheduler.test.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4290,
+      "sha256": "dfe417b2a50d25b0e8e5ab75a696226f8b0a3fbe03256daa8fc469d1b010187b"
+    },
+    "backend/scripts/runtime/scheduler.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3973,
+      "sha256": "e00d34d15f9afb0ddae0c45e312586a91e0ed52a6ad3af3d8cc7c91cd476d09b"
+    },
+    "backend/scripts/runtime/test-auth-invitations.mjs": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4894,
+      "sha256": "2072d331ebbb3ba015b2323fffbe0e00a8eb55de295d8226ba9ae06d9d4b5c1c"
+    },
+    "backend/scripts/runtime/test-dispatcher.mjs": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4043,
+      "sha256": "00812870e2a8f4a4ade8d55456a5ff94214096ba68337e568e18033b7bca6968"
+    },
+    "backend/supabase": {
+      "type": "directory",
+      "mode": "0755",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "backend/supabase/functions": {
+      "type": "directory",
+      "mode": "0755",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "backend/supabase/functions/_shared": {
+      "type": "directory",
+      "mode": "0700",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "backend/supabase/functions/_shared/automaticSources.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 10640,
+      "sha256": "82b80a77501984b9b39b428d7be5d971a5dfce5b717b5fce2ca12206ca93745c"
+    },
+    "backend/supabase/functions/_shared/backend.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 19177,
+      "sha256": "6d6e8f69df96d8904d7c73ca9950423281062480408a41df0419de29f51f7189"
+    },
+    "backend/supabase/functions/_shared/batchTransport.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 13899,
+      "sha256": "7c90ab814d1ad84eaac411042ff8697afc3fac99b23b9254e6fd2d42c270db6c"
+    },
+    "backend/supabase/functions/_shared/boundedDocx.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 27815,
+      "sha256": "fd5b564b321de31ef0ef96a10c4291558050c6408d65b20a27ab623374d2e2d3"
+    },
+    "backend/supabase/functions/_shared/boundedDocxArchive.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 7360,
+      "sha256": "44ad839d85a01f2baf778e234ec8a873d6f9cdb07affa25c72bf8e9ab079b599"
+    },
+    "backend/supabase/functions/_shared/boundedXml.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 10914,
+      "sha256": "3f3898e0b36e60b3121da07111572d0e4dc1870429b2420b869449737fabe99c"
+    },
+    "backend/supabase/functions/_shared/browserGateway.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 5689,
+      "sha256": "869c30e75eff7d3970583107a1a86053ae121d6d6b54d9e3eee58140338a209b"
+    },
+    "backend/supabase/functions/_shared/browserIdentity.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4109,
+      "sha256": "ef1554cc74d44f521188e16ad3d8105f3ae144c4da9b88f54ee25b86b5aff656"
+    },
+    "backend/supabase/functions/_shared/collector.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 16424,
+      "sha256": "13581fee47a56ed580eb5872ee9acd9bfe91e87dd03c260a55284edb757ed9f3"
+    },
+    "backend/supabase/functions/_shared/companyEvidenceFollowup.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 8471,
+      "sha256": "4481151afbf6825dffa37e6aae6b63e3ba60a63ea921f8c4672cebc592256944"
+    },
+    "backend/supabase/functions/_shared/companyEvidenceRetrieval.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 7488,
+      "sha256": "8fade8d94a5dfd5050a8088f53b3810afcff72d81aa186d6b1b42be06dc3c8d1"
+    },
+    "backend/supabase/functions/_shared/contentPolicy.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 2082,
+      "sha256": "34e2de158ba81a8896ebc8420f8c46e5d1ccd895c013afa83b5ab2834e280cab"
+    },
+    "backend/supabase/functions/_shared/contracts.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 27042,
+      "sha256": "b49751ada6c926b3535d28ecb23875bce93ac30a4ad62029de68b86bd85c454d"
+    },
+    "backend/supabase/functions/_shared/deliveryContract.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 5762,
+      "sha256": "788c9d22fb14f8aa179644e67ad2d196fd361a779f6451ce9b4a2d770870bbd8"
+    },
+    "backend/supabase/functions/_shared/deliveryExport.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 14380,
+      "sha256": "47a04e2f658e355609221aa34e84a42f02701fb4a48e891cd0aa12c6eec2e532"
+    },
+    "backend/supabase/functions/_shared/deliveryRender.process.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 568,
+      "sha256": "308d3b9ecc71d1ff815dfd134db3ab6a70c7e757ed8344ffc8acd371b493b99a"
+    },
+    "backend/supabase/functions/_shared/deliveryRenderIsolation.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 6618,
+      "sha256": "39da5e14f8064a69f2b183a3d50af14276037b185cabd679da126215b92632b3"
+    },
+    "backend/supabase/functions/_shared/deliveryRenderer.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 1315,
+      "sha256": "59a201f0b1cac176fc3d371db1640dbc2a0d1e2e994f5f9c74e7825b50391fd0"
+    },
+    "backend/supabase/functions/_shared/deliveryVerify.process.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 1653,
+      "sha256": "e00a77845dc19599a85f38a1901bc245e07d8aa94ca57bf1acb94619189b71e5"
+    },
+    "backend/supabase/functions/_shared/deliveryVerifyIsolation.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 6902,
+      "sha256": "fa26b281baa851e773813c741806a57822ff495b9333face4c17b1c28ddb5f6f"
+    },
+    "backend/supabase/functions/_shared/deliveryVerifyProtocol.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4363,
+      "sha256": "39259d53e740fc2bfa4d4c71a832cc46d66beb54e0a398294512abef7a2c30c3"
+    },
+    "backend/supabase/functions/_shared/deliveryWorkBudget.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 2552,
+      "sha256": "58e03491d2b16a084ca0602e5a7cca36cde280d8a65333d0fad18449e2bdc0ba"
+    },
+    "backend/supabase/functions/_shared/deliveryWorker.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 8732,
+      "sha256": "4947722931e58325bf69740c3731d3be713f81c07e4ec7466bd44d8644ed96eb"
+    },
+    "backend/supabase/functions/_shared/discovery.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 1999,
+      "sha256": "0e91718bc366b0bcd1349c6b35e0e49a61ff6be99286a2ccb143ce7532822414"
+    },
+    "backend/supabase/functions/_shared/documentCoverage.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 2527,
+      "sha256": "519c9a52b8b9f8f3c93c5dc423a4ab0dca4dbe091f50291fca9ec4d0b1e75fc0"
+    },
+    "backend/supabase/functions/_shared/docxRunSegments.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 952,
+      "sha256": "8e5b474932d20ef792909c5a831dd9dd86fb9080c1e7ba384a49dfc2f1650597"
+    },
+    "backend/supabase/functions/_shared/export.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 20435,
+      "sha256": "587e4b13836d4a9087e08726d915b71077e816f575c5f9ae2985bdeac1647282"
+    },
+    "backend/supabase/functions/_shared/exportUpload.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 1042,
+      "sha256": "0efaf56bcdf99dbbca708f6fee4df9132a491b287bda25fc4d2f42b72e949aba"
+    },
+    "backend/supabase/functions/_shared/finance.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 14073,
+      "sha256": "da288875ba9990d4439ada54db96be3fce7f0d1c9b2d473c6170be09033919ee"
+    },
+    "backend/supabase/functions/_shared/generatedDeliveryWorker.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 7792,
+      "sha256": "08ca580ce8735237f76afff05fdddb66bc7154314b3a2c364eac08b0f419d35d"
+    },
+    "backend/supabase/functions/_shared/generatedProposalConsistency.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 17351,
+      "sha256": "43d20c78ef4bf45579d263e9ffa800fd1035f5093fa9e862c09b7e4aa2af0d86"
+    },
+    "backend/supabase/functions/_shared/generation.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 74765,
+      "sha256": "0bbf3a3578cd514e4e93b3b8b829d19483eb35b05634231ca8a8da8ef39c4933"
+    },
+    "backend/supabase/functions/_shared/generationBatching.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 1595,
+      "sha256": "68a652d77b12cebe24b20131a2603b8931387b1391042b12ab1fd3834b14eb4b"
+    },
+    "backend/supabase/functions/_shared/heavyFileProjection.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3643,
+      "sha256": "1dd7c82567d01593c6345ae91d000b9670ce77652f298a92feafca36c8aac830"
+    },
+    "backend/supabase/functions/_shared/http.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4549,
+      "sha256": "05596a823d1a15e3bd4e5f8a65b4fbb405ed1bd2d8727c16ac5c30c5a95347f7"
+    },
+    "backend/supabase/functions/_shared/model.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 80787,
+      "sha256": "d2f2e2a55842ff47653d45c0a96c334534088f6e8c678988c3053fb5027807d7"
+    },
+    "backend/supabase/functions/_shared/modelAdapters": {
+      "type": "directory",
+      "mode": "0700",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "backend/supabase/functions/_shared/modelAdapters/anthropic.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 2235,
+      "sha256": "05dd75d4ae54b5c9ed0340f33f30516c617395078e705e0c6d866ccf91f762f8"
+    },
+    "backend/supabase/functions/_shared/modelAdapters/chat.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3793,
+      "sha256": "29a55eec7643f2a7e911d9b4419f86ea9a762de65c8beaed28f8e9d3636d3444"
+    },
+    "backend/supabase/functions/_shared/modelAdapters/gemini.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 9235,
+      "sha256": "7091210130947aeff60b189fe34c7389d0226a2f90562ef9213ece16dd13eaba"
+    },
+    "backend/supabase/functions/_shared/modelAdapters/index.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 741,
+      "sha256": "a34a218150906096d0e39e1049b9771c35f99d448d946e10dc26c01c0cc8d94b"
+    },
+    "backend/supabase/functions/_shared/modelAdapters/openai.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 2991,
+      "sha256": "0bb45c01bdf59a9e7a3183b40b6807221a603ddd49d199649a669ac034243520"
+    },
+    "backend/supabase/functions/_shared/modelAdapters/types.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 1262,
+      "sha256": "b096c74690d2425e54e0dc3c195ffee2ffc8bf8fff8a0155671db6f0b00dd330"
+    },
+    "backend/supabase/functions/_shared/modelAlternateWriterRecovery.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 5771,
+      "sha256": "132ce0d5a9ebf4106c23dfae1046c503493898a31f0330c5cc17816946433f7e"
+    },
+    "backend/supabase/functions/_shared/modelAnalysisEvidenceInstructions.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 5565,
+      "sha256": "3e49ab95b145213af9d1ec3cbc7884e172016bec418af075956df87f39f0a354"
+    },
+    "backend/supabase/functions/_shared/modelBlockedRecovery.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 5149,
+      "sha256": "e9ed259fac2dcc0a9752e56b69dafaf47d2a97eb74bc4aeeaf4af94ac9938e85"
+    },
+    "backend/supabase/functions/_shared/modelContextDiagnostics.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 1314,
+      "sha256": "b919bfe75370809503b9d9da00af7a4ed1ee378dce88a604bf4e675016787cea"
+    },
+    "backend/supabase/functions/_shared/modelContract.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 9685,
+      "sha256": "ddc25fe6ef0ca5541e865ada137ff2c6fe6ca624ad633c81a6c3d137b0005a7d"
+    },
+    "backend/supabase/functions/_shared/modelDomainDiagnostics.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 6927,
+      "sha256": "8dbd619b2e22215eccc134819dc46f39de783d381d0b61d7a9cf18c06251414b"
+    },
+    "backend/supabase/functions/_shared/modelGraph.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 62678,
+      "sha256": "da92ec5fcf2eb436c8d20f758971f77a65613b948735f5fef6b323b5f6e96697"
+    },
+    "backend/supabase/functions/_shared/modelGraphStore.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 5605,
+      "sha256": "dac7fd89af77f78042ab2e6d56e01b95ffb84539f6023f5ef273c31265bde0f2"
+    },
+    "backend/supabase/functions/_shared/modelGrounding.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 20897,
+      "sha256": "95bfbf6edb4e2e66147af13ab747a1aff4778faf17842734dd4ccca3fa3b1c10"
+    },
+    "backend/supabase/functions/_shared/modelInvalidVerificationRecovery.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 8074,
+      "sha256": "0692ddfe8f6bc83d1a83568a6717cf9acb82a60fd8941eaaafa2a84d8c868da6"
+    },
+    "backend/supabase/functions/_shared/modelLedger.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 10475,
+      "sha256": "4711341b7959144044b86d307fc4d12f1c3995b23f9a7a1a57b73e696a40bfd0"
+    },
+    "backend/supabase/functions/_shared/modelOutputPolicy.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 714,
+      "sha256": "966b8492b56d5548c792858941aff6c4d53c4b03531cd29d22918e907f9e9601"
+    },
+    "backend/supabase/functions/_shared/modelPlanningInstructions.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 5558,
+      "sha256": "cbba1230e538c07b00c267abd0b19edcbcbc9d62ada9f3b8043fde4e6007c3d3"
+    },
+    "backend/supabase/functions/_shared/modelProbe.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 1722,
+      "sha256": "7687cf357fc4075a8a25b46aa1346af6f9a6d224f515d9a78f222c472942e0a9"
+    },
+    "backend/supabase/functions/_shared/modelProviderErrors.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4595,
+      "sha256": "4d7ae20d79703de2084530968526db08fe4464c9891d0b33a3b198bf5319e53f"
+    },
+    "backend/supabase/functions/_shared/modelProviders.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 1121,
+      "sha256": "bc1087da8661c0b16cf525af62cf4b7cda61a38421ff292faa3893786b7a40a9"
+    },
+    "backend/supabase/functions/_shared/modelQuoteRepairScope.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 5322,
+      "sha256": "36f843d0ac5a31ec343740388e68d4bc19380d7a31114d77a4307c4cd7799deb"
+    },
+    "backend/supabase/functions/_shared/modelReasoning.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4016,
+      "sha256": "b2fdc0cfdea71d36117d3b787b08258e6f3cf22454dbcbfe918a5a1d9e013c3c"
+    },
+    "backend/supabase/functions/_shared/modelReferenceDiagnostics.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 7458,
+      "sha256": "7fc9d5a464fbc80465af76e8a7415c050d059da618b9a2be343841db49586a01"
+    },
+    "backend/supabase/functions/_shared/modelRepairFormat.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3598,
+      "sha256": "728be6dcb65d25816f6ab5ce4d96faad2043cbe235eaad88ac64b93d0c7fbada"
+    },
+    "backend/supabase/functions/_shared/modelRepairRecovery.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4445,
+      "sha256": "609fd3551c3f02126e32a706c6bfc6fd02b175d7a9eb43c4e8a4703219db79fe"
+    },
+    "backend/supabase/functions/_shared/modelRevalidatedWriter.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3929,
+      "sha256": "9660260d86cee0fadc1403119e301fceebfe95765ad081c07c0de189549313cb"
+    },
+    "backend/supabase/functions/_shared/modelSchemas.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 10070,
+      "sha256": "e851670c70452ce43070e0c4f1fae4f9bc4eda4570f9f458185f88be5fa5c779"
+    },
+    "backend/supabase/functions/_shared/modelScopeInstructions.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4596,
+      "sha256": "9aee9aeea105cd5971edecf0d6b9dc57c9fe593a0e9d1b83d130a93f1580953b"
+    },
+    "backend/supabase/functions/_shared/modelSemanticInstructions.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 2892,
+      "sha256": "c9bd061be9215bb2a9e20cc6d32e59479d93bf87aceb4e8e52a69c223e8201b2"
+    },
+    "backend/supabase/functions/_shared/modelSemanticPatch.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 23968,
+      "sha256": "38e364d8aeccfddd1fb5c5cebb6300b52c08c31f7193a7746264ffdc150b2f10"
+    },
+    "backend/supabase/functions/_shared/modelSemanticPrompt.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3292,
+      "sha256": "6f4adc65b785b97249fe45f51229669689098b834fe39ca7e5c3660669636883"
+    },
+    "backend/supabase/functions/_shared/modelStream.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4082,
+      "sha256": "1d2781c4a7abb630a3d1a11a64ca9eaed33544af32b13771d5c6b6ee96449960"
+    },
+    "backend/supabase/functions/_shared/modelStructuralReferences.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3361,
+      "sha256": "795d31014fccf82ddc080c18be03860bfff946a12a3582f4ae6eb65ab197fd26"
+    },
+    "backend/supabase/functions/_shared/modelTypedCandidate.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 2945,
+      "sha256": "d5c7059b94b7db3c63462a5e69fca6ccfe92b06503ab22b689afa0a07bd3458a"
+    },
+    "backend/supabase/functions/_shared/modelValidationDiagnostics.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 8170,
+      "sha256": "36709d354505a6b3ced923ef665e732bb8ee26bee41f38ca28521859a4e64dba"
+    },
+    "backend/supabase/functions/_shared/modelVerification.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3829,
+      "sha256": "51c2c8df08bc4ae4ee63fe4878703a99c34da029893ee4a331ef0df9c6801580"
+    },
+    "backend/supabase/functions/_shared/modelVerificationBatchContext.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3463,
+      "sha256": "c3169982caba120764922f7e6c7630ce278d6b5caa730ee0807b0647f8c61b60"
+    },
+    "backend/supabase/functions/_shared/modelVerificationFormat.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 1559,
+      "sha256": "ad4f8ed77c24d8480edd676cd32680ee222d681fc5b60403cacc45d9062e2e0f"
+    },
+    "backend/supabase/functions/_shared/modelVerificationInstructions.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 8810,
+      "sha256": "5daed393648fb04474212c3b1618f78fe5bf22897a5f63257034e791a5854f13"
+    },
+    "backend/supabase/functions/_shared/modelVerificationPrompt.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 2345,
+      "sha256": "e251f893ce7b2112c387ba207dd09759880c5ff77c811f56dd14616e0404c36b"
+    },
+    "backend/supabase/functions/_shared/modelVerifierRecheck.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 6765,
+      "sha256": "73446d5107b87907669c699cf149aca24f84ecebac857a356baf633cdfc2f288"
+    },
+    "backend/supabase/functions/_shared/modelWriterRecovery.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 10117,
+      "sha256": "33cb74e5ec7054f55d3f84afd9b32492fd9d224a8a114a9a3766f37c2f62c477"
+    },
+    "backend/supabase/functions/_shared/notifications.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 10999,
+      "sha256": "78e47bdb36bdbfec74919664d1205cae020a651b96ab69f47b352594fb537022"
+    },
+    "backend/supabase/functions/_shared/officialListings.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 11828,
+      "sha256": "64568de355eba185c2d080cfc401d7f5e9c4f8ef45ede90778aca5a6151808d5"
+    },
+    "backend/supabase/functions/_shared/ordinaryExportWorker.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 5233,
+      "sha256": "ca5105bdcab04c485942c1151aa6a35f06ac35124705e7c15c5ccd82c617223a"
+    },
+    "backend/supabase/functions/_shared/originals.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3224,
+      "sha256": "ebbe282f784dc42bfce27f1b0c6355c2702a98b8f2925b8ce2278e6458052b61"
+    },
+    "backend/supabase/functions/_shared/proposalAuthoring.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 15168,
+      "sha256": "76ce3393435cdedf5ad5929850c85e92481b195acf4c7b0519e0a22676da314c"
+    },
+    "backend/supabase/functions/_shared/proposalBlueprint.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 19305,
+      "sha256": "f808dee18523fc43a53e218b47a64ade408c3cbeafbd9250a48a9e7055463250"
+    },
+    "backend/supabase/functions/_shared/proposalBlueprintSchema.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3648,
+      "sha256": "bc7002dfcdd83013394e58fd526b4250f2ae684ce625dcd0d88323e858df7058"
+    },
+    "backend/supabase/functions/_shared/proposalConsistency.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 28679,
+      "sha256": "08f19b247f4691d700afed8f5917af120c943bf93e8cd68d4c53f434da04c625"
+    },
+    "backend/supabase/functions/_shared/proposalConsistencyReview.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4538,
+      "sha256": "9177b5a50a3c30b660fa0ff35bcf1f115e470d344ffb4334b019186eefbfc9b5"
+    },
+    "backend/supabase/functions/_shared/proposalOutline.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 8443,
+      "sha256": "f89269ac2c3c67ca9332342726c6c024e3fa590c11599c046b60f2026ff8f6dd"
+    },
+    "backend/supabase/functions/_shared/proposalPlanning.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 11337,
+      "sha256": "9d9eeab17a1a6a97fdf3dee15d05239c03cbd2b34f0c898a1c436ae5554d234f"
+    },
+    "backend/supabase/functions/_shared/proposalReviewEvidence.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 2798,
+      "sha256": "3ab6a1a72d0e68e62a6bc505be34d231a1f52b3fa57c3e2a54190c2e511d3210"
+    },
+    "backend/supabase/functions/_shared/publicNoticeBrowser.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 1546,
+      "sha256": "0f61f0485958a2f03068f7b1e0a13d571e69218871754907491579e61c166e82"
+    },
+    "backend/supabase/functions/_shared/publicNoticeDetails.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 29799,
+      "sha256": "fba830c99a9a929a5903edbcf12e717e8dda2461eb7c15188ee68830bba0a055"
+    },
+    "backend/supabase/functions/_shared/publicPostback.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 8327,
+      "sha256": "83df1a13ea1e11eea0efb7173ec2b477789273dec4c279e18751132c442ed09e"
+    },
+    "backend/supabase/functions/_shared/publicPostbackConfig.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 635,
+      "sha256": "1a3e7ab87a6c6c487b4dc1f23e020c8789b503e17e0e2a314bb51c088e621da9"
+    },
+    "backend/supabase/functions/_shared/recovery.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 5068,
+      "sha256": "812620674e90efc6f89e1957158d637af4961d44dc2f3c00d6dca913af8706ad"
+    },
+    "backend/supabase/functions/_shared/sourceEvidence.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 18836,
+      "sha256": "226bce8cf4d491e7749769f7d439f4e27509ecbd87f06a91fd99db1d03f173e1"
+    },
+    "backend/supabase/functions/_shared/sourceModel.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 6565,
+      "sha256": "8e7bc2605423bc97fbecbcac26581fb39c0d41512ccdea076193fbe762c2392d"
+    },
+    "backend/supabase/functions/_shared/sourcePageMarkup.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 1567,
+      "sha256": "57536deebb58ee1c4e5a635bb1ec2c0c14c4be5a29a289b5f6a6ac72f770a3b1"
+    },
+    "backend/supabase/functions/_shared/sourceResolution.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 14269,
+      "sha256": "7945af088fef748c73197a3ffbecc0c23dc73fd040165e1033a9d1e91e51dd91"
+    },
+    "backend/supabase/functions/_shared/storageWrites.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 2873,
+      "sha256": "260e9c40358c4e0f0efca874e60f14071a2afb6a20e41d72d74867335355f9dc"
+    },
+    "backend/supabase/functions/_shared/uploadedDocumentOcrGateway.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4391,
+      "sha256": "9200e167513c7fe7ce778781d817e16738582a13c038fccc2f5cbd4c1f7e0701"
+    },
+    "backend/supabase/functions/api": {
+      "type": "directory",
+      "mode": "0700",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "backend/supabase/functions/api/handler.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 49552,
+      "sha256": "5ab8fd1e73cfea6e6ee8310eafe24f6bac4f1c8591d3906367c13d127886689d"
+    },
+    "backend/supabase/functions/api/heavyFileAdmission.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3555,
+      "sha256": "2bf6ede8423ef2020917ba2eaf393d4250905d99308a64c335d590717b3b363e"
+    },
+    "backend/supabase/functions/api/index.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 175,
+      "sha256": "61b93d923035531b9b19c7ce9b760d46b93e27a074fe7f8adaf580fd4d4e293c"
+    },
+    "backend/supabase/functions/deno.json": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 780,
+      "sha256": "751952d53fd091e58934e082831da5fa97e81b0a832191a3e0198ae9bf894f11"
+    },
+    "backend/supabase/functions/deno.lock": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 19673,
+      "sha256": "ebb2122dac915d232b62b1391d66f3bd1fc240590971c57d38c1a0fa8a1ae55b"
+    },
+    "backend/supabase/functions/runtime.d.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 213,
+      "sha256": "029c0ad4dce562ee1f8845b2ec508eabcc533964a5218407320c6127bf472af6"
+    },
+    "backend/supabase/functions/source-browser": {
+      "type": "directory",
+      "mode": "0700",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "backend/supabase/functions/source-browser/index.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 199,
+      "sha256": "804e5ce51f085e6c139554eb83d7a6882c263b301a880f54011ae072a12b43b4"
+    },
+    "backend/supabase/functions/worker": {
+      "type": "directory",
+      "mode": "0700",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "backend/supabase/functions/worker/handler.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 9096,
+      "sha256": "3cfbe3b39b019e819221aa681192e5fc234e455ef37fc2416c9d7f5141448442"
+    },
+    "backend/supabase/functions/worker/index.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 433,
+      "sha256": "34742ca0fa10271b41875f8362131cade78cf423cc34a55e26a626c600bf1ed5"
+    },
+    "backend/supabase/functions/worker/maintenance.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 6563,
+      "sha256": "a68606086e8f0277445ce578b3262cc057b6d34b98a106404d54a229cdd44ed0"
+    },
+    "backend/supabase/functions/worker/queueWake.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 1684,
+      "sha256": "6cb7c1c0d910fbaba12ee4c32605185a968dbf0eb480bc94c07939c778a25427"
+    },
+    "frontend": {
+      "type": "directory",
+      "mode": "0755",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "frontend/public": {
+      "type": "directory",
+      "mode": "0755",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "frontend/public/fonts": {
+      "type": "directory",
+      "mode": "0755",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "frontend/public/fonts/Amiri-Bold.ttf": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 413480,
+      "sha256": "cfccb794268e7d573d857e6d6a67f89cf8a053e8ffd85dfa0c8ec1bb36fc4827"
+    },
+    "frontend/public/fonts/Amiri-OFL.txt": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4389,
+      "sha256": "72de68e5954f4fdd24702292ef5a32f003ca960ec9330dc86e5eefb5dffb9b22"
+    },
+    "frontend/public/fonts/Amiri-Regular.ttf": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 431116,
+      "sha256": "ab391c4147d054c48976e98322ad0eefe1427aa0e0502a12a4c75d80a70cfcd7"
+    },
+    "frontend/public/fonts/Carlito-Bold.ttf": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 682468,
+      "sha256": "bb5d20f79b82599ec72983597437373a80f2d2085fa91fc144fd74e876a594db"
+    },
+    "frontend/public/fonts/Carlito-OFL.txt": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 4424,
+      "sha256": "58402f82a7c332a700294988fe7554fbb0a63a8d27ccc1ee3bbc640311990a00"
+    },
+    "frontend/public/fonts/Carlito-Regular.ttf": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 628032,
+      "sha256": "f6418f708baede9789daef5d458c0f53d2a888af9820e8062934e504fedc6595"
+    },
+    "frontend/public/fonts/NOTICE.md": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 647,
+      "sha256": "49f27447c4310d57dff363256e0ca6d778f9222087e632596e5aa557ddcc7a39"
+    },
+    "frontend/public/fonts/manifest.json": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 681,
+      "sha256": "aa9b915194b2ecf25249ce1182e969c6c51c9fa0a98044fe14253e3731ddb942"
+    },
+    "frontend/src": {
+      "type": "directory",
+      "mode": "0755",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "frontend/src/lib": {
+      "type": "directory",
+      "mode": "0755",
+      "uid": 1000,
+      "gid": 1000
+    },
+    "frontend/src/lib/docxTableStream.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 3947,
+      "sha256": "f17a9a22cd1c5f85008ae44e0b97754a8bebcc4bd4c3fa0d93d33e69dd2ff545"
+    },
+    "frontend/src/lib/renderDocx.ts": {
+      "type": "file",
+      "mode": "0600",
+      "uid": 1000,
+      "gid": 1000,
+      "size": 16001,
+      "sha256": "c00351e975b5684f1aed9493d2ee4a7d8fe913b5545046daee46d0ddbfaabb94"
+    }
+  },
+  "supplementary_inputs": {
+    "backend/deploy/Dockerfile": {
+      "sha256": "503d4774ce8b42d80d8216371f029d22e3d7bc06e51e12593fbe9eb9db9ce001",
+      "git_mode": "100644",
+      "role": "observed_build_recipe"
+    },
+    ".dockerignore": {
+      "sha256": "8b0a9678c821136a3f43a08fb9d3de310428a0ce65aae82846699116ecf50441",
+      "git_mode": "100644",
+      "role": "build_context_policy"
+    },
+    "backend/package.json": {
+      "sha256": "021d583304b883f7b955dca35f0f42a102b20db0f35d002ebed66c6e8733263f",
+      "git_mode": "100644",
+      "role": "native_harness_dependency"
+    },
+    "backend/package-lock.json": {
+      "sha256": "8b7b79f42970cf43e5f873bcd6d59eec07c342a0f620b43f6c5618d770343dea",
+      "git_mode": "100644",
+      "role": "native_harness_dependency"
+    },
+    "frontend/package.json": {
+      "sha256": "eef37af1285363de28449a6cbf8616cfb22f8e7cd09f2205c7d245cef7e98083",
+      "git_mode": "100644",
+      "role": "native_harness_dependency"
+    },
+    "frontend/package-lock.json": {
+      "sha256": "ff30d1f8c24a2584966c498e971c741c73175000c09d87de5427e02236840d6c",
+      "git_mode": "100644",
+      "role": "native_harness_dependency"
+    }
+  },
+  "native_evidence": [
+    {
+      "path": "backend/docs/evidence/native-api-owned-snapshot-steady-f2d0f9-20261105.json",
+      "sha256": "192b84efb878d66e6f84a1b6783bf98430dba23f7c1782e7df86534dba069b48",
+      "format": "source_and_input",
+      "scope": "offline actual createApiHandler delivery downloads with migrated API-admitted v2 fixture and emulated Auth/RPC/Storage"
+    },
+    {
+      "path": "backend/docs/evidence/native-api-owned-snapshot-fresh-f2d0f9-20261105.json",
+      "sha256": "dc4f44dc41ecc324c2fccd07a0fa4b94969aa727596560af1b2c46de81dcc498",
+      "format": "source_and_input",
+      "scope": "offline actual createApiHandler delivery downloads with migrated API-admitted v2 fixture and emulated Auth/RPC/Storage"
+    },
+    {
+      "path": "backend/docs/evidence/native-reviewed-docx-handler-f2d0f9-20261105.json",
+      "sha256": "b5e2e3dc66969e294c208e0bb34571d0d498c310ad66bebd7caffd9db9240c0c",
+      "format": "source_and_input",
+      "scope": "offline actual reviewed-DOCX completion handler and native canonical verifier; actual saved ordinary request with synthetic ordinary-2 server pin/Auth/RPC/Storage"
+    },
+    {
+      "path": "backend/docs/evidence/native-api-batch-capacity-f2d0f9-20261105.json",
+      "sha256": "43931195155d53856e0d8b2a3d1aca55e5f3e4016229ad65e9bff41171126b3e",
+      "format": "batch",
+      "scope": "isolated actual-image API handler and Backend.batchStream with real PostgreSQL/PostgREST"
+    }
+  ],
+  "image_history_newest_first": [
+    {
+      "CreatedAt": "2026-11-05T08:08:07Z",
+      "CreatedBy": "CMD [\"run\" \"--cached-only\" \"--frozen\" \"--config=supabase/functions/deno.json\" \"--allow-env\" \"--allow-net\" \"--allow-sys\" \"--allow-run=/bin/deno\" \"--allow-read=/app,/deno-dir,/tmp\" \"--allow-write=/tmp\" \"scripts/runtime/main.ts\"]",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-11-05T08:08:07Z",
+      "CreatedBy": "EXPOSE &{[{{15 0} {15 0}}] 0xc002de2640}",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-11-05T08:08:07Z",
+      "CreatedBy": "USER deno",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-11-05T08:08:07Z",
+      "CreatedBy": "RUN /bin/sh -c if [ -f /run/secrets/proxy_ca ]; then export DENO_CERT=/run/secrets/proxy_ca; fi;     deno cache --frozen --config=supabase/functions/deno.json scripts/runtime/main.ts supabase/functions/_shared/deliveryRender.process.ts supabase/functions/_shared/deliveryVerify.process.ts && chmod -R a+rX /deno-dir # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-11-05T08:08:05Z",
+      "CreatedBy": "COPY --chown=deno:deno frontend/public/fonts/ /app/frontend/public/fonts/ # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-11-05T08:08:05Z",
+      "CreatedBy": "COPY --chown=deno:deno frontend/src/lib/docxTableStream.ts /app/frontend/src/lib/docxTableStream.ts # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-11-05T08:08:05Z",
+      "CreatedBy": "COPY --chown=deno:deno frontend/src/lib/renderDocx.ts /app/frontend/src/lib/renderDocx.ts # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-11-05T08:08:05Z",
+      "CreatedBy": "COPY --chown=deno:deno backend/scripts/runtime/ ./scripts/runtime/ # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-11-05T08:08:05Z",
+      "CreatedBy": "COPY --chown=deno:deno backend/supabase/functions/ ./supabase/functions/ # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-11-05T08:08:05Z",
+      "CreatedBy": "ENV DENO_DIR=/deno-dir PORT=8080 LANGSMITH_CONFIG_FILE=/app/backend/.langsmith-disabled.json",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-11-04T12:43:31Z",
+      "CreatedBy": "WORKDIR /app/backend",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "CMD [\"eval\" \"console.log('Welcome to Deno!')\"]",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "ENTRYPOINT [\"/tini\" \"--\" \"docker-entrypoint.sh\"]",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "RUN |1 DENO_VERSION=2.9.8 /bin/sh -c chmod 755 /usr/local/bin/docker-entrypoint.sh # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "COPY ./_entry.sh /usr/local/bin/docker-entrypoint.sh # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "LABEL org.opencontainers.image.title=Deno org.opencontainers.image.description=Deno Docker image (Alpine) org.opencontainers.image.url=https://github.com/denoland/deno_docker org.opencontainers.image.source=https://github.com/denoland/deno_docker org.opencontainers.image.licenses=MIT org.opencontainers.image.version=2.9.8",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "COPY /tini /tini # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "COPY /deno /bin/deno # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "ENV DENO_VERSION=2.9.8",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "ARG DENO_VERSION=2.9.8",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "ENV DENO_INSTALL_ROOT=/usr/local",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "ENV DENO_DIR=/deno-dir/",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "ENV DENO_USE_CGROUPS=1",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "RUN /bin/sh -c echo \"/usr/local/lib/glibc\" > /etc/ld.so.conf   && /lib64/ld-linux-*.so.* --library-path /usr/local/lib/glibc     /tmp/ldconfig -C /etc/ld.so.cache -f /etc/ld.so.conf   && rm /tmp/ldconfig # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "COPY /usr/sbin/ldconfig.real /tmp/ldconfig # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "RUN /bin/sh -c addgroup --gid 1000 deno   && adduser --uid 1000 --disabled-password deno --ingroup deno   && mkdir /deno-dir/   && chown deno:deno /deno-dir/   && mkdir /lib64   && ln -s /usr/local/lib/glibc/ld-linux-* /lib64/ # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "COPY --chown=root:root --chmod=755 /lib/ld-linux-* /lib/ # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-10-21T15:35:11Z",
+      "CreatedBy": "COPY --chown=root:root --chmod=755 /lib/*-linux-gnu/* /usr/local/lib/glibc/ # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-09-17T20:37:20Z",
+      "CreatedBy": "CMD [\"/bin/sh\"]",
+      "Comment": "buildkit.dockerfile.v0"
+    },
+    {
+      "CreatedAt": "2026-09-17T20:37:20Z",
+      "CreatedBy": "ADD alpine-minirootfs-3.24.2-x86_64.tar.gz / # buildkit",
+      "Comment": "buildkit.dockerfile.v0"
+    }
+  ],
+  "limits": [
+    "Build command, recipe, COPY sources and supplementary inputs were captured before and after this build; build log SHA256 and exact local image identity are bound. Historical89af and176bcf evidence remains unchanged; source plan binds seven changed paths and one added source-resolution module.",
+    "Exact image modes/owners are recorded separately from portable Git executable modes; no image permission normalization occurs.",
+    "Owned-snapshot warm 2 and fresh 1 plus reviewed DOCX retain actual image entrypoint and immutable product bytes, with synthetic Auth/RPC/Storage and no production gateway. API 100 uses real local PostgreSQL/PostgREST with synthetic Auth and a loopback prefix adapter.",
+    "API fixtures run at 384 MiB/700m. Renderer harness records zero actual swap on a host with SwapTotal 0; it does not set an explicit no-swap limit. API 100 explicitly disables swap. Local database limits do not prove managed database capacity.",
+    "The native suites were sequential in a reserved window. Functional package and operational suites finished before this measurement window. Normal metadata orchestration remains present. Total helper-process time was not measured; this is not a claim of zero other CPU activity.",
+    "This receipt qualifies these frozen native fixtures only, not hosted acceptance, production SLO, arbitrary document capacity, model quality, or desktop Word layout.",
+    "Registry publication/promotion remains pending; no registry digest is inferred from the local image ID."
+  ],
+  "observed_build": {
+    "path": "backend/docs/evidence/runtime-build-f2d0f9-20261105.json",
+    "sha256": "3b475aa8daa7c2c8bb3572ce5ba77d080b742a43587f07d5f5d6dc3c52c91c7f",
+    "native_orchestration_sha256": "06f99c5c968f1c015684dbe9074e02983fdd7760f04c51b89e8b65f1f701a5ea",
+    "native_preflight_sha256": "9517abed4de792381b88be8045d0d5c9d71db5946b7df18712aee9e380bed20f",
+    "tracked_source_before_sha256": "3ebd9ef4be652497d401b64d5a86593cba6b3703594451b81357d7eb40442f5d",
+    "tracked_source_after_sha256": "3ebd9ef4be652497d401b64d5a86593cba6b3703594451b81357d7eb40442f5d"
+  },
+  "orchestration_activity_scope": {
+    "path": "backend/docs/evidence/native-orchestration-activity-scope-f2d0f9-20261105.json",
+    "sha256": "1afcd53e3722ea0a6686976d1a7c532c88127c2eede52ee017dd30c6770832c7"
+  }
+}

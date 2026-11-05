@@ -66,7 +66,7 @@ async function renderAndDownload(
   snapshot: any,
   template = true,
 ) {
-  const job = await h.rpc("claim_backend_job_v4");
+  const job = await h.rpc("claim_backend_job_v5");
   expect(job).toMatchObject({
     type: "render_delivery",
     entity_id: snapshot.id,

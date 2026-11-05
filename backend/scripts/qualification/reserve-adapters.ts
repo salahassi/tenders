@@ -148,13 +148,45 @@ const canonicalValidators = new WeakMap<
   ReserveAdapter,
   ReserveAdapter["domainValidate"]
 >();
+const canonicalConstructors = new WeakMap<
+  ReserveAdapter,
+  () => Promise<ReserveAdapter>
+>();
 export async function buildReserveAdapter(
   caseId: string,
+): Promise<ReserveAdapter> {
+  return buildReserveInput(caseId);
+}
+/** One physical request in the separately accounted two-review composite.
+ * The single-request entrypoint continues to refuse these composite cases. */
+export async function buildReserveReviewSegment(
+  caseId: string,
+  index: number,
+): Promise<ReserveAdapter> {
+  return buildReserveInput(caseId, index);
+}
+async function buildReserveInput(
+  caseId: string,
+  reviewIndex?: number,
 ): Promise<ReserveAdapter> {
   const { corpus } = await loadReserve(),
     row = corpus.cases.find((item) => item.id === caseId);
   if (!row) throw Error("RESERVE_CASE_UNKNOWN");
-  if (!supported(row))
+  if (
+    reviewIndex !== undefined &&
+    !(
+      row.task === "summarize_review" &&
+      row.scenario === "review_identity" &&
+      Number.isInteger(reviewIndex) &&
+      reviewIndex >= 0 &&
+      reviewIndex < 2 &&
+      row.documents.length === 2 &&
+      JSON.stringify(row.workflow_facts.review_ids) ===
+        JSON.stringify(row.documents.map((d) => d.id))
+    )
+  )
+    throw Error("RESERVE_REVIEW_COMPOSITE_SELECTION_INVALID");
+  if (reviewIndex === undefined && !supported(row))
     throw Object.assign(
       Error(unsupportedReason(row).code),
       unsupportedReason(row),
@@ -163,7 +195,12 @@ export async function buildReserveAdapter(
   const material = publicCase(row),
     task = material.task as ModelTask;
   const phase = phaseMemory(),
-    job = { id: idFor(caseId + ":job"), lease_token: idFor(caseId + ":lease") };
+    requestIdentity =
+      reviewIndex === undefined ? caseId : `${caseId}:review:${reviewIndex}`,
+    job = {
+      id: idFor(requestIdentity + ":job"),
+      lease_token: idFor(requestIdentity + ":lease"),
+    };
   let context: any = {},
     evidence: Evidence[] = [],
     required: string[] = [],
@@ -254,7 +291,7 @@ export async function buildReserveAdapter(
     trace.context_constructor =
       "automaticSources projection + sourceReadingPrompt; no page fetched";
   } else if (task !== "connection_probe") {
-    const doc = material.documents[0],
+    const doc = material.documents[reviewIndex ?? 0],
       isReview = task === "summarize_review";
     const source: any = {
       id: doc.entity_id,
@@ -318,7 +355,19 @@ export async function buildReserveAdapter(
         verified: false,
       },
       blocks: isReview ? [] : [source],
-      reviews: isReview ? [source] : [],
+      reviews: isReview
+        ? material.documents.map((d) => ({
+            ...source,
+            id: d.entity_id,
+            text: d.text,
+            block_hash: d.sha256,
+            reference: {
+              entity_kind: "review",
+              entity_id: d.entity_id,
+              content_hash: d.sha256,
+            },
+          }))
+        : [],
       knowledge: [],
       rates: [],
       template: { id: idFor(caseId + ":template"), required_sections: [] },
@@ -374,6 +423,14 @@ export async function buildReserveAdapter(
     ];
     trace.context_constructor =
       "generation.taskInput + validateGenerationResult; synthetic envelope, not SQL admission";
+    if (reviewIndex !== undefined)
+      trace.composite_segment = {
+        index: reviewIndex,
+        physical_request_count: 2,
+        request_identity: requestIdentity,
+        selected_review_id: source.id,
+        frozen_review_ids: frozen.reviews.map((review: any) => review.id),
+      };
   } else
     trace.context_constructor =
       "connection_probe empty context/evidence; no business quality claim";
@@ -381,7 +438,7 @@ export async function buildReserveAdapter(
     backend: phase.backend as any,
     store: phase.store as any,
     job,
-    requestPrefix: `reserve:${caseId}`,
+    requestPrefix: `reserve:${requestIdentity}`,
     task,
     context,
     evidence,
@@ -412,20 +469,20 @@ export async function buildReserveAdapter(
     phasePins: [...phase.pins].map(([key, value]) => ({ key, ...value })),
   };
   canonicalValidators.set(adapter, domainValidate);
+  canonicalConstructors.set(adapter, () =>
+    buildReserveInput(caseId, reviewIndex),
+  );
   return adapter;
 }
-/** Uses production preparation, stopping before beforeSend/reserve/fetch.
- * Caller supplies explicit configuration; no actual enabled target is assumed. */
-export async function compileReserveRequest(
-  adapter: ReserveAdapter,
-  configuration: ModelConfiguration,
-) {
+export async function verifiedReserveAdapter(adapter: ReserveAdapter) {
   if (
     !canonicalValidators.has(adapter) ||
     canonicalValidators.get(adapter) !== adapter.domainValidate
   )
     throw Error("RESERVE_CANONICAL_VALIDATOR_CHANGED");
-  const fresh = await buildReserveAdapter(adapter.caseId);
+  const rebuild = canonicalConstructors.get(adapter);
+  if (!rebuild) throw Error("RESERVE_CANONICAL_CONSTRUCTOR_CHANGED");
+  const fresh = await rebuild();
   for (const field of [
     "task",
     "repair",
@@ -441,8 +498,16 @@ export async function compileReserveRequest(
   ] as const)
     if (JSON.stringify(adapter[field]) !== JSON.stringify(fresh[field]))
       throw Error("RESERVE_ADAPTER_INPUT_CHANGED");
+  return fresh;
+}
+/** Uses production preparation, stopping before beforeSend/reserve/fetch.
+ * Caller supplies explicit configuration; no actual enabled target is assumed. */
+export async function compileReserveRequest(
+  adapter: ReserveAdapter,
+  configuration: ModelConfiguration,
+) {
   // Use freshly reconstructed canonical wire callbacks, never caller replacements.
-  adapter = fresh;
+  adapter = await verifiedReserveAdapter(adapter);
   let captured: StructuredRequest | undefined,
     captures = 0,
     forbiddenOperations = 0;

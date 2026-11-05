@@ -351,7 +351,7 @@ describe("real PostgreSQL migrations and authorization", () => {
       (await asUser(reviewer, "select * from public.sources")).rows,
     ).toEqual([]);
     await expect(
-      asUser(reviewer, "select public.claim_backend_job()"),
+      asUser(reviewer, "select public.claim_backend_job_v5()"),
     ).rejects.toThrow(/permission denied/);
   });
 });
@@ -397,7 +397,7 @@ describe("queue integration through migrated PostgreSQL functions", () => {
 
   async function claim() {
     const result = await asWorker<{ job: Job | null }>(
-      "select public.claim_backend_job() as job",
+      "select public.claim_backend_job_v5() as job",
     );
     return result.rows[0].job;
   }
@@ -423,7 +423,7 @@ describe("queue integration through migrated PostgreSQL functions", () => {
   it("denies worker execution to authenticated users, including the Owner", async () => {
     for (const actor of [owner, editor, reviewer, outsider]) {
       await expect(
-        asUser(actor, "select public.claim_backend_job()"),
+        asUser(actor, "select public.claim_backend_job_v5()"),
       ).rejects.toThrow(/permission denied/);
       await expect(
         asUser(

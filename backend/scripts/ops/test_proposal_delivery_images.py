@@ -54,7 +54,7 @@ class DeliveryImageTests(unittest.TestCase):
 
  def exercise(self, missing=False, lookup_error=False, mutation=None, source_error=False, unpublished=False):
   with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
-   manifest=Path(directory)/'manifest';manifest.write_text('{"executor_max":4,"renderer_versions":[1,2,3],"minimum_worker_executor":4}')
+   manifest=Path(directory)/'manifest';manifest.write_text('{"executor_max":5,"renderer_versions":[1,2,3],"minimum_worker_executor":5}')
    envfile=Path(directory)/'env';calls=[];recipes=[]
    def run(args,**kwargs):
     calls.append(args)

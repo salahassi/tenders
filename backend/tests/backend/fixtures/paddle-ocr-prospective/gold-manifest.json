@@ -1,0 +1,1262 @@
+{
+  "version": 1,
+  "scope": "prospective_synthetic_gold_before_any_paddle_ocr_output",
+  "source_revision": "2b869ac341f3ca7944247930e68c022f91a7383a",
+  "authored_at_utc": "2026-11-05T00:39:46.913573+00:00",
+  "author_agent": "/root/ocr_feasibility_finish",
+  "author_saw_prior_tesseract_diagnostics": true,
+  "independent_private_holdout": false,
+  "ocr_executed": false,
+  "recognition_qualified": false,
+  "gold_policy": "Exact logical Unicode in declared whole-page reading order; no OCR-derived correction, no string reversal, no box resorting, no confidence filtering. All detected output is retained.",
+  "normalization": {
+    "id": "a06-strict-nfc-whitespace-v1",
+    "unicode": "NFC",
+    "line_endings": "CRLF and CR become LF",
+    "whitespace": "Collapse all Unicode whitespace runs to one ASCII space and trim leading/trailing whitespace.",
+    "preserved": "All non-whitespace code points, punctuation, decimal marks, Western/Arabic-Indic digits, bidi controls, negation and block order remain significant.",
+    "legacy_policy": "The seven controls retain their original files/gold and original recorded outcomes. This new strict oracle is a separate prospective measurement, never a relabeling of the historical NFKC oracle."
+  },
+  "fonts": {
+    "Amiri-Regular.ttf": {
+      "path": "frontend/public/fonts/Amiri-Regular.ttf",
+      "sha256": "ab391c4147d054c48976e98322ad0eefe1427aa0e0502a12a4c75d80a70cfcd7"
+    },
+    "Carlito-Regular.ttf": {
+      "path": "frontend/public/fonts/Carlito-Regular.ttf",
+      "sha256": "f6418f708baede9789daef5d458c0f53d2a888af9820e8062934e504fedc6595"
+    }
+  },
+  "cases": [
+    {
+      "id": "a06-01-conditional-gate",
+      "filename": "a06-01-conditional-gate.pdf",
+      "png_filename": "a06-01-conditional-gate.png",
+      "title": "Arabic actor, prohibition, exception and later condition",
+      "page_size_pt": [
+        595,
+        842
+      ],
+      "scan_dpi": 144,
+      "raster_size_px": [
+        1190,
+        1684
+      ],
+      "blocks": [
+        {
+          "id": "heading",
+          "text": "ضوابط حماية الموقع",
+          "rect_pt": [
+            42,
+            50,
+            553,
+            98
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 25,
+          "line_height": 1.25
+        },
+        {
+          "id": "actor",
+          "text": "يلتزم مشغل الموقع بتعيين 3 حراس لكل وردية.",
+          "rect_pt": [
+            42,
+            130,
+            553,
+            178
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "prohibition",
+          "text": "لا يجوز إغلاق بوابة الإخلاء أثناء وجود العاملين.",
+          "rect_pt": [
+            42,
+            210,
+            553,
+            258
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "exception",
+          "text": "يستثنى من ذلك الإغلاق الذي تأذن به الجهة كتابة.",
+          "rect_pt": [
+            42,
+            290,
+            553,
+            338
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "condition",
+          "text": "ولا يسري الاستثناء إلا بعد فتح مسار بديل آمن.",
+          "rect_pt": [
+            42,
+            370,
+            553,
+            418
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "reference",
+          "text": "مرجع التعليمات: GATE-R7.",
+          "rect_pt": [
+            42,
+            465,
+            553,
+            513
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        }
+      ],
+      "reading_order": [
+        "heading",
+        "actor",
+        "prohibition",
+        "exception",
+        "condition",
+        "reference"
+      ],
+      "graphics": [],
+      "critical_facts": [
+        {
+          "id": "G01",
+          "block_ids": [
+            "actor"
+          ],
+          "kind": "actor_obligation",
+          "exact_quote": "يلتزم مشغل الموقع بتعيين 3 حراس لكل وردية.",
+          "critical": true,
+          "interpretation": "The site operator must assign three guards per shift.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 42
+          },
+          "source_block_text_sha256": "47bf13994474120a8cf6cd8e8964781fa931c41539ca1ba9a79effb31213416a"
+        },
+        {
+          "id": "G02",
+          "block_ids": [
+            "prohibition",
+            "exception",
+            "condition"
+          ],
+          "kind": "conditional_exception",
+          "exact_quote": "لا يجوز إغلاق بوابة الإخلاء أثناء وجود العاملين.\nيستثنى من ذلك الإغلاق الذي تأذن به الجهة كتابة.\nولا يسري الاستثناء إلا بعد فتح مسار بديل آمن.",
+          "critical": true,
+          "interpretation": "Closing the evacuation gate while workers are present is prohibited; the exception requires both written authority permission and a safe alternate route opened beforehand.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 142
+          },
+          "source_block_text_sha256": "de16531b42a1ec9ab2172e58eb03abf579d774b4f104ecd82db2a7b1bab9e2c3"
+        },
+        {
+          "id": "G03",
+          "block_ids": [
+            "reference"
+          ],
+          "kind": "identifier",
+          "exact_quote": "GATE-R7",
+          "critical": true,
+          "interpretation": "The instruction identifier is GATE-R7.",
+          "source_quote_codepoint_span": {
+            "start": 16,
+            "end": 23
+          },
+          "source_block_text_sha256": "241530da3aac8c312d4e30ee1c9208439b7c326b276d8ada86410a9494807ad6"
+        }
+      ],
+      "expected_text": "ضوابط حماية الموقع\nيلتزم مشغل الموقع بتعيين 3 حراس لكل وردية.\nلا يجوز إغلاق بوابة الإخلاء أثناء وجود العاملين.\nيستثنى من ذلك الإغلاق الذي تأذن به الجهة كتابة.\nولا يسري الاستثناء إلا بعد فتح مسار بديل آمن.\nمرجع التعليمات: GATE-R7."
+    },
+    {
+      "id": "a06-02-decimal-payment",
+      "filename": "a06-02-decimal-payment.pdf",
+      "png_filename": "a06-02-decimal-payment.png",
+      "title": "Arabic currency, decimal point, zero and both digit systems",
+      "page_size_pt": [
+        595,
+        842
+      ],
+      "scan_dpi": 144,
+      "raster_size_px": [
+        1190,
+        1684
+      ],
+      "blocks": [
+        {
+          "id": "heading",
+          "text": "تفصيل الدفعات",
+          "rect_pt": [
+            42,
+            50,
+            553,
+            98
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 25,
+          "line_height": 1.25
+        },
+        {
+          "id": "decimal",
+          "text": "قيمة الوحدة 0.850 ريال، وليست 850 ريالا.",
+          "rect_pt": [
+            42,
+            130,
+            553,
+            178
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "quantity",
+          "text": "عدد الوحدات المعتمدة ٤٠، والدفعة المقدمة 0 ريال.",
+          "rect_pt": [
+            42,
+            210,
+            553,
+            258
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "acceptance",
+          "text": "لا تستحق أي دفعة قبل قبول جميع الوحدات.",
+          "rect_pt": [
+            42,
+            290,
+            553,
+            338
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "total",
+          "text": "الإجمالي المستحق بعد القبول 34.000 ريالا.",
+          "rect_pt": [
+            42,
+            370,
+            553,
+            418
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "reference",
+          "text": "مرجع الدفعة: PAY-Q6.",
+          "rect_pt": [
+            42,
+            465,
+            553,
+            513
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        }
+      ],
+      "reading_order": [
+        "heading",
+        "decimal",
+        "quantity",
+        "acceptance",
+        "total",
+        "reference"
+      ],
+      "graphics": [],
+      "critical_facts": [
+        {
+          "id": "P01",
+          "block_ids": [
+            "decimal"
+          ],
+          "kind": "decimal_currency",
+          "exact_quote": "قيمة الوحدة 0.850 ريال، وليست 850 ريالا.",
+          "critical": true,
+          "interpretation": "Unit price is 0.850 riyal, explicitly not 850 riyals; decimal punctuation is critical.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 40
+          },
+          "source_block_text_sha256": "94606088ebe588a0e6764386bbcaa3e8ac948cbdd1e2708409cc7b72f5be30bb"
+        },
+        {
+          "id": "P02",
+          "block_ids": [
+            "quantity"
+          ],
+          "kind": "quantity_zero",
+          "exact_quote": "عدد الوحدات المعتمدة ٤٠، والدفعة المقدمة 0 ريال.",
+          "critical": true,
+          "interpretation": "Forty units; advance payment is zero riyal. Arabic-Indic digits remain literal.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 48
+          },
+          "source_block_text_sha256": "e32d7f42da877fe43495edd918d0347a20ad6c7e187e73f6d60bee22ef192c98"
+        },
+        {
+          "id": "P03",
+          "block_ids": [
+            "acceptance",
+            "total"
+          ],
+          "kind": "payment_condition",
+          "exact_quote": "لا تستحق أي دفعة قبل قبول جميع الوحدات.\nالإجمالي المستحق بعد القبول 34.000 ريالا.",
+          "critical": true,
+          "interpretation": "No payment is due before all units are accepted; total after acceptance is 34.000 riyals.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 81
+          },
+          "source_block_text_sha256": "875ac65b87ca07046b5f8ec8bd889ffee851f211194a3bcfbda185729148f6b0"
+        },
+        {
+          "id": "P04",
+          "block_ids": [
+            "reference"
+          ],
+          "kind": "identifier",
+          "exact_quote": "PAY-Q6",
+          "critical": true,
+          "interpretation": "The payment reference is PAY-Q6.",
+          "source_quote_codepoint_span": {
+            "start": 13,
+            "end": 19
+          },
+          "source_block_text_sha256": "2b9ce48fc6088ab6052528fd24a3d7c54bf3c23d8c9924ec833eb3d0d9a573b0"
+        }
+      ],
+      "expected_text": "تفصيل الدفعات\nقيمة الوحدة 0.850 ريال، وليست 850 ريالا.\nعدد الوحدات المعتمدة ٤٠، والدفعة المقدمة 0 ريال.\nلا تستحق أي دفعة قبل قبول جميع الوحدات.\nالإجمالي المستحق بعد القبول 34.000 ريالا.\nمرجع الدفعة: PAY-Q6."
+    },
+    {
+      "id": "a06-03-incident-deadline",
+      "filename": "a06-03-incident-deadline.pdf",
+      "png_filename": "a06-03-incident-deadline.png",
+      "title": "Arabic date/time, parentheses, slash and Latin identifier",
+      "page_size_pt": [
+        595,
+        842
+      ],
+      "scan_dpi": 144,
+      "raster_size_px": [
+        1190,
+        1684
+      ],
+      "blocks": [
+        {
+          "id": "heading",
+          "text": "إبلاغ الحوادث",
+          "rect_pt": [
+            42,
+            50,
+            553,
+            98
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 25,
+          "line_height": 1.25
+        },
+        {
+          "id": "actor",
+          "text": "يجب على مسؤول الوردية إرسال البلاغ قبل الموعد الآتي:",
+          "rect_pt": [
+            42,
+            130,
+            553,
+            190
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "deadline",
+          "text": "الموعد بتوقيت الموقع: 2028/09/17 06:45.",
+          "rect_pt": [
+            42,
+            220,
+            553,
+            268
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "reference",
+          "text": "رقم البلاغ (INC-B4/27) هو المرجع المعتمد.",
+          "rect_pt": [
+            42,
+            300,
+            553,
+            348
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "fallback",
+          "text": "إذا تعطل الهاتف، يرسل البلاغ عبر البريد المسجل.",
+          "rect_pt": [
+            42,
+            380,
+            553,
+            428
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "prohibition",
+          "text": "لا يؤجل الموعد إلى يوم العمل التالي.",
+          "rect_pt": [
+            42,
+            460,
+            553,
+            508
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        }
+      ],
+      "reading_order": [
+        "heading",
+        "actor",
+        "deadline",
+        "reference",
+        "fallback",
+        "prohibition"
+      ],
+      "graphics": [],
+      "critical_facts": [
+        {
+          "id": "I01",
+          "block_ids": [
+            "actor",
+            "deadline"
+          ],
+          "kind": "actor_deadline",
+          "exact_quote": "يجب على مسؤول الوردية إرسال البلاغ قبل الموعد الآتي:\nالموعد بتوقيت الموقع: 2028/09/17 06:45.",
+          "critical": true,
+          "interpretation": "Shift officer sends the report before 2028/09/17 06:45 in site local time; no extra timezone is inferred.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 92
+          },
+          "source_block_text_sha256": "99ab27136cb140d194e96c5f043b6c3ef9eccefc59c6c3c53fd784deba2ccc69"
+        },
+        {
+          "id": "I02",
+          "block_ids": [
+            "reference"
+          ],
+          "kind": "identifier_parentheses",
+          "exact_quote": "(INC-B4/27)",
+          "critical": true,
+          "interpretation": "The report identifier preserves parentheses, slash and character order.",
+          "source_quote_codepoint_span": {
+            "start": 11,
+            "end": 22
+          },
+          "source_block_text_sha256": "55eda4f3f7857dbaf04122731e91b3b146e5f84e316720b548dd23f732be90a5"
+        },
+        {
+          "id": "I03",
+          "block_ids": [
+            "fallback"
+          ],
+          "kind": "fallback_condition",
+          "exact_quote": "إذا تعطل الهاتف، يرسل البلاغ عبر البريد المسجل.",
+          "critical": true,
+          "interpretation": "If the telephone fails, send the report by registered mail. The sentence does not prohibit using registered mail in other circumstances.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 47
+          },
+          "source_block_text_sha256": "4cb8e025597d4e5fdba40f1d3411be5e02896742cff501a219addfcbfea0b82d"
+        },
+        {
+          "id": "I04",
+          "block_ids": [
+            "prohibition"
+          ],
+          "kind": "deadline_prohibition",
+          "exact_quote": "لا يؤجل الموعد إلى يوم العمل التالي.",
+          "critical": true,
+          "interpretation": "The deadline must not be postponed to the next working day.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 36
+          },
+          "source_block_text_sha256": "b304260ae8ba7cfac8c632ed32dd30d0302e5ef9d167603fa4543ca2dea8cd22"
+        }
+      ],
+      "expected_text": "إبلاغ الحوادث\nيجب على مسؤول الوردية إرسال البلاغ قبل الموعد الآتي:\nالموعد بتوقيت الموقع: 2028/09/17 06:45.\nرقم البلاغ (INC-B4/27) هو المرجع المعتمد.\nإذا تعطل الهاتف، يرسل البلاغ عبر البريد المسجل.\nلا يؤجل الموعد إلى يوم العمل التالي."
+    },
+    {
+      "id": "a06-04-right-column-first",
+      "filename": "a06-04-right-column-first.pdf",
+      "png_filename": "a06-04-right-column-first.png",
+      "title": "Two Arabic columns with numbered clauses and footer",
+      "page_size_pt": [
+        595,
+        842
+      ],
+      "scan_dpi": 144,
+      "raster_size_px": [
+        1190,
+        1684
+      ],
+      "blocks": [
+        {
+          "id": "heading",
+          "text": "ترتيب تنفيذ الأعمال",
+          "rect_pt": [
+            42,
+            50,
+            553,
+            98
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 25,
+          "line_height": 1.25
+        },
+        {
+          "id": "right-1",
+          "text": "١. تفحص الجهة العينة الأولى.",
+          "rect_pt": [
+            320,
+            145,
+            553,
+            215
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 18,
+          "line_height": 1.25
+        },
+        {
+          "id": "right-2",
+          "text": "٢. لا يبدأ التشغيل قبل القبول.",
+          "rect_pt": [
+            320,
+            245,
+            553,
+            315
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 18,
+          "line_height": 1.25
+        },
+        {
+          "id": "left-3",
+          "text": "٣. يسلم المورد سجل الفحص.",
+          "rect_pt": [
+            42,
+            145,
+            275,
+            215
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 18,
+          "line_height": 1.25
+        },
+        {
+          "id": "left-4",
+          "text": "٤. تحفظ نسخة لمدة 18 شهرا.",
+          "rect_pt": [
+            42,
+            245,
+            275,
+            315
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 18,
+          "line_height": 1.25
+        },
+        {
+          "id": "footer",
+          "text": "الترتيب المعتمد: العمود الأيمن ثم الأيسر.",
+          "rect_pt": [
+            42,
+            500,
+            553,
+            548
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 18,
+          "line_height": 1.25
+        }
+      ],
+      "reading_order": [
+        "heading",
+        "right-1",
+        "right-2",
+        "left-3",
+        "left-4",
+        "footer"
+      ],
+      "graphics": [
+        {
+          "kind": "line",
+          "from_pt": [
+            297.5,
+            130
+          ],
+          "to_pt": [
+            297.5,
+            350
+          ],
+          "width_pt": 0.7,
+          "gray": 0.65
+        }
+      ],
+      "critical_facts": [
+        {
+          "id": "C01",
+          "block_ids": [
+            "right-1"
+          ],
+          "kind": "actor_action",
+          "exact_quote": "١. تفحص الجهة العينة الأولى.",
+          "critical": true,
+          "interpretation": "Authority inspects the first sample.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 28
+          },
+          "source_block_text_sha256": "e834619df4c46f467ea3bd29feb704a6ea4961cc8ace97b15f9e8fe85480915e"
+        },
+        {
+          "id": "C02",
+          "block_ids": [
+            "right-2"
+          ],
+          "kind": "prerequisite",
+          "exact_quote": "٢. لا يبدأ التشغيل قبل القبول.",
+          "critical": true,
+          "interpretation": "Operation must not start before acceptance.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 30
+          },
+          "source_block_text_sha256": "27b5fbd56715c9124217b3f9873436ffb49b5fccacd435f5695214ebcd84bf5b"
+        },
+        {
+          "id": "C03",
+          "block_ids": [
+            "left-3"
+          ],
+          "kind": "actor_action",
+          "exact_quote": "٣. يسلم المورد سجل الفحص.",
+          "critical": true,
+          "interpretation": "Supplier delivers the inspection record.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 25
+          },
+          "source_block_text_sha256": "5bc44285162a106c80b7da50405effdb126e81392ab71e00a0a65d4a45c47cda"
+        },
+        {
+          "id": "C04",
+          "block_ids": [
+            "left-4"
+          ],
+          "kind": "retention_period",
+          "exact_quote": "٤. تحفظ نسخة لمدة 18 شهرا.",
+          "critical": true,
+          "interpretation": "Keep one copy for eighteen months.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 26
+          },
+          "source_block_text_sha256": "a8789656a9829bd93e57bcd6e85f2bb220eee1439836142c366e17e411438baf"
+        },
+        {
+          "id": "C05",
+          "block_ids": [
+            "right-1",
+            "right-2",
+            "left-3",
+            "left-4",
+            "footer"
+          ],
+          "kind": "block_order",
+          "exact_quote": "١. تفحص الجهة العينة الأولى.\n٢. لا يبدأ التشغيل قبل القبول.\n٣. يسلم المورد سجل الفحص.\n٤. تحفظ نسخة لمدة 18 شهرا.\nالترتيب المعتمد: العمود الأيمن ثم الأيسر.",
+          "critical": true,
+          "interpretation": "Read the entire right column before the left column, followed by the footer; do not interleave equal-height rows.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 154
+          },
+          "source_block_text_sha256": "15c878de32f765995f71c132bb1f58814da279b2f8bb163331843908ef2be115"
+        }
+      ],
+      "expected_text": "ترتيب تنفيذ الأعمال\n١. تفحص الجهة العينة الأولى.\n٢. لا يبدأ التشغيل قبل القبول.\n٣. يسلم المورد سجل الفحص.\n٤. تحفظ نسخة لمدة 18 شهرا.\nالترتيب المعتمد: العمود الأيمن ثم الأيسر."
+    },
+    {
+      "id": "a06-05-mixed-table",
+      "filename": "a06-05-mixed-table.pdf",
+      "png_filename": "a06-05-mixed-table.png",
+      "title": "Mixed Arabic/English table and English obligations",
+      "page_size_pt": [
+        595,
+        842
+      ],
+      "scan_dpi": 144,
+      "raster_size_px": [
+        1190,
+        1684
+      ],
+      "blocks": [
+        {
+          "id": "heading",
+          "text": "Interface handover schedule",
+          "rect_pt": [
+            42,
+            50,
+            553,
+            98
+          ],
+          "direction": "ltr",
+          "font": "Carlito-Regular.ttf",
+          "font_size_pt": 25,
+          "line_height": 1.25
+        },
+        {
+          "id": "row-direction",
+          "text": "تقرأ خلايا كل صف من اليمين إلى اليسار.",
+          "rect_pt": [
+            42,
+            100,
+            553,
+            130
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 16,
+          "line_height": 1.25
+        },
+        {
+          "id": "header-item",
+          "text": "البند",
+          "rect_pt": [
+            382,
+            150,
+            541,
+            192
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "header-id",
+          "text": "Identifier",
+          "rect_pt": [
+            212,
+            150,
+            358,
+            192
+          ],
+          "direction": "ltr",
+          "font": "Carlito-Regular.ttf",
+          "font_size_pt": 18,
+          "line_height": 1.25
+        },
+        {
+          "id": "header-day",
+          "text": "Due day",
+          "rect_pt": [
+            54,
+            150,
+            188,
+            192
+          ],
+          "direction": "ltr",
+          "font": "Carlito-Regular.ttf",
+          "font_size_pt": 18,
+          "line_height": 1.25
+        },
+        {
+          "id": "read-item",
+          "text": "واجهة القراءة",
+          "rect_pt": [
+            382,
+            225,
+            541,
+            267
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "read-id",
+          "text": "API-READ-5",
+          "rect_pt": [
+            212,
+            225,
+            358,
+            267
+          ],
+          "direction": "ltr",
+          "font": "Carlito-Regular.ttf",
+          "font_size_pt": 18,
+          "line_height": 1.25
+        },
+        {
+          "id": "read-day",
+          "text": "6",
+          "rect_pt": [
+            54,
+            225,
+            188,
+            267
+          ],
+          "direction": "ltr",
+          "font": "Carlito-Regular.ttf",
+          "font_size_pt": 18,
+          "line_height": 1.25
+        },
+        {
+          "id": "audit-item",
+          "text": "سجل التدقيق",
+          "rect_pt": [
+            382,
+            300,
+            541,
+            342
+          ],
+          "direction": "rtl",
+          "font": "Amiri-Regular.ttf",
+          "font_size_pt": 20,
+          "line_height": 1.25
+        },
+        {
+          "id": "audit-id",
+          "text": "LOG-AUD-8",
+          "rect_pt": [
+            212,
+            300,
+            358,
+            342
+          ],
+          "direction": "ltr",
+          "font": "Carlito-Regular.ttf",
+          "font_size_pt": 18,
+          "line_height": 1.25
+        },
+        {
+          "id": "audit-day",
+          "text": "11",
+          "rect_pt": [
+            54,
+            300,
+            188,
+            342
+          ],
+          "direction": "ltr",
+          "font": "Carlito-Regular.ttf",
+          "font_size_pt": 18,
+          "line_height": 1.25
+        },
+        {
+          "id": "preserve",
+          "text": "The supplier must preserve both identifiers exactly.",
+          "rect_pt": [
+            42,
+            420,
+            553,
+            468
+          ],
+          "direction": "ltr",
+          "font": "Carlito-Regular.ttf",
+          "font_size_pt": 18,
+          "line_height": 1.25
+        },
+        {
+          "id": "prohibition",
+          "text": "Do not replace the audit log with a summary.",
+          "rect_pt": [
+            42,
+            490,
+            553,
+            538
+          ],
+          "direction": "ltr",
+          "font": "Carlito-Regular.ttf",
+          "font_size_pt": 18,
+          "line_height": 1.25
+        }
+      ],
+      "reading_order": [
+        "heading",
+        "row-direction",
+        "header-item",
+        "header-id",
+        "header-day",
+        "read-item",
+        "read-id",
+        "read-day",
+        "audit-item",
+        "audit-id",
+        "audit-day",
+        "preserve",
+        "prohibition"
+      ],
+      "graphics": [
+        {
+          "kind": "line",
+          "from_pt": [
+            42,
+            135
+          ],
+          "to_pt": [
+            42,
+            360
+          ],
+          "width_pt": 0.7,
+          "gray": 0.2
+        },
+        {
+          "kind": "line",
+          "from_pt": [
+            200,
+            135
+          ],
+          "to_pt": [
+            200,
+            360
+          ],
+          "width_pt": 0.7,
+          "gray": 0.2
+        },
+        {
+          "kind": "line",
+          "from_pt": [
+            370,
+            135
+          ],
+          "to_pt": [
+            370,
+            360
+          ],
+          "width_pt": 0.7,
+          "gray": 0.2
+        },
+        {
+          "kind": "line",
+          "from_pt": [
+            553,
+            135
+          ],
+          "to_pt": [
+            553,
+            360
+          ],
+          "width_pt": 0.7,
+          "gray": 0.2
+        },
+        {
+          "kind": "line",
+          "from_pt": [
+            42,
+            135
+          ],
+          "to_pt": [
+            553,
+            135
+          ],
+          "width_pt": 0.7,
+          "gray": 0.2
+        },
+        {
+          "kind": "line",
+          "from_pt": [
+            42,
+            210
+          ],
+          "to_pt": [
+            553,
+            210
+          ],
+          "width_pt": 0.7,
+          "gray": 0.2
+        },
+        {
+          "kind": "line",
+          "from_pt": [
+            42,
+            285
+          ],
+          "to_pt": [
+            553,
+            285
+          ],
+          "width_pt": 0.7,
+          "gray": 0.2
+        },
+        {
+          "kind": "line",
+          "from_pt": [
+            42,
+            360
+          ],
+          "to_pt": [
+            553,
+            360
+          ],
+          "width_pt": 0.7,
+          "gray": 0.2
+        }
+      ],
+      "critical_facts": [
+        {
+          "id": "T01",
+          "block_ids": [
+            "read-item",
+            "read-id",
+            "read-day"
+          ],
+          "kind": "table_row",
+          "exact_quote": "واجهة القراءة\nAPI-READ-5\n6",
+          "critical": true,
+          "interpretation": "Reading interface API-READ-5 is due on day6; row association is critical.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 26
+          },
+          "source_block_text_sha256": "5f3accf66112b62df756318ec2fe621311ee166d659cf3732cc9a555ff171981"
+        },
+        {
+          "id": "T02",
+          "block_ids": [
+            "audit-item",
+            "audit-id",
+            "audit-day"
+          ],
+          "kind": "table_row",
+          "exact_quote": "سجل التدقيق\nLOG-AUD-8\n11",
+          "critical": true,
+          "interpretation": "Audit log LOG-AUD-8 is due on day11; row association is critical.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 24
+          },
+          "source_block_text_sha256": "e0b4705d77548614168bb47f759271f4c92fa596cd6bace878ca5fdb85e75fc5"
+        },
+        {
+          "id": "T03",
+          "block_ids": [
+            "preserve"
+          ],
+          "kind": "identifier_preservation",
+          "exact_quote": "The supplier must preserve both identifiers exactly.",
+          "critical": true,
+          "interpretation": "Supplier must preserve both identifiers exactly.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 52
+          },
+          "source_block_text_sha256": "72ab3f2d1fc61567b9a8206ca2e4a4fa2a5ec94450f7c3e0633ec6128ca9112d"
+        },
+        {
+          "id": "T04",
+          "block_ids": [
+            "prohibition"
+          ],
+          "kind": "prohibition",
+          "exact_quote": "Do not replace the audit log with a summary.",
+          "critical": true,
+          "interpretation": "A summary cannot substitute for the audit log.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 44
+          },
+          "source_block_text_sha256": "402c5a27cc8b4b0a17e0e8bb86da2e674a208fe395fb848dbf5c08d68a7bf3cc"
+        },
+        {
+          "id": "T05",
+          "block_ids": [
+            "row-direction"
+          ],
+          "kind": "table_cell_order",
+          "exact_quote": "تقرأ خلايا كل صف من اليمين إلى اليسار.",
+          "critical": true,
+          "interpretation": "Read each row from the rightmost cell to the leftmost cell.",
+          "source_quote_codepoint_span": {
+            "start": 0,
+            "end": 38
+          },
+          "source_block_text_sha256": "b8fa21e28fb98bc9b5827914201d5029256ac69a69aee2b2e9bf7f5d599e1895"
+        }
+      ],
+      "expected_text": "Interface handover schedule\nتقرأ خلايا كل صف من اليمين إلى اليسار.\nالبند\nIdentifier\nDue day\nواجهة القراءة\nAPI-READ-5\n6\nسجل التدقيق\nLOG-AUD-8\n11\nThe supplier must preserve both identifiers exactly.\nDo not replace the audit log with a summary."
+    },
+    {
+      "id": "a06-06-blank",
+      "filename": "a06-06-blank.pdf",
+      "png_filename": "a06-06-blank.png",
+      "title": "Blank white page with no visible text",
+      "page_size_pt": [
+        595,
+        842
+      ],
+      "scan_dpi": 144,
+      "raster_size_px": [
+        1190,
+        1684
+      ],
+      "blocks": [],
+      "reading_order": [],
+      "graphics": [],
+      "critical_facts": [],
+      "expected_text": ""
+    }
+  ],
+  "retained_controls": [
+    {
+      "id": "known-arabic-failure",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr/scanned-ar.pdf",
+      "page": 1,
+      "expected_text": "يجب على المورد تسليم 12 تقريرا خلال 30 يوما.\nالدفع بقيمة 12500 ريال بعد القبول.\nالموعد النهائي للتقديم هو 15 ديسمبر 2026.\nيمنع التعاقد من الباطن دون موافقة خطية.",
+      "sha256": "70cb0b2e615d8c9880ab414a87c7eadc7bc6129268e203010006e74be844331b"
+    },
+    {
+      "id": "maintenance-obligation",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr-holdout/scanned-maintenance-obligation.pdf",
+      "page": 1,
+      "expected_text": "ملحق الصيانة\nيلتزم المتعهد بفحص 7 أجهزة في كل زيارة شهرية.\nلا يجوز إيقاف الخدمة أثناء ساعات العمل.\nإذا ظهر عطل حرج، تبدأ المعالجة خلال 6 ساعات.\nتبلغ قيمة الزيارة 3750 ريالا، ويبدأ العقد في 2027-02-18.\nمرجع الطلب: MX-2047-B.",
+      "sha256": "865400db7e101086faf30311b81239c52cfa71074d1b51c80354b4acab959003"
+    },
+    {
+      "id": "records-retention",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr-holdout/scanned-records-retention.pdf",
+      "page": 1,
+      "expected_text": "شروط حفظ السجلات\nيجب حفظ النسخ الاحتياطية لمدة 90 يوما بعد انتهاء العقد.\nلا يسمح بنقل الملفات إلى جهة خارجية.\nعند تعذر استعادة سجل واحد، يقدم تقرير خلال يومي عمل.\nتستحق الدفعة البالغة 6400 ريال في 3 أبريل 2027.\nرمز الحزمة: ARCHIVE-Q9.",
+      "sha256": "8df77416bbfe305d1e964f72afa9a643cb6208902820b54ee233c2830768cf96"
+    },
+    {
+      "id": "sensor-acceptance",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr-holdout/scanned-sensor-acceptance.pdf",
+      "page": 1,
+      "expected_text": "إشعار تسليم المعدات\nعلى المقاول تركيب 24 حساسا قبل بدء التشغيل.\nلا تعد التجربة ناجحة ما لم تعمل جميع الحساسات.\nإذا تأخر التسليم أكثر من 5 أيام، تخصم غرامة قدرها 850 ريالا.\nآخر موعد للفحص هو 2027/06/09، والمرجع هو SENSOR-K3.",
+      "sha256": "2954ab85ab810c853659aed7f7c95fd07785653fb588172da8076b37d9bb02e9"
+    },
+    {
+      "id": "english-existing-control",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr/scanned-en.pdf",
+      "page": 1,
+      "expected_text": "The supplier must deliver 12 reports within 30 days.\nPayment is SAR 12500 after acceptance.\nThe submission deadline is 2026-12-15.\nSubcontracting is prohibited without written approval.",
+      "sha256": "019eb10cff310db890866ad993704ed4cc05f7583ddab36a1b3e1b3634b7b826"
+    },
+    {
+      "id": "mixed-exact-scan-page",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr/mixed-five-pages.pdf",
+      "page": 3,
+      "expected_text": "The supplier must deliver 12 reports within 30 days.\nPayment is SAR 12500 after acceptance.\nThe submission deadline is 2026-12-15.\nSubcontracting is prohibited without written approval.",
+      "sha256": "a8a11d021b8f503dcd98b5ec2654ba25610c1077bf171ddbc4405304988989a9"
+    },
+    {
+      "id": "mixed-blank-page",
+      "path": "backend/tests/backend/fixtures/uploaded-ocr/mixed-five-pages.pdf",
+      "page": 5,
+      "expected_text": "",
+      "sha256": "a8a11d021b8f503dcd98b5ec2654ba25610c1077bf171ddbc4405304988989a9"
+    }
+  ],
+  "retained_control_source_hashes": {
+    "backend/tests/backend/fixtures/uploaded-ocr/generate.py": "24965ae88f06cd754f8daa856ee075135665ef1efac34708a3658eafcf22a3b8",
+    "backend/tests/backend/fixtures/uploaded-ocr/manifest.json": "b2828aab7a4d07a32ddb74836b5abd2fa5a86afd5b68b86675deb7100e6632de",
+    "backend/tests/backend/fixtures/uploaded-ocr/mixed-five-pages.pdf": "a8a11d021b8f503dcd98b5ec2654ba25610c1077bf171ddbc4405304988989a9",
+    "backend/tests/backend/fixtures/uploaded-ocr/scanned-ar.pdf": "70cb0b2e615d8c9880ab414a87c7eadc7bc6129268e203010006e74be844331b",
+    "backend/tests/backend/fixtures/uploaded-ocr/scanned-en.pdf": "019eb10cff310db890866ad993704ed4cc05f7583ddab36a1b3e1b3634b7b826",
+    "backend/tests/backend/fixtures/uploaded-ocr-holdout/README.md": "33b34d9a7e3224ad014d86f38aaf9c9cea255dc4c9ba9c6bacb1331e044cab54",
+    "backend/tests/backend/fixtures/uploaded-ocr-holdout/freeze.json": "3e7e6a5812b1d29cbc26a0058765f93a8af77ccfdd4a4b5444fbefbf66cb0706",
+    "backend/tests/backend/fixtures/uploaded-ocr-holdout/generate.py": "897b0b29aa2005cd8d83a6934b8d2d0600c0e1659b07e4c2ec3fd98736239fd8",
+    "backend/tests/backend/fixtures/uploaded-ocr-holdout/gold-manifest.json": "9f855604b3df5dc26f4d10f72a9b57f6fc8d1e071381480bef72951211c48b99",
+    "backend/tests/backend/fixtures/uploaded-ocr-holdout/manifest.json": "87efe37c61becfe3c696b60c96107c9a98739690c12508c13b7b1d9085134a99",
+    "backend/tests/backend/fixtures/uploaded-ocr-holdout/scanned-maintenance-obligation.pdf": "865400db7e101086faf30311b81239c52cfa71074d1b51c80354b4acab959003",
+    "backend/tests/backend/fixtures/uploaded-ocr-holdout/scanned-records-retention.pdf": "8df77416bbfe305d1e964f72afa9a643cb6208902820b54ee233c2830768cf96",
+    "backend/tests/backend/fixtures/uploaded-ocr-holdout/scanned-sensor-acceptance.pdf": "2954ab85ab810c853659aed7f7c95fd07785653fb588172da8076b37d9bb02e9"
+  },
+  "acceptance": {
+    "new_pages": 6,
+    "retained_development_pages": 7,
+    "total_pages": 13,
+    "critical_facts_must_survive": true,
+    "exact_page_and_critical_failures_reported_separately": true,
+    "blank_requires_empty_after_normalization": true,
+    "finite_pass_does_not_establish_universal_correctness": true
+  },
+  "source_review_required": true,
+  "pre_output_corrections": {
+    "prior_authoring_sha256": "6fa56e25cf3f6a29106c4c451bc3c35583d1e2cf952d28b2e6a66bfa5b3e8e10",
+    "prior_source": "review-history/gold-authoring-v1.json",
+    "prior_render_receipt": "review-history/render-v1.json",
+    "ocr_executed_before_or_during_correction": false,
+    "changes": [
+      {
+        "id": "I03",
+        "source_text_changed": false,
+        "reason": "Independent source review rejected an only-if interpretation of a one-way Arabic if-then condition; remove the unsupported exclusivity."
+      },
+      {
+        "id": "T05",
+        "source_text_changed": true,
+        "reason": "Independent visual review found table cell order ambiguous; add a visible right-to-left row instruction before any OCR and include it in exact gold."
+      }
+    ]
+  }
+}

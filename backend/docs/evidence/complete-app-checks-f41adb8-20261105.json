@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "source_revision": "f41adb8df5bad1d64b82946921ff0b811214408b",
+  "scope": "complete_backend_and_frontend_typecheck_tests_build",
+  "started_at": "2026-11-05T07:51:16.341075+00:00",
+  "checks": [
+    {
+      "package": "backend",
+      "name": "typecheck",
+      "command": [
+        "npm",
+        "--prefix",
+        "backend",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 0,
+      "seconds": 3.065,
+      "log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220"
+    },
+    {
+      "package": "backend",
+      "name": "tests",
+      "command": [
+        "npm",
+        "--prefix",
+        "backend",
+        "test",
+        "--",
+        "--maxWorkers=1"
+      ],
+      "exit_code": 0,
+      "seconds": 508.476,
+      "log_sha256": "81cda465613935f6e1a56daf57e32700bf0902753ba2049e8ed21a461c3655cf"
+    },
+    {
+      "package": "backend",
+      "name": "build",
+      "command": [
+        "npm",
+        "--prefix",
+        "backend",
+        "run",
+        "build"
+      ],
+      "exit_code": 0,
+      "seconds": 1.523,
+      "log_sha256": "8652d82be3115ea6597ae3b7dcf42d83bc898c68ec15888bbf53917a98ebac84"
+    },
+    {
+      "package": "frontend",
+      "name": "typecheck",
+      "command": [
+        "npm",
+        "--prefix",
+        "frontend",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 0,
+      "seconds": 2.507,
+      "log_sha256": "fcb5cdebec3bda0095f0e9251f60fcc4fc98a10fb4e6f77ef494c1c5e3f0efec"
+    },
+    {
+      "package": "frontend",
+      "name": "tests",
+      "command": [
+        "npm",
+        "--prefix",
+        "frontend",
+        "test",
+        "--",
+        "--maxWorkers=1"
+      ],
+      "exit_code": 0,
+      "seconds": 48.69,
+      "log_sha256": "feba9528a018888071f6cc456051b57643930f284925d09910bbda062819c712"
+    },
+    {
+      "package": "frontend",
+      "name": "build",
+      "command": [
+        "npm",
+        "--prefix",
+        "frontend",
+        "run",
+        "build"
+      ],
+      "exit_code": 0,
+      "seconds": 3.398,
+      "log_sha256": "369da060a01451ed60e6d5591e509ea4425511a66b7cb67eff131ca1330713ba"
+    }
+  ],
+  "finished_at": "2026-11-05T07:59:49.451860+00:00",
+  "changed_sources": [],
+  "passed": true,
+  "raw_receipt_sha256": "3a2cd6cac35d607414a422daafc3bf74f04eec91b10b7cc71c64b220c3e4f18d",
+  "counts": {
+    "backend_tests": 3488,
+    "backend_files": 206,
+    "frontend_tests": 380,
+    "frontend_files": 59
+  },
+  "native_qualification": "failed and separately retained; passing functional checks are not native capacity"
+}

@@ -1,6 +1,6 @@
 import {
   workflowFixture,
-  claimModelWorker4,
+  claimModelWorker5,
   historicalGenerationCommand,
 } from "./workflowFixture";
 import {
@@ -201,7 +201,7 @@ export async function createRecheckFixture(
     "select app_private.enqueue_generation(p,s.task,s.input) from public.generation_plans p join public.generation_steps s on s.plan_id=p.id where p.id=$1 order by s.ordinal limit 1",
     [originalPlan.id],
   );
-  const sibling = await claimModelWorker4(f, h.rpc);
+  const sibling = await claimModelWorker5(f, h.rpc);
   const siblingContext = await h.rpc("generation_context", {
     job_id: sibling.id,
     lease: sibling.lease_token,
@@ -220,7 +220,7 @@ export async function createRecheckFixture(
     lease: sibling.lease_token,
     result: candidate,
   });
-  const parent = await claimModelWorker4(f, h.rpc);
+  const parent = await claimModelWorker5(f, h.rpc);
   const context = await h.rpc("generation_context", {
     job_id: parent.id,
     lease: parent.lease_token,
@@ -507,7 +507,7 @@ export async function createRecheckFixture(
     return h.recheck(payload, key);
   }
   async function claimChild(child: any) {
-    const job = await claimModelWorker4(f, h.rpc);
+    const job = await claimModelWorker5(f, h.rpc);
     if (job.id !== child.id) throw new Error("Unexpected claimed job");
     await h.rpc("prepare_task_model_route", {
       job_id: job.id,

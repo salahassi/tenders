@@ -200,11 +200,53 @@ class PhysicalProcess(unittest.TestCase):
   for mutate in (lambda p:p['spec'].update(ephemeralContainers=[{'name':'debug'}]),lambda p:p['spec']['containers'][0].update(command=['sh']),lambda p:p['spec']['volumes'][0]['persistentVolumeClaim'].update(claimName='private-objects')):
    adapter,pod=self.fixture();mutate(pod)
    with self.assertRaises(c.FixtureError):adapter.validate_physical_pod(pod)
+ def test_owned_pending_helper_can_be_removed_but_never_used_as_process_proof(self):
+  adapter,pod=self.fixture();pod.pop('status');capture={'pods':{},'workloads':{}}
+  for name in c.proof.NAMES:capture['workloads'][name]=self.resource('deployment',name,{'replicas':1})
+  with self.assertRaises(c.proof.RetirementError):adapter.validate_physical_pod(pod)
+  def get(state,kind,name,**kwargs):return pod if kind=='pod' else capture['workloads'][name]
+  with patch.object(r,'get',side_effect=get),patch.object(r,'delete') as delete,patch.object(r,'patch'),patch.object(r,'command') as command,patch.object(r,'wait_deployment'),patch.object(adapter,'assert_boundary'),patch.object(adapter,'save_terminations',return_value=True) as journals:
+   adapter.restore(capture,adapter.nonce)
+  delete.assert_called_once_with(self.state,'pod',r.PHYSICAL)
+  self.assertIn('--for=delete',command.call_args.args[0]);self.assertEqual(journals.call_count,3)
+  self.assertIsNone(adapter.physical_uid)
+  pod['metadata']['uid']=UUIDS[30]
+  with self.assertRaises(c.FixtureError):adapter.validate_physical_pod_spec(pod)
  def test_already_removed_helper_does_not_fail_owned_cleanup(self):
   adapter,pod=self.fixture();capture={'pods':{},'workloads':{}}
   for name in c.proof.NAMES:capture['workloads'][name]=self.resource('deployment',name,{'replicas':1})
   def get(state,kind,name,**kwargs):return None if kind=='pod' else capture['workloads'][name]
   with patch.object(r,'get',side_effect=get),patch.object(r,'patch'),patch.object(r,'command') as command,patch.object(r,'wait_deployment'),patch.object(adapter,'assert_boundary'),patch.object(adapter,'save_terminations',return_value=True):adapter.restore(capture,adapter.nonce)
   command.assert_not_called()
+ def test_restore_retains_failure_location_and_prior_error_without_stopping_other_workloads(self):
+  adapter,pod=self.fixture();capture={'pods':{},'workloads':{}}
+  for name in c.proof.NAMES:capture['workloads'][name]=self.resource('deployment',name,{'replicas':1})
+  events=[]
+  def get(state,kind,name,**kwargs):return None if kind=='pod' else capture['workloads'][name]
+  def mutate(state,kind,name,*args):
+   events.append('patch:'+name)
+   if name=='gateway':raise c.FixtureError('RETIREMENT_FIXTURE_RESTORE_SPEC_CHANGED')
+  def journal(capture,name,nonce):
+   events.append('journal:'+name)
+   if name=='worker':raise KeyError('private customer identity')
+   return True
+  def readiness(state,name,seconds):
+   events.append('ready:'+name);self.assertEqual(seconds,180)
+   if name=='storage':raise r.command_failure('RETIREMENT_FIXTURE_COMMAND_TIMEOUT',['rollout','status'])
+  with patch.object(r,'get',side_effect=get),patch.object(r,'patch',side_effect=mutate),patch.object(r,'wait_deployment',side_effect=readiness),patch.object(adapter,'assert_boundary'),patch.object(adapter,'save_terminations',side_effect=journal):
+   with self.assertRaises(c.FixtureError) as result:
+    try:raise ValueError('private prior failure')
+    finally:adapter.restore(capture,adapter.nonce)
+  self.addCleanup(r.phase,'not_started')
+  self.assertEqual(str(result.exception),'RETIREMENT_FIXTURE_SERVICE_RESTORATION_REQUIRED')
+  value=r.failure_diagnostic(result.exception)['restoration_diagnostic']
+  self.assertEqual(value['prior_error'],{'kind':'value','code':None})
+  self.assertEqual([(x['stage'],x['workload']) for x in value['failures']],[('workload_restore','gateway'),('process_journal','worker'),('readiness','storage')])
+  self.assertEqual(value['failures'][0]['error']['code'],'RETIREMENT_FIXTURE_RESTORE_SPEC_CHANGED')
+  self.assertEqual(value['failures'][1]['error'],{'kind':'key','code':None})
+  diagnostic=value['failures'][2]['error']['command_diagnostic']
+  self.assertEqual((diagnostic['phase'],diagnostic['category']),('restore_readiness','timeout'))
+  self.assertEqual(events,['patch:storage','journal:storage','patch:gateway','patch:worker','journal:worker','ready:storage','ready:gateway','ready:worker'])
+  self.assertNotIn('private',json.dumps(r.failure_diagnostic(result.exception)))
 
 if __name__=='__main__':unittest.main()

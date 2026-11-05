@@ -45,10 +45,13 @@ REQUIRED = ('20261104121022_partial_document_coverage.sql',
  '20261104170442_durable_storage_write_intents.sql',
  '20261104172700_storage_write_retirement_proofs.sql',
  '20261104212300_structured_section_body_bound.sql',
- '20261104212818_bounded_command_batch_results.sql')
-CAPABILITIES = {'executor_max':4,'renderer_versions':[1,2,3],
- 'minimum_worker_executor':4,'ordinary_renderer_version':'ordinary-2',
- 'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1,
+ '20261104212818_bounded_command_batch_results.sql',
+ '20261105120000_source_obligation_resolution.sql',
+ '20261105120100_worker_capability_five.sql',
+ '20261105120200_retirement_catalog_and_retry_scope.sql')
+CAPABILITIES = {'executor_max':5,'renderer_versions':[1,2,3],
+ 'minimum_worker_executor':5,'ordinary_renderer_version':'ordinary-2',
+ 'source_resolution_version':1,'current_proposal_issuance_contract':1,'issuance_file_capacity_version':1,
  'global_renderer_limit':1,'storage_write_intents_version':1,
  'storage_retirement_version':1,'storage_gateway_guard_version':1,'application_auth_read_version':1,
  'command_batch_transport_version':1,'command_batch_chunk_bytes':262144,'legacy_batch_insert_fence_version':1,
@@ -171,8 +174,8 @@ def https_configuration(root=ROOT):
     except https_capacity.HttpsError as error:raise ReleaseError(str(error)) from None
 
 RUNTIME_HELPER = 'scripts/ops/runtime-qualification.py'
-RUNTIME_QUALIFICATION = 'docs/evidence/runtime-qualification-176bcf-20261105.json'
-RUNTIME_PUBLICATION = 'docs/evidence/runtime-qualified-publication-176bcf-20261105.json'
+RUNTIME_QUALIFICATION = 'docs/evidence/runtime-qualification-f2d0f9-20261105.json'
+RUNTIME_PUBLICATION = 'docs/evidence/runtime-qualified-publication-f2d0f9-20261105.json'
 
 def runtime_qualification(root=ROOT):
     values={}
@@ -191,7 +194,7 @@ def runtime_qualification(root=ROOT):
             constants[name]=found[0]
         receipt=json.loads(values['receipt'][1]);publication=json.loads(values['publication'][1])
     except (SyntaxError,ValueError,TypeError):raise ReleaseError('DELIVERY_RELEASE_RUNTIME_QUALIFICATION_INVALID') from None
-    if (constants['QUALIFIED_ID']!='sha256:176bcf738676421ebc58d26cd7bc2a29910d0242635de6084129a06701a9e4f8'
+    if (constants['QUALIFIED_ID']!='sha256:f2d0f99d4933c47d137940973a17aa78fe198ad385ac25f7a936ef45bdafcf44'
       or constants['REGISTRY']!='registry.digitalocean.com/tenderdesk-a6093a76/runtime'
       or digest(values['receipt'][0])!=constants['RECEIPT_SHA256'] or not isinstance(receipt,dict)
       or type(receipt.get('version')) is not int or receipt['version']!=1
@@ -275,7 +278,7 @@ def verify_source(manifest, *, migrations=ROOT/'supabase/migrations', gateway_ro
     if not isinstance(entries,list) or not len(REQUIRED)<=len(entries)<=30: raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
     names=[]; sources=[]
     for row in entries:
-        if not isinstance(row,dict) or set(row)!={'name','sha256'} or not re.fullmatch(r'20261104[0-9]{6}_[a-z0-9_]+\.sql',row['name']) or not re.fullmatch('[a-f0-9]{64}',row['sha256']): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
+        if not isinstance(row,dict) or set(row)!={'name','sha256'} or not re.fullmatch(r'[0-9]{14}_[a-z0-9_]+\.sql',row['name']) or not re.fullmatch('[a-f0-9]{64}',row['sha256']): raise ReleaseError('DELIVERY_RELEASE_MANIFEST_INVALID')
         path=migrations/row['name']
         if not path.is_file() or path.is_symlink() or digest(path.read_bytes())!=row['sha256']: raise ReleaseError('DELIVERY_RELEASE_SOURCE_CHANGED')
         names.append(row['name']); sources.append(path.read_text())
@@ -382,12 +385,14 @@ BEGIN
   OR to_regprocedure('public.claim_backend_local_job_v__EXECUTOR__()') IS NULL
   OR to_regprocedure('public.delivery_artifact_context(uuid,uuid)') IS NULL
  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_RUNTIME_CONTRACT_MISSING';END IF;
- FOREACH target IN ARRAY ARRAY['public.claim_backend_job_v__EXECUTOR__()','public.delivery_export_context(uuid,uuid)',
+ FOREACH target IN ARRAY ARRAY['public.claim_backend_job_v__EXECUTOR__()','public.claim_backend_local_job_v__EXECUTOR__()',
+  'public.wake_backend_queue_status_v__EXECUTOR__(uuid,uuid)','public.wake_backend_queue_revision_v__EXECUTOR__(uuid,uuid,bigint)',
+  'public.delivery_export_context(uuid,uuid)',
   'public.complete_delivery_artifact(uuid,uuid,uuid,text,bigint)','public.delivery_artifact_context(uuid,uuid)'] LOOP
   IF has_function_privilege('tdp_app_authenticated',target,'EXECUTE') OR has_function_privilege('tdp_app_anon',target,'EXECUTE')
    OR NOT has_function_privilege('tdp_app_service',target,'EXECUTE') THEN RAISE EXCEPTION 'DELIVERY_RELEASE_SERVICE_AUTHORITY_INVALID';END IF;
  END LOOP;
- IF __EXECUTOR__=4 THEN
+ IF __EXECUTOR__>=4 THEN
   IF to_regprocedure('app_private.delivery_renderer(public.proposal_delivery_snapshots)') IS NULL
    OR to_regprocedure('app_private.delivery_executor(public.proposal_delivery_snapshots)') IS NULL THEN RAISE EXCEPTION 'DELIVERY_RELEASE_RENDERER_CONTRACT_MISSING';END IF;
   FOREACH version_number IN ARRAY __RENDERERS__ LOOP
@@ -397,8 +402,33 @@ BEGIN
     THEN RAISE EXCEPTION 'DELIVERY_RELEASE_RENDERER_CONTRACT_MISMATCH';END IF;
   END LOOP;
  END IF;
- IF __MINIMUM_EXECUTOR__=4 AND (to_regclass('public.proposal_issuance_requests') IS NULL OR to_regclass('public.proposal_issuance_status') IS NULL)
+ IF __MINIMUM_EXECUTOR__>=4 AND (to_regclass('public.proposal_issuance_requests') IS NULL OR to_regclass('public.proposal_issuance_status') IS NULL)
   THEN RAISE EXCEPTION 'DELIVERY_RELEASE_DEADLINE_CONTRACT_MISSING';END IF;
+ IF __MINIMUM_EXECUTOR__>=5 AND NOT EXISTS(SELECT 1 FROM pg_trigger
+  WHERE tgrelid='public.jobs'::regclass AND tgname='zzzz_current_worker_capability'
+   AND tgenabled='O' AND tgfoid='app_private.guard_current_worker_capability()'::regprocedure)
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_WORKER_FLOOR_MISSING';END IF;
+ IF to_regprocedure('app_private.source_resolution(uuid,uuid)') IS NULL
+  OR to_regprocedure('app_private.assert_plan_source_resolution(uuid)') IS NULL
+  OR to_regprocedure('app_private.validate_source_resolution_inventory(public.generation_plans,jsonb,jsonb)') IS NULL
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_SOURCE_RESOLUTION_MISSING';END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.requirements'::regclass
+  AND tgname='requirement_z_resolution_guard' AND tgenabled='O'
+  AND tgfoid='app_private.guard_requirement_resolution()'::regprocedure)
+  OR NOT EXISTS(SELECT 1 FROM pg_trigger WHERE tgrelid='public.source_obligation_reviews'::regclass
+  AND tgname='source_supersession_revision' AND tgenabled='O'
+  AND tgfoid='app_private.pin_source_supersession_revision()'::regprocedure)
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_SOURCE_RESOLUTION_MISSING';END IF;
+ IF EXISTS(SELECT 1 FROM pg_proc WHERE oid IN (
+  'app_private.prepare_storage_write_retirement(uuid,uuid,jsonb)'::regprocedure,
+  'app_private.finish_storage_write_retirement(uuid,uuid,jsonb)'::regprocedure)
+  AND (position('to_regclass(''storage.objects'')' in prosrc)>0
+   OR position('''storage.objects''::regclass' in prosrc)>0
+   OR position('pg_catalog.pg_class' in prosrc)=0))
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_STORAGE_CATALOG_INVALID';END IF;
+ IF position('step.job_id=(app_command.input->>''id'')::uuid' in
+  pg_get_functiondef('app_private.app_command(text,jsonb,text)'::regprocedure))=0
+  THEN RAISE EXCEPTION 'DELIVERY_RELEASE_RETRY_SCOPE_INVALID';END IF;
  -- Source hashes bind the implementation. These independent catalog checks
  -- reject absent/disabled contracts and exposed new RPCs before runtime rollout.
  -- They do not substitute for actual mixed-version claim and capacity tests.

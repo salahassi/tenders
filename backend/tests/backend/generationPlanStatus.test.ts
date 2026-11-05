@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { afterAll, afterEach, beforeAll, beforeEach, expect, it } from "vitest";
 import {
   workflowFixture,
-  claimModelWorker4,
+  claimModelWorker5,
   historicalGenerationCommand,
 } from "./workflowFixture";
 
@@ -76,7 +76,7 @@ async function startWithSiblings() {
     "select app_private.enqueue_generation(p,s.task,s.input) from public.generation_plans p join public.generation_steps s on s.plan_id=p.id where p.id=$1 order by s.ordinal limit 1",
     [plan.id],
   );
-  const blocked = await claimModelWorker4(f, f.rpc);
+  const blocked = await claimModelWorker5(f, f.rpc);
   await f.rpc("fail_generation", [
     blocked.id,
     blocked.lease_token,
@@ -88,7 +88,7 @@ async function startWithSiblings() {
     status: "blocked",
     error_code: "MODEL_CORRECTION_EXHAUSTED",
   });
-  const sibling = await claimModelWorker4(f, f.rpc);
+  const sibling = await claimModelWorker5(f, f.rpc);
   expect(sibling.id).not.toBe(blocked.id);
   expect(sibling.entity_id).toBe(plan.id);
   return { plan, blocked, sibling };
@@ -598,7 +598,7 @@ it("ordinary generation retry clears the blocked aggregate and preserves complet
     input_hash: before.input_hash,
   });
   expect(await jobRow(sibling.id)).toEqual(completed);
-  const lease = await claimModelWorker4(f, f.rpc);
+  const lease = await claimModelWorker5(f, f.rpc);
   expect(lease.id).toBe(blocked.id);
   expect(lease.attempts).toBe(before.attempts + 1);
   expect(lease.checkpoint).toEqual({

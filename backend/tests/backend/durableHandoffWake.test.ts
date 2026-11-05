@@ -21,7 +21,7 @@ beforeEach(async () => {
 afterEach(async () => f.db.exec("rollback"));
 const url = "https://public.example.test/notice";
 const wake = (job: any, lease = job.lease_token) =>
-  f.rpc("wake_backend_queue_status", [job.id, lease]);
+  f.rpc("wake_backend_queue_status_v5", [job.id, lease]);
 async function rawJob() {
   return (
     await f.db.query<any>(
@@ -77,7 +77,7 @@ async function reader(kind: string) {
     ],
   );
   await f.rpc("schedule_assessment_refresh");
-  const job = await f.rpc("claim_backend_job_v2");
+  const job = await f.rpc("claim_backend_job_v5");
   expect(job.type).toBe("classify_opportunity");
   if (kind === "ocr")
     await f.rpc("request_notice_ocr", [
@@ -109,8 +109,8 @@ it.each(["ocr", "browser"])(
       (await f.db.query<any>("select * from public.jobs where id=$1", [job.id]))
         .rows[0],
     ).toEqual(before);
-    expect((await f.rpc("claim_backend_job_v2")).id).toBe(other.id);
-    expect(await f.rpc("claim_backend_job_v2")).toBeNull();
+    expect((await f.rpc("claim_backend_job_v5")).id).toBe(other.id);
+    expect(await f.rpc("claim_backend_job_v5")).toBeNull();
   },
 );
 
@@ -138,7 +138,7 @@ it.each([
     );
   if (mode === "executor")
     await f.db.query(
-      "update public.jobs set checkpoint='{\"model_executor\":3}' where id=$1",
+      "update public.jobs set checkpoint='{\"model_executor\":6}' where id=$1",
       [other.id],
     );
   if (mode === "revision")
@@ -146,7 +146,7 @@ it.each([
       job.id,
     ]);
   if (mode === "running")
-    expect((await f.rpc("claim_backend_job_v2")).id).toBe(other.id);
+    expect((await f.rpc("claim_backend_job_v5")).id).toBe(other.id);
   if (mode === "disabled")
     await f.db.exec("update app_private.dispatcher_settings set enabled=false");
   if (mode === "reserved")
@@ -166,7 +166,7 @@ it.each([
 
 async function graphFixture() {
   const queued = await rawJob();
-  const job = await f.rpc("claim_backend_job_v2");
+  const job = await f.rpc("claim_backend_job_v5");
   expect(job.id).toBe(queued.id);
   const thread = "b".repeat(64);
   const action = (leased: any, name: string, payload = {}) =>
@@ -222,7 +222,7 @@ it("wakes a graph-only turn after a new checkpoint and refuses an idempotent rep
     (await f.db.query<any>("select * from public.jobs where id=$1", [job.id]))
       .rows[0],
   ).toEqual(before);
-  const resumed = await f.rpc("claim_backend_job_v2");
+  const resumed = await f.rpc("claim_backend_job_v5");
   expect(resumed.id).toBe(job.id);
   await action(resumed, "put", put);
   await action(resumed, "yield");
@@ -252,7 +252,7 @@ it("keeps the ten-second workspace throttle for independent handoff receipts", a
   await action(job, "put", put);
   await action(job, "yield");
   expect(await wake(job)).toEqual({ dispatched: true });
-  const resumed = await f.rpc("claim_backend_job_v2");
+  const resumed = await f.rpc("claim_backend_job_v5");
   await action(resumed, "put", {
     ...put,
     checkpoint_id: "synthetic-2",

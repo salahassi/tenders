@@ -30,7 +30,7 @@ class DeliveryUpdateTests(unittest.TestCase):
    deployments[name]={'metadata':{'uid':name+'-uid','name':name,'resourceVersion':'1','annotations':{}},'spec':{'replicas':1,'strategy':copy.deepcopy(p.code.WORKER_STRATEGY),
     'template':{'spec':{'terminationGracePeriodSeconds':240,'containers':[{'name':name,'env':[{'name':'APP_RUNTIME_SERVICE','value':name}],'image':REGISTRY+'frontend@sha256:'+'a'*64 if name=='frontend' else BASE,'resources':{'requests':{'cpu':'25m','memory':'192Mi'},'limits':{'cpu':'1000m','memory':'640Mi'}}}]}}}}
   natives={name:cron(name.removeprefix('native-')) for name in ('native-browser','native-ocr')}
-  manifest={'gateway_configuration':{'fixture':True},'https_configuration':{'fixture':True},'executor_max':4,'renderer_versions':[1,2,3],'minimum_worker_executor':4,'baseline_images':{name:p.image_of(v) for name,v in deployments.items()},'baseline_native_schedules':p.inventory.public_schedules(list(natives.values()))}
+  manifest={'gateway_configuration':{'fixture':True},'https_configuration':{'fixture':True},'executor_max':5,'renderer_versions':[1,2,3],'minimum_worker_executor':5,'baseline_images':{name:p.image_of(v) for name,v in deployments.items()},'baseline_native_schedules':p.inventory.public_schedules(list(natives.values()))}
   def stage(name):
    events.append(name)
    if name==fail:raise RuntimeError('PRIVATE_FAILURE_PAYLOAD')

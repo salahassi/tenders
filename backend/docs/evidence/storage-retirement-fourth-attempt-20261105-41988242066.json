@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "source_revision": "18fe84449883fe3c67b858950d0db1e5638a3c90",
+  "workflow_run_id": 41988242066,
+  "workflow_job_id": 127114017123,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41988242066",
+  "conclusion": "failure",
+  "local_fixture_tests": {
+    "passed": 69
+  },
+  "prepare": {
+    "code": "RETIREMENT_FIXTURE_COMMAND_FAILED",
+    "command_diagnostic": {
+      "category": "remote_exit",
+      "child_code": null,
+      "child_http_status": null,
+      "command": "exec",
+      "exit_code": 3,
+      "phase": "retirement_prepare",
+      "resource_class": "other",
+      "sqlstate": "42501"
+    }
+  },
+  "deliberate_interruption_reached": false,
+  "resume": "skipped",
+  "cleanup_verified": true,
+  "runner_files_removed": true,
+  "raw_log_sha256": "f6ab1205615e634abfc3c5c7992f947ff19a618b6ed7f22b5894b3699d11c2a3",
+  "limits": [
+    "Exact SQLSTATE42501 at retirement prepare, before deliberate interruption.",
+    "Local restricted-owner reproduction identifies name-to-OID lookup requiring Storage schema USAGE; migration correction needs fresh hosted acceptance.",
+    "Both cleanups passed. No customer workspace records or model calls."
+  ]
+}

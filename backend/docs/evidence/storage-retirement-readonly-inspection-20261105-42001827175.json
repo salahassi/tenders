@@ -1,0 +1,46 @@
+{
+  "status": "passed_read_only",
+  "source_revision": "dfe65defdf48edd87ae78a83bdbec14ab05502b1",
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/42001827175",
+  "job_id": 127158690106,
+  "receipts": [
+    {
+      "status": "observed",
+      "origin_run": "41999178689",
+      "origin_source": "cac55b91d4fed22871aff14f05a98fca68ea4b53",
+      "pod_count": 1,
+      "storage_pods": [
+        {
+          "phase": "Running",
+          "containers": [
+            {
+              "ready": true,
+              "waiting_reason": "other",
+              "termination_reason": "other",
+              "exit_code": null
+            }
+          ],
+          "event_reasons": [
+            "Created",
+            "FailedMount",
+            "Pulled",
+            "Scheduled",
+            "Started",
+            "other"
+          ],
+          "event_categories": [],
+          "log_categories": [],
+          "sqlstates": [],
+          "logs_available": true
+        }
+      ],
+      "mutations": 0,
+      "customer_rows": 0,
+      "model_calls": 0
+    },
+    {
+      "storage_retirement_qualification": "runner_files_removed"
+    }
+  ],
+  "interpretation": "Exact retained Storage Pod is now ready. FailedMount is recorded, but no detailed mount category matched the bounded observer. This supports a scoped cleanup retry; it does not prove a root cause, timely recovery, or hosted retirement acceptance."
+}

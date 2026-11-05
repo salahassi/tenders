@@ -47,10 +47,10 @@ async function finish(id: string) {
   );
 }
 async function claim() {
-  return f.rpc("claim_backend_job_v4");
+  return f.rpc("claim_backend_job_v5");
 }
 async function wake(id: string) {
-  return f.rpc("wake_backend_queue_status_v4", [id, crypto.randomUUID()]);
+  return f.rpc("wake_backend_queue_status_v5", [id, crypto.randomUUID()]);
 }
 async function poll() {
   const j = await enqueue("draft_section", "retry_wait");

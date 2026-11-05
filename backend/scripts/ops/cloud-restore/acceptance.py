@@ -126,7 +126,7 @@ class RestoreAcceptance(Acceptance):
         requirement=self.rpc('cloud_restore_fixture_requirement',{'opportunity_id':opportunity['id'],'review_id':review['review_id']})
         self.passed('authorized_source_reviews_and_dormant_requirement')
         self.create_private_fixture_bucket()
-        job=self.rpc('claim_backend_job_v4')
+        job=self.rpc('claim_backend_job_v5')
         if not job or job['type']!='render_delivery' or job['entity_id']!=snapshot['id']:raise ProbeFailure('RESTORE_LOCAL_FIXTURE_JOB_MISMATCH')
         export=self.rpc('delivery_export_context',{'job_id':job['id'],'lease':job['lease_token']})
         stream=io.BytesIO()

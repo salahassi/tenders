@@ -1,0 +1,406 @@
+{
+  "version": 1,
+  "scope": "isolated Arabic OCR candidate qualification; authored synthetic and known development controls",
+  "source_revision": "57c8858fd510e0bd6783d11a74a1b88539a056be",
+  "image_id": "sha256:2cf5d314540a69ca1eaeccbf7edc5fc6db48ec4047eb1405318d6406ce2969d5",
+  "decision": "rejected_for_adoption",
+  "evaluation": {
+    "version": 1,
+    "scope": "agent_authored_synthetic_and_known_development_controls",
+    "campaign_sha256": "77abd1e6f7f3c24f00ebe3de3e1c2c2ab569da52661abf44938fb865cebbe69d",
+    "gold_sha256": "c5ca3a7cc0ccb72eeb52e47dce2bac2429c92c47908c45aa63ea29da618fd735",
+    "oracle_sha256": "13c70789d651bdceb1b56c57053280f4ef836e4dcd2165f501e58374b3d39c03",
+    "gold_accessed_only_after_campaign_finished": true,
+    "normalization": "a06-strict-nfc-whitespace-v1",
+    "expected_denominator": 13,
+    "completed": 13,
+    "whole_page_passed": 4,
+    "critical_facts_total_frozen": 21,
+    "critical_facts_scored": 21,
+    "critical_facts_exact_quote_survived": 2,
+    "cold_blank_status": "completed",
+    "candidate_passed_this_finite_campaign": false,
+    "universal_correctness_or_production_adoption_established": false,
+    "human_or_private_holdout_review": false,
+    "output_repair_performed": false,
+    "rows": [
+      {
+        "id": "a06-01-conditional-gate",
+        "attempt_status": "completed",
+        "whole_page_exact": false,
+        "critical_facts": [
+          {
+            "id": "G01",
+            "kind": "actor_obligation",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "G02",
+            "kind": "conditional_exception",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "G03",
+            "kind": "identifier",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          }
+        ],
+        "scored": true,
+        "qualification_pass": false,
+        "projected_text_sha256": "3ef1e8cbd4065a804cc7719d78749abd7e93612a196ffe2829a79e60b5296405",
+        "projected_text_codepoints": 189,
+        "upstream_joined_text_sha256": "3ef1e8cbd4065a804cc7719d78749abd7e93612a196ffe2829a79e60b5296405",
+        "upstream_joined_text_codepoints": 189,
+        "upstream_whole_page_exact": false,
+        "projected_whole_page_exact": false,
+        "critical_fact_scope": "Frozen source exact-quote checks, not a semantic correctness guarantee"
+      },
+      {
+        "id": "a06-02-decimal-payment",
+        "attempt_status": "completed",
+        "whole_page_exact": false,
+        "critical_facts": [
+          {
+            "id": "P01",
+            "kind": "decimal_currency",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "P02",
+            "kind": "quantity_zero",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "P03",
+            "kind": "payment_condition",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "P04",
+            "kind": "identifier",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          }
+        ],
+        "scored": true,
+        "qualification_pass": false,
+        "projected_text_sha256": "c737ede8f25021c7abe7c4cff712c23417e97d8259ba7ec18ca2e4642ba76f46",
+        "projected_text_codepoints": 170,
+        "upstream_joined_text_sha256": "c737ede8f25021c7abe7c4cff712c23417e97d8259ba7ec18ca2e4642ba76f46",
+        "upstream_joined_text_codepoints": 170,
+        "upstream_whole_page_exact": false,
+        "projected_whole_page_exact": false,
+        "critical_fact_scope": "Frozen source exact-quote checks, not a semantic correctness guarantee"
+      },
+      {
+        "id": "a06-03-incident-deadline",
+        "attempt_status": "completed",
+        "whole_page_exact": false,
+        "critical_facts": [
+          {
+            "id": "I01",
+            "kind": "actor_deadline",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "I02",
+            "kind": "identifier_parentheses",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "I03",
+            "kind": "fallback_condition",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "I04",
+            "kind": "deadline_prohibition",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          }
+        ],
+        "scored": true,
+        "qualification_pass": false,
+        "projected_text_sha256": "cdbd068767f446071371be051ae3acf39661895abe16501c3a3b6eed9e079c1d",
+        "projected_text_codepoints": 180,
+        "upstream_joined_text_sha256": "cdbd068767f446071371be051ae3acf39661895abe16501c3a3b6eed9e079c1d",
+        "upstream_joined_text_codepoints": 180,
+        "upstream_whole_page_exact": false,
+        "projected_whole_page_exact": false,
+        "critical_fact_scope": "Frozen source exact-quote checks, not a semantic correctness guarantee"
+      },
+      {
+        "id": "a06-04-right-column-first",
+        "attempt_status": "completed",
+        "whole_page_exact": false,
+        "critical_facts": [
+          {
+            "id": "C01",
+            "kind": "actor_action",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "C02",
+            "kind": "prerequisite",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "C03",
+            "kind": "actor_action",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "C04",
+            "kind": "retention_period",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "C05",
+            "kind": "block_order",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          }
+        ],
+        "scored": true,
+        "qualification_pass": false,
+        "projected_text_sha256": "36d6b932803710cab186a915e2b3a7b3d4ceb1e628813f487caa621965b828bb",
+        "projected_text_codepoints": 139,
+        "upstream_joined_text_sha256": "36d6b932803710cab186a915e2b3a7b3d4ceb1e628813f487caa621965b828bb",
+        "upstream_joined_text_codepoints": 139,
+        "upstream_whole_page_exact": false,
+        "projected_whole_page_exact": false,
+        "critical_fact_scope": "Frozen source exact-quote checks, not a semantic correctness guarantee"
+      },
+      {
+        "id": "a06-05-mixed-table",
+        "attempt_status": "completed",
+        "whole_page_exact": false,
+        "critical_facts": [
+          {
+            "id": "T01",
+            "kind": "table_row",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "T02",
+            "kind": "table_row",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          },
+          {
+            "id": "T03",
+            "kind": "identifier_preservation",
+            "projected_exact_quote_survived": true,
+            "upstream_exact_quote_survived": true,
+            "exact_quote_survived": true
+          },
+          {
+            "id": "T04",
+            "kind": "prohibition",
+            "projected_exact_quote_survived": true,
+            "upstream_exact_quote_survived": true,
+            "exact_quote_survived": true
+          },
+          {
+            "id": "T05",
+            "kind": "table_cell_order",
+            "projected_exact_quote_survived": false,
+            "upstream_exact_quote_survived": false,
+            "exact_quote_survived": false
+          }
+        ],
+        "scored": true,
+        "qualification_pass": false,
+        "projected_text_sha256": "27096cf58f19202bb18a29e70f9d47230765ea5c80f63f852a396e53fd83584f",
+        "projected_text_codepoints": 239,
+        "upstream_joined_text_sha256": "27096cf58f19202bb18a29e70f9d47230765ea5c80f63f852a396e53fd83584f",
+        "upstream_joined_text_codepoints": 239,
+        "upstream_whole_page_exact": false,
+        "projected_whole_page_exact": false,
+        "critical_fact_scope": "Frozen source exact-quote checks, not a semantic correctness guarantee"
+      },
+      {
+        "id": "a06-06-blank",
+        "attempt_status": "completed",
+        "whole_page_exact": true,
+        "critical_facts": [],
+        "scored": true,
+        "qualification_pass": true,
+        "projected_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "projected_text_codepoints": 0,
+        "upstream_joined_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "upstream_joined_text_codepoints": 0,
+        "upstream_whole_page_exact": true,
+        "projected_whole_page_exact": true,
+        "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+      },
+      {
+        "id": "known-arabic-failure",
+        "attempt_status": "completed",
+        "whole_page_exact": false,
+        "critical_facts": [],
+        "scored": true,
+        "qualification_pass": false,
+        "projected_text_sha256": "074659d7fc434166281054d04c3133ce9202bf91a8933703cd1e77a3d62ea2db",
+        "projected_text_codepoints": 134,
+        "upstream_joined_text_sha256": "074659d7fc434166281054d04c3133ce9202bf91a8933703cd1e77a3d62ea2db",
+        "upstream_joined_text_codepoints": 134,
+        "upstream_whole_page_exact": false,
+        "projected_whole_page_exact": false,
+        "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+      },
+      {
+        "id": "maintenance-obligation",
+        "attempt_status": "completed",
+        "whole_page_exact": false,
+        "critical_facts": [],
+        "scored": true,
+        "qualification_pass": false,
+        "projected_text_sha256": "b6c96cdd3d2077647089e1b42d59281a97e6c366c647d016ab29145f82dc9d7f",
+        "projected_text_codepoints": 171,
+        "upstream_joined_text_sha256": "b6c96cdd3d2077647089e1b42d59281a97e6c366c647d016ab29145f82dc9d7f",
+        "upstream_joined_text_codepoints": 171,
+        "upstream_whole_page_exact": false,
+        "projected_whole_page_exact": false,
+        "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+      },
+      {
+        "id": "records-retention",
+        "attempt_status": "completed",
+        "whole_page_exact": false,
+        "critical_facts": [],
+        "scored": true,
+        "qualification_pass": false,
+        "projected_text_sha256": "db3140554e627afbae605be0fe9f3fc748f77ef3c8fffd1b16e89b165852562c",
+        "projected_text_codepoints": 203,
+        "upstream_joined_text_sha256": "db3140554e627afbae605be0fe9f3fc748f77ef3c8fffd1b16e89b165852562c",
+        "upstream_joined_text_codepoints": 203,
+        "upstream_whole_page_exact": false,
+        "projected_whole_page_exact": false,
+        "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+      },
+      {
+        "id": "sensor-acceptance",
+        "attempt_status": "completed",
+        "whole_page_exact": false,
+        "critical_facts": [],
+        "scored": true,
+        "qualification_pass": false,
+        "projected_text_sha256": "53a584d5f613352ca8f625fcf3148919045c499803c534a15e7d8da7b56576c9",
+        "projected_text_codepoints": 192,
+        "upstream_joined_text_sha256": "53a584d5f613352ca8f625fcf3148919045c499803c534a15e7d8da7b56576c9",
+        "upstream_joined_text_codepoints": 192,
+        "upstream_whole_page_exact": false,
+        "projected_whole_page_exact": false,
+        "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+      },
+      {
+        "id": "english-existing-control",
+        "attempt_status": "completed",
+        "whole_page_exact": true,
+        "critical_facts": [],
+        "scored": true,
+        "qualification_pass": true,
+        "projected_text_sha256": "363e5b3980a9eeb704b3b18a3bc352b6aac1e5055f79062c506a4147e9990653",
+        "projected_text_codepoints": 185,
+        "upstream_joined_text_sha256": "363e5b3980a9eeb704b3b18a3bc352b6aac1e5055f79062c506a4147e9990653",
+        "upstream_joined_text_codepoints": 185,
+        "upstream_whole_page_exact": true,
+        "projected_whole_page_exact": true,
+        "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+      },
+      {
+        "id": "mixed-exact-scan-page",
+        "attempt_status": "completed",
+        "whole_page_exact": true,
+        "critical_facts": [],
+        "scored": true,
+        "qualification_pass": true,
+        "projected_text_sha256": "363e5b3980a9eeb704b3b18a3bc352b6aac1e5055f79062c506a4147e9990653",
+        "projected_text_codepoints": 185,
+        "upstream_joined_text_sha256": "363e5b3980a9eeb704b3b18a3bc352b6aac1e5055f79062c506a4147e9990653",
+        "upstream_joined_text_codepoints": 185,
+        "upstream_whole_page_exact": true,
+        "projected_whole_page_exact": true,
+        "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+      },
+      {
+        "id": "mixed-blank-page",
+        "attempt_status": "completed",
+        "whole_page_exact": true,
+        "critical_facts": [],
+        "scored": true,
+        "qualification_pass": true,
+        "projected_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "projected_text_codepoints": 0,
+        "upstream_joined_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "upstream_joined_text_codepoints": 0,
+        "upstream_whole_page_exact": true,
+        "projected_whole_page_exact": true,
+        "critical_fact_scope": "No separately authored critical-fact annotations; whole-page oracle only"
+      }
+    ]
+  },
+  "elapsed_seconds": 159.95614301899332,
+  "cleanup_seconds": 8.707009172954713,
+  "absolute_1380_seconds_respected": true,
+  "source_bindings": {
+    "version": 1,
+    "scope": "isolated_candidate_exact_inputs_reviewed_before_inference",
+    "image_id": "sha256:2cf5d314540a69ca1eaeccbf7edc5fc6db48ec4047eb1405318d6406ce2969d5",
+    "root_window_reference": "root-exclusive-a06-20261105-r2",
+    "host_files": {
+      "run_campaign.py": "46593a4d0dbe63c17b9ec7d8182ec8fcabbadafb6f9e31963725e980f2835a4d",
+      "entry_gate.py": "b452179e0e5a6766b549bd2265e2ddefe41bb1376ce418c3f5940b139b75e408",
+      "campaign-sources.json": "0f91ab17980f5ce725126cbb6c6f6e96047d3f39911121fbabe6062ac6eb71e4",
+      "evaluate_campaign.py": "7f6dca6cb9931d3b3012f8bc7de306b2d5c552303f5a18e08cac57c0ceae3e3c"
+    },
+    "experiment_files": {
+      "experiment-config.json": "ce8721461e536125fbe29c3601bb5bbd04c0cfcb37e12d9cd50a0d1d96c52286",
+      "run_parent.mjs": "0a7775b37f5b6f62f4a919baa8acad1bc7a86ab171097cb270513517e38acfd8",
+      "run_engine.py": "5cab126750ef6a2989362273f99b068471a2560826299bcad50ffa45237cd2c8"
+    }
+  },
+  "raw_hashes": {
+    "campaign.json": "77abd1e6f7f3c24f00ebe3de3e1c2c2ab569da52661abf44938fb865cebbe69d",
+    "run-binding.json": "d0ce239a64809e9e298c9e70e82f2de76becf44aec92e90b5734caeac222c5d5",
+    "host-evaluation.json": "26e136ac6007d6f4423095f9222fad99cf37fbd799d9a6ac22c74ab561b0a473"
+  },
+  "limits": [
+    "Not a private or human-reviewed holdout.",
+    "No production OCR default or dependency changed.",
+    "No further tuning or repeat campaign is authorized by this receipt."
+  ]
+}

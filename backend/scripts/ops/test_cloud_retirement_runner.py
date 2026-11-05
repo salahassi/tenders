@@ -29,6 +29,22 @@ class RunnerBoundaries(unittest.TestCase):
   self.state=c.initial_state(self.base,'b'*64)
  def resource(self,name,uid=UID):
   return {'metadata':{'name':name,'namespace':c.namespace(self.state),'uid':uid,'resourceVersion':'43','labels':c.labels(self.state)}}
+ def test_durable_retirement_can_resume_after_restoration_failure_but_verification_remains_required(self):
+  import fixture_adapter
+  self.state.update(phase='retired',process_capture={'retained':True},completion={
+   'before':{'pending':16384},'after':{'pending':0},'evidence':{'retained':True},'receipt':{'state':'complete'}})
+  with patch.object(r,'load',return_value=self.state),patch.object(fixture_adapter,'FixtureAdapter') as adapter,patch.object(c.proof,'retire') as retire,patch.object(m,'writer') as writer,patch.object(m,'cleanup') as cleanup:
+   adapter.return_value.verify_retirement.side_effect=c.FixtureError('RETIREMENT_FIXTURE_ALLOWANCE_RELEASE_INVALID')
+   with self.assertRaisesRegex(c.FixtureError,'ALLOWANCE_RELEASE_INVALID'):m.resume('1234abcd')
+  retire.assert_called_once();adapter.return_value.verify_retirement.assert_called_once()
+  writer.assert_not_called();cleanup.assert_not_called()
+ def test_partial_retirement_record_cannot_enter_resumed_coordinator(self):
+  import fixture_adapter
+  for completion in (None,{}, {'before':{},'after':{},'evidence':{},'receipt':{'state':'complete'}},
+    {'before':{'pending':1},'after':{'pending':0},'evidence':{'retained':True},'receipt':{'state':'pending'}}):
+   self.state.update(phase='retired',process_capture={'retained':True},completion=completion)
+   with patch.object(r,'load',return_value=self.state),patch.object(fixture_adapter,'FixtureAdapter') as adapter,self.assertRaisesRegex(c.FixtureError,'COMPLETION_MISSING'):m.resume('1234abcd')
+   adapter.assert_not_called()
  def test_origin_attempt_is_explicit_bounded_and_does_not_change_execution_attempt(self):
   with patch.object(m,'prepare_access'),patch.object(m,'already_cleaned',return_value=True),redirect_stdout(io.StringIO()) as out:
    self.assertEqual(m.main(['cleanup','--nonce','1234abcd','--origin-attempt','1']),0)
@@ -123,7 +139,7 @@ class RunnerBoundaries(unittest.TestCase):
  def test_manifest_is_current_and_verified_without_frozen_hash_assumption(self):
   path=Path(self.temp.name)/'manifest.json'
   for revision in ('first','second'):
-   manifest={'migrations':[{'name':str(i)} for i in range(24)],'storage_retirement_version':1,'reviewed_change':revision}
+   manifest={'migrations':[{'name':str(i)} for i in range(27)],'storage_retirement_version':1,'source_resolution_version':1,'minimum_worker_executor':5,'reviewed_change':revision}
    path.write_text(json.dumps(manifest))
    with patch.object(c.restore.release,'MANIFEST',path),patch.object(c.restore.release,'verify_source') as verify:
     self.assertEqual(c.manifest_contract(),c.restore.release.digest(c.restore.release.canonical(manifest).encode()))
@@ -152,13 +168,17 @@ class RunnerBoundaries(unittest.TestCase):
    create.assert_not_called()
  def test_workflow_separates_real_runners_and_never_treats_any_error_as_interruption(self):
   workflow=(HERE.parents[2]/'.github/workflows/qualify-storage-retirement.yml').read_text()
-  self.assertEqual(workflow.count('runs-on: ubuntu-latest'),2)
+  self.assertEqual(workflow.count('runs-on: ubuntu-latest'),3)
   self.assertIn('group: tenderdesk-digitalocean-production',workflow)
   self.assertIn('cancel-in-progress: false',workflow)
   self.assertIn('if [ "$result" -ne 86 ]',workflow)
   self.assertIn("needs.interrupt.outputs.interrupted == 'true'",workflow)
   self.assertIn('FIXTURE_ORIGIN_ATTEMPT: ${{ needs.interrupt.outputs.origin_attempt }}',workflow)
-  self.assertNotIn('inputs:',workflow)
+  self.assertIn('inspect:\n    if: ${{ inputs.inspect_retained == true }}',workflow)
+  self.assertIn('interrupt:\n    if: ${{ inputs.inspect_retained != true }}',workflow)
+  self.assertIn('type: boolean',workflow)
+  for target in ('namespace','nonce','run_id','database','source_revision'):
+   self.assertNotIn('inputs.'+target,workflow)
   self.assertNotIn('upload-artifact',workflow)
 
 if __name__=='__main__':unittest.main()

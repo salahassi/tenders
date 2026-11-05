@@ -23,6 +23,14 @@ class CloudRestoreTests(unittest.TestCase):
   self.state=m.bootstrap.identity();self.state.update(uid='namespace-uid',job_uid='parent-job-uid')
   self.original=m.bootstrap.sql_job;self.addCleanup(setattr,m.bootstrap,'sql_job',self.original)
   self.assets={name:(m.bootstrap.ASSETS/name).read_text() for name in ('setup.sql','post-migrations.sql','cleanup.sql','acceptance.py')}
+ def test_current_frozen_contract_requires_worker5_and_resolution_before_capture(self):
+  manifest=json.loads(m.release.MANIFEST.read_text())
+  m.validate_final_contract(manifest)
+  for candidate in ({**manifest,'minimum_worker_executor':4},{**manifest,'minimum_worker_executor':6},
+    {**manifest,'source_resolution_version':None},{**manifest,'renderer_versions':[1,2]},
+    {**manifest,'migrations':[r for r in manifest['migrations'] if r['name']!='20261105120200_retirement_catalog_and_retry_scope.sql']}):
+   with self.assertRaisesRegex(m.RestoreError,'RESTORE_FINAL_SOURCE_CONTRACT_REQUIRED'):
+    m.validate_final_contract(candidate)
  def test_acceptance_extends_real_http_client_without_legacy_fixture_flow(self):
   source,checks=m.acceptance_source(self.assets['acceptance.py'])
   self.assertEqual(len(checks),13);self.assertIn('self.auth()',source);self.assertIn('complete_restore_file',source)

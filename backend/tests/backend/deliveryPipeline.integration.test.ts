@@ -105,7 +105,7 @@ it("binds prepare, SQL claims, real two-volume rendering, retry and current-auth
     substantive_complete: false,
     approval_state: "draft",
   });
-  const firstJob = await rpc("claim_backend_job_v3");
+  const firstJob = await rpc("claim_backend_job_v5");
   expect(firstJob).toMatchObject({
     type: "render_delivery",
     entity_id: snapshot.id,
@@ -176,7 +176,7 @@ it("binds prepare, SQL claims, real two-volume rendering, retry and current-auth
     "update public.jobs set next_attempt_at=now()-interval '1 second' where id=$1",
     [firstJob.id],
   );
-  const retryJob = await rpc("claim_backend_job_v3");
+  const retryJob = await rpc("claim_backend_job_v5");
   expect(retryJob).toMatchObject({
     id: firstJob.id,
     entity_id: snapshot.id,
@@ -442,7 +442,7 @@ it("completes supplied substantive responses with all models unavailable through
     substantive_complete: true,
   });
   expect(await f.rpc("claim_backend_job_v3")).toBeNull();
-  const job = await f.rpc("claim_backend_job_v4");
+  const job = await f.rpc("claim_backend_job_v5");
   expect(job.checkpoint).toMatchObject({
     model_executor: 4,
     delivery_renderer_version: "2",

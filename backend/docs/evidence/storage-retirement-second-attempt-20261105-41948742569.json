@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "source_revision": "2157dcf740e40dc547706ebb7d3402be161428f7",
+  "workflow_run_id": 41948742569,
+  "workflow_job_id": 126987348008,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41948742569",
+  "conclusion": "failure",
+  "local_fixture_tests": {
+    "passed": 65
+  },
+  "prepare": {
+    "code": "RETIREMENT_FIXTURE_COMMAND_FAILED",
+    "command_diagnostic": {
+      "category": "remote_exit",
+      "child_code": "RETIREMENT_FIXTURE_REFRESH_MISSING",
+      "child_http_status": null,
+      "command": "exec",
+      "exit_code": 1,
+      "phase": "canonical_fixture_write",
+      "resource_class": "other"
+    }
+  },
+  "deliberate_interruption_reached": false,
+  "resume": "skipped",
+  "cleanup_verified": true,
+  "runner_files_removed": true,
+  "raw_log_sha256": "77752880ffce81a130924b00a98476f500e04ce931c9a23101d3e21901db064b",
+  "limits": [
+    "Failure located in private fixture session refresh-token validation, before canonical write preparation completed.",
+    "Exact missing/length/type cause and corrective action still require source/format verification; no token value was logged.",
+    "Cleanup success is not a passing interruption/resume drill. No customer workspace records or model calls."
+  ]
+}

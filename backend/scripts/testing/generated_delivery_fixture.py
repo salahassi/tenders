@@ -34,7 +34,7 @@ def setup(f, remaining_seconds=600):
  f.sql(f"update public.generation_plans set issuance_request_id={literal(issuance)} where id={literal(p)};")
  checkpoint={'model_executor':4,'minimum_worker_executor':4,'generated_version_id':v,'generated_version_hash':'c'*64}
  f.sql(f"insert into public.jobs(id,workspace_id,type,entity_id,input_hash,status,created_by,checkpoint) values({literal(projection)},{w},'prepare_generated_delivery',{literal(p)},repeat('b',64),'queued',{actor},{literal(checkpoint)}::jsonb)")
- job=f.value("select public.claim_backend_local_job_v4()")
+ job=f.value("select public.claim_backend_local_job_v5()")
  assert job['id']==projection,job
  ctx=f.value(f"select public.generated_delivery_context({literal(projection)},{literal(job['lease_token'])})")
  assert len(ctx['accepted_receipts'])==1

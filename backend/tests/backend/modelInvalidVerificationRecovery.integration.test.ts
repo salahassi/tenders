@@ -86,7 +86,7 @@ async function setup(
     expected_revision: 0,
   });
   await f.command("model.probe", {});
-  let job = await rpc("claim_backend_job_v2");
+  let job = await rpc("claim_backend_job_v5");
   await rpc("prepare_task_model_route", {
     job_id: job.id,
     lease: job.lease_token,
@@ -283,7 +283,7 @@ async function setup(
       ModelDeferred,
     );
     expect(fetcher).not.toHaveBeenCalled();
-    job = await rpc("claim_backend_job_v2");
+    job = await rpc("claim_backend_job_v5");
     runtimeOptions.job = job;
     store = new ModelGraphStore(backend, job, threadId);
   }
@@ -656,7 +656,7 @@ it("routes the latest invalid scoped report through one bounded writer repair an
       )
     ).rows,
   ).toEqual([]);
-  s.runtimeOptions.job = await rpc("claim_backend_job_v2");
+  s.runtimeOptions.job = await rpc("claim_backend_job_v5");
   expect((await executeGuardedModel(s.runtimeOptions)).result).toEqual(
     repaired,
   );

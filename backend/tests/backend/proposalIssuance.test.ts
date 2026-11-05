@@ -109,7 +109,7 @@ it("accepts one immutable 600-second authorization; replay does not extend it or
   expect(x.job.checkpoint).toMatchObject({
     issuance_request_id: x.request.id,
     issuance_deadline_version: 1,
-    minimum_worker_executor: 4,
+    minimum_worker_executor: 5,
   });
   await f.command("proposal.generate", x.input, x.key);
   expect(
@@ -224,7 +224,7 @@ it("reports timeout on the member view before a queue sweep", async () => {
     effective_error_code: "PROPOSAL_ISSUANCE_TIMEOUT",
   });
 });
-it("old workers cannot claim newly pinned normal jobs or children; executor4 can, without changing routing protocol2", async () => {
+it("old workers cannot claim newly pinned normal jobs or children; executor5 can, without changing routing protocol2", async () => {
   const x = await setup();
   await f.db.query("update public.jobs set status='canceled' where id<>$1", [
     x.job.id,
@@ -237,10 +237,11 @@ it("old workers cannot claim newly pinned normal jobs or children; executor4 can
     "claim_backend_job",
     "claim_backend_job_v2",
     "claim_backend_job_v3",
+    "claim_backend_job_v4",
   ])
     expect(await f.rpc(fn)).toBeNull();
-  await f.db.exec("select set_config('app.worker_executor','4',true)");
-  const j = await f.rpc("claim_backend_job");
+  await f.db.exec("select set_config('app.worker_executor','5',true)");
+  const j = await f.rpc("claim_backend_job_v5");
   expect(j.id).toBe(x.job.id);
   expect(j.checkpoint.model_executor).toBe(2);
   await f.db.query(
@@ -255,7 +256,7 @@ it("old workers cannot claim newly pinned normal jobs or children; executor4 can
     (await row("select checkpoint from public.jobs where id=$1", [child.id]))
       .checkpoint,
   ).toMatchObject({
-    minimum_worker_executor: 4,
+    minimum_worker_executor: 5,
     issuance_request_id: x.request.id,
   });
   await f.db.exec("select set_config('app.worker_executor','3',true)");
@@ -278,7 +279,7 @@ it("pins source/repair/consistency contracts before claim even without an issuan
   expect(
     (await row("select checkpoint from public.jobs where id=$1", [child.id]))
       .checkpoint.minimum_worker_executor,
-  ).toBe(4);
+  ).toBe(5);
   expect(await f.rpc("claim_backend_job_v3")).toBeNull();
 });
 it("returns known terminal model failure early, preserving unknown usage, and never retries it automatically", async () => {
@@ -419,7 +420,7 @@ it("creates a fresh authorized request on explicit retry while retaining old imm
       .checkpoint,
   ).toMatchObject({
     issuance_request_id: current.issuance_request_id,
-    minimum_worker_executor: 4,
+    minimum_worker_executor: 5,
   });
   expect(await f.rpc("claim_backend_job_v3")).toBeNull();
 });
@@ -452,8 +453,8 @@ it("keeps optional partial-draft render failures independent of viable automatic
       )
     ).outcome,
   ).toBe("active");
-  await f.db.exec("select set_config('app.worker_executor','4',true)");
-  expect((await f.rpc("claim_backend_job")).id).toBe(x.job.id);
+  await f.db.exec("select set_config('app.worker_executor','5',true)");
+  expect((await f.rpc("claim_backend_job_v5")).id).toBe(x.job.id);
 });
 it("returns the authoritative current lease clock without renewing the accepted issuance", async () => {
   const x = await setup();

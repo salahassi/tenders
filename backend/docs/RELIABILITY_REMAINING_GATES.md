@@ -1,57 +1,64 @@
 # Reliability acceptance status — November 5, 2026
 
-This refresh is anchored to integrated source `2b869ac`: the production repair
-context correction, expanded offline model reserve, prepared retirement drill
-and guarded current-request browser/observer helper are integrated. **Complete local application checks pass at `2b869ac`: 3,379 backend tests
-in 200 files, 380 frontend tests in 59 files, and both type checks/builds.
-Actual release and actual proposal resume/issuance remain pending.** Exact `2b869ac` operations/schema/Kubernetes
-checks and current-manifest isolated cloud restore now pass at their recorded
-scopes, before the later retirement-cleanup correction. Earlier completed local and restore scopes are
-retained against their original source; they do not close these current gates.
+Current application source f41adb8 passes **3,488 backend tests and 380 frontend
+tests**, both typechecks and builds. Source resolution preserves the corrected
+14-terminal obligation and unchanged 3 cabinets through SQL and a real local
+Word artifact, then rejects access after source revocation. Worker capability 5,
+retry parameter qualification and restricted-owner Storage catalog lookup are
+integrated. Draft PR28 stores the changes; the application remains **not deployed**.
 
-The corrected runtime `176bcf738676` has four fresh native receipts and exact
-source, layer and configuration evidence. It is published and read back at
-`runtime@sha256:996e1ea5b3ff63ca4ea0e5ef75dc45c7d5a83f0c8a2501539bb0a8fc669fbfb2`.
-The separate local revision-label promotion produced `c8b6db388e67`, retaining
-all executable layers and runtime configuration; that probe was not pushed or
-deployed. The current 24-migration release manifest is refrozen to canonical
-SHA-256 `2e6512d2eef73bc130f928cfcc01b04bcb437529cb5ab4b90fa815a228dce6fa`,
-using the unchanged original deployment baseline. Publication and freezing are
-complete; current release-head promotion and rollout are not. The renewed isolated
-restore is proven separately below.
+The initial new image721340 failed native verification with OOM and HTTP503;
+that rejection is retained. API verifier young-generation bounds then passed
+35 focused tests and four unchanged native fixture scopes on imagef2d0f9.
+The heaviest measured Word case peaked at301,563,904 of402,653,184 bytes
+(**96.41 MiB observed margin**). These finite fixtures do not prove arbitrary
+capacity or hosted latency. Image publication and pullback are verified at
+`registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:aabe842e35259b86969ddef810dd297e9a0b0e4a27d7f0746cdcd80a6a12fc6a`.
+The27-migration manifest is frozen from the unchanged original deployment baseline.
+Current cloud restore 41993933795 passes all 13 Auth/Storage checks and both
+cleanups against this exact manifest. Interrupted retirement now passes all 13 checks and cleanup in run 42002971002.
+Final release CI, rollout and actual customer issuance remain gates. No customer request was resumed.
 
-The minimum current measured document memory margin is **17.21 MiB** for the
-frozen native fixtures. The historical **10.88 MiB** measurement remains intact;
-no causal improvement or universal capacity claim follows. See
-[the provenance record](RUNTIME_QUALIFICATION_PROVENANCE.md) for precise scope and
-disclosed metadata activity during the native window. API means application
-programming interface; OCR means optical character recognition.
+Retirement run41988242066 identified SQLSTATE42501 at prepare and cleaned up.
+The corrected catalog lookup passes27 restricted-owner PostgreSQL controls;
+run 41999178689 later completed retirement but failed Storage restoration
+and cleanup. Exact read-only inspection then found Storage ready with FailedMount
+events. A scoped failed-job retry verified cleanup; it did not establish hosted
+acceptance. The durable-retired resume guard is now corrected with 80 focused
+controls. The fresh trial at e4192f9 passes all 13 checks and cleanup in run
+42002971002, with 125.502 seconds for resume/verification. It uses an idle fixture
+worker; inflight uploads and general recovery objectives remain unqualified.
+No detailed cause of the earlier mount failures is claimed.
+The Paddle OCR candidate is rejected
+(4/13 whole pages and2/21 critical facts). Automatic Arabic OCR, provider
+availability, private semantic/retrieval holdout and actual Word TOC update remain
+open. All earlier receipts retain their source-specific scope and failures.
 
 Historical source `865d840` passed complete local functional checks, and
 original-CA restore 41933205779 passed its exact 24-migration manifest
 `4cb2e712`. **A02 closes the exact `2b869ac` local scope; the retirement-cleanup
-follow-up now passes 57 focused guards; the mandatory final GitHub gate remains. A03 now also closes the exact current `2b869ac`/`2e6512d2` isolated
+follow-up now passes 57 focused guards; the mandatory final GitHub gate remains. A03 records the exact historical `2b869ac`/`2e6512d2` isolated
 restore scope.** Neither establishes deployed proposal completion.
 The last authorized read-only customer-target inspection remains incomplete and
 unchanged; no current-request activation has occurred at this anchor.
 
-Both release attempts were cancelled during verification: 41934809173 retained
+Three release attempts were cancelled during verification: 41934809173 retained
 the real-DOCX default-timeout follow-up, and 41937345060 at `3c21a65` stopped after
 English/Arabic controls reproduced the real recursive repair-context defect.
-Both skipped cluster access, images and rollout and passed their cleanup steps.
+The third,41944374857 at`bc7afab`, stopped for the typed supersession defect. All three skipped cluster access, images and rollout and passed their cleanup steps.
 The correction, native requalification and later registry publication are separate
-records. No successful deployment is inferred from either cancelled workflow.
+records. No successful deployment is inferred from these cancelled workflows.
 
 | Action and current scope | Required next work and completion evidence | Evidence and acceptance |
 | --- | --- | --- |
 | **A01 — Complete hosted capacity and whole-path acceptance** | After the checked release, exercise the deployed Auth/API/worker/Storage/proxy path with exact bytes, complete volumes, slow consumers, cancellation and measured resource margins. Bind the actual accepted-to-issued clock to 600 seconds. Current 17.21 MiB and historical 10.88 MiB are fixture margins only. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E01, E02, E13; W04, W09, D02, D04; EX-01, EX-02, EX-05, OP-02, BC-01 |
-| **A02 — Run complete integrated verification on the current source** | Complete local application checks pass at `2b869ac`; the later isolated-retirement cleanup correction passes 57 focused guards at `0cfb2ef`, with application/runtime source unchanged. Require the mandatory full GitHub release gate. The 667 operations/schema/Kubernetes checks pass at `2b869ac` before the later retirement-cleanup correction; the changed cleanup scope has its separate focused revalidation. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E01; W00, W11; R0, W11 exit evidence |
-| **A03 — Renew isolated cloud restore for the current 24-migration manifest** | Closed for `2b869ac` and manifest `2e6512d2`: run 41942455870 passes all 13 actual Auth/Storage HTTP checks, 24 migrations and both cleanup stages. Repeat if relevant release/schema/Auth/Storage contracts change; renderer, deployment and recovery objectives remain separate. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E06, E13; W09, W11, D05; OP-03, OP-04, D05 |
+| **A02 — Run complete integrated verification on the current source** | Current source-resolution/worker5 application gates pass at `f41adb8` (3,488 backend / 380 frontend); subsequent verifier allocation and operations changes have focused passing controls. Historical scope: the later isolated-retirement cleanup correction passes 57 focused guards at `0cfb2ef`, with application/runtime source unchanged. Require the mandatory full GitHub release gate. The 667 operations/schema/Kubernetes checks pass at `2b869ac` before the later retirement-cleanup correction; the changed cleanup scope has its separate focused revalidation. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E01; W00, W11; R0, W11 exit evidence |
+| **A03 — Renew isolated cloud restore for the final source-resolution release** | Current pass at `b933587` and manifest `1fdf73f4`: run 41993933795 passes all 13 actual Auth/Storage HTTP checks, 27 migrations and both cleanup stages. Repeat if relevant release/schema/Auth/Storage contracts change; renderer, deployment and recovery objectives remain separate. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E06, E13; W09, W11, D05; OP-03, OP-04, D05 |
 | **A04 — Establish actual available model routes under the existing policy** | Resolve provider-side quota/credit/credential availability through existing authorized routing and billing policy; confirm enabled task routes without silently buying capacity or changing usage accounting. Separately verify immediate clear error when every route is unavailable. **Completion:** Current configured-route availability and no-agent behavior have actual receipts; failures and unknown usage retained. | E08, E09; W07, W10, D06; ME-10, ME-11, BC-01 |
-| **A05 — Complete independent semantic and bounded-retrieval qualification** | 42/50 source cases construct canonical requests; eight remain unsupported. Complete and review those prerequisites/composite schedules without reducing the 100-cell/model denominator. Freeze provider/phase/prompt/schema/validator and business decisions before authorized execution; retain independent per-class outcome adjudication, the 48-cell retrieval plan and a separately authorized private holdout. Offline authored controls are not model quality. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E09, E10; W05, W06, W08, D07; ME-01, ME-02, ME-04, ME-08, ME-09, ME-14, RT-01, RT-02 |
+| **A05 — Complete independent semantic and bounded-retrieval qualification** | 42single-request cases plus two independently reviewed two-request composites make44/50 cases constructible; six require explicit contracts. Typed supersession is corrected and passes SQL-to-DOCX controls; reserve-adapter/provider qualification remains open. Complete and review those prerequisites/composite schedules without reducing the 100-cell/model denominator. Freeze provider/phase/prompt/schema/validator and business decisions before authorized execution; retain independent per-class outcome adjudication, the 48-cell retrieval plan and a separately authorized private holdout. Offline authored controls are not model quality. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E09, E10; W05, W06, W08, D07; ME-01, ME-02, ME-04, ME-08, ME-09, ME-14, RT-01, RT-02 |
 | **A06 — Qualify Arabic scanned-input extraction** | Keep both the rejected parameter tuning and official tessdata_best candidate unadopted. Qualify a maintainable alternative against frozen whole-page Arabic, mixed identifiers, English and blank controls before changing defaults. Preserve readable pages and mandatory source-bound visual correction. **Completion:** Independent gold tests preserve the supported Arabic obligations, numbers and blank/read coverage. Until then, automatic valid-scan correctness remains an explicit unclosed product limitation; mandatory review is a safety control, not automatic success. | E11; W02, W05, D03; IN-03, IN-04, D03 |
 | **A07 — Verify Word table-of-contents update and target-engine compatibility** | Perform actual Microsoft Word update/save and verify page numbers, headings, Arabic/English layout and yellow gaps. Preserve the two failed explicit LibreOffice invocation attempts; they produced no refreshed artifact and do not identify the absent-cache cause. **Completion:** Named actual reviewer/engine versions, updated files and per-page hashes/visual evidence; no invented cache numbers. | E03; W04, D02; EX-02, EX-06 |
-| **A08 — Execute the checked release** | After current complete gates (the current-manifest isolated restore has passed), release manifest `2e6512d2` with the qualified published digest and verified release-head promotion. Prove old-process exit, permanent legacy-RPC fence, visible database drain, locked fresh zero census and exact deployed schema/images/configuration. Publication and the local promotion probe do not prove rollout. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E04, E05, E08, E13; W00, W11; W11 exit evidence, OP-02, OP-04 |
+| **A08 — Execute the checked release** | Source-resolution/worker5 integration, new f2d0f9 runtime qualification/publication, 27-migration freeze and current isolated restore pass. The isolated interrupted-retirement gate now passes; run complete final release gates before rollout. Prove old-process exit, permanent legacy-RPC fence, visible database drain, locked fresh zero census and exact deployed schema/images/configuration. Publication and the local promotion probe do not prove rollout. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E04, E05, E08, E13; W00, W11; W11 exit evidence, OP-02, OP-04 |
 | **A09 — Complete actual authenticated issuance, export and recovery acceptance** | After verified release, activate the reviewed current-request workflow with the private selection, fresh server details and exact durable request body/key. Preserve predecessor accepted work and unknown usage. Observe accepted/deadline/whole-package completion and earlier terminal errors; authenticate actual complete-volume downloads separately. Execute the prepared nonce-owned retirement interruption/PVC drill, retain cleanup/recovery evidence and define service recovery objectives. Local browser/PGlite controls and metadata-only issuance do not close hosted acceptance. **Completion:** Exact source-bound receipts meet the linked acceptance cases. | E02, E04, E05, E06, E07, E12; W01, W03, W04, W07, W09, W10, W11, D01, D04, D05, D06; AR-04, AR-05, EX-01, EX-03, EX-04, EX-05, OP-02, OP-03, OP-04, OP-05, UX-01, UX-02, UX-03, BC-01 |
 
 ## Recorded evidence and its source
@@ -88,7 +95,7 @@ This receipt predates the later retirement-cleanup correction and does not
 cover that later change. Timings from concurrent functional checks are not native
 capacity measurements. The complete `2b869ac` application result now passes: 3,379 backend and 380 frontend tests, with both type checks and builds. The later cleanup-only change has 57 focused passes.
 
-Current original-CA restore **41942455870** at `2b869ac` applies all 24 migrations
+Historical original-CA restore **41942455870** at `2b869ac` applies all 24 migrations
 from manifest `2e6512d2` and passes all 13 actual Auth/Storage HTTP checks, original
 certificate/hostname verification and both cleanup stages. It reads production
 schema metadata and uses synthetic isolated data, with zero copied customer rows
@@ -113,7 +120,7 @@ Read-only, original-CA runs 41919585078 and 41926843276 observed zero legacy BAT
 
 The model reserve retains 50 frozen source cases across 13 tasks and 16 retrieval
 pairs. Expanded faithful prerequisites now construct **42/50 canonical single
-requests across all 13 task families**; **eight remain unsupported**. All 189
+requests across all 13 task families**; **eight remained unsupported at that source**. All 189
 offline adapter/integrity controls pass. Four `plan_proposal` cases explicitly
 exercise the legacy registered task rather than current new-plan orchestration.
 The planned 100 cells/model, corpus/gold and retrieval schedule remain unchanged.
@@ -121,6 +128,13 @@ There are zero provider, retrieval or database requests from this reserve.
 Authored controls are not independent blind/private holdout results. Prior
 critical findings and seven misses in the earlier 16-case bounded-retrieval
 result remain unresolved by request construction.
+
+The two later review composites pass229focused checks and make44/50 logical
+cases constructible:100planned logical cells/model,88constructible logical
+cells and92physical constituent requests across two repetitions. V1 live
+activation cannot execute those composites. The six remaining cases need
+explicit supersession, supplier-proposal input and zero-call citation workflow
+contracts. No live provider outcomes are inferred from this construction.
 
 Automatic Arabic OCR remains unqualified. The rejected 18-configuration tuning damaged independent identifiers and an English control. A later official `tessdata_best` substitution completes all seven frozen cases but passes only **3/7 overall and 0/4 Arabic pages**; two English/mixed-page controls and one blank control pass. Independent adjudication rejects the candidate. No OOM, timeout or infrastructure failure explains the Arabic defects. Runtime recognition defaults and gold are unchanged, and mandatory source-bound page correction remains a safety control rather than automatic correctness.
 
@@ -132,10 +146,13 @@ Read-only run **41934185072** at `865d840` observes the exact authorized latest 
 
 There is therefore no legitimate completed proposal for browser/export acceptance yet. After verified deployment, the supported interface first obtains fresh server-owned `PROPOSAL_CURRENT_CONTRACT_REQUIRED` details and then, on the explicitly requested action, sends an atomic idempotent canonical cancel-and-generate batch for a current-contract successor. The predecessor's accepted analysis, frozen inputs, paid pins, budgets and unknown accounting remain historical. The older operations successor helper is unsuitable because it requires no accepted sibling. The guarded operations workflow and bounded read-only issuance observer are now locally verified, with browser process capture before session/navigation, exact encrypted persistence before one send, no automatic replay after uncertainty, and actual nullable database timestamps. Known terminal errors stop observation early; effective timeout is kept separate from persisted completion. No activation occurred in this refresh. Export selection must wait for an actual current completed version; a template or partial artifact cannot substitute for that result.
 
-The separate nonce-owned two-job retirement drill is also prepared. Its local
-controls pass 45 cloud-retirement tests, 62 strict retirement/PostgreSQL authority
-checks and three migrated PGlite cases. Actual isolated Auth/Storage/PVC process
-interruption and recovery have not been dispatched. Owner-defined recovery
+The nonce-owned two-job retirement drill has two actual hosted failures before
+the intended interruption. Both cleanups were verified and resume was skipped.
+Run41946883085 retained only a generic command failure. After65passing safe
+diagnostic guards, run41948742569 located`RETIREMENT_FIXTURE_REFRESH_MISSING`
+in canonical fixture session preparation. Pinned GoTrue refresh-token format
+compatibility must be corrected and the actual drill rerun. Neither attempt
+qualifies process interruption, physical retirement or accounting recovery. Owner-defined recovery
 point/time objectives and whole-cluster fence/restore continuity remain open.
 
 ## R0 and release limits

@@ -201,7 +201,7 @@ it.each(["plan_blueprint", "plan_structure"] as const)(
     });
     let accepted: any;
     for (let i = 0; i < 8 && !accepted; i++) {
-      job = await rpc("claim_backend_job_v2");
+      job = await rpc("claim_backend_job_v5");
       try {
         accepted = await executeGuardedModel({ ...options, job });
       } catch (error) {
@@ -382,7 +382,7 @@ it("recovers and accepts the latest paid keyword-scope assessment without anothe
         exhausted = true;
       else {
         expect(error).toBeInstanceOf(ModelDeferred);
-        job = await rpc("claim_backend_job_v2");
+        job = await rpc("claim_backend_job_v5");
       }
     }
   }
@@ -404,7 +404,7 @@ it("recovers and accepts the latest paid keyword-scope assessment without anothe
       accepted = await executeGuardedModel({ ...options, job });
     } catch (error) {
       expect(error).toBeInstanceOf(ModelDeferred);
-      job = await rpc("claim_backend_job_v2");
+      job = await rpc("claim_backend_job_v5");
     }
   }
   expect(accepted?.result).toEqual(candidate(2));
@@ -555,7 +555,7 @@ it.each([false, true])(
           stopped = true;
         else {
           expect(error).toBeInstanceOf(ModelDeferred);
-          job = await rpc("claim_backend_job_v2");
+          job = await rpc("claim_backend_job_v5");
         }
       }
     }
@@ -593,7 +593,7 @@ it.each([false, true])(
         )
           continue;
         expect(error).toBeInstanceOf(ModelDeferred);
-        job = await rpc("claim_backend_job_v2");
+        job = await rpc("claim_backend_job_v5");
       }
     }
     expect(accepted?.result).toEqual(candidate(2));
@@ -756,7 +756,7 @@ it.each([false, true])(
           stopped = true;
         else {
           expect(error).toBeInstanceOf(ModelDeferred);
-          job = await rpc("claim_backend_job_v2");
+          job = await rpc("claim_backend_job_v5");
         }
       }
     }
@@ -780,7 +780,7 @@ it.each([false, true])(
         )
           continue;
         expect(error).toBeInstanceOf(ModelDeferred);
-        job = await rpc("claim_backend_job_v2");
+        job = await rpc("claim_backend_job_v5");
       }
     }
     expect(accepted?.result).toEqual(review);
@@ -888,7 +888,7 @@ async function configure(
     expected_revision: 0,
   });
   await f.command("model.probe", {});
-  const job = await rpc("claim_backend_job_v2");
+  const job = await rpc("claim_backend_job_v5");
   await rpc("prepare_task_model_route", {
     job_id: job.id,
     lease: job.lease_token,
@@ -1378,7 +1378,7 @@ it.each([
         if (scopeViolation && (error as any).code === "MODEL_ROUND_EXHAUSTED")
           break;
         expect(error).toBeInstanceOf(ModelDeferred);
-        job = await rpc("claim_backend_job_v2");
+        job = await rpc("claim_backend_job_v5");
         expect(job.id).toBe(options.job.id);
       }
     }

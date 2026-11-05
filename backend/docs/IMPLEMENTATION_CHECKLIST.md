@@ -1,5 +1,20 @@
 # Implementation status and continuation plan
 
+## November 5 — latest integration checkpoint
+
+Draft PR28 contains source resolution, worker5 and the27-migration release.
+Complete f41adb8 application gates pass3,488 backend and380frontend tests, both
+typechecks and builds. The later API verifier allocation setting passes35focused
+controls and four native fixture suites on imagef2d0f9. The failed721340image is
+retained as a rejection. The new image is published and pulled back exactly at
+registry digestaabe842e; temporary credentials were removed. The manifest is
+refrozen from the original deployment baseline. The current 27-migration cloud restore passes all 13 Auth/Storage
+checks and both cleanups in run 41993933795. Interrupted retirement now passes all 13 actual checks and cleanup in run
+42002971002 at e4192f9, against the same manifest. Earlier readiness/mount
+failures and their separate cleanup are retained. Final release CI and rollout
+remain pending; no application deployment or customer issuance is claimed. The Paddle candidate is rejected and the remaining acceptance gates
+are listed in RELIABILITY_REMAINING_GATES.md. Historical statuses follow.
+
 ## November 4 — current integration status and remaining release gates
 
 This overview supersedes the intermediate status statements in the dated entries
@@ -10863,3 +10878,384 @@ complete `2b869ac` gate. Current manifest source verification still passes.
 The public index now preserves all110 prior receipts and adds the scoped cleanup
 receipt. Final GitHub verification, actual deployment and the isolated hosted
 retirement drill remain distinct pending execution steps.
+
+### November 5 — separate two-review reserve composites and remaining contracts
+
+The qualification-only follow-up adds two independently pinned canonical review
+requests for each English/Arabic review-identity case. The original single-request
+entrypoint retains its 42/8 boundary. Combined offline construction now covers
+44/50 cases: 100 logical cells per model remain scheduled; 88 are constructible
+and require 92 physical requests, while 12 logical cells remain unsupported.
+Version-one activation cannot represent this composition and remains explicitly
+incompatible. No provider or retrieval request, billing/accounting mutation,
+production source change, deployment or semantic pass follows.
+
+Completed constituent outputs retain canonical source validation and hashes even
+when a sibling fails. Incomplete composites have no success aggregate. Independent
+source review caught asynchronous caller mutation that could relabel a case after
+reconstruction; canonical identity and observation snapshots now remain stable
+across awaits, with a regression control. A second reproduced projection defect
+accepted the other frozen review's exact quotation when only the domain callback
+ran; selected-evidence base validation now precedes it, matching the existing
+production executor. The failing control remains retained. The
+[follow-up design](QUALIFICATION_RESERVE_COMPOSITES.md) records exact remaining
+work for scoped addendum inventory, explicit untrusted supplier planning inputs,
+and deterministic quotation materialization versus identity repair dependencies.
+Six English/Arabic controls reproduce those boundaries; they do not count as
+passes of the six original semantic oracles.
+
+All 229 focused tests across seven files, backend typecheck and build passed.
+The 130-file source map remained unchanged during this final check. This includes
+34 new composite controls, six boundary controls and 189 existing qualification
+tests. Focused verification and source hashes are retained in
+[the local receipt](evidence/qualification-review-composites-20261105.json).
+Full current-source release gates, live composite execution, independent private
+holdout, provider availability and semantic acceptance remain distinct.
+
+### November 5 — current local gates and stopped hosted attempts
+
+At `9501068`, all six application checks passed: 3,419 backend tests in202 files,
+380 frontend tests in59 files, both type checks and builds, with unchanged
+source maps. The source-resolution/worker5 changes are later work and require
+new checks. The [receipt](evidence/complete-app-checks-9501068-20261105.json)
+retains exact log hashes and scope.
+
+Release41944374857 was deliberately canceled during source verification after
+the canonical supersession diagnostic found a material old-obligation bypass.
+Cluster access, image publication and deployment were skipped; both cleanup
+steps succeeded. The diagnostic used authored false-positive verifier receipts
+and issued a review draft only; it does not establish an actual provider false
+pass or final-approval bypass. The [cancellation receipt](evidence/release-cancelled-before-access-20261105-41944374857.json)
+preserves the run and exact source.
+
+The first isolated hosted retirement attempt41946883085 passed57 fixture tests
+but preparation failed with `RETIREMENT_FIXTURE_COMMAND_FAILED`. Deliberate
+interruption was not reached and resume was skipped. Fixture cleanup verified
+success and private runner files were removed. The [attempt receipt](evidence/storage-retirement-first-attempt-20261105-41946883085.json)
+does not infer the underlying command failure: the old helper discarded that
+diagnostic detail. A safe finite diagnostic is being added before retry.
+### November 5 — first hosted retirement failure and safe command diagnostics
+
+The first [isolated retirement run41946883085](https://github.com/salahassi/tenders/actions/runs/41946883085)
+checked out `bc7afab77d02fb8cdcb591870e044317ad342977`. All57 fixture tests passed,
+but prepare returned `RETIREMENT_FIXTURE_COMMAND_FAILED` before the deliberate
+interruption. Owned fixture cleanup and runner-file cleanup succeeded; resume
+was skipped. The full job log identifies neither the failing command nor its
+output, so the underlying cause remains unproved. Successful cleanup does not
+qualify interrupted retirement or prove which preparation phases completed.
+
+Added fixed phase/command/exit/category diagnostics and an allowlisted envelope
+for fixture-writer errors. Commands, payloads, private output, TLS verification,
+ownership and cleanup authority are unchanged. The diagnostic boundary rejects
+unrecognized/malformed metadata instead of publishing it. Focused local
+verification ([scoped receipt](evidence/storage-retirement-failure-diagnostics-20261105.json)):
+65 Python tests passed, including eight new failure-location,
+privacy, timeout, child-envelope and cleanup controls. This change neither
+reruns the hosted drill nor repairs an inferred infrastructure fault. Runtime,
+application packages and canonical migrations are unaffected; no broad package
+or provider test was run for this operations-only change.
+
+### November 5 — second hosted retirement attempt now identifies the failed guard
+
+Run41948742569 at2157dcf passed65 local guards, then stopped in
+`canonical_fixture_write` with the recognized fixture error
+`RETIREMENT_FIXTURE_REFRESH_MISSING`. Both cleanup steps passed and resume was
+skipped. The [sanitized receipt](evidence/storage-retirement-second-attempt-20261105-41948742569.json)
+locates the session-token validation failure without exposing token data.
+Underlying format compatibility and its correction require verification; the
+retirement acceptance gate remains open.
+### November 5 — exact source-obligation resolution database contract
+
+The isolated database correction adds `20261105120000_source_obligation_resolution.sql`.
+It pins new predecessor review revisions without rewriting historical rows, keeps
+raw passages, resolves exact typed units, validates pending as well as confirmed
+requirements, and checks current generated artifacts and ordinary exports.
+Analysis advancement independently verifies and stores retirement/current-unit
+audits while preserving accepted analysis outputs. The existing current-request
+user flow handles legacy refresh through `PROPOSAL_CURRENT_CONTRACT_REQUIRED`.
+The strict restore scope and historical paid contexts remain intact.
+
+Local focused verification passed 19 tests across the new source-resolution suite
+and existing source-review restore suite. This includes real requirement INSERT,
+real `advance_generation`, audit tampering, unchanged cabinets in a broad source,
+revision and revocation controls, multi-source authority, 64 current reviews, and
+canonical cancel/new-request commands. Source review aligned locator identity and marked-plan ambiguity rules with the
+runtime. Final runtime/SQL integration and independent review remain required. Worker capability
+five is owned by the separate following migration. No deployment or provider
+inference occurred in this change. The contract and limitations are documented in
+[SOURCE_OBLIGATION_RESOLUTION.md](SOURCE_OBLIGATION_RESOLUTION.md).
+### November 5 — stop release for confirmed supersession inventory defect
+
+The complete typed-review-to-export audit found a production inventory defect,
+beyond the earlier unsupported reserve-adapter boundary. A human-superseded
+nine-terminal requirement could be re-extracted as pending from the retained raw
+source and reject a correct fourteen-terminal/three-cabinet response. Controlled
+false-positive verifier records also reached an issued review-draft DOCX; final
+approval remained blocked. The unchanged [baseline evidence](evidence/source-resolution-baseline-20261105/README.md)
+records five passing counterexample controls, full source hashes and the limits
+of the deliberately authored verifier records. Release `41944374857` at `bc7afab`
+was canceled before rollout while this material issue was investigated.
+
+The [versioned reviewed-unit repair](SOURCE_OBLIGATION_RESOLUTION.md) preserves
+raw source and accepted analysis outputs, seeds current reviewed obligations,
+retires only unambiguous exact typed units, and records source-bound dispositions.
+Mixed/partial units require scoped resolution instead of silently entering the
+active inventory. Runtime controls cover English and Arabic and retain the
+separate arbitrary-prose false-verifier limitation. SQL persistence/export parity,
+worker-five integration, complete source gates, deployment and live admission
+remain required before this issue can be marked fully released. No reserve gold,
+corpus, frozen qualification prompt or historical paid request was rewritten to pass the fixture.
+### November 5 — isolated retirement refresh-token contract correction
+
+The instrumented retry [41948742569](https://github.com/salahassi/tenders/actions/runs/41948742569) fails at `canonical_fixture_write` with the fixed child code `RETIREMENT_FIXTURE_REFRESH_MISSING`. The actual private token was not inspected. The pinned GoTrue v2.197.0 upstream implementation generates legitimate 12-character refresh tokens; the fixture client incorrectly required at least 20 characters in both session and persisted-state validation. Both now accept a nonempty bounded opaque string. Refresh HTTP success, UUID/role checks, the same actor after rotation, and private-state ownership and permissions remain enforced.
+
+The [source-bound receipt](evidence/storage-retirement-refresh-contract-20261105.json) records the pinned upstream blob identities and 68 passing focused Python tests, including 12-character private-state roundtrip, malformed values, role/identity denial, failed refresh and changed-owner refusal before state writes. No hosted redispatch or production mutation occurred in this correction. The deliberate interruption/resume and physical retirement acceptance remain outstanding.
+### November 5 — source-resolution worker capability boundary (in progress)
+
+Fresh jobs now require worker capability5. The new claim/local-claim/wake RPCs
+retain independent model protocol pins, render versions, lease controls and
+provider accounting. The job trigger preserves every existing row at migration
+and never lowers an already stored floor5 or future higher floor on update.
+Current runtime entrypoints use capability5; historical RPCs remain present
+and cannot claim new work. Wake checks apply the floor to queue, completed-job
+and ready-local aliases, including accepted remote polling and handoffs.
+
+Current-schema test/race/restore helpers use worker5 explicitly. Historical
+migration-boundary tests and old-worker refusal controls keep their original
+workers. At the intermediate patch,158 focused tests and38 admission/delay
+controls passed; subsequent alias guards and new compatibility tests need
+revalidation after the exclusive OCR measurement window. No full gate, new
+runtime qualification, current manifest freeze, deployment or hosted request
+acceptance is claimed by this work-in-progress change.
+
+Focused worker5 verification now passes:120wake/contract/handoff tests in4files,
+264mixed model/source/delivery tests in8files,158source/issuance controls in5files,
+38admission/delay controls,9image guards,15update guards and18real atomic release
+contract tests. These overlapping suites are not summed as unique tests. Backend
+typecheck passes after linking both installed package dependencies in the
+isolated worktree. The [focused receipt](evidence/worker-capability-five-focused-20261105.json)
+retains log hashes, known iterative failures and final integration limits.
+
+### November 5 — integrate source-resolution and worker5 release contracts
+
+The upcoming release requires both new migrations,26total, source-resolution
+version1 and worker capability5. Independent catalog guards require the source
+review revision pin, requirement-resolution trigger and worker-floor trigger.
+The isolated restore/retirement current-worker helpers use v5, while historical
+24-migration hosted attempts retain their recorded v4 source. The old manifest
+is intentionally retained until fresh native runtime qualification and exact
+publication permit a reviewed re-freeze from the original baseline.
+Integrated checks and deployment remain pending.
+
+### November 5 — corrected source inventory reaches actual SQL and DOCX
+
+The integrated runtime/SQL regression now issues a local Word review draft with
+14 observation terminals and the unchanged3relay cabinets. The obsolete9-terminal
+commitment is absent. Current artifact access is rejected with
+`SOURCE_RESOLUTION_STALE` after later revocation. The independent analysis advance
+also retains accepted analysis bytes and records the resolution audit. Two new
+integration tests and the existing18delivery pipeline tests pass; the older
+revocation fixture now refreshes authority-bound source blocks as well as reviews.
+Authored verifier receipts remain fault injection, not a live-model accuracy proof.
+No final approval, provider usage or deployment is claimed.
+
+The completed [Paddle candidate campaign](evidence/paddle-ocr-candidate-rejected-20261105.json)
+passed4of13whole-page controls and preserved2of21critical exact-quote facts.
+All13pages plus the cold blank completed in159.956seconds; cleanup took8.707seconds.
+The candidate is rejected for adoption, and the Arabic OCR acceptance gate remains
+open. The [third retirement attempt](evidence/storage-retirement-third-attempt-20261105-41949704413.json)
+failed at the broad retirement-capture phase with exit3; both cleanups passed.
+Exact SQL localization is pending. Local non-superuser PostgreSQL tests now also
+execute the isolated adapter's actual fence and census statements; all9authority
+tests pass without changing grants or owners.
+
+The26migration atomic release suite passes18tests in121.303seconds. The
+[source-bound integration receipt](evidence/source-resolution-integrated-20261105.json)
+records focused logs and exact changed-source hashes. Safe SQLSTATE diagnostics
+from18fe844are integrated without exposing raw database messages.
+
+### November 5 — final-suite findings and narrow compatibility correction
+
+The e7e8ad4 full run passed3451backend tests and failed37across7files; frontend
+380tests, both typechecks and both builds pass. Most failures were obsolete
+fixture identifier validation and capability4expectations; the actual retry
+wrapper also had an ambiguous `input` parameter beside `generation_steps.input`.
+The full665operations suite found that retry defect plus the deliberately stale
+runtime qualification binding, which requires a newly measured image.
+
+Hosted retirement run41988242066 now identifies `retirement_prepare`/SQLSTATE42501;
+both cleanups pass. Local PostgreSQL reproduces permission denial from
+`to_regclass('storage.objects')` under a non-superuser application owner without
+Storage schema USAGE. Replacing only those lookups with exact catalog OIDs passes
+all25retirement controls with existing permissions. New migration20261105120200
+also qualifies the retry parameter and preserves historical migration bytes.
+The release set becomes27migrations. The permanent retirement suite now checks
+this restricted owner profile explicitly. Focused corrected and final gates are
+pending; deployment remains blocked.
+
+Restricted-owner27SQL checks and3canonical operational retry tests pass after
+the correction. The affected7backend suites reduced37failures to3obsolete
+worker-floor expectations; those are corrected to5and their focused rerun is
+pending. Independent release guards now reject the old catalog lookup and
+unqualified retry parameter. Full runtime requalification remains pending.
+
+### November5 — complete packages pass; new native image rejected for OOM
+
+At f41adb8,3488backend and380frontend tests, both typechecks and builds pass with
+unchanged source. The new721340runtime image fails its first frozen native Word
+download with `DELIVERY_RENDER_FAILED`/HTTP503and container OOMKilled=true.
+The parent remained alive to return the failure; the one-second sampling maximum
+356745216bytes is not the exact peak. Sources/fixtures stayed unchanged and owned
+containers were removed. Three later native suites were skipped; the image was
+neither qualified, published nor deployed. The original rejection is retained in
+[native-runtime-721340-rejected-20261105.json](evidence/native-runtime-721340-rejected-20261105.json).
+
+The API verifier previously bounded only V8 old-space. The candidate correction
+also bounds its young-generation semi-space to4MiB, preserving the64MiB old-space,
+384MiB container, worker arguments, document oracle and deadlines. This targets
+transient heap allocation; it is not an RSS guarantee and remains unqualified
+until the same exact native fixtures pass. All35focused isolation tests and backend typecheck pass. New native
+measurements are pending; no retry of the unchanged image is used as proof.
+
+### November5 — complete current packages and new runtime qualification
+
+Committed f41adb8 passes3488backend tests in206files and380frontend tests in59files,
+with both typechecks/builds passing and no source changes during the complete run.
+All18atomic27migration release controls,27restricted-owner retirement SQL checks,
+11schema helper tests and16Kubernetes tests pass. Earlier e7e8ad4failures remain
+recorded. Native imagef2d0f9 now has four fresh sequential receipts bound to the
+current seven changed runtime files and added source-resolution module. Frozen
+fixtures, base, build recipe and container limits are preserved. API child young-generation settings changed as documented after the rejected721340attempt; full package proof remains bound tof41adb8plus35focused isolation controls. Registry publication,
+manifest re-freeze, fresh cloud drills and deployment remain pending.
+
+Registry publicationf2d0f9 and27migration source verification pass. Manifest
+canonical SHA256: `1fdf73f4a9b638938285afd13cbf3e4077e28da3932816ea80f9d03a6d748f82`. Fresh hosted acceptance is the next gate.
+
+### November 5 — final operational integration and first27-migration restore guard
+
+The complete operations suite runs665tests;664pass and one current-image metadata
+expectation still assumed130files/146entries and the historical source revision.
+The expected values now bind the observed131files/147entries and4b249ca source.
+All13 focused runtime guards now pass.
+
+Cloud restore41993470511 at4281235 validates the original cluster CA and passes
+14local guards, then stops before catalog capture or fixture allocation with
+`RESTORE_FINAL_SOURCE_CONTRACT_REQUIRED`. Its helper still required worker4.
+The current gate now requires worker5, source resolution1 and all three new
+migrations; focused negative controls cover old/future workers and missing
+contracts. All15 focused restore guards pass. Both cleanup stages passed. A fresh hosted restore remains required;
+this failure is not a certificate regression or an application rollout.
+
+### November 5 — current27-migration cloud Auth/Storage restore passes
+
+Run41993933795 atb933587 passes all13 actual Auth/Storage recovery checks and
+both cleanups against manifest1fdf73f4. Original cluster CA verification and
+15local guards pass. All27additive migrations were applied only to the isolated
+fixture. No customer rows were copied, no model calls or production business
+mutations occurred. The receipt preserves exact source/role-mapped migration
+hashes. This proves isolated recovery, not rendering or application deployment.
+The new interrupted retirement drill is running against the same source.
+
+### November 5 — diagnose restoration without changing its authority or deadlines
+
+Run 41994312853 at b933587 completes canonical fixture creation, retirement
+prepare and the deliberate durable interruption. Resume fails with
+`RETIREMENT_FIXTURE_SERVICE_RESTORATION_REQUIRED`; the separate cleanup and
+private-runner-file removal both succeed. The aggregate error did not identify
+the failed restoration stage and could mask an earlier coordinator exception.
+
+The isolated adapter now retains bounded stage/workload labels, fixed error
+categories and validated command diagnostics, including a sanitized prior error.
+It still attempts every restoration and keeps the original identity, journal,
+finalizer and readiness requirements. No arbitrary exception text is logged.
+All 71 focused retirement tests pass, including fault injection proving that
+other workloads are restored after failures and private data is excluded.
+One instrumented hosted retry is next; no production deployment is claimed.
+
+The R0 evidence index, remaining-action matrix and remaining-gates document now
+include the 27-migration restore pass and the verified cleanup of the fifth
+retirement attempt. Historical failures remain intact. The instrumented run
+41996978998 uses 718ac68; no customer request or model call was started.
+
+### November 5 — complete current operational suite passes
+
+All 668 operations tests pass in 198.684 seconds on executable source 718ac68.
+All 11 schema-helper and 16 Kubernetes-render tests also pass. The manifest
+source check passes for all 27 migrations. Documentation was
+reconciled in 0db4f0a during this run; executable/test source did not change.
+This closes the earlier stale runtime-metadata failure. The mandatory final
+GitHub gate and hosted retirement acceptance remain required before rollout.
+
+### November 5 — isolate helper startup from original-writer process proof
+
+Run 41996978998 at 718ac68 identifies the earlier failure as physical-helper
+readiness timeout. Restoration then rejects its missing/invalid process identity
+and times out on Storage readiness. Cleanup later succeeds. No Pod/event reason
+was retained; missing identity does not prove that no process ever started.
+
+The adapter now permits deletion of its exact UID/spec-bound helper after failed
+startup, while all physical operations still require full process identity and
+all original writers retain their independent journals and exit proofs. Cleanup
+waits for the helper's deletion before restoring workloads. A failed readiness
+wait additionally captures bounded Pod-state/event categories from the exact
+owned UID, never raw messages, names or credentials. Timeouts are unchanged.
+All 74 focused tests pass, including absent-identity cleanup, rejection of
+foreign identity, private-event redaction and preservation of the initial error.
+A new isolated trial is required to identify the initial startup cause; no
+application deployment or customer invocation has occurred.
+
+The permanent DO access runbook now directly names the interrupted-retirement
+workflow, its original-CA path, nonce/PVC boundary, cleanup requirement and
+fixture-worker limitations. This documentation change does not alter runtime,
+manifest, cluster state or test outcomes.
+
+### November 5 — retained fixture requires exact-origin inspection
+
+Run 41999178689 at cac55b9 reports no prior coordinator error and no helper
+cleanup error, but Storage rollout still times out. The later cleanup fails on
+the same readiness condition; the nonce-owned fixture remains. This is not a
+cleanup pass. No new fixture or deployment is authorized by this result.
+
+The existing qualification workflow now has an explicit read-only inspection
+mode fixed to that run, attempt and source. It verifies the namespace UID,
+durable Secret identity, original manifest and deployment/ReplicaSet/Pod
+lineage before reading status, events and bounded logs. Only fixed categories
+and SQLSTATE values are public. It performs no cluster writes or SQL and
+removes its own runner credentials. The original recovery authority is unchanged.
+The initial helper-only 78 controls passed. The workflow integration then
+exposed one stale two-job/no-input assertion; it now requires three definitions
+with mutually exclusive inspection/allocation and rejects caller-supplied target
+selectors. All 78 integrated controls pass after this correction. Current
+fixture cleanup and release remain pending.
+
+### November 5 — retained fixture removed; durable-resume phase corrected
+
+Read-only run 42001827175 verifies the exact retained Storage Pod is ready and
+records FailedMount events. Their detailed cause was not established. This
+observation justified retrying only the failed job of run 41999178689. Attempt 2
+rejects the durable retired phase in the old runner, then successfully completes
+owned-resource cleanup and removes runner credentials. No fixture remains
+reported by that cleanup; acceptance did not pass.
+
+The runner now accepts interrupted or durably retired state. A retired state
+requires its complete before/evidence/receipt/after record, and the unchanged
+coordinator and verification still check canonical completion, accounting,
+original process exits and restored replicas before client verification. Partial
+records cannot enter recovery. All 80 focused controls pass. The prior 668-test
+operational pass retains its earlier source scope. A fresh hosted trial of the
+corrected recovery source is still required before application deployment.
+
+### November 5 — isolated interrupted retirement passes
+
+Run 42002971002 at e4192f9 passes deliberate interruption and all 13 actual
+resume/verification checks against manifest 1fdf73f4. It observes original writer
+exits, physical and metadata deletion, once-only allowance release and replay,
+old-key HTTP denial, new canonical upload/read and physical absence/presence
+after service restart. Resume and verification take 125.502 seconds in this
+fixture. Both fixture cleanup and private runner-file cleanup pass.
+
+This closes the isolated retirement gate only. The worker is an idle stand-in;
+actual inflight upload, production fixed-target execution, production throughput
+and a general recovery-time target are not established. Previous mount/readiness
+failures remain recorded. No customer data, provider calls or production business
+mutations occurred. The checked application release is the next step.

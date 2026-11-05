@@ -1,0 +1,23 @@
+{
+  "status": "cleanup_verified_acceptance_not_passed",
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/41999178689/attempts/2",
+  "source_revision": "cac55b91d4fed22871aff14f05a98fca68ea4b53",
+  "resume_job": 127159821030,
+  "receipts": [
+    {
+      "code": "RETIREMENT_FIXTURE_INTERRUPTION_NOT_JOURNALED",
+      "storage_retirement_qualification": "blocked"
+    },
+    {
+      "cleanup_verified": true,
+      "storage_retirement_qualification": "passed"
+    },
+    {
+      "storage_retirement_qualification": "runner_files_removed"
+    }
+  ],
+  "interpretation": "Read-only observation proved Storage ready before this exact failed-job retry. The old source rejects durable retired phase with INTERRUPTION_NOT_JOURNALED; its always-run cleanup then verifies full owned fixture removal and runner-file cleanup. No new fixture was allocated and no hosted retirement acceptance is inferred.",
+  "model_calls": 0,
+  "customer_rows_used": false,
+  "application_deployed": false
+}

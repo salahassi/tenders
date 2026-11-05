@@ -76,7 +76,7 @@ it("preserves authorized overflow cells through ordinary export snapshot, worker
   );
   // Independent exact source oracle, before any renderer normalizes blank cells.
   expect(projected).toEqual(table);
-  const job = await fixture.rpc("claim_backend_job_v4");
+  const job = await fixture.rpc("claim_backend_job_v5");
   expect(job?.type).toBe("render_export");
   const ready = await processOrdinaryExport(
     transport.backend as unknown as Backend,

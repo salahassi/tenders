@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "source_revision": "bc7afab77d02fb8cdcb591870e044317ad342977",
+  "workflow_run_id": 41944374857,
+  "workflow_job_id": 126972809575,
+  "workflow_url": "https://github.com/salahassi/tenders/actions/runs/41944374857",
+  "conclusion": "cancelled",
+  "reason": "Canonical source-supersession counterexample reintroduced an old obligation as pending/null-review. With deliberately authored false-positive verifier receipts the canonical path issued a contradictory review draft; final approval remained blocked. Stop before deployment for correction and requalification.",
+  "steps": [
+    {
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/setup-node@v7.1.0",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Verify exact reviewed source and both application packages",
+      "status": "completed",
+      "conclusion": "cancelled"
+    },
+    {
+      "name": "Prepare original-CA cluster access and expiring image credentials",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Publish or reuse exact source runtime, frontend and native OCR images",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Apply atomic schema and complete compatible workload rollout",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Remove only this release attempt's owned temporary database client",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Remove private runner credentials and build logs",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/setup-node@v7.1.0",
+      "status": "completed",
+      "conclusion": "skipped"
+    },
+    {
+      "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Complete job",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "application_deployed": false,
+  "raw_log_sha256": "01e14b34b8aa1f9590f5376320419b74a7b155f36117a2cb7a9adc9b159cf08f",
+  "limits": [
+    "Synthetic isolated fixture, not an observed real-provider false pass or customer production incident.",
+    "Cluster access, image publication and application rollout were skipped; both cleanup steps passed."
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "scope": "current source resolution SQL/DOCX and 26-migration release guard integration",
+  "parent_revision": "ab1d2d574f975b829f5aaa48e9ae7eec13084d1b",
+  "source_hashes": {
+    "backend/tests/backend/sourceResolutionPipeline.integration.test.ts": "c13d4e62d021429ff813268531cfd4497c57a6da4d0eb103c3b9413864f2ef04",
+    "backend/tests/backend/generatedDeliveryPipeline.integration.test.ts": "3634bfee76b7b24204ed1db84da6100ff2f093726ece0ce46564c5b3e38fc601",
+    "backend/scripts/ops/proposal-delivery-release.py": "4538502e51c42dfa936afc1099256ceb25a8c60ee2e19e6c56439ffee6ae4cb5",
+    "backend/scripts/ops/test_proposal_delivery_release.py": "74e48eeb9d9ca71358358d624875b5be9ba0432acf04163fa6945d89b069794e",
+    "backend/scripts/ops/test_storage_retirement_authority.py": "4cc29fd273cfa7b0068b9b309ce0c5b4e05bda3a023204e2400082176a11a458"
+  },
+  "checks": [
+    {
+      "log": "source-resolution-integrated-root-r3.log",
+      "sha256": "25ec253638de0406a7538f6822174d011d1b1bdf502169fd376dc1faffb910da",
+      "passed": 20,
+      "scope": "canonical SQL/DOCX pipeline controls"
+    },
+    {
+      "log": "source-resolution-pipeline-final.log",
+      "sha256": "6de80d5e6f7cfee6b343eb02def9e2ad4530d8c58d5edbe5f7a024631505ac6a",
+      "passed": 2,
+      "scope": "corrected review draft plus exact later SOURCE_RESOLUTION_STALE rejection"
+    },
+    {
+      "log": "release-26-integrated.log",
+      "sha256": "16260d39e10e15ab6772c36fb6c2d3dcfb3388cd4c52a6dc90a598ab192fc207",
+      "passed": 18,
+      "scope": "real atomic release and independent source/worker capability guards"
+    },
+    {
+      "log": "retirement-fixture-sql-root-r2.log",
+      "sha256": "2ce295dee6b0bcc3fe434dbcff2ae745df9a059fb1f6b5d6170ec73b27225b33",
+      "passed": 9,
+      "scope": "actual local PostgreSQL non-superuser adapter authority"
+    }
+  ],
+  "limits": [
+    "Overlapping test runs must not be summed as unique coverage.",
+    "Authored verifier receipts and synthetic Storage transport are not provider inference or hosted acceptance.",
+    "Complete final package gates, new runtime qualification, current cloud restore and deployment remain pending."
+  ]
+}

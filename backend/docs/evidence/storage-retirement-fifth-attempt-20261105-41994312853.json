@@ -1,0 +1,29 @@
+{
+  "status": "failed_with_cleanup_verified",
+  "source_revision": "b93358743c6e1ea4a0240d7d2ca890eeb303b86c",
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/41994312853",
+  "manifest_canonical_sha256": "1fdf73f4a9b638938285afd13cbf3e4077e28da3932816ea80f9d03a6d748f82",
+  "interrupt_job": {
+    "id": 127133694296,
+    "conclusion": "success",
+    "durable_scale_to_zero_and_deliberate_interruption_observed": true,
+    "runner_files_removed": true
+  },
+  "resume_job": {
+    "id": 127135074226,
+    "conclusion": "failure",
+    "code": "RETIREMENT_FIXTURE_SERVICE_RESTORATION_REQUIRED",
+    "cleanup_verified": true,
+    "runner_files_removed": true
+  },
+  "interpretation": "The prior restricted-catalog prepare failure is passed. Restoration aggregates errors; this receipt does not identify its underlying stage or a potentially masked coordinator failure. Sanitized phase diagnostics are required before retry.",
+  "application_deployed": false,
+  "customer_rows_used": false,
+  "model_calls": 0,
+  "limits": [
+    "Nonce-owned synthetic Auth/Storage/PVC fixture only.",
+    "The fixture worker is an idle stand-in, not production worker-throughput proof.",
+    "No actual inflight PUT retirement proof.",
+    "No hosted retirement acceptance or application rollout claimed."
+  ]
+}

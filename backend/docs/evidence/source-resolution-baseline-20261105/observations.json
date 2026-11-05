@@ -1,0 +1,568 @@
+{
+  "scope": "Offline synthetic fault injection. No provider inference, semantic pass, production admission or final approval claim.",
+  "authority_inventory": {
+    "current_review_ids": [
+      "ad85bca5-4d6e-46d1-80a6-de55aaa60aed",
+      "db1ea0a5-276f-4749-81c1-708ebad92584"
+    ],
+    "superseded_review_id": "5a2e440e-ef5e-47e2-9174-8c273ac7ff55",
+    "exact_old_span_excluded": true,
+    "full_old_source_chunk_retained": true,
+    "model_contract_has_supersedes_review_id": false,
+    "requirements": [
+      {
+        "id": "33de365c-446e-50c6-a725-bd4a2d772ed5",
+        "text": "Supplier shall deliver 9 observation terminals. Supplier shall deliver 3 relay cabinets.",
+        "quantities": [
+          {
+            "value": "9",
+            "unit": "observation terminals",
+            "currency": null
+          }
+        ],
+        "review_status": "pending",
+        "review_id": null
+      },
+      {
+        "id": "32147782-6763-59c0-ad29-a72c99e26c98",
+        "text": "Supplier shall deliver 3 relay cabinets.",
+        "quantities": [
+          {
+            "value": "3",
+            "unit": "relay cabinets",
+            "currency": null
+          }
+        ],
+        "review_status": "confirmed",
+        "review_id": "ad85bca5-4d6e-46d1-80a6-de55aaa60aed"
+      },
+      {
+        "id": "192193b9-23c0-5361-af66-f05b5f5c1dcb",
+        "text": "Supplier shall deliver 14 observation terminals.",
+        "quantities": [
+          {
+            "value": "14",
+            "unit": "observation terminals",
+            "currency": null
+          }
+        ],
+        "review_status": "confirmed",
+        "review_id": "db1ea0a5-276f-4749-81c1-708ebad92584"
+      }
+    ]
+  },
+  "persistence": {
+    "pending_superseded_clause_inserted": true,
+    "old_confirmed_review_rejected": true
+  },
+  "correct_14_and_3": {
+    "contaminated": {
+      "version": 1,
+      "policy": "generated-delivery-v1",
+      "input_hash": "233bee41ab47ee2577e0fbb3e1e268e95d460998d50a545f3de0ce8e0db0674e",
+      "machine_eligible": false,
+      "substantive_complete": false,
+      "approval_state": "draft",
+      "assurance": "model_checked_source_review_required",
+      "receipt_ids": [
+        "89b4ba3b-2762-43de-ad12-c33862421ed8",
+        "923f09d7-ee66-4e11-b7e1-ea7f1a93545b",
+        "b38c8f4a-55f3-4fce-b6a5-97f022e617d5",
+        "5d06d195-fa86-4fee-a84b-be3aba8afc1d",
+        "81a34c60-a0da-42ba-b530-da122c52a7d0",
+        "ad230bdd-0845-433d-a703-7daa6c0c6857"
+      ],
+      "verification_receipt_ids": [
+        "41ce64c3-1156-484f-a85e-80bba63eda57",
+        "9ceee16c-dc9e-4d2a-91e7-9e427940c4cf",
+        "4b44417e-e520-477b-9707-f10490d365d5",
+        "ff1857a6-bf18-4f96-be98-e6b472116bb9",
+        "5e7a9124-cd51-40e4-a2cd-ce6bccf7ca57",
+        "db1e7aa0-b9aa-4e76-b9bb-afab1d8e66ea"
+      ],
+      "coverage": [
+        {
+          "requirement_id": "33de365c-446e-50c6-a725-bd4a2d772ed5",
+          "status": "model_checked",
+          "section_keys": [
+            "solution-1-solution-unit"
+          ]
+        },
+        {
+          "requirement_id": "32147782-6763-59c0-ad29-a72c99e26c98",
+          "status": "model_checked",
+          "section_keys": [
+            "solution-1-solution-unit"
+          ]
+        },
+        {
+          "requirement_id": "192193b9-23c0-5361-af66-f05b5f5c1dcb",
+          "status": "model_checked",
+          "section_keys": [
+            "solution-1-solution-unit"
+          ]
+        }
+      ],
+      "blockers": [
+        {
+          "code": "SOURCE_QUANTITY_RESPONSE_MISMATCH",
+          "requirement_id": "33de365c-446e-50c6-a725-bd4a2d772ed5",
+          "detail": "source quantity response mismatch",
+          "paths": [
+            "$.requirements[\"33de365c-446e-50c6-a725-bd4a2d772ed5\"]"
+          ]
+        }
+      ],
+      "human_gaps": [
+        {
+          "code": "SOURCE_MEANING_OR_AUTHORITY_REVIEW_REQUIRED",
+          "requirement_id": "33de365c-446e-50c6-a725-bd4a2d772ed5",
+          "detail": "Review the authority and meaning of the buyer source before final approval."
+        },
+        {
+          "code": "FINALIZATION_INPUT_REQUIRED",
+          "detail": "Resolve the identified proposal inputs and commitments before final approval."
+        },
+        {
+          "code": "FINALIZATION_INPUT_REQUIRED",
+          "detail": "Resolve the identified proposal inputs and commitments before final approval."
+        },
+        {
+          "code": "AUTHORIZED_FINAL_PROPOSAL_REVIEW_REQUIRED",
+          "detail": "An authorized person must review this exact proposal and its supporting evidence before final approval."
+        }
+      ]
+    },
+    "governed": {
+      "version": 1,
+      "policy": "generated-delivery-v1",
+      "input_hash": "9ee23c15b0c7667177ebd300c5e82cebf11cb80a67e9db11c6f4f30a16721900",
+      "machine_eligible": true,
+      "substantive_complete": false,
+      "approval_state": "draft",
+      "assurance": "model_checked_source_review_required",
+      "receipt_ids": [
+        "77ecc9a7-7c33-4f8b-8218-9ad56a545062",
+        "b127f917-e8b0-4436-8808-6647ac89e7c5",
+        "a77ddfb6-063e-4ccf-98a5-8e1b9c2967f4",
+        "419ff00d-ca88-4d90-92d5-170d25127487",
+        "9596aa01-402c-403c-ae99-868c826b5e71",
+        "32272011-f042-4b00-8945-9ad9d9ac561c"
+      ],
+      "verification_receipt_ids": [
+        "16ab50af-c4fc-4381-859a-7c872f7a4509",
+        "9558d8e3-ad91-414f-9190-9db6eca428d3",
+        "00478db5-26b1-4baa-80dd-b4db258c15ea",
+        "edd1c1a8-b077-4f8a-94e4-e39a9b96b142",
+        "1acad36d-0f9d-4ae9-9a58-d2dea5931738",
+        "4672dbd6-6174-49f6-993c-cd999bde4aa0"
+      ],
+      "coverage": [
+        {
+          "requirement_id": "32147782-6763-59c0-ad29-a72c99e26c98",
+          "status": "model_checked",
+          "section_keys": [
+            "solution-1-solution-unit"
+          ]
+        },
+        {
+          "requirement_id": "192193b9-23c0-5361-af66-f05b5f5c1dcb",
+          "status": "model_checked",
+          "section_keys": [
+            "solution-1-solution-unit"
+          ]
+        }
+      ],
+      "blockers": [],
+      "human_gaps": [
+        {
+          "code": "FINALIZATION_INPUT_REQUIRED",
+          "detail": "Resolve the identified proposal inputs and commitments before final approval."
+        },
+        {
+          "code": "FINALIZATION_INPUT_REQUIRED",
+          "detail": "Resolve the identified proposal inputs and commitments before final approval."
+        },
+        {
+          "code": "AUTHORIZED_FINAL_PROPOSAL_REVIEW_REQUIRED",
+          "detail": "An authorized person must review this exact proposal and its supporting evidence before final approval."
+        }
+      ]
+    }
+  },
+  "false_positive_verifier_fault_injection": {
+    "report": {
+      "version": 1,
+      "policy": "generated-delivery-v1",
+      "input_hash": "e20eddf471052ffb30860c2ff63e00b9d80612903f401773d6f52defcf6f2176",
+      "machine_eligible": true,
+      "substantive_complete": false,
+      "approval_state": "draft",
+      "assurance": "model_checked_source_review_required",
+      "receipt_ids": [
+        "36e8daa4-0052-4c57-b4c3-f4247551d9aa",
+        "062bb4e3-ad86-474e-81ef-8652239a454e",
+        "77bad0d5-0225-4ac9-8bf1-dcc06d28bd3f",
+        "a9e7c8bb-a27b-4364-8523-258359dcd1e6",
+        "2300be21-7338-4df0-9a7d-adf6440e893b",
+        "e11c05ef-e83b-460b-a0ca-16ed0b66a3f7"
+      ],
+      "verification_receipt_ids": [
+        "7541853d-e8f8-45e7-9407-4f33c6acfb23",
+        "9cb9e703-645a-45c0-8caa-2afaa742d9c7",
+        "00dbfb4d-710c-49d5-aab5-8ea3dbb6b5cb",
+        "e499d707-da8f-409d-9c36-e720360e131d",
+        "00a7eada-5365-4cfc-98f7-ecc5432d5e38",
+        "d08d63cf-6c9a-4ad9-a674-8a2913c8d135"
+      ],
+      "coverage": [
+        {
+          "requirement_id": "33de365c-446e-50c6-a725-bd4a2d772ed5",
+          "status": "model_checked",
+          "section_keys": [
+            "solution-1-solution-unit"
+          ]
+        },
+        {
+          "requirement_id": "32147782-6763-59c0-ad29-a72c99e26c98",
+          "status": "model_checked",
+          "section_keys": [
+            "solution-1-solution-unit"
+          ]
+        },
+        {
+          "requirement_id": "192193b9-23c0-5361-af66-f05b5f5c1dcb",
+          "status": "model_checked",
+          "section_keys": [
+            "solution-1-solution-unit"
+          ]
+        }
+      ],
+      "blockers": [],
+      "human_gaps": [
+        {
+          "code": "SOURCE_MEANING_OR_AUTHORITY_REVIEW_REQUIRED",
+          "requirement_id": "33de365c-446e-50c6-a725-bd4a2d772ed5",
+          "detail": "Review the authority and meaning of the buyer source before final approval."
+        },
+        {
+          "code": "FINALIZATION_INPUT_REQUIRED",
+          "detail": "Resolve the identified proposal inputs and commitments before final approval."
+        },
+        {
+          "code": "FINALIZATION_INPUT_REQUIRED",
+          "detail": "Resolve the identified proposal inputs and commitments before final approval."
+        },
+        {
+          "code": "AUTHORIZED_FINAL_PROPOSAL_REVIEW_REQUIRED",
+          "detail": "An authorized person must review this exact proposal and its supporting evidence before final approval."
+        }
+      ]
+    },
+    "generic": {
+      "version": 1,
+      "policy": "generated-delivery-v1",
+      "input_hash": "37ce5ca65a36a9bddffd2249371151f01bbb4f9915372879b53cf6fc657784e7",
+      "machine_eligible": false,
+      "substantive_complete": false,
+      "approval_state": "draft",
+      "assurance": "model_checked_source_review_required",
+      "receipt_ids": [
+        "54a8a648-56bb-4f68-bcde-3661acf44503",
+        "c76a85ca-2719-41f1-a3f6-fbf961347a3c",
+        "099b0954-1c2f-43fa-a89f-bab691ef51f6",
+        "af947ed9-672f-4b4f-91a0-43f1aca1c2a7",
+        "8b223ea4-c65d-464a-846a-8fea3104ff87",
+        "55efa881-6ebd-4262-874c-0f1b9bad076c"
+      ],
+      "verification_receipt_ids": [
+        "2edc6609-7553-4837-8343-5fcf61671bf4",
+        "e38acb45-a828-46a0-aea3-f7883761c2ce",
+        "8230e0f3-b142-4745-9a8a-d9dc6c3ec3de",
+        "bd363c64-a7f4-4cf0-8b90-5c26dfa49045",
+        "9d95bea0-afa6-49b0-badb-a193cb2640eb",
+        "8bb2057b-b4d9-491a-89f4-a824f2b8baaa"
+      ],
+      "coverage": [
+        {
+          "requirement_id": "33de365c-446e-50c6-a725-bd4a2d772ed5",
+          "status": "gap",
+          "section_keys": []
+        },
+        {
+          "requirement_id": "32147782-6763-59c0-ad29-a72c99e26c98",
+          "status": "gap",
+          "section_keys": []
+        },
+        {
+          "requirement_id": "192193b9-23c0-5361-af66-f05b5f5c1dcb",
+          "status": "gap",
+          "section_keys": []
+        }
+      ],
+      "blockers": [
+        {
+          "code": "GENERATED_SECTION_EMPTY_OR_GENERIC",
+          "section_key": "solution-1-solution-unit",
+          "detail": "generated section empty or generic",
+          "paths": [
+            "$.sections"
+          ]
+        },
+        {
+          "code": "SUBSTANTIVE_RESPONSE_NOT_VERIFIED",
+          "requirement_id": "33de365c-446e-50c6-a725-bd4a2d772ed5",
+          "detail": "substantive response not verified",
+          "paths": [
+            "$.requirements[\"33de365c-446e-50c6-a725-bd4a2d772ed5\"]"
+          ]
+        },
+        {
+          "code": "SOURCE_QUANTITY_RESPONSE_MISMATCH",
+          "requirement_id": "33de365c-446e-50c6-a725-bd4a2d772ed5",
+          "detail": "source quantity response mismatch",
+          "paths": [
+            "$.requirements[\"33de365c-446e-50c6-a725-bd4a2d772ed5\"]"
+          ]
+        },
+        {
+          "code": "SUBSTANTIVE_RESPONSE_NOT_VERIFIED",
+          "requirement_id": "32147782-6763-59c0-ad29-a72c99e26c98",
+          "detail": "substantive response not verified",
+          "paths": [
+            "$.requirements[\"32147782-6763-59c0-ad29-a72c99e26c98\"]"
+          ]
+        },
+        {
+          "code": "SOURCE_QUANTITY_RESPONSE_MISMATCH",
+          "requirement_id": "32147782-6763-59c0-ad29-a72c99e26c98",
+          "detail": "source quantity response mismatch",
+          "paths": [
+            "$.requirements[\"32147782-6763-59c0-ad29-a72c99e26c98\"]"
+          ]
+        },
+        {
+          "code": "SUBSTANTIVE_RESPONSE_NOT_VERIFIED",
+          "requirement_id": "192193b9-23c0-5361-af66-f05b5f5c1dcb",
+          "detail": "substantive response not verified",
+          "paths": [
+            "$.requirements[\"192193b9-23c0-5361-af66-f05b5f5c1dcb\"]"
+          ]
+        },
+        {
+          "code": "SOURCE_QUANTITY_RESPONSE_MISMATCH",
+          "requirement_id": "192193b9-23c0-5361-af66-f05b5f5c1dcb",
+          "detail": "source quantity response mismatch",
+          "paths": [
+            "$.requirements[\"192193b9-23c0-5361-af66-f05b5f5c1dcb\"]"
+          ]
+        }
+      ],
+      "human_gaps": [
+        {
+          "code": "SOURCE_MEANING_OR_AUTHORITY_REVIEW_REQUIRED",
+          "requirement_id": "33de365c-446e-50c6-a725-bd4a2d772ed5",
+          "detail": "Review the authority and meaning of the buyer source before final approval."
+        },
+        {
+          "code": "FINALIZATION_INPUT_REQUIRED",
+          "detail": "Resolve the identified proposal inputs and commitments before final approval."
+        },
+        {
+          "code": "AUTHORIZED_FINAL_PROPOSAL_REVIEW_REQUIRED",
+          "detail": "An authorized person must review this exact proposal and its supporting evidence before final approval."
+        }
+      ]
+    },
+    "body": "We will deliver exactly 9 observation terminals for the observation system. We will also deliver exactly 14 observation terminals for the same observation system. We will install 3 relay cabinets, verify wiring and operational readiness, record the test results and obtain buyer acceptance of the installation."
+  },
+  "clean_inventory_semantic_boundary": {
+    "contradictory": {
+      "version": 1,
+      "policy": "generated-delivery-v1",
+      "input_hash": "bd27f07f5bc36299f9b3f675efed3a515b5ce9e5b02fa1124ee51f1e61e5671b",
+      "machine_eligible": true,
+      "substantive_complete": false,
+      "approval_state": "draft",
+      "assurance": "model_checked_source_review_required",
+      "receipt_ids": [
+        "54a1f564-56a1-49fd-9ab8-ed3e47177668",
+        "dd1835d8-84c4-433f-a9a0-aaa9b01ac45a",
+        "1f6c6456-fbcb-4e28-ac67-a6227225d0b4",
+        "a3901c81-63c9-4de8-b88b-bc201c84af59",
+        "b299e101-d3be-4f54-a216-1b8b1d38d2bc",
+        "b2a8dfbe-e2ed-4ad0-b3d7-6dcb49f9765b"
+      ],
+      "verification_receipt_ids": [
+        "108dcef4-3fee-4f39-8b63-c09a1c7b8993",
+        "24a584a6-d8df-4b6a-99d8-5cf2f14d523a",
+        "1b95f78c-e5a9-4a50-b779-c103c2e007fc",
+        "d1e29f4e-2064-4927-ab88-0e3cade24f6d",
+        "68d28d11-1e1d-4d43-9ec5-3032b771f15d",
+        "5db7aa7d-cc80-4c89-b5a4-6de33501a0bb"
+      ],
+      "coverage": [
+        {
+          "requirement_id": "32147782-6763-59c0-ad29-a72c99e26c98",
+          "status": "model_checked",
+          "section_keys": [
+            "solution-1-solution-unit"
+          ]
+        },
+        {
+          "requirement_id": "192193b9-23c0-5361-af66-f05b5f5c1dcb",
+          "status": "model_checked",
+          "section_keys": [
+            "solution-1-solution-unit"
+          ]
+        }
+      ],
+      "blockers": [],
+      "human_gaps": [
+        {
+          "code": "FINALIZATION_INPUT_REQUIRED",
+          "detail": "Resolve the identified proposal inputs and commitments before final approval."
+        },
+        {
+          "code": "FINALIZATION_INPUT_REQUIRED",
+          "detail": "Resolve the identified proposal inputs and commitments before final approval."
+        },
+        {
+          "code": "AUTHORIZED_FINAL_PROPOSAL_REVIEW_REQUIRED",
+          "detail": "An authorized person must review this exact proposal and its supporting evidence before final approval."
+        }
+      ]
+    },
+    "historical": {
+      "version": 1,
+      "policy": "generated-delivery-v1",
+      "input_hash": "6d41eeab0b58cdfccc055d7a137bdf944699415bd9986d94d324d9a91ece132e",
+      "machine_eligible": true,
+      "substantive_complete": false,
+      "approval_state": "draft",
+      "assurance": "model_checked_source_review_required",
+      "receipt_ids": [
+        "77854e61-dab7-4c70-9486-2743d8b143a3",
+        "5eaebbf7-fa7c-4b7c-890d-2020cd589350",
+        "54ee7b74-5f57-4565-9c1a-2b5db5c76a7c",
+        "553aa05b-64c1-4d69-8164-624859258f23",
+        "223668a3-f588-49b7-971c-d702f15cc630",
+        "7725ce4a-26a1-49c7-a078-e4e36dafed59"
+      ],
+      "verification_receipt_ids": [
+        "44e7c84d-7ddd-4ae0-bf1a-f4121ca245bf",
+        "9bdc4eee-c514-43bf-8b11-4c2611597ac2",
+        "c34e4f49-89ec-40b9-9dac-51848c5ccca5",
+        "595856fc-d899-48bc-8fa8-dd11c290d859",
+        "90a82111-d337-41bf-94af-60a9257f7d36",
+        "36801ef3-750f-44e5-be36-86d9cf0c0d38"
+      ],
+      "coverage": [
+        {
+          "requirement_id": "32147782-6763-59c0-ad29-a72c99e26c98",
+          "status": "model_checked",
+          "section_keys": [
+            "solution-1-solution-unit"
+          ]
+        },
+        {
+          "requirement_id": "192193b9-23c0-5361-af66-f05b5f5c1dcb",
+          "status": "model_checked",
+          "section_keys": [
+            "solution-1-solution-unit"
+          ]
+        }
+      ],
+      "blockers": [],
+      "human_gaps": [
+        {
+          "code": "FINALIZATION_INPUT_REQUIRED",
+          "detail": "Resolve the identified proposal inputs and commitments before final approval."
+        },
+        {
+          "code": "FINALIZATION_INPUT_REQUIRED",
+          "detail": "Resolve the identified proposal inputs and commitments before final approval."
+        },
+        {
+          "code": "AUTHORIZED_FINAL_PROPOSAL_REVIEW_REQUIRED",
+          "detail": "An authorized person must review this exact proposal and its supporting evidence before final approval."
+        }
+      ]
+    },
+    "scope": "Both use authored all-pass verifier records. Inventory retirement alone is not a semantic prose proof; banning digit9 would reject valid historical wording."
+  },
+  "actual_sql_and_docx": {
+    "published_snapshot_id": "ac25c71f-6f23-4189-b191-5f0279cc42d1",
+    "package_status": "ready",
+    "issuance_outcome": "issued",
+    "payload_state": {
+      "content_state": "generated_review_draft",
+      "assurance_state": "source_review_required",
+      "substantive_complete": false,
+      "approval_state": "draft"
+    },
+    "notice": "The generated responses passed the saved machine checks. This review draft has not received final human approval; pending source and commercial reviews remain explicit.",
+    "gaps": [
+      {
+        "id": "generated-review-0",
+        "section_key": "generated-review-gaps",
+        "field_path": "$.requirements[\"33de365c-446e-50c6-a725-bd4a2d772ed5\"]",
+        "reason": "MODEL_INPUT_REQUIRED",
+        "label": "Review source authority and obligation meaning before final approval.",
+        "required_for": "final_approval",
+        "source_ids": []
+      },
+      {
+        "id": "generated-review-1",
+        "section_key": "generated-review-gaps",
+        "field_path": "$.generation",
+        "reason": "MODEL_INPUT_REQUIRED",
+        "label": "Resolve the recorded inputs and commitments before final approval.",
+        "required_for": "final_approval",
+        "source_ids": []
+      },
+      {
+        "id": "generated-review-2",
+        "section_key": "generated-review-gaps",
+        "field_path": "$.generation",
+        "reason": "MODEL_INPUT_REQUIRED",
+        "label": "Resolve the recorded inputs and commitments before final approval.",
+        "required_for": "final_approval",
+        "source_ids": []
+      },
+      {
+        "id": "generated-review-3",
+        "section_key": "generated-review-gaps",
+        "field_path": "$.generation",
+        "reason": "MODEL_INPUT_REQUIRED",
+        "label": "An authorized person must review this exact proposal and evidence before final approval.",
+        "required_for": "final_approval",
+        "source_ids": []
+      }
+    ],
+    "final_approval_gate": {
+      "blockers": [
+        "Supporting evidence changed; regenerate the proposal.",
+        "Owner must confirm the complete requirement inventory.",
+        "Confirm coverage for every mandatory requirement.",
+        "Approve the latest complete, current financial estimate.",
+        "Approve the latest current delivery plan.",
+        "Complete the current source-bound substantive response and whole-proposal consistency review."
+      ],
+      "version_id": "5336a11a-33ee-47e2-b70e-ea7aeb3022f5",
+      "delivery_id": null,
+      "estimate_id": null,
+      "review_hash": "75f1af858a2b5a1910d1b258c1c65ed6691bdee7f764629a698c961410520609",
+      "content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "package_hash": null,
+      "pricing_hash": null,
+      "delivery_hash": null,
+      "evidence_revision": 1,
+      "consistency_complete": false
+    },
+    "approvals": 0,
+    "provider_usage": 0,
+    "docx_contains_both_obsolete9_and_current14": true,
+    "yellow_gap_highlights": true
+  }
+}

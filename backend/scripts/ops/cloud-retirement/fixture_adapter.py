@@ -9,6 +9,7 @@ import copy
 import ipaddress
 import json
 import os
+import sys
 import time
 import uuid
 from types import SimpleNamespace
@@ -148,9 +149,11 @@ class FixtureAdapter:
    spec=service.get('spec',{})
    f.need(spec.get('type','ClusterIP')=='ClusterIP' and not any(spec.get(x) for x in ('externalIPs','externalName','loadBalancerIP')) and all(not p.get('nodePort') for p in spec.get('ports',[])),'RETIREMENT_FIXTURE_PUBLIC_EXPOSURE')
  def install_fence(self,capture):
+  r.phase('retirement_fence_inspect')
   owner=self.state['bootstrap']['role_prefix']+'_owner'
   observed=self.query("select jsonb_build_object('owner',pg_get_userbyid(p.proowner),'security_definer',p.prosecdef,'config',p.proconfig,'body_sha256',encode(sha256(convert_to(p.prosrc,'UTF8')),'hex')) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='guard_retired_storage_write' and p.pronargs=0 and p.prokind='f'",None)
   f.need(observed=={'owner':owner,'security_definer':True,'config':['search_path=""'],'body_sha256':self.binary['guard_body_sha256']},'RETIREMENT_FIXTURE_GUARD_CHANGED')
+  r.phase('retirement_fence_install')
   self.sql("""do $fence$ declare so name;fo name;sid oid;fid oid;caller name:=current_user;had boolean;begin
    select r.oid,pg_get_userbyid(r.relowner) into sid,so from pg_class r join pg_namespace n on n.oid=r.relnamespace where n.nspname='storage' and r.relname='objects';
    select p.oid,pg_get_userbyid(p.proowner) into fid,fo from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='guard_retired_storage_write' and p.pronargs=0 and p.prokind='f';
@@ -163,8 +166,10 @@ class FixtureAdapter:
     execute format('set local role %I',so);execute 'create trigger tenderdesk_retired_storage_write before insert or update on storage.objects for each row execute function public.guard_retired_storage_write()';
     execute format('set local role %I',fo);if not had then execute format('revoke execute on function public.guard_retired_storage_write() from %I',so);end if;execute format('set local role %I',caller);
    end if;end $fence$""",None)
+  r.phase('retirement_fence_hash')
   self.fence_sha=self.query("select to_jsonb(encode(sha256(convert_to(pg_get_functiondef(p.oid)||pg_get_triggerdef(t.oid),'UTF8')),'hex')) from pg_trigger t join pg_class r on r.oid=t.tgrelid join pg_namespace rn on rn.oid=r.relnamespace join pg_proc p on p.oid=t.tgfoid where rn.nspname='storage' and r.relname='objects' and t.tgname='tenderdesk_retired_storage_write'",None)
  def accounting(self):
+  r.phase('retirement_accounting')
   fixture=self.state['fixture'];key=literal(fixture['selection'][0]['storage_key']);workspace=literal(fixture['workspace_id']);intent=literal(fixture['selection'][0]['id']);nonce=literal(self.nonce)
   return self.query("select jsonb_build_object('reserved',app_private.storage_reserved_bytes("+workspace+"::uuid),'pending',coalesce((select sum(estimated_size) from public.storage_cleanup_queue where workspace_id="+workspace+"::uuid and storage_key="+key+" and status<>'done'),0),'intent',(select jsonb_build_object('state',state,'revision',revision,'expected_hash',expected_hash,'expected_size',expected_size,'closed',send_closed_at is not null,'receipt',retirement_receipt is not null) from public.storage_write_intents where id="+intent+"::uuid),'completed_audits',(select count(*) from public.audit_events where action='storage.retirement.completed' and entity_id="+nonce+"::uuid))")
  def assert_uncertain(self):
@@ -174,10 +179,12 @@ class FixtureAdapter:
  def prepare(self,selection):
   if self.state['completion'] is None:
    self.state['completion']={'before':self.assert_uncertain(),'evidence':None,'receipt':None,'after':None};r.save(self.state)
+  r.phase('retirement_prepare')
   batch=self.query('select app_private.prepare_storage_write_retirement('+literal(selection['actor_id'])+','+literal(self.nonce)+','+value_sql(selection['selection'])+')')
   if batch['state']!='complete':f.need(self.assert_uncertain()==self.state['completion']['before'],'RETIREMENT_FIXTURE_ALLOWANCE_CHANGED')
   return batch
  def census(self):
+  r.phase('retirement_census')
   # All owners are read in one repeatable snapshot; only this synthetic DB exists.
   role=f.restore.builder.identifier(self.state['bootstrap']['role_prefix']+'_storageadmin');owner=f.restore.builder.identifier(self.state['bootstrap']['role_prefix']+'_owner')
   return self.query('SET LOCAL ROLE '+role+";DO $census$ BEGIN perform set_config('tenderdesk.retirement_census',(select coalesce(jsonb_agg(k),'[]')::text from(select name k from storage.objects where bucket_id='tenderdesk-private' union select key from storage.s3_multipart_uploads where bucket_id='tenderdesk-private' union select key from storage.s3_multipart_uploads_parts where bucket_id='tenderdesk-private')x),true);END $census$;SET LOCAL ROLE "+owner+";select coalesce(jsonb_agg(k),'[]') from(select jsonb_array_elements_text(current_setting('tenderdesk.retirement_census')::jsonb) k union select storage_key from public.storage_write_intents union select storage_key from public.storage_cleanup_queue union select storage_key from public.documents union select storage_key from public.export_artifacts union select storage_key from public.proposal_delivery_artifacts union select storage_key from public.export_package_volumes union select storage_key from public.restore_files)x",None)
@@ -261,9 +268,14 @@ class FixtureAdapter:
     'volumeMounts':[{'name':'objects','mountPath':'/var/lib/storage'},{'name':'work','mountPath':'/run/storage-retirement'}]}],
    'volumes':[{'name':'objects','persistentVolumeClaim':{'claimName':f.PVC_NAME}},{'name':'work','emptyDir':{'sizeLimit':'2Mi'}}]}}
   current=r.create(self.state,'pod',pod);self.physical_uid=current['metadata']['uid']
-  r.command(['wait','pod/'+r.PHYSICAL,'-n',f.namespace(self.state),'--for=condition=Ready','--timeout=90s'],timeout=100)
+  r.phase('physical_readiness')
+  try:r.command(['wait','pod/'+r.PHYSICAL,'-n',f.namespace(self.state),'--for=condition=Ready','--timeout=90s'],timeout=100)
+  except f.FixtureError as error:
+   r.capture_pod_readiness(error,self.state,r.PHYSICAL);raise
   self.write_physical('physical.mjs',HELPER.read_text())
  def validate_physical_pod(self,pod):
+  self.validate_physical_pod_spec(pod);c.pod_identity(pod)
+ def validate_physical_pod_spec(self,pod):
   f.owned(self.state,'pod',r.PHYSICAL,pod)
   spec=pod.get('spec',{});source=self.capture_value['pods']['storage'][0];cs=spec.get('containers',[])
   f.need(pod['metadata']['uid']==self.physical_uid and spec.get('restartPolicy')=='Never' and spec.get('automountServiceAccountToken') is False and spec.get('nodeName')==source['spec']['nodeName'] and spec.get('securityContext')==source['spec']['securityContext'] and not any(spec.get(k) for k in ('initContainers','ephemeralContainers','hostNetwork','hostPID','hostIPC')) and len(cs)==1,'RETIREMENT_FIXTURE_PHYSICAL_PROCESS_CHANGED')
@@ -273,7 +285,6 @@ class FixtureAdapter:
   volumes=spec.get('volumes',[]);f.need(len(volumes)==2,'RETIREMENT_FIXTURE_PHYSICAL_MOUNT_CHANGED')
   by_name={v['name']:v for v in volumes}
   f.need(set(by_name)=={'objects','work'} and by_name['objects']=={'name':'objects','persistentVolumeClaim':{'claimName':f.PVC_NAME}} and by_name['work']=={'name':'work','emptyDir':{'sizeLimit':'2Mi'}},'RETIREMENT_FIXTURE_PHYSICAL_MOUNT_CHANGED')
-  c.pod_identity(pod)
  def write_physical(self,name,text):
   f.need(name in ('physical.mjs','scope.json','expected-manifest.json'),'RETIREMENT_FIXTURE_FILE_INVALID')
   self.validate_physical_pod(r.get(self.state,'pod',r.PHYSICAL))
@@ -339,18 +350,23 @@ class FixtureAdapter:
    self.patch_pod(current,[{'op':'test','path':'/metadata/annotations/'+r.pointer(c.ANNOTATION),'value':nonce},{'op':'test','path':'/metadata/finalizers','value':[c.FINALIZER]},{'op':'remove','path':'/metadata/finalizers'},{'op':'remove','path':'/metadata/annotations/'+r.pointer(c.ANNOTATION)}])
   return True
  def restore(self,capture,nonce):
-  failed=False;unproven=False
+  prior=sys.exc_info()[1];failures=[];unproven=False
+  prior_summary=r.error_summary(prior) if prior is not None else None
+  r.phase('restore_physical_cleanup')
   try:
    if self.physical_uid:
     current=r.get(self.state,'pod',r.PHYSICAL,missing=True)
     if current is not None:
-     self.validate_physical_pod(current);r.delete(self.state,'pod',r.PHYSICAL)
+     # The exact owned helper may have no container ID after failed startup.
+     # Deleting it is cleanup, never evidence that original writers exited.
+     self.validate_physical_pod_spec(current);r.delete(self.state,'pod',r.PHYSICAL)
      r.command(['wait','pod/'+r.PHYSICAL,'-n',f.namespace(self.state),'--for=delete','--timeout=90s'],timeout=100)
     # Missing helper is only a cleanup fact. Original writer exit proof still
     # comes exclusively from the separately retained full process journals.
     self.physical_uid=None
-  except Exception:failed=True
+  except Exception as error:failures.append({'stage':'physical_cleanup','workload':'physical','error':r.error_summary(error)})
   for name in reversed(c.NAMES):
+   stage='workload_restore';r.phase('restore_workload')
    try:
     current=r.get(self.state,'deployment',name);old=capture['workloads'][name];raw=current['metadata'].get('annotations',{}).get(c.ANNOTATION)
     self.assert_boundary();ops=annotation_ops(current,RESTORED,nonce+':'+str(uuid.uuid4()))
@@ -360,12 +376,17 @@ class FixtureAdapter:
      f.need(raw==marker(old,nonce) and current['spec']==expected,'RETIREMENT_FIXTURE_RESTORE_SPEC_CHANGED')
      ops.extend([{'op':'test','path':'/metadata/annotations/'+r.pointer(c.ANNOTATION),'value':raw},{'op':'test','path':'/spec/replicas','value':0},{'op':'replace','path':'/spec/replicas','value':old['spec']['replicas']},{'op':'remove','path':'/metadata/annotations/'+r.pointer(c.ANNOTATION)}])
     r.patch(self.state,'deployment',name,current,ops)
+    stage='process_journal';r.phase('restore_process_journal')
     if not self.save_terminations(capture,name,nonce):unproven=True
-   except Exception:failed=True
+   except Exception as error:failures.append({'stage':stage,'workload':name,'error':r.error_summary(error)})
   for name in reversed(c.NAMES):
+   r.phase('restore_readiness')
    try:r.wait_deployment(self.state,name,180)
-   except Exception:failed=True
-  f.need(not failed,'RETIREMENT_FIXTURE_SERVICE_RESTORATION_REQUIRED')
+   except Exception as error:failures.append({'stage':'readiness','workload':name,'error':r.error_summary(error)})
+  if failures:
+   error=f.FixtureError('RETIREMENT_FIXTURE_SERVICE_RESTORATION_REQUIRED')
+   error.public_restoration_diagnostic={'failures':failures,'prior_error':prior_summary}
+   raise error from None
   f.need(not unproven,'RETIREMENT_FIXTURE_PROCESS_RECONCILIATION_REQUIRED')
  def verify_retirement(self):
   completion=self.state['completion'];f.need(completion and completion['receipt'] and completion['evidence'],'RETIREMENT_FIXTURE_COMPLETION_MISSING')

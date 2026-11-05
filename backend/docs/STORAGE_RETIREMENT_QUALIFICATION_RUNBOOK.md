@@ -6,7 +6,7 @@ The workflow uses the existing GitHub-hosted runner path and the original Kubern
 
 ## What the two jobs establish
 
-The first job reconstructs the exact current reviewed release schema, checks all 24 migration hashes, and starts actual pinned Auth and PostgREST services. Separate Deployments run pinned Storage, the qualified gateway configuration and an idle Python process representing the worker's process-lifecycle boundary. The actual HTTP fixture client runs beside Auth/REST and completes its upload before the deliberate retirement interruption. This does not test an in-flight PUT interruption or application worker capacity. Storage uses a new 1 GiB PersistentVolumeClaim (PVC), which requests a dynamically provisioned volume through the verified DigitalOcean storage class. The fixture creates an actual confirmed Auth user, logs in with a password and bootstraps an Owner membership.
+The first job reconstructs the exact current reviewed release schema, checks all 26 migration hashes, and starts actual pinned Auth and PostgREST services. Separate Deployments run pinned Storage, the qualified gateway configuration and an idle Python process representing the worker's process-lifecycle boundary. The actual HTTP fixture client runs beside Auth/REST and completes its upload before the deliberate retirement interruption. This does not test an in-flight PUT interruption or application worker capacity. Storage uses a new 1 GiB PersistentVolumeClaim (PVC), which requests a dynamically provisioned volume through the verified DigitalOcean storage class. The fixture creates an actual confirmed Auth user, logs in with a password and bootstraps an Owner membership.
 
 The application creates the file reservation through `source.create`, `opportunity.create`, `delivery.snapshot.prepare`, a canonical backend job claim and `delivery_export_context`. `begin_render_storage_write` records a genuine unknown write before an actual 16 KiB Storage upload. The fixture deliberately omits the completion acknowledgment, records the failure through `fail_delivery_export`, and uses canonical archive, purge preview and purge operations. Those operations leave the uncertain key's genuine 10 MiB cleanup reservation in place. The fixture never inserts or edits an intent, lease, quota counter or cleanup allowance directly.
 
@@ -31,6 +31,13 @@ If captured process termination is unknown, cleanup retains the Pod protection a
 The services and private fixture credentials have a bounded lifetime of roughly one hour. A delayed rerun may be able to clean the fixture but cannot claim a successful complete acceptance after those services expire. The workflow never refreshes or extends a failed measurement to manufacture a pass. A changed specification, foreign resource, unproven deletion or absent journal remains an explicit failure.
 
 ## Evidence to retain after an actual run
+
+Failed fixture commands report only a fixed phase, command/resource class, exit
+status and allowlisted failure category. An exact recognized fixture-writer
+failure envelope may also contribute its fixed code and HTTP status. Raw command
+arguments, payloads, output, credentials and resource identities remain private.
+These fields locate a failed operation; a generic historical failure without
+them does not establish a TLS, scheduling, SQL or application root cause.
 
 Retain the exact reviewed source commit, canonical release manifest hash, run link, both job outcomes, original certificate verification, redacted boolean checks, observed recovery duration and verified cleanup result. The public receipt contains no user tokens, database credentials, private keys, object keys or synthetic row identifiers. Private captures and proofs remain in the fixture's Secrets until verified cleanup. Do not publish raw SQL client or application diagnostics.
 

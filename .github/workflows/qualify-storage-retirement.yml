@@ -1,13 +1,37 @@
 name: Qualify interrupted storage retirement on an isolated PVC
 on:
   workflow_dispatch:
+    inputs:
+      inspect_retained:
+        description: Read-only diagnosis of the retained fixture from run 41999178689; creates no fixture
+        type: boolean
+        required: true
+        default: false
 permissions:
   contents: read
 concurrency:
   group: tenderdesk-digitalocean-production
   cancel-in-progress: false
 jobs:
+  inspect:
+    if: ${{ inputs.inspect_retained == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Verify fixed-origin inspection and redaction controls
+        run: python3 -m unittest discover -s backend/scripts/ops -p 'test_cloud_retirement_inspection.py'
+      - name: Inspect only the retained fixture from run 41999178689
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/cloud-retirement/inspect_blocked.py
+      - name: Remove private files from this inspection runner
+        if: ${{ always() }}
+        run: python3 backend/scripts/ops/cloud-retirement/runner.py runner-cleanup
   interrupt:
+    if: ${{ inputs.inspect_retained != true }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     outputs:

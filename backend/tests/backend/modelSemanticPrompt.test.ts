@@ -83,7 +83,7 @@ async function setup() {
     values($1,'analyze_chunk',$1,'synthetic-semantic-pin','queued',$2,'{"model_executor":2}')`,
     [f.w, f.owner],
   );
-  const job = await rpc("claim_backend_job_v2", {});
+  const job = await rpc("claim_backend_job_v5", {});
   const backend = { internal: rpc };
   const store = new ModelGraphStore(backend, job, "c".repeat(64));
   await store.action("init", {

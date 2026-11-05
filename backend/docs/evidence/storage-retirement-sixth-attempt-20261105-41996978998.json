@@ -1,0 +1,69 @@
+{
+  "status": "failed_with_cleanup_verified",
+  "source_revision": "718ac68b717774503230f70b2e90150af4968393",
+  "run_url": "https://github.com/salahassi/tenders/actions/runs/41996978998",
+  "interrupt_job": 127142447052,
+  "resume_job": 127143342027,
+  "manifest_canonical_sha256": "1fdf73f4a9b638938285afd13cbf3e4077e28da3932816ea80f9d03a6d748f82",
+  "receipts": [
+    {
+      "code": "RETIREMENT_FIXTURE_SERVICE_RESTORATION_REQUIRED",
+      "restoration_diagnostic": {
+        "failures": [
+          {
+            "error": {
+              "code": "STORAGE_RETIREMENT_PROCESS_PROOF_INVALID",
+              "kind": "guard"
+            },
+            "stage": "physical_cleanup",
+            "workload": "physical"
+          },
+          {
+            "error": {
+              "code": "RETIREMENT_FIXTURE_COMMAND_FAILED",
+              "command_diagnostic": {
+                "category": "readiness_timeout",
+                "child_code": null,
+                "child_http_status": null,
+                "command": "rollout",
+                "exit_code": 1,
+                "phase": "restore_readiness",
+                "resource_class": "other",
+                "sqlstate": null
+              },
+              "kind": "guard"
+            },
+            "stage": "readiness",
+            "workload": "storage"
+          }
+        ],
+        "prior_error": {
+          "code": "RETIREMENT_FIXTURE_COMMAND_FAILED",
+          "command_diagnostic": {
+            "category": "readiness_timeout",
+            "child_code": null,
+            "child_http_status": null,
+            "command": "wait",
+            "exit_code": 1,
+            "phase": "retirement_census",
+            "resource_class": "other",
+            "sqlstate": null
+          },
+          "kind": "guard"
+        }
+      },
+      "storage_retirement_qualification": "blocked"
+    },
+    {
+      "cleanup_verified": true,
+      "storage_retirement_qualification": "passed"
+    },
+    {
+      "storage_retirement_qualification": "runner_files_removed"
+    }
+  ],
+  "interpretation": "The original failure is physical-helper readiness timeout. Restoration then rejects the missing/invalid process identity and times out waiting for Storage. Exact Pod/event reason was not observed; absence of a recorded container identity does not prove that no process ever started. Separate cleanup is verified.",
+  "application_deployed": false,
+  "model_calls": 0,
+  "customer_rows_used": false
+}

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "scope": "complete operational run plus corrected current-contract focused verification",
+  "full_run": {
+    "tests": 665,
+    "passed": 664,
+    "failed": 1,
+    "log_sha256": "e1b09e7e4f82d86837b5ceece61fb491e5667a0e428cca1e607893aef16a2799",
+    "failure": "historical source/count assertion in current runtime metadata test"
+  },
+  "corrected_runtime_guards": {
+    "passed": 13,
+    "log_sha256": "67c9d782f533a8ccc286978c88204360c63604a73fcc421c3915cdafd67c404c"
+  },
+  "current_restore_guards": {
+    "passed": 15,
+    "log_sha256": "a49d7fe8a545cea484ea22e586a9b5eb4b29dc7b64212aacf994b706370fe20a"
+  },
+  "limits": [
+    "These focused runs are not summed as unique full-suite coverage.",
+    "Final release CI reruns all checks on the release head."
+  ]
+}

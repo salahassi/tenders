@@ -62,7 +62,7 @@ def run(f):
     f.sql("update public.jobs set status='canceled' where type='render_export' and status='queued';")
     o, v, payload = setup(f)
     package = f.command('export.package.prepare', payload)
-    job = f.value('select public.claim_backend_job_v4()')
+    job = f.value('select public.claim_backend_job_v5()')
     slot = f.value(f"select to_jsonb(s) from public.export_package_volumes s where package_id={literal(package['id'])}")
     artifact = f.value(f"select public.complete_export_package_volume({literal(job['id'])},{literal(job['lease_token'])},{literal(slot['id'])},{literal('a'*64)},100)")
     f.sql(f"select public.finish_export_package({literal(job['id'])},{literal(job['lease_token'])})")

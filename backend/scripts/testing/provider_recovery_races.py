@@ -15,7 +15,7 @@ def prepare(f, name, active=False):
     doc = f.upload(opportunity)
     f.command("document.confirm", {"id": doc["id"], "expected_revision": doc["revision"]})
     f.command("proposal.generate", {"id": opportunity["id"], "expected_revision": opportunity["revision"]})
-    job = f.value("select public.claim_backend_job()")
+    job = f.value("select public.claim_backend_job_v5()")
     f.sql(f"select public.fail_generation({literal(job['id'])},{literal(job['lease_token'])},'MODEL_CORRECTION_EXHAUSTED',null,null)")
     routing = {"model_routing": {"mode": "round_robin"}}
     f.sql(f"update public.jobs set checkpoint=checkpoint||{literal(routing)}::jsonb where id={literal(job['id'])}")
