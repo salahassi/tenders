@@ -32,6 +32,13 @@ The services and private fixture credentials have a bounded lifetime of roughly 
 
 ## Evidence to retain after an actual run
 
+Failed fixture commands report only a fixed phase, command/resource class, exit
+status and allowlisted failure category. An exact recognized fixture-writer
+failure envelope may also contribute its fixed code and HTTP status. Raw command
+arguments, payloads, output, credentials and resource identities remain private.
+These fields locate a failed operation; a generic historical failure without
+them does not establish a TLS, scheduling, SQL or application root cause.
+
 Retain the exact reviewed source commit, canonical release manifest hash, run link, both job outcomes, original certificate verification, redacted boolean checks, observed recovery duration and verified cleanup result. The public receipt contains no user tokens, database credentials, private keys, object keys or synthetic row identifiers. Private captures and proofs remain in the fixture's Secrets until verified cleanup. Do not publish raw SQL client or application diagnostics.
 
 A passing result qualifies this specific real Kubernetes/PVC interruption, the canonical SQL accounting path, pinned storage/gateway binaries and unchanged coordinator. It does not execute or qualify the fixed production Kubernetes adapter. The synthetic writer is not the application worker and provides no worker capacity measurement. The test does not simulate whole-cluster restore, preserve retirement fences across disaster recovery, or qualify arbitrary file sizes and concurrency.

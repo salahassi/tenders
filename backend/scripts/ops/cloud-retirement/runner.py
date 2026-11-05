@@ -206,44 +206,60 @@ def upstream_job(state):
     return parent
 
 def prepare():
+    r.phase('schema_catalog')
     manifest=json.loads(c.restore.release.MANIFEST.read_text())
     catalog=c.restore.capture(manifest)
     credentials,ca=b.preflight.target_credentials(os.environ['DIGITALOCEAN_ACCESS_TOKEN'])
     base=b.identity();output_nonce(base)
+    r.phase('namespace_allocation')
     created=b.create({'apiVersion':'v1','kind':'Namespace','metadata':{'name':base['namespace'],
       'labels':{**base['labels'],'tenderdesk.io/qualification':'storage-retirement','pod-security.kubernetes.io/enforce':'restricted'}}})
     base['uid']=created.get('metadata',{}).get('uid');b.save(base)
+    r.phase('fixture_journal')
     state=c.initial_state(base,c.manifest_contract());r.save(state,initial=True)
+    r.phase('upstream_allocation')
     parent=upstream_job(state)
     job=b.create(parent);base['job_uid']=job['metadata']['uid'];b.save(base);r.save(state)
     values=b.secret_values(credentials,ca,base)
+    r.phase('fixture_assets')
     r.create(state,'secret',{'apiVersion':'v1','kind':'Secret','type':'Opaque','metadata':r.meta(state,'bootstrap-secrets'),
       'data':{k:base64.b64encode(v.encode()).decode() for k,v in values.items()}})
     assets={name:(b.ASSETS/name).read_text() for name in ('setup.sql','cleanup.sql','acceptance.py')}
     assets.update({'post-migrations.sql':'-- Exact reconstructed SQL is privately mounted and hash verified.\n',
       'writer.py':(c.HERE/'writer.py').read_text()})
     r.create(state,'configmap',{'apiVersion':'v1','kind':'ConfigMap','metadata':r.meta(state,'bootstrap-code'),'data':assets})
+    r.phase('fixture_network')
     for policy in network_policies(state,credentials):r.create(state,'networkpolicy',policy)
     r.create(state,'configmap',{'apiVersion':'v1','kind':'ConfigMap','metadata':r.meta(state,'gateway-config'),
       'data':{'nginx.conf':r.renderer.gateway_configuration(c.namespace(state))}})
+    r.phase('storage_allocation')
     r.create(state,'persistentvolumeclaim',pvc_manifest(state))
     for name,port in (('auth',9999),('rest',3000)):
         r.create(state,'service',r.service(state,name,{'job-name':'compatible-services'},[(name,port)]))
     for name,ports in (('storage',[('storage',5000)]),('gateway',[('public',8080),('internal',8081)])):
         r.create(state,'service',r.service(state,name,{'tenderdesk.io/fixture-workload':name},ports))
+    r.phase('database_setup')
     base['setup_started']=True;b.save(base);r.save(state)
     create_sql_job(state,b.sql_job(base,'database-setup','setup.sql','defaultdb'))
+    r.phase('workload_start')
     patch_parent(state,False)
     for deployment in r.workload_manifests(state):r.create(state,'deployment',deployment)
+    r.phase('upstream_readiness')
     wait_upstream(state)
+    r.phase('storage_readiness')
     r.wait_deployment(state,'storage')
+    r.phase('schema_reconstruction')
     create_sql_job(state,schema_job(state,catalog,manifest))
     state['phase']='schema_ready';r.save(state)
+    r.phase('sql_client_readiness')
     r.create(state,'pod',r.sql_client(state))
     r.command(['wait','pod/'+r.SQL,'-n',c.namespace(state),'--for=condition=Ready','--timeout=120s'],timeout=130)
+    r.phase('remaining_workload_readiness')
     for name in ('worker','gateway'):r.wait_deployment(state,name)
+    r.phase('canonical_fixture_write')
     state['fixture']=c.validate_fixture(writer(state,'prepare'));state['phase']='fixture_ready';r.save(state)
     from fixture_adapter import FixtureAdapter
+    r.phase('retirement_capture')
     adapter=FixtureAdapter(state,interrupt_after_stop=True)
     c.proof.retire(adapter,adapter.selection())
     raise c.FixtureError('RETIREMENT_FIXTURE_INTERRUPTION_NOT_REACHED')
@@ -342,6 +358,7 @@ def delete_namespace(base):
     raise c.FixtureError('RETIREMENT_FIXTURE_NAMESPACE_CLEANUP_PENDING')
 
 def cleanup(state):
+    r.phase('cleanup')
     from fixture_adapter import FixtureAdapter
     r.namespace_guard(state)
     if state['cleanup_proof'] is None:
@@ -498,7 +515,9 @@ def main(argv=None):
         # All upstream diagnostics are kept private; only fixed codes and the
         # explicit redacted receipt below reach public GitHub Actions logs.
         with redirect_stdout(io.StringIO()),redirect_stderr(io.StringIO()):
+            r.phase('access')
             prepare_access()
+            if args.mode in ('resume','cleanup'):r.phase(args.mode)
             if args.mode=='prepare':prepare();result=None
             elif args.mode=='resume':result=resume(args.nonce)
             elif already_cleaned(args.nonce):result={'cleanup_verified':True}
@@ -513,6 +532,6 @@ def main(argv=None):
         except Exception:
             emit('blocked',code='RETIREMENT_FIXTURE_CATALOG_CLIENT_CLEANUP_PENDING')
         safe=str(error) if isinstance(error,(c.FixtureError,c.proof.RetirementError,b.BootstrapError,b.preflight.ProbeError,c.restore.RestoreError)) and re.fullmatch('[A-Z0-9_]{1,100}',str(error)) else 'RETIREMENT_FIXTURE_FAILED'
-        emit('blocked',code=safe);return 1
+        emit('blocked',code=safe,**r.failure_diagnostic(error));return 1
 
 if __name__=='__main__':sys.exit(main())

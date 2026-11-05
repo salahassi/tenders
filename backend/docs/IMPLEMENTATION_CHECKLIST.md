@@ -10863,3 +10863,24 @@ complete `2b869ac` gate. Current manifest source verification still passes.
 The public index now preserves all110 prior receipts and adds the scoped cleanup
 receipt. Final GitHub verification, actual deployment and the isolated hosted
 retirement drill remain distinct pending execution steps.
+
+### November 5 — first hosted retirement failure and safe command diagnostics
+
+The first [isolated retirement run41946883085](https://github.com/salahassi/tenders/actions/runs/41946883085)
+checked out `bc7afab77d02fb8cdcb591870e044317ad342977`. All57 fixture tests passed,
+but prepare returned `RETIREMENT_FIXTURE_COMMAND_FAILED` before the deliberate
+interruption. Owned fixture cleanup and runner-file cleanup succeeded; resume
+was skipped. The full job log identifies neither the failing command nor its
+output, so the underlying cause remains unproved. Successful cleanup does not
+qualify interrupted retirement or prove which preparation phases completed.
+
+Added fixed phase/command/exit/category diagnostics and an allowlisted envelope
+for fixture-writer errors. Commands, payloads, private output, TLS verification,
+ownership and cleanup authority are unchanged. The diagnostic boundary rejects
+unrecognized/malformed metadata instead of publishing it. Focused local
+verification ([scoped receipt](evidence/storage-retirement-failure-diagnostics-20261105.json)):
+65 Python tests passed, including eight new failure-location,
+privacy, timeout, child-envelope and cleanup controls. This change neither
+reruns the hosted drill nor repairs an inferred infrastructure fault. Runtime,
+application packages and canonical migrations are unaffected; no broad package
+or provider test was run for this operations-only change.

@@ -22,6 +22,72 @@ renderer=c.load('retirement_fixture_renderer',c.OPS.parent.parent/'deploy/kubern
 STATE=c.STATE_NAME
 PHYSICAL='retirement-physical'
 SQL='retirement-sql'
+PHASES=frozenset(('not_started','access','schema_catalog','namespace_allocation','fixture_journal','upstream_allocation',
+    'fixture_assets','fixture_network','storage_allocation','database_setup','workload_start','upstream_readiness',
+    'storage_readiness','schema_reconstruction','sql_client_readiness','remaining_workload_readiness',
+    'canonical_fixture_write','retirement_capture','resume','cleanup'))
+_phase='not_started'
+WRITER_FAILURE_CODES=frozenset(('RETIREMENT_FIXTURE_'+name) for name in (
+    'ALREADY_INITIALIZED','ARTIFACT_SCOPE_INVALID','BUCKET_CREATE_FAILED','BUCKET_INVALID','BUCKET_READ_FAILED',
+    'CANONICAL_PURGE_NOT_READY','CLAIM_MISMATCH','COMPLETION_NOT_EXACT','DOWNLOAD_FAILED','ENDPOINT_SCOPE_INVALID',
+    'EXTERNAL_PROCESSING_ENABLED','MODE_INVALID','NEW_KEY_INVALID','OLD_KEY_DENIAL_INVALID','OLD_KEY_DENIAL_UNPROVEN',
+    'OPPORTUNITY_CHANGED','OWNER_CHANGED','OWNER_INVALID','PRIVATE_STATE_INVALID','PRIVATE_STATE_SIZE','READ_FAILED',
+    'READ_INVALID','REFRESH_MISSING','RESULT_INVALID','RPC_INVALID','RPC_RESULT_INVALID','SEND_NOT_AUTHORIZED',
+    'SERVICES_NOT_READY','SESSION_REFRESH_FAILED','SESSION_REFRESH_INVALID','UNEXPECTED_FAILURE',
+    'UNKNOWN_QUOTA_NOT_RETAINED','UPLOADED_BYTES_CHANGED','UPLOAD_FAILED')) | frozenset(
+    'RETIREMENT_FIXTURE_RPC_'+name.upper()+'_FAILED' for name in ('app_command','archive_opportunity',
+    'begin_render_storage_write','delivery_export_context','fail_delivery_export','preview_opportunity_purge',
+    'purge_opportunity','retirement_fixture_selection','retirement_fixture_status','retirement_fixture_users','workspace_status'))
+
+def phase(name):
+    global _phase
+    c.need(name in PHASES,'RETIREMENT_FIXTURE_DIAGNOSTIC_PHASE_INVALID')
+    _phase=name
+
+def command_failure(code,args,*,result=None,category=None):
+    # Never retain subprocess args, payload, output, exception text or private
+    # resource names in an exception that may reach a public Actions log.
+    verb=args[0] if args and args[0] in ('get','patch','exec','wait','rollout','delete') else 'other'
+    resource=args[1] if len(args)>1 and args[1] in ('pod','pods','job','secret','configmap','deployment','service','pv','storageclass','networkpolicies','replicasets','horizontalpodautoscalers') else 'other'
+    category=category or ('timeout' if code.endswith('_TIMEOUT') else 'nonzero_exit')
+    status=None
+    child_code=child_http_status=None
+    if result is not None:
+        status=result.returncode if type(result.returncode) is int and -255<=result.returncode<=255 else None
+        # Only fixed categories leave this boundary; matching text is discarded.
+        message=(result.stderr or '')[:65536].lower()
+        for fragment,label in (('certificate signed by unknown authority','tls_verification'),('certificate verify failed','tls_verification'),
+            ('unable to connect to the server','cluster_transport'),('error from server (forbidden)','forbidden'),
+            ('error from server (unauthorized)','unauthenticated'),('error from server (notfound)','resource_missing'),
+            ('error from server (alreadyexists)','resource_exists'),('timed out waiting','readiness_timeout'),
+            ('command terminated with exit code','remote_exit')):
+            if fragment in message:category=label;break
+        if verb=='exec' and isinstance(result.stdout,str) and len(result.stdout.encode())<=4096:
+            try:
+                child=json.loads(result.stdout)
+                if (isinstance(child,dict) and set(child) in ({'failed','code'},{'failed','code','http_status'})
+                  and child.get('failed') is True and isinstance(child.get('code'),str) and child['code'] in WRITER_FAILURE_CODES
+                  and (child.get('http_status') is None or type(child['http_status']) is int and 100<=child['http_status']<=599)):
+                    child_code=child['code'];child_http_status=child.get('http_status')
+            except (ValueError,TypeError):pass
+    error=c.FixtureError(code)
+    error.public_command_diagnostic={'phase':_phase,'command':verb,'resource_class':resource,'exit_code':status,'category':category,
+        'child_code':child_code,'child_http_status':child_http_status}
+    return error
+
+def failure_diagnostic(error):
+    value=getattr(error,'public_command_diagnostic',None)
+    if not isinstance(error,c.FixtureError) or not isinstance(value,dict):return {}
+    if (set(value)!={'phase','command','resource_class','exit_code','category','child_code','child_http_status'}
+      or any(not isinstance(value[key],str) for key in ('phase','command','resource_class','category'))):return {}
+    if (value['phase'] not in PHASES
+      or value['command'] not in ('get','patch','exec','wait','rollout','delete','other')
+      or value['resource_class'] not in ('pod','pods','job','secret','configmap','deployment','service','pv','storageclass','networkpolicies','replicasets','horizontalpodautoscalers','other')
+      or value['category'] not in ('client_start','timeout','nonzero_exit','tls_verification','cluster_transport','forbidden','unauthenticated','resource_missing','resource_exists','readiness_timeout','remote_exit')
+      or not (value['exit_code'] is None or type(value['exit_code']) is int and -255<=value['exit_code']<=255)
+      or not (value['child_code'] is None or isinstance(value['child_code'],str) and value['child_code'] in WRITER_FAILURE_CODES)
+      or not (value['child_http_status'] is None or type(value['child_http_status']) is int and 100<=value['child_http_status']<=599)):return {}
+    return {'command_diagnostic':dict(value)}
 
 def pointer(value):return value.replace('~','~0').replace('/','~1')
 
@@ -29,8 +95,9 @@ def command(args,*,payload=None,timeout=60):
     executable=os.environ.get('KUBECTL','')
     c.need(executable.startswith('/') and os.environ.get('KUBECONFIG'),'RETIREMENT_FIXTURE_CLIENT_MISSING')
     try:r=subprocess.run([executable,'--request-timeout=30s',*args],input=payload,capture_output=True,text=True,timeout=timeout)
-    except (OSError,subprocess.TimeoutExpired):raise c.FixtureError('RETIREMENT_FIXTURE_COMMAND_TIMEOUT') from None
-    c.need(r.returncode==0,'RETIREMENT_FIXTURE_COMMAND_FAILED')
+    except OSError:raise command_failure('RETIREMENT_FIXTURE_COMMAND_TIMEOUT',args,category='client_start') from None
+    except subprocess.TimeoutExpired:raise command_failure('RETIREMENT_FIXTURE_COMMAND_TIMEOUT',args) from None
+    if r.returncode!=0:raise command_failure('RETIREMENT_FIXTURE_COMMAND_FAILED',args,result=r) from None
     c.need(len(r.stdout.encode())<=10*1024*1024,'RETIREMENT_FIXTURE_RESPONSE_TOO_LARGE')
     return r.stdout
 
