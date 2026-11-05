@@ -27,7 +27,7 @@ PHASES=frozenset(('not_started','access','schema_catalog','namespace_allocation'
     'storage_readiness','schema_reconstruction','sql_client_readiness','remaining_workload_readiness',
     'canonical_fixture_write','retirement_capture','retirement_fence_inspect','retirement_fence_install',
     'retirement_fence_hash','retirement_census','retirement_accounting','retirement_prepare','resume','cleanup',
-    'restore_physical_cleanup','restore_workload','restore_process_journal','restore_readiness'))
+    'restore_physical_cleanup','restore_workload','restore_process_journal','restore_readiness','physical_readiness'))
 _phase='not_started'
 WRITER_FAILURE_CODES=frozenset(('RETIREMENT_FIXTURE_'+name) for name in (
     'ALREADY_INITIALIZED','ARTIFACT_SCOPE_INVALID','BUCKET_CREATE_FAILED','BUCKET_INVALID','BUCKET_READ_FAILED',
@@ -97,6 +97,51 @@ def command_diagnostic(error):
       or not (value['child_http_status'] is None or type(value['child_http_status']) is int and 100<=value['child_http_status']<=599)):return {}
     return {'command_diagnostic':dict(value)}
 
+POD_LABELS=frozenset(('unknown','other','Pending','Running','Succeeded','Failed','Unknown',
+    'ContainerCreating','PodInitializing','ImagePullBackOff','ErrImagePull','CreateContainerConfigError',
+    'CreateContainerError','RunContainerError','CrashLoopBackOff','InvalidImageName','StartError','Error',
+    'Completed','OOMKilled','Unschedulable','UnexpectedAdmissionError','OutOfcpu','OutOfmemory',
+    'Evicted','DeadlineExceeded','NodeLost','FailedMount','FailedAttachVolume','FailedScheduling',
+    'FailedCreatePodSandBox','BackOff','FailedCreate','Scheduled','Pulled','Created','Started','Killing'))
+EVENT_CATEGORIES=(('multi-attach','multi_attach'),('already exclusively attached','multi_attach'),
+    ('mountvolume.setup failed','mount_setup'),('permission denied','permission_denied'),
+    ('read-only file system','read_only'),('no such file or directory','missing_path'),
+    ('not found in the list of registered csi drivers','csi_driver_unregistered'),
+    ('deadlineexceeded','deadline'),('timed out','timeout'),('insufficient','insufficient_resources'))
+
+def pod_diagnostic(error):
+    value=getattr(error,'public_pod_diagnostic',None)
+    if not isinstance(error,c.FixtureError) or not isinstance(value,dict):return {}
+    if set(value)!={'observed','events_observed','phase','waiting','terminated','event_reasons','event_categories'}:return {}
+    if any(type(value[k]) is not bool for k in ('observed','events_observed')):return {}
+    if not isinstance(value['phase'],str) or value['phase'] not in POD_LABELS:return {}
+    for key in ('waiting','terminated','event_reasons','event_categories'):
+        allowed=POD_LABELS if key!='event_categories' else {'other',*(x[1] for x in EVENT_CATEGORIES)}
+        if not isinstance(value[key],list) or len(value[key])>32 or any(not isinstance(x,str) or x not in allowed for x in value[key]):return {}
+    return {'pod_readiness_diagnostic':copy.deepcopy(value)}
+
+def capture_pod_readiness(error,state,name):
+    # Best-effort observation must never replace the original readiness failure.
+    # Names, UIDs, raw status messages and event text remain private.
+    value={'observed':False,'events_observed':False,'phase':'unknown','waiting':[],
+        'terminated':[],'event_reasons':[],'event_categories':[]}
+    label=lambda x:x if isinstance(x,str) and x in POD_LABELS else 'other'
+    try:
+        pod=get(state,'pod',name);status=pod.get('status',{})
+        value['phase']=label(status.get('phase'));value['observed']=True
+        for key in ('waiting','terminated'):
+            value[key]=sorted({label(x.get('state',{}).get(key,{}).get('reason'))
+                for x in status.get('containerStatuses',[])[:32] if key in x.get('state',{})})
+        ns=c.namespace(state);uid=pod['metadata']['uid']
+        events=json.loads(command(['get','events','-n',ns,'--field-selector','involvedObject.uid='+uid,'-o','json'],timeout=15))['items']
+        c.need(isinstance(events,list) and len(events)<=100,'RETIREMENT_FIXTURE_EVENT_CENSUS_INVALID')
+        c.need(all(x.get('metadata',{}).get('namespace')==ns and x.get('involvedObject',{}).get('uid')==uid for x in events),'RETIREMENT_FIXTURE_EVENT_SCOPE_INVALID')
+        value['event_reasons']=sorted({label(x.get('reason')) for x in events})
+        value['event_categories']=sorted({next((category for fragment,category in EVENT_CATEGORIES if fragment in str(x.get('message',''))[:65536].lower()),'other') for x in events})
+        value['events_observed']=True
+    except Exception:pass
+    error.public_pod_diagnostic=value
+
 # Fixed source-defined labels only. Never publish arbitrary exception messages,
 # even when they resemble a guard code, or the name of a custom exception class.
 RESTORE_CODES=frozenset('RETIREMENT_FIXTURE_'+name for name in (
@@ -113,19 +158,22 @@ def error_summary(error):
     kind=next((name for cls,name in ((c.FixtureError,'guard'),(c.proof.RetirementError,'guard'),
         (KeyError,'key'),(TypeError,'type'),(ValueError,'value')) if isinstance(error,cls)),'other')
     code=error.args[0] if kind=='guard' and len(error.args)==1 and isinstance(error.args[0],str) else None
-    return {'kind':kind,'code':code if code in RESTORE_CODES else None,**command_diagnostic(error)}
+    return {'kind':kind,'code':code if code in RESTORE_CODES else None,**command_diagnostic(error),**pod_diagnostic(error)}
 
 def valid_error_summary(value):
-    if not isinstance(value,dict) or set(value) not in ({'kind','code'},{'kind','code','command_diagnostic'}):return False
+    if not isinstance(value,dict) or not {'kind','code'}<=set(value)<={'kind','code','command_diagnostic','pod_readiness_diagnostic'}:return False
     if not isinstance(value['kind'],str) or value['kind'] not in ERROR_KINDS:return False
     if value['code'] is not None and (not isinstance(value['code'],str) or value['code'] not in RESTORE_CODES):return False
     if 'command_diagnostic' in value:
         error=c.FixtureError('RETIREMENT_FIXTURE_COMMAND_FAILED');error.public_command_diagnostic=value['command_diagnostic']
         if not command_diagnostic(error):return False
+    if 'pod_readiness_diagnostic' in value:
+        error=c.FixtureError('RETIREMENT_FIXTURE_COMMAND_FAILED');error.public_pod_diagnostic=value['pod_readiness_diagnostic']
+        if not pod_diagnostic(error):return False
     return True
 
 def failure_diagnostic(error):
-    result=command_diagnostic(error)
+    result={**command_diagnostic(error),**pod_diagnostic(error)}
     value=getattr(error,'public_restoration_diagnostic',None)
     if not isinstance(error,c.FixtureError) or not isinstance(value,dict) or set(value)!={'failures','prior_error'}:return result
     failures=value['failures']

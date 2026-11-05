@@ -268,9 +268,14 @@ class FixtureAdapter:
     'volumeMounts':[{'name':'objects','mountPath':'/var/lib/storage'},{'name':'work','mountPath':'/run/storage-retirement'}]}],
    'volumes':[{'name':'objects','persistentVolumeClaim':{'claimName':f.PVC_NAME}},{'name':'work','emptyDir':{'sizeLimit':'2Mi'}}]}}
   current=r.create(self.state,'pod',pod);self.physical_uid=current['metadata']['uid']
-  r.command(['wait','pod/'+r.PHYSICAL,'-n',f.namespace(self.state),'--for=condition=Ready','--timeout=90s'],timeout=100)
+  r.phase('physical_readiness')
+  try:r.command(['wait','pod/'+r.PHYSICAL,'-n',f.namespace(self.state),'--for=condition=Ready','--timeout=90s'],timeout=100)
+  except f.FixtureError as error:
+   r.capture_pod_readiness(error,self.state,r.PHYSICAL);raise
   self.write_physical('physical.mjs',HELPER.read_text())
  def validate_physical_pod(self,pod):
+  self.validate_physical_pod_spec(pod);c.pod_identity(pod)
+ def validate_physical_pod_spec(self,pod):
   f.owned(self.state,'pod',r.PHYSICAL,pod)
   spec=pod.get('spec',{});source=self.capture_value['pods']['storage'][0];cs=spec.get('containers',[])
   f.need(pod['metadata']['uid']==self.physical_uid and spec.get('restartPolicy')=='Never' and spec.get('automountServiceAccountToken') is False and spec.get('nodeName')==source['spec']['nodeName'] and spec.get('securityContext')==source['spec']['securityContext'] and not any(spec.get(k) for k in ('initContainers','ephemeralContainers','hostNetwork','hostPID','hostIPC')) and len(cs)==1,'RETIREMENT_FIXTURE_PHYSICAL_PROCESS_CHANGED')
@@ -280,7 +285,6 @@ class FixtureAdapter:
   volumes=spec.get('volumes',[]);f.need(len(volumes)==2,'RETIREMENT_FIXTURE_PHYSICAL_MOUNT_CHANGED')
   by_name={v['name']:v for v in volumes}
   f.need(set(by_name)=={'objects','work'} and by_name['objects']=={'name':'objects','persistentVolumeClaim':{'claimName':f.PVC_NAME}} and by_name['work']=={'name':'work','emptyDir':{'sizeLimit':'2Mi'}},'RETIREMENT_FIXTURE_PHYSICAL_MOUNT_CHANGED')
-  c.pod_identity(pod)
  def write_physical(self,name,text):
   f.need(name in ('physical.mjs','scope.json','expected-manifest.json'),'RETIREMENT_FIXTURE_FILE_INVALID')
   self.validate_physical_pod(r.get(self.state,'pod',r.PHYSICAL))
@@ -353,7 +357,9 @@ class FixtureAdapter:
    if self.physical_uid:
     current=r.get(self.state,'pod',r.PHYSICAL,missing=True)
     if current is not None:
-     self.validate_physical_pod(current);r.delete(self.state,'pod',r.PHYSICAL)
+     # The exact owned helper may have no container ID after failed startup.
+     # Deleting it is cleanup, never evidence that original writers exited.
+     self.validate_physical_pod_spec(current);r.delete(self.state,'pod',r.PHYSICAL)
      r.command(['wait','pod/'+r.PHYSICAL,'-n',f.namespace(self.state),'--for=delete','--timeout=90s'],timeout=100)
     # Missing helper is only a cleanup fact. Original writer exit proof still
     # comes exclusively from the separately retained full process journals.

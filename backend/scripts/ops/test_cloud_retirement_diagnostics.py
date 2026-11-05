@@ -101,5 +101,28 @@ class CommandDiagnostics(unittest.TestCase):
   for cause in (ValueError('private'),c.FixtureError('RETIREMENT_FIXTURE_PRIVATE_SECRET')):
    self.assertIsNone(r.error_summary(cause)['code'])
    self.assertNotIn('private',json.dumps(r.error_summary(cause)))
+ def test_pod_wait_observation_is_uid_scoped_and_redacted_through_prior_error(self):
+  error=self.failure('timed out waiting private')
+  pod={'metadata':{'uid':'private-uid'},'status':{'phase':'Pending','containerStatuses':[{'name':'private-container','state':{'waiting':{'reason':'ContainerCreating','message':'private-payload'}}}]}}
+  event={'metadata':{'namespace':'private-namespace'},'involvedObject':{'uid':'private-uid'},'reason':'FailedMount','message':'private-volume mount: permission denied private-token'}
+  with patch.object(r,'get',return_value=pod),patch.object(c,'namespace',return_value='private-namespace'),patch.object(r,'command',return_value=json.dumps({'items':[event]})) as command:
+   r.capture_pod_readiness(error,{},'private-pod')
+  self.assertIn('involvedObject.uid=private-uid',command.call_args.args[0])
+  value=r.failure_diagnostic(error)['pod_readiness_diagnostic']
+  self.assertEqual(value,{'observed':True,'events_observed':True,'phase':'Pending','waiting':['ContainerCreating'],'terminated':[],'event_reasons':['FailedMount'],'event_categories':['permission_denied']})
+  self.assertTrue(r.valid_error_summary(r.error_summary(error)))
+  self.assertNotIn('private',json.dumps(r.error_summary(error)))
+  error.public_pod_diagnostic={**value,'event_categories':['private']}
+  self.assertNotIn('pod_readiness_diagnostic',r.failure_diagnostic(error))
+ def test_unavailable_or_foreign_pod_events_do_not_mask_original_failure(self):
+  for events in ({'items':[{'metadata':{'namespace':'foreign'},'involvedObject':{'uid':'wrong'},'reason':'private'}]},ValueError('private')):
+   error=self.failure('timed out waiting')
+   kwargs={'side_effect':events} if isinstance(events,Exception) else {'return_value':json.dumps(events)}
+   with patch.object(r,'get',return_value={'metadata':{'uid':'expected'},'status':{'phase':'private'}}),patch.object(c,'namespace',return_value='owned'),patch.object(r,'command',**kwargs):r.capture_pod_readiness(error,{},'pod')
+   value=r.failure_diagnostic(error)
+   self.assertEqual(value['command_diagnostic']['category'],'readiness_timeout')
+   self.assertFalse(value['pod_readiness_diagnostic']['events_observed'])
+   self.assertEqual(value['pod_readiness_diagnostic']['phase'],'other')
+   self.assertNotIn('private',json.dumps(value))
 
 if __name__=='__main__':unittest.main()

@@ -11176,3 +11176,30 @@ The R0 evidence index, remaining-action matrix and remaining-gates document now
 include the 27-migration restore pass and the verified cleanup of the fifth
 retirement attempt. Historical failures remain intact. The instrumented run
 41996978998 uses 718ac68; no customer request or model call was started.
+
+### November 5 — complete current operational suite passes
+
+All 668 operations tests pass in 198.684 seconds on executable source 718ac68.
+All 11 schema-helper and 16 Kubernetes-render tests also pass. The manifest
+source check passes for all 27 migrations. Documentation was
+reconciled in 0db4f0a during this run; executable/test source did not change.
+This closes the earlier stale runtime-metadata failure. The mandatory final
+GitHub gate and hosted retirement acceptance remain required before rollout.
+
+### November 5 — isolate helper startup from original-writer process proof
+
+Run 41996978998 at 718ac68 identifies the earlier failure as physical-helper
+readiness timeout. Restoration then rejects its missing/invalid process identity
+and times out on Storage readiness. Cleanup later succeeds. No Pod/event reason
+was retained; missing identity does not prove that no process ever started.
+
+The adapter now permits deletion of its exact UID/spec-bound helper after failed
+startup, while all physical operations still require full process identity and
+all original writers retain their independent journals and exit proofs. Cleanup
+waits for the helper's deletion before restoring workloads. A failed readiness
+wait additionally captures bounded Pod-state/event categories from the exact
+owned UID, never raw messages, names or credentials. Timeouts are unchanged.
+All 74 focused tests pass, including absent-identity cleanup, rejection of
+foreign identity, private-event redaction and preservation of the initial error.
+A new isolated trial is required to identify the initial startup cause; no
+application deployment or customer invocation has occurred.

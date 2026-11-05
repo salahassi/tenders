@@ -1,0 +1,30 @@
+{
+  "status": "passed",
+  "executable_source_revision": "718ac68b717774503230f70b2e90150af4968393",
+  "documentation_only_revision_during_run": "0db4f0a",
+  "operations": {
+    "tests": 668,
+    "duration_seconds": 198.684,
+    "exit_code": 0,
+    "log_sha256": "9cb3ed726e4214ae91afef1f3e5a129d94a8bf65689d91e69cc8b04efb79280c"
+  },
+  "source_manifest": {
+    "verified": true,
+    "migration_count": 27,
+    "canonical_sha256": "1fdf73f4a9b638938285afd13cbf3e4077e28da3932816ea80f9d03a6d748f82"
+  },
+  "limits": [
+    "Local operational suite; final mandatory GitHub application and operational gate remains required.",
+    "No production deployment, model calls or customer requests."
+  ],
+  "schema_helper": {
+    "tests": 11,
+    "duration_seconds": 2.293,
+    "passed": true
+  },
+  "kubernetes_render": {
+    "tests": 16,
+    "duration_seconds": 0.011,
+    "passed": true
+  }
+}

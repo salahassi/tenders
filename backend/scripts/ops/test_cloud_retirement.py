@@ -200,6 +200,18 @@ class PhysicalProcess(unittest.TestCase):
   for mutate in (lambda p:p['spec'].update(ephemeralContainers=[{'name':'debug'}]),lambda p:p['spec']['containers'][0].update(command=['sh']),lambda p:p['spec']['volumes'][0]['persistentVolumeClaim'].update(claimName='private-objects')):
    adapter,pod=self.fixture();mutate(pod)
    with self.assertRaises(c.FixtureError):adapter.validate_physical_pod(pod)
+ def test_owned_pending_helper_can_be_removed_but_never_used_as_process_proof(self):
+  adapter,pod=self.fixture();pod.pop('status');capture={'pods':{},'workloads':{}}
+  for name in c.proof.NAMES:capture['workloads'][name]=self.resource('deployment',name,{'replicas':1})
+  with self.assertRaises(c.proof.RetirementError):adapter.validate_physical_pod(pod)
+  def get(state,kind,name,**kwargs):return pod if kind=='pod' else capture['workloads'][name]
+  with patch.object(r,'get',side_effect=get),patch.object(r,'delete') as delete,patch.object(r,'patch'),patch.object(r,'command') as command,patch.object(r,'wait_deployment'),patch.object(adapter,'assert_boundary'),patch.object(adapter,'save_terminations',return_value=True) as journals:
+   adapter.restore(capture,adapter.nonce)
+  delete.assert_called_once_with(self.state,'pod',r.PHYSICAL)
+  self.assertIn('--for=delete',command.call_args.args[0]);self.assertEqual(journals.call_count,3)
+  self.assertIsNone(adapter.physical_uid)
+  pod['metadata']['uid']=UUIDS[30]
+  with self.assertRaises(c.FixtureError):adapter.validate_physical_pod_spec(pod)
  def test_already_removed_helper_does_not_fail_owned_cleanup(self):
   adapter,pod=self.fixture();capture={'pods':{},'workloads':{}}
   for name in c.proof.NAMES:capture['workloads'][name]=self.resource('deployment',name,{'replicas':1})

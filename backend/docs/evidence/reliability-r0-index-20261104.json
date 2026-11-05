@@ -162,6 +162,13 @@
           "level": "Source-bound observed gate",
           "observed_result": "665 operational checks: 664 pass and one stale metadata expectation fails; corrected 13 runtime guards pass.",
           "limits": "Final complete release CI remains required."
+        },
+        {
+          "path": "backend/docs/evidence/operational-complete-718ac68-20261105.json",
+          "sha256": "c6a66534c7980e9a51fb4dd9b4c21bf9d4cfbe9c381d05f7329afa98df0a4f46",
+          "level": "Source-bound observed gate",
+          "observed_result": "668 operations, 11 schema-helper and 16 Kubernetes tests pass on current executable source 718ac68.",
+          "limits": "Final complete GitHub release gate and hosted acceptance remain required."
         }
       ]
     },
