@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "source_revision": "9501068cf630f0dd1b76537a6995627840c0fb4e",
+  "scope": "complete_backend_and_frontend_typecheck_tests_build",
+  "started_at": "2026-11-05T00:55:44.289220+00:00",
+  "checks": [
+    {
+      "package": "backend",
+      "name": "typecheck",
+      "command": [
+        "npm",
+        "--prefix",
+        "backend",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 0,
+      "seconds": 2.514,
+      "log_sha256": "537fdd9af319d22fba80875202b6f4eed7027692e77332c3979971609ba8b220"
+    },
+    {
+      "package": "backend",
+      "name": "tests",
+      "command": [
+        "npm",
+        "--prefix",
+        "backend",
+        "test",
+        "--",
+        "--maxWorkers=1"
+      ],
+      "exit_code": 0,
+      "seconds": 496.435,
+      "log_sha256": "abc1a72b42b7b0ab2d8637f40bc273fb3cc109d13e3af78b4aaf6133278425d8"
+    },
+    {
+      "package": "backend",
+      "name": "build",
+      "command": [
+        "npm",
+        "--prefix",
+        "backend",
+        "run",
+        "build"
+      ],
+      "exit_code": 0,
+      "seconds": 1.471,
+      "log_sha256": "8652d82be3115ea6597ae3b7dcf42d83bc898c68ec15888bbf53917a98ebac84"
+    },
+    {
+      "package": "frontend",
+      "name": "typecheck",
+      "command": [
+        "npm",
+        "--prefix",
+        "frontend",
+        "run",
+        "typecheck"
+      ],
+      "exit_code": 0,
+      "seconds": 2.017,
+      "log_sha256": "fcb5cdebec3bda0095f0e9251f60fcc4fc98a10fb4e6f77ef494c1c5e3f0efec"
+    },
+    {
+      "package": "frontend",
+      "name": "tests",
+      "command": [
+        "npm",
+        "--prefix",
+        "frontend",
+        "test",
+        "--",
+        "--maxWorkers=1"
+      ],
+      "exit_code": 0,
+      "seconds": 48.24,
+      "log_sha256": "7fa6be6c8b1d1f44e6d97f6e58d2faa1a4c6c33910b7f6016f6bacdba37bce67"
+    },
+    {
+      "package": "frontend",
+      "name": "build",
+      "command": [
+        "npm",
+        "--prefix",
+        "frontend",
+        "run",
+        "build"
+      ],
+      "exit_code": 0,
+      "seconds": 2.806,
+      "log_sha256": "2ed4ac88d8faafcccd40df2be1ac1606dc8f85ba829983297ad89149c742009d"
+    }
+  ],
+  "finished_at": "2026-11-05T01:04:04.751621+00:00",
+  "changed_sources": [],
+  "passed": true,
+  "test_counts": {
+    "backend": {
+      "files_passed": 202,
+      "tests_passed": 3419
+    },
+    "frontend": {
+      "files_passed": 59,
+      "tests_passed": 380
+    }
+  },
+  "source_file_count": 999,
+  "source_before_sha256": "bc5677fcf42c63328b33f8c24f7c20d60e077c97fdbd3009faca19c745a62609",
+  "raw_receipt_sha256": "ab867d96c3b71a4e97b292d9948b19a4db1067f6029329b6cc7b370490c581d7",
+  "harness_sha256": "0d25f0f8809d372ee991dfc7dc68d77ed2a79465c1830afd3372484a6acfb448",
+  "limits": [
+    "Functional checks at9501068 before source-resolution/worker5 implementation; no capacity inference.",
+    "No source changes during tests. No production deployment, provider semantic qualification or actual customer file issuance established."
+  ]
+}

@@ -10896,3 +10896,26 @@ tests. Focused verification and source hashes are retained in
 [the local receipt](evidence/qualification-review-composites-20261105.json).
 Full current-source release gates, live composite execution, independent private
 holdout, provider availability and semantic acceptance remain distinct.
+
+### November 5 — current local gates and stopped hosted attempts
+
+At `9501068`, all six application checks passed: 3,419 backend tests in202 files,
+380 frontend tests in59 files, both type checks and builds, with unchanged
+source maps. The source-resolution/worker5 changes are later work and require
+new checks. The [receipt](evidence/complete-app-checks-9501068-20261105.json)
+retains exact log hashes and scope.
+
+Release41944374857 was deliberately canceled during source verification after
+the canonical supersession diagnostic found a material old-obligation bypass.
+Cluster access, image publication and deployment were skipped; both cleanup
+steps succeeded. The diagnostic used authored false-positive verifier receipts
+and issued a review draft only; it does not establish an actual provider false
+pass or final-approval bypass. The [cancellation receipt](evidence/release-cancelled-before-access-20261105-41944374857.json)
+preserves the run and exact source.
+
+The first isolated hosted retirement attempt41946883085 passed57 fixture tests
+but preparation failed with `RETIREMENT_FIXTURE_COMMAND_FAILED`. Deliberate
+interruption was not reached and resume was skipped. Fixture cleanup verified
+success and private runner files were removed. The [attempt receipt](evidence/storage-retirement-first-attempt-20261105-41946883085.json)
+does not infer the underlying command failure: the old helper discarded that
+diagnostic detail. A safe finite diagnostic is being added before retry.
