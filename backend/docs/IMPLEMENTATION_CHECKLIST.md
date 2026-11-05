@@ -11259,3 +11259,24 @@ actual inflight upload, production fixed-target execution, production throughput
 and a general recovery-time target are not established. Previous mount/readiness
 failures remain recorded. No customer data, provider calls or production business
 mutations occurred. The checked application release is the next step.
+
+### November 5 — merged release application gates pass; cold-runner prerequisite fixed
+
+PR28 merged as 5041a54. Release 42004407118 passes all 3,488 backend and 380
+frontend tests, both typechecks and both builds. Operations runs 668 passing
+tests but the nine authority tests cannot initialize because their immutable
+PostgreSQL image is absent on the fresh runner. The tests deliberately use
+`--pull=never` and `--network none`; they must not be skipped or silently change
+binary. Cluster access, image publication and rollout are skipped; cleanups pass.
+
+All 15 workflow entry points that run the full operations suite now explicitly
+pull that same digest before the suite. The release and automatic verification
+paths provision it before package checks to fail early if unavailable. A direct
+registry pull confirms the exact digest, and all nine authority tests pass in
+7.664 seconds. Application/runtime/migration bytes remain unchanged. A fresh
+complete release gate remains required.
+
+The merge-triggered duplicate credential-sync verification 42004363235 was
+cancelled while still in package checks; discovery, binding and reload did not
+run. The full mandatory release verification was preserved. No live model
+evaluation or actual customer request was activated.

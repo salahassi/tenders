@@ -53,6 +53,8 @@ jobs:
           npm --prefix backend run typecheck
           npm --prefix backend test -- --maxWorkers=1
           npm --prefix backend run build
+          # Provision the immutable fixture before its network-isolated tests.
+          docker pull postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
           python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
           python3 -m unittest discover -s backend/deploy/kubernetes -p 'test_*.py'
       - name: Prepare verified cluster access and expiring image-push credentials

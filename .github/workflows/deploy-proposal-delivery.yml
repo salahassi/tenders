@@ -29,6 +29,8 @@ jobs:
         run: |
           set -euo pipefail
           python3 backend/scripts/ops/proposal-delivery-release.py
+          # Provision the immutable fixture before its network-isolated tests.
+          docker pull postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
           npm ci --prefix frontend
           npm ci --prefix backend
           python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
