@@ -12,7 +12,7 @@ registry digestaabe842e; temporary credentials were removed. The manifest is
 refrozen from the original deployment baseline. The current 27-migration cloud restore passes all 13 Auth/Storage
 checks and both cleanups in run 41993933795. Interrupted retirement now passes all 13 actual checks and cleanup in run
 42002971002 at e4192f9, against the same manifest. Earlier readiness/mount
-failures and their separate cleanup are retained. Final release CI and rollout
+failures and their separate cleanup are retained. Latest release CI at 9b54bad passes all 3,868 application tests and 713 operational/schema/Kubernetes checks. Runtime promotion is published, but the image step blocks before rollout. The frontend root-context correction now passes a real local Docker build; a fresh release remains required. Application rollout and actual issuance
 remain pending; no application deployment or customer issuance is claimed. The Paddle candidate is rejected and the remaining acceptance gates
 are listed in RELIABILITY_REMAINING_GATES.md. Historical statuses follow.
 
@@ -11328,3 +11328,30 @@ labels and all config fields match, with no missing/added/changed fields.
 Private credential/log cleanup passes. Explicit inspection mode skips package
 checks, image build/publication, schema work and rollout; this is not a release.
 The normal release mode still requires every complete check before deployment.
+
+### November 5 — frontend image includes the shared browser source graph
+
+Release 42014591057 at 9b54bad passes both application packages (3,488 backend
+and 380 frontend tests, typechecks/builds), 686 operations, 11 schema-helper and
+16 Kubernetes tests. Original-CA access and exact runtime promotion/publication
+pass. The next image command fails; rollout is skipped and both cleanups pass.
+The sanitized failure receipt preserves that boundary.
+
+The old frontend-only Docker context reproduces TS2307 for sibling backend
+shared imports locally. The Docker build now uses the repository-root layout
+and a frontend-specific allowlist, preserving all 47 transitive shared source
+modules and resolving their three browser dependencies from the existing locked
+frontend installation. All six direct workflow callers and the release helper
+use the same root context. The runtime Docker ignore file, qualified inputs and
+package locks are unchanged. Fewer intermediate build layers avoid unnecessary
+local VFS disk copies; only static output enters the final Nginx image.
+
+The actual corrected linux/amd64 Docker build passes TypeScript and Vite, then
+image metadata verification and owned tag cleanup. All 31 focused image/raw-config/
+qualification controls pass; the exact frozen runtime source guard passes.
+One prior local attempt exhausted development disk space before compilation;
+owned probe caches and the rejected Paddle image/cache were removed while
+retaining evidence and source. No containers or provider calls were started.
+Receipts: `release-image-build-blocked-20261105-42014591057.json` and
+`frontend-root-context-build-20261105.json`. A fresh complete hosted release and
+actual customer request/export remain required; local build success is not rollout.

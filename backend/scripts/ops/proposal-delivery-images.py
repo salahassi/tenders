@@ -18,7 +18,7 @@ release=importlib.util.module_from_spec(SPEC);sys.modules[SPEC.name]=release;SPE
 QSPEC=importlib.util.spec_from_file_location('runtime_qualification',HERE/'runtime-qualification.py')
 qualification=importlib.util.module_from_spec(QSPEC);sys.modules[QSPEC.name]=qualification;QSPEC.loader.exec_module(qualification)
 REGISTRY='registry.digitalocean.com/tenderdesk-a6093a76/'
-IMAGES={'runtime':('backend/deploy/Dockerfile','.'),'frontend':('frontend/Dockerfile','frontend'),'ocr':('backend/deploy/Dockerfile.ocr','.')}
+IMAGES={'runtime':('backend/deploy/Dockerfile','.'),'frontend':('frontend/Dockerfile','.'),'ocr':('backend/deploy/Dockerfile.ocr','.')}
 class ImageError(Exception):pass
 _RAW_CONFIG_CACHE={}
 

@@ -84,7 +84,7 @@ jobs:
           with (directory / 'build-frontend.log').open('w') as log:
               commands = [
                   ['docker', 'build', '--platform=linux/amd64', '--file', 'frontend/Dockerfile',
-                   '--label', 'org.opencontainers.image.revision=' + revision, '--tag', reference, 'frontend'],
+                   '--label', 'org.opencontainers.image.revision=' + revision, '--tag', reference, '.'],
                   ['docker', 'push', reference],
               ]
               for command in commands:
