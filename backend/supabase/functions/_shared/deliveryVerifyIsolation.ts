@@ -35,11 +35,15 @@ function createVerifier(): RendererProcess {
   // The worker has 640 MiB; other services use the smaller verifier budget.
   const oldSpace =
     runtime.env?.get("APP_RUNTIME_SERVICE") === "worker" ? 128 : 64;
+  // Old-space alone does not bound V8 young-generation allocation. The API
+  // child shares its 384 MiB container with the request process; cap each
+  // young-generation semi-space as well. Keep the worker contract unchanged.
+  const youngSpace = oldSpace === 64 ? ",--max-semi-space-size=4" : "";
   return new runtime.Command("/bin/deno", {
     args: [
       "run",
       "--no-prompt",
-      `--v8-flags=--max-old-space-size=${oldSpace}`,
+      `--v8-flags=--max-old-space-size=${oldSpace}${youngSpace}`,
       "--cached-only",
       "--frozen",
       `--config=${new URL("../deno.json", import.meta.url).pathname}`,

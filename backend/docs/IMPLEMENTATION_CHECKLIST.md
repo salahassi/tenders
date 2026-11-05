@@ -11093,3 +11093,21 @@ the correction. The affected7backend suites reduced37failures to3obsolete
 worker-floor expectations; those are corrected to5and their focused rerun is
 pending. Independent release guards now reject the old catalog lookup and
 unqualified retry parameter. Full runtime requalification remains pending.
+
+### November5 — complete packages pass; new native image rejected for OOM
+
+At f41adb8,3488backend and380frontend tests, both typechecks and builds pass with
+unchanged source. The new721340runtime image fails its first frozen native Word
+download with `DELIVERY_RENDER_FAILED`/HTTP503and container OOMKilled=true.
+The parent remained alive to return the failure; the one-second sampling maximum
+356745216bytes is not the exact peak. Sources/fixtures stayed unchanged and owned
+containers were removed. Three later native suites were skipped; the image was
+neither qualified, published nor deployed. The original rejection is retained in
+[native-runtime-721340-rejected-20261105.json](evidence/native-runtime-721340-rejected-20261105.json).
+
+The API verifier previously bounded only V8 old-space. The candidate correction
+also bounds its young-generation semi-space to4MiB, preserving the64MiB old-space,
+384MiB container, worker arguments, document oracle and deadlines. This targets
+transient heap allocation; it is not an RSS guarantee and remains unqualified
+until the same exact native fixtures pass. All35focused isolation tests and backend typecheck pass. New native
+measurements are pending; no retry of the unchanged image is used as proof.

@@ -437,7 +437,7 @@ it.each([
       ).resolves.toBe(true);
       expect(executable).toBe("/bin/deno");
       expect(options.args).toContain(
-        `--v8-flags=--max-old-space-size=${budget}`,
+        `--v8-flags=--max-old-space-size=${budget}${budget === 64 ? ",--max-semi-space-size=4" : ""}`,
       );
       expect(options.args).not.toContain("--allow-net");
       expect(options.clearEnv).toBe(true);
