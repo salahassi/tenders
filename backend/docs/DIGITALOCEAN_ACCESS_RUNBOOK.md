@@ -16,9 +16,16 @@ frontend `b2201c24`, the three other runtime images, configuration and the appli
 `ada21f57` schema ledger. It requires actual authenticated settings/model rendering,
 settled requests and complete aggregate counts, with owned rollback and cleanup.
 Both the three-minute job limit and 105-second coordinator bound apply. Read the
-entire workflow and `workspace-pagination-release.py` before dispatch. This new
-completion has not yet been deployed; keep the preceding image observations as
-the current baseline until its acceptance receipt exists.
+entire workflow and `workspace-pagination-release.py` before dispatch.
+[Completion42384215963](https://github.com/salahassi/tenders/actions/runs/42384215963)
+passed at `51bf7b1` in 123 seconds including queue time. Real authenticated settings
+and model rendering completed in 10.335 seconds with 36 settled HTTP-200 API
+requests, complete table counts and zero alerts/browser errors/model calls.
+Logout and both cleanup stages passed. See
+[the final receipt](evidence/workspace-pagination-release-passed-20261107-42384215963.json).
+Current API is now `f573e991`; worker/source-browser/scheduler remain `077b06ed`
+and frontend remains `b2201c24`. The previous-image guard deliberately rejects
+redispatch against this new baseline. Establish current state before future work.
 
 ## Three-minute pagination completion (November 7)
 
@@ -60,12 +67,13 @@ Kubernetes access or publication. Config-ID, manifest-ID and OCI-index formats
 are bound through exact hashes/sizes and a unique matching platform; all native
 config/layer/label guards remain enforced. Inspection `42370741371` passed.
 
-## Latest verified application release
+## Current images and original release baseline
 
-The November 7 pagination completion above supersedes the November 5 frontend
-and runtime image observations. The schema ledger/catalog and original release
-baseline below remain unchanged. Pagination acceptance does not close the
-separate proposal issuance, provider or export acceptance gates.
+The November 7 full-startup receipt above is the current image authority: API
+`f573e991`, three retained runtime targets `077b06ed`, frontend `b2201c24`.
+The schema ledger/catalog and original release baseline below remain unchanged.
+Startup acceptance does not close the separate proposal issuance, provider or
+export acceptance gates. The following November 5 release is historical.
 
 [Run42031298536](https://github.com/salahassi/tenders/actions/runs/42031298536)
 passes at main887411188b9591b01c9e3d01456372a37c3a0f68, with manifestada21f57.
