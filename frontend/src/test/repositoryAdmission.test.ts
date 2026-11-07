@@ -170,3 +170,40 @@ it("does not retry external busy and releases load sequencing for explicit refre
     "Current workspace",
   );
 });
+
+it("loads all 1201 job summaries in three requests and never loads full checkpoints on startup", async () => {
+  const rows = Array.from({ length: 1201 }, (_, n) => ({
+    id: id(n + 2),
+    revision: 1,
+    type: "analyze_chunk",
+    status: "failed",
+    attempts: 1,
+    model_round: 3,
+  }));
+  let pages = 0;
+  const request = vi.fn(async (path: string) => {
+    if (path === "/v1/bootstrap") return boot();
+    if (path.startsWith("/v1/jobs"))
+      throw new Error("Full job records must not load during startup");
+    if (path.startsWith("/v1/job-summaries?")) {
+      pages++;
+      const query = new URLSearchParams(path.split("?")[1]),
+        cursor = query.get("cursor");
+      expect(query.get("limit")).toBe("500");
+      const remaining = rows.filter((r) => !cursor || r.id > cursor);
+      const records = remaining.slice(0, 500);
+      return envelope({
+        records,
+        next_cursor: remaining.length > 500 ? records.at(-1)!.id : null,
+      });
+    }
+    return empty();
+  });
+  const state = await new ConnectedRepository({
+    request,
+    auth,
+  } as unknown as BackendClient).load();
+  expect(pages).toBe(3);
+  expect(state.jobs.map((j) => j.id)).toEqual(rows.map((r) => r.id));
+  expect(state.jobs[0].modelRound).toBe(3);
+});

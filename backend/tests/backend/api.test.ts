@@ -562,3 +562,30 @@ it("validates model log filters and a descending numeric cursor before querying 
     expect(f.backend.list).toHaveBeenCalledTimes(calls);
   }
 });
+
+it("serves authenticated job summaries with bounded cursor paging and no summary detail alias", async () => {
+  const f = fixture();
+  const response = await f.handle(
+    request(`job-summaries?limit=500&cursor=${source}`),
+  );
+  expect(response.status).toBe(200);
+  await response.json();
+  expect(f.backend.list).toHaveBeenCalledWith(
+    "synthetic-user-token",
+    "jobs",
+    {},
+    500,
+    source,
+    "job-summary",
+  );
+  for (const path of [
+    "job-summaries?limit=501",
+    "job-summaries?limit=0",
+    "job-summaries?cursor=bad",
+  ]) {
+    expect((await f.handle(request(path))).status).toBe(400);
+  }
+  expect((await f.handle(request(`job-summaries/${source}`))).status).toBe(404);
+  expect(f.backend.list).toHaveBeenCalledTimes(1);
+  expect(f.backend.one).not.toHaveBeenCalled();
+});

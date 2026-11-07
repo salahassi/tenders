@@ -8,6 +8,7 @@ import {
   Search,
 } from "lucide-react";
 import ModelActivity from "../components/ModelActivity";
+import JobDetails from "../components/JobDetails";
 import { Link } from "react-router-dom";
 import { useApp } from "../lib/store";
 import {
@@ -253,6 +254,7 @@ export default function Jobs() {
                     </td>
                     <td>
                       <div className="admin-job-message">{j.message}</div>
+                      <JobDetails id={j.id} />
                       <div className="small muted">
                         Worker attempts {j.attempt}
                         {j.modelRound != null &&

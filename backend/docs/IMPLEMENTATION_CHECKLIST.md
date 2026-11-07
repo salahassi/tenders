@@ -1,5 +1,28 @@
 # Implementation status and continuation plan
 
+## November 7 — excessive workspace job pagination
+
+The reported settings-page waterfall is reproduced by the production contract:
+the repository asks for 500 jobs, while the full-content API deliberately limits
+heavy `jobs` pages to one row. Startup drains the entire history serially before
+opening any page. These are authenticated application reads, not model requests.
+
+The correction adds an authenticated `job-summaries` list with selected scalar
+status/revision/attempt fields and two scalar routing counters. It fetches up to
+500 summaries with one metadata lookahead row and never selects complete
+checkpoints or lease credentials. The original full job list/detail routes keep
+their single-record heavy-content protection. Workspace startup consumes every
+summary page without a record-count ceiling. Source/routing checkpoint details
+load only when the user opens a task, with abort and explicit retry; no automatic
+retry loop is introduced. Model processing and usage accounting are unchanged.
+
+Local checks: 74 focused API/projection tests pass; 1,201 rows traverse in three
+summary requests; all 383 frontend tests, typecheck/build and the original browser
+boot/history checks pass. The expanded 1,201-row Chromium test, final backend
+gate, exact changed-runtime qualification and production deployment are pending.
+The previous verified deployment below remains active until a new receipt exists.
+
+
 ## November 5 — latest integration checkpoint
 
 **Application release42031298536 passed on main8874111.** PR28–32 are merged.

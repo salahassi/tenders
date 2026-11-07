@@ -40,7 +40,7 @@ const apiLists = new Set([
   "source-runs",
   "opportunities",
   "knowledge",
-  "jobs",
+  "job-summaries",
   "notifications",
   "audit-events",
   "proposals",
@@ -222,18 +222,12 @@ async function main() {
             tags: [],
           },
         ];
-      if (list === "jobs")
-        rows = [
-          {
-            id: job,
-            revision: 1,
-            type: "source_collect",
-            entity_id: source,
-            status: "succeeded",
-            attempts: 1,
-            created_at: "2026-01-01T00:00:00Z",
-          },
-        ];
+      if (list === "job-summaries")
+        rows = Array.from({ length: 1201 }, (_, n) => ({
+          id: `00000000-0000-4000-a000-${String(n + 1).padStart(12, "0")}`,
+          revision: 1, type: "source_collect", entity_id: source,
+          status: "succeeded", attempts: 1, created_at: "2026-01-01T00:00:00Z",
+        }));
       if (list === "audit-events") rows = auditRows;
       const cursor = url.searchParams.get("cursor");
       if (
@@ -343,6 +337,11 @@ async function main() {
       .getByRole("heading", { name: "Activity & jobs", exact: true })
       .waitFor({ timeout: 30000 });
     assert.equal(auditRequests().length, 0, "BOOT_MUST_NOT_LOAD_AUDIT_HISTORY");
+    const jobPages = requests.filter(r => r.path.startsWith("/functions/v1/api/v1/job-summaries?"));
+    assert.equal(jobPages.length, 3, "JOB_SUMMARIES_MUST_BATCH_1201_ROWS");
+    assert.equal(requests.filter(r => r.path.startsWith("/functions/v1/api/v1/jobs")).length, 0, "BOOT_MUST_NOT_FETCH_FULL_JOBS");
+    assert.equal(await page.getByRole("button", { name: "Show task details", exact: true }).count(), 1201);
+
     assert.equal(
       await page.getByText("Workspace unavailable", { exact: true }).count(),
       0,
@@ -350,7 +349,7 @@ async function main() {
     );
     await page.screenshot({
       path: path.join(screenshotDir, "jobs-open.png"),
-      fullPage: true,
+      fullPage: false,
     });
     await page.getByRole("link", { name: "Overview", exact: true }).click();
     await page
@@ -444,6 +443,9 @@ async function main() {
         audit_requests_on_boot: 0,
         audit_requests_after_user_paging: auditRequests().length,
         jobs_visible: true,
+        job_summary_records: 1201,
+        job_summary_requests_on_boot: jobPages.length,
+        full_job_requests_on_boot: 0,
         overview_visible: true,
         source_history_paged: true,
         source_history_failure_isolated: true,

@@ -66,7 +66,7 @@ function collectionSummary(run: Row | undefined): string {
     .safeParse(run.counts);
   return counts.success ? `${counts.data.processed} notices processed.` : "";
 }
-function sourceReadingSummary(checkpoint: unknown): string {
+export function sourceReadingSummary(checkpoint: unknown): string {
   const data = checkpoint as {
     source_reading_result?: {
       pages_read?: number;
@@ -156,7 +156,7 @@ export class ConnectedRepository {
     do {
       this.assertCurrentLoad(generation);
       const { data } = await this.client.request<unknown>(
-        `/v1/${path}?limit=${pageSize}${cursor ? `&cursor=${cursor}` : ""}`,
+        `/v1/${path === "jobs" ? "job-summaries" : path}?limit=${pageSize}${cursor ? `&cursor=${cursor}` : ""}`,
         { expectedIdentity: identity },
       );
       this.assertCurrentLoad(generation);
@@ -742,9 +742,10 @@ export class ConnectedRepository {
               : "queued",
       progress: r.status === "succeeded" ? 100 : 0,
       attempt: Number(r.attempts ?? 0),
-      modelRound: (
-        r.checkpoint as { model_routing?: { round_attempts?: number } } | null
-      )?.model_routing?.round_attempts,
+      modelRound:
+        (typeof r.model_round === "number" ? r.model_round : undefined) ??
+        (r.checkpoint as { model_routing?: { round_attempts?: number } } | null)
+          ?.model_routing?.round_attempts,
       errorCode: str(r, "error_code") || undefined,
       message:
         (ocrPending(str(r, "status"), str(r, "error_code"))
@@ -763,7 +764,8 @@ export class ConnectedRepository {
                     ].includes(str(r, "error_code"))
                   ? `Waiting for quota. Automatically retries after ${str(r, "next_attempt_at")}.`
                   : r.type === "model_probe" && r.status === "succeeded"
-                    ? (r.checkpoint as any)?.model_routing?.mode ===
+                    ? (r.routing_mode ??
+                        (r.checkpoint as any)?.model_routing?.mode) ===
                       "round_robin"
                       ? "Model connection verified; measured usage recorded."
                       : "Gemini connection verified; measured usage recorded."
@@ -1389,7 +1391,7 @@ export class ConnectedRepository {
   }
 }
 
-function modelRoutingSummary(checkpoint: unknown): string {
+export function modelRoutingSummary(checkpoint: unknown): string {
   const checks = (
     checkpoint as {
       model_routing?: { checks?: Array<{ provider: string; code: string }> };

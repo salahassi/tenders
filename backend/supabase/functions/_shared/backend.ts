@@ -244,13 +244,16 @@ export class Backend {
     filters: Record<string, string>,
     limit: number,
     cursor?: string,
+    projection?: "job-summary",
   ) {
     // Keep full content and complete cursor traversal, but never materialize a
     // second max-sized row merely to discover whether another page exists.
-    const heavy = isHeavyFileTable(table);
+    const summary = projection === "job-summary" && table === "jobs";
+    const heavy = !summary && isHeavyFileTable(table);
     const pageSize = heavy ? 1 : limit;
-    const selection: string =
-      table === "restore_sessions"
+    const selection: string = summary
+      ? "id,workspace_id,type,entity_id,status,attempts,error_code,next_attempt_at,created_at,updated_at,revision,model_round:checkpoint->model_routing->round_attempts,routing_mode:checkpoint->model_routing->mode"
+      : table === "restore_sessions"
         ? "id,state,created_at,expires_at,committed_at"
         : table === "generation_plans"
           ? "id,workspace_id,opportunity_id,proposal_id,base_version_id,package_id,kind,stage,status,evidence_revision,input_hash,error_code,created_at,updated_at,revision"

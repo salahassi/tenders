@@ -95,6 +95,7 @@ const readTables: Record<string, string> = {
   "opportunity-discovery": "opportunity_discovery",
   knowledge: "knowledge_items",
   jobs: "jobs",
+  "job-summaries": "jobs",
   notifications: "notifications",
   "audit-events": "audit_events",
   proposals: "proposals",
@@ -438,6 +439,12 @@ export function createApiHandler(
         );
       const read = path.match(/^\/v1\/([a-z-]+)(?:\/([^/]+))?$/);
       if (request.method === "GET" && read && readTables[read[1]]) {
+        if (read[2] && read[1] === "job-summaries")
+          throw new AppError(
+            404,
+            "NOT_FOUND",
+            "Use the job record for details.",
+          );
         if (read[2]) {
           const id =
             read[1] === "model-activity"
@@ -450,7 +457,11 @@ export function createApiHandler(
           return respond(record, 200, { revision: record.revision });
         }
         const limit = Number(url.searchParams.get("limit") || 25);
-        const maxLimit = ["jobs", "audit-events"].includes(read[1]) ? 500 : 100;
+        const maxLimit = ["jobs", "job-summaries", "audit-events"].includes(
+          read[1],
+        )
+          ? 500
+          : 100;
         if (!Number.isInteger(limit) || limit < 1 || limit > maxLimit)
           throw new AppError(
             400,
@@ -556,6 +567,7 @@ export function createApiHandler(
             filters,
             limit,
             cursor,
+            ...(read[1] === "job-summaries" ? ["job-summary" as const] : []),
           ),
         );
       }

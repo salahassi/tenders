@@ -192,7 +192,7 @@ describe("connected repository", () => {
     const first = "00000000-0000-4000-8000-000000000031",
       second = "00000000-0000-4000-8000-000000000032";
     f.request.mockImplementation(async (path, options) => {
-      if (path.startsWith("/v1/jobs?"))
+      if (path.startsWith("/v1/job-summaries?"))
         return {
           data: {
             records: [
@@ -215,7 +215,7 @@ describe("connected repository", () => {
     const state = await new ConnectedRepository(f.client).load();
     expect(state.jobs.map((j) => j.id)).toEqual([first, second]);
     expect(f.request).toHaveBeenCalledWith(
-      `/v1/jobs?limit=500&cursor=${first}`,
+      `/v1/job-summaries?limit=500&cursor=${first}`,
       { expectedIdentity: session.user.id },
     );
     expect(
@@ -278,7 +278,10 @@ describe("connected repository", () => {
       const id = (value: number) =>
         `00000000-0000-4000-8000-${value.toString(16).padStart(12, "0")}`;
       f.request.mockImplementation(async (path, options) => {
-        if (!path.startsWith(`/v1/${table}?`)) return original(path, options);
+        if (
+          !path.startsWith(`/v1/${table === "jobs" ? "job-summaries" : table}?`)
+        )
+          return original(path, options);
         const cursor = new URLSearchParams(path.split("?")[1]).get("cursor");
         const start = cursor ? parseInt(cursor.slice(-12), 16) : 0;
         const records = Array.from(
@@ -312,12 +315,12 @@ describe("connected repository", () => {
       if (table === "jobs") expect(state.jobs.at(-1)?.status).toBe("failed");
       expect(
         f.request.mock.calls.filter(([path]) =>
-          path.startsWith(`/v1/${table}?`),
+          path.startsWith(`/v1/${table === "jobs" ? "job-summaries" : table}?`),
         ).length,
       ).toBe(table === "jobs" ? 21 : 101);
     },
   );
-  it.each(["/v1/bootstrap", "/v1/jobs?"])(
+  it.each(["/v1/bootstrap", "/v1/job-summaries?"])(
     "keeps authorization failures from required %s requests fatal",
     async (failedPath) => {
       const f = fixture();
@@ -341,7 +344,8 @@ describe("connected repository", () => {
     const original = f.request.getMockImplementation()!;
     const next = "00000000-0000-4000-8000-000000000031";
     f.request.mockImplementation(async (path, options) => {
-      if (!path.startsWith("/v1/jobs?")) return original(path, options);
+      if (!path.startsWith("/v1/job-summaries?"))
+        return original(path, options);
       return {
         data: { records: [{ id: next, revision: 1 }], next_cursor: next },
         meta: { request_id: "fixture" },
@@ -351,8 +355,9 @@ describe("connected repository", () => {
       "pagination did not advance",
     );
     expect(
-      f.request.mock.calls.filter(([path]) => path.startsWith("/v1/jobs?"))
-        .length,
+      f.request.mock.calls.filter(([path]) =>
+        path.startsWith("/v1/job-summaries?"),
+      ).length,
     ).toBe(2);
   });
   it("preserves worker attempts separately from the current model round and job timestamps", async () => {
@@ -381,7 +386,7 @@ describe("connected repository", () => {
       },
     ];
     f.request.mockImplementation(async (path, options) =>
-      path.startsWith("/v1/jobs?")
+      path.startsWith("/v1/job-summaries?")
         ? {
             data: { records: rows, next_cursor: null },
             meta: { request_id: "fixture" },
@@ -411,9 +416,9 @@ describe("connected repository", () => {
     ];
     f.request.mockImplementation(async (path, options) => {
       const table = path.split("?")[0];
-      if (table === "/v1/jobs" || table === "/v1/source-runs") {
+      if (table === "/v1/job-summaries" || table === "/v1/source-runs") {
         const records = ids.map((id, i) =>
-          table === "/v1/jobs"
+          table === "/v1/job-summaries"
             ? {
                 id,
                 revision: 1,
@@ -1257,7 +1262,7 @@ it("projects durable OCR waits without changing job identity or masking later er
               inbox_visible: false,
             },
           ]
-        : table === "/v1/jobs"
+        : table === "/v1/job-summaries"
           ? [
               {
                 id: jobId,
