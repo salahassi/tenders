@@ -11,6 +11,62 @@ request/page counts and aggregate table sizes, with only same-origin GETs,
 no customer content in logs, a genuine isolated Owner session, logout and owned
 client cleanup. It does not change deployments or call models. The workflow
 retains the three-minute deadline. Cause and end-to-end acceptance remain open.
+Diagnostic `42381366914` failed before a browser result in 24 seconds; both
+cleanup stages passed. Bounded stage/type/source-line diagnostics are added to
+identify the setup failure without exposing exception payloads or credentials.
+Run `42381483301` isolates a missing `DIGITALOCEAN_ACCESS_TOKEN` binding in the
+observer step before temporary client creation. The workflow now supplies that
+existing secret to the observer; the browser child still strips it. A focused
+workflow binding regression check is added. Both failed runs cleaned up.
+Diagnostic `42381585874` completes in 139 seconds and confirms the remaining
+amplification: 119 opportunities require 120 requests, 32 source runs require 33,
+and fit assessments are still one per request (106 total in the database).
+Job summaries remain four requests for 1,795 jobs. The probe stops at its explicit
+200-request cap; its resulting alert is diagnostic-induced, not a production
+server error. The [aggregate evidence](evidence/workspace-startup-before-20261107.json)
+contains no customer content. Both cleanup stages and isolated session logout pass.
+
+The correction batches small complete rows into byte/time-bounded HTTP pages
+while retaining one-row database reads and the heavy-read admission lane. A page
+holds at most a conservative 1 MiB bound of small rows; an oversized row is sent
+alone, without fetching a second large row. The two-second soft work bound and
+cursor continuation preserve complete history without arbitrary record loss.
+All business fields remain intact, including null/zero/false and full text.
+Raw job reads retain their original one-record policy; job summaries are unchanged.
+New tests cover escaping/Arabic/emoji, oversized boundaries, exact continuation,
+work duration and all three affected tables. The immutable-image PostgreSQL/API
+fixture now also verifies 119 full opportunity records and preserved descriptions.
+Deployment and complete real-page acceptance remain pending.
+Local checks pass: 3,499 backend tests / 206 files, 383 frontend tests / 60 files,
+both package typechecks/builds, and 72 focused list/admission controls. Runtime
+`9566a11c` is built from `346f0b9`. The first native artifact save hit local ENOSPC;
+unused build cache cleanup restored space without deleting images or evidence.
+Three subsequent native DOCX scopes pass at 384 MiB / 700m. The new API fixture's
+loopback adapter initially rejected its newly added `opportunities` read; it now
+permits that exact GET route. Application/runtime COPY inputs remain unchanged;
+the failed fixture receipt and cleanup are retained before the focused retry.
+The corrected native API fixture passes at `7b464c2`: 119 complete opportunity
+records in four requests, with 118 exact seeded descriptions verified, alongside
+1,201 large-checkpoint job summaries in three requests and the complete 100-result
+412,758,765-byte stream. API peak memory is 167,448,576 bytes under the unchanged
+402,653,184-byte / 700m limit, with no OOM and verified cleanup. All four native
+scopes qualify the exact `9566a11c` image; build revision `346f0b9` and the later
+fixture-only correction are separately bound. No product code override is used.
+The qualified runtime is published and pull-verified as `runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a`.
+
+The new three-minute `deploy-workspace-pagination.yml` changes only the API image.
+It requires the observed `077b06ed` API/runtime and `b2201c24` frontend baseline,
+strict qualification/configuration/schema guards, owned rollback, and actual
+authenticated settings readiness with every startup table count matched. A
+successful diagnostic collection alone cannot satisfy acceptance: models must
+render, network requests must settle, the skeleton/errors must disappear and
+the read count must remain below 100. Its 105-second coordinator bound reserves
+time for cleanup/rollback. The new source manifest changes runtime qualification
+metadata only; the original deployed `ada21f57` ledger/catalog are preserved.
+The qualification tests now pin the newly verified image/source explicitly;
+34 Python release/qualification/manifest regression controls and three
+browser-boundary tests pass.
+Production update and complete UI acceptance are still pending.
 
 **Deployed and accepted:**
 [run42375651095](https://github.com/salahassi/tenders/actions/runs/42375651095)

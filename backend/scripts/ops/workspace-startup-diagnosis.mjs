@@ -50,6 +50,9 @@ export async function diagnose(input) {
     const response=await page.goto(input.origin+'/#/settings?section=models',{waitUntil:'domcontentloaded',timeout:15000});
     report.index_sha256=createHash('sha256').update(await response.body()).digest('hex');
     try {await page.getByRole('heading',{name:'Workspace settings',exact:true}).waitFor({state:'visible',timeout:65000});report.settings_ready=true;} catch {}
+    if(report.settings_ready){
+      try{await page.getByRole('heading',{name:'Models & providers',exact:true}).waitFor({state:'visible',timeout:10000});await page.waitForLoadState('networkidle',{timeout:10000});report.network_settled=true;}catch{report.network_settled=false;}
+    }
     report.models_visible=await page.getByRole('heading',{name:'Models & providers',exact:true}).isVisible();
     report.skeleton_visible=await page.locator('.shell-skeleton').isVisible();
     report.alert_count=await page.getByRole('alert').count();

@@ -56,7 +56,7 @@ class RuntimeQualificationTests(unittest.TestCase):
         self.assertEqual(len(self.receipt['native_evidence']), 4)
         self.assertEqual(self.receipt['source_entries']['backend/supabase/functions/_shared/model.ts']['sha256'],
                          'd2f2e2a55842ff47653d45c0a96c334534088f6e8c678988c3053fb5027807d7')
-        self.assertEqual(self.receipt['observed_checkout_revision'], 'b69927568be0afff5fd7aee2b381b9f4b06a1b1d')
+        self.assertEqual(self.receipt['observed_checkout_revision'], '346f0b90df89e893e94edfc3ddf1baeef5da7989')
         q.verify_published(self.image(), REFERENCE, self.receipt)
 
     def test_source_bytes_and_executable_mode_are_both_required(self):

@@ -1,6 +1,7 @@
 /** Shared HTTP projection policy. The browser uses the same classification to
  * sequence its own requests; the API independently enforces admission. Full
- * business fields are preserved, and heavy table pages never use lookahead. */
+ * business fields are preserved. Full rows are read individually and HTTP pages
+ * retain a bounded amount of small records; a large record travels alone. */
 export const heavyFileReadResources: Readonly<Record<string, string>> = {
   exports: "export_requests",
   "generation-steps": "generation_steps",
@@ -82,4 +83,37 @@ export function isHeavyFileRequest(method: string, rawPath: string): boolean {
   if (method.toUpperCase() === "PUT")
     return /^\/v1\/proposals\/[^/]+\/review-inputs$/.test(path);
   return false;
+}
+
+/** Bound retained full rows without serializing or copying a potentially huge
+ * text field. Six bytes per UTF-16 unit covers JSON escaping and UTF-8. This is
+ * deliberately conservative; no field or record is truncated. */
+export const FULL_LIST_PAGE_BYTES = 1024 * 1024;
+export const FULL_LIST_PAGE_MS = 2000;
+
+export function jsonBytesUpperBound(value: unknown, budget: number): number {
+  if (value === null) return 4;
+  if (typeof value === "string")
+    return Math.min(budget + 1, value.length * 6 + 2);
+  if (typeof value === "number") return String(value).length;
+  if (typeof value === "boolean") return value ? 4 : 5;
+  let size = 2;
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      size += 1 + jsonBytesUpperBound(item, Math.max(0, budget - size - 1));
+      if (size > budget) return budget + 1;
+    }
+  } else if (value && typeof value === "object") {
+    for (const key in value) {
+      if (!Object.hasOwn(value, key)) continue;
+      size += key.length * 6 + 4;
+      if (size > budget) return budget + 1;
+      size += jsonBytesUpperBound(
+        (value as Record<string, unknown>)[key],
+        budget - size,
+      );
+      if (size > budget) return budget + 1;
+    }
+  }
+  return size;
 }

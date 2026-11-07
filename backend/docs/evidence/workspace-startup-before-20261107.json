@@ -1,0 +1,222 @@
+{
+  "version": 1,
+  "kind": "actual_workspace_startup",
+  "settings_ready": false,
+  "skeleton_visible": false,
+  "browser_errors": 0,
+  "blocked_requests": 1,
+  "api_requests": 200,
+  "resources": {
+    "bootstrap": {
+      "requests": 1,
+      "records": 0,
+      "bytes": 2741,
+      "nonempty_pages": 0,
+      "min_page_size": null,
+      "max_page_size": 0,
+      "statuses": {
+        "200": 1
+      }
+    },
+    "sources": {
+      "requests": 1,
+      "records": 36,
+      "bytes": 66297,
+      "nonempty_pages": 1,
+      "min_page_size": 36,
+      "max_page_size": 36,
+      "statuses": {
+        "200": 1
+      }
+    },
+    "source-runs": {
+      "requests": 33,
+      "records": 32,
+      "bytes": 20579,
+      "nonempty_pages": 32,
+      "min_page_size": 1,
+      "max_page_size": 1,
+      "statuses": {
+        "200": 33
+      }
+    },
+    "opportunities": {
+      "requests": 120,
+      "records": 119,
+      "bytes": 569804,
+      "nonempty_pages": 119,
+      "min_page_size": 1,
+      "max_page_size": 1,
+      "statuses": {
+        "200": 120
+      }
+    },
+    "knowledge": {
+      "requests": 1,
+      "records": 0,
+      "bytes": 103,
+      "nonempty_pages": 0,
+      "min_page_size": null,
+      "max_page_size": 0,
+      "statuses": {
+        "200": 1
+      }
+    },
+    "job-summaries": {
+      "requests": 4,
+      "records": 1795,
+      "bytes": 816960,
+      "nonempty_pages": 4,
+      "min_page_size": 295,
+      "max_page_size": 500,
+      "statuses": {
+        "200": 4
+      }
+    },
+    "notifications": {
+      "requests": 2,
+      "records": 179,
+      "bytes": 120633,
+      "nonempty_pages": 2,
+      "min_page_size": 79,
+      "max_page_size": 100,
+      "statuses": {
+        "200": 2
+      }
+    },
+    "proposals": {
+      "requests": 1,
+      "records": 1,
+      "bytes": 591,
+      "nonempty_pages": 1,
+      "min_page_size": 1,
+      "max_page_size": 1,
+      "statuses": {
+        "200": 1
+      }
+    },
+    "documents": {
+      "requests": 2,
+      "records": 1,
+      "bytes": 127531,
+      "nonempty_pages": 1,
+      "min_page_size": 1,
+      "max_page_size": 1,
+      "statuses": {
+        "200": 2
+      }
+    },
+    "proposal-versions": {
+      "requests": 1,
+      "records": 0,
+      "bytes": 103,
+      "nonempty_pages": 0,
+      "min_page_size": null,
+      "max_page_size": 0,
+      "statuses": {
+        "200": 1
+      }
+    },
+    "proposal-sections": {
+      "requests": 1,
+      "records": 0,
+      "bytes": 103,
+      "nonempty_pages": 0,
+      "min_page_size": null,
+      "max_page_size": 0,
+      "statuses": {
+        "200": 1
+      }
+    },
+    "questions": {
+      "requests": 1,
+      "records": 0,
+      "bytes": 103,
+      "nonempty_pages": 0,
+      "min_page_size": null,
+      "max_page_size": 0,
+      "statuses": {
+        "200": 1
+      }
+    },
+    "review-inputs": {
+      "requests": 1,
+      "records": 0,
+      "bytes": 103,
+      "nonempty_pages": 0,
+      "min_page_size": null,
+      "max_page_size": 0,
+      "statuses": {
+        "200": 1
+      }
+    },
+    "regeneration-requests": {
+      "requests": 1,
+      "records": 0,
+      "bytes": 103,
+      "nonempty_pages": 0,
+      "min_page_size": null,
+      "max_page_size": 0,
+      "statuses": {
+        "200": 1
+      }
+    },
+    "requirements": {
+      "requests": 1,
+      "records": 0,
+      "bytes": 103,
+      "nonempty_pages": 0,
+      "min_page_size": null,
+      "max_page_size": 0,
+      "statuses": {
+        "200": 1
+      }
+    },
+    "fit-assessments": {
+      "requests": 29,
+      "records": 29,
+      "bytes": 252655,
+      "nonempty_pages": 29,
+      "min_page_size": 1,
+      "max_page_size": 1,
+      "statuses": {
+        "200": 29
+      }
+    }
+  },
+  "business_mutations": 0,
+  "model_requests": 0,
+  "index_sha256": "aaa576da3f4ebde3e1c8289ad6d0dfd93d486b1d5b8b53bf63a33c594e840616",
+  "models_visible": false,
+  "alert_count": 1,
+  "elapsed_ms": 68085,
+  "table_counts": {
+    "jobs": 1795,
+    "sources": 36,
+    "documents": 1,
+    "proposals": 1,
+    "questions": 0,
+    "source_runs": 32,
+    "requirements": 0,
+    "notifications": 179,
+    "opportunities": 119,
+    "review_inputs": 0,
+    "fit_assessments": 106,
+    "knowledge_items": 0,
+    "proposal_sections": 0,
+    "proposal_versions": 0,
+    "opportunity_discovery": 119,
+    "regeneration_requests": 0
+  },
+  "source_revision": "6bef937cfdbaf468e795be2fda890b97291a9bbe",
+  "auth_session_logged_out": true,
+  "owned_client_removed": true,
+  "evidence": {
+    "run": 42381585874,
+    "url": "https://github.com/salahassi/tenders/actions/runs/42381585874",
+    "elapsed_seconds": 139,
+    "diagnostic_request_cap": 200,
+    "cap_reached": true,
+    "note": "The probe aborted its 201st request. The resulting alert is probe-induced; other full-content tables are confirmed to amplify requests. This diagnostic is not successful UI acceptance."
+  }
+}

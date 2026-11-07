@@ -1,0 +1,9 @@
+{
+  "build_source": "346f0b90df89e893e94edfc3ddf1baeef5da7989",
+  "final_api_fixture_source": "7b464c23f031371a9e1f85656af9ec01b7fa6c55",
+  "allowed_fixture_only_changes": [
+    "backend/docs/IMPLEMENTATION_CHECKLIST.md",
+    "backend/scripts/testing/capacity_api_batch.ts"
+  ],
+  "scope": "Three DOCX native scopes at the build revision; final PostgreSQL/API scope after correcting only its loopback route allowance. Exact runtime COPY and supplementary build inputs remain identical. All package tests completed before native work; metadata and external draft editing overlapped without exclusive CPU claims. The disk-full artifact-save failure and first API fixture failure remain retained; all containers were cleaned."
+}

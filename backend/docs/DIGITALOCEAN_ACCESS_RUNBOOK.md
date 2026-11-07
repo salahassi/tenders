@@ -5,6 +5,21 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 7, 2026.
 
+## Reopened workspace startup: API pagination completion
+
+The owner reported that settings still did not load. Real-browser diagnosis
+`42381585874` confirms one-row requests remain for opportunities, source runs
+and fit assessments; the earlier job-summary result did not prove full startup.
+`deploy-workspace-pagination.yml` is the bounded completion path for that defect.
+It changes only API from `077b06ed` to qualified/published `f573e991`, retaining
+frontend `b2201c24`, the three other runtime images, configuration and the applied
+`ada21f57` schema ledger. It requires actual authenticated settings/model rendering,
+settled requests and complete aggregate counts, with owned rollback and cleanup.
+Both the three-minute job limit and 105-second coordinator bound apply. Read the
+entire workflow and `workspace-pagination-release.py` before dispatch. This new
+completion has not yet been deployed; keep the preceding image observations as
+the current baseline until its acceptance receipt exists.
+
 ## Three-minute pagination completion (November 7)
 
 The owner requires stopping any Actions run that exceeds three minutes and fixing
