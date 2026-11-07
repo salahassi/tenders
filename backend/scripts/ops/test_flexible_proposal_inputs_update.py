@@ -341,6 +341,19 @@ await db.close();console.log('actual restricted flexible-input release passed');
             self.assertEqual(p.runtime_pods("worker", deployment), [pod, old_pod])
             self.assertEqual(read.call_count, 2)
 
+    def test_frontend_drain_keeps_controller_ownership_and_frontend_image_boundary(self):
+        deployment,pod,replica_set=self.rendered_runtime_identity()
+        deployment['metadata']['name']='frontend'
+        pod['metadata']['labels']['app.kubernetes.io/name']='frontend'
+        pod['spec']['containers'][0]['name']='frontend'
+        pod['spec']['containers'][0]['image']=p.u.REGISTRY+'frontend@sha256:'+'b'*64
+        replica_set['metadata']['ownerReferences'][0]['name']='frontend'
+        with patch.object(p.u.d,'command',return_value=json.dumps({'items':[pod]})),patch.object(p.u.d,'get',return_value=replica_set):
+            self.assertEqual(p.runtime_pods('frontend',deployment),[pod])
+        pod['spec']['containers'][0]['image']=p.u.REGISTRY+'runtime@sha256:'+'b'*64
+        with patch.object(p.u.d,'command',return_value=json.dumps({'items':[pod]})),self.assertRaisesRegex(p.u.UpdateError,'IMMUTABLE_IMAGE_REQUIRED'):
+            p.runtime_pods('frontend',deployment)
+
     def test_same_label_pods_refuse_missing_spoofed_or_foreign_controller_identity(self):
         original_deployment, original_pod, original_rs = self.rendered_runtime_identity()
         cases = []

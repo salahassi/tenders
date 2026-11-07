@@ -183,7 +183,7 @@ def runtime_pods(name, deployment):
                 or labels.get("app.kubernetes.io/name") != name
                 or len(containers) != 1 or containers[0].get("name") != name):
             raise u.UpdateError("FLEXIBLE_INPUTS_RUNTIME_POD_OWNERSHIP_REQUIRED")
-        u.image(containers[0].get("image", ""), "runtime")
+        u.image(containers[0].get("image", ""), "frontend" if name == "frontend" else "runtime")
         owner = controller_owner(metadata, "ReplicaSet")
         identity = (owner["name"], owner["uid"])
         if identity not in replica_sets:

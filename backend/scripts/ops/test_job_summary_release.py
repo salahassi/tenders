@@ -33,6 +33,16 @@ class SummaryReleaseTests(unittest.TestCase):
             for name,key,value in [('api','image','operator-image'),('api','resources',{}),('rest','image','new-rest')]:
                 changed=copy.deepcopy(current);changed[name]['spec']['template']['spec']['containers'][0][key]=value
                 with patch.object(m.runtime,'workload_snapshot',return_value=changed),self.assertRaises(m.ReleaseError):m.verify_unchanged(old,{'unchanged':True},selected)
+    def test_rollback_attempts_all_owned_targets_even_when_one_drain_fails(self):
+        original={n:{'spec':{'template':{'spec':{'containers':[{'image':'old-'+n}]}}}} for n in ('api','worker','frontend')}
+        m.STATE.update(rolled_back=[],rollback_failed=[])
+        def drain(name,image):
+            if name=='frontend':raise RuntimeError('synthetic failure')
+        with patch.object(m.runtime,'patch_runtime') as patch_image,patch.object(m.d,'wait_deployments'),patch.object(m.base,'wait_drain',side_effect=drain):
+            with self.assertRaisesRegex(m.ReleaseError,'ROLLBACK_NOT_CONFIRMED'):
+                m.rollback(['api','worker','frontend'],{'runtime':'new-runtime','frontend':'new-frontend'},original)
+        self.assertEqual([c.args[0] for c in patch_image.call_args_list],['frontend','worker','api'])
+        self.assertEqual(m.STATE['rolled_back'],['worker','api']);self.assertEqual(m.STATE['rollback_failed'],['frontend'])
     def test_release_source_has_no_migration_or_processing_operation(self):
         source=Path(m.__file__).read_text()
         for forbidden in ['migration_script(', 'app_command(', 'retry_processing(', 'INSERT INTO ', 'UPDATE public.', 'DELETE FROM ']:self.assertNotIn(forbidden,source)

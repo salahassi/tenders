@@ -21,11 +21,24 @@ auth=load('summary_release_auth','proposal-export-acceptance.py')
 d,u,runtime,images=base.d,base.u,base.runtime,base.images
 RUNTIME=('api','worker','source-browser','scheduler')
 TARGETS=RUNTIME+('frontend',)
-PREVIOUS_RUNTIME='registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:9a94ce1a89c66627157efb6b67536d94c1d6b6e414752d45af144d97bd74df07'
+PREVIOUS_RUNTIME='registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e'
 PREVIOUS_FRONTEND='registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:32f26e92e33861e591fbc408cea0fca8ca817a7bd5496f11f48d32a2c53cf180'
 SCHEMA_MANIFEST='ada21f57461fa81e3b45778685d86438117ef419ad8c31ceaac86c06dcb2dba3'
 SCHEMA_CATALOG='8f82c88194713bff62224f307d8ab6744a42f4d7fa57a3559fafc4d083cddc04'
 class ReleaseError(Exception):pass
+STATE={'stage':'initial','patched':[],'rolled_back':[],'rollback_failed':[]}
+
+def rollback(touched,selected,original):
+    STATE['stage']='rollback'
+    for name in reversed(touched):
+        try:
+            candidate=selected['frontend' if name=='frontend' else 'runtime'];prior=base.image_of(original[name])
+            runtime.patch_runtime(name,prior,original[name],candidate)
+            d.wait_deployments([name]);base.wait_drain(name,prior)
+            STATE['rolled_back'].append(name)
+        except Exception:
+            STATE['rollback_failed'].append(name)
+    require(not STATE['rollback_failed'],'SUMMARY_ROLLBACK_NOT_CONFIRMED')
 
 def require(ok,code):
     if not ok:raise ReleaseError(code)
@@ -98,6 +111,7 @@ COMMIT;""".replace('__W__',workspace)
         if session:auth.smoke.expect(client.request('/auth/v1/logout?scope=local',token=session['access_token'],method='POST'),{200,204},'SUMMARY_LOGOUT_NOT_CONFIRMED')
 
 def update():
+    STATE.update(stage='preflight',patched=[],rolled_back=[],rollback_failed=[])
     revision=os.environ.get('GITHUB_SHA','');require(re.fullmatch('[a-f0-9]{40}',revision),'SUMMARY_REVISION_REQUIRED')
     selected={name:u.image(os.environ.get('TENDERDESK_'+name.upper()+'_IMAGE',''),name) for name in ('runtime','frontend')}
     images.verify_checkout(revision);q=images.qualification;receipt=q.load(images.release.ROOT.parent);q.verify_checkout(images.release.ROOT.parent,receipt)
@@ -109,22 +123,26 @@ def update():
     database=base.inventory.observer.Client(1800);database.labels['app.kubernetes.io/managed-by']=base.OWNER;base.save_client(database)
     touched=[]
     try:
+        STATE['stage']='schema_preflight'
         database.prepare();schema=verify_schema(database)
         for name in TARGETS:
+            STATE['stage']='update_'+name
             verify_unchanged(before,configuration,selected)
             candidate=selected['frontend' if name=='frontend' else 'runtime'];prior=base.image_of(original[name]);touched.append(name)
-            runtime.patch_runtime(name,candidate,original[name],prior);d.wait_deployments([name]);base.wait_drain(name,candidate)
+            runtime.patch_runtime(name,candidate,original[name],prior);STATE['patched'].append(name)
+            d.wait_deployments([name]);base.wait_drain(name,candidate)
         verify_unchanged(before,configuration,selected);verify_schema(database)
+        STATE['stage']='public_acceptance'
         front.public_check(u.owned('configmap','frontend-config'),expected)
+        STATE['stage']='authenticated_acceptance'
         observed=acceptance(database)
         require(all(base.image_of(u.deployment(n))==selected['frontend' if n=='frontend' else 'runtime'] for n in TARGETS),'SUMMARY_FINAL_IMAGE_MISMATCH')
         return {'release':'job-summary-pagination','status':'passed','source_revision':revision,'images':selected,'schema':schema,'acceptance':observed,'configuration_preserved':True,'auth_session_logged_out':True,'processing_retried':False}
     except Exception:
         # Image-only, additive endpoint release: restore our exact changed images,
         # never overwrite an operator's concurrent specification or image edit.
-        for name in reversed(touched):
-            candidate=selected['frontend' if name=='frontend' else 'runtime'];prior=base.image_of(original[name])
-            runtime.patch_runtime(name,prior,original[name],candidate);d.wait_deployments([name]);base.wait_drain(name,prior)
+        STATE['failure_stage']=STATE['stage']
+        rollback(touched,selected,original)
         raise
     finally:
         base.cleanup_saved_client()
@@ -139,5 +157,5 @@ def main():
         print(json.dumps(result),flush=True);return 0
     except Exception as error:
         code=str(error) if re.fullmatch('[A-Z][A-Z0-9_]{0,99}',str(error)) else 'SUMMARY_RELEASE_FAILED'
-        print(json.dumps({'release':'job-summary-pagination','status':'failed','code':code}),flush=True);return 1
+        print(json.dumps({'release':'job-summary-pagination','status':'failed','code':code,'rollout':STATE}),flush=True);return 1
 if __name__=='__main__':sys.exit(main())
