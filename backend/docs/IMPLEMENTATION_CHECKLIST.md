@@ -16,21 +16,33 @@ summary page without a record-count ceiling. Source/routing checkpoint details
 load only when the user opens a task, with abort and explicit retry; no automatic
 retry loop is introduced. Model processing and usage accounting are unchanged.
 
-Local checks: 74 focused API/projection tests pass; 1,201 rows traverse in three
-summary requests; all 383 frontend tests, typecheck/build and the original browser
-boot/history checks pass. The expanded Chromium test also passes: all 1,201 jobs are visible after three
-summary requests, with no full job reads on startup. The native real PostgreSQL/
-PostgREST/API harness now includes 1,201 jobs with large checkpoints to validate
-the actual projection and page count. Final backend checks, native qualification
-and production deployment remain pending. The three native DOCX scopes pass
-for image aeb8e3c3. The initial new job fixture exceeded the actual 64 KiB
-checkpoint constraint and was rejected before the API ran; that failed receipt
-and cleanup are retained. The fixture is corrected to about 61 KiB, without
-changing the application or relaxing its database constraint. The next fixture
-attempt used the wrong synthetic CORS origin and was rejected; it now uses the
-harness’s existing allowed origin. Both unsuccessful fixtures and their cleanup
-receipts are retained separately from application acceptance.
-The previous verified deployment below remains active until a new receipt exists.
+Local checks pass: 74 focused API/projection tests; all 383 frontend and 3,493
+backend tests; both package typechecks/builds. Chromium renders all 1,201 jobs
+with three summary requests and no full job reads on startup; existing 10,501-row
+audit paging and failure isolation remain verified. The actual immutable-image
+PostgreSQL/PostgREST/API fixture also returns 1,201 roughly 61 KiB checkpoints as
+three metadata pages, with no checkpoint fields. All four native scopes pass at
+the unchanged 384 MiB / 700m application limits, including the 100-result stream
+and DOCX delivery cases. Image `aeb8e3c3` is published and pull-verified as
+`runtime@sha256:d34fb3616c639938b8fc81a5dd1c2a5f31fb002c55fab446adb259a47833baa4`.
+This publication alone is not a deployed application.
+
+The first new fixture exceeded the real 64 KiB checkpoint constraint; the second
+used an unapproved synthetic CORS origin. Both failed receipts and verified
+cleanup are retained. The final fixture uses about 61 KiB and the existing
+allowed origin. Neither database constraints nor CORS policy were relaxed.
+Build revision is `b699275`; the final API fixture is `927d896`, with exact runtime
+COPY/build inputs unchanged. Receipt limits distinguish these revisions.
+
+The reviewed image-only deployment workflow verifies the already applied
+`ada21f57` schema ledger and `8f82c881` catalog before and after rollout. It checks
+the exact currently deployed images, preserves all workload configuration,
+uses guarded image patches and rollback, checks public frontend assets, and
+reads complete job summaries through a genuine temporary Owner session. It
+logs out and removes its owned SQL client. It never runs migrations or retries
+processing. The new source manifest changes runtime qualification metadata only;
+the original applied manifest and original inventory baseline remain retained.
+Hosted deployment and authenticated production acceptance remain pending.
 
 
 ## November 5 — latest integration checkpoint

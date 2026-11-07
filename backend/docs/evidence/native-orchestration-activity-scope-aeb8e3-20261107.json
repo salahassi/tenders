@@ -1,0 +1,6 @@
+{
+  "event": "job-summary-native-qualification",
+  "build_source": "b69927568be0afff5fd7aee2b381b9f4b06a1b1d",
+  "final_fixture_source": "927d8966816325dab3b34441ed79ed9c7ecaad92",
+  "scope": "Three successful DOCX scopes at build revision; final API100 plus 1201 large job summaries after isolated fixture-only corrections. All runtime COPY and supplementary inputs remain exact. Two failed fixture receipts are retained; no product constraint, CORS policy, native memory limit, provider setting or production record changed. Ordinary metadata work and five operational unit checks overlapped; no exclusive CPU claim."
+}
