@@ -1,0 +1,53 @@
+name: Diagnose actual workspace startup
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tenderdesk-digitalocean-production
+  cancel-in-progress: false
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - name: Prepare existing browser and validate read-only diagnostic boundaries
+        run: |
+          set -euo pipefail
+          npm ci --prefix backend
+          python3 -m pip install --quiet --disable-pip-version-check --requirement backend/scripts/ops/private-transfer-requirements.txt
+          node --test backend/scripts/ops/test_workspace_startup_diagnosis.mjs
+          browser="$(command -v google-chrome || command -v chromium || true)"
+          test -n "$browser"
+          echo "CHROMIUM_PATH=$browser" >> "$GITHUB_ENV"
+      - name: Prepare original-CA cluster access
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/digitalocean-runner.py
+      - name: Observe real settings startup without business writes or model calls
+        run: python3 backend/scripts/ops/workspace-startup-diagnosis.py
+      - name: Remove only the owned temporary database client
+        if: ${{ always() }}
+        run: |
+          if [ -n "${DOKS_WORKDIR:-}" ] && [ -x "${KUBECTL:-}" ]; then
+            python3 backend/scripts/ops/proposal-delivery-update.py --cleanup
+          fi
+      - name: Remove private runner credentials
+        if: ${{ always() }}
+        run: |
+          python3 - <<'PY'
+          import os,pathlib,re,shutil
+          run,attempt=os.environ['GITHUB_RUN_ID'],os.environ['GITHUB_RUN_ATTEMPT']
+          if not re.fullmatch(r'[0-9]{1,20}',run) or not re.fullmatch(r'[0-9]{1,6}',attempt):raise SystemExit(1)
+          directory=pathlib.Path(os.environ['RUNNER_TEMP'])/('td-deploy-'+run+'-'+attempt)
+          if directory.exists():shutil.rmtree(directory)
+          print('Private startup diagnostic credentials removed.')
+          PY
