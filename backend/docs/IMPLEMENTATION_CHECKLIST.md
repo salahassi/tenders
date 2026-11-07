@@ -22,7 +22,11 @@ boot/history checks pass. The expanded Chromium test also passes: all 1,201 jobs
 summary requests, with no full job reads on startup. The native real PostgreSQL/
 PostgREST/API harness now includes 1,201 jobs with large checkpoints to validate
 the actual projection and page count. Final backend checks, native qualification
-and production deployment remain pending.
+and production deployment remain pending. The three native DOCX scopes pass
+for image aeb8e3c3. The initial new job fixture exceeded the actual 64 KiB
+checkpoint constraint and was rejected before the API ran; that failed receipt
+and cleanup are retained. The fixture is corrected to about 61 KiB, without
+changing the application or relaxing its database constraint.
 The previous verified deployment below remains active until a new receipt exists.
 
 

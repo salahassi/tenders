@@ -113,7 +113,7 @@ def main():
         # Large checkpoints must stay in the database during summary pagination.
         fixture.sql(f"""insert into public.jobs(workspace_id,type,entity_id,status,input_hash,checkpoint,created_by)
           select {literal(fixture.workspace)},'model_probe',{literal(fixture.workspace)},'failed',repeat('a',64),
-          jsonb_build_object('summary_fixture_secret',repeat('PRIVATE_CHECKPOINT_',65536),
+          jsonb_build_object('summary_fixture_secret',repeat('PRIVATE_CHECKPOINT_',3300),
             'model_routing',jsonb_build_object('round_attempts',3,'mode','round_robin')),{literal(OWNER)}
           from generate_series(1,1201);""")
         summary_count = int(fixture.scalar('select count(*) from public.jobs'))
