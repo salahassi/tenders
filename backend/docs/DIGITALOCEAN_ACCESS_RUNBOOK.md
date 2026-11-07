@@ -18,6 +18,15 @@ reads the complete job summary history through an isolated genuine Owner session
 then logs out and removes its owned SQL client and runner credentials. No model
 call or business retry is part of acceptance. Read the complete workflow and
 `job-summary-release.py` before dispatch; hosted acceptance is still pending.
+`diagnose_promotion=true` selects a separate registry-read-only job: it verifies
+the published image and a local label-only promotion, removes private credentials,
+and skips the release job entirely. It never accesses Kubernetes or publishes.
+Docker config-ID, manifest-ID and OCI-index presentations are all resolved by
+hash/size-bound descriptors and exactly one matching platform; native config,
+layer and label checks remain strict. Inspection `42370741371` passed on the
+hosted engine. `reuse_verified_packages=true` requires the successful prior
+package gates and unchanged application/dependency/schema/runtime source paths;
+changed operations and the browser fixture are always re-tested.
 
 ## Latest verified application release
 
