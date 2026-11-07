@@ -33,6 +33,8 @@ jobs:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         run: python3 backend/scripts/ops/digitalocean-runner.py
       - name: Observe real settings startup without business writes or model calls
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         run: python3 backend/scripts/ops/workspace-startup-diagnosis.py
       - name: Remove only the owned temporary database client
         if: ${{ always() }}

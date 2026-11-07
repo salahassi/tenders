@@ -14,6 +14,10 @@ retains the three-minute deadline. Cause and end-to-end acceptance remain open.
 Diagnostic `42381366914` failed before a browser result in 24 seconds; both
 cleanup stages passed. Bounded stage/type/source-line diagnostics are added to
 identify the setup failure without exposing exception payloads or credentials.
+Run `42381483301` isolates a missing `DIGITALOCEAN_ACCESS_TOKEN` binding in the
+observer step before temporary client creation. The workflow now supplies that
+existing secret to the observer; the browser child still strips it. A focused
+workflow binding regression check is added. Both failed runs cleaned up.
 
 **Deployed and accepted:**
 [run42375651095](https://github.com/salahassi/tenders/actions/runs/42375651095)
