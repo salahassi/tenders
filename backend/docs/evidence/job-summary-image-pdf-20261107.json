@@ -1,0 +1,9 @@
+{
+  "actual_image_pdf_browser": "passed",
+  "image": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:c950bc251e8df87fad86265622b4afd80954fa59f00c6b85a2d2eb95203f1953",
+  "index_sha256": "aaa576da3f4ebde3e1c8289ad6d0dfd93d486b1d5b8b53bf63a33c594e840616",
+  "production_requests": 0,
+  "version": 1,
+  "scope": "Local genuine Nginx image and Chromium PDF extraction using verified immutable image asset references",
+  "container_removed": true
+}

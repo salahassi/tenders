@@ -5,6 +5,11 @@ spec=importlib.util.spec_from_file_location('summary_release_test',Path(__file__
 def identifier(n):return '00000000-0000-4000-8000-'+str(n).zfill(12)
 def response(rows,cursor):return m.auth.smoke.Response(200,json.dumps({'data':{'records':rows,'next_cursor':cursor}}).encode())
 class SummaryReleaseTests(unittest.TestCase):
+    def test_completion_keeps_runtime_and_uses_exact_already_published_frontend(self):
+        selected,sources,targets=m.selection('new-helper-source',True)
+        self.assertEqual(targets,('frontend',));self.assertEqual(selected['runtime'],m.PREVIOUS_RUNTIME)
+        self.assertEqual(selected['frontend'],m.COMPLETION_FRONTEND)
+        self.assertEqual(sources,{'runtime':m.RETAINED_RUNTIME_SOURCE,'frontend':m.proof.OPS_REVISION})
     def test_authenticated_complete_history_is_three_requests_and_only_gets(self):
         rows=[{'id':identifier(n)} for n in range(1,1202)]
         client=Mock();client.request.side_effect=[response(rows[:500],identifier(500)),response(rows[500:1000],identifier(1000)),response(rows[1000:],None)]
@@ -36,7 +41,7 @@ class SummaryReleaseTests(unittest.TestCase):
     def test_rollback_attempts_all_owned_targets_even_when_one_drain_fails(self):
         original={n:{'spec':{'template':{'spec':{'containers':[{'image':'old-'+n}]}}}} for n in ('api','worker','frontend')}
         m.STATE.update(rolled_back=[],rollback_failed=[])
-        def drain(name,image):
+        def drain(name,image,**kwargs):
             if name=='frontend':raise RuntimeError('synthetic failure')
         with patch.object(m.runtime,'patch_runtime') as patch_image,patch.object(m.d,'wait_deployments'),patch.object(m.base,'wait_drain',side_effect=drain):
             with self.assertRaisesRegex(m.ReleaseError,'ROLLBACK_NOT_CONFIRMED'):

@@ -138,15 +138,18 @@ def header(response, name):
     return next((str(value) for key, value in response.headers.items() if key.lower() == name.lower()), "")
 
 
-def browser_check(origin):
+def browser_check(origin, asset_directory=None):
     script = REPOSITORY / "frontend/deploy/verify-pdf-worker.mjs"
     if not script.is_file():
         raise FrontendUpdateError("FRONTEND_BROWSER_ACCEPTANCE_REQUIRED")
     try:
         # Subprocess diagnostics remain private and cannot become workflow logs.
         with tempfile.TemporaryFile() as output:
+            environment = dict(os.environ)
+            if asset_directory is not None:
+                environment["TENDERDESK_BROWSER_DIST"] = str(Path(asset_directory).resolve())
             result = subprocess.run(["node", str(script), origin], stdout=output, stderr=subprocess.STDOUT,
-                                    timeout=180, check=False)
+                                    env=environment, timeout=180, check=False)
             if output.tell() > MAX_BROWSER_OUTPUT:
                 raise FrontendUpdateError("FRONTEND_BROWSER_OUTPUT_REJECTED")
             if result.returncode:
@@ -156,7 +159,7 @@ def browser_check(origin):
     emit("browser_pdf_extraction_verified")
 
 
-def public_check(configuration, expected):
+def public_check(configuration, expected, *, asset_directory=None):
     public = smoke.javascript_config(configuration["data"]["runtime-config.js"].encode())
     # Only public GETs are used; no service identity or application session exists.
     client = smoke.Client(smoke.Config(public["appOrigin"], public["publishableKey"], "", ""))
@@ -187,7 +190,10 @@ def public_check(configuration, expected):
         raise FrontendUpdateError("FRONTEND_APPLICATION_HEALTH_FAILED")
     if client.request("/functions/v1/api/v1/bootstrap").status != 401:
         raise FrontendUpdateError("FRONTEND_ANONYMOUS_BOUNDARY_FAILED")
-    browser_check(public["appOrigin"])
+    if asset_directory is None:
+        browser_check(public["appOrigin"])
+    else:
+        browser_check(public["appOrigin"], asset_directory)
     emit("public_build_configuration_and_assets_verified", assets_verified=len(expected["assets"]))
     return public["appOrigin"]
 

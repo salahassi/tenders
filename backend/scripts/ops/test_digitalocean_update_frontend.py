@@ -295,6 +295,14 @@ class FrontendUpdateTests(unittest.TestCase):
 
 
 class FrontendAcceptanceProcessTests(unittest.TestCase):
+    def test_pdf_browser_receives_the_verified_image_asset_directory(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root=Path(temporary);script=root/'frontend/deploy/verify-pdf-worker.mjs';script.parent.mkdir(parents=True);script.write_text('// fixture')
+            assets=root/'verified-image';assets.mkdir()
+            with patch.object(f,'REPOSITORY',root),patch.object(f.subprocess,'run',return_value=subprocess.CompletedProcess([],0)) as run:
+                f.browser_check('https://offline.example.test',assets)
+            self.assertEqual(run.call_args.kwargs['env']['TENDERDESK_BROWSER_DIST'],str(assets))
+
     def test_browser_output_is_private_and_failure_timeout_and_oversize_are_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

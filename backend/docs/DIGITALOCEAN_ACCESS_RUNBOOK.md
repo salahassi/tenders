@@ -5,33 +5,35 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 5, 2026.
 
-## Job-summary image update (prepared November 7)
+## Three-minute pagination completion (November 7)
 
-`deploy-job-summary-pagination.yml` uses the established original-CA runner route
-and shared production concurrency group. It updates only runtime/frontend images
-against the exact already-applied `ada21f57` schema ledger and `8f82c881` catalog;
-it never reapplies SQL migrations. The archived applied manifest is
-[evidence/proposal-delivery-applied-ada21f57.json](evidence/proposal-delivery-applied-ada21f57.json).
-The current source manifest differs only in runtime qualification metadata.
-After guarded image updates, the workflow verifies public frontend assets and
-reads the complete job summary history through an isolated genuine Owner session,
-then logs out and removes its owned SQL client and runner credentials. No model
-call or business retry is part of acceptance. Read the complete workflow and
-`job-summary-release.py` before dispatch; hosted acceptance is still pending.
-`diagnose_promotion=true` selects a separate registry-read-only job: it verifies
-the published image and a local label-only promotion, removes private credentials,
-and skips the release job entirely. It never accesses Kubernetes or publishes.
-Docker config-ID, manifest-ID and OCI-index presentations are all resolved by
-hash/size-bound descriptors and exactly one matching platform; native config,
-layer and label checks remain strict. Inspection `42370741371` passed on the
-hosted engine. `reuse_verified_packages=true` requires the successful prior
-package gates and unchanged application/dependency/schema/runtime source paths;
-changed operations and the browser fixture are always re-tested.
-Frontend acceptance reads assets from a never-started container of the exact
-immutable, source-labelled frontend image and runs the workspace browser fixture
-against those bytes before rollout. Public HTML and all JS/CSS bytes are checked
-against that image artifact. The independent runner build remains a source check;
-its bundle names are not assumed to equal the container build's names.
+The owner requires stopping any Actions run that exceeds three minutes and fixing
+the cause. `deploy-job-summary-pagination.yml` now has a three-minute deadline.
+Its default completion retains runtime `077b06ed` and updates only frontend to
+already published `b2201c24`, with no rebuild/publication or runtime restart.
+The exact currently observed baseline remains mandatory. The coordinator has a
+90-second work deadline and 30-second rollout/drain bounds, plus owned rollback
+and client/credential cleanup. Monitor queued time too; job timeout starts when
+the runner starts. Do not leave a stalled run waiting beyond the owner's bound.
+
+Prior successful package gates from `42367604849` and operations gates from
+`42373358926` are verified against their exact commits. Application, dependency,
+schema and runtime source changes invalidate reuse. Only the explicit completion
+scripts, the PDF browser probe and documentation may differ from the operations
+anchor; focused checks cover those changes. The original applied `ada21f57`
+schema manifest and inventory baseline stay unchanged.
+
+Frontend assets come from a never-started container of the exact immutable image.
+The workspace browser test, public HTML/JS/CSS hashes and actual PDF worker probe
+all use those same bytes. Authenticated complete job-summary traversal follows,
+then session logout and owned SQL-client cleanup. Production acceptance is still
+pending. Read the entire workflow and helper before dispatch.
+
+`diagnose_promotion=true` selects the registry-read-only inspection job and skips
+rollout. It verifies the published image and a local label-only promotion without
+Kubernetes access or publication. Config-ID, manifest-ID and OCI-index formats
+are bound through exact hashes/sizes and a unique matching platform; all native
+config/layer/label guards remain enforced. Inspection `42370741371` passed.
 
 ## Latest verified application release
 
