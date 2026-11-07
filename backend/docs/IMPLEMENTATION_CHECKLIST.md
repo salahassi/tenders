@@ -18,6 +18,25 @@ Run `42381483301` isolates a missing `DIGITALOCEAN_ACCESS_TOKEN` binding in the
 observer step before temporary client creation. The workflow now supplies that
 existing secret to the observer; the browser child still strips it. A focused
 workflow binding regression check is added. Both failed runs cleaned up.
+Diagnostic `42381585874` completes in 139 seconds and confirms the remaining
+amplification: 119 opportunities require 120 requests, 32 source runs require 33,
+and fit assessments are still one per request (106 total in the database).
+Job summaries remain four requests for 1,795 jobs. The probe stops at its explicit
+200-request cap; its resulting alert is diagnostic-induced, not a production
+server error. The [aggregate evidence](evidence/workspace-startup-before-20261107.json)
+contains no customer content. Both cleanup stages and isolated session logout pass.
+
+The correction batches small complete rows into byte/time-bounded HTTP pages
+while retaining one-row database reads and the heavy-read admission lane. A page
+holds at most a conservative 1 MiB bound of small rows; an oversized row is sent
+alone, without fetching a second large row. The two-second soft work bound and
+cursor continuation preserve complete history without arbitrary record loss.
+All business fields remain intact, including null/zero/false and full text.
+Raw job reads retain their original one-record policy; job summaries are unchanged.
+New tests cover escaping/Arabic/emoji, oversized boundaries, exact continuation,
+work duration and all three affected tables. The immutable-image PostgreSQL/API
+fixture now also verifies 119 full opportunity records and preserved descriptions.
+Deployment and complete real-page acceptance remain pending.
 
 **Deployed and accepted:**
 [run42375651095](https://github.com/salahassi/tenders/actions/runs/42375651095)

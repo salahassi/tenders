@@ -2,7 +2,12 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { AppError, databaseError } from "./http.ts";
 import { MODEL_PROVIDER_IDS, type ModelProviderId } from "./modelProviders.ts";
 import type { DocumentCoverage } from "./documentCoverage.ts";
-import { isHeavyFileTable } from "./heavyFileProjection.ts";
+import {
+  isHeavyFileTable,
+  FULL_LIST_PAGE_BYTES,
+  FULL_LIST_PAGE_MS,
+  jsonBytesUpperBound,
+} from "./heavyFileProjection.ts";
 import { postgrestBatchBody } from "./batchTransport.ts";
 export type ModelEnvironmentSlot = {
   provider: string;
@@ -246,8 +251,9 @@ export class Backend {
     cursor?: string,
     projection?: "job-summary",
   ) {
-    // Keep full content and complete cursor traversal, but never materialize a
-    // second max-sized row merely to discover whether another page exists.
+    // Each database read still materializes at most one heavy record. Small
+    // full records share a byte/time-bounded HTTP page; a large record travels
+    // alone. No field is shortened and no second large row is prefetched.
     const summary = projection === "job-summary" && table === "jobs";
     const heavy = !summary && isHeavyFileTable(table);
     const pageSize = heavy ? 1 : limit;
@@ -260,25 +266,48 @@ export class Backend {
           : table === "workspace_invitations"
             ? "id,workspace_id,email,role,status,expires_at,created_at,revision"
             : "*";
-    let q = this.user(token)
-      .from(table)
-      .select(selection)
-      .order(table === "model_activity" ? "sequence" : "id", {
-        ascending: table !== "model_activity",
-      })
-      .limit(heavy ? pageSize : pageSize + 1);
-    for (const [key, value] of Object.entries(filters)) q = q.eq(key, value);
-    if (cursor)
-      q =
-        table === "model_activity"
-          ? q.lt("sequence", cursor)
-          : q.gt("id", cursor);
-    const { data, error } = await q;
-    if (error) throw databaseError(error);
-    const rows = (data || []) as unknown as Array<{
-      id: string;
-      [key: string]: unknown;
-    }>;
+    const client = this.user(token);
+    const read = async (after?: string) => {
+      let q = client
+        .from(table)
+        .select(selection)
+        .order(table === "model_activity" ? "sequence" : "id", {
+          ascending: table !== "model_activity",
+        })
+        .limit(heavy ? pageSize : pageSize + 1);
+      for (const [key, value] of Object.entries(filters)) q = q.eq(key, value);
+      if (after)
+        q =
+          table === "model_activity"
+            ? q.lt("sequence", after)
+            : q.gt("id", after);
+      const { data, error } = await q;
+      if (error) throw databaseError(error);
+      return (data || []) as unknown as Array<{
+        id: string;
+        [key: string]: unknown;
+      }>;
+    };
+    if (heavy && table !== "jobs") {
+      const records: Array<{ id: string; [key: string]: unknown }> = [];
+      const deadline = performance.now() + FULL_LIST_PAGE_MS;
+      let remaining = FULL_LIST_PAGE_BYTES,
+        after = cursor;
+      while (records.length < limit) {
+        const [row] = await read(after);
+        if (!row) return { records, next_cursor: null };
+        const size = jsonBytesUpperBound(row, remaining);
+        // Keep a large first row complete; otherwise defer the non-fitting row
+        // to the next cursor page. At most 1 MiB plus that one row is retained.
+        if (records.length && size > remaining) break;
+        records.push(row);
+        after = row.id;
+        remaining -= size;
+        if (remaining <= 0 || performance.now() >= deadline) break;
+      }
+      return { records, next_cursor: records.at(-1)?.id ?? null };
+    }
+    const rows = await read(cursor);
     return {
       records: rows.slice(0, pageSize),
       next_cursor: (heavy ? rows.length === pageSize : rows.length > pageSize)

@@ -4,6 +4,8 @@ import { Backend } from "../../supabase/functions/_shared/backend";
 import {
   heavyFileReadResources,
   isHeavyFileRequest,
+  jsonBytesUpperBound,
+  FULL_LIST_PAGE_BYTES,
 } from "../../supabase/functions/_shared/heavyFileProjection";
 
 it.each(Object.keys(heavyFileReadResources))(
@@ -86,6 +88,111 @@ function tableFixture(rows: Array<Record<string, unknown>>) {
   const user = vi.fn(() => client);
   return { user, selections, limits, cursors };
 }
+
+it.each(["opportunities", "fit_assessments", "source_runs"])(
+  "returns all 119 small full %s rows in two HTTP pages while reading individual DB rows",
+  async (table) => {
+    const records = Array.from({ length: 119 }, (_, n) => ({
+      id: String(n).padStart(4, "0"),
+      revision: 1,
+      text: "Complete requirement: quantity 0; optional unless approved.",
+      semantic: { required: false, quantity: 0, condition: null },
+    }));
+    const fake = tableFixture(records);
+    const first = await Backend.prototype.list.call(
+      fake as unknown as Backend,
+      "synthetic",
+      table,
+      { workspace_id: "workspace" },
+      100,
+    );
+    const last = await Backend.prototype.list.call(
+      fake as unknown as Backend,
+      "synthetic",
+      table,
+      { workspace_id: "workspace" },
+      100,
+      first.next_cursor!,
+    );
+    expect(first.records).toEqual(records.slice(0, 100));
+    expect(last.records).toEqual(records.slice(100));
+    expect(last.next_cursor).toBeNull();
+    expect(fake.limits.every((n) => n === 1)).toBe(true);
+    expect(fake.selections.every((s) => s === "*")).toBe(true);
+  },
+);
+
+it("defers a non-fitting complete row without skipping it or fetching a second large row", async () => {
+  const records = [
+    { id: "a", text: "small" },
+    { id: "b", text: "ب".repeat(FULL_LIST_PAGE_BYTES) },
+    { id: "c", text: "tail" },
+  ];
+  const fake = tableFixture(records),
+    all: unknown[] = [];
+  let cursor: string | undefined;
+  const sizes = [];
+  do {
+    const page = await Backend.prototype.list.call(
+      fake as unknown as Backend,
+      "synthetic",
+      "documents",
+      {},
+      100,
+      cursor,
+    );
+    all.push(...page.records);
+    sizes.push(page.records.length);
+    cursor = page.next_cursor ?? undefined;
+  } while (cursor);
+  expect(all).toEqual(records);
+  expect(sizes).toEqual([1, 1, 1]);
+  expect(fake.cursors).toEqual(["a", "a", "b", "c"]);
+});
+
+it("bounds a page's work duration without dropping the continuation record", async () => {
+  const fake = tableFixture([{ id: "a" }, { id: "b" }]);
+  const clock = vi
+    .spyOn(performance, "now")
+    .mockReturnValueOnce(0)
+    .mockReturnValue(2001);
+  try {
+    const page = await Backend.prototype.list.call(
+      fake as unknown as Backend,
+      "synthetic",
+      "opportunities",
+      {},
+      100,
+    );
+    expect(page.records).toEqual([{ id: "a" }]);
+    expect(page.next_cursor).toBe("a");
+    expect(fake.limits).toEqual([1]);
+  } finally {
+    clock.mockRestore();
+  }
+});
+
+it("conservatively covers JSON escaping, Arabic, emoji and nested values without copying large text", () => {
+  const values = [
+    null,
+    false,
+    0,
+    -2.25,
+    'عربي😀\n\u0000"\\',
+    { a: [1, false, null, "plain"], ع: { condition: "after approval" } },
+    "x".repeat(2 * FULL_LIST_PAGE_BYTES),
+  ];
+  for (const value of values) {
+    const actual = new TextEncoder().encode(JSON.stringify(value)).length;
+    expect(
+      jsonBytesUpperBound(value, 10 * FULL_LIST_PAGE_BYTES),
+    ).toBeGreaterThanOrEqual(actual);
+    if (actual > FULL_LIST_PAGE_BYTES)
+      expect(jsonBytesUpperBound(value, FULL_LIST_PAGE_BYTES)).toBe(
+        FULL_LIST_PAGE_BYTES + 1,
+      );
+  }
+});
 
 it("pages complete large records one at a time with no lookahead and a lossless terminal cursor", async () => {
   const records = [

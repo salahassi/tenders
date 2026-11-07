@@ -360,7 +360,10 @@ try {
         },
       ),
     );
-    assert(response.status === 200, `Summary API failed: HTTP ${response.status}`);
+    assert(
+      response.status === 200,
+      `Summary API failed: HTTP ${response.status}`,
+    );
     const text = await response.text();
     assert(
       !text.includes("PRIVATE_CHECKPOINT_") && text.length < 1024 * 1024,
@@ -395,6 +398,64 @@ try {
     summaryRows === config.summary_count && fixtureRows === 1201,
     "Job summary history was truncated",
   );
+  phase = "full-content-pagination";
+  let fullCursor: string | null = null,
+    fullRequests = 0,
+    fullRows = 0,
+    fullFixtures = 0,
+    largestPage = 0;
+  const fullIds = new Set<string>();
+  do {
+    const response = await handle(
+      new Request(
+        `https://edge.example.test/functions/v1/api/v1/opportunities?limit=100${fullCursor ? `&cursor=${fullCursor}` : ""}`,
+        {
+          headers: {
+            origin: environment.allowedOrigins[0],
+            authorization: `Bearer ${config.token}`,
+          },
+        },
+      ),
+    );
+    assert(
+      response.status === 200,
+      `Full page API failed: HTTP ${response.status}`,
+    );
+    const { data } = await response.json();
+    assert(
+      Array.isArray(data.records) && data.records.length <= 100,
+      "Full page row bound failed",
+    );
+    for (const row of data.records) {
+      assert(
+        !fullIds.has(row.id) && (!fullCursor || row.id > fullCursor),
+        "Full page cursor skipped or duplicated a record",
+      );
+      fullIds.add(row.id);
+      if (row.title.startsWith("Full page fixture ")) {
+        assert(
+          row.description === "Complete synthetic obligation. ".repeat(150) &&
+            row.archived === false,
+          "Full content was changed or truncated",
+        );
+        fullFixtures++;
+      }
+    }
+    fullRows += data.records.length;
+    largestPage = Math.max(largestPage, data.records.length);
+    fullRequests++;
+    fullCursor = data.next_cursor;
+    assert(
+      fullRequests < config.opportunity_count / 2,
+      "Full page requests remain amplified",
+    );
+  } while (fullCursor);
+  assert(
+    fullRows === config.opportunity_count &&
+      fullFixtures === 118 &&
+      largestPage > 1,
+    "Full page history was truncated",
+  );
   phase = "complete";
   sample();
   const result = {
@@ -416,6 +477,13 @@ try {
       requests: summaryRequests,
       large_checkpoint_fixtures: fixtureRows,
       full_checkpoint_fields_returned: 0,
+    },
+    full_content_pagination: {
+      records: fullRows,
+      requests: fullRequests,
+      complete_fixture_rows: fullFixtures,
+      largest_page: largestPage,
+      fields_truncated: 0,
     },
     headers_ms: headersMs,
     full_stream_ms: fullMs,

@@ -117,6 +117,11 @@ def main():
             'model_routing',jsonb_build_object('round_attempts',3,'mode','round_robin')),{literal(OWNER)}
           from generate_series(1,1201);""")
         summary_count = int(fixture.scalar('select count(*) from public.jobs'))
+        fixture.sql(f"""insert into public.opportunities(workspace_id,source_id,title,description,created_by)
+          select {literal(fixture.workspace)},(select source_id from public.opportunities where workspace_id={literal(fixture.workspace)} limit 1),
+          'Full page fixture '||n,repeat('Complete synthetic obligation. ',150),{literal(OWNER)}
+          from generate_series(1,118) n;""")
+        opportunity_count = int(fixture.scalar('select count(*) from public.opportunities'))
         launched = docker("run", "-d", "--name", rest, "--network", "container:" + pg, "--pull=never",
             "--memory=128m", "--memory-swap=128m", "--cpus=.5", "--pids-limit=64",
             "--label", "tenderdesk.synthetic-api-batch=" + nonce,
@@ -151,7 +156,7 @@ def main():
                 folder.mkdir()
             for name in ("capacity_api_batch.ts", "batchStreamOracle.ts"):
                 shutil.copyfile(ROOT / "backend/scripts/testing" / name, scripts / name)
-            (inputs / "fixture.json").write_text(json.dumps({"actor": OWNER, "token": jwt(secret), "key": key, "commands": commands, "summary_count": summary_count}))
+            (inputs / "fixture.json").write_text(json.dumps({"actor": OWNER, "token": jwt(secret), "key": key, "commands": commands, "summary_count": summary_count, "opportunity_count": opportunity_count}))
             stage.chmod(0o755)
             for path in stage.rglob("*"):
                 path.chmod(0o755 if path.is_dir() else 0o644)
