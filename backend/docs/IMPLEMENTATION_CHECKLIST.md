@@ -26,7 +26,10 @@ and production deployment remain pending. The three native DOCX scopes pass
 for image aeb8e3c3. The initial new job fixture exceeded the actual 64 KiB
 checkpoint constraint and was rejected before the API ran; that failed receipt
 and cleanup are retained. The fixture is corrected to about 61 KiB, without
-changing the application or relaxing its database constraint.
+changing the application or relaxing its database constraint. The next fixture
+attempt used the wrong synthetic CORS origin and was rejected; it now uses the
+harness’s existing allowed origin. Both unsuccessful fixtures and their cleanup
+receipts are retained separately from application acceptance.
 The previous verified deployment below remains active until a new receipt exists.
 
 

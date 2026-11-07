@@ -354,13 +354,13 @@ try {
         `https://edge.example.test/functions/v1/api/v1/job-summaries?limit=500${summaryCursor ? `&cursor=${summaryCursor}` : ""}`,
         {
           headers: {
-            origin: "https://app.example.test",
+            origin: environment.allowedOrigins[0],
             authorization: `Bearer ${config.token}`,
           },
         },
       ),
     );
-    assert(response.status === 200, "Summary API failed");
+    assert(response.status === 200, `Summary API failed: HTTP ${response.status}`);
     const text = await response.text();
     assert(
       !text.includes("PRIVATE_CHECKPOINT_") && text.length < 1024 * 1024,
