@@ -61,6 +61,9 @@ def raw_image_config(value):
         observed_rootfs=value.get('RootFS',{})
         safe_variant=lambda v:v if isinstance(v,str) and re.fullmatch('[a-zA-Z0-9_.-]{0,16}',v) else 'unrecognized'
         print(json.dumps({'image':'raw_identity_mismatch',
+          'raw_kind':'image_manifest' if decoded.get('schemaVersion')==2 and isinstance(decoded.get('config',{}).get('digest'),str) else 'image_config',
+          'observed_id':identifier,
+          'config_digest':decoded.get('config',{}).get('digest') if re.fullmatch('sha256:[a-f0-9]{64}',str(decoded.get('config',{}).get('digest',''))) else None,
           'os_matches':decoded.get('os')==value.get('Os'),
           'architecture_matches':decoded.get('architecture')==value.get('Architecture'),
           'raw_variant':safe_variant(decoded.get('variant','')),

@@ -48,7 +48,9 @@ and the 1,201-job Chromium fixture. Original-CA access succeeds. Image preparati
 then refuses `DELIVERY_IMAGE_RAW_IDENTITY_MISMATCH`, before any workload update;
 cleanup succeeds. Hosted deployment remains pending. A fixed-field raw-image
 metadata diagnostic is added to identify the engine presentation mismatch while
-keeping image bytes/platform/filesystem validation enforced.
+keeping image bytes/platform/filesystem validation enforced. Read-only inspection
+`42369591871` confirms platform/rootfs differences; an additional hash-only
+diagnostic distinguishes an OCI manifest ID from its referenced configuration ID.
 
 
 ## November 5 — latest integration checkpoint
