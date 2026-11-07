@@ -33,6 +33,8 @@ def raw_image_config(value):
     if not isinstance(identifier,str) or not re.fullmatch('sha256:[a-f0-9]{64}',identifier):
         raise ImageError('DELIVERY_IMAGE_RAW_ID_INVALID')
     if identifier not in _RAW_CONFIG_CACHE:
+        stage='archive'
+        kind='unread'
         try:
             directory=Path(os.environ['DOKS_WORKDIR'])
             if not directory.is_absolute() or directory.is_symlink() or not directory.is_dir():raise ValueError()
@@ -54,6 +56,8 @@ def raw_image_config(value):
                         if not isinstance(decoded,dict):raise ValueError()
                         return decoded
                     decoded=read_blob(identifier);config_id=identifier
+                    kind='index' if isinstance(decoded.get('manifests'),list) else 'manifest' if decoded.get('schemaVersion')==2 else 'config'
+                    stage='descriptor'
                     # Containerd-backed Docker reports a manifest digest as Id.
                     # Follow only its SHA-256/size-bound image-config descriptor.
                     if decoded.get('schemaVersion')==2:
@@ -61,11 +65,13 @@ def raw_image_config(value):
                         if (not isinstance(descriptor,dict) or descriptor.get('mediaType') not in (
                           'application/vnd.oci.image.config.v1+json','application/vnd.docker.container.image.v1+json')
                           or type(descriptor.get('size')) is not int or not 0<descriptor['size']<=1048576):raise ValueError()
+                        stage='config_blob'
                         config_id=descriptor.get('digest');decoded=read_blob(config_id,descriptor['size'])
                     if not isinstance(decoded.get('config'),dict):raise ValueError()
                 _RAW_CONFIG_CACHE[identifier]=(config_id,decoded)
                 _RAW_CONFIG_CACHE[config_id]=(config_id,decoded)
         except (KeyError,OSError,ValueError,TypeError,tarfile.TarError,subprocess.TimeoutExpired):
+            print(json.dumps({'image':'raw_config_unverified','stage':stage,'kind':kind,'observed_id':identifier}),flush=True)
             raise ImageError('DELIVERY_IMAGE_RAW_CONFIG_UNVERIFIED') from None
     config_id,decoded=_RAW_CONFIG_CACHE[identifier]
     rootfs=decoded.get('rootfs',{})
