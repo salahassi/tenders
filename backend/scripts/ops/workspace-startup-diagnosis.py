@@ -17,7 +17,7 @@ d,base,auth=m.d,m.base,m.auth
 STAGE='client_identity'
 TABLES=('sources','source_runs','opportunities','knowledge_items','jobs','notifications','proposals','documents','proposal_versions','proposal_sections','questions','review_inputs','regeneration_requests','requirements','fit_assessments','opportunity_discovery')
 
-def diagnose():
+def diagnose(before_browser=None):
     global STAGE
     database=base.inventory.observer.Client(1800);database.labels['app.kubernetes.io/managed-by']=base.OWNER;base.save_client(database)
     client=session=None
@@ -34,6 +34,7 @@ def diagnose():
         m.require(public['publishableKey']==core['ANON_KEY'],'STARTUP_CONFIGURATION_MISMATCH')
         config=auth.smoke.Config(public['appOrigin'],core['ANON_KEY'],core['SERVICE_KEY'],core['JWT_SECRET']);client=auth.smoke.Client(config)
         STAGE='isolated_session';session=auth.genuine_session(client,config,snapshot['owners'][0],workspace);auth.verify_session(client,config,session,snapshot['owners'][0],workspace)
+        if before_browser is not None:before_browser(database)
         STAGE='actual_browser';result=subprocess.run(['node',str(HERE/'workspace-startup-diagnosis.mjs')],input=json.dumps({'origin':config.origin,'session':session}),capture_output=True,text=True,timeout=90,env=auth.child_environment())
         m.require(result.returncode==0 and len(result.stdout)<32768,'STARTUP_BROWSER_FAILED')
         report=json.loads(result.stdout);report['table_counts']=snapshot['counts'];report['source_revision']=os.environ['GITHUB_SHA']

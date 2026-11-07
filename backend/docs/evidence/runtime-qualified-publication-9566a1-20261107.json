@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "qualified_image_id": "sha256:9566a11c502ad99c2df271bc090ca4b46678688545e95c70ddd3ccca9ac539a2",
+  "source_revision": "346f0b90df89e893e94edfc3ddf1baeef5da7989",
+  "reference": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a",
+  "status": "published_and_exact_image_verified",
+  "application_deployed": false,
+  "containers_started": 0,
+  "models_called": 0,
+  "business_mutations": 0,
+  "native_evidence_changed": false,
+  "temporary_credentials_removed": true,
+  "existing_exact_publication_reused": false,
+  "registry_pull_verified": true,
+  "rootfs_and_config_identical": true,
+  "qualification_sha256": "e1b5b0421c58953c28111191044afb547d3badb42c14e6fb249efb72e6bbc228",
+  "seconds": 26.542
+}

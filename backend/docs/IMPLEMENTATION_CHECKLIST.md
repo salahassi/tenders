@@ -45,6 +45,28 @@ Three subsequent native DOCX scopes pass at 384 MiB / 700m. The new API fixture'
 loopback adapter initially rejected its newly added `opportunities` read; it now
 permits that exact GET route. Application/runtime COPY inputs remain unchanged;
 the failed fixture receipt and cleanup are retained before the focused retry.
+The corrected native API fixture passes at `7b464c2`: 119 complete opportunity
+records in four requests, with 118 exact seeded descriptions verified, alongside
+1,201 large-checkpoint job summaries in three requests and the complete 100-result
+412,758,765-byte stream. API peak memory is 167,448,576 bytes under the unchanged
+402,653,184-byte / 700m limit, with no OOM and verified cleanup. All four native
+scopes qualify the exact `9566a11c` image; build revision `346f0b9` and the later
+fixture-only correction are separately bound. No product code override is used.
+The qualified runtime is published and pull-verified as `runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a`.
+
+The new three-minute `deploy-workspace-pagination.yml` changes only the API image.
+It requires the observed `077b06ed` API/runtime and `b2201c24` frontend baseline,
+strict qualification/configuration/schema guards, owned rollback, and actual
+authenticated settings readiness with every startup table count matched. A
+successful diagnostic collection alone cannot satisfy acceptance: models must
+render, network requests must settle, the skeleton/errors must disappear and
+the read count must remain below 100. Its 105-second coordinator bound reserves
+time for cleanup/rollback. The new source manifest changes runtime qualification
+metadata only; the original deployed `ada21f57` ledger/catalog are preserved.
+The qualification tests now pin the newly verified image/source explicitly;
+16 focused Python release/qualification controls and three browser-boundary tests
+pass; the additional manifest regression suite is still running locally.
+Production update and complete UI acceptance are still pending.
 
 **Deployed and accepted:**
 [run42375651095](https://github.com/salahassi/tenders/actions/runs/42375651095)
