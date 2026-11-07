@@ -18,8 +18,11 @@ retry loop is introduced. Model processing and usage accounting are unchanged.
 
 Local checks: 74 focused API/projection tests pass; 1,201 rows traverse in three
 summary requests; all 383 frontend tests, typecheck/build and the original browser
-boot/history checks pass. The expanded 1,201-row Chromium test, final backend
-gate, exact changed-runtime qualification and production deployment are pending.
+boot/history checks pass. The expanded Chromium test also passes: all 1,201 jobs are visible after three
+summary requests, with no full job reads on startup. The native real PostgreSQL/
+PostgREST/API harness now includes 1,201 jobs with large checkpoints to validate
+the actual projection and page count. Final backend checks, native qualification
+and production deployment remain pending.
 The previous verified deployment below remains active until a new receipt exists.
 
 
