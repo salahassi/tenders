@@ -150,3 +150,54 @@ it.each([
     expect(fake.limits).toEqual([11]);
   },
 );
+
+it("reads 1201 job summaries in three pages while retaining full one-row job reads", async () => {
+  const records = Array.from({ length: 1201 }, (_, n) => ({
+    id: String(n).padStart(6, "0"),
+    revision: 1,
+    status: "failed",
+  }));
+  const fake = tableFixture(records);
+  const all: unknown[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await Backend.prototype.list.call(
+      fake as unknown as Backend,
+      "synthetic",
+      "jobs",
+      {},
+      500,
+      cursor,
+      "job-summary",
+    );
+    all.push(...page.records);
+    cursor = page.next_cursor ?? undefined;
+  } while (cursor);
+  expect(all).toEqual(records);
+  expect(fake.limits).toEqual([501, 501, 501]);
+  expect(
+    fake.selections.every(
+      (s) =>
+        !s
+          .split(",")
+          .some((field) =>
+            ["*", "checkpoint", "lease_token", "input_hash"].includes(field),
+          ),
+    ),
+  ).toBe(true);
+  expect(fake.selections[0]).toContain(
+    "model_round:checkpoint->model_routing->round_attempts",
+  );
+  expect(isHeavyFileRequest("GET", "/v1/job-summaries?limit=500")).toBe(false);
+  expect(isHeavyFileRequest("GET", "/v1/jobs/id")).toBe(true);
+  const full = tableFixture(records);
+  await Backend.prototype.list.call(
+    full as unknown as Backend,
+    "synthetic",
+    "jobs",
+    {},
+    500,
+  );
+  expect(full.limits).toEqual([1]);
+  expect(full.selections).toEqual(["*"]);
+});

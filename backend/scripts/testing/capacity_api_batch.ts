@@ -128,6 +128,7 @@ const prefix = runtime.serve(
         "rpc/app_batch_prepare",
         "rpc/app_batch_result_chunk",
         "documents",
+        "jobs",
       ].includes(path),
       "Unexpected database route",
     );
@@ -341,6 +342,59 @@ try {
   );
   const cancelReacquire = await reacquire();
   if (healthError) throw healthError;
+  phase = "job-summary-pagination";
+  let summaryCursor: string | null = null,
+    summaryRequests = 0,
+    summaryRows = 0,
+    fixtureRows = 0;
+  const summaryIds = new Set<string>();
+  do {
+    const response = await handle(
+      new Request(
+        `https://edge.example.test/functions/v1/api/v1/job-summaries?limit=500${summaryCursor ? `&cursor=${summaryCursor}` : ""}`,
+        {
+          headers: {
+            origin: environment.allowedOrigins[0],
+            authorization: `Bearer ${config.token}`,
+          },
+        },
+      ),
+    );
+    assert(response.status === 200, `Summary API failed: HTTP ${response.status}`);
+    const text = await response.text();
+    assert(
+      !text.includes("PRIVATE_CHECKPOINT_") && text.length < 1024 * 1024,
+      "Summary included full checkpoint data",
+    );
+    const { data } = JSON.parse(text);
+    assert(
+      Array.isArray(data.records) && data.records.length <= 500,
+      "Summary page exceeded bound",
+    );
+    for (const row of data.records) {
+      assert(
+        !summaryIds.has(row.id) &&
+          (!summaryCursor || row.id > summaryCursor) &&
+          !("checkpoint" in row) &&
+          !("lease_token" in row),
+        "Summary row identity or projection changed",
+      );
+      summaryIds.add(row.id);
+      if (row.model_round === 3 && row.routing_mode === "round_robin")
+        fixtureRows++;
+    }
+    summaryRows += data.records.length;
+    summaryRequests++;
+    summaryCursor = data.next_cursor;
+    assert(
+      summaryRequests <= Math.ceil(config.summary_count / 500),
+      "Summary pagination amplified requests",
+    );
+  } while (summaryCursor);
+  assert(
+    summaryRows === config.summary_count && fixtureRows === 1201,
+    "Job summary history was truncated",
+  );
   phase = "complete";
   sample();
   const result = {
@@ -357,6 +411,12 @@ try {
     request_id: config.key,
     receipt_id: receiptId,
     result_count: 100,
+    job_summary: {
+      records: summaryRows,
+      requests: summaryRequests,
+      large_checkpoint_fixtures: fixtureRows,
+      full_checkpoint_fields_returned: 0,
+    },
     headers_ms: headersMs,
     full_stream_ms: fullMs,
     slow_consumer_busy: slowBusy,

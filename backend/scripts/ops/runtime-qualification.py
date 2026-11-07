@@ -11,12 +11,12 @@ import re
 import stat
 import subprocess
 
-QUALIFIED_ID = 'sha256:f2d0f99d4933c47d137940973a17aa78fe198ad385ac25f7a936ef45bdafcf44'
+QUALIFIED_ID = 'sha256:aeb8e3c377cdee690ea7f86bf52bfddfda4df93441b4181143fddcae974efac4'
 REGISTRY = 'registry.digitalocean.com/tenderdesk-a6093a76/runtime'
 REVISION_LABEL = 'org.opencontainers.image.revision'
-RECEIPT = 'backend/docs/evidence/runtime-qualification-f2d0f9-20261105.json'
-PUBLICATION = 'backend/docs/evidence/runtime-qualified-publication-f2d0f9-20261105.json'
-RECEIPT_SHA256 = 'a1e6f82c57ecae4561878412996022e2eba9e45f7d1aa19628698d363599d358'
+RECEIPT = 'backend/docs/evidence/runtime-qualification-aeb8e3-20261107.json'
+PUBLICATION = 'backend/docs/evidence/runtime-qualified-publication-aeb8e3-20261107.json'
+RECEIPT_SHA256 = '42d8057bc9bff4e02f437d93d650e33a7c7693c2a35a223fa1c5dac740353902'
 COPY_ROOTS = (
     'backend/supabase/functions', 'backend/scripts/runtime',
     'frontend/src/lib/renderDocx.ts', 'frontend/src/lib/docxTableStream.ts',

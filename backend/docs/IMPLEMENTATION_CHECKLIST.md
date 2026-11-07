@@ -1,5 +1,50 @@
 # Implementation status and continuation plan
 
+## November 7 — excessive workspace job pagination
+
+The reported settings-page waterfall is reproduced by the production contract:
+the repository asks for 500 jobs, while the full-content API deliberately limits
+heavy `jobs` pages to one row. Startup drains the entire history serially before
+opening any page. These are authenticated application reads, not model requests.
+
+The correction adds an authenticated `job-summaries` list with selected scalar
+status/revision/attempt fields and two scalar routing counters. It fetches up to
+500 summaries with one metadata lookahead row and never selects complete
+checkpoints or lease credentials. The original full job list/detail routes keep
+their single-record heavy-content protection. Workspace startup consumes every
+summary page without a record-count ceiling. Source/routing checkpoint details
+load only when the user opens a task, with abort and explicit retry; no automatic
+retry loop is introduced. Model processing and usage accounting are unchanged.
+
+Local checks pass: 74 focused API/projection tests; all 383 frontend and 3,493
+backend tests; both package typechecks/builds. Chromium renders all 1,201 jobs
+with three summary requests and no full job reads on startup; existing 10,501-row
+audit paging and failure isolation remain verified. The actual immutable-image
+PostgreSQL/PostgREST/API fixture also returns 1,201 roughly 61 KiB checkpoints as
+three metadata pages, with no checkpoint fields. All four native scopes pass at
+the unchanged 384 MiB / 700m application limits, including the 100-result stream
+and DOCX delivery cases. Image `aeb8e3c3` is published and pull-verified as
+`runtime@sha256:d34fb3616c639938b8fc81a5dd1c2a5f31fb002c55fab446adb259a47833baa4`.
+This publication alone is not a deployed application.
+
+The first new fixture exceeded the real 64 KiB checkpoint constraint; the second
+used an unapproved synthetic CORS origin. Both failed receipts and verified
+cleanup are retained. The final fixture uses about 61 KiB and the existing
+allowed origin. Neither database constraints nor CORS policy were relaxed.
+Build revision is `b699275`; the final API fixture is `927d896`, with exact runtime
+COPY/build inputs unchanged. Receipt limits distinguish these revisions.
+
+The reviewed image-only deployment workflow verifies the already applied
+`ada21f57` schema ledger and `8f82c881` catalog before and after rollout. It checks
+the exact currently deployed images, preserves all workload configuration,
+uses guarded image patches and rollback, checks public frontend assets, and
+reads complete job summaries through a genuine temporary Owner session. It
+logs out and removes its owned SQL client. It never runs migrations or retries
+processing. The new source manifest changes runtime qualification metadata only;
+the original applied manifest and original inventory baseline remain retained.
+Hosted deployment and authenticated production acceptance remain pending.
+
+
 ## November 5 — latest integration checkpoint
 
 **Application release42031298536 passed on main8874111.** PR28–32 are merged.

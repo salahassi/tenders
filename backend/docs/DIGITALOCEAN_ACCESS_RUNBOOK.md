@@ -5,6 +5,20 @@ The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
 Last reviewed: November 5, 2026.
 
+## Job-summary image update (prepared November 7)
+
+`deploy-job-summary-pagination.yml` uses the established original-CA runner route
+and shared production concurrency group. It updates only runtime/frontend images
+against the exact already-applied `ada21f57` schema ledger and `8f82c881` catalog;
+it never reapplies SQL migrations. The archived applied manifest is
+[evidence/proposal-delivery-applied-ada21f57.json](evidence/proposal-delivery-applied-ada21f57.json).
+The current source manifest differs only in runtime qualification metadata.
+After guarded image updates, the workflow verifies public frontend assets and
+reads the complete job summary history through an isolated genuine Owner session,
+then logs out and removes its owned SQL client and runner credentials. No model
+call or business retry is part of acceptance. Read the complete workflow and
+`job-summary-release.py` before dispatch; hosted acceptance is still pending.
+
 ## Latest verified application release
 
 [Run42031298536](https://github.com/salahassi/tenders/actions/runs/42031298536)

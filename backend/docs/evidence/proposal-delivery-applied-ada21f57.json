@@ -1,0 +1,247 @@
+{
+  "application_auth_read": {
+    "policy": "tenderdesk_application_identity_read",
+    "sources": {
+      "deploy/kubernetes/application-auth-read.sql": "cce0b663368838ad621bf6599ffdb9a33205a481ec6f7b9abcd4df001068fb4d",
+      "scripts/ops/application_auth_read.py": "e6b3d3b7e5370411da5293b358f2fdaa6694359101572a16e265c39268fac943"
+    },
+    "version": 1
+  },
+  "application_auth_read_version": 1,
+  "baseline_catalog_sha256": "6ba841007e059e1d99b663bb2a68c611768658a0e70f4a2cdf4223d613c27287",
+  "baseline_images": {
+    "api": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380",
+    "auth": "docker.io/supabase/gotrue:v2.197.0@sha256:839f529492d116b4e8b7777c953a27c381d34c15a744b1bcefde5eefaa1f9f9f",
+    "frontend": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:b90ee4cea47e8208dd785aba618caaf89aadf3c8fd15e4c8172633b2883b88af",
+    "gateway": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+    "https": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce",
+    "rest": "docker.io/postgrest/postgrest:v14.18@sha256:c847127074bd26e1b8d3f7c0e6e01e5346f4b85dd34f5d699fd230af960827c0",
+    "scheduler": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:c5a1d4d3bc108333a34233d5488c820130ee462c1940e74b17c4dcbbb33f9cde",
+    "source-browser": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:c5a1d4d3bc108333a34233d5488c820130ee462c1940e74b17c4dcbbb33f9cde",
+    "storage": "docker.io/supabase/storage-api:v1.81.0@sha256:92c5fe87ba5291915d0c21ca530ece9a58e13cc76a36a6c84fc69121a8dde799",
+    "worker": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:85799a61eaeed29f967f51fc7c9c83263d07e28c9053941663a396604ae60380"
+  },
+  "baseline_native_schedules": [
+    {
+      "active_deadline_seconds": 600,
+      "backoff_limit": 0,
+      "concurrency_policy": "Forbid",
+      "concurrency_policy_explicit": true,
+      "container_identity_recognized": true,
+      "effective_backoff_limit": 0,
+      "generation": 2,
+      "image": "registry.digitalocean.com/tenderdesk-a6093a76/browser@sha256:fbb755a5bc80ebabc472dbde571ad296849f3db39b90b7d0c6e964a27dc4353b",
+      "name": "native-browser",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "ephemeral-storage": null,
+          "memory": "768Mi"
+        },
+        "requests": {
+          "cpu": "100m",
+          "ephemeral-storage": null,
+          "memory": "256Mi"
+        }
+      },
+      "schedule": "*/5 * * * *",
+      "suspend_explicit": true,
+      "suspended": false
+    },
+    {
+      "active_deadline_seconds": 600,
+      "backoff_limit": 0,
+      "concurrency_policy": "Forbid",
+      "concurrency_policy_explicit": true,
+      "container_identity_recognized": true,
+      "effective_backoff_limit": 0,
+      "generation": 2,
+      "image": "registry.digitalocean.com/tenderdesk-a6093a76/ocr@sha256:a13d4de2579b00ba0ef963320f199310b1c1fdc86c75d8ca06004e7b2fcf0a88",
+      "name": "native-ocr",
+      "resources": {
+        "limits": {
+          "cpu": "1",
+          "ephemeral-storage": null,
+          "memory": "768Mi"
+        },
+        "requests": {
+          "cpu": "100m",
+          "ephemeral-storage": null,
+          "memory": "256Mi"
+        }
+      },
+      "schedule": "*/5 * * * *",
+      "suspend_explicit": true,
+      "suspended": false
+    }
+  ],
+  "baseline_releases": {
+    "ai-execution-reliability-v1": "0353c429634df4f9ed3429074e8ff027ef7151b66edffdc467dae08ecb2f8f4b",
+    "analysis-recheck-prompt-identity-v1": "30f79868deaa94daab1554584aede2545a1611a29f7b19d26503e75f57720f14",
+    "analysis-verifier-recheck-v1": "cead30c43776e35822e4fa63476223a5ff4abe8de35218286d66dd5bd8c22382",
+    "flexible-proposal-inputs-v1": "5bac8ff0a8e070688873b2e6c020a3c7ddb51c7dc8e0ad8005735e4e653ccf6c",
+    "model-admission-fairness-v1": "3bb13dd60fb4322ac3ba70c534ec6165a668da547318d1ea49232ae1d401c927",
+    "requested-model-processing-v1": "3eedc737b3b813e30f802b1ea39d42f8d017e4d06e7f9dada535a23bcb2ed3ac"
+  },
+  "command_batch_chunk_bytes": 262144,
+  "command_batch_transport_version": 1,
+  "current_proposal_issuance_contract": 1,
+  "executor_max": 5,
+  "gateway_configuration": {
+    "after_data_sha256": "9636fdac1a1ff54b88f10ae352eeee3d8933df886003ab42de7652d2725f0377",
+    "after_source_sha256": "c1a25c41c24f8bb804ecb0e162c8e0577437fd31b16ef82cefbacebbb20795ba",
+    "before_data_sha256": "c8eb18fbcada22ecf58add2282b5024ca565d99d3d10d505b3999cedda4a8422",
+    "before_source_sha256": "4907ecf81e2fa1e97754202906873ccd7c34e3dcbe26dd1e60cf4e276c639d23",
+    "gateway_image": "docker.io/nginxinc/nginx-unprivileged:1.29.5-alpine@sha256:99e7cb7bee644b244b2b5e7bb737e972e54dbaa150cabc7ae0598731cdeb7ac8",
+    "qualification_sha256": "8d395eec680876ff4b0155babe99fa904cfa5f7bc4d9955e80f6830f581e6014",
+    "storage_qualification_sha256": "1831842de23dc097269b403987d2530bb486f2fc01c4bde0cb491fd5ae369ff3",
+    "storage_qualified_source_sha256": "b87507bfd4253165c1e81d7d5557348f07b079481218e7f6db918a8fcdb731e5",
+    "version": 2
+  },
+  "global_renderer_limit": 1,
+  "https_configuration": {
+    "config_data_sha256": "199374dc9c4592f2d02ea4f91fe68a8e684f6245104d18035ff7bbf68bf2c17a",
+    "config_source_sha256": "f1739441ed4e26ff1806d06a8953bfa7bc8e50e5fb93fab80956ee759cf1bbc0",
+    "gateway_source_sha256": "c1a25c41c24f8bb804ecb0e162c8e0577437fd31b16ef82cefbacebbb20795ba",
+    "image": "registry.digitalocean.com/tenderdesk-a6093a76/https@sha256:3a539c44f0907ba846f70ae6e97f477cccf2a34cc84cc492201d5d73e7cfa7ce",
+    "image_id": "sha256:7c4521e5c6e421416a5aa0debc15993a660a23148aaaa303310d6f9b5883dd32",
+    "minimum_cpu_millicores": 300,
+    "minimum_memory_bytes": 134217728,
+    "qualification_sha256": "a10f52cf769a39d1204354796039e0bb6147a7a3dfdee5bae63a1a4621aace72",
+    "version": 1
+  },
+  "issuance_file_capacity_version": 1,
+  "legacy_batch_gateway_fence_version": 1,
+  "legacy_batch_insert_fence_version": 1,
+  "migrations": [
+    {
+      "name": "20261104121022_partial_document_coverage.sql",
+      "sha256": "7a33a9794c32d398d8fa2740c80f9dce0f9eeac93c7af5616947fb24bcdb9663"
+    },
+    {
+      "name": "20261104121116_proposal_delivery_snapshots.sql",
+      "sha256": "323ae4275ffd64bf61413f961d9a753674154a63241cfc63230f6e2ccf27e6d2"
+    },
+    {
+      "name": "20261104121423_provider_failure_scope.sql",
+      "sha256": "68410a020a500f45587fbf845c947aff491d0f6586a3a1b09be6593b840f715a"
+    },
+    {
+      "name": "20261104121443_automatic_usage_recovery.sql",
+      "sha256": "0121ca91d4cdaea64eaacbce44ee790609ae03278a771ce1773a08e97f6170b8"
+    },
+    {
+      "name": "20261104122015_company_evidence_retrieval.sql",
+      "sha256": "4cf7302d5a137e33741a1369eb65a9563ea37da5b9428a3222ad0566c48fedee"
+    },
+    {
+      "name": "20261104122333_durable_delivery_artifacts.sql",
+      "sha256": "40e413760862579d6caddf79ddbb4c42134f05a4657cef5c15294be5d2aaf128"
+    },
+    {
+      "name": "20261104133930_durable_uploaded_document_ocr.sql",
+      "sha256": "1f189df86545aec22f2d4ee8053912b0edad36fd4fa915caf3e5df3d68638f9d"
+    },
+    {
+      "name": "20261104134540_source_evidence_authority.sql",
+      "sha256": "fba123633c45282cbf12a2f7907768c647032da673d65a7853433fab615bce0e"
+    },
+    {
+      "name": "20261104134646_structured_proposal_authoring.sql",
+      "sha256": "1ee8a3bdc3c5eaa0b698f22565653d8d0a73b4cb4f42d4c36c893cbb4bf46bd5"
+    },
+    {
+      "name": "20261104135306_proposal_consistency_contract.sql",
+      "sha256": "1b8401b675194055d69d78e38ffc3f73f9f4d1036b7ce3fc66fe64cff8a6cdfe"
+    },
+    {
+      "name": "20261104135748_proposal_consistency_review.sql",
+      "sha256": "b31ae1d9dc08e4dea56cd32af49cb2c430f7a8ef18d1d4104c50fcaec5107097"
+    },
+    {
+      "name": "20261104140628_authored_response_adoption.sql",
+      "sha256": "2afe615339f15807baf38ff761df392222de529dac233acaeb81f225506f3404"
+    },
+    {
+      "name": "20261104142525_proposal_issuance_deadline.sql",
+      "sha256": "5d81ed380b3c4c0eb2637cf4e9ebea566b6b86e5a4a42adcc476391e475aca51"
+    },
+    {
+      "name": "20261104143632_generated_review_delivery.sql",
+      "sha256": "8da4bdcbd534b04f62d157bbd49d2aa2a5e0224cdfd7fdd19f18682653dfeeaa"
+    },
+    {
+      "name": "20261104144002_requirement_applicability_binding.sql",
+      "sha256": "dca1898a34571f6ccf88ce57bf24e84f5faed983d81dc5aa348b320155ebfb3b"
+    },
+    {
+      "name": "20261104150228_restored_source_review_assurance.sql",
+      "sha256": "d2e9f7b70f4cf2379d1a488b72612cb07afae9636eeed337b27c2225ecf6659a"
+    },
+    {
+      "name": "20261104151946_current_proposal_issuance_contract.sql",
+      "sha256": "4413206e83a6a19755d969d70b6ca4dc370c76ba79e57159d7f206d96d0a841e"
+    },
+    {
+      "name": "20261104152913_durable_ordinary_export_packages.sql",
+      "sha256": "b174c3c4d569cb508b00615a7f08ef347ac4787fa53161caae636ee2aaae7e50"
+    },
+    {
+      "name": "20261104160125_proposal_issuance_file_capacity.sql",
+      "sha256": "46ba7ddc4c1d004557bd35e7c11c99c89f416349554e1411197c2193f9d16723"
+    },
+    {
+      "name": "20261104163406_serialize_local_document_rendering.sql",
+      "sha256": "6f1a87cff03d035446cce8e8aefab0e09ce23c2d2c1d4d59377f741e89e2f088"
+    },
+    {
+      "name": "20261104170442_durable_storage_write_intents.sql",
+      "sha256": "af8ff6c5a07c946a60b40563549492466387c3d8eb324c67995d80d1a0d10694"
+    },
+    {
+      "name": "20261104172700_storage_write_retirement_proofs.sql",
+      "sha256": "5269599b431da34c3f7ee77d06442441e692c9f2b754d2f2050a42e06dbe1634"
+    },
+    {
+      "name": "20261104212300_structured_section_body_bound.sql",
+      "sha256": "e35c6131b64fd80943b340d1352e072db43ded8f3444885fd082720397b87e37"
+    },
+    {
+      "name": "20261104212818_bounded_command_batch_results.sql",
+      "sha256": "7bb805fefa6584e02ae8ef65fc6117fb86a9c48b2a8fcf4502e1e7783fe2dc22"
+    },
+    {
+      "name": "20261105120000_source_obligation_resolution.sql",
+      "sha256": "d77199d7309e804a6638e46f3169b9eec8cf85f5fd650e9a1f89ab4cd4cba0f1"
+    },
+    {
+      "name": "20261105120100_worker_capability_five.sql",
+      "sha256": "231981048bbaff8b2c8a2e85ed4deb16f68a0ec656fd0b2908b4e84d69f943b3"
+    },
+    {
+      "name": "20261105120200_retirement_catalog_and_retry_scope.sql",
+      "sha256": "504282160eabd9f641b6a4b8bce5a1c654f46f0f9f626517cf485a4adc7c3978"
+    }
+  ],
+  "minimum_worker_executor": 5,
+  "ordinary_renderer_version": "ordinary-2",
+  "release": "proposal-delivery-reliability-v1",
+  "renderer_versions": [
+    1,
+    2,
+    3
+  ],
+  "runtime_qualification": {
+    "helper_sha256": "822c875f26d93f22ea177ca88f17258c98381a93c62bb604f78199a112947a9b",
+    "publication_sha256": "61f4ab0d6bb4c0be2d1c605ab654ef7acd5e7f9b3707b0298fecff840bf9fe20",
+    "published_reference": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:aabe842e35259b86969ddef810dd297e9a0b0e4a27d7f0746cdcd80a6a12fc6a",
+    "qualified_image_id": "sha256:f2d0f99d4933c47d137940973a17aa78fe198ad385ac25f7a936ef45bdafcf44",
+    "receipt_sha256": "a1e6f82c57ecae4561878412996022e2eba9e45f7d1aa19628698d363599d358",
+    "version": 1
+  },
+  "source_resolution_version": 1,
+  "storage_gateway_guard_version": 1,
+  "storage_retirement_version": 1,
+  "storage_write_intents_version": 1,
+  "version": 1
+}
