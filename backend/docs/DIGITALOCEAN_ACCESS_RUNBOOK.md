@@ -3,7 +3,7 @@
 Use this file before Kubernetes inventory, diagnosis, acceptance or deployment.
 The repository-root [AGENTS.md](../../AGENTS.md) points here so the established
 route is available in every checkout, without relying on conversation history.
-Last reviewed: November 5, 2026.
+Last reviewed: November 7, 2026.
 
 ## Three-minute pagination completion (November 7)
 
@@ -26,8 +26,18 @@ schema manifest and inventory baseline stay unchanged.
 Frontend assets come from a never-started container of the exact immutable image.
 The workspace browser test, public HTML/JS/CSS hashes and actual PDF worker probe
 all use those same bytes. Authenticated complete job-summary traversal follows,
-then session logout and owned SQL-client cleanup. Production acceptance is still
-pending. Read the entire workflow and helper before dispatch.
+then session logout and owned SQL-client cleanup. Completion
+[42375651095](https://github.com/salahassi/tenders/actions/runs/42375651095)
+passed at `9e81488cb16f9a7fc148ae4089369f67732aea6e` in 115 seconds including
+queue time. The authenticated production traversal returned all 1,795 jobs in
+four pages (500, 500, 500, 295), with no full checkpoint fields or model requests.
+Public image assets, PDF worker browser acceptance, configuration preservation,
+session logout and both cleanup stages passed. See
+[the final receipt](evidence/job-summary-release-passed-20261107-42375651095.json).
+The observed frontend is now `b2201c24`; all four runtime targets remain
+`077b06ed`. This one-time completion is finished: its previous-image guard
+intentionally rejects another rollout against the new baseline. Read the entire
+workflow and helper and establish current state before any future deployment.
 
 `diagnose_promotion=true` selects the registry-read-only inspection job and skips
 rollout. It verifies the published image and a local label-only promotion without
@@ -36,6 +46,11 @@ are bound through exact hashes/sizes and a unique matching platform; all native
 config/layer/label guards remain enforced. Inspection `42370741371` passed.
 
 ## Latest verified application release
+
+The November 7 pagination completion above supersedes the November 5 frontend
+and runtime image observations. The schema ledger/catalog and original release
+baseline below remain unchanged. Pagination acceptance does not close the
+separate proposal issuance, provider or export acceptance gates.
 
 [Run42031298536](https://github.com/salahassi/tenders/actions/runs/42031298536)
 passes at main887411188b9591b01c9e3d01456372a37c3a0f68, with manifestada21f57.

@@ -2,6 +2,26 @@
 
 ## November 7 — excessive workspace job pagination
 
+**Deployed and accepted:**
+[run42375651095](https://github.com/salahassi/tenders/actions/runs/42375651095)
+at `9e81488cb16f9a7fc148ae4089369f67732aea6e` passed in **115 seconds** from
+creation to completion, within the owner's three-minute limit. The image-bound
+workspace browser, public HTML and all 55 code asset comparisons, and actual PDF
+worker browser probe pass. A genuine temporary Owner session traversed all
+**1,795 production jobs in four requests (500, 500, 500, 295)**, matching the
+database count, terminating on the last cursor and returning no checkpoints or
+lease credentials. Model requests and business mutations were zero. The session
+was logged out and both owned-client and private-runner cleanup stages passed.
+
+Only frontend changed to `b2201c24`; the four runtime targets remain `077b06ed`.
+The `ada21f57` schema ledger, `8f82c881` catalog and workload/private configuration
+are preserved. The run passed 29 current focused operations controls and verified
+the exact source-bound reuse of the previous complete package and 715-operations
+gates. See [the final receipt](evidence/job-summary-release-passed-20261107-42375651095.json).
+This closes the reported startup job-request amplification defect. Independent
+proposal issuance/provider/export work remains governed by its existing open
+gates. The following attempt history is retained as historical evidence.
+
 The reported settings-page waterfall is reproduced by the production contract:
 the repository asks for 500 jobs, while the full-content API deliberately limits
 heavy `jobs` pages to one row. Startup drains the entire history serially before
