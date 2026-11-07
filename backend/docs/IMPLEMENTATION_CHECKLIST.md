@@ -92,6 +92,21 @@ Its temporary client and credentials are removed. Recovery now pins exactly that
 observed image baseline, while retaining the original `ada21f57` schema ledger.
 Twelve Pod/ownership controls and six pagination-release controls pass locally.
 
+Release `42372009157` passes 712 operations / 11 schema / 16 Kubernetes checks,
+image publication and all five workload drains. Public acceptance rejects the
+runner-build/index comparison (`FRONTEND_PUBLIC_BUILD_MISMATCH`). All five images
+are restored and drained successfully; rollback reports no failures. The actual
+published frontend image contains `index-37E7Vfml.js`, while the independent
+runner build contains `index-Bbh5inT-.js`. A never-started local image inspection
+confirms the different index hashes. Acceptance now extracts the exact immutable,
+source-labelled image assets, browser-tests those bytes before rollout, and
+compares every public code asset against that verified artifact. It no longer
+assumes byte-identical output from the two separate build environments.
+The actual immutable frontend image passes local Chromium: 1,201 job summaries
+in three requests, no full job startup reads, all existing history/failure checks.
+Its index SHA is `aaa576da` and 55 public code assets are bound. Three archive
+boundary tests and all six pagination-release controls pass.
+
 
 ## November 5 — latest integration checkpoint
 

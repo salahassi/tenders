@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "scope": "Actual immutable frontend image assets on local Chromium with synthetic workspace transport",
+  "image": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:c950bc251e8df87fad86265622b4afd80954fa59f00c6b85a2d2eb95203f1953",
+  "image_source_revision": "da1556037c9378af09563589e20f24527720973e",
+  "job_records": 1201,
+  "job_summary_requests": 3,
+  "full_job_requests_on_boot": 0,
+  "production_requests": 0,
+  "index_sha256": "aaa576da3f4ebde3e1c8289ad6d0dfd93d486b1d5b8b53bf63a33c594e840616",
+  "code_assets": 55,
+  "source": "immutable_frontend_image",
+  "container_never_started": true,
+  "inspection_container_removed": true,
+  "workspace_browser_fixture_passed": true
+}
