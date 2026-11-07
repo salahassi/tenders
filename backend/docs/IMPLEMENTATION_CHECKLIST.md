@@ -2,6 +2,16 @@
 
 ## November 7 — excessive workspace job pagination
 
+**Reopened after the owner's report:** the prior four-page production check
+proved the job-summary endpoint, not complete authenticated settings startup.
+The public frontend currently serves index SHA `aaa576da`, matching the deployed
+image, with `Cache-Control: no-store`. Startup still sequentially reads other
+full-content tables. A bounded real-browser diagnosis now records per-resource
+request/page counts and aggregate table sizes, with only same-origin GETs,
+no customer content in logs, a genuine isolated Owner session, logout and owned
+client cleanup. It does not change deployments or call models. The workflow
+retains the three-minute deadline. Cause and end-to-end acceptance remain open.
+
 **Deployed and accepted:**
 [run42375651095](https://github.com/salahassi/tenders/actions/runs/42375651095)
 at `9e81488cb16f9a7fc148ae4089369f67732aea6e` passed in **115 seconds** from
