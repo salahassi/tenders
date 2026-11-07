@@ -11,6 +11,9 @@ request/page counts and aggregate table sizes, with only same-origin GETs,
 no customer content in logs, a genuine isolated Owner session, logout and owned
 client cleanup. It does not change deployments or call models. The workflow
 retains the three-minute deadline. Cause and end-to-end acceptance remain open.
+Diagnostic `42381366914` failed before a browser result in 24 seconds; both
+cleanup stages passed. Bounded stage/type/source-line diagnostics are added to
+identify the setup failure without exposing exception payloads or credentials.
 
 **Deployed and accepted:**
 [run42375651095](https://github.com/salahassi/tenders/actions/runs/42375651095)
