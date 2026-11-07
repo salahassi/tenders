@@ -64,8 +64,8 @@ the read count must remain below 100. Its 105-second coordinator bound reserves
 time for cleanup/rollback. The new source manifest changes runtime qualification
 metadata only; the original deployed `ada21f57` ledger/catalog are preserved.
 The qualification tests now pin the newly verified image/source explicitly;
-16 focused Python release/qualification controls and three browser-boundary tests
-pass; the additional manifest regression suite is still running locally.
+34 Python release/qualification/manifest regression controls and three
+browser-boundary tests pass.
 Production update and complete UI acceptance are still pending.
 
 **Deployed and accepted:**
