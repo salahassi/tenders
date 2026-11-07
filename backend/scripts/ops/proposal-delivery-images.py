@@ -57,6 +57,16 @@ def raw_image_config(value):
     if (decoded.get('os')!=value.get('Os') or decoded.get('architecture')!=value.get('Architecture')
       or decoded.get('variant','')!=value.get('Variant','') or not isinstance(rootfs,dict)
       or {'Type':rootfs.get('type'),'Layers':rootfs.get('diff_ids')}!=value.get('RootFS')):
+        # Fixed non-secret metadata only; never print environment/config values.
+        observed_rootfs=value.get('RootFS',{})
+        safe_variant=lambda v:v if isinstance(v,str) and re.fullmatch('[a-zA-Z0-9_.-]{0,16}',v) else 'unrecognized'
+        print(json.dumps({'image':'raw_identity_mismatch',
+          'os_matches':decoded.get('os')==value.get('Os'),
+          'architecture_matches':decoded.get('architecture')==value.get('Architecture'),
+          'raw_variant':safe_variant(decoded.get('variant','')),
+          'inspect_variant':safe_variant(value.get('Variant','')),
+          'rootfs_type_matches':isinstance(rootfs,dict) and rootfs.get('type')==observed_rootfs.get('Type'),
+          'layer_digests_match':isinstance(rootfs,dict) and rootfs.get('diff_ids')==observed_rootfs.get('Layers')}),flush=True)
         raise ImageError('DELIVERY_IMAGE_RAW_IDENTITY_MISMATCH')
     return copy.deepcopy(decoded['config'])
 
