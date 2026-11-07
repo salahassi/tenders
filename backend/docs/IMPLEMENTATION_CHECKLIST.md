@@ -63,6 +63,20 @@ source history without retaining credentials or requiring an unauthenticated
 private-repository fetch. No application rebuild
 qualification or native fixture is being inferred from a different image.
 
+Run `42370052315` passes the unchanged-source proof, 709 operations / 11 schema /
+16 Kubernetes checks and the browser fixture, but image preparation then refuses
+`DELIVERY_IMAGE_RAW_CONFIG_UNVERIFIED`, still before rollout. A registry-read-only
+promotion inspection mode reproduces the exact local label build on the hosted
+engine without publishing, accessing Kubernetes or modifying business data.
+Inspection `42370603240` verifies the published image, then proves the promoted
+image is an OCI index. Resolution now requires one exact observed-platform
+manifest and verifies index, manifest and config hashes/sizes before the existing
+qualification checks. Duplicate platform matches, wrong platform and changed
+manifest bytes/descriptors are rejected by added tests. Hosted inspection
+`42370741371` at `2149ccb` then passes both the exact published image and actual
+label-only promotion, including full config/layer qualification and private
+credential removal; no publication or production call is part of that probe.
+
 
 ## November 5 — latest integration checkpoint
 

@@ -3,6 +3,11 @@ name: Release job summary pagination
 on:
   workflow_dispatch:
     inputs:
+      diagnose_promotion:
+        description: Registry-read-only inspection and local label promotion; no publication, cluster access or rollout
+        type: boolean
+        required: true
+        default: false
       reuse_verified_packages:
         description: Reuse run 42367604849 only after proving application sources unchanged; always retest changed operations
         type: boolean
@@ -18,7 +23,20 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  inspect-promotion:
+    if: ${{ inputs.diagnose_promotion == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Verify the exact published image and local promotion metadata
+        env:
+          DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+        run: python3 backend/scripts/ops/runtime-promotion-inspection.py
   release:
+    if: ${{ inputs.diagnose_promotion != true }}
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
