@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Read and browser-test exact static assets from a never-started frontend image."""
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -56,3 +57,15 @@ def verified_assets(reference,revision,images,frontend):
             return expected,{'index_sha256':hashlib.sha256(expected['index']).hexdigest(),
                 'code_assets':len(expected['assets']),'source':'immutable_frontend_image',
                 'container_never_started':True,'inspection_container_removed':True,'workspace_browser_fixture_passed':True}
+
+@contextmanager
+def reference_directory(expected):
+    """Supply the same verified bytes to the public PDF worker browser probe."""
+    with tempfile.TemporaryDirectory(prefix='frontend-reference-',dir=os.environ['DOKS_WORKDIR']) as temporary:
+        directory=Path(temporary)
+        (directory/'index.html').write_bytes(expected['index'])
+        for name,content in expected['assets'].items():
+            path=PurePosixPath(name)
+            require(name.startswith('/assets/') and '..' not in path.parts and path.as_posix()==name,'REFERENCE_PATH_INVALID')
+            target=directory/name[1:];target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(content)
+        yield directory

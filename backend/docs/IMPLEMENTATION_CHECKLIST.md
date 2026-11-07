@@ -107,6 +107,26 @@ in three requests, no full job startup reads, all existing history/failure check
 Its index SHA is `aaa576da` and 55 public code assets are bound. Three archive
 boundary tests and all six pagination-release controls pass.
 
+Release `42373358926` passes 715 operations / 11 schema / 16 Kubernetes controls,
+image-asset browser acceptance, all workload drains and public HTML/JS/CSS hashes.
+The separate PDF browser probe still selected the independent runner dist and
+failed; all five images are restored with no rollback failures. The verified
+image asset directory now propagates to that PDF probe as well. Application and
+runtime sources remain unchanged; only that exact browser-probe file is allowed
+alongside operations changes when reusing the prior package gates.
+
+Owner's latest operating rule: stop any Actions run exceeding three minutes and
+resolve the delay. The completion workflow now has a three-minute job deadline;
+its coordinator has a 90-second work deadline and 30-second rollout/drain bounds.
+It retains the verified runtime `077b06ed` and changes only frontend to the already
+published `b2201c24` image. No rebuild, publication or runtime restart is needed.
+Both prior full application gates and the 715-operation run are checked through
+GitHub metadata and exact source comparisons; only the enumerated completion
+scripts/browser probe/docs may differ, and their targeted controls run again.
+The runner's installed Chrome is checked and used instead of downloading another
+browser. Actual local Nginx-image PDF extraction now passes with the verified
+image asset reference, alongside the 1,201-job image-browser test.
+
 
 ## November 5 — latest integration checkpoint
 

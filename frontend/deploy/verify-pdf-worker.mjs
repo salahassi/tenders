@@ -37,7 +37,7 @@ async function verify() {
   const require = createRequire(path.join(repository, "backend/package.json"));
   const { chromium, request } = require("playwright");
   const { PDFDocument, StandardFonts } = require("pdf-lib");
-  const dist = path.join(repository, "frontend/dist");
+  const dist = process.env.TENDERDESK_BROWSER_DIST || path.join(repository, "frontend/dist");
   const assetsDirectory = path.join(dist, "assets");
   const names = await readdir(assetsDirectory);
   const workers = names.filter((name) =>

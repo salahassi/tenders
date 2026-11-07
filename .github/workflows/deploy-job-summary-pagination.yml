@@ -1,18 +1,18 @@
-name: Release job summary pagination
+name: Complete job summary pagination
 
 on:
   workflow_dispatch:
     inputs:
       diagnose_promotion:
-        description: Registry-read-only inspection and local label promotion; no publication, cluster access or rollout
+        description: Registry-read-only local promotion inspection; no rollout
         type: boolean
         required: true
         default: false
       reuse_verified_packages:
-        description: Reuse run 42367604849 only after proving application sources unchanged; always retest changed operations
+        description: Require the recorded application and operations gates and exact unchanged application sources
         type: boolean
         required: true
-        default: false
+        default: true
 
 permissions:
   contents: read
@@ -26,7 +26,7 @@ jobs:
   inspect-promotion:
     if: ${{ inputs.diagnose_promotion == true }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -38,8 +38,11 @@ jobs:
   release:
     if: ${{ inputs.diagnose_promotion != true }}
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 3
     steps:
+      - name: Require recorded checks for the bounded completion
+        if: ${{ inputs.reuse_verified_packages != true }}
+        run: exit 1
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
@@ -51,45 +54,34 @@ jobs:
           cache-dependency-path: |
             frontend/package-lock.json
             backend/package-lock.json
-      - name: Prove unchanged application sources and prior successful gates
-        if: ${{ inputs.reuse_verified_packages == true }}
+      - name: Verify recorded gates, unchanged artifacts and current release checks
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python3 backend/scripts/ops/job-summary-verified-packages.py
-      - name: Verify exact reviewed source and both application packages
         run: |
           set -euo pipefail
+          python3 backend/scripts/ops/job-summary-verified-packages.py
           python3 backend/scripts/ops/proposal-delivery-release.py
-          # Provision the immutable fixture before its network-isolated tests.
-          docker pull postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
-          npm ci --prefix frontend
           npm ci --prefix backend
-          python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
-          if [ "${{ inputs.reuse_verified_packages }}" != "true" ]; then
-            npm --prefix frontend run typecheck
-            npm --prefix frontend test -- --maxWorkers=1
-            npm --prefix backend run typecheck
-            npm --prefix backend test -- --maxWorkers=1
-          fi
-          npm --prefix frontend run build
-          npm --prefix backend run build
-          python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
-          python3 -m unittest discover -s backend/scripts/ops/production-schema -p 'test_*.py'
-          python3 -m unittest discover -s backend/deploy/kubernetes -p 'test_*.py'
-      - name: Verify actual browser workspace loading
-        run: |
-          backend/node_modules/.bin/playwright install --with-deps chromium
-          node frontend/deploy/verify-workspace-boot.mjs
-      - name: Prepare original-CA cluster access and expiring image credentials
+          python3 -m pip install --quiet --disable-pip-version-check --requirement backend/scripts/ops/private-transfer-requirements.txt
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_digitalocean_update_frontend.py'
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_frontend_image_assets.py'
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_job_summary_release.py'
+          python3 -m unittest discover -s backend/scripts/ops -p 'test_job_summary_verified_packages.py'
+          node --check frontend/deploy/verify-pdf-worker.mjs
+          browser="$(command -v google-chrome || command -v chromium || true)"
+          test -n "$browser"
+          "$browser" --version
+          echo "CHROMIUM_PATH=$browser" >> "$GITHUB_ENV"
+      - name: Prepare original-CA cluster access and temporary image credentials
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
         run: python3 backend/scripts/ops/digitalocean-runner.py
-      - name: Publish exact qualified runtime and frontend
-        run: python3 backend/scripts/ops/job-summary-release.py --publish
-      - name: Update images and verify authenticated job summaries
+      - name: Pull the already verified immutable images without rebuilding or publishing
+        run: python3 backend/scripts/ops/job-summary-release.py --prepare-completion
+      - name: Complete only frontend and verify authenticated job summaries
         env:
           DIGITALOCEAN_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-        run: python3 backend/scripts/ops/job-summary-release.py
+        run: python3 backend/scripts/ops/job-summary-release.py --frontend-only
       - name: Remove only this release attempt's owned temporary database client
         if: ${{ always() }}
         run: |

@@ -10,6 +10,9 @@ import re
 import sys
 import time
 import uuid
+import signal
+import subprocess
+from concurrent.futures import ThreadPoolExecutor
 import importlib.util
 HERE=Path(__file__).resolve().parent
 
@@ -19,6 +22,7 @@ base=load('summary_release_base','proposal-delivery-update.py')
 front=load('summary_release_frontend','digitalocean-update-frontend.py')
 auth=load('summary_release_auth','proposal-export-acceptance.py')
 assets=load('summary_frontend_image_assets','frontend-image-assets.py')
+proof=load('summary_completion_proof','job-summary-verified-packages.py')
 d,u,runtime,images=base.d,base.u,base.runtime,base.images
 RUNTIME=('api','worker','source-browser','scheduler')
 TARGETS=RUNTIME+('frontend',)
@@ -26,7 +30,25 @@ PREVIOUS_RUNTIME='registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:0
 PREVIOUS_FRONTEND='registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:32f26e92e33861e591fbc408cea0fca8ca817a7bd5496f11f48d32a2c53cf180'
 SCHEMA_MANIFEST='ada21f57461fa81e3b45778685d86438117ef419ad8c31ceaac86c06dcb2dba3'
 SCHEMA_CATALOG='8f82c88194713bff62224f307d8ab6744a42f4d7fa57a3559fafc4d083cddc04'
+COMPLETION_FRONTEND='registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:b2201c24942c054df1df648b5210d61175e9643207bcedc827af103336757591'
+RETAINED_RUNTIME_SOURCE='594e0753f1ce44c939c551a474b7a6a8ffcb7b28'
 class ReleaseError(Exception):pass
+
+def selection(revision,frontend_only):
+    if frontend_only:
+        return {'runtime':PREVIOUS_RUNTIME,'frontend':COMPLETION_FRONTEND},{'runtime':RETAINED_RUNTIME_SOURCE,'frontend':proof.OPS_REVISION},('frontend',)
+    return {name:u.image(os.environ.get('TENDERDESK_'+name.upper()+'_IMAGE',''),name) for name in ('runtime','frontend')},dict.fromkeys(('runtime','frontend'),revision),TARGETS
+
+def prepare_completion_images():
+    images.verify_checkout(os.environ.get('GITHUB_SHA',''));proof.verify_completion_checkout()
+    selected,_,_=selection('',True)
+    def pull(item):
+        name,reference=item
+        with (Path(os.environ['DOKS_WORKDIR'])/('completion-'+name+'-pull.log')).open('w') as log:
+            result=subprocess.run(['docker','pull',reference],stdout=log,stderr=subprocess.STDOUT,timeout=60,check=False)
+        require(result.returncode==0,'SUMMARY_IMAGE_PULL_FAILED')
+    with ThreadPoolExecutor(max_workers=2) as pool:list(pool.map(pull,selected.items()))
+    print(json.dumps({'completion_images':'exact_published_images_pulled','published':False}),flush=True)
 STATE={'stage':'initial','patched':[],'rolled_back':[],'rollback_failed':[]}
 
 def rollback(touched,selected,original):
@@ -35,7 +57,7 @@ def rollback(touched,selected,original):
         try:
             candidate=selected['frontend' if name=='frontend' else 'runtime'];prior=base.image_of(original[name])
             runtime.patch_runtime(name,prior,original[name],candidate)
-            d.wait_deployments([name]);base.wait_drain(name,prior)
+            d.wait_deployments([name],seconds=30);base.wait_drain(name,prior,timeout=30)
             STATE['rolled_back'].append(name)
         except Exception:
             STATE['rollback_failed'].append(name)
@@ -111,39 +133,42 @@ COMMIT;""".replace('__W__',workspace)
     finally:
         if session:auth.smoke.expect(client.request('/auth/v1/logout?scope=local',token=session['access_token'],method='POST'),{200,204},'SUMMARY_LOGOUT_NOT_CONFIRMED')
 
-def update():
+def update(frontend_only=False):
     STATE.update(stage='preflight',patched=[],rolled_back=[],rollback_failed=[])
     revision=os.environ.get('GITHUB_SHA','');require(re.fullmatch('[a-f0-9]{40}',revision),'SUMMARY_REVISION_REQUIRED')
-    selected={name:u.image(os.environ.get('TENDERDESK_'+name.upper()+'_IMAGE',''),name) for name in ('runtime','frontend')}
+    selected,sources,targets=selection(revision,frontend_only)
+    if frontend_only:proof.verify_completion_checkout()
     images.verify_checkout(revision);q=images.qualification;receipt=q.load(images.release.ROOT.parent);q.verify_checkout(images.release.ROOT.parent,receipt)
-    images.inspect(selected['runtime'],revision,'runtime');images.inspect(selected['frontend'],revision,'frontend')
+    images.inspect(selected['runtime'],sources['runtime'],'runtime');images.inspect(selected['frontend'],sources['frontend'],'frontend')
     d.probe.validate_cluster();front.namespace_owned()
     original={name:u.deployment(name) for name in TARGETS}
     require(all(base.image_of(original[n])==PREVIOUS_RUNTIME for n in RUNTIME) and base.image_of(original['frontend'])==PREVIOUS_FRONTEND,'SUMMARY_DEPLOYED_IMAGE_BASELINE_CHANGED')
     before=runtime.workload_snapshot();configuration=runtime.retained_configuration()
     STATE['stage']='frontend_image_acceptance'
-    expected,frontend_proof=assets.verified_assets(selected['frontend'],revision,images,front)
+    expected,frontend_proof=assets.verified_assets(selected['frontend'],sources['frontend'],images,front)
     database=base.inventory.observer.Client(1800);database.labels['app.kubernetes.io/managed-by']=base.OWNER;base.save_client(database)
     touched=[]
     try:
         STATE['stage']='schema_preflight'
         database.prepare();schema=verify_schema(database)
-        for name in TARGETS:
+        for name in targets:
             STATE['stage']='update_'+name
             verify_unchanged(before,configuration,selected)
             candidate=selected['frontend' if name=='frontend' else 'runtime'];prior=base.image_of(original[name]);touched.append(name)
             runtime.patch_runtime(name,candidate,original[name],prior);STATE['patched'].append(name)
-            d.wait_deployments([name]);base.wait_drain(name,candidate)
+            d.wait_deployments([name],seconds=30);base.wait_drain(name,candidate,timeout=30)
         verify_unchanged(before,configuration,selected);verify_schema(database)
         STATE['stage']='public_acceptance'
-        front.public_check(u.owned('configmap','frontend-config'),expected)
+        with assets.reference_directory(expected) as directory:
+            front.public_check(u.owned('configmap','frontend-config'),expected,asset_directory=directory)
         STATE['stage']='authenticated_acceptance'
         observed=acceptance(database)
         require(all(base.image_of(u.deployment(n))==selected['frontend' if n=='frontend' else 'runtime'] for n in TARGETS),'SUMMARY_FINAL_IMAGE_MISMATCH')
-        return {'release':'job-summary-pagination','status':'passed','source_revision':revision,'images':selected,'schema':schema,'frontend_artifact':frontend_proof,'acceptance':observed,'configuration_preserved':True,'auth_session_logged_out':True,'processing_retried':False}
+        return {'release':'job-summary-pagination','status':'passed','source_revision':revision,'artifact_sources':sources,'deployment_targets':list(targets),'images':selected,'schema':schema,'frontend_artifact':frontend_proof,'acceptance':observed,'configuration_preserved':True,'auth_session_logged_out':True,'processing_retried':False}
     except Exception:
         # Image-only, additive endpoint release: restore our exact changed images,
         # never overwrite an operator's concurrent specification or image edit.
+        if frontend_only:signal.alarm(0)
         STATE['failure_stage']=STATE['stage']
         rollback(touched,selected,original)
         raise
@@ -155,8 +180,17 @@ def main():
         if sys.argv[1:]==['--publish']:
             images.IMAGES={k:v for k,v in images.IMAGES.items() if k in ('runtime','frontend')}
             images.prepare();return 0
-        require(not sys.argv[1:],'SUMMARY_ARGUMENTS_INVALID')
-        with redirect_stdout(io.StringIO()),redirect_stderr(io.StringIO()):result=update()
+        if sys.argv[1:]==['--prepare-completion']:
+            prepare_completion_images();return 0
+        require(sys.argv[1:] in ([],['--frontend-only']),'SUMMARY_ARGUMENTS_INVALID')
+        frontend_only=sys.argv[1:]==['--frontend-only']
+        if frontend_only:
+            def deadline(signum,frame):raise ReleaseError('SUMMARY_COMPLETION_DEADLINE')
+            signal.signal(signal.SIGALRM,deadline);signal.alarm(90)
+        try:
+            with redirect_stdout(io.StringIO()),redirect_stderr(io.StringIO()):result=update(frontend_only)
+        finally:
+            if frontend_only:signal.alarm(0)
         print(json.dumps(result),flush=True);return 0
     except Exception as error:
         code=str(error) if re.fullmatch('[A-Z][A-Z0-9_]{0,99}',str(error)) else 'SUMMARY_RELEASE_FAILED'
