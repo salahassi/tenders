@@ -1,0 +1,62 @@
+{
+  "release": "job-summary-pagination",
+  "status": "passed",
+  "source_revision": "9e81488cb16f9a7fc148ae4089369f67732aea6e",
+  "artifact_sources": {
+    "runtime": "594e0753f1ce44c939c551a474b7a6a8ffcb7b28",
+    "frontend": "ad03ffee941bcb27467cbe9a1cf8474570972157"
+  },
+  "deployment_targets": [
+    "frontend"
+  ],
+  "images": {
+    "runtime": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e",
+    "frontend": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:b2201c24942c054df1df648b5210d61175e9643207bcedc827af103336757591"
+  },
+  "schema": {
+    "manifest_sha256": "ada21f57461fa81e3b45778685d86438117ef419ad8c31ceaac86c06dcb2dba3",
+    "catalog_sha256": "8f82c88194713bff62224f307d8ab6744a42f4d7fa57a3559fafc4d083cddc04",
+    "schema_mutations": 0
+  },
+  "frontend_artifact": {
+    "index_sha256": "aaa576da3f4ebde3e1c8289ad6d0dfd93d486b1d5b8b53bf63a33c594e840616",
+    "code_assets": 55,
+    "source": "immutable_frontend_image",
+    "container_never_started": true,
+    "inspection_container_removed": true,
+    "workspace_browser_fixture_passed": true
+  },
+  "acceptance": {
+    "authenticated_owner": true,
+    "job_records": 1795,
+    "page_requests": 4,
+    "page_sizes": [
+      500,
+      500,
+      500,
+      295
+    ],
+    "complete_cursor_traversal": true,
+    "full_checkpoint_fields": 0,
+    "business_mutations": 0,
+    "model_requests": 0
+  },
+  "configuration_preserved": true,
+  "auth_session_logged_out": true,
+  "processing_retried": false,
+  "evidence": {
+    "workflow_run": 42375651095,
+    "job": 128412568295,
+    "url": "https://github.com/salahassi/tenders/actions/runs/42375651095",
+    "created_at": "2026-11-07T13:09:21Z",
+    "completed_at": "2026-11-07T13:11:16Z",
+    "elapsed_seconds": 115,
+    "conclusion": "success",
+    "owned_database_client_cleanup": "success",
+    "runner_credentials_cleanup": "success",
+    "focused_operations_tests": 29,
+    "application_gates_reused_from": 42367604849,
+    "operations_gates_reused_from": 42373358926,
+    "proof": "Hosted run and exact unchanged source comparisons; image-bound workspace browser, public assets and PDF probe; genuine authenticated complete summary traversal"
+  }
+}
