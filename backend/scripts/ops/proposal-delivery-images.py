@@ -23,7 +23,7 @@ class ImageError(Exception):pass
 _RAW_CONFIG_CACHE={}
 
 def raw_image_config(value):
-    """Read the config bytes whose SHA-256 is the observed immutable image ID.
+    """Resolve hash-bound image configuration from a config ID or manifest ID.
 
     Docker inspect adds engine/API-specific container defaults. Those are not
     part of the image config, so they cannot define promotion compatibility.
@@ -41,18 +41,33 @@ def raw_image_config(value):
                 result=subprocess.run(['docker','image','save','--output',str(archive),identifier],
                     stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True,timeout=180)
                 if result.returncode:raise ValueError()
-                digest=identifier[7:]
                 with tarfile.open(archive) as saved:
-                    members=[m for m in saved.getmembers() if m.name in (digest+'.json','blobs/sha256/'+digest)]
-                    if len(members)!=1 or not members[0].isfile() or not 0<members[0].size<=1048576:raise ValueError()
-                    raw=saved.extractfile(members[0]).read(1048577)
-                if hashlib.sha256(raw).hexdigest()!=digest:raise ValueError()
-                decoded=json.loads(raw)
-                if not isinstance(decoded,dict) or not isinstance(decoded.get('config'),dict):raise ValueError()
-                _RAW_CONFIG_CACHE[identifier]=decoded
+                    def read_blob(digest, expected_size=None):
+                        if not isinstance(digest,str) or not re.fullmatch('sha256:[a-f0-9]{64}',digest):raise ValueError()
+                        suffix=digest[7:]
+                        members=[m for m in saved.getmembers() if m.name in (suffix+'.json','blobs/sha256/'+suffix)]
+                        if len(members)!=1 or not members[0].isfile() or not 0<members[0].size<=1048576:raise ValueError()
+                        if expected_size is not None and members[0].size!=expected_size:raise ValueError()
+                        raw=saved.extractfile(members[0]).read(1048577)
+                        if hashlib.sha256(raw).hexdigest()!=suffix:raise ValueError()
+                        decoded=json.loads(raw)
+                        if not isinstance(decoded,dict):raise ValueError()
+                        return decoded
+                    decoded=read_blob(identifier);config_id=identifier
+                    # Containerd-backed Docker reports a manifest digest as Id.
+                    # Follow only its SHA-256/size-bound image-config descriptor.
+                    if decoded.get('schemaVersion')==2:
+                        descriptor=decoded.get('config',{})
+                        if (not isinstance(descriptor,dict) or descriptor.get('mediaType') not in (
+                          'application/vnd.oci.image.config.v1+json','application/vnd.docker.container.image.v1+json')
+                          or type(descriptor.get('size')) is not int or not 0<descriptor['size']<=1048576):raise ValueError()
+                        config_id=descriptor.get('digest');decoded=read_blob(config_id,descriptor['size'])
+                    if not isinstance(decoded.get('config'),dict):raise ValueError()
+                _RAW_CONFIG_CACHE[identifier]=(config_id,decoded)
+                _RAW_CONFIG_CACHE[config_id]=(config_id,decoded)
         except (KeyError,OSError,ValueError,TypeError,tarfile.TarError,subprocess.TimeoutExpired):
             raise ImageError('DELIVERY_IMAGE_RAW_CONFIG_UNVERIFIED') from None
-    decoded=_RAW_CONFIG_CACHE[identifier]
+    config_id,decoded=_RAW_CONFIG_CACHE[identifier]
     rootfs=decoded.get('rootfs',{})
     if (decoded.get('os')!=value.get('Os') or decoded.get('architecture')!=value.get('Architecture')
       or decoded.get('variant','')!=value.get('Variant','') or not isinstance(rootfs,dict)
@@ -71,6 +86,8 @@ def raw_image_config(value):
           'rootfs_type_matches':isinstance(rootfs,dict) and rootfs.get('type')==observed_rootfs.get('Type'),
           'layer_digests_match':isinstance(rootfs,dict) and rootfs.get('diff_ids')==observed_rootfs.get('Layers')}),flush=True)
         raise ImageError('DELIVERY_IMAGE_RAW_IDENTITY_MISMATCH')
+    # Canonical image identity is the verified config digest on both engines.
+    value['Id']=config_id
     return copy.deepcopy(decoded['config'])
 
 def qualification_diagnostic(value,receipt):

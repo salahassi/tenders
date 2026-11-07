@@ -2,9 +2,16 @@ name: Release job summary pagination
 
 on:
   workflow_dispatch:
+    inputs:
+      reuse_verified_packages:
+        description: Reuse run 42367604849 only after proving application sources unchanged; always retest changed operations
+        type: boolean
+        required: true
+        default: false
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: tenderdesk-digitalocean-production
@@ -25,6 +32,11 @@ jobs:
           cache-dependency-path: |
             frontend/package-lock.json
             backend/package-lock.json
+      - name: Prove unchanged application sources and prior successful gates
+        if: ${{ inputs.reuse_verified_packages == true }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 backend/scripts/ops/job-summary-verified-packages.py
       - name: Verify exact reviewed source and both application packages
         run: |
           set -euo pipefail
@@ -34,11 +46,13 @@ jobs:
           npm ci --prefix frontend
           npm ci --prefix backend
           python3 -m pip install --requirement backend/scripts/ops/private-transfer-requirements.txt
-          npm --prefix frontend run typecheck
-          npm --prefix frontend test -- --maxWorkers=1
+          if [ "${{ inputs.reuse_verified_packages }}" != "true" ]; then
+            npm --prefix frontend run typecheck
+            npm --prefix frontend test -- --maxWorkers=1
+            npm --prefix backend run typecheck
+            npm --prefix backend test -- --maxWorkers=1
+          fi
           npm --prefix frontend run build
-          npm --prefix backend run typecheck
-          npm --prefix backend test -- --maxWorkers=1
           npm --prefix backend run build
           python3 -m unittest discover -s backend/scripts/ops -p 'test_*.py'
           python3 -m unittest discover -s backend/scripts/ops/production-schema -p 'test_*.py'

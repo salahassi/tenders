@@ -51,6 +51,15 @@ metadata diagnostic is added to identify the engine presentation mismatch while
 keeping image bytes/platform/filesystem validation enforced. Read-only inspection
 `42369591871` confirms platform/rootfs differences; an additional hash-only
 diagnostic distinguishes an OCI manifest ID from its referenced configuration ID.
+Inspection `42369696495` proves Docker reports manifest `d34fb361` as its ID,
+whose SHA-bound config descriptor is exactly qualified config `aeb8e3c3`. The
+reader now verifies both blobs and descriptor size before canonicalizing the
+config identity; platform, full layer list, all config fields and labels remain
+strict. Local legacy/OCI/config-corruption and promotion controls pass. The
+release can reuse the successful package checks only after verifying that run's
+steps and exact unchanged application/dependency/runtime/schema source paths;
+all changed operations and browser checks still execute. No application rebuild
+qualification or native fixture is being inferred from a different image.
 
 
 ## November 5 — latest integration checkpoint
