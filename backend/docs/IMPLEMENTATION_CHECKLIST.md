@@ -2,6 +2,27 @@
 
 ## November 7 — excessive workspace job pagination
 
+**Full settings startup is now deployed and accepted:**
+[run42384215963](https://github.com/salahassi/tenders/actions/runs/42384215963)
+at `51bf7b134d811b6c9a68006db8b0e48b5fa8f951` passed in **123 seconds including
+queue time**. The genuine authenticated production browser opened settings and
+rendered Models & providers in **10,335 ms**, completed **36 API requests**, and
+reached network idle with no skeleton, alerts, browser errors or blocked requests.
+All 16 startup table counts matched: 119 opportunities in three requests,
+106 fit assessments in four, 32 source runs in one, and 1,795 jobs in four.
+Every observed API response was HTTP 200. This is an observed run, not a universal
+latency guarantee. No model calls or business writes occurred.
+
+Only API changed to `f573e991`; worker/source-browser/scheduler remain `077b06ed`
+and frontend remains `b2201c24`. The applied `ada21f57` ledger, `8f82c881` catalog
+and workload/private configuration are preserved. Session logout, owned SQL-client
+removal and both workflow cleanup stages passed. Duplicate provider-sync run
+`42384177656` was cancelled during verification; its discover/bind/reload/recover
+jobs executed no steps. The [final receipt](evidence/workspace-pagination-release-passed-20261107-42384215963.json)
+closes the reported startup request amplification. Independent proposal issuance,
+provider availability, retrieval and export gates remain separate. The following
+diagnosis and earlier attempts are retained as historical evidence.
+
 **Reopened after the owner's report:** the prior four-page production check
 proved the job-summary endpoint, not complete authenticated settings startup.
 The public frontend currently serves index SHA `aaa576da`, matching the deployed

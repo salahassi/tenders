@@ -1,0 +1,291 @@
+{
+  "release": "workspace-full-content-pagination",
+  "status": "passed",
+  "source_revision": "51bf7b134d811b6c9a68006db8b0e48b5fa8f951",
+  "runtime_artifact_source": "346f0b90df89e893e94edfc3ddf1baeef5da7989",
+  "api_image": "registry.digitalocean.com/tenderdesk-a6093a76/runtime@sha256:f573e991e622c982e82a4a3b4e6dc6f144e87586ba0f5dd0b3d05381b30dbd6a",
+  "frontend_image": "registry.digitalocean.com/tenderdesk-a6093a76/frontend@sha256:b2201c24942c054df1df648b5210d61175e9643207bcedc827af103336757591",
+  "deployment_targets": [
+    "api"
+  ],
+  "schema_manifest": "ada21f57461fa81e3b45778685d86438117ef419ad8c31ceaac86c06dcb2dba3",
+  "schema_catalog": "8f82c88194713bff62224f307d8ab6744a42f4d7fa57a3559fafc4d083cddc04",
+  "schema_mutations": 0,
+  "configuration_preserved": true,
+  "acceptance": {
+    "version": 1,
+    "kind": "actual_workspace_startup",
+    "settings_ready": true,
+    "skeleton_visible": false,
+    "browser_errors": 0,
+    "blocked_requests": 0,
+    "api_requests": 36,
+    "resources": {
+      "bootstrap": {
+        "requests": 1,
+        "records": 0,
+        "bytes": 2741,
+        "nonempty_pages": 0,
+        "min_page_size": null,
+        "max_page_size": 0,
+        "statuses": {
+          "200": 1
+        }
+      },
+      "sources": {
+        "requests": 1,
+        "records": 36,
+        "bytes": 66297,
+        "nonempty_pages": 1,
+        "min_page_size": 36,
+        "max_page_size": 36,
+        "statuses": {
+          "200": 1
+        }
+      },
+      "source-runs": {
+        "requests": 1,
+        "records": 32,
+        "bytes": 16226,
+        "nonempty_pages": 1,
+        "min_page_size": 32,
+        "max_page_size": 32,
+        "statuses": {
+          "200": 1
+        }
+      },
+      "opportunities": {
+        "requests": 3,
+        "records": 119,
+        "bytes": 553891,
+        "nonempty_pages": 3,
+        "min_page_size": 6,
+        "max_page_size": 57,
+        "statuses": {
+          "200": 3
+        }
+      },
+      "knowledge": {
+        "requests": 1,
+        "records": 0,
+        "bytes": 103,
+        "nonempty_pages": 0,
+        "min_page_size": null,
+        "max_page_size": 0,
+        "statuses": {
+          "200": 1
+        }
+      },
+      "job-summaries": {
+        "requests": 4,
+        "records": 1795,
+        "bytes": 816956,
+        "nonempty_pages": 4,
+        "min_page_size": 295,
+        "max_page_size": 500,
+        "statuses": {
+          "200": 4
+        }
+      },
+      "notifications": {
+        "requests": 2,
+        "records": 179,
+        "bytes": 120633,
+        "nonempty_pages": 2,
+        "min_page_size": 79,
+        "max_page_size": 100,
+        "statuses": {
+          "200": 2
+        }
+      },
+      "proposals": {
+        "requests": 1,
+        "records": 1,
+        "bytes": 591,
+        "nonempty_pages": 1,
+        "min_page_size": 1,
+        "max_page_size": 1,
+        "statuses": {
+          "200": 1
+        }
+      },
+      "documents": {
+        "requests": 1,
+        "records": 1,
+        "bytes": 127394,
+        "nonempty_pages": 1,
+        "min_page_size": 1,
+        "max_page_size": 1,
+        "statuses": {
+          "200": 1
+        }
+      },
+      "proposal-versions": {
+        "requests": 1,
+        "records": 0,
+        "bytes": 103,
+        "nonempty_pages": 0,
+        "min_page_size": null,
+        "max_page_size": 0,
+        "statuses": {
+          "200": 1
+        }
+      },
+      "proposal-sections": {
+        "requests": 1,
+        "records": 0,
+        "bytes": 103,
+        "nonempty_pages": 0,
+        "min_page_size": null,
+        "max_page_size": 0,
+        "statuses": {
+          "200": 1
+        }
+      },
+      "questions": {
+        "requests": 1,
+        "records": 0,
+        "bytes": 103,
+        "nonempty_pages": 0,
+        "min_page_size": null,
+        "max_page_size": 0,
+        "statuses": {
+          "200": 1
+        }
+      },
+      "review-inputs": {
+        "requests": 1,
+        "records": 0,
+        "bytes": 103,
+        "nonempty_pages": 0,
+        "min_page_size": null,
+        "max_page_size": 0,
+        "statuses": {
+          "200": 1
+        }
+      },
+      "regeneration-requests": {
+        "requests": 1,
+        "records": 0,
+        "bytes": 103,
+        "nonempty_pages": 0,
+        "min_page_size": null,
+        "max_page_size": 0,
+        "statuses": {
+          "200": 1
+        }
+      },
+      "requirements": {
+        "requests": 1,
+        "records": 0,
+        "bytes": 103,
+        "nonempty_pages": 0,
+        "min_page_size": null,
+        "max_page_size": 0,
+        "statuses": {
+          "200": 1
+        }
+      },
+      "fit-assessments": {
+        "requests": 4,
+        "records": 106,
+        "bytes": 862961,
+        "nonempty_pages": 4,
+        "min_page_size": 8,
+        "max_page_size": 34,
+        "statuses": {
+          "200": 4
+        }
+      },
+      "opportunity-discovery": {
+        "requests": 2,
+        "records": 119,
+        "bytes": 54682,
+        "nonempty_pages": 2,
+        "min_page_size": 19,
+        "max_page_size": 100,
+        "statuses": {
+          "200": 2
+        }
+      },
+      "other-api": {
+        "requests": 8,
+        "records": 30,
+        "bytes": 19389,
+        "nonempty_pages": 6,
+        "min_page_size": 1,
+        "max_page_size": 12,
+        "statuses": {
+          "200": 8
+        }
+      },
+      "model-routing": {
+        "requests": 1,
+        "records": 1,
+        "bytes": 541,
+        "nonempty_pages": 1,
+        "min_page_size": 1,
+        "max_page_size": 1,
+        "statuses": {
+          "200": 1
+        }
+      }
+    },
+    "business_mutations": 0,
+    "model_requests": 0,
+    "index_sha256": "aaa576da3f4ebde3e1c8289ad6d0dfd93d486b1d5b8b53bf63a33c594e840616",
+    "network_settled": true,
+    "models_visible": true,
+    "alert_count": 0,
+    "elapsed_ms": 10335,
+    "table_counts": {
+      "jobs": 1795,
+      "sources": 36,
+      "documents": 1,
+      "proposals": 1,
+      "questions": 0,
+      "source_runs": 32,
+      "requirements": 0,
+      "notifications": 179,
+      "opportunities": 119,
+      "review_inputs": 0,
+      "fit_assessments": 106,
+      "knowledge_items": 0,
+      "proposal_sections": 0,
+      "proposal_versions": 0,
+      "opportunity_discovery": 119,
+      "regeneration_requests": 0
+    },
+    "source_revision": "51bf7b134d811b6c9a68006db8b0e48b5fa8f951",
+    "auth_session_logged_out": true,
+    "owned_client_removed": true
+  },
+  "evidence": {
+    "workflow_run": 42384215963,
+    "job": 128438143017,
+    "url": "https://github.com/salahassi/tenders/actions/runs/42384215963",
+    "created_at": "2026-11-07T15:00:10Z",
+    "completed_at": "2026-11-07T15:02:13Z",
+    "elapsed_seconds_including_queue": 123,
+    "conclusion": "success",
+    "owned_database_client_cleanup": "success",
+    "runner_credential_cleanup": "success",
+    "retained_runtime_targets": {
+      "worker": "077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e",
+      "source-browser": "077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e",
+      "scheduler": "077b06edd81eb58296ef755e7baa8af32a73dd931c6f06097acc513d3f684e3e"
+    },
+    "duplicate_provider_sync": {
+      "run": 42384177656,
+      "cancelled_during": "verify",
+      "discover_steps_executed": 0,
+      "bind_steps_executed": 0,
+      "reload_steps_executed": 0,
+      "recover_steps_executed": 0
+    },
+    "limits": [
+      "One genuine authenticated browser observation, not a universal latency guarantee.",
+      "Completes startup request-amplification acceptance; separate proposal issuance, model availability, retrieval and export acceptance gates remain open."
+    ]
+  }
+}
