@@ -129,9 +129,12 @@ const prefix = runtime.serve(
         "rpc/app_batch_result_chunk",
         "documents",
         "jobs",
+        "opportunities",
       ].includes(path),
       "Unexpected database route",
     );
+    if (path === "opportunities")
+      assert(request.method === "GET", "Full-page fixture must remain read-only");
     if (path === "rpc/current_membership") counters.membership++;
     if (path === "rpc/app_batch_prepare") counters.prepare++;
     if (path === "rpc/app_batch_result_chunk") counters.chunks++;

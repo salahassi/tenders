@@ -37,6 +37,14 @@ New tests cover escaping/Arabic/emoji, oversized boundaries, exact continuation,
 work duration and all three affected tables. The immutable-image PostgreSQL/API
 fixture now also verifies 119 full opportunity records and preserved descriptions.
 Deployment and complete real-page acceptance remain pending.
+Local checks pass: 3,499 backend tests / 206 files, 383 frontend tests / 60 files,
+both package typechecks/builds, and 72 focused list/admission controls. Runtime
+`9566a11c` is built from `346f0b9`. The first native artifact save hit local ENOSPC;
+unused build cache cleanup restored space without deleting images or evidence.
+Three subsequent native DOCX scopes pass at 384 MiB / 700m. The new API fixture's
+loopback adapter initially rejected its newly added `opportunities` read; it now
+permits that exact GET route. Application/runtime COPY inputs remain unchanged;
+the failed fixture receipt and cleanup are retained before the focused retry.
 
 **Deployed and accepted:**
 [run42375651095](https://github.com/salahassi/tenders/actions/runs/42375651095)
