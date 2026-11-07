@@ -58,6 +58,28 @@ class RawConfig(unittest.TestCase):
    with patch.object(p.subprocess,'run',side_effect=run) as export:
     self.assertEqual(p.raw_image_config(value),self.document['config']);self.assertEqual(value['Id'],config_id)
     self.assertEqual(p.raw_image_config(value),self.document['config']);self.assertEqual(export.call_count,1)
+ def test_index_selects_one_exact_platform_and_binds_every_descriptor(self):
+  for fault in (None,'duplicate','platform','manifest_digest','manifest_size','manifest_bytes'):
+   p._RAW_CONFIG_CACHE.clear();raw,value=self.value();config_id=value['Id']
+   manifest=json.dumps({'schemaVersion':2,'config':{'digest':config_id,'size':len(raw),'mediaType':'application/vnd.oci.image.config.v1+json'}}).encode()
+   manifest_id='sha256:'+hashlib.sha256(manifest).hexdigest()
+   descriptor={'digest':manifest_id,'size':len(manifest),'mediaType':'application/vnd.oci.image.manifest.v1+json','platform':{'os':'linux','architecture':'amd64'}}
+   if fault=='platform':descriptor['platform']['architecture']='arm64'
+   if fault=='manifest_digest':descriptor['digest']='sha256:'+'0'*64
+   if fault=='manifest_size':descriptor['size']+=1
+   index={'schemaVersion':2,'manifests':[descriptor,{'platform':{'os':'unknown','architecture':'unknown'}}]}
+   if fault=='duplicate':index['manifests'].append(copy.deepcopy(descriptor))
+   encoded=json.dumps(index).encode();value['Id']='sha256:'+hashlib.sha256(encoded).hexdigest()
+   def run(args,**kwargs):
+    with tarfile.open(args[4],'w') as archive:
+     for digest,payload in [(value['Id'],encoded),(manifest_id,manifest+b' ' if fault=='manifest_bytes' else manifest),(config_id,raw)]:
+      member=tarfile.TarInfo('blobs/sha256/'+digest[7:]);member.size=len(payload);archive.addfile(member,io.BytesIO(payload))
+    return fixture.result()
+   with self.subTest(fault=fault),patch.object(p.subprocess,'run',side_effect=run):
+    if fault:
+     with self.assertRaisesRegex(p.ImageError,'RAW_CONFIG_UNVERIFIED'):p.raw_image_config(value)
+    else:
+     self.assertEqual(p.raw_image_config(value),self.document['config']);self.assertEqual(value['Id'],config_id)
  def test_manifest_descriptor_and_config_bytes_are_both_verified(self):
   for change in ('digest','size','type','bytes'):
    p._RAW_CONFIG_CACHE.clear();raw,value=self.value();config_id=value['Id']

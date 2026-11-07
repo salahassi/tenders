@@ -57,6 +57,21 @@ def raw_image_config(value):
                         return decoded
                     decoded=read_blob(identifier);config_id=identifier
                     kind='index' if isinstance(decoded.get('manifests'),list) else 'manifest' if decoded.get('schemaVersion')==2 else 'config'
+                    stage='index_descriptor'
+                    if kind=='index':
+                        descriptors=decoded['manifests']
+                        if decoded.get('schemaVersion')!=2 or not 1<=len(descriptors)<=16:raise ValueError()
+                        matches=[d for d in descriptors if isinstance(d,dict) and isinstance(d.get('platform'),dict)
+                          and d['platform'].get('os')==value.get('Os')
+                          and d['platform'].get('architecture')==value.get('Architecture')
+                          and d['platform'].get('variant','')==value.get('Variant','')]
+                        if len(matches)!=1:raise ValueError()
+                        selected=matches[0]
+                        if (selected.get('mediaType') not in ('application/vnd.oci.image.manifest.v1+json',
+                          'application/vnd.docker.distribution.manifest.v2+json')
+                          or type(selected.get('size')) is not int or not 0<selected['size']<=1048576):raise ValueError()
+                        stage='manifest_blob';decoded=read_blob(selected.get('digest'),selected['size'])
+                        if decoded.get('schemaVersion')!=2 or 'manifests' in decoded:raise ValueError()
                     stage='descriptor'
                     # Containerd-backed Docker reports a manifest digest as Id.
                     # Follow only its SHA-256/size-bound image-config descriptor.

@@ -68,6 +68,11 @@ Run `42370052315` passes the unchanged-source proof, 709 operations / 11 schema 
 `DELIVERY_IMAGE_RAW_CONFIG_UNVERIFIED`, still before rollout. A registry-read-only
 promotion inspection mode reproduces the exact local label build on the hosted
 engine without publishing, accessing Kubernetes or modifying business data.
+Inspection `42370603240` verifies the published image, then proves the promoted
+image is an OCI index. Resolution now requires one exact observed-platform
+manifest and verifies index, manifest and config hashes/sizes before the existing
+qualification checks. Duplicate platform matches, wrong platform and changed
+manifest bytes/descriptors are rejected by added tests.
 
 
 ## November 5 — latest integration checkpoint
