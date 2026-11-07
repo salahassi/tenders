@@ -34,7 +34,7 @@ def main():
         result=subprocess.run(['gh','api','repos/'+REPOSITORY+'/actions/'+path],capture_output=True,text=True,timeout=60,check=True)
         require(len(result.stdout)<2_000_000);return json.loads(result.stdout)
     verify_evidence(api('runs/'+str(RUN)),api('runs/'+str(RUN)+'/jobs?per_page=100')['jobs'])
-    subprocess.run(['git','fetch','--no-tags','--depth=1','origin',REVISION],cwd=ROOT,capture_output=True,timeout=120,check=True)
+    subprocess.run(['git','cat-file','-e',REVISION+'^{commit}'],cwd=ROOT,capture_output=True,timeout=120,check=True)
     changed=subprocess.run(['git','diff','--name-only','-z',REVISION,'HEAD','--'],cwd=ROOT,capture_output=True,timeout=30,check=True).stdout
     verify_changed_paths([p.decode() for p in changed.split(b'\0') if p])
     print(json.dumps({'package_checks':'reused_for_identical_application_sources','prior_run':RUN,'verified_revision':REVISION,'operations_retested':True}))

@@ -58,7 +58,9 @@ config identity; platform, full layer list, all config fields and labels remain
 strict. Local legacy/OCI/config-corruption and promotion controls pass. The
 release can reuse the successful package checks only after verifying that run's
 steps and exact unchanged application/dependency/runtime/schema source paths;
-all changed operations and browser checks still execute. No application rebuild
+all changed operations and browser checks still execute. Checkout supplies the
+source history without retaining credentials or requiring an unauthenticated
+private-repository fetch. No application rebuild
 qualification or native fixture is being inferred from a different image.
 
 
